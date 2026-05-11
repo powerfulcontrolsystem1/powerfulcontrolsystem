@@ -88,6 +88,19 @@ Este documento deja los 12 frentes convertidos en piezas operativas del proyecto
 - Contrato QA de modulos criticos: `tools/qa_module_contracts.mjs`.
 - E2E visual manual incluye capturas de botones, pagos y comprobantes cuando se configuran rutas/credenciales.
 
+## Extension empresarial 2026-05-11
+
+- Staging anonimizado por defecto: `deploy/scripts/vps-anonymize-staging.sh`.
+- Monitoreo Prometheus/Grafana: `deploy/monitoring/docker-compose.monitoring.yml`.
+- Backups externos: `deploy/scripts/vps-external-backup.sh`.
+- QA por roles: `tools/qa_roles_matrix.mjs`.
+- Matriz de pagos/comprobantes: `tools/payment_matrix_audit.mjs`.
+- Prueba de carga smoke: `tools/load_smoke_test.mjs`.
+- Manifiesto de release: `tools/release_manifest.mjs`.
+- Centro de soporte: `tools/support_center_audit.mjs`.
+- Normalizacion documental: `tools/docs_normalization_audit.mjs`.
+- Runbook completo: `documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md`.
+
 ## Comando profesional recomendado
 
 ```powershell

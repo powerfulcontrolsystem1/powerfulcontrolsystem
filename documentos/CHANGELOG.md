@@ -1,3 +1,12 @@
+## [2026-05-11] Madurez empresarial de 12 pasos
+- [Staging] `deploy/scripts/vps-refresh-staging-from-production.sh` anonimiza datos por defecto con `deploy/scripts/vps-anonymize-staging.sh`.
+- [Monitoreo] Se agrega stack Prometheus/Grafana/node-exporter/cAdvisor en `deploy/monitoring/` y script `deploy/scripts/vps-monitoring-up.sh`.
+- [Backups] Se agrega backup externo opcional por `rclone` o `s3` con cron instalable.
+- [QA] Se agregan auditorias `qa_roles_matrix`, `payment_matrix_audit`, `support_center_audit`, `docs_normalization_audit` y `load_smoke_test`.
+- [Release] `scripts/release_gate.ps1` genera manifiesto con `tools/release_manifest.mjs` e integra prueba de carga smoke.
+- [CI] `professional-ci.yml` incorpora auditorias nuevas y despliegue opcional a staging con `PCS_ENABLE_STAGING_DEPLOY=true`.
+- [Verificacion] `.\scripts\profesional_preflight.ps1 -Full` OK y `node tools\load_smoke_test.mjs` contra staging OK.
+
 ## [2026-05-11] Operacion profesional diaria de los 12 frentes
 - [VPS] Se agregan scripts para instalar Docker Buildx, activar staging Nginx, tomar snapshots de observabilidad y programar backups por cron.
 - [Staging] Se agrega refresco controlado de staging desde produccion con `deploy/scripts/vps-refresh-staging-from-production.sh`.

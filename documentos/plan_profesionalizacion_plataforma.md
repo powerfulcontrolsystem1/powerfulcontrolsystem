@@ -65,3 +65,17 @@ Este plan convierte las siete recomendaciones operativas en controles ejecutable
 .\scripts\sync_to_vps.ps1 -CleanupRemoteUnusedFiles:$false
 .\scripts\vps_backup_operacion.ps1 -DryRun
 ```
+
+## Madurez empresarial adicional
+
+El bloque de 12 pasos profesionales queda materializado en `documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md`.
+
+Controles nuevos:
+
+- Anonimizacion automatica de staging despues de refrescar desde produccion.
+- Monitoreo Prometheus/Grafana desplegable en VPS.
+- Backup externo por rclone o S3.
+- Deploy automatico opcional a staging desde GitHub Actions.
+- Auditorias de roles, pagos, soporte y normalizacion documental.
+- Prueba de carga smoke incluida en release gate.
+- Manifiesto formal de release por version.

@@ -1,3 +1,7 @@
+2026-05-11 - Madurez empresarial de 12 pasos
+- Archivos: deploy/scripts/vps-anonymize-staging.sh, deploy/scripts/vps-monitoring-up.sh, deploy/scripts/vps-external-backup.sh, deploy/scripts/vps-install-external-backup-cron.sh, deploy/monitoring/*, tools/qa_roles_matrix.mjs, tools/payment_matrix_audit.mjs, tools/support_center_audit.mjs, tools/docs_normalization_audit.mjs, tools/load_smoke_test.mjs, tools/release_manifest.mjs, scripts/profesional_preflight.ps1, scripts/release_gate.ps1, workflows GitHub y runbook de madurez empresarial.
+- Descripcion: se implementan los 12 puntos de madurez profesional: staging anonimo, monitoreo, QA por roles, releases formales, backup externo, seguridad auditada, observabilidad, normalizacion documental, deploy automatico a staging, matriz de pagos, pruebas de carga y centro de soporte interno.
+- Verificacion: preflight full OK, QA roles OK, matriz pagos OK, soporte OK, carga smoke contra staging OK con p95 1008 ms y error_rate 0.
 2026-05-11 - Ajuste profesional staging Docker
 - Archivos: deploy/docker-compose.staging.yml, deploy/scripts/vps-staging-up.sh.
 - Descripcion: staging queda con red Docker aislada pcs_staging_internal y el script genera secretos seguros cuando deploy/.env.staging nace desde plantilla.

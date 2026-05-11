@@ -148,11 +148,38 @@ try {
       "QA funcional por modulos finalizo con codigo $code"
     }
 
+    Invoke-Captured -Title "QA por roles operativos" -Required:$Strict -Script {
+      & node tools\qa_roles_matrix.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "QA por roles fallo con codigo $code" }
+      "QA por roles finalizo con codigo $code"
+    }
+
+    Invoke-Captured -Title "Matriz de pagos y comprobantes" -Required:$Strict -Script {
+      & node tools\payment_matrix_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "matriz de pagos fallo con codigo $code" }
+      "Matriz de pagos finalizo con codigo $code"
+    }
+
+    Invoke-Captured -Title "Centro de soporte interno" -Required:$Strict -Script {
+      & node tools\support_center_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "centro de soporte fallo con codigo $code" }
+      "Centro de soporte finalizo con codigo $code"
+    }
+
     Invoke-Captured -Title "Auditoria UX global" -Required:$Strict -Script {
       & node tools\ux_consistency_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria UX fallo con codigo $code" }
       "Auditoria UX finalizo con codigo $code"
+    }
+
+    Invoke-Captured -Title "Normalizacion documental" -Script {
+      & node tools\docs_normalization_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      "Normalizacion documental finalizo con codigo $code"
     }
   }
 

@@ -7,6 +7,7 @@ param(
   [switch]$SkipRemoteBackup,
   [switch]$SkipRestoreDrill,
   [switch]$SkipE2E,
+  [switch]$SkipLoadSmoke,
   [string]$E2EBaseUrl = "https://staging.powerfulcontrolsystem.com",
   [string]$EmpresaId = "7"
 )
@@ -43,6 +44,15 @@ try {
     & node tools\qa_print_formats.cjs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   }
+
+  if (-not $SkipLoadSmoke) {
+    $env:PCS_LOAD_BASE_URL = $E2EBaseUrl
+    & node tools\load_smoke_test.mjs
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  }
+
+  & node tools\release_manifest.mjs
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
   Write-Host "[OK] Release gate completado." -ForegroundColor Green
 } finally {

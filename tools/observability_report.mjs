@@ -49,6 +49,18 @@ const checks = [
     name: "runtime_state_log",
     ok: exists("backend/logs/server_runtime_state.json") || /server_runtime_state/.test(mainGo),
   },
+  {
+    name: "prometheus_grafana_stack",
+    ok: exists("deploy/monitoring/docker-compose.monitoring.yml") && exists("deploy/scripts/vps-monitoring-up.sh"),
+  },
+  {
+    name: "external_backup_script",
+    ok: exists("deploy/scripts/vps-external-backup.sh") && exists("deploy/scripts/vps-install-external-backup-cron.sh"),
+  },
+  {
+    name: "load_smoke_test",
+    ok: exists("tools/load_smoke_test.mjs") && exists("scripts/release_gate.ps1"),
+  },
 ];
 
 const report = {

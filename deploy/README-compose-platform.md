@@ -2,6 +2,36 @@
 
 Este despliegue prepara la plataforma para ejecutarse en Docker dentro de la VPS actual sin cortar el servicio que ya esta en produccion por `systemd` y Nginx. El flujo recomendado levanta Docker en paralelo por `127.0.0.1:8081`, valida, migra datos y solo despues conmuta Nginx.
 
+## Operacion empresarial adicional
+
+Staging seguro:
+
+```bash
+bash deploy/scripts/vps-refresh-staging-from-production.sh
+```
+
+El refresco ejecuta `deploy/scripts/vps-anonymize-staging.sh` por defecto. Para una copia exacta temporal, usar `STAGING_ANONYMIZE=0` de forma consciente.
+
+Monitoreo:
+
+```bash
+bash deploy/scripts/vps-monitoring-up.sh
+```
+
+Prometheus y Grafana quedan ligados a `127.0.0.1` por defecto.
+
+Backup externo:
+
+```bash
+EXTERNAL_BACKUP_TARGET=rclone RCLONE_REMOTE=remote:pcs-backups bash deploy/scripts/vps-external-backup.sh
+```
+
+o:
+
+```bash
+EXTERNAL_BACKUP_TARGET=s3 S3_URI=s3://bucket/powerfulcontrolsystem bash deploy/scripts/vps-external-backup.sh
+```
+
 ## Archivos principales
 
 - `deploy/docker-compose.platform.yml`: stack principal.

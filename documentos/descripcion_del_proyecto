@@ -1,7 +1,6 @@
-
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-05-10
+Actualizacion: 2026-05-11
 
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, helpdesk, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
 

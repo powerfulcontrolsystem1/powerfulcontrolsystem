@@ -75,6 +75,10 @@ add("recaptcha_contract", /RECAPTCHA|recaptcha/i.test(allGo + "\n" + walk("web",
   evidence: "Recaptcha o verificacion humana presente en login/flujo publico.",
 }, "medium");
 
+add("super_admin_2fa_readiness", /two.?factor|2fa|totp|mfa|otp/i.test(allGo + "\n" + walk("web", (full) => /\.(html|js)$/i.test(full)).map(read).join("\n")), {
+  recommendation: "Activar 2FA/TOTP obligatorio para super administrador antes de delegar despliegues automaticos a produccion.",
+}, "medium");
+
 add("cors_not_wildcard_credentials", !/Access-Control-Allow-Origin",\s*"\*"/.test(allGo), {
   evidence: "No se detecta CORS wildcard directo en Go.",
 }, "high");

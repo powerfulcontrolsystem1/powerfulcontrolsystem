@@ -3,6 +3,7 @@ set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-/root/powerfulcontrolsystem}"
 ENV_FILE="${ENV_FILE:-$PROJECT_DIR/deploy/.env.staging}"
+STAGING_ANONYMIZE="${STAGING_ANONYMIZE:-1}"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "[ERROR] No existe $ENV_FILE. Ejecuta primero deploy/scripts/vps-staging-up.sh." >&2
@@ -28,6 +29,12 @@ for db in pcs_superadministrador pcs_empresas; do
   docker exec pcs-postgres sh -lc "pg_dump -U \"\$POSTGRES_USER\" --no-owner --no-privileges '$db'" \
     | docker exec -i pcs-staging-postgres sh -lc "psql -v ON_ERROR_STOP=1 -U \"\$POSTGRES_USER\" '$db' >/dev/null"
 done
+
+if [ "$STAGING_ANONYMIZE" != "0" ]; then
+  bash deploy/scripts/vps-anonymize-staging.sh
+else
+  echo "[WARN] STAGING_ANONYMIZE=0. Staging queda con datos copiados desde produccion."
+fi
 
 docker compose --env-file "$ENV_FILE" -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml restart backend frontend
 

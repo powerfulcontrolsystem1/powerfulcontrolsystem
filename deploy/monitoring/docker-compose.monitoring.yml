@@ -1,0 +1,77 @@
+name: powerful-control-system-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: pcs-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - pcs_prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_BIND:-127.0.0.1}:${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - pcs_monitoring
+      - pcs_internal
+      - pcs_staging_internal
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: pcs-grafana
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Defina GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - pcs_grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "${GRAFANA_BIND:-127.0.0.1}:${GRAFANA_PORT:-3001}:3000"
+    networks:
+      - pcs_monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: pcs-node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - pcs_monitoring
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: pcs-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - pcs_monitoring
+
+networks:
+  pcs_monitoring:
+    name: pcs_monitoring
+    driver: bridge
+  pcs_internal:
+    external: true
+  pcs_staging_internal:
+    external: true
+
+volumes:
+  pcs_prometheus_data:
+  pcs_grafana_data:

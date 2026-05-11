@@ -43,21 +43,29 @@ jobs:
 
       - name: Run button and layout QA
         env:
-          PCS_QA_BASE_URL: ${{ inputs.base_url }}
-          PCS_QA_EMPRESA_ID: ${{ inputs.empresa_id }}
+          PCS_QA_BASE_URL: ${{ inputs.base_url || 'https://staging.powerfulcontrolsystem.com' }}
+          PCS_QA_EMPRESA_ID: ${{ inputs.empresa_id || '7' }}
           PCS_QA_EMAIL: ${{ secrets.PCS_QA_EMAIL }}
           PCS_QA_PASSWORD: ${{ secrets.PCS_QA_PASSWORD }}
-          PCS_QA_MAX_PAGES: ${{ inputs.max_pages }}
+          PCS_QA_MAX_PAGES: ${{ inputs.max_pages || '40' }}
           PCS_QA_VIEWPORTS: desktop,mobile
         run: node tools/qa_e2e_buttons.cjs
 
+      - name: Run role matrix audit
+        run: node tools/qa_roles_matrix.mjs --out documentos/reportes_profesionales
+
       - name: Run print format QA
         run: node tools/qa_print_formats.cjs
+
+      - name: Run payment matrix audit
+        run: node tools/payment_matrix_audit.mjs --out documentos/reportes_profesionales
 
       - name: Upload E2E evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-visual-evidence
-          path: test_runs/
+          path: |
+            test_runs/
+            documentos/reportes_profesionales/
           if-no-files-found: ignore
