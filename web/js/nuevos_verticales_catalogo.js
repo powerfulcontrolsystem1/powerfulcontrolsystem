@@ -246,13 +246,89 @@
     }
   ];
 
+  var productionMassRank = {
+    salon_spa: 1,
+    veterinaria_petshop: 2,
+    clinica_consultorios: 3,
+    laboratorio_clinico: 4,
+    taller_mecanico: 5,
+    servicios_tecnicos: 6,
+    lavanderia_tintoreria: 7,
+    agencia_viajes: 8,
+    eventos_boleteria: 9,
+    transporte_carga_tms: 10
+  };
+
+  var deferredReason = {
+    operador_turistico: "Cubierto inicialmente por agencia_viajes; se difiere hasta madurar cupos, rutas y liquidacion turistica.",
+    colegio_academia: "Demanda real, pero requiere notas, periodos academicos y cartera educativa mas especifica.",
+    guarderia_infantil: "Requiere controles sensibles de menores, autorizaciones y trazabilidad adicional antes de masificar.",
+    inmobiliaria_comercial: "Ciclo comercial mas largo y mayor dependencia de CRM, contratos y ventas consultivas.",
+    seguridad_privada: "Requiere turnos, rondas, novedades y cumplimiento laboral mas especializado.",
+    club_deportivo: "Se solapa parcialmente con gimnasio y agenda; conviene estabilizar esos flujos primero.",
+    funeraria_exequial: "Vertical sensible y de menor volumen relativo; requiere soporte documental especializado.",
+    parque_recreativo: "Depende de aforo, manillas y hardware; queda para una fase con boleteria QR mas madura.",
+    cooperativa_fondo: "Requiere cartera, creditos, aportes y regulacion financiera mas estricta.",
+    capacitacion_empresarial: "Puede reutilizar colegio_academia y CRM; queda para fase B2B posterior."
+  };
+
+  function uniqueList(values) {
+    var seen = {};
+    var out = [];
+    (values || []).forEach(function (value) {
+      var clean = String(value || "").trim();
+      if (!clean || seen[clean]) return;
+      seen[clean] = true;
+      out.push(clean);
+    });
+    return out;
+  }
+
   modules.forEach(function (item) {
     if (!Array.isArray(item.sections) || item.sections.length === 0) {
       item.sections = defaultSections.slice();
     }
+    var module = String(item.module || "").trim();
+    var rank = productionMassRank[module] || 0;
+    var isProductionMass = rank > 0;
+    item.productionMass = isProductionMass;
+    item.productionRank = rank;
+    item.decisionPreconfig = isProductionMass ? "integrar_v1_produccion_masiva" : "diferir_de_v1";
+    item.decisionLabel = isProductionMass ? "V1 masiva" : "Diferido v1";
+    item.decisionReason = isProductionMass
+      ? "Seleccionado para venta masiva en Colombia por demanda, repetibilidad y bajo riesgo de duplicar el nucleo."
+      : (deferredReason[module] || "Plantilla conservada en catalogo, pero no priorizada para la primera venta masiva.");
+    item.integrationStatus = item.integrationStatus || "plantilla_integrada_nucleo";
+    item.operationalVisible = isProductionMass;
+    item.coreModules = uniqueList(item.coreModules || ["clientes", "inventario", "ventas", "pagos", "facturacion", "reportes", "seguridad"]);
+    item.templateActivates = uniqueList((item.templateActivates || []).concat(item.coreModules, [module, "permisos", "licencias"]));
+    item.tablesTouched = uniqueList((item.tablesTouched || []).concat([
+      "tipo_empresa",
+      "licencias",
+      "paginas",
+      "roles",
+      "permisos",
+      "productos/servicios",
+      "clientes",
+      "ventas",
+      "pagos",
+      "reportes"
+    ]));
+    item.requiredPermissions = uniqueList(item.requiredPermissions || ["ver", "crear", "editar", "reportar", "cobrar"]);
+    item.saleFlow = item.saleFlow || "Cotizacion o venta directa usando clientes, productos/servicios, carritos, pagos y facturacion centrales.";
+    item.reportsProduced = uniqueList(item.reportsProduced || ["Ventas por empresa", "Caja y pagos", "Clientes", "Servicios/productos", "Reporte operativo del vertical"]);
+    item.portalStatus = isProductionMass ? ("V1 masiva #" + rank) : "Diferido v1";
+    item.portalDescription = (isProductionMass
+      ? ("Plantilla priorizada para produccion masiva. Activa " + item.templateActivates.slice(0, 6).join(", ") + " sobre el nucleo unico. ")
+      : ("Plantilla tecnica diferida de la primera venta masiva. No duplica clientes, productos, ventas ni pagos; queda oculta como modulo operativo hasta completar su flujo. "))
+      + item.description;
   });
 
   window.PCS_NUEVOS_VERTICALES = modules;
+  window.PCS_NUEVOS_VERTICALES_PRODUCCION_MASIVA = modules
+    .filter(function (item) { return item.productionMass; })
+    .sort(function (a, b) { return a.productionRank - b.productionRank; });
+  window.PCS_NUEVOS_VERTICALES_DIFERIDOS = modules.filter(function (item) { return !item.productionMass; });
   window.PCS_NUEVOS_VERTICALES_MODULES = modules.map(function (item) {
     return [item.id, item.module];
   });

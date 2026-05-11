@@ -29,6 +29,7 @@ type EmpresaApartamentoTuristicoConfig struct {
 type EmpresaApartamentoTuristicoUnidad struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
+	ServicioID         int64   `json:"servicio_id,omitempty"`
 	Codigo             string  `json:"codigo"`
 	Nombre             string  `json:"nombre"`
 	Tipo               string  `json:"tipo"`
@@ -74,6 +75,10 @@ type EmpresaApartamentoTuristicoReserva struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
 	ApartamentoID      int64   `json:"apartamento_id"`
+	ClienteID          int64   `json:"cliente_id,omitempty"`
+	ServicioID         int64   `json:"servicio_id,omitempty"`
+	CarritoID          int64   `json:"carrito_id,omitempty"`
+	CarritoItemID      int64   `json:"carrito_item_id,omitempty"`
 	ApartamentoNombre  string  `json:"apartamento_nombre,omitempty"`
 	CodigoReserva      string  `json:"codigo_reserva"`
 	HuespedNombre      string  `json:"huesped_nombre"`
@@ -85,6 +90,7 @@ type EmpresaApartamentoTuristicoReserva struct {
 	FechaSalida        string  `json:"fecha_salida"`
 	Noches             int     `json:"noches"`
 	Canal              string  `json:"canal"`
+	MetodoPago         string  `json:"metodo_pago,omitempty"`
 	EstadoReserva      string  `json:"estado_reserva"`
 	EstadoPago         string  `json:"estado_pago"`
 	Subtotal           float64 `json:"subtotal"`
@@ -139,6 +145,18 @@ type EmpresaApartamentoTuristicoDashboard struct {
 	TareasPendientes []EmpresaApartamentoTuristicoTarea   `json:"tareas_pendientes"`
 }
 
+type EmpresaApartamentosTuristicosIntegracionNucleoResumen struct {
+	EmpresaID              int64    `json:"empresa_id"`
+	EstadoIntegracion      string   `json:"estado_integracion"`
+	VisibleOperativo       bool     `json:"visible_operativo"`
+	ServiciosSincronizados int      `json:"servicios_sincronizados"`
+	ClientesSincronizados  int      `json:"clientes_sincronizados"`
+	ReservasSincronizadas  int      `json:"reservas_sincronizadas"`
+	ReservasPendientes     int      `json:"reservas_pendientes"`
+	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
+	Errores                []string `json:"errores,omitempty"`
+}
+
 func EnsureEmpresaApartamentosTuristicosSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_apartamentos_turisticos_config (
@@ -158,6 +176,7 @@ func EnsureEmpresaApartamentosTuristicosSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_apartamentos_turisticos_unidades (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
+			servicio_id BIGINT,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
 			tipo TEXT DEFAULT 'apartamento',
@@ -203,6 +222,10 @@ func EnsureEmpresaApartamentosTuristicosSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
 			apartamento_id BIGINT NOT NULL,
+			cliente_id BIGINT,
+			servicio_id BIGINT,
+			carrito_id BIGINT,
+			carrito_item_id BIGINT,
 			codigo_reserva TEXT NOT NULL,
 			huesped_nombre TEXT NOT NULL,
 			huesped_documento TEXT,
@@ -213,6 +236,7 @@ func EnsureEmpresaApartamentosTuristicosSchema(dbConn *sql.DB) error {
 			fecha_salida TEXT NOT NULL,
 			noches INTEGER DEFAULT 1,
 			canal TEXT DEFAULT 'directo',
+			metodo_pago TEXT DEFAULT 'efectivo',
 			estado_reserva TEXT DEFAULT 'confirmada',
 			estado_pago TEXT DEFAULT 'pendiente',
 			subtotal NUMERIC(14,2) DEFAULT 0,
@@ -252,6 +276,31 @@ func EnsureEmpresaApartamentosTuristicosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_apart_tur_tareas_estado ON empresa_apartamentos_turisticos_tareas(empresa_id, estado, fecha_programada)`,
 	}
 	for _, stmt := range stmts {
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	extraColumns := []struct {
+		table  string
+		column string
+		def    string
+	}{
+		{"empresa_apartamentos_turisticos_unidades", "servicio_id", "BIGINT"},
+		{"empresa_apartamentos_turisticos_reservas", "cliente_id", "BIGINT"},
+		{"empresa_apartamentos_turisticos_reservas", "servicio_id", "BIGINT"},
+		{"empresa_apartamentos_turisticos_reservas", "carrito_id", "BIGINT"},
+		{"empresa_apartamentos_turisticos_reservas", "carrito_item_id", "BIGINT"},
+		{"empresa_apartamentos_turisticos_reservas", "metodo_pago", "TEXT DEFAULT 'efectivo'"},
+	}
+	for _, col := range extraColumns {
+		if err := ensureColumnIfMissing(dbConn, col.table, col.column, col.def); err != nil {
+			return err
+		}
+	}
+	for _, stmt := range []string{
+		`CREATE INDEX IF NOT EXISTS ix_apart_tur_unidad_servicio ON empresa_apartamentos_turisticos_unidades(empresa_id, servicio_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_apart_tur_reserva_carrito ON empresa_apartamentos_turisticos_reservas(empresa_id, carrito_id)`,
+	} {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
@@ -309,7 +358,7 @@ func ListEmpresaApartamentosTuristicosUnidades(dbConn *sql.DB, empresaID int64) 
 	if err := EnsureEmpresaApartamentosTuristicosSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,codigo,nombre,COALESCE(tipo,''),COALESCE(ubicacion,''),COALESCE(capacidad,2),COALESCE(habitaciones,1),COALESCE(camas,1),COALESCE(banos,1),COALESCE(precio_base_noche,0),COALESCE(tarifa_limpieza,0),COALESCE(deposito_sugerido,0),COALESCE(estado_operativo,'activo'),COALESCE(estado_ocupacion,'disponible'),COALESCE(url_foto,''),COALESCE(amenidades,''),COALESCE(reglas_casa,''),COALESCE(notas,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(usuario_creador,'') FROM empresa_apartamentos_turisticos_unidades WHERE empresa_id=? ORDER BY codigo`, empresaID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,COALESCE(servicio_id,0),codigo,nombre,COALESCE(tipo,''),COALESCE(ubicacion,''),COALESCE(capacidad,2),COALESCE(habitaciones,1),COALESCE(camas,1),COALESCE(banos,1),COALESCE(precio_base_noche,0),COALESCE(tarifa_limpieza,0),COALESCE(deposito_sugerido,0),COALESCE(estado_operativo,'activo'),COALESCE(estado_ocupacion,'disponible'),COALESCE(url_foto,''),COALESCE(amenidades,''),COALESCE(reglas_casa,''),COALESCE(notas,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(usuario_creador,'') FROM empresa_apartamentos_turisticos_unidades WHERE empresa_id=? ORDER BY codigo`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +366,7 @@ func ListEmpresaApartamentosTuristicosUnidades(dbConn *sql.DB, empresaID int64) 
 	out := []EmpresaApartamentoTuristicoUnidad{}
 	for rows.Next() {
 		var x EmpresaApartamentoTuristicoUnidad
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.Tipo, &x.Ubicacion, &x.Capacidad, &x.Habitaciones, &x.Camas, &x.Banos, &x.PrecioBaseNoche, &x.TarifaLimpieza, &x.DepositoSugerido, &x.EstadoOperativo, &x.EstadoOcupacion, &x.UrlFoto, &x.Amenidades, &x.ReglasCasa, &x.Notas, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ServicioID, &x.Codigo, &x.Nombre, &x.Tipo, &x.Ubicacion, &x.Capacidad, &x.Habitaciones, &x.Camas, &x.Banos, &x.PrecioBaseNoche, &x.TarifaLimpieza, &x.DepositoSugerido, &x.EstadoOperativo, &x.EstadoOcupacion, &x.UrlFoto, &x.Amenidades, &x.ReglasCasa, &x.Notas, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -333,9 +382,14 @@ func CreateEmpresaApartamentoTuristicoUnidad(dbConn *sql.DB, x EmpresaApartament
 	if x.Codigo == "" || x.Nombre == "" {
 		return 0, errors.New("codigo y nombre son obligatorios")
 	}
+	servicioID, err := ensureApartTurUnidadServicio(dbConn, x, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	x.ServicioID = servicioID
 	var id int64
-	err := QueryRowCompat(dbConn, `INSERT INTO empresa_apartamentos_turisticos_unidades (empresa_id,codigo,nombre,tipo,ubicacion,capacidad,habitaciones,camas,banos,precio_base_noche,tarifa_limpieza,deposito_sugerido,estado_operativo,estado_ocupacion,url_foto,amenidades,reglas_casa,notas,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) RETURNING id`,
-		x.EmpresaID, x.Codigo, x.Nombre, x.Tipo, x.Ubicacion, x.Capacidad, x.Habitaciones, x.Camas, x.Banos, x.PrecioBaseNoche, x.TarifaLimpieza, x.DepositoSugerido, x.EstadoOperativo, x.EstadoOcupacion, x.UrlFoto, x.Amenidades, x.ReglasCasa, x.Notas, x.UsuarioCreador).Scan(&id)
+	err = QueryRowCompat(dbConn, `INSERT INTO empresa_apartamentos_turisticos_unidades (empresa_id,servicio_id,codigo,nombre,tipo,ubicacion,capacidad,habitaciones,camas,banos,precio_base_noche,tarifa_limpieza,deposito_sugerido,estado_operativo,estado_ocupacion,url_foto,amenidades,reglas_casa,notas,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) RETURNING id`,
+		x.EmpresaID, nullableID(x.ServicioID), x.Codigo, x.Nombre, x.Tipo, x.Ubicacion, x.Capacidad, x.Habitaciones, x.Camas, x.Banos, x.PrecioBaseNoche, x.TarifaLimpieza, x.DepositoSugerido, x.EstadoOperativo, x.EstadoOcupacion, x.UrlFoto, x.Amenidades, x.ReglasCasa, x.Notas, x.UsuarioCreador).Scan(&id)
 	return id, err
 }
 
@@ -392,7 +446,7 @@ func ListEmpresaApartamentosTuristicosReservas(dbConn *sql.DB, empresaID int64, 
 		args = append(args, strings.ToLower(strings.TrimSpace(estado)))
 	}
 	args = append(args, limit)
-	rows, err := ExecQueryCompat(dbConn, `SELECT r.id,r.empresa_id,r.apartamento_id,COALESCE(u.nombre,''),r.codigo_reserva,r.huesped_nombre,COALESCE(r.huesped_documento,''),COALESCE(r.huesped_telefono,''),COALESCE(r.huesped_email,''),COALESCE(r.cantidad_huespedes,1),r.fecha_entrada,r.fecha_salida,COALESCE(r.noches,1),COALESCE(r.canal,''),COALESCE(r.estado_reserva,''),COALESCE(r.estado_pago,''),COALESCE(r.subtotal,0),COALESCE(r.limpieza,0),COALESCE(r.impuestos,0),COALESCE(r.deposito,0),COALESCE(r.total,0),COALESCE(r.saldo_pendiente,0),COALESCE(r.codigo_acceso,''),COALESCE(r.observaciones,''),COALESCE(r.fecha_check_in,''),COALESCE(r.fecha_check_out,''),COALESCE(r.fecha_creacion,''),COALESCE(r.fecha_actualizacion,''),COALESCE(r.usuario_creador,'') FROM empresa_apartamentos_turisticos_reservas r LEFT JOIN empresa_apartamentos_turisticos_unidades u ON u.id=r.apartamento_id AND u.empresa_id=r.empresa_id WHERE `+where+` ORDER BY r.id DESC LIMIT ?`, args...)
+	rows, err := ExecQueryCompat(dbConn, apartTurReservaSelect()+` WHERE `+where+` ORDER BY r.id DESC LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -445,9 +499,21 @@ func CreateEmpresaApartamentoTuristicoReserva(dbConn *sql.DB, x EmpresaApartamen
 	estado := firstApartTurState(x.EstadoReserva, "confirmada")
 	pago := firstApartTurState(x.EstadoPago, "pendiente")
 	canal := firstApartTurState(x.Canal, "directo")
+	metodo := NormalizeMetodoPagoCarrito(x.MetodoPago)
+	if metodo == "" {
+		metodo = "efectivo"
+	}
+	clienteID, err := ensureApartTurClienteCore(dbConn, x, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	servicioID, err := ensureApartTurUnidadServicio(dbConn, unit, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
 	var id int64
-	err = QueryRowCompat(dbConn, `INSERT INTO empresa_apartamentos_turisticos_reservas (empresa_id,apartamento_id,codigo_reserva,huesped_nombre,huesped_documento,huesped_telefono,huesped_email,cantidad_huespedes,fecha_entrada,fecha_salida,noches,canal,estado_reserva,estado_pago,subtotal,limpieza,impuestos,deposito,total,saldo_pendiente,codigo_acceso,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) RETURNING id`,
-		x.EmpresaID, x.ApartamentoID, code, strings.TrimSpace(x.HuespedNombre), strings.TrimSpace(x.HuespedDocumento), strings.TrimSpace(x.HuespedTelefono), strings.TrimSpace(x.HuespedEmail), maxApartTurInt(x.CantidadHuespedes, 1), inicio, fin, noches, canal, estado, pago, subtotal, limpieza, impuestos, deposito, total, total, access, strings.TrimSpace(x.Observaciones), x.UsuarioCreador).Scan(&id)
+	err = QueryRowCompat(dbConn, `INSERT INTO empresa_apartamentos_turisticos_reservas (empresa_id,apartamento_id,cliente_id,servicio_id,codigo_reserva,huesped_nombre,huesped_documento,huesped_telefono,huesped_email,cantidad_huespedes,fecha_entrada,fecha_salida,noches,canal,metodo_pago,estado_reserva,estado_pago,subtotal,limpieza,impuestos,deposito,total,saldo_pendiente,codigo_acceso,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?) RETURNING id`,
+		x.EmpresaID, x.ApartamentoID, nullableID(clienteID), nullableID(servicioID), code, strings.TrimSpace(x.HuespedNombre), strings.TrimSpace(x.HuespedDocumento), strings.TrimSpace(x.HuespedTelefono), strings.TrimSpace(x.HuespedEmail), maxApartTurInt(x.CantidadHuespedes, 1), inicio, fin, noches, canal, metodo, estado, pago, subtotal, limpieza, impuestos, deposito, total, total, access, strings.TrimSpace(x.Observaciones), x.UsuarioCreador).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -456,14 +522,14 @@ func CreateEmpresaApartamentoTuristicoReserva(dbConn *sql.DB, x EmpresaApartamen
 }
 
 func GetEmpresaApartamentoTuristicoUnidad(dbConn *sql.DB, empresaID, id int64) (EmpresaApartamentoTuristicoUnidad, error) {
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,codigo,nombre,COALESCE(tipo,''),COALESCE(ubicacion,''),COALESCE(capacidad,2),COALESCE(habitaciones,1),COALESCE(camas,1),COALESCE(banos,1),COALESCE(precio_base_noche,0),COALESCE(tarifa_limpieza,0),COALESCE(deposito_sugerido,0),COALESCE(estado_operativo,'activo'),COALESCE(estado_ocupacion,'disponible'),COALESCE(url_foto,''),COALESCE(amenidades,''),COALESCE(reglas_casa,''),COALESCE(notas,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(usuario_creador,'') FROM empresa_apartamentos_turisticos_unidades WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, id)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,COALESCE(servicio_id,0),codigo,nombre,COALESCE(tipo,''),COALESCE(ubicacion,''),COALESCE(capacidad,2),COALESCE(habitaciones,1),COALESCE(camas,1),COALESCE(banos,1),COALESCE(precio_base_noche,0),COALESCE(tarifa_limpieza,0),COALESCE(deposito_sugerido,0),COALESCE(estado_operativo,'activo'),COALESCE(estado_ocupacion,'disponible'),COALESCE(url_foto,''),COALESCE(amenidades,''),COALESCE(reglas_casa,''),COALESCE(notas,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(usuario_creador,'') FROM empresa_apartamentos_turisticos_unidades WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, id)
 	if err != nil {
 		return EmpresaApartamentoTuristicoUnidad{}, err
 	}
 	defer rows.Close()
 	if rows.Next() {
 		var x EmpresaApartamentoTuristicoUnidad
-		err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.Tipo, &x.Ubicacion, &x.Capacidad, &x.Habitaciones, &x.Camas, &x.Banos, &x.PrecioBaseNoche, &x.TarifaLimpieza, &x.DepositoSugerido, &x.EstadoOperativo, &x.EstadoOcupacion, &x.UrlFoto, &x.Amenidades, &x.ReglasCasa, &x.Notas, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador)
+		err := rows.Scan(&x.ID, &x.EmpresaID, &x.ServicioID, &x.Codigo, &x.Nombre, &x.Tipo, &x.Ubicacion, &x.Capacidad, &x.Habitaciones, &x.Camas, &x.Banos, &x.PrecioBaseNoche, &x.TarifaLimpieza, &x.DepositoSugerido, &x.EstadoOperativo, &x.EstadoOcupacion, &x.UrlFoto, &x.Amenidades, &x.ReglasCasa, &x.Notas, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador)
 		return x, err
 	}
 	return EmpresaApartamentoTuristicoUnidad{}, sql.ErrNoRows
@@ -510,6 +576,22 @@ func CambiarEstadoApartamentoTuristicoReserva(dbConn *sql.DB, empresaID, reserva
 		cfg, _ := GetEmpresaApartamentoTuristicoConfig(dbConn, empresaID)
 		if estado == "checkout" && cfg.AutoProgramarLimpieza {
 			_, _ = ExecCompat(dbConn, `INSERT INTO empresa_apartamentos_turisticos_tareas (empresa_id,apartamento_id,reserva_id,tipo,prioridad,estado,fecha_programada,descripcion,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?, ?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,?)`, empresaID, aptID, reservaID, "limpieza", "alta", "pendiente", now, "Limpieza posterior a checkout", usuario)
+		}
+	}
+	if estado == "checkout" {
+		reserva, err := GetEmpresaApartamentoTuristicoReserva(dbConn, empresaID, reservaID)
+		if err != nil {
+			return err
+		}
+		if reserva.CarritoID <= 0 && reserva.Total > 0 {
+			carritoID, itemID, clienteID, servicioID, err := createApartTurReservaCarrito(dbConn, reserva, usuario)
+			if err != nil {
+				return err
+			}
+			_, err = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_reservas SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, estado_pago='pagado', saldo_pendiente=0 WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), empresaID, reservaID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -759,12 +841,367 @@ func maxApartTurInt(v, fallback int) int {
 }
 func roundApartTur(v float64) float64 { return math.Round(v*100) / 100 }
 
+func apartTurCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
+}
+
+func ensureApartTurClienteCore(dbConn *sql.DB, reserva EmpresaApartamentoTuristicoReserva, usuario string) (int64, error) {
+	if reserva.ClienteID > 0 {
+		return reserva.ClienteID, nil
+	}
+	if strings.TrimSpace(reserva.HuespedNombre) == "" && strings.TrimSpace(reserva.HuespedDocumento) == "" && strings.TrimSpace(reserva.HuespedTelefono) == "" && strings.TrimSpace(reserva.HuespedEmail) == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if documentoNorm := normalizeClienteDocumentoValue(reserva.HuespedDocumento); documentoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		if id, err := findClienteDuplicateID(dbConn, query, reserva.EmpresaID, documentoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if telefonoNorm := normalizeClienteTelefonoValue(reserva.HuespedTelefono); telefonoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		if id, err := findClienteDuplicateID(dbConn, query, reserva.EmpresaID, telefonoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if emailNorm := normalizeClienteEmailValue(reserva.HuespedEmail); emailNorm != "" {
+		if id, err := findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND lower(trim(COALESCE(email, ''))) = ? LIMIT 1`, reserva.EmpresaID, emailNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := strings.TrimSpace(reserva.HuespedDocumento)
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = apartTurCoreCode("APT-CLI", reserva.HuespedTelefono, reserva.HuespedEmail, reserva.HuespedNombre)
+	}
+	nombre := strings.TrimSpace(reserva.HuespedNombre)
+	if nombre == "" {
+		nombre = "Huesped apartamentos " + strings.TrimSpace(reserva.HuespedTelefono)
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         reserva.EmpresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Email:             strings.TrimSpace(reserva.HuespedEmail),
+		Telefono:          strings.TrimSpace(reserva.HuespedTelefono),
+		Pais:              "CO",
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde apartamentos turisticos.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func ensureApartTurUnidadServicio(dbConn *sql.DB, unidad EmpresaApartamentoTuristicoUnidad, usuario string) (int64, error) {
+	if unidad.ServicioID > 0 {
+		return unidad.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := apartTurCoreCode("APT-UNIDAD", unidad.Codigo)
+	if strings.TrimSpace(unidad.Codigo) == "" && unidad.ID > 0 {
+		code = apartTurCoreCode("APT-UNIDAD", fmt.Sprintf("%d", unidad.ID))
+	}
+	var servicioID int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, unidad.EmpresaID, code).Scan(&servicioID)
+	if err == nil {
+		_, _ = ExecCompat(dbConn, `UPDATE servicios SET nombre=?, descripcion=?, categoria='apartamentos_turisticos', precio=?, estado='activo', fecha_actualizacion=? WHERE empresa_id=? AND id=?`, strings.TrimSpace(unidad.Nombre), strings.TrimSpace(unidad.Tipo+" "+unidad.Ubicacion), unidad.PrecioBaseNoche, time.Now().Format("2006-01-02 15:04:05"), unidad.EmpresaID, servicioID)
+		if unidad.ID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_unidades SET servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(servicioID), unidad.EmpresaID, unidad.ID)
+		}
+		return servicioID, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	servicioID, err = CreateServicio(dbConn, Servicio{
+		EmpresaID:      unidad.EmpresaID,
+		Codigo:         code,
+		Nombre:         strings.TrimSpace(unidad.Nombre),
+		Descripcion:    strings.TrimSpace("Alojamiento turistico: " + unidad.Tipo + " " + unidad.Ubicacion),
+		Categoria:      "apartamentos_turisticos",
+		Precio:         unidad.PrecioBaseNoche,
+		Estado:         "activo",
+		UsuarioCreador: strings.TrimSpace(usuario),
+		Observaciones:  "Servicio sincronizado desde apartamentos turisticos.",
+	})
+	if err != nil {
+		return 0, err
+	}
+	if unidad.ID > 0 {
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_unidades SET servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(servicioID), unidad.EmpresaID, unidad.ID)
+	}
+	return servicioID, nil
+}
+
+func ensureApartTurStaticServicio(dbConn *sql.DB, empresaID int64, code, nombre, descripcion string, precio float64, usuario string) (int64, error) {
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	var servicioID int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, empresaID, strings.TrimSpace(code)).Scan(&servicioID)
+	if err == nil {
+		_, _ = ExecCompat(dbConn, `UPDATE servicios SET nombre=?, descripcion=?, categoria='apartamentos_turisticos', precio=?, estado='activo', fecha_actualizacion=? WHERE empresa_id=? AND id=?`, strings.TrimSpace(nombre), strings.TrimSpace(descripcion), precio, time.Now().Format("2006-01-02 15:04:05"), empresaID, servicioID)
+		return servicioID, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:      empresaID,
+		Codigo:         strings.TrimSpace(code),
+		Nombre:         strings.TrimSpace(nombre),
+		Descripcion:    strings.TrimSpace(descripcion),
+		Categoria:      "apartamentos_turisticos",
+		Precio:         precio,
+		Estado:         "activo",
+		UsuarioCreador: strings.TrimSpace(usuario),
+		Observaciones:  "Servicio sincronizado desde apartamentos turisticos.",
+	})
+}
+
+func createApartTurReservaCarrito(dbConn *sql.DB, reserva EmpresaApartamentoTuristicoReserva, usuario string) (int64, int64, int64, int64, error) {
+	if reserva.Total <= 0 {
+		return reserva.CarritoID, reserva.CarritoItemID, reserva.ClienteID, reserva.ServicioID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	clienteID, err := ensureApartTurClienteCore(dbConn, reserva, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	unidad, err := GetEmpresaApartamentoTuristicoUnidad(dbConn, reserva.EmpresaID, reserva.ApartamentoID)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	servicioID, err := ensureApartTurUnidadServicio(dbConn, unidad, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	metodo := NormalizeMetodoPagoCarrito(reserva.MetodoPago)
+	if metodo == "" {
+		metodo = "efectivo"
+	}
+	cfg, _ := GetEmpresaApartamentoTuristicoConfig(dbConn, reserva.EmpresaID)
+	referenciaExterna := fmt.Sprintf("apartamentos_turisticos:reserva:%d:%s", reserva.ID, reserva.CodigoReserva)
+	var carritoExistente int64
+	err = QueryRowCompat(dbConn, `SELECT id FROM carritos_compras WHERE empresa_id=? AND referencia_externa=? LIMIT 1`, reserva.EmpresaID, referenciaExterna).Scan(&carritoExistente)
+	if err == nil && carritoExistente > 0 {
+		return carritoExistente, reserva.CarritoItemID, clienteID, servicioID, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, 0, 0, 0, err
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         reserva.EmpresaID,
+		Codigo:            apartTurCoreCode("APT-RES", fmt.Sprintf("%d", reserva.ID), reserva.CodigoReserva),
+		Nombre:            "Reserva apartamento - " + strings.TrimSpace(reserva.HuespedNombre),
+		CanalVenta:        "apartamentos_turisticos",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            strings.ToUpper(strings.TrimSpace(cfg.Moneda)),
+		ReferenciaExterna: referenciaExterna,
+		MetodoPago:        metodo,
+		ReferenciaPago:    reserva.CodigoReserva,
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Observaciones:     "Venta central generada desde reserva de apartamentos turisticos.",
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	noches := reserva.Noches
+	if noches <= 0 {
+		noches = 1
+	}
+	precioNoche := reserva.Subtotal / float64(noches)
+	if precioNoche <= 0 {
+		precioNoche = unidad.PrecioBaseNoche
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          reserva.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       servicioID,
+		CodigoItem:         apartTurCoreCode("APT-NOCHE", reserva.CodigoReserva),
+		Descripcion:        strings.TrimSpace("Alojamiento " + reserva.ApartamentoNombre),
+		UnidadMedida:       "noche",
+		Cantidad:           float64(noches),
+		PrecioUnitario:     precioNoche,
+		ImpuestoPorcentaje: cfg.ImpuestoPorcentaje,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      fmt.Sprintf("%s a %s", reserva.FechaEntrada, reserva.FechaSalida),
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	if reserva.Limpieza > 0 {
+		limpiezaID, err := ensureApartTurStaticServicio(dbConn, reserva.EmpresaID, "APT-LIMPIEZA", "Limpieza apartamentos turisticos", "Servicio central para tarifa de limpieza de reservas.", reserva.Limpieza, usuario)
+		if err != nil {
+			return 0, 0, 0, 0, err
+		}
+		if _, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+			EmpresaID:          reserva.EmpresaID,
+			CarritoID:          carritoID,
+			TipoItem:           "servicio",
+			ReferenciaID:       limpiezaID,
+			CodigoItem:         apartTurCoreCode("APT-LIMP", reserva.CodigoReserva),
+			Descripcion:        "Limpieza apartamentos turisticos",
+			UnidadMedida:       "servicio",
+			Cantidad:           1,
+			PrecioUnitario:     reserva.Limpieza,
+			ImpuestoPorcentaje: cfg.ImpuestoPorcentaje,
+			UsuarioCreador:     strings.TrimSpace(usuario),
+			Estado:             "activo",
+		}); err != nil {
+			return 0, 0, 0, 0, err
+		}
+	}
+	if err := PayCarritoStationSession(dbConn, reserva.EmpresaID, carritoID, metodo, reserva.CodigoReserva, "", "", 0, 0, reserva.Total, 0, strings.TrimSpace(usuario)); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	return carritoID, itemID, clienteID, servicioID, nil
+}
+
+func GetEmpresaApartamentoTuristicoReserva(dbConn *sql.DB, empresaID, reservaID int64) (EmpresaApartamentoTuristicoReserva, error) {
+	if err := EnsureEmpresaApartamentosTuristicosSchema(dbConn); err != nil {
+		return EmpresaApartamentoTuristicoReserva{}, err
+	}
+	return scanApartTurReserva(QueryRowCompat(dbConn, apartTurReservaSelect()+` WHERE r.empresa_id=? AND r.id=?`, empresaID, reservaID))
+}
+
+func SyncEmpresaApartamentosTuristicosNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaApartamentosTuristicosIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaApartamentosTuristicosSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaApartamentosTuristicosIntegracionNucleoResumen{
+		EmpresaID:         empresaID,
+		EstadoIntegracion: "plantilla_integrada_nucleo",
+		VisibleOperativo:  true,
+	}
+	unidades, err := ListEmpresaApartamentosTuristicosUnidades(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, unidad := range unidades {
+		servicioID, err := ensureApartTurUnidadServicio(dbConn, unidad, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("apartamento %d servicio: %v", unidad.ID, err))
+			continue
+		}
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+		}
+	}
+	reservas, err := ListEmpresaApartamentosTuristicosReservas(dbConn, empresaID, "", 500)
+	if err != nil {
+		return nil, err
+	}
+	for _, reserva := range reservas {
+		if reserva.CarritoID > 0 {
+			resumen.ReservasPendientes++
+			continue
+		}
+		clienteID, err := ensureApartTurClienteCore(dbConn, reserva, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d cliente: %v", reserva.ID, err))
+			continue
+		}
+		reserva.ClienteID = clienteID
+		resumen.ClientesSincronizados++
+		unidad, err := GetEmpresaApartamentoTuristicoUnidad(dbConn, reserva.EmpresaID, reserva.ApartamentoID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d unidad: %v", reserva.ID, err))
+			continue
+		}
+		servicioID, err := ensureApartTurUnidadServicio(dbConn, unidad, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d servicio: %v", reserva.ID, err))
+			continue
+		}
+		reserva.ServicioID = servicioID
+		if strings.ToLower(strings.TrimSpace(reserva.EstadoReserva)) != "checkout" && strings.ToLower(strings.TrimSpace(reserva.EstadoReserva)) != "checkin" {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_reservas SET cliente_id=?, servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), reserva.EmpresaID, reserva.ID)
+			resumen.ReservasPendientes++
+			continue
+		}
+		if reserva.Total <= 0 {
+			resumen.ReservasPendientes++
+			continue
+		}
+		carritoID, itemID, clienteID, servicioID, err := createApartTurReservaCarrito(dbConn, reserva, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d carrito: %v", reserva.ID, err))
+			continue
+		}
+		_, err = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_reservas SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, estado_pago='pagado', saldo_pendiente=0 WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), reserva.EmpresaID, reserva.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d refs: %v", reserva.ID, err))
+			continue
+		}
+		resumen.ReservasSincronizadas++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
+}
+
 type apartTurReservaScanner interface {
 	Scan(dest ...interface{}) error
 }
 
+func apartTurReservaSelect() string {
+	return `SELECT r.id,r.empresa_id,r.apartamento_id,COALESCE(r.cliente_id,0),COALESCE(r.servicio_id,0),COALESCE(r.carrito_id,0),COALESCE(r.carrito_item_id,0),COALESCE(u.nombre,''),r.codigo_reserva,r.huesped_nombre,COALESCE(r.huesped_documento,''),COALESCE(r.huesped_telefono,''),COALESCE(r.huesped_email,''),COALESCE(r.cantidad_huespedes,1),r.fecha_entrada,r.fecha_salida,COALESCE(r.noches,1),COALESCE(r.canal,''),COALESCE(r.metodo_pago,''),COALESCE(r.estado_reserva,''),COALESCE(r.estado_pago,''),COALESCE(r.subtotal,0),COALESCE(r.limpieza,0),COALESCE(r.impuestos,0),COALESCE(r.deposito,0),COALESCE(r.total,0),COALESCE(r.saldo_pendiente,0),COALESCE(r.codigo_acceso,''),COALESCE(r.observaciones,''),COALESCE(r.fecha_check_in,''),COALESCE(r.fecha_check_out,''),COALESCE(r.fecha_creacion,''),COALESCE(r.fecha_actualizacion,''),COALESCE(r.usuario_creador,'') FROM empresa_apartamentos_turisticos_reservas r LEFT JOIN empresa_apartamentos_turisticos_unidades u ON u.id=r.apartamento_id AND u.empresa_id=r.empresa_id`
+}
+
 func scanApartTurReserva(row apartTurReservaScanner) (EmpresaApartamentoTuristicoReserva, error) {
 	var x EmpresaApartamentoTuristicoReserva
-	err := row.Scan(&x.ID, &x.EmpresaID, &x.ApartamentoID, &x.ApartamentoNombre, &x.CodigoReserva, &x.HuespedNombre, &x.HuespedDocumento, &x.HuespedTelefono, &x.HuespedEmail, &x.CantidadHuespedes, &x.FechaEntrada, &x.FechaSalida, &x.Noches, &x.Canal, &x.EstadoReserva, &x.EstadoPago, &x.Subtotal, &x.Limpieza, &x.Impuestos, &x.Deposito, &x.Total, &x.SaldoPendiente, &x.CodigoAcceso, &x.Observaciones, &x.FechaCheckIn, &x.FechaCheckOut, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador)
+	err := row.Scan(&x.ID, &x.EmpresaID, &x.ApartamentoID, &x.ClienteID, &x.ServicioID, &x.CarritoID, &x.CarritoItemID, &x.ApartamentoNombre, &x.CodigoReserva, &x.HuespedNombre, &x.HuespedDocumento, &x.HuespedTelefono, &x.HuespedEmail, &x.CantidadHuespedes, &x.FechaEntrada, &x.FechaSalida, &x.Noches, &x.Canal, &x.MetodoPago, &x.EstadoReserva, &x.EstadoPago, &x.Subtotal, &x.Limpieza, &x.Impuestos, &x.Deposito, &x.Total, &x.SaldoPendiente, &x.CodigoAcceso, &x.Observaciones, &x.FechaCheckIn, &x.FechaCheckOut, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador)
 	return x, err
 }

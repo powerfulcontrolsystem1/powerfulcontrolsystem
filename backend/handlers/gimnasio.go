@@ -136,6 +136,19 @@ func EmpresaGimnasioHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			switch action {
+			case "sincronizar_nucleo":
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				resumen, err := dbpkg.SyncEmpresaGimnasioNucleo(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, "No se pudo sincronizar gimnasio con el nucleo: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
+				return
 			case "socios":
 				var payload dbpkg.EmpresaGimnasioSocio
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

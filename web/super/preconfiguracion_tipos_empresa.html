@@ -254,6 +254,8 @@
       var typeSearch = document.getElementById('typeSearch');
       var saveBtn = form.querySelector('button[type="submit"]');
       var verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      var initialParams = new URLSearchParams(window.location.search || '');
+      var initialQuery = String(initialParams.get('q') || initialParams.get('vertical') || initialParams.get('modulo') || '').trim();
 
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (match) {
@@ -558,9 +560,25 @@
           var data = await fetchJSON('/super/api/tipos_empresas/preconfiguracion');
           items = data && Array.isArray(data.items) ? data.items : [];
           var currentID = selected && selected.tipo_empresa ? Number(selected.tipo_empresa.id || 0) : 0;
-          var next = items.find(function (item) {
+          var initialNormalized = normalizeText(initialQuery.replace(/_/g, ' '));
+          var next = initialNormalized ? items.find(function (item) {
+            var tipo = item && item.tipo_empresa ? item.tipo_empresa : {};
+            var preconfig = item && item.preconfig ? item.preconfig : {};
+            var template = getTemplate(item);
+            var vertical = getVerticalByTypeName(tipo.nombre || '');
+            return normalizeText([
+              tipo.nombre,
+              preconfig.nombre,
+              preconfig.descripcion,
+              template.operacion && template.operacion.tipo_negocio,
+              vertical && vertical.module,
+              vertical && vertical.fullTitle
+            ].join(' ')).indexOf(initialNormalized) >= 0;
+          }) : null;
+          next = next || items.find(function (item) {
             return item && item.tipo_empresa && Number(item.tipo_empresa.id || 0) === currentID;
           }) || items[0] || null;
+          if (initialQuery && typeSearch && !typeSearch.value) typeSearch.value = initialQuery.replace(/_/g, ' ');
           setForm(next);
           setMessage('');
         } catch (err) {

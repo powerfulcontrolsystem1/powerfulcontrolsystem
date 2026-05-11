@@ -33,6 +33,7 @@
       </div>
       <div class="form-actions">
         <button id="seedBtn" class="btn secondary" type="button">Cargar demo</button>
+        <button id="syncCoreBtn" class="btn secondary" type="button">Sincronizar nucleo</button>
         <button id="reloadBtn" class="btn" type="button">Actualizar</button>
       </div>
     </section>
@@ -74,7 +75,7 @@
     const apiBase="/api/empresa/propiedad_horizontal?empresa_id="+encodeURIComponent(empresaId);
     const money=new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0});
     const tabDefs=[["dashboard","Dashboard"],["unidades","Unidades"],["personas","Personas"],["cartera","Cartera"],["recaudos","Recaudos"],["pqrs","PQR"],["asambleas","Asambleas"]];
-    let state={unidades:[],personas:[],cargos:[],recaudos:[],pqrs:[],asambleas:[]};
+    let state={unidades:[],personas:[],cargos:[],recaudos:[],pqrs:[],asambleas:[],integracionNucleo:null};
     function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));}
     function val(id){return document.getElementById(id).value.trim();}
     async function api(action, method, body){const res=await fetch(apiBase+"&action="+action,{method:method||"GET",headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"}); const txt=await res.text(); let data=null; try{data=txt?JSON.parse(txt):null}catch(e){} if(!res.ok) throw new Error((data&&data.error)||txt||"Error"); return data;}
@@ -83,6 +84,7 @@
     function validTab(tab){return tabDefs.some(t=>t[0]===tab)?tab:"dashboard";}
     function initialTab(){return validTab(params.get("tab")||params.get("view")||"dashboard");}
     function activateTab(tab){tab=validTab(tab);document.querySelectorAll(".ph-tabs button").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("active"));const panel=document.getElementById("tab-"+tab);if(panel)panel.classList.add("active");}
+    function showNotice(text){document.querySelectorAll(".ph-notice").forEach(x=>x.remove());document.querySelector(".ph-shell").insertAdjacentHTML("afterbegin",'<div class="ph-card ph-notice">'+esc(text)+'</div>');}
     function render(d){
       state=d; const c=d.config||{};
       cfgNombre.value=c.nombre_copropiedad||""; cfgNit.value=c.nit||""; cfgTipo.value=c.tipo_copropiedad||"conjunto_residencial"; cfgDireccion.value=c.direccion||""; cfgCiudad.value=c.ciudad||""; cfgAdmin.value=c.administrador||""; cfgTel.value=c.telefono||""; cfgEmail.value=c.email||""; cfgMora.value=c.interes_mora_mensual||2; cfgGracia.value=c.dias_gracia||5; cfgFE.checked=!!c.facturacion_electronica; cfgPortal.checked=!!c.permitir_portal_residente;
@@ -106,7 +108,9 @@
     recaudoForm.onsubmit=async e=>{e.preventDefault(); await api("recaudo","POST",{cargo_id:Number(val("rCargo")||0),unidad_id:Number(val("rUnidad")||0),fecha_pago:val("rFecha"),metodo_pago:val("rMetodo"),referencia:val("rRef"),valor_pagado:Number(val("rValor")||0)}); recaudoForm.reset(); load()};
     pqrForm.onsubmit=async e=>{e.preventDefault(); await api("pqr","POST",{unidad_id:Number(val("qUnidad")||0),tipo:val("qTipo"),prioridad:val("qPrioridad"),asunto:val("qAsunto"),descripcion:val("qDesc"),responsable:val("qResp"),fecha_limite:val("qLimite")}); pqrForm.reset(); load()};
     asambleaForm.onsubmit=async e=>{e.preventDefault(); await api("asamblea","POST",{titulo:val("aTitulo"),tipo_asamblea:val("aTipo"),fecha:val("aFecha"),quorum_objetivo:Number(val("aQuorum")||51),quorum_actual:Number(val("aActual")||0),acta_url:val("aActa")}); asambleaForm.reset(); load()};
-    reloadBtn.onclick=load; seedBtn.onclick=async()=>{await api("seed_demo","POST",{}); load()}; load().catch(err=>{document.body.insertAdjacentHTML("afterbegin",'<div class="error">'+esc(err.message)+'</div>')});
+    reloadBtn.onclick=load; seedBtn.onclick=async()=>{await api("seed_demo","POST",{}); load()};
+    syncCoreBtn.onclick=async()=>{const r=await api("sincronizar_nucleo","POST",{}); state.integracionNucleo=r.integracion||null; const x=state.integracionNucleo||{}; showNotice("Nucleo sincronizado: "+Number(x.clientes_sincronizados||0)+" clientes, "+Number(x.servicios_sincronizados||0)+" servicios y "+Number(x.recaudos_sincronizados||0)+" recaudos conectados."); load()};
+    load().catch(err=>{document.body.insertAdjacentHTML("afterbegin",'<div class="error">'+esc(err.message)+'</div>')});
   </script>
 </body>
 </html>

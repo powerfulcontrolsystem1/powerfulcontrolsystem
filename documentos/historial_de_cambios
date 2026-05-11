@@ -1,3 +1,134 @@
+2026-05-11: Portada index alineada a modulos y verticales reales
+- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
+- Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` dejan de presentar los 20 verticales nuevos como si todos fueran ofertas operativas y publica tarjetas individuales solo para los 10 verticales V1 masiva.
+- Catalogo: `web/js/nuevos_verticales_catalogo.js` agrega decision V1/diferido, ranking, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica.
+- Backend publico: `backend/handlers/pagina_principal_handlers.go` actualiza las tarjetas por defecto que entrega el endpoint publico cuando no hay configuracion guardada.
+- UX publica: se agregan tarjetas para modulos reales del nucleo y transversales como CRM, drogueria/farmacia, alquileres, WMS, bancos/pagos, gestion documental, helpdesk/calidad y facturacion electronica Colombia.
+- Gobernanza: los 10 diferidos siguen visibles en el resumen de plantillas y matriz tecnica, pero no se ofrecen como boton operativo de `Probar gratis` hasta completar su flujo.
+- Verificacion: `node --check web/js/nuevos_verticales_catalogo.js`, validacion de scripts inline de `web/index.html` y conteo de catalogo 20 total / 10 publicables / 10 diferidos.
+2026-05-11: Aseguramiento comercial de verticales v1
+- POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias asegura tipos, preconfiguraciones y licencias recomendadas de los 10 verticales v1.
+- web/super/verticales_produccion_masiva.html agrega boton Asegurar v1 y refresca el semaforo Listo venta.
+- No se agregan rutas nuevas, permisos nuevos, tablas ni dependencias.
+
+2026-05-11: Semaforo listo para venta en verticales v1
+- web/super/verticales_produccion_masiva.html cruza catalogo de verticales, preconfiguraciones y licencias activas.
+- Un vertical queda Listo venta solo si es v1 masiva, tiene metadata completa, preconfiguracion activa con integracion_vertical y licencia activa que incluye el modulo.
+- No se agregan endpoints, permisos, tablas ni dependencias.
+
+2026-05-11: Acciones de gobierno para verticales v1
+- La vista super Verticales v1 enlaza cada vertical con Tipos de empresa, Preconfiguraciones y Licencias.
+- Las paginas web/super/tipos_empresas.html, web/super/preconfiguracion_tipos_empresa.html y web/super/licencias.html aceptan filtros iniciales q, vertical o modulo.
+- No se agregan endpoints, permisos, tablas ni dependencias.
+
+2026-05-11: Gobierno super de verticales v1 masiva
+- Se agrega web/super/verticales_produccion_masiva.html con KPIs, filtros, ranking, metadata extendida y exportacion CSV.
+- El panel super enlaza Verticales v1 desde Licencias y permite restaurar la pagina en web/js/super_administrador.js.
+- La vista reutiliza /super/api/verticales_nuevos/catalogo; no agrega endpoints, permisos, tablas ni dependencias.
+
+2026-05-11: Preconfiguraciones conectadas a matriz vertical y decision v1 masiva
+- Se agrega integracion_vertical al JSON de preconfiguracion por tipo de empresa.
+- Los catalogos de verticales nuevos exponen integracion_preconfig, produccion_masiva, prioridad_produccion y decision_preconfig.
+- Se priorizan 10 verticales nuevos para produccion masiva v1 y 10 quedan diferidos con motivo documentado en documentos/plan_verticales_produccion_masiva_2026-05-11.md.
+- Verificacion enfocada: go test ./db -run TipoEmpresaPreconfig|NuevosVerticalesProduccion -count=1; go test ./handlers -run VerticalesNuevos -count=1.
+
+- 2026-05-11: matriz extendida de plantillas verticales. El catalogo /api/*/verticales_integracion/catalogo publica template_activates, tables_touched, required_permissions, sale_flow y reports_produced; la pantalla empresarial muestra esos datos por vertical y la prueba de contrato bloquea verticales visibles sin metadata completa. No hay cambios de esquema ni dependencias nuevas.
+- 2026-05-11: sincronizacion segura desde matriz vertical. web/administrar_empresa/verticales_integracion.html ahora carga /api/empresa/permisos_contexto, calcula sincronizaciones permitidas, deshabilita botones sin permiso efectivo, exige confirmacion humana antes del POST y mantiene la autorizacion final en cada endpoint vertical por rol, licencia y empresa_id.
+2026-05-11 - Sincronizacion desde matriz vertical
+- El catalogo de integracion publica `sync_path` y `sync_action_name` para las verticales con migracion historica disponible.
+- `web/administrar_empresa/verticales_integracion.html` agrega botones `Sincronizar` por vertical y muestra resultado de la accion.
+- La pantalla conserva permiso `seguridad:R`; cada POST mantiene la autorizacion propia del endpoint vertical correspondiente.
+- Pruebas: `go test ./handlers -run VerticalesIntegracion -count=1` y parser inline de `verticales_integracion.html`.
+2026-05-11 - Pantalla de matriz vertical en empresa
+- Se agrega `web/administrar_empresa/verticales_integracion.html` para consultar la matriz completa de integracion por vertical.
+- `web/administrar_empresa.html` incorpora el enlace `Matriz de integracion` dentro de Soluciones por negocio.
+- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js` registran `linkVerticalesIntegracion` con permiso `seguridad:R`.
+- Pruebas: `node --check web/js/administrar_empresa.js`, parser inline de `verticales_integracion.html` y `go test ./handlers -run Verticales -count=1`.
+2026-05-11 - Indicador de matriz vertical en panel empresa
+- `web/administrar_empresa.html` agrega un indicador compacto de integracion vertical en el sidebar empresarial.
+- `web/js/administrar_empresa.js` alimenta el indicador con el resumen de `web/js/verticales_integracion_catalogo.js`, mostrando fuente API/local y conteo visible/total.
+- `web/estilos.css` agrega estilos discretos para el estado de matriz sin cambiar permisos, licencias ni rutas.
+- Pruebas: `node --check web/js/administrar_empresa.js`, `node --check web/js/verticales_integracion_catalogo.js` y prueba inline de resumen dinamico con `node -e`.
+2026-05-11 - Frontend consume catalogo API de integracion vertical
+- `web/js/administrar_empresa.js` carga `/api/empresa/verticales_integracion/catalogo` antes de aplicar permisos/licencias del menu empresarial.
+- `web/js/verticales_integracion_catalogo.js` permite fusionar los items del backend sobre el catalogo local para mantener fallback si la API falla.
+- Objetivo: evitar que el menu muestre verticales no integradas por desalineacion entre backend, frontend y documentacion.
+- Pruebas: `node --check web/js/administrar_empresa.js`, `node --check web/js/verticales_integracion_catalogo.js` y prueba inline de fusion dinamica con `node -e`.
+2026-05-11 - Catalogo API de integracion vertical
+- Se agrega `backend/handlers/empresa_verticales_integracion.go` para exponer por API la matriz de verticales clasicos.
+- Nuevas rutas de solo lectura: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
+- El contrato publica estado, visibilidad, modulos del nucleo, duplicados, flujo propio permitido y accion de sincronizacion historica.
+- Pruebas: `go test ./handlers -run Verticales -count=1` en `backend`.
+2026-05-11 - AIU construccion integrado al nucleo operativo
+- Se enlazan clientes de obra con `clientes`, contratos y conceptos con `servicios`, y facturas AIU con `carritos_compras`/`carrito_compra_items`.
+- Se agrega `POST /api/empresa/aiu_construccion?action=sincronizar_nucleo` para migrar contratos, conceptos y facturas historicas por empresa sin borrar la especialidad tecnica.
+- El panel AIU incorpora accion `Sincronizar nucleo` y la matriz marca `aiu_construccion` como `plantilla_integrada_nucleo` visible.
+- Pruebas: `go test ./db -run AIU -count=1` en `backend`.
+2026-05-11: Drogueria/farmacia validada al nucleo
+- Modulos afectados: drogueria_farmacia, inventario, compras, clientes, ventas, pagos, facturacion y administrar_empresa.
+- Cambio funcional: la vertical queda visible como plantilla_integrada_nucleo porque usa empresa_modulos_colombia_* como expediente sanitario y no crea inventario, productos, ventas ni pagos paralelos.
+- Frontend: la pagina de drogueria/farmacia declara que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
+- Gobernanza: lotes, INVIMA, formulas, controlados, dispensacion, devoluciones y farmacovigilancia quedan como especialidad sanitaria; el circuito comercial permanece en el nucleo.
+2026-05-11: Alquileres integrado al nucleo
+- Modulos afectados: alquileres, clientes, servicios, carritos, ventas, pagos y administrar_empresa.
+- Cambio funcional: clientes de contratos se enlazan a clientes centrales; activos y tarifas se enlazan a servicios vendibles; contratos con valor generan carrito, item de servicio y pago central cuando quedan sin saldo.
+- Migracion: se agrega POST /api/empresa/alquileres?action=sincronizar_nucleo para sincronizar activos, tarifas y contratos historicos por empresa.
+- Frontend: el panel de alquileres agrega accion Sincronizar nucleo y resumen operativo.
+- Gobernanza: alquileres queda visible como plantilla_integrada_nucleo; garantias, kilometraje, GPS, mantenimientos y devoluciones quedan como especialidad de renta de activos, no como duplicado comercial.
+2026-05-11: Propiedad horizontal integrada al nucleo
+- Modulos afectados: propiedad_horizontal, clientes, servicios, carritos, ventas, pagos y administrar_empresa.
+- Cambio funcional: propietarios/residentes se enlazan a clientes centrales; unidades y cargos se enlazan a servicios vendibles; recaudos generan carrito, item de servicio y pago central normalizado.
+- Migracion: se agrega POST /api/empresa/propiedad_horizontal?action=sincronizar_nucleo para sincronizar unidades, personas, cargos y recaudos historicos por empresa.
+- Frontend: el panel de propiedad horizontal agrega accion Sincronizar nucleo y resumen operativo.
+- Gobernanza: propiedad_horizontal queda visible como plantilla_integrada_nucleo; PQR, asambleas, coeficientes y cartera quedan como especialidad de copropiedad, no como duplicado comercial.
+2026-05-11: Apartamentos turisticos integrado al nucleo
+- Modulos afectados: `apartamentos_turisticos`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: unidades se enlazan a servicios centrales; huespedes se enlazan a clientes centrales; checkout de reservas genera carrito, item de alojamiento, limpieza e impuesto calculado por carrito con pago central normalizado.
+- Migracion: se agrega `POST /api/empresa/apartamentos_turisticos?action=sincronizar_nucleo` para migrar reservas historicas en check-in/checkout sin borrar disponibilidad, tarifas, codigos de acceso ni tareas.
+- Frontend: el panel agrega `Sincronizar nucleo` y resumen de reservas, servicios, clientes y observaciones.
+- Validacion: `go test ./db ./handlers -count=1`, sintaxis inline de `web/administrar_empresa/apartamentos_turisticos.html` y `node --check web/js/verticales_integracion_catalogo.js`.
+2026-05-11: Domicilios integrado al nucleo
+- Modulos afectados: `domicilios`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: productos de menu se enlazan a servicios centrales; pedidos nuevos se enlazan a clientes centrales; pedidos entregados generan carrito, items, tarifa/propina y pago central normalizado.
+- Migracion: se agrega `POST /api/empresa/domicilios?action=sincronizar_nucleo` para migrar pedidos entregados historicos sin borrar restaurantes, domiciliarios, ofertas, tracking GPS ni estados logisticos.
+- Frontend: el panel agrega `Sincronizar nucleo` y resumen de pedidos, servicios de menu, clientes y observaciones.
+- Validacion: `go test ./db ./handlers -count=1`, `node --check web/js/domicilios.js` y `node --check web/js/verticales_integracion_catalogo.js`.
+2026-05-11 - Taxi system integrado al nucleo operativo
+- Se enlazan clientes registrados/invitados y viajes completados con clientes centrales, servicios vendibles y carritos/items centrales.
+- Al completar un viaje con tarifa, se genera venta central y pago normalizado; taxi conserva conductores, GPS, ofertas, despacho y rutas como especialidad operativa.
+- Se agrega POST /api/empresa/taxi_system?action=sincronizar_nucleo para migrar viajes completados historicos por empresa.
+- El catalogo de verticales marca taxi_system/taxi como plantilla visible integrada y mantiene domicilios y demas verticales pendientes ocultos.
+- Validacion: go test ./db -run "Test.*Taxi|TestTaxi" -count=1; go test ./handlers -run "Test.*Taxi" -count=1; node --check taxi_system.js y verticales_integracion_catalogo.js.
+2026-05-11 - Parqueadero integrado al nucleo operativo
+- Se enlazan tickets cobrados de parqueadero con clientes opcionales, servicios vendibles y carritos/items centrales.
+- El cierre de salida crea venta central, item de servicio y pago con referencia del ticket; la tabla propia conserva placa, QR, entrada/salida, minutos, tarifas y anulaciones.
+- Se agrega POST /api/empresa/parqueadero?action=sincronizar_nucleo para migrar tickets cerrados historicos por empresa.
+- El catalogo de verticales marca parqueadero como plantilla visible integrada y mantiene ocultos taxi, domicilios y demas verticales pendientes.
+- Validacion: go test ./db -run "Test.*Parqueadero|TestParqueadero" -count=1; go test ./handlers -run "Test.*Parqueadero" -count=1; node --check verticales_integracion_catalogo.js.
+2026-05-11 - Odontologia integrada al nucleo operativo
+- Se enlazan pacientes odontologicos con clientes centrales, tratamientos con servicios vendibles y pagos con carritos/items centrales.
+- Se agrega POST /api/empresa/odontologia?action=sincronizar_nucleo para migrar referencias historicas por empresa sin borrar historia clinica, odontogramas, agenda ni presupuestos especializados.
+- El catalogo de verticales marca odontologia y consultorio_odontologico como plantillas visibles integradas, manteniendo ocultos los demas verticales pendientes.
+- Validacion: go test ./db -run "Test.*Odonto|Test.*Odontologia" -count=1; go test ./handlers -run "Test.*Odontologia|TestNuevosVerticales|TestEmpresaVerticalesNuevos" -count=1; node --check consultorio/catalogo/administrar.
+2026-05-11 - Gimnasio integrado al nucleo operativo
+- Archivos: backend/db/gimnasio.go, backend/handlers/gimnasio.go, backend/db/gimnasio_integracion_test.go, web/administrar_empresa/gimnasio.html, web/js/gimnasio.js, web/js/verticales_integracion_catalogo.js, documentos base y changelogs.
+- Descripcion: se migra gimnasio hacia el contrato de nucleo unico. Los socios se enlazan con clientes, los planes con servicios vendibles y los pagos pagados generan venta central en carritos_compras con item de servicio y referencia de pago.
+- API: se agrega POST /api/empresa/gimnasio?action=sincronizar_nucleo&empresa_id=... para sincronizar referencias historicas por empresa sin borrar tablas especializadas.
+- Frontend: el dashboard de gimnasio agrega el boton Sincronizar con nucleo y muestra resumen de clientes, servicios y ventas sincronizadas.
+- Gobernanza: gimnasio vuelve a estar visible como plantilla integrada; odontologia, parqueadero y demas verticales con cobros paralelos siguen ocultos hasta su oleada.
+- Verificacion: go test ./db -run "TestGimnasio|Test.*Gimnasio|Test.*Carrito|Test.*Cliente|Test.*Producto" -count=1, go test ./handlers -run "Test.*Gimnasio|TestNuevosVerticales|TestEmpresaVerticalesNuevos" -count=1 y node --check en gimnasio/verticales/administrar_empresa.
+2026-05-11 - Fases de integracion profesional de verticales
+- Archivos: documentos/matriz_integracion_verticales.md, web/js/verticales_integracion_catalogo.js, web/js/administrar_empresa.js, web/js/nuevos_verticales_catalogo.js, web/administrar_empresa.html, web/administrar_empresa/verticales_nuevos_menu.html, backend/handlers/empresa_verticales_nuevos.go, backend/handlers/empresa_verticales_nuevos_test.go y documentacion base.
+- Descripcion: se inicia la implementacion por fases con una matriz que mantiene clientes, productos/servicios, ventas, pagos, facturacion, reportes y permisos como fuente unica. Los 20 verticales nuevos quedan como plantillas visibles sobre el motor compartido y los verticales clasicos con duplicados reales se ocultan del menu operativo.
+- Integracion: el frontend aplica visibleOperativo antes de permisos/licencias y el backend expone metadata de integracion para catalogos de verticales nuevos.
+- Gobernanza: no se borran verticales por existir; solo se ocultan los pendientes y se documenta la migracion por oleadas para eliminar o fusionar duplicados reales.
+- Verificacion: node --check web/js/verticales_integracion_catalogo.js web/js/nuevos_verticales_catalogo.js web/js/administrar_empresa.js y go test ./handlers -run "TestNuevosVerticales|TestEmpresaVerticalesNuevos|TestPublicVerticalesNuevos|TestLinkNuevosVerticales" -count=1.
+2026-05-11 - Panel super profesional
+- Archivos: web/super_administrador.html, web/js/super_administrador.js, web/estilos.css, documentos base y changelogs.
+- Descripcion: se reduce el panel principal del super administrador a una consola ejecutiva con gobierno, licencias, acceso, IA esencial y plataforma. Se retiran accesos secundarios del menu visible sin eliminar rutas ni endpoints.
+- Navegacion: la restauracion de ultima subpagina queda limitada a las paginas visibles del panel profesional para evitar que vuelvan vistas retiradas desde la sesion local.
+- Validacion: sintaxis JavaScript OK, menu esperado de 16 accesos OK, busqueda de accesos retirados sin resultados en el shell y su script.
+- Riesgo: la verificacion visual en navegador integrado quedo bloqueada por politica local del cliente para URLs localhost; se conserva pendiente una revision visual autenticada en VPS o navegador del usuario.
 2026-05-11 - Limpieza PostgreSQL-only
 - Archivos: backend/db/finanzas.go, backend/db/propinas.go, web/administrar_empresa/carrito_de_compras.html, web/administrar_empresa/codigos_de_descuento.html, scripts/sync_to_vps.sh, scripts/sync_to_vps.ps1, scripts/actualizar_repositorio.ps1, AGENTS.md, copilot-instructions.md, .github/agents/agente_go.agent.md, documentos base y changelogs.
 - Descripcion: se retiran rastros del motor legado de codigo, frontend, scripts y documentacion; las consultas residuales de indices quedan sobre catalogos PostgreSQL y los helpers frontend adoptan nombres neutrales de backend.

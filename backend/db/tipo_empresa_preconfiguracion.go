@@ -24,14 +24,15 @@ type TipoEmpresaPreconfiguracion struct {
 }
 
 type TipoEmpresaPreconfigTemplate struct {
-	Estaciones TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
-	Operacion  TipoEmpresaPreconfigOperacion   `json:"operacion,omitempty"`
-	Productos  []TipoEmpresaPreconfigProducto  `json:"productos"`
-	Usuarios   []TipoEmpresaPreconfigUsuario   `json:"usuarios,omitempty"`
-	Tarifas    TipoEmpresaPreconfigTarifas     `json:"tarifas,omitempty"`
-	Modulos    TipoEmpresaPreconfigModulos     `json:"modulos,omitempty"`
-	Asistente  TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia,omitempty"`
-	TareasGuia []TipoEmpresaPreconfigTareaGuia `json:"tareas_guia,omitempty"`
+	Estaciones          TipoEmpresaPreconfigEstaciones           `json:"estaciones"`
+	Operacion           TipoEmpresaPreconfigOperacion            `json:"operacion,omitempty"`
+	IntegracionVertical *TipoEmpresaPreconfigIntegracionVertical `json:"integracion_vertical,omitempty"`
+	Productos           []TipoEmpresaPreconfigProducto           `json:"productos"`
+	Usuarios            []TipoEmpresaPreconfigUsuario            `json:"usuarios,omitempty"`
+	Tarifas             TipoEmpresaPreconfigTarifas              `json:"tarifas,omitempty"`
+	Modulos             TipoEmpresaPreconfigModulos              `json:"modulos,omitempty"`
+	Asistente           TipoEmpresaPreconfigAsistenteIA          `json:"asistente_ia,omitempty"`
+	TareasGuia          []TipoEmpresaPreconfigTareaGuia          `json:"tareas_guia,omitempty"`
 }
 
 type TipoEmpresaPreconfigEstaciones struct {
@@ -54,6 +55,20 @@ type TipoEmpresaPreconfigOperacion struct {
 	ComisionFiltro         string   `json:"comision_filtro,omitempty"`
 	ComisionPorcentaje     float64  `json:"comision_porcentaje,omitempty"`
 	RolesOperativos        []string `json:"roles_operativos,omitempty"`
+}
+
+type TipoEmpresaPreconfigIntegracionVertical struct {
+	Modulo              string   `json:"modulo"`
+	EstadoIntegracion   string   `json:"estado_integracion"`
+	Decision            string   `json:"decision"`
+	ProduccionMasiva    bool     `json:"produccion_masiva"`
+	PrioridadProduccion int      `json:"prioridad_produccion,omitempty"`
+	MotivoDecision      string   `json:"motivo_decision,omitempty"`
+	TemplateActivates   []string `json:"template_activates,omitempty"`
+	TablesTouched       []string `json:"tables_touched,omitempty"`
+	RequiredPermissions []string `json:"required_permissions,omitempty"`
+	SaleFlow            []string `json:"sale_flow,omitempty"`
+	ReportsProduced     []string `json:"reports_produced,omitempty"`
 }
 
 type TipoEmpresaPreconfigProducto struct {
@@ -1865,9 +1880,59 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 		tareas = append(tareas, task)
 	}
 	template.TareasGuia = tareas
+	if template.IntegracionVertical == nil && template.Operacion.TipoNegocio != "" {
+		template.IntegracionVertical = BuildTipoEmpresaPreconfigIntegracionVertical(template.Operacion.TipoNegocio)
+	}
+	if template.IntegracionVertical != nil {
+		template.IntegracionVertical = normalizeTipoEmpresaPreconfigIntegracionVertical(*template.IntegracionVertical)
+	}
 	template.Tarifas = normalizeTipoEmpresaPreconfigTarifas(template.Tarifas, template.Estaciones.Cantidad)
 	template.Modulos = normalizeTipoEmpresaPreconfigModulos(template.Modulos)
 	return template
+}
+
+func normalizeTipoEmpresaPreconfigIntegracionVertical(item TipoEmpresaPreconfigIntegracionVertical) *TipoEmpresaPreconfigIntegracionVertical {
+	rawModulo := strings.ToLower(strings.TrimSpace(item.Modulo))
+	item.Modulo = NormalizeEmpresaModuloColombia(rawModulo)
+	if item.Modulo == "" {
+		item.Modulo = rawModulo
+	}
+	item.EstadoIntegracion = strings.ToLower(strings.TrimSpace(item.EstadoIntegracion))
+	if item.EstadoIntegracion == "" {
+		item.EstadoIntegracion = "plantilla_integrada_nucleo"
+	}
+	item.Decision = strings.ToLower(strings.TrimSpace(item.Decision))
+	if item.Decision == "" {
+		item.Decision = "mantener_como_plantilla"
+	}
+	item.MotivoDecision = strings.TrimSpace(item.MotivoDecision)
+	if item.PrioridadProduccion < 0 {
+		item.PrioridadProduccion = 0
+	}
+	item.TemplateActivates = uniqueTrimmedStrings(item.TemplateActivates, false)
+	item.TablesTouched = uniqueTrimmedStrings(item.TablesTouched, false)
+	item.RequiredPermissions = uniqueTrimmedStrings(item.RequiredPermissions, false)
+	item.SaleFlow = uniqueTrimmedStrings(item.SaleFlow, false)
+	item.ReportsProduced = uniqueTrimmedStrings(item.ReportsProduced, false)
+	return &item
+}
+
+func uniqueTrimmedStrings(values []string, lower bool) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		clean := strings.TrimSpace(value)
+		if lower {
+			clean = strings.ToLower(clean)
+		}
+		key := strings.ToLower(clean)
+		if clean == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, clean)
+	}
+	return out
 }
 
 func normalizeTipoEmpresaPreconfigTarifas(tarifas TipoEmpresaPreconfigTarifas, estaciones int) TipoEmpresaPreconfigTarifas {

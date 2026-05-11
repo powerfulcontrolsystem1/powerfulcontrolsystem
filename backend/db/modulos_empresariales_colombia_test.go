@@ -64,6 +64,9 @@ func TestGetEmpresaModuloColombiaPlantillaPorModulo(t *testing.T) {
 	if farma.EtiquetaReferencia == "" || !strings.Contains(farma.MetadataEjemplo, "registro_invima") {
 		t.Fatalf("plantilla farmacia sin trazabilidad sanitaria: %#v", farma)
 	}
+	if !strings.Contains(strings.Join(farma.Tipos, ","), "formula_medica") || !strings.Contains(strings.Join(farma.Categorias, ","), "controlados") {
+		t.Fatalf("plantilla farmacia debe ser expediente sanitario, no inventario paralelo: %#v", farma)
+	}
 }
 
 func TestBuildEmpresaModuloColombiaDiagnostico(t *testing.T) {

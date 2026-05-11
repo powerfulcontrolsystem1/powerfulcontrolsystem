@@ -109,6 +109,14 @@ func EmpresaOdontologiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			switch action {
+			case "sincronizar_nucleo":
+				resumen, err := dbpkg.SyncEmpresaOdontologiaNucleo(dbEmp, empresaID, adminEmail)
+				if err != nil {
+					http.Error(w, "No se pudo sincronizar odontologia con el nucleo", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
+				return
 			case "pacientes":
 				var payload dbpkg.EmpresaOdontologiaPaciente
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

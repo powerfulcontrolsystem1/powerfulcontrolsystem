@@ -15,14 +15,22 @@ type empresaVerticalNuevoPermiso struct {
 }
 
 type empresaVerticalNuevoCatalogoItem struct {
-	ID         string                               `json:"id"`
-	Modulo     string                               `json:"module"`
-	Page       string                               `json:"page"`
-	Titulo     string                               `json:"title"`
-	TituloFull string                               `json:"full_title"`
-	Resumen    string                               `json:"summary"`
-	Secciones  []string                             `json:"sections"`
-	Plantilla  dbpkg.EmpresaModuloColombiaPlantilla `json:"plantilla"`
+	ID                   string                                         `json:"id"`
+	Modulo               string                                         `json:"module"`
+	Page                 string                                         `json:"page"`
+	Titulo               string                                         `json:"title"`
+	TituloFull           string                                         `json:"full_title"`
+	Resumen              string                                         `json:"summary"`
+	Secciones            []string                                       `json:"sections"`
+	IntegrationStatus    string                                         `json:"integration_status"`
+	OperationalVisible   bool                                           `json:"operational_visible"`
+	CoreModules          []string                                       `json:"core_modules"`
+	DuplicatesCore       []string                                       `json:"duplicates_core"`
+	ProduccionMasiva     bool                                           `json:"produccion_masiva"`
+	PrioridadProduccion  int                                            `json:"prioridad_produccion,omitempty"`
+	DecisionPreconfig    string                                         `json:"decision_preconfig,omitempty"`
+	IntegracionPreconfig *dbpkg.TipoEmpresaPreconfigIntegracionVertical `json:"integracion_preconfig,omitempty"`
+	Plantilla            dbpkg.EmpresaModuloColombiaPlantilla           `json:"plantilla"`
 }
 
 func empresaVerticalesNuevosPermisos() []empresaVerticalNuevoPermiso {
@@ -52,8 +60,33 @@ func EmpresaVerticalesNuevosCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func SuperVerticalesNuevosCatalogoHandler() http.HandlerFunc {
+func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action != "asegurar_v1_licencias" && action != "asegurar_produccion_masiva" {
+				http.Error(w, "accion no permitida", http.StatusBadRequest)
+				return
+			}
+			if len(dbSuper) == 0 || dbSuper[0] == nil {
+				http.Error(w, "db super no disponible", http.StatusInternalServerError)
+				return
+			}
+			tipos, licencias, err := dbpkg.EnsureNuevosVerticalesProduccionMasivaLicencias(dbSuper[0], "super.verticales_v1")
+			if err != nil {
+				http.Error(w, "no se pudieron asegurar verticales v1: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			items := buildEmpresaVerticalesNuevosCatalogo()
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                   true,
+				"tipos_asegurados":     tipos,
+				"licencias_aseguradas": licencias,
+				"total":                len(items),
+				"items":                items,
+			})
+			return
+		}
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
@@ -91,18 +124,34 @@ func buildEmpresaVerticalesNuevosCatalogo() []empresaVerticalNuevoCatalogoItem {
 		}
 		page := nuevoVerticalPageKey(modulo)
 		plantilla := dbpkg.GetEmpresaModuloColombiaPlantilla(modulo)
+		integracion := dbpkg.BuildTipoEmpresaPreconfigIntegracionVertical(modulo)
 		out = append(out, empresaVerticalNuevoCatalogoItem{
-			ID:         page,
-			Modulo:     modulo,
-			Page:       page,
-			Titulo:     strings.TrimSpace(item.Nombre),
-			TituloFull: strings.TrimSpace(item.Nombre),
-			Resumen:    strings.TrimSpace(item.Observaciones),
-			Secciones:  append([]string{}, plantilla.SeccionesFlujo...),
-			Plantilla:  plantilla,
+			ID:                   page,
+			Modulo:               modulo,
+			Page:                 page,
+			Titulo:               strings.TrimSpace(item.Nombre),
+			TituloFull:           strings.TrimSpace(item.Nombre),
+			Resumen:              strings.TrimSpace(item.Observaciones),
+			Secciones:            append([]string{}, plantilla.SeccionesFlujo...),
+			IntegrationStatus:    "plantilla_integrada_nucleo",
+			OperationalVisible:   true,
+			CoreModules:          []string{"clientes", "inventario", "ventas", "pagos", "facturacion", "reportes", "seguridad"},
+			DuplicatesCore:       []string{},
+			ProduccionMasiva:     integracion != nil && integracion.ProduccionMasiva,
+			PrioridadProduccion:  dbpkg.NuevoVerticalProduccionMasivaRank(modulo),
+			DecisionPreconfig:    integrationDecision(integracion),
+			IntegracionPreconfig: integracion,
+			Plantilla:            plantilla,
 		})
 	}
 	return out
+}
+
+func integrationDecision(integracion *dbpkg.TipoEmpresaPreconfigIntegracionVertical) string {
+	if integracion == nil {
+		return ""
+	}
+	return strings.TrimSpace(integracion.Decision)
 }
 
 var empresaVerticalesNuevosModuloSet = func() map[string]bool {

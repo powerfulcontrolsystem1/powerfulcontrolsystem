@@ -74,6 +74,7 @@ type EmpresaTaxiDriver struct {
 type EmpresaTaxiCustomer struct {
 	ID                 int64  `json:"id"`
 	EmpresaID          int64  `json:"empresa_id"`
+	ClienteID          int64  `json:"cliente_id,omitempty"`
 	Nombre             string `json:"nombre"`
 	Documento          string `json:"documento,omitempty"`
 	Telefono           string `json:"telefono"`
@@ -90,6 +91,10 @@ type EmpresaTaxiRequest struct {
 	ID                       int64   `json:"id"`
 	EmpresaID                int64   `json:"empresa_id"`
 	CustomerID               int64   `json:"customer_id,omitempty"`
+	ClienteID                int64   `json:"cliente_id,omitempty"`
+	ServicioID               int64   `json:"servicio_id,omitempty"`
+	CarritoID                int64   `json:"carrito_id,omitempty"`
+	CarritoItemID            int64   `json:"carrito_item_id,omitempty"`
 	ConductorID              int64   `json:"conductor_id,omitempty"`
 	CodigoServicio           string  `json:"codigo_servicio"`
 	ClienteNombre            string  `json:"cliente_nombre"`
@@ -109,6 +114,7 @@ type EmpresaTaxiRequest struct {
 	DistanciaEstimadaKM      float64 `json:"distancia_estimada_km,omitempty"`
 	TiempoEstimadoMin        float64 `json:"tiempo_estimado_min,omitempty"`
 	TarifaEstimada           float64 `json:"tarifa_estimada,omitempty"`
+	MetodoPago               string  `json:"metodo_pago,omitempty"`
 	ConductorNombre          string  `json:"conductor_nombre,omitempty"`
 	ConductorTelefono        string  `json:"conductor_telefono,omitempty"`
 	VehiculoPlaca            string  `json:"vehiculo_placa,omitempty"`
@@ -158,6 +164,18 @@ type EmpresaTaxiDashboard struct {
 	Requests               []EmpresaTaxiRequest `json:"requests"`
 	Drivers                []EmpresaTaxiDriver  `json:"drivers"`
 	Offers                 []EmpresaTaxiOffer   `json:"offers"`
+}
+
+type EmpresaTaxiIntegracionNucleoResumen struct {
+	EmpresaID              int64    `json:"empresa_id"`
+	ClientesSincronizados  int      `json:"clientes_sincronizados"`
+	ServiciosSincronizados int      `json:"servicios_sincronizados"`
+	ViajesSincronizados    int      `json:"viajes_sincronizados"`
+	ViajesPendientes       int      `json:"viajes_pendientes"`
+	Errores                []string `json:"errores,omitempty"`
+	EstadoIntegracion      string   `json:"estado_integracion"`
+	VisibleOperativo       bool     `json:"visible_operativo"`
+	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
 }
 
 func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
@@ -217,6 +235,7 @@ func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_taxi_customers (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
+			cliente_id BIGINT,
 			nombre TEXT NOT NULL,
 			documento TEXT,
 			telefono TEXT NOT NULL,
@@ -234,6 +253,10 @@ func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
 			customer_id BIGINT,
+			cliente_id BIGINT,
+			servicio_id BIGINT,
+			carrito_id BIGINT,
+			carrito_item_id BIGINT,
 			conductor_id BIGINT,
 			codigo_servicio TEXT NOT NULL,
 			cliente_nombre TEXT NOT NULL,
@@ -253,6 +276,7 @@ func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 			distancia_estimada_km NUMERIC(10,2) DEFAULT 0,
 			tiempo_estimado_min NUMERIC(10,2) DEFAULT 0,
 			tarifa_estimada NUMERIC(12,2) DEFAULT 0,
+			metodo_pago TEXT,
 			fecha_solicitud TEXT DEFAULT CURRENT_TIMESTAMP,
 			fecha_aceptacion TEXT,
 			fecha_inicio TEXT,
@@ -293,16 +317,23 @@ func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 		}
 	}
 	for _, col := range []struct {
-		name string
-		def  string
+		table string
+		name  string
+		def   string
 	}{
-		{"gps_dispositivo_id", "BIGINT DEFAULT 0"},
-		{"gps_codigo", "TEXT"},
-		{"gps_tipo", "TEXT DEFAULT 'app_movil'"},
-		{"gps_proveedor", "TEXT"},
-		{"gps_protocolo", "TEXT DEFAULT 'app_movil'"},
+		{"empresa_taxi_drivers", "gps_dispositivo_id", "BIGINT DEFAULT 0"},
+		{"empresa_taxi_drivers", "gps_codigo", "TEXT"},
+		{"empresa_taxi_drivers", "gps_tipo", "TEXT DEFAULT 'app_movil'"},
+		{"empresa_taxi_drivers", "gps_proveedor", "TEXT"},
+		{"empresa_taxi_drivers", "gps_protocolo", "TEXT DEFAULT 'app_movil'"},
+		{"empresa_taxi_customers", "cliente_id", "BIGINT"},
+		{"empresa_taxi_requests", "cliente_id", "BIGINT"},
+		{"empresa_taxi_requests", "servicio_id", "BIGINT"},
+		{"empresa_taxi_requests", "carrito_id", "BIGINT"},
+		{"empresa_taxi_requests", "carrito_item_id", "BIGINT"},
+		{"empresa_taxi_requests", "metodo_pago", "TEXT"},
 	} {
-		if err := ensureColumnIfMissing(dbConn, "empresa_taxi_drivers", col.name, col.def); err != nil {
+		if err := ensureColumnIfMissing(dbConn, col.table, col.name, col.def); err != nil {
 			return err
 		}
 	}
@@ -525,6 +556,73 @@ func UpdateTaxiDriverLocation(dbConn *sql.DB, empresaID, driverID, requestID int
 	return err
 }
 
+func ensureTaxiClienteCore(dbConn *sql.DB, empresaID int64, nombre, documento, telefono, email, usuario string, clienteID int64) (int64, error) {
+	if clienteID > 0 {
+		return clienteID, nil
+	}
+	if strings.TrimSpace(nombre) == "" && strings.TrimSpace(documento) == "" && strings.TrimSpace(telefono) == "" && strings.TrimSpace(email) == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if documentoNorm := normalizeClienteDocumentoValue(documento); documentoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		if id, err := findClienteDuplicateID(dbConn, query, empresaID, documentoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if telefonoNorm := normalizeClienteTelefonoValue(telefono); telefonoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		if id, err := findClienteDuplicateID(dbConn, query, empresaID, telefonoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if emailNorm := normalizeClienteEmailValue(email); emailNorm != "" {
+		if id, err := findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND lower(trim(COALESCE(email, ''))) = ? LIMIT 1`, empresaID, emailNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := strings.TrimSpace(documento)
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = taxiCoreCode("TX-CLI", telefono, nombre)
+	}
+	nombre = strings.TrimSpace(nombre)
+	if nombre == "" {
+		nombre = "Cliente taxi " + strings.TrimSpace(telefono)
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         empresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Email:             strings.TrimSpace(email),
+		Telefono:          strings.TrimSpace(telefono),
+		Pais:              "CO",
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde taxi system.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
 func RegisterTaxiCustomer(dbConn *sql.DB, item EmpresaTaxiCustomer) (EmpresaTaxiCustomer, error) {
 	if err := EnsureEmpresaTaxiSystemSchema(dbConn); err != nil {
 		return EmpresaTaxiCustomer{}, err
@@ -534,9 +632,13 @@ func RegisterTaxiCustomer(dbConn *sql.DB, item EmpresaTaxiCustomer) (EmpresaTaxi
 	if item.Nombre == "" || item.Telefono == "" || strings.TrimSpace(item.Pin) == "" {
 		return EmpresaTaxiCustomer{}, fmt.Errorf("nombre, telefono y pin son obligatorios")
 	}
+	clienteID, err := ensureTaxiClienteCore(dbConn, item.EmpresaID, item.Nombre, item.Documento, item.Telefono, item.Email, "", 0)
+	if err != nil {
+		return EmpresaTaxiCustomer{}, err
+	}
+	item.ClienteID = clienteID
 	salt, hash := hashTaxiPin(item.Pin)
-	var err error
-	item.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_customers (empresa_id, nombre, documento, telefono, email, pin_hash, pin_salt, estado, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, ?, ?, 'activo', ?, ?)`, item.EmpresaID, item.Nombre, strings.TrimSpace(item.Documento), item.Telefono, strings.TrimSpace(item.Email), hash, salt, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
+	item.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_customers (empresa_id, cliente_id, nombre, documento, telefono, email, pin_hash, pin_salt, estado, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, ?)`, item.EmpresaID, nullableID(clienteID), item.Nombre, strings.TrimSpace(item.Documento), item.Telefono, strings.TrimSpace(item.Email), hash, salt, time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return EmpresaTaxiCustomer{}, err
 	}
@@ -547,7 +649,7 @@ func RegisterTaxiCustomer(dbConn *sql.DB, item EmpresaTaxiCustomer) (EmpresaTaxi
 func TaxiCustomerLogin(dbConn *sql.DB, empresaID int64, telefono, pin string) (EmpresaTaxiCustomer, error) {
 	var item EmpresaTaxiCustomer
 	var hash, salt string
-	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(pin_hash,''), COALESCE(pin_salt,''), COALESCE(estado,'activo') FROM empresa_taxi_customers WHERE empresa_id = ? AND telefono = ?`, empresaID, strings.TrimSpace(telefono)).Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &hash, &salt, &item.Estado)
+	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(cliente_id,0), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(pin_hash,''), COALESCE(pin_salt,''), COALESCE(estado,'activo') FROM empresa_taxi_customers WHERE empresa_id = ? AND telefono = ?`, empresaID, strings.TrimSpace(telefono)).Scan(&item.ID, &item.EmpresaID, &item.ClienteID, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &hash, &salt, &item.Estado)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return EmpresaTaxiCustomer{}, ErrTaxiCustomerAuthInvalid
@@ -568,7 +670,7 @@ func TaxiCustomerLogin(dbConn *sql.DB, empresaID int64, telefono, pin string) (E
 
 func ResolveTaxiCustomerByToken(dbConn *sql.DB, empresaID int64, token string) (EmpresaTaxiCustomer, error) {
 	var item EmpresaTaxiCustomer
-	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(token_sesion,''), COALESCE(token_expira,''), COALESCE(estado,'activo') FROM empresa_taxi_customers WHERE empresa_id = ? AND token_sesion = ?`, empresaID, strings.TrimSpace(token)).Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.TokenSesion, &item.TokenExpira, &item.Estado)
+	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(cliente_id,0), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(token_sesion,''), COALESCE(token_expira,''), COALESCE(estado,'activo') FROM empresa_taxi_customers WHERE empresa_id = ? AND token_sesion = ?`, empresaID, strings.TrimSpace(token)).Scan(&item.ID, &item.EmpresaID, &item.ClienteID, &item.Nombre, &item.Documento, &item.Telefono, &item.Email, &item.TokenSesion, &item.TokenExpira, &item.Estado)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return EmpresaTaxiCustomer{}, ErrTaxiCustomerAuthInvalid
@@ -579,6 +681,148 @@ func ResolveTaxiCustomerByToken(dbConn *sql.DB, empresaID int64, token string) (
 		return EmpresaTaxiCustomer{}, ErrTaxiCustomerAuthInvalid
 	}
 	return item, nil
+}
+
+func taxiCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
+}
+
+func syncTaxiRequestCliente(dbConn *sql.DB, req EmpresaTaxiRequest, usuario string) (int64, error) {
+	if req.ClienteID > 0 {
+		return req.ClienteID, nil
+	}
+	if req.CustomerID > 0 {
+		var customer EmpresaTaxiCustomer
+		err := QueryRowCompat(dbConn, `SELECT id, empresa_id, COALESCE(cliente_id,0), COALESCE(nombre,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,'') FROM empresa_taxi_customers WHERE empresa_id=? AND id=? LIMIT 1`, req.EmpresaID, req.CustomerID).
+			Scan(&customer.ID, &customer.EmpresaID, &customer.ClienteID, &customer.Nombre, &customer.Documento, &customer.Telefono, &customer.Email)
+		if err == nil {
+			clienteID, err := ensureTaxiClienteCore(dbConn, customer.EmpresaID, customer.Nombre, customer.Documento, customer.Telefono, customer.Email, usuario, customer.ClienteID)
+			if err != nil {
+				return 0, err
+			}
+			if clienteID > 0 {
+				_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_customers SET cliente_id=?, fecha_actualizacion=? WHERE empresa_id=? AND id=?`, clienteID, time.Now().Format("2006-01-02 15:04:05"), req.EmpresaID, req.CustomerID)
+				return clienteID, nil
+			}
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return 0, err
+		}
+	}
+	return ensureTaxiClienteCore(dbConn, req.EmpresaID, req.ClienteNombre, req.ClienteDocumento, req.ClienteTelefono, "", usuario, 0)
+}
+
+func ensureTaxiServicio(dbConn *sql.DB, req EmpresaTaxiRequest, usuario string) (int64, error) {
+	if req.ServicioID > 0 {
+		return req.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := taxiCoreCode("TX-SERV", req.MetodoSolicitud)
+	if strings.TrimSpace(req.MetodoSolicitud) == "" {
+		code = "TX-SERV-TAXI"
+	}
+	var servicioID int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, req.EmpresaID, code).Scan(&servicioID)
+	if err == sql.ErrNoRows {
+		servicioID, err = CreateServicio(dbConn, Servicio{
+			EmpresaID:       req.EmpresaID,
+			Codigo:          code,
+			Nombre:          "Servicio taxi",
+			Descripcion:     "Servicio vendible para viajes de taxi system.",
+			Categoria:       "taxi_system",
+			DuracionMinutos: int(math.Ceil(req.TiempoEstimadoMin)),
+			Precio:          req.TarifaEstimada,
+			Estado:          "activo",
+			UsuarioCreador:  strings.TrimSpace(usuario),
+			Observaciones:   "Servicio sincronizado desde taxi system.",
+		})
+	}
+	return servicioID, err
+}
+
+func createTaxiRequestCarrito(dbConn *sql.DB, req EmpresaTaxiRequest, usuario string) (int64, int64, int64, int64, error) {
+	if req.TarifaEstimada <= 0 {
+		return 0, 0, req.ClienteID, req.ServicioID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	clienteID, err := syncTaxiRequestCliente(dbConn, req, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	req.ClienteID = clienteID
+	servicioID, err := ensureTaxiServicio(dbConn, req, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	req.ServicioID = servicioID
+	metodo := NormalizeMetodoPagoCarrito(req.MetodoPago)
+	if metodo == "" {
+		metodo = "efectivo"
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         req.EmpresaID,
+		Codigo:            taxiCoreCode("TX-VIAJE", fmt.Sprintf("%d", req.ID), req.CodigoServicio),
+		Nombre:            "Taxi - " + req.ClienteNombre,
+		CanalVenta:        "taxi_system",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            "COP",
+		ReferenciaExterna: fmt.Sprintf("taxi_system:request:%d:%s", req.ID, req.CodigoServicio),
+		MetodoPago:        metodo,
+		ReferenciaPago:    req.CodigoServicio,
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Observaciones:     "Venta central generada desde viaje de taxi system.",
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          req.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       servicioID,
+		CodigoItem:         taxiCoreCode("TX-ITEM", req.CodigoServicio),
+		Descripcion:        strings.TrimSpace("Viaje taxi: " + req.RecogerTexto + " -> " + req.DestinoTexto),
+		UnidadMedida:       "servicio",
+		Cantidad:           1,
+		PrecioUnitario:     req.TarifaEstimada,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      fmt.Sprintf("Distancia estimada %.2f km; tiempo %.1f min.", req.DistanciaEstimadaKM, req.TiempoEstimadoMin),
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	if err := PayCarritoStationSession(dbConn, req.EmpresaID, carritoID, metodo, req.CodigoServicio, "", "", 0, 0, req.TarifaEstimada, 0, strings.TrimSpace(usuario)); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	return carritoID, itemID, clienteID, servicioID, nil
 }
 
 func CreateTaxiRequest(dbConn *sql.DB, item EmpresaTaxiRequest) (EmpresaTaxiRequest, error) {
@@ -596,14 +840,29 @@ func CreateTaxiRequest(dbConn *sql.DB, item EmpresaTaxiRequest) (EmpresaTaxiRequ
 	item.Estado = "pendiente"
 	item.MetodoSolicitud = firstTaxiState(item.MetodoSolicitud, "taxi")
 	item.Canal = firstTaxiState(item.Canal, "web")
+	if metodo := NormalizeMetodoPagoCarrito(item.MetodoPago); metodo != "" {
+		item.MetodoPago = metodo
+	} else {
+		item.MetodoPago = "efectivo"
+	}
 	if item.DestinoLatitud != 0 || item.DestinoLongitud != 0 {
 		item.DistanciaEstimadaKM = taxiDistanceKM(item.RecogerLatitud, item.RecogerLongitud, item.DestinoLatitud, item.DestinoLongitud)
 		item.TiempoEstimadoMin = math.Round((item.DistanciaEstimadaKM/28.0)*60*10) / 10
 		item.TarifaEstimada = math.Round((6000+(item.DistanciaEstimadaKM*1900))*100) / 100
 	}
-	item.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_requests (empresa_id, customer_id, codigo_servicio, cliente_nombre, cliente_telefono, cliente_documento, recoger_texto, recoger_latitud, recoger_longitud, destino_texto, destino_latitud, destino_longitud, comparte_ubicacion_cliente, metodo_solicitud, estado, canal, notas, distancia_estimada_km, tiempo_estimado_min, tarifa_estimada, fecha_solicitud)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?)`,
-		item.EmpresaID, nullableID(item.CustomerID), item.CodigoServicio, item.ClienteNombre, item.ClienteTelefono, strings.TrimSpace(item.ClienteDocumento), item.RecogerTexto, item.RecogerLatitud, item.RecogerLongitud, strings.TrimSpace(item.DestinoTexto), item.DestinoLatitud, item.DestinoLongitud, taxiBoolToInt(item.ComparteUbicacionCliente), item.MetodoSolicitud, item.Canal, strings.TrimSpace(item.Notas), item.DistanciaEstimadaKM, item.TiempoEstimadoMin, item.TarifaEstimada, time.Now().Format("2006-01-02 15:04:05"))
+	clienteID, err := syncTaxiRequestCliente(dbConn, item, "")
+	if err != nil {
+		return EmpresaTaxiRequest{}, err
+	}
+	item.ClienteID = clienteID
+	servicioID, err := ensureTaxiServicio(dbConn, item, "")
+	if err != nil {
+		return EmpresaTaxiRequest{}, err
+	}
+	item.ServicioID = servicioID
+	item.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_taxi_requests (empresa_id, customer_id, cliente_id, servicio_id, codigo_servicio, cliente_nombre, cliente_telefono, cliente_documento, recoger_texto, recoger_latitud, recoger_longitud, destino_texto, destino_latitud, destino_longitud, comparte_ubicacion_cliente, metodo_solicitud, estado, canal, notas, distancia_estimada_km, tiempo_estimado_min, tarifa_estimada, metodo_pago, fecha_solicitud)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?, ?)`,
+		item.EmpresaID, nullableID(item.CustomerID), nullableID(item.ClienteID), nullableID(item.ServicioID), item.CodigoServicio, item.ClienteNombre, item.ClienteTelefono, strings.TrimSpace(item.ClienteDocumento), item.RecogerTexto, item.RecogerLatitud, item.RecogerLongitud, strings.TrimSpace(item.DestinoTexto), item.DestinoLatitud, item.DestinoLongitud, taxiBoolToInt(item.ComparteUbicacionCliente), item.MetodoSolicitud, item.Canal, strings.TrimSpace(item.Notas), item.DistanciaEstimadaKM, item.TiempoEstimadoMin, item.TarifaEstimada, item.MetodoPago, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return EmpresaTaxiRequest{}, err
 	}
@@ -617,8 +876,8 @@ func CreateTaxiRequest(dbConn *sql.DB, item EmpresaTaxiRequest) (EmpresaTaxiRequ
 func GetTaxiRequestByID(dbConn *sql.DB, empresaID, requestID int64) (EmpresaTaxiRequest, error) {
 	var item EmpresaTaxiRequest
 	var comparte int
-	err := QueryRowCompat(dbConn, `SELECT r.id, r.empresa_id, COALESCE(r.customer_id,0), COALESCE(r.conductor_id,0), COALESCE(r.codigo_servicio,''), COALESCE(r.cliente_nombre,''), COALESCE(r.cliente_telefono,''), COALESCE(r.cliente_documento,''), COALESCE(r.recoger_texto,''), COALESCE(r.recoger_latitud,0), COALESCE(r.recoger_longitud,0), COALESCE(r.destino_texto,''), COALESCE(r.destino_latitud,0), COALESCE(r.destino_longitud,0), COALESCE(r.comparte_ubicacion_cliente,0), COALESCE(r.metodo_solicitud,''), COALESCE(r.estado,'pendiente'), COALESCE(r.canal,'web'), COALESCE(r.notas,''), COALESCE(r.distancia_estimada_km,0), COALESCE(r.tiempo_estimado_min,0), COALESCE(r.tarifa_estimada,0), COALESCE(r.fecha_solicitud,''), COALESCE(r.fecha_aceptacion,''), COALESCE(r.fecha_inicio,''), COALESCE(r.fecha_cierre,''), COALESCE(d.nombre,''), COALESCE(d.telefono,''), COALESCE(d.vehiculo_placa,''), COALESCE(d.vehiculo_modelo,'') FROM empresa_taxi_requests r LEFT JOIN empresa_taxi_drivers d ON d.id = r.conductor_id AND d.empresa_id = r.empresa_id WHERE r.empresa_id = ? AND r.id = ?`, empresaID, requestID).Scan(
-		&item.ID, &item.EmpresaID, &item.CustomerID, &item.ConductorID, &item.CodigoServicio, &item.ClienteNombre, &item.ClienteTelefono, &item.ClienteDocumento, &item.RecogerTexto, &item.RecogerLatitud, &item.RecogerLongitud, &item.DestinoTexto, &item.DestinoLatitud, &item.DestinoLongitud, &comparte, &item.MetodoSolicitud, &item.Estado, &item.Canal, &item.Notas, &item.DistanciaEstimadaKM, &item.TiempoEstimadoMin, &item.TarifaEstimada, &item.FechaSolicitud, &item.FechaAceptacion, &item.FechaInicio, &item.FechaCierre, &item.ConductorNombre, &item.ConductorTelefono, &item.VehiculoPlaca, &item.VehiculoModelo,
+	err := QueryRowCompat(dbConn, `SELECT r.id, r.empresa_id, COALESCE(r.customer_id,0), COALESCE(r.cliente_id,0), COALESCE(r.servicio_id,0), COALESCE(r.carrito_id,0), COALESCE(r.carrito_item_id,0), COALESCE(r.conductor_id,0), COALESCE(r.codigo_servicio,''), COALESCE(r.cliente_nombre,''), COALESCE(r.cliente_telefono,''), COALESCE(r.cliente_documento,''), COALESCE(r.recoger_texto,''), COALESCE(r.recoger_latitud,0), COALESCE(r.recoger_longitud,0), COALESCE(r.destino_texto,''), COALESCE(r.destino_latitud,0), COALESCE(r.destino_longitud,0), COALESCE(r.comparte_ubicacion_cliente,0), COALESCE(r.metodo_solicitud,''), COALESCE(r.estado,'pendiente'), COALESCE(r.canal,'web'), COALESCE(r.notas,''), COALESCE(r.distancia_estimada_km,0), COALESCE(r.tiempo_estimado_min,0), COALESCE(r.tarifa_estimada,0), COALESCE(r.metodo_pago,''), COALESCE(r.fecha_solicitud,''), COALESCE(r.fecha_aceptacion,''), COALESCE(r.fecha_inicio,''), COALESCE(r.fecha_cierre,''), COALESCE(d.nombre,''), COALESCE(d.telefono,''), COALESCE(d.vehiculo_placa,''), COALESCE(d.vehiculo_modelo,'') FROM empresa_taxi_requests r LEFT JOIN empresa_taxi_drivers d ON d.id = r.conductor_id AND d.empresa_id = r.empresa_id WHERE r.empresa_id = ? AND r.id = ?`, empresaID, requestID).Scan(
+		&item.ID, &item.EmpresaID, &item.CustomerID, &item.ClienteID, &item.ServicioID, &item.CarritoID, &item.CarritoItemID, &item.ConductorID, &item.CodigoServicio, &item.ClienteNombre, &item.ClienteTelefono, &item.ClienteDocumento, &item.RecogerTexto, &item.RecogerLatitud, &item.RecogerLongitud, &item.DestinoTexto, &item.DestinoLatitud, &item.DestinoLongitud, &comparte, &item.MetodoSolicitud, &item.Estado, &item.Canal, &item.Notas, &item.DistanciaEstimadaKM, &item.TiempoEstimadoMin, &item.TarifaEstimada, &item.MetodoPago, &item.FechaSolicitud, &item.FechaAceptacion, &item.FechaInicio, &item.FechaCierre, &item.ConductorNombre, &item.ConductorTelefono, &item.VehiculoPlaca, &item.VehiculoModelo,
 	)
 	if err != nil {
 		return EmpresaTaxiRequest{}, err
@@ -811,12 +1070,42 @@ func UpdateTaxiRequestState(dbConn *sql.DB, empresaID, requestID, driverID int64
 	now := time.Now().Format("2006-01-02 15:04:05")
 	switch state {
 	case "en_camino":
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'en_camino', notas = ? WHERE empresa_id = ? AND id = ? AND conductor_id = ?`, strings.TrimSpace(notes), empresaID, requestID, driverID)
+		if driverID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'en_camino', notas = ? WHERE empresa_id = ? AND id = ? AND conductor_id = ?`, strings.TrimSpace(notes), empresaID, requestID, driverID)
+		} else {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'en_camino', notas = ? WHERE empresa_id = ? AND id = ?`, strings.TrimSpace(notes), empresaID, requestID)
+		}
 	case "abordo":
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'abordo', fecha_inicio = ?, notas = ? WHERE empresa_id = ? AND id = ? AND conductor_id = ?`, now, strings.TrimSpace(notes), empresaID, requestID, driverID)
+		if driverID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'abordo', fecha_inicio = ?, notas = ? WHERE empresa_id = ? AND id = ? AND conductor_id = ?`, now, strings.TrimSpace(notes), empresaID, requestID, driverID)
+		} else {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'abordo', fecha_inicio = ?, notas = ? WHERE empresa_id = ? AND id = ?`, now, strings.TrimSpace(notes), empresaID, requestID)
+		}
 	case "completado":
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'completado', fecha_cierre = ?, notas = ? WHERE empresa_id = ? AND id = ? AND conductor_id = ?`, now, strings.TrimSpace(notes), empresaID, requestID, driverID)
+		if driverID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'completado', fecha_cierre = ?, notas = ? WHERE empresa_id = ? AND id = ? AND conductor_id = ?`, now, strings.TrimSpace(notes), empresaID, requestID, driverID)
+		} else {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'completado', fecha_cierre = ?, notas = ? WHERE empresa_id = ? AND id = ?`, now, strings.TrimSpace(notes), empresaID, requestID)
+		}
 		_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_drivers SET disponible = 1, fecha_actualizacion = ? WHERE empresa_id = ? AND id = ?`, now, empresaID, driverID)
+		req, err := GetTaxiRequestByID(dbConn, empresaID, requestID)
+		if err != nil {
+			return EmpresaTaxiRequest{}, err
+		}
+		if req.CarritoID <= 0 && req.TarifaEstimada > 0 {
+			carritoID, itemID, clienteID, servicioID, err := createTaxiRequestCarrito(dbConn, req, "taxi_system")
+			if err != nil {
+				return EmpresaTaxiRequest{}, err
+			}
+			metodo := NormalizeMetodoPagoCarrito(req.MetodoPago)
+			if metodo == "" {
+				metodo = "efectivo"
+			}
+			_, err = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, metodo_pago=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), metodo, empresaID, requestID)
+			if err != nil {
+				return EmpresaTaxiRequest{}, err
+			}
+		}
 	case "cancelado":
 		_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET estado = 'cancelado', fecha_cierre = ?, notas = ? WHERE empresa_id = ? AND id = ?`, now, strings.TrimSpace(notes), empresaID, requestID)
 		if driverID > 0 {
@@ -824,6 +1113,66 @@ func UpdateTaxiRequestState(dbConn *sql.DB, empresaID, requestID, driverID int64
 		}
 	}
 	return GetTaxiRequestByID(dbConn, empresaID, requestID)
+}
+
+func SyncEmpresaTaxiSystemNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaTaxiIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaTaxiSystemSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaTaxiIntegracionNucleoResumen{
+		EmpresaID:         empresaID,
+		EstadoIntegracion: "plantilla_integrada_nucleo",
+		VisibleOperativo:  true,
+	}
+	requests, err := ListTaxiRequests(dbConn, empresaID, "completado", 500)
+	if err != nil {
+		return nil, err
+	}
+	for _, req := range requests {
+		if req.CarritoID > 0 {
+			resumen.ViajesPendientes++
+			continue
+		}
+		clienteID, err := syncTaxiRequestCliente(dbConn, req, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d cliente: %v", req.ID, err))
+			continue
+		}
+		req.ClienteID = clienteID
+		resumen.ClientesSincronizados++
+		servicioID, err := ensureTaxiServicio(dbConn, req, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d servicio: %v", req.ID, err))
+			continue
+		}
+		req.ServicioID = servicioID
+		resumen.ServiciosSincronizados++
+		if req.TarifaEstimada <= 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET cliente_id=?, servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), req.EmpresaID, req.ID)
+			resumen.ViajesPendientes++
+			continue
+		}
+		carritoID, itemID, clienteID, servicioID, err := createTaxiRequestCarrito(dbConn, req, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d carrito: %v", req.ID, err))
+			continue
+		}
+		metodo := NormalizeMetodoPagoCarrito(req.MetodoPago)
+		if metodo == "" {
+			metodo = "efectivo"
+		}
+		_, err = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, metodo_pago=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), metodo, req.EmpresaID, req.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d refs: %v", req.ID, err))
+			continue
+		}
+		resumen.ViajesSincronizados++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
 }
 
 func ListTaxiRoutePoints(dbConn *sql.DB, empresaID, requestID int64, limit int) ([]EmpresaTaxiRoutePoint, error) {

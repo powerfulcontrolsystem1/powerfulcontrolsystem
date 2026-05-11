@@ -11,6 +11,7 @@ import (
 type EmpresaGimnasioSocio struct {
 	ID                         int64   `json:"id"`
 	EmpresaID                  int64   `json:"empresa_id"`
+	ClienteID                  int64   `json:"cliente_id,omitempty"`
 	Codigo                     string  `json:"codigo"`
 	NombreCompleto             string  `json:"nombre_completo"`
 	Documento                  string  `json:"documento,omitempty"`
@@ -36,6 +37,7 @@ type EmpresaGimnasioSocio struct {
 type EmpresaGimnasioPlan struct {
 	ID                     int64   `json:"id"`
 	EmpresaID              int64   `json:"empresa_id"`
+	ServicioID             int64   `json:"servicio_id,omitempty"`
 	Nombre                 string  `json:"nombre"`
 	Descripcion            string  `json:"descripcion,omitempty"`
 	Precio                 float64 `json:"precio"`
@@ -121,8 +123,12 @@ type EmpresaGimnasioPago struct {
 	EmpresaID      int64   `json:"empresa_id"`
 	SocioID        int64   `json:"socio_id"`
 	SocioNombre    string  `json:"socio_nombre,omitempty"`
+	ClienteID      int64   `json:"cliente_id,omitempty"`
 	PlanID         int64   `json:"plan_id,omitempty"`
 	PlanNombre     string  `json:"plan_nombre,omitempty"`
+	ServicioID     int64   `json:"servicio_id,omitempty"`
+	CarritoID      int64   `json:"carrito_id,omitempty"`
+	CarritoItemID  int64   `json:"carrito_item_id,omitempty"`
 	Concepto       string  `json:"concepto"`
 	Monto          float64 `json:"monto"`
 	Moneda         string  `json:"moneda,omitempty"`
@@ -257,6 +263,18 @@ type EmpresaGimnasioPreconfiguracionResumen struct {
 	TieneDatos        bool   `json:"tiene_datos"`
 }
 
+type EmpresaGimnasioIntegracionNucleoResumen struct {
+	EmpresaID             int64    `json:"empresa_id"`
+	SociosSincronizados   int      `json:"socios_sincronizados"`
+	PlanesSincronizados   int      `json:"planes_sincronizados"`
+	PagosSincronizados    int      `json:"pagos_sincronizados"`
+	PagosPendientes       int      `json:"pagos_pendientes"`
+	Errores               []string `json:"errores,omitempty"`
+	EstadoIntegracion     string   `json:"estado_integracion"`
+	VisibleOperativo      bool     `json:"visible_operativo"`
+	RequiereRevisionDatos bool     `json:"requiere_revision_datos"`
+}
+
 var (
 	empresaGimnasioSchemaEnsured sync.Map
 	empresaGimnasioSchemaMu      sync.Mutex
@@ -280,6 +298,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_planes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
+			servicio_id INTEGER,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
 			precio REAL DEFAULT 0,
@@ -293,9 +312,11 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_planes_empresa ON empresa_gimnasio_planes(empresa_id, estado, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_planes_servicio ON empresa_gimnasio_planes(empresa_id, servicio_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_socios (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
+			cliente_id INTEGER,
 			codigo TEXT,
 			nombre_completo TEXT NOT NULL,
 			documento TEXT,
@@ -318,6 +339,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_empresa ON empresa_gimnasio_socios(empresa_id, estado, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_plan ON empresa_gimnasio_socios(empresa_id, plan_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_socios_cliente ON empresa_gimnasio_socios(empresa_id, cliente_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_entrenadores (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -384,7 +406,11 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
 			socio_id INTEGER NOT NULL,
+			cliente_id INTEGER,
 			plan_id INTEGER,
+			servicio_id INTEGER,
+			carrito_id INTEGER,
+			carrito_item_id INTEGER,
 			concepto TEXT NOT NULL,
 			monto REAL DEFAULT 0,
 			moneda TEXT DEFAULT 'COP',
@@ -399,6 +425,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_empresa_fecha ON empresa_gimnasio_pagos(empresa_id, fecha_pago DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_gimnasio_pagos_carrito ON empresa_gimnasio_pagos(empresa_id, carrito_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_gimnasio_acceso_config (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL UNIQUE,
@@ -484,6 +511,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				def  string
 			}{
 				{"empresa_id", "INTEGER NOT NULL"},
+				{"servicio_id", "INTEGER"},
 				{"nombre", "TEXT NOT NULL"},
 				{"descripcion", "TEXT"},
 				{"precio", "REAL DEFAULT 0"},
@@ -504,6 +532,7 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 				def  string
 			}{
 				{"empresa_id", "INTEGER NOT NULL"},
+				{"cliente_id", "INTEGER"},
 				{"codigo", "TEXT"},
 				{"nombre_completo", "TEXT NOT NULL"},
 				{"documento", "TEXT"},
@@ -611,7 +640,11 @@ func EnsureEmpresaGimnasioSchema(dbConn *sql.DB) error {
 			}{
 				{"empresa_id", "INTEGER NOT NULL"},
 				{"socio_id", "INTEGER NOT NULL"},
+				{"cliente_id", "INTEGER"},
 				{"plan_id", "INTEGER"},
+				{"servicio_id", "INTEGER"},
+				{"carrito_id", "INTEGER"},
+				{"carrito_item_id", "INTEGER"},
 				{"concepto", "TEXT NOT NULL"},
 				{"monto", "REAL DEFAULT 0"},
 				{"moneda", "TEXT DEFAULT 'COP'"},
@@ -889,6 +922,11 @@ func normalizeGymPago(payload EmpresaGimnasioPago) (*EmpresaGimnasioPago, error)
 	if out.MetodoPago == "" {
 		out.MetodoPago = "efectivo"
 	}
+	if coreMetodo := NormalizeMetodoPagoCarrito(out.MetodoPago); coreMetodo != "" {
+		out.MetodoPago = coreMetodo
+	} else {
+		out.MetodoPago = "efectivo"
+	}
 	if out.Canal == "" {
 		out.Canal = "mostrador"
 	}
@@ -899,6 +937,239 @@ func normalizeGymPago(payload EmpresaGimnasioPago) (*EmpresaGimnasioPago, error)
 		out.FechaPago = time.Now().Format("2006-01-02 15:04:05")
 	}
 	return &out, nil
+}
+
+func gymCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		clean := strings.ToUpper(strings.TrimSpace(part))
+		for _, r := range clean {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+			} else if b.Len() > 0 {
+				last := b.String()[b.Len()-1]
+				if last != '-' {
+					b.WriteRune('-')
+				}
+			}
+		}
+		if b.Len() > 0 {
+			last := b.String()[b.Len()-1]
+			if last != '-' {
+				b.WriteRune('-')
+			}
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + code
+}
+
+func findEmpresaGimnasioClienteID(dbConn *sql.DB, socio EmpresaGimnasioSocio) (int64, error) {
+	if socio.ClienteID > 0 {
+		return socio.ClienteID, nil
+	}
+	documento := normalizeClienteDocumentoValue(socio.Documento)
+	if documento != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		return findClienteDuplicateID(dbConn, query, socio.EmpresaID, documento)
+	}
+	if email := normalizeClienteEmailValue(socio.Email); email != "" {
+		return findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND lower(trim(COALESCE(email, ''))) = ? LIMIT 1`, socio.EmpresaID, email)
+	}
+	if telefono := normalizeClienteTelefonoValue(socio.Telefono); telefono != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		return findClienteDuplicateID(dbConn, query, socio.EmpresaID, telefono)
+	}
+	if codigo := strings.TrimSpace(socio.Codigo); codigo != "" {
+		return findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND tipo_documento = 'OTRO' AND numero_documento = ? LIMIT 1`, socio.EmpresaID, "GYM-"+codigo)
+	}
+	return 0, nil
+}
+
+func ensureEmpresaGimnasioSocioCliente(dbConn *sql.DB, socio EmpresaGimnasioSocio) (int64, error) {
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if id, err := findEmpresaGimnasioClienteID(dbConn, socio); err != nil {
+		return 0, err
+	} else if id > 0 {
+		return id, nil
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := strings.TrimSpace(socio.Documento)
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = "GYM-" + strings.TrimSpace(socio.Codigo)
+		if strings.TrimSpace(socio.Codigo) == "" {
+			numeroDocumento = gymCoreCode("GYM-SOCIO", socio.NombreCompleto)
+		}
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         socio.EmpresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: socio.NombreCompleto,
+		NombreComercial:   socio.NombreCompleto,
+		Email:             socio.Email,
+		Telefono:          socio.Telefono,
+		Pais:              "CO",
+		UsuarioCreador:    socio.UsuarioCreador,
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde gimnasio.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if strings.Contains(strings.ToLower(err.Error()), "cliente") && findErrClienteDuplicado(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func findErrClienteDuplicado(err error, out **ClienteDuplicadoError) bool {
+	for err != nil {
+		if dup, ok := err.(*ClienteDuplicadoError); ok {
+			*out = dup
+			return true
+		}
+		type unwrapper interface{ Unwrap() error }
+		u, ok := err.(unwrapper)
+		if !ok {
+			break
+		}
+		err = u.Unwrap()
+	}
+	return false
+}
+
+func getEmpresaGimnasioSocioByID(dbConn *sql.DB, empresaID, socioID int64) (*EmpresaGimnasioSocio, error) {
+	var socio EmpresaGimnasioSocio
+	err := dbConn.QueryRow(`SELECT id, empresa_id, COALESCE(cliente_id,0), COALESCE(codigo,''), COALESCE(nombre_completo,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(usuario_creador,'')
+		FROM empresa_gimnasio_socios WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, socioID).
+		Scan(&socio.ID, &socio.EmpresaID, &socio.ClienteID, &socio.Codigo, &socio.NombreCompleto, &socio.Documento, &socio.Telefono, &socio.Email, &socio.UsuarioCreador)
+	if err != nil {
+		return nil, err
+	}
+	return &socio, nil
+}
+
+func syncEmpresaGimnasioSocioCliente(dbConn *sql.DB, socio EmpresaGimnasioSocio) (int64, error) {
+	clienteID, err := ensureEmpresaGimnasioSocioCliente(dbConn, socio)
+	if err != nil || clienteID <= 0 || socio.ID <= 0 {
+		return clienteID, err
+	}
+	_, err = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET cliente_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, clienteID, socio.EmpresaID, socio.ID)
+	return clienteID, err
+}
+
+func syncEmpresaGimnasioPlanServicio(dbConn *sql.DB, plan EmpresaGimnasioPlan) (int64, error) {
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := gymCoreCode("GYM-PLAN", fmt.Sprintf("%d", plan.ID), plan.Nombre)
+	if plan.ServicioID > 0 {
+		if err := UpdateServicio(dbConn, Servicio{ID: plan.ServicioID, EmpresaID: plan.EmpresaID, Codigo: code, Nombre: plan.Nombre, Descripcion: plan.Descripcion, Categoria: "gimnasio", DuracionMinutos: plan.DuracionDias * 24 * 60, Precio: plan.Precio, Estado: plan.Estado, UsuarioCreador: plan.UsuarioCreador, Observaciones: "Servicio vendible sincronizado desde plan de gimnasio."}); err != nil {
+			return 0, err
+		}
+		return plan.ServicioID, nil
+	}
+	var servicioID int64
+	err := dbConn.QueryRow(`SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, plan.EmpresaID, code).Scan(&servicioID)
+	if err == sql.ErrNoRows {
+		servicioID, err = CreateServicio(dbConn, Servicio{EmpresaID: plan.EmpresaID, Codigo: code, Nombre: plan.Nombre, Descripcion: plan.Descripcion, Categoria: "gimnasio", DuracionMinutos: plan.DuracionDias * 24 * 60, Precio: plan.Precio, Estado: plan.Estado, UsuarioCreador: plan.UsuarioCreador, Observaciones: "Servicio vendible sincronizado desde plan de gimnasio."})
+	}
+	if err != nil {
+		return 0, err
+	}
+	if plan.ID > 0 {
+		_, err = dbConn.Exec(`UPDATE empresa_gimnasio_planes SET servicio_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, servicioID, plan.EmpresaID, plan.ID)
+	}
+	return servicioID, err
+}
+
+func ensureEmpresaGimnasioConceptoServicio(dbConn *sql.DB, pago EmpresaGimnasioPago) (int64, error) {
+	if pago.ServicioID > 0 {
+		return pago.ServicioID, nil
+	}
+	if pago.PlanID > 0 {
+		var plan EmpresaGimnasioPlan
+		err := dbConn.QueryRow(`SELECT id, empresa_id, COALESCE(servicio_id,0), COALESCE(nombre,''), COALESCE(descripcion,''), COALESCE(precio,0), COALESCE(duracion_dias,30), COALESCE(estado,'activo'), COALESCE(usuario_creador,'')
+			FROM empresa_gimnasio_planes WHERE empresa_id=? AND id=? LIMIT 1`, pago.EmpresaID, pago.PlanID).
+			Scan(&plan.ID, &plan.EmpresaID, &plan.ServicioID, &plan.Nombre, &plan.Descripcion, &plan.Precio, &plan.DuracionDias, &plan.Estado, &plan.UsuarioCreador)
+		if err != nil {
+			return 0, err
+		}
+		if plan.UsuarioCreador == "" {
+			plan.UsuarioCreador = pago.UsuarioCreador
+		}
+		return syncEmpresaGimnasioPlanServicio(dbConn, plan)
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := gymCoreCode("GYM-SERV", pago.Concepto)
+	var servicioID int64
+	err := dbConn.QueryRow(`SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, pago.EmpresaID, code).Scan(&servicioID)
+	if err == sql.ErrNoRows {
+		servicioID, err = CreateServicio(dbConn, Servicio{EmpresaID: pago.EmpresaID, Codigo: code, Nombre: pago.Concepto, Descripcion: "Servicio de gimnasio creado desde recaudo.", Categoria: "gimnasio", Precio: pago.Monto, Estado: "activo", UsuarioCreador: pago.UsuarioCreador, Observaciones: "Servicio vendible sincronizado desde pagos de gimnasio."})
+	}
+	return servicioID, err
+}
+
+func createEmpresaGimnasioPagoCarrito(dbConn *sql.DB, pago EmpresaGimnasioPago) (int64, int64, error) {
+	if pago.Estado != "pagado" {
+		return 0, 0, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         pago.EmpresaID,
+		Codigo:            gymCoreCode("GYM-PAGO", fmt.Sprintf("%d", pago.SocioID), fmt.Sprintf("%d", time.Now().UnixNano())),
+		Nombre:            "Gimnasio - " + pago.Concepto,
+		CanalVenta:        "gimnasio",
+		ClienteID:         pago.ClienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            pago.Moneda,
+		ReferenciaExterna: fmt.Sprintf("gimnasio:socio:%d:%s", pago.SocioID, pago.FechaPago),
+		MetodoPago:        pago.MetodoPago,
+		ReferenciaPago:    pago.Referencia,
+		UsuarioCreador:    pago.UsuarioCreador,
+		Observaciones:     "Venta central generada desde pago de gimnasio.",
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          pago.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       pago.ServicioID,
+		CodigoItem:         gymCoreCode("GYM-ITEM", pago.Concepto),
+		Descripcion:        pago.Concepto,
+		UnidadMedida:       "servicio",
+		Cantidad:           1,
+		PrecioUnitario:     pago.Monto,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     pago.UsuarioCreador,
+		Estado:             "activo",
+		Observaciones:      "Item central generado desde pago de gimnasio.",
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	if err := PayCarritoStationSession(dbConn, pago.EmpresaID, carritoID, pago.MetodoPago, pago.Referencia, "", "", 0, 0, pago.Monto, 0, pago.UsuarioCreador); err != nil {
+		return 0, 0, err
+	}
+	return carritoID, itemID, nil
 }
 
 func normalizeGymAccessConfig(payload EmpresaGimnasioAccesoConfig) *EmpresaGimnasioAccesoConfig {
@@ -975,7 +1246,7 @@ func ListEmpresaGimnasioSocios(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnas
 		return nil, err
 	}
 	rows, err := dbConn.Query(`SELECT
-		s.id, s.empresa_id, COALESCE(s.codigo,''), COALESCE(s.nombre_completo,''), COALESCE(s.documento,''), COALESCE(s.telefono,''),
+		s.id, s.empresa_id, COALESCE(s.cliente_id,0), COALESCE(s.codigo,''), COALESCE(s.nombre_completo,''), COALESCE(s.documento,''), COALESCE(s.telefono,''),
 		COALESCE(s.email,''), COALESCE(s.fecha_nacimiento,''), COALESCE(s.genero,''), COALESCE(s.objetivo,''), COALESCE(s.estado,'activo'),
 		COALESCE(s.plan_id,0), COALESCE(p.nombre,''), COALESCE(s.fecha_inicio_plan,''), COALESCE(s.fecha_fin_plan,''), COALESCE(s.saldo,0),
 		COALESCE(s.contacto_emergencia_nombre,''), COALESCE(s.contacto_emergencia_telefono,''), COALESCE(s.observaciones,''), COALESCE(s.fecha_creacion,''),
@@ -992,7 +1263,7 @@ func ListEmpresaGimnasioSocios(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnas
 	for rows.Next() {
 		var item EmpresaGimnasioSocio
 		if err := rows.Scan(
-			&item.ID, &item.EmpresaID, &item.Codigo, &item.NombreCompleto, &item.Documento, &item.Telefono,
+			&item.ID, &item.EmpresaID, &item.ClienteID, &item.Codigo, &item.NombreCompleto, &item.Documento, &item.Telefono,
 			&item.Email, &item.FechaNacimiento, &item.Genero, &item.Objetivo, &item.Estado,
 			&item.PlanID, &item.PlanNombre, &item.FechaInicioPlan, &item.FechaFinPlan, &item.Saldo,
 			&item.ContactoEmergenciaNombre, &item.ContactoEmergenciaTelefono, &item.Observaciones, &item.FechaCreacion,
@@ -1013,12 +1284,17 @@ func CreateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) (i
 	if err != nil {
 		return 0, err
 	}
+	clienteID, err := ensureEmpresaGimnasioSocioCliente(dbConn, *item)
+	if err != nil {
+		return 0, err
+	}
+	item.ClienteID = clienteID
 	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_socios (
-		empresa_id, codigo, nombre_completo, documento, telefono, email, fecha_nacimiento, genero, objetivo, estado,
+		empresa_id, cliente_id, codigo, nombre_completo, documento, telefono, email, fecha_nacimiento, genero, objetivo, estado,
 		plan_id, fecha_inicio_plan, fecha_fin_plan, saldo, contacto_emergencia_nombre, contacto_emergencia_telefono,
 		observaciones, usuario_creador, fecha_actualizacion
-	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
-		item.EmpresaID, item.Codigo, item.NombreCompleto, item.Documento, item.Telefono, item.Email, item.FechaNacimiento, item.Genero, item.Objetivo, item.Estado,
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
+		item.EmpresaID, nullableInt64(item.ClienteID), item.Codigo, item.NombreCompleto, item.Documento, item.Telefono, item.Email, item.FechaNacimiento, item.Genero, item.Objetivo, item.Estado,
 		item.PlanID, item.FechaInicioPlan, item.FechaFinPlan, item.Saldo, item.ContactoEmergenciaNombre, item.ContactoEmergenciaTelefono,
 		item.Observaciones, item.UsuarioCreador,
 	)
@@ -1035,12 +1311,17 @@ func UpdateEmpresaGimnasioSocio(dbConn *sql.DB, payload EmpresaGimnasioSocio) er
 	if item.ID <= 0 {
 		return fmt.Errorf("id es obligatorio")
 	}
+	clienteID, err := syncEmpresaGimnasioSocioCliente(dbConn, *item)
+	if err != nil {
+		return err
+	}
+	item.ClienteID = clienteID
 	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_socios SET
-		codigo=?, nombre_completo=?, documento=?, telefono=?, email=?, fecha_nacimiento=?, genero=?, objetivo=?, estado=?,
+		cliente_id=?, codigo=?, nombre_completo=?, documento=?, telefono=?, email=?, fecha_nacimiento=?, genero=?, objetivo=?, estado=?,
 		plan_id=?, fecha_inicio_plan=?, fecha_fin_plan=?, saldo=?, contacto_emergencia_nombre=?, contacto_emergencia_telefono=?,
 		observaciones=?, fecha_actualizacion=datetime('now','localtime')
 	WHERE id=? AND empresa_id=?`,
-		item.Codigo, item.NombreCompleto, item.Documento, item.Telefono, item.Email, item.FechaNacimiento, item.Genero, item.Objetivo, item.Estado,
+		nullableInt64(item.ClienteID), item.Codigo, item.NombreCompleto, item.Documento, item.Telefono, item.Email, item.FechaNacimiento, item.Genero, item.Objetivo, item.Estado,
 		item.PlanID, item.FechaInicioPlan, item.FechaFinPlan, item.Saldo, item.ContactoEmergenciaNombre, item.ContactoEmergenciaTelefono,
 		item.Observaciones, item.ID, item.EmpresaID,
 	)
@@ -1062,7 +1343,7 @@ func ListEmpresaGimnasioPlanes(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnas
 		return nil, err
 	}
 	rows, err := dbConn.Query(`SELECT
-		id, empresa_id, COALESCE(nombre,''), COALESCE(descripcion,''), COALESCE(precio,0), COALESCE(duracion_dias,30),
+		id, empresa_id, COALESCE(servicio_id,0), COALESCE(nombre,''), COALESCE(descripcion,''), COALESCE(precio,0), COALESCE(duracion_dias,30),
 		COALESCE(clases_incluidas,0), COALESCE(acceso_ilimitado,0), COALESCE(sesiones_personalizadas,0), COALESCE(estado,'activo'),
 		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
 	FROM empresa_gimnasio_planes
@@ -1076,7 +1357,7 @@ func ListEmpresaGimnasioPlanes(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnas
 	for rows.Next() {
 		var item EmpresaGimnasioPlan
 		var accesoIlimitado int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.Descripcion, &item.Precio, &item.DuracionDias,
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.Nombre, &item.Descripcion, &item.Precio, &item.DuracionDias,
 			&item.ClasesIncluidas, &accesoIlimitado, &item.SesionesPersonalizadas, &item.Estado,
 			&item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
@@ -1099,13 +1380,23 @@ func CreateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) (int
 	if item.AccesoIlimitado {
 		accesoIlimitado = 1
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_planes (
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_planes (
 		empresa_id, nombre, descripcion, precio, duracion_dias, clases_incluidas, acceso_ilimitado, sesiones_personalizadas,
 		estado, usuario_creador, fecha_actualizacion
 	) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))`,
 		item.EmpresaID, item.Nombre, item.Descripcion, item.Precio, item.DuracionDias, item.ClasesIncluidas, accesoIlimitado, item.SesionesPersonalizadas,
 		item.Estado, item.UsuarioCreador,
 	)
+	if err != nil {
+		return 0, err
+	}
+	item.ID = id
+	if servicioID, syncErr := syncEmpresaGimnasioPlanServicio(dbConn, *item); syncErr != nil {
+		return 0, syncErr
+	} else {
+		item.ServicioID = servicioID
+	}
+	return id, nil
 }
 
 func UpdateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) error {
@@ -1123,11 +1414,16 @@ func UpdateEmpresaGimnasioPlan(dbConn *sql.DB, payload EmpresaGimnasioPlan) erro
 	if item.AccesoIlimitado {
 		accesoIlimitado = 1
 	}
+	servicioID, err := syncEmpresaGimnasioPlanServicio(dbConn, *item)
+	if err != nil {
+		return err
+	}
+	item.ServicioID = servicioID
 	res, err := dbConn.Exec(`UPDATE empresa_gimnasio_planes SET
-		nombre=?, descripcion=?, precio=?, duracion_dias=?, clases_incluidas=?, acceso_ilimitado=?, sesiones_personalizadas=?, estado=?,
+		servicio_id=?, nombre=?, descripcion=?, precio=?, duracion_dias=?, clases_incluidas=?, acceso_ilimitado=?, sesiones_personalizadas=?, estado=?,
 		fecha_actualizacion=datetime('now','localtime')
 	WHERE id=? AND empresa_id=?`,
-		item.Nombre, item.Descripcion, item.Precio, item.DuracionDias, item.ClasesIncluidas, accesoIlimitado, item.SesionesPersonalizadas, item.Estado,
+		nullableInt64(item.ServicioID), item.Nombre, item.Descripcion, item.Precio, item.DuracionDias, item.ClasesIncluidas, accesoIlimitado, item.SesionesPersonalizadas, item.Estado,
 		item.ID, item.EmpresaID,
 	)
 	if err != nil {
@@ -1417,7 +1713,8 @@ func ListEmpresaGimnasioPagos(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnasi
 		return nil, err
 	}
 	rows, err := dbConn.Query(`SELECT
-		p.id, p.empresa_id, p.socio_id, COALESCE(s.nombre_completo,''), COALESCE(p.plan_id,0), COALESCE(pl.nombre,''),
+		p.id, p.empresa_id, p.socio_id, COALESCE(s.nombre_completo,''), COALESCE(p.cliente_id,0), COALESCE(p.plan_id,0), COALESCE(pl.nombre,''),
+		COALESCE(p.servicio_id,0), COALESCE(p.carrito_id,0), COALESCE(p.carrito_item_id,0),
 		COALESCE(p.concepto,''), COALESCE(p.monto,0), COALESCE(p.moneda,'COP'), COALESCE(p.metodo_pago,'efectivo'), COALESCE(p.canal,''),
 		COALESCE(p.sede,''), COALESCE(p.estado,'pagado'), COALESCE(p.referencia,''), COALESCE(p.fecha_pago,''), COALESCE(p.observaciones,''),
 		COALESCE(p.fecha_creacion,''), COALESCE(p.usuario_creador,'')
@@ -1433,7 +1730,8 @@ func ListEmpresaGimnasioPagos(dbConn *sql.DB, empresaID int64) ([]EmpresaGimnasi
 	var out []EmpresaGimnasioPago
 	for rows.Next() {
 		var item EmpresaGimnasioPago
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.SocioID, &item.SocioNombre, &item.PlanID, &item.PlanNombre,
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.SocioID, &item.SocioNombre, &item.ClienteID, &item.PlanID, &item.PlanNombre,
+			&item.ServicioID, &item.CarritoID, &item.CarritoItemID,
 			&item.Concepto, &item.Monto, &item.Moneda, &item.MetodoPago, &item.Canal, &item.Sede, &item.Estado,
 			&item.Referencia, &item.FechaPago, &item.Observaciones, &item.FechaCreacion, &item.UsuarioCreador); err != nil {
 			return nil, err
@@ -1451,16 +1749,123 @@ func CreateEmpresaGimnasioPago(dbConn *sql.DB, payload EmpresaGimnasioPago) (int
 	if err != nil {
 		return 0, err
 	}
+	socio, err := getEmpresaGimnasioSocioByID(dbConn, item.EmpresaID, item.SocioID)
+	if err != nil {
+		return 0, err
+	}
+	socio.UsuarioCreador = item.UsuarioCreador
+	clienteID, err := syncEmpresaGimnasioSocioCliente(dbConn, *socio)
+	if err != nil {
+		return 0, err
+	}
+	item.ClienteID = clienteID
+	servicioID, err := ensureEmpresaGimnasioConceptoServicio(dbConn, *item)
+	if err != nil {
+		return 0, err
+	}
+	item.ServicioID = servicioID
+	carritoID, carritoItemID, err := createEmpresaGimnasioPagoCarrito(dbConn, *item)
+	if err != nil {
+		return 0, err
+	}
+	item.CarritoID = carritoID
+	item.CarritoItemID = carritoItemID
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_gimnasio_pagos (
-		empresa_id, socio_id, plan_id, concepto, monto, moneda, metodo_pago, canal, sede, estado, referencia, fecha_pago, observaciones, usuario_creador
-	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		item.EmpresaID, item.SocioID, item.PlanID, item.Concepto, item.Monto, item.Moneda, item.MetodoPago, item.Canal, item.Sede, item.Estado, item.Referencia, item.FechaPago, item.Observaciones, item.UsuarioCreador,
+		empresa_id, socio_id, cliente_id, plan_id, servicio_id, carrito_id, carrito_item_id, concepto, monto, moneda, metodo_pago, canal, sede, estado, referencia, fecha_pago, observaciones, usuario_creador
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		item.EmpresaID, item.SocioID, nullableInt64(item.ClienteID), item.PlanID, nullableInt64(item.ServicioID), nullableInt64(item.CarritoID), nullableInt64(item.CarritoItemID), item.Concepto, item.Monto, item.Moneda, item.MetodoPago, item.Canal, item.Sede, item.Estado, item.Referencia, item.FechaPago, item.Observaciones, item.UsuarioCreador,
 	)
 	if err != nil {
 		return 0, err
 	}
 	_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET saldo=COALESCE(saldo,0)-?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, item.Monto, item.EmpresaID, item.SocioID)
 	return id, nil
+}
+
+func SyncEmpresaGimnasioNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaGimnasioIntegracionNucleoResumen, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
+		return nil, err
+	}
+	out := &EmpresaGimnasioIntegracionNucleoResumen{EmpresaID: empresaID, EstadoIntegracion: "plantilla_integrada_nucleo", VisibleOperativo: true}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+
+	planes, err := ListEmpresaGimnasioPlanes(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, plan := range planes {
+		plan.UsuarioCreador = usuario
+		if servicioID, syncErr := syncEmpresaGimnasioPlanServicio(dbConn, plan); syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("plan %d: %v", plan.ID, syncErr))
+		} else if servicioID > 0 {
+			out.PlanesSincronizados++
+		}
+	}
+
+	socios, err := ListEmpresaGimnasioSocios(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, socio := range socios {
+		socio.UsuarioCreador = usuario
+		if clienteID, syncErr := syncEmpresaGimnasioSocioCliente(dbConn, socio); syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("socio %d: %v", socio.ID, syncErr))
+		} else if clienteID > 0 {
+			out.SociosSincronizados++
+		}
+	}
+
+	pagos, err := ListEmpresaGimnasioPagos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, pago := range pagos {
+		if pago.CarritoID > 0 || pago.Estado != "pagado" {
+			if pago.Estado != "pagado" {
+				out.PagosPendientes++
+			}
+			continue
+		}
+		pago.UsuarioCreador = usuario
+		socio, syncErr := getEmpresaGimnasioSocioByID(dbConn, pago.EmpresaID, pago.SocioID)
+		if syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("pago %d socio: %v", pago.ID, syncErr))
+			continue
+		}
+		socio.UsuarioCreador = usuario
+		pago.ClienteID, syncErr = syncEmpresaGimnasioSocioCliente(dbConn, *socio)
+		if syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("pago %d cliente: %v", pago.ID, syncErr))
+			continue
+		}
+		pago.ServicioID, syncErr = ensureEmpresaGimnasioConceptoServicio(dbConn, pago)
+		if syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("pago %d servicio: %v", pago.ID, syncErr))
+			continue
+		}
+		carritoID, carritoItemID, syncErr := createEmpresaGimnasioPagoCarrito(dbConn, pago)
+		if syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("pago %d venta: %v", pago.ID, syncErr))
+			continue
+		}
+		_, syncErr = dbConn.Exec(`UPDATE empresa_gimnasio_pagos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableInt64(pago.ClienteID), nullableInt64(pago.ServicioID), nullableInt64(carritoID), nullableInt64(carritoItemID), pago.EmpresaID, pago.ID)
+		if syncErr != nil {
+			out.Errores = append(out.Errores, fmt.Sprintf("pago %d referencia: %v", pago.ID, syncErr))
+			continue
+		}
+		out.PagosSincronizados++
+	}
+	out.RequiereRevisionDatos = len(out.Errores) > 0
+	if out.RequiereRevisionDatos {
+		out.EstadoIntegracion = "integrado_con_observaciones"
+	}
+	return out, nil
 }
 
 func GetEmpresaGimnasioDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaGimnasioDashboard, error) {

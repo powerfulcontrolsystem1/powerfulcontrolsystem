@@ -36,6 +36,37 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 	}
 }
 
+func TestNuevosVerticalesProduccionMasivaLicenciasRecomendadas(t *testing.T) {
+	selected := NuevosVerticalesProduccionMasivaSeleccionados()
+	if len(selected) != 10 {
+		t.Fatalf("seleccion v1 len=%d want 10", len(selected))
+	}
+	for _, modulo := range selected {
+		t.Run(modulo, func(t *testing.T) {
+			item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
+			if !ok {
+				t.Fatalf("vertical %s no existe en catalogo", modulo)
+			}
+			plans := DefaultNuevoVerticalLicenciaPlans(item)
+			if len(plans) != 4 {
+				t.Fatalf("planes %s len=%d want 4", modulo, len(plans))
+			}
+			for _, plan := range plans {
+				modules := strings.Split(plan.ModulosHabilitados, ",")
+				seen := map[string]bool{}
+				for _, module := range modules {
+					seen[strings.TrimSpace(module)] = true
+				}
+				for _, required := range []string{modulo, "ventas", "clientes", "facturacion", "seguridad"} {
+					if !seen[required] {
+						t.Fatalf("plan %q no incluye modulo requerido %q en %q", plan.Nombre, required, plan.ModulosHabilitados)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestDefaultNuevoVerticalTipoEmpresaPreconfigTemplate(t *testing.T) {
 	for _, item := range NuevosVerticalesTipoEmpresaCatalog() {
 		t.Run(item.Modulo, func(t *testing.T) {

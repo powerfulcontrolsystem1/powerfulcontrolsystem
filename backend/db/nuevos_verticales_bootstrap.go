@@ -57,6 +57,32 @@ var nuevosVerticalesBootstrapMeta = []nuevoVerticalBootstrapMeta{
 
 var nuevosVerticalesTipoEmpresaCatalog = buildNuevosVerticalesTipoEmpresaCatalog()
 
+var nuevosVerticalesProduccionMasiva = map[string]int{
+	"salon_spa":             1,
+	"veterinaria_petshop":   2,
+	"clinica_consultorios":  3,
+	"laboratorio_clinico":   4,
+	"taller_mecanico":       5,
+	"servicios_tecnicos":    6,
+	"lavanderia_tintoreria": 7,
+	"agencia_viajes":        8,
+	"eventos_boleteria":     9,
+	"transporte_carga_tms":  10,
+}
+
+var nuevosVerticalesDiferidosMotivo = map[string]string{
+	"operador_turistico":       "Cubierto inicialmente por agencia_viajes; conviene diferirlo hasta tener reservas, cupos y liquidacion turistica mas profunda.",
+	"colegio_academia":         "Tiene demanda, pero requiere notas, periodos academicos y cartera educativa mas especifica para produccion masiva.",
+	"guarderia_infantil":       "Requiere controles adicionales de menores, autorizaciones y trazabilidad sensible antes de masificar.",
+	"inmobiliaria_comercial":   "Ciclo comercial mas largo y mayor dependencia de CRM/contratos; queda para fase de ventas consultivas.",
+	"seguridad_privada":        "Requiere programacion de turnos, rondas y cumplimiento laboral mas especializado antes de masificar.",
+	"club_deportivo":           "Solapa con gimnasio/educacion deportiva; conviene estabilizar gimnasio y agenda primero.",
+	"funeraria_exequial":       "Vertical sensible y de menor volumen relativo; conviene abordarlo con flujos documentales y soporte especializado.",
+	"parque_recreativo":        "Depende de control de aforo, manillas y hardware; queda para fase con boleteria/QR mas madura.",
+	"cooperativa_fondo":        "Requiere cartera, creditos, aportes y regulacion financiera mas estricta; no es prioridad de version masiva.",
+	"capacitacion_empresarial": "Puede reutilizar colegio_academia/CRM; queda para fase B2B despues de estabilizar ventas y agenda.",
+}
+
 func buildNuevosVerticalesTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
 	out := make([]NuevoVerticalTipoEmpresa, 0, len(nuevosVerticalesBootstrapMeta))
 	for _, meta := range nuevosVerticalesBootstrapMeta {
@@ -96,6 +122,92 @@ func NuevosVerticalesTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
 		out[i].Roles = append([]string{}, item.Roles...)
 	}
 	return out
+}
+
+func NuevosVerticalesProduccionMasivaSeleccionados() []string {
+	out := make([]string, 10)
+	for modulo, rank := range nuevosVerticalesProduccionMasiva {
+		if rank >= 1 && rank <= len(out) {
+			out[rank-1] = modulo
+		}
+	}
+	return uniqueTrimmedStrings(out, false)
+}
+
+func NuevoVerticalProduccionMasivaRank(modulo string) int {
+	modulo = NormalizeEmpresaModuloColombia(modulo)
+	return nuevosVerticalesProduccionMasiva[modulo]
+}
+
+func BuildTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPreconfigIntegracionVertical {
+	clean := NormalizeEmpresaModuloColombia(modulo)
+	if clean == "" {
+		clean = strings.ToLower(strings.TrimSpace(modulo))
+	}
+	if clean == "" {
+		return nil
+	}
+	if !isNuevoVerticalTipoEmpresaModulo(clean) {
+		return buildClassicTipoEmpresaPreconfigIntegracionVertical(clean)
+	}
+	plantilla := GetEmpresaModuloColombiaPlantilla(clean)
+	if strings.TrimSpace(plantilla.Titulo) == "" {
+		return buildClassicTipoEmpresaPreconfigIntegracionVertical(clean)
+	}
+	rank := nuevosVerticalesProduccionMasiva[clean]
+	produccion := rank > 0
+	decision := "diferir_de_v1"
+	motivo := nuevosVerticalesDiferidosMotivo[clean]
+	if produccion {
+		decision = "integrar_v1_produccion_masiva"
+		motivo = "Seleccionado para version masiva por demanda esperada en servicios, salud, turismo, comercio, transporte o entretenimiento en Colombia."
+	}
+	if motivo == "" {
+		motivo = "Mantener como plantilla disponible, sin prioridad de produccion masiva en esta version."
+	}
+	return &TipoEmpresaPreconfigIntegracionVertical{
+		Modulo:              clean,
+		EstadoIntegracion:   "plantilla_integrada_nucleo",
+		Decision:            decision,
+		ProduccionMasiva:    produccion,
+		PrioridadProduccion: rank,
+		MotivoDecision:      motivo,
+		TemplateActivates:   []string{clean, "clientes", "inventario/servicios", "ventas", "pagos", "facturacion", "reportes", "seguridad", "empresa_modulos_colombia"},
+		TablesTouched:       []string{"empresa_modulos_colombia_registros", "empresa_modulos_colombia_eventos", "empresa_modulos_colombia_evidencias", "empresa_modulos_colombia_aprobaciones", "empresa_modulos_colombia_tareas", "clientes", "servicios", "carritos_compras", "carrito_compra_items"},
+		RequiredPermissions: []string{"seguridad:R", clean + ":R", clean + ":C", "clientes:R/C", "inventario:R/C servicios", "ventas:C", "pagos:C", "reportes:R"},
+		SaleFlow:            []string{"registro del vertical", "cliente y servicio central", "cotizacion o venta central", "pago/facturacion central", "seguimiento y cierre por empresa_modulos_colombia"},
+		ReportsProduced:     []string{"dashboard del vertical", "agenda y SLA", "responsables", "riesgo operativo", "ventas centrales", "auditoria por empresa"},
+	}
+}
+
+func isNuevoVerticalTipoEmpresaModulo(modulo string) bool {
+	modulo = NormalizeEmpresaModuloColombia(modulo)
+	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+		if item.Modulo == modulo {
+			return true
+		}
+	}
+	return false
+}
+
+func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPreconfigIntegracionVertical {
+	switch strings.ToLower(strings.TrimSpace(modulo)) {
+	case "gimnasio", "odontologia", "turnos_atencion", "vehiculos", "taller", "lavadero_autos", "hotel", "motel", "drogueria_farmacia", "alquileres", "constructora":
+		return &TipoEmpresaPreconfigIntegracionVertical{
+			Modulo:              strings.ToLower(strings.TrimSpace(modulo)),
+			EstadoIntegracion:   "plantilla_integrada_nucleo",
+			Decision:            "mantener_como_plantilla",
+			ProduccionMasiva:    false,
+			MotivoDecision:      "Vertical clasico conectado a preconfiguracion; la prioridad de esta fase se concentra en 10 verticales nuevos para produccion masiva.",
+			TemplateActivates:   []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
+			TablesTouched:       []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items"},
+			RequiredPermissions: []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "reportes:R"},
+			SaleFlow:            []string{"registro especializado", "cliente/servicio central", "carrito central", "pago o factura central", "reporte consolidado"},
+			ReportsProduced:     []string{"reporte operativo", "ventas centrales", "auditoria por empresa"},
+		}
+	default:
+		return nil
+	}
 }
 
 func DefaultNuevoVerticalLicenciaModules(modulo string) string {
@@ -165,6 +277,52 @@ func EnsureNuevosVerticalesTipoEmpresaYLicencias(dbConn *sql.DB, usuario string)
 		}
 	}
 	return tiposAsegurados, licenciasAseguradas, nil
+}
+
+func EnsureNuevosVerticalesProduccionMasivaLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {
+	if dbConn == nil {
+		return 0, 0, errors.New("db connection is nil")
+	}
+	if err := EnsureLicenciasSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+	if err := EnsureCanonicalTiposEmpresaPreconfigurables(dbConn); err != nil {
+		return 0, 0, err
+	}
+	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+	for _, modulo := range NuevosVerticalesProduccionMasivaSeleccionados() {
+		item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
+		if !ok {
+			return tiposAsegurados, licenciasAseguradas, fmt.Errorf("vertical v1 no encontrado: %s", modulo)
+		}
+		tipoID, err := ensureNuevoVerticalTipoEmpresa(dbConn, item)
+		if err != nil {
+			return tiposAsegurados, licenciasAseguradas, err
+		}
+		tiposAsegurados++
+		for _, plan := range DefaultNuevoVerticalLicenciaPlans(item) {
+			if err := ensureNuevoVerticalLicenciaPlan(dbConn, tipoID, usuario, plan); err != nil {
+				return tiposAsegurados, licenciasAseguradas, err
+			}
+			licenciasAseguradas++
+		}
+		if _, err := UpsertTipoEmpresaPreconfiguracion(dbConn, defaultNuevoVerticalTipoEmpresaPreconfiguracion(tipoID, item, usuario)); err != nil {
+			return tiposAsegurados, licenciasAseguradas, err
+		}
+	}
+	return tiposAsegurados, licenciasAseguradas, nil
+}
+
+func getNuevoVerticalTipoEmpresaByModulo(modulo string) (NuevoVerticalTipoEmpresa, bool) {
+	modulo = NormalizeEmpresaModuloColombia(modulo)
+	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+		if item.Modulo == modulo {
+			return item, true
+		}
+	}
+	return NuevoVerticalTipoEmpresa{}, false
 }
 
 func ensureNuevoVerticalTipoEmpresa(dbConn *sql.DB, item NuevoVerticalTipoEmpresa) (int64, error) {

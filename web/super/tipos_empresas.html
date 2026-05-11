@@ -70,6 +70,8 @@
 
   <script>
     const verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+    const initialParams = new URLSearchParams(window.location.search || '');
+    const initialQuery = String(initialParams.get('q') || initialParams.get('vertical') || initialParams.get('modulo') || '').trim();
     function escapeHTML(value){
       return String(value == null ? '' : value).replace(/[&<>"']/g, function(match){
         return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match];
@@ -203,6 +205,7 @@
 
     // iniciar oculto
     document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display='';
+    if (initialQuery) document.getElementById('tipoSearch').value = initialQuery.replace(/_/g, ' ');
     load();
   </script>
   <script>

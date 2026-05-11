@@ -15,6 +15,7 @@ type EmpresaAIUContrato struct {
 	Codigo                string              `json:"codigo"`
 	Nombre                string              `json:"nombre"`
 	ClienteID             int64               `json:"cliente_id,omitempty"`
+	ServicioID            int64               `json:"servicio_id,omitempty"`
 	ClienteNombre         string              `json:"cliente_nombre,omitempty"`
 	Responsable           string              `json:"responsable,omitempty"`
 	CentroCosto           string              `json:"centro_costo,omitempty"`
@@ -66,6 +67,7 @@ type EmpresaAIUItem struct {
 	ID            int64   `json:"id"`
 	EmpresaID     int64   `json:"empresa_id"`
 	ContratoID    int64   `json:"contrato_id"`
+	ServicioID    int64   `json:"servicio_id,omitempty"`
 	Capitulo      string  `json:"capitulo"`
 	Descripcion   string  `json:"descripcion"`
 	Unidad        string  `json:"unidad"`
@@ -80,6 +82,8 @@ type EmpresaAIUFactura struct {
 	ID               int64   `json:"id"`
 	EmpresaID        int64   `json:"empresa_id"`
 	ContratoID       int64   `json:"contrato_id"`
+	CarritoID        int64   `json:"carrito_id,omitempty"`
+	CarritoItemID    int64   `json:"carrito_item_id,omitempty"`
 	DocumentoCodigo  string  `json:"documento_codigo"`
 	TipoDocumento    string  `json:"tipo_documento"`
 	PeriodoContable  string  `json:"periodo_contable,omitempty"`
@@ -130,6 +134,18 @@ type EmpresaAIUDashboard struct {
 	UltimosEventos     []EmpresaAIUEvento   `json:"ultimos_eventos"`
 }
 
+type EmpresaAIUIntegracionNucleoResumen struct {
+	EmpresaID              int64    `json:"empresa_id"`
+	EstadoIntegracion      string   `json:"estado_integracion"`
+	VisibleOperativo       bool     `json:"visible_operativo"`
+	ClientesSincronizados  int      `json:"clientes_sincronizados"`
+	ServiciosSincronizados int      `json:"servicios_sincronizados"`
+	FacturasSincronizadas  int      `json:"facturas_sincronizadas"`
+	FacturasPendientes     int      `json:"facturas_pendientes"`
+	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
+	Errores                []string `json:"errores,omitempty"`
+}
+
 func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_contratos (
@@ -138,6 +154,7 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
 			cliente_id INTEGER DEFAULT 0,
+			servicio_id INTEGER DEFAULT 0,
 			cliente_nombre TEXT,
 			responsable TEXT,
 			centro_costo TEXT,
@@ -187,6 +204,7 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
 			contrato_id INTEGER NOT NULL,
+			servicio_id INTEGER DEFAULT 0,
 			capitulo TEXT DEFAULT '',
 			descripcion TEXT NOT NULL,
 			unidad TEXT DEFAULT 'und',
@@ -201,6 +219,8 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
 			contrato_id INTEGER NOT NULL,
+			carrito_id INTEGER DEFAULT 0,
+			carrito_item_id INTEGER DEFAULT 0,
 			documento_codigo TEXT NOT NULL,
 			tipo_documento TEXT DEFAULT 'factura_electronica',
 			periodo_contable TEXT,
@@ -241,6 +261,7 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 	}
 	contractColumns := map[string]string{
 		"responsable":                 "TEXT",
+		"servicio_id":                 "INTEGER DEFAULT 0",
 		"centro_costo":                "TEXT",
 		"modalidad_contrato":          "TEXT DEFAULT 'precio_global'",
 		"porcentaje_retencion_fuente": "REAL DEFAULT 0",
@@ -265,6 +286,8 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 		}
 	}
 	facturaColumns := map[string]string{
+		"carrito_id":        "INTEGER DEFAULT 0",
+		"carrito_item_id":   "INTEGER DEFAULT 0",
 		"valor_retenciones": "REAL DEFAULT 0",
 		"valor_anticipo":    "REAL DEFAULT 0",
 		"valor_garantia":    "REAL DEFAULT 0",
@@ -272,6 +295,19 @@ func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 	}
 	for column, def := range facturaColumns {
 		if err := ensureColumnIfMissing(dbConn, "empresa_aiu_facturas", column, def); err != nil {
+			return err
+		}
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_aiu_items", "servicio_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	for _, stmt := range []string{
+		`CREATE INDEX IF NOT EXISTS ix_aiu_contratos_cliente ON empresa_aiu_contratos(empresa_id, cliente_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_aiu_contratos_servicio ON empresa_aiu_contratos(empresa_id, servicio_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_aiu_items_servicio ON empresa_aiu_items(empresa_id, servicio_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_aiu_facturas_carrito ON empresa_aiu_facturas(empresa_id, carrito_id)`,
+	} {
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
@@ -289,12 +325,17 @@ func UpsertEmpresaAIUContrato(dbConn *sql.DB, item EmpresaAIUContrato) (int64, e
 	if err := ValidateEmpresaAIUContrato(item); err != nil {
 		return 0, err
 	}
+	clienteID, servicioID, err := prepareAIUContratoCoreRefs(dbConn, item, item.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	item.ClienteID, item.ServicioID = clienteID, servicioID
 	previous, previousErr := GetEmpresaAIUContratoByCodigo(dbConn, item.EmpresaID, item.Codigo)
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_aiu_contratos
-		(empresa_id,codigo,nombre,cliente_id,cliente_nombre,responsable,centro_costo,modalidad_contrato,tipo_obra,modelo_aiu,base_iva_modo,porcentaje_admin,porcentaje_imprevistos,porcentaje_utilidad,porcentaje_iva,porcentaje_retencion_fuente,porcentaje_retencion_ica,porcentaje_retencion_iva,porcentaje_anticipo,porcentaje_garantia,avance_porcentaje,fecha_inicio,fecha_fin,estado,riesgo_nivel,observaciones,usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		(empresa_id,codigo,nombre,cliente_id,servicio_id,cliente_nombre,responsable,centro_costo,modalidad_contrato,tipo_obra,modelo_aiu,base_iva_modo,porcentaje_admin,porcentaje_imprevistos,porcentaje_utilidad,porcentaje_iva,porcentaje_retencion_fuente,porcentaje_retencion_ica,porcentaje_retencion_iva,porcentaje_anticipo,porcentaje_garantia,avance_porcentaje,fecha_inicio,fecha_fin,estado,riesgo_nivel,observaciones,usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT (empresa_id,codigo) DO UPDATE SET
-			nombre=EXCLUDED.nombre, cliente_id=EXCLUDED.cliente_id, cliente_nombre=EXCLUDED.cliente_nombre,
+			nombre=EXCLUDED.nombre, cliente_id=EXCLUDED.cliente_id, servicio_id=EXCLUDED.servicio_id, cliente_nombre=EXCLUDED.cliente_nombre,
 			responsable=EXCLUDED.responsable, centro_costo=EXCLUDED.centro_costo, modalidad_contrato=EXCLUDED.modalidad_contrato,
 			tipo_obra=EXCLUDED.tipo_obra, modelo_aiu=EXCLUDED.modelo_aiu, base_iva_modo=EXCLUDED.base_iva_modo,
 			porcentaje_admin=EXCLUDED.porcentaje_admin, porcentaje_imprevistos=EXCLUDED.porcentaje_imprevistos,
@@ -304,7 +345,7 @@ func UpsertEmpresaAIUContrato(dbConn *sql.DB, item EmpresaAIUContrato) (int64, e
 			porcentaje_garantia=EXCLUDED.porcentaje_garantia, avance_porcentaje=EXCLUDED.avance_porcentaje,
 			fecha_inicio=EXCLUDED.fecha_inicio, fecha_fin=EXCLUDED.fecha_fin, estado=EXCLUDED.estado, riesgo_nivel=EXCLUDED.riesgo_nivel,
 			observaciones=EXCLUDED.observaciones, usuario_creador=EXCLUDED.usuario_creador, fecha_actualizacion=CURRENT_TIMESTAMP`,
-		item.EmpresaID, item.Codigo, item.Nombre, item.ClienteID, item.ClienteNombre, item.Responsable, item.CentroCosto, item.ModalidadContrato, item.TipoObra, item.ModeloAIU, item.BaseIVAModo,
+		item.EmpresaID, item.Codigo, item.Nombre, item.ClienteID, item.ServicioID, item.ClienteNombre, item.Responsable, item.CentroCosto, item.ModalidadContrato, item.TipoObra, item.ModeloAIU, item.BaseIVAModo,
 		item.PorcentajeAdmin, item.PorcentajeImprevistos, item.PorcentajeUtilidad, item.PorcentajeIVA, item.PorcentajeRetFuente, item.PorcentajeRetICA, item.PorcentajeRetIVA,
 		item.PorcentajeAnticipo, item.PorcentajeGarantia, item.AvancePorcentaje, item.FechaInicio, item.FechaFin, item.Estado, item.RiesgoNivel, item.Observaciones, item.UsuarioCreador)
 	if err != nil {
@@ -335,10 +376,19 @@ func CreateEmpresaAIUItem(dbConn *sql.DB, item EmpresaAIUItem) (int64, error) {
 	if item.Cantidad <= 0 || item.ValorUnitario <= 0 {
 		return 0, errors.New("cantidad y valor unitario deben ser mayores que cero")
 	}
+	contrato, err := GetEmpresaAIUContrato(dbConn, item.EmpresaID, item.ContratoID)
+	if err != nil {
+		return 0, err
+	}
+	servicioID, err := ensureAIUItemServicio(dbConn, item, contrato, contrato.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	item.ServicioID = servicioID
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_aiu_items
-		(empresa_id,contrato_id,capitulo,descripcion,unidad,cantidad,valor_unitario,valor_total,estado)
-		VALUES (?,?,?,?,?,?,?,?,?)`,
-		item.EmpresaID, item.ContratoID, item.Capitulo, item.Descripcion, item.Unidad, item.Cantidad, item.ValorUnitario, item.ValorTotal, item.Estado)
+		(empresa_id,contrato_id,servicio_id,capitulo,descripcion,unidad,cantidad,valor_unitario,valor_total,estado)
+		VALUES (?,?,?,?,?,?,?,?,?,?)`,
+		item.EmpresaID, item.ContratoID, item.ServicioID, item.Capitulo, item.Descripcion, item.Unidad, item.Cantidad, item.ValorUnitario, item.ValorTotal, item.Estado)
 	if err != nil {
 		return 0, err
 	}
@@ -433,7 +483,7 @@ func ListEmpresaAIUContratosFiltrados(dbConn *sql.DB, empresaID int64, filtro Em
 		needle := "%" + strings.ToUpper(query) + "%"
 		args = append(args, needle, needle, needle, needle)
 	}
-	rows, err := ExecQueryCompat(dbConn, fmt.Sprintf(`SELECT id,empresa_id,codigo,nombre,COALESCE(cliente_id,0),COALESCE(cliente_nombre,''),COALESCE(responsable,''),COALESCE(centro_costo,''),COALESCE(modalidad_contrato,'precio_global'),COALESCE(tipo_obra,'obra_civil'),COALESCE(modelo_aiu,'base_aiu_no_sumada'),COALESCE(base_iva_modo,'utilidad'),COALESCE(porcentaje_admin,0),COALESCE(porcentaje_imprevistos,0),COALESCE(porcentaje_utilidad,0),COALESCE(porcentaje_iva,19),COALESCE(porcentaje_retencion_fuente,0),COALESCE(porcentaje_retencion_ica,0),COALESCE(porcentaje_retencion_iva,0),COALESCE(porcentaje_anticipo,0),COALESCE(porcentaje_garantia,0),COALESCE(avance_porcentaje,0),COALESCE(fecha_inicio,''),COALESCE(fecha_fin,''),COALESCE(estado,'borrador'),COALESCE(riesgo_nivel,'medio'),COALESCE(costo_directo,0),COALESCE(valor_administracion,0),COALESCE(valor_imprevistos,0),COALESCE(valor_utilidad,0),COALESCE(aiu_total,0),COALESCE(base_iva,0),COALESCE(valor_iva,0),COALESCE(total_factura,0),COALESCE(valor_retencion_fuente,0),COALESCE(valor_retencion_ica,0),COALESCE(valor_retencion_iva,0),COALESCE(valor_anticipo,0),COALESCE(valor_garantia,0),COALESCE(neto_cobrar,0),COALESCE(documento_codigo,''),COALESCE(aprobado_por,''),COALESCE(fecha_aprobacion,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(observaciones,'') FROM empresa_aiu_contratos WHERE %s ORDER BY id DESC LIMIT %d`, where, limit), args...)
+	rows, err := ExecQueryCompat(dbConn, fmt.Sprintf(`SELECT id,empresa_id,codigo,nombre,COALESCE(cliente_id,0),COALESCE(servicio_id,0),COALESCE(cliente_nombre,''),COALESCE(responsable,''),COALESCE(centro_costo,''),COALESCE(modalidad_contrato,'precio_global'),COALESCE(tipo_obra,'obra_civil'),COALESCE(modelo_aiu,'base_aiu_no_sumada'),COALESCE(base_iva_modo,'utilidad'),COALESCE(porcentaje_admin,0),COALESCE(porcentaje_imprevistos,0),COALESCE(porcentaje_utilidad,0),COALESCE(porcentaje_iva,19),COALESCE(porcentaje_retencion_fuente,0),COALESCE(porcentaje_retencion_ica,0),COALESCE(porcentaje_retencion_iva,0),COALESCE(porcentaje_anticipo,0),COALESCE(porcentaje_garantia,0),COALESCE(avance_porcentaje,0),COALESCE(fecha_inicio,''),COALESCE(fecha_fin,''),COALESCE(estado,'borrador'),COALESCE(riesgo_nivel,'medio'),COALESCE(costo_directo,0),COALESCE(valor_administracion,0),COALESCE(valor_imprevistos,0),COALESCE(valor_utilidad,0),COALESCE(aiu_total,0),COALESCE(base_iva,0),COALESCE(valor_iva,0),COALESCE(total_factura,0),COALESCE(valor_retencion_fuente,0),COALESCE(valor_retencion_ica,0),COALESCE(valor_retencion_iva,0),COALESCE(valor_anticipo,0),COALESCE(valor_garantia,0),COALESCE(neto_cobrar,0),COALESCE(documento_codigo,''),COALESCE(aprobado_por,''),COALESCE(fecha_aprobacion,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(observaciones,'') FROM empresa_aiu_contratos WHERE %s ORDER BY id DESC LIMIT %d`, where, limit), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +491,7 @@ func ListEmpresaAIUContratosFiltrados(dbConn *sql.DB, empresaID int64, filtro Em
 	out := []EmpresaAIUContrato{}
 	for rows.Next() {
 		var x EmpresaAIUContrato
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.ClienteID, &x.ClienteNombre, &x.Responsable, &x.CentroCosto, &x.ModalidadContrato, &x.TipoObra, &x.ModeloAIU, &x.BaseIVAModo, &x.PorcentajeAdmin, &x.PorcentajeImprevistos, &x.PorcentajeUtilidad, &x.PorcentajeIVA, &x.PorcentajeRetFuente, &x.PorcentajeRetICA, &x.PorcentajeRetIVA, &x.PorcentajeAnticipo, &x.PorcentajeGarantia, &x.AvancePorcentaje, &x.FechaInicio, &x.FechaFin, &x.Estado, &x.RiesgoNivel, &x.CostoDirecto, &x.ValorAdministracion, &x.ValorImprevistos, &x.ValorUtilidad, &x.AIUTotal, &x.BaseIVA, &x.ValorIVA, &x.TotalFactura, &x.ValorRetFuente, &x.ValorRetICA, &x.ValorRetIVA, &x.ValorAnticipo, &x.ValorGarantia, &x.NetoCobrar, &x.DocumentoCodigo, &x.AprobadoPor, &x.FechaAprobacion, &x.UsuarioCreador, &x.FechaCreacion, &x.FechaActualizacion, &x.Observaciones); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Nombre, &x.ClienteID, &x.ServicioID, &x.ClienteNombre, &x.Responsable, &x.CentroCosto, &x.ModalidadContrato, &x.TipoObra, &x.ModeloAIU, &x.BaseIVAModo, &x.PorcentajeAdmin, &x.PorcentajeImprevistos, &x.PorcentajeUtilidad, &x.PorcentajeIVA, &x.PorcentajeRetFuente, &x.PorcentajeRetICA, &x.PorcentajeRetIVA, &x.PorcentajeAnticipo, &x.PorcentajeGarantia, &x.AvancePorcentaje, &x.FechaInicio, &x.FechaFin, &x.Estado, &x.RiesgoNivel, &x.CostoDirecto, &x.ValorAdministracion, &x.ValorImprevistos, &x.ValorUtilidad, &x.AIUTotal, &x.BaseIVA, &x.ValorIVA, &x.TotalFactura, &x.ValorRetFuente, &x.ValorRetICA, &x.ValorRetIVA, &x.ValorAnticipo, &x.ValorGarantia, &x.NetoCobrar, &x.DocumentoCodigo, &x.AprobadoPor, &x.FechaAprobacion, &x.UsuarioCreador, &x.FechaCreacion, &x.FechaActualizacion, &x.Observaciones); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -450,7 +500,7 @@ func ListEmpresaAIUContratosFiltrados(dbConn *sql.DB, empresaID int64, filtro Em
 }
 
 func ListEmpresaAIUItems(dbConn *sql.DB, empresaID, contratoID int64) ([]EmpresaAIUItem, error) {
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,contrato_id,COALESCE(capitulo,''),COALESCE(descripcion,''),COALESCE(unidad,'und'),COALESCE(cantidad,0),COALESCE(valor_unitario,0),COALESCE(valor_total,0),COALESCE(estado,'activo'),COALESCE(fecha_creacion,'') FROM empresa_aiu_items WHERE empresa_id=? AND contrato_id=? ORDER BY id`, empresaID, contratoID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,contrato_id,COALESCE(servicio_id,0),COALESCE(capitulo,''),COALESCE(descripcion,''),COALESCE(unidad,'und'),COALESCE(cantidad,0),COALESCE(valor_unitario,0),COALESCE(valor_total,0),COALESCE(estado,'activo'),COALESCE(fecha_creacion,'') FROM empresa_aiu_items WHERE empresa_id=? AND contrato_id=? ORDER BY id`, empresaID, contratoID)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +508,7 @@ func ListEmpresaAIUItems(dbConn *sql.DB, empresaID, contratoID int64) ([]Empresa
 	out := []EmpresaAIUItem{}
 	for rows.Next() {
 		var x EmpresaAIUItem
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ContratoID, &x.Capitulo, &x.Descripcion, &x.Unidad, &x.Cantidad, &x.ValorUnitario, &x.ValorTotal, &x.Estado, &x.FechaCreacion); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ContratoID, &x.ServicioID, &x.Capitulo, &x.Descripcion, &x.Unidad, &x.Cantidad, &x.ValorUnitario, &x.ValorTotal, &x.Estado, &x.FechaCreacion); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -476,7 +526,7 @@ func ListEmpresaAIUFacturas(dbConn *sql.DB, empresaID, contratoID int64, limit i
 		where += " AND contrato_id=?"
 		args = append(args, contratoID)
 	}
-	rows, err := ExecQueryCompat(dbConn, fmt.Sprintf(`SELECT id,empresa_id,contrato_id,documento_codigo,COALESCE(tipo_documento,'factura_electronica'),COALESCE(periodo_contable,''),COALESCE(estado,'emitida'),COALESCE(costo_directo,0),COALESCE(aiu_total,0),COALESCE(base_iva,0),COALESCE(valor_iva,0),COALESCE(total_factura,0),COALESCE(valor_retenciones,0),COALESCE(valor_anticipo,0),COALESCE(valor_garantia,0),COALESCE(neto_cobrar,0),COALESCE(fecha_documento,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,''),COALESCE(observaciones,'') FROM empresa_aiu_facturas WHERE %s ORDER BY id DESC LIMIT %d`, where, limit), args...)
+	rows, err := ExecQueryCompat(dbConn, fmt.Sprintf(`SELECT id,empresa_id,contrato_id,COALESCE(carrito_id,0),COALESCE(carrito_item_id,0),documento_codigo,COALESCE(tipo_documento,'factura_electronica'),COALESCE(periodo_contable,''),COALESCE(estado,'emitida'),COALESCE(costo_directo,0),COALESCE(aiu_total,0),COALESCE(base_iva,0),COALESCE(valor_iva,0),COALESCE(total_factura,0),COALESCE(valor_retenciones,0),COALESCE(valor_anticipo,0),COALESCE(valor_garantia,0),COALESCE(neto_cobrar,0),COALESCE(fecha_documento,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,''),COALESCE(observaciones,'') FROM empresa_aiu_facturas WHERE %s ORDER BY id DESC LIMIT %d`, where, limit), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +534,7 @@ func ListEmpresaAIUFacturas(dbConn *sql.DB, empresaID, contratoID int64, limit i
 	out := []EmpresaAIUFactura{}
 	for rows.Next() {
 		var x EmpresaAIUFactura
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ContratoID, &x.DocumentoCodigo, &x.TipoDocumento, &x.PeriodoContable, &x.Estado, &x.CostoDirecto, &x.AIUTotal, &x.BaseIVA, &x.ValorIVA, &x.TotalFactura, &x.ValorRetenciones, &x.ValorAnticipo, &x.ValorGarantia, &x.NetoCobrar, &x.FechaDocumento, &x.UsuarioCreador, &x.FechaCreacion, &x.Observaciones); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ContratoID, &x.CarritoID, &x.CarritoItemID, &x.DocumentoCodigo, &x.TipoDocumento, &x.PeriodoContable, &x.Estado, &x.CostoDirecto, &x.AIUTotal, &x.BaseIVA, &x.ValorIVA, &x.TotalFactura, &x.ValorRetenciones, &x.ValorAnticipo, &x.ValorGarantia, &x.NetoCobrar, &x.FechaDocumento, &x.UsuarioCreador, &x.FechaCreacion, &x.Observaciones); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -581,7 +631,16 @@ func RegistrarEmpresaAIUFactura(dbConn *sql.DB, empresaID, contratoID int64, doc
 	if err != nil || len(facturas) == 0 {
 		return EmpresaAIUFactura{}, err
 	}
-	return facturas[0], nil
+	factura := facturas[0]
+	carritoID, itemID, clienteID, servicioID, syncErr := createOrSyncAIUFacturaCarrito(dbConn, row, factura, usuario)
+	if syncErr == nil {
+		factura.CarritoID, factura.CarritoItemID = carritoID, itemID
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_facturas SET carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(carritoID), nullableID(itemID), empresaID, factura.ID)
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_contratos SET cliente_id=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contratoID)
+	} else {
+		_ = RegistrarEmpresaAIUEvento(dbConn, empresaID, contratoID, "integracion_nucleo_observada", "", "", usuario, syncErr.Error())
+	}
+	return factura, nil
 }
 
 func BuildEmpresaAIUDashboard(dbConn *sql.DB, empresaID int64) (EmpresaAIUDashboard, error) {
@@ -684,6 +743,312 @@ func SeedEmpresaAIUDemo(dbConn *sql.DB, empresaID int64, usuario string) error {
 		return err
 	}
 	return nil
+}
+
+func SyncEmpresaAIUConstruccionNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaAIUIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaAIUConstruccionSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaAIUIntegracionNucleoResumen{
+		EmpresaID:         empresaID,
+		EstadoIntegracion: "integrado_nucleo",
+		VisibleOperativo:  true,
+	}
+	contratos, err := ListEmpresaAIUContratos(dbConn, empresaID, "", 500)
+	if err != nil {
+		return nil, err
+	}
+	for _, contrato := range contratos {
+		clienteID, servicioID, err := prepareAIUContratoCoreRefs(dbConn, contrato, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s: %s", contrato.Codigo, err.Error()))
+			continue
+		}
+		if clienteID > 0 {
+			resumen.ClientesSincronizados++
+		}
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+		}
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_contratos SET cliente_id=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contrato.ID)
+		items, itemErr := ListEmpresaAIUItems(dbConn, empresaID, contrato.ID)
+		if itemErr != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s conceptos: %s", contrato.Codigo, itemErr.Error()))
+			continue
+		}
+		for _, item := range items {
+			itemServicioID, err := ensureAIUItemServicio(dbConn, item, contrato, usuario)
+			if err != nil {
+				resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s/%s: %s", contrato.Codigo, item.Descripcion, err.Error()))
+				continue
+			}
+			if itemServicioID > 0 {
+				resumen.ServiciosSincronizados++
+				_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_items SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(itemServicioID), empresaID, item.ID)
+			}
+		}
+	}
+	facturas, err := ListEmpresaAIUFacturas(dbConn, empresaID, 0, 500)
+	if err != nil {
+		return nil, err
+	}
+	for _, factura := range facturas {
+		if factura.CarritoID > 0 {
+			resumen.FacturasSincronizadas++
+			continue
+		}
+		if factura.TotalFactura <= 0 {
+			resumen.FacturasPendientes++
+			continue
+		}
+		contrato, err := GetEmpresaAIUContrato(dbConn, empresaID, factura.ContratoID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s: contrato no encontrado", factura.DocumentoCodigo))
+			continue
+		}
+		carritoID, itemID, clienteID, servicioID, err := createOrSyncAIUFacturaCarrito(dbConn, contrato, factura, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s: %s", factura.DocumentoCodigo, err.Error()))
+			continue
+		}
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_facturas SET carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(carritoID), nullableID(itemID), empresaID, factura.ID)
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_contratos SET cliente_id=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contrato.ID)
+		resumen.FacturasSincronizadas++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
+}
+
+func prepareAIUContratoCoreRefs(dbConn *sql.DB, contrato EmpresaAIUContrato, usuario string) (int64, int64, error) {
+	clienteID, err := ensureAIUClienteCore(dbConn, contrato, usuario)
+	if err != nil {
+		return 0, 0, err
+	}
+	servicioID, err := ensureAIUContratoServicio(dbConn, contrato, usuario)
+	if err != nil {
+		return 0, 0, err
+	}
+	return clienteID, servicioID, nil
+}
+
+func ensureAIUClienteCore(dbConn *sql.DB, contrato EmpresaAIUContrato, usuario string) (int64, error) {
+	if contrato.ClienteID > 0 {
+		return contrato.ClienteID, nil
+	}
+	if strings.TrimSpace(contrato.ClienteNombre) == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	numeroDocumento := aiuCoreCode("AIU-CLI", contrato.Codigo, contrato.ClienteNombre)
+	if id, err := findClienteDuplicateID(dbConn, fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento")), contrato.EmpresaID, normalizeClienteDocumentoValue(numeroDocumento)); err != nil {
+		return 0, err
+	} else if id > 0 {
+		return id, nil
+	}
+	nombre := strings.TrimSpace(contrato.ClienteNombre)
+	if nombre == "" {
+		nombre = "Cliente AIU"
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         contrato.EmpresaID,
+		TipoDocumento:     "OTRO",
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "juridica",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Pais:              "CO",
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde AIU construccion.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func ensureAIUContratoServicio(dbConn *sql.DB, contrato EmpresaAIUContrato, usuario string) (int64, error) {
+	if contrato.ServicioID > 0 {
+		return contrato.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := aiuCoreCode("AIU-CTR", contrato.Codigo)
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND UPPER(TRIM(COALESCE(codigo,'')))=UPPER(TRIM(?)) LIMIT 1`, contrato.EmpresaID, code).Scan(&id)
+	if err == nil && id > 0 {
+		return id, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	calculado := CalculateEmpresaAIUContrato(contrato)
+	precio := calculado.TotalFactura
+	if precio <= 0 {
+		precio = calculado.CostoDirecto
+	}
+	nombre := strings.TrimSpace(contrato.Nombre)
+	if nombre == "" {
+		nombre = "Contrato AIU " + strings.TrimSpace(contrato.Codigo)
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:          contrato.EmpresaID,
+		Codigo:             code,
+		Nombre:             nombre,
+		Descripcion:        strings.TrimSpace(contrato.Observaciones),
+		Categoria:          "AIU construccion",
+		CostoReferencial:   calculado.CostoDirecto,
+		Precio:             precio,
+		ImpuestoPorcentaje: calculado.PorcentajeIVA,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      "Servicio sincronizado desde contrato AIU.",
+	})
+}
+
+func ensureAIUItemServicio(dbConn *sql.DB, item EmpresaAIUItem, contrato EmpresaAIUContrato, usuario string) (int64, error) {
+	if item.ServicioID > 0 {
+		return item.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := aiuCoreCode("AIU-ITEM", contrato.Codigo, item.Capitulo, item.Descripcion)
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND UPPER(TRIM(COALESCE(codigo,'')))=UPPER(TRIM(?)) LIMIT 1`, item.EmpresaID, code).Scan(&id)
+	if err == nil && id > 0 {
+		return id, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	precio := item.ValorTotal
+	if precio <= 0 {
+		precio = item.ValorUnitario
+	}
+	categoria := "AIU construccion / conceptos"
+	if strings.TrimSpace(item.Capitulo) != "" {
+		categoria = "AIU construccion / " + strings.TrimSpace(item.Capitulo)
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:          item.EmpresaID,
+		Codigo:             code,
+		Nombre:             strings.TrimSpace(item.Descripcion),
+		Descripcion:        "Concepto de obra del contrato " + strings.TrimSpace(contrato.Codigo),
+		Categoria:          categoria,
+		CostoReferencial:   item.ValorUnitario,
+		Precio:             precio,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      "Servicio sincronizado desde concepto AIU.",
+	})
+}
+
+func createOrSyncAIUFacturaCarrito(dbConn *sql.DB, contrato EmpresaAIUContrato, factura EmpresaAIUFactura, usuario string) (int64, int64, int64, int64, error) {
+	if factura.TotalFactura <= 0 {
+		return factura.CarritoID, factura.CarritoItemID, contrato.ClienteID, contrato.ServicioID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	clienteID, servicioID, err := prepareAIUContratoCoreRefs(dbConn, contrato, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	referenciaExterna := fmt.Sprintf("aiu_construccion:factura:%d:%s", factura.ID, strings.TrimSpace(factura.DocumentoCodigo))
+	var carritoExistente, itemExistente int64
+	err = QueryRowCompat(dbConn, `SELECT id FROM carritos_compras WHERE empresa_id=? AND referencia_externa=? LIMIT 1`, factura.EmpresaID, referenciaExterna).Scan(&carritoExistente)
+	if err == nil && carritoExistente > 0 {
+		_ = QueryRowCompat(dbConn, `SELECT id FROM carrito_compra_items WHERE empresa_id=? AND carrito_id=? AND referencia_id=? AND tipo_item='servicio' LIMIT 1`, factura.EmpresaID, carritoExistente, servicioID).Scan(&itemExistente)
+		return carritoExistente, itemExistente, clienteID, servicioID, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, 0, 0, 0, err
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         factura.EmpresaID,
+		Codigo:            aiuCoreCode("AIU-FAC", factura.DocumentoCodigo),
+		Nombre:            "Factura AIU " + strings.TrimSpace(factura.DocumentoCodigo),
+		CanalVenta:        "aiu_construccion",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            "COP",
+		ReferenciaExterna: referenciaExterna,
+		MetodoPago:        "transferencia_bancaria",
+		ReferenciaPago:    factura.DocumentoCodigo,
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Observaciones:     "Venta central generada desde factura AIU; impuestos y retenciones se conservan en el documento AIU.",
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          factura.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       servicioID,
+		CodigoItem:         aiuCoreCode("AIU-FAC-ITEM", factura.DocumentoCodigo),
+		Descripcion:        "Contrato AIU " + strings.TrimSpace(contrato.Codigo),
+		UnidadMedida:       "contrato",
+		Cantidad:           1,
+		PrecioUnitario:     factura.TotalFactura,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      factura.Observaciones,
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	return carritoID, itemID, clienteID, servicioID, nil
+}
+
+func aiuCoreCode(prefix string, parts ...string) string {
+	replacer := strings.NewReplacer(
+		"á", "A", "é", "E", "í", "I", "ó", "O", "ú", "U", "ñ", "N",
+		"Á", "A", "É", "E", "Í", "I", "Ó", "O", "Ú", "U", "Ñ", "N",
+		"ä", "A", "ë", "E", "ï", "I", "ö", "O", "ü", "U",
+		"Ä", "A", "Ë", "E", "Ï", "I", "Ö", "O", "Ü", "U",
+	)
+	var b strings.Builder
+	for _, part := range parts {
+		part = strings.ToUpper(replacer.Replace(strings.TrimSpace(part)))
+		for _, r := range part {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	prefixCode := strings.Trim(strings.ToUpper(strings.NewReplacer(" ", "-", "_", "-").Replace(strings.TrimSpace(prefix))), "-")
+	if prefixCode == "" {
+		prefixCode = "AIU"
+	}
+	return prefixCode + "-" + strings.Trim(code, "-")
 }
 
 func CalculateEmpresaAIUContrato(x EmpresaAIUContrato) EmpresaAIUContrato {

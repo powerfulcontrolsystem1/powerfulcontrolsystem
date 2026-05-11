@@ -1,3 +1,132 @@
+2026-05-11: Portada publica alineada con modulos y verticales reales
+- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
+- Cambio funcional: las tarjetas del index y los valores por defecto de `/api/public/pagina_principal` ya no presentan los 20 verticales nuevos como si todos fueran operativos de venta masiva; solo se publican como tarjetas los 10 V1 masiva.
+- Producto: los 10 diferidos siguen documentados en la tarjeta resumen de plantillas y en el catalogo tecnico, pero no se ofrecen como boton operativo hasta completar su integracion.
+- Gobernanza: las tarjetas refuerzan que ventas, clientes, productos, pagos, facturacion y reportes viven en el nucleo unico, no en verticales paralelos.
+
+2026-05-11: Fases de integracion profesional de verticales
+- Modulos afectados: `verticales_nuevos`, `administrar_empresa`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
+- Cambio funcional: el menu empresarial solo muestra verticales que estan integrados como plantilla o soporte transversal; los verticales clasicos con duplicados reales quedan ocultos hasta migrar al nucleo.
+- Catalogo: los 20 verticales nuevos se declaran como `plantilla_integrada_nucleo` y comparten clientes, productos/servicios, ventas, pagos, facturacion, reportes y seguridad.
+- Frontend: `web/js/verticales_integracion_catalogo.js` centraliza la decision visible/oculto y `web/js/administrar_empresa.js` la aplica antes de permisos y licencias.
+- Backend: los catalogos de verticales nuevos exponen estado de integracion y el test de contrato impide publicar elementos sin esa metadata.
+- Gobernanza: no se elimina codigo funcional en esta fase; se oculta lo no integrado y se documenta la matriz para fusionar solo duplicados reales.
+
+2026-05-11: Preconfiguraciones conectadas a matriz extendida de verticales
+- Modulos afectados: `preconfiguracion_tipos_empresa`, `verticales_nuevos`, `roles/licencias`, `ventas`, `pagos`, `reportes`.
+- Cambio funcional: cada preconfiguracion normalizada puede incluir `integracion_vertical` con decision, prioridad de produccion masiva, modulos activados, tablas tocadas, permisos, flujo de venta y reportes.
+- Decision comercial v1: se priorizan 10 verticales nuevos para produccion masiva (`salon_spa`, `veterinaria_petshop`, `clinica_consultorios`, `laboratorio_clinico`, `taller_mecanico`, `servicios_tecnicos`, `lavanderia_tintoreria`, `agencia_viajes`, `eventos_boleteria`, `transporte_carga_tms`).
+- Diferidos: `operador_turistico`, `colegio_academia`, `guarderia_infantil`, `inmobiliaria_comercial`, `seguridad_privada`, `club_deportivo`, `funeraria_exequial`, `parque_recreativo`, `cooperativa_fondo` y `capacitacion_empresarial` quedan para fases posteriores.
+- Backend: `/api/empresa/verticales_nuevos/catalogo`, `/super/api/verticales_nuevos/catalogo` y `/api/public/verticales_nuevos/catalogo` exponen `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
+- Plan de producto: `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
+
+2026-05-11: Gobierno super de verticales v1 masiva
+- Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
+- Cambio funcional: se agrega `web/super/verticales_produccion_masiva.html` para que super administrador vea KPIs, filtros, ranking, decision, permisos, flujo de venta y reportes de los 20 verticales nuevos.
+- Navegacion: `web/super_administrador.html` enlaza `Verticales v1` dentro de Licencias y `web/js/super_administrador.js` permite restaurar esa pagina como pagina principal del panel super.
+- Operacion: la vista consume `/super/api/verticales_nuevos/catalogo`, permite filtrar entre todos/v1 masiva/diferidos, buscar por modulo/permisos/reportes y exportar CSV.
+- Acciones: cada fila enlaza a `Tipos de empresa`, `Preconfiguraciones` y `Licencias` con parametros `q`, `vertical` o `modulo`; esas paginas aplican el filtro inicial para aterrizar en el vertical correcto.
+- Readiness: la vista cruza `/super/api/verticales_nuevos/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias?activo=1` para marcar `Listo venta` solo si el vertical es v1 masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
+- Aseguramiento: `Asegurar v1` ejecuta `POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias` y llama `EnsureNuevosVerticalesProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por vertical v1.
+- Seguridad: no se agregan permisos ni endpoints nuevos; se reutiliza el alcance autenticado del panel super y el rol `control_super_administrador` conserva su navegacion limitada.
+
+2026-05-11: Sincronizacion segura desde matriz de verticales
+- Modulos afectados: `verticales_integracion`, `administrar_empresa`, `roles/licencias`, verticales clasicos con `sincronizar_nucleo`.
+- Cambio funcional: la vista `web/administrar_empresa/verticales_integracion.html` muestra acciones historicas solo cuando el catalogo declara `sync_path` y `sync_action_name`, pero habilita el boton unicamente con contexto efectivo de permisos.
+- Seguridad: la pantalla consulta `/api/empresa/permisos_contexto`, exige pagina visible o permiso de creacion del modulo y confirma la accion antes del POST. El endpoint vertical sigue siendo la autoridad final por rol, licencia y `empresa_id`.
+- UX: se agrega KPI `Permitidas` para diferenciar sincronizaciones existentes de sincronizaciones disponibles para el usuario actual.
+
+2026-05-11: Matriz extendida de plantillas verticales
+- Modulos afectados: `verticales_integracion`, `administrar_empresa`, `roles/licencias`, `reportes`.
+- Cambio funcional: cada vertical visible declara que plantilla activa, que tablas toca, que permisos requiere, que flujo de venta usa y que reportes produce.
+- Backend: el catalogo agrega `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`, con prueba que impide publicar verticales visibles sin esa metadata.
+- Frontend: la matriz muestra la informacion extendida por fila, manteniendo la sincronizacion historica como accion controlada y separada.
+
+2026-05-11: Gimnasio integrado al nucleo
+- Modulos afectados: `gimnasio`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: socios nuevos se enlazan a clientes centrales; planes nuevos se enlazan a servicios vendibles; pagos de gimnasio generan carrito, item de servicio y cierre de venta central.
+- Migracion: se agrega `POST /api/empresa/gimnasio?action=sincronizar_nucleo` para sincronizar planes, socios y pagos historicos sin borrar registros especializados.
+- Frontend: el dashboard de gimnasio agrega accion `Sincronizar con nucleo` y resumen de clientes/servicios/ventas sincronizados.
+- Gobernanza: gimnasio vuelve a estar visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para fitness, acceso y agenda, no para duplicar el circuito comercial.
+
+2026-05-11: Odontologia integrada al nucleo
+- Modulos afectados: `odontologia`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: pacientes nuevos se enlazan a clientes centrales; tratamientos nuevos se enlazan a servicios vendibles; pagos odontologicos generan carrito, item de servicio y cierre de venta central.
+- Migracion: se agrega `POST /api/empresa/odontologia?action=sincronizar_nucleo` para sincronizar pacientes, tratamientos y pagos historicos sin borrar historia clinica, odontogramas, agenda ni presupuestos especializados.
+- Frontend: el panel del consultorio agrega accion `Sincronizar nucleo` y resumen operativo de pacientes, tratamientos, pagos y observaciones.
+- Gobernanza: odontologia queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para datos clinicos y operacion especializada, no para duplicar clientes, servicios, ventas o pagos.
+
+2026-05-11: Parqueadero integrado al nucleo
+- Modulos afectados: `parqueadero`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: al cobrar salida, el ticket genera venta central en carrito, item de servicio y pago central con referencia al codigo del ticket.
+- Migracion: se agrega `POST /api/empresa/parqueadero?action=sincronizar_nucleo` para sincronizar tickets cerrados historicos sin borrar placas, QR, tiempos, tarifas ni trazabilidad de entrada/salida.
+- Frontend: el panel de parqueadero agrega accion `Sincronizar nucleo` y resumen de tickets migrados, pendientes y observaciones.
+- Gobernanza: parqueadero queda visible como `plantilla_integrada_nucleo`; su tabla propia queda para operacion de parking y no para duplicar ventas o pagos.
+
+2026-05-11: Taxi system integrado al nucleo
+- Modulos afectados: `taxi_system`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: clientes registrados o invitados se enlazan con clientes centrales; viajes completados con tarifa generan carrito, item de servicio y pago central.
+- Migracion: se agrega `POST /api/empresa/taxi_system?action=sincronizar_nucleo` para sincronizar viajes completados historicos sin borrar conductores, GPS, ofertas, despacho ni trazabilidad de ruta.
+- Frontend: el panel de taxi agrega accion `Sincronizar nucleo` y resumen de viajes, clientes y pendientes.
+- Gobernanza: taxi system queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para despacho, movilidad, GPS y seguimiento, no para duplicar clientes, ventas o pagos.
+
+2026-05-11: Domicilios integrado al nucleo
+- Modulos afectados: `domicilios`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: pedidos nuevos se enlazan a clientes centrales; productos de menu se sincronizan como servicios vendibles; pedidos entregados generan carrito, items de servicio, tarifa/propina y pago central normalizado.
+- Migracion: se agrega `POST /api/empresa/domicilios?action=sincronizar_nucleo` para sincronizar pedidos entregados historicos sin borrar restaurantes, domiciliarios, ofertas, tracking GPS ni estados logisticos.
+- Frontend: el panel de domicilios agrega accion `Sincronizar nucleo` y resumen de pedidos, servicios de menu, clientes y observaciones.
+- Gobernanza: domicilios queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para marketplace/logistica y no para duplicar clientes, ventas o pagos.
+
+2026-05-11: Apartamentos turisticos integrado al nucleo
+- Modulos afectados: `apartamentos_turisticos`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: apartamentos/unidades se enlazan a servicios vendibles; reservas nuevas se enlazan a clientes centrales; el checkout genera carrito, item de alojamiento, limpieza e impuesto calculado por carrito y pago central normalizado.
+- Migracion: se agrega `POST /api/empresa/apartamentos_turisticos?action=sincronizar_nucleo` para sincronizar reservas historicas en check-in/checkout sin borrar disponibilidad, tarifas, codigos de acceso ni tareas operativas.
+- Frontend: el panel de apartamentos turisticos agrega accion `Sincronizar nucleo` y resumen de reservas, servicios, clientes y observaciones.
+- Gobernanza: apartamentos turisticos queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para operacion de alojamiento, no para duplicar clientes, ventas o pagos.
+
+2026-05-11: Propiedad horizontal integrada al nucleo
+- Modulos afectados: `propiedad_horizontal`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: propietarios/residentes se enlazan a clientes centrales; unidades y cargos se enlazan a servicios vendibles; recaudos generan carrito, item de servicio y pago central normalizado.
+- Migracion: se agrega `POST /api/empresa/propiedad_horizontal?action=sincronizar_nucleo` para sincronizar unidades, personas, cargos y recaudos historicos sin borrar PQR, asambleas, coeficientes ni cartera especializada.
+- Frontend: el panel de propiedad horizontal agrega accion `Sincronizar nucleo` y resumen de clientes, servicios y recaudos conectados.
+- Gobernanza: propiedad horizontal queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para copropiedad, no para duplicar clientes, servicios, ventas o pagos.
+
+2026-05-11: Alquileres integrado al nucleo
+- Modulos afectados: `alquileres`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
+- Cambio funcional: clientes de contratos se enlazan a clientes centrales; activos y tarifas se enlazan a servicios vendibles; contratos con valor generan carrito, item de servicio y pago central cuando quedan sin saldo.
+- Migracion: se agrega `POST /api/empresa/alquileres?action=sincronizar_nucleo` para sincronizar activos, tarifas y contratos historicos sin borrar garantias, kilometraje, GPS, mantenimientos ni devoluciones.
+- Frontend: el panel de alquileres agrega accion `Sincronizar nucleo` y resumen de clientes, servicios y contratos conectados.
+- Gobernanza: alquileres queda visible como `plantilla_integrada_nucleo`; sus tablas propias quedan para operacion de renta de activos, no para duplicar clientes, servicios, ventas o pagos.
+
+2026-05-11: Drogueria/farmacia validada al nucleo
+- Modulos afectados: `drogueria_farmacia`, `inventario`, `compras`, `clientes`, `ventas`, `facturacion`, `administrar_empresa`.
+- Cambio funcional: drogueria/farmacia queda visible como plantilla integrada porque usa `empresa_modulos_colombia_*` para expediente sanitario y no crea inventario, producto, venta ni pago paralelo.
+- Frontend: la pagina de drogueria/farmacia declara explicitamente que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
+- Gobernanza: lotes, INVIMA, formulas, controlados, dispensacion, devoluciones y farmacovigilancia quedan como especialidad sanitaria; los cobros y existencias siguen en el nucleo.
+
+2026-05-11: AIU construccion integrado al nucleo
+- Modulos afectados: `aiu_construccion`, `clientes`, `servicios`, `carritos`, `ventas`, `facturacion`, `reportes`, `administrar_empresa`.
+- Cambio funcional: contratos AIU sincronizan cliente y servicio central; conceptos de obra crean servicios vendibles y las facturas AIU enlazan carrito/item central sin recalcular IVA ni retenciones en el carrito.
+- Migracion: se agrega `POST /api/empresa/aiu_construccion?action=sincronizar_nucleo` para sincronizar contratos, conceptos y facturas historicas por empresa.
+- Frontend: el panel AIU agrega accion `Sincronizar nucleo` y resumen de clientes, servicios y facturas enlazadas.
+- Gobernanza: capitulos, AIU, retenciones, anticipo, garantia, avance, riesgo y auditoria tecnica quedan como especialidad de construccion; clientes, servicios, ventas y facturacion quedan en el nucleo.
+
+2026-05-11: Catalogo API de integracion de verticales clasicos
+- Modulos afectados: `verticales_integracion`, `administrar_empresa`, `super_administrador`, `roles/licencias`.
+- Cambio funcional: la matriz de verticales clasicos queda consultable por API publica, empresa y super con estado, visibilidad operativa, modulos de nucleo, duplicados, flujo propio permitido y accion de sincronizacion historica.
+- Backend: `backend/handlers/empresa_verticales_integracion.go` crea el contrato y `backend/main.go` registra `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
+- Frontend: `web/js/administrar_empresa.js` intenta cargar el contrato de empresa antes de aplicar permisos de menu y conserva `web/js/verticales_integracion_catalogo.js` como fallback offline.
+- UI: `web/administrar_empresa.html` muestra un indicador compacto de fuente y conteo de verticales visibles/ocultos para auditoria rapida del panel.
+- Pantalla: `web/administrar_empresa/verticales_integracion.html` muestra la matriz completa con estado, nucleo usado, especialidad permitida y sincronizacion historica; cuando existe `sync_path` + `sync_action_name`, permite disparar el POST de migracion usando permisos del endpoint vertical. El acceso usa `seguridad:R`.
+- QA: `backend/handlers/empresa_verticales_integracion_test.go` impide catalogar como visible un vertical con duplicados del nucleo.
+
+2026-05-11: Panel super profesional
+- Modulos afectados: `super_administrador`, `licencias`, `administradores`, `roles_permisos`, `seguridad`, `infraestructura`, `postgresql`, `integracion_ia`, `ayuda`.
+- Cambio funcional: el menu principal del super administrador queda reducido a los accesos operativos necesarios para gobierno diario y control de plataforma.
+- Frontend: `web/super_administrador.html` agrega cabecera compacta PCS y elimina del menu principal accesos secundarios como preconfiguraciones, asesor, pagina principal, contrato, frecuencia FE, voz IA, informacion IA portal y formatos de email.
+- Navegacion: `web/js/super_administrador.js` solo restaura desde sesion local paginas incluidas en el panel visible.
+- Seguridad: no se abren permisos nuevos, no se eliminan endpoints ni se cambian roles; las rutas retiradas del menu siguen protegidas por los controles existentes.
+
 2026-05-11: Limpieza PostgreSQL-only
 - Modulos afectados: `db`, `finanzas`, `propinas`, `carritos`, `codigos_descuento`, `operacion_vps`, `documentacion`.
 - Cambio funcional: se retiran ramas residuales de motor legado y las verificaciones de indices pasan a catalogos PostgreSQL.

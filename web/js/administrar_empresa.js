@@ -103,9 +103,11 @@ try {
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
   var companySelectorLink = document.querySelector("a.select-company");
   var permsEvidence = document.getElementById("menuPermsEvidence");
+  var verticalIntegrationEvidence = document.getElementById("verticalIntegrationEvidence");
   var nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES)
     ? window.PCS_NUEVOS_VERTICALES.slice()
     : [];
+  var verticalIntegration = window.PCS_VERTICAL_INTEGRATION || null;
   var nuevosVerticalesModules = Array.isArray(window.PCS_NUEVOS_VERTICALES_MODULES)
     ? window.PCS_NUEVOS_VERTICALES_MODULES.slice()
     : nuevosVerticalesCatalog.map(function (item) { return [item.id, item.module]; });
@@ -128,6 +130,7 @@ try {
     document.getElementById("linkImportacionesCosteo"),
     document.getElementById("linkProduccionMRP"),
     document.getElementById("linkLogisticaWMS"),
+    document.getElementById("linkVerticalesIntegracion"),
     document.getElementById("linkGimnasio"),
     document.getElementById("linkTaxiSystem"),
     document.getElementById("linkParqueadero"),
@@ -292,6 +295,7 @@ try {
     linkChatTareas: { module: permModuleChatTareas, action: permActionCreate },
     linkConfiguracionChatFlotante: { module: permModuleChatTareas, action: permActionUpdate },
     linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
+    linkVerticalesIntegracion: { module: permModuleSeguridad, action: permActionRead },
 
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkProductosMain: { module: permModuleInventario, action: permActionCreate },
@@ -429,6 +433,25 @@ try {
     return nuevosVerticalesModules.some(function (item) { return item[1] === normalized; });
   }
 
+  function verticalIsOperationalVisible(module) {
+    var normalized = String(module || "").trim().toLowerCase();
+    if (!normalized) return true;
+    if (verticalIntegration && typeof verticalIntegration.isOperationalVisible === "function") {
+      return verticalIntegration.isOperationalVisible(normalized);
+    }
+    return true;
+  }
+
+  function menuLinkPassesVerticalIntegration(link) {
+    if (!link) return true;
+    var module = String(link.getAttribute("data-vertical-module") || "").trim().toLowerCase();
+    var rule = menuPermissionCatalog[link.id || ""];
+    if (!module && rule && rule.module) {
+      module = String(rule.module || "").trim().toLowerCase();
+    }
+    return verticalIsOperationalVisible(module);
+  }
+
   function escHTML(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
@@ -443,7 +466,10 @@ try {
     Array.prototype.slice.call(document.querySelectorAll(".admin-business-vertical-item")).forEach(function (item) {
       if (item && item.parentElement) item.parentElement.removeChild(item);
     });
-    var html = nuevosVerticalesCatalog.map(function (item) {
+    var html = nuevosVerticalesCatalog.filter(function (item) {
+      if (item && item.operationalVisible === false) return false;
+      return verticalIsOperationalVisible(item && item.module);
+    }).map(function (item) {
       var id = String(item.id || "").trim();
       var module = String(item.module || "").trim();
       if (!id || !module) return "";
@@ -1251,8 +1277,49 @@ try {
       });
   }
 
+  function fetchVerticalIntegrationCatalog(empresaId) {
+    if (!verticalIntegration || typeof verticalIntegration.applyCatalogItems !== "function") {
+      return Promise.resolve(null);
+    }
+    var url = empresaId
+      ? "/api/empresa/verticales_integracion/catalogo?empresa_id=" + encodeURIComponent(empresaId)
+      : "/api/public/verticales_integracion/catalogo";
+    return fetch(url, { credentials: "same-origin" })
+      .then(function (resp) {
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .then(function (payload) {
+        var items = payload && Array.isArray(payload.items) ? payload.items : [];
+        if (!items.length) return null;
+        return { total: verticalIntegration.applyCatalogItems(items), source: url };
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  function setVerticalIntegrationEvidence(result) {
+    if (!verticalIntegrationEvidence || !verticalIntegration || typeof verticalIntegration.summary !== "function") {
+      return;
+    }
+    var s = verticalIntegration.summary();
+    if (!s || !s.total) {
+      verticalIntegrationEvidence.hidden = true;
+      return;
+    }
+    var source = result && result.source ? "API" : "local";
+    var parts = ["Verticales", String(s.visible) + "/" + String(s.total), source];
+    if (s.hidden) parts.push(String(s.hidden) + " ocultos");
+    if (s.pending) parts.push(String(s.pending) + " pendientes");
+    verticalIntegrationEvidence.textContent = parts.join(" · ");
+    verticalIntegrationEvidence.hidden = false;
+    verticalIntegrationEvidence.setAttribute("data-source", source.toLowerCase());
+  }
+
   function setMenuLinkVisible(link, visible) {
     if (!link) return;
+    visible = !!visible && menuLinkPassesVerticalIntegration(link);
     var item = null;
     if (typeof link.closest === "function") {
       item = link.closest("li");
@@ -1596,7 +1663,11 @@ try {
 
   setupAdminNavGroups();
 
-  fetchCurrentAdminRole()
+  fetchVerticalIntegrationCatalog(id)
+    .then(function (integrationResult) {
+      setVerticalIntegrationEvidence(integrationResult);
+      return fetchCurrentAdminRole();
+    })
     .then(function (role) {
       if (id) {
         return applyMenuPermissionsWithSource(id, role)
@@ -1614,6 +1685,7 @@ try {
       return null;
     })
     .catch(function () {
+      setVerticalIntegrationEvidence(null);
       if (id) {
         applyMenuPermissionsByRole("");
         setMenuPermissionsEvidence("Permisos de menú: no se pudo resolver contexto, se mantiene visibilidad base.", true);

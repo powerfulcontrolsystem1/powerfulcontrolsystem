@@ -6,6 +6,7 @@
   <title>Administrar Empresa</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
+  <script src="/js/verticales_integracion_catalogo.js"></script>
   <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body class="admin-empresa-shell" data-auto-collapse-menu="true">
@@ -13,6 +14,7 @@
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2 id="empresaTitleMenu">Administrar Empresa</h2>
       <p id="empresaNameMenu" class="empresa-name-menu"></p>
+      <p id="verticalIntegrationEvidence" class="vertical-integration-evidence" hidden></p>
       <ul class="nav admin-nav-grouped" id="adminSidebarNav">
         <li class="admin-nav-group is-open">
           <button type="button" class="admin-nav-group-title" aria-expanded="true">Inicio</button>
@@ -24,6 +26,7 @@
         <li class="admin-nav-group">
           <button type="button" class="admin-nav-group-title" aria-expanded="false">Soluciones por negocio</button>
           <ul class="admin-nav-sublist">
+            <li><a id="linkVerticalesIntegracion" href="/administrar_empresa/verticales_integracion.html" target="contentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Matriz de integración</a></li>
             <li><a id="linkGimnasio" href="/administrar_empresa/gimnasio_menu.html" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Gimnasio</a></li>
             <li><a id="linkConsultorioOdontologico" href="/administrar_empresa/modulo_menu.html?module=consultorio_odontologico" target="contentFrame"><img class="icon" src="/img/customer.svg" alt="">Odontologia</a></li>
             <li><a id="linkDrogueriaFarmacia" href="/administrar_empresa/modulo_menu.html?module=drogueria_farmacia" target="contentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Droguería / Farmacia</a></li>

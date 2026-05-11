@@ -63,7 +63,8 @@
     profesionales: [],
     consultorios: [],
     tratamientos: [],
-    presupuestos: []
+    presupuestos: [],
+    integracionNucleo: null
   };
 
   function getInitialTab() {
@@ -161,6 +162,26 @@
       metricCard("Recaudo del mes", formatMoney(row.recaudo_mes || 0)),
       metricCard("Saldo pendiente", formatMoney(row.saldo_pendiente || 0))
     ].join("");
+  }
+
+  function renderCoreIntegration() {
+    var host = document.getElementById("odontoCoreIntegrationSummary");
+    if (!host) return;
+    var row = state.integracionNucleo;
+    if (!row) {
+      host.textContent = "Nucleo: pacientes, tratamientos y pagos usan clientes, servicios y ventas centrales.";
+      host.classList.remove("is-error");
+      return;
+    }
+    var errors = Array.isArray(row.errores) ? row.errores.length : 0;
+    host.textContent = [
+      "Nucleo sincronizado",
+      "pacientes " + (row.pacientes_sincronizados || 0),
+      "tratamientos " + (row.tratamientos_sincronizados || 0),
+      "pagos " + (row.pagos_sincronizados || 0),
+      errors ? "observaciones " + errors : "sin observaciones"
+    ].join(separator);
+    host.classList.toggle("is-error", errors > 0 || !!row.requiere_revision_datos);
   }
 
   function renderSimpleList(hostId, items, formatter) {
@@ -396,6 +417,22 @@
       showTab(tabBtn.getAttribute("data-tab"));
       return;
     }
+    var syncBtn = event.target.closest("#odontoSyncCoreBtn");
+    if (syncBtn) {
+      syncBtn.disabled = true;
+      setNotice("Sincronizando odontologia con el nucleo...", false);
+      fetchJSON(apiBase + "&action=sincronizar_nucleo", { method: "POST" }).then(function (resp) {
+        state.integracionNucleo = resp && resp.integracion ? resp.integracion : null;
+        renderCoreIntegration();
+        setNotice("Odontologia sincronizada con el nucleo.", false);
+        return refreshAll();
+      }).catch(function (err) {
+        setNotice(err.message || "No se pudo sincronizar con el nucleo", true);
+      }).finally(function () {
+        syncBtn.disabled = false;
+      });
+      return;
+    }
     var stateBtn = event.target.closest("[data-entity]");
     if (stateBtn) {
       changeEstado(stateBtn.getAttribute("data-entity"), stateBtn.getAttribute("data-id"), stateBtn.getAttribute("data-next")).catch(function (err) {
@@ -415,6 +452,7 @@
   submitCreate("odontoPagoForm", "pagos", "Pago registrado.");
 
   showTab(getInitialTab());
+  renderCoreIntegration();
   refreshAll().catch(function (err) {
     setNotice(err.message || "No se pudo cargar el modulo", true);
   });

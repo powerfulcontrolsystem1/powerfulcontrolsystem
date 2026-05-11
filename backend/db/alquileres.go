@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -40,6 +41,7 @@ type EmpresaAlquilerCategoria struct {
 type EmpresaAlquilerActivo struct {
 	ID                   int64   `json:"id"`
 	EmpresaID            int64   `json:"empresa_id"`
+	ServicioID           int64   `json:"servicio_id,omitempty"`
 	Codigo               string  `json:"codigo"`
 	Nombre               string  `json:"nombre"`
 	CategoriaID          int64   `json:"categoria_id,omitempty"`
@@ -70,6 +72,7 @@ type EmpresaAlquilerActivo struct {
 type EmpresaAlquilerTarifa struct {
 	ID                  int64   `json:"id"`
 	EmpresaID           int64   `json:"empresa_id"`
+	ServicioID          int64   `json:"servicio_id,omitempty"`
 	Codigo              string  `json:"codigo"`
 	Nombre              string  `json:"nombre"`
 	CategoriaID         int64   `json:"categoria_id,omitempty"`
@@ -94,6 +97,10 @@ type EmpresaAlquilerContrato struct {
 	Codigo               string  `json:"codigo"`
 	TipoRegistro         string  `json:"tipo_registro,omitempty"`
 	ActivoID             int64   `json:"activo_id,omitempty"`
+	ClienteID            int64   `json:"cliente_id,omitempty"`
+	ServicioID           int64   `json:"servicio_id,omitempty"`
+	CarritoID            int64   `json:"carrito_id,omitempty"`
+	CarritoItemID        int64   `json:"carrito_item_id,omitempty"`
 	ActivoNombre         string  `json:"activo_nombre,omitempty"`
 	CategoriaNombre      string  `json:"categoria_nombre,omitempty"`
 	ClienteNombre        string  `json:"cliente_nombre"`
@@ -195,6 +202,18 @@ type EmpresaAlquilerDashboard struct {
 	IngresosPorSede        []EmpresaAlquilerResumenGrupo `json:"ingresos_por_sede"`
 }
 
+type EmpresaAlquilerIntegracionNucleoResumen struct {
+	EmpresaID              int64    `json:"empresa_id"`
+	EstadoIntegracion      string   `json:"estado_integracion"`
+	VisibleOperativo       bool     `json:"visible_operativo"`
+	ClientesSincronizados  int      `json:"clientes_sincronizados"`
+	ServiciosSincronizados int      `json:"servicios_sincronizados"`
+	ContratosSincronizados int      `json:"contratos_sincronizados"`
+	ContratosPendientes    int      `json:"contratos_pendientes"`
+	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
+	Errores                []string `json:"errores,omitempty"`
+}
+
 var (
 	empresaAlquileresSchemaEnsured sync.Map
 	empresaAlquileresSchemaMu      sync.Mutex
@@ -246,6 +265,7 @@ func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_alquileres_activos (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
+			servicio_id BIGINT,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
 			categoria_id BIGINT,
@@ -276,6 +296,7 @@ func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_alquileres_tarifas (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
+			servicio_id BIGINT,
 			codigo TEXT NOT NULL,
 			nombre TEXT NOT NULL,
 			categoria_id BIGINT,
@@ -299,6 +320,10 @@ func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
 			codigo TEXT NOT NULL,
 			tipo_registro TEXT DEFAULT 'alquiler',
 			activo_id BIGINT NOT NULL,
+			cliente_id BIGINT,
+			servicio_id BIGINT,
+			carrito_id BIGINT,
+			carrito_item_id BIGINT,
 			cliente_nombre TEXT NOT NULL,
 			cliente_documento TEXT,
 			cliente_telefono TEXT,
@@ -373,6 +398,33 @@ func EnsureEmpresaAlquileresSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_alquileres_ubicaciones_contrato ON empresa_alquileres_ubicaciones(empresa_id, contrato_id, id DESC)`,
 	}
 	for _, stmt := range stmts {
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	extraColumns := []struct {
+		table  string
+		column string
+		def    string
+	}{
+		{"empresa_alquileres_activos", "servicio_id", "BIGINT"},
+		{"empresa_alquileres_tarifas", "servicio_id", "BIGINT"},
+		{"empresa_alquileres_contratos", "cliente_id", "BIGINT"},
+		{"empresa_alquileres_contratos", "servicio_id", "BIGINT"},
+		{"empresa_alquileres_contratos", "carrito_id", "BIGINT"},
+		{"empresa_alquileres_contratos", "carrito_item_id", "BIGINT"},
+	}
+	for _, col := range extraColumns {
+		if err := ensureColumnIfMissing(dbConn, col.table, col.column, col.def); err != nil {
+			return err
+		}
+	}
+	for _, stmt := range []string{
+		`CREATE INDEX IF NOT EXISTS ix_empresa_alquileres_activos_servicio ON empresa_alquileres_activos(empresa_id, servicio_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_alquileres_tarifas_servicio ON empresa_alquileres_tarifas(empresa_id, servicio_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_alquileres_contratos_cliente ON empresa_alquileres_contratos(empresa_id, cliente_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_alquileres_contratos_carrito ON empresa_alquileres_contratos(empresa_id, carrito_id)`,
+	} {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
@@ -478,6 +530,361 @@ func normalizeModalidadCobro(raw string) string {
 	default:
 		return "dia"
 	}
+}
+
+func alquilerCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
+			switch r {
+			case '\u00c1', '\u00c0', '\u00c4', '\u00c2':
+				r = 'A'
+			case '\u00c9', '\u00c8', '\u00cb', '\u00ca':
+				r = 'E'
+			case '\u00cd', '\u00cc', '\u00cf', '\u00ce':
+				r = 'I'
+			case '\u00d3', '\u00d2', '\u00d6', '\u00d4':
+				r = 'O'
+			case '\u00da', '\u00d9', '\u00dc', '\u00db':
+				r = 'U'
+			case '\u00d1':
+				r = 'N'
+			}
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	prefixCode := strings.Trim(strings.ToUpper(strings.NewReplacer(" ", "-", "_", "-").Replace(strings.TrimSpace(prefix))), "-")
+	if prefixCode == "" {
+		prefixCode = "ALQ"
+	}
+	return prefixCode + "-" + strings.Trim(code, "-")
+}
+
+func alquilerTarifaPrecio(item EmpresaAlquilerTarifa) float64 {
+	switch normalizeModalidadCobro(item.ModalidadCobro) {
+	case "hora":
+		if item.PrecioHora > 0 {
+			return item.PrecioHora
+		}
+	case "semana":
+		if item.PrecioSemana > 0 {
+			return item.PrecioSemana
+		}
+	case "mes":
+		if item.PrecioMes > 0 {
+			return item.PrecioMes
+		}
+	case "evento":
+		if item.PrecioBase > 0 {
+			return item.PrecioBase
+		}
+	}
+	if item.PrecioDia > 0 {
+		return item.PrecioDia
+	}
+	if item.PrecioBase > 0 {
+		return item.PrecioBase
+	}
+	if item.PrecioHora > 0 {
+		return item.PrecioHora
+	}
+	if item.PrecioSemana > 0 {
+		return item.PrecioSemana
+	}
+	return item.PrecioMes
+}
+
+func ensureAlquilerActivoServicio(dbConn *sql.DB, item EmpresaAlquilerActivo, usuario string) (int64, error) {
+	if item.ServicioID > 0 {
+		return item.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := alquilerCoreCode("ALQ-ACT", item.Codigo)
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND UPPER(TRIM(COALESCE(codigo,'')))=UPPER(TRIM(?)) LIMIT 1`, item.EmpresaID, code).Scan(&id)
+	if err == nil && id > 0 {
+		return id, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	nombre := strings.TrimSpace(item.Nombre)
+	if nombre == "" {
+		nombre = "Activo alquilable " + strings.TrimSpace(item.Codigo)
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:          item.EmpresaID,
+		Codigo:             code,
+		Nombre:             nombre,
+		Descripcion:        strings.TrimSpace(item.Notas),
+		Categoria:          "Alquileres / " + normalizeAlquilerTipoActivo(item.TipoActivo),
+		CostoReferencial:   item.CostoBaseHora,
+		Precio:             item.CostoBaseHora,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      "Servicio sincronizado desde activo alquilable.",
+	})
+}
+
+func ensureAlquilerTarifaServicio(dbConn *sql.DB, item EmpresaAlquilerTarifa, usuario string) (int64, error) {
+	if item.ServicioID > 0 {
+		return item.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := alquilerCoreCode("ALQ-TAR", item.Codigo)
+	var id int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND UPPER(TRIM(COALESCE(codigo,'')))=UPPER(TRIM(?)) LIMIT 1`, item.EmpresaID, code).Scan(&id)
+	if err == nil && id > 0 {
+		return id, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	nombre := strings.TrimSpace(item.Nombre)
+	if nombre == "" {
+		nombre = "Tarifa alquiler " + strings.TrimSpace(item.Codigo)
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:          item.EmpresaID,
+		Codigo:             code,
+		Nombre:             nombre,
+		Descripcion:        "Tarifa de alquiler por " + normalizeModalidadCobro(item.ModalidadCobro),
+		Categoria:          "Alquileres / tarifas",
+		Precio:             alquilerTarifaPrecio(item),
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      "Servicio sincronizado desde tarifa de alquiler.",
+	})
+}
+
+func ensureAlquilerClienteCore(dbConn *sql.DB, item EmpresaAlquilerContrato, usuario string) (int64, error) {
+	if item.ClienteID > 0 {
+		return item.ClienteID, nil
+	}
+	if strings.TrimSpace(item.ClienteNombre) == "" && strings.TrimSpace(item.ClienteDocumento) == "" && strings.TrimSpace(item.ClienteTelefono) == "" && strings.TrimSpace(item.ClienteEmail) == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if documentoNorm := normalizeClienteDocumentoValue(item.ClienteDocumento); documentoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		if id, err := findClienteDuplicateID(dbConn, query, item.EmpresaID, documentoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if telefonoNorm := normalizeClienteTelefonoValue(item.ClienteTelefono); telefonoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		if id, err := findClienteDuplicateID(dbConn, query, item.EmpresaID, telefonoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if emailNorm := normalizeClienteEmailValue(item.ClienteEmail); emailNorm != "" {
+		if id, err := findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND lower(trim(COALESCE(email, ''))) = ? LIMIT 1`, item.EmpresaID, emailNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := strings.TrimSpace(item.ClienteDocumento)
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = alquilerCoreCode("ALQ-CLI", item.Codigo, item.ClienteTelefono, item.ClienteEmail, item.ClienteNombre)
+	}
+	nombre := strings.TrimSpace(item.ClienteNombre)
+	if nombre == "" {
+		nombre = "Cliente alquileres"
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         item.EmpresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Email:             strings.TrimSpace(item.ClienteEmail),
+		Telefono:          strings.TrimSpace(item.ClienteTelefono),
+		Pais:              "CO",
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde alquileres.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func getEmpresaAlquilerActivoByID(dbConn *sql.DB, empresaID, activoID int64) (EmpresaAlquilerActivo, error) {
+	var item EmpresaAlquilerActivo
+	var usaGPS, checklist, licencia int
+	err := QueryRowCompat(dbConn, `SELECT a.id, a.empresa_id, COALESCE(a.servicio_id,0), COALESCE(a.codigo,''), COALESCE(a.nombre,''), COALESCE(a.categoria_id,0), COALESCE(c.nombre,''), COALESCE(a.tipo_activo,''), COALESCE(a.marca,''), COALESCE(a.modelo,''), COALESCE(a.serie,''), COALESCE(a.placa,''), COALESCE(a.sede,''), COALESCE(a.estado,''), COALESCE(a.valor_reposicion,0), COALESCE(a.costo_base_hora,0), COALESCE(a.deposito_sugerido,0), COALESCE(a.usa_gps,0), COALESCE(a.requiere_checklist,0), COALESCE(a.requiere_licencia,0), COALESCE(a.url_foto,''), COALESCE(a.latitud_actual,0), COALESCE(a.longitud_actual,0), COALESCE(a.fecha_ultima_ubicacion,''), COALESCE(a.notas,''), COALESCE(a.fecha_creacion,''), COALESCE(a.fecha_actualizacion,''), COALESCE(a.usuario_creador,'')
+		FROM empresa_alquileres_activos a
+		LEFT JOIN empresa_alquileres_categorias c ON c.id = a.categoria_id
+		WHERE a.empresa_id=? AND a.id=? LIMIT 1`, empresaID, activoID).
+		Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.Codigo, &item.Nombre, &item.CategoriaID, &item.CategoriaNombre, &item.TipoActivo, &item.Marca, &item.Modelo, &item.Serie, &item.Placa, &item.Sede, &item.Estado, &item.ValorReposicion, &item.CostoBaseHora, &item.DepositoSugerido, &usaGPS, &checklist, &licencia, &item.UrlFoto, &item.LatitudActual, &item.LongitudActual, &item.FechaUltimaUbicacion, &item.Notas, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador)
+	item.UsaGPS = usaGPS > 0
+	item.RequiereChecklist = checklist > 0
+	item.RequiereLicencia = licencia > 0
+	return item, err
+}
+
+func getEmpresaAlquilerTarifaByID(dbConn *sql.DB, empresaID, tarifaID int64) (EmpresaAlquilerTarifa, error) {
+	var item EmpresaAlquilerTarifa
+	err := QueryRowCompat(dbConn, `SELECT t.id, t.empresa_id, COALESCE(t.servicio_id,0), COALESCE(t.codigo,''), COALESCE(t.nombre,''), COALESCE(t.categoria_id,0), COALESCE(c.nombre,''), COALESCE(t.modalidad_cobro,''), COALESCE(t.precio_base,0), COALESCE(t.precio_hora,0), COALESCE(t.precio_dia,0), COALESCE(t.precio_semana,0), COALESCE(t.precio_mes,0), COALESCE(t.kilometros_incluidos,0), COALESCE(t.deposito_minimo,0), COALESCE(t.estado,''), COALESCE(t.fecha_creacion,''), COALESCE(t.fecha_actualizacion,''), COALESCE(t.usuario_creador,'')
+		FROM empresa_alquileres_tarifas t
+		LEFT JOIN empresa_alquileres_categorias c ON c.id = t.categoria_id
+		WHERE t.empresa_id=? AND t.id=? LIMIT 1`, empresaID, tarifaID).
+		Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.Codigo, &item.Nombre, &item.CategoriaID, &item.CategoriaNombre, &item.ModalidadCobro, &item.PrecioBase, &item.PrecioHora, &item.PrecioDia, &item.PrecioSemana, &item.PrecioMes, &item.KilometrosIncluidos, &item.DepositoMinimo, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador)
+	return item, err
+}
+
+func getEmpresaAlquilerContratoByID(dbConn *sql.DB, empresaID, contratoID int64) (EmpresaAlquilerContrato, error) {
+	contratos, err := ListEmpresaAlquilerContratos(dbConn, empresaID)
+	if err != nil {
+		return EmpresaAlquilerContrato{}, err
+	}
+	for _, contrato := range contratos {
+		if contrato.ID == contratoID {
+			return contrato, nil
+		}
+	}
+	return EmpresaAlquilerContrato{}, sql.ErrNoRows
+}
+
+func prepareAlquilerContratoCoreRefs(dbConn *sql.DB, contrato EmpresaAlquilerContrato, usuario string) (int64, int64, error) {
+	clienteID, err := ensureAlquilerClienteCore(dbConn, contrato, usuario)
+	if err != nil {
+		return 0, 0, err
+	}
+	var servicioID int64
+	if contrato.TarifaID > 0 {
+		tarifa, err := getEmpresaAlquilerTarifaByID(dbConn, contrato.EmpresaID, contrato.TarifaID)
+		if err == nil {
+			servicioID, err = ensureAlquilerTarifaServicio(dbConn, tarifa, usuario)
+			if err != nil {
+				return 0, 0, err
+			}
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_tarifas SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), contrato.EmpresaID, contrato.TarifaID)
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return 0, 0, err
+		}
+	}
+	if servicioID <= 0 && contrato.ActivoID > 0 {
+		activo, err := getEmpresaAlquilerActivoByID(dbConn, contrato.EmpresaID, contrato.ActivoID)
+		if err != nil {
+			return 0, 0, err
+		}
+		servicioID, err = ensureAlquilerActivoServicio(dbConn, activo, usuario)
+		if err != nil {
+			return 0, 0, err
+		}
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_activos SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), contrato.EmpresaID, contrato.ActivoID)
+	}
+	return clienteID, servicioID, nil
+}
+
+func createOrSyncAlquilerContratoCarrito(dbConn *sql.DB, contrato EmpresaAlquilerContrato, marcarPagado bool, usuario string) (int64, int64, int64, int64, error) {
+	if contrato.Total <= 0 {
+		return contrato.CarritoID, contrato.CarritoItemID, contrato.ClienteID, contrato.ServicioID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	clienteID, servicioID, err := prepareAlquilerContratoCoreRefs(dbConn, contrato, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	referenciaExterna := fmt.Sprintf("alquileres:contrato:%d:%s", contrato.ID, strings.TrimSpace(contrato.Codigo))
+	var carritoExistente, itemExistente int64
+	var pagadoEn string
+	err = QueryRowCompat(dbConn, `SELECT id, COALESCE(pagado_en,'') FROM carritos_compras WHERE empresa_id=? AND referencia_externa=? LIMIT 1`, contrato.EmpresaID, referenciaExterna).Scan(&carritoExistente, &pagadoEn)
+	if err == nil && carritoExistente > 0 {
+		_ = QueryRowCompat(dbConn, `SELECT id FROM carrito_compra_items WHERE empresa_id=? AND carrito_id=? AND referencia_id=? AND tipo_item='servicio' LIMIT 1`, contrato.EmpresaID, carritoExistente, servicioID).Scan(&itemExistente)
+		if marcarPagado && strings.TrimSpace(pagadoEn) == "" {
+			_ = PayCarritoStationSession(dbConn, contrato.EmpresaID, carritoExistente, "transferencia_bancaria", contrato.Codigo, "", "", 0, 0, contrato.Total, 0, strings.TrimSpace(usuario))
+		}
+		return carritoExistente, itemExistente, clienteID, servicioID, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, 0, 0, 0, err
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         contrato.EmpresaID,
+		Codigo:            alquilerCoreCode("ALQ-CTR", contrato.Codigo),
+		Nombre:            "Contrato alquiler " + strings.TrimSpace(contrato.Codigo),
+		CanalVenta:        "alquileres",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            "COP",
+		ReferenciaExterna: referenciaExterna,
+		MetodoPago:        "transferencia_bancaria",
+		ReferenciaPago:    contrato.Codigo,
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Observaciones:     "Venta central generada desde contrato de alquiler.",
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	descripcion := "Alquiler"
+	if strings.TrimSpace(contrato.ActivoNombre) != "" {
+		descripcion += " " + strings.TrimSpace(contrato.ActivoNombre)
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          contrato.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       servicioID,
+		CodigoItem:         alquilerCoreCode("ALQ-ITEM", contrato.Codigo),
+		Descripcion:        descripcion,
+		UnidadMedida:       normalizeModalidadCobro(contrato.ModalidadCobro),
+		Cantidad:           1,
+		PrecioUnitario:     contrato.Total,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      contrato.Observaciones,
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	if marcarPagado {
+		if err := PayCarritoStationSession(dbConn, contrato.EmpresaID, carritoID, "transferencia_bancaria", contrato.Codigo, "", "", 0, 0, contrato.Total, 0, strings.TrimSpace(usuario)); err != nil {
+			return 0, 0, 0, 0, err
+		}
+	}
+	return carritoID, itemID, clienteID, servicioID, nil
 }
 
 func GetEmpresaAlquilerConfig(dbConn *sql.DB, empresaID int64) (EmpresaAlquilerConfig, error) {
@@ -590,20 +997,25 @@ func CreateEmpresaAlquilerActivo(dbConn *sql.DB, item EmpresaAlquilerActivo) (in
 	if strings.TrimSpace(item.Sede) == "" {
 		item.Sede = "principal"
 	}
+	servicioID, err := ensureAlquilerActivoServicio(dbConn, item, item.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	item.ServicioID = servicioID
 	if item.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_alquileres_activos SET codigo=?, nombre=?, categoria_id=?, tipo_activo=?, marca=?, modelo=?, serie=?, placa=?, sede=?, estado=?, valor_reposicion=?, costo_base_hora=?, deposito_sugerido=?, usa_gps=?, requiere_checklist=?, requiere_licencia=?, url_foto=?, notas=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`,
-			item.Codigo, item.Nombre, item.CategoriaID, item.TipoActivo, strings.TrimSpace(item.Marca), strings.TrimSpace(item.Modelo), strings.TrimSpace(item.Serie), strings.TrimSpace(item.Placa), item.Sede, item.Estado, item.ValorReposicion, item.CostoBaseHora, item.DepositoSugerido, boolInt(item.UsaGPS), boolInt(item.RequiereChecklist), boolInt(item.RequiereLicencia), strings.TrimSpace(item.UrlFoto), strings.TrimSpace(item.Notas), strings.TrimSpace(item.UsuarioCreador), item.EmpresaID, item.ID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_alquileres_activos SET codigo=?, nombre=?, categoria_id=?, tipo_activo=?, marca=?, modelo=?, serie=?, placa=?, sede=?, estado=?, valor_reposicion=?, costo_base_hora=?, deposito_sugerido=?, usa_gps=?, requiere_checklist=?, requiere_licencia=?, url_foto=?, notas=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`,
+			item.Codigo, item.Nombre, item.CategoriaID, item.TipoActivo, strings.TrimSpace(item.Marca), strings.TrimSpace(item.Modelo), strings.TrimSpace(item.Serie), strings.TrimSpace(item.Placa), item.Sede, item.Estado, item.ValorReposicion, item.CostoBaseHora, item.DepositoSugerido, boolInt(item.UsaGPS), boolInt(item.RequiereChecklist), boolInt(item.RequiereLicencia), strings.TrimSpace(item.UrlFoto), strings.TrimSpace(item.Notas), nullableID(item.ServicioID), strings.TrimSpace(item.UsuarioCreador), item.EmpresaID, item.ID)
 		return item.ID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_alquileres_activos (empresa_id, codigo, nombre, categoria_id, tipo_activo, marca, modelo, serie, placa, sede, estado, valor_reposicion, costo_base_hora, deposito_sugerido, usa_gps, requiere_checklist, requiere_licencia, url_foto, notas, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)`,
-		item.EmpresaID, item.Codigo, item.Nombre, item.CategoriaID, item.TipoActivo, strings.TrimSpace(item.Marca), strings.TrimSpace(item.Modelo), strings.TrimSpace(item.Serie), strings.TrimSpace(item.Placa), item.Sede, item.Estado, item.ValorReposicion, item.CostoBaseHora, item.DepositoSugerido, boolInt(item.UsaGPS), boolInt(item.RequiereChecklist), boolInt(item.RequiereLicencia), strings.TrimSpace(item.UrlFoto), strings.TrimSpace(item.Notas), strings.TrimSpace(item.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_alquileres_activos (empresa_id, servicio_id, codigo, nombre, categoria_id, tipo_activo, marca, modelo, serie, placa, sede, estado, valor_reposicion, costo_base_hora, deposito_sugerido, usa_gps, requiere_checklist, requiere_licencia, url_foto, notas, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)`,
+		item.EmpresaID, nullableID(item.ServicioID), item.Codigo, item.Nombre, item.CategoriaID, item.TipoActivo, strings.TrimSpace(item.Marca), strings.TrimSpace(item.Modelo), strings.TrimSpace(item.Serie), strings.TrimSpace(item.Placa), item.Sede, item.Estado, item.ValorReposicion, item.CostoBaseHora, item.DepositoSugerido, boolInt(item.UsaGPS), boolInt(item.RequiereChecklist), boolInt(item.RequiereLicencia), strings.TrimSpace(item.UrlFoto), strings.TrimSpace(item.Notas), strings.TrimSpace(item.UsuarioCreador))
 }
 
 func ListEmpresaAlquilerActivos(dbConn *sql.DB, empresaID int64) ([]EmpresaAlquilerActivo, error) {
 	if err := EnsureEmpresaAlquileresSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT a.id, a.empresa_id, COALESCE(a.codigo,''), COALESCE(a.nombre,''), COALESCE(a.categoria_id,0), COALESCE(c.nombre,''), COALESCE(a.tipo_activo,''), COALESCE(a.marca,''), COALESCE(a.modelo,''), COALESCE(a.serie,''), COALESCE(a.placa,''), COALESCE(a.sede,''), COALESCE(a.estado,''), COALESCE(a.valor_reposicion,0), COALESCE(a.costo_base_hora,0), COALESCE(a.deposito_sugerido,0), COALESCE(a.usa_gps,0), COALESCE(a.requiere_checklist,0), COALESCE(a.requiere_licencia,0), COALESCE(a.url_foto,''), COALESCE(a.latitud_actual,0), COALESCE(a.longitud_actual,0), COALESCE(a.fecha_ultima_ubicacion,''), COALESCE(a.notas,''), COALESCE(a.fecha_creacion,''), COALESCE(a.fecha_actualizacion,''), COALESCE(a.usuario_creador,'')
+	rows, err := ExecQueryCompat(dbConn, `SELECT a.id, a.empresa_id, COALESCE(a.servicio_id,0), COALESCE(a.codigo,''), COALESCE(a.nombre,''), COALESCE(a.categoria_id,0), COALESCE(c.nombre,''), COALESCE(a.tipo_activo,''), COALESCE(a.marca,''), COALESCE(a.modelo,''), COALESCE(a.serie,''), COALESCE(a.placa,''), COALESCE(a.sede,''), COALESCE(a.estado,''), COALESCE(a.valor_reposicion,0), COALESCE(a.costo_base_hora,0), COALESCE(a.deposito_sugerido,0), COALESCE(a.usa_gps,0), COALESCE(a.requiere_checklist,0), COALESCE(a.requiere_licencia,0), COALESCE(a.url_foto,''), COALESCE(a.latitud_actual,0), COALESCE(a.longitud_actual,0), COALESCE(a.fecha_ultima_ubicacion,''), COALESCE(a.notas,''), COALESCE(a.fecha_creacion,''), COALESCE(a.fecha_actualizacion,''), COALESCE(a.usuario_creador,'')
 		FROM empresa_alquileres_activos a
 		LEFT JOIN empresa_alquileres_categorias c ON c.id = a.categoria_id
 		WHERE a.empresa_id=? ORDER BY a.id DESC`, empresaID)
@@ -615,7 +1027,7 @@ func ListEmpresaAlquilerActivos(dbConn *sql.DB, empresaID int64) ([]EmpresaAlqui
 	for rows.Next() {
 		var item EmpresaAlquilerActivo
 		var usaGPS, checklist, licencia int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.CategoriaID, &item.CategoriaNombre, &item.TipoActivo, &item.Marca, &item.Modelo, &item.Serie, &item.Placa, &item.Sede, &item.Estado, &item.ValorReposicion, &item.CostoBaseHora, &item.DepositoSugerido, &usaGPS, &checklist, &licencia, &item.UrlFoto, &item.LatitudActual, &item.LongitudActual, &item.FechaUltimaUbicacion, &item.Notas, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.Codigo, &item.Nombre, &item.CategoriaID, &item.CategoriaNombre, &item.TipoActivo, &item.Marca, &item.Modelo, &item.Serie, &item.Placa, &item.Sede, &item.Estado, &item.ValorReposicion, &item.CostoBaseHora, &item.DepositoSugerido, &usaGPS, &checklist, &licencia, &item.UrlFoto, &item.LatitudActual, &item.LongitudActual, &item.FechaUltimaUbicacion, &item.Notas, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		item.UsaGPS = usaGPS > 0
@@ -639,18 +1051,23 @@ func CreateEmpresaAlquilerTarifa(dbConn *sql.DB, item EmpresaAlquilerTarifa) (in
 	if strings.TrimSpace(item.Estado) == "" {
 		item.Estado = "activa"
 	}
+	servicioID, err := ensureAlquilerTarifaServicio(dbConn, item, item.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	item.ServicioID = servicioID
 	if item.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_alquileres_tarifas SET codigo=?, nombre=?, categoria_id=?, modalidad_cobro=?, precio_base=?, precio_hora=?, precio_dia=?, precio_semana=?, precio_mes=?, kilometros_incluidos=?, deposito_minimo=?, estado=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`, item.Codigo, item.Nombre, item.CategoriaID, item.ModalidadCobro, item.PrecioBase, item.PrecioHora, item.PrecioDia, item.PrecioSemana, item.PrecioMes, item.KilometrosIncluidos, item.DepositoMinimo, item.Estado, strings.TrimSpace(item.UsuarioCreador), item.EmpresaID, item.ID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_alquileres_tarifas SET codigo=?, nombre=?, categoria_id=?, modalidad_cobro=?, precio_base=?, precio_hora=?, precio_dia=?, precio_semana=?, precio_mes=?, kilometros_incluidos=?, deposito_minimo=?, estado=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`, item.Codigo, item.Nombre, item.CategoriaID, item.ModalidadCobro, item.PrecioBase, item.PrecioHora, item.PrecioDia, item.PrecioSemana, item.PrecioMes, item.KilometrosIncluidos, item.DepositoMinimo, item.Estado, nullableID(item.ServicioID), strings.TrimSpace(item.UsuarioCreador), item.EmpresaID, item.ID)
 		return item.ID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_alquileres_tarifas (empresa_id, codigo, nombre, categoria_id, modalidad_cobro, precio_base, precio_hora, precio_dia, precio_semana, precio_mes, kilometros_incluidos, deposito_minimo, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)`, item.EmpresaID, item.Codigo, item.Nombre, item.CategoriaID, item.ModalidadCobro, item.PrecioBase, item.PrecioHora, item.PrecioDia, item.PrecioSemana, item.PrecioMes, item.KilometrosIncluidos, item.DepositoMinimo, item.Estado, strings.TrimSpace(item.UsuarioCreador))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_alquileres_tarifas (empresa_id, servicio_id, codigo, nombre, categoria_id, modalidad_cobro, precio_base, precio_hora, precio_dia, precio_semana, precio_mes, kilometros_incluidos, deposito_minimo, estado, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)`, item.EmpresaID, nullableID(item.ServicioID), item.Codigo, item.Nombre, item.CategoriaID, item.ModalidadCobro, item.PrecioBase, item.PrecioHora, item.PrecioDia, item.PrecioSemana, item.PrecioMes, item.KilometrosIncluidos, item.DepositoMinimo, item.Estado, strings.TrimSpace(item.UsuarioCreador))
 }
 
 func ListEmpresaAlquilerTarifas(dbConn *sql.DB, empresaID int64) ([]EmpresaAlquilerTarifa, error) {
 	if err := EnsureEmpresaAlquileresSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT t.id, t.empresa_id, COALESCE(t.codigo,''), COALESCE(t.nombre,''), COALESCE(t.categoria_id,0), COALESCE(c.nombre,''), COALESCE(t.modalidad_cobro,''), COALESCE(t.precio_base,0), COALESCE(t.precio_hora,0), COALESCE(t.precio_dia,0), COALESCE(t.precio_semana,0), COALESCE(t.precio_mes,0), COALESCE(t.kilometros_incluidos,0), COALESCE(t.deposito_minimo,0), COALESCE(t.estado,''), COALESCE(t.fecha_creacion,''), COALESCE(t.fecha_actualizacion,''), COALESCE(t.usuario_creador,'')
+	rows, err := ExecQueryCompat(dbConn, `SELECT t.id, t.empresa_id, COALESCE(t.servicio_id,0), COALESCE(t.codigo,''), COALESCE(t.nombre,''), COALESCE(t.categoria_id,0), COALESCE(c.nombre,''), COALESCE(t.modalidad_cobro,''), COALESCE(t.precio_base,0), COALESCE(t.precio_hora,0), COALESCE(t.precio_dia,0), COALESCE(t.precio_semana,0), COALESCE(t.precio_mes,0), COALESCE(t.kilometros_incluidos,0), COALESCE(t.deposito_minimo,0), COALESCE(t.estado,''), COALESCE(t.fecha_creacion,''), COALESCE(t.fecha_actualizacion,''), COALESCE(t.usuario_creador,'')
 			FROM empresa_alquileres_tarifas t
 			LEFT JOIN empresa_alquileres_categorias c ON c.id = t.categoria_id
 			WHERE t.empresa_id=? ORDER BY t.id DESC`, empresaID)
@@ -661,7 +1078,7 @@ func ListEmpresaAlquilerTarifas(dbConn *sql.DB, empresaID int64) ([]EmpresaAlqui
 	out := make([]EmpresaAlquilerTarifa, 0)
 	for rows.Next() {
 		var item EmpresaAlquilerTarifa
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.CategoriaID, &item.CategoriaNombre, &item.ModalidadCobro, &item.PrecioBase, &item.PrecioHora, &item.PrecioDia, &item.PrecioSemana, &item.PrecioMes, &item.KilometrosIncluidos, &item.DepositoMinimo, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.Codigo, &item.Nombre, &item.CategoriaID, &item.CategoriaNombre, &item.ModalidadCobro, &item.PrecioBase, &item.PrecioHora, &item.PrecioDia, &item.PrecioSemana, &item.PrecioMes, &item.KilometrosIncluidos, &item.DepositoMinimo, &item.Estado, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -696,19 +1113,31 @@ func CreateEmpresaAlquilerContrato(dbConn *sql.DB, item EmpresaAlquilerContrato)
 		item.Cantidad = 1
 	}
 	calculateContratoTotal(&item)
+	clienteID, servicioID, err := prepareAlquilerContratoCoreRefs(dbConn, item, item.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	item.ClienteID, item.ServicioID = clienteID, servicioID
 	if item.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET codigo=?, tipo_registro=?, activo_id=?, cliente_nombre=?, cliente_documento=?, cliente_telefono=?, cliente_email=?, responsable_empresa=?, tarifa_id=?, modalidad_cobro=?, fecha_reserva=?, fecha_inicio=?, fecha_fin_prevista=?, estado=?, cantidad=?, horas_planeadas=?, dias_planeados=?, kilometros_incluidos=?, deposito=?, valor_base=?, descuento=?, impuestos=?, total=?, saldo_pendiente=?, origen_entrega=?, destino_devolucion=?, observaciones=?, requiere_garantia=?, gps_tracking_activo=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`,
-			item.Codigo, item.TipoRegistro, item.ActivoID, item.ClienteNombre, strings.TrimSpace(item.ClienteDocumento), strings.TrimSpace(item.ClienteTelefono), strings.TrimSpace(item.ClienteEmail), strings.TrimSpace(item.ResponsableEmpresa), item.TarifaID, item.ModalidadCobro, strings.TrimSpace(item.FechaReserva), strings.TrimSpace(item.FechaInicio), strings.TrimSpace(item.FechaFinPrevista), item.Estado, item.Cantidad, item.HorasPlaneadas, item.DiasPlaneados, item.KilometrosIncluidos, item.Deposito, item.ValorBase, item.Descuento, item.Impuestos, item.Total, item.SaldoPendiente, strings.TrimSpace(item.OrigenEntrega), strings.TrimSpace(item.DestinoDevolucion), strings.TrimSpace(item.Observaciones), boolInt(item.RequiereGarantia), boolInt(item.GpsTrackingActivo), strings.TrimSpace(item.UsuarioCreador), item.EmpresaID, item.ID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET codigo=?, tipo_registro=?, activo_id=?, cliente_id=?, servicio_id=?, cliente_nombre=?, cliente_documento=?, cliente_telefono=?, cliente_email=?, responsable_empresa=?, tarifa_id=?, modalidad_cobro=?, fecha_reserva=?, fecha_inicio=?, fecha_fin_prevista=?, estado=?, cantidad=?, horas_planeadas=?, dias_planeados=?, kilometros_incluidos=?, deposito=?, valor_base=?, descuento=?, impuestos=?, total=?, saldo_pendiente=?, origen_entrega=?, destino_devolucion=?, observaciones=?, requiere_garantia=?, gps_tracking_activo=?, fecha_actualizacion=CURRENT_TIMESTAMP, usuario_creador=? WHERE empresa_id=? AND id=?`,
+			item.Codigo, item.TipoRegistro, item.ActivoID, nullableID(item.ClienteID), nullableID(item.ServicioID), item.ClienteNombre, strings.TrimSpace(item.ClienteDocumento), strings.TrimSpace(item.ClienteTelefono), strings.TrimSpace(item.ClienteEmail), strings.TrimSpace(item.ResponsableEmpresa), item.TarifaID, item.ModalidadCobro, strings.TrimSpace(item.FechaReserva), strings.TrimSpace(item.FechaInicio), strings.TrimSpace(item.FechaFinPrevista), item.Estado, item.Cantidad, item.HorasPlaneadas, item.DiasPlaneados, item.KilometrosIncluidos, item.Deposito, item.ValorBase, item.Descuento, item.Impuestos, item.Total, item.SaldoPendiente, strings.TrimSpace(item.OrigenEntrega), strings.TrimSpace(item.DestinoDevolucion), strings.TrimSpace(item.Observaciones), boolInt(item.RequiereGarantia), boolInt(item.GpsTrackingActivo), strings.TrimSpace(item.UsuarioCreador), item.EmpresaID, item.ID)
 		if err != nil {
 			return 0, err
+		}
+		if carritoID, itemID, clienteID, servicioID, cartErr := createOrSyncAlquilerContratoCarrito(dbConn, item, false, item.UsuarioCreador); cartErr == nil && carritoID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), item.EmpresaID, item.ID)
 		}
 		_ = syncActivoEstadoByContrato(dbConn, item.EmpresaID, item.ID, item.Estado)
 		return item.ID, nil
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_alquileres_contratos (empresa_id, codigo, tipo_registro, activo_id, cliente_nombre, cliente_documento, cliente_telefono, cliente_email, responsable_empresa, tarifa_id, modalidad_cobro, fecha_reserva, fecha_inicio, fecha_fin_prevista, estado, cantidad, horas_planeadas, dias_planeados, kilometros_incluidos, deposito, valor_base, descuento, impuestos, total, saldo_pendiente, origen_entrega, destino_devolucion, observaciones, requiere_garantia, gps_tracking_activo, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)`,
-		item.EmpresaID, item.Codigo, item.TipoRegistro, item.ActivoID, item.ClienteNombre, strings.TrimSpace(item.ClienteDocumento), strings.TrimSpace(item.ClienteTelefono), strings.TrimSpace(item.ClienteEmail), strings.TrimSpace(item.ResponsableEmpresa), item.TarifaID, item.ModalidadCobro, strings.TrimSpace(item.FechaReserva), strings.TrimSpace(item.FechaInicio), strings.TrimSpace(item.FechaFinPrevista), item.Estado, item.Cantidad, item.HorasPlaneadas, item.DiasPlaneados, item.KilometrosIncluidos, item.Deposito, item.ValorBase, item.Descuento, item.Impuestos, item.Total, item.SaldoPendiente, strings.TrimSpace(item.OrigenEntrega), strings.TrimSpace(item.DestinoDevolucion), strings.TrimSpace(item.Observaciones), boolInt(item.RequiereGarantia), boolInt(item.GpsTrackingActivo), strings.TrimSpace(item.UsuarioCreador))
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_alquileres_contratos (empresa_id, codigo, tipo_registro, activo_id, cliente_id, servicio_id, cliente_nombre, cliente_documento, cliente_telefono, cliente_email, responsable_empresa, tarifa_id, modalidad_cobro, fecha_reserva, fecha_inicio, fecha_fin_prevista, estado, cantidad, horas_planeadas, dias_planeados, kilometros_incluidos, deposito, valor_base, descuento, impuestos, total, saldo_pendiente, origen_entrega, destino_devolucion, observaciones, requiere_garantia, gps_tracking_activo, fecha_creacion, fecha_actualizacion, usuario_creador) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)`,
+		item.EmpresaID, item.Codigo, item.TipoRegistro, item.ActivoID, nullableID(item.ClienteID), nullableID(item.ServicioID), item.ClienteNombre, strings.TrimSpace(item.ClienteDocumento), strings.TrimSpace(item.ClienteTelefono), strings.TrimSpace(item.ClienteEmail), strings.TrimSpace(item.ResponsableEmpresa), item.TarifaID, item.ModalidadCobro, strings.TrimSpace(item.FechaReserva), strings.TrimSpace(item.FechaInicio), strings.TrimSpace(item.FechaFinPrevista), item.Estado, item.Cantidad, item.HorasPlaneadas, item.DiasPlaneados, item.KilometrosIncluidos, item.Deposito, item.ValorBase, item.Descuento, item.Impuestos, item.Total, item.SaldoPendiente, strings.TrimSpace(item.OrigenEntrega), strings.TrimSpace(item.DestinoDevolucion), strings.TrimSpace(item.Observaciones), boolInt(item.RequiereGarantia), boolInt(item.GpsTrackingActivo), strings.TrimSpace(item.UsuarioCreador))
 	if err != nil {
 		return 0, err
+	}
+	item.ID = id
+	if carritoID, itemID, clienteID, servicioID, cartErr := createOrSyncAlquilerContratoCarrito(dbConn, item, false, item.UsuarioCreador); cartErr == nil && carritoID > 0 {
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), item.EmpresaID, id)
 	}
 	_ = syncActivoEstadoByContrato(dbConn, item.EmpresaID, id, item.Estado)
 	return id, nil
@@ -743,7 +1172,7 @@ func ListEmpresaAlquilerContratos(dbConn *sql.DB, empresaID int64) ([]EmpresaAlq
 	if err := EnsureEmpresaAlquileresSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT c.id, c.empresa_id, COALESCE(c.codigo,''), COALESCE(c.tipo_registro,''), COALESCE(c.activo_id,0), COALESCE(a.nombre,''), COALESCE(cat.nombre,''), COALESCE(c.cliente_nombre,''), COALESCE(c.cliente_documento,''), COALESCE(c.cliente_telefono,''), COALESCE(c.cliente_email,''), COALESCE(c.responsable_empresa,''), COALESCE(c.tarifa_id,0), COALESCE(t.nombre,''), COALESCE(c.modalidad_cobro,''), COALESCE(c.fecha_reserva,''), COALESCE(c.fecha_inicio,''), COALESCE(c.fecha_fin_prevista,''), COALESCE(c.fecha_entrega_real,''), COALESCE(c.fecha_devolucion_real,''), COALESCE(c.estado,''), COALESCE(c.cantidad,1), COALESCE(c.horas_planeadas,0), COALESCE(c.dias_planeados,0), COALESCE(c.kilometros_incluidos,0), COALESCE(c.deposito,0), COALESCE(c.valor_base,0), COALESCE(c.descuento,0), COALESCE(c.impuestos,0), COALESCE(c.total,0), COALESCE(c.saldo_pendiente,0), COALESCE(c.origen_entrega,''), COALESCE(c.destino_devolucion,''), COALESCE(c.observaciones,''), COALESCE(c.requiere_garantia,0), COALESCE(c.gps_tracking_activo,0), COALESCE(c.latitud_actual,0), COALESCE(c.longitud_actual,0), COALESCE(c.fecha_ultima_ubicacion,''), COALESCE(c.fecha_creacion,''), COALESCE(c.fecha_actualizacion,''), COALESCE(c.usuario_creador,'')
+	rows, err := ExecQueryCompat(dbConn, `SELECT c.id, c.empresa_id, COALESCE(c.codigo,''), COALESCE(c.tipo_registro,''), COALESCE(c.activo_id,0), COALESCE(c.cliente_id,0), COALESCE(c.servicio_id,0), COALESCE(c.carrito_id,0), COALESCE(c.carrito_item_id,0), COALESCE(a.nombre,''), COALESCE(cat.nombre,''), COALESCE(c.cliente_nombre,''), COALESCE(c.cliente_documento,''), COALESCE(c.cliente_telefono,''), COALESCE(c.cliente_email,''), COALESCE(c.responsable_empresa,''), COALESCE(c.tarifa_id,0), COALESCE(t.nombre,''), COALESCE(c.modalidad_cobro,''), COALESCE(c.fecha_reserva,''), COALESCE(c.fecha_inicio,''), COALESCE(c.fecha_fin_prevista,''), COALESCE(c.fecha_entrega_real,''), COALESCE(c.fecha_devolucion_real,''), COALESCE(c.estado,''), COALESCE(c.cantidad,1), COALESCE(c.horas_planeadas,0), COALESCE(c.dias_planeados,0), COALESCE(c.kilometros_incluidos,0), COALESCE(c.deposito,0), COALESCE(c.valor_base,0), COALESCE(c.descuento,0), COALESCE(c.impuestos,0), COALESCE(c.total,0), COALESCE(c.saldo_pendiente,0), COALESCE(c.origen_entrega,''), COALESCE(c.destino_devolucion,''), COALESCE(c.observaciones,''), COALESCE(c.requiere_garantia,0), COALESCE(c.gps_tracking_activo,0), COALESCE(c.latitud_actual,0), COALESCE(c.longitud_actual,0), COALESCE(c.fecha_ultima_ubicacion,''), COALESCE(c.fecha_creacion,''), COALESCE(c.fecha_actualizacion,''), COALESCE(c.usuario_creador,'')
 			FROM empresa_alquileres_contratos c
 			JOIN empresa_alquileres_activos a ON a.id = c.activo_id
 			LEFT JOIN empresa_alquileres_categorias cat ON cat.id = a.categoria_id
@@ -758,7 +1187,7 @@ func ListEmpresaAlquilerContratos(dbConn *sql.DB, empresaID int64) ([]EmpresaAlq
 	for rows.Next() {
 		var item EmpresaAlquilerContrato
 		var garantia, gps int
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.TipoRegistro, &item.ActivoID, &item.ActivoNombre, &item.CategoriaNombre, &item.ClienteNombre, &item.ClienteDocumento, &item.ClienteTelefono, &item.ClienteEmail, &item.ResponsableEmpresa, &item.TarifaID, &item.TarifaNombre, &item.ModalidadCobro, &item.FechaReserva, &item.FechaInicio, &item.FechaFinPrevista, &item.FechaEntregaReal, &item.FechaDevolucionReal, &item.Estado, &item.Cantidad, &item.HorasPlaneadas, &item.DiasPlaneados, &item.KilometrosIncluidos, &item.Deposito, &item.ValorBase, &item.Descuento, &item.Impuestos, &item.Total, &item.SaldoPendiente, &item.OrigenEntrega, &item.DestinoDevolucion, &item.Observaciones, &garantia, &gps, &item.LatitudActual, &item.LongitudActual, &item.FechaUltimaUbicacion, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.TipoRegistro, &item.ActivoID, &item.ClienteID, &item.ServicioID, &item.CarritoID, &item.CarritoItemID, &item.ActivoNombre, &item.CategoriaNombre, &item.ClienteNombre, &item.ClienteDocumento, &item.ClienteTelefono, &item.ClienteEmail, &item.ResponsableEmpresa, &item.TarifaID, &item.TarifaNombre, &item.ModalidadCobro, &item.FechaReserva, &item.FechaInicio, &item.FechaFinPrevista, &item.FechaEntregaReal, &item.FechaDevolucionReal, &item.Estado, &item.Cantidad, &item.HorasPlaneadas, &item.DiasPlaneados, &item.KilometrosIncluidos, &item.Deposito, &item.ValorBase, &item.Descuento, &item.Impuestos, &item.Total, &item.SaldoPendiente, &item.OrigenEntrega, &item.DestinoDevolucion, &item.Observaciones, &garantia, &gps, &item.LatitudActual, &item.LongitudActual, &item.FechaUltimaUbicacion, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		item.RequiereGarantia = garantia > 0
@@ -790,7 +1219,16 @@ func UpdateEmpresaAlquilerContratoEstado(dbConn *sql.DB, empresaID, contratoID i
 	if err != nil {
 		return err
 	}
-	return syncActivoEstadoByContrato(dbConn, empresaID, contratoID, estado)
+	if err := syncActivoEstadoByContrato(dbConn, empresaID, contratoID, estado); err != nil {
+		return err
+	}
+	if estado == "devuelto" {
+		contrato, err := getEmpresaAlquilerContratoByID(dbConn, empresaID, contratoID)
+		if err == nil {
+			_, _, _, _, _ = createOrSyncAlquilerContratoCarrito(dbConn, contrato, true, responsable)
+		}
+	}
+	return nil
 }
 
 func CreateEmpresaAlquilerMantenimiento(dbConn *sql.DB, item EmpresaAlquilerMantenimiento) (int64, error) {
@@ -989,6 +1427,79 @@ func limitAlquilerActivos(items []EmpresaAlquilerActivo, max int) []EmpresaAlqui
 		return items
 	}
 	return items[:max]
+}
+
+func SyncEmpresaAlquileresNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaAlquilerIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaAlquileresSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaAlquilerIntegracionNucleoResumen{EmpresaID: empresaID, EstadoIntegracion: "plantilla_integrada_nucleo", VisibleOperativo: true}
+	activos, err := ListEmpresaAlquilerActivos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, activo := range activos {
+		servicioID, err := ensureAlquilerActivoServicio(dbConn, activo, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("activo %d servicio: %v", activo.ID, err))
+			continue
+		}
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_activos SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, activo.ID)
+		}
+	}
+	tarifas, err := ListEmpresaAlquilerTarifas(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, tarifa := range tarifas {
+		servicioID, err := ensureAlquilerTarifaServicio(dbConn, tarifa, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("tarifa %d servicio: %v", tarifa.ID, err))
+			continue
+		}
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_tarifas SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, tarifa.ID)
+		}
+	}
+	contratos, err := ListEmpresaAlquilerContratos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, contrato := range contratos {
+		clienteID, servicioID, err := prepareAlquilerContratoCoreRefs(dbConn, contrato, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("contrato %d refs: %v", contrato.ID, err))
+			continue
+		}
+		if clienteID > 0 {
+			resumen.ClientesSincronizados++
+		}
+		if contrato.Total <= 0 {
+			resumen.ContratosPendientes++
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET cliente_id=?, servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contrato.ID)
+			continue
+		}
+		marcarPagado := contrato.SaldoPendiente <= 0 || normalizeAlquilerEstado(contrato.Estado) == "devuelto"
+		carritoID, itemID, clienteID, servicioID, err := createOrSyncAlquilerContratoCarrito(dbConn, contrato, marcarPagado, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("contrato %d carrito: %v", contrato.ID, err))
+			continue
+		}
+		_, err = ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), empresaID, contrato.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("contrato %d refs carrito: %v", contrato.ID, err))
+			continue
+		}
+		resumen.ContratosSincronizados++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
 }
 
 func SeedEmpresaAlquilerDemoData(dbConn *sql.DB, empresaID int64, usuario string) error {

@@ -22,9 +22,28 @@
     }
   }
 
+  var coreSuperPages = {
+    "/super/licencias_resumen.html": true,
+    "/super/tipos_empresas.html": true,
+    "/super/verticales_produccion_masiva.html": true,
+    "/super/licencias.html": true,
+    "/super/administradores.html": true,
+    "/super/roles_de_usuario.html": true,
+    "/super/permisos_rol.html": true,
+    "/super/seguridad_2fa.html": true,
+    "/super/integracion_ia.html": true,
+    "/super/configuracion_logica_del_chat_con_ia.html": true,
+    "/super/contexto_ia_logica_negocio.html": true,
+    "/super/alertas_sistema.html": true,
+    "/super/seguridad.html": true,
+    "/super/administrar_base_de_datos.html": true,
+    "/super/configuracion_avanzada.html": true,
+    "/ayuda/ayuda.html": true
+  };
+
   function isAllowedSuperHref(href) {
-    var normalized = normalizeHref(href);
-    return normalized.indexOf("/super/") === 0 || normalized === "/ayuda/ayuda.html";
+    var normalized = normalizeHref(href).split("?")[0];
+    return !!coreSuperPages[normalized];
   }
 
   function persistLastPage(href) {
@@ -131,8 +150,7 @@
       "/super/licencias_resumen.html": true,
       "/super/administradores.html": true,
       "/super/seguridad.html": true,
-      "/super/seguridad_2fa.html": true,
-      "/super/reportes_globales.html": true
+      "/super/seguridad_2fa.html": true
     };
     links.forEach(function (a) {
       var normalized = normalizeHref(a.getAttribute("href")).split("?")[0];

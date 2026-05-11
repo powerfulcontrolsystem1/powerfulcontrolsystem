@@ -302,6 +302,7 @@
       const formSubtitle = document.getElementById('formSubtitle');
       const formModeBadge = document.getElementById('formModeBadge');
       const crudState = { licencias: [], tipos: [], filtersReady: false };
+      const initialLicenseQuery = String(currentParams.get('q') || currentParams.get('modulo') || currentParams.get('vertical') || '').trim();
       let cleanupCrudTableScroll = null;
       const moduleLabels = {
         ventas: 'Ventas universales',
@@ -1066,6 +1067,7 @@
         const data = await fetchJSONOrThrow(buildLicenciasApiURL());
         crudState.licencias = Array.isArray(data) ? data : [];
         fillCrudFilters(crudState.licencias);
+        if (initialLicenseQuery && licSearch && !licSearch.value) licSearch.value = initialLicenseQuery.replace(/_/g, ' ');
         renderCrudList();
       }
 

@@ -212,6 +212,14 @@ func EmpresaDomiciliosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, row)
 				return
+			case "sincronizar_nucleo":
+				resumen, err := dbpkg.SyncEmpresaDomiciliosNucleo(dbEmp, empresaID, adminEmail)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
+				return
 			case "seed_demo":
 				if err := dbpkg.SeedEmpresaDomiciliosDemo(dbEmp, empresaID, adminEmail); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)

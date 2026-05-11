@@ -1,6 +1,6 @@
 # Modulo profesional de domicilios
 
-Fecha: 2026-05-05
+Fecha: 2026-05-11
 Estado: vigente, documentado tambien en el portal publico `web/index.html`
 
 El modulo de domicilios agrega una operacion tipo marketplace local: central administrativa, restaurantes aliados, domiciliarios moviles, cliente publico, asignacion por cercania, tracking GPS por navegador y codigo de entrega.
@@ -31,6 +31,15 @@ El index comercial describe este modulo como `Domicilios tipo Rappi` dentro de l
 7. El sistema genera ofertas a domiciliarios online y disponibles dentro del radio.
 8. El domiciliario acepta, comparte ubicacion y actualiza estados.
 9. La entrega se cierra con el codigo de seguridad visible para el cliente.
+10. Al quedar `entregado`, el pedido genera cliente, servicios de menu, carrito, items y pago central en el nucleo comercial.
+
+## Integracion con nucleo
+
+- Los productos del menu se enlazan con `servicios` mediante `servicio_id`.
+- Los pedidos se enlazan con `clientes` mediante `cliente_id`, reutilizando telefono cuando existe.
+- Los pedidos entregados crean `carritos_compras` con canal `domicilios`, referencia externa del pedido y metodo de pago normalizado.
+- Cada linea del pedido queda vinculada a `carrito_compra_items` mediante `carrito_item_id`; tarifa de domicilio y propina se agregan como servicios centrales.
+- La accion protegida `POST /api/empresa/domicilios?action=sincronizar_nucleo` migra pedidos entregados historicos sin borrar restaurantes, domiciliarios, ofertas, tracking ni estados logisticos.
 
 ## Datos demo
 
@@ -45,7 +54,7 @@ Desde la central se puede usar `Cargar demo productiva`.
 - Protegido: `/api/empresa/domicilios`
 - Publico: `/api/public/domicilios`
 
-Acciones protegidas: `dashboard`, `config`, `restaurants`, `couriers`, `menu`, `orders`, `dispatch`, `order_state`, `seed_demo`.
+Acciones protegidas: `dashboard`, `config`, `restaurants`, `couriers`, `menu`, `orders`, `dispatch`, `order_state`, `sincronizar_nucleo`, `seed_demo`.
 
 Acciones publicas: `catalog`, `order`, `tracking`, `courier_login`, `courier_presence`, `courier_location`, `courier_offers`, `courier_orders`, `respond_offer`, `restaurant_login`, `restaurant_orders`, `order_state`.
 

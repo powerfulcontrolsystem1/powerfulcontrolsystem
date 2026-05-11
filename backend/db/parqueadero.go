@@ -38,6 +38,10 @@ type EmpresaParqueaderoTicket struct {
 	CodigoTicket     string  `json:"codigo_ticket"`
 	Placa            string  `json:"placa"`
 	TipoVehiculo     string  `json:"tipo_vehiculo"`
+	ClienteID        int64   `json:"cliente_id,omitempty"`
+	ServicioID       int64   `json:"servicio_id,omitempty"`
+	CarritoID        int64   `json:"carrito_id,omitempty"`
+	CarritoItemID    int64   `json:"carrito_item_id,omitempty"`
 	ClienteNombre    string  `json:"cliente_nombre,omitempty"`
 	ClienteDocumento string  `json:"cliente_documento,omitempty"`
 	Estado           string  `json:"estado"`
@@ -82,6 +86,17 @@ type EmpresaParqueaderoDashboard struct {
 	Config           EmpresaParqueaderoConfig   `json:"config"`
 }
 
+type EmpresaParqueaderoIntegracionNucleoResumen struct {
+	EmpresaID              int64    `json:"empresa_id"`
+	TicketsSincronizados   int      `json:"tickets_sincronizados"`
+	TicketsPendientes      int      `json:"tickets_pendientes"`
+	ServiciosSincronizados int      `json:"servicios_sincronizados"`
+	Errores                []string `json:"errores,omitempty"`
+	EstadoIntegracion      string   `json:"estado_integracion"`
+	VisibleOperativo       bool     `json:"visible_operativo"`
+	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
+}
+
 func EnsureEmpresaParqueaderoSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_parqueadero_config (
@@ -110,6 +125,10 @@ func EnsureEmpresaParqueaderoSchema(dbConn *sql.DB) error {
 			codigo_ticket TEXT NOT NULL,
 			placa TEXT NOT NULL,
 			tipo_vehiculo TEXT DEFAULT 'carro',
+			cliente_id BIGINT,
+			servicio_id BIGINT,
+			carrito_id BIGINT,
+			carrito_item_id BIGINT,
 			cliente_nombre TEXT,
 			cliente_documento TEXT,
 			estado TEXT DEFAULT 'abierto',
@@ -130,9 +149,24 @@ func EnsureEmpresaParqueaderoSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_parqueadero_ticket_empresa_token ON empresa_parqueadero_tickets(empresa_id, qr_token)`,
 		`CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_estado ON empresa_parqueadero_tickets(empresa_id, estado, id DESC)`,
 		`CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_placa ON empresa_parqueadero_tickets(empresa_id, placa, estado)`,
+		`CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_carrito ON empresa_parqueadero_tickets(empresa_id, carrito_id)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	columns := []struct {
+		name string
+		def  string
+	}{
+		{"cliente_id", "BIGINT"},
+		{"servicio_id", "BIGINT"},
+		{"carrito_id", "BIGINT"},
+		{"carrito_item_id", "BIGINT"},
+	}
+	for _, column := range columns {
+		if err := ensureColumnIfMissing(dbConn, "empresa_parqueadero_tickets", column.name, column.def); err != nil {
 			return err
 		}
 	}
@@ -261,7 +295,7 @@ func ListEmpresaParqueaderoTickets(dbConn *sql.DB, empresaID int64, estado strin
 		args = append(args, strings.ToLower(strings.TrimSpace(estado)))
 	}
 	args = append(args, limit)
-	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE `+where+` ORDER BY id DESC LIMIT ?`, args...)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_id,0), COALESCE(servicio_id,0), COALESCE(carrito_id,0), COALESCE(carrito_item_id,0), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE `+where+` ORDER BY id DESC LIMIT ?`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -279,22 +313,22 @@ func ListEmpresaParqueaderoTickets(dbConn *sql.DB, empresaID int64, estado strin
 
 func GetEmpresaParqueaderoTicketByID(dbConn *sql.DB, empresaID, ticketID int64) (EmpresaParqueaderoTicket, error) {
 	var item EmpresaParqueaderoTicket
-	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, ticketID).Scan(
-		&item.ID, &item.EmpresaID, &item.CodigoTicket, &item.Placa, &item.TipoVehiculo, &item.ClienteNombre, &item.ClienteDocumento, &item.Estado, &item.FechaEntrada, &item.FechaSalida, &item.MinutosCobrados, &item.Subtotal, &item.Impuestos, &item.Total, &item.MetodoPago, &item.QRToken, &item.QRPayload, &item.Observaciones, &item.UsuarioCreador, &item.UsuarioCierre,
+	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_id,0), COALESCE(servicio_id,0), COALESCE(carrito_id,0), COALESCE(carrito_item_id,0), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, ticketID).Scan(
+		&item.ID, &item.EmpresaID, &item.CodigoTicket, &item.Placa, &item.TipoVehiculo, &item.ClienteID, &item.ServicioID, &item.CarritoID, &item.CarritoItemID, &item.ClienteNombre, &item.ClienteDocumento, &item.Estado, &item.FechaEntrada, &item.FechaSalida, &item.MinutosCobrados, &item.Subtotal, &item.Impuestos, &item.Total, &item.MetodoPago, &item.QRToken, &item.QRPayload, &item.Observaciones, &item.UsuarioCreador, &item.UsuarioCierre,
 	)
 	return item, err
 }
 
 func GetEmpresaParqueaderoTicketByToken(dbConn *sql.DB, empresaID int64, token string) (EmpresaParqueaderoTicket, error) {
 	var item EmpresaParqueaderoTicket
-	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE empresa_id = ? AND qr_token = ? LIMIT 1`, empresaID, strings.TrimSpace(token)).Scan(
-		&item.ID, &item.EmpresaID, &item.CodigoTicket, &item.Placa, &item.TipoVehiculo, &item.ClienteNombre, &item.ClienteDocumento, &item.Estado, &item.FechaEntrada, &item.FechaSalida, &item.MinutosCobrados, &item.Subtotal, &item.Impuestos, &item.Total, &item.MetodoPago, &item.QRToken, &item.QRPayload, &item.Observaciones, &item.UsuarioCreador, &item.UsuarioCierre,
+	err := QueryRowCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_id,0), COALESCE(servicio_id,0), COALESCE(carrito_id,0), COALESCE(carrito_item_id,0), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE empresa_id = ? AND qr_token = ? LIMIT 1`, empresaID, strings.TrimSpace(token)).Scan(
+		&item.ID, &item.EmpresaID, &item.CodigoTicket, &item.Placa, &item.TipoVehiculo, &item.ClienteID, &item.ServicioID, &item.CarritoID, &item.CarritoItemID, &item.ClienteNombre, &item.ClienteDocumento, &item.Estado, &item.FechaEntrada, &item.FechaSalida, &item.MinutosCobrados, &item.Subtotal, &item.Impuestos, &item.Total, &item.MetodoPago, &item.QRToken, &item.QRPayload, &item.Observaciones, &item.UsuarioCreador, &item.UsuarioCierre,
 	)
 	return item, err
 }
 
 func GetEmpresaParqueaderoTicketAbiertoPorPlaca(dbConn *sql.DB, empresaID int64, placa string) (*EmpresaParqueaderoTicket, error) {
-	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE empresa_id = ? AND placa = ? AND LOWER(COALESCE(estado,'')) = 'abierto' ORDER BY id DESC LIMIT 1`, empresaID, normalizePlate(placa))
+	rows, err := ExecQueryCompat(dbConn, `SELECT id, empresa_id, codigo_ticket, placa, COALESCE(tipo_vehiculo,''), COALESCE(cliente_id,0), COALESCE(servicio_id,0), COALESCE(carrito_id,0), COALESCE(carrito_item_id,0), COALESCE(cliente_nombre,''), COALESCE(cliente_documento,''), COALESCE(estado,''), COALESCE(fecha_entrada,''), COALESCE(fecha_salida,''), COALESCE(minutos_cobrados,0), COALESCE(subtotal,0), COALESCE(impuestos,0), COALESCE(total,0), COALESCE(metodo_pago,''), COALESCE(qr_token,''), COALESCE(qr_payload,''), COALESCE(observaciones,''), COALESCE(usuario_creador,''), COALESCE(usuario_cierre,'') FROM empresa_parqueadero_tickets WHERE empresa_id = ? AND placa = ? AND LOWER(COALESCE(estado,'')) = 'abierto' ORDER BY id DESC LIMIT 1`, empresaID, normalizePlate(placa))
 	if err != nil {
 		return nil, err
 	}
@@ -322,6 +356,173 @@ func CalcularEmpresaParqueaderoCobro(dbConn *sql.DB, empresaID, ticketID int64, 
 	return cobro, ticket, err
 }
 
+func parqueaderoCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
+}
+
+func ensureEmpresaParqueaderoCliente(dbConn *sql.DB, ticket EmpresaParqueaderoTicket) (int64, error) {
+	if ticket.ClienteID > 0 {
+		return ticket.ClienteID, nil
+	}
+	nombre := strings.TrimSpace(ticket.ClienteNombre)
+	documento := strings.TrimSpace(ticket.ClienteDocumento)
+	if nombre == "" && documento == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	normalizedDoc := normalizeClienteDocumentoValue(documento)
+	if normalizedDoc != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		if id, err := findClienteDuplicateID(dbConn, query, ticket.EmpresaID, normalizedDoc); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := documento
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = parqueaderoCoreCode("PK-PLACA", ticket.Placa)
+	}
+	if nombre == "" {
+		nombre = "Cliente parqueadero " + normalizePlate(ticket.Placa)
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         ticket.EmpresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Pais:              "CO",
+		UsuarioCreador:    ticket.UsuarioCierre,
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde parqueadero.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func ensureEmpresaParqueaderoServicio(dbConn *sql.DB, cfg EmpresaParqueaderoConfig, ticket EmpresaParqueaderoTicket) (int64, error) {
+	if ticket.ServicioID > 0 {
+		return ticket.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	tipo := normalizeVehicleType(ticket.TipoVehiculo)
+	code := parqueaderoCoreCode("PK-SERV", tipo)
+	var servicioID int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, ticket.EmpresaID, code).Scan(&servicioID)
+	if err == sql.ErrNoRows {
+		servicioID, err = CreateServicio(dbConn, Servicio{
+			EmpresaID:       ticket.EmpresaID,
+			Codigo:          code,
+			Nombre:          "Parqueadero " + tipo,
+			Descripcion:     "Servicio vendible para cobro de parqueadero por tiempo.",
+			Categoria:       "parqueadero",
+			DuracionMinutos: cfg.MinutosBase,
+			Precio:          cfg.TarifaBase,
+			Estado:          "activo",
+			UsuarioCreador:  ticket.UsuarioCierre,
+			Observaciones:   "Servicio sincronizado desde tickets de parqueadero.",
+		})
+	}
+	return servicioID, err
+}
+
+func createEmpresaParqueaderoCarrito(dbConn *sql.DB, cfg EmpresaParqueaderoConfig, ticket EmpresaParqueaderoTicket, cobro EmpresaParqueaderoCobro, metodoPago string) (int64, int64, int64, error) {
+	if cobro.Total <= 0 {
+		return 0, 0, ticket.ServicioID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, 0, err
+	}
+	clienteID, err := ensureEmpresaParqueaderoCliente(dbConn, ticket)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	ticket.ClienteID = clienteID
+	servicioID, err := ensureEmpresaParqueaderoServicio(dbConn, cfg, ticket)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	metodo := NormalizeMetodoPagoCarrito(metodoPago)
+	if metodo == "" {
+		metodo = "efectivo"
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         ticket.EmpresaID,
+		Codigo:            parqueaderoCoreCode("PK-TICKET", fmt.Sprintf("%d", ticket.ID), ticket.CodigoTicket),
+		Nombre:            "Parqueadero - " + ticket.Placa,
+		CanalVenta:        "parqueadero",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            cfg.Moneda,
+		ReferenciaExterna: fmt.Sprintf("parqueadero:ticket:%d:%s", ticket.ID, ticket.CodigoTicket),
+		MetodoPago:        metodo,
+		ReferenciaPago:    ticket.CodigoTicket,
+		UsuarioCreador:    ticket.UsuarioCierre,
+		Observaciones:     "Venta central generada desde ticket de parqueadero.",
+	})
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          ticket.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       servicioID,
+		CodigoItem:         parqueaderoCoreCode("PK-ITEM", ticket.CodigoTicket),
+		Descripcion:        fmt.Sprintf("Parqueadero %s - %s min", ticket.Placa, fmt.Sprintf("%d", cobro.MinutosCobrados)),
+		UnidadMedida:       "servicio",
+		Cantidad:           1,
+		PrecioUnitario:     cobro.Total,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     ticket.UsuarioCierre,
+		Estado:             "activo",
+		Observaciones:      cobro.Detalle,
+	})
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	if err := PayCarritoStationSession(dbConn, ticket.EmpresaID, carritoID, metodo, ticket.CodigoTicket, "", "", 0, 0, cobro.Total, 0, ticket.UsuarioCierre); err != nil {
+		return 0, 0, 0, err
+	}
+	return carritoID, itemID, servicioID, nil
+}
+
 func CerrarEmpresaParqueaderoTicket(dbConn *sql.DB, empresaID, ticketID int64, metodoPago, usuario string) (EmpresaParqueaderoTicket, EmpresaParqueaderoCobro, error) {
 	cobro, ticket, err := CalcularEmpresaParqueaderoCobro(dbConn, empresaID, ticketID, time.Now())
 	if err != nil {
@@ -333,13 +534,102 @@ func CerrarEmpresaParqueaderoTicket(dbConn *sql.DB, empresaID, ticketID int64, m
 	if strings.TrimSpace(metodoPago) == "" {
 		metodoPago = "efectivo"
 	}
-	_, err = ExecCompat(dbConn, `UPDATE empresa_parqueadero_tickets SET estado = 'salido', fecha_salida = ?, minutos_cobrados = ?, subtotal = ?, impuestos = ?, total = ?, metodo_pago = ?, usuario_cierre = ? WHERE empresa_id = ? AND id = ?`,
-		cobro.FechaSalida, cobro.MinutosCobrados, cobro.Subtotal, cobro.Impuestos, cobro.Total, strings.ToLower(strings.TrimSpace(metodoPago)), strings.TrimSpace(usuario), empresaID, ticketID)
+	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
+	if metodoPago == "" {
+		metodoPago = "efectivo"
+	}
+	cfg, err := GetEmpresaParqueaderoConfig(dbConn, empresaID)
+	if err != nil {
+		return EmpresaParqueaderoTicket{}, EmpresaParqueaderoCobro{}, err
+	}
+	ticket.UsuarioCierre = strings.TrimSpace(usuario)
+	carritoID, itemID, servicioID, err := createEmpresaParqueaderoCarrito(dbConn, cfg, ticket, cobro, metodoPago)
+	if err != nil {
+		return EmpresaParqueaderoTicket{}, EmpresaParqueaderoCobro{}, err
+	}
+	clienteID, err := ensureEmpresaParqueaderoCliente(dbConn, ticket)
+	if err != nil {
+		return EmpresaParqueaderoTicket{}, EmpresaParqueaderoCobro{}, err
+	}
+	_, err = ExecCompat(dbConn, `UPDATE empresa_parqueadero_tickets SET estado = 'salido', fecha_salida = ?, minutos_cobrados = ?, subtotal = ?, impuestos = ?, total = ?, metodo_pago = ?, cliente_id = ?, servicio_id = ?, carrito_id = ?, carrito_item_id = ?, usuario_cierre = ? WHERE empresa_id = ? AND id = ?`,
+		cobro.FechaSalida, cobro.MinutosCobrados, cobro.Subtotal, cobro.Impuestos, cobro.Total, metodoPago, nullableInt64(clienteID), nullableInt64(servicioID), nullableInt64(carritoID), nullableInt64(itemID), strings.TrimSpace(usuario), empresaID, ticketID)
 	if err != nil {
 		return EmpresaParqueaderoTicket{}, EmpresaParqueaderoCobro{}, err
 	}
 	closed, err := GetEmpresaParqueaderoTicketByID(dbConn, empresaID, ticketID)
 	return closed, cobro, err
+}
+
+func SyncEmpresaParqueaderoNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaParqueaderoIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaParqueaderoSchema(dbConn); err != nil {
+		return nil, err
+	}
+	cfg, err := GetEmpresaParqueaderoConfig(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaParqueaderoIntegracionNucleoResumen{
+		EmpresaID:         empresaID,
+		EstadoIntegracion: "plantilla_integrada_nucleo",
+		VisibleOperativo:  true,
+	}
+	tickets, err := ListEmpresaParqueaderoTickets(dbConn, empresaID, "salido", 500)
+	if err != nil {
+		return nil, err
+	}
+	for _, ticket := range tickets {
+		if ticket.CarritoID > 0 || ticket.Total <= 0 {
+			resumen.TicketsPendientes++
+			continue
+		}
+		ticket.UsuarioCierre = usuario
+		if strings.TrimSpace(ticket.MetodoPago) == "" {
+			ticket.MetodoPago = "efectivo"
+		}
+		cobro := EmpresaParqueaderoCobro{
+			EmpresaID:       ticket.EmpresaID,
+			TicketID:        ticket.ID,
+			CodigoTicket:    ticket.CodigoTicket,
+			Placa:           ticket.Placa,
+			FechaEntrada:    ticket.FechaEntrada,
+			FechaSalida:     ticket.FechaSalida,
+			MinutosCobrados: ticket.MinutosCobrados,
+			Subtotal:        ticket.Subtotal,
+			Impuestos:       ticket.Impuestos,
+			Total:           ticket.Total,
+			Moneda:          cfg.Moneda,
+			Detalle:         "Sincronizacion historica de parqueadero.",
+		}
+		carritoID, itemID, servicioID, err := createEmpresaParqueaderoCarrito(dbConn, cfg, ticket, cobro, ticket.MetodoPago)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("ticket %d: %v", ticket.ID, err))
+			continue
+		}
+		clienteID, err := ensureEmpresaParqueaderoCliente(dbConn, ticket)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("ticket %d cliente: %v", ticket.ID, err))
+			continue
+		}
+		metodo := NormalizeMetodoPagoCarrito(ticket.MetodoPago)
+		if metodo == "" {
+			metodo = "efectivo"
+		}
+		_, err = ExecCompat(dbConn, `UPDATE empresa_parqueadero_tickets SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, metodo_pago=?, usuario_cierre=COALESCE(NULLIF(usuario_cierre,''), ? ) WHERE empresa_id=? AND id=?`,
+			nullableInt64(clienteID), nullableInt64(servicioID), nullableInt64(carritoID), nullableInt64(itemID), metodo, strings.TrimSpace(usuario), ticket.EmpresaID, ticket.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("ticket %d refs: %v", ticket.ID, err))
+			continue
+		}
+		resumen.TicketsSincronizados++
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+		}
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
 }
 
 func AnularEmpresaParqueaderoTicket(dbConn *sql.DB, empresaID, ticketID int64, usuario, motivo string) error {
@@ -555,5 +845,5 @@ type parqueaderoScanner interface {
 }
 
 func scanParqueaderoTicket(row parqueaderoScanner, item *EmpresaParqueaderoTicket) error {
-	return row.Scan(&item.ID, &item.EmpresaID, &item.CodigoTicket, &item.Placa, &item.TipoVehiculo, &item.ClienteNombre, &item.ClienteDocumento, &item.Estado, &item.FechaEntrada, &item.FechaSalida, &item.MinutosCobrados, &item.Subtotal, &item.Impuestos, &item.Total, &item.MetodoPago, &item.QRToken, &item.QRPayload, &item.Observaciones, &item.UsuarioCreador, &item.UsuarioCierre)
+	return row.Scan(&item.ID, &item.EmpresaID, &item.CodigoTicket, &item.Placa, &item.TipoVehiculo, &item.ClienteID, &item.ServicioID, &item.CarritoID, &item.CarritoItemID, &item.ClienteNombre, &item.ClienteDocumento, &item.Estado, &item.FechaEntrada, &item.FechaSalida, &item.MinutosCobrados, &item.Subtotal, &item.Impuestos, &item.Total, &item.MetodoPago, &item.QRToken, &item.QRPayload, &item.Observaciones, &item.UsuarioCreador, &item.UsuarioCierre)
 }

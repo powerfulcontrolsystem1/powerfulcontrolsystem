@@ -102,6 +102,14 @@ func EmpresaTaxiSystemHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFun
 
 		case http.MethodPost:
 			switch action {
+			case "sincronizar_nucleo":
+				resumen, err := dbpkg.SyncEmpresaTaxiSystemNucleo(dbEmp, empresaID, adminEmail)
+				if err != nil {
+					http.Error(w, "No se pudo sincronizar taxi system con el nucleo", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
+				return
 			case "config":
 				var payload dbpkg.EmpresaTaxiConfig
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

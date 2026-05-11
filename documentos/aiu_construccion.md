@@ -18,6 +18,7 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - Tablero profesional con totales, facturado, neto a cobrar, pendiente por facturar, alertas de avance alto sin facturar y contratos por estado.
 - Filtros por estado/busqueda, facturas recientes y exportacion CSV desde la vista.
 - Generacion de factura electronica AIU en `empresa_facturacion_documentos`, reutilizando el modulo de facturacion electronica, auditoria y permisos.
+- Integracion con el nucleo: cliente de obra en `clientes`, contrato/conceptos en `servicios` y factura AIU enlazada a `carritos_compras`/`carrito_compra_items` para reportes comerciales sin duplicar IVA ni retenciones.
 - Control independiente por licencia/rol mediante `aiu_construccion`.
 
 ## Rutas y archivos
@@ -39,11 +40,12 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - `POST action=contrato`: crea o actualiza contrato.
 - `POST action=item`: agrega concepto/capitulo al contrato.
 - `POST action=generar_factura`: registra factura AIU y documento electronico.
+- `POST action=sincronizar_nucleo`: enlaza contratos, conceptos y facturas historicas con clientes, servicios y carritos centrales.
 - `POST action=estado`: cambia estado con validacion de flujo y aprobacion.
 - `POST action=seed_demo`: crea un ejemplo operativo.
 
 ## Verificacion
 
-- `go test ./db -run Test.*AIU -count=1`
+- `go test ./db -run AIU -count=1`
 - `go test ./handlers -run "TestNormalizeFacturacionDocumentoElectronicoTipo|TestResolveFacturacionTransitionForDocumentosElectronicosNuevos" -count=1`
 - `go test ./...`

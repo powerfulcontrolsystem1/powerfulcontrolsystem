@@ -204,6 +204,10 @@
         <button class="parking-tab" type="button" data-panel="config">Tarifas</button>
         <button class="parking-tab" type="button" data-panel="recibo">Recibo</button>
       </div>
+      <div class="parking-actions" style="margin-top:12px;">
+        <button id="btnSyncCore" class="btn secondary" type="button">Sincronizar nucleo</button>
+        <span id="parkingCoreSummary" class="form-help">Nucleo: tickets cobrados generan ventas y pagos centrales.</span>
+      </div>
     </section>
 
     <section id="panel-operacion" class="parking-panel parking-grid-2">
@@ -298,9 +302,9 @@
 
   <script>
     (function(){
-      var state = { empresaID: getEmpresaID(), dashboard: null, selected: null, cobro: null };
+      var state = { empresaID: getEmpresaID(), dashboard: null, selected: null, cobro: null, integracionNucleo: null };
       var els = {};
-      ["kpiAbiertos","kpiSalidas","kpiIngresos","placa","tipoVehiculo","clienteNombre","clienteDocumento","observaciones","btnEmitirTicket","btnRefrescar","ticketsAbiertos","parkingMsg","salidaToken","btnValidarQR","btnCobrarQR","salidaResumen","cfgNombre","cfgPrefijo","cfgMoneda","cfgTolerancia","cfgMinBase","cfgTarifaBase","cfgMinFraccion","cfgTarifaFraccion","cfgDiaMax","cfgIva","cfgFraccionCompleta","cfgIvaIncluido","cfgSalidaQR","cfgPrintEntrada","cfgPrintSalida","btnGuardarConfig","receiptTitle","rTicket","rPlaca","rEntrada","rSalida","rMinutos","rSubtotal","rImpuestos","rTotal","receiptQR","btnImprimirRecibo"].forEach(function(id){ els[id]=document.getElementById(id); });
+      ["kpiAbiertos","kpiSalidas","kpiIngresos","placa","tipoVehiculo","clienteNombre","clienteDocumento","observaciones","btnEmitirTicket","btnRefrescar","ticketsAbiertos","parkingMsg","btnSyncCore","parkingCoreSummary","salidaToken","btnValidarQR","btnCobrarQR","salidaResumen","cfgNombre","cfgPrefijo","cfgMoneda","cfgTolerancia","cfgMinBase","cfgTarifaBase","cfgMinFraccion","cfgTarifaFraccion","cfgDiaMax","cfgIva","cfgFraccionCompleta","cfgIvaIncluido","cfgSalidaQR","cfgPrintEntrada","cfgPrintSalida","btnGuardarConfig","receiptTitle","rTicket","rPlaca","rEntrada","rSalida","rMinutos","rSubtotal","rImpuestos","rTotal","receiptQR","btnImprimirRecibo"].forEach(function(id){ els[id]=document.getElementById(id); });
 
       function getEmpresaID(){
         try {
@@ -355,6 +359,22 @@
         els.kpiIngresos.textContent = money(d.ingresos_hoy || 0);
         fillConfig(d.config || {});
         renderOpenTickets(d.tickets_abiertos || []);
+        renderCoreIntegration();
+      }
+      function renderCoreIntegration(){
+        if (!els.parkingCoreSummary) return;
+        var row = state.integracionNucleo;
+        if (!row) {
+          els.parkingCoreSummary.textContent = "Nucleo: tickets cobrados generan ventas y pagos centrales.";
+          return;
+        }
+        var errors = Array.isArray(row.errores) ? row.errores.length : 0;
+        els.parkingCoreSummary.textContent = [
+          "Nucleo sincronizado",
+          "tickets " + (row.tickets_sincronizados || 0),
+          "pendientes " + (row.tickets_pendientes || 0),
+          errors ? "observaciones " + errors : "sin observaciones"
+        ].join(" | ");
       }
       function fillConfig(cfg){
         els.cfgNombre.value = cfg.nombre || "Parqueadero";
@@ -509,9 +529,25 @@
         setMsg("Tarifas guardadas.", "success");
         await load();
       }
+      async function sincronizarNucleo(){
+        try {
+          els.btnSyncCore.disabled = true;
+          setMsg("Sincronizando parqueadero con el nucleo...", "");
+          var resp = await request(api("sincronizar_nucleo"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" });
+          state.integracionNucleo = resp.integracion || null;
+          renderCoreIntegration();
+          setMsg("Parqueadero sincronizado con ventas y pagos centrales.", "success");
+          await load();
+        } catch(err) {
+          setMsg(err.message || "No se pudo sincronizar con el nucleo.", "error");
+        } finally {
+          els.btnSyncCore.disabled = false;
+        }
+      }
       document.querySelectorAll(".parking-tab").forEach(function(btn){ btn.addEventListener("click", function(){ showPanel(btn.dataset.panel); }); });
       els.btnEmitirTicket.addEventListener("click", emitirTicket);
       els.btnRefrescar.addEventListener("click", load);
+      els.btnSyncCore.addEventListener("click", sincronizarNucleo);
       els.btnValidarQR.addEventListener("click", validarQR);
       els.btnCobrarQR.addEventListener("click", cobrarQR);
       els.btnGuardarConfig.addEventListener("click", guardarConfig);

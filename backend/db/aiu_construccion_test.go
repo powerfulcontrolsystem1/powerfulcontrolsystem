@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -133,5 +134,23 @@ func TestNormalizeEmpresaAIUItemRequiresRealValueAfterNormalization(t *testing.T
 	})
 	if got.Cantidad != 0 || got.ValorUnitario != 0 || got.ValorTotal != 0 {
 		t.Fatalf("expected negative values to normalize to zero, got %#v", got)
+	}
+}
+
+func TestAIUCoreCodeNormalizaAcentosYLimitaLongitud(t *testing.T) {
+	got := aiuCoreCode("AIU-CTR", "Obra Ñandú", "Administración eléctrica con acabados especiales")
+	if !strings.HasPrefix(got, "AIU-CTR-OBRA-NANDU-ADMINISTRACION-ELECTRICA") {
+		t.Fatalf("codigo AIU inesperado: %s", got)
+	}
+	if len(strings.TrimPrefix(got, "AIU-CTR-")) > 42 {
+		t.Fatalf("codigo AIU no debe exceder 42 caracteres utiles: %s", got)
+	}
+}
+
+func TestAIUFacturaCarritoReferenceIsStable(t *testing.T) {
+	factura := EmpresaAIUFactura{ID: 77, DocumentoCodigo: " FE-AIU-001 "}
+	got := fmt.Sprintf("aiu_construccion:factura:%d:%s", factura.ID, strings.TrimSpace(factura.DocumentoCodigo))
+	if got != "aiu_construccion:factura:77:FE-AIU-001" {
+		t.Fatalf("referencia externa inesperada: %s", got)
 	}
 }

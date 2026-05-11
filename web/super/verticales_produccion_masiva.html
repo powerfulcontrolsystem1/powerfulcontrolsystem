@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Verticales v1 masiva</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .verticales-v1-shell{max-width:1280px;margin:0 auto;padding:22px;display:grid;gap:16px}
+    .verticales-v1-head{display:grid;gap:8px}
+    .verticales-v1-head h1{margin:0;font-size:1.7rem;line-height:1.15;letter-spacing:0}
+    .verticales-v1-head p{margin:0;color:var(--muted);max-width:860px;line-height:1.5}
+    .verticales-v1-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .verticales-v1-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .verticales-v1-kpi{min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .verticales-v1-kpi span{display:block;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+    .verticales-v1-kpi strong{display:block;margin-top:4px;font-size:1.55rem;line-height:1.1}
+    .verticales-v1-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .verticales-v1-segmented{display:inline-grid;grid-template-columns:repeat(4,auto);gap:4px;padding:4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .verticales-v1-segmented button{border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:850;padding:8px 10px;cursor:pointer}
+    .verticales-v1-segmented button.is-active{background:var(--accent);color:var(--btn-primary-text,#fff)}
+    .verticales-v1-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .verticales-v1-table{width:100%;border-collapse:collapse;min-width:1240px}
+    .verticales-v1-table th,.verticales-v1-table td{padding:12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .verticales-v1-table th{color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em;background:var(--surface-soft)}
+    .verticales-v1-table td small{display:block;margin-top:4px;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .verticales-v1-rank{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:color-mix(in srgb,var(--accent) 16%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));font-weight:900}
+    .verticales-v1-rank.is-empty{background:var(--surface-soft);color:var(--muted)}
+    .verticales-v1-pill{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:5px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface-soft);color:var(--muted);font-size:.74rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .verticales-v1-pill.is-mass{border-color:color-mix(in srgb,#16a34a 38%,var(--border));background:color-mix(in srgb,#dcfce7 70%,var(--surface));color:#166534}
+    .verticales-v1-pill.is-deferred{border-color:color-mix(in srgb,#f97316 38%,var(--border));background:color-mix(in srgb,#ffedd5 70%,var(--surface));color:#9a3412}
+    .verticales-v1-pill.is-ready{border-color:color-mix(in srgb,#059669 44%,var(--border));background:color-mix(in srgb,#d1fae5 72%,var(--surface));color:#065f46}
+    .verticales-v1-pill.is-blocked{border-color:color-mix(in srgb,#dc2626 36%,var(--border));background:color-mix(in srgb,#fee2e2 70%,var(--surface));color:#991b1b}
+    .verticales-v1-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+    .verticales-v1-list code{white-space:normal;overflow-wrap:anywhere;border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--surface-soft);font-size:.76rem}
+    .verticales-v1-row-actions{display:grid;gap:6px;min-width:150px}
+    .verticales-v1-row-actions .btn{min-height:32px;padding:6px 9px;font-size:.78rem;justify-content:center}
+    .verticales-v1-empty{padding:18px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);color:var(--muted);text-align:center}
+    .verticales-v1-error{padding:12px;border:1px solid color-mix(in srgb,#ef4444 44%,var(--border));border-radius:8px;background:color-mix(in srgb,#fee2e2 72%,var(--surface));color:#991b1b}
+    @media (max-width:1080px){.verticales-v1-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media (max-width:900px){.verticales-v1-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.verticales-v1-toolbar{grid-template-columns:1fr}.verticales-v1-actions{align-items:stretch}.verticales-v1-actions .btn{width:100%;justify-content:center}}
+    @media (max-width:560px){.verticales-v1-shell{padding:14px}.verticales-v1-kpis{grid-template-columns:1fr}.verticales-v1-segmented{grid-template-columns:1fr}.verticales-v1-table{min-width:920px}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <main class="verticales-v1-shell">
+    <header class="verticales-v1-head">
+      <h1>Verticales v1 masiva</h1>
+      <p>Gobierno comercial y tecnico de las plantillas priorizadas para escalar en Colombia sin duplicar clientes, productos, ventas, pagos ni reportes.</p>
+      <div class="verticales-v1-actions">
+        <a class="btn secondary" href="/super/tipos_empresas.html">Tipos de empresa</a>
+        <a class="btn secondary" href="/super/preconfiguracion_tipos_empresa.html">Preconfiguraciones</a>
+        <a class="btn secondary" href="/super/licencias.html">Licencias</a>
+        <button class="btn secondary" id="ensureBtn" type="button">Asegurar v1</button>
+        <button class="btn" id="exportBtn" type="button">Exportar CSV</button>
+      </div>
+    </header>
+
+    <section class="verticales-v1-kpis" aria-label="Resumen de verticales">
+      <div class="verticales-v1-kpi"><span>Total catalogo</span><strong id="kpiTotal">0</strong></div>
+      <div class="verticales-v1-kpi"><span>V1 masiva</span><strong id="kpiMass">0</strong></div>
+      <div class="verticales-v1-kpi"><span>Diferidos</span><strong id="kpiDeferred">0</strong></div>
+      <div class="verticales-v1-kpi"><span>Metadata completa</span><strong id="kpiComplete">0</strong></div>
+      <div class="verticales-v1-kpi"><span>Listos venta</span><strong id="kpiReady">0</strong></div>
+    </section>
+
+    <section class="verticales-v1-toolbar" aria-label="Filtros de verticales">
+      <input id="searchInput" class="form-input" type="search" placeholder="Buscar vertical, modulo, permiso o reporte">
+      <div class="verticales-v1-segmented" role="tablist" aria-label="Estado comercial">
+        <button type="button" class="is-active" data-filter="all">Todos</button>
+        <button type="button" data-filter="ready">Listos</button>
+        <button type="button" data-filter="mass">V1 masiva</button>
+        <button type="button" data-filter="deferred">Diferidos</button>
+      </div>
+      <button class="btn secondary" id="refreshBtn" type="button">Actualizar</button>
+    </section>
+
+    <div id="messageBox" hidden></div>
+    <section id="tableHost" class="verticales-v1-table-wrap" aria-live="polite"></section>
+  </main>
+
+  <script>
+    (function(){
+      var state = { items: [], preconfigs: [], licenses: [], filter: 'all', query: '' };
+      var tableHost = document.getElementById('tableHost');
+      var messageBox = document.getElementById('messageBox');
+      var searchInput = document.getElementById('searchInput');
+      var exportBtn = document.getElementById('exportBtn');
+      var ensureBtn = document.getElementById('ensureBtn');
+
+      function escapeHTML(value){
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function(match){
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match];
+        });
+      }
+
+      function normalizeText(value){
+        var out = String(value || '').trim().toLowerCase();
+        if (out.normalize) out = out.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return out;
+      }
+
+      function asArray(value){
+        return Array.isArray(value) ? value.filter(Boolean) : [];
+      }
+
+      function getIntegration(item){
+        return item && item.integracion_preconfig ? item.integracion_preconfig : {};
+      }
+
+      function isComplete(item){
+        var integration = getIntegration(item);
+        return asArray(integration.template_activates).length > 0 &&
+          asArray(integration.tables_touched).length > 0 &&
+          asArray(integration.required_permissions).length > 0 &&
+          asArray(integration.sale_flow).length > 0 &&
+          asArray(integration.reports_produced).length > 0;
+      }
+
+      function splitCSV(value){
+        return String(value || '').split(',').map(function(part){
+          return normalizeText(part).replace(/\s+/g, '_');
+        }).filter(Boolean).filter(function(value, index, arr){
+          return arr.indexOf(value) === index;
+        });
+      }
+
+      function isActiveRecord(item){
+        if (!item) return false;
+        if (String(item.estado || '').trim().toLowerCase() === 'inactivo') return false;
+        if (item.activo === false || item.activo === 0 || String(item.activo) === '0') return false;
+        return true;
+      }
+
+      function textMatchesModule(text, moduleKey){
+        var normalized = normalizeText(text).replace(/_/g, ' ');
+        var moduleText = normalizeText(moduleKey).replace(/_/g, ' ');
+        return !!moduleText && normalized.indexOf(moduleText) >= 0;
+      }
+
+      function findPreconfig(item){
+        var moduleKey = item && item.module ? String(item.module) : '';
+        var title = item && item.title ? String(item.title) : '';
+        for (var i = 0; i < state.preconfigs.length; i += 1) {
+          var row = state.preconfigs[i] || {};
+          var tipo = row.tipo_empresa || {};
+          var preconfig = row.preconfig || {};
+          var template = row.template || {};
+          var operation = template.operacion || {};
+          var integration = template.integracion_vertical || {};
+          var haystack = [
+            tipo.nombre,
+            preconfig.nombre,
+            preconfig.descripcion,
+            operation.tipo_negocio,
+            integration.modulo
+          ].join(' ');
+          if (integration.modulo === moduleKey || operation.tipo_negocio === moduleKey || textMatchesModule(haystack, moduleKey) || textMatchesModule(haystack, title)) {
+            return row;
+          }
+        }
+        return null;
+      }
+
+      function findLicense(item){
+        var moduleKey = normalizeText(item && item.module).replace(/_/g, '_');
+        if (!moduleKey) return null;
+        for (var i = 0; i < state.licenses.length; i += 1) {
+          var row = state.licenses[i] || {};
+          if (!isActiveRecord(row)) continue;
+          if (Number(row.empresa_id || 0) > 0) continue;
+          var modules = splitCSV(row.modulos_habilitados || '');
+          if (modules.indexOf(moduleKey) >= 0) return row;
+        }
+        return null;
+      }
+
+      function buildReadiness(item){
+        var preconfig = findPreconfig(item);
+        var license = findLicense(item);
+        var preconfigData = preconfig && preconfig.preconfig ? preconfig.preconfig : {};
+        var template = preconfig && preconfig.template ? preconfig.template : {};
+        var templateIntegration = template.integracion_vertical || {};
+        var preconfigReady = !!preconfig && !!preconfigData.enabled && templateIntegration.modulo === item.module;
+        var licenseReady = !!license;
+        var metadataReady = isComplete(item);
+        var massReady = !!item.produccion_masiva;
+        var missing = [];
+        if (!massReady) missing.push('no es v1 masiva');
+        if (!metadataReady) missing.push('metadata incompleta');
+        if (!preconfigReady) missing.push(preconfig ? 'preconfig sin integracion activa' : 'sin preconfiguracion');
+        if (!licenseReady) missing.push('sin licencia activa');
+        return {
+          ready: massReady && metadataReady && preconfigReady && licenseReady,
+          preconfig: preconfig,
+          license: license,
+          missing: missing
+        };
+      }
+
+      function itemSearchText(item){
+        var integration = getIntegration(item);
+        return normalizeText([
+          item.module,
+          item.title,
+          item.summary,
+          item.decision_preconfig,
+          integration.motivo_decision,
+          buildReadiness(item).ready ? 'listo venta' : 'pendiente venta',
+          buildReadiness(item).missing.join(' '),
+          asArray(integration.required_permissions).join(' '),
+          asArray(integration.reports_produced).join(' '),
+          asArray(integration.sale_flow).join(' ')
+        ].join(' '));
+      }
+
+      function filteredItems(){
+        var query = normalizeText(state.query);
+        return state.items.filter(function(item){
+          var mass = !!item.produccion_masiva;
+          var readiness = buildReadiness(item);
+          if (state.filter === 'ready' && !readiness.ready) return false;
+          if (state.filter === 'mass' && !mass) return false;
+          if (state.filter === 'deferred' && mass) return false;
+          if (query && itemSearchText(item).indexOf(query) < 0) return false;
+          return true;
+        }).sort(function(a,b){
+          var ar = Number(a.prioridad_produccion || 99);
+          var br = Number(b.prioridad_produccion || 99);
+          if (ar !== br) return ar - br;
+          return String(a.title || '').localeCompare(String(b.title || ''), 'es');
+        });
+      }
+
+      function renderList(values, limit){
+        values = asArray(values);
+        if (!values.length) return '<small>Sin datos declarados</small>';
+        var shown = values.slice(0, limit || 4).map(function(value){
+          return '<code>' + escapeHTML(value) + '</code>';
+        }).join('');
+        var remaining = values.length - (limit || 4);
+        if (remaining > 0) shown += '<code>+' + remaining + '</code>';
+        return '<div class="verticales-v1-list">' + shown + '</div>';
+      }
+
+      function renderTable(){
+        var rows = filteredItems();
+        document.getElementById('kpiTotal').textContent = state.items.length;
+        document.getElementById('kpiMass').textContent = state.items.filter(function(i){ return !!i.produccion_masiva; }).length;
+        document.getElementById('kpiDeferred').textContent = state.items.filter(function(i){ return !i.produccion_masiva; }).length;
+        document.getElementById('kpiComplete').textContent = state.items.filter(isComplete).length;
+        document.getElementById('kpiReady').textContent = state.items.filter(function(i){ return buildReadiness(i).ready; }).length;
+
+        if (!rows.length) {
+          tableHost.className = 'verticales-v1-empty';
+          tableHost.innerHTML = 'No hay verticales para el filtro actual.';
+          return;
+        }
+        tableHost.className = 'verticales-v1-table-wrap';
+        tableHost.innerHTML = '' +
+          '<table class="verticales-v1-table">' +
+          '<thead><tr>' +
+          '<th>Prioridad</th><th>Vertical</th><th>Venta</th><th>Decision</th><th>Plantilla activa</th><th>Permisos</th><th>Flujo de venta</th><th>Reportes</th><th>Acciones</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function(item){
+            var integration = getIntegration(item);
+            var rank = Number(item.prioridad_produccion || 0);
+            var mass = !!item.produccion_masiva;
+            var moduleKey = encodeURIComponent(item.module || '');
+            var titleKey = encodeURIComponent(item.title || item.module || '');
+            var readiness = buildReadiness(item);
+            var licenseName = readiness.license && readiness.license.nombre ? readiness.license.nombre : '';
+            var preconfigName = readiness.preconfig && readiness.preconfig.preconfig ? readiness.preconfig.preconfig.nombre : '';
+            return '<tr>' +
+              '<td><span class="verticales-v1-rank ' + (rank ? '' : 'is-empty') + '">' + (rank ? escapeHTML(rank) : '-') + '</span></td>' +
+              '<td><strong>' + escapeHTML(item.title || item.module) + '</strong><small>' + escapeHTML(item.module || '') + '</small><small>' + escapeHTML(item.summary || '') + '</small></td>' +
+              '<td><span class="verticales-v1-pill ' + (readiness.ready ? 'is-ready' : 'is-blocked') + '">' + (readiness.ready ? 'Listo venta' : 'Pendiente') + '</span><small>' + escapeHTML(readiness.ready ? ('Preconfig: ' + (preconfigName || 'activa') + ' / Licencia: ' + (licenseName || 'activa')) : readiness.missing.join(', ')) + '</small></td>' +
+              '<td><span class="verticales-v1-pill ' + (mass ? 'is-mass' : 'is-deferred') + '">' + (mass ? 'V1 masiva' : 'Diferido') + '</span><small>' + escapeHTML(integration.motivo_decision || item.decision_preconfig || '') + '</small></td>' +
+              '<td>' + renderList(integration.template_activates, 5) + '<small>Tablas: ' + escapeHTML(asArray(integration.tables_touched).slice(0, 4).join(', ') || 'sin declarar') + '</small></td>' +
+              '<td>' + renderList(integration.required_permissions, 5) + '</td>' +
+              '<td>' + renderList(integration.sale_flow, 5) + '</td>' +
+              '<td>' + renderList(integration.reports_produced, 5) + '</td>' +
+              '<td><div class="verticales-v1-row-actions">' +
+                '<a class="btn secondary" href="/super/tipos_empresas.html?vertical=' + moduleKey + '&q=' + titleKey + '">Tipo</a>' +
+                '<a class="btn secondary" href="/super/preconfiguracion_tipos_empresa.html?vertical=' + moduleKey + '&q=' + titleKey + '">Preconfig</a>' +
+                '<a class="btn secondary" href="/super/licencias.html?modulo=' + moduleKey + '&q=' + moduleKey + '">Licencias</a>' +
+              '</div></td>' +
+              '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      }
+
+      function setMessage(text, error){
+        if (!text) {
+          messageBox.hidden = true;
+          messageBox.className = '';
+          messageBox.textContent = '';
+          return;
+        }
+        messageBox.hidden = false;
+        messageBox.className = error ? 'verticales-v1-error' : 'form-help';
+        messageBox.textContent = text;
+      }
+
+      async function load(){
+        setMessage('', false);
+        tableHost.className = 'verticales-v1-empty';
+        tableHost.textContent = 'Cargando catalogo...';
+        try {
+          var res = await fetch('/super/api/verticales_nuevos/catalogo', { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var payload = await res.json();
+          state.items = Array.isArray(payload.items) ? payload.items : [];
+          var warnings = [];
+          try {
+            var preconfigRes = await fetch('/super/api/tipos_empresas/preconfiguracion', { credentials: 'same-origin' });
+            if (!preconfigRes.ok) throw new Error('HTTP ' + preconfigRes.status);
+            var preconfigPayload = await preconfigRes.json();
+            state.preconfigs = preconfigPayload && Array.isArray(preconfigPayload.items) ? preconfigPayload.items : [];
+          } catch (preconfigErr) {
+            state.preconfigs = [];
+            warnings.push('preconfiguraciones');
+          }
+          try {
+            var licensesRes = await fetch('/super/api/licencias?activo=1', { credentials: 'same-origin' });
+            if (!licensesRes.ok) throw new Error('HTTP ' + licensesRes.status);
+            var licensesPayload = await licensesRes.json();
+            state.licenses = Array.isArray(licensesPayload) ? licensesPayload : [];
+          } catch (licensesErr) {
+            state.licenses = [];
+            warnings.push('licencias');
+          }
+          renderTable();
+          if (warnings.length) {
+            setMessage('Catalogo cargado, pero no se pudo cruzar: ' + warnings.join(', ') + '.', true);
+          }
+        } catch (err) {
+          state.items = [];
+          state.preconfigs = [];
+          state.licenses = [];
+          renderTable();
+          setMessage('No fue posible cargar el catalogo de verticales nuevos: ' + err.message, true);
+        }
+      }
+
+      async function ensureV1(){
+        if (!confirm('Asegurar tipos, preconfiguraciones y licencias recomendadas para los 10 verticales v1?')) return;
+        var originalText = ensureBtn.textContent;
+        ensureBtn.disabled = true;
+        ensureBtn.textContent = 'Asegurando...';
+        setMessage('', false);
+        try {
+          var res = await fetch('/super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias', {
+            method: 'POST',
+            credentials: 'same-origin'
+          });
+          var raw = await res.text();
+          var payload = null;
+          try { payload = raw ? JSON.parse(raw) : null; } catch (e) { payload = null; }
+          if (!res.ok) throw new Error((payload && (payload.error || payload.message)) || raw || ('HTTP ' + res.status));
+          await load();
+          setMessage('Verticales v1 asegurados: tipos ' + (payload && payload.tipos_asegurados || 0) + ', licencias ' + (payload && payload.licencias_aseguradas || 0) + '.', false);
+        } catch (err) {
+          setMessage('No fue posible asegurar verticales v1: ' + err.message, true);
+        } finally {
+          ensureBtn.disabled = false;
+          ensureBtn.textContent = originalText;
+        }
+      }
+
+      function exportCSV(){
+        var rows = filteredItems();
+        var header = ['prioridad','modulo','titulo','decision','produccion_masiva','listo_venta','pendientes','preconfiguracion','licencia','permisos','flujo_venta','reportes'];
+        var csv = [header].concat(rows.map(function(item){
+          var integration = getIntegration(item);
+          var readiness = buildReadiness(item);
+          var preconfigName = readiness.preconfig && readiness.preconfig.preconfig ? readiness.preconfig.preconfig.nombre : '';
+          var licenseName = readiness.license && readiness.license.nombre ? readiness.license.nombre : '';
+          return [
+            item.prioridad_produccion || '',
+            item.module || '',
+            item.title || '',
+            item.decision_preconfig || '',
+            item.produccion_masiva ? 'si' : 'no',
+            readiness.ready ? 'si' : 'no',
+            readiness.missing.join(' | '),
+            preconfigName,
+            licenseName,
+            asArray(integration.required_permissions).join(' | '),
+            asArray(integration.sale_flow).join(' | '),
+            asArray(integration.reports_produced).join(' | ')
+          ];
+        })).map(function(row){
+          return row.map(function(cell){
+            return '"' + String(cell == null ? '' : cell).replace(/"/g, '""') + '"';
+          }).join(',');
+        }).join('\r\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'verticales_v1_masiva.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }
+
+      document.querySelectorAll('.verticales-v1-segmented button').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          document.querySelectorAll('.verticales-v1-segmented button').forEach(function(other){ other.classList.remove('is-active'); });
+          btn.classList.add('is-active');
+          state.filter = btn.getAttribute('data-filter') || 'all';
+          renderTable();
+        });
+      });
+      searchInput.addEventListener('input', function(){ state.query = searchInput.value; renderTable(); });
+      document.getElementById('refreshBtn').addEventListener('click', load);
+      ensureBtn.addEventListener('click', ensureV1);
+      exportBtn.addEventListener('click', exportCSV);
+      load();
+    })();
+  </script>
+</body>
+</html>

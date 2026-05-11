@@ -15,6 +15,14 @@ El módulo `apartamentos_turisticos` administra alquiler vacacional por empresa:
 - Programación de tareas de limpieza, inspección, lavandería, inventario o mantenimiento.
 - Cambio manual de estado operativo y ocupación de cada apartamento.
 
+## Integracion con nucleo
+
+- Cada unidad se enlaza con `servicios` mediante `servicio_id` para vender noches de alojamiento sin crear catalogo paralelo.
+- Cada reserva se enlaza con `clientes` mediante `cliente_id`, reutilizando documento, telefono o email cuando ya existe.
+- El checkout genera `carritos_compras` con canal `apartamentos_turisticos`, referencia externa de reserva, item de alojamiento, item de limpieza cuando aplica e impuesto calculado por carrito.
+- `carrito_id` y `carrito_item_id` quedan guardados en la reserva para trazabilidad y para evitar ventas duplicadas.
+- La accion protegida `POST /api/empresa/apartamentos_turisticos?action=sincronizar_nucleo` migra reservas historicas en `checkin` o `checkout` sin borrar unidades, tarifas, disponibilidad, codigos de acceso ni tareas.
+
 ## Seguridad y aislamiento
 
 - Todas las tablas usan `empresa_id`.
@@ -50,6 +58,7 @@ El módulo `apartamentos_turisticos` administra alquiler vacacional por empresa:
 - `POST action=estado_apartamento`
 - `POST action=tareas`
 - `POST action=estado_tarea`
+- `POST action=sincronizar_nucleo`
 
 ## Flujo operativo
 

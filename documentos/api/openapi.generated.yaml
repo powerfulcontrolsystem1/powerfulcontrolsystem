@@ -1892,6 +1892,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/verticales_integracion/catalogo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/verticales_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/verticales_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/verticales_nuevos/catalogo":
     get:
       tags: [empresa]
@@ -2214,6 +2227,19 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /api/public/venta_publica
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/verticales_integracion/catalogo":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/verticales_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/verticales_integracion/catalogo
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -3280,6 +3306,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/venta_digital
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/verticales_integracion/catalogo":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/verticales_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/verticales_integracion/catalogo
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

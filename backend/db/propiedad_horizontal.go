@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -28,6 +29,7 @@ type EmpresaPropiedadHorizontalConfig struct {
 type EmpresaPropiedadHorizontalUnidad struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
+	ServicioID         int64   `json:"servicio_id,omitempty"`
 	Codigo             string  `json:"codigo"`
 	Torre              string  `json:"torre"`
 	Piso               string  `json:"piso"`
@@ -48,6 +50,7 @@ type EmpresaPropiedadHorizontalPersona struct {
 	ID                 int64  `json:"id"`
 	EmpresaID          int64  `json:"empresa_id"`
 	UnidadID           int64  `json:"unidad_id"`
+	ClienteID          int64  `json:"cliente_id,omitempty"`
 	UnidadCodigo       string `json:"unidad_codigo,omitempty"`
 	TipoRelacion       string `json:"tipo_relacion"`
 	Nombre             string `json:"nombre"`
@@ -65,6 +68,7 @@ type EmpresaPropiedadHorizontalCargo struct {
 	ID               int64   `json:"id"`
 	EmpresaID        int64   `json:"empresa_id"`
 	UnidadID         int64   `json:"unidad_id"`
+	ServicioID       int64   `json:"servicio_id,omitempty"`
 	UnidadCodigo     string  `json:"unidad_codigo,omitempty"`
 	Periodo          string  `json:"periodo"`
 	Concepto         string  `json:"concepto"`
@@ -86,6 +90,10 @@ type EmpresaPropiedadHorizontalRecaudo struct {
 	EmpresaID      int64   `json:"empresa_id"`
 	CargoID        int64   `json:"cargo_id"`
 	UnidadID       int64   `json:"unidad_id"`
+	ClienteID      int64   `json:"cliente_id,omitempty"`
+	ServicioID     int64   `json:"servicio_id,omitempty"`
+	CarritoID      int64   `json:"carrito_id,omitempty"`
+	CarritoItemID  int64   `json:"carrito_item_id,omitempty"`
 	UnidadCodigo   string  `json:"unidad_codigo,omitempty"`
 	FechaPago      string  `json:"fecha_pago"`
 	MetodoPago     string  `json:"metodo_pago"`
@@ -145,6 +153,18 @@ type EmpresaPropiedadHorizontalDashboard struct {
 	Asambleas         []EmpresaPropiedadHorizontalAsamblea `json:"asambleas"`
 }
 
+type EmpresaPropiedadHorizontalIntegracionNucleoResumen struct {
+	EmpresaID              int64    `json:"empresa_id"`
+	EstadoIntegracion      string   `json:"estado_integracion"`
+	VisibleOperativo       bool     `json:"visible_operativo"`
+	ClientesSincronizados  int      `json:"clientes_sincronizados"`
+	ServiciosSincronizados int      `json:"servicios_sincronizados"`
+	RecaudosSincronizados  int      `json:"recaudos_sincronizados"`
+	RecaudosPendientes     int      `json:"recaudos_pendientes"`
+	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
+	Errores                []string `json:"errores,omitempty"`
+}
+
 func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_propiedad_horizontal_config (
@@ -167,6 +187,7 @@ func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_propiedad_horizontal_unidades (
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
+			servicio_id BIGINT,
 			codigo TEXT NOT NULL,
 			torre TEXT,
 			piso TEXT,
@@ -187,6 +208,7 @@ func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
 			unidad_id BIGINT DEFAULT 0,
+			cliente_id BIGINT,
 			tipo_relacion TEXT DEFAULT 'propietario',
 			nombre TEXT NOT NULL,
 			documento TEXT,
@@ -203,6 +225,7 @@ func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
 			unidad_id BIGINT NOT NULL,
+			servicio_id BIGINT,
 			periodo TEXT NOT NULL,
 			concepto TEXT NOT NULL,
 			tipo_cargo TEXT DEFAULT 'cuota_administracion',
@@ -223,6 +246,10 @@ func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 			empresa_id BIGINT NOT NULL,
 			cargo_id BIGINT DEFAULT 0,
 			unidad_id BIGINT NOT NULL,
+			cliente_id BIGINT,
+			servicio_id BIGINT,
+			carrito_id BIGINT,
+			carrito_item_id BIGINT,
 			fecha_pago TEXT,
 			metodo_pago TEXT DEFAULT 'transferencia',
 			referencia TEXT,
@@ -264,6 +291,33 @@ func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_prop_h_asambleas_empresa ON empresa_propiedad_horizontal_asambleas(empresa_id,estado,fecha)`,
 	}
 	for _, stmt := range stmts {
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	extraColumns := []struct {
+		table  string
+		column string
+		def    string
+	}{
+		{"empresa_propiedad_horizontal_unidades", "servicio_id", "BIGINT"},
+		{"empresa_propiedad_horizontal_personas", "cliente_id", "BIGINT"},
+		{"empresa_propiedad_horizontal_cargos", "servicio_id", "BIGINT"},
+		{"empresa_propiedad_horizontal_recaudos", "cliente_id", "BIGINT"},
+		{"empresa_propiedad_horizontal_recaudos", "servicio_id", "BIGINT"},
+		{"empresa_propiedad_horizontal_recaudos", "carrito_id", "BIGINT"},
+		{"empresa_propiedad_horizontal_recaudos", "carrito_item_id", "BIGINT"},
+	}
+	for _, col := range extraColumns {
+		if err := ensureColumnIfMissing(dbConn, col.table, col.column, col.def); err != nil {
+			return err
+		}
+	}
+	for _, stmt := range []string{
+		`CREATE INDEX IF NOT EXISTS ix_prop_h_personas_cliente ON empresa_propiedad_horizontal_personas(empresa_id, cliente_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_prop_h_cargos_servicio ON empresa_propiedad_horizontal_cargos(empresa_id, servicio_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_prop_h_recaudos_carrito ON empresa_propiedad_horizontal_recaudos(empresa_id, carrito_id)`,
+	} {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
@@ -311,10 +365,16 @@ func UpsertEmpresaPropiedadHorizontalUnidad(dbConn *sql.DB, x EmpresaPropiedadHo
 		return 0, errors.New("empresa_id y codigo son obligatorios")
 	}
 	var id int64
-	err := QueryRowCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_unidades (empresa_id,codigo,torre,piso,tipo_unidad,area_m2,coeficiente,cuota_base,parqueadero,deposito,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),CAST(CURRENT_TIMESTAMP AS TEXT),?)
+	err := QueryRowCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_unidades (empresa_id,servicio_id,codigo,torre,piso,tipo_unidad,area_m2,coeficiente,cuota_base,parqueadero,deposito,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),CAST(CURRENT_TIMESTAMP AS TEXT),?)
 		ON CONFLICT (empresa_id,codigo) DO UPDATE SET torre=EXCLUDED.torre,piso=EXCLUDED.piso,tipo_unidad=EXCLUDED.tipo_unidad,area_m2=EXCLUDED.area_m2,coeficiente=EXCLUDED.coeficiente,cuota_base=EXCLUDED.cuota_base,parqueadero=EXCLUDED.parqueadero,deposito=EXCLUDED.deposito,estado=EXCLUDED.estado,observaciones=EXCLUDED.observaciones,fecha_actualizacion=CAST(CURRENT_TIMESTAMP AS TEXT),usuario_creador=EXCLUDED.usuario_creador RETURNING id`,
-		x.EmpresaID, x.Codigo, x.Torre, x.Piso, x.TipoUnidad, x.AreaM2, x.Coeficiente, x.CuotaBase, x.Parqueadero, x.Deposito, x.Estado, x.Observaciones, x.UsuarioCreador).Scan(&id)
+		x.EmpresaID, nullableID(x.ServicioID), x.Codigo, x.Torre, x.Piso, x.TipoUnidad, x.AreaM2, x.Coeficiente, x.CuotaBase, x.Parqueadero, x.Deposito, x.Estado, x.Observaciones, x.UsuarioCreador).Scan(&id)
+	if err == nil {
+		x.ID = id
+		if servicioID, srvErr := ensurePropHUnidadServicio(dbConn, x, x.UsuarioCreador); srvErr == nil && servicioID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_unidades SET servicio_id=?, fecha_actualizacion=CAST(CURRENT_TIMESTAMP AS TEXT) WHERE empresa_id=? AND id=?`, nullableID(servicioID), x.EmpresaID, id)
+		}
+	}
 	return id, err
 }
 
@@ -322,7 +382,7 @@ func ListEmpresaPropiedadHorizontalUnidades(dbConn *sql.DB, empresaID int64) ([]
 	if err := EnsureEmpresaPropiedadHorizontalSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,COALESCE(codigo,''),COALESCE(torre,''),COALESCE(piso,''),COALESCE(tipo_unidad,''),COALESCE(area_m2,0),COALESCE(coeficiente,0),COALESCE(cuota_base,0),COALESCE(parqueadero,''),COALESCE(deposito,''),COALESCE(estado,''),COALESCE(observaciones,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(usuario_creador,'') FROM empresa_propiedad_horizontal_unidades WHERE empresa_id=? ORDER BY torre,codigo`, empresaID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,COALESCE(servicio_id,0),COALESCE(codigo,''),COALESCE(torre,''),COALESCE(piso,''),COALESCE(tipo_unidad,''),COALESCE(area_m2,0),COALESCE(coeficiente,0),COALESCE(cuota_base,0),COALESCE(parqueadero,''),COALESCE(deposito,''),COALESCE(estado,''),COALESCE(observaciones,''),COALESCE(fecha_creacion,''),COALESCE(fecha_actualizacion,''),COALESCE(usuario_creador,'') FROM empresa_propiedad_horizontal_unidades WHERE empresa_id=? ORDER BY torre,codigo`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +390,7 @@ func ListEmpresaPropiedadHorizontalUnidades(dbConn *sql.DB, empresaID int64) ([]
 	out := []EmpresaPropiedadHorizontalUnidad{}
 	for rows.Next() {
 		var x EmpresaPropiedadHorizontalUnidad
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.Codigo, &x.Torre, &x.Piso, &x.TipoUnidad, &x.AreaM2, &x.Coeficiente, &x.CuotaBase, &x.Parqueadero, &x.Deposito, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.ServicioID, &x.Codigo, &x.Torre, &x.Piso, &x.TipoUnidad, &x.AreaM2, &x.Coeficiente, &x.CuotaBase, &x.Parqueadero, &x.Deposito, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.FechaActualizacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -346,18 +406,23 @@ func UpsertEmpresaPropiedadHorizontalPersona(dbConn *sql.DB, x EmpresaPropiedadH
 	if x.EmpresaID <= 0 || x.Nombre == "" {
 		return 0, errors.New("empresa_id y nombre son obligatorios")
 	}
+	clienteID, err := ensurePropHPersonaClienteCore(dbConn, x, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	x.ClienteID = clienteID
 	if x.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_personas SET unidad_id=?,tipo_relacion=?,nombre=?,documento=?,telefono=?,email=?,contacto_emergencia=?,estado=?,observaciones=?,usuario_creador=? WHERE empresa_id=? AND id=?`, x.UnidadID, x.TipoRelacion, x.Nombre, x.Documento, x.Telefono, x.Email, x.ContactoEmergencia, x.Estado, x.Observaciones, x.UsuarioCreador, x.EmpresaID, x.ID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_personas SET unidad_id=?,cliente_id=?,tipo_relacion=?,nombre=?,documento=?,telefono=?,email=?,contacto_emergencia=?,estado=?,observaciones=?,usuario_creador=? WHERE empresa_id=? AND id=?`, x.UnidadID, nullableID(x.ClienteID), x.TipoRelacion, x.Nombre, x.Documento, x.Telefono, x.Email, x.ContactoEmergencia, x.Estado, x.Observaciones, x.UsuarioCreador, x.EmpresaID, x.ID)
 		return x.ID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_personas (empresa_id,unidad_id,tipo_relacion,nombre,documento,telefono,email,contacto_emergencia,estado,observaciones,fecha_creacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),?)`, x.EmpresaID, x.UnidadID, x.TipoRelacion, x.Nombre, x.Documento, x.Telefono, x.Email, x.ContactoEmergencia, x.Estado, x.Observaciones, x.UsuarioCreador)
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_personas (empresa_id,unidad_id,cliente_id,tipo_relacion,nombre,documento,telefono,email,contacto_emergencia,estado,observaciones,fecha_creacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),?)`, x.EmpresaID, x.UnidadID, nullableID(x.ClienteID), x.TipoRelacion, x.Nombre, x.Documento, x.Telefono, x.Email, x.ContactoEmergencia, x.Estado, x.Observaciones, x.UsuarioCreador)
 }
 
 func ListEmpresaPropiedadHorizontalPersonas(dbConn *sql.DB, empresaID int64) ([]EmpresaPropiedadHorizontalPersona, error) {
 	if err := EnsureEmpresaPropiedadHorizontalSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT p.id,p.empresa_id,COALESCE(p.unidad_id,0),COALESCE(u.codigo,''),COALESCE(p.tipo_relacion,''),COALESCE(p.nombre,''),COALESCE(p.documento,''),COALESCE(p.telefono,''),COALESCE(p.email,''),COALESCE(p.contacto_emergencia,''),COALESCE(p.estado,''),COALESCE(p.observaciones,''),COALESCE(p.fecha_creacion,''),COALESCE(p.usuario_creador,'') FROM empresa_propiedad_horizontal_personas p LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=p.unidad_id AND u.empresa_id=p.empresa_id WHERE p.empresa_id=? ORDER BY p.id DESC LIMIT 300`, empresaID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT p.id,p.empresa_id,COALESCE(p.unidad_id,0),COALESCE(p.cliente_id,0),COALESCE(u.codigo,''),COALESCE(p.tipo_relacion,''),COALESCE(p.nombre,''),COALESCE(p.documento,''),COALESCE(p.telefono,''),COALESCE(p.email,''),COALESCE(p.contacto_emergencia,''),COALESCE(p.estado,''),COALESCE(p.observaciones,''),COALESCE(p.fecha_creacion,''),COALESCE(p.usuario_creador,'') FROM empresa_propiedad_horizontal_personas p LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=p.unidad_id AND u.empresa_id=p.empresa_id WHERE p.empresa_id=? ORDER BY p.id DESC LIMIT 300`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +430,7 @@ func ListEmpresaPropiedadHorizontalPersonas(dbConn *sql.DB, empresaID int64) ([]
 	out := []EmpresaPropiedadHorizontalPersona{}
 	for rows.Next() {
 		var x EmpresaPropiedadHorizontalPersona
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.UnidadID, &x.UnidadCodigo, &x.TipoRelacion, &x.Nombre, &x.Documento, &x.Telefono, &x.Email, &x.ContactoEmergencia, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.UnidadID, &x.ClienteID, &x.UnidadCodigo, &x.TipoRelacion, &x.Nombre, &x.Documento, &x.Telefono, &x.Email, &x.ContactoEmergencia, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -381,14 +446,19 @@ func CreateEmpresaPropiedadHorizontalCargo(dbConn *sql.DB, x EmpresaPropiedadHor
 	if x.EmpresaID <= 0 || x.UnidadID <= 0 || x.Concepto == "" {
 		return 0, errors.New("empresa_id, unidad_id y concepto son obligatorios")
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_cargos (empresa_id,unidad_id,periodo,concepto,tipo_cargo,valor_base,interes_mora,descuento,total,saldo_pendiente,fecha_vencimiento,estado,observaciones,fecha_creacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),?)`, x.EmpresaID, x.UnidadID, x.Periodo, x.Concepto, x.TipoCargo, x.ValorBase, x.InteresMora, x.Descuento, x.Total, x.SaldoPendiente, x.FechaVencimiento, x.Estado, x.Observaciones, x.UsuarioCreador)
+	servicioID, err := ensurePropHCargoServicio(dbConn, x, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	x.ServicioID = servicioID
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_cargos (empresa_id,unidad_id,servicio_id,periodo,concepto,tipo_cargo,valor_base,interes_mora,descuento,total,saldo_pendiente,fecha_vencimiento,estado,observaciones,fecha_creacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),?)`, x.EmpresaID, x.UnidadID, nullableID(x.ServicioID), x.Periodo, x.Concepto, x.TipoCargo, x.ValorBase, x.InteresMora, x.Descuento, x.Total, x.SaldoPendiente, x.FechaVencimiento, x.Estado, x.Observaciones, x.UsuarioCreador)
 }
 
 func ListEmpresaPropiedadHorizontalCargos(dbConn *sql.DB, empresaID int64) ([]EmpresaPropiedadHorizontalCargo, error) {
 	if err := EnsureEmpresaPropiedadHorizontalSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT c.id,c.empresa_id,c.unidad_id,COALESCE(u.codigo,''),COALESCE(c.periodo,''),COALESCE(c.concepto,''),COALESCE(c.tipo_cargo,''),COALESCE(c.valor_base,0),COALESCE(c.interes_mora,0),COALESCE(c.descuento,0),COALESCE(c.total,0),COALESCE(c.saldo_pendiente,0),COALESCE(c.fecha_vencimiento,''),COALESCE(c.estado,''),COALESCE(c.observaciones,''),COALESCE(c.fecha_creacion,''),COALESCE(c.usuario_creador,'') FROM empresa_propiedad_horizontal_cargos c LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=c.unidad_id AND u.empresa_id=c.empresa_id WHERE c.empresa_id=? ORDER BY c.id DESC LIMIT 300`, empresaID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT c.id,c.empresa_id,c.unidad_id,COALESCE(c.servicio_id,0),COALESCE(u.codigo,''),COALESCE(c.periodo,''),COALESCE(c.concepto,''),COALESCE(c.tipo_cargo,''),COALESCE(c.valor_base,0),COALESCE(c.interes_mora,0),COALESCE(c.descuento,0),COALESCE(c.total,0),COALESCE(c.saldo_pendiente,0),COALESCE(c.fecha_vencimiento,''),COALESCE(c.estado,''),COALESCE(c.observaciones,''),COALESCE(c.fecha_creacion,''),COALESCE(c.usuario_creador,'') FROM empresa_propiedad_horizontal_cargos c LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=c.unidad_id AND u.empresa_id=c.empresa_id WHERE c.empresa_id=? ORDER BY c.id DESC LIMIT 300`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +466,7 @@ func ListEmpresaPropiedadHorizontalCargos(dbConn *sql.DB, empresaID int64) ([]Em
 	out := []EmpresaPropiedadHorizontalCargo{}
 	for rows.Next() {
 		var x EmpresaPropiedadHorizontalCargo
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.UnidadID, &x.UnidadCodigo, &x.Periodo, &x.Concepto, &x.TipoCargo, &x.ValorBase, &x.InteresMora, &x.Descuento, &x.Total, &x.SaldoPendiente, &x.FechaVencimiento, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.UnidadID, &x.ServicioID, &x.UnidadCodigo, &x.Periodo, &x.Concepto, &x.TipoCargo, &x.ValorBase, &x.InteresMora, &x.Descuento, &x.Total, &x.SaldoPendiente, &x.FechaVencimiento, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -417,9 +487,20 @@ func CreateEmpresaPropiedadHorizontalRecaudo(dbConn *sql.DB, x EmpresaPropiedadH
 	if x.EmpresaID <= 0 || x.UnidadID <= 0 || x.ValorPagado <= 0 {
 		return 0, errors.New("empresa_id, unidad_id y valor_pagado son obligatorios")
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_recaudos (empresa_id,cargo_id,unidad_id,fecha_pago,metodo_pago,referencia,valor_pagado,observaciones,fecha_creacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),?)`, x.EmpresaID, x.CargoID, x.UnidadID, x.FechaPago, x.MetodoPago, x.Referencia, x.ValorPagado, x.Observaciones, x.UsuarioCreador)
+	clienteID, servicioID, err := preparePropHRecaudoCoreRefs(dbConn, x, x.UsuarioCreador)
+	if err != nil {
+		return 0, err
+	}
+	x.ClienteID, x.ServicioID = clienteID, servicioID
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_propiedad_horizontal_recaudos (empresa_id,cargo_id,unidad_id,cliente_id,servicio_id,fecha_pago,metodo_pago,referencia,valor_pagado,observaciones,fecha_creacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,CAST(CURRENT_TIMESTAMP AS TEXT),?)`, x.EmpresaID, x.CargoID, x.UnidadID, nullableID(x.ClienteID), nullableID(x.ServicioID), x.FechaPago, x.MetodoPago, x.Referencia, x.ValorPagado, x.Observaciones, x.UsuarioCreador)
 	if err == nil && x.CargoID > 0 {
 		_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_cargos SET saldo_pendiente=CASE WHEN saldo_pendiente-? < 0 THEN 0 ELSE saldo_pendiente-? END, estado=CASE WHEN saldo_pendiente-? <= 0 THEN 'pagado' ELSE estado END WHERE empresa_id=? AND id=?`, x.ValorPagado, x.ValorPagado, x.ValorPagado, x.EmpresaID, x.CargoID)
+	}
+	if err == nil {
+		x.ID = id
+		if carritoID, itemID, clienteID, servicioID, cartErr := createPropHRecaudoCarrito(dbConn, x, x.UsuarioCreador); cartErr == nil && carritoID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_recaudos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), x.EmpresaID, id)
+		}
 	}
 	return id, err
 }
@@ -428,7 +509,7 @@ func ListEmpresaPropiedadHorizontalRecaudos(dbConn *sql.DB, empresaID int64) ([]
 	if err := EnsureEmpresaPropiedadHorizontalSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := ExecQueryCompat(dbConn, `SELECT r.id,r.empresa_id,COALESCE(r.cargo_id,0),r.unidad_id,COALESCE(u.codigo,''),COALESCE(r.fecha_pago,''),COALESCE(r.metodo_pago,''),COALESCE(r.referencia,''),COALESCE(r.valor_pagado,0),COALESCE(r.observaciones,''),COALESCE(r.fecha_creacion,''),COALESCE(r.usuario_creador,'') FROM empresa_propiedad_horizontal_recaudos r LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=r.unidad_id AND u.empresa_id=r.empresa_id WHERE r.empresa_id=? ORDER BY r.id DESC LIMIT 200`, empresaID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT r.id,r.empresa_id,COALESCE(r.cargo_id,0),r.unidad_id,COALESCE(r.cliente_id,0),COALESCE(r.servicio_id,0),COALESCE(r.carrito_id,0),COALESCE(r.carrito_item_id,0),COALESCE(u.codigo,''),COALESCE(r.fecha_pago,''),COALESCE(r.metodo_pago,''),COALESCE(r.referencia,''),COALESCE(r.valor_pagado,0),COALESCE(r.observaciones,''),COALESCE(r.fecha_creacion,''),COALESCE(r.usuario_creador,'') FROM empresa_propiedad_horizontal_recaudos r LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=r.unidad_id AND u.empresa_id=r.empresa_id WHERE r.empresa_id=? ORDER BY r.id DESC LIMIT 200`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +517,7 @@ func ListEmpresaPropiedadHorizontalRecaudos(dbConn *sql.DB, empresaID int64) ([]
 	out := []EmpresaPropiedadHorizontalRecaudo{}
 	for rows.Next() {
 		var x EmpresaPropiedadHorizontalRecaudo
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.CargoID, &x.UnidadID, &x.UnidadCodigo, &x.FechaPago, &x.MetodoPago, &x.Referencia, &x.ValorPagado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.CargoID, &x.UnidadID, &x.ClienteID, &x.ServicioID, &x.CarritoID, &x.CarritoItemID, &x.UnidadCodigo, &x.FechaPago, &x.MetodoPago, &x.Referencia, &x.ValorPagado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -609,6 +690,428 @@ func SeedEmpresaPropiedadHorizontalDemo(dbConn *sql.DB, empresaID int64, usuario
 	_, _ = UpsertEmpresaPropiedadHorizontalPQR(dbConn, EmpresaPropiedadHorizontalPQR{EmpresaID: empresaID, UnidadID: u2, Tipo: "mantenimiento", Prioridad: "alta", Asunto: "Humedad en zona comun", Descripcion: "Reporte de humedad cerca al shut de basuras.", Responsable: "Mantenimiento", FechaLimite: time.Now().AddDate(0, 0, 5).Format("2006-01-02"), UsuarioCreador: usuario})
 	_, _ = UpsertEmpresaPropiedadHorizontalAsamblea(dbConn, EmpresaPropiedadHorizontalAsamblea{EmpresaID: empresaID, Titulo: "Asamblea ordinaria anual", TipoAsamblea: "ordinaria", Fecha: time.Now().AddDate(0, 1, 0).Format("2006-01-02"), Estado: "programada", QuorumObjetivo: 51, QuorumActual: 0, UsuarioCreador: usuario})
 	return nil
+}
+
+func propHCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
+			switch r {
+			case '\u00c1', '\u00c0', '\u00c4', '\u00c2':
+				r = 'A'
+			case '\u00c9', '\u00c8', '\u00cb', '\u00ca':
+				r = 'E'
+			case '\u00cd', '\u00cc', '\u00cf', '\u00ce':
+				r = 'I'
+			case '\u00d3', '\u00d2', '\u00d6', '\u00d4':
+				r = 'O'
+			case '\u00da', '\u00d9', '\u00dc', '\u00db':
+				r = 'U'
+			case '\u00d1':
+				r = 'N'
+			}
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	var prefixBuilder strings.Builder
+	for _, r := range strings.ToUpper(strings.TrimSpace(prefix)) {
+		switch r {
+		case '\u00c1', '\u00c0', '\u00c4', '\u00c2':
+			r = 'A'
+		case '\u00c9', '\u00c8', '\u00cb', '\u00ca':
+			r = 'E'
+		case '\u00cd', '\u00cc', '\u00cf', '\u00ce':
+			r = 'I'
+		case '\u00d3', '\u00d2', '\u00d6', '\u00d4':
+			r = 'O'
+		case '\u00da', '\u00d9', '\u00dc', '\u00db':
+			r = 'U'
+		case '\u00d1':
+			r = 'N'
+		}
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			prefixBuilder.WriteRune(r)
+			continue
+		}
+		if prefixBuilder.Len() > 0 && prefixBuilder.String()[prefixBuilder.Len()-1] != '-' {
+			prefixBuilder.WriteRune('-')
+		}
+	}
+	prefixCode := strings.Trim(prefixBuilder.String(), "-")
+	if prefixCode == "" {
+		prefixCode = "PH"
+	}
+	return prefixCode + "-" + strings.Trim(code, "-")
+}
+
+func ensurePropHUnidadServicio(dbConn *sql.DB, unidad EmpresaPropiedadHorizontalUnidad, usuario string) (int64, error) {
+	if unidad.ServicioID > 0 {
+		return unidad.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := propHCoreCode("PH-UNIDAD", unidad.Codigo)
+	var servicioID int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, unidad.EmpresaID, code).Scan(&servicioID)
+	if err == nil {
+		_, _ = ExecCompat(dbConn, `UPDATE servicios SET nombre=?, descripcion=?, categoria='propiedad_horizontal', precio=?, estado='activo', fecha_actualizacion=? WHERE empresa_id=? AND id=?`, "Cuota base "+unidad.Codigo, strings.TrimSpace(unidad.TipoUnidad+" "+unidad.Torre+" "+unidad.Piso), unidad.CuotaBase, time.Now().Format("2006-01-02 15:04:05"), unidad.EmpresaID, servicioID)
+		return servicioID, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:      unidad.EmpresaID,
+		Codigo:         code,
+		Nombre:         "Cuota base " + unidad.Codigo,
+		Descripcion:    strings.TrimSpace("Servicio base de propiedad horizontal para " + unidad.TipoUnidad + " " + unidad.Torre + " " + unidad.Piso),
+		Categoria:      "propiedad_horizontal",
+		Precio:         unidad.CuotaBase,
+		Estado:         "activo",
+		UsuarioCreador: strings.TrimSpace(usuario),
+		Observaciones:  "Servicio sincronizado desde propiedad horizontal.",
+	})
+}
+
+func ensurePropHCargoServicio(dbConn *sql.DB, cargo EmpresaPropiedadHorizontalCargo, usuario string) (int64, error) {
+	if cargo.ServicioID > 0 {
+		return cargo.ServicioID, nil
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := propHCoreCode("PH-CARGO", cargo.TipoCargo, cargo.Concepto)
+	var servicioID int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, cargo.EmpresaID, code).Scan(&servicioID)
+	if err == nil {
+		_, _ = ExecCompat(dbConn, `UPDATE servicios SET nombre=?, descripcion=?, categoria='propiedad_horizontal', precio=?, estado='activo', fecha_actualizacion=? WHERE empresa_id=? AND id=?`, cargo.Concepto, cargo.TipoCargo, cargo.ValorBase, time.Now().Format("2006-01-02 15:04:05"), cargo.EmpresaID, servicioID)
+		return servicioID, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:      cargo.EmpresaID,
+		Codigo:         code,
+		Nombre:         cargo.Concepto,
+		Descripcion:    "Cargo de propiedad horizontal: " + cargo.TipoCargo,
+		Categoria:      "propiedad_horizontal",
+		Precio:         cargo.ValorBase,
+		Estado:         "activo",
+		UsuarioCreador: strings.TrimSpace(usuario),
+		Observaciones:  "Servicio sincronizado desde cargos de propiedad horizontal.",
+	})
+}
+
+func ensurePropHPersonaClienteCore(dbConn *sql.DB, persona EmpresaPropiedadHorizontalPersona, usuario string) (int64, error) {
+	if persona.ClienteID > 0 {
+		return persona.ClienteID, nil
+	}
+	if strings.TrimSpace(persona.Nombre) == "" && strings.TrimSpace(persona.Documento) == "" && strings.TrimSpace(persona.Telefono) == "" && strings.TrimSpace(persona.Email) == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if documentoNorm := normalizeClienteDocumentoValue(persona.Documento); documentoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		if id, err := findClienteDuplicateID(dbConn, query, persona.EmpresaID, documentoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if telefonoNorm := normalizeClienteTelefonoValue(persona.Telefono); telefonoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		if id, err := findClienteDuplicateID(dbConn, query, persona.EmpresaID, telefonoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	if emailNorm := normalizeClienteEmailValue(persona.Email); emailNorm != "" {
+		if id, err := findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND lower(trim(COALESCE(email, ''))) = ? LIMIT 1`, persona.EmpresaID, emailNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := strings.TrimSpace(persona.Documento)
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = propHCoreCode("PH-CLI", persona.UnidadCodigo, persona.Telefono, persona.Email, persona.Nombre)
+	}
+	nombre := strings.TrimSpace(persona.Nombre)
+	if nombre == "" {
+		nombre = "Residente propiedad horizontal"
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         persona.EmpresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Email:             strings.TrimSpace(persona.Email),
+		Telefono:          strings.TrimSpace(persona.Telefono),
+		Pais:              "CO",
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde propiedad horizontal.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func findPropHClienteByUnidad(dbConn *sql.DB, empresaID, unidadID int64, usuario string) (int64, error) {
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,COALESCE(unidad_id,0),COALESCE(cliente_id,0),COALESCE(tipo_relacion,''),COALESCE(nombre,''),COALESCE(documento,''),COALESCE(telefono,''),COALESCE(email,''),COALESCE(estado,'') FROM empresa_propiedad_horizontal_personas WHERE empresa_id=? AND unidad_id=? AND estado='activo' ORDER BY CASE tipo_relacion WHEN 'propietario' THEN 1 WHEN 'arrendatario' THEN 2 WHEN 'residente' THEN 3 ELSE 4 END, id DESC LIMIT 1`, empresaID, unidadID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var p EmpresaPropiedadHorizontalPersona
+		if err := rows.Scan(&p.ID, &p.EmpresaID, &p.UnidadID, &p.ClienteID, &p.TipoRelacion, &p.Nombre, &p.Documento, &p.Telefono, &p.Email, &p.Estado); err != nil {
+			return 0, err
+		}
+		clienteID, err := ensurePropHPersonaClienteCore(dbConn, p, usuario)
+		if err != nil {
+			return 0, err
+		}
+		if clienteID > 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_personas SET cliente_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), empresaID, p.ID)
+			return clienteID, nil
+		}
+	}
+	var unidad EmpresaPropiedadHorizontalUnidad
+	err = QueryRowCompat(dbConn, `SELECT id,empresa_id,COALESCE(codigo,''),COALESCE(torre,''),COALESCE(piso,'') FROM empresa_propiedad_horizontal_unidades WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, unidadID).
+		Scan(&unidad.ID, &unidad.EmpresaID, &unidad.Codigo, &unidad.Torre, &unidad.Piso)
+	if err != nil {
+		return 0, err
+	}
+	return ensurePropHPersonaClienteCore(dbConn, EmpresaPropiedadHorizontalPersona{EmpresaID: empresaID, UnidadID: unidadID, UnidadCodigo: unidad.Codigo, Nombre: "Unidad " + unidad.Codigo, Documento: propHCoreCode("PH-UNIDAD", unidad.Codigo)}, usuario)
+}
+
+func getPropHCargoByID(dbConn *sql.DB, empresaID, cargoID int64) (EmpresaPropiedadHorizontalCargo, error) {
+	var x EmpresaPropiedadHorizontalCargo
+	err := QueryRowCompat(dbConn, `SELECT c.id,c.empresa_id,c.unidad_id,COALESCE(c.servicio_id,0),COALESCE(u.codigo,''),COALESCE(c.periodo,''),COALESCE(c.concepto,''),COALESCE(c.tipo_cargo,''),COALESCE(c.valor_base,0),COALESCE(c.interes_mora,0),COALESCE(c.descuento,0),COALESCE(c.total,0),COALESCE(c.saldo_pendiente,0),COALESCE(c.fecha_vencimiento,''),COALESCE(c.estado,''),COALESCE(c.observaciones,''),COALESCE(c.fecha_creacion,''),COALESCE(c.usuario_creador,'') FROM empresa_propiedad_horizontal_cargos c LEFT JOIN empresa_propiedad_horizontal_unidades u ON u.id=c.unidad_id AND u.empresa_id=c.empresa_id WHERE c.empresa_id=? AND c.id=?`, empresaID, cargoID).
+		Scan(&x.ID, &x.EmpresaID, &x.UnidadID, &x.ServicioID, &x.UnidadCodigo, &x.Periodo, &x.Concepto, &x.TipoCargo, &x.ValorBase, &x.InteresMora, &x.Descuento, &x.Total, &x.SaldoPendiente, &x.FechaVencimiento, &x.Estado, &x.Observaciones, &x.FechaCreacion, &x.UsuarioCreador)
+	return x, err
+}
+
+func preparePropHRecaudoCoreRefs(dbConn *sql.DB, recaudo EmpresaPropiedadHorizontalRecaudo, usuario string) (int64, int64, error) {
+	clienteID, err := findPropHClienteByUnidad(dbConn, recaudo.EmpresaID, recaudo.UnidadID, usuario)
+	if err != nil {
+		return 0, 0, err
+	}
+	var cargo EmpresaPropiedadHorizontalCargo
+	if recaudo.CargoID > 0 {
+		cargo, err = getPropHCargoByID(dbConn, recaudo.EmpresaID, recaudo.CargoID)
+		if err != nil {
+			return 0, 0, err
+		}
+	} else {
+		cargo = EmpresaPropiedadHorizontalCargo{EmpresaID: recaudo.EmpresaID, UnidadID: recaudo.UnidadID, Concepto: "Recaudo propiedad horizontal", TipoCargo: "otro", ValorBase: recaudo.ValorPagado, Total: recaudo.ValorPagado}
+	}
+	servicioID, err := ensurePropHCargoServicio(dbConn, cargo, usuario)
+	if err != nil {
+		return 0, 0, err
+	}
+	if recaudo.CargoID > 0 && servicioID > 0 {
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_cargos SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), recaudo.EmpresaID, recaudo.CargoID)
+	}
+	return clienteID, servicioID, nil
+}
+
+func propHMetodoPagoCarrito(metodo string) string {
+	normalized := NormalizeMetodoPagoCarrito(metodo)
+	if normalized != "" {
+		return normalized
+	}
+	switch strings.ToLower(strings.TrimSpace(metodo)) {
+	case "pse", "wompi", "epayco", "consignacion", "otro":
+		return "transferencia_bancaria"
+	default:
+		return "efectivo"
+	}
+}
+
+func createPropHRecaudoCarrito(dbConn *sql.DB, recaudo EmpresaPropiedadHorizontalRecaudo, usuario string) (int64, int64, int64, int64, error) {
+	if recaudo.ValorPagado <= 0 {
+		return recaudo.CarritoID, recaudo.CarritoItemID, recaudo.ClienteID, recaudo.ServicioID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	clienteID, servicioID, err := preparePropHRecaudoCoreRefs(dbConn, recaudo, usuario)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	referencia := strings.TrimSpace(recaudo.Referencia)
+	if referencia == "" {
+		referencia = fmt.Sprintf("RECAUDO-%d", recaudo.ID)
+	}
+	referenciaExterna := fmt.Sprintf("propiedad_horizontal:recaudo:%d:%s", recaudo.ID, referencia)
+	var carritoExistente int64
+	err = QueryRowCompat(dbConn, `SELECT id FROM carritos_compras WHERE empresa_id=? AND referencia_externa=? LIMIT 1`, recaudo.EmpresaID, referenciaExterna).Scan(&carritoExistente)
+	if err == nil && carritoExistente > 0 {
+		return carritoExistente, recaudo.CarritoItemID, clienteID, servicioID, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, 0, 0, 0, err
+	}
+	metodo := propHMetodoPagoCarrito(recaudo.MetodoPago)
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         recaudo.EmpresaID,
+		Codigo:            propHCoreCode("PH-REC", fmt.Sprintf("%d", recaudo.ID), referencia),
+		Nombre:            "Recaudo propiedad horizontal " + recaudo.UnidadCodigo,
+		CanalVenta:        "propiedad_horizontal",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            "COP",
+		ReferenciaExterna: referenciaExterna,
+		MetodoPago:        metodo,
+		ReferenciaPago:    referencia,
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Observaciones:     "Venta central generada desde recaudo de propiedad horizontal.",
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	descripcion := "Recaudo propiedad horizontal"
+	if recaudo.CargoID > 0 {
+		if cargo, err := getPropHCargoByID(dbConn, recaudo.EmpresaID, recaudo.CargoID); err == nil && strings.TrimSpace(cargo.Concepto) != "" {
+			descripcion = cargo.Concepto
+		}
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          recaudo.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       servicioID,
+		CodigoItem:         propHCoreCode("PH-ITEM", referencia),
+		Descripcion:        descripcion,
+		UnidadMedida:       "servicio",
+		Cantidad:           1,
+		PrecioUnitario:     recaudo.ValorPagado,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     strings.TrimSpace(usuario),
+		Estado:             "activo",
+		Observaciones:      recaudo.Observaciones,
+	})
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	if err := PayCarritoStationSession(dbConn, recaudo.EmpresaID, carritoID, metodo, referencia, "", "", 0, 0, recaudo.ValorPagado, 0, strings.TrimSpace(usuario)); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	return carritoID, itemID, clienteID, servicioID, nil
+}
+
+func SyncEmpresaPropiedadHorizontalNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaPropiedadHorizontalIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaPropiedadHorizontalSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaPropiedadHorizontalIntegracionNucleoResumen{EmpresaID: empresaID, EstadoIntegracion: "plantilla_integrada_nucleo", VisibleOperativo: true}
+	unidades, err := ListEmpresaPropiedadHorizontalUnidades(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, unidad := range unidades {
+		servicioID, err := ensurePropHUnidadServicio(dbConn, unidad, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("unidad %d servicio: %v", unidad.ID, err))
+			continue
+		}
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_unidades SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, unidad.ID)
+		}
+	}
+	personas, err := ListEmpresaPropiedadHorizontalPersonas(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, persona := range personas {
+		clienteID, err := ensurePropHPersonaClienteCore(dbConn, persona, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("persona %d cliente: %v", persona.ID, err))
+			continue
+		}
+		if clienteID > 0 {
+			resumen.ClientesSincronizados++
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_personas SET cliente_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), empresaID, persona.ID)
+		}
+	}
+	cargos, err := ListEmpresaPropiedadHorizontalCargos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, cargo := range cargos {
+		servicioID, err := ensurePropHCargoServicio(dbConn, cargo, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("cargo %d servicio: %v", cargo.ID, err))
+			continue
+		}
+		if servicioID > 0 {
+			resumen.ServiciosSincronizados++
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_cargos SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, cargo.ID)
+		}
+	}
+	recaudos, err := ListEmpresaPropiedadHorizontalRecaudos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, recaudo := range recaudos {
+		if recaudo.CarritoID > 0 {
+			resumen.RecaudosSincronizados++
+			continue
+		}
+		if recaudo.ValorPagado <= 0 {
+			resumen.RecaudosPendientes++
+			continue
+		}
+		carritoID, itemID, clienteID, servicioID, err := createPropHRecaudoCarrito(dbConn, recaudo, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("recaudo %d carrito: %v", recaudo.ID, err))
+			continue
+		}
+		_, err = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_recaudos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), empresaID, recaudo.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("recaudo %d refs: %v", recaudo.ID, err))
+			continue
+		}
+		resumen.RecaudosSincronizados++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
 }
 
 func normalizePropiedadHorizontalConfig(x EmpresaPropiedadHorizontalConfig) EmpresaPropiedadHorizontalConfig {

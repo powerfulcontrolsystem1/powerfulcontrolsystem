@@ -14,6 +14,7 @@ El index comercial describe este modulo como `Taxi system tipo Uber` dentro de l
 - Mapa operativo para solicitudes, conductores, clientes y dispositivos GPS.
 - Tipos de GPS configurables para app movil, tracker dedicado, OBD2, celular, tablet, dashcam o webhook externo.
 - Estados de solicitud, asignacion, llegada, inicio, finalizacion, tarifa e historial operativo.
+- Integracion con nucleo comercial para que viajes completados generen venta/pago central.
 
 ## Superficies
 
@@ -58,10 +59,23 @@ Estas columnas viven en `empresa_taxi_drivers` y se migran automaticamente desde
 - `GET /api/empresa/taxi_system?action=drivers&empresa_id=...`
 - `POST /api/empresa/taxi_system?action=drivers&empresa_id=...`
 - `POST /api/empresa/taxi_system?action=dispatch&empresa_id=...&request_id=...`
+- `POST /api/empresa/taxi_system?action=sincronizar_nucleo&empresa_id=...`
 - `GET /api/empresa/taxi_system?action=route&empresa_id=...&request_id=...`
 - `GET /api/empresa/taxi_system?action=gps_devices&empresa_id=...`
 - `POST /api/empresa/taxi_system?action=gps_devices&empresa_id=...`
 - `PUT /api/empresa/taxi_system?action=gps_devices&empresa_id=...`
+
+## Integracion con nucleo
+
+Taxi system no debe duplicar clientes, ventas ni pagos. Las tablas propias conservan despacho, conductores, GPS, ofertas, ruta y estados del viaje. El flujo comercial queda enlazado asi:
+
+- `empresa_taxi_customers.cliente_id`: cliente central para clientes registrados.
+- `empresa_taxi_requests.cliente_id`: cliente central para cada viaje, incluso si fue invitado.
+- `empresa_taxi_requests.servicio_id`: servicio vendible central para viajes de taxi.
+- `empresa_taxi_requests.carrito_id` y `carrito_item_id`: venta central creada al completar el viaje con tarifa.
+- `empresa_taxi_requests.metodo_pago`: metodo normalizado del flujo de carrito, por defecto `efectivo`.
+
+La accion `sincronizar_nucleo` migra viajes completados historicos sin borrar trazabilidad de rutas, GPS, conductores ni ofertas.
 
 ## Validacion
 

@@ -71,6 +71,14 @@ func EmpresaParqueaderoHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost, http.MethodPut:
 			switch action {
+			case "sincronizar_nucleo":
+				resumen, err := dbpkg.SyncEmpresaParqueaderoNucleo(dbEmp, empresaID, adminEmail)
+				if err != nil {
+					http.Error(w, "No se pudo sincronizar parqueadero con el nucleo", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
+				return
 			case "config":
 				var payload dbpkg.EmpresaParqueaderoConfig
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

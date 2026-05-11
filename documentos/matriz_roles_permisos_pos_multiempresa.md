@@ -1,3 +1,21 @@
+2026-05-11: Nota operativa para integracion de verticales
+- Los permisos/licencias siguen siendo necesarios, pero no son suficientes para mostrar un vertical: ademas debe estar marcado como visible operativo en la matriz de integracion.
+- Los 20 verticales nuevos permanecen visibles como `plantilla_integrada_nucleo` porque usan el motor comun y no duplican clientes, productos/servicios, ventas ni pagos.
+- Para version masiva v1, la preconfiguracion marca 10 verticales como `produccion_masiva`: `salon_spa`, `veterinaria_petshop`, `clinica_consultorios`, `laboratorio_clinico`, `taller_mecanico`, `servicios_tecnicos`, `lavanderia_tintoreria`, `agencia_viajes`, `eventos_boleteria` y `transporte_carga_tms`.
+- Los 10 restantes quedan con decision `diferir_de_v1`; esto no cambia permisos existentes ni borra licencias, solo evita tratarlos como oferta masiva hasta completar sus flujos especificos.
+- `web/super/verticales_produccion_masiva.html` queda como vista de gobierno para `super_administrador`; consume `/super/api/verticales_nuevos/catalogo` y no crea permisos nuevos. El rol `control_super_administrador` no recibe este acceso en su navegacion limitada.
+- La accion `Asegurar v1` usa el mismo endpoint super con POST y requiere alcance de super administrador; no concede permisos empresariales ni activa modulos por rol, solo asegura catalogo comercial/preconfiguracion/licencias.
+- Gimnasio, odontologia, parqueadero, taxi system, domicilios, apartamentos turisticos, propiedad horizontal, alquileres, drogueria/farmacia y AIU construccion quedan visibles como `plantilla_integrada_nucleo` al enlazar sus personas/servicios/tickets/viajes/pedidos/reservas/cargos/recaudos/contratos/facturas o expedientes sanitarios con clientes, servicios, inventario, ventas, pagos y facturacion centrales.
+- La ocultacion por matriz sigue aplicando a cualquier vertical futuro que no tenga integracion real; no concede ni retira permisos de API, solo evita prometer al usuario un modulo operativo antes de su migracion al nucleo.
+- `linkVerticalesIntegracion` queda protegido por `seguridad:R`; permite consultar la matriz operativa desde el panel empresa sin conceder permisos de operacion sobre cada vertical.
+- Los botones `Sincronizar` dentro de esa matriz tambien consultan `/api/empresa/permisos_contexto`; se habilitan solo cuando la pagina del vertical esta permitida o el modulo tiene accion de creacion efectiva. Cada endpoint vertical mantiene su propio wrapper de autorizacion y `empresa_id`.
+- El catalogo de la matriz declara `required_permissions` por vertical para auditoria; esa metadata no concede permisos por si sola, solo documenta el rol/modulo/accion que debe existir para operar la plantilla.
+
+2026-05-11: Nota operativa para panel super profesional
+- El panel principal de `super_administrador` muestra solo accesos de gobierno diario: centro de mando, seleccion de empresa, tipos de empresa, licencias, administradores, roles, permisos, 2FA, integracion IA, reglas de chat, contexto de negocio, alertas, seguridad VPS, PostgreSQL, configuracion y ayuda.
+- No se agregan permisos ni se elimina autorizacion de rutas existentes; los modulos secundarios retirados del menu principal conservan proteccion por rol y pueden mantenerse como rutas directas o historicas.
+- El rol `control_super_administrador` conserva navegacion limitada y no recibe ayuda privada ni configuracion ampliada.
+
 2026-05-10: Nota operativa para preconfiguraciones y configuracion guiada
 - Las preconfiguraciones por tipo de empresa se aseguran por `tipo_empresa_id`, no por conteo global; si un tipo activo no tiene plantilla, el arranque o `seed_defaults` crea una plantilla inicial sin sobrescribir personalizaciones.
 - Los 20 verticales nuevos conservan plantilla inteligente propia para estaciones, productos/servicios, usuarios guia, roles y tareas iniciales.

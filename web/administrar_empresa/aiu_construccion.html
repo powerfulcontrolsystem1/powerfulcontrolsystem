@@ -73,6 +73,7 @@
       </div>
       <div class="aiu-actions">
         <button class="btn secondary" type="button" id="btnNuevo">Nuevo</button>
+        <button class="btn secondary" type="button" id="btnSyncCore">Sincronizar nucleo</button>
         <button class="btn secondary" type="button" id="btnDemo">Demo</button>
         <button class="btn secondary" type="button" id="btnExportar">Exportar CSV</button>
       </div>
@@ -436,6 +437,14 @@
       el("filtro_q").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); loadContratos().catch(err => setMsg(err.message, true)); } });
       el("btnNuevo").addEventListener("click", () => clearForm(true));
       el("btnExportar").addEventListener("click", exportCSV);
+      el("btnSyncCore").addEventListener("click", async () => {
+        try {
+          const data = await read(await fetch(api("sincronizar_nucleo"), { method:"POST" }));
+          const x = data.integracion || {};
+          await loadDashboard();
+          setMsg("Nucleo sincronizado: " + (x.clientes_sincronizados || 0) + " clientes, " + (x.servicios_sincronizados || 0) + " servicios, " + (x.facturas_sincronizadas || 0) + " facturas.", Boolean(x.requiere_revision_datos));
+        } catch(err){ setMsg(err.message, true); }
+      });
       el("btnDemo").addEventListener("click", async () => { try { await read(await fetch(api("seed_demo"), { method:"POST" })); await loadDashboard(); setMsg("Demo AIU cargado.", false); } catch(err){ setMsg(err.message, true); } });
       activatePanel(requestedPanel());
       clearForm(false);

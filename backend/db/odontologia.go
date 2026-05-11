@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,6 +12,7 @@ import (
 type EmpresaOdontologiaPaciente struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
+	ClienteID          int64   `json:"cliente_id,omitempty"`
 	Codigo             string  `json:"codigo"`
 	NombreCompleto     string  `json:"nombre_completo"`
 	Documento          string  `json:"documento,omitempty"`
@@ -122,6 +124,7 @@ type EmpresaOdontologiaOdontograma struct {
 type EmpresaOdontologiaTratamiento struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
+	ServicioID         int64   `json:"servicio_id,omitempty"`
 	PacienteID         int64   `json:"paciente_id"`
 	PacienteNombre     string  `json:"paciente_nombre,omitempty"`
 	ProfesionalID      int64   `json:"profesional_id,omitempty"`
@@ -166,8 +169,12 @@ type EmpresaOdontologiaPago struct {
 	EmpresaID          int64   `json:"empresa_id"`
 	PacienteID         int64   `json:"paciente_id,omitempty"`
 	PacienteNombre     string  `json:"paciente_nombre,omitempty"`
+	ClienteID          int64   `json:"cliente_id,omitempty"`
 	PresupuestoID      int64   `json:"presupuesto_id,omitempty"`
 	PresupuestoNombre  string  `json:"presupuesto_nombre,omitempty"`
+	ServicioID         int64   `json:"servicio_id,omitempty"`
+	CarritoID          int64   `json:"carrito_id,omitempty"`
+	CarritoItemID      int64   `json:"carrito_item_id,omitempty"`
 	Concepto           string  `json:"concepto"`
 	Monto              float64 `json:"monto"`
 	MetodoPago         string  `json:"metodo_pago,omitempty"`
@@ -194,6 +201,18 @@ type EmpresaOdontologiaDashboard struct {
 	TratamientosPrioridad []EmpresaOdontologiaTratamiento `json:"tratamientos_prioridad"`
 }
 
+type EmpresaOdontologiaIntegracionNucleoResumen struct {
+	EmpresaID                 int64    `json:"empresa_id"`
+	PacientesSincronizados    int      `json:"pacientes_sincronizados"`
+	TratamientosSincronizados int      `json:"tratamientos_sincronizados"`
+	PagosSincronizados        int      `json:"pagos_sincronizados"`
+	PagosPendientes           int      `json:"pagos_pendientes"`
+	Errores                   []string `json:"errores,omitempty"`
+	EstadoIntegracion         string   `json:"estado_integracion"`
+	VisibleOperativo          bool     `json:"visible_operativo"`
+	RequiereRevisionDatos     bool     `json:"requiere_revision_datos"`
+}
+
 var (
 	empresaOdontologiaSchemaEnsured sync.Map
 	empresaOdontologiaSchemaMu      sync.Mutex
@@ -217,6 +236,7 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_pacientes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
+			cliente_id INTEGER,
 			codigo TEXT,
 			nombre_completo TEXT NOT NULL,
 			documento TEXT,
@@ -236,6 +256,7 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pacientes_empresa ON empresa_odontologia_pacientes(empresa_id, estado, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pacientes_cliente ON empresa_odontologia_pacientes(empresa_id, cliente_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_profesionales (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -321,6 +342,7 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_tratamientos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
+			servicio_id INTEGER,
 			paciente_id INTEGER NOT NULL,
 			profesional_id INTEGER DEFAULT 0,
 			nombre TEXT NOT NULL,
@@ -339,6 +361,7 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_tratamientos_empresa ON empresa_odontologia_tratamientos(empresa_id, estado, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_tratamientos_servicio ON empresa_odontologia_tratamientos(empresa_id, servicio_id);`,
 		`CREATE TABLE IF NOT EXISTS empresa_odontologia_presupuestos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
@@ -360,7 +383,11 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
 			paciente_id INTEGER DEFAULT 0,
+			cliente_id INTEGER,
 			presupuesto_id INTEGER DEFAULT 0,
+			servicio_id INTEGER,
+			carrito_id INTEGER,
+			carrito_item_id INTEGER,
 			concepto TEXT NOT NULL,
 			monto REAL DEFAULT 0,
 			metodo_pago TEXT,
@@ -373,10 +400,38 @@ func EnsureEmpresaOdontologiaSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pagos_empresa ON empresa_odontologia_pagos(empresa_id, fecha_pago DESC, id DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_odontologia_pagos_carrito ON empresa_odontologia_pagos(empresa_id, carrito_id);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
+		}
+	}
+	columnGroups := []struct {
+		table   string
+		columns []struct {
+			name string
+			def  string
+		}
+	}{
+		{"empresa_odontologia_pacientes", []struct {
+			name string
+			def  string
+		}{{"cliente_id", "INTEGER"}}},
+		{"empresa_odontologia_tratamientos", []struct {
+			name string
+			def  string
+		}{{"servicio_id", "INTEGER"}}},
+		{"empresa_odontologia_pagos", []struct {
+			name string
+			def  string
+		}{{"cliente_id", "INTEGER"}, {"servicio_id", "INTEGER"}, {"carrito_id", "INTEGER"}, {"carrito_item_id", "INTEGER"}}},
+	}
+	for _, group := range columnGroups {
+		for _, column := range group.columns {
+			if err := ensureColumnIfMissing(dbConn, group.table, column.name, column.def); err != nil {
+				return err
+			}
 		}
 	}
 	empresaOdontologiaSchemaEnsured.Store(cacheKey, true)
@@ -396,6 +451,246 @@ func normalizeOdontoEstado(raw, fallback string) string {
 
 func defaultOdontoCode(prefix string) string {
 	return fmt.Sprintf("%s-%d", prefix, time.Now().Unix())
+}
+
+func odontoCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		clean := strings.ToUpper(strings.TrimSpace(part))
+		for _, r := range clean {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+			} else if b.Len() > 0 {
+				last := b.String()[b.Len()-1]
+				if last != '-' {
+					b.WriteRune('-')
+				}
+			}
+		}
+		if b.Len() > 0 {
+			last := b.String()[b.Len()-1]
+			if last != '-' {
+				b.WriteRune('-')
+			}
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + code
+}
+
+func findEmpresaOdontologiaClienteID(dbConn *sql.DB, paciente EmpresaOdontologiaPaciente) (int64, error) {
+	if paciente.ClienteID > 0 {
+		return paciente.ClienteID, nil
+	}
+	documento := normalizeClienteDocumentoValue(paciente.Documento)
+	if documento != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteDocumentoSQLExpr("numero_documento"))
+		return findClienteDuplicateID(dbConn, query, paciente.EmpresaID, documento)
+	}
+	if email := normalizeClienteEmailValue(paciente.Email); email != "" {
+		return findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND lower(trim(COALESCE(email, ''))) = ? LIMIT 1`, paciente.EmpresaID, email)
+	}
+	if telefono := normalizeClienteTelefonoValue(paciente.Telefono); telefono != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		return findClienteDuplicateID(dbConn, query, paciente.EmpresaID, telefono)
+	}
+	if codigo := strings.TrimSpace(paciente.Codigo); codigo != "" {
+		return findClienteDuplicateID(dbConn, `SELECT id FROM clientes WHERE empresa_id = ? AND tipo_documento = 'OTRO' AND numero_documento = ? LIMIT 1`, paciente.EmpresaID, "OD-"+codigo)
+	}
+	return 0, nil
+}
+
+func ensureEmpresaOdontologiaPacienteCliente(dbConn *sql.DB, paciente EmpresaOdontologiaPaciente) (int64, error) {
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if id, err := findEmpresaOdontologiaClienteID(dbConn, paciente); err != nil {
+		return 0, err
+	} else if id > 0 {
+		return id, nil
+	}
+	tipoDocumento := "CC"
+	numeroDocumento := strings.TrimSpace(paciente.Documento)
+	if numeroDocumento == "" {
+		tipoDocumento = "OTRO"
+		numeroDocumento = "OD-" + strings.TrimSpace(paciente.Codigo)
+		if strings.TrimSpace(paciente.Codigo) == "" {
+			numeroDocumento = odontoCoreCode("OD-PAC", paciente.NombreCompleto)
+		}
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         paciente.EmpresaID,
+		TipoDocumento:     tipoDocumento,
+		NumeroDocumento:   numeroDocumento,
+		TipoPersona:       "natural",
+		NombreRazonSocial: paciente.NombreCompleto,
+		NombreComercial:   paciente.NombreCompleto,
+		Email:             paciente.Email,
+		Telefono:          paciente.Telefono,
+		Pais:              "CO",
+		UsuarioCreador:    paciente.UsuarioCreador,
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde odontologia.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func getEmpresaOdontologiaPacienteByID(dbConn *sql.DB, empresaID, pacienteID int64) (*EmpresaOdontologiaPaciente, error) {
+	var paciente EmpresaOdontologiaPaciente
+	err := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(cliente_id,0), COALESCE(codigo,''), COALESCE(nombre_completo,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(usuario_creador,'')
+		FROM empresa_odontologia_pacientes WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, pacienteID).
+		Scan(&paciente.ID, &paciente.EmpresaID, &paciente.ClienteID, &paciente.Codigo, &paciente.NombreCompleto, &paciente.Documento, &paciente.Telefono, &paciente.Email, &paciente.UsuarioCreador)
+	if err != nil {
+		return nil, err
+	}
+	return &paciente, nil
+}
+
+func syncEmpresaOdontologiaPacienteCliente(dbConn *sql.DB, paciente EmpresaOdontologiaPaciente) (int64, error) {
+	clienteID, err := ensureEmpresaOdontologiaPacienteCliente(dbConn, paciente)
+	if err != nil || clienteID <= 0 || paciente.ID <= 0 {
+		return clienteID, err
+	}
+	_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET cliente_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, clienteID, paciente.EmpresaID, paciente.ID)
+	return clienteID, err
+}
+
+func syncEmpresaOdontologiaTratamientoServicio(dbConn *sql.DB, tratamiento EmpresaOdontologiaTratamiento) (int64, error) {
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := odontoCoreCode("OD-TRAT", fmt.Sprintf("%d", tratamiento.ID), tratamiento.Nombre)
+	precio := tratamiento.CostoEstimado
+	if precio <= 0 {
+		precio = tratamiento.CostoReal
+	}
+	if tratamiento.ServicioID > 0 {
+		if err := UpdateServicio(dbConn, Servicio{ID: tratamiento.ServicioID, EmpresaID: tratamiento.EmpresaID, Codigo: code, Nombre: tratamiento.Nombre, Descripcion: tratamiento.Observaciones, Categoria: "odontologia", DuracionMinutos: tratamiento.SesionesTotal * 45, Precio: precio, Estado: "activo", UsuarioCreador: tratamiento.UsuarioCreador, Observaciones: "Servicio vendible sincronizado desde tratamiento odontologico."}); err != nil {
+			return 0, err
+		}
+		return tratamiento.ServicioID, nil
+	}
+	var servicioID int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, tratamiento.EmpresaID, code).Scan(&servicioID)
+	if err == sql.ErrNoRows {
+		servicioID, err = CreateServicio(dbConn, Servicio{EmpresaID: tratamiento.EmpresaID, Codigo: code, Nombre: tratamiento.Nombre, Descripcion: tratamiento.Observaciones, Categoria: "odontologia", DuracionMinutos: tratamiento.SesionesTotal * 45, Precio: precio, Estado: "activo", UsuarioCreador: tratamiento.UsuarioCreador, Observaciones: "Servicio vendible sincronizado desde tratamiento odontologico."})
+	}
+	if err != nil {
+		return 0, err
+	}
+	if tratamiento.ID > 0 {
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_tratamientos SET servicio_id=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, servicioID, tratamiento.EmpresaID, tratamiento.ID)
+	}
+	return servicioID, err
+}
+
+func getEmpresaOdontologiaTratamientoByID(dbConn *sql.DB, empresaID, tratamientoID int64) (*EmpresaOdontologiaTratamiento, error) {
+	var t EmpresaOdontologiaTratamiento
+	err := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(servicio_id,0), COALESCE(paciente_id,0), COALESCE(profesional_id,0), COALESCE(nombre,''), COALESCE(categoria,''), COALESCE(sesiones_total,1), COALESCE(costo_estimado,0), COALESCE(costo_real,0), COALESCE(estado,'planificado'), COALESCE(observaciones,''), COALESCE(usuario_creador,'')
+		FROM empresa_odontologia_tratamientos WHERE empresa_id=? AND id=? LIMIT 1`, empresaID, tratamientoID).
+		Scan(&t.ID, &t.EmpresaID, &t.ServicioID, &t.PacienteID, &t.ProfesionalID, &t.Nombre, &t.Categoria, &t.SesionesTotal, &t.CostoEstimado, &t.CostoReal, &t.Estado, &t.Observaciones, &t.UsuarioCreador)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func ensureEmpresaOdontologiaPagoServicio(dbConn *sql.DB, pago EmpresaOdontologiaPago) (int64, error) {
+	if pago.ServicioID > 0 {
+		return pago.ServicioID, nil
+	}
+	if pago.PresupuestoID > 0 {
+		var tratamientoID int64
+		err := queryRowSQLCompat(dbConn, `SELECT COALESCE(tratamiento_id,0) FROM empresa_odontologia_presupuestos WHERE empresa_id=? AND id=? LIMIT 1`, pago.EmpresaID, pago.PresupuestoID).Scan(&tratamientoID)
+		if err != nil {
+			return 0, err
+		}
+		if tratamientoID > 0 {
+			t, err := getEmpresaOdontologiaTratamientoByID(dbConn, pago.EmpresaID, tratamientoID)
+			if err != nil {
+				return 0, err
+			}
+			if t.UsuarioCreador == "" {
+				t.UsuarioCreador = pago.UsuarioCreador
+			}
+			return syncEmpresaOdontologiaTratamientoServicio(dbConn, *t)
+		}
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code := odontoCoreCode("OD-SERV", pago.Concepto)
+	var servicioID int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, pago.EmpresaID, code).Scan(&servicioID)
+	if err == sql.ErrNoRows {
+		servicioID, err = CreateServicio(dbConn, Servicio{EmpresaID: pago.EmpresaID, Codigo: code, Nombre: pago.Concepto, Descripcion: "Servicio odontologico creado desde recaudo.", Categoria: "odontologia", Precio: pago.Monto, Estado: "activo", UsuarioCreador: pago.UsuarioCreador, Observaciones: "Servicio vendible sincronizado desde pagos de odontologia."})
+	}
+	return servicioID, err
+}
+
+func createEmpresaOdontologiaPagoCarrito(dbConn *sql.DB, pago EmpresaOdontologiaPago) (int64, int64, error) {
+	if pago.Estado == "anulado" {
+		return 0, 0, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+	metodo := NormalizeMetodoPagoCarrito(pago.MetodoPago)
+	if metodo == "" {
+		metodo = "efectivo"
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         pago.EmpresaID,
+		Codigo:            odontoCoreCode("OD-PAGO", fmt.Sprintf("%d", pago.PacienteID), fmt.Sprintf("%d", time.Now().UnixNano())),
+		Nombre:            "Odontologia - " + pago.Concepto,
+		CanalVenta:        "odontologia",
+		ClienteID:         pago.ClienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            "COP",
+		ReferenciaExterna: fmt.Sprintf("odontologia:paciente:%d:%s", pago.PacienteID, pago.FechaPago),
+		MetodoPago:        metodo,
+		ReferenciaPago:    pago.Referencia,
+		UsuarioCreador:    pago.UsuarioCreador,
+		Observaciones:     "Venta central generada desde pago odontologico.",
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+		EmpresaID:          pago.EmpresaID,
+		CarritoID:          carritoID,
+		TipoItem:           "servicio",
+		ReferenciaID:       pago.ServicioID,
+		CodigoItem:         odontoCoreCode("OD-ITEM", pago.Concepto),
+		Descripcion:        pago.Concepto,
+		UnidadMedida:       "servicio",
+		Cantidad:           1,
+		PrecioUnitario:     pago.Monto,
+		ImpuestoPorcentaje: 0,
+		UsuarioCreador:     pago.UsuarioCreador,
+		Estado:             "activo",
+		Observaciones:      "Item central generado desde pago odontologico.",
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	if err := PayCarritoStationSession(dbConn, pago.EmpresaID, carritoID, metodo, pago.Referencia, "", "", 0, 0, pago.Monto, 0, pago.UsuarioCreador); err != nil {
+		return 0, 0, err
+	}
+	return carritoID, itemID, nil
 }
 
 func BuildEmpresaOdontologiaDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaOdontologiaDashboard, error) {
@@ -431,7 +726,7 @@ func ListEmpresaOdontologiaPacientes(dbConn *sql.DB, empresaID int64) ([]Empresa
 	if err := EnsureEmpresaOdontologiaSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := querySQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre_completo,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(fecha_nacimiento,''), COALESCE(genero,''), COALESCE(aseguradora,''), COALESCE(alergias,''), COALESCE(riesgo_medico,''), COALESCE(ultima_visita,''), COALESCE(saldo,0), COALESCE(estado,'activo'), COALESCE(observaciones,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'') FROM empresa_odontologia_pacientes WHERE empresa_id = ? ORDER BY id DESC`, empresaID)
+	rows, err := querySQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(cliente_id,0), COALESCE(codigo,''), COALESCE(nombre_completo,''), COALESCE(documento,''), COALESCE(telefono,''), COALESCE(email,''), COALESCE(fecha_nacimiento,''), COALESCE(genero,''), COALESCE(aseguradora,''), COALESCE(alergias,''), COALESCE(riesgo_medico,''), COALESCE(ultima_visita,''), COALESCE(saldo,0), COALESCE(estado,'activo'), COALESCE(observaciones,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'') FROM empresa_odontologia_pacientes WHERE empresa_id = ? ORDER BY id DESC`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +734,7 @@ func ListEmpresaOdontologiaPacientes(dbConn *sql.DB, empresaID int64) ([]Empresa
 	out := []EmpresaOdontologiaPaciente{}
 	for rows.Next() {
 		var item EmpresaOdontologiaPaciente
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.NombreCompleto, &item.Documento, &item.Telefono, &item.Email, &item.FechaNacimiento, &item.Genero, &item.Aseguradora, &item.Alergias, &item.RiesgoMedico, &item.UltimaVisita, &item.Saldo, &item.Estado, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ClienteID, &item.Codigo, &item.NombreCompleto, &item.Documento, &item.Telefono, &item.Email, &item.FechaNacimiento, &item.Genero, &item.Aseguradora, &item.Alergias, &item.RiesgoMedico, &item.UltimaVisita, &item.Saldo, &item.Estado, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -458,7 +753,12 @@ func CreateEmpresaOdontologiaPaciente(dbConn *sql.DB, payload EmpresaOdontologia
 		payload.Codigo = defaultOdontoCode("PAC")
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "activo")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pacientes (empresa_id,codigo,nombre_completo,documento,telefono,email,fecha_nacimiento,genero,aseguradora,alergias,riesgo_medico,ultima_visita,saldo,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, strings.TrimSpace(payload.Codigo), strings.TrimSpace(payload.NombreCompleto), strings.TrimSpace(payload.Documento), strings.TrimSpace(payload.Telefono), strings.TrimSpace(payload.Email), strings.TrimSpace(payload.FechaNacimiento), strings.TrimSpace(payload.Genero), strings.TrimSpace(payload.Aseguradora), strings.TrimSpace(payload.Alergias), strings.TrimSpace(payload.RiesgoMedico), strings.TrimSpace(payload.UltimaVisita), payload.Saldo, payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	clienteID, err := ensureEmpresaOdontologiaPacienteCliente(dbConn, payload)
+	if err != nil {
+		return 0, err
+	}
+	payload.ClienteID = clienteID
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pacientes (empresa_id,cliente_id,codigo,nombre_completo,documento,telefono,email,fecha_nacimiento,genero,aseguradora,alergias,riesgo_medico,ultima_visita,saldo,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, nullableInt64(payload.ClienteID), strings.TrimSpace(payload.Codigo), strings.TrimSpace(payload.NombreCompleto), strings.TrimSpace(payload.Documento), strings.TrimSpace(payload.Telefono), strings.TrimSpace(payload.Email), strings.TrimSpace(payload.FechaNacimiento), strings.TrimSpace(payload.Genero), strings.TrimSpace(payload.Aseguradora), strings.TrimSpace(payload.Alergias), strings.TrimSpace(payload.RiesgoMedico), strings.TrimSpace(payload.UltimaVisita), payload.Saldo, payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 }
 
 func SetEmpresaOdontologiaPacienteEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
@@ -657,7 +957,7 @@ func ListEmpresaOdontologiaTratamientos(dbConn *sql.DB, empresaID int64) ([]Empr
 	if err := EnsureEmpresaOdontologiaSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := querySQLCompat(dbConn, `SELECT t.id,t.empresa_id,t.paciente_id,COALESCE(p.nombre_completo,''),t.profesional_id,COALESCE(pr.nombre_completo,''),COALESCE(t.nombre,''),COALESCE(t.categoria,''),COALESCE(t.piezas,''),COALESCE(t.sesiones_total,1),COALESCE(t.sesiones_realizadas,0),COALESCE(t.costo_estimado,0),COALESCE(t.costo_real,0),COALESCE(t.fecha_inicio,''),COALESCE(t.fecha_fin,''),COALESCE(t.estado,'planificado'),COALESCE(t.observaciones,''),COALESCE(t.fecha_creacion,''),COALESCE(t.fecha_actualizacion,''),COALESCE(t.usuario_creador,'') FROM empresa_odontologia_tratamientos t LEFT JOIN empresa_odontologia_pacientes p ON p.id = t.paciente_id AND p.empresa_id = t.empresa_id LEFT JOIN empresa_odontologia_profesionales pr ON pr.id = t.profesional_id AND pr.empresa_id = t.empresa_id WHERE t.empresa_id = ? ORDER BY t.id DESC`, empresaID)
+	rows, err := querySQLCompat(dbConn, `SELECT t.id,t.empresa_id,COALESCE(t.servicio_id,0),t.paciente_id,COALESCE(p.nombre_completo,''),t.profesional_id,COALESCE(pr.nombre_completo,''),COALESCE(t.nombre,''),COALESCE(t.categoria,''),COALESCE(t.piezas,''),COALESCE(t.sesiones_total,1),COALESCE(t.sesiones_realizadas,0),COALESCE(t.costo_estimado,0),COALESCE(t.costo_real,0),COALESCE(t.fecha_inicio,''),COALESCE(t.fecha_fin,''),COALESCE(t.estado,'planificado'),COALESCE(t.observaciones,''),COALESCE(t.fecha_creacion,''),COALESCE(t.fecha_actualizacion,''),COALESCE(t.usuario_creador,'') FROM empresa_odontologia_tratamientos t LEFT JOIN empresa_odontologia_pacientes p ON p.id = t.paciente_id AND p.empresa_id = t.empresa_id LEFT JOIN empresa_odontologia_profesionales pr ON pr.id = t.profesional_id AND pr.empresa_id = t.empresa_id WHERE t.empresa_id = ? ORDER BY t.id DESC`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -665,7 +965,7 @@ func ListEmpresaOdontologiaTratamientos(dbConn *sql.DB, empresaID int64) ([]Empr
 	out := []EmpresaOdontologiaTratamiento{}
 	for rows.Next() {
 		var item EmpresaOdontologiaTratamiento
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.PacienteID, &item.PacienteNombre, &item.ProfesionalID, &item.ProfesionalNombre, &item.Nombre, &item.Categoria, &item.Piezas, &item.SesionesTotal, &item.SesionesRealizadas, &item.CostoEstimado, &item.CostoReal, &item.FechaInicio, &item.FechaFin, &item.Estado, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.ServicioID, &item.PacienteID, &item.PacienteNombre, &item.ProfesionalID, &item.ProfesionalNombre, &item.Nombre, &item.Categoria, &item.Piezas, &item.SesionesTotal, &item.SesionesRealizadas, &item.CostoEstimado, &item.CostoReal, &item.FechaInicio, &item.FechaFin, &item.Estado, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -684,7 +984,15 @@ func CreateEmpresaOdontologiaTratamiento(dbConn *sql.DB, payload EmpresaOdontolo
 		payload.SesionesTotal = 1
 	}
 	payload.Estado = normalizeOdontoEstado(payload.Estado, "planificado")
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_tratamientos (empresa_id,paciente_id,profesional_id,nombre,categoria,piezas,sesiones_total,sesiones_realizadas,costo_estimado,costo_real,fecha_inicio,fecha_fin,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, strings.TrimSpace(payload.Nombre), strings.TrimSpace(payload.Categoria), strings.TrimSpace(payload.Piezas), payload.SesionesTotal, payload.SesionesRealizadas, payload.CostoEstimado, payload.CostoReal, strings.TrimSpace(payload.FechaInicio), strings.TrimSpace(payload.FechaFin), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_tratamientos (empresa_id,paciente_id,profesional_id,nombre,categoria,piezas,sesiones_total,sesiones_realizadas,costo_estimado,costo_real,fecha_inicio,fecha_fin,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.ProfesionalID, strings.TrimSpace(payload.Nombre), strings.TrimSpace(payload.Categoria), strings.TrimSpace(payload.Piezas), payload.SesionesTotal, payload.SesionesRealizadas, payload.CostoEstimado, payload.CostoReal, strings.TrimSpace(payload.FechaInicio), strings.TrimSpace(payload.FechaFin), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	if err != nil {
+		return 0, err
+	}
+	payload.ID = id
+	if _, err := syncEmpresaOdontologiaTratamientoServicio(dbConn, payload); err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func SetEmpresaOdontologiaTratamientoEstado(dbConn *sql.DB, empresaID, id int64, estado string) error {
@@ -736,7 +1044,7 @@ func ListEmpresaOdontologiaPagos(dbConn *sql.DB, empresaID int64) ([]EmpresaOdon
 	if err := EnsureEmpresaOdontologiaSchema(dbConn); err != nil {
 		return nil, err
 	}
-	rows, err := querySQLCompat(dbConn, `SELECT pg.id,pg.empresa_id,pg.paciente_id,COALESCE(pa.nombre_completo,''),pg.presupuesto_id,COALESCE(pr.nombre,''),COALESCE(pg.concepto,''),COALESCE(pg.monto,0),COALESCE(pg.metodo_pago,''),COALESCE(pg.referencia,''),COALESCE(pg.fecha_pago,''),COALESCE(pg.estado,'aplicado'),COALESCE(pg.observaciones,''),COALESCE(pg.fecha_creacion,''),COALESCE(pg.fecha_actualizacion,''),COALESCE(pg.usuario_creador,'') FROM empresa_odontologia_pagos pg LEFT JOIN empresa_odontologia_pacientes pa ON pa.id = pg.paciente_id AND pa.empresa_id = pg.empresa_id LEFT JOIN empresa_odontologia_presupuestos pr ON pr.id = pg.presupuesto_id AND pr.empresa_id = pg.empresa_id WHERE pg.empresa_id = ? ORDER BY pg.fecha_pago DESC, pg.id DESC`, empresaID)
+	rows, err := querySQLCompat(dbConn, `SELECT pg.id,pg.empresa_id,COALESCE(pg.paciente_id,0),COALESCE(pa.nombre_completo,''),COALESCE(pg.cliente_id,0),COALESCE(pg.presupuesto_id,0),COALESCE(pr.nombre,''),COALESCE(pg.servicio_id,0),COALESCE(pg.carrito_id,0),COALESCE(pg.carrito_item_id,0),COALESCE(pg.concepto,''),COALESCE(pg.monto,0),COALESCE(pg.metodo_pago,''),COALESCE(pg.referencia,''),COALESCE(pg.fecha_pago,''),COALESCE(pg.estado,'aplicado'),COALESCE(pg.observaciones,''),COALESCE(pg.fecha_creacion,''),COALESCE(pg.fecha_actualizacion,''),COALESCE(pg.usuario_creador,'') FROM empresa_odontologia_pagos pg LEFT JOIN empresa_odontologia_pacientes pa ON pa.id = pg.paciente_id AND pa.empresa_id = pg.empresa_id LEFT JOIN empresa_odontologia_presupuestos pr ON pr.id = pg.presupuesto_id AND pr.empresa_id = pg.empresa_id WHERE pg.empresa_id = ? ORDER BY pg.fecha_pago DESC, pg.id DESC`, empresaID)
 	if err != nil {
 		return nil, err
 	}
@@ -744,7 +1052,7 @@ func ListEmpresaOdontologiaPagos(dbConn *sql.DB, empresaID int64) ([]EmpresaOdon
 	out := []EmpresaOdontologiaPago{}
 	for rows.Next() {
 		var item EmpresaOdontologiaPago
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.PacienteID, &item.PacienteNombre, &item.PresupuestoID, &item.PresupuestoNombre, &item.Concepto, &item.Monto, &item.MetodoPago, &item.Referencia, &item.FechaPago, &item.Estado, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.PacienteID, &item.PacienteNombre, &item.ClienteID, &item.PresupuestoID, &item.PresupuestoNombre, &item.ServicioID, &item.CarritoID, &item.CarritoItemID, &item.Concepto, &item.Monto, &item.MetodoPago, &item.Referencia, &item.FechaPago, &item.Estado, &item.Observaciones, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -763,7 +1071,42 @@ func CreateEmpresaOdontologiaPago(dbConn *sql.DB, payload EmpresaOdontologiaPago
 	if strings.TrimSpace(payload.FechaPago) == "" {
 		payload.FechaPago = time.Now().Format("2006-01-02 15:04:05")
 	}
-	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pagos (empresa_id,paciente_id,presupuesto_id,concepto,monto,metodo_pago,referencia,fecha_pago,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, payload.PacienteID, payload.PresupuestoID, strings.TrimSpace(payload.Concepto), payload.Monto, strings.TrimSpace(payload.MetodoPago), strings.TrimSpace(payload.Referencia), strings.TrimSpace(payload.FechaPago), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
+	if metodo := NormalizeMetodoPagoCarrito(payload.MetodoPago); metodo != "" {
+		payload.MetodoPago = metodo
+	} else {
+		payload.MetodoPago = "efectivo"
+	}
+	if payload.PacienteID <= 0 && payload.PresupuestoID > 0 {
+		_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(paciente_id,0) FROM empresa_odontologia_presupuestos WHERE empresa_id=? AND id=? LIMIT 1`, payload.EmpresaID, payload.PresupuestoID).Scan(&payload.PacienteID)
+	}
+	if payload.PacienteID > 0 {
+		paciente, err := getEmpresaOdontologiaPacienteByID(dbConn, payload.EmpresaID, payload.PacienteID)
+		if err != nil {
+			return 0, err
+		}
+		if paciente.UsuarioCreador == "" {
+			paciente.UsuarioCreador = payload.UsuarioCreador
+		}
+		clienteID, err := syncEmpresaOdontologiaPacienteCliente(dbConn, *paciente)
+		if err != nil {
+			return 0, err
+		}
+		payload.ClienteID = clienteID
+	}
+	servicioID, err := ensureEmpresaOdontologiaPagoServicio(dbConn, payload)
+	if err != nil {
+		return 0, err
+	}
+	payload.ServicioID = servicioID
+	if payload.Estado != "anulado" {
+		carritoID, itemID, err := createEmpresaOdontologiaPagoCarrito(dbConn, payload)
+		if err != nil {
+			return 0, err
+		}
+		payload.CarritoID = carritoID
+		payload.CarritoItemID = itemID
+	}
+	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_odontologia_pagos (empresa_id,paciente_id,cliente_id,presupuesto_id,servicio_id,carrito_id,carrito_item_id,concepto,monto,metodo_pago,referencia,fecha_pago,estado,observaciones,fecha_creacion,fecha_actualizacion,usuario_creador) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'),?)`, payload.EmpresaID, nullableInt64(payload.PacienteID), nullableInt64(payload.ClienteID), nullableInt64(payload.PresupuestoID), nullableInt64(payload.ServicioID), nullableInt64(payload.CarritoID), nullableInt64(payload.CarritoItemID), strings.TrimSpace(payload.Concepto), payload.Monto, strings.TrimSpace(payload.MetodoPago), strings.TrimSpace(payload.Referencia), strings.TrimSpace(payload.FechaPago), payload.Estado, strings.TrimSpace(payload.Observaciones), strings.TrimSpace(payload.UsuarioCreador))
 	if err != nil {
 		return 0, err
 	}
@@ -774,4 +1117,103 @@ func CreateEmpresaOdontologiaPago(dbConn *sql.DB, payload EmpresaOdontologiaPago
 		_, _ = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pacientes SET saldo = CASE WHEN saldo - ? < 0 THEN 0 ELSE saldo - ? END, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, payload.Monto, payload.Monto, payload.EmpresaID, payload.PacienteID)
 	}
 	return id, nil
+}
+
+func SyncEmpresaOdontologiaNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaOdontologiaIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaOdontologiaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaOdontologiaIntegracionNucleoResumen{
+		EmpresaID:         empresaID,
+		EstadoIntegracion: "plantilla_integrada_nucleo",
+		VisibleOperativo:  true,
+	}
+	pacientes, err := ListEmpresaOdontologiaPacientes(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, paciente := range pacientes {
+		if paciente.UsuarioCreador == "" {
+			paciente.UsuarioCreador = usuario
+		}
+		if _, err := syncEmpresaOdontologiaPacienteCliente(dbConn, paciente); err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("paciente %d: %v", paciente.ID, err))
+			continue
+		}
+		resumen.PacientesSincronizados++
+	}
+	tratamientos, err := ListEmpresaOdontologiaTratamientos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, tratamiento := range tratamientos {
+		if tratamiento.UsuarioCreador == "" {
+			tratamiento.UsuarioCreador = usuario
+		}
+		if _, err := syncEmpresaOdontologiaTratamientoServicio(dbConn, tratamiento); err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("tratamiento %d: %v", tratamiento.ID, err))
+			continue
+		}
+		resumen.TratamientosSincronizados++
+	}
+	pagos, err := ListEmpresaOdontologiaPagos(dbConn, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	for _, pago := range pagos {
+		if pago.UsuarioCreador == "" {
+			pago.UsuarioCreador = usuario
+		}
+		pago.Estado = normalizeOdontoEstado(pago.Estado, "aplicado")
+		if pago.Estado == "anulado" || pago.CarritoID > 0 {
+			resumen.PagosPendientes++
+			continue
+		}
+		if pago.PacienteID <= 0 && pago.PresupuestoID > 0 {
+			_ = queryRowSQLCompat(dbConn, `SELECT COALESCE(paciente_id,0) FROM empresa_odontologia_presupuestos WHERE empresa_id=? AND id=? LIMIT 1`, pago.EmpresaID, pago.PresupuestoID).Scan(&pago.PacienteID)
+		}
+		if pago.PacienteID > 0 {
+			paciente, err := getEmpresaOdontologiaPacienteByID(dbConn, pago.EmpresaID, pago.PacienteID)
+			if err != nil {
+				resumen.Errores = append(resumen.Errores, fmt.Sprintf("pago %d paciente: %v", pago.ID, err))
+				continue
+			}
+			if paciente.UsuarioCreador == "" {
+				paciente.UsuarioCreador = usuario
+			}
+			clienteID, err := syncEmpresaOdontologiaPacienteCliente(dbConn, *paciente)
+			if err != nil {
+				resumen.Errores = append(resumen.Errores, fmt.Sprintf("pago %d cliente: %v", pago.ID, err))
+				continue
+			}
+			pago.ClienteID = clienteID
+		}
+		if metodo := NormalizeMetodoPagoCarrito(pago.MetodoPago); metodo != "" {
+			pago.MetodoPago = metodo
+		} else {
+			pago.MetodoPago = "efectivo"
+		}
+		servicioID, err := ensureEmpresaOdontologiaPagoServicio(dbConn, pago)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pago %d servicio: %v", pago.ID, err))
+			continue
+		}
+		pago.ServicioID = servicioID
+		carritoID, itemID, err := createEmpresaOdontologiaPagoCarrito(dbConn, pago)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pago %d carrito: %v", pago.ID, err))
+			continue
+		}
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_odontologia_pagos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, metodo_pago=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, nullableInt64(pago.ClienteID), nullableInt64(pago.ServicioID), nullableInt64(carritoID), nullableInt64(itemID), pago.MetodoPago, pago.EmpresaID, pago.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pago %d refs: %v", pago.ID, err))
+			continue
+		}
+		resumen.PagosSincronizados++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
 }

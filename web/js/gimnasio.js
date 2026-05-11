@@ -13,6 +13,7 @@
     pagos: [],
     accesoConfig: null,
     preconfiguracion: null,
+    integracionNucleo: null,
     credenciales: [],
     dispositivos: [],
     eventosAcceso: []
@@ -220,6 +221,18 @@
       'Acceso ' + (cfg.acceso_configurado ? '<strong>configurado</strong>' : '<strong>pendiente</strong>');
   }
 
+  function renderCoreIntegration() {
+    var node = byId("gymCoreIntegrationSummary");
+    if (!node) return;
+    var row = state.integracionNucleo;
+    if (!row) {
+      node.textContent = "La sincronización crea clientes, servicios vendibles y ventas centrales para que gimnasio no opere cobros paralelos.";
+      return;
+    }
+    var errores = Array.isArray(row.errores) ? row.errores.length : 0;
+    node.innerHTML = "Núcleo sincronizado: clientes <strong>" + escapeHTML(row.socios_sincronizados || 0) + "</strong>, servicios <strong>" + escapeHTML(row.planes_sincronizados || 0) + "</strong>, ventas/pagos <strong>" + escapeHTML(row.pagos_sincronizados || 0) + "</strong>" + (errores ? " · observaciones <strong>" + escapeHTML(errores) + "</strong>" : "") + ".";
+  }
+
   function renderTables() {
     byId("gymSociosTable").innerHTML = renderList(state.socios, [
       { key: "nombre_completo", label: "Socio" }, { key: "plan_nombre", label: "Plan" }, { key: "telefono", label: "Teléfono" }, { key: "fecha_fin_plan", label: "Fin del plan" },
@@ -352,6 +365,7 @@
       syncSelects();
       renderAccessConfig();
       renderPreconfig();
+      renderCoreIntegration();
       renderTables();
       errors = errors.filter(Boolean);
       if (errors.length) {
@@ -370,6 +384,15 @@
     byId("gymPaymentForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("POST", "pagos", { empresa_id: state.empresaID, socio_id: parseNumber("gymPaymentSocio"), plan_id: parseNumber("gymPaymentPlan"), concepto: collectValue("gymPaymentConcepto"), monto: parseNumber("gymPaymentMonto"), metodo_pago: collectValue("gymPaymentMetodo"), canal: collectValue("gymPaymentCanal") }).then(refreshAllWithMessage.bind(null, "Pago registrado.")).catch(showError); });
     byId("gymAccessConfigForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("PUT", "acceso_config", payloadAccessConfig()).then(refreshAllWithMessage.bind(null, "Política de acceso guardada.")).catch(showError); });
     byId("gymPreconfigForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("POST", "aplicar_preconfiguracion", payloadPreconfig()).then(function () { return refreshAllWithMessage("Preconfiguración aplicada correctamente."); }).catch(showError); });
+    if (byId("gymSyncCoreBtn")) {
+      byId("gymSyncCoreBtn").addEventListener("click", function () {
+        sendJSON("POST", "sincronizar_nucleo", null).then(function (payload) {
+          state.integracionNucleo = payload.integracion || null;
+          renderCoreIntegration();
+          return refreshAllWithMessage("Gimnasio sincronizado con el núcleo.");
+        }).catch(showError);
+      });
+    }
     byId("gymCredentialForm").addEventListener("submit", function (e) { e.preventDefault(); var p = payloadCredential(); sendJSON(p.id ? "PUT" : "POST", "credenciales", p).then(refreshAllWithMessage.bind(null, "Credencial guardada.")).catch(showError); });
     byId("gymDeviceForm").addEventListener("submit", function (e) { e.preventDefault(); var p = payloadDevice(); sendJSON(p.id ? "PUT" : "POST", "dispositivos", p).then(refreshAllWithMessage.bind(null, "Dispositivo guardado.")).catch(showError); });
     byId("gymAccessValidationForm").addEventListener("submit", function (e) { e.preventDefault(); sendJSON("POST", "validar_acceso", { empresa_id: state.empresaID, codigo_credencial: collectValue("gymValidateCode"), metodo_acceso: collectValue("gymValidateMethod"), dispositivo_id: parseNumber("gymValidateDevice") }).then(function (payload) { showAccessResult(payload); refreshAll().catch(showError); }).catch(showError); });

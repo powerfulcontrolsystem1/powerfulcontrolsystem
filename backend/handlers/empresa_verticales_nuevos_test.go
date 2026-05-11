@@ -61,6 +61,54 @@ func TestEmpresaVerticalesNuevosCatalogoContrato(t *testing.T) {
 		if item.Plantilla.Modulo != item.Modulo {
 			t.Fatalf("plantilla modulo=%q want %q", item.Plantilla.Modulo, item.Modulo)
 		}
+		if item.IntegrationStatus != "plantilla_integrada_nucleo" || !item.OperationalVisible {
+			t.Fatalf("estado de integracion invalido para %q: %+v", item.Modulo, item)
+		}
+		if len(item.CoreModules) < 7 || len(item.DuplicatesCore) != 0 {
+			t.Fatalf("contrato de nucleo invalido para %q: core=%v duplicados=%v", item.Modulo, item.CoreModules, item.DuplicatesCore)
+		}
+		if item.IntegracionPreconfig == nil {
+			t.Fatalf("item sin integracion_preconfig: %s", item.Modulo)
+		}
+		if item.IntegracionPreconfig.Modulo != item.Modulo {
+			t.Fatalf("integracion modulo=%q want %q", item.IntegracionPreconfig.Modulo, item.Modulo)
+		}
+		if item.DecisionPreconfig != item.IntegracionPreconfig.Decision {
+			t.Fatalf("decision catalogo=%q integracion=%q", item.DecisionPreconfig, item.IntegracionPreconfig.Decision)
+		}
+		if len(item.IntegracionPreconfig.TemplateActivates) == 0 ||
+			len(item.IntegracionPreconfig.TablesTouched) == 0 ||
+			len(item.IntegracionPreconfig.RequiredPermissions) == 0 ||
+			len(item.IntegracionPreconfig.SaleFlow) == 0 ||
+			len(item.IntegracionPreconfig.ReportsProduced) == 0 {
+			t.Fatalf("integracion extendida incompleta para %s: %+v", item.Modulo, item.IntegracionPreconfig)
+		}
+	}
+}
+
+func TestEmpresaVerticalesNuevosCatalogoProduccionMasiva(t *testing.T) {
+	items := buildEmpresaVerticalesNuevosCatalogo()
+	masivos := 0
+	for _, item := range items {
+		if item.ProduccionMasiva {
+			masivos++
+			if item.PrioridadProduccion < 1 || item.PrioridadProduccion > 10 {
+				t.Fatalf("prioridad masiva invalida para %s: %d", item.Modulo, item.PrioridadProduccion)
+			}
+			if item.DecisionPreconfig != "integrar_v1_produccion_masiva" {
+				t.Fatalf("masivo %s decision=%q", item.Modulo, item.DecisionPreconfig)
+			}
+			continue
+		}
+		if item.PrioridadProduccion != 0 {
+			t.Fatalf("diferido %s no debe tener prioridad, got %d", item.Modulo, item.PrioridadProduccion)
+		}
+		if item.DecisionPreconfig != "diferir_de_v1" {
+			t.Fatalf("diferido %s decision=%q", item.Modulo, item.DecisionPreconfig)
+		}
+	}
+	if masivos != 10 {
+		t.Fatalf("verticales masivos=%d, want 10", masivos)
 	}
 }
 
@@ -81,6 +129,24 @@ func TestPublicVerticalesNuevosCatalogoHandler(t *testing.T) {
 	}
 	if !payload.OK || payload.Total != 20 || len(payload.Items) != 20 {
 		t.Fatalf("payload inesperado: %+v", payload)
+	}
+}
+
+func TestSuperVerticalesNuevosCatalogoPostRequiereDB(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias", nil)
+	rr := httptest.NewRecorder()
+	SuperVerticalesNuevosCatalogoHandler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestSuperVerticalesNuevosCatalogoPostAccionInvalida(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/super/api/verticales_nuevos/catalogo?action=borrar", nil)
+	rr := httptest.NewRecorder()
+	SuperVerticalesNuevosCatalogoHandler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
 }
 

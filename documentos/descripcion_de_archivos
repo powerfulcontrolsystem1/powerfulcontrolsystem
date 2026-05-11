@@ -1,3 +1,118 @@
+- Actualizacion 2026-05-11: portada index alineada a modulos y verticales reales
+	- `web/index.html` : actualiza la seccion de modulos y las tarjetas publicas para reflejar nucleo unico, modulos reales, 10 verticales V1 masiva y 10 diferidos no publicables como operativos.
+	- `web/js/nuevos_verticales_catalogo.js` : agrega decision local `productionMass`, `productionRank`, `decisionPreconfig`, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica solo para verticales V1 masiva.
+	- `backend/handlers/pagina_principal_handlers.go` : actualiza las tarjetas por defecto del endpoint `/api/public/pagina_principal` para que el index no dependa solo del fallback HTML cuando no exista configuracion guardada.
+	- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `CHANGELOG.md`, `documentos/CHANGELOG.md` y `documentos/historial_de_cambios` : documentan el cambio de portada y trazabilidad.
+
+- Actualizacion 2026-05-11: preconfiguraciones conectadas a matriz vertical y decision v1 masiva
+	- `backend/db/tipo_empresa_preconfiguracion.go` : agrega `integracion_vertical` al template normalizado de preconfiguracion por tipo de empresa.
+	- `backend/db/nuevos_verticales_bootstrap.go` : selecciona 10 verticales nuevos para produccion masiva v1, deja 10 diferidos con motivo y agrega `EnsureNuevosVerticalesProduccionMasivaLicencias`.
+	- `backend/handlers/empresa_verticales_nuevos.go` : expone `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion`, `decision_preconfig` y la accion POST `asegurar_v1_licencias`.
+	- `web/super/verticales_produccion_masiva.html` : nueva vista super para auditar ranking v1 masiva, diferidos, permisos, flujos, reportes y exportar CSV.
+	- `web/super/verticales_produccion_masiva.html` : calcula `Listo venta` cruzando verticales, preconfiguraciones y licencias activas, y muestra pendientes por fila.
+	- `web/super/verticales_produccion_masiva.html` : agrega boton `Asegurar v1` para asegurar tipos, preconfiguraciones y licencias recomendadas de los 10 verticales priorizados.
+	- `web/super_administrador.html` y `web/js/super_administrador.js` : agregan acceso `Verticales v1` y restauracion permitida en la consola super.
+	- `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` : aceptan parametros iniciales `q`, `vertical` o `modulo` para abrir filtradas desde la vista de verticales v1.
+	- `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_verticales_nuevos_test.go` : validan metadata extendida y seleccion exacta de 10 verticales masivos.
+	- `documentos/plan_verticales_produccion_masiva_2026-05-11.md` : registra decision, descartes temporales y plan para version apta para produccion masiva.
+
+- Actualizacion 2026-05-11: sincronizacion segura desde matriz vertical
+	- `backend/handlers/empresa_verticales_integracion.go` : publica `sync_path` y `sync_action_name` para las verticales con migracion historica.
+	- `web/administrar_empresa/verticales_integracion.html` : consulta catalogo y contexto de permisos, agrega KPI de sincronizaciones permitidas, deshabilita acciones no autorizadas y confirma antes de ejecutar POST.
+	- `web/estilos.css` : ajusta KPIs de la matriz a cinco columnas.
+	- `documentos/matriz_integracion_verticales.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/matriz_roles_permisos_pos_multiempresa.md` : documentan el contrato de sincronizacion segura.
+
+- Actualizacion 2026-05-11: matriz extendida de plantillas verticales
+	- `backend/handlers/empresa_verticales_integracion.go` : agrega metadata `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
+	- `backend/handlers/empresa_verticales_integracion_test.go` : valida que todo vertical visible tenga metadata completa de plantilla, tablas, permisos, flujo y reportes.
+	- `web/administrar_empresa/verticales_integracion.html` : muestra la matriz extendida por vertical.
+	- `web/js/verticales_integracion_catalogo.js` : conserva la metadata extendida cuando el catalogo backend se fusiona con el respaldo local.
+
+- Actualizacion 2026-05-11: integracion profesional de verticales
+	- `documentos/matriz_integracion_verticales.md` : matriz de estado por vertical, contrato tecnico de nucleo unico y oleadas de implementacion.
+	- `web/js/verticales_integracion_catalogo.js` : catalogo frontend de visibilidad operativa para ocultar verticales clasicos pendientes de integracion al nucleo.
+	- `web/js/administrar_empresa.js` : aplica la visibilidad de integracion antes de permisos/licencias y filtra el bloque de 20 nuevos verticales.
+	- `web/js/nuevos_verticales_catalogo.js` : marca los 20 verticales nuevos como plantillas integradas al nucleo.
+	- `backend/handlers/empresa_verticales_nuevos.go` y `backend/handlers/empresa_verticales_nuevos_test.go` : exponen y validan el contrato `integration_status`, `operational_visible`, `core_modules` y `duplicates_core`.
+
+- Actualizacion 2026-05-11: gimnasio integrado al nucleo
+	- `backend/db/gimnasio.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza socios, planes y pagos con clientes, servicios y carritos centrales.
+	- `backend/handlers/gimnasio.go` : agrega `POST action=sincronizar_nucleo` para migrar referencias historicas del gimnasio por empresa.
+	- `backend/db/gimnasio_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/gimnasio.html` y `web/js/gimnasio.js` : agregan accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: odontologia integrada al nucleo
+	- `backend/db/odontologia.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza pacientes, tratamientos y pagos con clientes, servicios y carritos centrales.
+	- `backend/handlers/odontologia.go` : agrega `POST action=sincronizar_nucleo` para migrar referencias historicas de odontologia por empresa.
+	- `backend/db/odontologia_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/consultorio_odontologico.html` y `web/js/consultorio_odontologico.js` : agregan accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: parqueadero integrado al nucleo
+	- `backend/db/parqueadero.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza tickets cobrados con clientes opcionales, servicios y carritos centrales.
+	- `backend/handlers/parqueadero.go` : agrega `POST action=sincronizar_nucleo` para migrar tickets cerrados historicos por empresa.
+	- `backend/db/parqueadero_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/parqueadero.html` : agrega accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: taxi system integrado al nucleo
+	- `backend/db/taxi_system.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza clientes/viajes completados con clientes, servicios y carritos centrales.
+	- `backend/handlers/taxi_system.go` : agrega `POST action=sincronizar_nucleo` para migrar viajes completados historicos por empresa.
+	- `backend/db/taxi_system_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/taxi_system.html` y `web/js/taxi_system.js` : agregan accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: domicilios integrado al nucleo
+	- `backend/db/domicilios.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza menu, clientes y pedidos entregados con clientes, servicios y carritos centrales.
+	- `backend/handlers/domicilios.go` : agrega `POST action=sincronizar_nucleo` para migrar pedidos entregados historicos por empresa.
+	- `backend/db/domicilios_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/domicilios.html` y `web/js/domicilios.js` : agregan accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: apartamentos turisticos integrado al nucleo
+	- `backend/db/apartamentos_turisticos.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza unidades, huespedes y reservas cerradas con clientes, servicios y carritos centrales.
+	- `backend/handlers/apartamentos_turisticos.go` : agrega `POST action=sincronizar_nucleo` para migrar reservas historicas por empresa.
+	- `backend/db/apartamentos_turisticos_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/apartamentos_turisticos.html` : agrega accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: propiedad horizontal integrada al nucleo
+	- `backend/db/propiedad_horizontal.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza unidades, personas, cargos y recaudos con clientes, servicios y carritos centrales.
+	- `backend/handlers/propiedad_horizontal.go` : agrega `POST action=sincronizar_nucleo` para migrar datos historicos por empresa.
+	- `backend/db/propiedad_horizontal_integracion_test.go` : valida normalizacion de codigo/medio de pago para la integracion.
+	- `web/administrar_empresa/propiedad_horizontal.html` : agrega accion de sincronizacion con el nucleo y resumen operativo.
+
+- Actualizacion 2026-05-11: alquileres integrado al nucleo
+	- `backend/db/alquileres.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza activos, tarifas y contratos con clientes, servicios y carritos centrales.
+	- `backend/handlers/alquileres.go` : agrega `POST action=sincronizar_nucleo` para migrar contratos historicos por empresa.
+	- `backend/db/alquileres_integracion_test.go` : valida normalizacion de codigo y precio base por modalidad para la integracion.
+	- `web/administrar_empresa/alquileres.html` y `web/js/alquileres.js` : agregan accion de sincronizacion con el nucleo y resumen operativo.
+	- `documentos/alquileres.md` : documenta alcance funcional, seguridad, tablas e integracion de alquileres con el nucleo comercial.
+
+- Actualizacion 2026-05-11: drogueria/farmacia validada al nucleo
+	- `web/js/verticales_integracion_catalogo.js` : marca `drogueria_farmacia` como plantilla integrada visible y sin duplicados de nucleo.
+	- `web/administrar_empresa/drogueria_farmacia.html` : declara que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
+	- `backend/db/modulos_empresariales_colombia_test.go` : refuerza que la plantilla de farmacia es expediente sanitario y no inventario paralelo.
+	- `documentos/drogueria_farmacia.md` : documenta alcance funcional, seguridad, tablas compartidas e integracion con el nucleo.
+
+- Actualizacion 2026-05-11: AIU construccion integrado al nucleo
+	- `backend/db/aiu_construccion.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza contratos, conceptos y facturas AIU con clientes, servicios y carritos centrales.
+	- `backend/handlers/aiu_construccion.go` : agrega `POST action=sincronizar_nucleo` para migrar contratos, conceptos y facturas historicas por empresa.
+	- `backend/db/aiu_construccion_test.go` : valida normalizacion de codigo de integracion y referencia externa estable para facturas AIU.
+	- `web/administrar_empresa/aiu_construccion.html` : agrega accion de sincronizacion con el nucleo y resumen operativo.
+	- `web/js/verticales_integracion_catalogo.js` : marca `aiu_construccion` como plantilla integrada visible y sin duplicados del nucleo.
+
+- Actualizacion 2026-05-11: catalogo API de integracion vertical
+	- `backend/handlers/empresa_verticales_integracion.go` : nuevo catalogo de verticales clasicos con estado de integracion, visibilidad, modulos de nucleo, duplicados, flujo propio y accion de sincronizacion.
+	- `backend/handlers/empresa_verticales_integracion_test.go` : valida el contrato de catalogo y el endpoint publico.
+	- `backend/main.go` : registra `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
+	- `web/js/verticales_integracion_catalogo.js` : permite fusionar el contrato de backend sobre el catalogo local.
+	- `web/js/administrar_empresa.js` : carga el catalogo de empresa antes de aplicar permisos del menu y conserva fallback local.
+	- `web/administrar_empresa.html` y `web/estilos.css` : agregan indicador compacto de matriz activa en el sidebar empresarial.
+	- `web/administrar_empresa/verticales_integracion.html` : nueva pantalla de consulta de matriz con KPIs, estado, nucleo, especialidad y botones de sincronizacion historica por vertical.
+	- `backend/handlers/empresa_permisos.go` : registra `linkVerticalesIntegracion` con permiso `seguridad:R`.
+
+- Actualizacion 2026-05-11: panel super profesional
+	- `web/super_administrador.html` : reduce el menu principal a accesos necesarios, agrega cabecera PCS y chips de alcance operativo.
+	- `web/js/super_administrador.js` : limita la restauracion de la ultima pagina a las subpaginas visibles del panel profesional.
+	- `web/estilos.css` : agrega estilos especificos para el shell super administrador profesional.
+	- `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md` y `documentos/historial_de_cambios` : registran trazabilidad del ajuste de navegacion.
+
 - Actualizacion 2026-05-11: limpieza PostgreSQL-only
 	- `backend/db/finanzas.go` y `backend/db/propinas.go` : las comprobaciones de indices usan `pg_indexes`.
 	- `web/administrar_empresa/carrito_de_compras.html` y `web/administrar_empresa/codigos_de_descuento.html` : helpers de fecha renombrados a convencion de backend.

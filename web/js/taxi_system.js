@@ -50,7 +50,7 @@
   };
   var activeTileLayer = tileLayers.osm.addTo(map);
   var layer = L.layerGroup().addTo(map);
-  var state = { cfg: null, requests: [], drivers: [], gpsDevices: [], mapFilter: "all" };
+  var state = { cfg: null, requests: [], drivers: [], gpsDevices: [], mapFilter: "all", integracionNucleo: null };
 
   function setMsg(id, text, bad) {
     var el = document.getElementById(id);
@@ -66,6 +66,24 @@
     el.style.color = bad ? "#b91c1c" : "";
     el.style.background = bad ? "rgba(254,242,242,.92)" : "";
     el.style.borderColor = bad ? "rgba(185,28,28,.22)" : "";
+  }
+
+  function renderCoreIntegration() {
+    var el = document.getElementById("taxiCoreSummary");
+    if (!el) return;
+    var row = state.integracionNucleo;
+    if (!row) {
+      el.textContent = "Nucleo: viajes completados generan ventas y pagos centrales.";
+      return;
+    }
+    var errors = Array.isArray(row.errores) ? row.errores.length : 0;
+    el.textContent = [
+      "Nucleo sincronizado",
+      "viajes " + (row.viajes_sincronizados || 0),
+      "clientes " + (row.clientes_sincronizados || 0),
+      "pendientes " + (row.viajes_pendientes || 0),
+      errors ? "observaciones " + errors : "sin observaciones"
+    ].join(" | ");
   }
 
   function setTab(tab) {
@@ -497,9 +515,26 @@
     }
   });
 
+  document.getElementById("taxiSyncCoreBtn").addEventListener("click", async function (ev) {
+    try {
+      ev.currentTarget.disabled = true;
+      setPageMsg("Sincronizando taxi system con el nucleo...");
+      var resp = await j(base + "&action=sincronizar_nucleo", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      state.integracionNucleo = resp.integracion || null;
+      renderCoreIntegration();
+      setPageMsg("Taxi system sincronizado con clientes, servicios, ventas y pagos centrales.");
+      await loadDashboard();
+    } catch (e) {
+      setPageMsg(e.message || "No se pudo sincronizar con el nucleo.", true);
+    } finally {
+      ev.currentTarget.disabled = false;
+    }
+  });
+
   (async function init() {
     try {
       setTab(initialTabFromURL());
+      renderCoreIntegration();
       setPageMsg("Taxi system listo para revisar cobertura, despachar servicios y monitorear la operación.");
       await loadConfig();
       await loadGpsDevices();

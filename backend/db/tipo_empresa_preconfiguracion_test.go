@@ -182,6 +182,93 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 			if len(template.TareasGuia) < 4 {
 				t.Fatalf("vertical debe tener tareas guia profesionales: got %d", len(template.TareasGuia))
 			}
+			if template.IntegracionVertical == nil {
+				t.Fatalf("vertical debe quedar conectado a la matriz extendida de integracion")
+			}
+			if template.IntegracionVertical.Modulo != item.Modulo {
+				t.Fatalf("integracion modulo=%q want %q", template.IntegracionVertical.Modulo, item.Modulo)
+			}
+			if template.IntegracionVertical.EstadoIntegracion != "plantilla_integrada_nucleo" {
+				t.Fatalf("estado integracion=%q", template.IntegracionVertical.EstadoIntegracion)
+			}
+			if len(template.IntegracionVertical.TemplateActivates) == 0 ||
+				len(template.IntegracionVertical.TablesTouched) == 0 ||
+				len(template.IntegracionVertical.RequiredPermissions) == 0 ||
+				len(template.IntegracionVertical.SaleFlow) == 0 ||
+				len(template.IntegracionVertical.ReportsProduced) == 0 {
+				t.Fatalf("integracion extendida incompleta: %+v", template.IntegracionVertical)
+			}
+		})
+	}
+}
+
+func TestNuevosVerticalesProduccionMasivaSeleccionaDiez(t *testing.T) {
+	selected := NuevosVerticalesProduccionMasivaSeleccionados()
+	if len(selected) != 10 {
+		t.Fatalf("verticales produccion masiva len=%d, want 10: %v", len(selected), selected)
+	}
+
+	seen := map[string]bool{}
+	for i, modulo := range selected {
+		if modulo == "" {
+			t.Fatalf("modulo vacio en prioridad %d", i+1)
+		}
+		if seen[modulo] {
+			t.Fatalf("modulo duplicado en seleccion: %s", modulo)
+		}
+		seen[modulo] = true
+		if rank := NuevoVerticalProduccionMasivaRank(modulo); rank != i+1 {
+			t.Fatalf("rank %s=%d want %d", modulo, rank, i+1)
+		}
+		plantilla := GetEmpresaModuloColombiaPlantilla(modulo)
+		preconfig := DefaultTipoEmpresaPreconfiguracion(789, plantilla.Titulo)
+		template, err := ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON)
+		if err != nil {
+			t.Fatalf("preconfig %s invalida: %v", modulo, err)
+		}
+		if template.IntegracionVertical == nil || !template.IntegracionVertical.ProduccionMasiva {
+			t.Fatalf("%s debe quedar marcado como produccion masiva: %+v", modulo, template.IntegracionVertical)
+		}
+		if template.IntegracionVertical.Decision != "integrar_v1_produccion_masiva" {
+			t.Fatalf("%s decision=%q", modulo, template.IntegracionVertical.Decision)
+		}
+	}
+
+	masivos := 0
+	for _, item := range NuevosVerticalesTipoEmpresaCatalog() {
+		integracion := BuildTipoEmpresaPreconfigIntegracionVertical(item.Modulo)
+		if integracion == nil {
+			t.Fatalf("sin integracion para %s", item.Modulo)
+		}
+		if integracion.ProduccionMasiva {
+			masivos++
+			continue
+		}
+		if integracion.Decision != "diferir_de_v1" {
+			t.Fatalf("%s no masivo debe diferirse, got %q", item.Modulo, integracion.Decision)
+		}
+		if integracion.MotivoDecision == "" {
+			t.Fatalf("%s diferido debe explicar motivo", item.Modulo)
+		}
+	}
+	if masivos != 10 {
+		t.Fatalf("verticales masivos=%d, want 10", masivos)
+	}
+}
+
+func TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1(t *testing.T) {
+	for _, modulo := range []string{"gimnasio", "odontologia", "drogueria_farmacia", "alquileres", "constructora"} {
+		t.Run(modulo, func(t *testing.T) {
+			integracion := BuildTipoEmpresaPreconfigIntegracionVertical(modulo)
+			if integracion == nil {
+				t.Fatalf("sin integracion clasica para %s", modulo)
+			}
+			if integracion.Decision != "mantener_como_plantilla" {
+				t.Fatalf("%s decision=%q, want mantener_como_plantilla", modulo, integracion.Decision)
+			}
+			if integracion.ProduccionMasiva {
+				t.Fatalf("%s no debe entrar en ranking de nuevos verticales masivos", modulo)
+			}
 		})
 	}
 }

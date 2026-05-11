@@ -1,3 +1,124 @@
+## Actualizacion 2026-05-11 (portada index y tarjetas reales)
+
+- `web/index.html` consume `web/js/nuevos_verticales_catalogo.js` antes de construir tarjetas publicas.
+- `backend/handlers/pagina_principal_handlers.go` mantiene los defaults de `/api/public/pagina_principal` alineados con la misma oferta real cuando no existe configuracion guardada en super.
+- Las tarjetas base de la portada cubren modulos reales del nucleo y transversales: POS, CRM, hotel/motel, apartamentos, propiedad horizontal, gimnasio, odontologia, drogueria/farmacia, alquileres, domicilios, taxi, turnos, carnets, produccion/MRP, compras OCR/IA, WMS, bancos/pagos, gestion documental, helpdesk/calidad, tesoreria, facturacion, cierre fiscal, centros de costo, activos, cobranza, contador, certificados y AIU.
+- El catalogo local de los 20 verticales nuevos agrega estado de producto (`productionMass`, `productionRank`, `decisionPreconfig`) y metadata de plantilla (`templateActivates`, `tablesTouched`, `requiredPermissions`, `saleFlow`, `reportsProduced`).
+- `index.html` solo transforma en tarjetas publicas los verticales nuevos con visibilidad operativa/V1 masiva. Los diferidos quedan en la matriz y en el resumen de plantillas, no como boton operativo de `Probar gratis`.
+
+## Actualizacion 2026-05-11 (sincronizacion segura de matriz vertical)
+
+- `backend/handlers/empresa_verticales_integracion.go` publica `sync_path` y `sync_action_name` como contrato estructurado para migraciones historicas de verticales clasicos.
+- El mismo contrato publica `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced` para convertir cada vertical visible en una plantilla auditable.
+- `web/administrar_empresa/verticales_integracion.html` carga en paralelo el catalogo de verticales y `/api/empresa/permisos_contexto`; solo habilita `Sincronizar` cuando el usuario tiene pagina del vertical o permiso de creacion del modulo.
+- La tabla de la pantalla muestra modulos, plantilla, tablas, permisos, flujo de venta y reportes por vertical para evitar duplicados funcionales ocultos.
+- La ejecucion desde la matriz pide confirmacion humana y envia `POST {sync_path}?empresa_id=...&action={sync_action_name}`; el handler vertical conserva la validacion real de permisos, licencia y aislamiento por `empresa_id`.
+- `web/estilos.css` ajusta el resumen de cinco KPIs para incluir sincronizaciones permitidas.
+
+## Actualizacion 2026-05-11 (preconfiguracion vertical y produccion masiva)
+
+- `backend/db/tipo_empresa_preconfiguracion.go` agrega el bloque `integracion_vertical` al template normalizado de preconfiguracion.
+- `backend/db/nuevos_verticales_bootstrap.go` centraliza la decision de 10 verticales nuevos para produccion masiva v1 y 10 diferidos.
+- `backend/handlers/empresa_verticales_nuevos.go` publica `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig` en los catalogos publico, empresa y super.
+- `web/super/verticales_produccion_masiva.html` consume el catalogo super y presenta KPIs, filtros, ranking, metadata extendida y exportacion CSV para gobierno comercial.
+- La misma vista calcula `Listo venta` cruzando catalogo de verticales, preconfiguraciones y licencias activas; si falta algo, muestra el pendiente por fila.
+- La accion `Asegurar v1` llama `POST /super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias`; `backend/handlers/empresa_verticales_nuevos.go` delega en `db.EnsureNuevosVerticalesProduccionMasivaLicencias`.
+- `web/super_administrador.html` y `web/js/super_administrador.js` incorporan la vista como pagina permitida del panel principal para `super_administrador`.
+- `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` aceptan filtros iniciales por `q`, `vertical` o `modulo` para abrir desde la matriz comercial sin duplicar pantallas ni datos.
+- `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_verticales_nuevos_test.go` validan que existan exactamente 10 verticales masivos y que todos tengan metadata extendida.
+- `documentos/plan_verticales_produccion_masiva_2026-05-11.md` registra decision comercial, diferidos y plan de cierre para version masiva.
+
+## Actualizacion 2026-05-11 (integracion profesional de verticales)
+
+- `documentos/matriz_integracion_verticales.md` define el contrato de nucleo unico y el estado visible/oculto de cada vertical.
+- `web/js/verticales_integracion_catalogo.js` alimenta la decision visual del panel empresarial para no mostrar verticales con ventas, clientes, productos o pagos duplicados.
+- `web/js/administrar_empresa.js` aplica ese estado antes de permisos/licencias, por lo que una vertical pendiente queda oculta aunque exista pagina, handler o permiso.
+- `backend/handlers/empresa_verticales_nuevos.go` expone metadata de integracion en los catalogos publico, empresa y super de los 20 verticales nuevos.
+- No hay cambio de esquema en esta fase; la siguiente oleada debe migrar duplicados reales al nucleo PostgreSQL compartido.
+
+## Actualizacion 2026-05-11 (gimnasio al nucleo)
+
+- `backend/db/gimnasio.go` enlaza socios con `clientes`, planes con `servicios` y pagos con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/gimnasio.go` agrega la accion `sincronizar_nucleo` para migracion controlada de datos historicos por empresa.
+- `web/administrar_empresa/gimnasio.html` y `web/js/gimnasio.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `gimnasio` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (odontologia al nucleo)
+
+- `backend/db/odontologia.go` enlaza pacientes con `clientes`, tratamientos con `servicios` y pagos con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/odontologia.go` agrega la accion `sincronizar_nucleo` para migracion controlada de datos historicos por empresa.
+- `web/administrar_empresa/consultorio_odontologico.html` y `web/js/consultorio_odontologico.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `odontologia` y `consultorio_odontologico` como plantillas visibles integradas.
+
+## Actualizacion 2026-05-11 (parqueadero al nucleo)
+
+- `backend/db/parqueadero.go` enlaza tickets con `clientes` opcionales, `servicios` por tipo de vehiculo y `carritos_compras`/`carrito_compra_items` al cobrar salida.
+- `backend/handlers/parqueadero.go` agrega la accion `sincronizar_nucleo` para migracion controlada de tickets cerrados historicos por empresa.
+- `web/administrar_empresa/parqueadero.html` agrega una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `parqueadero` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (taxi system al nucleo)
+
+- `backend/db/taxi_system.go` enlaza clientes/solicitudes con `clientes`, servicios de viaje con `servicios` y viajes completados con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/taxi_system.go` agrega la accion `sincronizar_nucleo` para migracion controlada de viajes completados historicos por empresa.
+- `web/administrar_empresa/taxi_system.html` y `web/js/taxi_system.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `taxi_system` y `taxi` como plantillas visibles integradas.
+
+## Actualizacion 2026-05-11 (domicilios al nucleo)
+
+- `backend/db/domicilios.go` enlaza clientes de pedidos con `clientes`, items de menu con `servicios` y pedidos entregados con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/domicilios.go` agrega la accion `sincronizar_nucleo` para migracion controlada de pedidos entregados historicos por empresa.
+- `web/administrar_empresa/domicilios.html` y `web/js/domicilios.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `domicilios` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (apartamentos turisticos al nucleo)
+
+- `backend/db/apartamentos_turisticos.go` enlaza huespedes con `clientes`, unidades con `servicios` y reservas cerradas con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/apartamentos_turisticos.go` agrega la accion `sincronizar_nucleo` para migracion controlada de reservas historicas por empresa.
+- `web/administrar_empresa/apartamentos_turisticos.html` agrega una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `apartamentos_turisticos` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (propiedad horizontal al nucleo)
+
+- `backend/db/propiedad_horizontal.go` enlaza personas con `clientes`, unidades/cargos con `servicios` y recaudos con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/propiedad_horizontal.go` agrega la accion `sincronizar_nucleo` para migracion controlada de unidades, personas, cargos y recaudos historicos por empresa.
+- `web/administrar_empresa/propiedad_horizontal.html` agrega una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `propiedad_horizontal` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (alquileres al nucleo)
+
+- `backend/db/alquileres.go` enlaza clientes de contratos con `clientes`, activos/tarifas con `servicios` y contratos con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/alquileres.go` agrega la accion `sincronizar_nucleo` para migracion controlada de activos, tarifas y contratos historicos por empresa.
+- `web/administrar_empresa/alquileres.html` y `web/js/alquileres.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `alquileres` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (drogueria/farmacia al nucleo)
+
+- `backend/handlers/modulos_empresariales_colombia.go` sigue atendiendo `/api/empresa/drogueria_farmacia` mediante `EmpresaModuloColombiaHandler`; no se crea handler paralelo de ventas o inventario.
+- `backend/db/modulos_empresariales_colombia.go` mantiene `drogueria_farmacia` como expediente sanitario sobre `empresa_modulos_colombia_*`.
+- `backend/db/drogueria_farmacia_bootstrap.go` conserva licencias con `inventario`, `compras`, `ventas`, `clientes` y `facturacion` centrales.
+- `web/administrar_empresa/drogueria_farmacia.html` declara que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
+- `web/js/verticales_integracion_catalogo.js` marca `drogueria_farmacia` como plantilla visible integrada.
+
+## Actualizacion 2026-05-11 (AIU construccion al nucleo)
+
+- `backend/db/aiu_construccion.go` enlaza contratos con `clientes`/`servicios`, conceptos con `servicios` y facturas con `carritos_compras`/`carrito_compra_items`.
+- `backend/handlers/aiu_construccion.go` agrega `POST action=sincronizar_nucleo` para migracion controlada por empresa.
+- `web/administrar_empresa/aiu_construccion.html` agrega accion operativa para ejecutar la sincronizacion y mostrar resumen.
+- `web/js/verticales_integracion_catalogo.js` marca `aiu_construccion` como plantilla visible integrada.
+- `backend/db/aiu_construccion_test.go` cubre normalizacion de codigo de integracion y referencia externa estable de factura AIU.
+
+## Actualizacion 2026-05-11 (catalogo API de integracion vertical)
+
+- `backend/handlers/empresa_verticales_integracion.go` expone la matriz de verticales clasicos con estado de integracion, visibilidad, modulos del nucleo, duplicados, flujo propio y accion de sincronizacion.
+- `backend/main.go` registra `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
+- `web/js/verticales_integracion_catalogo.js` permite fusionar items recibidos desde backend mediante `applyCatalogItems`.
+- `web/js/administrar_empresa.js` consulta el catalogo de empresa antes de resolver permisos y usa el catalogo local si la API no responde.
+- `web/administrar_empresa.html` y `web/estilos.css` agregan un indicador compacto de la matriz activa en el sidebar empresarial.
+- `web/administrar_empresa/verticales_integracion.html` agrega una pantalla de consulta de matriz con resumen, tabla de estado, nucleo, especialidad y botones de sincronizacion historica cuando el catalogo lo permite.
+- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js` registran `linkVerticalesIntegracion` bajo `seguridad:R`.
+- `backend/handlers/empresa_verticales_integracion_test.go` valida que los verticales visibles no declaren duplicados del nucleo y que existan los verticales clasicos integrados.
+
 ## Actualizacion 2026-05-10 (roles finos y ayuda privada super)
 
 - `backend/handlers/empresa_permisos.go` es la fuente canonica de modulos, acciones, paginas `link...`, wrappers empresariales y compatibilidad de licencias para los nuevos modulos finos.

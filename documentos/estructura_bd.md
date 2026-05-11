@@ -21,6 +21,89 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-11 (integracion profesional de verticales)
+- La primera tanda de matriz/visibilidad no agrego tablas ni columnas.
+- Los 20 verticales nuevos siguen usando las tablas compartidas `empresa_modulos_colombia_*` por `empresa_id` y `modulo`.
+- Los verticales clasicos con tablas propias solo pueden quedar visibles cuando sus datos cobrables migran o referencian el nucleo de clientes, productos/servicios, ventas y pagos.
+
+Actualizacion 2026-05-11 (preconfiguraciones verticales v1 masiva)
+- No se agregan tablas ni columnas fisicas.
+- El JSON de `tipo_empresa_preconfiguraciones.config_json` puede incluir `integracion_vertical` para conectar la plantilla con la matriz extendida.
+- `integracion_vertical` registra `modulo`, `estado_integracion`, `decision`, `produccion_masiva`, `prioridad_produccion`, `motivo_decision`, `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
+- Los 10 verticales priorizados para produccion masiva v1 quedan marcados en el JSON; los otros 10 permanecen diferidos sin borrar catalogo ni datos.
+- La accion super `asegurar_v1_licencias` reutiliza las tablas existentes `tipos_empresas`, `tipo_empresa_preconfiguraciones` y `licencias`; no introduce esquema nuevo.
+
+Actualizacion 2026-05-11 (gimnasio integrado al nucleo)
+- `empresa_gimnasio_socios.cliente_id`: referencia al cliente central creado o reutilizado para el socio.
+- `empresa_gimnasio_planes.servicio_id`: referencia al servicio vendible central creado desde el plan.
+- `empresa_gimnasio_pagos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo de gimnasio.
+- Las tablas de gimnasio conservan solo la especialidad operativa: acceso, clases, asistencia, credenciales y lectura fitness; el cobro queda reconciliable con `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (odontologia integrada al nucleo)
+- `empresa_odontologia_pacientes.cliente_id`: referencia al cliente central creado o reutilizado para el paciente facturable.
+- `empresa_odontologia_tratamientos.servicio_id`: referencia al servicio vendible central creado desde el tratamiento.
+- `empresa_odontologia_pagos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo odontologico.
+- Las tablas clinicas de odontologia conservan la especialidad: historia clinica, odontograma, profesionales, consultorios, citas, presupuestos y trazabilidad clinica; el circuito comercial queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (parqueadero integrado al nucleo)
+- `empresa_parqueadero_tickets.cliente_id`: referencia opcional al cliente central creado o reutilizado cuando el ticket trae cliente/documento.
+- `empresa_parqueadero_tickets.servicio_id`: referencia al servicio vendible central por tipo de vehiculo.
+- `empresa_parqueadero_tickets.carrito_id` y `carrito_item_id`: referencias al carrito e item central generados al cobrar salida.
+- La tabla de parqueadero conserva la especialidad operativa: placa, QR, entrada, salida, minutos, tarifas y anulaciones; el cobro queda reconciliable con `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (taxi system integrado al nucleo)
+- `empresa_taxi_customers.cliente_id`: referencia al cliente central creado o reutilizado para el cliente registrado del portal.
+- `empresa_taxi_requests.cliente_id`: referencia al cliente central usado por el viaje, incluso si la solicitud fue como invitado.
+- `empresa_taxi_requests.servicio_id`: referencia al servicio vendible central para viajes de taxi.
+- `empresa_taxi_requests.carrito_id` y `carrito_item_id`: referencias al carrito e item central generados al completar el viaje.
+- `empresa_taxi_requests.metodo_pago`: metodo normalizado contra el flujo de carrito; por defecto `efectivo` mientras no exista pasarela propia del viaje.
+- Las tablas de taxi conservan la especialidad operativa: conductores, ofertas, GPS, rutas, estados de viaje y trazabilidad de despacho; el cobro queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (domicilios integrado al nucleo)
+- `empresa_domicilios_menu_items.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada producto de menu.
+- `empresa_domicilios_orders.cliente_id`: referencia al cliente central creado o reutilizado desde nombre, telefono y direccion del pedido.
+- `empresa_domicilios_orders.carrito_id`: referencia al carrito central generado cuando el pedido pasa a `entregado`.
+- `empresa_domicilios_order_items.servicio_id` y `carrito_item_id`: referencias al servicio vendido y al item central de carrito por linea del pedido.
+- La tabla de domicilios conserva la especialidad operativa: restaurantes aliados, domiciliarios, ofertas, tracking GPS, estados logisticos, codigo de entrega y calculo de tarifa; el cobro queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (apartamentos turisticos integrado al nucleo)
+- `empresa_apartamentos_turisticos_unidades.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada apartamento/unidad.
+- `empresa_apartamentos_turisticos_reservas.cliente_id`: referencia al cliente central creado o reutilizado desde huesped, documento, telefono o email.
+- `empresa_apartamentos_turisticos_reservas.servicio_id`: referencia al servicio central de alojamiento usado por la reserva.
+- `empresa_apartamentos_turisticos_reservas.carrito_id` y `carrito_item_id`: referencias al carrito e item central generados al cerrar la estadia por checkout o sincronizacion historica.
+- `empresa_apartamentos_turisticos_reservas.metodo_pago`: metodo normalizado contra el flujo de carrito; por defecto `efectivo` cuando no existe pasarela/canal externo conciliado.
+- Las tablas de apartamentos conservan la especialidad operativa: unidades, disponibilidad, tarifas, codigos de acceso, check-in/check-out, limpieza y mantenimiento; el cobro queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (propiedad horizontal integrada al nucleo)
+- `empresa_propiedad_horizontal_unidades.servicio_id`: referencia al servicio vendible central creado o reutilizado para la cuota base de la unidad.
+- `empresa_propiedad_horizontal_personas.cliente_id`: referencia al cliente central creado o reutilizado para propietarios, residentes, arrendatarios y apoderados.
+- `empresa_propiedad_horizontal_cargos.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada concepto cobrable.
+- `empresa_propiedad_horizontal_recaudos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo de copropiedad.
+- Las tablas de propiedad horizontal conservan la especialidad operativa: unidades, coeficientes, cartera, PQR, asambleas y trazabilidad de copropiedad; el cobro queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (alquileres integrado al nucleo)
+- `empresa_alquileres_activos.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada activo alquilable.
+- `empresa_alquileres_tarifas.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada tarifa/modalidad cobrable.
+- `empresa_alquileres_contratos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el contrato de alquiler.
+- Las tablas de alquileres conservan la especialidad operativa: contratos, garantias, kilometraje, GPS, mantenimiento, entrega y devolucion; el flujo cobrable queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
+
+Actualizacion 2026-05-11 (drogueria/farmacia validada al nucleo)
+- `drogueria_farmacia` no agrega tablas fisicas propias de productos, inventario, ventas ni pagos.
+- Usa `empresa_modulos_colombia_registros`, `empresa_modulos_colombia_eventos`, `empresa_modulos_colombia_evidencias`, `empresa_modulos_colombia_aprobaciones` y `empresa_modulos_colombia_tareas` con `modulo='drogueria_farmacia'` para expediente sanitario.
+- Productos, lotes operativos de inventario, compras, clientes, ventas, pagos y facturacion se mantienen en los modulos centrales existentes.
+
+Actualizacion 2026-05-11 (AIU construccion integrado al nucleo)
+- `empresa_aiu_contratos.cliente_id`: referencia al cliente central creado o reutilizado para el cliente de obra.
+- `empresa_aiu_contratos.servicio_id`: referencia al servicio vendible central creado o reutilizado para el contrato AIU.
+- `empresa_aiu_items.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada concepto/capitulo cobrable.
+- `empresa_aiu_facturas.carrito_id` y `carrito_item_id`: referencias al carrito e item central generados por la factura AIU.
+- Las tablas AIU conservan la especialidad de construccion: capitulos, porcentajes AIU, base IVA, retenciones, anticipo, garantia, avance, riesgo y auditoria tecnica; el circuito cobrable queda reconciliable con `clientes`, `servicios`, `carritos_compras`, `carrito_compra_items` y `empresa_facturacion_documentos`.
+
+Actualizacion 2026-05-11 (catalogo API de integracion vertical)
+- Se agregan endpoints de solo lectura para exponer la matriz operativa de verticales clasicos: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
+- No agrega tablas ni columnas; el contrato vive en codigo Go y publica `integration_status`, `operational_visible`, `core_modules`, `duplicates_core`, `own_flow_allowed`, `decision`, `sync_action`, `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
+- Las tablas listadas en `tables_touched` son declarativas para auditoria de integracion: documentan que tablas del vertical y del nucleo participan en el flujo, sin crear relaciones nuevas en esta fase.
+
 Actualizacion 2026-05-10 (alertas automaticas super)
 - `metrics`: se amplia con `disk_total`, `disk_used` y `disk_percent` para que el panel super y las alertas midan la capacidad real del filesystem del VPS/contenedor.
 - `super_alertas_config`: configuracion global del modulo de alertas super. Incluye activacion, correo destino, umbrales de disco, trafico, sesiones, conexiones PostgreSQL y ventana de enfriamiento entre correos repetidos.

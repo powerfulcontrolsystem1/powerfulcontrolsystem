@@ -96,6 +96,7 @@ type EmpresaDomicilioMenuItem struct {
 	ID                   int64   `json:"id"`
 	EmpresaID            int64   `json:"empresa_id"`
 	RestaurantID         int64   `json:"restaurant_id"`
+	ServicioID           int64   `json:"servicio_id,omitempty"`
 	RestaurantNombre     string  `json:"restaurant_nombre,omitempty"`
 	Codigo               string  `json:"codigo,omitempty"`
 	Nombre               string  `json:"nombre"`
@@ -110,21 +111,25 @@ type EmpresaDomicilioMenuItem struct {
 }
 
 type EmpresaDomicilioOrderItem struct {
-	ID         int64   `json:"id"`
-	EmpresaID  int64   `json:"empresa_id,omitempty"`
-	OrderID    int64   `json:"order_id,omitempty"`
-	MenuItemID int64   `json:"menu_item_id"`
-	Nombre     string  `json:"nombre"`
-	Cantidad   float64 `json:"cantidad"`
-	PrecioUnit float64 `json:"precio_unit"`
-	Subtotal   float64 `json:"subtotal"`
-	Notas      string  `json:"notas,omitempty"`
+	ID            int64   `json:"id"`
+	EmpresaID     int64   `json:"empresa_id,omitempty"`
+	OrderID       int64   `json:"order_id,omitempty"`
+	MenuItemID    int64   `json:"menu_item_id"`
+	ServicioID    int64   `json:"servicio_id,omitempty"`
+	CarritoItemID int64   `json:"carrito_item_id,omitempty"`
+	Nombre        string  `json:"nombre"`
+	Cantidad      float64 `json:"cantidad"`
+	PrecioUnit    float64 `json:"precio_unit"`
+	Subtotal      float64 `json:"subtotal"`
+	Notas         string  `json:"notas,omitempty"`
 }
 
 type EmpresaDomicilioOrder struct {
 	ID                  int64                       `json:"id"`
 	EmpresaID           int64                       `json:"empresa_id"`
 	RestaurantID        int64                       `json:"restaurant_id"`
+	ClienteID           int64                       `json:"cliente_id,omitempty"`
+	CarritoID           int64                       `json:"carrito_id,omitempty"`
 	RestaurantNombre    string                      `json:"restaurant_nombre,omitempty"`
 	CourierID           int64                       `json:"courier_id,omitempty"`
 	CourierNombre       string                      `json:"courier_nombre,omitempty"`
@@ -199,6 +204,18 @@ type EmpresaDomiciliosDashboard struct {
 	Couriers                 []EmpresaDomicilioCourier    `json:"couriers"`
 	Restaurants              []EmpresaDomicilioRestaurant `json:"restaurants"`
 	Offers                   []EmpresaDomicilioOffer      `json:"offers"`
+}
+
+type EmpresaDomiciliosIntegracionNucleoResumen struct {
+	EmpresaID                  int64    `json:"empresa_id"`
+	EstadoIntegracion          string   `json:"estado_integracion"`
+	VisibleOperativo           bool     `json:"visible_operativo"`
+	MenuServiciosSincronizados int      `json:"menu_servicios_sincronizados"`
+	ClientesSincronizados      int      `json:"clientes_sincronizados"`
+	PedidosSincronizados       int      `json:"pedidos_sincronizados"`
+	PedidosPendientes          int      `json:"pedidos_pendientes"`
+	RequiereRevisionDatos      bool     `json:"requiere_revision_datos"`
+	Errores                    []string `json:"errores,omitempty"`
 }
 
 func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
@@ -283,6 +300,7 @@ func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
 			restaurant_id BIGINT NOT NULL,
+			servicio_id BIGINT,
 			codigo TEXT,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
@@ -300,6 +318,8 @@ func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
 			id BIGSERIAL PRIMARY KEY,
 			empresa_id BIGINT NOT NULL,
 			restaurant_id BIGINT NOT NULL,
+			cliente_id BIGINT,
+			carrito_id BIGINT,
 			courier_id BIGINT,
 			codigo_pedido TEXT NOT NULL,
 			codigo_entrega TEXT,
@@ -334,6 +354,8 @@ func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
 			empresa_id BIGINT NOT NULL,
 			order_id BIGINT NOT NULL,
 			menu_item_id BIGINT,
+			servicio_id BIGINT,
+			carrito_item_id BIGINT,
 			nombre TEXT NOT NULL,
 			cantidad NUMERIC(12,2) NOT NULL DEFAULT 1,
 			precio_unit NUMERIC(12,2) NOT NULL DEFAULT 0,
@@ -369,6 +391,30 @@ func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_domicilios_tracking_order ON empresa_domicilios_tracking(empresa_id, order_id, capturado_en DESC)`,
 	}
 	for _, stmt := range stmts {
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
+	extraColumns := []struct {
+		table  string
+		column string
+		def    string
+	}{
+		{"empresa_domicilios_menu_items", "servicio_id", "BIGINT"},
+		{"empresa_domicilios_orders", "cliente_id", "BIGINT"},
+		{"empresa_domicilios_orders", "carrito_id", "BIGINT"},
+		{"empresa_domicilios_order_items", "servicio_id", "BIGINT"},
+		{"empresa_domicilios_order_items", "carrito_item_id", "BIGINT"},
+	}
+	for _, col := range extraColumns {
+		if err := ensureColumnIfMissing(dbConn, col.table, col.column, col.def); err != nil {
+			return err
+		}
+	}
+	for _, stmt := range []string{
+		`CREATE INDEX IF NOT EXISTS ix_empresa_domicilios_orders_carrito ON empresa_domicilios_orders(empresa_id, carrito_id)`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_domicilios_items_servicio ON empresa_domicilios_order_items(empresa_id, servicio_id)`,
+	} {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
@@ -575,7 +621,7 @@ func ListDomicilioMenuItems(dbConn *sql.DB, empresaID, restaurantID int64, onlyA
 	if err := EnsureEmpresaDomiciliosSchema(dbConn); err != nil {
 		return nil, err
 	}
-	q := `SELECT m.id,m.empresa_id,m.restaurant_id,COALESCE(r.nombre,''),COALESCE(m.codigo,''),COALESCE(m.nombre,''),COALESCE(m.descripcion,''),COALESCE(m.categoria,''),COALESCE(m.precio,0),COALESCE(m.imagen_url,''),COALESCE(m.disponible,1),COALESCE(m.tiempo_preparacion_min,0),COALESCE(m.orden,0),COALESCE(m.fecha_actualizacion,'') FROM empresa_domicilios_menu_items m LEFT JOIN empresa_domicilios_restaurantes r ON r.id=m.restaurant_id AND r.empresa_id=m.empresa_id WHERE m.empresa_id=?`
+	q := `SELECT m.id,m.empresa_id,m.restaurant_id,COALESCE(m.servicio_id,0),COALESCE(r.nombre,''),COALESCE(m.codigo,''),COALESCE(m.nombre,''),COALESCE(m.descripcion,''),COALESCE(m.categoria,''),COALESCE(m.precio,0),COALESCE(m.imagen_url,''),COALESCE(m.disponible,1),COALESCE(m.tiempo_preparacion_min,0),COALESCE(m.orden,0),COALESCE(m.fecha_actualizacion,'') FROM empresa_domicilios_menu_items m LEFT JOIN empresa_domicilios_restaurantes r ON r.id=m.restaurant_id AND r.empresa_id=m.empresa_id WHERE m.empresa_id=?`
 	args := []interface{}{empresaID}
 	if restaurantID > 0 {
 		q += ` AND m.restaurant_id=?`
@@ -594,7 +640,7 @@ func ListDomicilioMenuItems(dbConn *sql.DB, empresaID, restaurantID int64, onlyA
 	for rows.Next() {
 		var x EmpresaDomicilioMenuItem
 		var disp int
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RestaurantID, &x.RestaurantNombre, &x.Codigo, &x.Nombre, &x.Descripcion, &x.Categoria, &x.Precio, &x.ImagenURL, &disp, &x.TiempoPreparacionMin, &x.Orden, &x.FechaActualizacion); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RestaurantID, &x.ServicioID, &x.RestaurantNombre, &x.Codigo, &x.Nombre, &x.Descripcion, &x.Categoria, &x.Precio, &x.ImagenURL, &disp, &x.TiempoPreparacionMin, &x.Orden, &x.FechaActualizacion); err != nil {
 			return nil, err
 		}
 		x.Disponible = disp > 0
@@ -610,13 +656,18 @@ func UpsertDomicilioMenuItem(dbConn *sql.DB, x EmpresaDomicilioMenuItem) (int64,
 	if x.EmpresaID <= 0 || x.RestaurantID <= 0 || strings.TrimSpace(x.Nombre) == "" {
 		return 0, fmt.Errorf("restaurante y nombre son obligatorios")
 	}
+	servicioID, err := ensureDomicilioMenuServicio(dbConn, x, "domicilios")
+	if err != nil {
+		return 0, err
+	}
+	x.ServicioID = servicioID
 	if x.ID > 0 {
-		_, err := ExecCompat(dbConn, `UPDATE empresa_domicilios_menu_items SET restaurant_id=?,codigo=?,nombre=?,descripcion=?,categoria=?,precio=?,imagen_url=?,disponible=?,tiempo_preparacion_min=?,orden=?,fecha_actualizacion=? WHERE id=? AND empresa_id=?`,
-			x.RestaurantID, strings.TrimSpace(x.Codigo), strings.TrimSpace(x.Nombre), strings.TrimSpace(x.Descripcion), strings.TrimSpace(x.Categoria), x.Precio, strings.TrimSpace(x.ImagenURL), domicilioBoolToInt(x.Disponible), x.TiempoPreparacionMin, x.Orden, nowDomicilio(), x.ID, x.EmpresaID)
+		_, err := ExecCompat(dbConn, `UPDATE empresa_domicilios_menu_items SET restaurant_id=?,servicio_id=?,codigo=?,nombre=?,descripcion=?,categoria=?,precio=?,imagen_url=?,disponible=?,tiempo_preparacion_min=?,orden=?,fecha_actualizacion=? WHERE id=? AND empresa_id=?`,
+			x.RestaurantID, nullableID(x.ServicioID), strings.TrimSpace(x.Codigo), strings.TrimSpace(x.Nombre), strings.TrimSpace(x.Descripcion), strings.TrimSpace(x.Categoria), x.Precio, strings.TrimSpace(x.ImagenURL), domicilioBoolToInt(x.Disponible), x.TiempoPreparacionMin, x.Orden, nowDomicilio(), x.ID, x.EmpresaID)
 		return x.ID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_menu_items (empresa_id,restaurant_id,codigo,nombre,descripcion,categoria,precio,imagen_url,disponible,tiempo_preparacion_min,orden,fecha_creacion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		x.EmpresaID, x.RestaurantID, strings.TrimSpace(x.Codigo), strings.TrimSpace(x.Nombre), strings.TrimSpace(x.Descripcion), strings.TrimSpace(x.Categoria), x.Precio, strings.TrimSpace(x.ImagenURL), domicilioBoolToInt(defaultTrueDomicilio(x.Disponible)), x.TiempoPreparacionMin, x.Orden, nowDomicilio(), nowDomicilio())
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_menu_items (empresa_id,restaurant_id,servicio_id,codigo,nombre,descripcion,categoria,precio,imagen_url,disponible,tiempo_preparacion_min,orden,fecha_creacion,fecha_actualizacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		x.EmpresaID, x.RestaurantID, nullableID(x.ServicioID), strings.TrimSpace(x.Codigo), strings.TrimSpace(x.Nombre), strings.TrimSpace(x.Descripcion), strings.TrimSpace(x.Categoria), x.Precio, strings.TrimSpace(x.ImagenURL), domicilioBoolToInt(defaultTrueDomicilio(x.Disponible)), x.TiempoPreparacionMin, x.Orden, nowDomicilio(), nowDomicilio())
 }
 
 func BuildEmpresaDomiciliosDashboard(dbConn *sql.DB, empresaID int64) (EmpresaDomiciliosDashboard, error) {
@@ -773,7 +824,14 @@ func CreateDomicilioOrder(dbConn *sql.DB, order EmpresaDomicilioOrder) (EmpresaD
 		}
 		sub := roundDomicilio(qty * m.Precio)
 		subtotal += sub
-		items = append(items, EmpresaDomicilioOrderItem{MenuItemID: m.ID, Nombre: m.Nombre, Cantidad: qty, PrecioUnit: m.Precio, Subtotal: sub, Notas: strings.TrimSpace(raw.Notas)})
+		servicioID, err := ensureDomicilioMenuServicio(dbConn, m, "domicilios")
+		if err != nil {
+			return EmpresaDomicilioOrder{}, err
+		}
+		if servicioID > 0 && m.ServicioID <= 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_domicilios_menu_items SET servicio_id=?, fecha_actualizacion=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), nowDomicilio(), order.EmpresaID, m.ID)
+		}
+		items = append(items, EmpresaDomicilioOrderItem{MenuItemID: m.ID, ServicioID: servicioID, Nombre: m.Nombre, Cantidad: qty, PrecioUnit: m.Precio, Subtotal: sub, Notas: strings.TrimSpace(raw.Notas)})
 	}
 	dist := haversineDomicilio(rest.Latitud, rest.Longitud, order.ClienteLatitud, order.ClienteLongitud)
 	if dist <= 0 {
@@ -792,13 +850,23 @@ func CreateDomicilioOrder(dbConn *sql.DB, order EmpresaDomicilioOrder) (EmpresaD
 	if strings.TrimSpace(order.Estado) == "" {
 		order.Estado = "nuevo"
 	}
-	order.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_orders (empresa_id,restaurant_id,codigo_pedido,codigo_entrega,token_cliente,cliente_nombre,cliente_telefono,cliente_direccion,cliente_latitud,cliente_longitud,metodo_pago,estado,canal,notas_cliente,subtotal,tarifa_domicilio,propina,descuento,total,distancia_estimada_km,tiempo_estimado_min,fecha_pedido) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		order.EmpresaID, order.RestaurantID, order.CodigoPedido, order.CodigoEntrega, order.TokenCliente, strings.TrimSpace(order.ClienteNombre), strings.TrimSpace(order.ClienteTelefono), strings.TrimSpace(order.ClienteDireccion), order.ClienteLatitud, order.ClienteLongitud, firstDomicilioState(order.MetodoPago, "efectivo"), order.Estado, firstDomicilioState(order.Canal, "web"), strings.TrimSpace(order.NotasCliente), order.Subtotal, order.TarifaDomicilio, order.Propina, order.Descuento, order.Total, order.DistanciaEstimadaKM, order.TiempoEstimadoMin, nowDomicilio())
+	if metodo := NormalizeMetodoPagoCarrito(order.MetodoPago); metodo != "" {
+		order.MetodoPago = metodo
+	} else {
+		order.MetodoPago = "efectivo"
+	}
+	clienteID, err := ensureDomicilioClienteCore(dbConn, order, "domicilios")
+	if err != nil {
+		return EmpresaDomicilioOrder{}, err
+	}
+	order.ClienteID = clienteID
+	order.ID, err = insertSQLCompat(dbConn, `INSERT INTO empresa_domicilios_orders (empresa_id,restaurant_id,cliente_id,codigo_pedido,codigo_entrega,token_cliente,cliente_nombre,cliente_telefono,cliente_direccion,cliente_latitud,cliente_longitud,metodo_pago,estado,canal,notas_cliente,subtotal,tarifa_domicilio,propina,descuento,total,distancia_estimada_km,tiempo_estimado_min,fecha_pedido) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		order.EmpresaID, order.RestaurantID, nullableID(order.ClienteID), order.CodigoPedido, order.CodigoEntrega, order.TokenCliente, strings.TrimSpace(order.ClienteNombre), strings.TrimSpace(order.ClienteTelefono), strings.TrimSpace(order.ClienteDireccion), order.ClienteLatitud, order.ClienteLongitud, order.MetodoPago, order.Estado, firstDomicilioState(order.Canal, "web"), strings.TrimSpace(order.NotasCliente), order.Subtotal, order.TarifaDomicilio, order.Propina, order.Descuento, order.Total, order.DistanciaEstimadaKM, order.TiempoEstimadoMin, nowDomicilio())
 	if err != nil {
 		return EmpresaDomicilioOrder{}, err
 	}
 	for _, it := range items {
-		_, err = ExecCompat(dbConn, `INSERT INTO empresa_domicilios_order_items (empresa_id,order_id,menu_item_id,nombre,cantidad,precio_unit,subtotal,notas) VALUES (?,?,?,?,?,?,?,?)`, order.EmpresaID, order.ID, it.MenuItemID, it.Nombre, it.Cantidad, it.PrecioUnit, it.Subtotal, it.Notas)
+		_, err = ExecCompat(dbConn, `INSERT INTO empresa_domicilios_order_items (empresa_id,order_id,menu_item_id,servicio_id,nombre,cantidad,precio_unit,subtotal,notas) VALUES (?,?,?,?,?,?,?,?,?)`, order.EmpresaID, order.ID, it.MenuItemID, nullableID(it.ServicioID), it.Nombre, it.Cantidad, it.PrecioUnit, it.Subtotal, it.Notas)
 		if err != nil {
 			return EmpresaDomicilioOrder{}, err
 		}
@@ -857,6 +925,22 @@ func UpdateDomicilioOrderState(dbConn *sql.DB, empresaID, orderID, actorID int64
 	}
 	if state == "entregado" || state == "cancelado" {
 		_, _ = ExecCompat(dbConn, `UPDATE empresa_domicilios_couriers SET disponible=1 WHERE empresa_id=? AND id=(SELECT courier_id FROM empresa_domicilios_orders WHERE empresa_id=? AND id=?)`, empresaID, empresaID, orderID)
+	}
+	if state == "entregado" {
+		order, err := GetDomicilioOrderByID(dbConn, empresaID, orderID)
+		if err != nil {
+			return EmpresaDomicilioOrder{}, err
+		}
+		if order.CarritoID <= 0 && order.Total > 0 {
+			carritoID, clienteID, err := createDomicilioOrderCarrito(dbConn, order, "domicilios")
+			if err != nil {
+				return EmpresaDomicilioOrder{}, err
+			}
+			_, err = ExecCompat(dbConn, `UPDATE empresa_domicilios_orders SET cliente_id=?, carrito_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(carritoID), empresaID, orderID)
+			if err != nil {
+				return EmpresaDomicilioOrder{}, err
+			}
+		}
 	}
 	return GetDomicilioOrderByID(dbConn, empresaID, orderID)
 }
@@ -1077,7 +1161,7 @@ func ListDomicilioTracking(dbConn *sql.DB, empresaID, orderID int64, limit int) 
 }
 
 func ListDomicilioOrderItems(dbConn *sql.DB, empresaID, orderID int64) ([]EmpresaDomicilioOrderItem, error) {
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,order_id,COALESCE(menu_item_id,0),COALESCE(nombre,''),COALESCE(cantidad,0),COALESCE(precio_unit,0),COALESCE(subtotal,0),COALESCE(notas,'') FROM empresa_domicilios_order_items WHERE empresa_id=? AND order_id=? ORDER BY id`, empresaID, orderID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,order_id,COALESCE(menu_item_id,0),COALESCE(servicio_id,0),COALESCE(carrito_item_id,0),COALESCE(nombre,''),COALESCE(cantidad,0),COALESCE(precio_unit,0),COALESCE(subtotal,0),COALESCE(notas,'') FROM empresa_domicilios_order_items WHERE empresa_id=? AND order_id=? ORDER BY id`, empresaID, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -1085,7 +1169,7 @@ func ListDomicilioOrderItems(dbConn *sql.DB, empresaID, orderID int64) ([]Empres
 	var out []EmpresaDomicilioOrderItem
 	for rows.Next() {
 		var x EmpresaDomicilioOrderItem
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.OrderID, &x.MenuItemID, &x.Nombre, &x.Cantidad, &x.PrecioUnit, &x.Subtotal, &x.Notas); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.OrderID, &x.MenuItemID, &x.ServicioID, &x.CarritoItemID, &x.Nombre, &x.Cantidad, &x.PrecioUnit, &x.Subtotal, &x.Notas); err != nil {
 			return nil, err
 		}
 		out = append(out, x)
@@ -1151,13 +1235,356 @@ type domicilioScanner interface {
 }
 
 func domicilioOrderSelect() string {
-	return `SELECT o.id,o.empresa_id,o.restaurant_id,COALESCE(r.nombre,''),COALESCE(o.courier_id,0),COALESCE(c.nombre,''),COALESCE(c.telefono,''),COALESCE(o.codigo_pedido,''),COALESCE(o.codigo_entrega,''),COALESCE(o.token_cliente,''),COALESCE(o.cliente_nombre,''),COALESCE(o.cliente_telefono,''),COALESCE(o.cliente_direccion,''),COALESCE(o.cliente_latitud,0),COALESCE(o.cliente_longitud,0),COALESCE(o.metodo_pago,''),COALESCE(o.estado,''),COALESCE(o.canal,''),COALESCE(o.notas_cliente,''),COALESCE(o.notas_internas,''),COALESCE(o.subtotal,0),COALESCE(o.tarifa_domicilio,0),COALESCE(o.propina,0),COALESCE(o.descuento,0),COALESCE(o.total,0),COALESCE(o.distancia_estimada_km,0),COALESCE(o.tiempo_estimado_min,0),COALESCE(o.fecha_pedido,''),COALESCE(o.fecha_confirmacion,''),COALESCE(o.fecha_listo,''),COALESCE(o.fecha_recogida,''),COALESCE(o.fecha_entrega,''),COALESCE(o.fecha_cancelacion,'') FROM empresa_domicilios_orders o LEFT JOIN empresa_domicilios_restaurantes r ON r.id=o.restaurant_id AND r.empresa_id=o.empresa_id LEFT JOIN empresa_domicilios_couriers c ON c.id=o.courier_id AND c.empresa_id=o.empresa_id`
+	return `SELECT o.id,o.empresa_id,o.restaurant_id,COALESCE(o.cliente_id,0),COALESCE(o.carrito_id,0),COALESCE(r.nombre,''),COALESCE(o.courier_id,0),COALESCE(c.nombre,''),COALESCE(c.telefono,''),COALESCE(o.codigo_pedido,''),COALESCE(o.codigo_entrega,''),COALESCE(o.token_cliente,''),COALESCE(o.cliente_nombre,''),COALESCE(o.cliente_telefono,''),COALESCE(o.cliente_direccion,''),COALESCE(o.cliente_latitud,0),COALESCE(o.cliente_longitud,0),COALESCE(o.metodo_pago,''),COALESCE(o.estado,''),COALESCE(o.canal,''),COALESCE(o.notas_cliente,''),COALESCE(o.notas_internas,''),COALESCE(o.subtotal,0),COALESCE(o.tarifa_domicilio,0),COALESCE(o.propina,0),COALESCE(o.descuento,0),COALESCE(o.total,0),COALESCE(o.distancia_estimada_km,0),COALESCE(o.tiempo_estimado_min,0),COALESCE(o.fecha_pedido,''),COALESCE(o.fecha_confirmacion,''),COALESCE(o.fecha_listo,''),COALESCE(o.fecha_recogida,''),COALESCE(o.fecha_entrega,''),COALESCE(o.fecha_cancelacion,'') FROM empresa_domicilios_orders o LEFT JOIN empresa_domicilios_restaurantes r ON r.id=o.restaurant_id AND r.empresa_id=o.empresa_id LEFT JOIN empresa_domicilios_couriers c ON c.id=o.courier_id AND c.empresa_id=o.empresa_id`
 }
 
 func scanDomicilioOrder(s domicilioScanner) (EmpresaDomicilioOrder, error) {
 	var o EmpresaDomicilioOrder
-	err := s.Scan(&o.ID, &o.EmpresaID, &o.RestaurantID, &o.RestaurantNombre, &o.CourierID, &o.CourierNombre, &o.CourierTelefono, &o.CodigoPedido, &o.CodigoEntrega, &o.TokenCliente, &o.ClienteNombre, &o.ClienteTelefono, &o.ClienteDireccion, &o.ClienteLatitud, &o.ClienteLongitud, &o.MetodoPago, &o.Estado, &o.Canal, &o.NotasCliente, &o.NotasInternas, &o.Subtotal, &o.TarifaDomicilio, &o.Propina, &o.Descuento, &o.Total, &o.DistanciaEstimadaKM, &o.TiempoEstimadoMin, &o.FechaPedido, &o.FechaConfirmacion, &o.FechaListo, &o.FechaRecogida, &o.FechaEntrega, &o.FechaCancelacion)
+	err := s.Scan(&o.ID, &o.EmpresaID, &o.RestaurantID, &o.ClienteID, &o.CarritoID, &o.RestaurantNombre, &o.CourierID, &o.CourierNombre, &o.CourierTelefono, &o.CodigoPedido, &o.CodigoEntrega, &o.TokenCliente, &o.ClienteNombre, &o.ClienteTelefono, &o.ClienteDireccion, &o.ClienteLatitud, &o.ClienteLongitud, &o.MetodoPago, &o.Estado, &o.Canal, &o.NotasCliente, &o.NotasInternas, &o.Subtotal, &o.TarifaDomicilio, &o.Propina, &o.Descuento, &o.Total, &o.DistanciaEstimadaKM, &o.TiempoEstimadoMin, &o.FechaPedido, &o.FechaConfirmacion, &o.FechaListo, &o.FechaRecogida, &o.FechaEntrega, &o.FechaCancelacion)
 	return o, err
+}
+
+func domicilioCoreCode(prefix string, parts ...string) string {
+	var b strings.Builder
+	for _, part := range parts {
+		for _, r := range strings.ToUpper(strings.TrimSpace(part)) {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+				continue
+			}
+			if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+				b.WriteRune('-')
+			}
+		}
+		if b.Len() > 0 && b.String()[b.Len()-1] != '-' {
+			b.WriteRune('-')
+		}
+	}
+	code := strings.Trim(b.String(), "-")
+	if code == "" {
+		code = fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	if len(code) > 42 {
+		code = code[:42]
+	}
+	return strings.Trim(strings.ToUpper(strings.TrimSpace(prefix)), "-") + "-" + strings.Trim(code, "-")
+}
+
+func ensureDomicilioClienteCore(dbConn *sql.DB, order EmpresaDomicilioOrder, usuario string) (int64, error) {
+	if order.ClienteID > 0 {
+		return order.ClienteID, nil
+	}
+	if strings.TrimSpace(order.ClienteNombre) == "" && strings.TrimSpace(order.ClienteTelefono) == "" {
+		return 0, nil
+	}
+	if err := EnsureEmpresaClientesSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if telefonoNorm := normalizeClienteTelefonoValue(order.ClienteTelefono); telefonoNorm != "" {
+		query := fmt.Sprintf(`SELECT id FROM clientes WHERE empresa_id = ? AND %s = ? LIMIT 1`, clienteTelefonoSQLExpr("telefono"))
+		if id, err := findClienteDuplicateID(dbConn, query, order.EmpresaID, telefonoNorm); err != nil {
+			return 0, err
+		} else if id > 0 {
+			return id, nil
+		}
+	}
+	nombre := strings.TrimSpace(order.ClienteNombre)
+	if nombre == "" {
+		nombre = "Cliente domicilios " + strings.TrimSpace(order.ClienteTelefono)
+	}
+	id, err := CreateCliente(dbConn, Cliente{
+		EmpresaID:         order.EmpresaID,
+		TipoDocumento:     "OTRO",
+		NumeroDocumento:   domicilioCoreCode("DOM-CLI", order.ClienteTelefono, nombre),
+		TipoPersona:       "natural",
+		NombreRazonSocial: nombre,
+		NombreComercial:   nombre,
+		Telefono:          strings.TrimSpace(order.ClienteTelefono),
+		Direccion:         strings.TrimSpace(order.ClienteDireccion),
+		Pais:              "CO",
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Estado:            "activo",
+		Observaciones:     "Cliente creado/sincronizado desde domicilios.",
+	})
+	if err != nil {
+		var dup *ClienteDuplicadoError
+		if errors.As(err, &dup) && dup.ClienteID > 0 {
+			return dup.ClienteID, nil
+		}
+		return 0, err
+	}
+	return id, nil
+}
+
+func ensureDomicilioStaticServicio(dbConn *sql.DB, empresaID int64, code, nombre, descripcion string, precio float64, usuario string) (int64, error) {
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	code = strings.TrimSpace(code)
+	var servicioID int64
+	err := QueryRowCompat(dbConn, `SELECT id FROM servicios WHERE empresa_id=? AND codigo=? LIMIT 1`, empresaID, code).Scan(&servicioID)
+	if err == nil {
+		_, _ = ExecCompat(dbConn, `UPDATE servicios SET nombre=?, descripcion=?, categoria='domicilios', precio=?, estado='activo', fecha_actualizacion=? WHERE empresa_id=? AND id=?`, strings.TrimSpace(nombre), strings.TrimSpace(descripcion), precio, nowDomicilio(), empresaID, servicioID)
+		return servicioID, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return 0, err
+	}
+	return CreateServicio(dbConn, Servicio{
+		EmpresaID:      empresaID,
+		Codigo:         code,
+		Nombre:         strings.TrimSpace(nombre),
+		Descripcion:    strings.TrimSpace(descripcion),
+		Categoria:      "domicilios",
+		Precio:         precio,
+		Estado:         "activo",
+		UsuarioCreador: strings.TrimSpace(usuario),
+		Observaciones:  "Servicio sincronizado desde domicilios.",
+	})
+}
+
+func ensureDomicilioMenuServicio(dbConn *sql.DB, item EmpresaDomicilioMenuItem, usuario string) (int64, error) {
+	if item.ServicioID > 0 {
+		return item.ServicioID, nil
+	}
+	codePart := strings.TrimSpace(item.Codigo)
+	if codePart == "" && item.ID > 0 {
+		codePart = fmt.Sprintf("%d", item.ID)
+	}
+	if codePart == "" {
+		codePart = item.Nombre
+	}
+	code := domicilioCoreCode("DOM-MENU", fmt.Sprintf("%d", item.RestaurantID), codePart)
+	servicioID, err := ensureDomicilioStaticServicio(dbConn, item.EmpresaID, code, item.Nombre, item.Descripcion, item.Precio, usuario)
+	if err != nil {
+		return 0, err
+	}
+	if item.ID > 0 && servicioID > 0 {
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_domicilios_menu_items SET servicio_id=?, fecha_actualizacion=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), nowDomicilio(), item.EmpresaID, item.ID)
+	}
+	return servicioID, nil
+}
+
+func ensureDomicilioOrderItemServicio(dbConn *sql.DB, order EmpresaDomicilioOrder, item EmpresaDomicilioOrderItem, usuario string) (int64, error) {
+	if item.ServicioID > 0 {
+		return item.ServicioID, nil
+	}
+	if item.MenuItemID > 0 {
+		var menu EmpresaDomicilioMenuItem
+		err := QueryRowCompat(dbConn, `SELECT id,empresa_id,restaurant_id,COALESCE(servicio_id,0),COALESCE(codigo,''),COALESCE(nombre,''),COALESCE(descripcion,''),COALESCE(categoria,''),COALESCE(precio,0),COALESCE(imagen_url,''),COALESCE(tiempo_preparacion_min,0) FROM empresa_domicilios_menu_items WHERE empresa_id=? AND id=? LIMIT 1`, order.EmpresaID, item.MenuItemID).
+			Scan(&menu.ID, &menu.EmpresaID, &menu.RestaurantID, &menu.ServicioID, &menu.Codigo, &menu.Nombre, &menu.Descripcion, &menu.Categoria, &menu.Precio, &menu.ImagenURL, &menu.TiempoPreparacionMin)
+		if err == nil {
+			return ensureDomicilioMenuServicio(dbConn, menu, usuario)
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return 0, err
+		}
+	}
+	menu := EmpresaDomicilioMenuItem{
+		EmpresaID:    order.EmpresaID,
+		RestaurantID: order.RestaurantID,
+		Codigo:       fmt.Sprintf("ORDER-%d-ITEM-%d", order.ID, item.ID),
+		Nombre:       item.Nombre,
+		Descripcion:  "Item vendido desde pedido de domicilios.",
+		Categoria:    "domicilios",
+		Precio:       item.PrecioUnit,
+	}
+	return ensureDomicilioMenuServicio(dbConn, menu, usuario)
+}
+
+func createDomicilioOrderCarrito(dbConn *sql.DB, order EmpresaDomicilioOrder, usuario string) (int64, int64, error) {
+	if order.Total <= 0 {
+		return order.CarritoID, order.ClienteID, nil
+	}
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return 0, 0, err
+	}
+	clienteID, err := ensureDomicilioClienteCore(dbConn, order, usuario)
+	if err != nil {
+		return 0, 0, err
+	}
+	order.ClienteID = clienteID
+	if len(order.Items) == 0 {
+		order.Items, _ = ListDomicilioOrderItems(dbConn, order.EmpresaID, order.ID)
+	}
+	metodo := NormalizeMetodoPagoCarrito(order.MetodoPago)
+	if metodo == "" {
+		metodo = "efectivo"
+	}
+	cfg, _ := GetEmpresaDomiciliosConfig(dbConn, order.EmpresaID)
+	moneda := strings.TrimSpace(strings.ToUpper(cfg.Moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+	referenciaExterna := fmt.Sprintf("domicilios:order:%d:%s", order.ID, order.CodigoPedido)
+	var carritoExistente int64
+	err = QueryRowCompat(dbConn, `SELECT id FROM carritos_compras WHERE empresa_id=? AND referencia_externa=? LIMIT 1`, order.EmpresaID, referenciaExterna).Scan(&carritoExistente)
+	if err == nil && carritoExistente > 0 {
+		return carritoExistente, clienteID, nil
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, 0, err
+	}
+	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
+		EmpresaID:         order.EmpresaID,
+		Codigo:            domicilioCoreCode("DOM-PEDIDO", fmt.Sprintf("%d", order.ID), order.CodigoPedido),
+		Nombre:            "Domicilios - " + strings.TrimSpace(order.ClienteNombre),
+		CanalVenta:        "domicilios",
+		ClienteID:         clienteID,
+		EstadoCarrito:     "abierto",
+		Moneda:            moneda,
+		ReferenciaExterna: referenciaExterna,
+		MetodoPago:        metodo,
+		ReferenciaPago:    order.CodigoPedido,
+		UsuarioCreador:    strings.TrimSpace(usuario),
+		Observaciones:     "Venta central generada desde pedido entregado de domicilios.",
+	})
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, it := range order.Items {
+		if it.Cantidad <= 0 {
+			continue
+		}
+		servicioID, err := ensureDomicilioOrderItemServicio(dbConn, order, it, usuario)
+		if err != nil {
+			return 0, 0, err
+		}
+		itemID, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+			EmpresaID:          order.EmpresaID,
+			CarritoID:          carritoID,
+			TipoItem:           "servicio",
+			ReferenciaID:       servicioID,
+			CodigoItem:         domicilioCoreCode("DOM-ITEM", order.CodigoPedido, fmt.Sprintf("%d", it.ID)),
+			Descripcion:        strings.TrimSpace(it.Nombre),
+			UnidadMedida:       "servicio",
+			Cantidad:           it.Cantidad,
+			PrecioUnitario:     it.PrecioUnit,
+			ImpuestoPorcentaje: 0,
+			UsuarioCreador:     strings.TrimSpace(usuario),
+			Estado:             "activo",
+			Observaciones:      strings.TrimSpace(it.Notas),
+		})
+		if err != nil {
+			return 0, 0, err
+		}
+		_, _ = ExecCompat(dbConn, `UPDATE empresa_domicilios_order_items SET servicio_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), nullableID(itemID), order.EmpresaID, it.ID)
+	}
+	if order.TarifaDomicilio > 0 {
+		servicioID, err := ensureDomicilioStaticServicio(dbConn, order.EmpresaID, "DOM-TARIFA-DOMICILIO", "Tarifa de domicilio", "Servicio central para tarifa de entrega a domicilio.", order.TarifaDomicilio, usuario)
+		if err != nil {
+			return 0, 0, err
+		}
+		if _, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+			EmpresaID:          order.EmpresaID,
+			CarritoID:          carritoID,
+			TipoItem:           "servicio",
+			ReferenciaID:       servicioID,
+			CodigoItem:         domicilioCoreCode("DOM-FEE", order.CodigoPedido),
+			Descripcion:        "Tarifa de domicilio",
+			UnidadMedida:       "servicio",
+			Cantidad:           1,
+			PrecioUnitario:     order.TarifaDomicilio,
+			ImpuestoPorcentaje: 0,
+			UsuarioCreador:     strings.TrimSpace(usuario),
+			Estado:             "activo",
+		}); err != nil {
+			return 0, 0, err
+		}
+	}
+	if order.Propina > 0 {
+		servicioID, err := ensureDomicilioStaticServicio(dbConn, order.EmpresaID, "DOM-PROPINA", "Propina domicilios", "Servicio central para propinas de domicilios.", order.Propina, usuario)
+		if err != nil {
+			return 0, 0, err
+		}
+		if _, err := CreateCarritoCompraItem(dbConn, CarritoCompraItem{
+			EmpresaID:          order.EmpresaID,
+			CarritoID:          carritoID,
+			TipoItem:           "servicio",
+			ReferenciaID:       servicioID,
+			CodigoItem:         domicilioCoreCode("DOM-TIP", order.CodigoPedido),
+			Descripcion:        "Propina domicilios",
+			UnidadMedida:       "servicio",
+			Cantidad:           1,
+			PrecioUnitario:     order.Propina,
+			ImpuestoPorcentaje: 0,
+			UsuarioCreador:     strings.TrimSpace(usuario),
+			Estado:             "activo",
+		}); err != nil {
+			return 0, 0, err
+		}
+	}
+	descuentoTipo := ""
+	if order.Descuento > 0 {
+		descuentoTipo = "manual"
+	}
+	if err := PayCarritoStationSession(dbConn, order.EmpresaID, carritoID, metodo, order.CodigoPedido, descuentoTipo, "", order.Descuento, 0, order.Total, 0, strings.TrimSpace(usuario)); err != nil {
+		return 0, 0, err
+	}
+	return carritoID, clienteID, nil
+}
+
+func SyncEmpresaDomiciliosNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaDomiciliosIntegracionNucleoResumen, error) {
+	if err := EnsureEmpresaDomiciliosSchema(dbConn); err != nil {
+		return nil, err
+	}
+	resumen := &EmpresaDomiciliosIntegracionNucleoResumen{
+		EmpresaID:         empresaID,
+		EstadoIntegracion: "plantilla_integrada_nucleo",
+		VisibleOperativo:  true,
+	}
+	menu, err := ListDomicilioMenuItems(dbConn, empresaID, 0, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, item := range menu {
+		servicioID, err := ensureDomicilioMenuServicio(dbConn, item, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("menu %d servicio: %v", item.ID, err))
+			continue
+		}
+		if servicioID > 0 {
+			resumen.MenuServiciosSincronizados++
+		}
+	}
+	orders, err := ListDomicilioOrders(dbConn, empresaID, "entregado", 500)
+	if err != nil {
+		return nil, err
+	}
+	for _, order := range orders {
+		if order.CarritoID > 0 {
+			resumen.PedidosPendientes++
+			continue
+		}
+		clienteID, err := ensureDomicilioClienteCore(dbConn, order, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pedido %d cliente: %v", order.ID, err))
+			continue
+		}
+		order.ClienteID = clienteID
+		resumen.ClientesSincronizados++
+		if order.Total <= 0 {
+			_, _ = ExecCompat(dbConn, `UPDATE empresa_domicilios_orders SET cliente_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), order.EmpresaID, order.ID)
+			resumen.PedidosPendientes++
+			continue
+		}
+		carritoID, clienteID, err := createDomicilioOrderCarrito(dbConn, order, usuario)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pedido %d carrito: %v", order.ID, err))
+			continue
+		}
+		_, err = ExecCompat(dbConn, `UPDATE empresa_domicilios_orders SET cliente_id=?, carrito_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(carritoID), order.EmpresaID, order.ID)
+		if err != nil {
+			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pedido %d refs: %v", order.ID, err))
+			continue
+		}
+		resumen.PedidosSincronizados++
+	}
+	if len(resumen.Errores) > 0 {
+		resumen.EstadoIntegracion = "integrado_con_observaciones"
+		resumen.RequiereRevisionDatos = true
+	}
+	return resumen, nil
 }
 
 func hashDomicilioPin(pin string) (string, string) {
