@@ -1,3 +1,9 @@
+## [2026-05-11] Operacion profesional diaria de los 12 frentes
+- [VPS] Se agregan scripts para instalar Docker Buildx, activar staging Nginx, tomar snapshots de observabilidad y programar backups por cron.
+- [Release] Se agrega `scripts/release_gate.ps1` y runbook de release profesional.
+- [CI/E2E] El workflow E2E queda programado contra staging y se documentan secretos requeridos de GitHub.
+- [Auditorias] Se agregan auditorias de migraciones, QA funcional de modulos criticos y consistencia UX global al preflight.
+
 ## [2026-05-11] Implementacion profesional de 12 frentes operativos
 - [Staging] Se agrega `deploy/docker-compose.staging.yml`, `deploy/.env.staging.example`, `scripts/staging_up.ps1` y `deploy/scripts/vps-staging-up.sh`.
 - [CI/CD] Se agregan workflows `.github/workflows/professional-ci.yml` y `.github/workflows/e2e-visual.yml`.

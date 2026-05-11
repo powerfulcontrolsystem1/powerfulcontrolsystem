@@ -13,6 +13,12 @@
 	- `scripts/vps_restore_validation.ps1` : validacion de restaurabilidad de backups con prueba temporal PostgreSQL.
 	- `documentos/plan_profesional_12_puntos.md`, `documentos/api/openapi.generated.yaml` y runbooks de staging/DRP : documentacion operativa de continuidad.
 
+- Actualizacion 2026-05-11: operacion diaria de los 12 frentes profesionales
+	- `deploy/scripts/vps-install-buildx.sh`, `deploy/scripts/vps-configure-staging-nginx.sh`, `deploy/scripts/vps-install-backup-cron.sh`, `deploy/scripts/vps-backup-operacion.sh` y `deploy/scripts/vps-observability-snapshot.sh` : operacion VPS para builds modernos, staging real, backups programados y telemetria.
+	- `scripts/release_gate.ps1` : compuerta de release con preflight, backup, restauracion temporal y E2E opcional.
+	- `tools/migration_audit.mjs`, `tools/qa_module_contracts.mjs` y `tools/ux_consistency_audit.mjs` : auditorias adicionales integradas al preflight.
+	- `.github/SECRETOS_REQUERIDOS.md` y `documentos/gobernanza_tecnica/runbooks/runbook_release_profesional.md` : guia de secretos y flujo formal de release.
+
 - Actualizacion 2026-05-10: modo tactil para carritos
 	- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` : agrega el check `modo_pantalla_tactil` para adaptar carrito y agregador de productos a pantallas tactiles.
 	- `web/administrar_empresa/configuracion_de_estaciones.html` y `web/administrar_empresa/estaciones.html` : preservan la bandera tactil dentro de `estaciones_config`, con herencia global o por estacion.

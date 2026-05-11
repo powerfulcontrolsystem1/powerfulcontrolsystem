@@ -1,12 +1,14 @@
 name: E2E Visual QA
 
 on:
+  schedule:
+    - cron: "30 9 * * 1-5"
   workflow_dispatch:
     inputs:
       base_url:
         description: "URL base a probar"
         required: true
-        default: "https://powerfulcontrolsystem.com"
+        default: "https://staging.powerfulcontrolsystem.com"
       empresa_id:
         description: "Empresa de prueba"
         required: true

@@ -54,6 +54,15 @@ jobs:
       - name: Observability inventory
         run: node tools/observability_report.mjs --out documentos/reportes_profesionales
 
+      - name: Migration audit
+        run: node tools/migration_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Critical module QA contract
+        run: node tools/qa_module_contracts.mjs --out documentos/reportes_profesionales
+
+      - name: UX consistency audit
+        run: node tools/ux_consistency_audit.mjs --out documentos/reportes_profesionales
+
       - name: Upload professional reports
         if: always()
         uses: actions/upload-artifact@v4
