@@ -11,6 +11,7 @@ Este documento deja los 12 frentes convertidos en piezas operativas del proyecto
 - Local: `.\scripts\staging_up.ps1 -ConfigOnly` o `.\scripts\staging_up.ps1 -Build`.
 - VPS: `bash deploy/scripts/vps-staging-up.sh`.
 - Nginx/SSL: `bash deploy/scripts/vps-configure-staging-nginx.sh`.
+- Refresco de datos: `bash deploy/scripts/vps-refresh-staging-from-production.sh`.
 - Puerto recomendado: `127.0.0.1:8082`, con dominio futuro `staging.powerfulcontrolsystem.com`.
 
 ## 2. CI/CD automatico
