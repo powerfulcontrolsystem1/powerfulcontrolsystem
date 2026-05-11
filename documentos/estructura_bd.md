@@ -39,6 +39,7 @@ Actualizacion 2026-05-11 (gimnasio integrado al nucleo)
 - `empresa_gimnasio_pagos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo de gimnasio.
 - Las tablas de gimnasio conservan solo la especialidad operativa: acceso, clases, asistencia, credenciales y lectura fitness; el cobro queda reconciliable con `carritos_compras` y `carrito_compra_items`.
 - Compatibilidad PostgreSQL: los indices de integracion (`servicio_id`, `cliente_id`, `carrito_id`) se crean despues de asegurar columnas para que bases existentes no fallen durante la carga del modulo.
+- Idempotencia de sincronizacion: los pagos historicos de gimnasio usan `carritos_compras.referencia_externa` estable por pago cuando existe `empresa_gimnasio_pagos.id`, evitando duplicar ventas centrales al repetir `sincronizar_nucleo`.
 
 Actualizacion 2026-05-11 (odontologia integrada al nucleo)
 - `empresa_odontologia_pacientes.cliente_id`: referencia al cliente central creado o reutilizado para el paciente facturable.
@@ -46,6 +47,7 @@ Actualizacion 2026-05-11 (odontologia integrada al nucleo)
 - `empresa_odontologia_pagos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo odontologico.
 - Las tablas clinicas de odontologia conservan la especialidad: historia clinica, odontograma, profesionales, consultorios, citas, presupuestos y trazabilidad clinica; el circuito comercial queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
 - Compatibilidad PostgreSQL: los indices de integracion (`cliente_id`, `servicio_id`, `carrito_id`) se crean despues de asegurar columnas para evitar cargas parciales en instalaciones actualizadas por fases.
+- Idempotencia de sincronizacion: los pagos historicos de odontologia usan `carritos_compras.referencia_externa` estable por pago cuando existe `empresa_odontologia_pagos.id`, evitando colisiones por nombre unico y ventas duplicadas al repetir `sincronizar_nucleo`.
 
 Actualizacion 2026-05-11 (parqueadero integrado al nucleo)
 - `empresa_parqueadero_tickets.cliente_id`: referencia opcional al cliente central creado o reutilizado cuando el ticket trae cliente/documento.

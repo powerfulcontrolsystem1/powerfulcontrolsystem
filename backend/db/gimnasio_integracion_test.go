@@ -36,6 +36,16 @@ func TestNormalizeGymPagoUsaMetodoPagoCentral(t *testing.T) {
 	}
 }
 
+func TestGimnasioPagoCarritoReferenciaUsaIDParaSincronizacion(t *testing.T) {
+	pago := EmpresaGimnasioPago{ID: 42, SocioID: 7, Concepto: "Mensualidad", Referencia: "REF-123", FechaPago: "2026-05-12 10:00:00", Monto: 120000}
+	if got := gimnasioPagoCarritoReferencia(pago); got != "gimnasio:pago:42" {
+		t.Fatalf("gimnasioPagoCarritoReferencia() = %q", got)
+	}
+	if got := gimnasioPagoCarritoNombre(pago); got != "Gimnasio - Mensualidad #42" {
+		t.Fatalf("gimnasioPagoCarritoNombre() = %q", got)
+	}
+}
+
 func TestGimnasioEnsureCreaIndicesDeIntegracionDespuesDeColumnas(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("gimnasio.go"))
 	if err != nil {

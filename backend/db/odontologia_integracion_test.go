@@ -24,6 +24,16 @@ func TestOdontoPagoUsaMetodoPagoCentral(t *testing.T) {
 	}
 }
 
+func TestOdontoPagoCarritoReferenciaUsaIDParaSincronizacion(t *testing.T) {
+	pago := EmpresaOdontologiaPago{ID: 42, PacienteID: 7, Concepto: "Abono", Referencia: "REF-123", FechaPago: "2026-05-12 10:00:00", Monto: 30000}
+	if got := odontoPagoCarritoReferencia(pago); got != "odontologia:pago:42" {
+		t.Fatalf("odontoPagoCarritoReferencia() = %q", got)
+	}
+	if got := odontoPagoCarritoNombre(pago); got != "Odontologia - Abono #42" {
+		t.Fatalf("odontoPagoCarritoNombre() = %q", got)
+	}
+}
+
 func TestOdontologiaEnsureCreaIndicesDeIntegracionDespuesDeColumnas(t *testing.T) {
 	raw, err := os.ReadFile(filepath.Join("odontologia.go"))
 	if err != nil {

@@ -1,3 +1,9 @@
+## [2026-05-11] Sincronizacion idempotente de pagos verticales
+- [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` reutilizan `carritos_compras.referencia_externa` antes de crear carritos desde pagos historicos.
+- [Integracion] Las ventas centrales generadas por `sincronizar_nucleo` usan referencia estable por ID de pago y nombre estable, evitando colisiones por el indice unico `(empresa_id, nombre)`.
+- [QA] Se agregan pruebas para fijar la llave historica de pagos en odontologia y gimnasio.
+- [Alcance] No hay tablas, endpoints, permisos ni dependencias nuevas.
+
 ## [2026-05-11] Correccion de cargas parciales en verticales integrados
 - [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` crean indices de integracion solo despues de asegurar columnas nuevas en bases PostgreSQL existentes.
 - [Frontend] `web/js/consultorio_odontologico.js`, `web/js/gimnasio.js` y `web/js/alquileres.js` limpian el aviso de carga parcial cuando la recarga completa no devuelve errores.

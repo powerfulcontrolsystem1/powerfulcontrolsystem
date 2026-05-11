@@ -1,3 +1,9 @@
+2026-05-11: Sincronizacion idempotente de pagos en verticales clinico/fitness
+- Modulos afectados: `odontologia`, `gimnasio`, `carritos`, `ventas`, `pagos`.
+- Cambio funcional: la sincronizacion historica de pagos reutiliza carritos centrales ya creados por `referencia_externa` y genera nombres estables por pago cuando el registro ya tiene ID.
+- Estabilidad: `POST /api/empresa/odontologia?action=sincronizar_nucleo` y `POST /api/empresa/gimnasio?action=sincronizar_nucleo` pueden repetirse sin colisionar por el indice unico `(empresa_id, nombre)` de `carritos_compras`.
+- Gobernanza: no se agregan tablas, permisos, dependencias ni circuitos paralelos; se refuerza la regla de nucleo unico para ventas/pagos.
+
 2026-05-11: Veinte verticales nuevos como plantillas reales
 - Modulos afectados: `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
 - Cambio funcional: los 20 verticales nuevos quedan en produccion masiva con ranking 1-20, preconfiguracion, tipos de empresa, licencias recomendadas, permisos, flujo de venta y reportes.

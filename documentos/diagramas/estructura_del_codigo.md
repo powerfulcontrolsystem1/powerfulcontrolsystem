@@ -1,3 +1,10 @@
+## Actualizacion 2026-05-11 (sincronizacion idempotente de pagos verticales)
+
+- `backend/db/odontologia.go` agrega referencia y nombre estables para carritos generados desde pagos odontologicos cuando el pago ya tiene ID.
+- `createEmpresaOdontologiaPagoCarrito` reutiliza `carritos_compras.referencia_externa` antes de crear una venta central nueva.
+- `backend/db/gimnasio.go` aplica el mismo contrato para pagos de gimnasio, evitando colisiones por nombre unico en sincronizaciones repetidas.
+- `backend/db/odontologia_integracion_test.go` y `backend/db/gimnasio_integracion_test.go` validan que la referencia historica use el ID del pago como llave estable.
+
 ## Actualizacion 2026-05-11 (portada index y tarjetas reales)
 
 - `web/index.html` consume `web/js/nuevos_verticales_catalogo.js` antes de construir tarjetas publicas.

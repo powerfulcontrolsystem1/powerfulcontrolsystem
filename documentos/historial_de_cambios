@@ -23645,3 +23645,18 @@ Archivos modificados:
 - web/js/alquileres.js
 - web/js/consultorio_odontologico.js
 - web/js/gimnasio.js
+
+2026-05-11: Sincronizacion idempotente de pagos en odontologia y gimnasio
+PushStatus: pendiente
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/gimnasio.go
+- backend/db/gimnasio_integracion_test.go
+- backend/db/odontologia.go
+- backend/db/odontologia_integracion_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_integracion_verticales.md

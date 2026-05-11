@@ -1138,15 +1138,25 @@ func createEmpresaGimnasioPagoCarrito(dbConn *sql.DB, pago EmpresaGimnasioPago) 
 	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
 		return 0, 0, err
 	}
+	referenciaExterna := gimnasioPagoCarritoReferencia(pago)
+	var carritoExistente, itemExistente int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM carritos_compras WHERE empresa_id=? AND referencia_externa=? LIMIT 1`, pago.EmpresaID, referenciaExterna).Scan(&carritoExistente)
+	if err == nil && carritoExistente > 0 {
+		_ = queryRowSQLCompat(dbConn, `SELECT id FROM carrito_compra_items WHERE empresa_id=? AND carrito_id=? AND referencia_id=? AND tipo_item='servicio' LIMIT 1`, pago.EmpresaID, carritoExistente, pago.ServicioID).Scan(&itemExistente)
+		return carritoExistente, itemExistente, nil
+	}
+	if err != nil && err != sql.ErrNoRows {
+		return 0, 0, err
+	}
 	carritoID, err := CreateCarritoCompra(dbConn, CarritoCompra{
 		EmpresaID:         pago.EmpresaID,
 		Codigo:            gymCoreCode("GYM-PAGO", fmt.Sprintf("%d", pago.SocioID), fmt.Sprintf("%d", time.Now().UnixNano())),
-		Nombre:            "Gimnasio - " + pago.Concepto,
+		Nombre:            gimnasioPagoCarritoNombre(pago),
 		CanalVenta:        "gimnasio",
 		ClienteID:         pago.ClienteID,
 		EstadoCarrito:     "abierto",
 		Moneda:            pago.Moneda,
-		ReferenciaExterna: fmt.Sprintf("gimnasio:socio:%d:%s", pago.SocioID, pago.FechaPago),
+		ReferenciaExterna: referenciaExterna,
 		MetodoPago:        pago.MetodoPago,
 		ReferenciaPago:    pago.Referencia,
 		UsuarioCreador:    pago.UsuarioCreador,
@@ -1177,6 +1187,31 @@ func createEmpresaGimnasioPagoCarrito(dbConn *sql.DB, pago EmpresaGimnasioPago) 
 		return 0, 0, err
 	}
 	return carritoID, itemID, nil
+}
+
+func gimnasioPagoCarritoReferencia(pago EmpresaGimnasioPago) string {
+	if pago.ID > 0 {
+		return fmt.Sprintf("gimnasio:pago:%d", pago.ID)
+	}
+	referencia := strings.TrimSpace(pago.Referencia)
+	if referencia != "" {
+		return "gimnasio:pago:" + gymCoreCode("REF", referencia)
+	}
+	return fmt.Sprintf("gimnasio:socio:%d:%s:%.2f", pago.SocioID, strings.TrimSpace(pago.FechaPago), pago.Monto)
+}
+
+func gimnasioPagoCarritoNombre(pago EmpresaGimnasioPago) string {
+	concepto := strings.TrimSpace(pago.Concepto)
+	if concepto == "" {
+		concepto = "Pago gimnasio"
+	}
+	if pago.ID > 0 {
+		return fmt.Sprintf("Gimnasio - %s #%d", concepto, pago.ID)
+	}
+	if ref := strings.TrimSpace(pago.Referencia); ref != "" {
+		return "Gimnasio - " + concepto + " - " + gymCoreCode("REF", ref)
+	}
+	return "Gimnasio - " + concepto + " - " + gymCoreCode("SOC", fmt.Sprintf("%d", pago.SocioID), pago.FechaPago)
 }
 
 func normalizeGymAccessConfig(payload EmpresaGimnasioAccesoConfig) *EmpresaGimnasioAccesoConfig {
