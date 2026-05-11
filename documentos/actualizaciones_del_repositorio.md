@@ -8458,3 +8458,36 @@ Archivos modificados:
 Archivos modificados:
 - .github/workflows/e2e-visual.yml
 - .github/workflows/professional-ci.yml
+
+2026-05-11 02:25:51 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 718ca8b9; PushStatus: OK
+Archivos modificados:
+- .github/SECRETOS_REQUERIDOS.md
+- .github/workflows/e2e-visual.yml
+- .github/workflows/professional-ci.yml
+- CHANGELOG.md
+- deploy/README-compose-platform.md
+- deploy/monitoring/docker-compose.monitoring.yml
+- deploy/monitoring/grafana/provisioning/datasources/prometheus.yml
+- deploy/monitoring/prometheus.yml
+- deploy/scripts/vps-anonymize-staging.sh
+- deploy/scripts/vps-external-backup.sh
+- deploy/scripts/vps-install-external-backup-cron.sh
+- deploy/scripts/vps-monitoring-up.sh
+- deploy/scripts/vps-refresh-staging-from-production.sh
+- documentos/CHANGELOG.md
+- documentos/descripcion_del_proyecto
+- documentos/gobernanza_tecnica/runbooks/runbook_madurez_empresarial_12_pasos.md
+- documentos/historial_de_cambios
+- documentos/plan_profesional_12_puntos.md
+- documentos/plan_profesionalizacion_plataforma.md
+- documentos/releases/README.md
+- scripts/profesional_preflight.ps1
+- scripts/release_gate.ps1
+- tools/docs_normalization_audit.mjs
+- tools/load_smoke_test.mjs
+- tools/observability_report.mjs
+- tools/payment_matrix_audit.mjs
+- tools/qa_roles_matrix.mjs
+- tools/release_manifest.mjs
+- tools/security_audit.mjs
+- tools/support_center_audit.mjs
