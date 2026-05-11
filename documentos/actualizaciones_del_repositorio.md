@@ -8701,3 +8701,17 @@ Archivos modificados:
 - web/js/alquileres.js
 - web/js/consultorio_odontologico.js
 - web/js/gimnasio.js
+
+2026-05-11 17:08:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 948e16d2; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/gimnasio.go
+- backend/db/gimnasio_integracion_test.go
+- backend/db/odontologia.go
+- backend/db/odontologia_integracion_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_integracion_verticales.md
