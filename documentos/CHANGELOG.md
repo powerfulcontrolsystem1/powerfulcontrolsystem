@@ -1,3 +1,8 @@
+## [2026-05-11] Fix arranque PostgreSQL parqueadero
+- [Backend] `backend/db/parqueadero.go` ahora asegura columnas de integracion al nucleo antes de crear el indice por `carrito_id`.
+- [Operacion] Corrige el fallo de despliegue en VPS con bases existentes que todavia no tenian `empresa_parqueadero_tickets.carrito_id`.
+- [Alcance] No hay nuevas tablas, endpoints, permisos ni dependencias.
+
 ## [2026-05-11] Portada index alineada a modulos reales
 - [Frontend] `web/index.html` y los defaults de `/api/public/pagina_principal` actualizan el texto de cobertura y las tarjetas publicas con nucleo unico, modulos reales y verticales clasificados.
 - [Producto] Los 20 verticales nuevos siguen en catalogo, pero solo los 10 V1 masiva se publican como tarjetas operativas; los 10 diferidos quedan resumidos y ocultos como oferta de `Probar gratis`.

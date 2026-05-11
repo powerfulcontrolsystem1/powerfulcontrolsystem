@@ -1,3 +1,8 @@
+2026-05-11: Fix arranque PostgreSQL parqueadero
+- Modulo afectado: `parqueadero`.
+- Causa tecnica: el despliegue VPS fallaba en `EnsureEmpresaParqueaderoSchema` porque intentaba crear el indice `ix_parqueadero_ticket_empresa_carrito` antes de asegurar la columna `carrito_id` en tablas ya existentes.
+- Cambio: `backend/db/parqueadero.go` asegura `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` antes de crear el indice por carrito.
+- Alcance: no agrega tablas, endpoints, permisos ni dependencias; solo corrige orden de migracion ligera PostgreSQL.
 2026-05-11: Portada index alineada a modulos y verticales reales
 - Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
 - Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` dejan de presentar los 20 verticales nuevos como si todos fueran ofertas operativas y publica tarjetas individuales solo para los 10 verticales V1 masiva.

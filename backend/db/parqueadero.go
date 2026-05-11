@@ -149,7 +149,6 @@ func EnsureEmpresaParqueaderoSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_parqueadero_ticket_empresa_token ON empresa_parqueadero_tickets(empresa_id, qr_token)`,
 		`CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_estado ON empresa_parqueadero_tickets(empresa_id, estado, id DESC)`,
 		`CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_placa ON empresa_parqueadero_tickets(empresa_id, placa, estado)`,
-		`CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_carrito ON empresa_parqueadero_tickets(empresa_id, carrito_id)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
@@ -169,6 +168,9 @@ func EnsureEmpresaParqueaderoSchema(dbConn *sql.DB) error {
 		if err := ensureColumnIfMissing(dbConn, "empresa_parqueadero_tickets", column.name, column.def); err != nil {
 			return err
 		}
+	}
+	if _, err := ExecCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_parqueadero_ticket_empresa_carrito ON empresa_parqueadero_tickets(empresa_id, carrito_id)`); err != nil {
+		return err
 	}
 	return nil
 }
