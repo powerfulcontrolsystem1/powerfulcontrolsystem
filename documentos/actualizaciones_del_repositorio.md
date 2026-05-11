@@ -8003,3 +8003,17 @@ Archivos modificados:
 - web/super/permisos_rol.html
 - web/super/preconfiguracion_tipos_empresa.html
 - web/super/tipos_empresas.html
+
+2026-05-10 20:31:07 - Mensaje: Integrar soluciones por negocio y simplificar modulos operativos; Commit: 4352f3b4; PushStatus: OK
+Archivos modificados:
+- documentos/arquitectura_modulos_universales.md
+- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_botones_integrados.png
+- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_directos.png
+- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_mobile.png
+- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_sin_cuadros_superiores.png
+- documentos/plan_20_modulos_verticales_2026-05-10.md
+- web/administrar_empresa.html
+- web/ayuda/ayuda.html
+- web/estilos.css
+- web/js/administrar_empresa.js
+- web/js/modulo_colombia_admin.js
