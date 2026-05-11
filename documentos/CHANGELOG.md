@@ -1,3 +1,19 @@
+## [2026-05-11] Limpieza PostgreSQL-only
+- [Backend] Las verificaciones residuales de indices en finanzas y propinas consultan `pg_indexes` y ya no conservan ramas de motor legado.
+- [Frontend] Los helpers de fecha en carrito y codigos de descuento usan nombres neutrales de backend.
+- [Operacion] Scripts de sincronizacion y actualizacion dejan de contemplar extensiones de motores retirados; se eliminaron artefactos locales generados en perfiles temporales.
+- [Gobernanza] Documentacion e instrucciones quedan alineadas a PostgreSQL como unico motor permitido, sin dependencias nuevas ni cambios de esquema.
+
+## [2026-05-11] Centro de mando profesional super
+- [Super] `web/super/licencias_resumen.html` ahora abre con una lectura ejecutiva del VPS y del proyecto.
+- [Metricas] El panel consolida CPU, memoria, disco, trafico, historico, PostgreSQL, alertas, errores, servicios, procesos, licencias, empresas y consumo OpenAI estimado.
+- [Gobernanza] Se reutilizan endpoints existentes y no se agregan dependencias, tablas ni permisos nuevos.
+
+## [2026-05-11] Cierre implementable de pendientes 1 a 8
+- [Pagos] `web/pagar_licencia.html` permite elegir manualmente el pais de pago, guarda la preferencia local y recarga disponibilidad de Wompi/Epayco por `pais_codigo`.
+- [Docs] Se corrigen referencias activas a documentos historicos inexistentes y se apunta a fuentes vigentes.
+- [Alcance] DIAN oficial SOAP/WSDL, proveedores/hardware reales, E2E con credenciales y normalizacion masiva de mojibake quedan documentados como pendientes externos/controlados, no como cierres locales.
+
 ## [2026-05-11] Madurez empresarial de 12 pasos
 - [Staging] `deploy/scripts/vps-refresh-staging-from-production.sh` anonimiza datos por defecto con `deploy/scripts/vps-anonymize-staging.sh`.
 - [Monitoreo] Se agrega stack Prometheus/Grafana/node-exporter/cAdvisor en `deploy/monitoring/` y script `deploy/scripts/vps-monitoring-up.sh`.

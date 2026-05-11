@@ -674,6 +674,10 @@ func main() {
 			log.Fatalf("failed to ensure postgres compat functions in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_pg_compat_super")
+		if err := dbpkg.EnsureAdministradoresAuthSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure administradores auth schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_ensure_administradores_auth_schema")
 		if err := dbpkg.EnsurePaymentGatewaySchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure payment gateway schema in superadministrador db: %v", err)
 		}
@@ -1132,6 +1136,7 @@ func main() {
 	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
 	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
+	http.HandleFunc("/super/api/administradores/2fa", handlers.AdminTwoFactorHandler(dbSuper))
 	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))

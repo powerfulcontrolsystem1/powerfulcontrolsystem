@@ -466,7 +466,7 @@ type InventarioMovimiento struct {
 	Observaciones       string  `json:"observaciones,omitempty"`
 }
 
-// EnsureEmpresaProductosSchema crea y migra las tablas del módulo de productos en empresas.db.
+// EnsureEmpresaProductosSchema crea y migra las tablas del modulo de productos en PostgreSQL.
 func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS bodegas (

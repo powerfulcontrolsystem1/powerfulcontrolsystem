@@ -21,7 +21,7 @@ Reglas obligatorias:
 - Regla oficial de datos en VPS con PostgreSQL:
   - La base de datos operativa del sistema debe ejecutarse en el servidor virtual (VPS), no en la máquina local del desarrollador.
   - PostgreSQL es el motor relacional objetivo y obligatorio para operación productiva.
-  - SQLite deja de estar permitido para el sistema. No debe usarse en runtime, utilidades, pruebas operativas ni documentación vigente, salvo referencias históricas mínimas dentro de trazabilidad de cambios ya cerrados.
+  - PostgreSQL es el único motor permitido para el sistema. No debe usarse otro motor en runtime, utilidades, pruebas operativas ni documentación vigente.
   - La migración debe ejecutarse por etapas (`superadministrador` y luego `empresas`) validando consistencia por base antes de continuar.
 
 Comportamiento del agente:

@@ -11,6 +11,7 @@ services:
       - --storage.tsdb.retention.time=30d
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - pcs_prometheus_data:/prometheus
     ports:
       - "${PROMETHEUS_BIND:-127.0.0.1}:${PROMETHEUS_PORT:-9090}:9090"
@@ -31,6 +32,7 @@ services:
     volumes:
       - pcs_grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "${GRAFANA_BIND:-127.0.0.1}:${GRAFANA_PORT:-3001}:3000"
     networks:

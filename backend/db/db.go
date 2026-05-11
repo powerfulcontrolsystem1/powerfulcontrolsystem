@@ -105,6 +105,9 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_set INTEGER DEFAULT 0`,
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_token TEXT`,
 		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS password_reset_expira TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_enabled INTEGER DEFAULT 0`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_secret TEXT`,
+		`ALTER TABLE administradores ADD COLUMN IF NOT EXISTS totp_confirmado_en TEXT`,
 	}
 	for _, stmt := range statements {
 		if _, err := dbConn.Exec(stmt); err != nil {
@@ -419,6 +422,9 @@ type Admin struct {
 	PasswordSalt        string `json:"-"`
 	PasswordResetToken  string `json:"-"`
 	PasswordResetExpira string `json:"-"`
+	TOTPEnabled         int    `json:"totp_enabled,omitempty"`
+	TOTPSecret          string `json:"-"`
+	TOTPConfirmadoEn    string `json:"totp_confirmado_en,omitempty"`
 }
 
 // NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).
@@ -1174,8 +1180,8 @@ func GetSesiones(dbConn *sql.DB) ([]Session, error) {
 }
 
 // GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt)
-func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
-	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
+func getAdminByEmailFullCore(dbConn *sql.DB, email string) (*Admin, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(telefono, ''), COALESCE(pais, ''), COALESCE(ciudad, ''), COALESCE(email_confirmado, 0), COALESCE(email_confirm_token, ''), COALESCE(email_confirm_expira, ''), COALESCE(email_confirmado_en, ''), COALESCE(password_set, 0), COALESCE(password_hash, ''), COALESCE(password_salt, ''), COALESCE(password_reset_token, ''), COALESCE(password_reset_expira, ''), COALESCE(totp_enabled, 0), COALESCE(totp_secret, ''), COALESCE(totp_confirmado_en, '') FROM administradores WHERE lower(email) = lower(?) LIMIT 1`, strings.TrimSpace(email))
 	var a Admin
 	var photo sql.NullString
 	var usuarioCreador sql.NullString
@@ -1192,11 +1198,10 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	var passwordSalt sql.NullString
 	var passwordResetToken sql.NullString
 	var passwordResetExpira sql.NullString
-	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira); err != nil {
-		if isMissingColumnError(err) {
-			// Fallback a la consulta previa
-			return GetAdminByEmail(dbConn, email)
-		}
+	var totpEnabled sql.NullInt64
+	var totpSecret sql.NullString
+	var totpConfirmadoEn sql.NullString
+	if err := row.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &telefono, &pais, &ciudad, &emailConfirmado, &emailConfirmToken, &emailConfirmExpira, &emailConfirmadoEn, &passwordSet, &passwordHash, &passwordSalt, &passwordResetToken, &passwordResetExpira, &totpEnabled, &totpSecret, &totpConfirmadoEn); err != nil {
 		return nil, err
 	}
 	if photo.Valid {
@@ -1222,7 +1227,27 @@ func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
 	a.PasswordSalt = passwordSalt.String
 	a.PasswordResetToken = passwordResetToken.String
 	a.PasswordResetExpira = passwordResetExpira.String
+	a.TOTPEnabled = int(totpEnabled.Int64)
+	a.TOTPSecret = totpSecret.String
+	a.TOTPConfirmadoEn = totpConfirmadoEn.String
 	return &a, nil
+}
+
+// GetAdminByEmailFull devuelve el administrador por email incluyendo campos seguridad (tokens, hash, salt, TOTP).
+func GetAdminByEmailFull(dbConn *sql.DB, email string) (*Admin, error) {
+	admin, err := getAdminByEmailFullCore(dbConn, email)
+	if err == nil {
+		return admin, nil
+	}
+	if isMissingColumnError(err) {
+		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr == nil {
+			if admin, retryErr := getAdminByEmailFullCore(dbConn, email); retryErr == nil {
+				return admin, nil
+			}
+		}
+		return GetAdminByEmail(dbConn, email)
+	}
+	return nil, err
 }
 
 // ResolveAdminPrincipalEmail devuelve el email del administrador principal asociado a un administrador.
@@ -1308,6 +1333,43 @@ func SetAdministradorPassword(dbConn *sql.DB, email, hash, salt string) error {
 	return err
 }
 
+// SetAdministradorTOTPSecret guarda el secreto TOTP pendiente de confirmacion.
+func SetAdministradorTOTPSecret(dbConn *sql.DB, email, secret string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_secret = ?, totp_enabled = 0, totp_confirmado_en = '', fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(secret), strings.TrimSpace(email))
+	if err != nil && isMissingColumnError(err) {
+		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
+			return schemaErr
+		}
+		_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_secret = ?, totp_enabled = 0, totp_confirmado_en = '', fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(secret), strings.TrimSpace(email))
+	}
+	return err
+}
+
+func EnableAdministradorTOTP(dbConn *sql.DB, email string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 1, totp_confirmado_en = "+nowExpr+", fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND COALESCE(totp_secret, '') <> ''", strings.TrimSpace(email))
+	if err != nil && isMissingColumnError(err) {
+		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
+			return schemaErr
+		}
+		_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 1, totp_confirmado_en = "+nowExpr+", fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?) AND COALESCE(totp_secret, '') <> ''", strings.TrimSpace(email))
+	}
+	return err
+}
+
+func DisableAdministradorTOTP(dbConn *sql.DB, email string) error {
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 0, totp_secret = '', totp_confirmado_en = '', fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(email))
+	if err != nil && isMissingColumnError(err) {
+		if schemaErr := EnsureAdministradoresAuthSchema(dbConn); schemaErr != nil {
+			return schemaErr
+		}
+		_, err = execSQLCompat(dbConn, "UPDATE administradores SET totp_enabled = 0, totp_secret = '', totp_confirmado_en = '', fecha_actualizacion = "+nowExpr+" WHERE LOWER(COALESCE(email,'')) = LOWER(?)", strings.TrimSpace(email))
+	}
+	return err
+}
+
 // SetAdministradorPasswordResetToken guarda token de recuperación para el administrador.
 func SetAdministradorPasswordResetToken(dbConn *sql.DB, email, token, expira string) error {
 	nowExpr := sqlNowExpr()
@@ -1376,7 +1438,7 @@ func SetTipoEmpresaActivo(dbConn *sql.DB, id int64, estado string) error {
 	return err
 }
 
-// Empresa representa una empresa registrada en empresas.db
+// Empresa representa una empresa registrada en la base PostgreSQL operativa.
 type Empresa struct {
 	ID                 int64  `json:"id"`
 	EmpresaID          int64  `json:"empresa_id,omitempty"`
@@ -1393,7 +1455,7 @@ type Empresa struct {
 	CompartidaPor      string `json:"compartida_por,omitempty"`
 }
 
-// CreateEmpresa inserta una nueva empresa en la base empresas.db
+// CreateEmpresa inserta una nueva empresa en la base PostgreSQL operativa.
 func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
 	tx, err := dbConn.Begin()
 	if err != nil {

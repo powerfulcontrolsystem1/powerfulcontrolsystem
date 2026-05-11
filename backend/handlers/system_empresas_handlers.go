@@ -405,7 +405,7 @@ func SecurityProcessesHandler(dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-// EmpresasHandler maneja CRUD de empresas en la base empresas.db
+// EmpresasHandler maneja CRUD de empresas en la base PostgreSQL operativa.
 func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

@@ -240,6 +240,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 		var payload struct {
 			Email          string `json:"email"`
 			Password       string `json:"password"`
+			OTPCode        string `json:"otp_code"`
 			RecaptchaToken string `json:"recaptcha_token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -283,6 +284,10 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		// crear sesión
+		if admin.TOTPEnabled == 1 && !verifyAdminTOTPCode(admin.TOTPSecret, payload.OTPCode, time.Now()) {
+			writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
+			return
+		}
 		token, terr := utils.GenerateSecureToken(32)
 		if terr != nil {
 			log.Println("AdminLoginHandler token gen error:", terr)

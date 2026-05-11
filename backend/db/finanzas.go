@@ -159,7 +159,7 @@ type EmpresaFinanzasConfiguracion struct {
 	Observaciones              string `json:"observaciones"`
 }
 
-// EnsureEmpresaFinanzasSchema crea y migra las tablas del modulo financiero en empresas.db.
+// EnsureEmpresaFinanzasSchema crea y migra las tablas del modulo financiero en PostgreSQL.
 func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	startedAt := time.Now()
 	defer func() {
@@ -687,20 +687,11 @@ func empresaFinanzasIndexExists(dbConn *sql.DB, indexName string) (bool, error) 
 	query := `
 		SELECT EXISTS (
 			SELECT 1
-			FROM sqlite_master
-			WHERE type = 'index' AND name = ?
+			FROM pg_indexes
+			WHERE schemaname = ANY (current_schemas(false))
+			  AND indexname = ?
 		)
 	`
-	if isPostgresDialect() {
-		query = `
-			SELECT EXISTS (
-				SELECT 1
-				FROM pg_indexes
-				WHERE schemaname = ANY (current_schemas(false))
-				  AND indexname = ?
-			)
-		`
-	}
 	err := queryRowSQLCompat(dbConn, query, strings.TrimSpace(indexName)).Scan(&exists)
 	if err != nil {
 		return false, err

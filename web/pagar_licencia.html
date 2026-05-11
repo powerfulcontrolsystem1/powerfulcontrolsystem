@@ -471,20 +471,28 @@
           function countryName(code){
             const c = String(code || '').toUpperCase();
             if (c === 'CO') return 'Colombia';
+            if (c === 'EC') return 'Ecuador';
+            if (c === 'PA') return 'Panamá';
             if (c === 'MX') return 'México';
             if (c === 'US') return 'Estados Unidos';
             if (c === 'ES') return 'España';
             return c || 'No detectado';
           }
-          function countryFlag(code){
-            const c = String(code || '').toUpperCase();
-            if (!/^[A-Z]{2}$/.test(c)) return 'ðŸ³ï¸';
-            const A = 0x1F1E6;
-            const cc = c.charCodeAt(0) - 65;
-            const dd = c.charCodeAt(1) - 65;
-            return String.fromCodePoint(A + cc, A + dd);
+          function normalizeCountryCode(code){
+            const c = String(code || '').trim().toUpperCase().slice(0, 2);
+            return /^[A-Z]{2}$/.test(c) ? c : '';
           }
-          const paisCodigo = resolveCountryFromBrowser() || 'CO';
+          function resolveCountryForCheckout(){
+            const fromQuery = normalizeCountryCode(params.get('pais_codigo'));
+            if (fromQuery) return fromQuery;
+            try {
+              const stored = normalizeCountryCode(localStorage.getItem('pcs_checkout_country'));
+              if (stored) return stored;
+            } catch (e) {}
+            return normalizeCountryCode(resolveCountryFromBrowser()) || 'CO';
+          }
+          const countryOptions = ['CO', 'EC', 'PA', 'MX', 'US', 'ES'];
+          const paisCodigo = resolveCountryForCheckout();
 
           const [summaryRes, methodsRes] = await Promise.all([
             fetch('/api/public/licencias/checkout_summary?' + summaryParams.toString(), { credentials: 'same-origin' }),
@@ -576,7 +584,7 @@
                   '<h2 class="brand-title checkout-brand-title"><span>Confirma tu licencia</span><span>y completa el pago</span></h2>'+
                   '<p class="brand-subtitle checkout-brand-subtitle">' + escapeHtml(checkoutSubtitle) + '</p>'+
                   '<div class="checkout-mini-pills" style="margin-top:10px;">' +
-                    '<span class="checkout-mini-pill">País detectado: ' + escapeHtml(countryName(paisCodigo)) + ' ' + escapeHtml(countryFlag(paisCodigo)) + ' (' + escapeHtml(paisCodigo) + ')</span>' +
+                    '<span class="checkout-mini-pill">País de pago: ' + escapeHtml(countryName(paisCodigo)) + ' (' + escapeHtml(paisCodigo) + ')</span>' +
                     (checkoutMode ? '<span class="checkout-mini-pill">Modo: ' + escapeHtml(checkoutMode) + '</span>' : '') +
                   '</div>' +
                 '</div>'+
@@ -614,6 +622,15 @@
                   '<h3>Beneficios comerciales</h3>'+
                   '<p>Aplica promociones y registra el asesor comercial asociado antes de abrir la pasarela.</p>'+
                   '<div class="checkout-code-stack">'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="checkoutCountrySelect">País de pago</label>'+
+                      '<select id="checkoutCountrySelect" class="form-input">'+
+                        countryOptions.map(function(code){
+                          return '<option value="' + escapeHtml(code) + '"' + (code === paisCodigo ? ' selected' : '') + '>' + escapeHtml(countryName(code)) + ' (' + escapeHtml(code) + ')</option>';
+                        }).join('')+
+                      '</select>'+
+                      '<div class="form-help">Cambia el país si el navegador o una VPN detecta una ubicación incorrecta.</div>'+
+                    '</div>'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="discountCode">Código de descuento</label>'+
                       '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional">'+
@@ -719,6 +736,7 @@
             epaycoStatus: document.getElementById('epaycoStatus'),
             discountCodeInput: document.getElementById('discountCode'),
             asesorIdInput: document.getElementById('asesorId'),
+            checkoutCountrySelect: document.getElementById('checkoutCountrySelect'),
             summaryOriginalValue: document.getElementById('summaryOriginalValue'),
             summaryDiscountValue: document.getElementById('summaryDiscountValue'),
             summaryTotalValue: document.getElementById('summaryTotalValue'),
@@ -1048,6 +1066,13 @@
 
           if (ui.selectWompiCard) ui.selectWompiCard.addEventListener('click', function(){ setPaymentMethod('wompi'); });
           if (ui.selectEpaycoCard) ui.selectEpaycoCard.addEventListener('click', function(){ setPaymentMethod('epayco'); });
+          if (ui.checkoutCountrySelect) ui.checkoutCountrySelect.addEventListener('change', function(){
+            const nextCountry = normalizeCountryCode(ui.checkoutCountrySelect.value) || 'CO';
+            try { localStorage.setItem('pcs_checkout_country', nextCountry); } catch (e) {}
+            const nextParams = new URLSearchParams(window.location.search);
+            nextParams.set('pais_codigo', nextCountry);
+            window.location.search = nextParams.toString();
+          });
           if (ui.discountCodeInput) {
             ui.discountCodeInput.addEventListener('input', scheduleCheckoutSummaryRefresh);
             ui.discountCodeInput.addEventListener('blur', refreshCheckoutSummary);

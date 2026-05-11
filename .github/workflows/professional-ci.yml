@@ -54,8 +54,14 @@ jobs:
       - name: Docker staging config
         run: docker compose --env-file deploy/.env.staging.example -f deploy/docker-compose.platform.yml -f deploy/docker-compose.staging.yml config --quiet
 
+      - name: Docker monitoring config
+        run: docker compose --env-file deploy/monitoring/.env.monitoring.example -f deploy/monitoring/docker-compose.monitoring.yml config --quiet
+
       - name: Observability inventory
         run: node tools/observability_report.mjs --out documentos/reportes_profesionales
+
+      - name: Business observability and capacity
+        run: node tools/business_observability_audit.mjs --out documentos/reportes_profesionales
 
       - name: Migration audit
         run: node tools/migration_audit.mjs --out documentos/reportes_profesionales
@@ -69,8 +75,20 @@ jobs:
       - name: Payment and receipts matrix
         run: node tools/payment_matrix_audit.mjs --out documentos/reportes_profesionales
 
+      - name: Real payment contract
+        run: node tools/payment_real_matrix_audit.mjs --out documentos/reportes_profesionales
+
       - name: Support center audit
         run: node tools/support_center_audit.mjs --out documentos/reportes_profesionales
+
+      - name: Staging anonymization audit
+        run: node tools/staging_anonymization_audit.mjs --out documentos/reportes_profesionales
+
+      - name: SLO/SLA audit
+        run: node tools/slo_sla_audit.mjs --out documentos/reportes_profesionales
+
+      - name: VPS hardening contract
+        run: node tools/vps_hardening_audit.mjs --out documentos/reportes_profesionales
 
       - name: UX consistency audit
         run: node tools/ux_consistency_audit.mjs --out documentos/reportes_profesionales

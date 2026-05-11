@@ -134,6 +134,13 @@ try {
       "Reporte de observabilidad finalizo con codigo $code"
     }
 
+    Invoke-Captured -Title "Observabilidad de negocio y capacidad" -Required:$Strict -Script {
+      & node tools\business_observability_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "observabilidad de negocio fallo con codigo $code" }
+      "Observabilidad de negocio finalizo con codigo $code"
+    }
+
     Invoke-Captured -Title "Auditoria de migraciones" -Required:$Strict -Script {
       & node tools\migration_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
@@ -162,11 +169,39 @@ try {
       "Matriz de pagos finalizo con codigo $code"
     }
 
+    Invoke-Captured -Title "Contrato de pagos reales" -Required:$Strict -Script {
+      & node tools\payment_real_matrix_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "contrato de pagos reales fallo con codigo $code" }
+      "Contrato de pagos reales finalizo con codigo $code"
+    }
+
     Invoke-Captured -Title "Centro de soporte interno" -Required:$Strict -Script {
       & node tools\support_center_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "centro de soporte fallo con codigo $code" }
       "Centro de soporte finalizo con codigo $code"
+    }
+
+    Invoke-Captured -Title "Anonimizacion de staging" -Required:$Strict -Script {
+      & node tools\staging_anonymization_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "anonimizacion de staging fallo con codigo $code" }
+      "Anonimizacion de staging finalizo con codigo $code"
+    }
+
+    Invoke-Captured -Title "SLO/SLA operativo" -Required:$Strict -Script {
+      & node tools\slo_sla_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "SLO/SLA fallo con codigo $code" }
+      "SLO/SLA finalizo con codigo $code"
+    }
+
+    Invoke-Captured -Title "Hardening VPS" -Required:$Strict -Script {
+      & node tools\vps_hardening_audit.mjs --out $ReportDir
+      $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+      if ($Strict -and $code -ne 0) { throw "hardening VPS fallo con codigo $code" }
+      "Hardening VPS finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Auditoria UX global" -Required:$Strict -Script {
@@ -191,6 +226,8 @@ try {
       }
       & docker compose --env-file deploy\.env.platform.example -f deploy\docker-compose.platform.yml config --quiet
       if ($LASTEXITCODE -ne 0) { throw "docker compose config fallo con codigo $LASTEXITCODE" }
+      & docker compose --env-file deploy\monitoring\.env.monitoring.example -f deploy\monitoring\docker-compose.monitoring.yml config --quiet
+      if ($LASTEXITCODE -ne 0) { throw "docker compose monitoring config fallo con codigo $LASTEXITCODE" }
       "Docker Compose config ok"
     }
   }

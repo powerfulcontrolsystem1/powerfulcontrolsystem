@@ -1,0 +1,27 @@
+groups:
+  - name: pcs_vps_capacity
+    rules:
+      - alert: PCSDiscoVPSAlto
+        expr: 100 - ((node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} * 100) / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"}) >= 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco VPS por encima del 80%"
+          description: "El montaje {{ $labels.mountpoint }} esta en {{ $value | printf \"%.1f\" }}%."
+      - alert: PCSMemoriaAlta
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 >= 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memoria VPS por encima del 85%"
+          description: "Uso de memoria en {{ $value | printf \"%.1f\" }}%."
+      - alert: PCSBackendCaido
+        expr: up{job=~"pcs-backend|pcs-staging-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend PCS sin respuesta"
+          description: "El job {{ $labels.job }} no responde a Prometheus."

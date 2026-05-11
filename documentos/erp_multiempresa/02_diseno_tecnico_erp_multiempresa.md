@@ -57,7 +57,7 @@ Definir la arquitectura tecnica objetivo del ERP multiempresa, su modelo de dato
 ## 4.2 Bases legado
 
 - No hay archivos `.db` legacy versionados en el repositorio vigente.
-- El legado SQLite queda solo como referencia historica de migracion o como respaldo tecnico externo y no como artefacto operativo local.
+- El legado motor legado retirado queda solo como referencia historica de migracion o como respaldo tecnico externo y no como artefacto operativo local.
 
 ## 4.3 Patrone de modelado
 

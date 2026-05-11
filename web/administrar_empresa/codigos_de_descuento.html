@@ -207,7 +207,7 @@
       return 'DSCT-' + part1 + '-' + part2;
     }
 
-    function formatSQLiteDate(dateText) {
+    function formatBackendDate(dateText) {
       const raw = normalize(dateText);
       if (!raw) return '-';
       const iso = raw.replace(' ', 'T');
@@ -376,7 +376,7 @@
           '<td>' + (normalize(item.moneda) || 'COP') + ' ' + toNumber(item.monto_minimo_compra, 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.usos_actuales || 0) + ' / ' + Number(item.usos_maximos || 1) + '</td>' +
           '<td>' + formatReglas(item) + '</td>' +
-          '<td>' + formatSQLiteDate(item.fecha_vencimiento) + '</td>' +
+          '<td>' + formatBackendDate(item.fecha_vencimiento) + '</td>' +
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
           '<button class="edit btn secondary" data-id="' + Number(item.id || 0) + '">Editar</button> ' +
@@ -556,4 +556,3 @@
   </script>
 </body>
 </html>
-

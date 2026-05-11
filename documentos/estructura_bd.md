@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-05-06.1.0
-Ultima actualizacion: 2026-05-06
+Version: 2026-05-11.1.0
+Ultima actualizacion: 2026-05-11
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -9,9 +9,10 @@ Nota de gobernanza documental:
 Bases operativas PostgreSQL en VPS:
 - `pcs_empresas`
 - `pcs_superadministrador`
-Estado de legado SQLite:
-- Retirado del runtime y depurado del repositorio tras cierre de migracion.
-- No hay archivos `.db` locales versionados como fuente operativa vigente.
+Regla de motor:
+- PostgreSQL es el unico motor de base de datos permitido para runtime, pruebas operativas, scripts y documentacion vigente.
+- Las consultas de introspeccion deben usar catalogos PostgreSQL como `pg_indexes` e `information_schema`.
+- No hay artefactos locales de base de datos versionados como fuente operativa vigente.
 Todas las tablas operativas usan como base los campos estandar:
 - id (clave primaria)
 - fecha_creacion
@@ -1178,10 +1179,10 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
 ## 4) Historial resumido
 - 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar relés GPIO en Raspberry Pi por estacion/habitacion. La configuracion guarda conexion HTTP por empresa; los relés asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
-- 2026-04-08: se agrega `super_servidor_eventos` en `superadministrador.db` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
-- 2026-04-08: se amplía `licencias` en `superadministrador.db` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
-- 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `superadministrador.db` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
-- 2026-04-08: se agregan `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `superadministrador.db` para configuracion dinamica de permisos por rol (modulo/accion y pagina), con indices unicos por rol para garantizar consistencia de matriz.
+- 2026-04-08: se agrega `super_servidor_eventos` en `pcs_superadministrador` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
+- 2026-04-08: se amplía `licencias` en `pcs_superadministrador` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
+- 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `pcs_superadministrador` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
+- 2026-04-08: se agregan `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `pcs_superadministrador` para configuracion dinamica de permisos por rol (modulo/accion y pagina), con indices unicos por rol para garantizar consistencia de matriz.
 - 2026-04-07: se agregan `empresa_backups` y `empresa_backups_restauraciones` para el modulo 36 de backups empresariales, incluyendo snapshot JSON por `empresa_id`, trazabilidad de hash de contenido y bitacora de restauraciones.
 - 2026-04-07: se agrega `empresa_creditos_clientes_limites` para gobernar limites por cliente (`limite_saldo_total`, `max_creditos_activos`, `requiere_aprobacion_exceso`) y reforzar aislamiento por `empresa_id` en validaciones de alta/edicion de creditos.
 - 2026-04-07: se agregan `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos` para base del modulo 35 (creditos), con trazabilidad de cupo/saldo, amortizacion por cuotas, abonos y movimientos por `empresa_id`/`credito_id`/`cliente_id`.
@@ -1197,7 +1198,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.
 - 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
 - 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
-- 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `superadministrador.db` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
+- 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
 - 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
 - 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.
 - 2026-04-05: se agrega `reservas_hotel` para gestionar reservas por estacion/habitacion con control de disponibilidad por rango, expiracion de pendientes y confirmacion de pago.
@@ -1222,7 +1223,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-04: se amplía `empresa_finanzas_configuracion` con parametrización contable externa por empresa (destino ERP, cuentas base y mapeo por categoría) para exportación JSON contable avanzada.
 - 2026-04-04: se agregan `empresa_finanzas_movimientos` y `empresa_finanzas_configuracion` para el módulo financiero por empresa (ingresos/egresos con comprobantes e impresión).
 - 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catálogo de categorías por empresa.
-- 2026-04-02: se agregan tablas del modulo chat_y_tareas en empresas.db y se actualiza este documento.
+- 2026-04-02: se agregan tablas del modulo chat_y_tareas en pcs_empresas y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.
 ### Tabla: super_juegos_records (pcs_superadministrador)
 Almacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el público.

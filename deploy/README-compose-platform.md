@@ -19,6 +19,19 @@ bash deploy/scripts/vps-monitoring-up.sh
 ```
 
 Prometheus y Grafana quedan ligados a `127.0.0.1` por defecto.
+El script crea las redes internas faltantes, genera una clave fuerte de Grafana si solo existe el placeholder y carga el dashboard `pcs-operacion`.
+
+Verificacion de anonimizacion staging:
+
+```bash
+bash deploy/scripts/vps-verify-staging-anonymization.sh
+```
+
+Hardening VPS:
+
+```bash
+bash deploy/scripts/vps-hardening-audit.sh
+```
 
 Backup externo:
 

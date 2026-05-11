@@ -306,6 +306,8 @@
       event.preventDefault();
       var email = normalizeEmail(emailInput && emailInput.value);
       var password = passInput && passInput.value ? passInput.value : '';
+      var otpInput = document.getElementById('adminOtpCode');
+      var otpCode = otpInput && otpInput.value ? otpInput.value.replace(/\D/g, '').slice(0, 6) : '';
       if (!email || !password) {
         showMsg(loginMessageDiv, 'Debes ingresar correo y contraseña.', true);
         return;
@@ -324,7 +326,7 @@
         if (loginToken === null) {
           return;
         }
-        var response = await postJson('/super/api/administradores/login', {email: email, password: password, recaptcha_token: loginToken});
+        var response = await postJson('/super/api/administradores/login', {email: email, password: password, otp_code: otpCode, recaptcha_token: loginToken});
         if (response.ok && response.json && response.json.redirect_url) {
           persistThemePreference(response.json.apariencia);
           var sharedInvitationToken = getSharedInvitationTokenFromQuery();
@@ -337,6 +339,11 @@
         }
         if (response.json && response.json.password_setup_required) {
           showMsg(loginMessageDiv, getResponseMessage(response, 'Tu cuenta todavía no tiene una contraseña activa.'), true);
+          return;
+        }
+        if (response.json && response.json.two_factor_required) {
+          showMsg(loginMessageDiv, getResponseMessage(response, 'Ingresa el codigo 2FA de tu aplicacion autenticadora.'), true);
+          if (otpInput) otpInput.focus();
           return;
         }
         if (response.status === 403) {

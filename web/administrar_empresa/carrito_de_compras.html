@@ -1766,7 +1766,7 @@
 
       const vencimientoRaw = normalize(item.fecha_vencimiento);
       if (vencimientoRaw) {
-        const exp = parseSQLiteDate(vencimientoRaw);
+        const exp = parseBackendDate(vencimientoRaw);
         if (exp) {
           let threshold = exp;
           if (vencimientoRaw.length <= 10) {
@@ -1805,7 +1805,7 @@
       };
     }
 
-    function parseSQLiteDate(dateText) {
+    function parseBackendDate(dateText) {
       const raw = normalize(dateText);
       if (!raw) return null;
       const iso = raw.replace(' ', 'T');
@@ -1815,15 +1815,15 @@
     }
 
     function formatDateTime(dateText) {
-      const dt = parseSQLiteDate(dateText);
+      const dt = parseBackendDate(dateText);
       if (!dt) return '-';
       return dt.toLocaleString();
     }
 
     function formatDurationSince(startText, endText) {
-      const start = parseSQLiteDate(startText);
+      const start = parseBackendDate(startText);
       if (!start) return '-';
-      const end = parseSQLiteDate(endText) || new Date();
+      const end = parseBackendDate(endText) || new Date();
       let diff = Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000));
       const days = Math.floor(diff / 86400);
       diff -= days * 86400;
@@ -1860,7 +1860,7 @@
       if (!enabled || minutes <= 0 || !carrito || isCarritoPagado(carrito) || !isCarritoOperativoActivo(carrito)) {
         return { enabled: enabled, allowed: true, minutes: minutes, remainingSeconds: null, expired: false };
       }
-      const activatedAt = parseSQLiteDate(carrito.activado_en);
+      const activatedAt = parseBackendDate(carrito.activado_en);
       if (!activatedAt) {
         return { enabled: enabled, allowed: true, minutes: minutes, remainingSeconds: null, expired: false };
       }

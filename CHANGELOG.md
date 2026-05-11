@@ -1,3 +1,6 @@
+- 2026-05-11: limpieza PostgreSQL-only del proyecto. Se retiran rastros del motor legado de codigo, frontend, scripts, documentacion vigente e historica, se cambian consultas residuales de indices a `pg_indexes`, se renombran helpers frontend a fechas de backend y se eliminan artefactos locales generados por perfiles temporales. No se agregan dependencias ni cambios en `go.mod`.
+- 2026-05-11: actualizado `web/super/licencias_resumen.html` como centro de mando profesional del VPS y del proyecto. Consolida salud general, CPU/RAM/disco/trafico, PostgreSQL, alertas, errores recientes, servicios, procesos, licencias, empresas y consumo OpenAI estimado usando endpoints existentes, sin dependencias nuevas ni cambios de esquema.
+- 2026-05-11: cierre implementable de pendientes 1 a 8. El checkout publico de licencias ahora permite seleccionar manualmente el pais de pago y reconsulta disponibilidad Wompi/Epayco por `pais_codigo`, evitando depender solo del navegador/VPN. Se corrigen referencias activas a documentos historicos inexistentes (`estructura_del_codigo` alias y plan maestro 14/15 puntos) hacia fuentes vigentes. Se deja explicitado que DIAN SOAP/WSDL oficial, hardware/proveedores reales, E2E con credenciales y normalizacion masiva de mojibake siguen como cierres externos/controlados, no como completados locales.
 - 2026-05-11: implementada capa de madurez empresarial de 12 pasos: staging anonimizado por defecto, monitoreo Prometheus/Grafana, backups externos rclone/S3, deploy automatico opcional a staging, QA por roles, matriz de pagos/comprobantes, prueba de carga smoke, manifiesto de release, auditoria de soporte y normalizacion documental. Verificacion: `.\scripts\profesional_preflight.ps1 -Full` OK y carga smoke staging p95 1008 ms con error rate 0.
 - 2026-05-10: Carritos suma modo tactil configurable por empresa/estacion para adaptar carrito operativo, cobro y agregador de productos por botones a tablets, monitores POS y pantallas tactiles.
 - 2026-05-10: agregado modulo privado **Alertas del sistema** en super administrador. Configura destino, umbrales y enfriamiento; evalua disco VPS, trafico, sesiones administrativas y conexiones PostgreSQL; envia correo via Gmail SMTP y registra historial en `super_alertas_eventos`. Tambien se amplian metricas con `disk_total`, `disk_used` y `disk_percent`. Verificacion: `go test ./...` en `backend/`.
@@ -276,7 +279,7 @@
 
 - Permisos super: pruebas dirigidas migradas a PostgreSQL y middleware robustecido.
 	- Archivos modificados: `backend/handlers/postgres_test_helpers_test.go`, `backend/handlers/system_empresas_handlers_test.go`, `backend/handlers/auth_users_carritos_test.go`, `backend/handlers/auth_admin_handlers_test.go`, `backend/utils/utils.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃ³n: el bloque de pruebas de permisos del panel super ya no depende de SQLite y ahora usa esquemas efÃ­meros en PostgreSQL, alineados con el tÃºnel local documentado del proyecto. En la misma iteraciÃ³n, `AuthMiddleware` deja de fallar cuando no hay conexiÃ³n `dbSuper` en flujos pÃºblicos, evitando un `panic` en la validaciÃ³n de rutas pÃºblicas de licencias.
+	- DescripciÃ³n: el bloque de pruebas de permisos del panel super ya no depende de motor legado retirado y ahora usa esquemas efÃ­meros en PostgreSQL, alineados con el tÃºnel local documentado del proyecto. En la misma iteraciÃ³n, `AuthMiddleware` deja de fallar cuando no hay conexiÃ³n `dbSuper` en flujos pÃºblicos, evitando un `panic` en la validaciÃ³n de rutas pÃºblicas de licencias.
 	- VerificaciÃ³n: `go test ./handlers -run 'TestSuperEndpointsPermisosPorRol|TestAdministradorPuedeEditarYEliminarEmpresaDesdeRutaSuperProtegida|TestNuevoAdminRegistradoPuedeCrearSuPrimeraEmpresaViaRutaSuperProtegida' -count=1` y `go test ./utils -run '^TestAuthMiddlewareAllowsPublicLicenciaPaymentRoutesWithoutSession$' -count=1`.
 
 - Apariencia global: contraste y componentes alineados en los seis temas.
@@ -296,12 +299,12 @@
 
 - Backups empresariales: se implementa la Fase 2 de exportar/importar configuracion por empresa.
 	- Archivos modificados: `backend/db/backups_empresariales.go`, `backend/handlers/backups_empresariales.go`, `backend/handlers/backups_empresariales_test.go`, `web/administrar_empresa/backups.html`, `backend/.env.example`, `backend/main.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃ³n: el mÃ³dulo de backups ahora exporta e importa configuraciÃ³n completa por empresa en JSON canÃ³nico, con restauraciÃ³n sobre PostgreSQL y trazabilidad del origen importado. En la misma iteraciÃ³n se limpian referencias operativas falsas a SQLite del entorno y de comentarios de arranque.
+	- DescripciÃ³n: el mÃ³dulo de backups ahora exporta e importa configuraciÃ³n completa por empresa en JSON canÃ³nico, con restauraciÃ³n sobre PostgreSQL y trazabilidad del origen importado. En la misma iteraciÃ³n se limpian referencias operativas falsas a motor legado retirado del entorno y de comentarios de arranque.
 	- VerificaciÃ³n: prueba dirigida del handler de configuraciÃ³n empresarial y diagnÃ³stico del editor sin errores en los archivos tocados.
 
-- PostgreSQL: gobernanza endurecida y limpieza de soporte residual SQLite.
+- PostgreSQL: gobernanza endurecida y limpieza de soporte residual motor legado retirado.
 	- Archivos modificados: `.github/agents/agente_go.agent.md`, `.github/agents/agente_backend_db.agent.md`, `copilot-instructions.md`, `backend/db/compat_wrappers.go`, `backend/db/sql_compat.go`, `backend/db/horarios_trabajadores.go`, `.gitignore`, `documentos/descripcion_del_proyecto`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃ³n: el repositorio formaliza PostgreSQL como Ãºnico motor permitido en reglas de agentes e instrucciones del proyecto. TambiÃ©n se elimina el fallback SQLite en memoria del paquete `db`, el dialecto SQL por defecto deja de aceptar SQLite y el esquema de horarios queda solamente en sintaxis PostgreSQL.
+	- DescripciÃ³n: el repositorio formaliza PostgreSQL como Ãºnico motor permitido en reglas de agentes e instrucciones del proyecto. TambiÃ©n se elimina el fallback motor legado retirado en memoria del paquete `db`, el dialecto SQL por defecto deja de aceptar motor legado retirado y el esquema de horarios queda solamente en sintaxis PostgreSQL.
 
 - Estaciones: la tarjeta `Notas` ahora soporta mÃºltiples recordatorios persistentes con repeticiÃ³n automÃ¡tica local.
 	- Archivos modificados: `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
@@ -309,7 +312,7 @@
 	- VerificaciÃ³n: diagnÃ³stico del editor sin errores en los archivos frontend tocados; revisiÃ³n de QA y backend sin cambios contractuales obligatorios en servidor.
 
 - PostgreSQL: se cierra la Fase 1 de limpieza postmigracion del repositorio.
-	- Archivos modificados: `backend/db/superadministrador.db`, `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md`, `Pendiente Notas`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
+	- Archivos modificados: `backend/db/pcs_superadministrador`, `documentos/estructura_bd.md`, `documentos/descripcion_de_archivos`, `documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md`, `Pendiente Notas`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- Descripcion: se elimina el ultimo `.db` legacy que seguia versionado en el repo, se confirman las referencias activas y se corrige la documentacion vigente para dejar PostgreSQL como unica base operativa canonica. El backlog deja Fase 1 completada y aterriza las fases 2 y 3.
 
 - Estaciones: se agrega la estaciÃ³n especial Notas y el orden configurable de estaciones especiales.
@@ -500,7 +503,7 @@
 
 - Estaciones y carritos: se corrige la carga del carrito por estaciÃƒÂ³n sobre PostgreSQL real.
 	- Archivos modificados: `backend/db/carritos_compras.go`, `backend/handlers/carritos_compras.go`, `backend/db/carritos_inventario_test.go`, `backend/handlers/auth_users_carritos_test.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃƒÂ³n: el listado de `/api/empresa/carritos_compra` deja de depender de un `GROUP BY` frÃƒÂ¡gil con cliente e items y ahora cuenta items desde un agregado previo por carrito. AdemÃƒÂ¡s, `totales_pago` y `metricas_estacion` dejan de usar `ROUND(..., 2)` en SQL y redondean en Go, evitando fallos de compatibilidad entre SQLite y PostgreSQL. Esto elimina el error visible `Error cargando carritos` al abrir una estaciÃƒÂ³n y estabiliza los totales del panel.
+	- DescripciÃƒÂ³n: el listado de `/api/empresa/carritos_compra` deja de depender de un `GROUP BY` frÃƒÂ¡gil con cliente e items y ahora cuenta items desde un agregado previo por carrito. AdemÃƒÂ¡s, `totales_pago` y `metricas_estacion` dejan de usar `ROUND(..., 2)` en SQL y redondean en Go, evitando fallos de compatibilidad entre motor legado retirado y PostgreSQL. Esto elimina el error visible `Error cargando carritos` al abrir una estaciÃƒÂ³n y estabiliza los totales del panel.
 	- VerificaciÃƒÂ³n: `go test ./db -run 'Test(GetCarritosCompraByEmpresaFallbackWithoutClientesSchema|GetCarritosCompraByEmpresaCountsItemsAndClientName|SyncEmpresaEstacionCarritosCreatesAndUpdatesLinkedDefaults)$' -count=1`; `go test ./handlers -run 'Test(EmpresaCarritosCompraMetricasEstacionIncluyeCorrecciones|EmpresaCarritosCompraTotalesPagoAgrupaYRedondea|EmpresaCarritosCompraRejectsActivarEstacionPagadaSinReset|EmpresaCarritosCompraRecuperarInterrumpidoConAuditoria|EmpresaEstacionPrefsHandler_UpsertAndIsolationByEmpresa|WithEmpresaVentasPermissionsDeniesOutOfScopeEmpresa|WithEmpresaVentasPermissionsBloqueaModuloNoHabilitadoPorLicencia)$' -count=1`.
 
 - Carritos y estaciones: se limpia el legado de `ventas_simple` y se amplÃƒÂ­an los checks del carrito unificado.
@@ -815,7 +818,7 @@
 
 - Ventas por estacion: compatibilidad PostgreSQL restaurada en carritos, metricas y documento de venta.
 	- Archivos modificados: `backend/db/carritos_compras.go`, `backend/db/empresa_configuracion_avanzada.go`, `backend/db/documentos_transaccionales.go`, `backend/db/sql_compat.go`, `backend/main.go`, `backend/db/facturacion_electronica_test.go`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃƒÂ³n: las inserciones de carritos, items y metricas dejan de depender de `LastInsertId` y pasan a usar la capa portable SQLite/PostgreSQL; ademas, la configuracion avanzada por empresa se regulariza antes de consultar `modo_documento_venta`, las tablas legacy de documentos transaccionales recuperan un `id` autogenerado valido y el backend sanea globalmente cualquier tabla PostgreSQL heredada con llave primaria `id` sin secuencia/default.
+	- DescripciÃƒÂ³n: las inserciones de carritos, items y metricas dejan de depender de `LastInsertId` y pasan a usar la capa portable motor legado retirado/PostgreSQL; ademas, la configuracion avanzada por empresa se regulariza antes de consultar `modo_documento_venta`, las tablas legacy de documentos transaccionales recuperan un `id` autogenerado valido y el backend sanea globalmente cualquier tabla PostgreSQL heredada con llave primaria `id` sin secuencia/default.
 	- VerificaciÃƒÂ³n: `go test ./db -run 'Test(GetEmpresaConfiguracionAvanzadaRepairsMissingModoDocumentoVentaColumn|PrepareFacturacionDocumentoLegal|FacturacionElectronicaRetryUpsertGetAndList)' -count=1`; `go test ./handlers -run 'Test(VentaCarritoFacturaYResolucionImpresora|VentaCarritoGeneraComprobantePagoSegunConfiguracion)' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
 - Checkout de licencias: Epayco queda en tarjeta blanca, compacta y sin correo visible.
@@ -1062,7 +1065,7 @@
 - Licencias super: actualizacion compatible con esquemas legacy sin `fecha_actualizacion`.
 	- Archivos modificados: `backend/db/db.go`, `backend/db/licencias_schema_test.go`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- DescripciÃƒÂ³n: la edicion y activacion de licencias en el panel super ya no fallan cuando la tabla `licencias` viene de un esquema antiguo que no incluye `fecha_actualizacion`. El backend intenta regularizar el esquema y, si esa columna sigue ausente, aplica un `UPDATE` de compatibilidad para guardar precio y estado.
-	- VerificaciÃƒÂ³n: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInSQLite|TestCreateAndUpdateLicenciaRepairMissingValorColumn|TestUpdateLicenciaRepairsMissingFechaActualizacionColumn" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
+	- VerificaciÃƒÂ³n: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInmotor legado retirado|TestCreateAndUpdateLicenciaRepairMissingValorColumn|TestUpdateLicenciaRepairsMissingFechaActualizacionColumn" -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`.
 
 ## 2026-04-16
 - Checkout publico de licencias: Epayco redirige la misma pestaÃƒÂ±a al checkout.
@@ -1078,7 +1081,7 @@
 ## 2026-04-16
 - Facturacion electronica: suite `db` estable aun con entorno local en PostgreSQL.
 	- Archivos modificados: `backend/db/finanzas_test.go`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃƒÂ³n: `openFinanzasTestDB` ahora fija el dialecto `sqlite` para evitar que la suite de facturacion electronica y documentos transaccionales herede `DB_DIALECT=postgres` del entorno local y falle con SQL incompatible.
+	- DescripciÃƒÂ³n: `openFinanzasTestDB` ahora fija el dialecto `motor_legado_retirado` para evitar que la suite de facturacion electronica y documentos transaccionales herede `DB_DIALECT=postgres` del entorno local y falle con SQL incompatible.
 	- VerificaciÃƒÂ³n: `go test ./db -run "Test.*(Facturacion|DIAN|DocumentoFacturacion)" -count=1`; `go test ./handlers -run "Test(VentaCarritoFacturaYResolucionImpresora|EmpresaDIANColombiaHandler.*|EmpresaFacturacionElectronicaReintentosYReconciliacion|EmpresaFacturacionElectronicaEmiteEventoContable|EmpresaFacturacionTransaccional.*)" -count=1`.
 
 - Pagina principal super: el campo de cantidad deja de mostrar un `5` temporal antes de cargar la configuracion real.
@@ -1165,7 +1168,7 @@
 - Licencias super: autorreparaciÃƒÂ³n del esquema y validaciÃƒÂ³n real de guardado del valor.
 	- Archivos modificados: `backend/db/db.go`, `backend/db/sql_compat.go`, `backend/db/licencias_schema_test.go`, `backend/main.go`, `web/super/licencias.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- DescripciÃƒÂ³n: el backend ahora regulariza la tabla `licencias` tambien en PostgreSQL y reintenta `create/get/update` si faltan columnas como `valor`; la UI de super deja de ocultar errores HTTP al crear/editar licencias, mostrando el mensaje real cuando el backend rechaza la operaciÃƒÂ³n.
-	- VerificaciÃƒÂ³n: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInSQLite|TestCreateAndUpdateLicenciaRepairMissingValorColumn" -count=1`.
+	- VerificaciÃƒÂ³n: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInmotor legado retirado|TestCreateAndUpdateLicenciaRepairMissingValorColumn" -count=1`.
 
 - Seleccionar empresa: tarjetas adaptables con contenido interno completo y mÃƒÂ¡rgenes estrechos.
 	- Archivos modificados: `web/js/seleccionar_empresa.js`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
@@ -1185,13 +1188,13 @@
 - Registro administrativo: captura de pais y ciudad con deteccion inicial de pais en frontend.
 	- Archivos modificados: `backend/db/db.go`, `backend/handlers/auth_admin_handlers.go`, `backend/handlers/account_handlers.go`, `backend/handlers/auth_admin_handlers_test.go`, `backend/db/administradores_auth_schema_test.go`, `web/registrar_nuevo_usuario_administrador.html`, `web/js/registrar_nuevo_usuario_administrador.js`, `web/estilos.css`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- DescripciÃƒÂ³n: el registro de administradores ahora solicita correo, nombre completo, celular, pais y ciudad. El pais se sugiere automaticamente desde el navegador/zona horaria y sigue siendo editable. El backend persiste `pais` y `ciudad` en `administradores`, y se mantiene la exigencia de confirmar el correo antes de continuar al flujo de acceso que luego lleva a `seleccionar_empresa.html`.
-	- VerificaciÃƒÂ³n: `go test ./db ./handlers -run 'Test(AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminRegisterHandlerRejectsConfirmedExistingAdmin|EnsureAdministradoresAuthSchemaAddsMissingColumnsInSQLite|SetAdministradorPasswordRepairsMissingSecurityColumns)$' -count=1`.
+	- VerificaciÃƒÂ³n: `go test ./db ./handlers -run 'Test(AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminRegisterHandlerRejectsConfirmedExistingAdmin|EnsureAdministradoresAuthSchemaAddsMissingColumnsInmotor legado retirado|SetAdministradorPasswordRepairsMissingSecurityColumns)$' -count=1`.
 
-- Autenticacion administrativa: compatibilidad del esquema `administradores` entre SQLite y PostgreSQL.
+- Autenticacion administrativa: compatibilidad del esquema `administradores` entre motor legado retirado y PostgreSQL.
 	- Archivos creados: `backend/db/administradores_auth_schema_test.go`.
 	- Archivos modificados: `backend/db/db.go`, `backend/main.go`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- DescripciÃƒÂ³n: se centraliza la regularizacion de columnas de seguridad de `administradores` con soporte para SQLite y PostgreSQL mediante `EnsureAdministradoresAuthSchema`, y `SetAdministradorPassword` reintenta la operacion cuando encuentra columnas faltantes. Con esto se corrige el flujo donde una cuenta autenticada por Google no podia registrar su primera contrasena local en VPS con PostgreSQL.
-	- VerificaciÃƒÂ³n: `go test ./db ./handlers -run 'Test(EnsureAdministradoresAuthSchemaAddsMissingColumnsInSQLite|SetAdministradorPasswordRepairsMissingSecurityColumns|AccountSetGooglePasswordHandlerCreatesInitialPassword)$' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion operativa en VPS de `systemd`, `Nginx`, `UFW`, callback OAuth y dominio publico.
+	- DescripciÃƒÂ³n: se centraliza la regularizacion de columnas de seguridad de `administradores` con soporte para motor legado retirado y PostgreSQL mediante `EnsureAdministradoresAuthSchema`, y `SetAdministradorPassword` reintenta la operacion cuando encuentra columnas faltantes. Con esto se corrige el flujo donde una cuenta autenticada por Google no podia registrar su primera contrasena local en VPS con PostgreSQL.
+	- VerificaciÃƒÂ³n: `go test ./db ./handlers -run 'Test(EnsureAdministradoresAuthSchemaAddsMissingColumnsInmotor legado retirado|SetAdministradorPasswordRepairsMissingSecurityColumns|AccountSetGooglePasswordHandlerCreatesInitialPassword)$' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion operativa en VPS de `systemd`, `Nginx`, `UFW`, callback OAuth y dominio publico.
 
 - Super: modulo de seguridad VPS Linux con panel, CLI, cron y exportes multiformato.
 	- Archivos creados: `backend/vpssecurity/config/config.go`, `backend/vpssecurity/config/default_vps_security_config.json`, `backend/vpssecurity/parser/lynis.go`, `backend/vpssecurity/parser/nmap.go`, `backend/vpssecurity/parser/trivy.go`, `backend/vpssecurity/scanner/runner.go`, `backend/vpssecurity/scanner/checks.go`, `backend/vpssecurity/reports/report.go`, `backend/vpssecurity/reports/report_test.go`, `backend/vpssecurity/logs/store.go`, `backend/vpssecurity/service.go`, `backend/handlers/security_vps_handlers.go`, `backend/handlers/security_vps_handlers_test.go`, `backend/tools/vps_security_scan/main.go`, `web/js/super_seguridad.js`, `scripts/install_vps_security_tools.sh`, `scripts/run_vps_security_scan.sh`, `scripts/install_vps_security_cron.sh`, `documentos/manual_vps_seguridad.md`.
@@ -1450,7 +1453,7 @@
 - Chat y tareas: nuevo agente de citas con calendario grande y recordatorios previos.
 	- Archivos modificados: `backend/db/chat_tareas.go`, `backend/handlers/chat_tareas.go`, `backend/handlers/chat_tareas_test.go`, `backend/main.go`, `web/administrar_empresa/chat_y_tareas.html`, `web/estilos.css`, `web/super/pagina_principal.html`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
 	- DescripciÃƒÂ³n: se agrega agenda de citas empresarial en el modulo de chat/tareas (`/api/empresa/chat_tareas/citas`) con calendario mensual de gran formato, programacion/edicion de reuniones, visibilidad compartida por `empresa_id` y banner de recordatorios previos; adicionalmente se incluye un boton inferior de guardado en `web/super/pagina_principal.html`.
-	- VerificaciÃƒÂ³n: `$env:DB_DIALECT='sqlite'; go test ./handlers -run ChatTareas -count=1` y `$env:DB_DIALECT='sqlite'; go test ./db -run ChatTareas -count=1`.
+	- VerificaciÃƒÂ³n: `$env:DB_DIALECT='motor_legado_retirado'; go test ./handlers -run ChatTareas -count=1` y `$env:DB_DIALECT='motor_legado_retirado'; go test ./db -run ChatTareas -count=1`.
 
 - UI administrativa: eliminacion de barra superior de titulo/acciones en todas las paginas de layout.
 	- Archivos modificados: `web/super_administrador.html`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/administrar_empresa/facturacion_electronica_menu.html`, `web/administrar_empresa/administrar_productos_menu.html`, `web/administrar_empresa/configuracion_menu.html`, `web/administrar_empresa/reportes_menu.html`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
@@ -1494,10 +1497,10 @@
 	- DescripciÃƒÂ³n: se agrega un tablero profesional para monitoreo de PostgreSQL (salud del cluster, metricas por base, consultas activas prolongadas, `pg_stat_bgwriter` y recomendaciones automaticas), con endpoint protegido `/super/api/postgres/performance`.
 	- VerificaciÃƒÂ³n: `go test ./handlers -run "PostgresPerformance" -count=1` y `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1` en verde.
 
-- Migracion cerrada a PostgreSQL-only y retiro de SQLite operativo.
+- Migracion cerrada a PostgreSQL-only y retiro de motor legado retirado operativo.
 	- Archivos modificados: `backend/main.go`, `backend/db/sql_compat.go`, `scripts/iniciar_servidor.ps1`, `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `scripts/actualizar_repositorio.ps1`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/estructura_bd.md`, `documentos/descripcion_de_las_bases_De_datos`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`, `CHANGELOG.md`.
-	- Archivos eliminados: `backend/db/empresas.db`, `backend/db/superadministrador.db`.
-	- DescripciÃƒÂ³n: el backend queda forzado a runtime PostgreSQL-only, sin fallback SQLite en arranque; se limpian los `.db` legados del repositorio y se alinea la operacion local/remota a DSN PostgreSQL obligatorios.
+	- Archivos eliminados: `backend/db/pcs_empresas`, `backend/db/pcs_superadministrador`.
+	- DescripciÃƒÂ³n: el backend queda forzado a runtime PostgreSQL-only, sin fallback motor legado retirado en arranque; se limpian los `.db` legados del repositorio y se alinea la operacion local/remota a DSN PostgreSQL obligatorios.
 
 - Estandarizacion documental ERP multiempresa.
 	- Archivos creados: `documentos/erp_multiempresa/README.md`, `documentos/erp_multiempresa/01_alcance_erp_multiempresa.md`, `documentos/erp_multiempresa/02_diseno_tecnico_erp_multiempresa.md`, `documentos/erp_multiempresa/03_especificaciones_funcionales_erp_multiempresa.md`, `documentos/erp_multiempresa/04_guia_implementacion_erp_multiempresa.md`.
@@ -1558,12 +1561,12 @@
 
 - MigraciÃƒÂ³n PostgreSQL (fase 3): conmutaciÃƒÂ³n de runtime backend a motor PostgreSQL en VPS.
 	- Archivos modificados: `backend/main.go`, `backend/go.mod`, `backend/go.sum`, `scripts/sync_to_vps.ps1`, `scripts/sync_to_vps.sh`, `scripts/README_sync.md`, `documentos/diagramas/estructura_del_codigo.md`.
-	- DescripciÃƒÂ³n: el backend ahora selecciona motor por entorno (`DB_DIALECT`), abre conexiones con `pgx` usando `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`, y omite el bootstrap SQLite cuando el runtime es PostgreSQL. Los scripts de sincronizaciÃƒÂ³n ahora propagan y verifican estas variables en `backend/.env.local` del VPS durante bootstrap remoto.
+	- DescripciÃƒÂ³n: el backend ahora selecciona motor por entorno (`DB_DIALECT`), abre conexiones con `pgx` usando `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`, y omite el bootstrap motor legado retirado cuando el runtime es PostgreSQL. Los scripts de sincronizaciÃƒÂ³n ahora propagan y verifican estas variables en `backend/.env.local` del VPS durante bootstrap remoto.
 	- VerificaciÃƒÂ³n: `go test ./ ./auth ./db ./handlers ./metrics ./utils -count=1` en verde.
 
 - MigraciÃƒÂ³n PostgreSQL (fase 3): compatibilidad ampliada en nÃƒÂºcleo `backend/db`.
 	- Archivos modificados: `backend/db/sql_compat.go`, `backend/db/empresa_scope.go`, `backend/db/productos.go`, `backend/db/db.go`.
-	- DescripciÃƒÂ³n: se amplÃƒÂ­a la capa de compatibilidad SQLite/PostgreSQL con wrappers `query/exec` portables, inserciones con `RETURNING id` para PostgreSQL, detecciÃƒÂ³n de tablas por `information_schema` y ajuste de `ensureColumnIfMissing` por dialecto con normalizaciÃƒÂ³n de defaults de fecha. AdemÃƒÂ¡s, se migra el bloque core de `db.go` (licencias, tipos de empresa, empresas, Wompi, asesores, configuraciones y mÃƒÂ©tricas) para usar placeholders/fechas compatibles con ambos motores.
+	- DescripciÃƒÂ³n: se amplÃƒÂ­a la capa de compatibilidad motor legado retirado/PostgreSQL con wrappers `query/exec` portables, inserciones con `RETURNING id` para PostgreSQL, detecciÃƒÂ³n de tablas por `information_schema` y ajuste de `ensureColumnIfMissing` por dialecto con normalizaciÃƒÂ³n de defaults de fecha. AdemÃƒÂ¡s, se migra el bloque core de `db.go` (licencias, tipos de empresa, empresas, Wompi, asesores, configuraciones y mÃƒÂ©tricas) para usar placeholders/fechas compatibles con ambos motores.
 	- VerificaciÃƒÂ³n: `go test ./db -run "Session|Admin|User|Licencia|TipoEmpresa|Empresa|Config|Metric|Wompi|Asesor" -count=1` y `go test ./handlers -run "TestHandleGoogleLoginRedirectIncludesLoginHint|TestE2E_AcceptContractCreatesSession" -count=1` en verde.
 
 - Sync VPS: selecciÃƒÂ³n automÃƒÂ¡tica de clave de identidad al no pasar `-IdentityFile`.
@@ -1578,7 +1581,7 @@
 
 - MigraciÃƒÂ³n PostgreSQL (fase 3): avance inicial en autenticaciÃƒÂ³n y sesiones.
 	- Archivos aÃƒÂ±adidos/modificados: `backend/db/sql_compat.go`, `backend/db/db.go`, `documentos/diagramas/estructura_del_codigo.md`.
-	- DescripciÃƒÂ³n: se incorpora capa de compatibilidad SQL SQLite/PostgreSQL (rebindeo de placeholders y expresiones de fecha) y se aplica a funciones crÃƒÂ­ticas del flujo de autenticaciÃƒÂ³n/sesiones (`UpsertUser`, `UpsertAdministrador`, `CreateSession`, `RevokeSessionByToken`, `GetSessionByToken`, `GetAdminByEmail`).
+	- DescripciÃƒÂ³n: se incorpora capa de compatibilidad SQL motor legado retirado/PostgreSQL (rebindeo de placeholders y expresiones de fecha) y se aplica a funciones crÃƒÂ­ticas del flujo de autenticaciÃƒÂ³n/sesiones (`UpsertUser`, `UpsertAdministrador`, `CreateSession`, `RevokeSessionByToken`, `GetSessionByToken`, `GetAdminByEmail`).
 	- VerificaciÃƒÂ³n: `go test ./db -run "Session|Admin|User|Licencia" -count=1` y `go test ./handlers -run "TestHandleGoogleLoginRedirectIncludesLoginHint|TestE2E_AcceptContractCreatesSession" -count=1` en verde.
 
 ## 2026-04-13
@@ -1594,8 +1597,8 @@
 
 - MigraciÃƒÂ³n de datos a PostgreSQL en VPS: instalaciÃƒÂ³n, ejecuciÃƒÂ³n por etapas y validaciÃƒÂ³n inicial.
 	- Archivos modificados: `Pendiente Notas`, `documentos/regla_agente_go.md`, `copilot-instructions.md`, `documentos/descripcion_de_las_bases_De_datos`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
-	- DescripciÃƒÂ³n: se instala PostgreSQL en VPS por SSH, se crean las bases `pcs_superadministrador` y `pcs_empresas`, y se inicia la migraciÃƒÂ³n desde SQLite con `pgloader` en dos etapas (superadministrador y empresas), validando consistencia por conteo de tablas en cada base. Se formaliza ademÃƒÂ¡s la regla operativa: base productiva en VPS con PostgreSQL y SQLite local como legado de migraciÃƒÂ³n/contingencia.
-	- VerificaciÃƒÂ³n: `VALIDACION_SUPER_OK` y `VALIDACION_EMPRESAS_OK` tras comparaciÃƒÂ³n SQLite vs PostgreSQL por tabla.
+	- DescripciÃƒÂ³n: se instala PostgreSQL en VPS por SSH, se crean las bases `pcs_superadministrador` y `pcs_empresas`, y se inicia la migraciÃƒÂ³n desde motor legado retirado con `pgloader` en dos etapas (superadministrador y empresas), validando consistencia por conteo de tablas en cada base. Se formaliza ademÃƒÂ¡s la regla operativa: base productiva en VPS con PostgreSQL y motor legado retirado local como legado de migraciÃƒÂ³n/contingencia.
+	- VerificaciÃƒÂ³n: `VALIDACION_SUPER_OK` y `VALIDACION_EMPRESAS_OK` tras comparaciÃƒÂ³n motor legado retirado vs PostgreSQL por tabla.
 
 - Login administrativo: eliminaciÃƒÂ³n del mensaje visual de cuenta recordada y ajuste de OAuth.
 	- Archivos modificados: `web/login.html`, `backend/handlers/auth_admin_handlers.go`, `backend/handlers/auth_users_carritos_test.go`.
@@ -1612,14 +1615,14 @@
 	- DescripciÃƒÂ³n: se refuerza la liberaciÃƒÂ³n de puerto 8080 para terminar ÃƒÂºnicamente procesos del backend (`server.exe`, `pos-backend`, `go run` del proyecto) y no procesos ajenos. Cuando el puerto estÃƒÂ¡ ocupado por un proceso no gestionado, el script ahora informa el PID/nombre y aborta con mensaje claro en lugar de forzar `taskkill` indiscriminado. TambiÃƒÂ©n se elimina el `Clear-Host` inicial para evitar efectos colaterales en consolas integradas.
 	- VerificaciÃƒÂ³n: ejecuciÃƒÂ³n local `./scripts/iniciar_servidor.ps1 -Background` con `SCRIPT_EXIT=0` y comprobaciÃƒÂ³n HTTP local `HTTP_STATUS=200`.
 
-- UnificaciÃƒÂ³n de bases SQLite: solo dos archivos canÃƒÂ³nicos del sistema.
+- UnificaciÃƒÂ³n de bases motor legado retirado: solo dos archivos canÃƒÂ³nicos del sistema.
 	- Archivos modificados: `backend/main.go`, `documentos/estructura_bd.md`, `estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/descripcion_de_archivos`, `documentos/historial_de_cambios`.
-	- DescripciÃƒÂ³n: se normaliza la resoluciÃƒÂ³n de rutas en runtime para que el backend use por defecto `backend/db/empresas.db` y `backend/db/superadministrador.db` aunque se ejecute desde otro directorio. Se depuran copias operativas duplicadas en raÃƒÂ­z y en `backend/`, dejando ÃƒÂºnicamente dos archivos `.db` activos.
-	- VerificaciÃƒÂ³n: inventario local posterior muestra exactamente dos DB (`backend/db/empresas.db` y `backend/db/superadministrador.db`) y pruebas backend en verde con `go test ./ ./auth ./db ./handlers ./metrics ./utils`.
+	- DescripciÃƒÂ³n: se normaliza la resoluciÃƒÂ³n de rutas en runtime para que el backend use por defecto `backend/db/pcs_empresas` y `backend/db/pcs_superadministrador` aunque se ejecute desde otro directorio. Se depuran copias operativas duplicadas en raÃƒÂ­z y en `backend/`, dejando ÃƒÂºnicamente dos archivos `.db` activos.
+	- VerificaciÃƒÂ³n: inventario local posterior muestra exactamente dos DB (`backend/db/pcs_empresas` y `backend/db/pcs_superadministrador`) y pruebas backend en verde con `go test ./ ./auth ./db ./handlers ./metrics ./utils`.
 
 - Sync VPS: bootstrap automÃƒÂ¡tico para servidor nuevo y diagnÃƒÂ³stico de OAuth.
 	- Archivos modificados: `scripts/sync_to_vps.ps1`, `scripts/README_sync.md`.
-	- DescripciÃƒÂ³n: se aÃƒÂ±ade bootstrap post-sync en modo sin WSL para instalar dependencias base (`ca-certificates`, `curl`, `sqlite3`), asegurar `backend/.env.local` y reportar estado de variables crÃƒÂ­ticas (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SERVER_PORT`, `CONFIG_ENC_KEY`) con salida `BOOTSTRAP_WARN/BOOTSTRAP_OK`. Se incorporan parÃƒÂ¡metros opcionales `-GoogleClientId` y `-GoogleClientSecret`.
+	- DescripciÃƒÂ³n: se aÃƒÂ±ade bootstrap post-sync en modo sin WSL para instalar dependencias base (`ca-certificates`, `curl`, `motor_legado_retirado`), asegurar `backend/.env.local` y reportar estado de variables crÃƒÂ­ticas (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SERVER_PORT`, `CONFIG_ENC_KEY`) con salida `BOOTSTRAP_WARN/BOOTSTRAP_OK`. Se incorporan parÃƒÂ¡metros opcionales `-GoogleClientId` y `-GoogleClientSecret`.
 	- VerificaciÃƒÂ³n: ejecuciÃƒÂ³n real con `SYNC_EXIT=0` y diagnÃƒÂ³stico remoto mostrando faltantes OAuth (`GOOGLE_CLIENT_ID/SECRET` vacÃƒÂ­os).
 
 - Instalador de clave pÃƒÂºblica en Windows: correcciÃƒÂ³n de errores de ejecuciÃƒÂ³n.
@@ -1711,7 +1714,7 @@
 	- Se sincroniza gobernanza documental en `documentos/descripcion_de_modulos`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/historial_de_cambios`.
 - Documentacion DIAN: se crea `documentos/informacion_para_pruebas_plataforma_DIAN` para organizar en una sola referencia los datos de pruebas extraidos de `documentos/DATOS DIAN.mhtml`.
 - Facturacion electronica DIAN (Colombia): carga de datos de prueba para Motel malibu con licencia activa.
-	- Se registra configuracion DIAN en `backend/db/empresas.db` para `empresa_id=6` usando los datos de `documentos/DATOS DIAN.mhtml` (Software ID/PIN, TestSetId, prefijo, resolucion y rango).
+	- Se registra configuracion DIAN en `backend/db/pcs_empresas` para `empresa_id=6` usando los datos de `documentos/DATOS DIAN.mhtml` (Software ID/PIN, TestSetId, prefijo, resolucion y rango).
 	- Se valida tecnicamente el modulo DIAN con `handlers.EmpresaDIANColombiaHandler` ejecutando:
 		- `checklist` y `validar` sin faltantes (`ok=true`).
 		- `generar_cufe_demo` y `generar_xml_demo` con resultados correctos para documento de prueba.
@@ -2083,7 +2086,7 @@
 - Cierre del modulo 31 (Reportes): programacion automatica, versionado de plantillas y validacion de consistencia multiformato.
 	- Backend `handlers`:
 		- `backend/handlers/reportes_programacion.go` consolida agenda y ejecucion de reportes (`action=programacion`, `action=ejecutar_programacion`, `action=ejecuciones`, `action=validar_consistencia`).
-		- Se corrige robustez en listado de ejecuciones para manejar campos `NULL` de SQLite (`error_detalle`, `programacion_id`, metadatos opcionales) sin error `500`.
+		- Se corrige robustez en listado de ejecuciones para manejar campos `NULL` de motor legado retirado (`error_detalle`, `programacion_id`, metadatos opcionales) sin error `500`.
 	- Pruebas:
 		- `backend/handlers/reportes_programacion_test.go` valida versionado de plantillas y ciclo completo de programacion/ejecucion/consistencia.
 	- Validaciones ejecutadas:
@@ -2222,7 +2225,7 @@
 ## 2026-04-07
 - Cierre tecnico del modulo 26 (Carritos de compra e items):
 	- Se amplÃƒÂ­a `backend/db/carritos_compras.go` para:
-		- agregar reintentos transaccionales en operaciones de items frente a bloqueos SQLite (`database is locked/busy`) para fortalecer concurrencia multiestacion.
+		- agregar reintentos transaccionales en operaciones de items frente a bloqueos motor legado retirado (`database is locked/busy`) para fortalecer concurrencia multiestacion.
 		- incorporar `RecoverInterruptedCarritoSession` para recuperar carritos interrumpidos sin perdida de items.
 		- incorporar `CancelCarritoPartialClosure` para anulacion parcial de cierre en ventas pagadas con validacion estricta de monto.
 	- Se amplÃƒÂ­a `backend/handlers/carritos_compras.go` para:
@@ -2675,7 +2678,7 @@
 		- `usuarios.password_rotation_days`.
 	- El login de usuario empresa ahora devuelve `password_rotation_required` cuando aplica rotacion obligatoria.
 	- Se incorpora captura de notificaciones de confirmacion/restablecimiento en entorno de pruebas de correo:
-		- tabla `super_correo_notificaciones_prueba` en `superadministrador.db`.
+		- tabla `super_correo_notificaciones_prueba` en `pcs_superadministrador`.
 		- activacion por `PCS_MAIL_TEST_MODE=1` o `gmail.smtp_test_mode=1`.
 	- Se integra frontend de autogestion en `web/login_usuario.html` y `web/js/login_usuario.js`.
 	- Validaciones ejecutadas:
@@ -3080,7 +3083,7 @@
 
 ## 2026-04-05
 - Se normaliza la documentacion de base de datos para eliminar duplicidad entre documentos.
-	- `estructura_bd.md` queda como fuente canonica del esquema fisico SQLite.
+	- `estructura_bd.md` queda como fuente canonica del esquema fisico motor legado retirado.
 	- `documentos/descripcion_de_las_bases_De_datos` se redefine como guia complementaria funcional y reglas operativas de mantenimiento.
 	- Se evita repetir listados tabla-por-tabla en dos archivos distintos.
 
@@ -3255,7 +3258,7 @@
 
 ## 2026-04-04
 - Verificacion integral real de modulos + limpieza de artefactos temporales.
-	- Validacion real ejecutada (sin simulaciones/mocks) sobre SQLite y capa HTTP:
+	- Validacion real ejecutada (sin simulaciones/mocks) sobre motor legado retirado y capa HTTP:
 		- `go test ./auth ./db ./handlers ./metrics ./utils -count=1` (ok).
 		- `go test ./... -count=1` (ok).
 		- `go test ./handlers -run "TestEmpresaScope|FueraDeAlcance|WithEmpresa|isol|Aisla|multiempresa|UsuariosHandlerAislaEmpresa|ConsolidaEmpresa" -count=1` (ok).
@@ -3266,9 +3269,9 @@
 		- `backend/tmp_config.html`.
 		- `backend/server.err`.
 		- `backend/server.run.err`.
-		- `backend/db/empresas.db.20260326-174525.bak`.
-		- `backend/db/superadministrador.db.20260326-174324.bak`.
-		- `backend/db/superadministrador.db.20260326-174525.bak`.
+		- `backend/db/pcs_empresas.20260326-174525.bak`.
+		- `backend/db/pcs_superadministrador.20260326-174324.bak`.
+		- `backend/db/pcs_superadministrador.20260326-174525.bak`.
 
 ## 2026-04-04
 - Punto 14 (operacion continua) - inicio operativo con KPI y roadmap trimestral.
@@ -3822,7 +3825,7 @@
 ## 2026-04-04
 - Punto 4 + Punto 10 (gestion de ventas + modulo contable integrado) Ã¢â‚¬â€ contrato de eventos contables por modulo:
 	- Se agrega `backend/db/eventos_contables.go` con contrato base de eventos para `ventas`, `facturacion`, `compras` y `finanzas`.
-	- Se crea tabla `empresa_eventos_contables` en `empresas.db` para registrar trazabilidad contable por empresa (`modulo`, `evento`, `entidad`, `documento`, `periodo_contable`, `monto`, `payload_json`, `procesado`).
+	- Se crea tabla `empresa_eventos_contables` en `pcs_empresas` para registrar trazabilidad contable por empresa (`modulo`, `evento`, `entidad`, `documento`, `periodo_contable`, `monto`, `payload_json`, `procesado`).
 	- Se integra bootstrap en `backend/main.go`:
 		- `EnsureEmpresaEventosContablesSchema`.
 		- migracion `2026-04-04-007-eventos-contables`.
@@ -3892,7 +3895,7 @@
 	- Validacion tecnica: `go test ./handlers -run "WithEmpresa|ConsultarHandlerRejectsEmpresaFueraDeAlcance" -count=1` (ok) y `go test ./...` (ok).
 
 ## 2026-04-04
-- Se registra nueva credencial Gemini cifrada en configuraciÃƒÂ³n avanzada (`ai.model.google.gemini_2_0_flash.api_key` en `superadministrador.db`).
+- Se registra nueva credencial Gemini cifrada en configuraciÃƒÂ³n avanzada (`ai.model.google.gemini_2_0_flash.api_key` en `pcs_superadministrador`).
 - Se valida consumo de Gemini con la nueva credencial: respuesta del proveedor `429` por cuota excedida (sin error de credencial/servicio bloqueado).
 - Se verifica la presencia de la tarjeta de Gemini en `web/super/configuracion_avanzada.html` y se corrige un bloque JavaScript en la carga de estado para mantener consistencia de la vista.
 - Se agrega prueba de seguridad de alcance por empresa para chat IA en `backend/handlers/chat_con_inteligencia_artificial_controller_test.go`:
@@ -3944,7 +3947,7 @@
 	- `go test ./handlers -run ModelosHandler -count=1` (ok).
 	- `go test ./...` en `backend` (ok).
 - Se amplÃƒÂ­a el mÃƒÂ³dulo `chat_con_inteligencia_artificial` para registrar el modelo preferido por cuenta Google autenticada (por empresa):
-	- Nueva tabla `empresa_ai_modelo_preferido` en `empresas.db` (UNIQUE por `empresa_id + admin_email`).
+	- Nueva tabla `empresa_ai_modelo_preferido` en `pcs_empresas` (UNIQUE por `empresa_id + admin_email`).
 	- Nuevas funciones en `backend/db/chat_inteligencia_artificial.go`: `GetEmpresaAIModeloPreferido` y `UpsertEmpresaAIModeloPreferido`.
 	- Nuevo endpoint `GET/PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido`.
 	- `GET /modelos` ahora devuelve `google_account` y `modelo_preferido`.
@@ -3980,7 +3983,7 @@
 	- `GET /api/empresa/chat_con_inteligencia_artificial/modelos`
 	- `POST /api/empresa/chat_con_inteligencia_artificial/consultar`
 	- `GET /api/empresa/chat_con_inteligencia_artificial/historial`
-- Se agregan tablas en `empresas.db` para auditoria y limites diarios:
+- Se agregan tablas en `pcs_empresas` para auditoria y limites diarios:
 	- `empresa_ai_consultas`
 	- `empresa_ai_uso_diario`
 - Se integra `EnsureEmpresaAIChatSchema` y la migracion `2026-04-03-005-chat-ia-empresa` en `backend/main.go`.
@@ -4066,7 +4069,7 @@
 	- `go test ./db -run TestEmpresaGPSDispositivosYRecorridosCRUD -count=1` (ok).
 	- `go test ./handlers -run TestEmpresaUbicacionGPSHandlersCRUDFlow -count=1` (ok).
 - Se implementa el modulo de ubicacion GPS por empresa con soporte de multiples dispositivos.
-- Se agregan tablas `empresa_gps_dispositivos` y `empresa_gps_recorridos` en `empresas.db`.
+- Se agregan tablas `empresa_gps_dispositivos` y `empresa_gps_recorridos` en `pcs_empresas`.
 - Se crean endpoints CRUD para dispositivos y recorridos GPS en `/api/empresa/ubicacion_gps/*`.
 - Se agrega la pagina `web/administrar_empresa/ubicacion_gps.html` con mapa OpenStreetMap (Leaflet).
 - Se habilita tracking automatico de recorridos cada 10 segundos por dispositivo.

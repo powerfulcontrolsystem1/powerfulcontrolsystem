@@ -1,3 +1,16 @@
+2026-05-11: Limpieza PostgreSQL-only
+- Modulos afectados: `db`, `finanzas`, `propinas`, `carritos`, `codigos_descuento`, `operacion_vps`, `documentacion`.
+- Cambio funcional: se retiran ramas residuales de motor legado y las verificaciones de indices pasan a catalogos PostgreSQL.
+- Frontend: helpers de fecha en carrito y codigos de descuento usan nombres neutrales asociados al backend.
+- Operacion: scripts de sincronizacion y actualizacion dejan de contemplar extensiones de motores retirados y se depuran artefactos locales generados por perfiles temporales.
+- Gobernanza: PostgreSQL queda como unico motor permitido; no se agregan dependencias externas, tablas ni cambios en `go.mod`.
+
+2026-05-11: Centro de mando profesional super
+- Modulos afectados: `super_administrador`, `metricas`, `infraestructura`, `postgresql`, `alertas_sistema`, `errores_sistema`.
+- Cambio funcional: `web/super/licencias_resumen.html` agrega una lectura ejecutiva del VPS y del proyecto con estado general, KPIs de capacidad, PostgreSQL, errores, alertas, servicios y consumo IA.
+- Integracion: reutiliza endpoints existentes de metricas, PostgreSQL, alertas, errores, servicios VPS, procesos y consumos; no introduce endpoints nuevos, dependencias externas ni cambios de esquema.
+- Operacion: agrega accesos directos a alertas, administracion PostgreSQL y auditoria de seguridad VPS para cerrar incidentes desde el mismo panel.
+
 2026-05-11: Portada publica y Probar Gratis para 20 nuevas empresas
 - Modulos afectados: `portal_publico`, `verticales_nuevos`, `licencias`, `registro`.
 - Cambio funcional: las tarjetas publicas de las 20 nuevas empresas muestran parrafos descriptivos largos en lugar de textos resumidos.
@@ -424,7 +437,7 @@
 2026-04-20: Backups empresariales agrega exportar/importar configuracion por empresa
 - Modulos afectados: `backups empresariales`, `administrar_empresa`, `configuracion`, `integraciones`
 - Cambio funcional: `backend/db/backups_empresariales.go` incorpora un alcance canonico `configuracion_empresa` para snapshots portables de tablas de configuracion (general, avanzada, operativa, estacion_prefs, impresoras, venta publica, soporte remoto, DIAN y preferencias empresariales relacionadas). `backend/handlers/backups_empresariales.go` agrega `action=exportar_configuracion` y `action=importar_configuracion`, permitiendo exportar un JSON canonico y restaurarlo sobre la empresa destino con remapeo de `empresa_id` y trazabilidad como backup restaurable. `web/administrar_empresa/backups.html` agrega la interfaz visible para descargar e importar la configuracion desde archivo.
-- Impacto operativo: la empresa puede clonar o recuperar su configuracion completa desde el panel sin tocar tablas transaccionales ni depender de artefactos SQLite. Cada importacion queda registrada en el historial de backups y se aplica sobre PostgreSQL con restauracion controlada.
+- Impacto operativo: la empresa puede clonar o recuperar su configuracion completa desde el panel sin tocar tablas transaccionales ni depender de artefactos motor legado retirado. Cada importacion queda registrada en el historial de backups y se aplica sobre PostgreSQL con restauracion controlada.
 
 2026-04-20: Estaciones agrega la estacion especial Notas y orden configurable para especiales
 - Modulos afectados: `estaciones`, `carritos`, `administrar_empresa`
@@ -464,7 +477,7 @@
 
 2026-04-20: Inventario avanzado, compras preventivas y tablero financiero quedan validados en PostgreSQL sobre runtime real de Motel Calipso
 - Modulos afectados: `inventario`, `compras`, `finanzas`, `reportes`
-- Cambio funcional: `backend/db/productos.go` deja portables para PostgreSQL las consultas de tendencia, proyeccion de quiebre, plan de reposicion y resumen por proveedor. La salida de inventario con politica PEPS deja de fallar al consumir lotes con wrappers SQL compatibles y cerrar el cursor antes de actualizar existencias/lotes en la misma transaccion. `backend/db/finanzas.go` deja de construir el tablero y su exporte con consultas sensibles a SQLite y pasa a usar lectura compatible para el resumen financiero, contable y operativo.
+- Cambio funcional: `backend/db/productos.go` deja portables para PostgreSQL las consultas de tendencia, proyeccion de quiebre, plan de reposicion y resumen por proveedor. La salida de inventario con politica PEPS deja de fallar al consumir lotes con wrappers SQL compatibles y cerrar el cursor antes de actualizar existencias/lotes en la misma transaccion. `backend/db/finanzas.go` deja de construir el tablero y su exporte con consultas sensibles a motor legado retirado y pasa a usar lectura compatible para el resumen financiero, contable y operativo.
 - Impacto operativo: en la empresa 7 de Motel Calipso ya responden por API los paneles `tendencia`, `proyeccion_quiebre`, `plan_reposicion`, `plan_reposicion_resumen`, `tablero financiero`, `tablero_export` y el dataset `empresarial_tablero`; ademas se valida el ciclo real de emitir, recepcionar y contabilizar reposicion, y el cierre de caja puede crear, cerrar y aprobar sobre PostgreSQL sin cambiar frontend ni permisos.
 
 2026-04-26: Finanzas, inventario y asistencia reciben base operativa contable profesional
@@ -1049,7 +1062,7 @@ Actualizacion 2026-04-16 (menu flotante publico: separacion de botones cercanos)
 - Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste es visual y de usabilidad sobre el mismo menu compartido.
 Actualizacion 2026-04-16 (facturacion electronica: pruebas estables bajo entorno postgres activo):
 - Se refuerza el modulo `facturacion electronica` en su capa de validacion automatizada para que las pruebas de `db` no hereden accidentalmente `DB_DIALECT=postgres` desde el entorno local del backend.
-- `backend/db/finanzas_test.go` fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` en `sqlite` dentro de `openFinanzasTestDB`, evitando que los helpers de esquema emitan `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` contra SQLite durante la suite de facturacion y documentos transaccionales.
+- `backend/db/finanzas_test.go` fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` en `motor_legado_retirado` dentro de `openFinanzasTestDB`, evitando que los helpers de esquema emitan `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` contra motor legado retirado durante la suite de facturacion y documentos transaccionales.
 - Con este ajuste quedan verificadas de nuevo las pruebas del modulo de facturacion electronica y DIAN en `backend/db/*` y `backend/handlers/*`, incluyendo emision documental, reintentos, reconciliacion, firma XML, envio, acuse, contingencia, reconexion y set de pruebas.
 - Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste solo estabiliza la suite automatizada del mismo modulo existente.
 
@@ -1168,7 +1181,7 @@ Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciud
 - El estado pendiente por confirmacion de correo se mantiene como requisito antes de iniciar sesion y seguir hacia `seleccionar_empresa.html`.
 - Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste amplía datos de registro del mismo flujo administrativo existente.
 
-Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable en PostgreSQL; SQLite retirado del runtime):
+Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable en PostgreSQL; motor legado retirado retirado del runtime):
 - Se refuerza el modulo `autenticacion y sesiones` para que las columnas de seguridad del administrador no dependan de un bootstrap exclusivo ni de un motor legado.
 - `backend/db/db.go` centraliza `EnsureAdministradoresAuthSchema` y permite regularizar en PostgreSQL las columnas de contrato, confirmacion y password usando `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
 - `backend/main.go` deja de mantener un bloque inline basado en `PRAGMA` y reutiliza la misma funcion de base de datos al arrancar el backend.
@@ -1462,13 +1475,13 @@ Actualizacion 2026-04-14 (impresoras operativas por empresa):
 - Se incorpora `/api/empresa/impresoras/resolver` para determinar impresora objetivo en flujos operativos de impresion.
 - La resolucion opera con prioridad `producto -> funcionalidad -> predeterminada` y mantiene aislamiento estricto por `empresa_id`.
 
-Actualizacion 2026-04-14 (migracion SQLite -> PostgreSQL en VPS):
+Actualizacion 2026-04-14 (migracion motor legado retirado -> PostgreSQL en VPS):
 - Se completa el bloque core de conmutacion runtime para operar con PostgreSQL en VPS mediante `DB_DIALECT=postgres` y DSN separados para `pcs_superadministrador` y `pcs_empresas`.
-- Se amplian validaciones de compatibilidad SQL en backend para mantener transicion controlada con SQLite legado solo para migracion/contingencia.
+- Se amplian validaciones de compatibilidad SQL en backend para mantener transicion controlada con motor legado retirado legado solo para migracion/contingencia.
 - El alcance de permisos por rol no cambia; se mantiene matriz vigente y aislamiento obligatorio por `empresa_id`.
 
 Actualizacion 2026-04-14 (fase 4: estabilizacion contable en PostgreSQL):
-- Se endurece el modulo de finanzas/contabilidad para procesamiento de eventos y asientos (`asientos_worker`) usando operaciones SQL portables entre SQLite y PostgreSQL.
+- Se endurece el modulo de finanzas/contabilidad para procesamiento de eventos y asientos (`asientos_worker`) usando operaciones SQL portables entre motor legado retirado y PostgreSQL.
 - Se restablece operacion de salida controlada en VPS con `DB_DIALECT=postgres` y DSN activos, validando arranque y salud del backend en entorno productivo.
 - No hay cambios funcionales de permisos por rol ni de aislamiento por `empresa_id`; se mantiene matriz vigente.
 

@@ -6,7 +6,7 @@ Estado: obligatorio
 ## Principios base
 
 1. `empresa_id` es frontera obligatoria de aislamiento en toda operacion empresarial.
-2. PostgreSQL en VPS es el runtime productivo canonico; SQLite no define el comportamiento objetivo del sistema.
+2. PostgreSQL en VPS es el runtime productivo canonico; motor legado retirado no define el comportamiento objetivo del sistema.
 3. Los flujos publicos con efectos persistentes deben validar contexto esperado y ser idempotentes.
 4. Las consultas o escrituras sobre esquemas evolutivos deben tolerar instalaciones legacy cuando el modulo ya lo requiera.
 5. La documentacion no debe afirmar la existencia de rutas, archivos o artefactos inexistentes.
@@ -56,7 +56,7 @@ Leer ademas:
 
 - verificar `documentos/estructura_bd.md`.
 - no asumir columnas nuevas sin saneamiento o migracion clara si el modulo ya convive con legado.
-- si el cambio afecta PostgreSQL, validar que no dependa de `LastInsertId` ni de comportamiento exclusivo de SQLite.
+- si el cambio afecta PostgreSQL, validar que no dependa de `LastInsertId` ni de comportamiento exclusivo de motor legado retirado.
 
 ### Si cambias flujos publicos de pago
 

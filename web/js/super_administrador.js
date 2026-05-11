@@ -131,6 +131,7 @@
       "/super/licencias_resumen.html": true,
       "/super/administradores.html": true,
       "/super/seguridad.html": true,
+      "/super/seguridad_2fa.html": true,
       "/super/reportes_globales.html": true
     };
     links.forEach(function (a) {

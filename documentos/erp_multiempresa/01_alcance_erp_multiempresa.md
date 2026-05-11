@@ -89,7 +89,7 @@ Fuentes consolidadas para este alcance:
 
 - Backend en Go con handlers por dominio y capa de acceso a datos.
 - Frontend web HTML/CSS/JS por panel de super y empresa.
-- Operacion objetivo en PostgreSQL VPS con SQLite legado para contingencia/migracion.
+- Operacion objetivo en PostgreSQL VPS con motor legado retirado legado para contingencia/migracion.
 - Integraciones externas de identidad, notificaciones, pagos, DIAN, mapas e IA.
 - Instrumentacion de pruebas unitarias e integracion por dominio.
 

@@ -166,7 +166,7 @@ type CarritoStationMetricSummary struct {
 	UltimaOperacion        string  `json:"ultima_operacion"`
 }
 
-// EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en empresas.db.
+// EnsureEmpresaCarritosSchema crea y migra tablas de carritos de compra en PostgreSQL.
 func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 	startedAt := time.Now()
 	defer func() {

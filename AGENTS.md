@@ -30,9 +30,8 @@ checklist interno y entregar una sola salida integrada.
   en `go.mod` sin autorizacion explicita del usuario.
 - Si una dependencia externa se autoriza, documentar motivo tecnico, alternativa
   en Go puro, impacto y archivos afectados en `documentos/historial_de_cambios`.
-- PostgreSQL es el motor productivo obligatorio. No reintroducir SQLite en runtime,
-  utilidades, pruebas operativas o documentacion vigente, salvo referencias
-  historicas de trazabilidad.
+- PostgreSQL es el unico motor de base de datos permitido. No reintroducir otros
+  motores en runtime, utilidades, pruebas operativas o documentacion vigente.
 - No imprimir secretos, claves, tokens, correos sensibles completos con claves, ni
   valores privados en consola, documentacion o commits.
 - Mantener aislamiento por `empresa_id` en todo cambio multiempresa.

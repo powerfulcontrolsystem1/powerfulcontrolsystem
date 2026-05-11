@@ -732,7 +732,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 	- Impacto de matriz: sin cambios en permisos; `Reportes globales (super)` se mantiene como `R` exclusivo de `super_administrador`.
 
 - Actualizacion 2026-04-16 (facturacion electronica: estabilidad de pruebas automatizadas):
-	- `backend/db/finanzas_test.go` fuerza el dialecto `sqlite` en `openFinanzasTestDB` para evitar que la suite del modulo herede configuracion `postgres` del entorno local y falle por compatibilidad SQL durante pruebas de esquema y documentos transaccionales.
+	- `backend/db/finanzas_test.go` fuerza el dialecto `motor_legado_retirado` en `openFinanzasTestDB` para evitar que la suite del modulo herede configuracion `postgres` del entorno local y falle por compatibilidad SQL durante pruebas de esquema y documentos transaccionales.
 	- Impacto de matriz: sin cambios en permisos, roles, wrappers o visibilidad del modulo `facturacion electronica`; el ajuste solo endurece la validacion automatizada del backend.
 
 - Actualizacion 2026-04-16 (portal publico: menu flotante navegable en movil):
@@ -1135,7 +1135,7 @@ Leyenda:
 
 - Actualizacion 2026-04-14 (migracion PostgreSQL runtime en VPS):
 	- Se completa la conmutacion de runtime backend para operar con `DB_DIALECT=postgres` y DSN por base (`DB_SUPERADMIN_DSN`, `DB_EMPRESAS_DSN`).
-	- Se agregan capas de compatibilidad SQL para transicion SQLite/PostgreSQL en modulos core sin ampliar privilegios por rol.
+	- Se agregan capas de compatibilidad SQL para transicion motor legado retirado/PostgreSQL en modulos core sin ampliar privilegios por rol.
 	- No hay cambios en la matriz CRUD/A ni en wrappers de autorizacion: se preserva el mismo control por modulo y aislamiento por `empresa_id`.
 
 - Actualizacion 2026-04-13 (estaciones, sensores y facturacion visual por estacion):

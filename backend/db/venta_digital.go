@@ -193,7 +193,7 @@ func TryParseSuperVentaDigitalOrderCodeFromReference(reference string) string {
 	return ""
 }
 
-// EnsureSuperVentaDigitalSchema crea y migra tablas de venta digital global en superadministrador.db.
+// EnsureSuperVentaDigitalSchema crea y migra tablas de venta digital global en PostgreSQL.
 func EnsureSuperVentaDigitalSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return errors.New("db connection is nil")

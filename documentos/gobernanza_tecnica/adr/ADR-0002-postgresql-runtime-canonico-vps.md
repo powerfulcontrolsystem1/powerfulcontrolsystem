@@ -5,13 +5,13 @@ Estado: aceptada
 
 ## Contexto
 
-El proyecto convivio historicamente con SQLite, pero la regla operativa vigente establece que la base de datos productiva corre en un VPS y el motor objetivo es PostgreSQL. Persistir decisiones nuevas basadas en SQLite como runtime principal genera errores futuros de compatibilidad, rendimiento y comportamiento.
+El proyecto convivio historicamente con motor legado retirado, pero la regla operativa vigente establece que la base de datos productiva corre en un VPS y el motor objetivo es PostgreSQL. Persistir decisiones nuevas basadas en motor legado retirado como runtime principal genera errores futuros de compatibilidad, rendimiento y comportamiento.
 
 ## Decision
 
 Se declara PostgreSQL en VPS como runtime productivo canonico del sistema.
 
-SQLite queda limitado a:
+motor legado retirado queda limitado a:
 
 - migracion historica,
 - respaldos tecnicos puntuales,

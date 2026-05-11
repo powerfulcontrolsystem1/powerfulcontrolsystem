@@ -377,8 +377,9 @@ func empresaPropinasIndexExists(dbConn *sql.DB, indexName string) (bool, error) 
 	err := queryRowSQLCompat(dbConn, `
 		SELECT EXISTS (
 			SELECT 1
-			FROM sqlite_master
-			WHERE type = 'index' AND name = ?
+			FROM pg_indexes
+			WHERE schemaname = ANY (current_schemas(false))
+			  AND indexname = ?
 		)
 	`, indexName).Scan(&exists)
 	if err != nil {

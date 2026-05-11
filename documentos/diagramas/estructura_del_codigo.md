@@ -225,7 +225,7 @@ Fecha de actualizacion: 2026-04-18
 
 - Backend carritos:
   - `backend/db/carritos_compras.go` deja de contar items con `COUNT(...) + GROUP BY c.id` sobre el listado principal y pasa a unir un agregado previo por `carrito_id`, evitando fallos en PostgreSQL cuando la consulta trae tambien el nombre del cliente.
-  - `backend/db/carritos_compras.go` y `backend/handlers/carritos_compras.go` retiran `ROUND(..., 2)` del SQL de metricas/totales y hacen el redondeo en Go para mantener el mismo comportamiento entre SQLite y PostgreSQL.
+  - `backend/db/carritos_compras.go` y `backend/handlers/carritos_compras.go` retiran `ROUND(..., 2)` del SQL de metricas/totales y hacen el redondeo en Go para mantener el mismo comportamiento entre motor legado retirado y PostgreSQL.
 - Flujo:
   - `estaciones.html` -> `carrito_de_compras.html` -> `GET /api/empresa/carritos_compra?include_inactive=1` vuelve a responder estable en instalaciones PostgreSQL con clientes e items y deja de disparar el mensaje visible `Error cargando carritos` por fallo del query.
   - `carrito_de_compras.html` -> `GET /api/empresa/carritos_compra?action=totales_pago` y `action=metricas_estacion` mantienen el panel operativo sin depender de firmas SQL distintas por motor.
@@ -488,7 +488,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (configuracion empresarial: persistencia real del bloque general)
 
 - Backend:
-  - `backend/db/empresa_configuracion_general.go` agrega el nuevo almacenamiento relacional por `empresa_id` para reglas de productos y pedidos (`imprimir_orden_servicio`, descuentos y lector de código de barras), con bootstrap default y escritura compatible con SQLite/PostgreSQL mediante `insertSQLCompat`.
+  - `backend/db/empresa_configuracion_general.go` agrega el nuevo almacenamiento relacional por `empresa_id` para reglas de productos y pedidos (`imprimir_orden_servicio`, descuentos y lector de código de barras), con bootstrap default y escritura compatible con motor legado retirado/PostgreSQL mediante `insertSQLCompat`.
   - `backend/handlers/empresa_configuracion_general.go` expone `GET/PUT /api/empresa/configuracion_general` bajo el wrapper de seguridad empresarial existente.
   - `backend/handlers/empresa_configuracion_general_test.go` valida carga default y guardado real del nuevo endpoint.
   - `backend/main.go` registra el esquema `empresa_configuracion_general`, su migración y la nueva ruta autenticada.
@@ -504,7 +504,7 @@ Fecha de actualizacion: 2026-04-18
   - `backend/db/carritos_compras.go` migra las inserciones de `CreateCarritoCompra`, `CreateCarritoCompraItem` y `RecordCarritoStationMetric` a la capa portable `insertSQLCompat` / `insertTxSQLCompat`, eliminando la dependencia de `LastInsertId` cuando el runtime opera con PostgreSQL.
   - `backend/db/empresa_configuracion_avanzada.go` fuerza `EnsureEmpresaConfiguracionAvanzadaSchema` al leer o guardar la configuracion por empresa para autorreparar instalaciones legacy antes de consultar `modo_documento_venta`.
   - `backend/db/documentos_transaccionales.go` autorrepara en PostgreSQL la secuencia/default del campo `id` en `empresa_facturacion_documentos` y `empresa_compras_documentos` si la tabla fue creada desde un esquema legacy sin autoincremento real.
-  - `backend/db/sql_compat.go` incorpora `EnsurePostgresPrimaryKeySequences`, que detecta tablas base con llave primaria `id` sin `nextval(...)` y recrea secuencia/default en lote para instalaciones PostgreSQL heredadas desde SQLite.
+  - `backend/db/sql_compat.go` incorpora `EnsurePostgresPrimaryKeySequences`, que detecta tablas base con llave primaria `id` sin `nextval(...)` y recrea secuencia/default en lote para instalaciones PostgreSQL heredadas desde motor legado retirado.
   - `backend/main.go` ejecuta esa regularizacion al arrancar, tanto sobre `pcs_empresas` como sobre `pcs_superadministrador`, despues del bootstrap de esquemas y antes de exponer la API.
   - `backend/db/facturacion_electronica_test.go` agrega la regresion para una tabla legacy de `empresa_configuracion_avanzada` sin `modo_documento_venta`, verificando que la lectura regulariza el esquema y devuelve el valor por defecto.
 - Flujo:
@@ -937,7 +937,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-17 (portal publico de usuarios: contrato versionado y subdominio por empresa)
 
 - Backend:
-  - `backend/db/usuarios_empresa.go` centraliza `EnsureEmpresaUsuariosAuthSchema` y agrega persistencia de `acepta_contrato`, `contrato_version_aceptada` y `fecha_acepta_contrato` en `users` para SQLite y PostgreSQL.
+  - `backend/db/usuarios_empresa.go` centraliza `EnsureEmpresaUsuariosAuthSchema` y agrega persistencia de `acepta_contrato`, `contrato_version_aceptada` y `fecha_acepta_contrato` en `users` para motor legado retirado y PostgreSQL.
   - `backend/handlers/usuarios_empresa.go` exige contrato vigente antes de login, primer password, reset y cambio de contrasena; ademas resuelve enlaces publicos de correo hacia `https://{empresa_slug}.powerfulcontrolsystem.com/login_usuario.html` o al `dominio_publico` configurado por empresa.
   - `backend/main.go` asegura el esquema auth de usuarios al arrancar y hace que la raiz del subdominio `usuarios.powerfulcontrolsystem.com` sirva `web/login_usuario.html`.
   - `backend/handlers/auth_users_carritos_test.go` cubre aceptacion requerida de contrato, login exitoso con aceptacion y la construccion del enlace publico del subdominio.
@@ -1013,8 +1013,8 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-16 (licencias super: valor persistente y esquema autorreparable)
 
 - Backend:
-  - `backend/db/db.go` incorpora `EnsureLicenciasSchema` para regularizar la tabla `licencias` en SQLite y PostgreSQL.
-  - `backend/db/sql_compat.go` amplia la deteccion de columna faltante para cubrir errores SQLite del tipo `has no column named ...`, necesarios para disparar la autorreparacion.
+  - `backend/db/db.go` incorpora `EnsureLicenciasSchema` para regularizar la tabla `licencias` en motor legado retirado y PostgreSQL.
+  - `backend/db/sql_compat.go` amplia la deteccion de columna faltante para cubrir errores motor legado retirado del tipo `has no column named ...`, necesarios para disparar la autorreparacion.
   - `CreateLicencia`, `GetLicenciasFiltered`, `GetLicenciaByID` y `UpdateLicencia` reintentan la operacion si detectan tabla/columnas faltantes como `valor`.
   - `backend/main.go` ejecuta `EnsureLicenciasSchema(dbSuper)` durante el arranque PostgreSQL.
 - Frontend:
@@ -1064,7 +1064,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-16 (autenticacion administrativa: regularizacion cross-db del esquema `administradores`)
 
 - Backend:
-  - `backend/db/db.go` incorpora `EnsureAdministradoresAuthSchema`, que regulariza columnas operativas y de seguridad de `administradores` en SQLite y PostgreSQL.
+  - `backend/db/db.go` incorpora `EnsureAdministradoresAuthSchema`, que regulariza columnas operativas y de seguridad de `administradores` en motor legado retirado y PostgreSQL.
   - `backend/main.go` sustituye el bloque inline de `PRAGMA table_info` por esa funcion reusable durante el arranque.
   - `backend/db/administradores_auth_schema_test.go` cubre la reparacion de columnas faltantes y el caso de `SetAdministradorPassword` sobre una tabla incompleta.
 - Flujo:
@@ -1615,9 +1615,9 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Backend runtime:
   - `backend/main.go` queda en modo PostgreSQL-only para operacion de servidor.
-  - se deshabilita explicitamente el runtime SQLite y se exige `DB_EMPRESAS_DSN` + `DB_SUPERADMIN_DSN`.
+  - se deshabilita explicitamente el runtime motor legado retirado y se exige `DB_EMPRESAS_DSN` + `DB_SUPERADMIN_DSN`.
 - Higiene de datos legado:
-  - se eliminan los archivos `backend/db/empresas.db` y `backend/db/superadministrador.db` del repositorio.
+  - se eliminan los archivos `backend/db/pcs_empresas` y `backend/db/pcs_superadministrador` del repositorio.
 - Operacion local:
   - `scripts/iniciar_servidor.ps1` valida `DB_DIALECT=postgres` y bloquea arranques sin DSN.
 
@@ -1663,7 +1663,7 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 ## Actualizacion 2026-04-14 (fase 4 PostgreSQL - estabilizacion de salida operativa)
 
 - Backend DB (contabilidad):
-  - `backend/db/eventos_contables.go` migra consultas del worker y operaciones de asientos/eventos a wrappers SQL portables (`querySQLCompat`, `execSQLCompat`, `insertSQLCompat`) para compatibilidad real SQLite/PostgreSQL.
+  - `backend/db/eventos_contables.go` migra consultas del worker y operaciones de asientos/eventos a wrappers SQL portables (`querySQLCompat`, `execSQLCompat`, `insertSQLCompat`) para compatibilidad real motor legado retirado/PostgreSQL.
   - se unifica insercion con retorno de `id` en PostgreSQL y manejo de colisiones de idempotencia por restriccion unica.
 - Operacion VPS:
   - se reestablece `backend/.env.local` con `DB_DIALECT=postgres` y DSN no vacios para `pcs_empresas` y `pcs_superadministrador`.
@@ -1671,14 +1671,14 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Resultado funcional:
   - se elimina el error operativo del worker contable en PostgreSQL (`syntax error at or near "ORDER"`) observado durante la salida controlada.
 
-## Actualizacion 2026-04-13 (inicio de migracion SQLite -> PostgreSQL en VPS)
+## Actualizacion 2026-04-13 (inicio de migracion motor legado retirado -> PostgreSQL en VPS)
 
 - Infraestructura de datos en VPS:
   - se instala PostgreSQL 16 y herramienta `pgloader` en servidor remoto.
   - se aprovisionan bases `pcs_superadministrador` y `pcs_empresas`.
 - Migracion por etapas con validacion:
-  - Etapa 1: `superadministrador.db` migrada a `pcs_superadministrador`.
-  - Etapa 2: `empresas.db` migrada a `pcs_empresas`.
+  - Etapa 1: `pcs_superadministrador` migrada a `pcs_superadministrador`.
+  - Etapa 2: `pcs_empresas` migrada a `pcs_empresas`.
   - ambas etapas con validacion de conteo por tabla (`VALIDACION_SUPER_OK`, `VALIDACION_EMPRESAS_OK`).
 - Alcance de esta fase:
   - migracion de estructura + datos en VPS completada.
@@ -1688,7 +1688,7 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 ```mermaid
 flowchart TD
-    A[SQLite local legado] --> B[Transferencia a VPS por SSH]
+    A[motor legado retirado local legado] --> B[Transferencia a VPS por SSH]
     B --> C[pgloader superadministrador]
     C --> D[Validacion conteos superadministrador]
     D --> E[pgloader empresas]
@@ -1699,9 +1699,9 @@ flowchart TD
 ## Actualizacion 2026-04-13 (unificacion de rutas DB runtime)
 
 - Backend runtime:
-  - `backend/main.go` ahora resuelve por defecto las bases SQLite en rutas canónicas dentro de `backend/db/`:
-    - `backend/db/empresas.db`
-    - `backend/db/superadministrador.db`
+  - `backend/main.go` ahora resuelve por defecto las bases motor legado retirado en rutas canónicas dentro de `backend/db/`:
+    - `backend/db/pcs_empresas`
+    - `backend/db/pcs_superadministrador`
   - Si el servidor se ejecuta desde un directorio distinto, ya no crea copias en raíz o en `backend/`; mantiene una sola ubicación operativa.
 - Higiene de datos locales:
   - se depuraron copias duplicadas de `.db` fuera de `backend/db/` para reducir riesgo de desalineación entre entornos local y VPS.
@@ -1709,7 +1709,7 @@ flowchart TD
 ## Actualizacion 2026-04-14 (fase 3 PostgreSQL - autenticacion/sesiones + redeploy VPS)
 
 - Capa DB (avance de migracion):
-  - se agrega `backend/db/sql_compat.go` con compatibilidad inicial SQLite/PostgreSQL para:
+  - se agrega `backend/db/sql_compat.go` con compatibilidad inicial motor legado retirado/PostgreSQL para:
     - rebindeo de placeholders (`?` -> `$1..$n`) bajo dialecto PostgreSQL.
     - expresiones temporales portables (`CURRENT_TIMESTAMP` vs `datetime('now','localtime')`).
     - condicion de expiracion de sesiones portable.
@@ -1726,10 +1726,10 @@ flowchart TD
 - Capa DB (ampliacion de compatibilidad):
   - `backend/db/sql_compat.go` incorpora:
     - wrappers portables `querySQLCompat` y `queryTxSQLCompat`.
-    - insercion portable con id (`insertSQLCompat`/`insertTxSQLCompat`) para SQLite y PostgreSQL.
+    - insercion portable con id (`insertSQLCompat`/`insertTxSQLCompat`) para motor legado retirado y PostgreSQL.
     - utilidades de deteccion de errores de esquema y normalizacion de definiciones de columna por dialecto.
   - `backend/db/empresa_scope.go` migra `tableExists` para PostgreSQL usando `information_schema.tables`.
-  - `backend/db/productos.go` adapta `ensureColumnIfMissing` para consultar columnas por `information_schema.columns` en PostgreSQL y mantener `PRAGMA` en SQLite.
+  - `backend/db/productos.go` adapta `ensureColumnIfMissing` para consultar columnas por `information_schema.columns` en PostgreSQL y mantener `PRAGMA` en motor legado retirado.
 
 - Dominio funcional migrado en `backend/db/db.go`:
   - CRUD y consultas de `licencias`, `tipos_de_empresas`, `empresas`.
@@ -1742,7 +1742,7 @@ flowchart TD
 - Backend runtime:
   - `backend/main.go` incorpora seleccion de motor por entorno (`DB_DIALECT`/`DB_ENGINE`/`PCS_DB_DIALECT`).
   - en modo `postgres`, abre conexiones con driver `pgx` usando `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
-  - en modo `postgres`, omite el bootstrap SQLite en arranque para evitar ejecuciones `PRAGMA`/DDL legacy no compatibles.
+  - en modo `postgres`, omite el bootstrap motor legado retirado en arranque para evitar ejecuciones `PRAGMA`/DDL legacy no compatibles.
 - Operacion de despliegue:
   - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` amplian bootstrap remoto para persistir en `backend/.env.local`:
     - `DB_DIALECT`
@@ -1750,16 +1750,16 @@ flowchart TD
     - `DB_SUPERADMIN_DSN`
   - el bootstrap reporta estado de variables DB criticas con `BOOTSTRAP_OK/BOOTSTRAP_WARN`.
 
-### Diagrama de flujo (runtime dual SQLite/PostgreSQL)
+### Diagrama de flujo (runtime dual motor legado retirado/PostgreSQL)
 
 ```mermaid
 flowchart TD
     A[Arranque backend] --> B{DB_DIALECT = postgres?}
     B -->|Si| C[Abrir pgx: DB_EMPRESAS_DSN + DB_SUPERADMIN_DSN]
-    C --> D[Omitir bootstrap SQLite runtime]
+    C --> D[Omitir bootstrap motor legado retirado runtime]
     D --> E[Registrar rutas y levantar servidor]
-    B -->|No| F[Abrir SQLite en backend/db/*.db]
-    F --> G[Aplicar bootstrap/migraciones SQLite]
+    B -->|No| F[Abrir motor legado retirado en backend/db/*.db]
+    F --> G[Aplicar bootstrap/migraciones motor legado retirado]
     G --> E
 ```
 
@@ -2095,7 +2095,7 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/venta_digital.go` (nuevo):
-    - agrega `EnsureSuperVentaDigitalSchema` en `superadministrador.db`.
+    - agrega `EnsureSuperVentaDigitalSchema` en `pcs_superadministrador`.
     - crea tablas `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes`.
     - implementa ciclo de orden digital con estado de pago, referencia externa, transaction id y trazabilidad de entrega por correo.
 
@@ -2127,7 +2127,7 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/roles_permisos_usuario.go` (nuevo):
-    - agrega `EnsureRolesPermisosSchema` para crear tablas `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `superadministrador.db`.
+    - agrega `EnsureRolesPermisosSchema` para crear tablas `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `pcs_superadministrador`.
     - agrega consultas para resolver overrides por `rol_id` y por nombre de rol, con fallback seguro cuando la tabla aun no existe.
     - agrega reemplazo transaccional de matriz de permisos por rol (`ReplaceRolPermisosDeUsuario`).
 
@@ -2435,7 +2435,7 @@ flowchart TD
 
 - Backend auditoria:
   - `backend/db/auditoria_empresa.go`:
-    - agrega busqueda `search` full-text sobre eventos de auditoria usando FTS en SQLite, con fallback por `LIKE` para entornos sin FTS5.
+    - agrega busqueda `search` full-text sobre eventos de auditoria usando FTS en motor legado retirado, con fallback por `LIKE` para entornos sin FTS5.
     - inicializa objetos de busqueda (`empresa_auditoria_eventos_fts` + triggers de sync + backfill) para mantener indexacion consistente al crear/editar/eliminar eventos.
     - integra la estrategia FTS/fallback en listado y conteo con filtros avanzados y paginacion.
   - `backend/handlers/auditoria_empresa.go`:
@@ -2513,7 +2513,7 @@ flowchart TD
 
 - Backend carritos y concurrencia multiestacion:
   - `backend/db/carritos_compras.go`:
-    - agrega timeout SQLite y reintentos transaccionales (`withCarritoTxRetry`) para operaciones de items, reforzando control de stock bajo alta concurrencia multiestacion.
+    - agrega timeout motor legado retirado y reintentos transaccionales (`withCarritoTxRetry`) para operaciones de items, reforzando control de stock bajo alta concurrencia multiestacion.
     - agrega `RecoverInterruptedCarritoSession` para recuperar sesiones interrumpidas sin perder items.
     - agrega `CancelCarritoPartialClosure` para anulacion parcial de cierre en ventas pagadas.
   - `backend/handlers/carritos_compras.go`:
@@ -4836,7 +4836,7 @@ flowchart TD
 
 - Documentacion funcional:
   - `documentos/matriz_roles_permisos_pos_multiempresa.md` incorpora matriz UAT de transiciones para cierres de caja con casos por rol y estado.
-  - `documentos/plan_maestro_pos_multiempresa_14_puntos.md` define estrategia de procesamiento de asientos basada en:
+  - El plan maestro historico de 14/15 puntos definio la estrategia de procesamiento de asientos, hoy conservada en la documentacion canonica de arquitectura, base de datos y modulos, basada en:
     - consumo de `empresa_eventos_contables` pendientes,
     - resolucion canonica por `entidad_id` en documentos transaccionales,
     - idempotencia y procesamiento por lotes con trazabilidad de resultado.
@@ -5317,7 +5317,7 @@ flowchart TD
 ## Actualizacion 2026-04-01 (fallback OAuth desde base de datos)
 
 - Backend:
-  - `backend/main.go` ahora puede resolver credenciales OAuth Google desde `superadministrador.db` (tabla `configuraciones`) cuando no son validas o no existen en entorno.
+  - `backend/main.go` ahora puede resolver credenciales OAuth Google desde `pcs_superadministrador` (tabla `configuraciones`) cuando no son validas o no existen en entorno.
   - Se soportan aliases de claves para facilitar compatibilidad con configuraciones historicas.
 
 - Script de arranque:
@@ -5357,7 +5357,7 @@ flowchart TD
 
 - Backend DB:
   - Se agrega `backend/db/facturacion_electronica.go` con tabla `facturacion_electronica_pais` y CRUD por `empresa_id + pais_codigo`.
-  - Se agrega `backend/db/empresa_scope.go` para asegurar referencia `empresa_id` en tablas base de `empresas.db` (`empresas`, `schema_migrations` y `tipos_de_empresas` legacy).
+  - Se agrega `backend/db/empresa_scope.go` para asegurar referencia `empresa_id` en tablas base de `pcs_empresas` (`empresas`, `schema_migrations` y `tipos_de_empresas` legacy).
   - Se actualiza `backend/db/db.go` para mantener `empresa_id` autoconsistente en `empresas` (autorreferencia con `id`) al crear nuevas empresas.
 
 - Backend handlers/rutas:
@@ -5373,7 +5373,7 @@ flowchart TD
   - `web/menu.js` ahora detecta país automáticamente (API + señales de navegador) y muestra bandera en el menú flotante.
 
 - Validacion de alcance multiempresa:
-  - Auditoría post-migración en `empresas.db`: todas las tablas no sistema quedaron con columna `empresa_id`.
+  - Auditoría post-migración en `pcs_empresas`: todas las tablas no sistema quedaron con columna `empresa_id`.
 
 ## Actualizacion 2026-04-01 (colores de estado de carrito por empresa + ajustes FE)
 

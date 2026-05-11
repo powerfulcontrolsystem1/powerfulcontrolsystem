@@ -4,6 +4,10 @@ Actualizacion: 2026-05-11
 
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, helpdesk, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
 
+Revision metricas profesionales 2026-05-11: el resumen inicial de `web/super/licencias_resumen.html` funciona como centro de mando del VPS y del proyecto, consolidando CPU, memoria, disco, trafico, muestras historicas, salud PostgreSQL, alertas del sistema, errores recientes, servicios del VPS, licencias, empresas y consumo OpenAI estimado. Reutiliza APIs existentes (`/super/api/metrics/*`, `/super/api/postgres/performance`, `/super/api/alertas_sistema`, `/super/api/errores`, `/super/api/servidores`, `/super/api/vps/procesos` y `/super/api/consumos`) sin agregar dependencias ni cambiar permisos.
+
+Revision PostgreSQL-only 2026-05-11: el proyecto queda documentado y depurado para operar solo con PostgreSQL. Se retiraron referencias residuales al motor legado en codigo, frontend, scripts, instrucciones y documentacion, se limpiaron artefactos locales generados por pruebas temporales y las consultas de introspeccion de indices usan catalogos PostgreSQL.
+
 Revision portada 2026-05-11: el portal publico `web/index.html` toma descripciones largas desde `web/js/nuevos_verticales_catalogo.js` para las 20 nuevas empresas, de modo que las tarjetas nuevas quedan al nivel informativo de las primeras tarjetas. El boton `Probar Gratis` conserva datos de modulo, tipo de empresa, titulo, descripcion y secciones, y `web/descripcion_de_los_sistemas.ht` reutiliza ese catalogo para presentar una ficha especifica antes del registro de prueba.
 
 Revision roles/ayuda 2026-05-10: el catalogo de permisos separa nuevos modulos finos (`crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`) y conserva compatibilidad con licencias antiguas basadas en `ventas`, `seguridad`, `finanzas`, `inventario` o `clientes`. La ayuda completa de super administrador se abre desde `web/super_administrador.html` y solo la puede ver `super_administrador`.
@@ -283,8 +287,8 @@ Regla general de tablas:
 
 - El indice documental vigente del repositorio esta en `documentos/README.md`.
 - El detalle tecnico de arquitectura y mapa de funciones esta en `documentos/diagramas/estructura_del_codigo.md` (fuente canonica).
-- El archivo `documentos/estructura_del_codigo` se mantiene solo como alias de compatibilidad historica.
-- El plan maestro de implementacion POS multiempresa (15 puntos) esta en `documentos/plan_maestro_pos_multiempresa_14_puntos.md`.
+- El alias historico `documentos/estructura_del_codigo` ya no se usa como fuente activa; la fuente vigente es `documentos/diagramas/estructura_del_codigo.md`.
+- El plan operativo vigente de madurez, QA, staging, backups y release esta en `documentos/plan_profesional_12_puntos.md`; las referencias al plan maestro historico de 14/15 puntos quedan solo como trazabilidad antigua en changelog e historial.
 - La matriz base de roles y permisos esta en `documentos/matriz_roles_permisos_pos_multiempresa.md`.
 - La descripcion compacta de funcionalidades por modulo esta en `documentos/descripcion_de_modulos`.
 - La gobernanza tecnica del repositorio vive en `documentos/gobernanza_tecnica/README.md`, con plan por fases, estandares de cambio seguro, ADRs, contratos tecnicos y runbooks operativos.

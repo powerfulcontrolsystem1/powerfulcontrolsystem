@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Powerful Control System
+    orgId: 1
+    folder: Powerful Control System
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

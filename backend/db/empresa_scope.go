@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-// EnsureEmpresasScopeReferences asegura que las tablas base de empresas.db
+// EnsureEmpresasScopeReferences asegura que las tablas base de la base operativa
 // tengan una referencia de alcance por empresa donde aplique.
 func EnsureEmpresasScopeReferences(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresas", "empresa_id", "INTEGER"); err != nil {

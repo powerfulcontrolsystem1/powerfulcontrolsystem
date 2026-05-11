@@ -1309,8 +1309,6 @@ function Get-SyncExcludePatterns {
     "*/__pycache__",
     "*/*/__pycache__",
     "*.db",
-    "*.sqlite",
-    "*.sqlite3",
     "*.log",
     "*.exe",
     "*.vsix",

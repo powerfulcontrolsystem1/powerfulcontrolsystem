@@ -149,7 +149,7 @@ func EnsureSuperServidorEventosSchema(dbConn *sql.DB) error {
 	return nil
 }
 
-// CreateSuperServidorEvento registra un evento de arranque/reinicio del servidor en superadministrador.db.
+// CreateSuperServidorEvento registra un evento de arranque/reinicio del servidor en PostgreSQL.
 func CreateSuperServidorEvento(dbConn *sql.DB, payload SuperServidorEvento) (int64, error) {
 	if dbConn == nil {
 		return 0, fmt.Errorf("db connection is required")

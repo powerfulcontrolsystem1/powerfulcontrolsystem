@@ -247,7 +247,7 @@ func isClientesUniqueConstraintErr(err error) bool {
 	return strings.Contains(msg, "clientes")
 }
 
-// EnsureEmpresaClientesSchema crea y migra la tabla clientes en empresas.db.
+// EnsureEmpresaClientesSchema crea y migra la tabla clientes en PostgreSQL.
 func EnsureEmpresaClientesSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS clientes (
