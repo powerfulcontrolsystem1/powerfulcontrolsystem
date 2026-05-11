@@ -8407,3 +8407,7 @@ Archivos modificados:
 - tools/permissions_license_audit.mjs
 - tools/professional_audit.mjs
 - tools/security_audit.mjs
+
+2026-05-11 01:04:18 - Mensaje: fix: corregir salida limpieza disco sync VPS; Commit: 79cab573; PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
