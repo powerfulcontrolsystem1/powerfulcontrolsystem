@@ -23210,3 +23210,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - deploy/scripts/vps-staging-up.sh
+
+2026-05-11: feat: refrescar staging desde produccion
+PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-refresh-staging-from-production.sh
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/plan_profesional_12_puntos.md

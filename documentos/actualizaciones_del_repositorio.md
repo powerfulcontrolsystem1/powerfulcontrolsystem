@@ -8446,3 +8446,10 @@ Archivos modificados:
 2026-05-11 01:34:45 - Mensaje: fix: reset controlado staging; Commit: 3b7968b1; PushStatus: OK
 Archivos modificados:
 - deploy/scripts/vps-staging-up.sh
+
+2026-05-11 01:40:30 - Mensaje: feat: refrescar staging desde produccion; Commit: 744d9840; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-refresh-staging-from-production.sh
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/plan_profesional_12_puntos.md
