@@ -416,18 +416,6 @@
         return "registros";
       }
 
-      function sectionAnchor(intent) {
-        return {
-          dashboard: "#mcAgenda",
-          control: "#mcSLA",
-          registros: "#mcTable",
-          seguimiento: "#mcFollowForm",
-          responsables: "#mcResponsables",
-          aprobacion: "#mcApprovalForm",
-          evidencia: "#mcEvidenceForm"
-        }[intent] || "#mcAgenda";
-      }
-
       function sectionIcon(intent, idx) {
         return {
           dashboard: "/img/analytics-color.svg",
@@ -440,13 +428,14 @@
         }[intent] || ["/img/analytics-color.svg", "/img/settings-color.svg", "/img/report.svg", "/img/customer.svg", "/img/shield-license-color.svg", "/img/network-color.svg"][idx % 6];
       }
 
-      function moduloColombiaUrl(module, title, lead, section, intent, hash) {
+      function moduloColombiaUrl(module, title, lead, section, intent) {
+        var view = intent || "dashboard";
         return "/administrar_empresa/modulo_colombia.html?module=" + encodeURIComponent(module) +
           "&title=" + encodeURIComponent(title) +
           "&lead=" + encodeURIComponent(lead) +
           "&section=" + encodeURIComponent(section || "") +
           "&intent=" + encodeURIComponent(intent || "") +
-          (hash || "");
+          "&view=" + encodeURIComponent(view);
       }
 
       Object.keys(verticalesNuevos).forEach(function (module) {
@@ -454,15 +443,13 @@
         var title = row[0];
         var summary = row[1];
         var labels = row[2];
-        var anchors = ["#mcAgenda", "#mcForm", "#mcTable", "#mcResponsables", "#mcApprovalForm", "#mcEvidenceForm"];
         modules[module] = {
           title: title,
           summary: summary,
-          defaultUrl: moduloColombiaUrl(module, title, summary, labels[0] || "Dashboard", "dashboard", "#mcAgenda"),
+          defaultUrl: moduloColombiaUrl(module, title, summary, labels[0] || "Dashboard", "dashboard"),
           items: labels.map(function (label, idx) {
             var intent = sectionIntent(label, idx);
-            var anchor = sectionAnchor(intent) || anchors[idx] || "#mcAgenda";
-            return [label, sectionIcon(intent, idx), moduloColombiaUrl(module, title, summary, label, intent, anchor)];
+            return [label, sectionIcon(intent, idx), moduloColombiaUrl(module, title, summary, label, intent)];
           })
         };
       });

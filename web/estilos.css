@@ -16304,6 +16304,10 @@ html[data-theme^="dark"] body.modulo-colombia-page {
   gap: 14px;
 }
 
+[data-mc-view][hidden] {
+  display: none !important;
+}
+
 .mc-head,
 .mc-kpis article,
 .mc-card {

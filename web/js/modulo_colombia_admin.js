@@ -2,7 +2,7 @@
   "use strict";
 
   var root = null;
-  var state = { empresaId: "", modulo: "", titulo: "", lead: "", activeSection: "", activeIntent: "", catalogItem: null, dashboard: null, reporte: null, agenda: null, sla: null, riesgo: null, responsables: [], expediente: null, evidencias: [], aprobaciones: [], tareas: [], diagnostico: null, plantilla: null, busqueda: null, selectedRegistroID: 0 };
+  var state = { empresaId: "", modulo: "", titulo: "", lead: "", activeSection: "", activeIntent: "", view: "dashboard", catalogItem: null, dashboard: null, reporte: null, agenda: null, sla: null, riesgo: null, responsables: [], expediente: null, evidencias: [], aprobaciones: [], tareas: [], diagnostico: null, plantilla: null, busqueda: null, selectedRegistroID: 0 };
   var money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
   function queryParam(name) {
@@ -70,6 +70,10 @@
     return String(value || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
   }
 
+  function displayLabel(value) {
+    return String(value || "").replace(/[_]+/g, " ").replace(/\s+/g, " ").trim();
+  }
+
   function normalizeLabel(value) {
     return cleanLabel(value).toLowerCase();
   }
@@ -92,6 +96,23 @@
     if (/seguimiento|agenda|tracking|check|asistencia|visita|ronda|incidente|novedad/.test(text)) return "seguimiento";
     if (/responsable|profesional|tecnico|guia|conductor|instructor|guarda/.test(text)) return "responsables";
     return fallback || "registros";
+  }
+
+  function normalizeView(value) {
+    var view = String(value || "").toLowerCase().trim();
+    if (["dashboard", "control", "registros", "seguimiento", "responsables", "aprobacion", "evidencia"].indexOf(view) >= 0) return view;
+    return "dashboard";
+  }
+
+  function viewMatches(list) {
+    var views = String(list || "").split(/\s+/).filter(Boolean);
+    return !views.length || views.indexOf(state.view) >= 0;
+  }
+
+  function applyViewVisibility() {
+    Array.prototype.slice.call(document.querySelectorAll("[data-mc-view]")).forEach(function (node) {
+      node.hidden = !viewMatches(node.getAttribute("data-mc-view"));
+    });
   }
 
   function moduleSections() {
@@ -126,17 +147,17 @@
       '<header class="mc-head"><div><h1>' + esc(state.titulo) + '</h1><p>' + esc(state.lead) + '</p></div>' +
       '<div class="mc-actions"><button class="mc-btn" id="mcRefresh" type="button">Actualizar</button><button class="mc-btn" id="mcSeed" type="button">Cargar demo</button><button class="mc-btn" id="mcImportBtn" type="button">Importar CSV</button><button class="mc-btn primary" id="mcExport" type="button">Exportar auditoria CSV</button><input id="mcImportFile" type="file" accept=".csv,text/csv" hidden></div></header>' +
       '<section class="mc-kpis"><article><span>Total</span><strong id="kpiTotal">0</strong></article><article><span>Abiertos</span><strong id="kpiAbiertos">0</strong></article><article><span>En proceso</span><strong id="kpiProceso">0</strong></article><article><span>Aprobados / cerrados</span><strong id="kpiAprobados">0</strong></article><article><span>Vencidos</span><strong id="kpiVencidos">0</strong></article><article><span>Valor</span><strong id="kpiValor">$0</strong></article></section>' +
-      '<section class="mc-card" id="mcConfig"><div class="mc-card-head"><div><h2>Configuracion operativa del vertical</h2><p class="mc-muted">Plantilla activa, estados, categorias, acciones, diagnostico y formato CSV para este negocio.</p></div><div class="mc-actions"><button class="mc-btn" id="mcDownloadTemplate" type="button">Plantilla CSV</button><button class="mc-btn" id="mcDownloadChecklist" type="button">Checklist CSV</button><button class="mc-btn" id="mcCopyMetadata" type="button">Copiar metadata</button></div></div><div id="mcConfigDiagnostics" class="mc-config-diagnostics"></div><div id="mcConfigBody" class="mc-config-grid"></div></section>' +
-      '<div class="mc-toolbar mc-searchbar"><label>Buscar<input id="mcTextoFiltro" placeholder="Codigo, nombre, tercero, referencia"></label><label>Estado<select id="mcEstadoFiltro"><option value="">Todos</option></select></label><label>Tipo<select id="mcTipoFiltro"><option value="">Todos</option></select></label><label>Categoria<select id="mcCategoriaFiltro"><option value="">Todas</option></select></label><label>Prioridad<select id="mcPrioridadFiltro"><option value="">Todas</option><option value="baja">Baja</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label><label>Responsable<input id="mcResponsableFiltro" placeholder="Usuario, rol o area"></label><label>Vencimiento<select id="mcVenceFiltro"><option value="">Todos</option><option value="vencidos">Vencidos</option><option value="7">Proximos 7 dias</option><option value="30">Proximos 30 dias</option></select></label><button class="mc-btn primary" id="mcSearch" type="button">Buscar</button><button class="mc-btn" id="mcClearSearch" type="button">Limpiar</button><button class="mc-btn" id="mcClearForm" type="button">Nuevo registro</button></div>' +
+      '<section class="mc-card" id="mcConfig" data-mc-view="control"><div class="mc-card-head"><div><h2>Configuracion operativa: ' + esc(state.activeSection || "Configuracion") + '</h2><p class="mc-muted">Plantilla activa, estados, categorias, acciones, diagnostico y formato CSV para este negocio.</p></div><div class="mc-actions"><button class="mc-btn" id="mcDownloadTemplate" type="button">Plantilla CSV</button><button class="mc-btn" id="mcDownloadChecklist" type="button">Checklist CSV</button><button class="mc-btn" id="mcCopyMetadata" type="button">Copiar metadata</button></div></div><div id="mcConfigDiagnostics" class="mc-config-diagnostics"></div><div id="mcConfigBody" class="mc-config-grid"></div></section>' +
+      '<div class="mc-toolbar mc-searchbar" data-mc-view="registros"><label>Buscar<input id="mcTextoFiltro" placeholder="Codigo, nombre, tercero, referencia"></label><label>Estado<select id="mcEstadoFiltro"><option value="">Todos</option></select></label><label>Tipo<select id="mcTipoFiltro"><option value="">Todos</option></select></label><label>Categoria<select id="mcCategoriaFiltro"><option value="">Todas</option></select></label><label>Prioridad<select id="mcPrioridadFiltro"><option value="">Todas</option><option value="baja">Baja</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label><label>Responsable<input id="mcResponsableFiltro" placeholder="Usuario, rol o area"></label><label>Vencimiento<select id="mcVenceFiltro"><option value="">Todos</option><option value="vencidos">Vencidos</option><option value="7">Proximos 7 dias</option><option value="30">Proximos 30 dias</option></select></label><button class="mc-btn primary" id="mcSearch" type="button">Buscar</button><button class="mc-btn" id="mcClearSearch" type="button">Limpiar</button><button class="mc-btn" id="mcClearForm" type="button">Nuevo registro</button></div>' +
       '<div id="mcMsg" class="mc-msg"></div>' +
-      '<section class="mc-card"><h2>Agenda y alertas</h2><div id="mcAgenda" class="mc-agenda"></div></section>' +
-      '<section class="mc-card"><h2>SLA y cumplimiento</h2><div id="mcSLA" class="mc-sla"></div></section>' +
-      '<section class="mc-card"><h2>Matriz de riesgo operativo</h2><div id="mcRiesgo" class="mc-riesgo"></div></section>' +
-      '<section class="mc-card"><h2>Responsables y carga</h2><div id="mcResponsables" class="mc-responsables"></div></section>' +
-      '<section class="mc-card"><h2>Reporte ejecutivo</h2><div id="mcReporte" class="mc-report"></div></section>' +
-      '<section class="mc-card"><h2>Expediente 360</h2><div id="mcExpediente" class="mc-expediente"><div class="mc-empty">Selecciona Expediente en un registro para ver su trazabilidad completa.</div></div></section>' +
-      '<section class="mc-grid"><form id="mcForm" class="mc-card mc-form">' +
-      '<h2>Registro operativo</h2><input type="hidden" id="mcId">' +
+      '<section class="mc-card" data-mc-view="dashboard seguimiento"><h2>' + esc(state.activeSection || "Agenda") + ': Agenda y alertas</h2><div id="mcAgenda" class="mc-agenda"></div></section>' +
+      '<section class="mc-card" data-mc-view="dashboard control"><h2>SLA y cumplimiento</h2><div id="mcSLA" class="mc-sla"></div></section>' +
+      '<section class="mc-card" data-mc-view="dashboard control"><h2>Matriz de riesgo operativo</h2><div id="mcRiesgo" class="mc-riesgo"></div></section>' +
+      '<section class="mc-card" data-mc-view="dashboard responsables"><h2>Responsables y carga</h2><div id="mcResponsables" class="mc-responsables"></div></section>' +
+      '<section class="mc-card" data-mc-view="dashboard evidencia aprobacion responsables"><h2>Reporte ejecutivo</h2><div id="mcReporte" class="mc-report"></div></section>' +
+      '<section class="mc-card" data-mc-view="evidencia seguimiento"><h2>Expediente 360</h2><div id="mcExpediente" class="mc-expediente"><div class="mc-empty">Selecciona Expediente en un registro para ver su trazabilidad completa.</div></div></section>' +
+      '<section class="mc-grid" data-mc-view="registros"><form id="mcForm" class="mc-card mc-form">' +
+      '<h2>Gestion de ' + esc(state.activeSection || "registros") + '</h2><input type="hidden" id="mcId">' +
       '<div class="mc-row"><label>Codigo<input id="mcCodigo" required placeholder="AUTO-001"></label><label>Tipo<select id="mcTipo"></select></label></div>' +
       '<label>Nombre<input id="mcNombre" required></label>' +
       '<div class="mc-row"><label><span id="mcTerceroLabel">Tercero / area</span><input id="mcTercero"></label><label>Responsable<input id="mcResponsable"></label></div>' +
@@ -146,8 +167,8 @@
       '<label>Valor<input id="mcValor" type="number" step="0.01" value="0"></label>' +
       '<label>Metadata JSON<textarea id="mcMetadata" placeholder=\'{"nota":"detalle"}\'></textarea></label>' +
       '<button class="mc-btn primary" type="submit">Guardar</button></form>' +
-      '<div class="mc-card"><h2>Registros</h2><div class="mc-bulk"><strong id="mcBulkCount">0 seleccionados</strong><label>Estado<select id="mcBulkEstado"><option value="">Sin cambio</option></select></label><label>Prioridad<select id="mcBulkPrioridad"><option value="">Sin cambio</option><option value="baja">Baja</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label><label>Responsable<input id="mcBulkResponsable" placeholder="Asignar responsable"></label><label>Detalle<input id="mcBulkDetalle" placeholder="Motivo de accion masiva"></label><button class="mc-btn primary" id="mcBulkApply" type="button">Aplicar</button></div><div id="mcTable" class="mc-table-wrap"></div></div></section>' +
-      '<section class="mc-grid mc-grid-secondary"><div class="mc-card"><h2>Seguimiento profesional</h2><form id="mcFollowForm" class="mc-form"><input type="hidden" id="mcFollowId"><div class="mc-row"><label>Registro<select id="mcFollowRegistro"></select></label><label>Accion<select id="mcFollowEvento"></select></label></div><div class="mc-row"><label>Cambiar estado<select id="mcFollowEstado"></select></label><label>Detalle<input id="mcFollowDetalle" placeholder="Gestion realizada, evidencia o decision"></label></div><button class="mc-btn primary" type="submit">Registrar seguimiento</button></form><div id="mcAlerts"></div></div><div class="mc-card"><h2>Evidencias y soportes</h2><form id="mcEvidenceForm" class="mc-form"><div class="mc-row"><label>Registro<select id="mcEvidenceRegistro"></select></label><label>Tipo<select id="mcEvidenceTipo"><option value="soporte">Soporte</option><option value="contrato">Contrato</option><option value="foto">Foto</option><option value="acta">Acta</option><option value="documento">Documento</option><option value="enlace">Enlace</option></select></label></div><label>Nombre<input id="mcEvidenceNombre" required placeholder="Nombre del soporte"></label><label>URL o ruta<input id="mcEvidenceUrl" placeholder="https://... o ruta interna"></label><label>Descripcion<input id="mcEvidenceDesc" placeholder="Detalle breve"></label><button class="mc-btn primary" type="submit">Agregar evidencia</button></form><div id="mcEvidenceList"></div></div><div class="mc-card"><h2>Aprobaciones</h2><form id="mcApprovalForm" class="mc-form"><div class="mc-row"><label>Registro<select id="mcApprovalRegistro"></select></label><label>Nivel<select id="mcApprovalNivel"><option value="operativo">Operativo</option><option value="supervisor">Supervisor</option><option value="contable">Contable</option><option value="gerencia">Gerencia</option><option value="cumplimiento">Cumplimiento</option><option value="juridico">Juridico</option></select></label></div><div class="mc-row"><label>Solicitado a<input id="mcApprovalTo" required placeholder="usuario, rol o area"></label><label>Vence<input id="mcApprovalDue" type="date"></label></div><label>Comentario<input id="mcApprovalComment" placeholder="Motivo o instruccion"></label><button class="mc-btn primary" type="submit">Solicitar aprobacion</button></form><div id="mcApprovalList"></div></div><div class="mc-card"><h2>Tareas y compromisos</h2><form id="mcTaskForm" class="mc-form"><div class="mc-row"><label>Registro<select id="mcTaskRegistro"></select></label><label>Prioridad<select id="mcTaskPrioridad"><option value="normal">Normal</option><option value="baja">Baja</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label></div><div class="mc-row"><label>Responsable<input id="mcTaskResponsable" placeholder="Usuario, rol o area"></label><label>Vence<input id="mcTaskDue" type="date"></label></div><label>Tarea<input id="mcTaskTitulo" required placeholder="Compromiso operativo"></label><label>Comentario<input id="mcTaskComment" placeholder="Detalle breve"></label><button class="mc-btn primary" type="submit">Crear tarea</button></form><div id="mcTaskList"></div></div><div class="mc-card"><h2>Bitacora</h2><div id="mcEvents"></div></div></section></main>';
+      '<div class="mc-card"><h2>' + esc(state.activeSection || "Registros") + '</h2><div class="mc-bulk"><strong id="mcBulkCount">0 seleccionados</strong><label>Estado<select id="mcBulkEstado"><option value="">Sin cambio</option></select></label><label>Prioridad<select id="mcBulkPrioridad"><option value="">Sin cambio</option><option value="baja">Baja</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label><label>Responsable<input id="mcBulkResponsable" placeholder="Asignar responsable"></label><label>Detalle<input id="mcBulkDetalle" placeholder="Motivo de accion masiva"></label><button class="mc-btn primary" id="mcBulkApply" type="button">Aplicar</button></div><div id="mcTable" class="mc-table-wrap"></div></div></section>' +
+      '<section class="mc-grid mc-grid-secondary"><div class="mc-card" data-mc-view="seguimiento"><h2>' + esc(state.activeSection || "Seguimiento profesional") + '</h2><form id="mcFollowForm" class="mc-form"><input type="hidden" id="mcFollowId"><div class="mc-row"><label>Registro<select id="mcFollowRegistro"></select></label><label>Accion<select id="mcFollowEvento"></select></label></div><div class="mc-row"><label>Cambiar estado<select id="mcFollowEstado"></select></label><label>Detalle<input id="mcFollowDetalle" placeholder="Gestion realizada, evidencia o decision"></label></div><button class="mc-btn primary" type="submit">Registrar seguimiento</button></form><div id="mcAlerts"></div></div><div class="mc-card" data-mc-view="evidencia"><h2>' + esc(state.activeSection || "Evidencias y soportes") + '</h2><form id="mcEvidenceForm" class="mc-form"><div class="mc-row"><label>Registro<select id="mcEvidenceRegistro"></select></label><label>Tipo<select id="mcEvidenceTipo"><option value="soporte">Soporte</option><option value="contrato">Contrato</option><option value="foto">Foto</option><option value="acta">Acta</option><option value="documento">Documento</option><option value="enlace">Enlace</option></select></label></div><label>Nombre<input id="mcEvidenceNombre" required placeholder="Nombre del soporte"></label><label>URL o ruta<input id="mcEvidenceUrl" placeholder="https://... o ruta interna"></label><label>Descripcion<input id="mcEvidenceDesc" placeholder="Detalle breve"></label><button class="mc-btn primary" type="submit">Agregar evidencia</button></form><div id="mcEvidenceList"></div></div><div class="mc-card" data-mc-view="aprobacion"><h2>' + esc(state.activeSection || "Aprobaciones") + '</h2><form id="mcApprovalForm" class="mc-form"><div class="mc-row"><label>Registro<select id="mcApprovalRegistro"></select></label><label>Nivel<select id="mcApprovalNivel"><option value="operativo">Operativo</option><option value="supervisor">Supervisor</option><option value="contable">Contable</option><option value="gerencia">Gerencia</option><option value="cumplimiento">Cumplimiento</option><option value="juridico">Juridico</option></select></label></div><div class="mc-row"><label>Solicitado a<input id="mcApprovalTo" required placeholder="usuario, rol o area"></label><label>Vence<input id="mcApprovalDue" type="date"></label></div><label>Comentario<input id="mcApprovalComment" placeholder="Motivo o instruccion"></label><button class="mc-btn primary" type="submit">Solicitar aprobacion</button></form><div id="mcApprovalList"></div></div><div class="mc-card" data-mc-view="seguimiento responsables"><h2>Tareas de ' + esc(state.activeSection || "seguimiento") + '</h2><form id="mcTaskForm" class="mc-form"><div class="mc-row"><label>Registro<select id="mcTaskRegistro"></select></label><label>Prioridad<select id="mcTaskPrioridad"><option value="normal">Normal</option><option value="baja">Baja</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label></div><div class="mc-row"><label>Responsable<input id="mcTaskResponsable" placeholder="Usuario, rol o area"></label><label>Vence<input id="mcTaskDue" type="date"></label></div><label>Tarea<input id="mcTaskTitulo" required placeholder="Compromiso operativo"></label><label>Comentario<input id="mcTaskComment" placeholder="Detalle breve"></label><button class="mc-btn primary" type="submit">Crear tarea</button></form><div id="mcTaskList"></div></div><div class="mc-card" data-mc-view="seguimiento dashboard"><h2>Bitacora</h2><div id="mcEvents"></div></div></section></main>';
   }
 
   function render() {
@@ -172,6 +193,7 @@
     renderAprobaciones(state.aprobaciones || []);
     renderTareas(state.tareas || []);
     renderConfig();
+    applyViewVisibility();
     scrollToRequestedSection();
   }
 
@@ -230,7 +252,7 @@
     var sections = moduleSections();
     return [
       { label: "Empresa detectada", ok: !!state.empresaId, detail: state.empresaId ? "empresa_id " + state.empresaId : "Falta contexto de empresa" },
-      { label: "Catalogo central", ok: !!state.catalogItem, detail: state.catalogItem ? "Vertical enlazado a catalogo" : "No se encontro en PCS_NUEVOS_VERTICALES" },
+      { label: "Catalogo central", ok: !!state.catalogItem, detail: state.catalogItem ? "Solucion enlazada al catalogo" : "No se encontro en PCS_NUEVOS_VERTICALES" },
       { label: "Ruta de trabajo", ok: sections.length >= 4, detail: sections.length + " secciones visibles" },
       { label: "Tipos y categorias", ok: (p.tipos || []).length >= 2 && (p.categorias || []).length >= 2, detail: (p.tipos || []).length + " tipos / " + (p.categorias || []).length + " categorias" },
       { label: "Estados y acciones", ok: (p.estados_flujo || []).length >= 3 && (p.acciones_sugeridas || []).length >= 3, detail: (p.estados_flujo || []).length + " estados / " + (p.acciones_sugeridas || []).length + " acciones" },
@@ -918,9 +940,12 @@
     state.catalogItem = findCatalogItem(state.modulo);
     state.titulo = document.body.getAttribute("data-title") || queryParam("title") || queryParam("titulo") || (state.catalogItem && (state.catalogItem.fullTitle || state.catalogItem.title)) || "Modulo empresarial";
     state.lead = document.body.getAttribute("data-lead") || queryParam("lead") || (state.catalogItem && (state.catalogItem.lead || state.catalogItem.summary)) || "";
-    state.activeSection = cleanLabel(queryParam("section") || queryParam("seccion") || "Dashboard");
+    state.activeSection = displayLabel(queryParam("section") || queryParam("seccion") || "Dashboard");
     state.activeIntent = cleanLabel(queryParam("intent") || intentFromSection(state.activeSection, "dashboard")).toLowerCase();
+    state.view = normalizeView(queryParam("view") || state.activeIntent);
+    document.title = state.titulo + " - " + state.activeSection;
     renderShell();
+    applyViewVisibility();
     scrollToRequestedSection();
     window.addEventListener("hashchange", scrollToRequestedSection);
     window.addEventListener("message", function (event) {

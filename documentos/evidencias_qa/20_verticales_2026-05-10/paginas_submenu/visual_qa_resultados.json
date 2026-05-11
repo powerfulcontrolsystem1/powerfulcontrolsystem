@@ -1,0 +1,882 @@
+[
+  {
+    "module": "agencia_viajes",
+    "title": "Agencia de viajes y planes turisticos",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Dashboard comercial",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Agencia de viajes y planes turisticos - Dashboard comercial"
+      },
+      {
+        "section": "Paquetes y cotizaciones",
+        "view": "registros",
+        "ok": true,
+        "title": "Agencia de viajes y planes turisticos - Paquetes y cotizaciones"
+      },
+      {
+        "section": "Reservas y vouchers",
+        "view": "registros",
+        "ok": true,
+        "title": "Agencia de viajes y planes turisticos - Reservas y vouchers"
+      },
+      {
+        "section": "Pagos y comisiones",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Agencia de viajes y planes turisticos - Pagos y comisiones"
+      },
+      {
+        "section": "Aprobaciones",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Agencia de viajes y planes turisticos - Aprobaciones"
+      },
+      {
+        "section": "Evidencias",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Agencia de viajes y planes turisticos - Evidencias"
+      }
+    ]
+  },
+  {
+    "module": "operador_turistico",
+    "title": "Operador turistico local",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Dashboard operativo",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Operador turistico local - Dashboard operativo"
+      },
+      {
+        "section": "Tours y rutas",
+        "view": "registros",
+        "ok": true,
+        "title": "Operador turistico local - Tours y rutas"
+      },
+      {
+        "section": "Guias y cupos",
+        "view": "responsables",
+        "ok": true,
+        "title": "Operador turistico local - Guias y cupos"
+      },
+      {
+        "section": "Check-in",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Operador turistico local - Check-in"
+      },
+      {
+        "section": "Evidencias",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Operador turistico local - Evidencias"
+      },
+      {
+        "section": "Cierre",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Operador turistico local - Cierre"
+      }
+    ]
+  },
+  {
+    "module": "eventos_boleteria",
+    "title": "Eventos y boleteria",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Dashboard",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Eventos y boleteria - Dashboard"
+      },
+      {
+        "section": "Eventos",
+        "view": "registros",
+        "ok": true,
+        "title": "Eventos y boleteria - Eventos"
+      },
+      {
+        "section": "Boletas QR",
+        "view": "registros",
+        "ok": true,
+        "title": "Eventos y boleteria - Boletas QR"
+      },
+      {
+        "section": "Aforo",
+        "view": "registros",
+        "ok": true,
+        "title": "Eventos y boleteria - Aforo"
+      },
+      {
+        "section": "Validacion",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Eventos y boleteria - Validacion"
+      },
+      {
+        "section": "Reportes",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Eventos y boleteria - Reportes"
+      }
+    ]
+  },
+  {
+    "module": "salon_spa",
+    "title": "Salon de belleza, barberia y spa",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Agenda",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Salon de belleza, barberia y spa - Agenda"
+      },
+      {
+        "section": "Servicios",
+        "view": "registros",
+        "ok": true,
+        "title": "Salon de belleza, barberia y spa - Servicios"
+      },
+      {
+        "section": "Profesionales",
+        "view": "responsables",
+        "ok": true,
+        "title": "Salon de belleza, barberia y spa - Profesionales"
+      },
+      {
+        "section": "Insumos",
+        "view": "registros",
+        "ok": true,
+        "title": "Salon de belleza, barberia y spa - Insumos"
+      },
+      {
+        "section": "Comisiones",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Salon de belleza, barberia y spa - Comisiones"
+      },
+      {
+        "section": "Cierre",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Salon de belleza, barberia y spa - Cierre"
+      }
+    ]
+  },
+  {
+    "module": "veterinaria_petshop",
+    "title": "Veterinaria y pet shop",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Pacientes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Veterinaria y pet shop - Pacientes"
+      },
+      {
+        "section": "Historia",
+        "view": "registros",
+        "ok": true,
+        "title": "Veterinaria y pet shop - Historia"
+      },
+      {
+        "section": "Vacunas",
+        "view": "registros",
+        "ok": true,
+        "title": "Veterinaria y pet shop - Vacunas"
+      },
+      {
+        "section": "Peluqueria",
+        "view": "registros",
+        "ok": true,
+        "title": "Veterinaria y pet shop - Peluqueria"
+      },
+      {
+        "section": "Productos",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Veterinaria y pet shop - Productos"
+      },
+      {
+        "section": "Seguimiento",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Veterinaria y pet shop - Seguimiento"
+      }
+    ]
+  },
+  {
+    "module": "clinica_consultorios",
+    "title": "Clinica medica y consultorios multiples",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Pacientes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Clinica medica y consultorios multiples - Pacientes"
+      },
+      {
+        "section": "Citas",
+        "view": "registros",
+        "ok": true,
+        "title": "Clinica medica y consultorios multiples - Citas"
+      },
+      {
+        "section": "Historia",
+        "view": "registros",
+        "ok": true,
+        "title": "Clinica medica y consultorios multiples - Historia"
+      },
+      {
+        "section": "Ordenes",
+        "view": "registros",
+        "ok": true,
+        "title": "Clinica medica y consultorios multiples - Ordenes"
+      },
+      {
+        "section": "Aprobaciones",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Clinica medica y consultorios multiples - Aprobaciones"
+      },
+      {
+        "section": "Reportes",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Clinica medica y consultorios multiples - Reportes"
+      }
+    ]
+  },
+  {
+    "module": "laboratorio_clinico",
+    "title": "Laboratorio clinico",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Ordenes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Laboratorio clinico - Ordenes"
+      },
+      {
+        "section": "Muestras",
+        "view": "registros",
+        "ok": true,
+        "title": "Laboratorio clinico - Muestras"
+      },
+      {
+        "section": "Resultados",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Laboratorio clinico - Resultados"
+      },
+      {
+        "section": "Calidad",
+        "view": "control",
+        "ok": true,
+        "title": "Laboratorio clinico - Calidad"
+      },
+      {
+        "section": "Entrega",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Laboratorio clinico - Entrega"
+      },
+      {
+        "section": "SLA",
+        "view": "control",
+        "ok": true,
+        "title": "Laboratorio clinico - SLA"
+      }
+    ]
+  },
+  {
+    "module": "colegio_academia",
+    "title": "Colegio, academia o instituto",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Matriculas",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Colegio, academia o instituto - Matriculas"
+      },
+      {
+        "section": "Cursos",
+        "view": "registros",
+        "ok": true,
+        "title": "Colegio, academia o instituto - Cursos"
+      },
+      {
+        "section": "Asistencia",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Colegio, academia o instituto - Asistencia"
+      },
+      {
+        "section": "Mensualidades",
+        "view": "registros",
+        "ok": true,
+        "title": "Colegio, academia o instituto - Mensualidades"
+      },
+      {
+        "section": "Boletines",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Colegio, academia o instituto - Boletines"
+      },
+      {
+        "section": "Certificados",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Colegio, academia o instituto - Certificados"
+      }
+    ]
+  },
+  {
+    "module": "guarderia_infantil",
+    "title": "Guarderia y jardin infantil",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Jornada",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Guarderia y jardin infantil - Jornada"
+      },
+      {
+        "section": "Ninos",
+        "view": "registros",
+        "ok": true,
+        "title": "Guarderia y jardin infantil - Ninos"
+      },
+      {
+        "section": "Acudientes",
+        "view": "registros",
+        "ok": true,
+        "title": "Guarderia y jardin infantil - Acudientes"
+      },
+      {
+        "section": "Autorizaciones",
+        "view": "registros",
+        "ok": true,
+        "title": "Guarderia y jardin infantil - Autorizaciones"
+      },
+      {
+        "section": "Novedades",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Guarderia y jardin infantil - Novedades"
+      },
+      {
+        "section": "Pagos",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Guarderia y jardin infantil - Pagos"
+      }
+    ]
+  },
+  {
+    "module": "lavanderia_tintoreria",
+    "title": "Lavanderia y tintoreria",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Recepcion",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Lavanderia y tintoreria - Recepcion"
+      },
+      {
+        "section": "Prendas",
+        "view": "registros",
+        "ok": true,
+        "title": "Lavanderia y tintoreria - Prendas"
+      },
+      {
+        "section": "Etiquetas",
+        "view": "registros",
+        "ok": true,
+        "title": "Lavanderia y tintoreria - Etiquetas"
+      },
+      {
+        "section": "Proceso",
+        "view": "registros",
+        "ok": true,
+        "title": "Lavanderia y tintoreria - Proceso"
+      },
+      {
+        "section": "Entrega",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Lavanderia y tintoreria - Entrega"
+      },
+      {
+        "section": "Reclamos",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Lavanderia y tintoreria - Reclamos"
+      }
+    ]
+  },
+  {
+    "module": "taller_mecanico",
+    "title": "Taller mecanico, motos y autos",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Ordenes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Taller mecanico, motos y autos - Ordenes"
+      },
+      {
+        "section": "Diagnostico",
+        "view": "registros",
+        "ok": true,
+        "title": "Taller mecanico, motos y autos - Diagnostico"
+      },
+      {
+        "section": "Repuestos",
+        "view": "registros",
+        "ok": true,
+        "title": "Taller mecanico, motos y autos - Repuestos"
+      },
+      {
+        "section": "Mano de obra",
+        "view": "registros",
+        "ok": true,
+        "title": "Taller mecanico, motos y autos - Mano de obra"
+      },
+      {
+        "section": "Garantias",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Taller mecanico, motos y autos - Garantias"
+      },
+      {
+        "section": "Entrega",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Taller mecanico, motos y autos - Entrega"
+      }
+    ]
+  },
+  {
+    "module": "transporte_carga_tms",
+    "title": "Transporte de carga / TMS",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Fletes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Transporte de carga / TMS - Fletes"
+      },
+      {
+        "section": "Manifiestos",
+        "view": "registros",
+        "ok": true,
+        "title": "Transporte de carga / TMS - Manifiestos"
+      },
+      {
+        "section": "Conductores",
+        "view": "responsables",
+        "ok": true,
+        "title": "Transporte de carga / TMS - Conductores"
+      },
+      {
+        "section": "Tracking",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Transporte de carga / TMS - Tracking"
+      },
+      {
+        "section": "Entregas",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Transporte de carga / TMS - Entregas"
+      },
+      {
+        "section": "Liquidacion",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Transporte de carga / TMS - Liquidacion"
+      }
+    ]
+  },
+  {
+    "module": "servicios_tecnicos",
+    "title": "Servicios tecnicos a domicilio",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Ordenes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Servicios tecnicos a domicilio - Ordenes"
+      },
+      {
+        "section": "Agenda",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Servicios tecnicos a domicilio - Agenda"
+      },
+      {
+        "section": "Tecnicos",
+        "view": "responsables",
+        "ok": true,
+        "title": "Servicios tecnicos a domicilio - Tecnicos"
+      },
+      {
+        "section": "Repuestos",
+        "view": "registros",
+        "ok": true,
+        "title": "Servicios tecnicos a domicilio - Repuestos"
+      },
+      {
+        "section": "Firmas",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Servicios tecnicos a domicilio - Firmas"
+      },
+      {
+        "section": "Garantias",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Servicios tecnicos a domicilio - Garantias"
+      }
+    ]
+  },
+  {
+    "module": "inmobiliaria_comercial",
+    "title": "Inmobiliaria comercial",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Propiedades",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Inmobiliaria comercial - Propiedades"
+      },
+      {
+        "section": "Leads",
+        "view": "registros",
+        "ok": true,
+        "title": "Inmobiliaria comercial - Leads"
+      },
+      {
+        "section": "Visitas",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Inmobiliaria comercial - Visitas"
+      },
+      {
+        "section": "Contratos",
+        "view": "registros",
+        "ok": true,
+        "title": "Inmobiliaria comercial - Contratos"
+      },
+      {
+        "section": "Comisiones",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Inmobiliaria comercial - Comisiones"
+      },
+      {
+        "section": "Cierre",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Inmobiliaria comercial - Cierre"
+      }
+    ]
+  },
+  {
+    "module": "seguridad_privada",
+    "title": "Seguridad privada y vigilancia",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Puestos",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Seguridad privada y vigilancia - Puestos"
+      },
+      {
+        "section": "Turnos",
+        "view": "registros",
+        "ok": true,
+        "title": "Seguridad privada y vigilancia - Turnos"
+      },
+      {
+        "section": "Guardas",
+        "view": "responsables",
+        "ok": true,
+        "title": "Seguridad privada y vigilancia - Guardas"
+      },
+      {
+        "section": "Rondas QR",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Seguridad privada y vigilancia - Rondas QR"
+      },
+      {
+        "section": "Incidentes",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Seguridad privada y vigilancia - Incidentes"
+      },
+      {
+        "section": "Reportes",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Seguridad privada y vigilancia - Reportes"
+      }
+    ]
+  },
+  {
+    "module": "club_deportivo",
+    "title": "Club deportivo y escuela deportiva",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Alumnos",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Club deportivo y escuela deportiva - Alumnos"
+      },
+      {
+        "section": "Disciplinas",
+        "view": "registros",
+        "ok": true,
+        "title": "Club deportivo y escuela deportiva - Disciplinas"
+      },
+      {
+        "section": "Clases",
+        "view": "registros",
+        "ok": true,
+        "title": "Club deportivo y escuela deportiva - Clases"
+      },
+      {
+        "section": "Torneos",
+        "view": "registros",
+        "ok": true,
+        "title": "Club deportivo y escuela deportiva - Torneos"
+      },
+      {
+        "section": "Pagos",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Club deportivo y escuela deportiva - Pagos"
+      },
+      {
+        "section": "Asistencia",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Club deportivo y escuela deportiva - Asistencia"
+      }
+    ]
+  },
+  {
+    "module": "funeraria_exequial",
+    "title": "Funeraria y servicios exequiales",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Planes",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Funeraria y servicios exequiales - Planes"
+      },
+      {
+        "section": "Afiliados",
+        "view": "registros",
+        "ok": true,
+        "title": "Funeraria y servicios exequiales - Afiliados"
+      },
+      {
+        "section": "Servicios",
+        "view": "registros",
+        "ok": true,
+        "title": "Funeraria y servicios exequiales - Servicios"
+      },
+      {
+        "section": "Salas",
+        "view": "registros",
+        "ok": true,
+        "title": "Funeraria y servicios exequiales - Salas"
+      },
+      {
+        "section": "Documentos",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Funeraria y servicios exequiales - Documentos"
+      },
+      {
+        "section": "Cierre",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Funeraria y servicios exequiales - Cierre"
+      }
+    ]
+  },
+  {
+    "module": "parque_recreativo",
+    "title": "Parque recreativo y atracciones",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Entradas",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Parque recreativo y atracciones - Entradas"
+      },
+      {
+        "section": "Manillas QR",
+        "view": "registros",
+        "ok": true,
+        "title": "Parque recreativo y atracciones - Manillas QR"
+      },
+      {
+        "section": "Aforo",
+        "view": "registros",
+        "ok": true,
+        "title": "Parque recreativo y atracciones - Aforo"
+      },
+      {
+        "section": "Atracciones",
+        "view": "registros",
+        "ok": true,
+        "title": "Parque recreativo y atracciones - Atracciones"
+      },
+      {
+        "section": "Consumo",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Parque recreativo y atracciones - Consumo"
+      },
+      {
+        "section": "Incidentes",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Parque recreativo y atracciones - Incidentes"
+      }
+    ]
+  },
+  {
+    "module": "cooperativa_fondo",
+    "title": "Cooperativa y fondo de empleados",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Asociados",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Cooperativa y fondo de empleados - Asociados"
+      },
+      {
+        "section": "Aportes",
+        "view": "registros",
+        "ok": true,
+        "title": "Cooperativa y fondo de empleados - Aportes"
+      },
+      {
+        "section": "Creditos",
+        "view": "registros",
+        "ok": true,
+        "title": "Cooperativa y fondo de empleados - Creditos"
+      },
+      {
+        "section": "Cartera",
+        "view": "registros",
+        "ok": true,
+        "title": "Cooperativa y fondo de empleados - Cartera"
+      },
+      {
+        "section": "Beneficios",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Cooperativa y fondo de empleados - Beneficios"
+      },
+      {
+        "section": "Asambleas",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Cooperativa y fondo de empleados - Asambleas"
+      }
+    ]
+  },
+  {
+    "module": "capacitacion_empresarial",
+    "title": "Centro de capacitacion empresarial",
+    "menuLinks": 6,
+    "defaultVisible": true,
+    "sections": [
+      {
+        "section": "Cursos",
+        "view": "dashboard",
+        "ok": true,
+        "title": "Centro de capacitacion empresarial - Cursos"
+      },
+      {
+        "section": "Cohortes",
+        "view": "registros",
+        "ok": true,
+        "title": "Centro de capacitacion empresarial - Cohortes"
+      },
+      {
+        "section": "Instructores",
+        "view": "responsables",
+        "ok": true,
+        "title": "Centro de capacitacion empresarial - Instructores"
+      },
+      {
+        "section": "Asistencia",
+        "view": "seguimiento",
+        "ok": true,
+        "title": "Centro de capacitacion empresarial - Asistencia"
+      },
+      {
+        "section": "Evaluaciones",
+        "view": "aprobacion",
+        "ok": true,
+        "title": "Centro de capacitacion empresarial - Evaluaciones"
+      },
+      {
+        "section": "Certificados",
+        "view": "evidencia",
+        "ok": true,
+        "title": "Centro de capacitacion empresarial - Certificados"
+      }
+    ]
+  }
+]

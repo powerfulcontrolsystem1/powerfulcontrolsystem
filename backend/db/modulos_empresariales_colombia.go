@@ -1063,7 +1063,10 @@ func ListEmpresaModuloColombiaRegistros(dbConn *sql.DB, empresaID int64, modulo,
 	modulo = NormalizeEmpresaModuloColombia(modulo)
 	args := []interface{}{empresaID, modulo}
 	where := "empresa_id=? AND modulo=?"
-	if estado = normalizeModuloColombiaEstado(estado); estado != "" && estado != "todos" {
+	if strings.TrimSpace(estado) != "" {
+		estado = normalizeModuloColombiaEstado(estado)
+	}
+	if estado != "" && estado != "todos" {
 		where += " AND estado=?"
 		args = append(args, estado)
 	}
@@ -1260,7 +1263,10 @@ func ListEmpresaModuloColombiaAprobaciones(dbConn *sql.DB, empresaID int64, modu
 		where += " AND registro_id=?"
 		args = append(args, registroID)
 	}
-	if estado = normalizeModuloColombiaAprobacionEstado(estado); estado != "" && estado != "todos" {
+	if strings.TrimSpace(estado) != "" {
+		estado = normalizeModuloColombiaAprobacionEstado(estado)
+	}
+	if estado != "" && estado != "todos" {
 		where += " AND estado=?"
 		args = append(args, estado)
 	}
@@ -1294,7 +1300,10 @@ func ListEmpresaModuloColombiaTareas(dbConn *sql.DB, empresaID int64, modulo str
 		where += " AND registro_id=?"
 		args = append(args, registroID)
 	}
-	if estado = normalizeModuloColombiaTareaEstado(estado); estado != "" && estado != "todos" {
+	if strings.TrimSpace(estado) != "" {
+		estado = normalizeModuloColombiaTareaEstado(estado)
+	}
+	if estado != "" && estado != "todos" {
 		where += " AND estado=?"
 		args = append(args, estado)
 	}

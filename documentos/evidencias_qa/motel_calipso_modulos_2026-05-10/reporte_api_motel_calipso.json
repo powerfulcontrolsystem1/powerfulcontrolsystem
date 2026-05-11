@@ -1,0 +1,5030 @@
+{
+  "started": "2026-05-11T02:46:08.563Z",
+  "base": "https://powerfulcontrolsystem.com",
+  "empresa_id": 7,
+  "empresa": "Motel Calipso",
+  "modules_expected": 20,
+  "api": [
+    {
+      "module": "agencia_viajes",
+      "title": "Agencia de viajes y planes turisticos",
+      "registro_id": 141,
+      "codigo": "QA-AGENCIAVIA-1778467571282-1",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "operador_turistico",
+      "title": "Operador turistico local",
+      "registro_id": 143,
+      "codigo": "QA-OPERADORTU-1778467575242-2",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "eventos_boleteria",
+      "title": "Eventos y boleteria",
+      "registro_id": 145,
+      "codigo": "QA-EVENTOSBOL-1778467579173-3",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "salon_spa",
+      "title": "Salon de belleza, barberia y spa",
+      "registro_id": 147,
+      "codigo": "QA-SALONSPA-1778467583159-4",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "veterinaria_petshop",
+      "title": "Veterinaria y pet shop",
+      "registro_id": 149,
+      "codigo": "QA-VETERINARI-1778467587108-5",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "clinica_consultorios",
+      "title": "Clinica medica y consultorios multiples",
+      "registro_id": 151,
+      "codigo": "QA-CLINICACON-1778467591015-6",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "laboratorio_clinico",
+      "title": "Laboratorio clinico",
+      "registro_id": 153,
+      "codigo": "QA-LABORATORI-1778467594934-7",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "colegio_academia",
+      "title": "Colegio, academia o instituto",
+      "registro_id": 155,
+      "codigo": "QA-COLEGIOACA-1778467598832-8",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "guarderia_infantil",
+      "title": "Guarderia y jardin infantil",
+      "registro_id": 157,
+      "codigo": "QA-GUARDERIAI-1778467602859-9",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "lavanderia_tintoreria",
+      "title": "Lavanderia y tintoreria",
+      "registro_id": 159,
+      "codigo": "QA-LAVANDERIA-1778467606758-10",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "taller_mecanico",
+      "title": "Taller mecanico, motos y autos",
+      "registro_id": 161,
+      "codigo": "QA-TALLERMECA-1778467610687-11",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "transporte_carga_tms",
+      "title": "Transporte de carga / TMS",
+      "registro_id": 163,
+      "codigo": "QA-TRANSPORTE-1778467614595-12",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "servicios_tecnicos",
+      "title": "Servicios tecnicos a domicilio",
+      "registro_id": 165,
+      "codigo": "QA-SERVICIOST-1778467618548-13",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "inmobiliaria_comercial",
+      "title": "Inmobiliaria comercial",
+      "registro_id": 167,
+      "codigo": "QA-INMOBILIAR-1778467622903-14",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "seguridad_privada",
+      "title": "Seguridad privada y vigilancia",
+      "registro_id": 169,
+      "codigo": "QA-SEGURIDADP-1778467627032-15",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "club_deportivo",
+      "title": "Club deportivo y escuela deportiva",
+      "registro_id": 171,
+      "codigo": "QA-CLUBDEPORT-1778467631575-16",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "funeraria_exequial",
+      "title": "Funeraria y servicios exequiales",
+      "registro_id": 173,
+      "codigo": "QA-FUNERARIAE-1778467635490-17",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "parque_recreativo",
+      "title": "Parque recreativo y atracciones",
+      "registro_id": 175,
+      "codigo": "QA-PARQUERECR-1778467639507-18",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "cooperativa_fondo",
+      "title": "Cooperativa y fondo de empleados",
+      "registro_id": 177,
+      "codigo": "QA-COOPERATIV-1778467643495-19",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "module": "capacitacion_empresarial",
+      "title": "Centro de capacitacion empresarial",
+      "registro_id": 179,
+      "codigo": "QA-CAPACITACI-1778467647488-20",
+      "ok": true,
+      "steps": [
+        {
+          "name": "GET dashboard",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET plantilla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET diagnostico",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET responsables",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET eventos",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST registro",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "GET buscar registro creado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cambio estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evento",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST evidencia",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion solicitar",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "Regla negocio cierre bloquea aprobacion pendiente",
+          "ok": true,
+          "status": 400,
+          "detail": ""
+        },
+        {
+          "name": "POST aprobacion decidir",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea",
+          "ok": true,
+          "status": 201,
+          "detail": ""
+        },
+        {
+          "name": "POST tarea estado",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST accion masiva",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET evidencias registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET aprobaciones registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET tareas registro",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET expediente 360",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST cierre controlado exitoso",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST importar registros",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "POST generar plan accion",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET dashboard post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET reporte post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET agenda post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET sla post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET riesgo post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET exportacion post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        },
+        {
+          "name": "GET registros post-flujo",
+          "ok": true,
+          "status": 200,
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "failures": [],
+  "global_checks": [
+    {
+      "index": 1,
+      "ok": true,
+      "status": 200,
+      "rel": "/administrar_empresa.html?id=7&empresa_id=7",
+      "detail": ""
+    },
+    {
+      "index": 2,
+      "ok": true,
+      "status": 200,
+      "rel": "/api/empresa/permisos_contexto?empresa_id=7&include_matrix=1",
+      "detail": ""
+    },
+    {
+      "index": 3,
+      "ok": true,
+      "status": 200,
+      "rel": "/api/public/verticales_nuevos/catalogo",
+      "detail": ""
+    },
+    {
+      "index": 4,
+      "ok": true,
+      "status": 200,
+      "rel": "/api/empresa/verticales_nuevos/catalogo?empresa_id=7",
+      "detail": ""
+    }
+  ],
+  "finished": "2026-05-11T02:47:29.934Z",
+  "summary": {
+    "api_modules_ok": 20,
+    "api_modules_total": 20,
+    "api_steps_ok": 800,
+    "api_steps_total": 800,
+    "global_checks_ok": 4,
+    "global_checks_total": 4,
+    "failures": 0
+  }
+}
