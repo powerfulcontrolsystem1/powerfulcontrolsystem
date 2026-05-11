@@ -94,82 +94,11 @@
     return fallback || "registros";
   }
 
-  function sectionDescription(intent) {
-    return {
-      dashboard: "Vista de mando con alertas, vencimientos, recomendaciones y salud operativa del modulo.",
-      control: "Controles de cumplimiento, SLA, riesgo, configuracion operativa y puntos de auditoria.",
-      registros: "Gestion de registros, busqueda, edicion, importacion CSV y acciones masivas.",
-      seguimiento: "Seguimiento profesional con cambio de estado, bitacora y compromisos de operacion.",
-      responsables: "Carga por responsable, pendientes, recomendaciones de reasignacion y control de equipos.",
-      aprobacion: "Solicitudes, validaciones, aprobaciones, rechazos y cierre controlado con trazabilidad.",
-      evidencia: "Soportes, documentos, evidencias, reporte ejecutivo y exportacion para auditoria."
-    }[intent] || "Gestion operativa del modulo.";
-  }
-
-  function sectionTarget(intent) {
-    return {
-      dashboard: "mcAgenda",
-      control: "mcConfig",
-      registros: "mcTable",
-      seguimiento: "mcFollowForm",
-      responsables: "mcResponsables",
-      aprobacion: "mcApprovalForm",
-      evidencia: "mcEvidenceForm"
-    }[intent] || "mcAgenda";
-  }
-
   function moduleSections() {
     var sections = state.plantilla && Array.isArray(state.plantilla.secciones_flujo) ? state.plantilla.secciones_flujo : [];
     if (!sections.length && state.catalogItem && Array.isArray(state.catalogItem.sections)) sections = state.catalogItem.sections;
     if (!sections.length) sections = ["Dashboard", "Registros", "Seguimiento", "Aprobaciones", "Evidencias", "Reportes"];
     return sections.map(cleanLabel).filter(Boolean);
-  }
-
-  function workflowMarkup() {
-    var sections = moduleSections();
-    if (!sections.length) return "";
-    return '<ol class="mc-workflow" id="mcWorkflow">' + sections.map(function (section, idx) {
-      var intent = intentFromSection(section, idx === 0 ? "dashboard" : "registros");
-      var active = normalizeLabel(section) === normalizeLabel(state.activeSection);
-      return '<li><button type="button" class="' + (active ? "active" : "") + '" data-mc-workflow-section="' + esc(section) + '" data-mc-workflow-intent="' + esc(intent) + '" data-mc-workflow-target="' + esc(sectionTarget(intent)) + '"><small>' + esc(String(idx + 1).padStart(2, "0")) + '</small><span>' + esc(section) + '</span></button></li>';
-    }).join("") + "</ol>";
-  }
-
-  function sectionContextMarkup() {
-    var section = cleanLabel(state.activeSection) || "Operacion integral";
-    var intent = state.activeIntent || intentFromSection(section, "dashboard");
-    return '<section class="mc-section-context" id="mcSectionContext">' +
-      '<div><span>Seccion activa</span><strong id="mcSectionTitle">' + esc(section) + '</strong><p id="mcSectionDesc">' + esc(sectionDescription(intent)) + '</p></div>' +
-      '<nav class="mc-section-quick" aria-label="Accesos rapidos del modulo">' +
-      '<button type="button" data-mc-jump="mcAgenda">Dashboard</button>' +
-      '<button type="button" data-mc-jump="mcConfig">Config.</button>' +
-      '<button type="button" data-mc-jump="mcTable">Registros</button>' +
-      '<button type="button" data-mc-jump="mcFollowForm">Seguimiento</button>' +
-      '<button type="button" data-mc-jump="mcApprovalForm">Aprobaciones</button>' +
-      '<button type="button" data-mc-jump="mcEvidenceForm">Evidencias</button>' +
-      '<button type="button" data-mc-jump="mcReporte">Reportes</button>' +
-      '</nav>' +
-      '<div class="mc-workflow-wrap" aria-label="Ruta de trabajo del vertical">' + workflowMarkup() + '</div>' +
-      '</section>';
-  }
-
-  function updateSectionContext(section, intent) {
-    if (section) state.activeSection = cleanLabel(section);
-    if (intent) state.activeIntent = cleanLabel(intent).toLowerCase();
-    if (!state.activeIntent) state.activeIntent = intentFromSection(state.activeSection, "dashboard");
-    var title = document.getElementById("mcSectionTitle");
-    var desc = document.getElementById("mcSectionDesc");
-    if (title) title.textContent = state.activeSection || "Operacion integral";
-    if (desc) desc.textContent = sectionDescription(state.activeIntent);
-    document.querySelectorAll("[data-mc-workflow-section]").forEach(function (btn) {
-      btn.classList.toggle("active", normalizeLabel(btn.getAttribute("data-mc-workflow-section")) === normalizeLabel(state.activeSection));
-    });
-  }
-
-  function refreshWorkflowContext() {
-    var wrap = document.querySelector(".mc-workflow-wrap");
-    if (wrap) wrap.innerHTML = workflowMarkup();
-    updateSectionContext(state.activeSection, state.activeIntent);
   }
 
   function jumpToElementById(id) {
@@ -196,7 +125,6 @@
       '<main class="mc-shell">' +
       '<header class="mc-head"><div><h1>' + esc(state.titulo) + '</h1><p>' + esc(state.lead) + '</p></div>' +
       '<div class="mc-actions"><button class="mc-btn" id="mcRefresh" type="button">Actualizar</button><button class="mc-btn" id="mcSeed" type="button">Cargar demo</button><button class="mc-btn" id="mcImportBtn" type="button">Importar CSV</button><button class="mc-btn primary" id="mcExport" type="button">Exportar auditoria CSV</button><input id="mcImportFile" type="file" accept=".csv,text/csv" hidden></div></header>' +
-      sectionContextMarkup() +
       '<section class="mc-kpis"><article><span>Total</span><strong id="kpiTotal">0</strong></article><article><span>Abiertos</span><strong id="kpiAbiertos">0</strong></article><article><span>En proceso</span><strong id="kpiProceso">0</strong></article><article><span>Aprobados / cerrados</span><strong id="kpiAprobados">0</strong></article><article><span>Vencidos</span><strong id="kpiVencidos">0</strong></article><article><span>Valor</span><strong id="kpiValor">$0</strong></article></section>' +
       '<section class="mc-card" id="mcConfig"><div class="mc-card-head"><div><h2>Configuracion operativa del vertical</h2><p class="mc-muted">Plantilla activa, estados, categorias, acciones, diagnostico y formato CSV para este negocio.</p></div><div class="mc-actions"><button class="mc-btn" id="mcDownloadTemplate" type="button">Plantilla CSV</button><button class="mc-btn" id="mcDownloadChecklist" type="button">Checklist CSV</button><button class="mc-btn" id="mcCopyMetadata" type="button">Copiar metadata</button></div></div><div id="mcConfigDiagnostics" class="mc-config-diagnostics"></div><div id="mcConfigBody" class="mc-config-grid"></div></section>' +
       '<div class="mc-toolbar mc-searchbar"><label>Buscar<input id="mcTextoFiltro" placeholder="Codigo, nombre, tercero, referencia"></label><label>Estado<select id="mcEstadoFiltro"><option value="">Todos</option></select></label><label>Tipo<select id="mcTipoFiltro"><option value="">Todos</option></select></label><label>Categoria<select id="mcCategoriaFiltro"><option value="">Todas</option></select></label><label>Prioridad<select id="mcPrioridadFiltro"><option value="">Todas</option><option value="baja">Baja</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label><label>Responsable<input id="mcResponsableFiltro" placeholder="Usuario, rol o area"></label><label>Vencimiento<select id="mcVenceFiltro"><option value="">Todos</option><option value="vencidos">Vencidos</option><option value="7">Proximos 7 dias</option><option value="30">Proximos 30 dias</option></select></label><button class="mc-btn primary" id="mcSearch" type="button">Buscar</button><button class="mc-btn" id="mcClearSearch" type="button">Limpiar</button><button class="mc-btn" id="mcClearForm" type="button">Nuevo registro</button></div>' +
@@ -266,7 +194,6 @@
       '<span>' + esc((p.etiqueta_tercero || "Tercero / area") + " | " + (p.etiqueta_referencia || "Referencia")) + '</span>' +
       '<code>' + esc(p.metadata_ejemplo || '{"nota":"detalle"}') + '</code></article>';
     renderConfigDiagnostics();
-    refreshWorkflowContext();
   }
 
   function configBlock(title, rows) {
@@ -665,10 +592,10 @@
       state.agenda = results[2] || {};
       state.sla = results[3] || {};
       state.riesgo = results[4] || {};
-      state.responsables = results[5] || [];
-      state.evidencias = results[6] || [];
-      state.aprobaciones = results[7] || [];
-      state.tareas = results[8] || [];
+      state.responsables = Array.isArray(results[5]) ? results[5] : [];
+      state.evidencias = Array.isArray(results[6]) ? results[6] : [];
+      state.aprobaciones = Array.isArray(results[7]) ? results[7] : [];
+      state.tareas = Array.isArray(results[8]) ? results[8] : [];
       state.diagnostico = results[9] || null;
       state.busqueda = results[10] || null;
       if (state.busqueda) {
@@ -999,7 +926,6 @@
     window.addEventListener("message", function (event) {
       var data = event && event.data;
       if (!data || data.type !== "pcs-submenu-select") return;
-      updateSectionContext(data.section || "", data.intent || "");
       scrollToSubmenuHash(data.hash || data.key || "");
     });
     api("plantilla").then(function (plantilla) {
@@ -1068,15 +994,6 @@
     document.addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-edit]");
       if (btn) editRow(btn.getAttribute("data-edit"));
-      var jumpBtn = ev.target.closest("[data-mc-jump]");
-      if (jumpBtn) {
-        jumpToElementById(jumpBtn.getAttribute("data-mc-jump") || "");
-      }
-      var workflowBtn = ev.target.closest("[data-mc-workflow-section]");
-      if (workflowBtn) {
-        updateSectionContext(workflowBtn.getAttribute("data-mc-workflow-section") || "", workflowBtn.getAttribute("data-mc-workflow-intent") || "");
-        jumpToElementById(workflowBtn.getAttribute("data-mc-workflow-target") || "");
-      }
       var expBtn = ev.target.closest("[data-expediente]");
       if (expBtn) loadExpediente(expBtn.getAttribute("data-expediente"));
       var closeBtn = ev.target.closest("[data-close-controlled]");

@@ -46,13 +46,13 @@ Los modulos quedan en el catalogo de permisos de empresa y en la matriz del supe
 
 ## Frontend
 
-Se agrego la entrada `20 verticales nuevos` en `Administrar Empresa > Soluciones por negocio`.
+Los 20 modulos por tipo de negocio se muestran como botones propios dentro de `Administrar Empresa > Soluciones por negocio`, al mismo nivel visual de Gimnasio, Odontologia, Taxi system, Domicilios y otros negocios existentes. El antiguo boton agrupador `20 verticales nuevos` ya no queda como paso intermedio en el menu principal.
 
-Cada tarjeta del submenu abre `modulo_menu.html?module=<modulo>`, con botones internos para areas como dashboard, configuracion, registros, aprobaciones, evidencias, seguimiento, SLA y reportes. El contenido operativo carga en `modulo_colombia.html`, que toma `module`, `title` y `lead` por query string.
+Cada boton vertical abre `modulo_menu.html?module=<modulo>`, con botones internos para areas como dashboard, configuracion, registros, aprobaciones, evidencias, seguimiento, SLA y reportes. El contenido operativo carga en `modulo_colombia.html`, que toma `module`, `title` y `lead` por query string.
 
 El submenu de cada vertical ahora interpreta la intencion de cada seccion (`dashboard`, `registros`, `seguimiento`, `responsables`, `aprobacion`, `evidencia` o `control`) y abre la zona correcta del modulo con `section` e `intent`. La pagina operativa muestra una banda fija de contexto con la seccion activa y accesos rapidos, para que en desktop y celular el usuario sepa si esta trabajando en dashboard, registros, seguimiento, aprobaciones, evidencias o reportes.
 
-La pagina operativa tambien carga `web/js/nuevos_verticales_catalogo.js` y renderiza la ruta de trabajo completa del vertical como pasos numerados. Las secciones ya quedan expuestas desde la plantilla backend en `secciones_flujo`, y el catalogo visual se usa como respaldo para iconos, resumenes y portada. Esto deja visibles las seis secciones propias de cada negocio, resalta la seccion activa y permite saltar entre etapas sin crear 20 pantallas duplicadas.
+La pagina operativa carga `web/js/nuevos_verticales_catalogo.js` para resolver iconos, resumenes y textos de portada, pero ya no muestra el bloque superior de seccion activa ni la ruta numerada dentro del formulario operativo. La navegacion principal queda en el submenu de botones de cada modulo, para que la pagina de trabajo arranque directamente con indicadores, configuracion, diagnostico y registros.
 
 Cada vertical incorpora una seccion de configuracion operativa (`mcConfig`) alimentada por su plantilla backend: tipos de registro, categorias, estados de flujo, acciones sugeridas, etiquetas de tercero/referencia y metadata JSON base. Desde esa misma tarjeta se puede descargar una plantilla CSV de carga y copiar la metadata de ejemplo, manteniendo la configuracion profesional sin duplicar interfaces por industria.
 
@@ -78,7 +78,7 @@ El panel de super administrador tambien queda alineado: `super/tipos_empresas.ht
 
 La ayuda administrativa y el contexto canonico de IA tambien quedan alineados. `/ayuda/ayuda.html` incluye una seccion `20 verticales nuevos` con catalogo, activacion, operacion, pantallas conectadas y regla de soporte; `defaultContextoIALogicaNegocioText()` explica a la IA que estos verticales usan licencias, roles, `modulos_habilitados`, diagnostico y el motor compartido `empresa_modulos_colombia_*`.
 
-El acceso `20 verticales nuevos` en el menu empresarial ya no queda siempre visible: se muestra cuando el contexto efectivo de licencia/rol permite crear al menos uno de los 20 verticales. El lanzador `verticales_nuevos_menu.html` tambien consulta `/api/empresa/permisos_contexto` y filtra sus tarjetas a las permitidas para la empresa y el rol actuales.
+Los botones directos de los verticales en el menu empresarial se filtran por licencia/rol usando el mismo contexto de permisos. El lanzador `verticales_nuevos_menu.html` se conserva como pagina de catalogo y tambien consulta `/api/empresa/permisos_contexto` para filtrar sus tarjetas a las permitidas para la empresa y el rol actuales.
 
 Las pantallas de permisos (`super/permisos_rol.html` y `administrar_empresa/configuracion_permisos.html`) muestran la regla agrupada como `Cualquiera de 20 verticales`, con detalle de los modulos incluidos y una regla legible (`Crear en al menos un vertical permitido`) para evitar que el super administrador vea un modulo vacio o ambiguo.
 
@@ -116,6 +116,10 @@ Cada licencia incluye el modulo vertical correspondiente y los modulos base de v
 ## Evidencia visual
 
 - `documentos/evidencias_qa/20_verticales_2026-05-10/verticales_nuevos_menu.png`
+- `documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_directos.png`
+- `documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_mobile.png`
+- `documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_botones_integrados.png`
+- `documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_sin_cuadros_superiores.png`
 - `documentos/evidencias_qa/20_verticales_2026-05-10/agencia_viajes_modulo.png`
 - `documentos/evidencias_qa/20_verticales_2026-05-10/verticales_catalogo_centralizado.png`
 - `documentos/evidencias_qa/20_verticales_2026-05-10/submenu_agencia_viajes_centralizado.png`
@@ -161,7 +165,7 @@ Cada licencia incluye el modulo vertical correspondiente y los modulos base de v
 - Validacion cruzada de catalogos backend/frontend: 20 modulos exactos y sin faltantes.
 - Validacion estatica de no duplicacion: `index.html` y `super/licencias.html` no conservan tarjetas/checks estaticos de `agencia_viajes` a `capacitacion_empresarial`.
 - Validacion backend de no duplicacion: las pruebas comprueban que cada tipo/licencia use el titulo derivado de su plantilla operativa y que el numero de plantillas coincida con el catalogo de tipos.
-- Validacion de permisos: prueba automatica para `linkNuevosVerticales`, que queda oculto si ningun vertical esta permitido y visible cuando al menos uno lo esta.
+- Validacion de permisos: los 20 botones directos del menu empresarial usan las mismas claves `link<Vertical>` del catalogo y se filtran por modulo/rol/licencia.
 - Validacion visual controlada de permisos: capturas con contexto mock local para comprobar que `linkNuevosVerticales` aparece como regla agrupada y que el lanzador solo muestra los verticales permitidos.
 - Validacion visual del flujo por seccion: capturas desktop y celular del modulo `agencia_viajes`, confirmando banda fija de seccion activa y salto directo a `Registros`.
 - Validacion visual de ruta de trabajo: capturas desktop y celular con pasos numerados de `agencia_viajes`, resaltando `Reservas y vouchers`.
@@ -176,3 +180,4 @@ Cada licencia incluye el modulo vertical correspondiente y los modulos base de v
 - Validacion de selector de empresas: tarjetas y formulario reconocen los nuevos tipos verticales desde `web/js/nuevos_verticales_catalogo.js`, incluyendo vista previa de secciones antes de crear empresa.
 - Validacion de super administrador: tipos de empresa y preconfiguraciones identifican visualmente los verticales, muestran conteos y exponen secciones principales del flujo.
 - Validacion de ayuda e IA: prueba automatica del contexto canonico de IA y captura visual de la seccion `20 verticales nuevos` en el centro de ayuda.
+- Validacion de simplificacion UI: `Administrar empresa > Soluciones por negocio` muestra los 20 tipos como botones directos, sin encabezado separado; la pagina operativa del modulo ya no renderiza el bloque superior de seccion activa, accesos rapidos ni ruta numerada.

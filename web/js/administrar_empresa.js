@@ -103,6 +103,13 @@ try {
   var portalUsuariosLink = document.getElementById("linkPortalUsuarios");
   var companySelectorLink = document.querySelector("a.select-company");
   var permsEvidence = document.getElementById("menuPermsEvidence");
+  var nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES)
+    ? window.PCS_NUEVOS_VERTICALES.slice()
+    : [];
+  var nuevosVerticalesModules = Array.isArray(window.PCS_NUEVOS_VERTICALES_MODULES)
+    ? window.PCS_NUEVOS_VERTICALES_MODULES.slice()
+    : nuevosVerticalesCatalog.map(function (item) { return [item.id, item.module]; });
+  var nuevosVerticalesMenuLinks = renderNuevosVerticalesMenuLinks();
   var storage = null;
   try {
     storage = window.sessionStorage;
@@ -207,7 +214,7 @@ try {
     document.getElementById("linkTarifasPorMinutos"),
     document.getElementById("linkTarifasPorDia"),
     document.getElementById("linkFrecuenciaFE"),
-  ];
+  ].concat(nuevosVerticalesMenuLinks);
   var frameLinks = [];
 
   var permActionRead = "R";
@@ -270,10 +277,6 @@ try {
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
   var permModuleNextcloud = "nextcloud";
-  var nuevosVerticalesModules = Array.isArray(window.PCS_NUEVOS_VERTICALES_MODULES)
-    ? window.PCS_NUEVOS_VERTICALES_MODULES.slice()
-    : [];
-
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
@@ -416,7 +419,6 @@ try {
     linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
     linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIAGlobal: { module: permModuleSeguridad, action: permActionRead },
-    linkNuevosVerticales: { anyModules: nuevosVerticalesModules.map(function (item) { return item[1]; }), action: permActionCreate },
     linkEstaciones: { alwaysVisible: true },
     linkPanelEmpresa: { alwaysVisible: true }
   };
@@ -427,6 +429,35 @@ try {
   function isNuevoVerticalModule(module) {
     var normalized = String(module || "").trim().toLowerCase();
     return nuevosVerticalesModules.some(function (item) { return item[1] === normalized; });
+  }
+
+  function escHTML(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+    });
+  }
+
+  function renderNuevosVerticalesMenuLinks() {
+    var mount = document.getElementById("adminBusinessVerticalsMount");
+    if (!mount || !nuevosVerticalesCatalog.length) {
+      return [];
+    }
+    Array.prototype.slice.call(document.querySelectorAll(".admin-business-vertical-item")).forEach(function (item) {
+      if (item && item.parentElement) item.parentElement.removeChild(item);
+    });
+    var html = nuevosVerticalesCatalog.map(function (item) {
+      var id = String(item.id || "").trim();
+      var module = String(item.module || "").trim();
+      if (!id || !module) return "";
+      var title = String(item.title || item.fullTitle || module).trim();
+      var icon = String(item.icon || "/img/company-briefcase-color.svg").trim();
+      var href = "/administrar_empresa/modulo_menu.html?module=" + encodeURIComponent(module);
+      return '<li class="admin-business-vertical-item"><a id="' + escHTML(id) + '" href="' + escHTML(href) + '" target="contentFrame" data-vertical-module="' + escHTML(module) + '">' +
+        '<img class="icon" src="' + escHTML(icon) + '" alt="">' + escHTML(title) +
+        '</a></li>';
+    }).join("");
+    mount.insertAdjacentHTML("beforebegin", html);
+    return Array.prototype.slice.call(document.querySelectorAll(".admin-business-vertical-item a[data-vertical-module]"));
   }
 
   function storageKey(empresaId) {
@@ -1278,6 +1309,7 @@ try {
   }
 
   function refreshMenuGroups() {
+    refreshNuevosVerticalesMenuVisibility();
     var groups = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .admin-nav-group"));
     groups.forEach(function (group) {
       var items = Array.prototype.slice.call(group.querySelectorAll(".admin-nav-sublist > li"));
@@ -1290,6 +1322,11 @@ try {
       });
       group.style.display = hasVisibleItem ? "" : "none";
     });
+  }
+
+  function refreshNuevosVerticalesMenuVisibility() {
+    var mount = document.getElementById("adminBusinessVerticalsMount");
+    if (mount) mount.style.display = "none";
   }
 
   function isMenuLinkVisible(link) {
