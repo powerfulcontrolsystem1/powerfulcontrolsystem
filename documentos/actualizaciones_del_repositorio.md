@@ -8432,3 +8432,7 @@ Archivos modificados:
 - tools/migration_audit.mjs
 - tools/qa_module_contracts.mjs
 - tools/ux_consistency_audit.mjs
+
+2026-05-11 01:24:15 - Mensaje: fix: instalar buildx con fallback oficial; Commit: 515ac1bd; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-install-buildx.sh
