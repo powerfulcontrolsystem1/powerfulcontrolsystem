@@ -280,6 +280,7 @@ type EmpresaModuloColombiaAccionMasivaResult struct {
 type EmpresaModuloColombiaPlantilla struct {
 	Modulo             string   `json:"modulo"`
 	Titulo             string   `json:"titulo"`
+	SeccionesFlujo     []string `json:"secciones_flujo,omitempty"`
 	Tipos              []string `json:"tipos"`
 	Categorias         []string `json:"categorias"`
 	EstadosFlujo       []string `json:"estados_flujo"`
@@ -287,6 +288,27 @@ type EmpresaModuloColombiaPlantilla struct {
 	EtiquetaTercero    string   `json:"etiqueta_tercero"`
 	EtiquetaReferencia string   `json:"etiqueta_referencia"`
 	MetadataEjemplo    string   `json:"metadata_ejemplo"`
+}
+
+type EmpresaModuloColombiaDiagnosticoCheck struct {
+	Clave         string `json:"clave"`
+	Titulo        string `json:"titulo"`
+	OK            bool   `json:"ok"`
+	Informativo   bool   `json:"informativo,omitempty"`
+	Detalle       string `json:"detalle,omitempty"`
+	Recomendacion string `json:"recomendacion,omitempty"`
+}
+
+type EmpresaModuloColombiaDiagnostico struct {
+	EmpresaID         int64                                   `json:"empresa_id"`
+	Modulo            string                                  `json:"modulo"`
+	Titulo            string                                  `json:"titulo"`
+	Estado            string                                  `json:"estado"`
+	Puntuacion        int                                     `json:"puntuacion"`
+	TotalObligatorios int                                     `json:"total_obligatorios"`
+	OKObligatorios    int                                     `json:"ok_obligatorios"`
+	Checks            []EmpresaModuloColombiaDiagnosticoCheck `json:"checks"`
+	Recomendaciones   []string                                `json:"recomendaciones,omitempty"`
 }
 
 var empresaModuloColombiaTitulos = map[string]string{
@@ -304,11 +326,24 @@ func GetEmpresaModuloColombiaPlantilla(modulo string) EmpresaModuloColombiaPlant
 	base := EmpresaModuloColombiaPlantilla{
 		Modulo:             modulo,
 		Titulo:             empresaModuloColombiaTitulos[modulo],
+		SeccionesFlujo:     GetEmpresaModuloColombiaSeccionesFlujo(modulo),
 		EstadosFlujo:       []string{"pendiente", "en_revision", "en_proceso", "aprobado", "cerrado", "rechazado", "cancelado"},
 		AccionesSugeridas:  []string{"seguimiento", "comentario", "aprobacion", "evidencia", "cierre"},
 		EtiquetaTercero:    "Tercero / area",
 		EtiquetaReferencia: "Referencia",
 		MetadataEjemplo:    `{"nota":"detalle operativo"}`,
+	}
+	if plantilla, ok := empresaModuloColombiaPlantillasVerticales[modulo]; ok {
+		base.Titulo = plantilla.Titulo
+		base.SeccionesFlujo = append([]string{}, GetEmpresaModuloColombiaSeccionesFlujo(modulo)...)
+		base.Tipos = append([]string{}, plantilla.Tipos...)
+		base.Categorias = append([]string{}, plantilla.Categorias...)
+		base.EstadosFlujo = append([]string{}, plantilla.EstadosFlujo...)
+		base.AccionesSugeridas = append([]string{}, plantilla.AccionesSugeridas...)
+		base.EtiquetaTercero = plantilla.EtiquetaTercero
+		base.EtiquetaReferencia = plantilla.EtiquetaReferencia
+		base.MetadataEjemplo = plantilla.MetadataEjemplo
+		return base
 	}
 	switch modulo {
 	case "bancos_pagos":
@@ -364,6 +399,87 @@ func GetEmpresaModuloColombiaPlantilla(modulo string) EmpresaModuloColombiaPlant
 		base.Categorias = []string{"general", "operacion", "finanzas"}
 	}
 	return base
+}
+
+func BuildEmpresaModuloColombiaDiagnostico(dbConn *sql.DB, empresaID int64, modulo string) (EmpresaModuloColombiaDiagnostico, error) {
+	modulo = NormalizeEmpresaModuloColombia(modulo)
+	if modulo == "" {
+		return EmpresaModuloColombiaDiagnostico{}, errors.New("modulo no soportado")
+	}
+	plantilla := GetEmpresaModuloColombiaPlantilla(modulo)
+	totalRegistros := 0
+	dbDetalle := "Conexion operativa"
+	dbOK := true
+	if dbConn != nil {
+		registros, err := ListEmpresaModuloColombiaRegistros(dbConn, empresaID, modulo, "", 1)
+		if err != nil {
+			dbOK = false
+			dbDetalle = err.Error()
+		} else {
+			totalRegistros = len(registros)
+		}
+	}
+	return buildEmpresaModuloColombiaDiagnostico(empresaID, modulo, plantilla, totalRegistros, dbOK, dbDetalle), nil
+}
+
+func buildEmpresaModuloColombiaDiagnostico(empresaID int64, modulo string, plantilla EmpresaModuloColombiaPlantilla, totalRegistros int, dbOK bool, dbDetalle string) EmpresaModuloColombiaDiagnostico {
+	metadataOK := false
+	if strings.TrimSpace(plantilla.MetadataEjemplo) != "" {
+		var meta map[string]interface{}
+		metadataOK = json.Unmarshal([]byte(plantilla.MetadataEjemplo), &meta) == nil
+	}
+	if strings.TrimSpace(dbDetalle) == "" {
+		dbDetalle = "Conexion operativa"
+	}
+	checks := []EmpresaModuloColombiaDiagnosticoCheck{
+		{Clave: "empresa_contexto", Titulo: "Empresa detectada", OK: empresaID > 0, Detalle: fmt.Sprintf("empresa_id %d", empresaID), Recomendacion: "Abrir el modulo desde el panel de una empresa activa."},
+		{Clave: "modulo_soportado", Titulo: "Modulo soportado", OK: modulo != "" && plantilla.Modulo == modulo && plantilla.Titulo != "", Detalle: plantilla.Titulo, Recomendacion: "Registrar el modulo en el catalogo empresarial antes de activarlo."},
+		{Clave: "base_datos", Titulo: "Base de datos operativa", OK: dbOK, Detalle: dbDetalle, Recomendacion: "Revisar migraciones y conexion de la base empresarial."},
+		{Clave: "ruta_trabajo", Titulo: "Ruta de trabajo", OK: len(plantilla.SeccionesFlujo) >= 4, Detalle: fmt.Sprintf("%d secciones", len(plantilla.SeccionesFlujo)), Recomendacion: "Definir las secciones principales del submenu operativo."},
+		{Clave: "tipos_categorias", Titulo: "Tipos y categorias", OK: len(plantilla.Tipos) >= 2 && len(plantilla.Categorias) >= 2, Detalle: fmt.Sprintf("%d tipos / %d categorias", len(plantilla.Tipos), len(plantilla.Categorias)), Recomendacion: "Definir al menos dos tipos y dos categorias para clasificar registros."},
+		{Clave: "estados_acciones", Titulo: "Estados y acciones", OK: len(plantilla.EstadosFlujo) >= 3 && len(plantilla.AccionesSugeridas) >= 3, Detalle: fmt.Sprintf("%d estados / %d acciones", len(plantilla.EstadosFlujo), len(plantilla.AccionesSugeridas)), Recomendacion: "Completar el flujo minimo de estados y acciones sugeridas."},
+		{Clave: "etiquetas", Titulo: "Etiquetas operativas", OK: plantilla.EtiquetaTercero != "" && plantilla.EtiquetaReferencia != "", Detalle: strings.TrimSpace(plantilla.EtiquetaTercero + " / " + plantilla.EtiquetaReferencia), Recomendacion: "Configurar las etiquetas de tercero y referencia para el negocio."},
+		{Clave: "metadata_json", Titulo: "Metadata JSON", OK: metadataOK, Detalle: map[bool]string{true: "Ejemplo valido", false: "Revisar JSON de ejemplo"}[metadataOK], Recomendacion: "Corregir metadata_ejemplo para que sea JSON valido."},
+		{Clave: "registros_operativos", Titulo: "Registros operativos", OK: totalRegistros > 0, Informativo: true, Detalle: map[bool]string{true: fmt.Sprintf("%d registro(s) recientes", totalRegistros), false: "Listo para cargar el primer registro"}[totalRegistros > 0]},
+	}
+	recomendaciones := []string{}
+	okObligatorios := 0
+	totalObligatorios := 0
+	for _, check := range checks {
+		if check.Informativo {
+			continue
+		}
+		totalObligatorios++
+		if check.OK {
+			okObligatorios++
+			continue
+		}
+		if check.Recomendacion != "" {
+			recomendaciones = append(recomendaciones, check.Recomendacion)
+		}
+	}
+	if len(recomendaciones) == 0 && totalRegistros == 0 {
+		recomendaciones = append(recomendaciones, "Cargar registros demo o crear el primer registro para activar metricas reales.")
+	}
+	estado := "revisar"
+	if okObligatorios == totalObligatorios {
+		estado = "listo"
+	}
+	puntuacion := 0
+	if totalObligatorios > 0 {
+		puntuacion = int(float64(okObligatorios) / float64(totalObligatorios) * 100)
+	}
+	return EmpresaModuloColombiaDiagnostico{
+		EmpresaID:         empresaID,
+		Modulo:            modulo,
+		Titulo:            plantilla.Titulo,
+		Estado:            estado,
+		Puntuacion:        puntuacion,
+		TotalObligatorios: totalObligatorios,
+		OKObligatorios:    okObligatorios,
+		Checks:            checks,
+		Recomendaciones:   recomendaciones,
+	}
 }
 
 func EnsureEmpresaModulosColombiaSchema(dbConn *sql.DB) error {
@@ -1956,9 +2072,13 @@ func normalizeModuloColombiaEvento(v string) string {
 }
 
 func NormalizeEmpresaModuloColombia(v string) string {
-	switch strings.ToLower(strings.TrimSpace(v)) {
+	clean := strings.ToLower(strings.TrimSpace(v))
+	if _, ok := empresaModuloColombiaPlantillasVerticales[clean]; ok {
+		return clean
+	}
+	switch clean {
 	case "bancos_pagos", "gestion_documental", "cumplimiento_kyc", "contratos_obligaciones", "helpdesk", "calidad_procesos", "drogueria_farmacia":
-		return strings.ToLower(strings.TrimSpace(v))
+		return clean
 	default:
 		return ""
 	}
@@ -2209,7 +2329,27 @@ func demoEmpresaModuloColombiaRows(empresaID int64, modulo, usuario string) []Em
 			mergeModuloDemo(base, "FARMA-CTRL-001", "Seguimiento medicamento controlado", "controlado", "Paciente controlado", "Director tecnico", "controlados", "REC-CTRL-001", 0, map[string]interface{}{"libro_control": "pendiente", "cantidad_dispensada": 1, "requiere_firma": true}),
 		}
 	default:
-		return nil
+		plantilla := GetEmpresaModuloColombiaPlantilla(modulo)
+		if plantilla.Titulo == "" || len(plantilla.Tipos) == 0 || len(plantilla.Categorias) == 0 {
+			return nil
+		}
+		tipoPrincipal := plantilla.Tipos[0]
+		tipoControl := plantilla.Tipos[len(plantilla.Tipos)-1]
+		categoriaPrincipal := plantilla.Categorias[0]
+		categoriaControl := plantilla.Categorias[len(plantilla.Categorias)-1]
+		tercero := strings.TrimSpace(plantilla.EtiquetaTercero)
+		if tercero == "" {
+			tercero = "Cliente / area"
+		}
+		referencia := strings.TrimSpace(plantilla.EtiquetaReferencia)
+		if referencia == "" {
+			referencia = "Referencia"
+		}
+		prefix := strings.ToUpper(strings.ReplaceAll(modulo, "_", "-"))
+		return []EmpresaModuloColombiaRegistro{
+			mergeModuloDemo(base, prefix+"-001", plantilla.Titulo+" - operacion principal", tipoPrincipal, tercero+" demo", "Coordinador", categoriaPrincipal, referencia+" 001", 850000, map[string]interface{}{"origen": "demo", "modulo": modulo, "flujo": "registro->seguimiento->cierre"}),
+			mergeModuloDemo(base, prefix+"-002", plantilla.Titulo+" - control y seguimiento", tipoControl, tercero+" control", "Supervisor", categoriaControl, referencia+" 002", 0, map[string]interface{}{"origen": "demo", "sla_dias": 3, "requiere_evidencia": true}),
+		}
 	}
 }
 

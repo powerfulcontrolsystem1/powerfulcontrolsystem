@@ -390,12 +390,13 @@ var permissionRolesCatalogOrdered = []string{
 }
 
 type permissionPageRule struct {
-	PaginaClave   string `json:"pagina_clave"`
-	Modulo        string `json:"modulo,omitempty"`
-	Accion        string `json:"accion,omitempty"`
-	AlwaysVisible bool   `json:"always_visible,omitempty"`
-	Titulo        string `json:"titulo,omitempty"`
-	Grupo         string `json:"grupo,omitempty"`
+	PaginaClave   string   `json:"pagina_clave"`
+	Modulo        string   `json:"modulo,omitempty"`
+	Accion        string   `json:"accion,omitempty"`
+	AnyModules    []string `json:"any_modules,omitempty"`
+	AlwaysVisible bool     `json:"always_visible,omitempty"`
+	Titulo        string   `json:"titulo,omitempty"`
+	Grupo         string   `json:"grupo,omitempty"`
 }
 
 var permissionPagesCatalogOrdered = []permissionPageRule{
@@ -557,13 +558,14 @@ type permissionModuleMatrixRow struct {
 }
 
 type permissionPageAccessRow struct {
-	PaginaClave   string `json:"pagina_clave"`
-	Modulo        string `json:"modulo,omitempty"`
-	Accion        string `json:"accion,omitempty"`
-	Permitido     bool   `json:"permitido"`
-	AlwaysVisible bool   `json:"always_visible,omitempty"`
-	Titulo        string `json:"titulo,omitempty"`
-	Grupo         string `json:"grupo,omitempty"`
+	PaginaClave   string   `json:"pagina_clave"`
+	Modulo        string   `json:"modulo,omitempty"`
+	Accion        string   `json:"accion,omitempty"`
+	AnyModules    []string `json:"any_modules,omitempty"`
+	Permitido     bool     `json:"permitido"`
+	AlwaysVisible bool     `json:"always_visible,omitempty"`
+	Titulo        string   `json:"titulo,omitempty"`
+	Grupo         string   `json:"grupo,omitempty"`
 }
 
 type permissionSummary struct {
@@ -2081,6 +2083,16 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	}
 
 	allReadRoles := []string{"admin_empresa", "supervisor_sucursal", "cajero", "inventario", "compras", "contabilidad", "auditor"}
+	if isPermModuleNuevoVertical(module) {
+		switch action {
+		case permActionRead:
+			return roleIn(role, allReadRoles...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
+		case permActionDelete:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal")
+		}
+	}
 
 	switch module {
 	case permModuleVentas:
@@ -2621,10 +2633,7 @@ func buildPermissionPagesCatalogFromModuleRows(modulos []permissionModuleMatrixR
 	for _, rule := range permissionPagesCatalogOrdered {
 		permitido := true
 		if !rule.AlwaysVisible {
-			permitido = false
-			if moduleRow, ok := moduleRows[strings.ToLower(strings.TrimSpace(rule.Modulo))]; ok {
-				permitido = moduleRow.Acciones[strings.ToUpper(strings.TrimSpace(rule.Accion))]
-			}
+			permitido = permissionPageRulePermittedByModuleRows(rule, moduleRows)
 		}
 		if override, ok := pageOverrides[rule.PaginaClave]; ok {
 			permitido = override
@@ -2642,6 +2651,7 @@ func buildPermissionPagesCatalogFromModuleRows(modulos []permissionModuleMatrixR
 			PaginaClave:   rule.PaginaClave,
 			Modulo:        sanitizeLegacyPermissionVisibleText(rule.Modulo),
 			Accion:        sanitizeLegacyPermissionVisibleText(rule.Accion),
+			AnyModules:    append([]string{}, rule.AnyModules...),
 			Permitido:     permitido,
 			AlwaysVisible: rule.AlwaysVisible,
 			Titulo:        titulo,
@@ -2650,6 +2660,25 @@ func buildPermissionPagesCatalogFromModuleRows(modulos []permissionModuleMatrixR
 	}
 
 	return out
+}
+
+func permissionPageRulePermittedByModuleRows(rule permissionPageRule, moduleRows map[string]permissionModuleMatrixRow) bool {
+	action := strings.ToUpper(strings.TrimSpace(rule.Accion))
+	if action == "" {
+		action = permActionRead
+	}
+	if len(rule.AnyModules) > 0 {
+		for _, module := range rule.AnyModules {
+			if moduleRow, ok := moduleRows[strings.ToLower(strings.TrimSpace(module))]; ok && moduleRow.Acciones[action] {
+				return true
+			}
+		}
+		return false
+	}
+	if moduleRow, ok := moduleRows[strings.ToLower(strings.TrimSpace(rule.Modulo))]; ok {
+		return moduleRow.Acciones[action]
+	}
+	return false
 }
 
 func parseLicenciaModulosCSV(raw string) (map[string]bool, []string) {
@@ -2786,6 +2815,9 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	}
 	path := strings.ToLower(strings.TrimSpace(r.URL.Path))
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if page, ok := permissionPageForNuevoVerticalAPIPath(path); ok {
+		return page
+	}
 	switch {
 	case strings.HasPrefix(path, "/api/empresa/crm/"):
 		return "linkCRMComercial"

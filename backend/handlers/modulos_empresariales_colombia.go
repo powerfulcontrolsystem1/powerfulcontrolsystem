@@ -39,6 +39,14 @@ func EmpresaModuloColombiaHandler(dbEmp *sql.DB, modulo string) http.HandlerFunc
 			case "plantilla":
 				writeJSON(w, http.StatusOK, dbpkg.GetEmpresaModuloColombiaPlantilla(modulo))
 				return
+			case "diagnostico", "diagnostico_configuracion":
+				row, err := dbpkg.BuildEmpresaModuloColombiaDiagnostico(dbEmp, empresaID, modulo)
+				if err != nil {
+					http.Error(w, "No se pudo generar el diagnostico del modulo empresarial", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, row)
+				return
 			case "reporte":
 				row, err := dbpkg.BuildEmpresaModuloColombiaReporte(dbEmp, empresaID, modulo)
 				if err != nil {

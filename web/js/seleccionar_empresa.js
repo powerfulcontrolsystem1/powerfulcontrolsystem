@@ -9,6 +9,12 @@
   var currentActiveByEmpresa = {};
   var shareNoticeEl = document.getElementById("selectorShareNotice");
   var shareInvitesPanel = null;
+  var nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+  var nuevosVerticalesByModule = {};
+  nuevosVerticalesCatalog.forEach(function (item) {
+    var module = String(item && item.module ? item.module : "").trim().toLowerCase();
+    if (module) nuevosVerticalesByModule[module] = item;
+  });
   var deleteModalState = {
     empresa: null,
     impacto: null,
@@ -423,8 +429,85 @@
     return normalized;
   }
 
+  function getVerticalTone(item) {
+    var module = String(item && item.module ? item.module : "").trim().toLowerCase();
+    if (/(agencia_viajes|operador_turistico)/.test(module)) return "lodging";
+    if (/(eventos_boleteria|parque_recreativo)/.test(module)) return "digital";
+    if (/(clinica_consultorios|laboratorio_clinico|veterinaria_petshop|salon_spa)/.test(module)) return "services";
+    if (/(colegio_academia|guarderia_infantil|capacitacion_empresarial|club_deportivo)/.test(module)) return "generic";
+    if (/(transporte_carga_tms)/.test(module)) return "logistics";
+    if (/(lavanderia_tintoreria|taller_mecanico|servicios_tecnicos|seguridad_privada|funeraria_exequial)/.test(module)) return "services";
+    if (/(inmobiliaria_comercial|cooperativa_fondo)/.test(module)) return "retail";
+    return "generic";
+  }
+
+  function getVerticalByTypeName(tipoNombre) {
+    var normalized = normalizeCompanyTypeName(tipoNombre);
+    if (!normalized) return null;
+    for (var i = 0; i < nuevosVerticalesCatalog.length; i += 1) {
+      var item = nuevosVerticalesCatalog[i];
+      var moduleText = normalizeCompanyTypeName(String(item && item.module ? item.module : "").replace(/_/g, " "));
+      var titleText = normalizeCompanyTypeName([
+        item && item.title,
+        item && item.fullTitle,
+        item && item.summary,
+        item && item.lead
+      ].join(" "));
+      if ((moduleText && normalized.indexOf(moduleText) >= 0) || (titleText && (titleText.indexOf(normalized) >= 0 || normalized.indexOf(titleText.split(" ").slice(0, 2).join(" ")) >= 0))) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  function getVerticalSections(item) {
+    return Array.isArray(item && item.sections)
+      ? item.sections.map(function (section) { return String(section || "").trim(); }).filter(Boolean)
+      : [];
+  }
+
+  function renderTipoEmpresaPreview() {
+    var preview = document.getElementById("tipoEmpresaPreview");
+    var select = document.getElementById("tipo_id");
+    if (!preview || !select) return;
+    var option = select.options ? select.options[select.selectedIndex] : null;
+    var tipoNombre = option ? String(option.text || "").trim() : "";
+    var vertical = getVerticalByTypeName(tipoNombre);
+    if (!vertical) {
+      preview.hidden = true;
+      preview.innerHTML = "";
+      return;
+    }
+    var sections = getVerticalSections(vertical).slice(0, 4);
+    preview.hidden = false;
+    preview.innerHTML =
+      '<div class="selector-type-preview__media">' +
+      '<img src="' + escapeHtml(vertical.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
+      "</div>" +
+      '<div class="selector-type-preview__body">' +
+      '<div class="selector-type-preview__kicker">Vertical profesional</div>' +
+      '<strong>' + escapeHtml(vertical.fullTitle || vertical.title || tipoNombre) + "</strong>" +
+      '<p>' + escapeHtml(vertical.lead || vertical.summary || "Tipo de empresa con preconfiguracion, licencias y modulo operativo propio.") + "</p>" +
+      (sections.length ? '<div class="selector-type-preview__chips">' + sections.map(function (section) {
+        return '<span>' + escapeHtml(section) + '</span>';
+      }).join("") + "</div>" : "") +
+      "</div>";
+  }
+
   function getEmpresaTypeVisual(empresa) {
     var tipoNombre = String(empresa && empresa.tipo_nombre ? empresa.tipo_nombre : "").trim();
+    var vertical = getVerticalByTypeName(tipoNombre);
+    if (vertical) {
+      return {
+        tone: getVerticalTone(vertical),
+        icon: vertical.icon || "/img/company-briefcase-color.svg",
+        alt: "Icono de " + (vertical.title || "vertical empresarial"),
+        eyebrow: "Vertical profesional",
+        activeCopy: "Empresa lista para operar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con flujo, roles, permisos, licencias y reportes del motor vertical.",
+        pendingCopy: "Activa una licencia vertical para habilitar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con configuracion inicial, roles y ruta de trabajo.",
+        label: vertical.fullTitle || vertical.title || tipoNombre || "Vertical"
+      };
+    }
     var normalized = normalizeCompanyTypeName(tipoNombre);
     var visualRules = [
       {
@@ -1403,8 +1486,18 @@
           opt.value = t.nombre;
           opt.text = t.nombre;
           opt.dataset.id = t.id;
+          var vertical = getVerticalByTypeName(t.nombre);
+          if (vertical) {
+            opt.dataset.verticalModule = vertical.module || "";
+            opt.dataset.verticalTitle = vertical.fullTitle || vertical.title || "";
+          }
           tipoSelect.appendChild(opt);
         });
+        renderTipoEmpresaPreview();
+        if (!tipoSelect.dataset.verticalPreviewBound) {
+          tipoSelect.dataset.verticalPreviewBound = "1";
+          tipoSelect.addEventListener("change", renderTipoEmpresaPreview);
+        }
       }
 
       var list = empresas.slice().sort(function (left, right) {

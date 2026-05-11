@@ -6,6 +6,7 @@
   <title>Pagar Licencia</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body class="checkout-licencia-page">
   <div class="admin-layout">
@@ -36,6 +37,52 @@
       const pendingPaymentKey = 'pcs_licencia_payment_pending_v1';
 
       function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m] }) }
+      function normalizeImage(raw) {
+        const value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) return '/img/shield-license-color.svg';
+        return value;
+      }
+      const verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      const verticalByModule = {};
+      verticalCatalog.forEach(function(item){
+        const module = String(item && item.module || '').trim().toLowerCase();
+        if (module) verticalByModule[module] = item;
+      });
+      function normalizeSearchText(raw) {
+        let value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return value;
+      }
+      function splitCSV(raw) {
+        return String(raw || '').split(',').map(function(part){ return String(part || '').trim().toLowerCase(); }).filter(Boolean);
+      }
+      function resolveLicenseVertical(lic, tipoNombre) {
+        const modules = splitCSV(lic && (lic.modulos_habilitados || lic.ModulosHab || lic.modulosHab));
+        for (let i = 0; i < modules.length; i += 1) {
+          if (verticalByModule[modules[i]]) return verticalByModule[modules[i]];
+        }
+        const haystack = normalizeSearchText([
+          tipoNombre,
+          lic && (lic.tipo_nombre || lic.TipoNombre || lic.tipoNombre),
+          lic && (lic.nombre || lic.Nombre),
+          lic && (lic.descripcion || lic.Descripcion)
+        ].join(' '));
+        for (let j = 0; j < verticalCatalog.length; j += 1) {
+          const item = verticalCatalog[j];
+          const title = normalizeSearchText([item.title, item.fullTitle, item.module].join(' '));
+          const compactModule = normalizeSearchText(String(item.module || '').replace(/_/g, ' '));
+          if ((title && haystack.indexOf(title) >= 0) || (compactModule && haystack.indexOf(compactModule) >= 0)) return item;
+        }
+        return null;
+      }
+      function resolveLicenseVisual(lic, tipoNombre) {
+        const vertical = resolveLicenseVertical(lic, tipoNombre);
+        return {
+          vertical: vertical,
+          icon: normalizeImage((vertical && vertical.icon) || '/img/shield-license-color.svg'),
+          label: vertical ? (vertical.fullTitle || vertical.title || vertical.module) : ''
+        };
+      }
       function formatCurrency(value){
         const amount = Number(value || 0);
         if (Number.isNaN(amount)) return '$ 0';
@@ -507,6 +554,8 @@
           const licenciaDescripcion = String(lic.descripcion || lic.Descripcion || '').trim();
           const licenciaValor = lic.valor || lic.Valor || 0;
           const licenciaDuracion = String(lic.duracion_dias || lic.DuracionDias || '').trim();
+          const licenciaMaxDocs = String(lic.max_documentos_mensuales || lic.MaxDocumentosMensuales || '').trim();
+          const licenciaVisual = resolveLicenseVisual(lic, tipoNombre);
           const bundle = summaryPayload && summaryPayload.bundle ? summaryPayload.bundle : null;
           const checkoutTitle = checkoutMode === 'empresa_bundle'
             ? 'Renovación agrupada de licencias'
@@ -536,7 +585,7 @@
                 '<article class="portal-card home-offer-card checkout-home-card checkout-license-card">'+
                   '<div class="checkout-license-topline">'+
                     '<div class="checkout-card-kicker">Licencia seleccionada</div>'+
-                    '<div class="home-offer-media checkout-license-media"><img src="/img/shield-license-color.svg" alt="Licencia" class="card-logo"></div>'+
+                    '<div class="home-offer-media checkout-license-media"><img src="' + escapeHtml(licenciaVisual.icon) + '" alt="Licencia" class="card-logo"></div>'+
                   '</div>'+
                   '<h3>'+escapeHtml(licenciaNombre)+'</h3>'+
                   '<p>'+escapeHtml(licenciaDescripcion || 'Licencia lista para pago y activación al confirmar la transacción.')+'</p>'+
@@ -548,7 +597,9 @@
                   '<div class="checkout-meta-list">'+
                     (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
                     (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
+                    (licenciaVisual.label ? '<span class="checkout-meta-pill">Vertical: ' + escapeHtml(licenciaVisual.label) + '</span>' : '')+
                     (licenciaDuracion ? '<span class="checkout-meta-pill">Duración: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
+                    (licenciaMaxDocs ? '<span class="checkout-meta-pill">Documentos: ' + escapeHtml(licenciaMaxDocs) + '/mes</span>' : '')+
                   '</div>'+
                   '<div class="checkout-license-value-row">'+
                     '<span>Total a pagar ahora</span>'+

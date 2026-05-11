@@ -221,6 +221,7 @@
     }
   </style>
   <script src="/menu.js"></script>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body class="elegir-licencia-page">
   <div class="admin-layout">
@@ -257,7 +258,52 @@
         return value;
       }
 
+      var verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      var verticalByModule = {};
+      verticalCatalog.forEach(function(item) {
+        var module = String(item && item.module || '').trim().toLowerCase();
+        if (module) verticalByModule[module] = item;
+      });
+
+      function normalizeSearchText(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) {
+          value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        return value;
+      }
+
+      function splitCSV(raw) {
+        return String(raw || '').split(',').map(function(part) {
+          return String(part || '').trim().toLowerCase();
+        }).filter(Boolean);
+      }
+
+      function getLicenciaModuloVertical(licencia, tipoNombre) {
+        var modulos = splitCSV(licencia && (licencia.modulos_habilitados || licencia.ModulosHab || licencia.modulosHab));
+        for (var i = 0; i < modulos.length; i += 1) {
+          if (verticalByModule[modulos[i]]) return verticalByModule[modulos[i]];
+        }
+        var haystack = normalizeSearchText([
+          tipoNombre,
+          licencia && (licencia.tipo_nombre || licencia.tipoNombre),
+          licencia && (licencia.nombre || licencia.Nombre),
+          licencia && (licencia.descripcion || licencia.Descripcion)
+        ].join(' '));
+        for (var j = 0; j < verticalCatalog.length; j += 1) {
+          var item = verticalCatalog[j];
+          var title = normalizeSearchText([item.title, item.fullTitle, item.module].join(' '));
+          var compactModule = normalizeSearchText(String(item.module || '').replace(/_/g, ' '));
+          if ((title && haystack.indexOf(title) >= 0) || (compactModule && haystack.indexOf(compactModule) >= 0)) {
+            return item;
+          }
+        }
+        return null;
+      }
+
       function getLicenciaIcon(licencia, tipoNombre) {
+        var vertical = getLicenciaModuloVertical(licencia, tipoNombre);
+        if (vertical && vertical.icon) return vertical.icon;
         var tipo = String((licencia && (licencia.tipo_nombre || licencia.tipoNombre)) || tipoNombre || '').toLowerCase();
         var nombre = String((licencia && (licencia.nombre || licencia.Nombre)) || '').toLowerCase();
         if (tipo.indexOf('hotel') >= 0 || nombre.indexOf('hotel') >= 0) return '/img/hotel-logo.svg';
@@ -275,6 +321,22 @@
         if (tipo.indexOf('red social') >= 0 || nombre.indexOf('red social') >= 0 || tipo.indexOf('redes sociales') >= 0 || nombre.indexOf('redes sociales') >= 0) return '/img/redes-sociales-logo.svg';
         if (tipo.indexOf('sensor') >= 0 || nombre.indexOf('sensor') >= 0 || tipo.indexOf('monitoreo') >= 0 || nombre.indexOf('monitoreo') >= 0) return '/img/sensores-logo.svg';
         return '/img/punto_venta.png';
+      }
+
+      function getLicenciaToneClass(licencia, tipoNombre, idx) {
+        var vertical = getLicenciaModuloVertical(licencia, tipoNombre);
+        if (vertical && vertical.module) {
+          var foundIndex = verticalCatalog.findIndex(function(item) {
+            return String(item.module || '').toLowerCase() === String(vertical.module || '').toLowerCase();
+          });
+          if (foundIndex >= 0) return 'license-tone-' + ((foundIndex % 8) + 1);
+        }
+        return 'license-tone-' + ((idx % 8) + 1);
+      }
+
+      function getLicenciaKicker(licencia, tipoNombre) {
+        var vertical = getLicenciaModuloVertical(licencia, tipoNombre);
+        return vertical ? 'Vertical' : 'Licencia';
       }
 
       function resolveCurrencyByCountry(paisCodigo) {
@@ -365,14 +427,16 @@
         var descripcion = String(licencia.descripcion || licencia.Descripcion || '').trim();
         var actionLabel = valor <= 0 ? 'Activar licencia' : 'Comprar licencia';
         var money = formatMoney(valor, currencyCtx && currencyCtx.currency, currencyCtx && currencyCtx.locale);
+        var toneClass = getLicenciaToneClass(licencia, tipoNombre, idx);
+        var kicker = getLicenciaKicker(licencia, tipoNombre);
         return '' +
-          '<article class="portal-card home-offer-card license-sales-card license-tone-' + ((idx % 8) + 1) + '" style="animation-delay:' + (idx * 90) + 'ms">' +
+          '<article class="portal-card home-offer-card license-sales-card ' + escapeHtml(toneClass) + '" style="animation-delay:' + (idx * 90) + 'ms">' +
           '  <div class="license-sales-top">' +
           '    <div class="home-offer-media license-sales-media">' +
           '      <img src="' + escapeHtml(icono) + '" alt="Icono licencia ' + escapeHtml(String(licencia.nombre || licencia.Nombre || '')) + '" class="card-logo">' +
           '    </div>' +
           '    <div class="license-sales-title">' +
-          '      <span class="license-sales-kicker">Licencia</span>' +
+          '      <span class="license-sales-kicker">' + escapeHtml(kicker) + '</span>' +
           '      <h3>' + escapeHtml(String(licencia.nombre || licencia.Nombre || '--')) + '</h3>' +
           '    </div>' +
           '  </div>' +

@@ -513,6 +513,7 @@ func noCacheAdminStaticHandler(next http.Handler) http.Handler {
 			path == "/administrar_empresa.html" ||
 			path == "/seleccionar_empresa.html" ||
 			path == "/js/administrar_empresa.js" ||
+			path == "/js/nuevos_verticales_catalogo.js" ||
 			path == "/menu.js" ||
 			strings.HasSuffix(path, ".html") {
 			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
@@ -713,6 +714,12 @@ func main() {
 			log.Printf("INFO: tipo alquileres verificado: tipo_id=%d licencias=%d", tipoID, licencias)
 		}
 		startupTrace("after_ensure_alquileres_tipo_licencias")
+		if tipos, licencias, err := dbpkg.EnsureNuevosVerticalesTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudieron asegurar nuevos verticales/licencias: %v", err)
+		} else {
+			log.Printf("INFO: nuevos verticales verificados: tipos=%d licencias=%d", tipos, licencias)
+		}
+		startupTrace("after_ensure_nuevos_verticales_tipo_licencias")
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}
@@ -922,6 +929,7 @@ func main() {
 	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler(dbSuper))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
+	http.HandleFunc("/super/api/verticales_nuevos/catalogo", handlers.SuperVerticalesNuevosCatalogoHandler())
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
@@ -1016,6 +1024,7 @@ func main() {
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
+	http.HandleFunc("/api/public/verticales_nuevos/catalogo", handlers.PublicVerticalesNuevosCatalogoHandler())
 	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))
 	http.HandleFunc("/api/public/geo", handlers.PublicGeoHandler())
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaReservasHotelPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
@@ -1065,9 +1074,14 @@ func main() {
 	http.HandleFunc("/api/empresa/cierre_fiscal", handlers.WithEmpresaCierreFiscalPermissions(dbEmpresas, dbSuper, handlers.EmpresaCierreFiscalHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/declaraciones_tributarias", handlers.WithEmpresaDeclaracionesTributariasPermissions(dbEmpresas, dbSuper, handlers.EmpresaDeclaracionesTributariasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tesoreria_presupuesto", handlers.WithEmpresaTesoreriaPresupuestoPermissions(dbEmpresas, dbSuper, handlers.EmpresaTesoreriaPresupuestoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/verticales_nuevos/catalogo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVerticalesNuevosCatalogoHandler()))
 	http.HandleFunc("/api/empresa/bancos_pagos", handlers.WithEmpresaBancosPagosPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "bancos_pagos")))
 	http.HandleFunc("/api/empresa/cumplimiento_kyc", handlers.WithEmpresaCumplimientoKYCPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "cumplimiento_kyc")))
 	http.HandleFunc("/api/empresa/calidad_procesos", handlers.WithEmpresaCalidadProcesosPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "calidad_procesos")))
+	for _, moduloVertical := range handlers.NuevosVerticalesEmpresaModules() {
+		moduloVertical := moduloVertical
+		http.HandleFunc("/api/empresa/"+moduloVertical, handlers.WithEmpresaModuloVerticalPermissions(dbEmpresas, dbSuper, moduloVertical, handlers.EmpresaModuloColombiaHandler(dbEmpresas, moduloVertical)))
+	}
 	http.HandleFunc("/api/empresa/calculadora", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCalculadoraHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/creditos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCreditosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/cobranza", handlers.WithEmpresaCobranzaPermissions(dbEmpresas, dbSuper, handlers.EmpresaCobranzaHandler(dbEmpresas)))

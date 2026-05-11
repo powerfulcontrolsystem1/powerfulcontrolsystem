@@ -6,6 +6,7 @@
   <title>Modulo - Menu</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body class="admin-empresa-shell empresa-submenu-shell">
   <div class="admin-layout">
@@ -391,6 +392,80 @@
           ]
         }
       };
+
+      var verticalesNuevos = {};
+      (window.PCS_NUEVOS_VERTICALES || []).forEach(function (item) {
+        verticalesNuevos[item.module] = [
+          item.fullTitle || item.title,
+          item.lead || item.summary || "",
+          item.sections || ["Dashboard", "Configuracion", "Registros", "Seguimiento", "Aprobaciones", "Evidencias"]
+        ];
+      });
+
+      function sectionIntent(label, idx) {
+        var text = String(label || "").toLowerCase();
+        if (/dashboard|tablero|panel|resumen|jornada/.test(text)) return "dashboard";
+        if (/config|sla|calidad|riesgo|cumplimiento|auditoria/.test(text)) return "control";
+        if (/aproba|validaci|cierre|entrega|firma|comision|liquidacion/.test(text)) return "aprobacion";
+        if (/evidencia|document|certificado|reporte|boletin|resultado/.test(text)) return "evidencia";
+        if (/seguimiento|agenda|tracking|check|asistencia|visita|ronda|incidente|novedad/.test(text)) return "seguimiento";
+        if (/responsable|profesional|tecnico|guia|conductor|instructor|guarda/.test(text)) return "responsables";
+        if (idx === 0) return "dashboard";
+        if (idx === 4) return "aprobacion";
+        if (idx === 5) return "evidencia";
+        return "registros";
+      }
+
+      function sectionAnchor(intent) {
+        return {
+          dashboard: "#mcAgenda",
+          control: "#mcSLA",
+          registros: "#mcTable",
+          seguimiento: "#mcFollowForm",
+          responsables: "#mcResponsables",
+          aprobacion: "#mcApprovalForm",
+          evidencia: "#mcEvidenceForm"
+        }[intent] || "#mcAgenda";
+      }
+
+      function sectionIcon(intent, idx) {
+        return {
+          dashboard: "/img/analytics-color.svg",
+          control: "/img/settings-color.svg",
+          registros: "/img/report.svg",
+          seguimiento: "/img/network-color.svg",
+          responsables: "/img/customer.svg",
+          aprobacion: "/img/shield-license-color.svg",
+          evidencia: "/img/excel.svg"
+        }[intent] || ["/img/analytics-color.svg", "/img/settings-color.svg", "/img/report.svg", "/img/customer.svg", "/img/shield-license-color.svg", "/img/network-color.svg"][idx % 6];
+      }
+
+      function moduloColombiaUrl(module, title, lead, section, intent, hash) {
+        return "/administrar_empresa/modulo_colombia.html?module=" + encodeURIComponent(module) +
+          "&title=" + encodeURIComponent(title) +
+          "&lead=" + encodeURIComponent(lead) +
+          "&section=" + encodeURIComponent(section || "") +
+          "&intent=" + encodeURIComponent(intent || "") +
+          (hash || "");
+      }
+
+      Object.keys(verticalesNuevos).forEach(function (module) {
+        var row = verticalesNuevos[module];
+        var title = row[0];
+        var summary = row[1];
+        var labels = row[2];
+        var anchors = ["#mcAgenda", "#mcForm", "#mcTable", "#mcResponsables", "#mcApprovalForm", "#mcEvidenceForm"];
+        modules[module] = {
+          title: title,
+          summary: summary,
+          defaultUrl: moduloColombiaUrl(module, title, summary, labels[0] || "Dashboard", "dashboard", "#mcAgenda"),
+          items: labels.map(function (label, idx) {
+            var intent = sectionIntent(label, idx);
+            var anchor = sectionAnchor(intent) || anchors[idx] || "#mcAgenda";
+            return [label, sectionIcon(intent, idx), moduloColombiaUrl(module, title, summary, label, intent, anchor)];
+          })
+        };
+      });
 
       function param(name) {
         try { return (new URLSearchParams(location.search || "")).get(name) || ""; } catch (_) { return ""; }

@@ -1063,6 +1063,9 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Caja sensores", "caja", "Registra pagos y contratos."),
 		}, "Asistente para instalaciones, alertas, mantenimientos, contratos y seguimiento tecnico."), operacionPreconfig("sensores", "Acceso", "Accesos", true, true, false, "", "", 0, []string{"tecnico", "operacion", "caja"}))
 	}
+	if template, ok := defaultNuevoVerticalTipoEmpresaPreconfigTemplate(tipoNombre); ok {
+		return template
+	}
 	return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GEN", "Estacion", 4, []TipoEmpresaPreconfigProducto{
 		productoPreconfig("DEMO-GEN-001", "Producto guia", "General", "Producto inicial de ejemplo", 5000, 12000, 5),
 		productoPreconfig("DEMO-GEN-002", "Servicio guia", "Servicios", "Servicio inicial de ejemplo", 0, 25000, 0),

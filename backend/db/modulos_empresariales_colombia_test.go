@@ -66,6 +66,47 @@ func TestGetEmpresaModuloColombiaPlantillaPorModulo(t *testing.T) {
 	}
 }
 
+func TestBuildEmpresaModuloColombiaDiagnostico(t *testing.T) {
+	plantilla := GetEmpresaModuloColombiaPlantilla("agencia_viajes")
+	got := buildEmpresaModuloColombiaDiagnostico(7, "agencia_viajes", plantilla, 0, true, "")
+	if got.Estado != "listo" || got.Puntuacion != 100 {
+		t.Fatalf("diagnostico listo inesperado: %#v", got)
+	}
+	if got.TotalObligatorios == 0 || got.OKObligatorios != got.TotalObligatorios {
+		t.Fatalf("conteo de checks inesperado: %#v", got)
+	}
+	if len(got.Checks) < 7 {
+		t.Fatalf("checks insuficientes: %#v", got.Checks)
+	}
+	foundInfo := false
+	for _, check := range got.Checks {
+		if check.Clave == "registros_operativos" {
+			foundInfo = check.Informativo && !check.OK
+		}
+	}
+	if !foundInfo {
+		t.Fatalf("check informativo de registros inesperado: %#v", got.Checks)
+	}
+}
+
+func TestBuildEmpresaModuloColombiaDiagnosticoDetectaFallos(t *testing.T) {
+	plantilla := EmpresaModuloColombiaPlantilla{
+		Modulo:          "helpdesk",
+		Titulo:          "Helpdesk",
+		Tipos:           []string{"ticket"},
+		Categorias:      []string{"soporte"},
+		EstadosFlujo:    []string{"abierto"},
+		MetadataEjemplo: "{mal",
+	}
+	got := buildEmpresaModuloColombiaDiagnostico(0, "helpdesk", plantilla, 0, false, "sin conexion")
+	if got.Estado != "revisar" || got.Puntuacion >= 100 {
+		t.Fatalf("diagnostico debio requerir revision: %#v", got)
+	}
+	if len(got.Recomendaciones) == 0 {
+		t.Fatalf("recomendaciones esperadas: %#v", got)
+	}
+}
+
 func TestNormalizeModuloColombiaEvento(t *testing.T) {
 	if got := normalizeModuloColombiaEvento(" Cambio Estado / Manual "); got != "cambio_estado_manual" {
 		t.Fatalf("normalizeModuloColombiaEvento = %q", got)

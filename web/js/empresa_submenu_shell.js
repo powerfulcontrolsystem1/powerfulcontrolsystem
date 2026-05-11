@@ -63,12 +63,19 @@
   function notifyFrameSelection(rawUrl) {
     var key = submenuKeyFromUrl(rawUrl);
     var hash = hashTargetFromUrl(rawUrl);
-    if (!key && !hash) return;
+    var section = "";
+    var intent = "";
+    try {
+      var url = new URL(rawUrl, window.location.origin);
+      section = url.searchParams.get("section") || "";
+      intent = url.searchParams.get("intent") || "";
+    } catch (_) {}
+    if (!key && !hash && !section && !intent) return;
     var frame = document.querySelector("iframe[data-submenu-frame]");
     if (!frame || !frame.contentWindow) return;
     window.setTimeout(function () {
       try {
-        frame.contentWindow.postMessage({ type: "pcs-submenu-select", key: key, hash: hash }, window.location.origin);
+        frame.contentWindow.postMessage({ type: "pcs-submenu-select", key: key, hash: hash, section: section, intent: intent }, window.location.origin);
       } catch (_) {}
     }, 80);
   }

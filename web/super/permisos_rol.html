@@ -140,6 +140,28 @@
         return (state.modulosEtiqueta && state.modulosEtiqueta[m]) ? state.modulosEtiqueta[m] : m;
       }
 
+      function pageRuleModules(item) {
+        const anyModules = Array.isArray(item.any_modules)
+          ? item.any_modules.map(function (m) { return String(m || '').trim(); }).filter(Boolean)
+          : [];
+        if (anyModules.length) {
+          return {
+            title: 'Cualquiera de ' + String(anyModules.length) + ' verticales',
+            detail: anyModules.map(moduleTitle).join(', ')
+          };
+        }
+        const moduleName = item.modulo ? moduleTitle(item.modulo) : '';
+        return { title: moduleName || '—', detail: '' };
+      }
+
+      function pageRuleAccessLabel(item) {
+        if (item.always_visible) return 'Visible por defecto; override puede restringir';
+        const action = item.accion ? actionLabelShort(item.accion) : '—';
+        const anyModules = Array.isArray(item.any_modules) ? item.any_modules.filter(Boolean) : [];
+        if (anyModules.length) return action + ' en al menos un vertical permitido';
+        return action;
+      }
+
       function loadRoleFromQueryString() {
         const params = new URLSearchParams(window.location.search);
         const raw = Number(params.get('rol_id') || 0);
@@ -232,7 +254,8 @@
       }
 
       function itemSearchBlob(item) {
-        return [item.pagina_clave, item.modulo, item.accion, item.titulo, item.grupo, item.titulo || ''].join(' ').toLowerCase();
+        const modules = pageRuleModules(item);
+        return [item.pagina_clave, item.modulo, item.accion, item.titulo, item.grupo, modules.title, modules.detail, item.titulo || ''].join(' ').toLowerCase();
       }
 
       function buildPaginasTable() {
@@ -254,14 +277,14 @@
           const rows = items.map(function (item) {
             const pag = String(item.pagina_clave || '').trim();
             const tit = String(item.titulo || item.pagina_clave).trim();
-            const accionTxt = item.always_visible
-              ? 'Visible por defecto; override puede restringir'
-              : (item.accion ? actionLabelShort(item.accion) : '—');
-            const modLab = item.modulo ? moduleTitle(item.modulo) : '—';
+            const accionTxt = pageRuleAccessLabel(item);
+            const modules = pageRuleModules(item);
+            const modulesHtml = '<strong>' + escapeHtml(modules.title) + '</strong>' +
+              (modules.detail ? '<div class="pcs-pr-td-sub pcs-pr-td-sub--wrap">' + escapeHtml(modules.detail) + '</div>' : '');
             const blob = itemSearchBlob(item);
             return '<tr class="pcs-pr-pag-row" data-pag-clave="' + escapeHtml(pag) + '" data-search-blob="' + escapeHtml(blob) + '">' +
               '<td class="pcs-pr-td-title"><strong>' + escapeHtml(tit) + '</strong><div class="pcs-pr-td-sub"><code>' + escapeHtml(pag) + '</code></div></td>' +
-              '<td>' + escapeHtml(modLab) + '</td>' +
+              '<td>' + modulesHtml + '</td>' +
               '<td>' + escapeHtml(accionTxt) + (item.always_visible ? ' <span class="pcs-pr-badge">Base</span>' : '') + '</td>' +
               '<td class="pcs-pr-td-ck"><input type="checkbox" data-page="' + escapeHtml(pag) + '" ' + (boolValue(item.permitido) ? 'checked' : '') + '></td>' +
             '</tr>';

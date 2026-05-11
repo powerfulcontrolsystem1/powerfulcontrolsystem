@@ -2,8 +2,16 @@
   "use strict";
 
   var root = null;
-  var state = { empresaId: "", modulo: "", titulo: "", lead: "", dashboard: null, reporte: null, agenda: null, sla: null, riesgo: null, responsables: [], expediente: null, evidencias: [], aprobaciones: [], tareas: [], plantilla: null, busqueda: null, selectedRegistroID: 0 };
+  var state = { empresaId: "", modulo: "", titulo: "", lead: "", activeSection: "", activeIntent: "", catalogItem: null, dashboard: null, reporte: null, agenda: null, sla: null, riesgo: null, responsables: [], expediente: null, evidencias: [], aprobaciones: [], tareas: [], diagnostico: null, plantilla: null, busqueda: null, selectedRegistroID: 0 };
   var money = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+
+  function queryParam(name) {
+    try {
+      return (new URLSearchParams(window.location.search || "")).get(name) || "";
+    } catch (_) {
+      return "";
+    }
+  }
 
   function esc(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
@@ -58,12 +66,139 @@
     node.classList.toggle("is-error", !!isError);
   }
 
+  function cleanLabel(value) {
+    return String(value || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function normalizeLabel(value) {
+    return cleanLabel(value).toLowerCase();
+  }
+
+  function findCatalogItem(moduleName) {
+    var key = String(moduleName || "").trim();
+    var items = (window.PCS_NUEVOS_VERTICALES || []);
+    for (var i = 0; i < items.length; i += 1) {
+      if (String(items[i].module || "") === key) return items[i];
+    }
+    return null;
+  }
+
+  function intentFromSection(label, fallback) {
+    var text = cleanLabel(label).toLowerCase();
+    if (/dashboard|tablero|panel|resumen|jornada/.test(text)) return "dashboard";
+    if (/config|sla|calidad|riesgo|cumplimiento|auditoria/.test(text)) return "control";
+    if (/aproba|validaci|cierre|entrega|firma|comision|liquidacion/.test(text)) return "aprobacion";
+    if (/evidencia|document|certificado|reporte|boletin|resultado/.test(text)) return "evidencia";
+    if (/seguimiento|agenda|tracking|check|asistencia|visita|ronda|incidente|novedad/.test(text)) return "seguimiento";
+    if (/responsable|profesional|tecnico|guia|conductor|instructor|guarda/.test(text)) return "responsables";
+    return fallback || "registros";
+  }
+
+  function sectionDescription(intent) {
+    return {
+      dashboard: "Vista de mando con alertas, vencimientos, recomendaciones y salud operativa del modulo.",
+      control: "Controles de cumplimiento, SLA, riesgo, configuracion operativa y puntos de auditoria.",
+      registros: "Gestion de registros, busqueda, edicion, importacion CSV y acciones masivas.",
+      seguimiento: "Seguimiento profesional con cambio de estado, bitacora y compromisos de operacion.",
+      responsables: "Carga por responsable, pendientes, recomendaciones de reasignacion y control de equipos.",
+      aprobacion: "Solicitudes, validaciones, aprobaciones, rechazos y cierre controlado con trazabilidad.",
+      evidencia: "Soportes, documentos, evidencias, reporte ejecutivo y exportacion para auditoria."
+    }[intent] || "Gestion operativa del modulo.";
+  }
+
+  function sectionTarget(intent) {
+    return {
+      dashboard: "mcAgenda",
+      control: "mcConfig",
+      registros: "mcTable",
+      seguimiento: "mcFollowForm",
+      responsables: "mcResponsables",
+      aprobacion: "mcApprovalForm",
+      evidencia: "mcEvidenceForm"
+    }[intent] || "mcAgenda";
+  }
+
+  function moduleSections() {
+    var sections = state.plantilla && Array.isArray(state.plantilla.secciones_flujo) ? state.plantilla.secciones_flujo : [];
+    if (!sections.length && state.catalogItem && Array.isArray(state.catalogItem.sections)) sections = state.catalogItem.sections;
+    if (!sections.length) sections = ["Dashboard", "Registros", "Seguimiento", "Aprobaciones", "Evidencias", "Reportes"];
+    return sections.map(cleanLabel).filter(Boolean);
+  }
+
+  function workflowMarkup() {
+    var sections = moduleSections();
+    if (!sections.length) return "";
+    return '<ol class="mc-workflow" id="mcWorkflow">' + sections.map(function (section, idx) {
+      var intent = intentFromSection(section, idx === 0 ? "dashboard" : "registros");
+      var active = normalizeLabel(section) === normalizeLabel(state.activeSection);
+      return '<li><button type="button" class="' + (active ? "active" : "") + '" data-mc-workflow-section="' + esc(section) + '" data-mc-workflow-intent="' + esc(intent) + '" data-mc-workflow-target="' + esc(sectionTarget(intent)) + '"><small>' + esc(String(idx + 1).padStart(2, "0")) + '</small><span>' + esc(section) + '</span></button></li>';
+    }).join("") + "</ol>";
+  }
+
+  function sectionContextMarkup() {
+    var section = cleanLabel(state.activeSection) || "Operacion integral";
+    var intent = state.activeIntent || intentFromSection(section, "dashboard");
+    return '<section class="mc-section-context" id="mcSectionContext">' +
+      '<div><span>Seccion activa</span><strong id="mcSectionTitle">' + esc(section) + '</strong><p id="mcSectionDesc">' + esc(sectionDescription(intent)) + '</p></div>' +
+      '<nav class="mc-section-quick" aria-label="Accesos rapidos del modulo">' +
+      '<button type="button" data-mc-jump="mcAgenda">Dashboard</button>' +
+      '<button type="button" data-mc-jump="mcConfig">Config.</button>' +
+      '<button type="button" data-mc-jump="mcTable">Registros</button>' +
+      '<button type="button" data-mc-jump="mcFollowForm">Seguimiento</button>' +
+      '<button type="button" data-mc-jump="mcApprovalForm">Aprobaciones</button>' +
+      '<button type="button" data-mc-jump="mcEvidenceForm">Evidencias</button>' +
+      '<button type="button" data-mc-jump="mcReporte">Reportes</button>' +
+      '</nav>' +
+      '<div class="mc-workflow-wrap" aria-label="Ruta de trabajo del vertical">' + workflowMarkup() + '</div>' +
+      '</section>';
+  }
+
+  function updateSectionContext(section, intent) {
+    if (section) state.activeSection = cleanLabel(section);
+    if (intent) state.activeIntent = cleanLabel(intent).toLowerCase();
+    if (!state.activeIntent) state.activeIntent = intentFromSection(state.activeSection, "dashboard");
+    var title = document.getElementById("mcSectionTitle");
+    var desc = document.getElementById("mcSectionDesc");
+    if (title) title.textContent = state.activeSection || "Operacion integral";
+    if (desc) desc.textContent = sectionDescription(state.activeIntent);
+    document.querySelectorAll("[data-mc-workflow-section]").forEach(function (btn) {
+      btn.classList.toggle("active", normalizeLabel(btn.getAttribute("data-mc-workflow-section")) === normalizeLabel(state.activeSection));
+    });
+  }
+
+  function refreshWorkflowContext() {
+    var wrap = document.querySelector(".mc-workflow-wrap");
+    if (wrap) wrap.innerHTML = workflowMarkup();
+    updateSectionContext(state.activeSection, state.activeIntent);
+  }
+
+  function jumpToElementById(id) {
+    var target = document.getElementById(id || "");
+    if (!target) return;
+    scrollElementIntoViewWithOffset(target, true);
+  }
+
+  function scrollElementIntoViewWithOffset(target, smooth) {
+    if (!target) return;
+    var offset = 108;
+    var header = document.getElementById("mcSectionContext");
+    if (header) offset += header.getBoundingClientRect().height || 0;
+    try {
+      var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+      window.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+    } catch (_) {
+      try { target.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" }); } catch (__) { target.scrollIntoView(); }
+    }
+  }
+
   function renderShell() {
     root.innerHTML =
       '<main class="mc-shell">' +
       '<header class="mc-head"><div><h1>' + esc(state.titulo) + '</h1><p>' + esc(state.lead) + '</p></div>' +
       '<div class="mc-actions"><button class="mc-btn" id="mcRefresh" type="button">Actualizar</button><button class="mc-btn" id="mcSeed" type="button">Cargar demo</button><button class="mc-btn" id="mcImportBtn" type="button">Importar CSV</button><button class="mc-btn primary" id="mcExport" type="button">Exportar auditoria CSV</button><input id="mcImportFile" type="file" accept=".csv,text/csv" hidden></div></header>' +
+      sectionContextMarkup() +
       '<section class="mc-kpis"><article><span>Total</span><strong id="kpiTotal">0</strong></article><article><span>Abiertos</span><strong id="kpiAbiertos">0</strong></article><article><span>En proceso</span><strong id="kpiProceso">0</strong></article><article><span>Aprobados / cerrados</span><strong id="kpiAprobados">0</strong></article><article><span>Vencidos</span><strong id="kpiVencidos">0</strong></article><article><span>Valor</span><strong id="kpiValor">$0</strong></article></section>' +
+      '<section class="mc-card" id="mcConfig"><div class="mc-card-head"><div><h2>Configuracion operativa del vertical</h2><p class="mc-muted">Plantilla activa, estados, categorias, acciones, diagnostico y formato CSV para este negocio.</p></div><div class="mc-actions"><button class="mc-btn" id="mcDownloadTemplate" type="button">Plantilla CSV</button><button class="mc-btn" id="mcDownloadChecklist" type="button">Checklist CSV</button><button class="mc-btn" id="mcCopyMetadata" type="button">Copiar metadata</button></div></div><div id="mcConfigDiagnostics" class="mc-config-diagnostics"></div><div id="mcConfigBody" class="mc-config-grid"></div></section>' +
       '<div class="mc-toolbar mc-searchbar"><label>Buscar<input id="mcTextoFiltro" placeholder="Codigo, nombre, tercero, referencia"></label><label>Estado<select id="mcEstadoFiltro"><option value="">Todos</option></select></label><label>Tipo<select id="mcTipoFiltro"><option value="">Todos</option></select></label><label>Categoria<select id="mcCategoriaFiltro"><option value="">Todas</option></select></label><label>Prioridad<select id="mcPrioridadFiltro"><option value="">Todas</option><option value="baja">Baja</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="urgente">Urgente</option></select></label><label>Responsable<input id="mcResponsableFiltro" placeholder="Usuario, rol o area"></label><label>Vencimiento<select id="mcVenceFiltro"><option value="">Todos</option><option value="vencidos">Vencidos</option><option value="7">Proximos 7 dias</option><option value="30">Proximos 30 dias</option></select></label><button class="mc-btn primary" id="mcSearch" type="button">Buscar</button><button class="mc-btn" id="mcClearSearch" type="button">Limpiar</button><button class="mc-btn" id="mcClearForm" type="button">Nuevo registro</button></div>' +
       '<div id="mcMsg" class="mc-msg"></div>' +
       '<section class="mc-card"><h2>Agenda y alertas</h2><div id="mcAgenda" class="mc-agenda"></div></section>' +
@@ -108,7 +243,94 @@
     renderEvidencias(state.evidencias || []);
     renderAprobaciones(state.aprobaciones || []);
     renderTareas(state.tareas || []);
+    renderConfig();
     scrollToRequestedSection();
+  }
+
+  function renderConfig() {
+    var host = document.getElementById("mcConfigBody");
+    if (!host) return;
+    var p = state.plantilla || {};
+    var sections = moduleSections();
+    var tipos = p.tipos && p.tipos.length ? p.tipos : [];
+    var categorias = p.categorias && p.categorias.length ? p.categorias : [];
+    var estados = p.estados_flujo && p.estados_flujo.length ? p.estados_flujo : [];
+    var acciones = p.acciones_sugeridas && p.acciones_sugeridas.length ? p.acciones_sugeridas : [];
+    host.innerHTML =
+      configBlock("Secciones del flujo", sections) +
+      configBlock("Tipos de registro", tipos) +
+      configBlock("Categorias", categorias) +
+      configBlock("Estados de flujo", estados) +
+      configBlock("Acciones sugeridas", acciones) +
+      '<article class="mc-config-card"><strong>Etiquetas y metadata</strong>' +
+      '<span>' + esc((p.etiqueta_tercero || "Tercero / area") + " | " + (p.etiqueta_referencia || "Referencia")) + '</span>' +
+      '<code>' + esc(p.metadata_ejemplo || '{"nota":"detalle"}') + '</code></article>';
+    renderConfigDiagnostics();
+    refreshWorkflowContext();
+  }
+
+  function configBlock(title, rows) {
+    rows = rows || [];
+    return '<article class="mc-config-card"><strong>' + esc(title) + '</strong><div class="mc-config-tags">' +
+      (rows.length ? rows.map(function (row) { return '<span>' + esc(String(row || "").replace(/_/g, " ")) + '</span>'; }).join("") : '<em>Sin datos</em>') +
+      '</div></article>';
+  }
+
+  function metadataExampleIsValid() {
+    var raw = (state.plantilla && state.plantilla.metadata_ejemplo) || "";
+    if (!raw) return false;
+    try {
+      JSON.parse(raw);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function configChecklist() {
+    if (state.diagnostico && Array.isArray(state.diagnostico.checks) && state.diagnostico.checks.length) {
+      return state.diagnostico.checks.map(function (item) {
+        return {
+          label: item.titulo || item.clave || "Criterio",
+          ok: !!item.ok,
+          warnOnly: !!item.informativo,
+          detail: item.detalle || item.recomendacion || ""
+        };
+      });
+    }
+    var p = state.plantilla || {};
+    var d = state.dashboard || {};
+    var sections = moduleSections();
+    return [
+      { label: "Empresa detectada", ok: !!state.empresaId, detail: state.empresaId ? "empresa_id " + state.empresaId : "Falta contexto de empresa" },
+      { label: "Catalogo central", ok: !!state.catalogItem, detail: state.catalogItem ? "Vertical enlazado a catalogo" : "No se encontro en PCS_NUEVOS_VERTICALES" },
+      { label: "Ruta de trabajo", ok: sections.length >= 4, detail: sections.length + " secciones visibles" },
+      { label: "Tipos y categorias", ok: (p.tipos || []).length >= 2 && (p.categorias || []).length >= 2, detail: (p.tipos || []).length + " tipos / " + (p.categorias || []).length + " categorias" },
+      { label: "Estados y acciones", ok: (p.estados_flujo || []).length >= 3 && (p.acciones_sugeridas || []).length >= 3, detail: (p.estados_flujo || []).length + " estados / " + (p.acciones_sugeridas || []).length + " acciones" },
+      { label: "Metadata JSON", ok: metadataExampleIsValid(), detail: metadataExampleIsValid() ? "Ejemplo valido" : "Revisar JSON de ejemplo" },
+      { label: "Registros operativos", ok: Number(d.total_registros || 0) > 0, warnOnly: true, detail: Number(d.total_registros || 0) > 0 ? d.total_registros + " registro(s)" : "Listo para cargar el primer registro" }
+    ];
+  }
+
+  function renderConfigDiagnostics() {
+    var host = document.getElementById("mcConfigDiagnostics");
+    if (!host) return;
+    var checks = configChecklist();
+    var hard = checks.filter(function (item) { return !item.warnOnly; });
+    var okHard = hard.filter(function (item) { return item.ok; }).length;
+    var totalHard = hard.length;
+    var ready = okHard === totalHard;
+    if (state.diagnostico && Number(state.diagnostico.total_obligatorios || 0) > 0) {
+      okHard = Number(state.diagnostico.ok_obligatorios || 0);
+      totalHard = Number(state.diagnostico.total_obligatorios || 0);
+      ready = String(state.diagnostico.estado || "") === "listo";
+    }
+    host.innerHTML =
+      '<div class="mc-config-score ' + (ready ? "ok" : "warn") + '"><strong>' + esc(okHard + "/" + totalHard) + '</strong><span>' + esc(ready ? "Configuracion base lista" : "Revisar configuracion base") + '</span></div>' +
+      '<div class="mc-config-checks">' + checks.map(function (item) {
+        var tone = item.ok ? "ok" : (item.warnOnly ? "info" : "warn");
+        return '<article class="' + esc(tone) + '"><strong>' + esc(item.label) + '</strong><span>' + esc(item.detail) + '</span></article>';
+      }).join("") + '</div>';
   }
 
   function scrollToRequestedSection() {
@@ -120,7 +342,7 @@
     var target = document.getElementById(id);
     if (!target) return;
     window.setTimeout(function () {
-      try { target.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) { target.scrollIntoView(); }
+      scrollElementIntoViewWithOffset(target, true);
     }, 80);
   }
 
@@ -436,7 +658,8 @@
     setMsg("Cargando...");
     var searchQuery = buildSearchQuery();
     var searchRequest = searchQuery ? api("buscar&" + searchQuery) : Promise.resolve(null);
-    Promise.all([api("dashboard"), api("reporte"), api("agenda"), api("sla"), api("riesgo"), api("responsables"), api("evidencias"), api("aprobaciones"), api("tareas"), searchRequest]).then(function (results) {
+    var diagnosticoRequest = api("diagnostico").catch(function () { return null; });
+    Promise.all([api("dashboard"), api("reporte"), api("agenda"), api("sla"), api("riesgo"), api("responsables"), api("evidencias"), api("aprobaciones"), api("tareas"), diagnosticoRequest, searchRequest]).then(function (results) {
       state.dashboard = results[0] || {};
       state.reporte = results[1] || {};
       state.agenda = results[2] || {};
@@ -446,7 +669,8 @@
       state.evidencias = results[6] || [];
       state.aprobaciones = results[7] || [];
       state.tareas = results[8] || [];
-      state.busqueda = results[9] || null;
+      state.diagnostico = results[9] || null;
+      state.busqueda = results[10] || null;
       if (state.busqueda) {
         state.dashboard.registros = state.busqueda.registros || [];
       }
@@ -643,6 +867,53 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
+  function downloadTemplateCSV() {
+    var p = state.plantilla || {};
+    var tipos = p.tipos && p.tipos.length ? p.tipos : ["general"];
+    var categorias = p.categorias && p.categorias.length ? p.categorias : ["general"];
+    var estados = p.estados_flujo && p.estados_flujo.length ? p.estados_flujo : ["pendiente"];
+    var rows = [
+      ["codigo", "tipo", "nombre", "tercero", "responsable", "categoria", "referencia", "prioridad", "estado", "fecha", "vencimiento", "valor"],
+      [
+        String(state.modulo || "MOD").toUpperCase().slice(0, 3) + "-001",
+        tipos[0] || "general",
+        "Registro de ejemplo",
+        p.etiqueta_tercero || "Tercero / area",
+        "Responsable",
+        categorias[0] || "general",
+        p.etiqueta_referencia || "Referencia",
+        "normal",
+        estados[0] || "pendiente",
+        new Date().toISOString().slice(0, 10),
+        "",
+        "0"
+      ]
+    ];
+    downloadCSV(rowsToCSV(rows), state.modulo + "_plantilla_carga.csv");
+    setMsg("Plantilla CSV generada para " + state.titulo + ".");
+  }
+
+  function downloadChecklistCSV() {
+    var rows = [["criterio", "estado", "detalle"]].concat(configChecklist().map(function (item) {
+      return [item.label, item.ok ? "ok" : (item.warnOnly ? "informativo" : "revisar"), item.detail];
+    }));
+    downloadCSV(rowsToCSV(rows), state.modulo + "_checklist_configuracion.csv");
+    setMsg("Checklist de configuracion generado.");
+  }
+
+  function copyMetadataExample() {
+    var example = (state.plantilla && state.plantilla.metadata_ejemplo) || '{"nota":"detalle"}';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(example).then(function () {
+        setMsg("Metadata base copiada.");
+      }).catch(function () {
+        setMsg("Metadata base: " + example);
+      });
+    } else {
+      setMsg("Metadata base: " + example);
+    }
+  }
+
   function parseCSV(text) {
     var rows = [];
     var row = [];
@@ -716,23 +987,29 @@
     root = document.getElementById("moduloColombiaApp");
     if (!root) return;
     state.empresaId = resolveEmpresaId();
-    state.modulo = document.body.getAttribute("data-module") || "";
-    state.titulo = document.body.getAttribute("data-title") || "Modulo empresarial";
-    state.lead = document.body.getAttribute("data-lead") || "";
+    state.modulo = document.body.getAttribute("data-module") || queryParam("module") || queryParam("modulo") || "";
+    state.catalogItem = findCatalogItem(state.modulo);
+    state.titulo = document.body.getAttribute("data-title") || queryParam("title") || queryParam("titulo") || (state.catalogItem && (state.catalogItem.fullTitle || state.catalogItem.title)) || "Modulo empresarial";
+    state.lead = document.body.getAttribute("data-lead") || queryParam("lead") || (state.catalogItem && (state.catalogItem.lead || state.catalogItem.summary)) || "";
+    state.activeSection = cleanLabel(queryParam("section") || queryParam("seccion") || "Dashboard");
+    state.activeIntent = cleanLabel(queryParam("intent") || intentFromSection(state.activeSection, "dashboard")).toLowerCase();
     renderShell();
     scrollToRequestedSection();
     window.addEventListener("hashchange", scrollToRequestedSection);
     window.addEventListener("message", function (event) {
       var data = event && event.data;
       if (!data || data.type !== "pcs-submenu-select") return;
+      updateSectionContext(data.section || "", data.intent || "");
       scrollToSubmenuHash(data.hash || data.key || "");
     });
     api("plantilla").then(function (plantilla) {
       state.plantilla = plantilla || {};
       applyPlantilla();
+      renderConfig();
     }).catch(function () {
       state.plantilla = {};
       applyPlantilla();
+      renderConfig();
     });
     document.getElementById("mcRefresh").addEventListener("click", load);
     document.getElementById("mcSearch").addEventListener("click", load);
@@ -759,6 +1036,9 @@
       api("seed_demo", { method: "POST", body: "{}" }).then(load).catch(function (err) { setMsg(err.message, true); });
     });
     document.getElementById("mcExport").addEventListener("click", exportCSV);
+    document.getElementById("mcDownloadTemplate").addEventListener("click", downloadTemplateCSV);
+    document.getElementById("mcDownloadChecklist").addEventListener("click", downloadChecklistCSV);
+    document.getElementById("mcCopyMetadata").addEventListener("click", copyMetadataExample);
     document.getElementById("mcImportBtn").addEventListener("click", function () {
       document.getElementById("mcImportFile").click();
     });
@@ -788,6 +1068,15 @@
     document.addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-edit]");
       if (btn) editRow(btn.getAttribute("data-edit"));
+      var jumpBtn = ev.target.closest("[data-mc-jump]");
+      if (jumpBtn) {
+        jumpToElementById(jumpBtn.getAttribute("data-mc-jump") || "");
+      }
+      var workflowBtn = ev.target.closest("[data-mc-workflow-section]");
+      if (workflowBtn) {
+        updateSectionContext(workflowBtn.getAttribute("data-mc-workflow-section") || "", workflowBtn.getAttribute("data-mc-workflow-intent") || "");
+        jumpToElementById(workflowBtn.getAttribute("data-mc-workflow-target") || "");
+      }
       var expBtn = ev.target.closest("[data-expediente]");
       if (expBtn) loadExpediente(expBtn.getAttribute("data-expediente"));
       var closeBtn = ev.target.closest("[data-close-controlled]");

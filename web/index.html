@@ -841,11 +841,11 @@
           <article class="portal-modules-intro">
             <span class="portal-modules-kicker">Módulos del sistema</span>
             <h2 id="portalModulesTitle">Todo lo que resuelve Powerful Control System en una sola plataforma</h2>
-            <p>Powerful Control System reune la operacion completa de una empresa: POS, reservas, inventario, logistica WMS, produccion/MRP, compras con OCR/IA, bancos y pagos masivos, gestion documental, KYC/KYB y LAFT, contratos, helpdesk, calidad/procesos, finanzas, cierre fiscal, centros de costo, declaraciones tributarias Colombia, activos fijos NIIF/Fiscal, certificados tributarios para terceros, cobranza, portal contador, AIU construccion, parqueaderos, apartamentos turisticos, propiedad horizontal, domicilios, taxi tipo Uber, odontologia, turnos, carnets empresariales, control electrico, venta publica con QR y permisos por licencia en una sola suite.</p>
+            <p>Powerful Control System reune la operacion completa de una empresa: POS, reservas, inventario, logistica WMS, produccion/MRP, compras con OCR/IA, bancos y pagos masivos, gestion documental, KYC/KYB y LAFT, contratos, helpdesk, calidad/procesos, finanzas, cierre fiscal, centros de costo, declaraciones tributarias Colombia, activos fijos NIIF/Fiscal, certificados tributarios para terceros, cobranza, portal contador, AIU construccion, parqueaderos, apartamentos turisticos, propiedad horizontal, domicilios, taxi tipo Uber, odontologia, turnos, carnets empresariales, control electrico, venta publica con QR y 20 nuevos tipos de empresa verticales con permisos por licencia en una sola suite.</p>
           </article>
           <aside class="portal-modules-note">
             <h3>Cobertura empresarial real</h3>
-            <p>Cada modulo puede activarse por empresa, usuario, rol y licencia. La plataforma sirve para negocios tradicionales y para operaciones especializadas como hoteles, moteles, gimnasios, restaurantes, domicilios, flotas, consultorios, constructoras, parqueaderos, alojamientos turisticos, oficinas contables y centros de atencion.</p>
+            <p>Cada modulo puede activarse por empresa, usuario, rol y licencia. La plataforma sirve para negocios tradicionales y para operaciones especializadas como hoteles, moteles, gimnasios, restaurantes, domicilios, flotas, consultorios, constructoras, parqueaderos, turismo, eventos, clinicas, laboratorios, colegios, lavanderias, talleres, transporte, inmobiliarias, seguridad privada, cooperativas y centros de capacitacion.</p>
           </aside>
         </div>
 
@@ -861,6 +861,7 @@
           <article class="portal-module-card"><h3>Domicilios tipo Rappi</h3><p>Sistema para restaurantes, domiciliarios y central administrativa con pedidos y seguimiento operativo.</p><ul><li>Restaurantes, menus, productos, disponibilidad y flujo de preparacion.</li><li>Domiciliarios, asignacion, estados, ubicacion y tracking en tiempo real.</li><li>Central administrativa con metricas, pedidos, entregas y trazabilidad.</li></ul></article>
           <article class="portal-module-card"><h3>Taxi system tipo Uber</h3><p>Gestiona solicitudes de viaje, conductores, clientes, GPS y mapa operativo para servicios de transporte.</p><ul><li>Mapa, vehiculos, conductores, estados y tipos de GPS configurables.</li><li>Solicitud, asignacion, llegada, inicio, finalizacion y tarifa del servicio.</li><li>Historial, ubicacion en vivo y control administrativo de la flota.</li></ul></article>
           <article class="portal-module-card"><h3>Turnos y atencion al publico</h3><p>Organiza filas, ventanillas y llamados para recepcion, clinicas, oficinas o servicios de atencion.</p><ul><li>Emision de turnos, pantalla publica, llamado y estado de atencion.</li><li>Areas, ventanillas, prioridades, tiempos y resumen operativo.</li><li>Experiencia clara para cliente externo y personal interno.</li></ul></article>
+          <article class="portal-module-card"><h3>20 nuevos tipos de empresa</h3><p>Verticales listos para crear empresas con tipo, licencia, roles, configuracion inicial y modulo operativo propio.</p><ul><li>Agencia de viajes, operador turistico, eventos y boleteria, salon/spa, veterinaria, clinica y laboratorio.</li><li>Colegio, guarderia, lavanderia, taller mecanico, transporte de carga, servicios tecnicos e inmobiliaria.</li><li>Seguridad privada, club deportivo, funeraria, parque recreativo, cooperativa y capacitacion empresarial.</li></ul></article>
         <article class="portal-module-card"><h3>Clientes y CRM comercial</h3><p>Relacion comercial completa desde el lead hasta la fidelizacion y recompra.</p><ul><li>Base fiscal y comercial, historial, preferencias y segmentacion.</li><li>Pipeline, campanas, seguimientos, scoring, forecast y metas comerciales.</li><li>Conversion de leads a cotizaciones, actividad comercial y trazabilidad por empresa.</li></ul></article>
           <article class="portal-module-card"><h3>Inventario, productos y compras</h3><p>Catalogo profesional para productos, servicios, combos, bodegas, abastecimiento y operacion WMS.</p><ul><li>Productos, servicios, categorias, existencias, precios e imagenes.</li><li>Lotes, seriales, vencimientos, reservas, valorizacion, bodegas y kardex.</li><li>Compras documentales, requisiciones, cotizaciones, aprobaciones, recepcion y proveedores.</li><li>Logistica WMS con ubicaciones internas, picking, packing, despachos, rutas, conteos y bitacora por empresa.</li></ul></article>
           <article class="portal-module-card"><h3>Compras con OCR e IA</h3><p>Captura inteligente de compras y gastos desde foto, PDF o XML para acelerar la contabilidad.</p><ul><li>Radicacion de soportes, lectura OCR/IA, proveedor, NIT, documento, impuestos y total.</li><li>Deteccion de duplicados por hash o numero de documento.</li><li>Aprobacion, rechazo y contabilizacion como cuenta por pagar.</li></ul></article>
@@ -897,6 +898,7 @@
     <span class="whatsapp-floating-text">Chat Soporte</span>
   </a>
 
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
   <script>
     window.__pcsAutoInjectChatShell = true;
     window.__pcsUseFloatingPublicChat = true;
@@ -1108,6 +1110,29 @@
         }
       ];
 
+      var localVerticalCatalog = window.PCS_NUEVOS_VERTICALES || [];
+      var localVerticalVisualsByModule = {};
+      localVerticalCatalog.forEach(function(item) {
+        if (item && item.module) localVerticalVisualsByModule[item.module] = item;
+      });
+
+      function verticalCardFromCatalogItem(item) {
+        var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+        var local = localVerticalVisualsByModule[module] || {};
+        return {
+          __verticalModule: module,
+          detalle_id: 'vertical-' + module,
+          titulo: (item && (item.full_title || item.fullTitle || item.title || item.titulo || item.module)) || module,
+          descripcion: (item && (item.lead || item.summary || item.resumen)) || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.',
+          imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
+          imagen_secundaria_url: local.secondaryIcon || (item && item.secondaryIcon) || '/img/report.svg',
+          enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module)
+        };
+      }
+
+      var publicVerticalCards = localVerticalCatalog.map(verticalCardFromCatalogItem);
+      fallbackCards = fallbackCards.concat(publicVerticalCards);
+
       function escapeHTML(value) {
         return String(value == null ? '' : value)
           .replace(/&/g, '&amp;')
@@ -1127,6 +1152,15 @@
           normalized = 'tarjeta';
         }
         return normalized + '-detalle-' + (index + 1);
+      }
+
+      function normalizeDetailId(raw, fallback) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) {
+          value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        value = value.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        return value || fallback;
       }
 
       function normalizeLink(raw) {
@@ -1202,7 +1236,7 @@
           var imagenSec = normalizeImage((card && card.imagen_secundaria_url) || '/img/sistema punto de venta.png');
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
           var tipoTarjeta = normalizeCardType(card && card.tipo_tarjeta);
-          var detalleId = slugifyTitle(titulo, idx);
+          var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
           return {
             tipo_tarjeta: tipoTarjeta,
             titulo: titulo,
@@ -1214,6 +1248,42 @@
             detalle_href: '/descripcion_de_los_sistemas.ht#' + encodeURIComponent(detalleId)
           };
         });
+      }
+
+      async function refreshFallbackVerticalCards() {
+        try {
+          var response = await fetch('/api/public/verticales_nuevos/catalogo', { credentials: 'same-origin' });
+          if (!response.ok) return;
+          var payload = await response.json();
+          var rows = payload && Array.isArray(payload.items) ? payload.items : [];
+          if (!rows.length) return;
+          var modules = {};
+          rows.forEach(function(item) {
+            var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+            if (module) modules[module] = true;
+          });
+          publicVerticalCards = rows.map(verticalCardFromCatalogItem);
+          fallbackCards = fallbackCards.filter(function(card) {
+            return !card.__verticalModule || !modules[card.__verticalModule];
+          }).concat(publicVerticalCards);
+        } catch (_) {}
+      }
+
+      function mergeCardsWithVerticals(rawCards) {
+        if (!Array.isArray(rawCards) || !rawCards.length) {
+          return fallbackCards;
+        }
+        if (!publicVerticalCards.length) {
+          return rawCards;
+        }
+        var modules = {};
+        publicVerticalCards.forEach(function(card) {
+          if (card && card.__verticalModule) modules[card.__verticalModule] = true;
+        });
+        return rawCards.filter(function(card) {
+          var module = String((card && card.__verticalModule) || '').trim().toLowerCase();
+          return !module || !modules[module];
+        }).concat(publicVerticalCards);
       }
 
       function renderCards(cards) {
@@ -1298,6 +1368,7 @@
       async function loadCards() {
         statusEl.textContent = 'Cargando ofertas...';
         try {
+          await refreshFallbackVerticalCards();
           var response = await fetch('/api/public/pagina_principal', { credentials: 'same-origin' });
           var payload = null;
           try {
@@ -1312,7 +1383,7 @@
 
           applyVisualSettings(payload && payload.estilos);
           applyWhatsAppContactNumber(payload && payload.whatsapp_contact_number);
-          var cards = normalizeCards(payload && payload.tarjetas);
+          var cards = normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas));
           renderCards(cards);
           statusEl.textContent = '';
         } catch (err) {

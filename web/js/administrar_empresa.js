@@ -270,6 +270,9 @@ try {
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
   var permModuleNextcloud = "nextcloud";
+  var nuevosVerticalesModules = Array.isArray(window.PCS_NUEVOS_VERTICALES_MODULES)
+    ? window.PCS_NUEVOS_VERTICALES_MODULES.slice()
+    : [];
 
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
@@ -413,9 +416,18 @@ try {
     linkERPExtendido: { module: permModuleSeguridad, action: permActionUpdate },
     linkERPExtendidoMenu: { module: permModuleSeguridad, action: permActionUpdate },
     linkChatIAGlobal: { module: permModuleSeguridad, action: permActionRead },
+    linkNuevosVerticales: { anyModules: nuevosVerticalesModules.map(function (item) { return item[1]; }), action: permActionCreate },
     linkEstaciones: { alwaysVisible: true },
     linkPanelEmpresa: { alwaysVisible: true }
   };
+  nuevosVerticalesModules.forEach(function (item) {
+    menuPermissionCatalog[item[0]] = { module: item[1], action: permActionCreate };
+  });
+
+  function isNuevoVerticalModule(module) {
+    var normalized = String(module || "").trim().toLowerCase();
+    return nuevosVerticalesModules.some(function (item) { return item[1] === normalized; });
+  }
 
   function storageKey(empresaId) {
     return "admin_empresa:last_page:" + String(empresaId || "global");
@@ -873,6 +885,16 @@ try {
       return true;
     }
 
+    if (isNuevoVerticalModule(normalizedModule)) {
+      if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+      if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+        return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero"]);
+      }
+      if (normalizedAction === "D") {
+        return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
+      }
+    }
+
     switch (normalizedModule) {
       case permModuleVentas:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
@@ -1129,6 +1151,12 @@ try {
     if (!rule || rule.alwaysVisible) {
       return true;
     }
+    if (Array.isArray(rule.anyModules) && rule.anyModules.length) {
+      return rule.anyModules.some(function (module) {
+        var moduleRow = getPermissionContextModuleRow(permissionContext, module);
+        return isContextModuleActionAllowed(moduleRow, rule.action);
+      });
+    }
     var moduleRow = getPermissionContextModuleRow(permissionContext, rule.module);
     return isContextModuleActionAllowed(moduleRow, rule.action);
   }
@@ -1274,6 +1302,11 @@ try {
     var rule = menuPermissionCatalog[link.id || ""];
     if (!rule || rule.alwaysVisible) {
       return true;
+    }
+    if (Array.isArray(rule.anyModules) && rule.anyModules.length) {
+      return rule.anyModules.some(function (module) {
+        return roleAllowsModuleAction(role, module, rule.action);
+      });
     }
     return roleAllowsModuleAction(role, rule.module, rule.action);
   }

@@ -48,6 +48,7 @@
     .lic-module-presets{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 10px}
     .lic-module-presets button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 9px;font-size:.72rem;font-weight:850;color:var(--text);cursor:pointer}
     .lic-module-presets button:hover{border-color:var(--accent);color:var(--accent)}
+    .lic-coverage-item-vertical{background:color-mix(in srgb,var(--surface) 88%,#0f766e 12%);border-color:color-mix(in srgb,var(--border) 70%,#0f766e 30%)}
     .lic-risk-list{display:grid;gap:7px;margin-top:8px}
     .lic-risk-item{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.45);font-size:.76rem;color:var(--text)}
     .lic-risk-item strong{white-space:nowrap}
@@ -254,6 +255,7 @@
 
   <!-- Menú flotante eliminado en páginas del panel /super -->
 
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
   <script>
     (function(){
       const currentParams = new URLSearchParams(window.location.search || '');
@@ -320,13 +322,25 @@
         control_electrico: 'Control eléctrico',
         carnets: 'Carnets'
       };
-      const modulePresets = {
-        all: '',
-        operativo: 'ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,helpdesk,calidad_procesos',
-        financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,facturacion',
-        comercial: 'ventas,venta_publica,clientes,compras,domicilios',
-        enterprise: 'ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,compras,gestion_documental,contratos_obligaciones,helpdesk,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,produccion_mrp,logistica_wms,importaciones_costeo'
-      };
+      let nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      function nuevosVerticalesCSV(){
+        return nuevosVerticalesCatalog.map(function(item){ return item.module; }).filter(Boolean).join(',');
+      }
+      nuevosVerticalesCatalog.forEach(function(item){
+        moduleLabels[item.module] = item.fullTitle || item.title || item.module;
+      });
+      let modulePresets = buildModulePresets();
+
+      function buildModulePresets(){
+        const verticalesCSV = nuevosVerticalesCSV();
+        return {
+          all: '',
+          operativo: normalizeCSV('ventas,inventario,clientes,gimnasio,turnos_atencion,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,helpdesk,calidad_procesos,' + verticalesCSV),
+          financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,facturacion',
+          comercial: 'ventas,venta_publica,clientes,compras,domicilios',
+          enterprise: normalizeCSV('ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,compras,gestion_documental,contratos_obligaciones,helpdesk,facturacion,seguridad,venta_publica,gimnasio,taxi_system,domicilios,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,produccion_mrp,logistica_wms,importaciones_costeo,' + verticalesCSV)
+        };
+      }
 
       function parseTruthy(v){
         switch (String(v || '').trim().toLowerCase()) {
@@ -382,6 +396,82 @@
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
       }
+
+      function renderNuevosVerticalesCoverage(){
+        const grid = document.querySelector('#modulosLicenciaBox .lic-coverage-grid');
+        if (!grid || !nuevosVerticalesCatalog.length) return;
+        const existing = new Set(Array.from(grid.querySelectorAll('input[name="lic_modulo"]')).map(function(el){
+          return String(el.value || '').trim().toLowerCase();
+        }));
+        const pending = nuevosVerticalesCatalog.filter(function(item){
+          const module = String(item.module || '').trim().toLowerCase();
+          return module && !existing.has(module);
+        });
+        if (!pending.length) return;
+        grid.insertAdjacentHTML('beforeend', pending.map(function(item){
+          return '<label class="lic-coverage-item lic-coverage-item-vertical">' +
+            '<input type="checkbox" name="lic_modulo" value="' + escapeHTML(item.module) + '">' +
+            '<span class="lic-coverage-h">' + escapeHTML(item.fullTitle || item.title || item.module) + '</span>' +
+            '<span class="lic-coverage-d">' + escapeHTML(item.summary || item.lead || 'Modulo vertical empresarial.') + '</span>' +
+            '</label>';
+        }).join(''));
+      }
+      renderNuevosVerticalesCoverage();
+
+      function refreshNuevosVerticalesCoverageLabels(){
+        nuevosVerticalesCatalog.forEach(function(item){
+          const module = String(item.module || '').trim().toLowerCase();
+          if (!module) return;
+          const input = Array.from(document.querySelectorAll('#modulosLicenciaBox input[name="lic_modulo"]')).find(function(el){
+            return String(el.value || '').trim().toLowerCase() === module;
+          });
+          const label = input ? input.closest('.lic-coverage-item') : null;
+          if (!label) return;
+          label.classList.add('lic-coverage-item-vertical');
+          const title = label.querySelector('.lic-coverage-h');
+          const desc = label.querySelector('.lic-coverage-d');
+          if (title) title.textContent = item.fullTitle || item.title || item.module;
+          if (desc) desc.textContent = item.summary || item.lead || 'Modulo vertical empresarial.';
+        });
+      }
+
+      function normalizeBackendVerticalCatalog(catalog){
+        const rows = catalog && Array.isArray(catalog.items) ? catalog.items : [];
+        return rows.map(function(row){
+          const module = String(row.module || row.modulo || '').trim().toLowerCase();
+          if (!module) return null;
+          return {
+            id: row.id || row.page || '',
+            module: module,
+            title: row.title || row.titulo || module,
+            fullTitle: row.full_title || row.fullTitle || row.title || row.titulo || module,
+            summary: row.summary || row.resumen || '',
+            sections: Array.isArray(row.sections) ? row.sections : []
+          };
+        }).filter(Boolean);
+      }
+
+      function applyBackendVerticalCatalog(catalog){
+        const rows = normalizeBackendVerticalCatalog(catalog);
+        if (!rows.length) return;
+        const localByModule = {};
+        nuevosVerticalesCatalog.forEach(function(item){ localByModule[item.module] = item; });
+        nuevosVerticalesCatalog = rows.map(function(row){
+          const local = localByModule[row.module] || {};
+          return Object.assign({}, local, row);
+        });
+        nuevosVerticalesCatalog.forEach(function(item){
+          moduleLabels[item.module] = item.fullTitle || item.title || item.module;
+        });
+        modulePresets = buildModulePresets();
+        renderNuevosVerticalesCoverage();
+        refreshNuevosVerticalesCoverageLabels();
+      }
+
+      fetch('/super/api/verticales_nuevos/catalogo', { credentials: 'same-origin' })
+        .then(function(resp){ return resp.ok ? resp.json() : null; })
+        .then(applyBackendVerticalCatalog)
+        .catch(function(){});
 
       function hasValue(value){
         return value !== null && value !== undefined && value !== '';

@@ -11,7 +11,22 @@
       font-size: inherit;
       line-height: inherit;
     }
+    .tipos-vertical-toolbar{display:grid;gap:12px;margin:0 0 14px}
+    .tipos-vertical-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .tipos-vertical-stat{border:1px solid var(--content-soft-border);border-radius:10px;background:var(--content-soft-bg);padding:12px}
+    .tipos-vertical-stat strong{display:block;font-size:1.35rem;line-height:1;color:var(--text)}
+    .tipos-vertical-stat span{display:block;margin-top:5px;color:var(--muted);font-size:.82rem}
+    .tipos-vertical-search{max-width:420px}
+    .tipo-vertical-cell{display:flex;align-items:center;gap:10px}
+    .tipo-vertical-icon{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:color-mix(in srgb,var(--surface) 82%,var(--accent) 18%);border:1px solid color-mix(in srgb,var(--border) 72%,var(--accent) 28%)}
+    .tipo-vertical-icon img{width:22px;height:22px;object-fit:contain}
+    .tipo-vertical-name{display:grid;gap:3px}
+    .tipo-vertical-name strong{color:var(--text)}
+    .tipo-vertical-chip{display:inline-flex;align-items:center;width:max-content;min-height:24px;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+    .tipo-row-vertical td{background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%)}
+    @media (max-width:760px){.tipos-vertical-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.tipo-vertical-cell{align-items:flex-start}}
   </style>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -40,27 +55,100 @@
       </div>
       <div class="form-help" id="msg"></div>
     </form>
+    <div class="tipos-vertical-toolbar">
+      <div class="tipos-vertical-summary" aria-label="Resumen de tipos de empresa">
+        <div class="tipos-vertical-stat"><strong id="statTiposTotal">0</strong><span>Tipos registrados</span></div>
+        <div class="tipos-vertical-stat"><strong id="statTiposActivos">0</strong><span>Activos</span></div>
+        <div class="tipos-vertical-stat"><strong id="statTiposVerticales">0</strong><span>Verticales 2026</span></div>
+        <div class="tipos-vertical-stat"><strong id="statTiposInactivos">0</strong><span>Inactivos</span></div>
+      </div>
+      <input id="tipoSearch" class="form-input tipos-vertical-search" type="search" placeholder="Buscar tipo, vertical u observacion">
+    </div>
     <div id="list">Cargando...</div>
   </div>
 
 
   <script>
+    const verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+    function escapeHTML(value){
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(match){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match];
+      });
+    }
+    function normalizeText(value){
+      var out = String(value || '').trim().toLowerCase();
+      if (out.normalize) out = out.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return out;
+    }
+    function getVerticalByName(name){
+      var normalized = normalizeText(name);
+      if (!normalized) return null;
+      for (var i = 0; i < verticalCatalog.length; i += 1) {
+        var item = verticalCatalog[i];
+        var moduleText = normalizeText(String(item.module || '').replace(/_/g, ' '));
+        var titleText = normalizeText([item.title, item.fullTitle, item.summary, item.lead].join(' '));
+        var shortTitle = normalizeText([item.title, item.fullTitle].join(' ')).split(' ').slice(0, 3).join(' ');
+        if ((moduleText && normalized.indexOf(moduleText) >= 0) || (shortTitle && normalized.indexOf(shortTitle) >= 0) || (titleText && titleText.indexOf(normalized) >= 0)) {
+          return item;
+        }
+      }
+      return null;
+    }
+    function updateStats(data){
+      var total = Array.isArray(data) ? data.length : 0;
+      var activos = 0;
+      var verticales = 0;
+      (data || []).forEach(function(item){
+        if (item.estado === 'activo' || item.activo == 1) activos += 1;
+        if (getVerticalByName(item.nombre)) verticales += 1;
+      });
+      document.getElementById('statTiposTotal').textContent = total;
+      document.getElementById('statTiposActivos').textContent = activos;
+      document.getElementById('statTiposVerticales').textContent = verticales;
+      document.getElementById('statTiposInactivos').textContent = Math.max(0, total - activos);
+    }
+    function renderTypeNameCell(item){
+      var vertical = getVerticalByName(item.nombre);
+      if (!vertical) return '<strong>' + escapeHTML(item.nombre || '') + '</strong>';
+      return '' +
+        '<div class="tipo-vertical-cell">' +
+        '  <span class="tipo-vertical-icon"><img src="' + escapeHTML(vertical.icon || '/img/company-briefcase-color.svg') + '" alt=""></span>' +
+        '  <span class="tipo-vertical-name">' +
+        '    <strong>' + escapeHTML(item.nombre || vertical.fullTitle || vertical.title || '') + '</strong>' +
+        '    <span class="tipo-vertical-chip">Vertical</span>' +
+        '  </span>' +
+        '</div>';
+    }
     async function load(){
       const res = await fetch('/super/api/tipos_empresas');
       const data = await res.json();
+      updateStats(data);
+      const query = normalizeText(document.getElementById('tipoSearch') && document.getElementById('tipoSearch').value);
+      const rows = (Array.isArray(data) ? data : []).filter(function(i){
+        if (!query) return true;
+        const vertical = getVerticalByName(i.nombre);
+        return normalizeText([i.nombre, i.observaciones, vertical && vertical.fullTitle, vertical && vertical.module].join(' ')).indexOf(query) >= 0;
+      });
       const table = document.createElement('table');
       table.className = 'table';
       table.innerHTML = '<thead><tr><th>ID</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>';
       const tbody = document.createElement('tbody');
-      data.forEach(i=>{
+      rows.forEach(i=>{
         const tr = document.createElement('tr');
         const activo = i.estado == 'activo' || i.activo==1 ? 1 : 0;
         const toggleLabel = (activo==1) ? 'Desactivar' : 'Activar';
-        tr.innerHTML = `<td>${i.id}</td><td>${i.nombre}</td><td>${i.observaciones||''}</td><td class="actions"><button data-id="${i.id}" class="edit btn secondary">Editar</button> <button data-id="${i.id}" class="del btn danger">Eliminar</button> <button data-id="${i.id}" data-activo="${activo}" class="toggle btn">${toggleLabel}</button></td>`;
+        if (getVerticalByName(i.nombre)) tr.classList.add('tipo-row-vertical');
+        tr.innerHTML = '<td>' + escapeHTML(i.id) + '</td><td>' + renderTypeNameCell(i) + '</td><td>' + escapeHTML(i.observaciones || '') + '</td><td class="actions"><button data-id="' + escapeHTML(i.id) + '" class="edit btn secondary">Editar</button> <button data-id="' + escapeHTML(i.id) + '" class="del btn danger">Eliminar</button> <button data-id="' + escapeHTML(i.id) + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button></td>';
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
-      const list = document.getElementById('list'); list.innerHTML=''; list.appendChild(table);
+      const list = document.getElementById('list');
+      list.innerHTML='';
+      if (!rows.length) {
+        list.innerHTML = '<div class="form-help">No hay tipos que coincidan con la busqueda.</div>';
+      } else {
+        list.appendChild(table);
+      }
       document.querySelectorAll('.edit').forEach(b=>b.onclick = async ()=>{
         const id = b.getAttribute('data-id');
         const item = data.find(x=>x.id==id);
@@ -111,6 +199,7 @@
     document.getElementById('addBtn').onclick = ()=>{
       document.getElementById('form').style.display=''; document.getElementById('addBtn').style.display='none'; document.getElementById('itemId').value=''; document.getElementById('nombre').value=''; document.getElementById('observaciones').value=''; document.getElementById('saveBtn').innerText='Guardar'; document.getElementById('cancelBtn').style.display='none'; window.scrollTo({ top:0, behavior:'smooth' });
     }
+    document.getElementById('tipoSearch').addEventListener('input', load);
 
     // iniciar oculto
     document.getElementById('form').style.display='none'; document.getElementById('addBtn').style.display='';

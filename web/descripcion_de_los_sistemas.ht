@@ -8,6 +8,7 @@
   <link rel="icon" type="image/png" href="/img/punto_venta.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <script src="/menu.js"></script>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body>
   <div class="portal systems-page">
@@ -150,6 +151,56 @@
         }
       ];
 
+      var localVerticalCatalog = window.PCS_NUEVOS_VERTICALES || [];
+      var localVerticalVisualsByModule = {};
+      localVerticalCatalog.forEach(function(item) {
+        if (item && item.module) localVerticalVisualsByModule[item.module] = item;
+      });
+
+      function verticalSectionsFromCatalogItem(item) {
+        var sections = [];
+        if (item && Array.isArray(item.sections)) {
+          sections = item.sections.slice();
+        } else if (item && item.plantilla && Array.isArray(item.plantilla.secciones_flujo)) {
+          sections = item.plantilla.secciones_flujo.slice();
+        }
+        return sections.map(function(section) {
+          return String(section || '').trim();
+        }).filter(Boolean);
+      }
+
+      function verticalCardFromCatalogItem(item) {
+        var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+        var local = localVerticalVisualsByModule[module] || {};
+        var title = (item && (item.full_title || item.fullTitle || item.title || item.titulo)) || local.fullTitle || local.title || module;
+        var summary = (item && (item.lead || item.summary || item.resumen)) || local.lead || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
+        var sections = verticalSectionsFromCatalogItem(item);
+        var firstSections = sections.slice(0, 5);
+        var points = firstSections.map(function(section) {
+          return 'Flujo operativo: ' + section + '.';
+        });
+        points.push('Permisos por rol, licencia y empresa usando el motor comun de verticales.');
+        points.push('Configuracion inicial con tipos, estados, acciones sugeridas, diagnostico y exportacion.');
+        return {
+          __verticalModule: module,
+          detalle_id: 'vertical-' + module,
+          titulo: title,
+          descripcion: summary,
+          imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
+          enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module),
+          detalle_etiqueta: 'Vertical empresarial',
+          detalle_titular: 'Activa ' + title + ' con roles, licencia, configuracion y operacion lista para trabajar.',
+          detalle_parrafo_uno: 'Este vertical nace sobre el motor empresarial comun de Powerful Control System. La empresa puede usar un flujo propio para su industria sin duplicar tecnologia: tablero, registros, agenda, seguimiento, responsables, aprobaciones, evidencias, tareas, importacion, exportacion y auditoria viven en una misma base profesional.',
+          detalle_parrafo_dos: sections.length
+            ? ('La ruta de trabajo incluye ' + sections.join(', ') + '. Esa estructura permite arrancar con un negocio real, mantener control por permisos y crecer hacia reportes, SLA, evidencias y configuraciones avanzadas sin cambiar de plataforma.')
+            : 'La ruta de trabajo se alimenta desde el catalogo backend del vertical, de modo que la portada, licencias, roles y pantalla operativa usan el mismo contrato funcional.',
+          detalle_puntos: points
+        };
+      }
+
+      var publicVerticalCards = localVerticalCatalog.map(verticalCardFromCatalogItem);
+      fallbackCards = fallbackCards.concat(publicVerticalCards);
+
       function escapeHTML(value) {
         return String(value == null ? '' : value)
           .replace(/&/g, '&amp;')
@@ -169,6 +220,15 @@
           normalized = 'tarjeta';
         }
         return normalized + '-detalle-' + (index + 1);
+      }
+
+      function normalizeDetailId(raw, fallback) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) {
+          value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        value = value.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        return value || fallback;
       }
 
       function normalizeLink(raw) {
@@ -242,7 +302,7 @@
           var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
           var trialLink = resolvePublicTrialLink((card && card.enlace) || fallback.enlace);
-          var detalleId = slugifyTitle(titulo, idx);
+          var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
           return {
             titulo: titulo,
             descripcion: descripcion,
@@ -260,6 +320,42 @@
               : (Array.isArray(fallback.detalle_puntos) ? fallback.detalle_puntos.slice() : [])
           };
         });
+      }
+
+      async function refreshFallbackVerticalCards() {
+        try {
+          var response = await fetch('/api/public/verticales_nuevos/catalogo', { credentials: 'same-origin' });
+          if (!response.ok) return;
+          var payload = await response.json();
+          var rows = payload && Array.isArray(payload.items) ? payload.items : [];
+          if (!rows.length) return;
+          var modules = {};
+          rows.forEach(function(item) {
+            var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+            if (module) modules[module] = true;
+          });
+          publicVerticalCards = rows.map(verticalCardFromCatalogItem);
+          fallbackCards = fallbackCards.filter(function(card) {
+            return !card.__verticalModule || !modules[card.__verticalModule];
+          }).concat(publicVerticalCards);
+        } catch (_) {}
+      }
+
+      function mergeCardsWithVerticals(rawCards) {
+        if (!Array.isArray(rawCards) || !rawCards.length) {
+          return fallbackCards;
+        }
+        if (!publicVerticalCards.length) {
+          return rawCards;
+        }
+        var modules = {};
+        publicVerticalCards.forEach(function(card) {
+          if (card && card.__verticalModule) modules[card.__verticalModule] = true;
+        });
+        return rawCards.filter(function(card) {
+          var module = String((card && card.__verticalModule) || '').trim().toLowerCase();
+          return !module || !modules[module];
+        }).concat(publicVerticalCards);
       }
 
       function getSelectedBusinessCardId() {
@@ -457,6 +553,7 @@
       async function loadSystems() {
         statusEl.textContent = 'Cargando descripciones...';
         try {
+          await refreshFallbackVerticalCards();
           var response = await fetch('/api/public/pagina_principal', { credentials: 'same-origin' });
           var payload = null;
           try {
@@ -470,7 +567,7 @@
           }
 
           applyVisualSettings(payload && payload.estilos);
-          var cards = normalizeCards(payload && payload.tarjetas);
+          var cards = normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas));
           renderQuickNav(cards);
           renderSections(cards);
           bindSectionObserver();
