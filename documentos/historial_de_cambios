@@ -1,3 +1,10 @@
+2026-05-12: Menu de configuracion super alineado con Administrar empresa
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`.
+- Cambio funcional: `web/super/configuracion_avanzada.html` reemplaza el submenu interno plano por un sidebar agrupado con el patron visual de Administrar empresa, manteniendo buscador, navegacion por secciones y colapso movil.
+- Frontend: los grupos `Gobierno`, `Infraestructura`, `Pagos`, `Comunicaciones`, `Seguridad`, `IA` y `Operacion` abren sus tarjetas existentes sin cambiar contratos.
+- Alcance: no cambian endpoints, permisos, backend, base de datos ni dependencias.
+- Validacion prevista: sintaxis de scripts inline, `git diff --check`, preflight profesional y verificacion publica tras despliegue.
+
 2026-05-12: Scroll superior en tabla de Tipos de empresa
 - Modulos afectados: `super_administrador`, `tipos_empresas`.
 - Cambio funcional: `web/super/tipos_empresas.html` envuelve la tabla con una barra de scroll horizontal superior sincronizada con el contenedor inferior, facilitando navegar columnas desde el inicio de la tabla.

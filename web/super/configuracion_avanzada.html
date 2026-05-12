@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Configuración avanzada</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
   <style>
     .advanced-config-page .page-header { display:grid; justify-items:center; gap:8px; margin:0 0 18px; padding:22px 12px 8px; }
     .advanced-config-page .page-header .form-help { margin:0 auto; max-width:820px; }
@@ -18,25 +19,27 @@
     .rustdesk-download-item span { display:block; color:var(--muted); font-size:.88rem; }
     .rustdesk-probe-list { margin:0; padding-left:18px; display:grid; gap:8px; }
     .rustdesk-steps { margin:0; padding-left:18px; display:grid; gap:8px; }
-    .advanced-config-layout { display:grid; grid-template-columns:minmax(230px,280px) minmax(0,1fr); gap:18px; align-items:start; }
+    .advanced-config-layout { display:grid; grid-template-columns:minmax(250px,300px) minmax(0,1fr); gap:18px; align-items:start; }
     .advanced-config-main { min-width:0; display:block; }
-    .advanced-section-finder { position:sticky; top:14px; z-index:2; margin:0; padding:14px; border:1px solid color-mix(in srgb,var(--border) 82%,var(--accent) 18%); border-radius:8px; background:linear-gradient(180deg, var(--surface), var(--surface-soft)); box-shadow:0 18px 38px rgba(3,10,20,.24); isolation:isolate; backdrop-filter:none; }
-    .advanced-section-finder-header { display:grid; gap:3px; margin:0 0 12px; }
-    .advanced-section-finder-header h2 { margin:0; font-size:1rem; line-height:1.2; }
-    .advanced-section-finder-header p { margin:0; color:var(--muted); font-size:.86rem; line-height:1.35; }
+    .advanced-section-finder { position:sticky; top:14px; z-index:2; width:100%; max-height:calc(100vh - 28px); overflow:auto; border-radius:8px; box-sizing:border-box; }
+    .advanced-section-finder .super-console-brand { margin:0 0 12px; }
+    .advanced-section-finder .admin-sidebar-summary { margin-bottom:12px; }
     .advanced-section-finder-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .advanced-section-finder-row input { flex:1 1 260px; }
-    .advanced-category-map { display:grid; grid-template-columns:1fr; gap:8px; margin:12px 0 0; padding:0; list-style:none; max-height:calc(100vh - 230px); overflow:auto; }
+    .advanced-section-finder-row input { flex:1 1 170px; min-width:0; }
+    .advanced-section-finder-row .btn { min-height:40px; padding-inline:12px; }
+    .advanced-category-map { margin:12px 0 0; }
     .advanced-category-map li { display:block; }
-    .advanced-category-map button { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; min-height:46px; padding:10px 11px; border:1px solid color-mix(in srgb,var(--border) 84%,var(--accent) 16%); border-radius:8px; background:color-mix(in srgb,var(--surface) 90%,var(--accent) 10%); color:var(--text); font:inherit; font-weight:850; text-align:left; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease; }
-    .advanced-category-map button::before { content:""; width:8px; height:8px; border-radius:999px; background:color-mix(in srgb,var(--accent) 72%,#22c55e 28%); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent); flex:0 0 auto; }
+    .advanced-category-map button:not(.admin-menu-visibility-toggle) { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:40px; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font:inherit; font-size:.84rem; font-weight:800; text-align:left; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease; }
+    .advanced-category-map button img.icon { width:28px; height:28px; margin-right:2px; vertical-align:middle; transition:transform .15s ease; background:var(--menu-icon-bg,#e0f2fe); border:1px solid var(--menu-icon-border,rgba(14,165,233,.28)); border-radius:8px; padding:5px; box-sizing:border-box; filter:none!important; box-shadow:0 8px 16px rgba(15,23,42,.12); flex:0 0 auto; }
     .advanced-category-map button strong { flex:1 1 auto; min-width:0; }
-    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:color-mix(in srgb,var(--surface-soft) 78%,var(--accent) 22%); border-color:color-mix(in srgb,var(--border) 55%,var(--accent) 45%); outline:none; transform:translateX(2px); }
+    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:var(--surface-soft); border-color:color-mix(in srgb,var(--accent) 30%,var(--border)); outline:none; transform:translateX(2px); }
+    .advanced-category-map button:hover img.icon { transform:translateY(-1px); }
     .advanced-category-map button.is-active { background:linear-gradient(135deg, color-mix(in srgb,var(--accent) 22%,var(--surface) 78%), color-mix(in srgb,#22c55e 14%,var(--surface) 86%)); border-color:color-mix(in srgb,var(--accent) 62%,var(--border) 38%); box-shadow:inset 3px 0 0 var(--accent); }
-    .advanced-category-map button.is-active::before { background:#22c55e; }
+    .advanced-category-map button.is-active img.icon { background:var(--menu-icon-active-bg,#fff); border-color:rgba(255,255,255,.7); box-shadow:0 8px 18px rgba(15,23,42,.18); }
     .advanced-category-map button span { color:var(--muted); font-weight:750; font-size:.78rem; text-align:right; flex:0 0 auto; max-width:96px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .advanced-category-map li.is-hidden { display:none; }
     .advanced-category-map button.is-hidden { display:none; }
+    .advanced-category-map .admin-nav-group.is-hidden { display:none; }
     .advanced-section-empty { display:none; margin-top:10px; color:var(--muted); }
     .advanced-section-empty.is-visible { display:block; }
     .advanced-card, .advanced-category-heading { scroll-margin-top:18px; }
@@ -46,7 +49,7 @@
     .consumos-config-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
     .consumos-config-form .form-col { min-width:0; }
     .consumos-config-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
-    @media (max-width: 980px) { .advanced-config-layout { grid-template-columns:1fr; } .advanced-section-finder { position:relative; top:auto; } .advanced-category-map { grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); max-height:none; overflow:visible; } }
+    @media (max-width: 980px) { .advanced-config-layout { grid-template-columns:1fr; } .advanced-section-finder { position:relative; top:auto; max-height:none; overflow:visible; } }
     @media (max-width: 760px) { .consumos-config-form { grid-template-columns:1fr; } .consumos-config-actions { justify-content:flex-start; } .advanced-section-finder-row input { flex-basis:100%; } .advanced-section-finder-row .btn { width:100%; } }
     @media (max-width: 900px) { .rustdesk-download-item { flex-direction:column; align-items:flex-start; } }
   </style>
@@ -62,34 +65,85 @@
     </div>
 
     <div class="advanced-config-layout">
-    <nav class="advanced-section-finder" aria-label="Submenú de configuración avanzada">
-      <div class="advanced-section-finder-header">
-        <h2>Submenú</h2>
-        <p>Cada botón abre una sección de configuración.</p>
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible advanced-section-finder" aria-label="Submenu de configuracion avanzada">
+      <div class="super-console-brand">
+        <span class="super-console-mark" aria-hidden="true">PCS</span>
+        <div>
+          <h2>Configuracion</h2>
+          <p class="admin-sidebar-kicker">Super administrador</p>
+        </div>
+      </div>
+      <div class="admin-sidebar-summary">
+        <p>Ajustes globales del sistema organizados por area operativa.</p>
       </div>
       <div class="advanced-section-finder-row">
         <input id="advancedSectionSearch" class="form-input" type="search" placeholder="Buscar seccion: IA, pagos, Gmail, RustDesk, voz, respaldo...">
         <button id="advancedSectionClear" class="btn secondary" type="button">Limpiar</button>
       </div>
-      <ul id="advancedCategoryList" class="advanced-category-map">
-        <li><button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto" aria-label="Consumos Costos externos"><strong>Consumos</strong><span>Costos externos</span></button></li>
-        <li><button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr" aria-label="RustDesk VPS Soporte remoto"><strong>RustDesk VPS</strong><span>Soporte remoto</span></button></li>
-        <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps nextcloud rustdesk cuotas" aria-label="Limitaciones API, DB, cuotas"><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
-        <li><button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina" aria-label="OnlyOffice Documentos"><strong>OnlyOffice</strong><span>Documentos</span></button></li>
-        <li><button type="button" data-target="nextcloudConfigCard" data-search="nextcloud nube almacenamiento archivos privada" aria-label="Nextcloud Nube privada"><strong>Nextcloud</strong><span>Nube privada</span></button></li>
-        <li><button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token" aria-label="Voz IA Streaming"><strong>Voz IA</strong><span>Streaming</span></button></li>
-        <li><button type="button" data-target="epaycoConfig" data-search="pagos facturacion checkout epayco venta digital" aria-label="Epayco Checkout"><strong>Epayco</strong><span>Checkout</span></button></li>
-        <li><button type="button" data-target="wompiConfig" data-search="pagos wompi nequi bancolombia checkout" aria-label="Wompi / Nequi Pagos"><strong>Wompi / Nequi</strong><span>Pagos</span></button></li>
-        <li><button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email" aria-label="Gmail SMTP Correo"><strong>Gmail SMTP</strong><span>Correo</span></button></li>
-        <li><button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono" aria-label="WhatsApp portal Contacto"><strong>WhatsApp portal</strong><span>Contacto</span></button></li>
-        <li><button type="button" data-target="recaptchaConfigCard" data-search="seguridad captcha recaptcha verificacion formularios" aria-label="reCAPTCHA Seguridad"><strong>reCAPTCHA</strong><span>Seguridad</span></button></li>
-        <li><button type="button" data-target="admin2FAConfigCard" data-search="seguridad 2fa doble factor login administradores otp totp" aria-label="2FA login Acceso"><strong>2FA login</strong><span>Acceso</span></button></li>
-        <li><button type="button" data-target="aiConfigCard" data-search="ia inteligencia artificial modelos credenciales chat gpt openai google" aria-label="IA global Modelos"><strong>IA global</strong><span>Modelos</span></button></li>
-        <li><button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema" aria-label="Mantenimiento Sistema"><strong>Mantenimiento</strong><span>Sistema</span></button></li>
-        <li><button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion" aria-label="Respaldo Backup"><strong>Respaldo</strong><span>Backup</span></button></li>
+      <ul id="advancedCategoryList" class="nav admin-nav-grouped advanced-category-map">
+        <li class="admin-nav-group is-open">
+          <div class="admin-nav-group-title">Gobierno</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="consumosExternosCard" data-search="consumos costos hostinger cursor openai tokens presupuesto" aria-label="Consumos Costos externos"><img class="icon" src="/img/analytics-color.svg" alt=""><strong>Consumos</strong><span>Costos externos</span></button></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Infraestructura</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr" aria-label="RustDesk VPS Soporte remoto"><img class="icon" src="/img/network-color.svg" alt=""><strong>RustDesk VPS</strong><span>Soporte remoto</span></button></li>
+            <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps nextcloud rustdesk cuotas" aria-label="Limitaciones API, DB, cuotas"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
+            <li><button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina" aria-label="OnlyOffice Documentos"><img class="icon" src="/img/report.svg" alt=""><strong>OnlyOffice</strong><span>Documentos</span></button></li>
+            <li><button type="button" data-target="nextcloudConfigCard" data-search="nextcloud nube almacenamiento archivos privada" aria-label="Nextcloud Nube privada"><img class="icon" src="/img/google-drive.svg" alt=""><strong>Nextcloud</strong><span>Nube privada</span></button></li>
+            <li><button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token" aria-label="Voz IA Streaming"><img class="icon" src="/img/gpt.svg" alt=""><strong>Voz IA</strong><span>Streaming</span></button></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Pagos</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="epaycoConfig" data-search="pagos facturacion checkout epayco venta digital" aria-label="Epayco Checkout"><img class="icon" src="/img/money.svg" alt=""><strong>Epayco</strong><span>Checkout</span></button></li>
+            <li><button type="button" data-target="wompiConfig" data-search="pagos wompi nequi bancolombia checkout" aria-label="Wompi / Nequi Pagos"><img class="icon" src="/img/bancolombia-logo.svg" alt=""><strong>Wompi / Nequi</strong><span>Pagos</span></button></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Comunicaciones</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email" aria-label="Gmail SMTP Correo"><img class="icon" src="/img/settings-color.svg" alt=""><strong>Gmail SMTP</strong><span>Correo</span></button></li>
+            <li><button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono" aria-label="WhatsApp portal Contacto"><img class="icon" src="/img/social.svg" alt=""><strong>WhatsApp portal</strong><span>Contacto</span></button></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Seguridad</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="recaptchaConfigCard" data-search="seguridad captcha recaptcha verificacion formularios" aria-label="reCAPTCHA Seguridad"><img class="icon" src="/img/shield-security-color.svg" alt=""><strong>reCAPTCHA</strong><span>Seguridad</span></button></li>
+            <li><button type="button" data-target="admin2FAConfigCard" data-search="seguridad 2fa doble factor login administradores otp totp" aria-label="2FA login Acceso"><img class="icon" src="/img/shield-security-color.svg" alt=""><strong>2FA login</strong><span>Acceso</span></button></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">IA</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="aiConfigCard" data-search="ia inteligencia artificial modelos credenciales chat gpt openai google" aria-label="IA global Modelos"><img class="icon" src="/img/gpt.svg" alt=""><strong>IA global</strong><span>Modelos</span></button></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Operacion</div>
+          <ul class="admin-nav-sublist">
+            <li><button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema" aria-label="Mantenimiento Sistema"><img class="icon" src="/img/settings-color.svg" alt=""><strong>Mantenimiento</strong><span>Sistema</span></button></li>
+            <li><button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion" aria-label="Respaldo Backup"><img class="icon" src="/img/backup.svg" alt=""><strong>Respaldo</strong><span>Backup</span></button></li>
+          </ul>
+        </li>
+        <li id="advancedDynamicGroup" class="admin-nav-group" hidden>
+          <div class="admin-nav-group-title">Otras secciones</div>
+          <ul id="advancedDynamicCategoryList" class="admin-nav-sublist"></ul>
+        </li>
+        <li class="admin-menu-visibility-item">
+          <button type="button" class="admin-menu-visibility-toggle" aria-controls="advancedCategoryList" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
+            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
+            <span class="admin-menu-visibility-label">Ocultar menu</span>
+          </button>
+        </li>
       </ul>
       <div id="advancedSectionEmpty" class="advanced-section-empty">No se encontraron secciones con ese texto.</div>
-    </nav>
+    </aside>
 
     <main class="advanced-config-main">
     <section class="card form advanced-card" data-brand="system" id="consumosExternosCard">
@@ -1825,6 +1879,8 @@
         const searchEl = document.getElementById('advancedSectionSearch');
         const clearBtn = document.getElementById('advancedSectionClear');
         const listEl = document.getElementById('advancedCategoryList');
+        const dynamicListEl = document.getElementById('advancedDynamicCategoryList');
+        const dynamicGroupEl = document.getElementById('advancedDynamicGroup');
         const emptyEl = document.getElementById('advancedSectionEmpty');
         if (!searchEl || !listEl) return;
 
@@ -1834,6 +1890,43 @@
             text = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           }
           return text;
+        };
+
+        const setGroupOpen = function(group, open){
+          if (!group) return;
+          if (open && group.parentElement) {
+            Array.from(group.parentElement.querySelectorAll('.admin-nav-group')).forEach(function(other){
+              if (other === group || other.hidden || other.classList.contains('is-hidden')) return;
+              other.classList.remove('is-open');
+              const otherTitle = other.querySelector('.admin-nav-group-title');
+              if (otherTitle) otherTitle.setAttribute('aria-expanded', 'false');
+            });
+          }
+          group.classList.toggle('is-open', !!open);
+          const title = group.querySelector('.admin-nav-group-title');
+          if (title) title.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+
+        const setupGroups = function(){
+          Array.from(listEl.querySelectorAll('.admin-nav-group')).forEach(function(group, index){
+            const title = group.querySelector('.admin-nav-group-title');
+            if (!title) return;
+            if (title.tagName && title.tagName.toLowerCase() !== 'button') {
+              title.setAttribute('role', 'button');
+              title.setAttribute('tabindex', '0');
+            }
+            setGroupOpen(group, group.classList.contains('is-open') || index === 0);
+            const toggle = function(){
+              setGroupOpen(group, !group.classList.contains('is-open'));
+            };
+            title.addEventListener('click', toggle);
+            title.addEventListener('keydown', function(event){
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggle();
+              }
+            });
+          });
         };
 
         const existingTargets = new Set(Array.from(listEl.querySelectorAll('button[data-target]')).map(function(button){
@@ -1854,16 +1947,25 @@
           button.innerHTML = '<strong>' + title + '</strong><span>' + hint.slice(0, 34) + (hint.length > 34 ? '...' : '') + '</span>';
           const item = document.createElement('li');
           item.appendChild(button);
-          listEl.appendChild(item);
+          if (dynamicListEl) {
+            button.insertAdjacentHTML('afterbegin', '<img class="icon" src="/img/settings-color.svg" alt="">');
+            dynamicListEl.appendChild(item);
+            if (dynamicGroupEl) dynamicGroupEl.hidden = false;
+          } else {
+            listEl.appendChild(item);
+          }
         });
 
         const sectionButtons = Array.from(listEl.querySelectorAll('button[data-target]'));
+        setupGroups();
         const setActiveButton = function(targetId){
           sectionButtons.forEach(function(button){
             const active = (button.dataset.target || '') === targetId;
             button.classList.toggle('is-active', active);
             if (active) {
               button.setAttribute('aria-current', 'true');
+              const group = button.closest('.admin-nav-group');
+              if (group) setGroupOpen(group, true);
             } else {
               button.removeAttribute('aria-current');
             }
@@ -1893,6 +1995,16 @@
             const parentItem = button.closest('li');
             if (parentItem) parentItem.classList.toggle('is-hidden', !show);
             if (show) visible += 1;
+          });
+          Array.from(listEl.querySelectorAll('.admin-nav-group')).forEach(function(group){
+            if (group.hidden) return;
+            const hasVisibleButton = !!group.querySelector('.admin-nav-sublist button[data-target]:not(.is-hidden)');
+            group.classList.toggle('is-hidden', !hasVisibleButton);
+            if (query && hasVisibleButton) {
+              group.classList.add('is-open');
+              const title = group.querySelector('.admin-nav-group-title');
+              if (title) title.setAttribute('aria-expanded', 'true');
+            }
           });
           if (emptyEl) emptyEl.classList.toggle('is-visible', visible === 0);
         };

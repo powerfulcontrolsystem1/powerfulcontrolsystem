@@ -1,3 +1,5 @@
+- 2026-05-12: menu de configuracion super alineado con Administrar empresa. `web/super/configuracion_avanzada.html` reemplaza el submenu plano por un sidebar agrupado con clases `admin-sidebar`/`admin-nav-grouped`, buscador, colapso movil e iconos por seccion. Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 - 2026-05-12: licencias ocultables para clientes. `web/super/licencias.html` renombra el estado como visibilidad comercial y permite mostrar/ocultar licencias del catálogo; el backend bloquea checkout público, Wompi, Nequi, Epayco, activación sin pago y addons seleccionados cuando `licencias.activo=0`. No agrega tablas ni dependencias.
 
 - 2026-05-12: nucleo configurable por plantilla de tipo de empresa. `tipo_empresa_preconfiguraciones.config_json` incorpora `adaptacion_nucleo`; al aplicar la plantilla se guarda la preferencia empresarial y `estaciones_config` declara el recurso que representa cada estacion. Usuarios operativos y productos/servicios quedan como nucleo comun configurable, no como duplicados por vertical. Sin tablas ni dependencias nuevas.

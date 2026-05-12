@@ -1,3 +1,8 @@
+## [2026-05-12] Menu de configuracion super alineado
+- [Frontend] `web/super/configuracion_avanzada.html` usa el mismo patron visual de menu lateral agrupado que Administrar empresa: `admin-sidebar`, `admin-nav-grouped`, grupos plegables, iconos y boton de colapso movil.
+- [UX] El buscador de secciones se conserva y ahora abre/oculta grupos completos segun coincidencias, manteniendo scroll interno a cada tarjeta.
+- [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Scroll superior en Tipos de empresa
 - [Frontend] `web/super/tipos_empresas.html` agrega un scroll horizontal arriba de la tabla y lo sincroniza con el scroll inferior.
 - [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.

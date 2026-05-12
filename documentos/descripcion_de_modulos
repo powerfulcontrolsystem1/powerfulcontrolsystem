@@ -1,3 +1,9 @@
+2026-05-12: Configuracion avanzada del super administrador
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`.
+- Cambio funcional: la pagina `web/super/configuracion_avanzada.html` presenta sus ajustes globales con el mismo menu lateral agrupado usado por Administrar empresa.
+- UX: conserva busqueda por seccion, navegacion interna a tarjetas y agrega grupos plegables con iconos y colapso movil.
+- Alcance: no cambia permisos, endpoints, tablas, rutas de backend ni dependencias.
+
 2026-05-12: Nucleo configurable desde plantilla de tipo de empresa
 - Modulos afectados: `preconfiguracion_tipos_empresa`, `configuracion_guiada`, `estaciones`, `usuarios`, `productos/servicios`, `roles/licencias`.
 - Cambio funcional: el JSON de plantilla incorpora `adaptacion_nucleo` para declarar que usuarios operativos, productos/servicios cobrables y estaciones/recurso viven en el nucleo comun.
