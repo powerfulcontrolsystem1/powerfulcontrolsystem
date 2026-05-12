@@ -275,11 +275,45 @@
       display: grid;
       gap: 12px;
     }
+    .crm-help-hero {
+      display: grid;
+      gap: 10px;
+      padding: 18px;
+      border: 1px solid color-mix(in srgb, var(--border) 72%, var(--accent) 28%);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 86%, var(--accent) 14%);
+    }
+    .crm-help-hero h2 {
+      margin: 0;
+      color: var(--text);
+    }
+    .crm-help-hero p {
+      margin: 0;
+      max-width: 92ch;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .crm-help-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .crm-help-list li + li {
+      margin-top: 7px;
+    }
+    .crm-help-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
     @media (max-width: 1080px) {
       .crm-head,
       .crm-main,
       .crm-grid-2,
-      .crm-grid-3 {
+      .crm-grid-3,
+      .crm-help-grid {
         grid-template-columns: 1fr;
       }
       .crm-submenu {
@@ -353,6 +387,7 @@
         <button type="button" class="btn secondary crm-tab-btn" data-tab="forecast">Forecast</button>
         <button type="button" class="btn secondary crm-tab-btn" data-tab="metas">Metas y conversion</button>
         <button type="button" class="btn secondary crm-tab-btn" data-tab="embudo">Embudo documental</button>
+        <button type="button" class="btn secondary crm-tab-btn" data-tab="ayuda">Ayuda</button>
       </nav>
 
       <div class="crm-content">
@@ -617,10 +652,41 @@
             <div id="embudoTableWrap" class="crm-table-wrap"></div>
           </article>
         </section>
+
+        <section id="crmPanelAyuda" class="crm-panel is-hidden">
+          <article class="crm-help-hero">
+            <h2>Que es CRM</h2>
+            <p>CRM significa Gestion de Relaciones con Clientes. Es la forma organizada de registrar prospectos, clientes, conversaciones, oportunidades, cotizaciones, campanas y cierres para que el equipo comercial sepa a quien atender, que sigue y cuanto valor puede convertirse en ventas reales.</p>
+          </article>
+          <div class="crm-help-grid">
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Como funciona este modulo</h2></div>
+              <ul class="crm-help-list">
+                <li><strong>Tablero ejecutivo:</strong> resume pipeline, forecast, alertas, agenda y responsables para priorizar el dia comercial.</li>
+                <li><strong>Leads:</strong> guarda oportunidades nuevas con estado, canal, propietario, valor potencial, probabilidad y proximo contacto.</li>
+                <li><strong>Seguimientos:</strong> registra llamadas, correos, reuniones, visitas o WhatsApp para dejar trazabilidad de cada conversacion.</li>
+                <li><strong>Cotizaciones:</strong> centraliza propuestas comerciales y permite seguir su avance hasta aprobacion, rechazo, vencimiento o conversion.</li>
+              </ul>
+            </article>
+            <article class="crm-card">
+              <div class="crm-card-header"><h2>Como se debe operar</h2></div>
+              <ul class="crm-help-list">
+                <li>Primero crea o actualiza el lead con datos claros de contacto, canal y responsable.</li>
+                <li>Despues registra cada seguimiento y define siempre la proxima accion con fecha.</li>
+                <li>Cuando exista interes real, genera la cotizacion y mantenla vinculada al lead o cliente.</li>
+                <li>Usa forecast, metas y embudo documental para revisar valor en riesgo, conversion y tareas pendientes.</li>
+              </ul>
+            </article>
+          </div>
+          <article class="crm-card">
+            <div class="crm-card-header"><h2>Regla del sistema</h2></div>
+            <p>Este CRM no reemplaza clientes, ventas ni facturacion: los complementa. Los clientes siguen en el nucleo de clientes, las ventas y pagos siguen en sus modulos centrales, y CRM conserva la historia comercial que explica como una oportunidad llega a cotizacion, venta y postventa.</p>
+          </article>
+        </section>
       </div>
     </section>
   </main>
 
-  <script src="/js/crm_comercial.js?v=20260512-crm-enterprise"></script>
+  <script src="/js/crm_comercial.js?v=20260512-crm-help"></script>
 </body>
 </html>

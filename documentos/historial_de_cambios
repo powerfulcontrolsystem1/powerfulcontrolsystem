@@ -1,3 +1,10 @@
+2026-05-12: Ayuda operativa en CRM unificado
+- Modulos afectados: `crm_unificado`, `administrar_empresa`, `roles/licencias`.
+- Cambio funcional: el menu de CRM unificado agrega un boton final `Ayuda` y la pagina `crm_comercial.html` agrega una pestana de ayuda que define primero que es CRM antes de explicar el flujo del modulo.
+- Frontend: la ayuda describe tablero ejecutivo, leads, seguimientos, cotizaciones, forecast, metas, embudo documental y la regla de que CRM complementa clientes, ventas y facturacion sin duplicarlos.
+- Seguridad y permisos: no se agregan rutas publicas, endpoints, permisos, tablas ni dependencias; el boton vive dentro del mismo modulo protegido `crm_unificado`.
+- Validacion: `node --check` de `web/js/crm_comercial.js`, parseo de scripts inline HTML y `git diff --check` sobre archivos tocados.
+
 2026-05-12: Tarjeta de totales del carrito adaptable por tipo de empresa
 - Modulos afectados: `carritos`, `ventas`, `verticales_integracion`, `administrar_empresa`.
 - Cambio funcional: la tarjeta `Totales y detalles` cambia titulo, etiquetas y contexto segun el tipo de empresa/vertical activo, manteniendo el mismo carrito, items, pagos, impuestos, descuentos y saldos del nucleo universal.

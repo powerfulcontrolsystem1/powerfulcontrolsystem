@@ -1,3 +1,8 @@
+2026-05-12: Nota operativa para ayuda de CRM unificado
+- El boton `Ayuda` agregado al menu de `crm_unificado` abre una pestana interna de `web/administrar_empresa/crm_comercial.html`; no crea pagina publica, endpoint nuevo ni permiso adicional.
+- La ayuda esta dentro del alcance ya protegido por `linkCRMComercial` y `crm_unificado`, y primero define CRM antes de explicar el tablero, leads, seguimientos, cotizaciones, forecast, metas y embudo.
+- La regla operativa queda explicita: CRM complementa clientes, ventas y facturacion, pero no duplica esos nucleos ni cambia sus permisos.
+
 2026-05-12: Nota operativa para visibilidad de licencias
 - La pagina `web/super/licencias.html` permite a `super_administrador` mostrar u ocultar licencias para clientes usando `licencias.activo`.
 - Ocultar una licencia no borra historico ni permisos ya documentados; la retira del catalogo comercial y bloquea checkout publico nuevo.

@@ -50,7 +50,8 @@
     campanas: "crmPanelCampanas",
     forecast: "crmPanelForecast",
     metas: "crmPanelMetas",
-    embudo: "crmPanelEmbudo"
+    embudo: "crmPanelEmbudo",
+    ayuda: "crmPanelAyuda"
   };
 
   const state = {

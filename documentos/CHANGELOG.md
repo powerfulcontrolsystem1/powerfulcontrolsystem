@@ -1,3 +1,9 @@
+## [2026-05-12] Ayuda interna en CRM unificado
+- [Menu] `web/administrar_empresa/modulo_menu.html` agrega `Ayuda` como ultimo boton del menu de `crm_unificado`.
+- [Frontend] `web/administrar_empresa/crm_comercial.html` agrega una pestana `Ayuda` que primero define que es CRM y despues explica el uso del modulo.
+- [UX] La ayuda cubre tablero ejecutivo, leads, seguimientos, cotizaciones, forecast, metas, embudo documental y la regla de no duplicar clientes/ventas/facturacion.
+- [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Totales del carrito por tipo de empresa
 - [Frontend] `web/administrar_empresa/carrito_de_compras.html` adapta la tarjeta `Totales y detalles` con perfiles de negocio: estadia, gimnasio, clinico, pedido, transporte, parqueadero, alquiler, copropiedad, farmacia, belleza, orden de servicio, academico, obra y verticales nuevos.
 - [Contexto] La pagina consulta `/api/empresa/permisos_contexto` para leer `vertical_scope` y usa configuracion general como respaldo; si el contexto no llega, conserva el perfil POS universal.

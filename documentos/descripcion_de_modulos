@@ -1,3 +1,9 @@
+2026-05-12: Ayuda contextual en CRM unificado
+- Modulos afectados: `crm_unificado`, `administrar_empresa`.
+- Cambio funcional: el menu del CRM incorpora un boton inferior `Ayuda` y el modulo muestra una pestana dedicada que comienza definiendo CRM como Gestion de Relaciones con Clientes.
+- UX: la ayuda explica el uso de tablero, leads, seguimientos, cotizaciones, forecast, metas y embudo documental, y recuerda que CRM no duplica clientes, ventas ni facturacion.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
 2026-05-12: Carritos adaptables por tipo de empresa
 - Modulos afectados: `carritos`, `ventas`, `administrar_empresa`, `verticales_integracion`.
 - Cambio funcional: la tarjeta de totales del carrito usa el contexto `vertical_scope` de `/api/empresa/permisos_contexto` para presentar nombres de cuenta, cliente, servicios, productos, tiempos, total y saldo acordes al negocio activo.
