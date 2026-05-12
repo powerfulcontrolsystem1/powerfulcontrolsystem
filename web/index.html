@@ -1362,7 +1362,7 @@
         if (Array.isArray(sections) && sections.length) {
           params.set('secciones', sections.join('|'));
         }
-        return '/descripcion_de_los_sistemas.ht?' + params.toString() + '#' + encodeURIComponent(detalleId);
+        return '/descripcion_de_los_sistemas.html?' + params.toString() + '#' + encodeURIComponent(detalleId);
       }
 
       async function refreshFallbackVerticalCards() {

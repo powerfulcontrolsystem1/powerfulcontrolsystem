@@ -1,3 +1,16 @@
+2026-05-12: Enlace Probar Gratis del index
+- Modulos afectados: `index_publico`, `portal_publico`, `autenticacion`, `super_administrador`.
+- Causa tecnica: el index enviaba a `/descripcion_de_los_sistemas.ht`; esa extension no se sirve como HTML estandar y podia descargarse en el navegador en vez de mostrar la ficha del sistema elegido.
+- Cambio funcional: `web/index.html` usa `/descripcion_de_los_sistemas.html` y conserva query/ancla de la tarjeta; `web/descripcion_de_los_sistemas.html` queda como landing oficial.
+- Compatibilidad: `backend/main.go` sirve la ruta legacy `.ht` con contenido HTML y `backend/utils/utils.go` permite `.html` y `.ht` como rutas publicas exactas.
+- Verificacion: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; parseo de scripts inline de `web/index.html` y `web/descripcion_de_los_sistemas.html` con Node; `node --check tools/professional_audit.mjs`; `node tools/professional_audit.mjs` OK; `git diff --check` sin errores.
+
+2026-05-12: Apariencia claro/oscuro en Centro de mando super
+- Modulo afectado: super_administrador.
+- Cambio funcional: `web/super/licencias_resumen.html` adapta su paleta al tema global del sistema y corrige contrastes en modo claro y modo oscuro para tarjetas, botones, pills, tablas, graficas y score.
+- Alcance: no agrega dependencias, rutas, tablas ni permisos.
+- Verificacion: parseo de scripts inline con Node OK; `git diff --check -- web/super/licencias_resumen.html` sin errores.
+
 2026-05-12: Centro de mando super reconstruido desde cero
 - Modulo afectado: super_administrador.
 - Cambio funcional: se reemplaza completamente `web/super/licencias_resumen.html` por una consola ejecutiva moderna con score operativo, KPIs de VPS/proyecto, PostgreSQL, seguridad, negocio SaaS, costos IA/hosting, servicios, riesgos, incidentes y controles de gobierno.

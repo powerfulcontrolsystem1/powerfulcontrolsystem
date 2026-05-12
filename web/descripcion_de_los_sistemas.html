@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Descripcion de los sistemas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <link rel="icon" type="image/png" href="/img/punto_venta.png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <script src="/menu.js"></script>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
+</head>
+<body>
+  <div class="portal systems-page">
+    <header class="portal-header">
+      <div class="brand"><a class="btn secondary" href="/index.html">Volver al portal</a></div>
+      <nav class="nav-actions">
+        <a class="btn dark" href="/login.html">Iniciar sesion</a>
+      </nav>
+    </header>
+
+    <main class="portal-main container systems-main systems-main-compact">
+      <p id="systemsStatus" class="form-help systems-status" role="status"></p>
+
+      <section id="systemsSections" class="systems-sections" aria-live="polite"></section>
+
+      <footer class="footer">@ 2026 - Powerful Control System - Sistema POS Multiempresa</footer>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var quickNavEl = document.getElementById('systemsQuickNav');
+      var sectionsEl = document.getElementById('systemsSections');
+      var statusEl = document.getElementById('systemsStatus');
+      var systemsMainEl = document.querySelector('.systems-main');
+      var sectionObserver = null;
+
+      var fallbackCards = [
+        {
+          titulo: 'Punto de venta',
+          descripcion: 'Solucion completa para ventas rapidas y facturacion electronica.',
+          imagen_url: '/img/punto_venta.png',
+          enlace: '/administrar_empresa.html?module=punto_venta',
+          detalle_etiqueta: 'Retail y mostrador',
+          detalle_titular: 'Vende rapido, factura mejor y controla la caja desde una sola pantalla.',
+          detalle_parrafo_uno: 'La solucion de Punto de Venta esta pensada para negocios que necesitan registrar ventas agiles sin perder trazabilidad. Cada movimiento puede quedar asociado a empresa, usuario, estacion, cliente, metodo de pago y documento emitido, lo que facilita operar mostrador, caja rapida o atencion general desde una misma interfaz.',
+          detalle_parrafo_dos: 'Ademas de cobrar, el sistema ayuda a controlar inventario, descuentos, precios, clientes frecuentes, cierres de caja y reportes operativos. Esto permite que el comercio no solo venda mas rapido, sino que tambien mantenga orden financiero y visibilidad real sobre lo que esta ocurriendo en el negocio.',
+          detalle_puntos: [
+            'Facturacion electronica y documentos de venta con trazabilidad por empresa.',
+            'Carritos de compra rapidos con productos, servicios, combos y descuentos controlados.',
+            'Cierres de caja, metodos de pago y conciliacion operativa para supervision diaria.',
+            'Inventario sincronizado, historial de ventas y reportes para decisiones comerciales.'
+          ]
+        },
+        {
+          titulo: 'Motel',
+          descripcion: 'Gestion por tiempo de servicio y facturacion tarifada por estancia.',
+          imagen_url: '/img/motel.png',
+          enlace: '/administrar_empresa.html?module=motel',
+          detalle_etiqueta: 'Operacion por estancias',
+          detalle_titular: 'Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.',
+          detalle_parrafo_uno: 'El sistema para Motel esta orientado a negocios donde el cobro depende del tiempo de uso, la disponibilidad de habitaciones y los consumos agregados durante la estancia. Permite conocer que habitaciones estan libres, ocupadas, reservadas o listas para limpieza, facilitando la operacion en tiempo real.',
+          detalle_parrafo_dos: 'La plataforma combina tarifas por minutos, tarifas por bloques, cargos adicionales, consumos de minibar o servicios y seguimiento de pagos por habitacion. Esto mejora la rotacion, reduce errores de cobro y entrega una trazabilidad clara para auditoria interna y control administrativo.',
+          detalle_puntos: [
+            'Tarifas por tiempo, reglas por bloques y calculo automatico del valor a cobrar.',
+            'Control de habitaciones con estados operativos y consumos asociados a la estancia.',
+            'Carritos simultaneos por estacion o habitacion con aislamiento por empresa.',
+            'Reportes de ocupacion, ingresos por turno y seguimiento detallado de servicios.'
+          ]
+        },
+        {
+          titulo: 'Restaurante',
+          descripcion: 'Gestion de mesas, pedidos y facturacion para restaurantes.',
+          imagen_url: '/img/restaurante.png',
+          enlace: '/administrar_empresa.html?module=restaurante',
+          detalle_etiqueta: 'Mesas y cocina',
+          detalle_titular: 'Administra mesas, pedidos, cocina y cobro final con flujo continuo.',
+          detalle_parrafo_uno: 'La solucion para Restaurante ayuda a organizar la atencion desde que el cliente se sienta hasta que se factura la cuenta. El personal puede trabajar por mesas, estaciones o usuarios, tomar pedidos rapidamente y mantener control sobre productos, tiempos de despacho y consumos acumulados.',
+          detalle_parrafo_dos: 'Tambien facilita dividir cuentas, manejar propinas, emitir facturas, enviar ordenes a cocina o barra y consultar reportes por turno. Con esto, el restaurante gana velocidad en servicio, reduce reprocesos y mejora la coordinacion entre salon, caja y produccion.',
+          detalle_puntos: [
+            'Gestion de mesas, pedidos abiertos y consumos acumulados por cliente o grupo.',
+            'Impresion o resolucion de comandos para cocina, barra o puntos de preparacion.',
+            'Propinas, descuentos y metodos de pago integrados al cierre de la cuenta.',
+            'Indicadores de ventas, rotacion de mesas y control operativo por turno.'
+          ]
+        },
+        {
+          titulo: 'Control por sensor',
+          descripcion: 'Integracion y alertas con sensores para control de accesos.',
+          imagen_url: '/img/sensor.png',
+          enlace: '/administrar_empresa.html?module=sensor',
+          detalle_etiqueta: 'Monitoreo y automatizacion',
+          detalle_titular: 'Conecta eventos fisicos con alertas, estados y control operativo centralizado.',
+          detalle_parrafo_uno: 'La solucion de Control por Sensor esta disenada para operaciones donde un evento fisico debe producir una accion o una evidencia digital. Puede servir para accesos, aperturas, cierres, confirmaciones de paso, sensores de puerta o estados que deban registrarse automaticamente para soporte operativo o seguridad.',
+          detalle_parrafo_dos: 'En lugar de depender solo de verificaciones manuales, el sistema centraliza se?ales, alertas y trazabilidad para que supervisores y administradores sepan que ocurrio, cuando ocurrio y en que punto operativo sucedio. Esto mejora la reaccion, la auditoria y la consistencia de la operacion diaria.',
+          detalle_puntos: [
+            'Registro de eventos de sensores con relacion a estaciones o puntos de control.',
+            'Alertas operativas y visibilidad de estados recientes para soporte inmediato.',
+            'Trazabilidad de accesos, aperturas o incidencias con evidencia temporal.',
+            'Integracion con flujos operativos que requieren validacion fisica o automatizada.'
+          ]
+        },
+        {
+          titulo: 'Hotel',
+          descripcion: 'Administracion de empresas, reservas y operacion hotelera con control por habitacion.',
+          imagen_url: '/img/settings-color.svg',
+          enlace: '/administrar_empresa.html?module=configuracion',
+          detalle_etiqueta: 'Reservas y hospedaje',
+          detalle_titular: 'Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.',
+          detalle_parrafo_uno: 'La solucion para Hotel permite administrar habitaciones, reservas futuras, ocupacion actual y cargos adicionales dentro de una operacion unificada. De esta forma, recepcion y administracion pueden trabajar con informacion consistente sobre disponibilidad, tiempos de entrada y salida y consumos por huesped.',
+          detalle_parrafo_dos: 'El sistema ayuda a estructurar el ciclo completo del hospedaje: reserva, confirmacion, asignacion de habitacion, facturacion, cargos por servicios y control posterior. Esto lo convierte en una herramienta util tanto para pequenos hoteles como para operaciones que necesitan mayor orden en caja, reportes y servicio al cliente.',
+          detalle_puntos: [
+            'Control de reservas por rango de fechas y disponibilidad real de habitaciones.',
+            'Check-in y check-out con cargos diarios, servicios adicionales y seguimiento por huesped.',
+            'Facturacion, reportes de ocupacion y trazabilidad por empresa y periodo.',
+            'Soporte para operaciones multiusuario con historial claro de movimientos y cobros.'
+          ]
+        },
+        {
+          titulo: 'Sistema para Gimnasios',
+          descripcion: 'Maneja membresias, accesos RFID, clases, pagos y renovaciones desde una sola plataforma.',
+          imagen_url: '/img/gym-logo.svg',
+          enlace: '/administrar_empresa.html?module=gimnasio',
+          detalle_etiqueta: 'Membresias y acceso',
+          detalle_titular: 'Controla socios, accesos, clases y recaudo con una operacion pensada para gimnasios modernos.',
+          detalle_parrafo_uno: 'La solucion para Gimnasios centraliza la vida comercial y operativa del centro deportivo: altas de socios, planes, renovaciones, recaudo, control de cartera, clases, entrenadores y seguimiento por sede o canal. Tambien permite manejar credenciales, carnets y acceso por tarjeta RFID o NFC.',
+          detalle_parrafo_dos: 'Esto ayuda a ofrecer una experiencia profesional desde recepcion hasta el control de acceso, reduciendo filas, mejorando la renovacion de planes y dejando trazabilidad clara sobre ingresos, asistencia, vencimientos y rentabilidad por linea de servicio.',
+          detalle_puntos: [
+            'Membresias, pagos, renovaciones y saldo por socio.',
+            'Control de acceso con tarjetas RFID, QR, PIN o biometria segun la operacion.',
+            'Clases, entrenadores, cupos, horarios y consumo por canal.',
+            'Indicadores de rentabilidad por plan, sede y punto de ingreso.'
+          ]
+        },
+        {
+          titulo: 'Sistema para consultorios odontologicos',
+          descripcion: 'Gestiona agenda clinica, historias, odontograma, tratamientos, presupuestos y recaudo por paciente.',
+          imagen_url: '/img/dental-logo.svg',
+          enlace: '/administrar_empresa.html?module=consultorio_odontologico',
+          detalle_etiqueta: 'Agenda y gestion clinica',
+          detalle_titular: 'Organiza la consulta, el tratamiento y el recaudo en una sola plataforma para odontologia.',
+          detalle_parrafo_uno: 'La solucion para consultorios odontologicos integra agenda de citas, profesionales, unidades de atencion, historias clinicas, odontograma, tratamientos, aseguradoras, presupuestos y pagos. Esto permite seguir el recorrido completo del paciente sin depender de varias herramientas aisladas.',
+          detalle_parrafo_dos: 'La operacion se vuelve mas clara para recepcion, equipo clinico y administracion porque cada paciente mantiene su contexto medico y financiero. Asi se mejora la puntualidad, la continuidad del tratamiento, la trazabilidad de sesiones y el control del recaudo pendiente.',
+          detalle_puntos: [
+            'Agenda por profesional, consultorio, prioridad y canal de atencion.',
+            'Historia clinica, odontograma y evolucion por paciente.',
+            'Tratamientos, sesiones, presupuestos y recaudo asociado.',
+            'Control de profesionales, aseguradoras y saldos pendientes.'
+          ]
+        }
+      ];
+
+      var localVerticalCatalog = window.PCS_NUEVOS_VERTICALES || [];
+      var localVerticalVisualsByModule = {};
+      localVerticalCatalog.forEach(function(item) {
+        if (item && item.module) localVerticalVisualsByModule[item.module] = item;
+      });
+
+      function verticalSectionsFromCatalogItem(item) {
+        var sections = [];
+        if (item && Array.isArray(item.sections)) {
+          sections = item.sections.slice();
+        } else if (item && item.plantilla && Array.isArray(item.plantilla.secciones_flujo)) {
+          sections = item.plantilla.secciones_flujo.slice();
+        }
+        return sections.map(function(section) {
+          return String(section || '').trim();
+        }).filter(Boolean);
+      }
+
+      function verticalCardFromCatalogItem(item) {
+        var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+        var local = localVerticalVisualsByModule[module] || {};
+        var title = (item && (item.full_title || item.fullTitle || item.title || item.titulo)) || local.fullTitle || local.title || module;
+        var summary = (item && (item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || local.description || local.lead || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
+        var sections = verticalSectionsFromCatalogItem(item);
+        var firstSections = sections.slice(0, 5);
+        var points = firstSections.map(function(section) {
+          return 'Flujo operativo: ' + section + '.';
+        });
+        points.push('Permisos por rol, licencia y empresa usando el motor comun de verticales.');
+        points.push('Configuracion inicial con tipos, estados, acciones sugeridas, diagnostico y exportacion.');
+        return {
+          __verticalModule: module,
+          module: module,
+          full_title: title,
+          sections: sections,
+          detalle_id: 'vertical-' + module,
+          titulo: title,
+          descripcion: summary,
+          imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
+          enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module),
+          detalle_etiqueta: 'Vertical empresarial',
+          detalle_titular: 'Activa ' + title + ' con roles, licencia, configuracion y operacion lista para trabajar.',
+          detalle_parrafo_uno: summary + ' Trabaja sobre el motor empresarial comun de Powerful Control System, por eso puede compartir usuarios, roles, licencias, auditoria, reportes, evidencias y configuracion inicial sin duplicar tecnologia ni aislar la informacion del negocio.',
+          detalle_parrafo_dos: sections.length
+            ? ('La ruta de trabajo incluye ' + sections.join(', ') + '. Esa estructura permite arrancar con un negocio real, mantener control por permisos y crecer hacia reportes, SLA, evidencias y configuraciones avanzadas sin cambiar de plataforma.')
+            : 'La ruta de trabajo se alimenta desde el catalogo backend del vertical, de modo que la portada, licencias, roles y pantalla operativa usan el mismo contrato funcional.',
+          detalle_puntos: points
+        };
+      }
+
+      var publicVerticalCards = localVerticalCatalog.map(verticalCardFromCatalogItem);
+      fallbackCards = fallbackCards.concat(publicVerticalCards);
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function slugifyTitle(value, index) {
+        var normalized = String(value || '').toLowerCase();
+        if (normalized.normalize) {
+          normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        normalized = normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        if (!normalized) {
+          normalized = 'tarjeta';
+        }
+        return normalized + '-detalle-' + (index + 1);
+      }
+
+      function normalizeDetailId(raw, fallback) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value.normalize) {
+          value = value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        value = value.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+        return value || fallback;
+      }
+
+      function normalizeLink(raw) {
+        var value = String(raw || '').trim();
+        if (!value) return '/login.html';
+        var lower = value.toLowerCase();
+        if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || value.indexOf('/') === 0) {
+          return value;
+        }
+        return '/' + value.replace(/^\/+/, '');
+      }
+
+      function resolvePublicTrialLink(raw) {
+        var normalized = normalizeLink(raw);
+        var lower = String(normalized || '').toLowerCase();
+        if (!lower) {
+          return '/login.html';
+        }
+        if (
+          lower.indexOf('/administrar_empresa') === 0 ||
+          lower.indexOf('/super/') === 0 ||
+          lower === '/super_administrador.html' ||
+          lower === '/seleccionar_empresa.html' ||
+          lower === '/editar_empresa.html'
+        ) {
+          return '/registrar_nuevo_usuario_administrador.html';
+        }
+        return normalized;
+      }
+
+      function buildPublicTrialLink(raw, card, titulo, descripcion, detalleId) {
+        var base = resolvePublicTrialLink(raw);
+        var params = new URLSearchParams();
+        var module = String((card && (card.module || card.__verticalModule || card.modulo)) || '').trim().toLowerCase();
+        params.set('origen', 'probar_gratis');
+        params.set('detalle_id', detalleId);
+        params.set('titulo', titulo);
+        params.set('descripcion', descripcion);
+        if (module) {
+          params.set('module', module);
+          params.set('tipo_empresa', module);
+        }
+        var fullTitle = String((card && (card.full_title || card.fullTitle)) || titulo).trim();
+        if (fullTitle) params.set('titulo_completo', fullTitle);
+        var sections = Array.isArray(card && card.sections) ? card.sections : [];
+        if (sections.length) params.set('secciones', sections.join('|'));
+        if (base.indexOf('?') >= 0) {
+          return base + '&' + params.toString();
+        }
+        return base + '?' + params.toString();
+      }
+
+      function normalizeImage(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/punto_venta.png';
+        }
+        return value;
+      }
+
+      function normalizeVisualSize(raw) {
+        var value = String(raw || '').trim().toLowerCase();
+        if (value === 'small') value = 'pequeno';
+        if (value === 'medium') value = 'mediano';
+        if (value === 'large') value = 'grande';
+        if (value !== 'pequeno' && value !== 'mediano' && value !== 'grande') {
+          value = 'mediano';
+        }
+        return value;
+      }
+
+      function normalizeVisualSettings(raw) {
+        var source = raw && typeof raw === 'object' ? raw : {};
+        return {
+          landing_card_size: normalizeVisualSize(source.landing_card_size),
+          landing_text_size: normalizeVisualSize(source.landing_text_size)
+        };
+      }
+
+      function applyVisualSettings(raw) {
+        var settings = normalizeVisualSettings(raw);
+        if (!systemsMainEl) return;
+        systemsMainEl.setAttribute('data-card-size', settings.landing_card_size);
+        systemsMainEl.setAttribute('data-text-size', settings.landing_text_size);
+      }
+
+      function normalizeCards(rawCards) {
+        var source = Array.isArray(rawCards) && rawCards.length ? rawCards : fallbackCards;
+        return source.map(function (card, idx) {
+          var fallback = fallbackCards[idx % fallbackCards.length];
+          var titulo = String((card && card.titulo) || '').trim() || fallback.titulo;
+          var descripcion = String((card && card.descripcion) || '').trim() || fallback.descripcion;
+          var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
+          var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
+          var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
+          var trialLink = buildPublicTrialLink((card && card.enlace) || fallback.enlace, card, titulo, descripcion, detalleId);
+          return {
+            titulo: titulo,
+            descripcion: descripcion,
+            imagen_url: imagen,
+            enlace: enlace,
+            trial_link: trialLink,
+            detalle_id: detalleId,
+            youtube_url: String((card && card.youtube_url) || '').trim(),
+            detalle_etiqueta: String((card && card.detalle_etiqueta) || fallback.detalle_etiqueta || '').trim(),
+            detalle_titular: String((card && card.detalle_titular) || fallback.detalle_titular || '').trim(),
+            detalle_parrafo_uno: String((card && card.detalle_parrafo_uno) || fallback.detalle_parrafo_uno || '').trim(),
+            detalle_parrafo_dos: String((card && card.detalle_parrafo_dos) || fallback.detalle_parrafo_dos || '').trim(),
+            detalle_puntos: Array.isArray(card && card.detalle_puntos) && card.detalle_puntos.length
+              ? card.detalle_puntos
+              : (Array.isArray(fallback.detalle_puntos) ? fallback.detalle_puntos.slice() : [])
+          };
+        });
+      }
+
+      async function refreshFallbackVerticalCards() {
+        try {
+          var response = await fetch('/api/public/verticales_nuevos/catalogo', { credentials: 'same-origin' });
+          if (!response.ok) return;
+          var payload = await response.json();
+          var rows = payload && Array.isArray(payload.items) ? payload.items : [];
+          if (!rows.length) return;
+          var modules = {};
+          rows.forEach(function(item) {
+            var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
+            if (module) modules[module] = true;
+          });
+          publicVerticalCards = rows.map(verticalCardFromCatalogItem);
+          fallbackCards = fallbackCards.filter(function(card) {
+            return !card.__verticalModule || !modules[card.__verticalModule];
+          }).concat(publicVerticalCards);
+        } catch (_) {}
+      }
+
+      function mergeCardsWithVerticals(rawCards) {
+        if (!Array.isArray(rawCards) || !rawCards.length) {
+          return fallbackCards;
+        }
+        if (!publicVerticalCards.length) {
+          return rawCards;
+        }
+        var modules = {};
+        publicVerticalCards.forEach(function(card) {
+          if (card && card.__verticalModule) modules[card.__verticalModule] = true;
+        });
+        return rawCards.filter(function(card) {
+          var module = String((card && card.__verticalModule) || '').trim().toLowerCase();
+          return !module || !modules[module];
+        }).concat(publicVerticalCards);
+      }
+
+      function getSelectedBusinessCardId() {
+        var hash = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : '';
+        if (hash) return String(hash);
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var q = String(params.get('tipo') || params.get('card') || params.get('seleccion') || '').trim();
+          if (q) return q;
+        } catch (e) {}
+        return '';
+      }
+
+      function normalizeYouTubeId(rawUrl) {
+        var raw = String(rawUrl || '').trim();
+        if (!raw) return '';
+        try {
+          var u = new URL(raw);
+          var host = String(u.hostname || '').toLowerCase();
+          if (host === 'youtu.be') {
+            return String(u.pathname || '').replace(/^\/+/, '').split('/')[0] || '';
+          }
+          if (host.indexOf('youtube.com') >= 0) {
+            var v = u.searchParams.get('v');
+            if (v) return String(v).trim();
+            // soportar /embed/<id> o /shorts/<id>
+            var path = String(u.pathname || '');
+            var parts = path.split('/').filter(Boolean);
+            if (parts.length >= 2 && (parts[0] === 'embed' || parts[0] === 'shorts')) {
+              return String(parts[1] || '').trim();
+            }
+          }
+        } catch (e) {}
+        return '';
+      }
+
+      function buildYouTubeEmbedHTML(card) {
+        var id = normalizeYouTubeId(card && card.youtube_url);
+        if (!id) return '';
+        var safeId = escapeHTML(id.replace(/[^a-zA-Z0-9_-]/g, ''));
+        if (!safeId) return '';
+        return '' +
+          '<div class="system-detail-video">' +
+          '  <div class="system-detail-video-frame">' +
+          '    <iframe src="https://www.youtube-nocookie.com/embed/' + safeId + '?rel=0&modestbranding=1" ' +
+          '      title="Video de la solución" frameborder="0" ' +
+          '      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>' +
+          '  </div>' +
+          '  <a class="system-detail-video-link" href="' + escapeHTML(card.youtube_url) + '" target="_blank" rel="noopener noreferrer">Ver en YouTube</a>' +
+          '</div>';
+      }
+
+      function renderQuickNav(cards) {
+        if (!quickNavEl) {
+          return;
+        }
+        quickNavEl.innerHTML = cards.map(function (card, idx) {
+          return '' +
+            '<a class="systems-nav-link systems-nav-item" data-target-id="' + escapeHTML(card.detalle_id) + '" href="#' + escapeHTML(card.detalle_id) + '">' +
+            '  <span class="systems-nav-item-index">' + String(idx + 1).padStart(2, '0') + '</span>' +
+            '  <span class="systems-nav-item-copy">' +
+            '    <span class="systems-nav-item-title">' + escapeHTML(card.titulo) + '</span>' +
+            '    <span class="systems-nav-item-desc">' + escapeHTML(card.detalle_etiqueta || card.descripcion) + '</span>' +
+            '  </span>' +
+            '  <span class="systems-nav-item-arrow" aria-hidden="true">›</span>' +
+            '</a>';
+        }).join('');
+        setActiveQuickNavFromHash();
+      }
+
+      function setActiveQuickNav(targetId) {
+        if (!quickNavEl) {
+          return;
+        }
+        var navItems = quickNavEl ? quickNavEl.querySelectorAll('.systems-nav-item') : [];
+        for (var i = 0; i < navItems.length; i += 1) {
+          var isActive = navItems[i].getAttribute('data-target-id') === targetId;
+          navItems[i].classList.toggle('is-active', isActive);
+          navItems[i].setAttribute('aria-current', isActive ? 'true' : 'false');
+        }
+      }
+
+      function setActiveQuickNavFromHash() {
+        if (!quickNavEl) {
+          return;
+        }
+        var firstItem = quickNavEl.querySelector('.systems-nav-item');
+        var targetId = window.location.hash ? decodeURIComponent(window.location.hash.slice(1)) : '';
+        if (!targetId && firstItem) {
+          targetId = firstItem.getAttribute('data-target-id') || '';
+        }
+        if (targetId) {
+          setActiveQuickNav(targetId);
+        }
+      }
+
+      function bindSectionObserver() {
+        if (!quickNavEl) {
+          return;
+        }
+        if (sectionObserver && typeof sectionObserver.disconnect === 'function') {
+          sectionObserver.disconnect();
+        }
+        if (!('IntersectionObserver' in window)) {
+          setActiveQuickNavFromHash();
+          return;
+        }
+        var sections = sectionsEl ? sectionsEl.querySelectorAll('.system-detail-card') : [];
+        sectionObserver = new IntersectionObserver(function (entries) {
+          var topEntry = null;
+          for (var i = 0; i < entries.length; i += 1) {
+            if (!entries[i].isIntersecting) {
+              continue;
+            }
+            if (!topEntry || entries[i].intersectionRatio > topEntry.intersectionRatio) {
+              topEntry = entries[i];
+            }
+          }
+          if (topEntry && topEntry.target && topEntry.target.id) {
+            setActiveQuickNav(topEntry.target.id);
+          }
+        }, {
+          rootMargin: '-18% 0px -48% 0px',
+          threshold: [0.2, 0.35, 0.55]
+        });
+        for (var i = 0; i < sections.length; i += 1) {
+          sectionObserver.observe(sections[i]);
+        }
+      }
+
+      function renderSections(cards) {
+        var selectedId = getSelectedBusinessCardId();
+        if (selectedId) {
+          var filtered = cards.filter(function (card) { return String(card.detalle_id || '') === String(selectedId); });
+          if (filtered.length) {
+            cards = filtered;
+          }
+        }
+        sectionsEl.innerHTML = cards.map(function (card, idx) {
+          var pointsHTML = card.detalle_puntos.map(function (point) {
+            return '<li>' + escapeHTML(point) + '</li>';
+          }).join('');
+          var videoHTML = buildYouTubeEmbedHTML(card);
+
+          return '' +
+            '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card home-offer-card" tabindex="-1">' +
+            '  <div class="system-detail-media">' +
+            '    <span class="system-detail-tag">' + escapeHTML(card.detalle_etiqueta) + '</span>' +
+            '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Icono ' + escapeHTML(card.titulo) + '">' +
+            '    <p class="system-detail-caption">Llegaste a esta seccion desde la tarjeta del portal principal.</p>' +
+            '  </div>' +
+            '  <div class="system-detail-body">' +
+            '    <p class="system-detail-kicker">' + escapeHTML(card.titulo) + '</p>' +
+            '    <h2 class="system-detail-title">' + escapeHTML(card.detalle_titular) + '</h2>' +
+            '    <p class="system-detail-short">' + escapeHTML(card.descripcion) + '</p>' +
+            (videoHTML ? ('    ' + videoHTML) : '') +
+            '    <div class="system-detail-copy">' +
+            '      <p>' + escapeHTML(card.detalle_parrafo_uno) + '</p>' +
+            '      <p>' + escapeHTML(card.detalle_parrafo_dos) + '</p>' +
+            '    </div>' +
+            '    <div class="system-detail-points-wrap">' +
+            '      <h3>Capacidades clave</h3>' +
+            '      <ul class="system-detail-points">' + pointsHTML + '</ul>' +
+            '    </div>' +
+            '    <div class="system-detail-actions">' +
+              '      <a class="home-offer-btn system-trial-btn" href="' + escapeHTML(card.trial_link || '/registrar_nuevo_usuario_administrador.html') + '">Probar Gratis</a>' +
+            '    </div>' +
+            '  </div>' +
+            '</article>';
+        }).join('');
+      }
+
+      function scrollToHashIfNeeded() {
+        if (!window.location.hash) {
+          setActiveQuickNavFromHash();
+          return;
+        }
+        var sectionId = decodeURIComponent(window.location.hash.slice(1));
+        var target = document.getElementById(sectionId);
+        if (!target) {
+          setActiveQuickNavFromHash();
+          return;
+        }
+        setActiveQuickNav(sectionId);
+        window.requestAnimationFrame(function () {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (typeof target.focus === 'function') {
+            target.focus({ preventScroll: true });
+          }
+        });
+      }
+
+      window.addEventListener('hashchange', scrollToHashIfNeeded);
+
+      async function loadSystems() {
+        statusEl.textContent = 'Cargando descripciones...';
+        try {
+          await refreshFallbackVerticalCards();
+          var response = await fetch('/api/public/pagina_principal', { credentials: 'same-origin' });
+          var payload = null;
+          try {
+            payload = await response.json();
+          } catch (_) {
+            payload = null;
+          }
+
+          if (!response.ok) {
+            throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
+          }
+
+          applyVisualSettings(payload && payload.estilos);
+          var cards = normalizeCards(mergeCardsWithVerticals(payload && payload.tarjetas));
+          renderQuickNav(cards);
+          renderSections(cards);
+          bindSectionObserver();
+          statusEl.textContent = '';
+          scrollToHashIfNeeded();
+        } catch (err) {
+          applyVisualSettings(null);
+          var fallback = normalizeCards(fallbackCards);
+          renderQuickNav(fallback);
+          renderSections(fallback);
+          bindSectionObserver();
+          statusEl.textContent = 'Se mostraron descripciones predeterminadas por un problema temporal de conexion.';
+          scrollToHashIfNeeded();
+        }
+      }
+
+      loadSystems();
+    })();
+  </script>
+</body>
+</html>

@@ -24,6 +24,8 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/api/public/verticales_integracion/catalogo",
 		"/api/onlyoffice/file",
 		"/api/onlyoffice/callback",
+		"/descripcion_de_los_sistemas.html",
+		"/descripcion_de_los_sistemas.ht",
 		"/red_social_comercial.html",
 		"/visualizar_productos_y_precios_publico.html",
 		"/motel-calipso/visualizar_productos_y_precios_publico.html",

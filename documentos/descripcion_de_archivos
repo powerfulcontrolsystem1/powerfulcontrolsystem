@@ -1,3 +1,13 @@
+- Actualizacion 2026-05-12: enlace Probar Gratis del index
+	- `web/descripcion_de_los_sistemas.html` : landing publica oficial para mostrar la informacion ampliada del sistema/vertical elegido desde las tarjetas del index.
+	- `web/descripcion_de_los_sistemas.ht` : queda como ruta legacy compatible; el backend la sirve como HTML para evitar descargas en navegadores.
+	- `web/index.html` : construye el enlace de detalle con `.html` y mantiene el contexto comercial por query string y ancla.
+	- `backend/main.go` y `backend/utils/utils.go` : sirven y autorizan la landing descriptiva publica sin sesion.
+
+- Actualizacion 2026-05-12: apariencia claro/oscuro del Centro de mando
+	- `web/super/licencias_resumen.html` : corrige la paleta fija del Centro de mando para que respete `html[data-theme]`, `theme-light` y `theme-dark`; usa variables globales del sistema y estados propios compatibles con tema claro/oscuro.
+	- Alcance: solo frontend de super administrador; no agrega archivos, rutas, permisos, tablas ni dependencias.
+
 - Actualizacion 2026-05-12: Centro de mando super reconstruido
 	- `web/super/licencias_resumen.html` : reemplaza el tablero anterior por una consola ejecutiva de super administrador con score operativo, KPIs de VPS/proyecto, PostgreSQL, seguridad, negocio SaaS, costos IA/hosting, servicios, riesgos, incidentes y controles de gobierno.
 	- Contratos consumidos: `/super/api/metrics/current`, `/super/api/metrics/history`, `/super/api/postgres/performance`, `/super/api/alertas_sistema`, `/super/api/errores`, `/super/api/servidores`, `/super/api/licencias`, `/super/api/empresas` y `/super/api/consumos`.

@@ -1314,6 +1314,13 @@ func main() {
 			staticFS.ServeHTTP(w, r2)
 			return
 		}
+		if path == "/descripcion_de_los_sistemas.ht" {
+			r2 := r.Clone(r.Context())
+			r2.URL.Path = "/descripcion_de_los_sistemas.html"
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			staticFS.ServeHTTP(w, r2)
+			return
+		}
 
 		trimmed := strings.Trim(path, "/")
 		parts := strings.Split(trimmed, "/")

@@ -124,7 +124,7 @@ function auditPermissionsAndMenu() {
 
 function auditPublicCommercialFlow() {
   const indexHtml = read("web/index.html");
-  const detailHtml = read("web/descripcion_de_los_sistemas.ht");
+  const detailHtml = read("web/descripcion_de_los_sistemas.html");
   const checks = {
     index_uses_vertical_description: /item\.description \|\| item\.descripcion_larga/.test(indexHtml),
     trial_carries_context: /accion', 'probar_gratis'/.test(indexHtml) && /tipo_empresa/.test(indexHtml),

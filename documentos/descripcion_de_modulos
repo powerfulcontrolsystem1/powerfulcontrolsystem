@@ -1,3 +1,13 @@
+2026-05-12: Enlace Probar Gratis del index
+- `index_publico`: las tarjetas publicas abren la ficha del sistema elegido en `/descripcion_de_los_sistemas.html`, conservando modulo, tipo de empresa, titulo, descripcion, secciones y ancla.
+- `portal_publico`: la ruta legacy `/descripcion_de_los_sistemas.ht` sigue disponible como compatibilidad servida como HTML, no como descarga.
+- `autenticacion`: ambas rutas descriptivas son publicas exactas en `AuthMiddleware`; no exponen paneles ni datos empresariales.
+
+2026-05-12: Apariencia claro/oscuro del Centro de mando
+- `super_administrador`: `web/super/licencias_resumen.html` deja de usar una paleta fija clara y pasa a consumir las variables globales de tema para fondos, tarjetas, texto, bordes, estados, graficas y score.
+- UX: la pagina aplica temprano el tema guardado en `localStorage`/cookie para funcionar bien dentro del iframe del panel super o abierta directamente.
+- Alcance: no cambia endpoints, permisos, roles, tablas ni dependencias.
+
 2026-05-12: Centro de mando super reconstruido
 - `super_administrador`: `web/super/licencias_resumen.html` queda como consola ejecutiva de mando con score operativo, KPIs profesionales, infraestructura VPS, PostgreSQL, alertas, errores, servicios, negocio SaaS y controles de gobierno.
 - Integraciones: consume `/super/api/metrics/current`, `/super/api/metrics/history`, `/super/api/postgres/performance`, `/super/api/alertas_sistema`, `/super/api/errores`, `/super/api/servidores`, `/super/api/licencias`, `/super/api/empresas` y `/super/api/consumos`.

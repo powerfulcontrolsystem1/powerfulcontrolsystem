@@ -1,3 +1,14 @@
+## [2026-05-12] Enlace Probar Gratis del index
+- [Frontend] `web/index.html` cambia el destino de ficha comercial a `/descripcion_de_los_sistemas.html` conservando `accion=probar_gratis`, `tipo_empresa`, modulo, secciones y ancla de la tarjeta elegida.
+- [Backend] `backend/main.go` atiende la ruta legacy `/descripcion_de_los_sistemas.ht` sirviendo la version `.html` con `Content-Type: text/html`, evitando que navegadores la descarguen.
+- [Seguridad] `AuthMiddleware` mantiene publicas ambas rutas descriptivas; no se abren rutas privadas ni permisos nuevos.
+- [Operacion] `web/super/pagina_principal.html` y la auditoria profesional usan la ruta oficial `.html`.
+
+## [2026-05-12] Apariencia claro/oscuro del Centro de mando
+- [Frontend] `web/super/licencias_resumen.html` usa las variables globales `--bg`, `--surface`, `--surface-soft`, `--text`, `--muted`, `--border`, `--accent` y `--accent-2` para integrarse con temas claros y oscuros.
+- [UX] Se corrigen fondos, bordes, botones, pills de estado, tablas, graficas SVG y aro de score para evitar contraste roto al cambiar de tema.
+- [Alcance] Sin cambios de API, permisos, base de datos ni dependencias.
+
 ## [2026-05-12] Centro de mando super reconstruido
 - [Frontend] `web/super/licencias_resumen.html` se reemplaza completo por una consola ejecutiva responsive con score operativo, KPIs de plataforma, PostgreSQL, seguridad, negocio SaaS, costos, SLO, riesgos, servicios e incidentes.
 - [Operacion] La vista agrega controles directos para actualizar, evaluar alertas y abrir gobierno de alertas, PostgreSQL, seguridad VPS, licencias, empresas, tipos de empresa, roles, verticales, IA, configuracion y reportes.

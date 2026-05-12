@@ -1,3 +1,10 @@
+## Actualizacion 2026-05-12 (Probar Gratis index)
+
+- `web/index.html` construye el enlace de detalle hacia `/descripcion_de_los_sistemas.html`, preservando parametros comerciales y ancla por tarjeta.
+- `web/descripcion_de_los_sistemas.html` queda como landing descriptiva oficial para renderizar la informacion ampliada del sistema elegido.
+- `backend/main.go` conserva compatibilidad con `/descripcion_de_los_sistemas.ht`, sirviendo el HTML oficial con tipo de contenido correcto para impedir descargas.
+- `backend/utils/utils.go` mantiene publicas ambas rutas exactas en `AuthMiddleware`; no hay cambios de permisos privados ni endpoints de empresa.
+
 ## Actualizacion 2026-05-12 (Centro de mando super)
 
 - `web/super_administrador.html` mantiene `web/super/licencias_resumen.html` como entrada de Centro de mando para super administrador.

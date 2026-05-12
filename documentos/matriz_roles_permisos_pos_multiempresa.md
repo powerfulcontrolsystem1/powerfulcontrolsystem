@@ -1,3 +1,8 @@
+2026-05-12: Nota operativa para Probar Gratis del portal
+- `/descripcion_de_los_sistemas.html` es la landing publica oficial para mostrar la informacion del sistema o vertical elegido desde `web/index.html`.
+- `/descripcion_de_los_sistemas.ht` queda como compatibilidad publica legacy servida como HTML por backend; no concede sesion, rol ni acceso a datos empresariales.
+- El flujo `index.html` -> ficha descriptiva -> `Probar Gratis` conserva el contrato publico: solo muestra informacion comercial y deriva al registro/licencia correspondiente.
+
 2026-05-12: Nota operativa para Centro de mando super
 - `web/super/licencias_resumen.html` sigue siendo la pagina de Centro de mando del panel `super_administrador`.
 - La reconstruccion visual no agrega permisos, roles, endpoints ni acceso a empresas; reutiliza las APIs super ya autenticadas para metricas, PostgreSQL, alertas, errores, servidores, licencias, empresas y consumos.
