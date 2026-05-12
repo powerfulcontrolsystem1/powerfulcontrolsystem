@@ -1837,6 +1837,12 @@ Criterio de esta guia:
 26) Carritos de compra e items
 - Operacion de carrito, pago validado, concurrencia de stock y recuperacion de sesiones.
 
+2026-05-12: Verticales 20 en super administrador
+- Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
+- Cambio funcional: la vista `Verticales 20` ahora presenta semaforo ejecutivo, tarjetas de foco, conteo de brechas, metadata completa, listos para venta y licencias base.
+- Operacion: se agregan filtros para ver verticales sin licencia base o sin preconfiguracion activa, manteniendo el cruce con catalogo, preconfiguraciones y licencias.
+- Alcance: no se agregan endpoints, permisos, tablas ni dependencias; se reutiliza `/super/api/verticales_nuevos/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias`.
+
 2026-05-12: Identidad visual empresarial
 - Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
 - Cambio funcional: Configuracion empresarial expone una seccion visible para cargar o pegar el logo de la empresa; el panel principal lo muestra encima del titulo de empresa sin modificar la tarjeta de clima.

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Verticales produccion masiva</title>
+  <title>Verticales 20</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .verticales-v1-shell{max-width:1280px;margin:0 auto;padding:22px;display:grid;gap:16px}
@@ -11,12 +11,25 @@
     .verticales-v1-head h1{margin:0;font-size:1.7rem;line-height:1.15;letter-spacing:0}
     .verticales-v1-head p{margin:0;color:var(--muted);max-width:860px;line-height:1.5}
     .verticales-v1-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    .verticales-v1-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+    .verticales-v1-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
     .verticales-v1-kpi{min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
     .verticales-v1-kpi span{display:block;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
     .verticales-v1-kpi strong{display:block;margin-top:4px;font-size:1.55rem;line-height:1.1}
+    .verticales-v1-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.42fr);gap:12px}
+    .verticales-v1-panel{padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .verticales-v1-panel h2{margin:0 0 8px;font-size:1rem;letter-spacing:0}
+    .verticales-v1-panel p{margin:0;color:var(--muted);line-height:1.45}
+    .verticales-v1-gap-list{display:grid;gap:7px;margin-top:10px}
+    .verticales-v1-gap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);text-align:left;cursor:pointer}
+    .verticales-v1-gap strong{font-size:.86rem;overflow-wrap:anywhere}
+    .verticales-v1-gap span{color:var(--muted);font-size:.76rem}
+    .verticales-v1-card-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .verticales-v1-card{min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .verticales-v1-card h3{margin:8px 0 4px;font-size:.98rem;line-height:1.15;letter-spacing:0}
+    .verticales-v1-card p{margin:0;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .verticales-v1-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
     .verticales-v1-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
-    .verticales-v1-segmented{display:inline-grid;grid-template-columns:repeat(4,auto);gap:4px;padding:4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .verticales-v1-segmented{display:inline-grid;grid-template-columns:repeat(6,auto);gap:4px;padding:4px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
     .verticales-v1-segmented button{border:0;border-radius:6px;background:transparent;color:var(--muted);font-weight:850;padding:8px 10px;cursor:pointer}
     .verticales-v1-segmented button.is-active{background:var(--accent);color:var(--btn-primary-text,#fff)}
     .verticales-v1-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
@@ -37,16 +50,17 @@
     .verticales-v1-row-actions .btn{min-height:32px;padding:6px 9px;font-size:.78rem;justify-content:center}
     .verticales-v1-empty{padding:18px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);color:var(--muted);text-align:center}
     .verticales-v1-error{padding:12px;border:1px solid color-mix(in srgb,#ef4444 44%,var(--border));border-radius:8px;background:color-mix(in srgb,#fee2e2 72%,var(--surface));color:#991b1b}
+    @media (max-width:1180px){.verticales-v1-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.verticales-v1-summary{grid-template-columns:1fr}}
     @media (max-width:1080px){.verticales-v1-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
     @media (max-width:900px){.verticales-v1-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.verticales-v1-toolbar{grid-template-columns:1fr}.verticales-v1-actions{align-items:stretch}.verticales-v1-actions .btn{width:100%;justify-content:center}}
-    @media (max-width:560px){.verticales-v1-shell{padding:14px}.verticales-v1-kpis{grid-template-columns:1fr}.verticales-v1-segmented{grid-template-columns:1fr}.verticales-v1-table{min-width:920px}}
+    @media (max-width:560px){.verticales-v1-shell{padding:14px}.verticales-v1-kpis,.verticales-v1-card-grid{grid-template-columns:1fr}.verticales-v1-segmented{grid-template-columns:1fr}.verticales-v1-table{min-width:920px}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
   <main class="verticales-v1-shell">
     <header class="verticales-v1-head">
-      <h1>Verticales produccion masiva</h1>
-      <p>Gobierno comercial y tecnico de las 20 plantillas reales para escalar en Colombia sin duplicar clientes, productos, ventas, pagos ni reportes.</p>
+      <h1>Verticales 20</h1>
+      <p>Gobierno comercial y tecnico de las 20 plantillas reales de produccion masiva, conectadas al nucleo unico de clientes, productos, ventas, pagos, facturacion, reportes, roles y licencias.</p>
       <div class="verticales-v1-actions">
         <a class="btn secondary" href="/super/tipos_empresas.html">Tipos de empresa</a>
         <a class="btn secondary" href="/super/preconfiguracion_tipos_empresa.html">Preconfiguraciones</a>
@@ -59,9 +73,23 @@
     <section class="verticales-v1-kpis" aria-label="Resumen de verticales">
       <div class="verticales-v1-kpi"><span>Total catalogo</span><strong id="kpiTotal">0</strong></div>
       <div class="verticales-v1-kpi"><span>Produccion</span><strong id="kpiMass">0</strong></div>
-      <div class="verticales-v1-kpi"><span>No listos</span><strong id="kpiDeferred">0</strong></div>
+      <div class="verticales-v1-kpi"><span>Brechas</span><strong id="kpiGaps">0</strong></div>
       <div class="verticales-v1-kpi"><span>Metadata completa</span><strong id="kpiComplete">0</strong></div>
       <div class="verticales-v1-kpi"><span>Listos venta</span><strong id="kpiReady">0</strong></div>
+      <div class="verticales-v1-kpi"><span>Licencias base</span><strong id="kpiLicenses">0</strong></div>
+    </section>
+
+    <section class="verticales-v1-summary" aria-label="Diagnostico comercial">
+      <article class="verticales-v1-panel">
+        <h2>Semaforo ejecutivo</h2>
+        <p id="executiveSummary">Cargando estado de produccion masiva...</p>
+        <div id="focusCards" class="verticales-v1-card-grid" style="margin-top:12px"></div>
+      </article>
+      <article class="verticales-v1-panel">
+        <h2>Brechas principales</h2>
+        <p id="gapSummary">Sin lectura todavia.</p>
+        <div id="gapList" class="verticales-v1-gap-list"></div>
+      </article>
     </section>
 
     <section class="verticales-v1-toolbar" aria-label="Filtros de verticales">
@@ -71,6 +99,8 @@
         <button type="button" data-filter="ready" aria-label="Listos">Listos</button>
         <button type="button" data-filter="mass" aria-label="Produccion">Produccion</button>
         <button type="button" data-filter="not_ready" aria-label="No listos">No listos</button>
+        <button type="button" data-filter="without_license" aria-label="Sin licencia">Sin licencia</button>
+        <button type="button" data-filter="without_preconfig" aria-label="Sin preconfiguracion">Sin preconfig</button>
       </div>
       <button class="btn secondary" id="refreshBtn" type="button">Actualizar</button>
     </section>
@@ -87,6 +117,10 @@
       var searchInput = document.getElementById('searchInput');
       var exportBtn = document.getElementById('exportBtn');
       var ensureBtn = document.getElementById('ensureBtn');
+      var executiveSummary = document.getElementById('executiveSummary');
+      var gapSummary = document.getElementById('gapSummary');
+      var gapList = document.getElementById('gapList');
+      var focusCards = document.getElementById('focusCards');
 
       function escapeHTML(value){
         return String(value == null ? '' : value).replace(/[&<>"']/g, function(match){
@@ -102,6 +136,14 @@
 
       function asArray(value){
         return Array.isArray(value) ? value.filter(Boolean) : [];
+      }
+
+      function payloadItems(payload){
+        if (Array.isArray(payload)) return payload;
+        if (payload && Array.isArray(payload.items)) return payload.items;
+        if (payload && Array.isArray(payload.licencias)) return payload.licencias;
+        if (payload && Array.isArray(payload.data)) return payload.data;
+        return [];
       }
 
       function getIntegration(item){
@@ -180,8 +222,11 @@
         var license = findLicense(item);
         var preconfigData = preconfig && preconfig.preconfig ? preconfig.preconfig : {};
         var template = preconfig && preconfig.template ? preconfig.template : {};
+        var operation = template.operacion || {};
         var templateIntegration = template.integracion_vertical || {};
-        var preconfigReady = !!preconfig && !!preconfigData.enabled && templateIntegration.modulo === item.module;
+        var templateModule = String(templateIntegration.modulo || operation.tipo_negocio || '').trim();
+        var preconfigEnabled = !!preconfigData.enabled || String(preconfigData.estado || '').trim().toLowerCase() === 'activo';
+        var preconfigReady = !!preconfig && preconfigEnabled && templateModule === item.module;
         var licenseReady = !!license;
         var metadataReady = isComplete(item);
         var massReady = !!item.produccion_masiva;
@@ -194,8 +239,21 @@
           ready: massReady && metadataReady && preconfigReady && licenseReady,
           preconfig: preconfig,
           license: license,
+          preconfigReady: preconfigReady,
+          licenseReady: licenseReady,
+          metadataReady: metadataReady,
+          massReady: massReady,
           missing: missing
         };
+      }
+
+      function itemStatus(item){
+        var readiness = buildReadiness(item);
+        if (readiness.ready) return 'Listo';
+        if (!readiness.licenseReady) return 'Sin licencia';
+        if (!readiness.preconfigReady) return 'Sin preconfig';
+        if (!readiness.metadataReady) return 'Metadata';
+        return 'Pendiente';
       }
 
       function itemSearchText(item){
@@ -222,6 +280,8 @@
           if (state.filter === 'ready' && !readiness.ready) return false;
           if (state.filter === 'mass' && !mass) return false;
           if (state.filter === 'not_ready' && readiness.ready) return false;
+          if (state.filter === 'without_license' && readiness.licenseReady) return false;
+          if (state.filter === 'without_preconfig' && readiness.preconfigReady) return false;
           if (query && itemSearchText(item).indexOf(query) < 0) return false;
           return true;
         }).sort(function(a,b){
@@ -243,13 +303,82 @@
         return '<div class="verticales-v1-list">' + shown + '</div>';
       }
 
+      function computeDiagnostics(){
+        var ready = 0;
+        var metadata = 0;
+        var noLicense = 0;
+        var noPreconfig = 0;
+        var noProduction = 0;
+        state.items.forEach(function(item){
+          var readiness = buildReadiness(item);
+          if (readiness.ready) ready += 1;
+          if (readiness.metadataReady) metadata += 1;
+          if (!readiness.licenseReady) noLicense += 1;
+          if (!readiness.preconfigReady) noPreconfig += 1;
+          if (!readiness.massReady) noProduction += 1;
+        });
+        return {
+          total: state.items.length,
+          mass: state.items.filter(function(i){ return !!i.produccion_masiva; }).length,
+          ready: ready,
+          metadata: metadata,
+          noLicense: noLicense,
+          noPreconfig: noPreconfig,
+          noProduction: noProduction,
+          gaps: noLicense + noPreconfig + noProduction + (state.items.length - metadata)
+        };
+      }
+
+      function renderSummary(){
+        var diag = computeDiagnostics();
+        var gapRows = [
+          { title: 'Sin licencia base', count: diag.noLicense, filter: 'without_license' },
+          { title: 'Sin preconfiguracion activa', count: diag.noPreconfig, filter: 'without_preconfig' },
+          { title: 'Metadata incompleta', count: Math.max(0, diag.total - diag.metadata), filter: 'not_ready' },
+          { title: 'Fuera de produccion', count: diag.noProduction, filter: 'not_ready' }
+        ];
+        var percentage = diag.total ? Math.round((diag.ready / diag.total) * 100) : 0;
+        executiveSummary.textContent = diag.total
+          ? (diag.ready + ' de ' + diag.total + ' verticales estan listos para venta (' + percentage + '%). La vista cruza catalogo, metadata, preconfiguracion activa y licencia base.')
+          : 'Sin verticales cargados.';
+        gapSummary.textContent = diag.gaps ? 'Prioriza las brechas con mayor conteo antes de publicar comercialmente.' : 'No hay brechas detectadas en la lectura actual.';
+        gapList.innerHTML = gapRows.map(function(row){
+          return '<button type="button" class="verticales-v1-gap" data-gap-filter="' + escapeHTML(row.filter) + '">' +
+            '<strong>' + escapeHTML(row.title) + '</strong><span>' + escapeHTML(row.count) + '</span>' +
+          '</button>';
+        }).join('');
+        gapList.querySelectorAll('[data-gap-filter]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            setFilter(btn.getAttribute('data-gap-filter') || 'all');
+          });
+        });
+
+        var focus = state.items.slice().sort(function(a,b){
+          var ar = buildReadiness(a), br = buildReadiness(b);
+          if (ar.ready !== br.ready) return ar.ready ? 1 : -1;
+          return Number(a.prioridad_produccion || 99) - Number(b.prioridad_produccion || 99);
+        }).slice(0, 4);
+        focusCards.innerHTML = focus.map(function(item){
+          var readiness = buildReadiness(item);
+          var rank = Number(item.prioridad_produccion || 0);
+          return '<article class="verticales-v1-card">' +
+            '<div class="verticales-v1-card-top"><span class="verticales-v1-rank ' + (rank ? '' : 'is-empty') + '">' + (rank || '-') + '</span><span class="verticales-v1-pill ' + (readiness.ready ? 'is-ready' : 'is-blocked') + '">' + escapeHTML(itemStatus(item)) + '</span></div>' +
+            '<h3>' + escapeHTML(item.title || item.module) + '</h3>' +
+            '<p>' + escapeHTML(readiness.ready ? 'Listo para comercializar.' : readiness.missing.join(', ')) + '</p>' +
+          '</article>';
+        }).join('');
+      }
+
       function renderTable(){
         var rows = filteredItems();
+        var diagnostics = computeDiagnostics();
         document.getElementById('kpiTotal').textContent = state.items.length;
-        document.getElementById('kpiMass').textContent = state.items.filter(function(i){ return !!i.produccion_masiva; }).length;
-        document.getElementById('kpiDeferred').textContent = state.items.filter(function(i){ return !buildReadiness(i).ready; }).length;
-        document.getElementById('kpiComplete').textContent = state.items.filter(isComplete).length;
-        document.getElementById('kpiReady').textContent = state.items.filter(function(i){ return buildReadiness(i).ready; }).length;
+        document.getElementById('kpiMass').textContent = diagnostics.mass;
+        document.getElementById('kpiGaps').textContent = diagnostics.gaps;
+        document.getElementById('kpiComplete').textContent = diagnostics.metadata;
+        document.getElementById('kpiReady').textContent = diagnostics.ready;
+        document.getElementById('kpiLicenses').textContent = state.licenses.filter(isActiveRecord).length;
+        renderSummary();
 
         if (!rows.length) {
           tableHost.className = 'verticales-v1-empty';
@@ -316,7 +445,7 @@
             var preconfigRes = await fetch('/super/api/tipos_empresas/preconfiguracion', { credentials: 'same-origin' });
             if (!preconfigRes.ok) throw new Error('HTTP ' + preconfigRes.status);
             var preconfigPayload = await preconfigRes.json();
-            state.preconfigs = preconfigPayload && Array.isArray(preconfigPayload.items) ? preconfigPayload.items : [];
+            state.preconfigs = payloadItems(preconfigPayload);
           } catch (preconfigErr) {
             state.preconfigs = [];
             warnings.push('preconfiguraciones');
@@ -325,7 +454,7 @@
             var licensesRes = await fetch('/super/api/licencias?activo=1', { credentials: 'same-origin' });
             if (!licensesRes.ok) throw new Error('HTTP ' + licensesRes.status);
             var licensesPayload = await licensesRes.json();
-            state.licenses = Array.isArray(licensesPayload) ? licensesPayload : [];
+            state.licenses = payloadItems(licensesPayload);
           } catch (licensesErr) {
             state.licenses = [];
             warnings.push('licencias');
@@ -406,12 +535,17 @@
         setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
       }
 
+      function setFilter(filter){
+        state.filter = filter || 'all';
+        document.querySelectorAll('.verticales-v1-segmented button').forEach(function(other){
+          other.classList.toggle('is-active', (other.getAttribute('data-filter') || 'all') === state.filter);
+        });
+        renderTable();
+      }
+
       document.querySelectorAll('.verticales-v1-segmented button').forEach(function(btn){
         btn.addEventListener('click', function(){
-          document.querySelectorAll('.verticales-v1-segmented button').forEach(function(other){ other.classList.remove('is-active'); });
-          btn.classList.add('is-active');
-          state.filter = btn.getAttribute('data-filter') || 'all';
-          renderTable();
+          setFilter(btn.getAttribute('data-filter') || 'all');
         });
       });
       searchInput.addEventListener('input', function(){ state.query = searchInput.value; renderTable(); });

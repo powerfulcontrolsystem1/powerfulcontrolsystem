@@ -1,3 +1,10 @@
+2026-05-12: Actualizacion de pagina super Verticales 20
+- Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
+- Cambio funcional: `web/super/verticales_produccion_masiva.html` se actualiza como consola ejecutiva con semaforo comercial, brechas principales, tarjetas de foco, KPIs ampliados y filtros por `Sin licencia` y `Sin preconfig`.
+- Frontend: el readiness cruza catalogo, metadata extendida, preconfiguracion activa e licencia base; tambien tolera respuestas API con arreglo directo, `items`, `licencias` o `data`.
+- Alcance: no cambian backend, endpoints, permisos, base de datos ni dependencias.
+- Validacion prevista: sintaxis del script inline, `git diff --check`, preflight profesional y verificacion publica tras despliegue.
+
 2026-05-12: Limpieza visual del super administrador
 - Modulos afectados: `super_administrador`.
 - Cambio funcional: se retira del encabezado lateral el bloque de cuatro indicadores compactos `PostgreSQL`, `VPS`, `Licencias` y `Seguridad`.

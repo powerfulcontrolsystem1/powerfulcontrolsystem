@@ -1,3 +1,9 @@
+## [2026-05-12] Verticales 20 actualizado
+- [Frontend] `web/super/verticales_produccion_masiva.html` muestra semaforo ejecutivo, brechas principales, tarjetas de foco comercial y KPIs de licencias/base/readiness.
+- [Operacion] Se agregan filtros `Sin licencia` y `Sin preconfig` para priorizar tareas antes de publicar comercialmente un vertical.
+- [Contrato] El cruce de readiness acepta payloads con `items`, `licencias` o arreglos directos y valida catalogo, metadata, preconfiguracion activa y licencia base.
+- [Alcance] Sin endpoints, permisos, tablas ni dependencias nuevas.
+
 ## [2026-05-12] Limpieza visual del super administrador
 - [Frontend] `web/super_administrador.html` retira los indicadores compactos `PostgreSQL`, `VPS`, `Licencias` y `Seguridad` del encabezado lateral.
 - [Alcance] Sin cambios de rutas, iframes, permisos, backend, base de datos ni dependencias.
