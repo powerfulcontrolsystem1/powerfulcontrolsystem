@@ -193,14 +193,6 @@ func EmpresaPropiedadHorizontalHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
-			case "sincronizar_nucleo":
-				resumen, err := dbpkg.SyncEmpresaPropiedadHorizontalNucleo(dbEmp, empresaID, usuario)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
-				return
 			}
 		}
 		http.Error(w, "accion o metodo no soportado", http.StatusMethodNotAllowed)

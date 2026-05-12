@@ -60,8 +60,12 @@ func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 		if item.OperationalVisible && len(item.ReportsProduced) == 0 {
 			t.Fatalf("vertical visible sin reportes declarados: %+v", item)
 		}
-		if item.SyncAction != "" && (item.SyncPath == "" || item.SyncActionName == "") {
-			t.Fatalf("sincronizacion sin contrato estructurado: %+v", item)
+		payload, err := json.Marshal(item)
+		if err != nil {
+			t.Fatalf("marshal item: %v", err)
+		}
+		if item.OperationalVisible && (jsonContainsKey(payload, "sync_action") || jsonContainsKey(payload, "sync_path") || jsonContainsKey(payload, "sync_action_name")) {
+			t.Fatalf("vertical visible publica contrato viejo de sincronizacion: %s", string(payload))
 		}
 	}
 	for module, ok := range required {
@@ -69,6 +73,15 @@ func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 			t.Fatalf("vertical requerido faltante en catalogo: %s", module)
 		}
 	}
+}
+
+func jsonContainsKey(payload []byte, key string) bool {
+	var raw map[string]any
+	if err := json.Unmarshal(payload, &raw); err != nil {
+		return false
+	}
+	_, ok := raw[key]
+	return ok
 }
 
 func TestPublicVerticalesIntegracionCatalogoHandler(t *testing.T) {

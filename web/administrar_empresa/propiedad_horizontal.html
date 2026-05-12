@@ -33,7 +33,6 @@
       </div>
       <div class="form-actions">
         <button id="seedBtn" class="btn secondary" type="button">Cargar demo</button>
-        <button id="syncCoreBtn" class="btn secondary" type="button">Sincronizar nucleo</button>
         <button id="reloadBtn" class="btn" type="button">Actualizar</button>
       </div>
     </section>
@@ -109,7 +108,6 @@
     pqrForm.onsubmit=async e=>{e.preventDefault(); await api("pqr","POST",{unidad_id:Number(val("qUnidad")||0),tipo:val("qTipo"),prioridad:val("qPrioridad"),asunto:val("qAsunto"),descripcion:val("qDesc"),responsable:val("qResp"),fecha_limite:val("qLimite")}); pqrForm.reset(); load()};
     asambleaForm.onsubmit=async e=>{e.preventDefault(); await api("asamblea","POST",{titulo:val("aTitulo"),tipo_asamblea:val("aTipo"),fecha:val("aFecha"),quorum_objetivo:Number(val("aQuorum")||51),quorum_actual:Number(val("aActual")||0),acta_url:val("aActa")}); asambleaForm.reset(); load()};
     reloadBtn.onclick=load; seedBtn.onclick=async()=>{await api("seed_demo","POST",{}); load()};
-    syncCoreBtn.onclick=async()=>{const r=await api("sincronizar_nucleo","POST",{}); state.integracionNucleo=r.integracion||null; const x=state.integracionNucleo||{}; showNotice("Nucleo sincronizado: "+Number(x.clientes_sincronizados||0)+" clientes, "+Number(x.servicios_sincronizados||0)+" servicios y "+Number(x.recaudos_sincronizados||0)+" recaudos conectados."); load()};
     load().catch(err=>{document.body.insertAdjacentHTML("afterbegin",'<div class="error">'+esc(err.message)+'</div>')});
   </script>
 </body>

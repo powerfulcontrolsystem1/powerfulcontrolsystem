@@ -263,18 +263,6 @@ type EmpresaGimnasioPreconfiguracionResumen struct {
 	TieneDatos        bool   `json:"tiene_datos"`
 }
 
-type EmpresaGimnasioIntegracionNucleoResumen struct {
-	EmpresaID             int64    `json:"empresa_id"`
-	SociosSincronizados   int      `json:"socios_sincronizados"`
-	PlanesSincronizados   int      `json:"planes_sincronizados"`
-	PagosSincronizados    int      `json:"pagos_sincronizados"`
-	PagosPendientes       int      `json:"pagos_pendientes"`
-	Errores               []string `json:"errores,omitempty"`
-	EstadoIntegracion     string   `json:"estado_integracion"`
-	VisibleOperativo      bool     `json:"visible_operativo"`
-	RequiereRevisionDatos bool     `json:"requiere_revision_datos"`
-}
-
 var (
 	empresaGimnasioSchemaEnsured sync.Map
 	empresaGimnasioSchemaMu      sync.Mutex
@@ -1822,92 +1810,6 @@ func CreateEmpresaGimnasioPago(dbConn *sql.DB, payload EmpresaGimnasioPago) (int
 	}
 	_, _ = dbConn.Exec(`UPDATE empresa_gimnasio_socios SET saldo=COALESCE(saldo,0)-?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, item.Monto, item.EmpresaID, item.SocioID)
 	return id, nil
-}
-
-func SyncEmpresaGimnasioNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaGimnasioIntegracionNucleoResumen, error) {
-	if empresaID <= 0 {
-		return nil, fmt.Errorf("empresa_id es obligatorio")
-	}
-	if err := EnsureEmpresaGimnasioSchema(dbConn); err != nil {
-		return nil, err
-	}
-	out := &EmpresaGimnasioIntegracionNucleoResumen{EmpresaID: empresaID, EstadoIntegracion: "plantilla_integrada_nucleo", VisibleOperativo: true}
-	usuario = strings.TrimSpace(usuario)
-	if usuario == "" {
-		usuario = "sistema"
-	}
-
-	planes, err := ListEmpresaGimnasioPlanes(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, plan := range planes {
-		plan.UsuarioCreador = usuario
-		if servicioID, syncErr := syncEmpresaGimnasioPlanServicio(dbConn, plan); syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("plan %d: %v", plan.ID, syncErr))
-		} else if servicioID > 0 {
-			out.PlanesSincronizados++
-		}
-	}
-
-	socios, err := ListEmpresaGimnasioSocios(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, socio := range socios {
-		socio.UsuarioCreador = usuario
-		if clienteID, syncErr := syncEmpresaGimnasioSocioCliente(dbConn, socio); syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("socio %d: %v", socio.ID, syncErr))
-		} else if clienteID > 0 {
-			out.SociosSincronizados++
-		}
-	}
-
-	pagos, err := ListEmpresaGimnasioPagos(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, pago := range pagos {
-		if pago.CarritoID > 0 || pago.Estado != "pagado" {
-			if pago.Estado != "pagado" {
-				out.PagosPendientes++
-			}
-			continue
-		}
-		pago.UsuarioCreador = usuario
-		socio, syncErr := getEmpresaGimnasioSocioByID(dbConn, pago.EmpresaID, pago.SocioID)
-		if syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("pago %d socio: %v", pago.ID, syncErr))
-			continue
-		}
-		socio.UsuarioCreador = usuario
-		pago.ClienteID, syncErr = syncEmpresaGimnasioSocioCliente(dbConn, *socio)
-		if syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("pago %d cliente: %v", pago.ID, syncErr))
-			continue
-		}
-		pago.ServicioID, syncErr = ensureEmpresaGimnasioConceptoServicio(dbConn, pago)
-		if syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("pago %d servicio: %v", pago.ID, syncErr))
-			continue
-		}
-		carritoID, carritoItemID, syncErr := createEmpresaGimnasioPagoCarrito(dbConn, pago)
-		if syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("pago %d venta: %v", pago.ID, syncErr))
-			continue
-		}
-		_, syncErr = dbConn.Exec(`UPDATE empresa_gimnasio_pagos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableInt64(pago.ClienteID), nullableInt64(pago.ServicioID), nullableInt64(carritoID), nullableInt64(carritoItemID), pago.EmpresaID, pago.ID)
-		if syncErr != nil {
-			out.Errores = append(out.Errores, fmt.Sprintf("pago %d referencia: %v", pago.ID, syncErr))
-			continue
-		}
-		out.PagosSincronizados++
-	}
-	out.RequiereRevisionDatos = len(out.Errores) > 0
-	if out.RequiereRevisionDatos {
-		out.EstadoIntegracion = "integrado_con_observaciones"
-	}
-	return out, nil
 }
 
 func GetEmpresaGimnasioDashboard(dbConn *sql.DB, empresaID int64) (*EmpresaGimnasioDashboard, error) {

@@ -21,9 +21,6 @@ type empresaVerticalIntegracionItem struct {
 	DuplicatesCore      []string `json:"duplicates_core"`
 	OwnFlowAllowed      []string `json:"own_flow_allowed"`
 	Decision            string   `json:"decision"`
-	SyncAction          string   `json:"sync_action,omitempty"`
-	SyncPath            string   `json:"sync_path,omitempty"`
-	SyncActionName      string   `json:"sync_action_name,omitempty"`
 	AliasDe             string   `json:"alias_of,omitempty"`
 	Motivo              string   `json:"reason"`
 }
@@ -83,31 +80,25 @@ func PublicVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
 
 func buildEmpresaVerticalesIntegracionCatalogo() []empresaVerticalIntegracionItem {
 	return []empresaVerticalIntegracionItem{
-		classicVertical("gimnasio", "linkGimnasio", "Gimnasio", "Socios, planes, acceso, clases, asistencias y dispositivos", "Sincroniza socios con clientes, planes con servicios vendibles y pagos con ventas/pagos centrales.", "/api/empresa/gimnasio", "sincronizar_nucleo"),
-		classicVertical("odontologia", "linkConsultorioOdontologico", "Odontologia", "Historia clinica, odontograma, profesionales, consultorios y citas clinicas", "Sincroniza pacientes con clientes, tratamientos con servicios vendibles y pagos con ventas/pagos centrales.", "/api/empresa/odontologia", "sincronizar_nucleo"),
+		classicVertical("gimnasio", "linkGimnasio", "Gimnasio", "Socios, planes, acceso, clases, asistencias y dispositivos", "Plantilla fitness conectada al nucleo comun: socios, planes y pagos operan desde clientes, servicios, ventas y pagos centrales."),
+		classicVertical("odontologia", "linkConsultorioOdontologico", "Odontologia", "Historia clinica, odontograma, profesionales, consultorios y citas clinicas", "Plantilla clinica conectada al nucleo comun: pacientes, tratamientos y recaudos usan clientes, servicios, ventas y pagos centrales."),
 		classicVerticalAlias("consultorio_odontologico", "linkConsultorioOdontologico", "Consultorio odontologico", "odontologia", "Vista especializada de odontologia integrada al nucleo operativo."),
-		classicVertical("parqueadero", "linkParqueadero", "Parqueadero", "Ticket QR, placa, entrada/salida, tiempos y reglas tarifarias", "Cierra tickets creando venta, item de servicio y pago central en carritos.", "/api/empresa/parqueadero", "sincronizar_nucleo"),
-		classicVertical("taxi_system", "linkTaxiSystem", "Taxi system", "Conductores, despacho, GPS, tracking, ofertas y rutas", "Sincroniza clientes de viaje y servicios completados con clientes, servicios, ventas y pagos centrales.", "/api/empresa/taxi_system", "sincronizar_nucleo"),
+		classicVertical("parqueadero", "linkParqueadero", "Parqueadero", "Ticket QR, placa, entrada/salida, tiempos y reglas tarifarias", "Plantilla de parqueadero conectada al nucleo comun: tickets y cobros crean servicio, venta y pago central sin modulo comercial paralelo."),
+		classicVertical("taxi_system", "linkTaxiSystem", "Taxi system", "Conductores, despacho, GPS, tracking, ofertas y rutas", "Plantilla de transporte conectada al nucleo comun: clientes, servicios de viaje, ventas y pagos se gobiernan desde el nucleo."),
 		classicVerticalAlias("taxi", "linkTaxiSystem", "Taxi", "taxi_system", "Alias visual de taxi_system integrado al nucleo."),
-		classicVertical("domicilios", "linkDomicilios", "Domicilios", "Tracking, domiciliarios, restaurantes aliados, menu, ofertas y estados logisticos", "Sincroniza pedidos entregados con clientes, servicios de menu, ventas y pagos centrales.", "/api/empresa/domicilios", "sincronizar_nucleo"),
-		classicVertical("apartamentos_turisticos", "linkApartamentosTuristicos", "Apartamentos turisticos", "Unidades, disponibilidad, tareas, tarifas, check-in y checkout", "Sincroniza huespedes con clientes, apartamentos con servicios y reservas cerradas con ventas/pagos centrales.", "/api/empresa/apartamentos_turisticos", "sincronizar_nucleo"),
-		classicVertical("propiedad_horizontal", "linkPropiedadHorizontal", "Propiedad horizontal", "Unidades, asambleas, PQR, residentes, cartera y recaudos", "Sincroniza propietarios/residentes con clientes, cargos con servicios y recaudos con ventas/pagos centrales.", "/api/empresa/propiedad_horizontal", "sincronizar_nucleo"),
-		classicVertical("alquileres", "linkAlquileres", "Alquileres", "Contratos, activos, garantias, mantenimientos, kilometraje y mapa GPS", "Sincroniza clientes de contratos con clientes centrales, activos/tarifas con servicios y contratos con ventas/pagos centrales.", "/api/empresa/alquileres", "sincronizar_nucleo"),
-		classicVertical("drogueria_farmacia", "linkDrogueriaFarmacia", "Drogueria / farmacia", "Expediente sanitario, lotes, INVIMA, formulas, controlados y farmacovigilancia", "Opera como expediente sanitario sobre el nucleo: productos, inventario, ventas, clientes y facturacion siguen en modulos centrales.", "", ""),
-		classicVertical("aiu_construccion", "linkAIUConstruccion", "Construccion / AIU", "Capitulos, AIU, presupuestos de obra, retenciones, anticipo, garantia y auditoria tecnica", "Sincroniza clientes de obra, contratos y conceptos como servicios; facturas AIU quedan enlazadas a ventas centrales sin duplicar impuestos.", "/api/empresa/aiu_construccion", "sincronizar_nucleo"),
+		classicVertical("domicilios", "linkDomicilios", "Domicilios", "Tracking, domiciliarios, restaurantes aliados, menu, ofertas y estados logisticos", "Plantilla logistica conectada al nucleo comun: pedidos, clientes, menu, ventas y pagos se resuelven en los modulos centrales."),
+		classicVertical("apartamentos_turisticos", "linkApartamentosTuristicos", "Apartamentos turisticos", "Unidades, disponibilidad, tareas, tarifas, check-in y checkout", "Plantilla de alojamiento conectada al nucleo comun: huespedes, unidades vendibles, reservas, ventas y pagos comparten el motor central."),
+		classicVertical("propiedad_horizontal", "linkPropiedadHorizontal", "Propiedad horizontal", "Unidades, asambleas, PQR, residentes, cartera y recaudos", "Plantilla de copropiedad conectada al nucleo comun: terceros, unidades, cargos, recaudos, cartera y reportes no duplican clientes ni pagos."),
+		classicVertical("alquileres", "linkAlquileres", "Alquileres", "Contratos, activos, garantias, mantenimientos, kilometraje y mapa GPS", "Plantilla de alquiler conectada al nucleo comun: clientes, activos vendibles, contratos, ventas y pagos usan la fuente unica."),
+		classicVertical("drogueria_farmacia", "linkDrogueriaFarmacia", "Drogueria / farmacia", "Expediente sanitario, lotes, INVIMA, formulas, controlados y farmacovigilancia", "Plantilla sanitaria conectada al nucleo comun: productos, inventario, compras, clientes, ventas y facturacion siguen en modulos centrales."),
+		classicVertical("aiu_construccion", "linkAIUConstruccion", "Construccion / AIU", "Capitulos, AIU, presupuestos de obra, retenciones, anticipo, garantia y auditoria tecnica", "Plantilla de construccion conectada al nucleo comun: clientes, contratos, conceptos, ventas, impuestos y reportes se enlazan sin duplicar documentos comerciales."),
 		supportVertical("turnos_atencion", "linkTurnosAtencion", "Turnos de atencion", "Turnos, puestos, pantalla publica y seguimiento de fila", "Funciona como capacidad operativa transversal y no reemplaza clientes, productos, ventas ni pagos."),
 		supportVerticalAlias("turnos", "linkTurnosAtencion", "Turnos", "turnos_atencion", "Alias visual de turnos_atencion."),
 	}
 }
 
-func classicVertical(module, page, title, ownFlow, reason, syncPath, syncActionName string) empresaVerticalIntegracionItem {
-	syncPath = strings.TrimSpace(syncPath)
-	syncActionName = strings.TrimSpace(syncActionName)
+func classicVertical(module, page, title, ownFlow, reason string) empresaVerticalIntegracionItem {
 	detail := classicVerticalIntegrationDetail(module, page)
-	syncAction := ""
-	if syncPath != "" && syncActionName != "" {
-		syncAction = "POST " + syncPath + "?action=" + syncActionName
-	}
 	return empresaVerticalIntegracionItem{
 		ID:                  strings.TrimSpace(page),
 		Modulo:              strings.ToLower(strings.TrimSpace(module)),
@@ -123,16 +114,13 @@ func classicVertical(module, page, title, ownFlow, reason, syncPath, syncActionN
 		ReportsProduced:     copyStringSlice(detail.ReportsProduced),
 		DuplicatesCore:      []string{},
 		OwnFlowAllowed:      []string{strings.TrimSpace(ownFlow)},
-		Decision:            "mantener_visible",
-		SyncAction:          syncAction,
-		SyncPath:            syncPath,
-		SyncActionName:      syncActionName,
+		Decision:            "plantilla_universal_nucleo",
 		Motivo:              strings.TrimSpace(reason),
 	}
 }
 
 func classicVerticalAlias(module, page, title, aliasOf, reason string) empresaVerticalIntegracionItem {
-	item := classicVertical(module, page, title, "Alias operativo; usa el flujo permitido del modulo principal", reason, "", "")
+	item := classicVertical(module, page, title, "Alias operativo; usa el flujo permitido del modulo principal", reason)
 	detail := classicVerticalIntegrationDetail(aliasOf, page)
 	item.TemplateActivates = copyStringSlice(detail.TemplateActivates)
 	item.TablesTouched = copyStringSlice(detail.TablesTouched)

@@ -44,7 +44,6 @@ Actualizacion 2026-05-11 (gimnasio integrado al nucleo)
 - `empresa_gimnasio_pagos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo de gimnasio.
 - Las tablas de gimnasio conservan solo la especialidad operativa: acceso, clases, asistencia, credenciales y lectura fitness; el cobro queda reconciliable con `carritos_compras` y `carrito_compra_items`.
 - Compatibilidad PostgreSQL: los indices de integracion (`servicio_id`, `cliente_id`, `carrito_id`) se crean despues de asegurar columnas para que bases existentes no fallen durante la carga del modulo.
-- Idempotencia de sincronizacion: los pagos historicos de gimnasio usan `carritos_compras.referencia_externa` estable por pago cuando existe `empresa_gimnasio_pagos.id`, evitando duplicar ventas centrales al repetir `sincronizar_nucleo`.
 
 Actualizacion 2026-05-11 (odontologia integrada al nucleo)
 - `empresa_odontologia_pacientes.cliente_id`: referencia al cliente central creado o reutilizado para el paciente facturable.
@@ -52,7 +51,6 @@ Actualizacion 2026-05-11 (odontologia integrada al nucleo)
 - `empresa_odontologia_pagos.cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`: referencias a cliente, servicio e item/venta central generados por el recaudo odontologico.
 - Las tablas clinicas de odontologia conservan la especialidad: historia clinica, odontograma, profesionales, consultorios, citas, presupuestos y trazabilidad clinica; el circuito comercial queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
 - Compatibilidad PostgreSQL: los indices de integracion (`cliente_id`, `servicio_id`, `carrito_id`) se crean despues de asegurar columnas para evitar cargas parciales en instalaciones actualizadas por fases.
-- Idempotencia de sincronizacion: los pagos historicos de odontologia usan `carritos_compras.referencia_externa` estable por pago cuando existe `empresa_odontologia_pagos.id`, evitando colisiones por nombre unico y ventas duplicadas al repetir `sincronizar_nucleo`.
 
 Actualizacion 2026-05-11 (parqueadero integrado al nucleo)
 - `empresa_parqueadero_tickets.cliente_id`: referencia opcional al cliente central creado o reutilizado cuando el ticket trae cliente/documento.
@@ -79,7 +77,6 @@ Actualizacion 2026-05-11 (apartamentos turisticos integrado al nucleo)
 - `empresa_apartamentos_turisticos_unidades.servicio_id`: referencia al servicio vendible central creado o reutilizado para cada apartamento/unidad.
 - `empresa_apartamentos_turisticos_reservas.cliente_id`: referencia al cliente central creado o reutilizado desde huesped, documento, telefono o email.
 - `empresa_apartamentos_turisticos_reservas.servicio_id`: referencia al servicio central de alojamiento usado por la reserva.
-- `empresa_apartamentos_turisticos_reservas.carrito_id` y `carrito_item_id`: referencias al carrito e item central generados al cerrar la estadia por checkout o sincronizacion historica.
 - `empresa_apartamentos_turisticos_reservas.metodo_pago`: metodo normalizado contra el flujo de carrito; por defecto `efectivo` cuando no existe pasarela/canal externo conciliado.
 - Las tablas de apartamentos conservan la especialidad operativa: unidades, disponibilidad, tarifas, codigos de acceso, check-in/check-out, limpieza y mantenimiento; el cobro queda reconciliable con `clientes`, `servicios`, `carritos_compras` y `carrito_compra_items`.
 
@@ -110,7 +107,6 @@ Actualizacion 2026-05-11 (AIU construccion integrado al nucleo)
 
 Actualizacion 2026-05-11 (catalogo API de integracion vertical)
 - Se agregan endpoints de solo lectura para exponer la matriz operativa de verticales clasicos: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
-- No agrega tablas ni columnas; el contrato vive en codigo Go y publica `integration_status`, `operational_visible`, `core_modules`, `duplicates_core`, `own_flow_allowed`, `decision`, `sync_action`, `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
 - Las tablas listadas en `tables_touched` son declarativas para auditoria de integracion: documentan que tablas del vertical y del nucleo participan en el flujo, sin crear relaciones nuevas en esta fase.
 
 Actualizacion 2026-05-10 (alertas automaticas super)
@@ -175,7 +171,7 @@ Actualizacion 2026-05-05 (carnets empresariales por empresa)
 - El modulo se expone por `/api/empresa/carnets` con wrapper `WithEmpresaCarnetsPermissions`; no comparte carnets entre empresas.
 
 Actualizacion 2026-05-05 (suite contable Colombia avanzada)
-- `empresa_contabilidad_exogena_formatos`: formatos DIAN/medios magneticos configurables por `empresa_id`, formato, version, año gravable, concepto, periodicidad, estado y ultima generacion.
+- `empresa_contabilidad_exogena_formatos`: formatos DIAN/medios magneticos configurables por `empresa_id`, formato, version, aÃ±o gravable, concepto, periodicidad, estado y ultima generacion.
 - `empresa_contabilidad_exogena_registros`: registros por tercero/formato para exogena, con documento, razon social, cuenta, base, IVA, retencion, total, validaciones y estado.
 - `empresa_contabilidad_nomina_electronica`: documentos de nomina electronica por empleado/documento y periodo, con salario, devengados, deducciones, total, CUNE, estado DIAN, respuesta y payload.
 - `empresa_contabilidad_documentos_soporte`: documentos soporte electronicos para compras a no obligados a facturar, con proveedor, periodo, subtotal, IVA, retenciones, total, CUDS, estado DIAN y payload.
@@ -211,16 +207,16 @@ Actualizacion 2026-04-30 (pagos, empresas compartidas y documentos IA)
 
 Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 - empresa_compras_documentos:
-  - agrega `comprobante_url` y `comprobante_nombre_archivo` para enlazar la evidencia física cargada por la empresa en cada documento de compra.
+  - agrega `comprobante_url` y `comprobante_nombre_archivo` para enlazar la evidencia fÃ­sica cargada por la empresa en cada documento de compra.
 - empresa_finanzas_movimientos:
-  - mantiene `comprobante_url` como referencia del soporte físico asociado a ingresos y egresos; desde esta fecha el valor puede provenir de subida local al repositorio web y no solo de URL externa manual.
+  - mantiene `comprobante_url` como referencia del soporte fÃ­sico asociado a ingresos y egresos; desde esta fecha el valor puede provenir de subida local al repositorio web y no solo de URL externa manual.
 - Regla operativa de almacenamiento:
-  - los comprobantes físicos de compras y finanzas se guardan en el filesystem bajo `web/uploads/comprobantes/empresa_<empresa_id>/compras/` y `web/uploads/comprobantes/empresa_<empresa_id>/finanzas/`, manteniendo aislamiento por `empresa_id`.
+  - los comprobantes fÃ­sicos de compras y finanzas se guardan en el filesystem bajo `web/uploads/comprobantes/empresa_<empresa_id>/compras/` y `web/uploads/comprobantes/empresa_<empresa_id>/finanzas/`, manteniendo aislamiento por `empresa_id`.
 
 Actualizacion 2026-04-26 (finanzas/inventario/asistencia: integracion operativa)
 - empresa_finanzas_configuracion:
   - `integracion_contable_destino` acepta valores operativos `generico`, `siigo`, `world_office`, `alegra`, `helisa`, `loggro`, `contapyme`.
-  - Las categorias/cuentas por defecto se amplian para operación Colombia (ventas, habitaciones, restaurante, bar, lavanderia, propinas, compras, nomina, servicios publicos, arriendo, mantenimiento, impuestos, bancos).
+  - Las categorias/cuentas por defecto se amplian para operaciÃ³n Colombia (ventas, habitaciones, restaurante, bar, lavanderia, propinas, compras, nomina, servicios publicos, arriendo, mantenimiento, impuestos, bancos).
 - productos:
   - `codigo_barras` se usa como destino persistente del generador de etiquetas Code 128 por empresa y como fuente prioritaria del lector en carritos.
 - empresa_asistencia_empleados:
@@ -461,7 +457,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ### Tabla de codigos de descuento por empresa
 - codigos_de_descuento:
   - empresa_id, codigo, tipo_descuento, valor, moneda
-  - codigo: formato moderno `PREFIJO-XXXX-XXXX` (ej. DSCT-AB12-CD34). Unicidad garantizada por el índice `ux_codigos_descuento_empresa_codigo` (empresa_id, codigo).
+  - codigo: formato moderno `PREFIJO-XXXX-XXXX` (ej. DSCT-AB12-CD34). Unicidad garantizada por el Ã­ndice `ux_codigos_descuento_empresa_codigo` (empresa_id, codigo).
   - monto_minimo_compra, fecha_vencimiento
   - usos_maximos, usos_actuales
   - segmento_cliente, canal_venta
@@ -1142,11 +1138,11 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ### Tablas de pagos y metricas
 - pagos_wompi:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
-  - discount_code (TEXT) : código de descuento aplicado por cliente (opcional)
-  - asesor_id (TEXT) : codigo de asesor comercial que originó la venta (opcional)
-  - payment_method, provider_payload_json (opcional): metadatos del proveedor/método de pago
+  - discount_code (TEXT) : cÃ³digo de descuento aplicado por cliente (opcional)
+  - asesor_id (TEXT) : codigo de asesor comercial que originÃ³ la venta (opcional)
+  - payment_method, provider_payload_json (opcional): metadatos del proveedor/mÃ©todo de pago
 
-  - Descripción: tabla canonica para registrar pagos/operaciones de Wompi/Nequi y activaciones manuales. Se registran metadatos de descuento y referencia de asesor para habilitar cálculo y trazabilidad de comisiones.
+  - DescripciÃ³n: tabla canonica para registrar pagos/operaciones de Wompi/Nequi y activaciones manuales. Se registran metadatos de descuento y referencia de asesor para habilitar cÃ¡lculo y trazabilidad de comisiones.
 - pagos_epayco:
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
   - discount_code (TEXT) : codigo de descuento aplicado por cliente (opcional)
@@ -1177,7 +1173,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - periodicidad_pago, dia_pago, pago_minimo, requiere_soporte_pago
   - estado_invitacion (`pendiente`, `aceptada`, `expirada`), invitacion_token_hash, invitacion_expira_en, invitado_por_email, aceptado_en
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
-  - Descripción: administradores invitados por super para operar como asesores comerciales. Al aceptar la invitación reciben un codigo comercial que puede incluirse en el checkout publico de licencias.
+  - DescripciÃ³n: administradores invitados por super para operar como asesores comerciales. Al aceptar la invitaciÃ³n reciben un codigo comercial que puede incluirse en el checkout publico de licencias.
 
 - asesor_comercial_comisiones:
   - id, asesor_id, asesor_codigo, asesor_email
@@ -1189,7 +1185,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - estado_pago_comision, metodo_pago_comision, referencia_pago_comision
   - fecha_programada_pago, soporte_pago_url
   - fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
-  - Descripción: historial de ventas/renovaciones de licencia asociadas a asesores comerciales. Si una empresa pagó con codigo de asesor, las renovaciones dentro de `meses_asociacion` siguen generando comisión hasta `asociado_hasta`; vencido ese plazo ya no se muestra en `mis_clientes`.
+  - DescripciÃ³n: historial de ventas/renovaciones de licencia asociadas a asesores comerciales. Si una empresa pagÃ³ con codigo de asesor, las renovaciones dentro de `meses_asociacion` siguen generando comisiÃ³n hasta `asociado_hasta`; vencido ese plazo ya no se muestra en `mis_clientes`.
 
 ## Relaciones adicionales
 - asesores_comerciales.id -> asesor_comercial_comisiones.asesor_id
@@ -1277,9 +1273,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
-- 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar relés GPIO en Raspberry Pi por estacion/habitacion. La configuracion guarda conexion HTTP por empresa; los relés asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
+- 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar relÃ©s GPIO en Raspberry Pi por estacion/habitacion. La configuracion guarda conexion HTTP por empresa; los relÃ©s asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
 - 2026-04-08: se agrega `super_servidor_eventos` en `pcs_superadministrador` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
-- 2026-04-08: se amplía `licencias` en `pcs_superadministrador` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
+- 2026-04-08: se amplÃ­a `licencias` en `pcs_superadministrador` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
 - 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `pcs_superadministrador` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
 - 2026-04-08: se agregan `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `pcs_superadministrador` para configuracion dinamica de permisos por rol (modulo/accion y pagina), con indices unicos por rol para garantizar consistencia de matriz.
 - 2026-04-07: se agregan `empresa_backups` y `empresa_backups_restauraciones` para el modulo 36 de backups empresariales, incluyendo snapshot JSON por `empresa_id`, trazabilidad de hash de contenido y bitacora de restauraciones.
@@ -1287,29 +1283,29 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-07: se agregan `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos` para base del modulo 35 (creditos), con trazabilidad de cupo/saldo, amortizacion por cuotas, abonos y movimientos por `empresa_id`/`credito_id`/`cliente_id`.
 - 2026-04-07: se agregan objetos de busqueda full-text para auditoria empresarial (`empresa_auditoria_eventos_fts` + triggers `ai/au/ad`) para soportar `search` con mejor rendimiento y fallback seguro.
 - 2026-04-07: se agrega `empresa_ventas_estacion_metricas` para cierre del modulo 27 de ventas simples por estacion, con trazabilidad de `venta_pagada`, `cierre_parcial_anulado` y `sesion_recuperada`, incluyendo `duracion_segundos` y montos operativos por `empresa_id`/`carrito_id`/`estacion_id`.
-- 2026-04-07: se amplía `empresa_rrhh_vacaciones_licencias` para cierre del modulo 22 de RRHH con aprobacion jerarquica (`nivel_aprobacion_*`, `aprobadores_json`, `historial_aprobaciones_json`, `fecha_aprobacion_final`), calculo de saldo/acumulado (`periodo_acumulado_*`, `saldo_dias_*`, `saldo_snapshot_json`) y enlace de novedades a nomina (`empleado_nomina_id`, `nomina_liquidacion_id`, `nomina_periodo_*`, `nomina_vinculada_*`).
+- 2026-04-07: se amplÃ­a `empresa_rrhh_vacaciones_licencias` para cierre del modulo 22 de RRHH con aprobacion jerarquica (`nivel_aprobacion_*`, `aprobadores_json`, `historial_aprobaciones_json`, `fecha_aprobacion_final`), calculo de saldo/acumulado (`periodo_acumulado_*`, `saldo_dias_*`, `saldo_snapshot_json`) y enlace de novedades a nomina (`empleado_nomina_id`, `nomina_liquidacion_id`, `nomina_periodo_*`, `nomina_vinculada_*`).
 - 2026-04-06: se agrega `facturacion_electronica_reintentos` para cola de integracion fiscal FE por documento (`estado_envio`, `intentos`, `max_intentos`, `proximo_intento`, `contingencia_activa`, `referencia_externa`) y soporte de reconciliacion de estados.
-- 2026-04-06: se amplía `empresa_compras_documentos` para cierre del modulo 16 de compras con aprobacion multinivel (`requiere_aprobacion`, `niveles_aprobacion_requeridos`, `nivel_aprobacion_actual`, `aprobadores_json`), recepcion parcial por item (`recepcion_detalle_json`, `recepcion_resumen_json`) y validacion documental proveedor-factura-entrada (`validacion_documental_estado`, `proveedor_documento_ref`, `factura_documento_ref`, `entrada_documento_ref`).
-- 2026-04-06: se amplía comisiones por servicio con tabla de escalas/topes (`empresa_comisiones_servicio_escalas`), flujo de ajustes manuales con aprobacion (`ajuste_estado`, `aprobado_por`, `aprobado_en`) y enlace a nomina (`liquidacion_nomina_id`, `periodo_liquidacion_*`, `liquidado_*`); `empresa_nomina_liquidaciones` incorpora `comisiones_servicio_total`, `comisiones_servicio_movimientos` y `comisiones_servicio_ajustes`.
-- 2026-04-06: se amplía el modulo de propinas con reglas fiscales por empresa (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`), ajustes manuales auditados (`origen_movimiento`, `ajuste_manual`, `referencia_ajuste`) y conciliacion por `cierre_caja_id`; `empresa_cierres_caja` incorpora resumen persistido de propinas conciliadas (`propinas_*`).
-- 2026-04-06: se amplía `codigos_de_descuento` con reglas avanzadas por contexto (segmento/canal/horario/dias) y controles antifraude por cliente (`max_usos_por_cliente`, `ventana_horas_fraude`); se agrega `codigos_descuento_redenciones` para trazabilidad de estados `aplicada/revertida/anulada` por carrito/cliente.
+- 2026-04-06: se amplÃ­a `empresa_compras_documentos` para cierre del modulo 16 de compras con aprobacion multinivel (`requiere_aprobacion`, `niveles_aprobacion_requeridos`, `nivel_aprobacion_actual`, `aprobadores_json`), recepcion parcial por item (`recepcion_detalle_json`, `recepcion_resumen_json`) y validacion documental proveedor-factura-entrada (`validacion_documental_estado`, `proveedor_documento_ref`, `factura_documento_ref`, `entrada_documento_ref`).
+- 2026-04-06: se amplÃ­a comisiones por servicio con tabla de escalas/topes (`empresa_comisiones_servicio_escalas`), flujo de ajustes manuales con aprobacion (`ajuste_estado`, `aprobado_por`, `aprobado_en`) y enlace a nomina (`liquidacion_nomina_id`, `periodo_liquidacion_*`, `liquidado_*`); `empresa_nomina_liquidaciones` incorpora `comisiones_servicio_total`, `comisiones_servicio_movimientos` y `comisiones_servicio_ajustes`.
+- 2026-04-06: se amplÃ­a el modulo de propinas con reglas fiscales por empresa (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`), ajustes manuales auditados (`origen_movimiento`, `ajuste_manual`, `referencia_ajuste`) y conciliacion por `cierre_caja_id`; `empresa_cierres_caja` incorpora resumen persistido de propinas conciliadas (`propinas_*`).
+- 2026-04-06: se amplÃ­a `codigos_de_descuento` con reglas avanzadas por contexto (segmento/canal/horario/dias) y controles antifraude por cliente (`max_usos_por_cliente`, `ventana_horas_fraude`); se agrega `codigos_descuento_redenciones` para trazabilidad de estados `aplicada/revertida/anulada` por carrito/cliente.
 - 2026-04-06: se agregan `empresa_inventario_configuracion`, `inventario_costos_lotes` e `inventario_conteos_ciclicos` para cierre del modulo 11 de inventario (politica promedio/peps por empresa, trazabilidad por lotes de costo y conteo ciclico con ajuste auditado).
 - 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.
 - 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
 - 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
-- 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
+- 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseÃ±a.
 - 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
 - 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.
 - 2026-04-05: se agrega `reservas_hotel` para gestionar reservas por estacion/habitacion con control de disponibilidad por rango, expiracion de pendientes y confirmacion de pago.
 - 2026-04-05: se agrega `empresa_vehiculos_registro` para controlar ingreso y salida de vehiculos por empresa con patente, conductor, propietario y motivo operativo.
 - 2026-04-05: se agrega `codigos_de_descuento` por empresa para promociones con vigencia, usos y validacion de pago en carrito.
-- 2026-04-05: se amplía `carritos_compras` con `metodo_pago` y `referencia_pago` para trazabilidad del cierre de venta por estacion.
+- 2026-04-05: se amplÃ­a `carritos_compras` con `metodo_pago` y `referencia_pago` para trazabilidad del cierre de venta por estacion.
 - 2026-04-17: `empresa_configuracion_avanzada` agrega `modo_documento_venta` para definir por empresa si la venta pagada genera `factura_electronica` o `comprobante_pago`, reutilizando `empresa_facturacion_documentos` como repositorio canonico de ambos documentos.
 - 2026-04-05: se agregan `combos_productos` y `combos_productos_detalle` para venta compuesta con precio unico y receta de ingredientes por empresa.
-- 2026-04-04: se amplía `proveedores` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`) para gestionar catálogo, precios y condiciones por empresa.
+- 2026-04-04: se amplÃ­a `proveedores` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`) para gestionar catÃ¡logo, precios y condiciones por empresa.
 - 2026-04-04: se agrega `empresa_auditoria_eventos` para trazabilidad de acciones criticas por `empresa_id`, modulo/accion/recurso, resultado HTTP y metadatos (`request_id`, IP, user-agent), con retencion configurable y purga.
 - 2026-04-04: se agrega `empresa_asientos_contables` como persistencia canonica de asientos por evento procesado, con idempotencia por `hash_idempotencia` y referencia a `evento_contable_id`.
-- 2026-04-04: se amplía `empresa_eventos_contables` con metadatos de procesamiento (`intentos_procesamiento`, `fecha_ultimo_intento`, `error_procesamiento`, `asiento_contable_id`) para trazabilidad de lotes y reintentos.
+- 2026-04-04: se amplÃ­a `empresa_eventos_contables` con metadatos de procesamiento (`intentos_procesamiento`, `fecha_ultimo_intento`, `error_procesamiento`, `asiento_contable_id`) para trazabilidad de lotes y reintentos.
 - 2026-04-04: se agrega `empresa_cierres_caja` para soportar apertura/arqueo/cierre/aprobacion de caja por sucursal y turno, con diferencia e incidencia de arqueo.
 - 2026-04-04: se agregan `empresa_facturacion_documentos` y `empresa_compras_documentos` para persistencia canonica del ciclo documental y referencia estable de `entidad_id` en eventos contables.
 - 2026-04-04: se agrega `empresa_eventos_contables` para contrato de eventos contables por modulo (`ventas`, `facturacion`, `compras`, `finanzas`) y trazabilidad de integracion contable.
@@ -1317,16 +1313,15 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-04: se activa emision transaccional en endpoints existentes para `facturacion` (`factura_emitida`, `factura_anulada`, `nota_credito_emitida`) y `compras` (`orden_compra_emitida`, `compra_recepcionada`, `compra_contabilizada`).
 - 2026-04-04: se agrega `empresa_ai_modelo_preferido` para persistir el `model_id` preferido por `empresa_id + admin_email` (cuenta Google autenticada).
 - 2026-04-04: se agregan `empresa_ai_consultas` y `empresa_ai_uso_diario` para el modulo `chat_con_inteligencia_artificial`, con auditoria y limites diarios por empresa/proveedor/modelo.
-- 2026-04-04: se amplía finanzas con `empresa_finanzas_periodos`, control de cierre/reapertura de periodos, retenciones (`fuente/ica/iva`) y `total_neto` en `empresa_finanzas_movimientos`.
-- 2026-04-04: se amplía `empresa_finanzas_configuracion` con cuentas de retenciones por cobrar y por pagar para asiento contable.
-- 2026-04-04: se amplía `empresa_finanzas_configuracion` con parametrización contable externa por empresa (destino ERP, cuentas base y mapeo por categoría) para exportación JSON contable avanzada.
-- 2026-04-04: se agregan `empresa_finanzas_movimientos` y `empresa_finanzas_configuracion` para el módulo financiero por empresa (ingresos/egresos con comprobantes e impresión).
-- 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catálogo de categorías por empresa.
+- 2026-04-04: se amplÃ­a finanzas con `empresa_finanzas_periodos`, control de cierre/reapertura de periodos, retenciones (`fuente/ica/iva`) y `total_neto` en `empresa_finanzas_movimientos`.
+- 2026-04-04: se amplÃ­a `empresa_finanzas_configuracion` con cuentas de retenciones por cobrar y por pagar para asiento contable.
+- 2026-04-04: se amplÃ­a `empresa_finanzas_configuracion` con parametrizaciÃ³n contable externa por empresa (destino ERP, cuentas base y mapeo por categorÃ­a) para exportaciÃ³n JSON contable avanzada.
+- 2026-04-04: se agregan `empresa_finanzas_movimientos` y `empresa_finanzas_configuracion` para el mÃ³dulo financiero por empresa (ingresos/egresos con comprobantes e impresiÃ³n).
+- 2026-04-02: se agrega `categorias_productos`, se incorpora `productos.categoria_id` y se documentan relaciones del catÃ¡logo de categorÃ­as por empresa.
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en pcs_empresas y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.
 ### Tabla: super_juegos_records (pcs_superadministrador)
-Almacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el público.
+Almacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el pÃºblico.
 - **Columnas**: `id` (INTEGER/SERIAL), `juego` (TEXT), `nombre_jugador` (TEXT), `empresa_id` (TEXT, DEFAULT 'Publico'), `puntaje` (INTEGER), `nivel` (INTEGER), `fecha_creacion` (TEXT/TIMESTAMP), `fecha_actualizacion` (TEXT/TIMESTAMP), `usuario_creador` (TEXT), `estado` (TEXT), `observaciones` (TEXT).
-- **Único**: `id` autoincremental.
-- **Índice**: `idx_super_juegos_records_top` en (`juego`, `puntaje` DESC, `fecha_creacion` ASC).
-
+- **Ãšnico**: `id` autoincremental.
+- **Ãndice**: `idx_super_juegos_records_top` en (`juego`, `puntaje` DESC, `fecha_creacion` ASC).

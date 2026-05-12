@@ -1,3 +1,9 @@
+## Actualizacion 2026-05-12 (Centro de mando super)
+
+- `web/super_administrador.html` mantiene `web/super/licencias_resumen.html` como entrada de Centro de mando para super administrador.
+- `web/super/licencias_resumen.html` se reconstruye como consola ejecutiva frontend pura, sin dependencias externas, consumiendo los contratos super existentes de metricas, PostgreSQL, alertas, errores, servidores, licencias, empresas y consumos.
+- No hay rutas backend nuevas ni cambios de esquema; el flujo sigue dentro del panel super autenticado.
+
 ## Actualizacion 2026-05-11 (2FA login desde configuracion avanzada)
 
 - `backend/handlers/admin_totp_handlers.go` centraliza `security.admin_2fa.enabled`, expone `/super/api/config/admin_2fa` y separa la activacion global del secreto TOTP por administrador.
@@ -36,11 +42,9 @@
 
 ## Actualizacion 2026-05-11 (sincronizacion segura de matriz vertical)
 
-- `backend/handlers/empresa_verticales_integracion.go` publica `sync_path` y `sync_action_name` como contrato estructurado para migraciones historicas de verticales clasicos.
 - El mismo contrato publica `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced` para convertir cada vertical visible en una plantilla auditable.
 - `web/administrar_empresa/verticales_integracion.html` carga en paralelo el catalogo de verticales y `/api/empresa/permisos_contexto`; solo habilita `Sincronizar` cuando el usuario tiene pagina del vertical o permiso de creacion del modulo.
 - La tabla de la pantalla muestra modulos, plantilla, tablas, permisos, flujo de venta y reportes por vertical para evitar duplicados funcionales ocultos.
-- La ejecucion desde la matriz pide confirmacion humana y envia `POST {sync_path}?empresa_id=...&action={sync_action_name}`; el handler vertical conserva la validacion real de permisos, licencia y aislamiento por `empresa_id`.
 - `web/estilos.css` ajusta el resumen de cinco KPIs para incluir sincronizaciones permitidas.
 
 ## Actualizacion 2026-05-11 (preconfiguracion vertical y produccion masiva)
@@ -68,7 +72,6 @@
 
 - `backend/db/gimnasio.go` enlaza socios con `clientes`, planes con `servicios` y pagos con `carritos_compras`/`carrito_compra_items`.
 - `EnsureEmpresaGimnasioSchema` asegura columnas de integracion antes de crear indices sobre `servicio_id`, `cliente_id` y `carrito_id`, evitando carga parcial en bases PostgreSQL existentes.
-- `backend/handlers/gimnasio.go` agrega la accion `sincronizar_nucleo` para migracion controlada de datos historicos por empresa.
 - `web/administrar_empresa/gimnasio.html` y `web/js/gimnasio.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `gimnasio` como plantilla visible integrada.
 
@@ -76,49 +79,42 @@
 
 - `backend/db/odontologia.go` enlaza pacientes con `clientes`, tratamientos con `servicios` y pagos con `carritos_compras`/`carrito_compra_items`.
 - `EnsureEmpresaOdontologiaSchema` asegura columnas de integracion antes de crear indices sobre `cliente_id`, `servicio_id` y `carrito_id`, corrigiendo errores que hacian ver el modulo como cargado parcialmente.
-- `backend/handlers/odontologia.go` agrega la accion `sincronizar_nucleo` para migracion controlada de datos historicos por empresa.
 - `web/administrar_empresa/consultorio_odontologico.html` y `web/js/consultorio_odontologico.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `odontologia` y `consultorio_odontologico` como plantillas visibles integradas.
 
 ## Actualizacion 2026-05-11 (parqueadero al nucleo)
 
 - `backend/db/parqueadero.go` enlaza tickets con `clientes` opcionales, `servicios` por tipo de vehiculo y `carritos_compras`/`carrito_compra_items` al cobrar salida.
-- `backend/handlers/parqueadero.go` agrega la accion `sincronizar_nucleo` para migracion controlada de tickets cerrados historicos por empresa.
 - `web/administrar_empresa/parqueadero.html` agrega una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `parqueadero` como plantilla visible integrada.
 
 ## Actualizacion 2026-05-11 (taxi system al nucleo)
 
 - `backend/db/taxi_system.go` enlaza clientes/solicitudes con `clientes`, servicios de viaje con `servicios` y viajes completados con `carritos_compras`/`carrito_compra_items`.
-- `backend/handlers/taxi_system.go` agrega la accion `sincronizar_nucleo` para migracion controlada de viajes completados historicos por empresa.
 - `web/administrar_empresa/taxi_system.html` y `web/js/taxi_system.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `taxi_system` y `taxi` como plantillas visibles integradas.
 
 ## Actualizacion 2026-05-11 (domicilios al nucleo)
 
 - `backend/db/domicilios.go` enlaza clientes de pedidos con `clientes`, items de menu con `servicios` y pedidos entregados con `carritos_compras`/`carrito_compra_items`.
-- `backend/handlers/domicilios.go` agrega la accion `sincronizar_nucleo` para migracion controlada de pedidos entregados historicos por empresa.
 - `web/administrar_empresa/domicilios.html` y `web/js/domicilios.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `domicilios` como plantilla visible integrada.
 
 ## Actualizacion 2026-05-11 (apartamentos turisticos al nucleo)
 
 - `backend/db/apartamentos_turisticos.go` enlaza huespedes con `clientes`, unidades con `servicios` y reservas cerradas con `carritos_compras`/`carrito_compra_items`.
-- `backend/handlers/apartamentos_turisticos.go` agrega la accion `sincronizar_nucleo` para migracion controlada de reservas historicas por empresa.
 - `web/administrar_empresa/apartamentos_turisticos.html` agrega una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `apartamentos_turisticos` como plantilla visible integrada.
 
 ## Actualizacion 2026-05-11 (propiedad horizontal al nucleo)
 
 - `backend/db/propiedad_horizontal.go` enlaza personas con `clientes`, unidades/cargos con `servicios` y recaudos con `carritos_compras`/`carrito_compra_items`.
-- `backend/handlers/propiedad_horizontal.go` agrega la accion `sincronizar_nucleo` para migracion controlada de unidades, personas, cargos y recaudos historicos por empresa.
 - `web/administrar_empresa/propiedad_horizontal.html` agrega una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `propiedad_horizontal` como plantilla visible integrada.
 
 ## Actualizacion 2026-05-11 (alquileres al nucleo)
 
 - `backend/db/alquileres.go` enlaza clientes de contratos con `clientes`, activos/tarifas con `servicios` y contratos con `carritos_compras`/`carrito_compra_items`.
-- `backend/handlers/alquileres.go` agrega la accion `sincronizar_nucleo` para migracion controlada de activos, tarifas y contratos historicos por empresa.
 - `web/administrar_empresa/alquileres.html` y `web/js/alquileres.js` agregan una accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `alquileres` como plantilla visible integrada.
 
@@ -133,19 +129,16 @@
 ## Actualizacion 2026-05-11 (AIU construccion al nucleo)
 
 - `backend/db/aiu_construccion.go` enlaza contratos con `clientes`/`servicios`, conceptos con `servicios` y facturas con `carritos_compras`/`carrito_compra_items`.
-- `backend/handlers/aiu_construccion.go` agrega `POST action=sincronizar_nucleo` para migracion controlada por empresa.
 - `web/administrar_empresa/aiu_construccion.html` agrega accion operativa para ejecutar la sincronizacion y mostrar resumen.
 - `web/js/verticales_integracion_catalogo.js` marca `aiu_construccion` como plantilla visible integrada.
 - `backend/db/aiu_construccion_test.go` cubre normalizacion de codigo de integracion y referencia externa estable de factura AIU.
 
 ## Actualizacion 2026-05-11 (catalogo API de integracion vertical)
 
-- `backend/handlers/empresa_verticales_integracion.go` expone la matriz de verticales clasicos con estado de integracion, visibilidad, modulos del nucleo, duplicados, flujo propio y accion de sincronizacion.
 - `backend/main.go` registra `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
 - `web/js/verticales_integracion_catalogo.js` permite fusionar items recibidos desde backend mediante `applyCatalogItems`.
 - `web/js/administrar_empresa.js` consulta el catalogo de empresa antes de resolver permisos y usa el catalogo local si la API no responde.
 - `web/administrar_empresa.html` y `web/estilos.css` agregan un indicador compacto de la matriz activa en el sidebar empresarial.
-- `web/administrar_empresa/verticales_integracion.html` agrega una pantalla de consulta de matriz con resumen, tabla de estado, nucleo, especialidad y botones de sincronizacion historica cuando el catalogo lo permite.
 - `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js` registran `linkVerticalesIntegracion` bajo `seguridad:R`.
 - `backend/handlers/empresa_verticales_integracion_test.go` valida que los verticales visibles no declaren duplicados del nucleo y que existan los verticales clasicos integrados.
 
@@ -226,7 +219,7 @@
   - `web/administrar_empresa/estaciones.html` y `web/administrar_empresa/configuracion_de_estaciones.html` persisten `ia_pedidos_enabled` y `ia_pedidos_placement` dentro de `estaciones_config`; boton movil alterna clase `estaciones-thumb-mobile` en la rejilla.
   - `web/estilos.css` define layout compacto en modo miniatura (tres columnas en pantallas <=640px).
 - Flujo resumido:
-  - Usuario habilita estacion IA -> abre estaciones -> escribe «dos cervezas mesa 5» -> backend lista estaciones y productos activos en el prompt -> modelo devuelve JSON -> servidor valida y escribe lineas en el carrito de la estacion 5.
+  - Usuario habilita estacion IA -> abre estaciones -> escribe Â«dos cervezas mesa 5Â» -> backend lista estaciones y productos activos en el prompt -> modelo devuelve JSON -> servidor valida y escribe lineas en el carrito de la estacion 5.
 
 ## Actualizacion 2026-04-24 (asesor comercial: invitacion, codigo y comisiones)
 
@@ -244,45 +237,45 @@
 ## Actualizacion 2026-04-21 (autenticacion publica: Google reCAPTCHA reactivado y gobernado desde super)
 
 - Backend autenticacion:
-  - `backend/handlers/recaptcha.go` centraliza el estado del servicio, publica `/config.js`, persiste `security.recaptcha.enabled` en configuración super y valida tokens contra Google usando únicamente librerías estándar de Go.
-  - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go` y `backend/handlers/accept_handlers.go` pasan a exigir `recaptcha_token` en formularios públicos sensibles cuando el servicio está activo.
-  - `backend/main.go` registra `/super/api/config/recaptcha` y delega `/config.js` al nuevo bootstrap público real.
+  - `backend/handlers/recaptcha.go` centraliza el estado del servicio, publica `/config.js`, persiste `security.recaptcha.enabled` en configuraciÃ³n super y valida tokens contra Google usando Ãºnicamente librerÃ­as estÃ¡ndar de Go.
+  - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go` y `backend/handlers/accept_handlers.go` pasan a exigir `recaptcha_token` en formularios pÃºblicos sensibles cuando el servicio estÃ¡ activo.
+  - `backend/main.go` registra `/super/api/config/recaptcha` y delega `/config.js` al nuevo bootstrap pÃºblico real.
 - Frontend autenticacion y panel super:
-  - `web/js/recaptcha_helper.js` actúa como adaptador común para login admin, registro admin, portal de usuarios empresa y aceptación de contrato.
-  - `web/login.html`, `web/login_usuario.html`, `web/registrar_nuevo_usuario_administrador.html` y `web/accept.html` cargan `/config.js` y renderizan el widget solo si el backend informa que el servicio está habilitado y configurado.
-  - `web/super/configuracion_avanzada.html` agrega la tarjeta de activación/desactivación global del servicio y reporta si faltan `GOOGLE_RECAPTCHA_SITE_KEY` o `GOOGLE_RECAPTCHA_SECRET_KEY`.
+  - `web/js/recaptcha_helper.js` actÃºa como adaptador comÃºn para login admin, registro admin, portal de usuarios empresa y aceptaciÃ³n de contrato.
+  - `web/login.html`, `web/login_usuario.html`, `web/registrar_nuevo_usuario_administrador.html` y `web/accept.html` cargan `/config.js` y renderizan el widget solo si el backend informa que el servicio estÃ¡ habilitado y configurado.
+  - `web/super/configuracion_avanzada.html` agrega la tarjeta de activaciÃ³n/desactivaciÃ³n global del servicio y reporta si faltan `GOOGLE_RECAPTCHA_SITE_KEY` o `GOOGLE_RECAPTCHA_SECRET_KEY`.
 - Flujo:
   - `configuracion_avanzada.html` -> `GET/PUT /super/api/config/recaptcha` -> persistencia del toggle global en DB super.
-  - `login.html`, `registrar_nuevo_usuario_administrador.html`, `login_usuario.html`, `accept.html` -> carga `config.js` -> render condicional del widget -> envío de `recaptcha_token` al backend -> validación remota en Google antes de crear sesión o emitir tokens de recuperación.
+  - `login.html`, `registrar_nuevo_usuario_administrador.html`, `login_usuario.html`, `accept.html` -> carga `config.js` -> render condicional del widget -> envÃ­o de `recaptcha_token` al backend -> validaciÃ³n remota en Google antes de crear sesiÃ³n o emitir tokens de recuperaciÃ³n.
 
 ## Actualizacion 2026-04-24 (red social empresarial y venta publica por paginas)
 
 - Backend red social:
-  - `backend/db/red_social.go` agrega nombre de empresa en las publicaciones públicas para que el feed renderice contexto empresarial.
+  - `backend/db/red_social.go` agrega nombre de empresa en las publicaciones pÃºblicas para que el feed renderice contexto empresarial.
   - `backend/main.go` registra tambien `/api/empresa/publicaciones/` para operaciones con id.
 - Backend venta publica:
   - `backend/db/venta_publica.go` agrega `empresa_venta_publica_paginas` y `pagina_id` en `empresa_venta_publica_items`.
-  - `backend/handlers/venta_publica.go` agrega `action=paginas` y filtra el catálogo público por `pagina_slug`.
+  - `backend/handlers/venta_publica.go` agrega `action=paginas` y filtra el catÃ¡logo pÃºblico por `pagina_slug`.
   - `backend/main.go` y `backend/utils/utils.go` publican `/pagar_productos_de_venta_publica.html` y `/{slug}/pagar_productos_de_venta_publica.html`.
 - Frontend:
-  - `web/administrar_empresa/venta_publica.html` administra tienda, páginas y productos existentes del sistema.
-  - `web/venta_publica.html` muestra páginas y productos publicados con botón `Pagar`.
-  - `web/pagar_productos_de_venta_publica.html` crea pagos públicos contra `/api/public/venta_publica?action=crear_pago`.
+  - `web/administrar_empresa/venta_publica.html` administra tienda, pÃ¡ginas y productos existentes del sistema.
+  - `web/venta_publica.html` muestra pÃ¡ginas y productos publicados con botÃ³n `Pagar`.
+  - `web/pagar_productos_de_venta_publica.html` crea pagos pÃºblicos contra `/api/public/venta_publica?action=crear_pago`.
 - Flujo:
-  - `administrar_empresa/venta_publica.html` -> crear página -> agregar producto existente -> `venta_publica.html?empresa_slug=...&pagina_slug=...` -> `pagar_productos_de_venta_publica.html?item_id=...` -> Wompi/Epayco con credenciales propias de la empresa.
+  - `administrar_empresa/venta_publica.html` -> crear pÃ¡gina -> agregar producto existente -> `venta_publica.html?empresa_slug=...&pagina_slug=...` -> `pagar_productos_de_venta_publica.html?item_id=...` -> Wompi/Epayco con credenciales propias de la empresa.
 
 ## Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 
 - Backend compras/finanzas:
   - `backend/main.go` registra `POST /api/empresa/compras/documentos/comprobante` bajo `WithEmpresaComprasPermissions` y `POST /api/empresa/finanzas/movimientos/comprobante` bajo `WithEmpresaFinanzasPermissions`.
-  - `backend/handlers/compras.go` y `backend/handlers/finanzas.go` aceptan cargas multipart, guardan el archivo físico en `web/uploads/comprobantes/empresa_<id>/<modulo>/` y actualizan la referencia persistida del comprobante.
-  - `backend/db/documentos_transaccionales.go` amplía `empresa_compras_documentos` con metadata de comprobante y `backend/db/finanzas.go` agrega helper específico para persistir la URL del soporte en movimientos financieros.
+  - `backend/handlers/compras.go` y `backend/handlers/finanzas.go` aceptan cargas multipart, guardan el archivo fÃ­sico en `web/uploads/comprobantes/empresa_<id>/<modulo>/` y actualizan la referencia persistida del comprobante.
+  - `backend/db/documentos_transaccionales.go` amplÃ­a `empresa_compras_documentos` con metadata de comprobante y `backend/db/finanzas.go` agrega helper especÃ­fico para persistir la URL del soporte en movimientos financieros.
 - Frontend empresa:
-  - `web/administrar_empresa/compras.html` permite adjuntar soporte al crear el documento o desde el listado, y expone un botón directo para ver el comprobante guardado.
-  - `web/administrar_empresa/finanzas.html` añade selector de archivo en el formulario de movimientos y muestra el adjunto en el listado y en la edición del movimiento.
+  - `web/administrar_empresa/compras.html` permite adjuntar soporte al crear el documento o desde el listado, y expone un botÃ³n directo para ver el comprobante guardado.
+  - `web/administrar_empresa/finanzas.html` aÃ±ade selector de archivo en el formulario de movimientos y muestra el adjunto en el listado y en la ediciÃ³n del movimiento.
 - Flujo:
-  - `compras.html?empresa_id=...` -> `POST /api/empresa/compras/documentos` -> opcional `POST /api/empresa/compras/documentos/comprobante` -> persistencia de `comprobante_url` y visualización desde la tabla.
-  - `finanzas.html?empresa_id=...` -> `POST|PUT /api/empresa/finanzas/movimientos` -> opcional `POST /api/empresa/finanzas/movimientos/comprobante` -> persistencia de `comprobante_url` y visualización desde el listado.
+  - `compras.html?empresa_id=...` -> `POST /api/empresa/compras/documentos` -> opcional `POST /api/empresa/compras/documentos/comprobante` -> persistencia de `comprobante_url` y visualizaciÃ³n desde la tabla.
+  - `finanzas.html?empresa_id=...` -> `POST|PUT /api/empresa/finanzas/movimientos` -> opcional `POST /api/empresa/finanzas/movimientos/comprobante` -> persistencia de `comprobante_url` y visualizaciÃ³n desde el listado.
 
 ## Actualizacion 2026-04-20 (backups empresariales: exporte e importacion de configuracion por empresa)
 
@@ -298,22 +291,22 @@
 ## Actualizacion 2026-04-20 (apariencia global, login y acceso a juegos restaurados)
 
 - Frontend compartido:
-  - `web/menu.js` deja de depender de la sola inyección del menú flotante para aplicar el tema; ahora arranca primero como gestor global de apariencia, replica `data-theme` y clases `theme-light/theme-dark` en documentos e iframes mismo-origen, y luego monta el menú flotante cuando hay sesión.
-  - `web/estilos.css` alinea shells administrativos, formularios, tablas, menú flotante y páginas públicas con los seis temas disponibles (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`).
+  - `web/menu.js` deja de depender de la sola inyecciÃ³n del menÃº flotante para aplicar el tema; ahora arranca primero como gestor global de apariencia, replica `data-theme` y clases `theme-light/theme-dark` en documentos e iframes mismo-origen, y luego monta el menÃº flotante cuando hay sesiÃ³n.
+  - `web/estilos.css` alinea shells administrativos, formularios, tablas, menÃº flotante y pÃ¡ginas pÃºblicas con los seis temas disponibles (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`).
   - `web/login_usuario.html`, `web/configuracion_de_la_cuenta.html` y `web/red_social_comercial.html` quedan dentro del mismo bootstrap visual global.
-- Backend autenticación:
+- Backend autenticaciÃ³n:
   - `backend/handlers/auth_admin_handlers.go` y `backend/handlers/usuarios_empresa.go` devuelven `apariencia` junto con el login exitoso para que el frontend pueda fijar el tema antes del redirect al shell autenticado.
-- Frontend autenticación y juegos:
+- Frontend autenticaciÃ³n y juegos:
   - `web/js/login.js` y `web/js/login_usuario.js` persisten la apariencia recibida en `localStorage` y cookie ligera `pcs_theme` antes de navegar.
-  - `web/Juegos/menu_juegos.html` y `web/Juegos/n64/index.html` se restauran como rutas públicas funcionales enlazadas desde el menú flotante.
+  - `web/Juegos/menu_juegos.html` y `web/Juegos/n64/index.html` se restauran como rutas pÃºblicas funcionales enlazadas desde el menÃº flotante.
 - Flujo:
-  - `login.html` o `login_usuario.html` -> `POST` de autenticación -> respuesta con `redirect_url` + `apariencia` -> persistencia local inmediata del tema -> redirect al panel correspondiente -> `menu.js` reaplica tema y lo sincroniza con iframes.
-  - Cualquier página pública con `menu.js` -> lectura de tema local/cookie -> aplicación visual inmediata -> si existe sesión, `GET /api/user/configuracion` refresca la preferencia guardada en backend.
+  - `login.html` o `login_usuario.html` -> `POST` de autenticaciÃ³n -> respuesta con `redirect_url` + `apariencia` -> persistencia local inmediata del tema -> redirect al panel correspondiente -> `menu.js` reaplica tema y lo sincroniza con iframes.
+  - Cualquier pÃ¡gina pÃºblica con `menu.js` -> lectura de tema local/cookie -> aplicaciÃ³n visual inmediata -> si existe sesiÃ³n, `GET /api/user/configuracion` refresca la preferencia guardada en backend.
 
 ## Actualizacion 2026-04-20 (estaciones: especiales reordenables y nueva tarjeta Notas)
 
 - Frontend estaciones:
-  - `web/administrar_empresa/configuracion_de_estaciones.html` amplía `estaciones_config` para administrar `Caja`, `YouTube` y `Notas` como estaciones especiales con orden independiente (`before` o `after`) respecto a las estaciones numeradas.
+  - `web/administrar_empresa/configuracion_de_estaciones.html` amplÃ­a `estaciones_config` para administrar `Caja`, `YouTube` y `Notas` como estaciones especiales con orden independiente (`before` o `after`) respecto a las estaciones numeradas.
   - `web/administrar_empresa/estaciones.html` deja de concatenar especiales en orden fijo y arma el grid con grupos `especiales antes -> estaciones normales -> especiales despues`.
   - `web/administrar_empresa/estaciones.html` agrega la tarjeta especial `Notas` con textarea operativo, temporizador programable, guardado del texto base en `estaciones_config` y alerta visual/sonora al vencerse.
   - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva los nuevos campos del JSON al guardar la configuracion global del carrito para no perder `Notas` ni el orden de las especiales.
@@ -330,7 +323,7 @@
   - `web/administrar_empresa/configuracion_de_estaciones.html` agrega `notas_repeat_minutes` como default de la estacion.
   - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva el nuevo campo al guardar la configuracion global del carrito.
 - Estilos compartidos:
-  - `web/estilos.css` amplía la tarjeta `Notas` con listado de recordatorios, estados activos/alerta y layout responsive para varias notas dentro de la misma estacion.
+  - `web/estilos.css` amplÃ­a la tarjeta `Notas` con listado de recordatorios, estados activos/alerta y layout responsive para varias notas dentro de la misma estacion.
 - Flujo:
   - `estaciones.html?empresa_id=...` -> carga `estaciones_config` -> restaura runtime de `Notas` desde `localStorage` aislado por empresa -> muestra varias notas con temporizador, repeticion y countdown persistente tras recarga.
   - `Guardar nota` sigue persistiendo solo la configuracion base de la estacion en `empresa_estacion_prefs`; el runtime multiple de recordatorios queda local al navegador.
@@ -401,44 +394,44 @@ Fecha de actualizacion: 2026-04-18
 - Backend super:
   - `backend/handlers/super_email_templates.go` agrega el registro de plantillas de correo, sus valores por defecto, helpers de render y el endpoint `GET/PUT /super/api/config/email_templates`.
   - `backend/main.go` registra la nueva ruta super de plantillas.
-  - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` dejan de construir correos críticos con texto fijo y pasan a usar el render centralizado configurable desde super.
+  - `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` dejan de construir correos crÃ­ticos con texto fijo y pasan a usar el render centralizado configurable desde super.
 - Frontend super:
-  - `web/super/formato_para_emviar_email.html` agrega la nueva subpágina del panel para editar correos de confirmación, licencias y formatos recomendados.
+  - `web/super/formato_para_emviar_email.html` agrega la nueva subpÃ¡gina del panel para editar correos de confirmaciÃ³n, licencias y formatos recomendados.
   - `web/super_administrador.html` incorpora el acceso lateral `Formatos de email`.
-  - `web/super/configuracion_avanzada.html` oculta los botones de guardado por tarjeta y concentra el persistido en un botón global arriba y otro abajo.
+  - `web/super/configuracion_avanzada.html` oculta los botones de guardado por tarjeta y concentra el persistido en un botÃ³n global arriba y otro abajo.
 - Flujo:
-  - `super_administrador.html` -> `formato_para_emviar_email.html` -> `GET/PUT /super/api/config/email_templates` -> persistencia en configuración super -> envío de correos reales con plantillas editadas.
+  - `super_administrador.html` -> `formato_para_emviar_email.html` -> `GET/PUT /super/api/config/email_templates` -> persistencia en configuraciÃ³n super -> envÃ­o de correos reales con plantillas editadas.
   - `configuracion_avanzada.html` -> `Guardar cambios` -> persistencia secuencial de Wompi, Epayco, Gmail e IA en el mismo ciclo de guardado.
 
-## Actualizacion 2026-04-19 (portal publico y selector: CTA seguros y menú filtrado por perfil)
+## Actualizacion 2026-04-19 (portal publico y selector: CTA seguros y menÃº filtrado por perfil)
 
 - Frontend portal:
-  - `web/descripcion_de_los_sistemas.ht` mantiene los enlaces internos de detalle por tarjeta, pero resuelve el CTA `Probar Gratis` con una sanitización explícita que redirige al registro público cuando el enlace configurado corresponde a una ruta protegida del panel.
+  - `web/descripcion_de_los_sistemas.ht` mantiene los enlaces internos de detalle por tarjeta, pero resuelve el CTA `Probar Gratis` con una sanitizaciÃ³n explÃ­cita que redirige al registro pÃºblico cuando el enlace configurado corresponde a una ruta protegida del panel.
 - Frontend selector:
-  - `web/js/seleccionar_empresa.js` consulta `/me` para cargar el perfil real del administrador y decidir la visibilidad del menú lateral.
-  - `Licencias` sigue como acceso de alcance propio, mientras `Administradores` y `Reportes globales` quedan ocultos para administradores normales o super delegados; el menú sensible se oculta antes de la respuesta de `/me` para evitar exposición visual transitoria.
+  - `web/js/seleccionar_empresa.js` consulta `/me` para cargar el perfil real del administrador y decidir la visibilidad del menÃº lateral.
+  - `Licencias` sigue como acceso de alcance propio, mientras `Administradores` y `Reportes globales` quedan ocultos para administradores normales o super delegados; el menÃº sensible se oculta antes de la respuesta de `/me` para evitar exposiciÃ³n visual transitoria.
 - Flujo:
-  - `index.html` -> `descripcion_de_los_sistemas.ht#detalle` -> `Probar Gratis` -> registro público si el destino original era privado.
-  - `seleccionar_empresa.html` -> carga inicial con menú sensible oculto -> `GET /me` -> reapertura selectiva de enlaces según `role` y `usuario_creador` del admin autenticado.
+  - `index.html` -> `descripcion_de_los_sistemas.ht#detalle` -> `Probar Gratis` -> registro pÃºblico si el destino original era privado.
+  - `seleccionar_empresa.html` -> carga inicial con menÃº sensible oculto -> `GET /me` -> reapertura selectiva de enlaces segÃºn `role` y `usuario_creador` del admin autenticado.
 
-## Actualizacion 2026-04-19 (super/licencias: alcance delegado, backup legacy y validaciones públicas)
+## Actualizacion 2026-04-19 (super/licencias: alcance delegado, backup legacy y validaciones pÃºblicas)
 
 - Backend super:
   - `backend/handlers/system_empresas_handlers.go` valida empresas consultadas con el correo autenticado real y no con el principal resuelto como si fuera el actor, evitando que administradores delegados salten el aislamiento por portafolio.
-  - `backend/db/chat_inteligencia_artificial.go` solo concede acceso global inmediato a administradores principales reales; los delegados siguen pasando por resolución de alcance por empresa.
-  - `backend/handlers/postgres_performance.go` valida `action` antes del guard de motor para devolver errores de contrato estables en el panel de diagnóstico.
-- Backend licencias/configuración:
-  - `backend/handlers/super_config_backup_handlers.go` vuelve a admitir claves sensibles legacy de IA en exporte/restauración del backup super para mantener compatibilidad con respaldos previos.
-  - `backend/handlers/payments_handlers.go` separa la visibilidad pública de Epayco del requisito de credenciales privadas usado por el flujo real de cobro.
+  - `backend/db/chat_inteligencia_artificial.go` solo concede acceso global inmediato a administradores principales reales; los delegados siguen pasando por resoluciÃ³n de alcance por empresa.
+  - `backend/handlers/postgres_performance.go` valida `action` antes del guard de motor para devolver errores de contrato estables en el panel de diagnÃ³stico.
+- Backend licencias/configuraciÃ³n:
+  - `backend/handlers/super_config_backup_handlers.go` vuelve a admitir claves sensibles legacy de IA en exporte/restauraciÃ³n del backup super para mantener compatibilidad con respaldos previos.
+  - `backend/handlers/payments_handlers.go` separa la visibilidad pÃºblica de Epayco del requisito de credenciales privadas usado por el flujo real de cobro.
 - Flujo:
-  - `super_administrador delegado` -> `GET /api/empresas/{id}` -> verificación por administrador autenticado + cadena principal/delegado -> `403` si la empresa no pertenece al portafolio permitido.
-  - `panel super backup` -> exporte/restauración -> aceptación de claves sensibles actuales y legacy -> persistencia cifrada cuando aplica.
-  - `portal público` -> `GET /api/public/licencias/payment_methods` -> publicación de `epayco` si existe `public_key` -> checkout interno conserva validaciones adicionales al cobrar.
+  - `super_administrador delegado` -> `GET /api/empresas/{id}` -> verificaciÃ³n por administrador autenticado + cadena principal/delegado -> `403` si la empresa no pertenece al portafolio permitido.
+  - `panel super backup` -> exporte/restauraciÃ³n -> aceptaciÃ³n de claves sensibles actuales y legacy -> persistencia cifrada cuando aplica.
+  - `portal pÃºblico` -> `GET /api/public/licencias/payment_methods` -> publicaciÃ³n de `epayco` si existe `public_key` -> checkout interno conserva validaciones adicionales al cobrar.
 
 ## Actualizacion 2026-04-18 (carrito unificado configurable para estaciones y empresa)
 
 - Frontend:
-  - `web/administrar_empresa/carrito_de_compras.html` concentra la operacion de carrito general y de estacion, y resuelve la visibilidad de búsqueda, cliente, descuentos, impuestos, lector, propina, comisión, pago mixto, resumen total, desglose de cobro y resumen de productos a partir de `estaciones_config`.
+  - `web/administrar_empresa/carrito_de_compras.html` concentra la operacion de carrito general y de estacion, y resuelve la visibilidad de bÃºsqueda, cliente, descuentos, impuestos, lector, propina, comisiÃ³n, pago mixto, resumen total, desglose de cobro y resumen de productos a partir de `estaciones_config`.
   - `web/administrar_empresa/configuracion_de_estaciones.html` administra la configuracion global y los overrides por estacion dentro del mismo documento `estaciones_config`, manteniendo la sincronizacion de carritos base.
   - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` edita la configuracion global del carrito unificado para toda la empresa.
   - `web/administrar_empresa/estaciones.html` abre siempre `carrito_de_compras.html` para cada estacion y `web/administrar_empresa/ventas_simple.html` solo redirige a esa ruta para no romper accesos legacy.
@@ -447,7 +440,7 @@ Fecha de actualizacion: 2026-04-18
   - `estaciones.html` -> `carrito_de_compras.html?empresa_id=...&estacion_id=...&carrito_codigo=...` -> aplicacion de checks UI segun configuracion global/heredada de la estacion.
 
 
-## Actualizacion 2026-04-18 (chat con IA: interfaz reducida en empresa y super) — obsoleta
+## Actualizacion 2026-04-18 (chat con IA: interfaz reducida en empresa y super) â€” obsoleta
 
 - Nota: esta iteracion quedo reemplazada por el layout tipo Gemini (2026-04-24): sidebar, selector visible, uso diario y historial en panel lateral.
 
@@ -471,14 +464,14 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-19 (chat IA Gemini-only y retiro de Ollama)
 
 - Backend:
-  - `backend/handlers/ai_credentials_catalog.go` deja el catálogo IA reducido a `google:gemini-2.0-flash`.
-  - `backend/handlers/ai_config_handlers.go` usa la misma API de configuración avanzada para guardar la API key cifrada de Gemini, habilitar o deshabilitar el servicio y ejecutar una prueba real contra Google Gemini.
-  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` operan sobre un único proveedor y ya no contienen la ruta local a Ollama.
+  - `backend/handlers/ai_credentials_catalog.go` deja el catÃ¡logo IA reducido a `google:gemini-2.0-flash`.
+  - `backend/handlers/ai_config_handlers.go` usa la misma API de configuraciÃ³n avanzada para guardar la API key cifrada de Gemini, habilitar o deshabilitar el servicio y ejecutar una prueba real contra Google Gemini.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` operan sobre un Ãºnico proveedor y ya no contienen la ruta local a Ollama.
 - Frontend:
   - `web/super/configuracion_avanzada.html` muestra una sola tarjeta IA para Google Gemini.
   - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` fijan Gemini como modelo visible por defecto.
 - Runtime:
-  - `scripts/iniciar_servidor.ps1` mantiene solo el túnel PostgreSQL y deja de levantar o reescribir `OLLAMA_BASE_URL`.
+  - `scripts/iniciar_servidor.ps1` mantiene solo el tÃºnel PostgreSQL y deja de levantar o reescribir `OLLAMA_BASE_URL`.
   - El VPS deja de alojar `ollama.service` y el binario local asociado.
 
 ## Actualizacion 2026-04-18 (inventario/productos: compras pasa a una vista dedicada del modulo)
@@ -495,7 +488,7 @@ Fecha de actualizacion: 2026-04-18
 - Frontend productos:
   - `web/administrar_empresa/administrar_productos.html` sigue siendo la fuente unica del modulo, pero ahora resuelve cinco subvistas: `productos`, `bodegas`, `categorias`, `proveedores` y `precios`.
   - `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` redirigen hacia esa vista central, preservando `empresa_id` en el iframe del panel empresa.
-  - `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada `Proveedores` y reutiliza `Precios` para mostrar el historial real de cambios de precio en lugar de una página placeholder.
+  - `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada `Proveedores` y reutiliza `Precios` para mostrar el historial real de cambios de precio en lugar de una pÃ¡gina placeholder.
 - Flujo:
   - `administrar_empresa.html` -> `administrar_productos_menu.html` -> `productosContentFrame` -> `administrar_productos.html?view=productos|bodegas|categorias|proveedores|precios`.
   - `productos` conserva CRUD de productos y servicios, `proveedores` concentra el CRUD de proveedores y `precios` concentra el historial de cambios de precio.
@@ -504,7 +497,7 @@ Fecha de actualizacion: 2026-04-18
 
 - Backend:
   - `backend/db/chat_inteligencia_artificial.go` deja de asumir que `super_ai_*` y `empresa_ai_*` ya existen completos en PostgreSQL; ahora repara tablas/columnas faltantes al consultar modelo preferido, uso diario, historial y auditoria de consultas.
-  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía el timeout de las llamadas a Ollama para tolerar tiempos de inferencia más altos de `codellama:7b` cuando el backend local consume `OLLAMA_BASE_URL` apuntando al túnel del VPS.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplÃ­a el timeout de las llamadas a Ollama para tolerar tiempos de inferencia mÃ¡s altos de `codellama:7b` cuando el backend local consume `OLLAMA_BASE_URL` apuntando al tÃºnel del VPS.
 - Testing/runtime:
   - `backend/db/chat_inteligencia_artificial_test.go` agrega regresiones para schema faltante en `super_ai_modelo_preferido`, `super_ai_uso_diario` y `super_ai_consultas`.
   - Validacion real: `GET /super/api/chat_con_ia_global/modelos` y `POST /super/api/chat_con_ia_global/consultar` vuelven a responder correctamente usando `ollama:ambis` por `http://localhost:8080`.
@@ -546,9 +539,9 @@ Fecha de actualizacion: 2026-04-18
 
 - Backend:
   - `backend/handlers/ai_config_handlers.go` lee y escribe `ai.provider.deepseek.enabled` y `ai.provider.ollama.enabled` desde `/super/api/config/ai`.
-  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` filtran el catálogo visible según esos switches y hacen fallback automático al primer modelo habilitado cuando el preferido quedó apagado.
+  - `backend/handlers/chat_con_inteligencia_artificial_controller.go` y `backend/handlers/chat_con_ia_global_super.go` filtran el catÃ¡logo visible segÃºn esos switches y hacen fallback automÃ¡tico al primer modelo habilitado cuando el preferido quedÃ³ apagado.
 - Frontend:
-  - `web/super/configuracion_avanzada.html` agrega dos switches reales por proveedor: `DeepSeek Chat` y `Ambis Local`, además del switch global de servicio.
+  - `web/super/configuracion_avanzada.html` agrega dos switches reales por proveedor: `DeepSeek Chat` y `Ambis Local`, ademÃ¡s del switch global de servicio.
 - Flujo:
   - `super/configuracion_avanzada.html` -> `PUT /super/api/config/ai` con `provider_enabled` -> persistencia de `deepseek`/`ollama`.
   - `administrar_empresa/chat_con_inteligencia_artificial.html` y `super/chat_con_ia_global.html` -> `GET .../modelos` -> reciben solo proveedores habilitados.
@@ -582,7 +575,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube)
 
 - Frontend estaciones:
-  - `web/administrar_empresa/configuracion_de_estaciones.html` amplía la preferencia global `estaciones_config` con `youtube_enabled`, manteniendo el mismo almacenamiento clave/valor en `empresa_estacion_prefs`.
+  - `web/administrar_empresa/configuracion_de_estaciones.html` amplÃ­a la preferencia global `estaciones_config` con `youtube_enabled`, manteniendo el mismo almacenamiento clave/valor en `empresa_estacion_prefs`.
   - `web/administrar_empresa/estaciones.html` interpreta esa bandera y agrega una tarjeta especial `YouTube` al tablero operativo, separada de las estaciones que abren carritos o venta simple.
   - `web/administrar_empresa/youtube_station_browser.html` encapsula el iframe embebido para reutilizarlo en modo compacto dentro de la tarjeta y en modo ampliado dentro del overlay de aproximadamente `500 x 500`.
   - `web/estilos.css` incorpora el layout responsive de la tarjeta YouTube, el boton cuadrado `[]` y el overlay de ampliacion.
@@ -592,11 +585,11 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-19 (estaciones: YouTube con referencia reproducible y fallback externo)
 
 - Frontend estaciones:
-  - `web/administrar_empresa/configuracion_de_estaciones.html` agrega un campo explícito para guardar una URL o ID de video/playlist de YouTube dentro de `youtube_query`.
-  - `web/administrar_empresa/youtube_station_browser.html` deja de usar búsquedas embebidas y ahora solo carga videos o playlists válidos en `youtube-nocookie`; cuando la referencia no es embebible, muestra un estado interno y conserva el enlace externo a YouTube.
-  - `web/administrar_empresa/estaciones.html` enseña la referencia configurada en la tarjeta para que la operadora vea qué fuente intenta reproducir la estación.
+  - `web/administrar_empresa/configuracion_de_estaciones.html` agrega un campo explÃ­cito para guardar una URL o ID de video/playlist de YouTube dentro de `youtube_query`.
+  - `web/administrar_empresa/youtube_station_browser.html` deja de usar bÃºsquedas embebidas y ahora solo carga videos o playlists vÃ¡lidos en `youtube-nocookie`; cuando la referencia no es embebible, muestra un estado interno y conserva el enlace externo a YouTube.
+  - `web/administrar_empresa/estaciones.html` enseÃ±a la referencia configurada en la tarjeta para que la operadora vea quÃ© fuente intenta reproducir la estaciÃ³n.
 - Flujo:
-  - `configuracion_de_estaciones.html` -> guardar `youtube_query` como URL/ID válido -> `estaciones.html` construye la tarjeta -> `youtube_station_browser.html` resuelve video/playlist embebible -> reproducción en iframe o fallback externo si solo hay texto libre.
+  - `configuracion_de_estaciones.html` -> guardar `youtube_query` como URL/ID vÃ¡lido -> `estaciones.html` construye la tarjeta -> `youtube_station_browser.html` resuelve video/playlist embebible -> reproducciÃ³n en iframe o fallback externo si solo hay texto libre.
 
 ## Actualizacion 2026-04-18 (orquestacion interna de agentes del repositorio)
 
@@ -639,14 +632,14 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (configuracion empresarial: persistencia real del bloque general)
 
 - Backend:
-  - `backend/db/empresa_configuracion_general.go` agrega el nuevo almacenamiento relacional por `empresa_id` para reglas de productos y pedidos (`imprimir_orden_servicio`, descuentos y lector de código de barras), con bootstrap default y escritura compatible con motor legado retirado/PostgreSQL mediante `insertSQLCompat`.
+  - `backend/db/empresa_configuracion_general.go` agrega el nuevo almacenamiento relacional por `empresa_id` para reglas de productos y pedidos (`imprimir_orden_servicio`, descuentos y lector de cÃ³digo de barras), con bootstrap default y escritura compatible con motor legado retirado/PostgreSQL mediante `insertSQLCompat`.
   - `backend/handlers/empresa_configuracion_general.go` expone `GET/PUT /api/empresa/configuracion_general` bajo el wrapper de seguridad empresarial existente.
   - `backend/handlers/empresa_configuracion_general_test.go` valida carga default y guardado real del nuevo endpoint.
-  - `backend/main.go` registra el esquema `empresa_configuracion_general`, su migración y la nueva ruta autenticada.
+  - `backend/main.go` registra el esquema `empresa_configuracion_general`, su migraciÃ³n y la nueva ruta autenticada.
 - Frontend:
-  - `web/administrar_empresa/configuracion.html` deja de persistir el bloque `Productos y pedidos` en `localStorage` y pasa a cargar/guardar por `fetch` contra `/api/empresa/configuracion_general`; la restauración de backup de ese bloque también se escribe ya en backend.
+  - `web/administrar_empresa/configuracion.html` deja de persistir el bloque `Productos y pedidos` en `localStorage` y pasa a cargar/guardar por `fetch` contra `/api/empresa/configuracion_general`; la restauraciÃ³n de backup de ese bloque tambiÃ©n se escribe ya en backend.
 - Flujo:
-  - `administrar_empresa/configuracion.html` -> `GET /api/empresa/configuracion_general?empresa_id=...` -> edición de reglas de productos/pedidos -> `PUT /api/empresa/configuracion_general?empresa_id=...` -> persistencia real por empresa.
+  - `administrar_empresa/configuracion.html` -> `GET /api/empresa/configuracion_general?empresa_id=...` -> ediciÃ³n de reglas de productos/pedidos -> `PUT /api/empresa/configuracion_general?empresa_id=...` -> persistencia real por empresa.
 
 ## Actualizacion 2026-04-18 (ventas por estacion: compatibilidad PostgreSQL en carritos, metricas y documento de venta)
 
@@ -665,7 +658,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (configuracion avanzada: boton Probar Gmail con envio real)
 
 - Backend:
-  - `backend/handlers/usuarios_empresa.go` amplía `GmailConfigHandler` con `POST /super/api/config/gmail?action=test`, que usa la configuracion SMTP guardada en PostgreSQL para enviar un correo de prueba real al buzon operativo del sistema.
+  - `backend/handlers/usuarios_empresa.go` amplÃ­a `GmailConfigHandler` con `POST /super/api/config/gmail?action=test`, que usa la configuracion SMTP guardada en PostgreSQL para enviar un correo de prueba real al buzon operativo del sistema.
   - En modo de pruebas de correo (`gmail.smtp_test_mode` o `PCS_MAIL_TEST_MODE`) el mismo flujo captura la notificacion en `super_correo_notificaciones_prueba` para permitir regresiones sin salir a Internet.
   - `backend/handlers/system_empresas_handlers_test.go` agrega una regresion que valida la respuesta JSON del action y la captura de la notificacion de prueba.
 - Frontend:
@@ -676,7 +669,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (checkout Epayco: correo de activacion reintentable sin duplicados)
 
 - Backend:
-  - `backend/handlers/payments_handlers.go` separa la decision de enviar el correo de la condicion de “licencia recien activada”, de modo que un pago `APPROVED` pueda completar la notificacion despues si el webhook aprobó primero o el primer intento no se consolidó.
+  - `backend/handlers/payments_handlers.go` separa la decision de enviar el correo de la condicion de â€œlicencia recien activadaâ€, de modo que un pago `APPROVED` pueda completar la notificacion despues si el webhook aprobÃ³ primero o el primer intento no se consolidÃ³.
   - El mismo archivo marca en `raw_payload` los campos `licencia_activation_email_sent`, `licencia_activation_email_to` y `licencia_activation_email_sent_at` para impedir duplicados en polls o webhooks posteriores.
   - La extraccion del destinatario ahora reconoce tambien `data.customer_email` en la respuesta de validacion Epayco.
 - Testing:
@@ -691,7 +684,7 @@ Fecha de actualizacion: 2026-04-18
   - `backend/handlers/payments_handlers.go` centraliza el resumen de checkout, evita crear transacciones Wompi/Epayco cuando el total queda en cero y obliga a que `POST /licencias/activar_sin_pago` solo opere en ese escenario.
   - `backend/db/licencias_gratis.go` incorpora la tabla `licencias_activaciones_gratis` y el bloqueo unico por `(licencia_id, empresa_id)` para impedir reutilizar gratis la misma licencia dentro de la misma empresa.
 - Frontend:
-  - `web/pagar_licencia.html` agrega una tarjeta de resumen con `valor base`, `descuento` y `total`, oculta la pasarela cuando el total llega a cero y muestra el CTA `Activar licencia` con mensaje de bloqueo cuando la empresa ya consumió esa cortesia.
+  - `web/pagar_licencia.html` agrega una tarjeta de resumen con `valor base`, `descuento` y `total`, oculta la pasarela cuando el total llega a cero y muestra el CTA `Activar licencia` con mensaje de bloqueo cuando la empresa ya consumiÃ³ esa cortesia.
   - `web/elegir_licencia.html` cambia el CTA inicial a `Activar licencia` cuando el valor base ya es cero.
 - Flujo:
   - `/pagar_licencia.html?licencia_id=...&empresa_id=...` -> `GET /api/public/licencias/checkout_summary` -> si `total_value > 0`, checkout normal por pasarela; si `total_value = 0`, `POST /licencias/activar_sin_pago` -> backend marca `licencias_activaciones_gratis` y rechaza nuevas activaciones gratis para la misma empresa/licencia.
@@ -710,7 +703,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus cierra experiencia movil)
 
 - Frontend:
-  - `web/Juegos/brigada_burbujas_3d_plus.html` amplía la shell del shooter con HUD pastel, ayudas en pantalla, indicador tactil y controles responsive para orientacion vertical.
+  - `web/Juegos/brigada_burbujas_3d_plus.html` amplÃ­a la shell del shooter con HUD pastel, ayudas en pantalla, indicador tactil y controles responsive para orientacion vertical.
   - El mismo archivo permite apuntar deslizando sobre el canvas y disparar con toque rapido, sin depender solo de los botones inferiores del pad.
 - Flujo:
   - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> cuenta regresiva -> mision 3D simulada con desplazamiento por botones, giro por gestos tactiles y salida al lobby compartido.
@@ -719,10 +712,10 @@ Fecha de actualizacion: 2026-04-18
 
 - Frontend:
   - `web/Juegos/brigada_burbujas_3d_plus.html` incorpora un rack de arsenal con tres armas, HUD de arma activa y sector, pickups jugables, recarga por pool de municion y cambio rapido por teclado o botones tactiles.
-  - El mismo archivo amplía la IA enemiga con busqueda cuando pierde linea de vision, patrulla, refuerzos del jefe final y presion mas fuerte en sectores abiertos o hibridos.
+  - El mismo archivo amplÃ­a la IA enemiga con busqueda cuando pierde linea de vision, patrulla, refuerzos del jefe final y presion mas fuerte en sectores abiertos o hibridos.
   - El render refuerza la sensacion pseudo-3D con lineas de suelo en perspectiva, pickups flotantes y arma recoloreada segun el arsenal activo.
 - Flujo:
-  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> campaña 3D simulada con sectores cerrados/abiertos, desbloqueo de armas por pickups, IA de asedio y salida al lobby compartido.
+  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> campaÃ±a 3D simulada con sectores cerrados/abiertos, desbloqueo de armas por pickups, IA de asedio y salida al lobby compartido.
 
 ## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus cierra accesos tacticos moviles)
 
@@ -751,7 +744,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega HUD Auto y ayuda de mira)
 
 - Frontend:
-  - `web/Juegos/brigada_burbujas_3d_plus.html` eleva el auto-disparo a un boton visible del HUD movil y amplía el panel tactil con ajuste fino de impacto y ayuda suave de mira.
+  - `web/Juegos/brigada_burbujas_3d_plus.html` eleva el auto-disparo a un boton visible del HUD movil y amplÃ­a el panel tactil con ajuste fino de impacto y ayuda suave de mira.
   - El loop de juego aplica correccion angular gradual hacia el objetivo mas cercano cuando el usuario mantiene el gesto de apuntado en movil, sin convertirlo en autoaim rigido.
 - Flujo:
   - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> HUD `Auto` o panel `Ajustes` -> ayuda de mira configurable + feedback graduable -> combate tactil mas rapido dentro del mismo escenario.
@@ -764,13 +757,13 @@ Fecha de actualizacion: 2026-04-18
 - Flujo:
   - `/Juegos/brigada_burbujas_3d_plus.html` en movil -> carga opciones guardadas -> aplica preset facil inicial si es necesario -> HUD `Auto ON` -> combate simplificado desde la primera partida.
 
-## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus amplía campaña y combate)
+## Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus amplÃ­a campaÃ±a y combate)
 
 - Frontend:
   - `web/Juegos/brigada_burbujas_3d_plus.html` incorpora cinco niveles, tres poderes de transformacion, proyectiles enemigos visibles y nuevos arquetipos de rival con comportamiento tactico.
-  - `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan la comunicacion visual del juego para reflejar poderes, campaña larga y rivales de pasarela caricaturesca adulta.
+  - `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan la comunicacion visual del juego para reflejar poderes, campaÃ±a larga y rivales de pasarela caricaturesca adulta.
 - Flujo:
-  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> campaña 3D simulada con habilidades especiales, IA enemiga por roles y cierre de score en el runtime comun del arcade.
+  - `/Juegos/menu_juegos.html` -> `/Juegos/brigada_burbujas_3d_plus.html` -> countdown -> campaÃ±a 3D simulada con habilidades especiales, IA enemiga por roles y cierre de score en el runtime comun del arcade.
 
 ## Actualizacion 2026-04-17 (ventas por empresa: selector entre factura electronica y comprobante de pago)
 
@@ -781,7 +774,7 @@ Fecha de actualizacion: 2026-04-18
   - `backend/handlers/carrito_facturacion_impresion_test.go` valida los dos caminos documentales en la venta: `factura_electronica` y `comprobante_pago`.
 - Frontend:
   - `web/administrar_empresa/configuracion.html` incorpora el selector `Documento al vender` dentro de la configuracion de impresion/factura.
-  - `web/administrar_empresa/facturas_electronicas.html` amplía el historial para consultar tambien comprobantes de pago.
+  - `web/administrar_empresa/facturas_electronicas.html` amplÃ­a el historial para consultar tambien comprobantes de pago.
 - Flujo:
   - `administrar_empresa/configuracion.html` -> `PUT /api/empresa/configuracion_avanzada` con `modo_documento_venta` -> `PUT /api/empresa/carritos_compra?action=pagar_estacion` -> persistencia automatica en `empresa_facturacion_documentos` como `factura_electronica` o `comprobante_pago`.
 
@@ -805,7 +798,7 @@ Fecha de actualizacion: 2026-04-18
 - Frontend:
   - `web/seleccionar_empresa.html` agrega la opcion lateral `Editar empresa` dentro del menu del selector.
   - `web/js/seleccionar_empresa.js` deja de renderizar el boton `Editar` en las tarjetas, conserva la posicion del texto principal y usa la empresa activa del contexto para abrir `editar_empresa.html`.
-  - `web/estilos.css` rediseña las tarjetas del selector con fondos claros por tipo de negocio, insignia superior, icono decorativo y botones cuadrados en las acciones visibles.
+  - `web/estilos.css` rediseÃ±a las tarjetas del selector con fondos claros por tipo de negocio, insignia superior, icono decorativo y botones cuadrados en las acciones visibles.
   - `web/editar_empresa.html` y `web/js/editar_empresa.js` se simplifican a un CRUD parcial enfocado solo en editar y eliminar.
 - Flujo:
   - `/seleccionar_empresa.html` -> menu lateral `Editar empresa` -> `/editar_empresa.html?id=...` -> `GET /super/api/empresas?id=...` + `action=impacto_desactivacion` -> `PUT /super/api/empresas?id=...` o `DELETE /super/api/empresas?id=...&action=eliminar_total`.
@@ -824,13 +817,13 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-17 (venta publica empresarial con Wompi y Epayco por empresa)
 
 - Backend:
-  - `backend/db/venta_publica.go` amplía el esquema `empresa_venta_publica_configuracion` con activación, modo y credenciales Epayco por `empresa_id`, y agrega lookup de órdenes públicas por `transaction_id` o `referencia_externa`.
-  - `backend/handlers/venta_publica.go` reutiliza esa configuración para crear pagos públicos con `wompi_nequi` o `epayco`, publicar `payment_methods` sanitizados y consultar el estado de la orden según la pasarela elegida.
-  - `backend/handlers/payments_handlers.go` y `backend/main.go` conectan `/wompi/webhook` y `/epayco/webhook` con `dbEmpresas`, para que los eventos de pago actualicen también `empresa_venta_publica_ordenes`.
+  - `backend/db/venta_publica.go` amplÃ­a el esquema `empresa_venta_publica_configuracion` con activaciÃ³n, modo y credenciales Epayco por `empresa_id`, y agrega lookup de Ã³rdenes pÃºblicas por `transaction_id` o `referencia_externa`.
+  - `backend/handlers/venta_publica.go` reutiliza esa configuraciÃ³n para crear pagos pÃºblicos con `wompi_nequi` o `epayco`, publicar `payment_methods` sanitizados y consultar el estado de la orden segÃºn la pasarela elegida.
+  - `backend/handlers/payments_handlers.go` y `backend/main.go` conectan `/wompi/webhook` y `/epayco/webhook` con `dbEmpresas`, para que los eventos de pago actualicen tambiÃ©n `empresa_venta_publica_ordenes`.
 - Frontend:
-  - `web/administrar_empresa/configuracion.html` agrega una sección `Pasarelas de pago` para activar o desactivar Wompi/Epayco y guardar sus credenciales por empresa.
-  - `web/administrar_empresa/venta_publica.html` expone la configuración completa de la tienda pública con ambos proveedores, para que guardar desde ese módulo no sobrescriba ni borre campos de la otra pasarela.
-  - `web/venta_publica.html` carga las pasarelas activas por empresa, deja escoger el método y abre `Smart Checkout` de Epayco cuando aplique.
+  - `web/administrar_empresa/configuracion.html` agrega una secciÃ³n `Pasarelas de pago` para activar o desactivar Wompi/Epayco y guardar sus credenciales por empresa.
+  - `web/administrar_empresa/venta_publica.html` expone la configuraciÃ³n completa de la tienda pÃºblica con ambos proveedores, para que guardar desde ese mÃ³dulo no sobrescriba ni borre campos de la otra pasarela.
+  - `web/venta_publica.html` carga las pasarelas activas por empresa, deja escoger el mÃ©todo y abre `Smart Checkout` de Epayco cuando aplique.
 - Flujo:
   - `administrar_empresa/configuracion.html` o `administrar_empresa/venta_publica.html` -> `POST /api/empresa/venta_publica?action=config` -> `GET /api/public/venta_publica?action=catalogo` con `payment_methods` -> `POST /api/public/venta_publica?action=crear_pago` -> retorno/polling -> webhook `/wompi/webhook` o `/epayco/webhook` actualiza `empresa_venta_publica_ordenes`.
 
@@ -926,19 +919,19 @@ Fecha de actualizacion: 2026-04-18
 - Flujo:
   - `/elegir_licencia.html` -> listado de licencias del tipo seleccionado -> tarjetas mas compactas con descripcion, valor, duracion y CTA `Comprar licencia` -> `/pagar_licencia.html`.
 
-## Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto)
+## Actualizacion 2026-04-17 (navegacion general: misma pestaÃ±a por defecto)
 
 - Frontend:
-  - `web/super_administrador.html`, `web/administrar_empresa.html`, `web/js/seleccionar_empresa.js` y `web/js/administrar_empresa.js` dejan de abrir modulos operativos o cambios de contexto en una pestaña nueva; ahora reutilizan la misma ventana actual.
-  - `web/super/venta_digital.html`, `web/super/pagina_principal.html`, `web/super/configuracion_avanzada.html` y `web/administrar_empresa/venta_publica.html` cambian las aperturas de vista pública para navegar en la misma pestaña, usando el contexto superior cuando la acción nace dentro de un iframe.
-  - `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` eliminan aperturas innecesarias en nueva ventana para exportes, visores o navegación normal.
-  - `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/registrar_contrasena_usuario_de_google.html`, `web/index.html`, `web/Informacion_de_contacto.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/administrar_empresa/chat_y_tareas.html` dejan de forzar pestaña nueva en ayudas, CTA públicos, portal de usuarios, archivos adjuntos o accesos comerciales normales.
+  - `web/super_administrador.html`, `web/administrar_empresa.html`, `web/js/seleccionar_empresa.js` y `web/js/administrar_empresa.js` dejan de abrir modulos operativos o cambios de contexto en una pestaÃ±a nueva; ahora reutilizan la misma ventana actual.
+  - `web/super/venta_digital.html`, `web/super/pagina_principal.html`, `web/super/configuracion_avanzada.html` y `web/administrar_empresa/venta_publica.html` cambian las aperturas de vista pÃºblica para navegar en la misma pestaÃ±a, usando el contexto superior cuando la acciÃ³n nace dentro de un iframe.
+  - `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html`, `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` eliminan aperturas innecesarias en nueva ventana para exportes, visores o navegaciÃ³n normal.
+  - `web/login.html`, `web/registrar_nuevo_usuario_administrador.html`, `web/registrar_contrasena_usuario_de_google.html`, `web/index.html`, `web/Informacion_de_contacto.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/administrar_empresa/chat_y_tareas.html` dejan de forzar pestaÃ±a nueva en ayudas, CTA pÃºblicos, portal de usuarios, archivos adjuntos o accesos comerciales normales.
 - Descargas posteriores al ajuste:
-  - `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html` y `web/administrar_empresa/soporte_remoto.html` reemplazan la redirección de exportes por descargas silenciosas con `fetch + blob`, de modo que PDF/XLS/CSV/JSON/TXT no saquen al usuario de la vista actual.
+  - `web/administrar_empresa/administrar_clientes.html`, `web/administrar_empresa/asistencia_empleados.html`, `web/administrar_empresa/backups.html`, `web/administrar_empresa/tarifas_por_dia.html` y `web/administrar_empresa/soporte_remoto.html` reemplazan la redirecciÃ³n de exportes por descargas silenciosas con `fetch + blob`, de modo que PDF/XLS/CSV/JSON/TXT no saquen al usuario de la vista actual.
 - Excepciones conservadas:
-  - Se mantienen en nueva ventana los enlaces/documentos legales (`contrato`, términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+  - Se mantienen en nueva ventana los enlaces/documentos legales (`contrato`, tÃ©rminos de pasarela) y los popups tÃ©cnicos de impresiÃ³n o vista previa documental.
 - Flujo:
-  - navegación normal del sistema -> misma pestaña por defecto -> solo `contrato/legal` e impresión permanecen en ventana aparte cuando su función técnica lo exige.
+  - navegaciÃ³n normal del sistema -> misma pestaÃ±a por defecto -> solo `contrato/legal` e impresiÃ³n permanecen en ventana aparte cuando su funciÃ³n tÃ©cnica lo exige.
 
 ## Actualizacion 2026-04-17 (licencias super: valor 0 visible y editable)
 
@@ -951,7 +944,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-17 (licencias del selector: historial y estado con vencimiento)
 
 - Backend:
-  - `backend/db/db.go` amplía el payload de `licencias` para exponer `empresa_nombre`, `fecha_inicio` y `fecha_fin` cuando la licencia ya está asignada a una empresa, manteniendo el mismo endpoint `/super/api/licencias`.
+  - `backend/db/db.go` amplÃ­a el payload de `licencias` para exponer `empresa_nombre`, `fecha_inicio` y `fecha_fin` cuando la licencia ya estÃ¡ asignada a una empresa, manteniendo el mismo endpoint `/super/api/licencias`.
   - `backend/handlers/payments_handlers_test.go` valida que el handler filtre por creador y devuelva fecha de inicio, fecha de vencimiento y empresa en el historial de licencias asignadas.
 - Frontend:
   - `web/super/licencias.html` detecta el modo `scope=mine&con_empresa=1` y deja de mostrar el CRUD: en ese alcance presenta una vista de historial/estado con licencias pagadas o vencidas, fecha de vencimiento, filtro por empresa y acceso directo a renovar.
@@ -1111,7 +1104,7 @@ Fecha de actualizacion: 2026-04-18
 ## Actualizacion 2026-04-16 (home publico: contacto centrado debajo de las tarjetas)
 
 - Frontend:
-  - `web/index.html` deja `Registrarse o iniciar sesión` como unica accion superior y mueve `Informacion de contacto` a un bloque centrado debajo de `portalCardsGrid`.
+  - `web/index.html` deja `Registrarse o iniciar sesiÃ³n` como unica accion superior y mueve `Informacion de contacto` a un bloque centrado debajo de `portalCardsGrid`.
   - `web/estilos.css` agrega `portal-contact-action` y reutiliza el estilo comercial del CTA del home para el acceso de contacto.
 - Flujo:
   - `index.html` -> tarjetas dinamicas del home -> acceso `Informacion de contacto` centrado bajo el grid -> `/Informacion_de_contacto.html`.
@@ -1149,14 +1142,14 @@ Fecha de actualizacion: 2026-04-18
 - Frontend:
   - `web/Juegos/ajedrez_3d_plus.html` agrega una nueva experiencia publica de ajedrez con tablero en perspectiva 3D simulada, cronometro arcade, cuenta regresiva de arranque y ayudas tacticas (`sugerencia`, `deshacer`, `congelar IA`).
   - El juego reutiliza `web/Juegos/arcade_shared.js` para jugador global, records locales y sonido compartido, y expone cinco niveles de dificultad (`Rookie`, `Club`, `Pro`, `Elite`, `Maestro`) variando profundidad, retardo y margen de error de la IA.
-  - `web/Juegos/menu_juegos.html` publica la novena tarjeta del lobby hacia `Ajedrez 3D plus` y `web/img/juegos/ajedrez_3d.svg` añade la portada dedicada.
+  - `web/Juegos/menu_juegos.html` publica la novena tarjeta del lobby hacia `Ajedrez 3D plus` y `web/img/juegos/ajedrez_3d.svg` aÃ±ade la portada dedicada.
 - Flujo:
   - `menu flotante` -> `/Juegos/menu_juegos.html` -> `Ajedrez 3D plus` -> `/Juegos/ajedrez_3d_plus.html` -> seleccion de dificultad -> cuenta regresiva -> duelo con IA y record local por slug `ajedrez_3d`.
 
 ## Actualizacion 2026-04-16 (home publico: botones superiores compactos y centrados en movil)
 
 - Frontend:
-  - `web/estilos.css` reduce el alto y el ancho util de los botones superiores del `index.html`, manteniendo tamaño uniforme entre `Registrarse o iniciar sesión` e `Informacion de contacto`.
+  - `web/estilos.css` reduce el alto y el ancho util de los botones superiores del `index.html`, manteniendo tamaÃ±o uniforme entre `Registrarse o iniciar sesiÃ³n` e `Informacion de contacto`.
   - El breakpoint movil del header centra ambos botones y elimina el empuje lateral del acceso de contacto.
 - Flujo:
   - `index.html` -> header publico -> botones compactos de acceso/ contacto en escritorio y centrados en movil.
@@ -1169,7 +1162,7 @@ Fecha de actualizacion: 2026-04-18
   - `CreateLicencia`, `GetLicenciasFiltered`, `GetLicenciaByID` y `UpdateLicencia` reintentan la operacion si detectan tabla/columnas faltantes como `valor`.
   - `backend/main.go` ejecuta `EnsureLicenciasSchema(dbSuper)` durante el arranque PostgreSQL.
 - Frontend:
-  - `web/super/licencias.html` valida `fetch` con manejo explícito de respuestas HTTP para no ocultar fallos de persistencia al crear o editar.
+  - `web/super/licencias.html` valida `fetch` con manejo explÃ­cito de respuestas HTTP para no ocultar fallos de persistencia al crear o editar.
 - Flujo:
   - `super/licencias.html` -> `POST|PUT /super/api/licencias` -> `db.EnsureLicenciasSchema` si faltan columnas -> persistencia correcta de `valor` -> recarga del listado.
 
@@ -1265,7 +1258,7 @@ flowchart TD
   - `web/index.html` marca la barra de acciones superior del home con `portal-header-actions-split`.
   - `web/estilos.css` ensancha esa fila solo para el home y empuja `Informacion de contacto` al extremo derecho sin alterar la pagina `/Informacion_de_contacto.html`.
 - Flujo:
-  - `index.html` -> header publico -> `Registrarse o iniciar sesión` queda a la izquierda del bloque de acciones y `Informacion de contacto` al extremo derecho de la misma fila.
+  - `index.html` -> header publico -> `Registrarse o iniciar sesiÃ³n` queda a la izquierda del bloque de acciones y `Informacion de contacto` al extremo derecho de la misma fila.
 
 ## Actualizacion 2026-04-16 (login unificado sin recordar usuario/cuenta y sin login_hint)
 
@@ -1273,13 +1266,13 @@ flowchart TD
   - `backend/handlers/auth_admin_handlers.go` elimina la propagacion de `login_hint` en `HandleGoogleLogin`, por lo que `/auth/google/login` inicia OAuth con parametros estables y sin depender de estado cliente por navegador/host.
   - `backend/handlers/auth_users_carritos_test.go` ajusta cobertura para validar que `login_hint` siempre se omite aunque llegue como querystring.
 - Frontend:
-  - `web/login.html` y `web/js/login.js` eliminan la opcion `Recordar cuenta`, su almacenamiento local y la sincronizacion de correo recordado desde sesión.
+  - `web/login.html` y `web/js/login.js` eliminan la opcion `Recordar cuenta`, su almacenamiento local y la sincronizacion de correo recordado desde sesiÃ³n.
   - `web/login_usuario.html` y `web/js/login_usuario.js` eliminan `Recordar usuario` y cualquier persistencia local de correo/empresa asociada a ese comportamiento.
-  - `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran limpieza/sincronizacion de `remember*`, dejando solo la logica de sesión y navegación.
+  - `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran limpieza/sincronizacion de `remember*`, dejando solo la logica de sesiÃ³n y navegaciÃ³n.
 - Flujo:
-  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/login` (sin `login_hint`) -> `/auth/google/callback`.
-  - `login_usuario.html` -> ingreso por correo/contraseña y `empresa_id` sin persistencia de usuario recordado.
-  - El comportamiento queda alineado entre entorno local y VPS al depender de sesión backend + host canónico, no de estado guardado por dominio en `localStorage`.
+  - `login.html` -> `Iniciar sesiÃ³n con Google` -> `/auth/google/login` (sin `login_hint`) -> `/auth/google/callback`.
+  - `login_usuario.html` -> ingreso por correo/contraseÃ±a y `empresa_id` sin persistencia de usuario recordado.
+  - El comportamiento queda alineado entre entorno local y VPS al depender de sesiÃ³n backend + host canÃ³nico, no de estado guardado por dominio en `localStorage`.
 
 ## Actualizacion 2026-04-16 (super: tamano estimado por empresa en administracion PostgreSQL)
 
@@ -1310,10 +1303,10 @@ flowchart TD
   - `backend/handlers/payments_handlers_test.go` cubre la presencia de `p_key` cuando hay llave privada y su omision cuando no esta configurada.
 - Frontend:
   - `web/pagar_licencia.html` deja de renderizar el selector visual de metodos cuando solo una pasarela esta disponible y activa automaticamente ese flujo.
-  - `web/pagar_licencia.html` redirige la misma pestaña al checkout de Epayco despues de guardar la referencia pendiente, evitando dejar el pago en una pestaña emergente con polling antes del retorno.
+  - `web/pagar_licencia.html` redirige la misma pestaÃ±a al checkout de Epayco despues de guardar la referencia pendiente, evitando dejar el pago en una pestaÃ±a emergente con polling antes del retorno.
 - Flujo:
   - `pagar_licencia.html` -> metodo unico disponible -> panel directo sin selector.
-  - `POST /epayco/create_transaction` -> `checkout.php` con `public_key`, `p_cust_id_cliente` opcional, `p_key` opcional y callbacks HTTPS publicos -> redirect de la misma pestaña a Epayco -> `/epayco/respuesta.html` -> `pagar_licencia.html` reanuda la verificacion.
+  - `POST /epayco/create_transaction` -> `checkout.php` con `public_key`, `p_cust_id_cliente` opcional, `p_key` opcional y callbacks HTTPS publicos -> redirect de la misma pestaÃ±a a Epayco -> `/epayco/respuesta.html` -> `pagar_licencia.html` reanuda la verificacion.
 
 ## Actualizacion 2026-04-16 (frontend de licencias y seleccion de empresa: preseleccion visible y tarjetas compactas)
 
@@ -1326,33 +1319,33 @@ flowchart TD
 ## Actualizacion 2026-04-16 (login administrativo: registro separado y recuperacion guiada)
 
 - Backend:
-  - `backend/handlers/auth_admin_handlers.go` endurece `AdminRegisterHandler` para exigir `nombre`, `telefono` y contraseña segura, evita sobrescribir cuentas administrativas ya confirmadas y limita la recuperación de contraseña a cuentas confirmadas.
-  - `backend/handlers/auth_admin_handlers.go` envía un enlace directo de recuperación hacia `/login.html?view=reset&email=...&token_recuperacion=...`, manteniendo el token solo en la URL firmada del correo para que el usuario no deba copiarlo manualmente.
-  - `backend/utils/utils.go` libera como rutas públicas `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin`, corrigiendo el bloqueo previo del enlace de confirmación administrativa.
-  - `backend/handlers/auth_admin_handlers_test.go` agrega cobertura del registro administrativo, login por correo, recuperación de contraseña y creación de sesión; `backend/handlers/auth_users_carritos_test.go` amplía la prueba del middleware público con la nueva página de registro y la confirmación administrativa.
+  - `backend/handlers/auth_admin_handlers.go` endurece `AdminRegisterHandler` para exigir `nombre`, `telefono` y contraseÃ±a segura, evita sobrescribir cuentas administrativas ya confirmadas y limita la recuperaciÃ³n de contraseÃ±a a cuentas confirmadas.
+  - `backend/handlers/auth_admin_handlers.go` envÃ­a un enlace directo de recuperaciÃ³n hacia `/login.html?view=reset&email=...&token_recuperacion=...`, manteniendo el token solo en la URL firmada del correo para que el usuario no deba copiarlo manualmente.
+  - `backend/utils/utils.go` libera como rutas pÃºblicas `/registrar_nuevo_usuario_administrador.html` y `/auth/confirmar_admin`, corrigiendo el bloqueo previo del enlace de confirmaciÃ³n administrativa.
+  - `backend/handlers/auth_admin_handlers_test.go` agrega cobertura del registro administrativo, login por correo, recuperaciÃ³n de contraseÃ±a y creaciÃ³n de sesiÃ³n; `backend/handlers/auth_users_carritos_test.go` amplÃ­a la prueba del middleware pÃºblico con la nueva pÃ¡gina de registro y la confirmaciÃ³n administrativa.
 - Frontend:
-  - `web/login.html` elimina el campo `Nombre (para registro)` del acceso principal, centra el botón `Iniciar por correo` y agrega debajo las acciones `Registrarse` y `¿Olvidó su contraseña?`.
-  - `web/js/login.js` reemplaza los `prompt()` del flujo de recuperación por formularios reales para solicitar y restablecer contraseña.
-  - `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva superficie pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
-  - `web/ayuda/login_administradores.html` documenta el doble acceso administrativo: Google y correo/clave, con registro y recuperación visibles.
+  - `web/login.html` elimina el campo `Nombre (para registro)` del acceso principal, centra el botÃ³n `Iniciar por correo` y agrega debajo las acciones `Registrarse` y `Â¿OlvidÃ³ su contraseÃ±a?`.
+  - `web/js/login.js` reemplaza los `prompt()` del flujo de recuperaciÃ³n por formularios reales para solicitar y restablecer contraseÃ±a.
+  - `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva superficie pÃºblica de registro administrativo con `email`, `nombre completo`, `telefono`, contraseÃ±a y confirmaciÃ³n de contraseÃ±a.
+  - `web/ayuda/login_administradores.html` documenta el doble acceso administrativo: Google y correo/clave, con registro y recuperaciÃ³n visibles.
 - Flujo:
-  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/login` -> `/auth/google/callback` -> `/accept.html` -> `/accept/complete`.
+  - `login.html` -> `Iniciar sesiÃ³n con Google` -> `/auth/google/login` -> `/auth/google/callback` -> `/accept.html` -> `/accept/complete`.
   - `login.html` -> `Registrarse` -> `registrar_nuevo_usuario_administrador.html` -> `POST /super/api/administradores/register` -> `/auth/confirmar_admin` -> `login.html`.
-  - `login.html` -> `¿Olvidó su contraseña?` -> `POST /super/api/administradores/solicitar_recuperacion` -> correo con enlace directo de recuperación -> `login.html?view=reset...` -> `POST /super/api/administradores/restablecer_password` -> sesión administrativa.
+  - `login.html` -> `Â¿OlvidÃ³ su contraseÃ±a?` -> `POST /super/api/administradores/solicitar_recuperacion` -> correo con enlace directo de recuperaciÃ³n -> `login.html?view=reset...` -> `POST /super/api/administradores/restablecer_password` -> sesiÃ³n administrativa.
 
 ## Actualizacion 2026-04-16 (login Google: registro obligatorio de clave local cuando falta password_set)
 
 - Backend:
-  - `backend/handlers/auth_admin_handlers.go` deja de enviar directamente al panel después del callback Google cuando la cuenta aún no tiene contraseña local y redirige a `/registrar_contrasena_usuario_de_google.html`.
-  - `backend/handlers/accept_handlers.go` aplica la misma decisión después de aceptar contrato para que el flujo Google y el flujo aceptación mantengan una sola salida consistente.
-  - `backend/handlers/account_handlers.go` agrega `/api/account/set_google_password`, endpoint autenticado que permite guardar la primera contraseña local sin exigir clave actual cuando la sesión nació por Google y `password_set` todavía está inactivo.
-  - `backend/main.go` registra la nueva ruta de API protegida para creación de clave inicial.
+  - `backend/handlers/auth_admin_handlers.go` deja de enviar directamente al panel despuÃ©s del callback Google cuando la cuenta aÃºn no tiene contraseÃ±a local y redirige a `/registrar_contrasena_usuario_de_google.html`.
+  - `backend/handlers/accept_handlers.go` aplica la misma decisiÃ³n despuÃ©s de aceptar contrato para que el flujo Google y el flujo aceptaciÃ³n mantengan una sola salida consistente.
+  - `backend/handlers/account_handlers.go` agrega `/api/account/set_google_password`, endpoint autenticado que permite guardar la primera contraseÃ±a local sin exigir clave actual cuando la sesiÃ³n naciÃ³ por Google y `password_set` todavÃ­a estÃ¡ inactivo.
+  - `backend/main.go` registra la nueva ruta de API protegida para creaciÃ³n de clave inicial.
 - Frontend:
-  - `web/registrar_contrasena_usuario_de_google.html` presenta el formulario dedicado para crear la contraseña local de una cuenta que ya inició sesión con Google.
-  - `web/js/registrar_contrasena_usuario_de_google.js` consulta `/api/account`, valida si la cuenta ya tiene clave y envía la nueva contraseña al endpoint `/api/account/set_google_password` antes de redirigir al panel correcto.
+  - `web/registrar_contrasena_usuario_de_google.html` presenta el formulario dedicado para crear la contraseÃ±a local de una cuenta que ya iniciÃ³ sesiÃ³n con Google.
+  - `web/js/registrar_contrasena_usuario_de_google.js` consulta `/api/account`, valida si la cuenta ya tiene clave y envÃ­a la nueva contraseÃ±a al endpoint `/api/account/set_google_password` antes de redirigir al panel correcto.
 - Flujo:
-  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/callback` -> si falta contrato: `/accept.html` -> `/accept/complete` -> si `password_set = 0`: `/registrar_contrasena_usuario_de_google.html` -> `/api/account/set_google_password` -> panel final.
-  - `login.html` -> `Iniciar sesión con Google` -> `/auth/google/callback` -> si contrato ya estaba aceptado y `password_set = 0`: `/registrar_contrasena_usuario_de_google.html` -> `/api/account/set_google_password` -> panel final.
+  - `login.html` -> `Iniciar sesiÃ³n con Google` -> `/auth/google/callback` -> si falta contrato: `/accept.html` -> `/accept/complete` -> si `password_set = 0`: `/registrar_contrasena_usuario_de_google.html` -> `/api/account/set_google_password` -> panel final.
+  - `login.html` -> `Iniciar sesiÃ³n con Google` -> `/auth/google/callback` -> si contrato ya estaba aceptado y `password_set = 0`: `/registrar_contrasena_usuario_de_google.html` -> `/api/account/set_google_password` -> panel final.
 
 ## Actualizacion 2026-04-16 (arcade publico: cuenta regresiva en Patito y ajuste movil de los cinco juegos)
 
@@ -1546,21 +1539,21 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Flujo:
   - `super/configuracion_avanzada.html` -> guarda `epayco.enabled` + `epayco.public_key` -> `GET /api/public/licencias/payment_methods` responde sin sesion -> `web/pagar_licencia.html` muestra Epayco cuando la `Public Key` existe -> `/epayco/*` y `/wompi/*` pueden consultar/reanudar el estado del pago aunque el navegador vuelva desde la pasarela sin una sesion administrativa activa.
 
-## Actualizacion 2026-04-15 (login admin y Gmail SMTP con edición directa)
+## Actualizacion 2026-04-15 (login admin y Gmail SMTP con ediciÃ³n directa)
 
 - Frontend:
-  - `web/login.html` elimina el bloque visual `Se recordará ... / Olvidar`; la opcion `Recordar cuenta` sigue operando de forma silenciosa a traves de `web/js/login.js`.
-  - `web/super/configuracion_avanzada.html` deja de poner la seccion Gmail en modo solo lectura cuando ya existe configuración previa; el correo remitente y el resto de campos quedan editables directamente mientras el cifrado obligatorio esté disponible.
+  - `web/login.html` elimina el bloque visual `Se recordarÃ¡ ... / Olvidar`; la opcion `Recordar cuenta` sigue operando de forma silenciosa a traves de `web/js/login.js`.
+  - `web/super/configuracion_avanzada.html` deja de poner la seccion Gmail en modo solo lectura cuando ya existe configuraciÃ³n previa; el correo remitente y el resto de campos quedan editables directamente mientras el cifrado obligatorio estÃ© disponible.
 - Backend:
   - `backend/handlers/usuarios_empresa.go` mantiene el contrato de `GET/PUT /super/api/config/gmail`, reutilizado por la UI para actualizar correo remitente, host, puerto, URL base y correo de alertas sin rutas adicionales.
 - Flujo:
   - `login.html` -> `Recordar cuenta` persiste `login_hint` sin mostrar texto auxiliar -> `/auth/google/login`.
-  - `super/configuracion_avanzada.html` -> carga `/super/api/config/gmail` -> edición directa de campos Gmail -> guardado sobre la misma API.
+  - `super/configuracion_avanzada.html` -> carga `/super/api/config/gmail` -> ediciÃ³n directa de campos Gmail -> guardado sobre la misma API.
 
 ## Actualizacion 2026-04-15 (pagina_principal: tamanos visuales configurables para home y landing)
 
 - Backend:
-  - `backend/handlers/pagina_principal_handlers.go` amplía el contrato publico/administrativo de `pagina_principal` con `estilos.index_card_size`, `estilos.index_text_size`, `estilos.landing_card_size` y `estilos.landing_text_size`, normalizados como `pequeno|mediano|grande`.
+  - `backend/handlers/pagina_principal_handlers.go` amplÃ­a el contrato publico/administrativo de `pagina_principal` con `estilos.index_card_size`, `estilos.index_text_size`, `estilos.landing_card_size` y `estilos.landing_text_size`, normalizados como `pequeno|mediano|grande`.
   - `backend/handlers/pagina_principal_handlers_test.go` valida que esos ajustes se normalicen y se expongan correctamente desde `/api/public/pagina_principal`.
 - Frontend:
   - `web/super/pagina_principal.html` agrega selectores para controlar tamano de tarjetas y de texto tanto en `index.html` como en `/descripcion_de_los_sistemas.ht`.
@@ -1608,18 +1601,18 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Flujo:
   - `configuracion avanzada super` -> guarda estado `enabled`/credenciales -> `GET /api/public/licencias/payment_methods` -> `pagar_licencia.html` muestra solo pasarelas disponibles -> `WompiTermsHandler` y `WompiCreateNequiTransactionHandler` revalidan disponibilidad antes de continuar.
 
-## Actualizacion 2026-04-15 (checkout de licencias: Epayco con dominio público y contrato de credenciales coherente)
+## Actualizacion 2026-04-15 (checkout de licencias: Epayco con dominio pÃºblico y contrato de credenciales coherente)
 
 - Backend:
   - `backend/handlers/payments_handlers.go` separa `epayco.public_key`, `epayco.private_key` y `epayco.customer_id`, manteniendo compatibilidad de lectura con `epayco.cust_id` y `epayco.key` para instalaciones previas.
-  - El builder de checkout de Epayco deja de derivar `response` y `confirmation` desde `localhost`; ahora reutiliza `gmail.confirm_base_url` o el host público efectivo mediante `resolvePaymentBaseURL(...)`, y rechaza explícitamente hosts loopback para pagos externos.
-  - `WompiCreateNequiTransactionHandler` usa la misma resolución de base pública para `redirect_url`, evitando callbacks locales en entornos publicados.
+  - El builder de checkout de Epayco deja de derivar `response` y `confirmation` desde `localhost`; ahora reutiliza `gmail.confirm_base_url` o el host pÃºblico efectivo mediante `resolvePaymentBaseURL(...)`, y rechaza explÃ­citamente hosts loopback para pagos externos.
+  - `WompiCreateNequiTransactionHandler` usa la misma resoluciÃ³n de base pÃºblica para `redirect_url`, evitando callbacks locales en entornos publicados.
 - Frontend:
-  - `web/super/configuracion_avanzada.html` muestra y guarda `Public Key`, `Private Key` y `Customer ID (opcional)` de Epayco con etiquetas consistentes, sin confundir la llave pública con el identificador del comercio.
+  - `web/super/configuracion_avanzada.html` muestra y guarda `Public Key`, `Private Key` y `Customer ID (opcional)` de Epayco con etiquetas consistentes, sin confundir la llave pÃºblica con el identificador del comercio.
 - Pruebas:
-  - `backend/handlers/payments_handlers_test.go` valida la resolución de base pública, la canonicalización del dominio configurado y que el checkout Epayco salga con `public_key` correcta y sin `localhost`.
+  - `backend/handlers/payments_handlers_test.go` valida la resoluciÃ³n de base pÃºblica, la canonicalizaciÃ³n del dominio configurado y que el checkout Epayco salga con `public_key` correcta y sin `localhost`.
 - Flujo:
-  - `configuracion avanzada super` -> guarda llaves Epayco coherentes -> `POST /epayco/create_transaction` resuelve dominio público válido -> Epayco recibe `public_key`, `p_cust_id_cliente` opcional y callbacks HTTPS públicos -> el checkout deja de fallar por `AccessDenied` asociado a llaves/callbacks mal armados.
+  - `configuracion avanzada super` -> guarda llaves Epayco coherentes -> `POST /epayco/create_transaction` resuelve dominio pÃºblico vÃ¡lido -> Epayco recibe `public_key`, `p_cust_id_cliente` opcional y callbacks HTTPS pÃºblicos -> el checkout deja de fallar por `AccessDenied` asociado a llaves/callbacks mal armados.
 
 ## Actualizacion 2026-04-15 (checkout de licencias: retorno recuperable tras volver de la pasarela)
 
@@ -1643,18 +1636,18 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 - Resultado operativo:
   - se evita que navegadores de escritorio con estado local contaminado envien dominios o textos arbitrarios a Google durante `/auth/google/login`.
 
-## Actualizacion 2026-04-15 (host canónico para OAuth y carga visible en estaciones)
+## Actualizacion 2026-04-15 (host canÃ³nico para OAuth y carga visible en estaciones)
 
 - Backend HTTP:
   - `backend/utils/utils.go` incorpora `CanonicalPublicHostMiddleware`, que redirige `www.powerfulcontrolsystem.com` a `https://powerfulcontrolsystem.com` antes de `AuthMiddleware` y del resto del pipeline HTTP.
-  - `backend/main.go` encadena ese middleware entre logging y normalización de errores, de modo que el acceso administrativo y público ya no opere con dos hosts principales distintos en paralelo.
-  - `backend/.env.example` y `scripts/sync_to_vps.ps1` alinean el valor por defecto de `GOOGLE_REDIRECT_URL` al callback canónico `https://powerfulcontrolsystem.com/auth/google/callback`.
+  - `backend/main.go` encadena ese middleware entre logging y normalizaciÃ³n de errores, de modo que el acceso administrativo y pÃºblico ya no opere con dos hosts principales distintos en paralelo.
+  - `backend/.env.example` y `scripts/sync_to_vps.ps1` alinean el valor por defecto de `GOOGLE_REDIRECT_URL` al callback canÃ³nico `https://powerfulcontrolsystem.com/auth/google/callback`.
 - Resultado OAuth:
-  - cuando un usuario entra por `https://www.powerfulcontrolsystem.com/login.html`, la solicitud se canonicaliza primero al dominio raíz y luego `/auth/google/login` emite un único `redirect_uri` canónico.
-  - se evita mezclar `oauth_redirect_url`, `session_token` y `browser_session_active` entre `www` y el apex, que era la fuente más probable de inestabilidad tras registrar el dominio público.
+  - cuando un usuario entra por `https://www.powerfulcontrolsystem.com/login.html`, la solicitud se canonicaliza primero al dominio raÃ­z y luego `/auth/google/login` emite un Ãºnico `redirect_uri` canÃ³nico.
+  - se evita mezclar `oauth_redirect_url`, `session_token` y `browser_session_active` entre `www` y el apex, que era la fuente mÃ¡s probable de inestabilidad tras registrar el dominio pÃºblico.
 - Frontend estaciones:
-  - `web/administrar_empresa/estaciones.html` muestra `Cargando estaciones...` antes de renderizar la grilla y marca la vista con `aria-busy` mientras obtiene configuración, carritos y sensores.
-  - ante fallos de carga, la misma vista deja un mensaje explícito en pantalla en lugar de quedar en blanco.
+  - `web/administrar_empresa/estaciones.html` muestra `Cargando estaciones...` antes de renderizar la grilla y marca la vista con `aria-busy` mientras obtiene configuraciÃ³n, carritos y sensores.
+  - ante fallos de carga, la misma vista deja un mensaje explÃ­cito en pantalla en lugar de quedar en blanco.
 
 ## Actualizacion 2026-04-15 (deploy VPS persistente y bootstrap endurecido)
 
@@ -1673,8 +1666,8 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - El backend emite una cookie auxiliar visible `browser_session_active=1` junto con la sesion real `session_token` (HttpOnly) para sincronizar UI sin exponer el token.
   - `backend/utils/utils.go` mantiene publico `GET /js/login.js` para evitar bloqueo de script de login sin sesion.
 - Frontend:
-  - `web/menu.js` y `web/js/login.js` usan la cookie visible `browser_session_active` como señal de sesion para decidir cuando consultar `/me`, evitando leer `session_token` (HttpOnly) y reduciendo respuestas `401` esperadas en consola antes de login.
-  - `web/index.html` actualiza encabezado principal del portal a `Sistema de Facturación Electrónica` con subtitulo operativo.
+  - `web/menu.js` y `web/js/login.js` usan la cookie visible `browser_session_active` como seÃ±al de sesion para decidir cuando consultar `/me`, evitando leer `session_token` (HttpOnly) y reduciendo respuestas `401` esperadas en consola antes de login.
+  - `web/index.html` actualiza encabezado principal del portal a `Sistema de FacturaciÃ³n ElectrÃ³nica` con subtitulo operativo.
 - Flujo:
   - `/login.html` -> `/auth/google/login` (302 OAuth con callback HTTPS en VPS) -> `/auth/google/callback` -> creacion de sesion -> redireccion por rol.
 
@@ -1754,7 +1747,7 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Backend:
   - nuevo handler `backend/handlers/postgres_performance.go` con endpoint `GET /super/api/postgres/performance`.
-  - el endpoint consolida estado de cluster, metricas por base (`pcs_superadministrador` y `pcs_empresas`), `pg_stat_bgwriter`, consultas activas prolongadas y recomendaciones automáticas para operacion.
+  - el endpoint consolida estado de cluster, metricas por base (`pcs_superadministrador` y `pcs_empresas`), `pg_stat_bgwriter`, consultas activas prolongadas y recomendaciones automÃ¡ticas para operacion.
   - el acceso queda protegido por el flujo existente de `super_administrador` para rutas `/super/*` y `/super/api/*`.
 - Frontend:
   - nueva pagina `web/super/administrar_base_de_datos.html` con tablero de KPIs, tendencias, tablas operativas y exportacion JSON.
@@ -1776,11 +1769,11 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Backend autenticacion Google:
   - `backend/handlers/auth_admin_handlers.go` ahora resuelve `redirect_uri` con host/protocolo de la solicitud (`X-Forwarded-Host`, `X-Forwarded-Proto`, `Host`) cuando el valor configurado no existe o apunta a loopback.
-  - si la configuración heredada usa `localhost` pero la solicitud entra por host público, se reescribe automáticamente a `http(s)://<host-publico>/auth/google/callback` para evitar callbacks rotos.
-  - se persiste temporalmente la URL de callback efectiva en cookie técnica (`oauth_redirect_url`) para garantizar consistencia entre `/auth/google/login` y `/auth/google/callback`.
+  - si la configuraciÃ³n heredada usa `localhost` pero la solicitud entra por host pÃºblico, se reescribe automÃ¡ticamente a `http(s)://<host-publico>/auth/google/callback` para evitar callbacks rotos.
+  - se persiste temporalmente la URL de callback efectiva en cookie tÃ©cnica (`oauth_redirect_url`) para garantizar consistencia entre `/auth/google/login` y `/auth/google/callback`.
 - Resultado operativo:
   - se elimina el error de navegador `Unsafe attempt to load URL ... localhost ... from frame chrome-error://chromewebdata` en flujo OAuth desde VPS.
-  - validación HTTP en producción muestra `redirect_uri=http://2.24.197.58:8080/auth/google/callback`.
+  - validaciÃ³n HTTP en producciÃ³n muestra `redirect_uri=http://2.24.197.58:8080/auth/google/callback`.
 
 ## Actualizacion 2026-04-14 (OAuth runtime: prioridad entorno sobre DB)
 
@@ -1788,28 +1781,28 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
   - `loadGoogleOAuthFromDB` deja de sobreescribir valores ya definidos por entorno.
   - prioridad efectiva: entorno (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URL`) -> DB (`configuraciones`) solo para completar faltantes.
 - Scripts de despliegue:
-  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` incorporan propagación opcional de `GOOGLE_REDIRECT_URL` en bootstrap remoto (`backend/.env.local`).
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` incorporan propagaciÃ³n opcional de `GOOGLE_REDIRECT_URL` en bootstrap remoto (`backend/.env.local`).
 - Resultado operativo:
-  - se reduce riesgo de usar callbacks heredados no válidos en VPS por sobrescritura desde DB.
-  - el bloqueo OAuth actual observado en VPS queda aislado a política/registro de `redirect_uri` en Google Cloud Console (no a salud de DB/backend).
+  - se reduce riesgo de usar callbacks heredados no vÃ¡lidos en VPS por sobrescritura desde DB.
+  - el bloqueo OAuth actual observado en VPS queda aislado a polÃ­tica/registro de `redirect_uri` en Google Cloud Console (no a salud de DB/backend).
 
 ## Actualizacion 2026-04-14 (correccion web root en VPS)
 
 - Backend runtime (estaticos web):
-  - `backend/main.go` actualiza `resolveWebDir()` para incluir rutas candidatas adicionales desde `backend/bin` hacia la raíz del proyecto (`../../web` y `../../../web`).
+  - `backend/main.go` actualiza `resolveWebDir()` para incluir rutas candidatas adicionales desde `backend/bin` hacia la raÃ­z del proyecto (`../../web` y `../../../web`).
   - Se evita fallback indeseado a `backend/web/uploads`, que mostraba solo listado de archivos en `/`.
 - Resultado operativo:
   - `index.html` y `login.html` vuelven a servirse desde `/root/powerfulcontrolsystem/web` en VPS.
-  - La URL pública `http://2.24.197.58:8080/` carga el portal correctamente.
+  - La URL pÃºblica `http://2.24.197.58:8080/` carga el portal correctamente.
 
 ## Actualizacion 2026-04-14 (hardening deploy VPS: guard DSN postgres)
 
 - Scripts de despliegue:
-  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` preservan configuración DB remota existente y validan el modo efectivo antes del redeploy.
+  - `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` preservan configuraciÃ³n DB remota existente y validan el modo efectivo antes del redeploy.
   - si el modo efectivo es `postgres` y falta `DB_EMPRESAS_DSN` o `DB_SUPERADMIN_DSN`, el bootstrap aborta con `BOOTSTRAP_ERROR:POSTGRES_MISSING_DSN`.
 - Resultado operativo:
-  - se evita el fallo tardío `DEPLOY_ERROR:process_not_running` causado por arranque con DSN vacíos.
-  - el error pasa a ser temprano, explícito y trazable en etapa de bootstrap.
+  - se evita el fallo tardÃ­o `DEPLOY_ERROR:process_not_running` causado por arranque con DSN vacÃ­os.
+  - el error pasa a ser temprano, explÃ­cito y trazable en etapa de bootstrap.
 
 ## Actualizacion 2026-04-14 (fase 4 PostgreSQL - estabilizacion de salida operativa)
 
@@ -1850,12 +1843,12 @@ flowchart TD
 ## Actualizacion 2026-04-13 (unificacion de rutas DB runtime)
 
 - Backend runtime:
-  - `backend/main.go` ahora resuelve por defecto las bases motor legado retirado en rutas canónicas dentro de `backend/db/`:
+  - `backend/main.go` ahora resuelve por defecto las bases motor legado retirado en rutas canÃ³nicas dentro de `backend/db/`:
     - `backend/db/pcs_empresas`
     - `backend/db/pcs_superadministrador`
-  - Si el servidor se ejecuta desde un directorio distinto, ya no crea copias en raíz o en `backend/`; mantiene una sola ubicación operativa.
+  - Si el servidor se ejecuta desde un directorio distinto, ya no crea copias en raÃ­z o en `backend/`; mantiene una sola ubicaciÃ³n operativa.
 - Higiene de datos locales:
-  - se depuraron copias duplicadas de `.db` fuera de `backend/db/` para reducir riesgo de desalineación entre entornos local y VPS.
+  - se depuraron copias duplicadas de `.db` fuera de `backend/db/` para reducir riesgo de desalineaciÃ³n entre entornos local y VPS.
 
 ## Actualizacion 2026-04-14 (fase 3 PostgreSQL - autenticacion/sesiones + redeploy VPS)
 
@@ -1926,7 +1919,7 @@ flowchart TD
     - retira bloque de colores de carrito para evitar duplicidad de configuracion y dejar una unica fuente operativa en estaciones.
   - `web/administrar_empresa/estaciones.html`:
     - aplica parseo robusto de configuracion y selecciona el estado mas reciente de sensor por estacion usando `last_seen`.
-    - muestra `Cargando estaciones...` antes del render para no dejar la vista vacía mientras se cargan configuración, carritos y sensores.
+    - muestra `Cargando estaciones...` antes del render para no dejar la vista vacÃ­a mientras se cargan configuraciÃ³n, carritos y sensores.
 
 - QA backend de aislamiento multiempresa:
   - `backend/handlers/empresa_estacion_prefs_test.go`:
@@ -1939,7 +1932,7 @@ flowchart TD
   - `web/js/administrar_empresa.js`:
     - agrega resolucion de `empresa_id` desde URL actual, URL del parent y storage (`sessionStorage`/`localStorage`).
     - persiste contexto de empresa activa (`active_empresa_id`, `empresa_id`, `admin_empresa_id`) para iframes anidados.
-    - corrige navegaciones internas de iframe que pierden `empresa_id`, reescribiendo `src` con el parámetro obligatorio.
+    - corrige navegaciones internas de iframe que pierden `empresa_id`, reescribiendo `src` con el parÃ¡metro obligatorio.
 
 - Frontend subpaginas operativas:
   - `web/administrar_empresa/configuracion.html`
@@ -1948,7 +1941,7 @@ flowchart TD
   - `web/administrar_empresa/auditoria.html`
   - `web/administrar_empresa/administrar_productos.html`
   - `web/administrar_empresa/sensor_puertas_mensajes.html`
-    - ahora resuelven `empresa_id` desde contexto activo (URL, parent y storage), evitando falsos negativos de "empresa no seleccionada" cuando la empresa ya está abierta en el shell principal.
+    - ahora resuelven `empresa_id` desde contexto activo (URL, parent y storage), evitando falsos negativos de "empresa no seleccionada" cuando la empresa ya estÃ¡ abierta en el shell principal.
 
 ### Diagrama de flujo (resolucion de empresa en iframes)
 
@@ -1971,22 +1964,22 @@ flowchart TD
 
 - Backend handlers:
   - `backend/handlers/auth_admin_handlers.go`:
-    - `HandleGoogleLogin` fuerza `prompt=select_account consent` para evitar reutilización silenciosa de sesión Google.
-    - `HandleGoogleCallback` usa `administradores.acepta_contrato` como criterio canonico y redirige a `/accept.html?payload=...` cuando falta aceptación.
+    - `HandleGoogleLogin` fuerza `prompt=select_account consent` para evitar reutilizaciÃ³n silenciosa de sesiÃ³n Google.
+    - `HandleGoogleCallback` usa `administradores.acepta_contrato` como criterio canonico y redirige a `/accept.html?payload=...` cuando falta aceptaciÃ³n.
   - `backend/handlers/accept_handlers.go`:
-    - `AcceptCompleteHandler` valida payload cifrado, verifica reCAPTCHA en backend y solo entonces persiste aceptación + crea cookie `session_token`.
-    - limpia cookie legacy `accepted_contract` para evitar señal compartida entre cuentas.
+    - `AcceptCompleteHandler` valida payload cifrado, verifica reCAPTCHA en backend y solo entonces persiste aceptaciÃ³n + crea cookie `session_token`.
+    - limpia cookie legacy `accepted_contract` para evitar seÃ±al compartida entre cuentas.
 
 - Frontend:
   - `web/login.html` + `web/js/login.js`:
-    - página exclusiva de entrada administrativa, sin modal de contrato ni auto-login.
+    - pÃ¡gina exclusiva de entrada administrativa, sin modal de contrato ni auto-login.
   - `web/accept.html`:
-    - pantalla dedicada para aceptar contrato y completar verificación humana.
+    - pantalla dedicada para aceptar contrato y completar verificaciÃ³n humana.
   - `web/menu.js`:
-    - se desactiva el flujo legacy de modal por querystring (no-op) para evitar doble implementación.
+    - se desactiva el flujo legacy de modal por querystring (no-op) para evitar doble implementaciÃ³n.
 
 - QA:
-  - `backend/handlers/e2e_login_acceptance_test.go` valida el flujo completo callback -> accept -> sesión -> segundo login sin contrato.
+  - `backend/handlers/e2e_login_acceptance_test.go` valida el flujo completo callback -> accept -> sesiÃ³n -> segundo login sin contrato.
   - `backend/handlers/auth_users_carritos_test.go` valida prompt OAuth esperado.
 
 ### Diagrama de flujo (login administrativo)
@@ -2006,7 +1999,7 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/modulos_faltantes.go`:
-    - amplía `empresa_dian_configuracion` con `usar_software_compartido`, `software_id_compartido_ref` y `software_pin_compartido_ref`.
+    - amplÃ­a `empresa_dian_configuracion` con `usar_software_compartido`, `software_id_compartido_ref` y `software_pin_compartido_ref`.
     - agrega indice `ix_dian_empresa_shared_mode` para consultas operativas del modo DIAN por empresa.
 
 - Backend handlers:
@@ -2041,7 +2034,7 @@ flowchart TD
     - agrega `action=generar_xml_ubl_base` para producir un XML UBL 2.1 base con `UBLExtensions`, emisor, cliente y total documental.
     - agrega `action=firmar_xml_xades_base` para incrustar una firma XMLDSig/XAdES base sobre el XML generado, reutilizando `certificado_clave_ref` y certificado X.509 opcional.
     - agrega `action=diagnostico_oficial` para reportar faltantes de configuracion y brechas tecnicas frente al contrato oficial DIAN (SOAP/WSDL, ZIP, TrackId, UBL/firma final).
-    - amplía `action=guia_onboarding` con la secuencia de preparacion tecnica previa al transporte oficial.
+    - amplÃ­a `action=guia_onboarding` con la secuencia de preparacion tecnica previa al transporte oficial.
 
 - QA:
   - `backend/handlers/modulos_faltantes_test.go`:
@@ -2104,12 +2097,12 @@ flowchart TD
     - evita suplantacion de autor (`autor_tipo`, `autor_ref_id`, `autor_nombre`, `autor_email`) usando identidad de sesion.
     - auto-registra al emisor como participante de la conversacion para mantener trazabilidad colaborativa.
     - al crear conversaciones desde usuario, agrega automaticamente al administrador propietario de la empresa (`empresas.usuario_creador`) como participante `admin`.
-    - amplía whitelist de adjuntos con formatos documentales de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`).
+    - amplÃ­a whitelist de adjuntos con formatos documentales de oficina (`doc/docx/xls/xlsx/ppt/pptx/rtf/odt/ods/odp`).
 
 - Frontend:
   - `web/administrar_empresa/chat_y_tareas.html`:
-    - amplía `accept` de archivos para documentos y fotos.
-    - deriva actor de sesion y envía metadata de autor coherente para mensajes/adjuntos.
+    - amplÃ­a `accept` de archivos para documentos y fotos.
+    - deriva actor de sesion y envÃ­a metadata de autor coherente para mensajes/adjuntos.
     - clasifica burbuja propia por actor efectivo en sesion.
 
 - QA:
@@ -2122,7 +2115,7 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/empresa_configuracion_avanzada.go`:
-    - amplía `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales`, `cantidad_decimales`.
+    - amplÃ­a `empresa_configuracion_avanzada` con `moneda_codigo`, `sistema_numerico`, `usar_decimales`, `cantidad_decimales`.
     - agrega normalizacion de moneda, sistema numerico y precision decimal en `Get/UpsertEmpresaConfiguracionAvanzada`.
   - `backend/db/carritos_compras.go`:
     - al crear carrito, hereda `moneda_codigo` configurada por empresa cuando el payload no envia moneda explicita.
@@ -2140,33 +2133,33 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/chat_tareas.go`:
-    - amplía tabla `chat_tareas` con `nota_voz_url`, `nota_voz_mime_type`, `nota_voz_tamano_bytes`, `nota_voz_duracion_segundos`.
+    - amplÃ­a tabla `chat_tareas` con `nota_voz_url`, `nota_voz_mime_type`, `nota_voz_tamano_bytes`, `nota_voz_duracion_segundos`.
     - agrega `SetChatTareaNotaVoz` para actualizar nota de voz por tarea y `empresa_id`.
   - `backend/db/db.go`:
-    - amplía modelo/CRUD de `licencias` con `modulos_habilitados` y `super_rol_habilitado`.
-    - agrega `GetLicenciaPermisoPolicyByEmpresa` para resolver política activa de licencia por empresa.
+    - amplÃ­a modelo/CRUD de `licencias` con `modulos_habilitados` y `super_rol_habilitado`.
+    - agrega `GetLicenciaPermisoPolicyByEmpresa` para resolver polÃ­tica activa de licencia por empresa.
 
 - Backend handlers/rutas:
   - `backend/handlers/chat_tareas.go`:
     - agrega endpoint `POST /api/empresa/chat_tareas/tareas/nota_voz` para upload de nota de voz por tarea.
   - `backend/handlers/empresa_permisos.go`:
-    - aplica restricciones por licencia en middleware (módulos habilitados).
+    - aplica restricciones por licencia en middleware (mÃ³dulos habilitados).
     - calcula `rol_efectivo` (supervisor con `super_rol_habilitado` => capacidades de `admin_empresa`).
-    - amplía respuesta de `/api/empresa/permisos_contexto` con bloque `licencia` y `rol_efectivo`.
+    - amplÃ­a respuesta de `/api/empresa/permisos_contexto` con bloque `licencia` y `rol_efectivo`.
   - `backend/main.go`:
     - registra ruta `/api/empresa/chat_tareas/tareas/nota_voz`.
-    - actualiza bootstrap de `licencias` y registra migración `2026-04-08-004-licencias-permisos-superrol`.
+    - actualiza bootstrap de `licencias` y registra migraciÃ³n `2026-04-08-004-licencias-permisos-superrol`.
 
 - Frontend:
   - `web/administrar_empresa/chat_y_tareas.html`:
-    - agrega grabación de voz (MediaRecorder) para mensajes y tareas.
-    - integra upload de nota de voz de tarea y reproducción en lista de tareas.
+    - agrega grabaciÃ³n de voz (MediaRecorder) para mensajes y tareas.
+    - integra upload de nota de voz de tarea y reproducciÃ³n en lista de tareas.
   - `web/super/licencias.html`:
-    - agrega configuración de módulos por licencia y bandera de super rol.
+    - agrega configuraciÃ³n de mÃ³dulos por licencia y bandera de super rol.
   - `web/administrar_empresa/administrar_productos_menu.html`:
     - queda como punto de entrada operativo por defecto del panel empresa tras retirar la antigua portada `inicio.html`.
   - `web/estilos.css`:
-    - agrega estilos de notas de voz, configuración de licencia por módulos y accesos directos de inicio.
+    - agrega estilos de notas de voz, configuraciÃ³n de licencia por mÃ³dulos y accesos directos de inicio.
 
 ## Actualizacion 2026-04-08 (modulo soporte remoto empresarial)
 
@@ -2174,7 +2167,7 @@ flowchart TD
   - `backend/db/soporte_remoto.go` (nuevo):
     - agrega `EnsureEmpresaSoporteRemotoSchema`.
     - crea tablas `empresa_soporte_remoto_configuracion`, `empresa_soporte_remoto_dispositivos` y `empresa_soporte_remoto_sesiones`.
-    - amplía configuracion con topes `max_conexiones_mes`, `max_minutos_mes` y `max_dispositivos`.
+    - amplÃ­a configuracion con topes `max_conexiones_mes`, `max_minutos_mes` y `max_dispositivos`.
     - implementa flujo de dispositivos por empresa, validacion de acceso por PIN hash, heartbeat de agente, calculo de consumo mensual, bloqueo automatico por plan y registro de intentos bloqueados dentro de `empresa_soporte_remoto_sesiones`.
 
 - Backend handlers:
@@ -2204,43 +2197,43 @@ flowchart TD
   - `web/administrar_empresa/soporte_remoto_view.html` (nuevo):
     - visor embebido con resolucion por `empresa_id + codigo_sesion + token`.
   - `web/super/soporte_remoto.html` (nuevo):
-    - panel tecnico central con lista de empresas, consumo mensual, cupos por plan, dispositivos, sesiones y visor embebido/reapertura en nueva pestaña.
+    - panel tecnico central con lista de empresas, consumo mensual, cupos por plan, dispositivos, sesiones y visor embebido/reapertura en nueva pestaÃ±a.
 
 ## Actualizacion 2026-04-20 (soporte remoto publico estilo RustDesk)
 
 - Backend DB:
   - `backend/db/soporte_remoto.go`:
-    - amplía `empresa_soporte_remoto_configuracion` con URLs de descarga del servidor (`servidor_windows_url`, `servidor_linux_url`) e instrucciones públicas por empresa.
+    - amplÃ­a `empresa_soporte_remoto_configuracion` con URLs de descarga del servidor (`servidor_windows_url`, `servidor_linux_url`) e instrucciones pÃºblicas por empresa.
 - Backend handlers:
   - `backend/handlers/soporte_remoto.go`:
-    - agrega `portal_publico_url` al crear sesiones y amplía el bundle público con descargas de cliente/servidor e instrucciones visibles en `resolver_acceso_publico`.
+    - agrega `portal_publico_url` al crear sesiones y amplÃ­a el bundle pÃºblico con descargas de cliente/servidor e instrucciones visibles en `resolver_acceso_publico`.
   - `backend/handlers/super_soporte_remoto.go`:
-    - agrega `action=config` para que la mesa técnica super edite la configuración pública de soporte remoto por empresa.
+    - agrega `action=config` para que la mesa tÃ©cnica super edite la configuraciÃ³n pÃºblica de soporte remoto por empresa.
 - Integracion de arranque/rutas:
   - `backend/utils/utils.go`:
-    - habilita acceso público a `soporte_remoto_acceso.html` además de `/api/public/soporte_remoto`.
+    - habilita acceso pÃºblico a `soporte_remoto_acceso.html` ademÃ¡s de `/api/public/soporte_remoto`.
 - Frontend:
   - `web/administrar_empresa/soporte_remoto.html`:
-    - reorganiza el módulo para administrar host RustDesk, descargas cliente/servidor, dispositivos y portal público por sesión.
+    - reorganiza el mÃ³dulo para administrar host RustDesk, descargas cliente/servidor, dispositivos y portal pÃºblico por sesiÃ³n.
   - `web/super/soporte_remoto.html`:
-    - integra en la mesa técnica la edición central de configuración pública por empresa sin salir del módulo.
+    - integra en la mesa tÃ©cnica la ediciÃ³n central de configuraciÃ³n pÃºblica por empresa sin salir del mÃ³dulo.
   - `web/soporte_remoto_acceso.html` (nuevo):
-    - página pública de acceso remoto por token con estado de sesión, descargas cliente/servidor, datos de conexión y visor web opcional.
+    - pÃ¡gina pÃºblica de acceso remoto por token con estado de sesiÃ³n, descargas cliente/servidor, datos de conexiÃ³n y visor web opcional.
 
 ## Actualizacion 2026-04-20.2 (soporte remoto: tope diario RustDesk)
 
 - Backend DB:
   - `backend/db/soporte_remoto.go`:
-    - agrega `max_minutos_dia_rustdesk` a la configuración empresarial y calcula consumo diario específico de sesiones RustDesk para el día operativo actual.
-    - valida el tope tanto en creación directa de sesión como al pasar una sesión pendiente a `aprobada/activa`.
+    - agrega `max_minutos_dia_rustdesk` a la configuraciÃ³n empresarial y calcula consumo diario especÃ­fico de sesiones RustDesk para el dÃ­a operativo actual.
+    - valida el tope tanto en creaciÃ³n directa de sesiÃ³n como al pasar una sesiÃ³n pendiente a `aprobada/activa`.
 - Backend handlers:
   - `backend/handlers/soporte_remoto.go`:
-    - devuelve `412` con resumen de uso cuando la aprobación o creación de una sesión RustDesk supera el límite diario configurado.
+    - devuelve `412` con resumen de uso cuando la aprobaciÃ³n o creaciÃ³n de una sesiÃ³n RustDesk supera el lÃ­mite diario configurado.
   - `backend/handlers/super_soporte_remoto.go`:
-    - expone el nuevo campo en configuración/reportes y devuelve el mismo `412` en la mesa técnica super.
+    - expone el nuevo campo en configuraciÃ³n/reportes y devuelve el mismo `412` en la mesa tÃ©cnica super.
 - Frontend:
   - `web/super/soporte_remoto.html`:
-    - agrega el control visual del límite diario RustDesk y el KPI de consumo del día junto a los topes mensuales.
+    - agrega el control visual del lÃ­mite diario RustDesk y el KPI de consumo del dÃ­a junto a los topes mensuales.
 
 ## Actualizacion 2026-04-08 (modulo venta digital global: super + publico)
 
@@ -2482,7 +2475,7 @@ flowchart TD
   - `backend/handlers/calculadora_operativa.go`:
     - expone endpoint `/api/empresa/calculadora` con acciones `config`, `referencias`, `export`, `limpiar`, `activar/desactivar`.
     - valida asociaciones de `carrito_id`/`cotizacion_id` segun configuracion de la empresa.
-    - reutiliza exportador multiformato para trazabilidad homogénea (`json/csv/txt/xls/pdf`).
+    - reutiliza exportador multiformato para trazabilidad homogÃ©nea (`json/csv/txt/xls/pdf`).
   - `backend/handlers/calculadora_operativa_test.go`:
     - agrega `TestEmpresaCalculadoraHandlerConfigOperacionesFiltrosYExport`.
 
@@ -2692,7 +2685,7 @@ flowchart TD
 
 - Backend integraciones:
   - `backend/handlers/modulos_faltantes.go`:
-    - amplía `empresaModuloIntegracionesCRUDHandler` con `action=rotar_credencial` para rotacion de referencias seguras (`env:`, `vault:`, `secret:`, etc.) sin almacenar secretos planos.
+    - amplÃ­a `empresaModuloIntegracionesCRUDHandler` con `action=rotar_credencial` para rotacion de referencias seguras (`env:`, `vault:`, `secret:`, etc.) sin almacenar secretos planos.
     - agrega `action=monitoreo`/`action=alertas` para sondeo de conectividad, latencia, estado y antiguedad de sincronizacion por conector.
 
 - Seguridad y permisos:
@@ -2724,7 +2717,7 @@ flowchart TD
   - `backend/handlers/modulos_faltantes_test.go`:
     - agrega cobertura para capacidad de produccion y seguimiento de hitos logistica.
   - `backend/handlers/reportes_test.go`:
-    - amplía validaciones de metas y desviaciones del dataset de cadena.
+    - amplÃ­a validaciones de metas y desviaciones del dataset de cadena.
 
 ## Actualizacion 2026-04-07 (cierre tecnico modulo 22: RRHH extendido)
 
@@ -2790,8 +2783,8 @@ flowchart TD
 
 - Backend ventas y trazabilidad comercial:
   - `backend/handlers/modulos_faltantes.go`:
-    - amplía `EmpresaVentasCotizacionesHandler` con acciones `convertir_pedido`, `convertir_documento_final` y `embudo`.
-    - amplía `EmpresaVentasPedidosHandler` con `convertir_documento_final`.
+    - amplÃ­a `EmpresaVentasCotizacionesHandler` con acciones `convertir_pedido`, `convertir_documento_final` y `embudo`.
+    - amplÃ­a `EmpresaVentasPedidosHandler` con `convertir_documento_final`.
     - implementa conversion automatica cotizacion -> pedido -> documento final con persistencia en `empresa_facturacion_documentos`.
     - implementa snapshot de embudo comercial con SLA (`cotizacion` y `pedido`) y alertas de vencimiento.
   - `backend/handlers/empresa_permisos.go`:
@@ -2827,7 +2820,7 @@ flowchart TD
 - Frontend compras:
   - `web/administrar_empresa/compras.html`:
     - incorpora campos y acciones UI para aprobacion multinivel, recepcion parcial por JSON de items y validacion documental.
-    - amplía filtros y KPI operativos del modulo de compras.
+    - amplÃ­a filtros y KPI operativos del modulo de compras.
 
 - Pruebas:
   - `backend/handlers/compras_documentos_test.go`:
@@ -2842,7 +2835,7 @@ flowchart TD
     - agrega tabla `facturacion_electronica_reintentos` para cola FE por `empresa_id + tipo_documento + documento_codigo`.
     - incorpora tipos/funciones de consulta y upsert para estado de envio, intentos, contingencia y referencia externa.
   - `backend/db/eventos_contables.go`:
-    - amplía contrato de eventos del modulo `facturacion` con `factura_integracion_enviada`, `factura_integracion_fallida` y `factura_contingencia_activada`.
+    - amplÃ­a contrato de eventos del modulo `facturacion` con `factura_integracion_enviada`, `factura_integracion_fallida` y `factura_contingencia_activada`.
 
 - Backend facturacion electronica:
   - `backend/handlers/facturacion_electronica.go`:
@@ -2863,7 +2856,7 @@ flowchart TD
 
 - Backend DIAN Colombia:
   - `backend/handlers/modulos_faltantes.go`:
-    - amplía `EmpresaDIANColombiaHandler` con acciones reales `firmar_xml_real`, `enviar_documento_real`, `consultar_acuse_real` y `reconexion_dian`.
+    - amplÃ­a `EmpresaDIANColombiaHandler` con acciones reales `firmar_xml_real`, `enviar_documento_real`, `consultar_acuse_real` y `reconexion_dian`.
     - incorpora firma digital RSA-SHA256 de XML utilizando referencia segura de certificado/llave (`certificado_clave_ref`).
     - incorpora envio HTTP a DIAN por `url_dian`, lectura de token por `token_emisor_ref` y normalizacion de estados de acuse.
     - integra contingencia y reconexion operativa actualizando `estado_dian`, `ultimo_envio` y trazabilidad en `observaciones`.
@@ -2910,8 +2903,8 @@ flowchart TD
 
 - Backend propinas y conciliacion de cierres:
   - `backend/db/propinas.go`:
-    - amplía configuracion con campos fiscales (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`).
-    - amplía movimientos con origen, bandera de ajuste manual, referencia de ajuste, `cierre_caja_id`, trazabilidad de conciliacion y snapshot fiscal (`fiscal_*`).
+    - amplÃ­a configuracion con campos fiscales (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`).
+    - amplÃ­a movimientos con origen, bandera de ajuste manual, referencia de ajuste, `cierre_caja_id`, trazabilidad de conciliacion y snapshot fiscal (`fiscal_*`).
     - agrega `CreateEmpresaPropinaAjusteManual` para registrar ajustes positivos/negativos con validacion.
     - agrega `ConciliarEmpresaPropinasConCierreCaja` para consolidar movimientos por fecha/cierre y actualizar totales en `empresa_cierres_caja`.
   - `backend/db/finanzas.go`:
@@ -2927,7 +2920,7 @@ flowchart TD
     - incorpora campos de configuracion fiscal.
     - incorpora registro UI de ajuste manual auditado.
     - incorpora ejecucion UI de conciliacion por cierre y visualizacion de resumen.
-    - amplía filtros y columnas del reporte para mostrar origen/ajustes/impuesto/total fiscal.
+    - amplÃ­a filtros y columnas del reporte para mostrar origen/ajustes/impuesto/total fiscal.
 
 - Pruebas:
   - `backend/handlers/propinas_test.go`:
@@ -3047,7 +3040,7 @@ flowchart TD
 - Frontend login usuario empresa:
   - `web/login_usuario.html` y `web/js/login_usuario.js`:
     - formulario para solicitar token de recuperacion,
-    - formulario para restablecer contraseña con token,
+    - formulario para restablecer contraseÃ±a con token,
     - soporte de prellenado por querystring (`email`, `token_recuperacion`).
 
 ## Actualizacion 2026-04-06 (cierre modulo 2: administracion global super)
@@ -3088,7 +3081,7 @@ flowchart TD
     - politicas configurables de complejidad (`usuarios.password_*`),
     - validacion de rotacion opcional en login con respuesta `password_rotation_required`.
   - `backend/db/usuarios_empresa.go`:
-    - consulta `password_actualizada_en` para evaluar antiguedad de contraseña.
+    - consulta `password_actualizada_en` para evaluar antiguedad de contraseÃ±a.
 
 - Backend correo en pruebas:
   - `backend/db/correo_notificaciones_prueba.go` (nuevo):
@@ -3105,12 +3098,12 @@ flowchart TD
 
 - Frontend login usuario empresa:
   - `web/login_usuario.html` y `web/js/login_usuario.js`:
-    - nuevo formulario para cambio autogestionado de contraseña,
+    - nuevo formulario para cambio autogestionado de contraseÃ±a,
     - manejo de flujo de rotacion obligatoria desde respuesta de login.
 
 - Backend pruebas:
   - `backend/handlers/usuarios_empresa_seguridad_test.go` (nuevo):
-    - valida cambio de contraseña,
+    - valida cambio de contraseÃ±a,
     - valida complejidad configurable,
     - valida rotacion opcional,
     - valida captura de notificaciones de correo en modo pruebas.
@@ -3255,7 +3248,7 @@ flowchart TD
   - `web/administrar_empresa/tarifas_por_minutos.html`:
     - agrega panel de configuracion avanzada de redondeo y limites diarios.
     - agrega boton `Aplicar a todas las estaciones`.
-    - amplía simulador con detalle de calculo y referencia documental contable.
+    - amplÃ­a simulador con detalle de calculo y referencia documental contable.
 
 - Backend pruebas:
   - `backend/db/tarifas_por_minutos_test.go`:
@@ -3283,7 +3276,7 @@ flowchart TD
 - Frontend tarifas por dia:
   - `web/administrar_empresa/tarifas_por_dia.html`:
     - agrega boton `Aplicar a todas las estaciones`.
-    - amplía simulador mostrando dias equivalentes y detalle de prorrateo.
+    - amplÃ­a simulador mostrando dias equivalentes y detalle de prorrateo.
     - agrega panel de descarga del comparativo esperado vs real por estacion.
 
 - Backend pruebas:
@@ -3380,7 +3373,7 @@ flowchart TD
 
 - Backend reportes:
   - `backend/handlers/reportes.go`:
-    - rediseña el dataset `operativo_compras_movimientos` para consolidar compras por proveedor usando documentos transaccionales de compras.
+    - rediseÃ±a el dataset `operativo_compras_movimientos` para consolidar compras por proveedor usando documentos transaccionales de compras.
     - agrega KPI de ciclo documental y costo operativo:
       - `ordenes_emitidas`, `recepciones`, `contabilizaciones`,
       - `monto_ordenado`, `monto_recepcionado`, `monto_contabilizado`, `brecha_monto`,
@@ -3405,7 +3398,7 @@ flowchart TD
 
 - Backend pruebas:
   - `backend/handlers/reportes_test.go`:
-    - amplía preparacion de esquema de pruebas para incluir tablas ERP extendidas (`EnsureEmpresaModulosFaltantesSchema`).
+    - amplÃ­a preparacion de esquema de pruebas para incluir tablas ERP extendidas (`EnsureEmpresaModulosFaltantesSchema`).
     - incorpora `TestEmpresaReportesHandlerDatasetOperativoModulosResumen` para validar:
       - conteos por modulo (`registros_totales`, `registros_activos`, `registros_rango`),
       - fecha de ultimo registro,
@@ -3723,10 +3716,10 @@ flowchart TD
     - se parametriza `hora_check_in` y `hora_check_out`.
     - se implementa calculo de dias cobrados y monto total por permanencia.
   - `backend/db/carritos_tarifa_dia.go` (nuevo):
-    - se integra recálculo automático del carrito activo de estación con tarifa diaria.
-    - se recalcula total de deuda en función de `activado_en` y fecha de corte.
+    - se integra recÃ¡lculo automÃ¡tico del carrito activo de estaciÃ³n con tarifa diaria.
+    - se recalcula total de deuda en funciÃ³n de `activado_en` y fecha de corte.
   - `backend/db/carritos_compras.go`:
-    - `RecalculateCarritoCompraTotals` delega a recálculo con tarifa diaria para mantener consistencia de `total`.
+    - `RecalculateCarritoCompraTotals` delega a recÃ¡lculo con tarifa diaria para mantener consistencia de `total`.
 
 - Backend handlers:
   - `backend/handlers/tarifas_por_dia.go` (nuevo):
@@ -3734,7 +3727,7 @@ flowchart TD
     - acciones `listar`, `detalle`, `aplicable`, `calcular`, `activar` y `desactivar`.
   - `backend/handlers/carritos_compras.go`:
     - al listar carritos se refresca deuda diaria para estaciones activas.
-    - al pagar estación se recalcula tarifa diaria antes de validar el cobro.
+    - al pagar estaciÃ³n se recalcula tarifa diaria antes de validar el cobro.
 
 - Rutas y bootstrap (`backend/main.go`):
   - se asegura esquema con `EnsureEmpresaTarifasPorDiaSchema`.
@@ -3743,16 +3736,16 @@ flowchart TD
 
 - Frontend empresa:
   - `web/administrar_empresa/tarifas_por_dia.html` (nuevo):
-    - formulario de tarifa diaria por estación,
-    - configuración de check-in/check-out,
+    - formulario de tarifa diaria por estaciÃ³n,
+    - configuraciÃ³n de check-in/check-out,
     - simulador por rango de fechas.
   - `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
-    - integración de `linkTarifasPorDia` en menú y permisos del módulo ventas.
+    - integraciÃ³n de `linkTarifasPorDia` en menÃº y permisos del mÃ³dulo ventas.
 
 - Pruebas:
-  - `backend/db/tarifas_por_dia_test.go` valida CRUD, cálculo diario e integración con carrito.
-  - `backend/handlers/tarifas_por_dia_test.go` valida contrato HTTP del módulo.
-  - `backend/handlers/carritos_tarifa_por_dia_test.go` valida recálculo automático en listado de carritos.
+  - `backend/db/tarifas_por_dia_test.go` valida CRUD, cÃ¡lculo diario e integraciÃ³n con carrito.
+  - `backend/handlers/tarifas_por_dia_test.go` valida contrato HTTP del mÃ³dulo.
+  - `backend/handlers/carritos_tarifa_por_dia_test.go` valida recÃ¡lculo automÃ¡tico en listado de carritos.
 
 ## Actualizacion 2026-04-05 (modulo de tarifas por minutos por estacion)
 
@@ -4116,7 +4109,7 @@ flowchart TD
     - activar/desactivar,
     - eliminar,
     - validar aplicacion por monto.
-  - generacion automatica de codigo promocional cuando no se envía valor manual.
+  - generacion automatica de codigo promocional cuando no se envÃ­a valor manual.
 
 - Backend carrito/pagos (`backend/db/carritos_compras.go`):
   - se agregan campos `metodo_pago` y `referencia_pago` en `carritos_compras`.
@@ -4143,7 +4136,7 @@ flowchart TD
 
 - Frontend empresa:
   - nueva pagina `web/administrar_empresa/codigos_de_descuento.html` para CRUD de codigos promocionales.
-  - `web/administrar_empresa/carrito_de_compras.html` amplía el flujo de cierre con metodo de pago, referencia y validacion de codigo.
+  - `web/administrar_empresa/carrito_de_compras.html` amplÃ­a el flujo de cierre con metodo de pago, referencia y validacion de codigo.
   - integracion de menu en:
     - `web/administrar_empresa.html` (`linkCodigosDescuento`),
     - `web/js/administrar_empresa.js` (permiso modulo `ventas`, accion `create`).
@@ -4186,7 +4179,7 @@ flowchart TD
   - integracion de menu en:
     - `web/administrar_empresa.html` (`linkCombosProductos`),
     - `web/js/administrar_empresa.js` (permiso modulo `inventario`, accion `create`).
-  - `web/administrar_empresa/carrito_de_compras.html` amplía el flujo para incluir `tipo_item=combo` y busqueda en catalogo inteligente de combos.
+  - `web/administrar_empresa/carrito_de_compras.html` amplÃ­a el flujo para incluir `tipo_item=combo` y busqueda en catalogo inteligente de combos.
 
 - Pruebas:
   - `backend/db/productos_categorias_test.go` agrega `TestCombosProductoCRUDConReceta`.
@@ -4396,7 +4389,7 @@ flowchart TD
 ## Actualizacion 2026-04-04 (punto 7 - gestion de proveedores: catalogo, precios y condiciones)
 
 - Backend DB (`backend/db/productos.go`):
-  - se amplía el modelo `Proveedor` con:
+  - se amplÃ­a el modelo `Proveedor` con:
     - `catalogo_referencia`,
     - `precio_base_referencial`,
     - `descuento_porcentaje`,
@@ -4410,8 +4403,8 @@ flowchart TD
   - los eventos contables del modulo compras incluyen metadata comercial del proveedor para trazabilidad.
 
 - Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
-  - se amplía el formulario de proveedores con campos de catalogo, precio base y condiciones de negociacion.
-  - se amplía la tabla de proveedores para mostrar precio base y condiciones relevantes.
+  - se amplÃ­a el formulario de proveedores con campos de catalogo, precio base y condiciones de negociacion.
+  - se amplÃ­a la tabla de proveedores para mostrar precio base y condiciones relevantes.
   - se agrega validacion de rango en cliente antes de enviar cambios al backend.
 
 - Pruebas:
@@ -4438,7 +4431,7 @@ flowchart TD
     - `stock_minimo` y `stock_maximo` no pueden ser negativos,
     - `stock_minimo` no puede superar `stock_maximo` cuando `stock_maximo > 0`.
   - se agrega `GetAlertasQuiebreByEmpresa` para listar quiebres/bajo minimo por empresa, producto y bodega.
-  - se amplía `GetMovimientosByEmpresa` como kardex operativo con filtros de consulta:
+  - se amplÃ­a `GetMovimientosByEmpresa` como kardex operativo con filtros de consulta:
     - `bodega_id` (origen o destino),
     - `tipo` de movimiento,
     - rango `desde`/`hasta` por fecha.
@@ -4501,11 +4494,11 @@ flowchart TD
 ## Actualizacion 2026-04-04 (continuacion punto 5 - top criticos y reposicion guiada)
 
 - Frontend empresa (`web/administrar_empresa/administrar_productos.html`):
-  - se agrega bloque `Top productos críticos (déficit)` dentro de inventario.
+  - se agrega bloque `Top productos crÃ­ticos (dÃ©ficit)` dentro de inventario.
   - la lista se alimenta de `GET /api/empresa/inventario/alertas` y prioriza:
     - estado `sin_stock`,
     - mayor `deficit`.
-  - se agrega accion `Preparar reposición` para precargar el formulario de ajuste de inventario con:
+  - se agrega accion `Preparar reposiciÃ³n` para precargar el formulario de ajuste de inventario con:
     - `producto_id`,
     - `bodega_id`,
     - `tipo=entrada`,
@@ -4738,7 +4731,7 @@ flowchart TD
   - `backend/handlers/chat_con_inteligencia_artificial_controller.go` migra el consumo de IA a Google Generative Language API (`generateContent`).
 
 - Frontend empresa:
-  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` se rediseña con experiencia visual tipo Gemini.
+  - `web/administrar_empresa/chat_con_inteligencia_artificial.html` se rediseÃ±a con experiencia visual tipo Gemini.
   - Se hace explicita la autenticacion Google y el alcance por `empresa_id` en la interfaz.
 
 - Frontend super:
@@ -4762,7 +4755,7 @@ flowchart TD
 ## Actualizacion 2026-04-04 (ampliacion de cobertura de permisos en rutas operativas)
 
 - Backend handlers:
-  - `backend/handlers/empresa_permisos.go` amplía modulos autorizables a `clientes`, `compras` y `facturacion`.
+  - `backend/handlers/empresa_permisos.go` amplÃ­a modulos autorizables a `clientes`, `compras` y `facturacion`.
   - Se agregan wrappers:
     - `WithEmpresaClientesPermissions`,
     - `WithEmpresaComprasPermissions`,
@@ -4872,7 +4865,7 @@ flowchart TD
     - `compra_contabilizada`.
 
 - Seguridad por permisos:
-  - `backend/handlers/empresa_permisos.go` amplía el mapeo de acciones para compras/facturacion en operaciones transaccionales (`emitir/recepcionar/contabilizar/anular`).
+  - `backend/handlers/empresa_permisos.go` amplÃ­a el mapeo de acciones para compras/facturacion en operaciones transaccionales (`emitir/recepcionar/contabilizar/anular`).
 
 - Pruebas:
   - `backend/handlers/eventos_contables_modulos_test.go` incorpora:
@@ -4915,7 +4908,7 @@ flowchart TD
 
 - Pruebas:
   - Nuevo `backend/db/documentos_transaccionales_test.go` para validar upsert/lectura y estabilidad de ID documental.
-  - `backend/handlers/eventos_contables_modulos_test.go` amplía validación para asegurar reutilización de `entidad_id` en transiciones del mismo documento.
+  - `backend/handlers/eventos_contables_modulos_test.go` amplÃ­a validaciÃ³n para asegurar reutilizaciÃ³n de `entidad_id` en transiciones del mismo documento.
 
 ## Actualizacion 2026-04-04 (inicio punto 11 - tablero minimo financiero-operativo)
 
@@ -4927,14 +4920,14 @@ flowchart TD
   - El resumen soporta filtros por rango de fecha (`desde`, `hasta`) para analitica de corto plazo.
 
 - Backend handlers:
-  - `backend/handlers/finanzas.go` amplía `GET /api/empresa/finanzas/movimientos` con `action=tablero|dashboard|resumen_kpi` para exponer el tablero en API.
+  - `backend/handlers/finanzas.go` amplÃ­a `GET /api/empresa/finanzas/movimientos` con `action=tablero|dashboard|resumen_kpi` para exponer el tablero en API.
 
 - Frontend empresa:
   - `web/administrar_empresa/reportes.html` evoluciona de reportes solo operativos a tablero mixto (operativo + financiero + contable) en la misma vista.
-  - Se incorpora consumo asíncrono del resumen y fallback visual `N/D` cuando no hay acceso al endpoint financiero.
+  - Se incorpora consumo asÃ­ncrono del resumen y fallback visual `N/D` cuando no hay acceso al endpoint financiero.
 
 - Pruebas:
-  - `backend/db/finanzas_test.go` agrega cobertura de consolidación de KPI en `TestGetEmpresaReportesTableroResumen`.
+  - `backend/db/finanzas_test.go` agrega cobertura de consolidaciÃ³n de KPI en `TestGetEmpresaReportesTableroResumen`.
   - `backend/handlers/eventos_contables_modulos_test.go` agrega `TestEmpresaFinanzasTableroResumenHandler` para validar contrato HTTP del nuevo `action=tablero`.
 
 ## Actualizacion 2026-04-04 (inicio punto 12 - cierres de caja por sucursal)
@@ -4998,7 +4991,7 @@ flowchart TD
 ## Actualizacion 2026-04-04 (continuacion puntos 10 y 11 - asientos canonicos + tablero financiero)
 
 - Backend DB:
-  - `backend/db/eventos_contables.go` amplía trazabilidad de `empresa_eventos_contables` con:
+  - `backend/db/eventos_contables.go` amplÃ­a trazabilidad de `empresa_eventos_contables` con:
     - intentos y fecha de ultimo intento,
     - error de procesamiento,
     - referencia a asiento generado.
@@ -5019,7 +5012,7 @@ flowchart TD
   - Se publica ruta protegida `/api/empresa/finanzas/asientos_contables`.
 
 - Reportes y tablero:
-  - `backend/db/finanzas.go` amplía `GetEmpresaReportesTableroResumen` con:
+  - `backend/db/finanzas.go` amplÃ­a `GetEmpresaReportesTableroResumen` con:
     - `estado_resultados`,
     - `balance_general`,
     - KPI contables `asientos_generados` y `asientos_monto_total`.
@@ -5221,22 +5214,22 @@ flowchart TD
 
 - Backend utilidades (`backend/utils/utils.go`):
   - `LoggingMiddleware` ahora agrega trazabilidad por request con `request_id`, `empresa_id` y latencia.
-  - Se incorpora separación de logs por empresa en archivos dedicados:
+  - Se incorpora separaciÃ³n de logs por empresa en archivos dedicados:
     - `backend/logs/empresa_<id>.log`
     - `backend/logs/empresa_global.log` (fallback)
   - `JSONErrorMiddleware` normaliza errores API no-JSON con respuesta estructurada y metadatos de trazabilidad (`request_id` / `empresa_id`).
 
 - Backend handlers multipart:
   - `backend/handlers/chat_tareas.go` y `backend/handlers/productos.go` fijan `X-Empresa-ID` al resolver `empresa_id` desde formulario.
-  - Esto mantiene separación de logs por empresa también en endpoints de upload.
+  - Esto mantiene separaciÃ³n de logs por empresa tambiÃ©n en endpoints de upload.
 
-- Backend autenticación de usuarios empresa:
+- Backend autenticaciÃ³n de usuarios empresa:
   - `backend/handlers/usuarios_empresa.go` aplica hardening de respuestas `500` para no exponer detalles internos.
   - Se conserva trazabilidad con logs de servidor contextualizados por empresa/usuario.
 
 - Scripts operativos (`scripts/iniciar_servidor.ps1`):
-  - Se agrega detección de caída temprana de `server.exe` durante arranque.
-  - Ante fallo, se imprime diagnóstico inmediato con últimas líneas de `backend/server.err`.
+  - Se agrega detecciÃ³n de caÃ­da temprana de `server.exe` durante arranque.
+  - Ante fallo, se imprime diagnÃ³stico inmediato con Ãºltimas lÃ­neas de `backend/server.err`.
 
 ## Actualizacion 2026-04-04 (modulo de finanzas multiempresa)
 
@@ -5245,7 +5238,7 @@ flowchart TD
   - Nuevas tablas:
     - `empresa_finanzas_movimientos` para ingresos/egresos con comprobantes.
     - `empresa_finanzas_configuracion` para parametrizacion financiera por empresa.
-  - `empresa_finanzas_configuracion` se amplía con plan de cuentas contable por empresa:
+  - `empresa_finanzas_configuracion` se amplÃ­a con plan de cuentas contable por empresa:
     - destino de integracion externa,
     - cuentas base de asiento,
     - mapeo de cuentas por categoria para ingresos/egresos.
@@ -5268,7 +5261,7 @@ flowchart TD
     - filtros operativos,
     - KPIs de ingresos/egresos/balance,
     - impresion de comprobantes en formato carta y POS.
-    - separacion del libro en pestañas `Todos`, `Ingresos` y `Egresos`.
+    - separacion del libro en pestaÃ±as `Todos`, `Ingresos` y `Egresos`.
     - exportacion de resultados filtrados a Excel (CSV), PDF y JSON contable.
     - plantilla dedicada SIIGO en CSV para importacion de asientos.
     - exportacion de balance de prueba en CSV.
@@ -5290,28 +5283,28 @@ flowchart TD
     - `periodo_contable`,
     - `retencion_fuente`, `retencion_ica`, `retencion_iva`, `total_retenciones`,
     - `total_neto`.
-  - Se aplica bloqueo de cambios cuando el periodo está cerrado en operaciones de crear/editar/eliminar/activar/desactivar movimientos.
+  - Se aplica bloqueo de cambios cuando el periodo estÃ¡ cerrado en operaciones de crear/editar/eliminar/activar/desactivar movimientos.
   - `empresa_finanzas_configuracion` incorpora cuentas de retenciones por cobrar/pagar.
 
 - Backend handlers (`backend/handlers/finanzas.go`):
-  - Se amplía filtro de movimientos por `periodo`.
+  - Se amplÃ­a filtro de movimientos por `periodo`.
   - Se agrega endpoint de periodos:
     - `GET/POST/PUT /api/empresa/finanzas/periodos`
-  - Se normaliza respuesta HTTP 409 cuando el periodo del movimiento está cerrado.
+  - Se normaliza respuesta HTTP 409 cuando el periodo del movimiento estÃ¡ cerrado.
 
 - Bootstrap (`backend/main.go`):
-  - Se registra migración `2026-04-03-004-finanzas-periodos-retenciones`.
+  - Se registra migraciÃ³n `2026-04-03-004-finanzas-periodos-retenciones`.
   - Se publica ruta `/api/empresa/finanzas/periodos`.
 
 - Frontend (`web/administrar_empresa/finanzas.html`):
   - Se agregan controles para cerrar/reabrir periodos contables y refrescar listado de periodos.
   - Se incorporan campos de retenciones y totales calculados (bruto, retenciones, neto) en formulario y tabla.
   - Se agregan exportaciones contables de `balance general`, `libro diario` y `libro mayor` en CSV.
-  - Se integra validación local para evitar guardado cuando el periodo se encuentra cerrado.
+  - Se integra validaciÃ³n local para evitar guardado cuando el periodo se encuentra cerrado.
 
-- Endurecimiento técnico:
+- Endurecimiento tÃ©cnico:
   - `backend/handlers/system_empresas_handlers.go` usa `net.JoinHostPort` para compatibilidad IPv6 en escaneo de puertos.
-  - `scripts/iniciar_servidor.ps1` ajusta nombre de función de lectura `.env` con verbo aprobado en el script.
+  - `scripts/iniciar_servidor.ps1` ajusta nombre de funciÃ³n de lectura `.env` con verbo aprobado en el script.
 
 ## Actualizacion 2026-04-04 (chat_con_inteligencia_artificial por empresa)
 
@@ -5362,22 +5355,22 @@ flowchart TD
   - Se agrega tabla `empresa_ai_modelo_preferido` para persistir el modelo IA preferido por `empresa_id + admin_email`.
   - Se incorporan funciones:
     - `GetEmpresaAIModeloPreferido` (lectura de preferencia),
-    - `UpsertEmpresaAIModeloPreferido` (alta/actualización de preferencia).
+    - `UpsertEmpresaAIModeloPreferido` (alta/actualizaciÃ³n de preferencia).
 
 - Backend handlers:
   - `backend/handlers/chat_con_inteligencia_artificial_controller.go`:
     - incorpora endpoint `GET/PUT /api/empresa/chat_con_inteligencia_artificial/modelo_preferido`,
-    - amplía `GET /modelos` para devolver `google_account` y `modelo_preferido`,
-    - registra automáticamente el modelo usado en `POST /consultar` como preferencia de la cuenta Google autenticada.
+    - amplÃ­a `GET /modelos` para devolver `google_account` y `modelo_preferido`,
+    - registra automÃ¡ticamente el modelo usado en `POST /consultar` como preferencia de la cuenta Google autenticada.
   - `backend/handlers/chat_con_inteligencia_artificial_router.go` registra la nueva ruta de preferencia.
 
 - Frontend (`web/administrar_empresa/chat_con_inteligencia_artificial.html`):
   - Carga el modelo preferido al iniciar la pantalla.
-  - Guarda automáticamente el nuevo modelo seleccionado para la cuenta Google.
+  - Guarda automÃ¡ticamente el nuevo modelo seleccionado para la cuenta Google.
   - Muestra la cuenta Google vinculada dentro del bloque de uso diario.
 
 - Impacto funcional:
-  - Se aproxima la experiencia de selección persistente de modelo al patrón de plataformas tipo ChatGPT, manteniendo aislamiento por `empresa_id`.
+  - Se aproxima la experiencia de selecciÃ³n persistente de modelo al patrÃ³n de plataformas tipo ChatGPT, manteniendo aislamiento por `empresa_id`.
 
 ## Actualizacion 2026-04-03 (centro de ayuda + scanner de codigo + configuracion por empresa)
 
@@ -5409,7 +5402,7 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/carritos_compras.go` ahora reserva inventario al agregar items de tipo producto al carrito.
-  - Se libera inventario automaticamente al desactivar/eliminar items activos o al resetear carritos abiertos de estación.
+  - Se libera inventario automaticamente al desactivar/eliminar items activos o al resetear carritos abiertos de estaciÃ³n.
   - En venta cerrada, el stock reservado se mantiene y no se revierte en el pago.
 
 - Backend handlers:
@@ -5422,7 +5415,7 @@ flowchart TD
     - validacion de error por stock insuficiente.
 
 - Tooling seed:
-  - `backend/tools/seed_motel_malibu/main.go` amplía carga demo a 10 clientes y 10 usuarios de empresa.
+  - `backend/tools/seed_motel_malibu/main.go` amplÃ­a carga demo a 10 clientes y 10 usuarios de empresa.
   - Incluye validacion automatica de inventario (antes de agregar, despues de agregar y despues de pagar).
   - Mantiene y confirma validacion de impresion con vista previa POS/Carta.
 
@@ -5519,12 +5512,12 @@ flowchart TD
   - Se refuerza login/primer ingreso de usuarios de empresa con lookup opcional por `empresa_id`.
 
 - Frontend:
-  - Nueva subpagina `web/administrar_empresa/facturacion_electronica.html` para configurar FE por país (CO/PA/EC).
-  - Menú de `administrar_empresa` actualizado con acceso a `Facturación electrónica`.
-  - `web/menu.js` ahora detecta país automáticamente (API + señales de navegador) y muestra bandera en el menú flotante.
+  - Nueva subpagina `web/administrar_empresa/facturacion_electronica.html` para configurar FE por paÃ­s (CO/PA/EC).
+  - MenÃº de `administrar_empresa` actualizado con acceso a `FacturaciÃ³n electrÃ³nica`.
+  - `web/menu.js` ahora detecta paÃ­s automÃ¡ticamente (API + seÃ±ales de navegador) y muestra bandera en el menÃº flotante.
 
 - Validacion de alcance multiempresa:
-  - Auditoría post-migración en `pcs_empresas`: todas las tablas no sistema quedaron con columna `empresa_id`.
+  - AuditorÃ­a post-migraciÃ³n en `pcs_empresas`: todas las tablas no sistema quedaron con columna `empresa_id`.
 
 ## Actualizacion 2026-04-01 (colores de estado de carrito por empresa + ajustes FE)
 
@@ -5532,14 +5525,14 @@ flowchart TD
   - `backend/db/empresa_configuracion_avanzada.go` agrega campos persistentes:
     - `color_carrito_activo`
     - `color_carrito_inactivo`
-  - Se incluyen defaults y normalización HEX para evitar valores inválidos.
-  - `backend/db/facturacion_electronica.go` ahora prellena configuración FE por país con datos de `empresa_configuracion_avanzada` cuando no existe registro FE por país.
+  - Se incluyen defaults y normalizaciÃ³n HEX para evitar valores invÃ¡lidos.
+  - `backend/db/facturacion_electronica.go` ahora prellena configuraciÃ³n FE por paÃ­s con datos de `empresa_configuracion_avanzada` cuando no existe registro FE por paÃ­s.
 
 - Frontend:
-  - `web/administrar_empresa/estaciones.html` consulta estado operativo real de carritos por estación y aplica color dinámico de tarjeta (activo/inactivo).
+  - `web/administrar_empresa/estaciones.html` consulta estado operativo real de carritos por estaciÃ³n y aplica color dinÃ¡mico de tarjeta (activo/inactivo).
   - `web/administrar_empresa/configuracion.html` incorpora tarjeta para configurar colores de estado del carrito.
-  - Se robustece guardado de configuración avanzada desde `configuracion.html` con estrategia de merge para no sobrescribir campos fiscales/FE no visibles en ese formulario.
-  - `web/administrar_empresa/configuracion_avanzada.html` incorpora edición de colores para mantener consistencia en guardados completos.
+  - Se robustece guardado de configuraciÃ³n avanzada desde `configuracion.html` con estrategia de merge para no sobrescribir campos fiscales/FE no visibles en ese formulario.
+  - `web/administrar_empresa/configuracion_avanzada.html` incorpora ediciÃ³n de colores para mantener consistencia en guardados completos.
 
 - Estilos:
   - `web/estilos.css` agrega estilos de estados (`station-card-active`/`station-card-inactive`) y badge visual por estado de carrito.
@@ -5547,11 +5540,11 @@ flowchart TD
 ## Actualizacion 2026-04-01 (ciclo operativo de estaciones: inactivo -> activo -> inactivo)
 
 - Frontend:
-  - `web/administrar_empresa/configuracion_de_estaciones.html` sincroniza carritos de estación en estado base inactivo/cerrado para que el módulo inicie sin estaciones activas.
-  - `web/administrar_empresa/estaciones.html` muestra fecha/hora de entrada (`activado_en`) solo cuando la estación está activa.
+  - `web/administrar_empresa/configuracion_de_estaciones.html` sincroniza carritos de estaciÃ³n en estado base inactivo/cerrado para que el mÃ³dulo inicie sin estaciones activas.
+  - `web/administrar_empresa/estaciones.html` muestra fecha/hora de entrada (`activado_en`) solo cuando la estaciÃ³n estÃ¡ activa.
 
 - Flujo funcional:
-  - Al seleccionar una estación, el carrito se activa.
+  - Al seleccionar una estaciÃ³n, el carrito se activa.
   - Al finalizar la compra, el carrito vuelve a inactivo/cerrado.
 
 - Estilos:
@@ -5560,12 +5553,12 @@ flowchart TD
 ## Actualizacion 2026-04-01 (persistencia de subpagina al recargar F5)
 
 - Frontend:
-  - `web/js/administrar_empresa.js` conserva y restaura la última subpagina por `empresa_id` en el iframe principal.
-  - `web/js/super_administrador.js` conserva y restaura la última subpagina abierta en el iframe de super administrador.
-  - `web/js/seleccionar_empresa.js` conserva y restaura la última vista activa (`empresas`, `form` o `frame`).
+  - `web/js/administrar_empresa.js` conserva y restaura la Ãºltima subpagina por `empresa_id` en el iframe principal.
+  - `web/js/super_administrador.js` conserva y restaura la Ãºltima subpagina abierta en el iframe de super administrador.
+  - `web/js/seleccionar_empresa.js` conserva y restaura la Ãºltima vista activa (`empresas`, `form` o `frame`).
 
 - Impacto funcional:
-  - Al recargar con F5, los paneles administrativos mantienen la misma página/vista abierta y evitan volver al estado inicial por defecto.
+  - Al recargar con F5, los paneles administrativos mantienen la misma pÃ¡gina/vista abierta y evitan volver al estado inicial por defecto.
 
 ## Actualizacion 2026-04-01 (inactivacion masiva de carritos de estaciones + validacion E2E)
 
@@ -5609,19 +5602,19 @@ flowchart TD
 
 - Backend DB:
   - `backend/db/productos.go` incorpora tabla `categorias_productos` por `empresa_id`.
-  - Se agrega `productos.categoria_id` para relación con catálogo y se mantiene `productos.categoria` como respaldo textual de compatibilidad.
-  - Migración segura: se crean categorías automáticas a partir de valores legacy en `productos.categoria` y se hace backfill de `categoria_id`.
+  - Se agrega `productos.categoria_id` para relaciÃ³n con catÃ¡logo y se mantiene `productos.categoria` como respaldo textual de compatibilidad.
+  - MigraciÃ³n segura: se crean categorÃ­as automÃ¡ticas a partir de valores legacy en `productos.categoria` y se hace backfill de `categoria_id`.
 
 - Backend handlers/rutas:
   - `backend/handlers/productos.go` agrega endpoint CRUD:
     - `GET/POST/PUT/DELETE /api/empresa/categorias_productos`
   - `GET /api/empresa/productos` ahora acepta filtro opcional `categoria_id`.
-  - `backend/main.go` registra la nueva ruta del módulo.
+  - `backend/main.go` registra la nueva ruta del mÃ³dulo.
 
 - Frontend:
-  - `web/administrar_empresa/administrar_productos.html` agrega sección de gestión de categorías (crear/editar/activar/eliminar).
-  - El formulario de productos cambia de categoría libre a selector de catálogo.
-  - El listado de productos agrega columna de categoría y filtro por categoría.
+  - `web/administrar_empresa/administrar_productos.html` agrega secciÃ³n de gestiÃ³n de categorÃ­as (crear/editar/activar/eliminar).
+  - El formulario de productos cambia de categorÃ­a libre a selector de catÃ¡logo.
+  - El listado de productos agrega columna de categorÃ­a y filtro por categorÃ­a.
 
 - Pruebas:
   - Nuevas pruebas en `backend/db/productos_categorias_test.go`.

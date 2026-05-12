@@ -515,22 +515,6 @@
     }
   });
 
-  document.getElementById("taxiSyncCoreBtn").addEventListener("click", async function (ev) {
-    try {
-      ev.currentTarget.disabled = true;
-      setPageMsg("Sincronizando taxi system con el nucleo...");
-      var resp = await j(base + "&action=sincronizar_nucleo", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-      state.integracionNucleo = resp.integracion || null;
-      renderCoreIntegration();
-      setPageMsg("Taxi system sincronizado con clientes, servicios, ventas y pagos centrales.");
-      await loadDashboard();
-    } catch (e) {
-      setPageMsg(e.message || "No se pudo sincronizar con el nucleo.", true);
-    } finally {
-      ev.currentTarget.disabled = false;
-    }
-  });
-
   (async function init() {
     try {
       setTab(initialTabFromURL());

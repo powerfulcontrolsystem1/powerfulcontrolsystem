@@ -86,17 +86,6 @@ type EmpresaParqueaderoDashboard struct {
 	Config           EmpresaParqueaderoConfig   `json:"config"`
 }
 
-type EmpresaParqueaderoIntegracionNucleoResumen struct {
-	EmpresaID              int64    `json:"empresa_id"`
-	TicketsSincronizados   int      `json:"tickets_sincronizados"`
-	TicketsPendientes      int      `json:"tickets_pendientes"`
-	ServiciosSincronizados int      `json:"servicios_sincronizados"`
-	Errores                []string `json:"errores,omitempty"`
-	EstadoIntegracion      string   `json:"estado_integracion"`
-	VisibleOperativo       bool     `json:"visible_operativo"`
-	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
-}
-
 func EnsureEmpresaParqueaderoSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_parqueadero_config (
@@ -560,78 +549,6 @@ func CerrarEmpresaParqueaderoTicket(dbConn *sql.DB, empresaID, ticketID int64, m
 	}
 	closed, err := GetEmpresaParqueaderoTicketByID(dbConn, empresaID, ticketID)
 	return closed, cobro, err
-}
-
-func SyncEmpresaParqueaderoNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaParqueaderoIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaParqueaderoSchema(dbConn); err != nil {
-		return nil, err
-	}
-	cfg, err := GetEmpresaParqueaderoConfig(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaParqueaderoIntegracionNucleoResumen{
-		EmpresaID:         empresaID,
-		EstadoIntegracion: "plantilla_integrada_nucleo",
-		VisibleOperativo:  true,
-	}
-	tickets, err := ListEmpresaParqueaderoTickets(dbConn, empresaID, "salido", 500)
-	if err != nil {
-		return nil, err
-	}
-	for _, ticket := range tickets {
-		if ticket.CarritoID > 0 || ticket.Total <= 0 {
-			resumen.TicketsPendientes++
-			continue
-		}
-		ticket.UsuarioCierre = usuario
-		if strings.TrimSpace(ticket.MetodoPago) == "" {
-			ticket.MetodoPago = "efectivo"
-		}
-		cobro := EmpresaParqueaderoCobro{
-			EmpresaID:       ticket.EmpresaID,
-			TicketID:        ticket.ID,
-			CodigoTicket:    ticket.CodigoTicket,
-			Placa:           ticket.Placa,
-			FechaEntrada:    ticket.FechaEntrada,
-			FechaSalida:     ticket.FechaSalida,
-			MinutosCobrados: ticket.MinutosCobrados,
-			Subtotal:        ticket.Subtotal,
-			Impuestos:       ticket.Impuestos,
-			Total:           ticket.Total,
-			Moneda:          cfg.Moneda,
-			Detalle:         "Sincronizacion historica de parqueadero.",
-		}
-		carritoID, itemID, servicioID, err := createEmpresaParqueaderoCarrito(dbConn, cfg, ticket, cobro, ticket.MetodoPago)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("ticket %d: %v", ticket.ID, err))
-			continue
-		}
-		clienteID, err := ensureEmpresaParqueaderoCliente(dbConn, ticket)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("ticket %d cliente: %v", ticket.ID, err))
-			continue
-		}
-		metodo := NormalizeMetodoPagoCarrito(ticket.MetodoPago)
-		if metodo == "" {
-			metodo = "efectivo"
-		}
-		_, err = ExecCompat(dbConn, `UPDATE empresa_parqueadero_tickets SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, metodo_pago=?, usuario_cierre=COALESCE(NULLIF(usuario_cierre,''), ? ) WHERE empresa_id=? AND id=?`,
-			nullableInt64(clienteID), nullableInt64(servicioID), nullableInt64(carritoID), nullableInt64(itemID), metodo, strings.TrimSpace(usuario), ticket.EmpresaID, ticket.ID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("ticket %d refs: %v", ticket.ID, err))
-			continue
-		}
-		resumen.TicketsSincronizados++
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-		}
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 func AnularEmpresaParqueaderoTicket(dbConn *sql.DB, empresaID, ticketID int64, usuario, motivo string) error {

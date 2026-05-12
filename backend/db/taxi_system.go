@@ -166,18 +166,6 @@ type EmpresaTaxiDashboard struct {
 	Offers                 []EmpresaTaxiOffer   `json:"offers"`
 }
 
-type EmpresaTaxiIntegracionNucleoResumen struct {
-	EmpresaID              int64    `json:"empresa_id"`
-	ClientesSincronizados  int      `json:"clientes_sincronizados"`
-	ServiciosSincronizados int      `json:"servicios_sincronizados"`
-	ViajesSincronizados    int      `json:"viajes_sincronizados"`
-	ViajesPendientes       int      `json:"viajes_pendientes"`
-	Errores                []string `json:"errores,omitempty"`
-	EstadoIntegracion      string   `json:"estado_integracion"`
-	VisibleOperativo       bool     `json:"visible_operativo"`
-	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
-}
-
 func EnsureEmpresaTaxiSystemSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_taxi_config (
@@ -1113,66 +1101,6 @@ func UpdateTaxiRequestState(dbConn *sql.DB, empresaID, requestID, driverID int64
 		}
 	}
 	return GetTaxiRequestByID(dbConn, empresaID, requestID)
-}
-
-func SyncEmpresaTaxiSystemNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaTaxiIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaTaxiSystemSchema(dbConn); err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaTaxiIntegracionNucleoResumen{
-		EmpresaID:         empresaID,
-		EstadoIntegracion: "plantilla_integrada_nucleo",
-		VisibleOperativo:  true,
-	}
-	requests, err := ListTaxiRequests(dbConn, empresaID, "completado", 500)
-	if err != nil {
-		return nil, err
-	}
-	for _, req := range requests {
-		if req.CarritoID > 0 {
-			resumen.ViajesPendientes++
-			continue
-		}
-		clienteID, err := syncTaxiRequestCliente(dbConn, req, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d cliente: %v", req.ID, err))
-			continue
-		}
-		req.ClienteID = clienteID
-		resumen.ClientesSincronizados++
-		servicioID, err := ensureTaxiServicio(dbConn, req, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d servicio: %v", req.ID, err))
-			continue
-		}
-		req.ServicioID = servicioID
-		resumen.ServiciosSincronizados++
-		if req.TarifaEstimada <= 0 {
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET cliente_id=?, servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), req.EmpresaID, req.ID)
-			resumen.ViajesPendientes++
-			continue
-		}
-		carritoID, itemID, clienteID, servicioID, err := createTaxiRequestCarrito(dbConn, req, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d carrito: %v", req.ID, err))
-			continue
-		}
-		metodo := NormalizeMetodoPagoCarrito(req.MetodoPago)
-		if metodo == "" {
-			metodo = "efectivo"
-		}
-		_, err = ExecCompat(dbConn, `UPDATE empresa_taxi_requests SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, metodo_pago=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), metodo, req.EmpresaID, req.ID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("viaje %d refs: %v", req.ID, err))
-			continue
-		}
-		resumen.ViajesSincronizados++
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 func ListTaxiRoutePoints(dbConn *sql.DB, empresaID, requestID int64, limit int) ([]EmpresaTaxiRoutePoint, error) {

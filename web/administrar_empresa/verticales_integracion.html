@@ -13,15 +13,15 @@
     <header class="verticales-integration-head">
       <p>Gobierno de soluciones por negocio</p>
       <h1>Matriz de integracion vertical</h1>
-      <span id="matrixSource">Cargando contrato operativo...</span>
+      <span id="matrixSource">Cargando contrato de plantillas...</span>
     </header>
 
     <section class="verticales-integration-kpis" aria-label="Resumen de integracion">
       <div><span>Total</span><strong id="kpiTotal">0</strong></div>
       <div><span>Visibles</span><strong id="kpiVisible">0</strong></div>
       <div><span>Ocultos</span><strong id="kpiHidden">0</strong></div>
-      <div><span>Con sincronizacion</span><strong id="kpiSync">0</strong></div>
-      <div><span>Permitidas</span><strong id="kpiSyncAllowed">0</strong></div>
+      <div><span>Nucleo comun</span><strong id="kpiCore">0</strong></div>
+      <div><span>Plantillas</span><strong id="kpiTemplates">0</strong></div>
     </section>
 
     <section class="verticales-integration-table-wrap" aria-label="Verticales">
@@ -32,7 +32,7 @@
             <th>Estado</th>
             <th>Nucleo</th>
             <th>Especialidad permitida</th>
-            <th>Sincronizacion</th>
+            <th>Plantilla y reportes</th>
           </tr>
         </thead>
         <tbody id="matrixRows">
@@ -87,7 +87,6 @@
             reports_produced: x.reportsProduced || [],
             duplicates_core: x.duplicados || [],
             own_flow_allowed: x.flujoPropioPermitido || [],
-            sync_action: x.syncAction || "",
             reason: x.motivo || ""
           };
         });
@@ -110,17 +109,6 @@
           });
       }
 
-      function fetchPermissionContext(empresaId) {
-        if (!empresaId) return Promise.resolve(null);
-        return fetch("/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
-          .then(function (resp) { return resp.ok ? resp.json() : null; })
-          .then(function (payload) {
-            if (!payload || typeof payload !== "object" || !Array.isArray(payload.modulos)) return null;
-            return payload;
-          })
-          .catch(function () { return null; });
-      }
-
       function fmtStatus(item) {
         var status = String(item.integration_status || "").trim();
         if (!status) status = item.operational_visible === false ? "pendiente_integracion_nucleo" : "plantilla_integrada_nucleo";
@@ -132,23 +120,21 @@
       }
 
       var currentItems = [];
-      var currentPermissionContext = null;
       var empresaId = resolveEmpresaId();
 
-      function render(data, permissionContext) {
+      function render(data) {
         var items = Array.isArray(data.items) ? data.items : [];
         currentItems = items;
-        currentPermissionContext = permissionContext || null;
         var visible = items.filter(function (x) { return x.operational_visible !== false; }).length;
         var hidden = items.length - visible;
-        var sync = items.filter(function (x) { return String(x.sync_action || "").trim() !== ""; }).length;
-        var syncAllowed = items.filter(function (x) { return canSyncItem(x); }).length;
+        var coreReady = items.filter(function (x) { return Array.isArray(x.core_modules) && x.core_modules.length > 0 && x.operational_visible !== false; }).length;
+        var templates = items.filter(function (x) { return Array.isArray(x.template_activates) && x.template_activates.length > 0; }).length;
         el("kpiTotal").textContent = String(items.length);
         el("kpiVisible").textContent = String(visible);
         el("kpiHidden").textContent = String(hidden);
-        el("kpiSync").textContent = String(sync);
-        el("kpiSyncAllowed").textContent = String(syncAllowed);
-        el("matrixSource").textContent = "Fuente: " + data.source + " | visibles " + visible + "/" + items.length + " | sincronizaciones permitidas " + syncAllowed + "/" + sync;
+        el("kpiCore").textContent = String(coreReady);
+        el("kpiTemplates").textContent = String(templates);
+        el("matrixSource").textContent = "Fuente: " + data.source + " | visibles " + visible + "/" + items.length + " | plantillas con nucleo comun " + coreReady + "/" + items.length;
 
         if (!items.length) {
           el("matrixRows").innerHTML = '<tr><td colspan="5">No hay datos de integracion vertical disponibles.</td></tr>';
@@ -163,112 +149,19 @@
           var reports = listText(item.reports_produced, "Reportes no declarados");
           var own = Array.isArray(item.own_flow_allowed) && item.own_flow_allowed.length ? item.own_flow_allowed.join("; ") : (item.reason || "Sin especialidad declarada");
           var duplicates = Array.isArray(item.duplicates_core) && item.duplicates_core.length ? " Duplicados: " + item.duplicates_core.join(", ") : "";
-          var sync = item.sync_action ? item.sync_action : "No requiere accion historica";
-          var syncAllowedForItem = canSyncItem(item);
-          var syncReason = syncDisabledReason(item);
-          var action = item.sync_path && item.sync_action_name
-            ? '<button class="verticales-sync-btn" type="button" data-sync-index="' + idx + '"' + (syncAllowedForItem ? '' : ' disabled') + ' title="' + esc(syncReason) + '">Sincronizar</button><span class="verticales-sync-result" id="syncResult' + idx + '">' + esc(syncAllowedForItem ? "" : syncReason) + '</span>'
-            : '<span class="verticales-sync-muted">No aplica</span>';
+          var decision = String(item.decision || "plantilla_universal_nucleo").replace(/_/g, " ");
           var visibleLabel = item.operational_visible === false ? "Oculto" : "Visible";
           return '<tr>' +
             '<td><strong>' + esc(item.title || item.module) + '</strong><span>' + esc(item.module || "") + '</span></td>' +
             '<td><mark data-visible="' + esc(item.operational_visible === false ? "0" : "1") + '">' + esc(visibleLabel) + '</mark><small>' + esc(fmtStatus(item)) + esc(duplicates) + '</small></td>' +
             '<td><strong>Modulos</strong><span>' + esc(core) + '</span><small>Plantilla: ' + esc(template) + '</small><small>Tablas: ' + esc(tables) + '</small></td>' +
             '<td>' + esc(own) + '<span>Permisos: ' + esc(permissions) + '</span></td>' +
-            '<td><code>' + esc(sync) + '</code><span>Flujo: ' + esc(saleFlow) + '</span><span>Reportes: ' + esc(reports) + '</span>' + action + '</td>' +
+            '<td><strong>' + esc(decision) + '</strong><span>Flujo: ' + esc(saleFlow) + '</span><span>Reportes: ' + esc(reports) + '</span></td>' +
           '</tr>';
         }).join("");
-        Array.prototype.slice.call(document.querySelectorAll("[data-sync-index]")).forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            runSync(Number(btn.getAttribute("data-sync-index") || -1), btn);
-          });
-        });
       }
 
-      function runSync(index, btn) {
-        var item = currentItems[index];
-        if (!item || !item.sync_path || !item.sync_action_name) return;
-        if (!empresaId) {
-          setSyncResult(index, "Sin empresa activa.", true);
-          return;
-        }
-        if (!canSyncItem(item)) {
-          setSyncResult(index, syncDisabledReason(item), true);
-          return;
-        }
-        if (!window.confirm("Ejecutar sincronizacion historica para " + (item.title || item.module || "este vertical") + "?")) {
-          return;
-        }
-        btn.disabled = true;
-        setSyncResult(index, "Sincronizando...", false);
-        var url = item.sync_path + "?empresa_id=" + encodeURIComponent(empresaId) + "&action=" + encodeURIComponent(item.sync_action_name);
-        fetch(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: "{}" })
-          .then(function (resp) {
-            if (!resp.ok) {
-              return resp.text().then(function (txt) { throw new Error(txt || "No se pudo sincronizar"); });
-            }
-            return resp.json().catch(function () { return {}; });
-          })
-          .then(function (payload) {
-            var data = payload.integracion || payload.resumen || payload;
-            var msg = "Sincronizacion ejecutada.";
-            if (data && typeof data === "object") {
-              var parts = [];
-              Object.keys(data).forEach(function (key) {
-                if (/_sincronizad[oa]s?$/.test(key) && typeof data[key] !== "object") {
-                  parts.push(key.replace(/_/g, " ") + ": " + data[key]);
-                }
-              });
-              if (parts.length) msg = parts.slice(0, 3).join(" - ");
-            }
-            setSyncResult(index, msg, false);
-          })
-          .catch(function (err) {
-            setSyncResult(index, err.message || "Error sincronizando.", true);
-          })
-          .finally(function () {
-            btn.disabled = false;
-          });
-      }
-
-      function setSyncResult(index, message, error) {
-        var target = el("syncResult" + index);
-        if (!target) return;
-        target.textContent = message;
-        target.setAttribute("data-error", error ? "1" : "0");
-      }
-
-      function moduleRowAllowsCreate(row) {
-        if (!row || typeof row !== "object") return false;
-        if (typeof row.create !== "undefined") return !!row.create;
-        if (row.acciones && typeof row.acciones === "object") return !!row.acciones.C;
-        return false;
-      }
-
-      function canSyncItem(item) {
-        if (!item || !item.sync_path || !item.sync_action_name || !empresaId) return false;
-        if (!currentPermissionContext) return false;
-        var pages = currentPermissionContext.paginas || {};
-        var page = String(item.page || item.id || "").trim();
-        if (page && Object.prototype.hasOwnProperty.call(pages, page)) return !!pages[page];
-        var module = String(item.module || "").trim().toLowerCase();
-        var rows = Array.isArray(currentPermissionContext.modulos) ? currentPermissionContext.modulos : [];
-        for (var i = 0; i < rows.length; i += 1) {
-          if (String(rows[i].modulo || "").trim().toLowerCase() === module) return moduleRowAllowsCreate(rows[i]);
-        }
-        return false;
-      }
-
-      function syncDisabledReason(item) {
-        if (!item || !item.sync_path || !item.sync_action_name) return "No requiere sincronizacion historica.";
-        if (!empresaId) return "Sin empresa activa.";
-        if (!currentPermissionContext) return "Permisos no resueltos.";
-        return "Sin permiso para sincronizar este vertical.";
-      }
-
-      Promise.all([fetchCatalog(empresaId), fetchPermissionContext(empresaId)]).then(function (results) {
-        render(results[0], results[1]);
-      });
+      fetchCatalog(empresaId).then(render);
     })();
   </script>
 </body>

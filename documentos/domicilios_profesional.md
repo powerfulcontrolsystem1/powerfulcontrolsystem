@@ -39,7 +39,6 @@ El index comercial describe este modulo como `Domicilios tipo Rappi` dentro de l
 - Los pedidos se enlazan con `clientes` mediante `cliente_id`, reutilizando telefono cuando existe.
 - Los pedidos entregados crean `carritos_compras` con canal `domicilios`, referencia externa del pedido y metodo de pago normalizado.
 - Cada linea del pedido queda vinculada a `carrito_compra_items` mediante `carrito_item_id`; tarifa de domicilio y propina se agregan como servicios centrales.
-- La accion protegida `POST /api/empresa/domicilios?action=sincronizar_nucleo` migra pedidos entregados historicos sin borrar restaurantes, domiciliarios, ofertas, tracking ni estados logisticos.
 
 ## Datos demo
 
@@ -54,7 +53,6 @@ Desde la central se puede usar `Cargar demo productiva`.
 - Protegido: `/api/empresa/domicilios`
 - Publico: `/api/public/domicilios`
 
-Acciones protegidas: `dashboard`, `config`, `restaurants`, `couriers`, `menu`, `orders`, `dispatch`, `order_state`, `sincronizar_nucleo`, `seed_demo`.
 
 Acciones publicas: `catalog`, `order`, `tracking`, `courier_login`, `courier_presence`, `courier_location`, `courier_offers`, `courier_orders`, `respond_offer`, `restaurant_login`, `restaurant_orders`, `order_state`.
 

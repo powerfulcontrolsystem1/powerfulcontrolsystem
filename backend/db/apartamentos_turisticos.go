@@ -145,18 +145,6 @@ type EmpresaApartamentoTuristicoDashboard struct {
 	TareasPendientes []EmpresaApartamentoTuristicoTarea   `json:"tareas_pendientes"`
 }
 
-type EmpresaApartamentosTuristicosIntegracionNucleoResumen struct {
-	EmpresaID              int64    `json:"empresa_id"`
-	EstadoIntegracion      string   `json:"estado_integracion"`
-	VisibleOperativo       bool     `json:"visible_operativo"`
-	ServiciosSincronizados int      `json:"servicios_sincronizados"`
-	ClientesSincronizados  int      `json:"clientes_sincronizados"`
-	ReservasSincronizadas  int      `json:"reservas_sincronizadas"`
-	ReservasPendientes     int      `json:"reservas_pendientes"`
-	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
-	Errores                []string `json:"errores,omitempty"`
-}
-
 func EnsureEmpresaApartamentosTuristicosSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_apartamentos_turisticos_config (
@@ -1112,84 +1100,6 @@ func GetEmpresaApartamentoTuristicoReserva(dbConn *sql.DB, empresaID, reservaID 
 		return EmpresaApartamentoTuristicoReserva{}, err
 	}
 	return scanApartTurReserva(QueryRowCompat(dbConn, apartTurReservaSelect()+` WHERE r.empresa_id=? AND r.id=?`, empresaID, reservaID))
-}
-
-func SyncEmpresaApartamentosTuristicosNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaApartamentosTuristicosIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaApartamentosTuristicosSchema(dbConn); err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaApartamentosTuristicosIntegracionNucleoResumen{
-		EmpresaID:         empresaID,
-		EstadoIntegracion: "plantilla_integrada_nucleo",
-		VisibleOperativo:  true,
-	}
-	unidades, err := ListEmpresaApartamentosTuristicosUnidades(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, unidad := range unidades {
-		servicioID, err := ensureApartTurUnidadServicio(dbConn, unidad, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("apartamento %d servicio: %v", unidad.ID, err))
-			continue
-		}
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-		}
-	}
-	reservas, err := ListEmpresaApartamentosTuristicosReservas(dbConn, empresaID, "", 500)
-	if err != nil {
-		return nil, err
-	}
-	for _, reserva := range reservas {
-		if reserva.CarritoID > 0 {
-			resumen.ReservasPendientes++
-			continue
-		}
-		clienteID, err := ensureApartTurClienteCore(dbConn, reserva, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d cliente: %v", reserva.ID, err))
-			continue
-		}
-		reserva.ClienteID = clienteID
-		resumen.ClientesSincronizados++
-		unidad, err := GetEmpresaApartamentoTuristicoUnidad(dbConn, reserva.EmpresaID, reserva.ApartamentoID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d unidad: %v", reserva.ID, err))
-			continue
-		}
-		servicioID, err := ensureApartTurUnidadServicio(dbConn, unidad, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d servicio: %v", reserva.ID, err))
-			continue
-		}
-		reserva.ServicioID = servicioID
-		if strings.ToLower(strings.TrimSpace(reserva.EstadoReserva)) != "checkout" && strings.ToLower(strings.TrimSpace(reserva.EstadoReserva)) != "checkin" {
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_reservas SET cliente_id=?, servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), reserva.EmpresaID, reserva.ID)
-			resumen.ReservasPendientes++
-			continue
-		}
-		if reserva.Total <= 0 {
-			resumen.ReservasPendientes++
-			continue
-		}
-		carritoID, itemID, clienteID, servicioID, err := createApartTurReservaCarrito(dbConn, reserva, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d carrito: %v", reserva.ID, err))
-			continue
-		}
-		_, err = ExecCompat(dbConn, `UPDATE empresa_apartamentos_turisticos_reservas SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=?, estado_pago='pagado', saldo_pendiente=0 WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), reserva.EmpresaID, reserva.ID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("reserva %d refs: %v", reserva.ID, err))
-			continue
-		}
-		resumen.ReservasSincronizadas++
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 type apartTurReservaScanner interface {

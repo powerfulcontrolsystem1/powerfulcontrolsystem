@@ -41,8 +41,6 @@ Modulo empresarial para administrar conjuntos residenciales, edificios, condomin
 - Las unidades se enlazan con `servicios` para representar cuotas base y cargos vendibles sin duplicar catalogo comercial.
 - Propietarios, residentes, arrendatarios y apoderados se sincronizan con `clientes` por documento, telefono o email.
 - Los cargos se enlazan a `servicios`; los recaudos crean o reutilizan `carritos_compras` y `carrito_compra_items` con pago normalizado.
-- La accion `POST /api/empresa/propiedad_horizontal?action=sincronizar_nucleo&empresa_id=...` migra datos historicos por empresa sin borrar unidades, PQR, asambleas, coeficientes ni cartera especializada.
-- El panel `web/administrar_empresa/propiedad_horizontal.html` incluye boton `Sincronizar nucleo` para ejecutar la migracion controlada y mostrar el resumen operativo.
 
 ## Integraciones previstas
 

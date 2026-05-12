@@ -30,7 +30,7 @@ Los verticales son plantillas o especializaciones. Pueden tener tablas propias s
 
 - `plantilla_integrada_nucleo`: vertical visible; opera como plantilla sobre modulos base y no reemplaza ventas, clientes, productos ni pagos.
 - `integrado_soporte`: visible; es una capacidad transversal que no sustituye el nucleo comercial.
-- `pendiente_integracion_nucleo`: oculto del menu operativo; existe en codigo, pero requiere migrar duplicados reales al nucleo antes de mostrarse como solucion lista.
+- `pendiente_integracion_nucleo`: oculto del menu operativo; existe en codigo, pero requiere integrarse al nucleo antes de mostrarse como solucion lista.
 - `comercial_no_operativo`: no visible en administracion; puede existir solo como contenido comercial o backlog.
 - `descartable`: candidato a fusionar o eliminar si no aporta especialidad distinta al nucleo.
 
@@ -39,17 +39,17 @@ Los verticales son plantillas o especializaciones. Pueden tener tablas propias s
 | Vertical | Estado | Visible en operacion | Usa nucleo requerido | Tablas/flujo propio permitido | Duplicado a resolver | Decision |
 |---|---|---:|---|---|---|---|
 | 20 nuevos verticales (`agencia_viajes`, `salon_spa`, `taller_mecanico`, etc.) | `plantilla_integrada_nucleo` | Si | clientes, productos/servicios, ventas, pagos, facturacion, reportes, permisos | `empresa_modulos_colombia_*` para seguimiento, agenda, evidencias, aprobaciones y riesgo | Ninguno critico detectado en esta fase | Mantener visible como plantilla |
+| Gimnasio | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Socios, planes, acceso, credenciales, clases, asistencias y dispositivos | Ninguno publico; opera como plantilla fitness | Mantener visible |
+| Odontologia | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Historia clinica, odontograma, profesionales, consultorios y citas clinicas | Ninguno publico; opera como plantilla clinica | Mantener visible |
+| Parqueadero | `plantilla_integrada_nucleo` | Si | servicios vendibles, ventas/carritos, pagos y reportes | Ticket QR, placa, entrada/salida, tiempos y reglas tarifarias | Ninguno publico; opera como plantilla de parking | Mantener visible |
+| Taxi system | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Conductores, despacho, GPS, tracking, ofertas y rutas | Ninguno publico; opera como plantilla de transporte | Mantener visible |
+| Domicilios | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Tracking, domiciliarios, restaurantes aliados, menu, ofertas y estados logisticos | Ninguno publico; opera como plantilla logistica | Mantener visible |
+| Apartamentos turisticos | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Unidades, disponibilidad, tarifas, check-in, checkout y tareas | Ninguno publico; opera como plantilla de alojamiento | Mantener visible |
+| Propiedad horizontal | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Unidades, asambleas, PQR, residentes, cartera y recaudos | Ninguno publico; opera como plantilla de copropiedad | Mantener visible |
+| Alquileres | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Contratos, activos, garantias, mantenimientos, kilometraje y GPS | Ninguno publico; opera como plantilla de renta | Mantener visible |
 | Turnos de atencion | `integrado_soporte` | Si | seguridad, reportes y operacion empresarial | Turnos, puestos, pantalla publica y seguimiento de fila | No reemplaza ventas/pagos/clientes | Mantener visible |
-| Gimnasio | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Socios como especialidad, acceso, credenciales, clases, asistencias y dispositivos | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Odontologia | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Historia clinica, odontograma, profesionales, consultorios y citas clinicas | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Parqueadero | `plantilla_integrada_nucleo` | Si | ventas/carritos, pagos, servicios vendibles y reportes | Ticket QR, placa, entrada/salida y reglas tarifarias | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Taxi system | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Conductores, despacho, GPS, tracking y rutas | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Domicilios | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Tracking, domiciliarios, restaurantes aliados, menu, ofertas y estados logisticos | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Apartamentos turisticos | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Unidades, disponibilidad, tareas, tarifas, check-in y checkout | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Propiedad horizontal | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Unidades, asambleas, PQR, residentes, cartera y recaudos | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
-| Alquileres | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Contratos, activos, garantias, mantenimientos, kilometraje y mapa GPS | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
 | Drogueria / farmacia | `plantilla_integrada_nucleo` | Si | productos, inventario, compras, ventas, clientes, facturacion y reportes | Expediente sanitario, lotes, INVIMA, formulas, controlados y farmacovigilancia | Validado: no crea inventario/venta paralela; usa `empresa_modulos_colombia_*` | Mantener visible |
-| Construccion / AIU | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, facturacion y reportes | Capitulos, AIU, presupuestos de obra, retenciones, anticipo, garantia y auditoria tecnica | Migracion historica disponible por accion `sincronizar_nucleo` | Mantener visible |
+| Construccion / AIU | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, facturacion y reportes | Capitulos, AIU, presupuestos, retenciones, anticipo, garantia y auditoria tecnica | Ninguno publico; opera como plantilla de construccion | Mantener visible |
 
 ## Contrato tecnico obligatorio
 
@@ -65,19 +65,15 @@ Los verticales son plantillas o especializaciones. Pueden tener tablas propias s
 ## Oleadas de implementacion
 
 1. Normalizacion visible: ocultar pendientes y publicar matriz.
-2. Gimnasio: migrar socios a clientes, planes a servicios/productos, pagos a ventas/pagos. Estado: implementado para flujos nuevos y con accion de sincronizacion historica.
-3. Odontologia: migrar pacientes facturables a clientes, tratamientos a servicios y pagos a ventas/pagos; conservar historia clinica. Estado: implementado para flujos nuevos y con accion de sincronizacion historica.
-4. Parqueadero: al cerrar ticket, crear venta/pago central y vincular ticket con la transaccion. Estado: implementado para flujos nuevos y con accion de sincronizacion historica.
-5. Domicilios y taxi: conectar pedido/viaje con venta/pago central. Taxi system: implementado para viajes completados y con accion de sincronizacion historica. Domicilios: implementado para pedidos entregados y con accion de sincronizacion historica.
-6. Apartamentos, alquileres, propiedad horizontal y drogueria: validar duplicados, fusionar o dejar como plantilla. Apartamentos turisticos: implementado para huespedes, servicios de alojamiento y reservas cerradas. Propiedad horizontal: implementado para propietarios/residentes, servicios de cargos y recaudos cobrados. Alquileres: implementado para clientes de contrato, activos/tarifas como servicios y contratos con venta central. Drogueria/farmacia: validado como expediente sanitario sobre productos, inventario, ventas y facturacion centrales.
-7. Construccion / AIU: implementado para clientes de obra, contratos/conceptos como servicios y facturas enlazadas a carritos centrales sin recalcular impuestos en el carrito.
+2. Igualdad de contrato: 10 verticales clasicos y 20 verticales nuevos se declaran como plantillas reales sobre nucleo comun.
+3. Alcance por licencia: cada tipo de empresa activa solo su vertical y conserva el nucleo universal compartido.
+4. Auditoria: cada vertical visible declara modulos activados, tablas tocadas, permisos, flujo de venta y reportes.
 
 ## Implementacion actual
 
 - `web/js/verticales_integracion_catalogo.js` define el estado visible/oculto de verticales clasicos.
 - `web/js/administrar_empresa.js` refresca ese catalogo desde `/api/empresa/verticales_integracion/catalogo` cuando hay contexto de empresa y conserva el JS local como respaldo si la API no responde; luego aplica permisos/licencias.
 - El shell de `web/administrar_empresa.html` muestra un resumen operativo compacto de la matriz activa para distinguir fuente API/local y conteo de verticales visibles u ocultos.
-- `web/administrar_empresa/verticales_integracion.html` permite consultar la matriz completa desde el panel empresa y ejecutar sincronizaciones historicas cuando el catalogo declara `sync_path` + `sync_action_name`. La pantalla consulta `/api/empresa/permisos_contexto` antes de habilitar botones, confirma la accion con el usuario y conserva la autorizacion efectiva de cada endpoint vertical.
 - La matriz completa ahora expone por vertical los modulos/plantilla que activa, tablas tocadas, permisos requeridos, flujo de venta y reportes producidos; esto convierte cada solucion en una plantilla gobernada y no en un circuito duplicado.
 - `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo` exponen la misma matriz operativa para auditoria, super y empresa.
 - `web/js/nuevos_verticales_catalogo.js` marca los 20 verticales nuevos como `plantilla_integrada_nucleo`.
@@ -86,13 +82,4 @@ Los verticales son plantillas o especializaciones. Pueden tener tablas propias s
 - Desde esa vista super, cada vertical abre sus pantallas relacionadas con filtro inicial: `Tipos de empresa`, `Preconfiguraciones` y `Licencias`.
 - La senal `Listo venta` exige metadata extendida completa, preconfiguracion activa con `integracion_vertical` y licencia activa de catalogo que incluya el modulo.
 - La accion `Asegurar 20` asegura tipos, preconfiguraciones y licencias recomendadas para los 20 verticales nuevos.
-- Gimnasio crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/gimnasio?action=sincronizar_nucleo&empresa_id=...` migra referencias historicas sin borrar las tablas especializadas del vertical y es repetible porque los pagos usan `referencia_externa` estable en carritos.
-- Odontologia crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/odontologia?action=sincronizar_nucleo&empresa_id=...` migra pacientes, tratamientos y pagos historicos sin borrar historia clinica, odontogramas, agenda ni presupuesto especializado y es repetible porque los pagos usan `referencia_externa` estable en carritos.
-- Parqueadero crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/parqueadero?action=sincronizar_nucleo&empresa_id=...` migra tickets cerrados historicos sin borrar placas, QR, tiempos, tarifas ni trazabilidad de entrada/salida.
-- Taxi system crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/taxi_system?action=sincronizar_nucleo&empresa_id=...` migra viajes completados historicos sin borrar conductores, GPS, despacho, ofertas ni trazabilidad de ruta.
-- Domicilios crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/domicilios?action=sincronizar_nucleo&empresa_id=...` migra pedidos entregados historicos sin borrar restaurantes, domiciliarios, ofertas, tracking GPS, menu ni estados logisticos.
-- Apartamentos turisticos crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/apartamentos_turisticos?action=sincronizar_nucleo&empresa_id=...` migra reservas en check-in/checkout historicas sin borrar unidades, tarifas, disponibilidad, codigos de acceso ni tareas operativas.
-- Propiedad horizontal crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/propiedad_horizontal?action=sincronizar_nucleo&empresa_id=...` migra propietarios/residentes, unidades, cargos y recaudos historicos sin borrar PQR, asambleas, coeficientes, cartera ni trazabilidad de copropiedad.
-- Alquileres crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/alquileres?action=sincronizar_nucleo&empresa_id=...` migra clientes de contratos, activos, tarifas y contratos historicos sin borrar garantias, kilometraje, GPS, mantenimientos ni devoluciones.
 - Drogueria/farmacia queda visible como plantilla integrada porque no crea tablas paralelas de producto, inventario, venta ni pago: usa `empresa_modulos_colombia_*` para expediente sanitario y exige los modulos centrales de productos, inventario, compras, ventas, clientes y facturacion en sus licencias/preconfiguracion.
-- Construccion / AIU crea/sincroniza `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` contra el nucleo. La accion `POST /api/empresa/aiu_construccion?action=sincronizar_nucleo&empresa_id=...` migra contratos, conceptos y facturas historicas sin borrar capitulos, calculo AIU, retenciones, anticipo, garantia ni auditoria tecnica.

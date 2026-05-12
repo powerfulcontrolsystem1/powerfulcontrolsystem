@@ -1,3 +1,13 @@
+## [2026-05-12] Centro de mando super reconstruido
+- [Frontend] `web/super/licencias_resumen.html` se reemplaza completo por una consola ejecutiva responsive con score operativo, KPIs de plataforma, PostgreSQL, seguridad, negocio SaaS, costos, SLO, riesgos, servicios e incidentes.
+- [Operacion] La vista agrega controles directos para actualizar, evaluar alertas y abrir gobierno de alertas, PostgreSQL, seguridad VPS, licencias, empresas, tipos de empresa, roles, verticales, IA, configuracion y reportes.
+- [Alcance] Reutiliza APIs existentes del panel super; no agrega endpoints, permisos, tablas, dependencias ni cambios en `go.mod`.
+- [QA] Parseo de script inline con Node OK; `git diff --check -- web/super/licencias_resumen.html` sin errores.
+
+## [2026-05-11] Matriz de integracion en configuracion empresarial
+- [Menu] `Matriz de integracion` sale de Soluciones por negocio y queda en Administrar empresa > Configuracion > Base empresarial.
+- [Permisos] `linkVerticalesIntegracion` conserva `seguridad:R`, ahora agrupado como Administracion y configuracion.
+
 ## [2026-05-11] Emisora online por empresa
 - [Backend] `/api/chat_flotante/preferencias` acepta `empresa_id` y persiste `chat_flotante.*`, incluida `radio_online_enabled`, en `empresa_estacion_prefs`.
 - [Frontend] `Configurar chat y robot` agrega el check `Activar emisora online`; el panel compacto del chat y `radio_player.js` sincronizan el reproductor flotante con esa preferencia.
@@ -6,7 +16,6 @@
 ## [2026-05-11] Alcance vertical por licencia
 - [Backend] `/api/empresa/permisos_contexto` calcula `vertical_scope` desde tipo/preconfiguracion/licencia y desactiva acciones de verticales ajenos sin tocar el nucleo universal.
 - [Licencias] El checkout, activacion manual/gratuita y confirmaciones de pago validan que la licencia base corresponda al tipo de empresa elegido.
-- [Plantillas] La activacion de licencia aplica la preconfiguracion de tipo de forma idempotente y ejecuta sincronizacion historica del vertical cuando existe funcion `Sync...Nucleo`.
 - [Frontend] `elegir_licencia.html` consulta licencias filtradas por `tipo_id` y `editar_empresa.js` conserva `tipo_id/tipo_nombre` al renovar.
 - [QA] `go test ./handlers`; `go test ./db`.
 
@@ -23,7 +32,6 @@
 
 ## [2026-05-11] Sincronizacion idempotente de pagos verticales
 - [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` reutilizan `carritos_compras.referencia_externa` antes de crear carritos desde pagos historicos.
-- [Integracion] Las ventas centrales generadas por `sincronizar_nucleo` usan referencia estable por ID de pago y nombre estable, evitando colisiones por el indice unico `(empresa_id, nombre)`.
 - [QA] Se agregan pruebas para fijar la llave historica de pagos en odontologia y gimnasio.
 - [Alcance] No hay tablas, endpoints, permisos ni dependencias nuevas.
 
@@ -89,18 +97,16 @@
 - [QA] La prueba de contrato impide publicar verticales visibles sin metadata completa; no hay cambios de esquema ni dependencias.
 
 ## [2026-05-11] Sincronizacion segura de matriz vertical
-- [Backend] El catalogo publica `sync_path` y `sync_action_name` como contrato estructurado para verticales con migracion historica.
 - [Frontend] La matriz consulta `/api/empresa/permisos_contexto`, calcula sincronizaciones permitidas, deshabilita botones sin permiso efectivo y confirma antes de ejecutar POST.
 - [Seguridad] El endpoint vertical conserva la autorizacion final por rol, licencia y `empresa_id`; no hay nuevas dependencias ni cambios de esquema.
 
 ## [2026-05-11] Sincronizacion desde matriz vertical
-- [Backend] El catalogo de integracion publica `sync_path` y `sync_action_name` para las verticales con migracion historica.
 - [Frontend] `web/administrar_empresa/verticales_integracion.html` agrega botones `Sincronizar` por vertical y muestra resultado/resumen de la accion.
 - [Seguridad] La vista conserva permiso `seguridad:R`; cada POST mantiene la autorizacion real del endpoint vertical correspondiente.
 
 ## [2026-05-11] Pantalla de matriz vertical en empresa
 - [Frontend] Se agrega `web/administrar_empresa/verticales_integracion.html` para consultar KPIs, estado, nucleo, especialidad y sincronizacion por vertical.
-- [Menu] `web/administrar_empresa.html` incorpora `Matriz de integración` dentro de Soluciones por negocio.
+- [Menu] `web/administrar_empresa/configuracion_menu.html` incorpora `Matriz de integraciÃ³n` dentro de Configuracion > Base empresarial.
 - [Permisos] `linkVerticalesIntegracion` queda registrado con `seguridad:R` en backend y frontend.
 
 ## [2026-05-11] Indicador de matriz vertical en panel empresa
@@ -116,12 +122,10 @@
 ## [2026-05-11] Catalogo API de integracion vertical
 - [Backend] Se agrega `backend/handlers/empresa_verticales_integracion.go` para exponer la matriz de verticales clasicos.
 - [API] Nuevas rutas de solo lectura: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
-- [Contrato] Cada item publica estado, visibilidad operativa, modulos del nucleo, duplicados, flujo propio permitido, decision y accion de sincronizacion historica.
 - [QA] `backend/handlers/empresa_verticales_integracion_test.go` bloquea verticales visibles con duplicados del nucleo.
 
 ## [2026-05-11] AIU construccion integrado al nucleo
 - [Backend] `aiu_construccion` enlaza clientes de obra con clientes centrales, contratos/conceptos con servicios y facturas AIU con ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/aiu_construccion?action=sincronizar_nucleo` para migrar contratos, conceptos y facturas historicas por empresa.
 - [Frontend] El panel AIU incluye accion de sincronizacion y resumen de clientes, servicios y facturas conectadas.
 - [Gobernanza] AIU queda visible como plantilla integrada; sus tablas propias se conservan para capitulos, calculo AIU, retenciones, anticipo, garantia, avance, riesgo y auditoria tecnica.
 
@@ -133,25 +137,21 @@
 
 ## [2026-05-11] Alquileres integrado al nucleo
 - [Backend] `alquileres` enlaza clientes de contratos a clientes centrales, activos/tarifas a servicios y contratos con valor a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/alquileres?action=sincronizar_nucleo` para migrar datos historicos por empresa.
 - [Frontend] El panel de alquileres incluye accion de sincronizacion y resumen de clientes, servicios y contratos conectados.
 - [Gobernanza] Alquileres queda visible como plantilla integrada; sus tablas propias se conservan para activos, garantias, kilometraje, GPS, mantenimiento, entrega y devolucion.
 
 ## [2026-05-11] Propiedad horizontal integrada al nucleo
 - [Backend] `propiedad_horizontal` enlaza propietarios/residentes a clientes centrales, unidades/cargos a servicios y recaudos a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/propiedad_horizontal?action=sincronizar_nucleo` para migrar datos historicos por empresa.
 - [Frontend] El panel de propiedad horizontal incluye accion de sincronizacion y resumen de clientes, servicios y recaudos conectados.
 - [Gobernanza] Propiedad horizontal queda visible como plantilla integrada; sus tablas propias se conservan para unidades, coeficientes, cartera, PQR y asambleas.
 
 ## [2026-05-11] Apartamentos turisticos integrado al nucleo
 - [Backend] `apartamentos_turisticos` enlaza huespedes a clientes centrales, unidades a servicios y reservas cerradas a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/apartamentos_turisticos?action=sincronizar_nucleo` para migrar reservas historicas por empresa.
 - [Frontend] El panel de apartamentos incluye accion de sincronizacion y resumen de reservas, servicios, clientes y observaciones.
 - [Gobernanza] Apartamentos turisticos queda visible como plantilla integrada; sus tablas propias se conservan para unidades, tarifas, disponibilidad, codigos de acceso, limpieza y mantenimiento.
 
 ## [2026-05-11] Domicilios integrado al nucleo
 - [Backend] `domicilios` enlaza clientes de pedidos a clientes centrales, productos de menu a servicios y pedidos entregados a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/domicilios?action=sincronizar_nucleo` para migrar pedidos entregados historicos por empresa.
 - [Frontend] El panel de domicilios incluye accion de sincronizacion y resumen de pedidos, servicios de menu, clientes y observaciones.
 - [Gobernanza] Domicilios queda visible como plantilla integrada; sus tablas propias se conservan para restaurantes, domiciliarios, ofertas, GPS, tracking y estados logisticos.
 
@@ -159,29 +159,24 @@
 - [Gobernanza] Se agrega `documentos/matriz_integracion_verticales.md` como contrato para mantener clientes, productos/servicios, ventas, pagos, facturacion, reportes y permisos en el nucleo.
 - [Frontend] `web/js/verticales_integracion_catalogo.js` clasifica verticales clasicos y oculta del menu operativo los que siguen duplicando funciones centrales.
 - [Catalogo] `web/js/nuevos_verticales_catalogo.js` y los endpoints de verticales nuevos publican estado de integracion, visibilidad operativa, modulos base y duplicados detectados.
-- [Alcance] No se borran verticales por existir; se ocultan los pendientes y se conserva el codigo para migracion controlada.
 
 ## [2026-05-11] Gimnasio integrado al nucleo
 - [Backend] `gimnasio` enlaza socios a clientes, planes a servicios y pagos a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/gimnasio?action=sincronizar_nucleo` para migrar referencias historicas por empresa.
 - [Frontend] El dashboard de gimnasio incluye accion de sincronizacion y resumen de clientes/servicios/ventas sincronizados.
 - [Gobernanza] Gimnasio queda visible como plantilla integrada; sus tablas propias se conservan para acceso, clases y asistencia.
 
 ## [2026-05-11] Odontologia integrada al nucleo
 - [Backend] `odontologia` enlaza pacientes a clientes, tratamientos a servicios y pagos a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/odontologia?action=sincronizar_nucleo` para migrar referencias historicas por empresa.
 - [Frontend] El panel de consultorio incluye accion de sincronizacion y resumen de pacientes/tratamientos/pagos sincronizados.
 - [Gobernanza] Odontologia queda visible como plantilla integrada; sus tablas propias se conservan para historia clinica, odontograma, agenda y presupuesto clinico.
 
 ## [2026-05-11] Parqueadero integrado al nucleo
 - [Backend] `parqueadero` enlaza tickets cobrados a clientes opcionales, servicios y ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/parqueadero?action=sincronizar_nucleo` para migrar tickets cerrados historicos por empresa.
 - [Frontend] El panel de parqueadero incluye accion de sincronizacion y resumen de tickets sincronizados.
 - [Gobernanza] Parqueadero queda visible como plantilla integrada; su tabla propia se conserva para placas, QR, entrada/salida, tarifas y anulaciones.
 
 ## [2026-05-11] Taxi system integrado al nucleo
 - [Backend] `taxi_system` enlaza clientes registrados/invitados a clientes centrales, servicios de viaje a servicios y viajes completados a ventas centrales en carritos.
-- [API] Se agrega `POST /api/empresa/taxi_system?action=sincronizar_nucleo` para migrar viajes completados historicos por empresa.
 - [Frontend] El panel de taxi incluye accion de sincronizacion y resumen de viajes, clientes y pendientes.
 - [Gobernanza] Taxi system queda visible como plantilla integrada; sus tablas propias se conservan para conductores, GPS, despacho, ofertas y rutas.
 
@@ -431,7 +426,7 @@
 - [Contabilidad] Se amplia `contabilidad_colombia_avanzada` con activos fijos avanzados sin duplicar modulo: depreciacion por periodo, eventos, mantenimiento, traslados y bajas.
 - [Backend] La API `/api/empresa/contabilidad_colombia_avanzada` agrega `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento`.
 - [Base de datos] Se enriquecen activos fijos con serial, placa, metodo de depreciacion, centro de costo, proveedor, poliza y mantenimiento programado; se agregan `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos`.
-- [Frontend] La suite contable agrega pestaña `Activos avanzado` para generar depreciacion, registrar eventos y consultar inventario gerencial.
+- [Frontend] La suite contable agrega pestaÃ±a `Activos avanzado` para generar depreciacion, registrar eventos y consultar inventario gerencial.
 - [Docs/QA] Se crea `documentos/activos_fijos_avanzado.md` y el QA Calipso valida activo, depreciacion, mantenimiento y resumen avanzado.
 
 ## [2026-05-06] Nomina Colombia avanzada
@@ -480,7 +475,7 @@
 - [Contabilidad] Se agrega `contabilidad_colombia_avanzada` con informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales por empresa.
 - [Backend] Nueva API `/api/empresa/contabilidad_colombia_avanzada`, tablas empresariales aisladas por `empresa_id` y generacion de exogena/libros desde comprobantes contabilizados del nucleo `contabilidad_colombia`.
 - [Permisos] Nuevo modulo de licencia `contabilidad_colombia_avanzada`, pagina `linkContabilidadColombiaAvanzada` y wrapper `WithEmpresaContabilidadColombiaAvanzadaPermissions`.
-- [Frontend] Nueva vista `web/administrar_empresa/contabilidad_colombia_avanzada.html` con dashboard y pestañas profesionales para cada submodulo.
+- [Frontend] Nueva vista `web/administrar_empresa/contabilidad_colombia_avanzada.html` con dashboard y pestaÃ±as profesionales para cada submodulo.
 - [Docs/QA] Se crea `documentos/contabilidad_colombia_avanzada.md`; pruebas Go y auditoria de rutas/permisos actualizadas.
 
 ## [2026-05-05] Portal publico, carta QR y Motel Calipso publicado
@@ -515,7 +510,7 @@
 
 ## [2026-05-04] Control electrico Raspberry Pi por estacion
 - [Control electrico] Nuevo modulo en Administrar empresa para configurar Raspberry Pi, IP/puerto/ruta API, token opcional, timeout y sincronizacion automatica.
-- [Estaciones] Cada estacion puede mapearse a multiples relés GPIO con salida/carga (luces, jacuzzi, aire, puerta u otro), nombre, pin, logica activo alto, pulso opcional y prueba manual ON/OFF.
+- [Estaciones] Cada estacion puede mapearse a multiples relÃ©s GPIO con salida/carga (luces, jacuzzi, aire, puerta u otro), nombre, pin, logica activo alto, pulso opcional y prueba manual ON/OFF.
 - [Carrito] El carrito de estacion incorpora boton `Control electrico` para abrir un panel operativo y controlar manualmente salidas de la habitacion sin salir de la venta.
 - [Automatizacion] Al activar/recuperar/reabrir una estacion se envia `on`; al pagar/cerrar/desactivar se envia `off`. Tambien se engancha con autoactivacion por sensor de puertas.
 - [Auditoria] Se agrega bitacora electrica por empresa con comando, estado objetivo, GPIO, HTTP status, respuesta/error, actor, origen y fecha.
@@ -531,20 +526,20 @@
 ## [2026-04-30] Pagos, chat IA, empresas compartidas, hoja de vida operativa y documentos dinamicos
 - [Pagos/Epayco] Smart Checkout v2 conserva fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`; se elimina la redireccion GET que producia XML `AccessDenied` y se documenta el requisito de `epayco.customer_id` para fallback.
 - [Pagos/Epayco] El fallback clasico resuelve su modo con `epayco.customer_id` + `epayco.checkout_key`/`epayco.p_key`, separado de las llaves Smart Checkout, para no enviar cuentas reales como pruebas y evitar el error "El comercio no fue reconocido".
-- [Chat IA] La secretaria IA 3D se rediseña como avatar estilo caricatura ejecutiva joven y habla siempre con voz femenina (`es-CO-female`), manteniendo el robot con voz configurable.
+- [Chat IA] La secretaria IA 3D se rediseÃ±a como avatar estilo caricatura ejecutiva joven y habla siempre con voz femenina (`es-CO-female`), manteniendo el robot con voz configurable.
 - [Empresas compartidas] El editor de empresa permite consultar y retirar administradores compartidos desde ambos lados del acceso, con trazabilidad del actor.
 - [Administrar empresa] Se implementa la hoja de vida operativa universal para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con ficha, eventos, servicios, alertas y resumen operativo.
 - [Documentos IA] Se documenta el flujo `/generate` + `/download` para generar documentos dinamicos con IA/templates y exportar PDF, DOCX, XLSX, HTML, TXT o JSON.
-- Nueva funcionalidad: MÃ³dulo Red Social Comercial con portal pÃºblico y administraciÃ³n por empresa. EliminaciÃ³n de modulo juegos y venta de licencias desde cliente.
+- Nueva funcionalidad: MÃƒÂ³dulo Red Social Comercial con portal pÃƒÂºblico y administraciÃƒÂ³n por empresa. EliminaciÃƒÂ³n de modulo juegos y venta de licencias desde cliente.
 
 ## [2026-04-23] Retiro Tipos de usuario (panel super)
-- [Super/DB] Eliminación del módulo Tipos de usuario: sin API ni UI; tabla `tipos_de_usuario` removida al arranque; documentación alineada.
+- [Super/DB] EliminaciÃ³n del mÃ³dulo Tipos de usuario: sin API ni UI; tabla `tipos_de_usuario` removida al arranque; documentaciÃ³n alineada.
 
-## [2026-04-23] reCAPTCHA, backup y manual de instalación
-- [Docs/Operación] Se actualizó el manual de instalación con reCAPTCHA v2/v3/Enterprise, variables, panel super y fallos frecuentes (dominios, tipo de clave). Se documentan las claves y copias best-effort en `backup/super_administrador` y `backup/empresas/<empresa_id>`. Ajustes en `descripcion_de_archivos` e `historial_de_cambios` y alineación con `CHANGELOG.md` raíz.
+## [2026-04-23] reCAPTCHA, backup y manual de instalaciÃ³n
+- [Docs/OperaciÃ³n] Se actualizÃ³ el manual de instalaciÃ³n con reCAPTCHA v2/v3/Enterprise, variables, panel super y fallos frecuentes (dominios, tipo de clave). Se documentan las claves y copias best-effort en `backup/super_administrador` y `backup/empresas/<empresa_id>`. Ajustes en `descripcion_de_archivos` e `historial_de_cambios` y alineaciÃ³n con `CHANGELOG.md` raÃ­z.
 
 ## [2026-04-20] Limpieza Total Themes
-- [UI/Temas] Auditoría y barrido de más de 50 páginas y scripts en web/administrar_empresa, web/super y páginas públicas para limpiar colores fijos, migrando lógicas JS a .classList.add('text-danger') y respetando las 6 paletas dinámicas. Completado barrido masivo de vistas.
+- [UI/Temas] AuditorÃ­a y barrido de mÃ¡s de 50 pÃ¡ginas y scripts en web/administrar_empresa, web/super y pÃ¡ginas pÃºblicas para limpiar colores fijos, migrando lÃ³gicas JS a .classList.add('text-danger') y respetando las 6 paletas dinÃ¡micas. Completado barrido masivo de vistas.
 - **2026-04-30 - Pagos ePayco de licencias**: el fallback estandar ahora usa `checkout.js` con `external: "true"` y `PUBLIC_KEY`; se evita el POST legacy a `secure.payco.co/checkout.php`, `P_KEY` queda solo en backend para validacion de webhooks con SHA256 y el frontend `pagar_licencia.html` soporta `checkout_type=classic_js`. Verificacion: `go test ./handlers -run Test.*Epayco -count=1` y `go test ./... -count=1`.
 
 ## [2026-05-03] Documentacion, ayuda y estado operativo de modulos
@@ -555,3 +550,8 @@
 
 - **Declaraciones Tributarias y Motor de Impuestos Colombia**: nuevo modulo `declaraciones_tributarias` con API privada, dashboard, preliquidacion, calendario editable, saldos a pagar/favor, movimientos de conciliacion, permisos/licencia, pantalla administrativa y documentacion. Verificacion prevista: pruebas unitarias del motor, `go test ./... -count=1` y `git diff --check`.
 - 2026-05-06: implementados modulos empresariales Colombia `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos` con nucleo compartido, APIs privadas por empresa, paginas administrativas, permisos/licencias y documentacion.
+## [2026-05-11] Contrato universal de 30 verticales
+- [Backend] `backend/handlers/empresa_verticales_integracion.go` deja de publicar acciones de migracion manual antigua y declara las verticales clasicas como plantillas sobre nucleo comun.
+- [Licencias] La activacion de licencia aplica la preconfiguracion idempotente del tipo de empresa sin ejecutar migraciones automaticas.
+- [Frontend] La matriz empresarial queda como auditoria de plantilla, nucleo, permisos, flujo de venta y reportes; los dashboards clasicos ya no muestran botones de migracion manual.
+- [QA] `go test ./...`; validacion JS de catalogos y pantallas empresariales tocadas.

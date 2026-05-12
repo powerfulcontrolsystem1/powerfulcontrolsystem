@@ -206,14 +206,6 @@ func EmpresaApartamentosTuristicosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
-			case "sincronizar_nucleo":
-				resumen, err := dbpkg.SyncEmpresaApartamentosTuristicosNucleo(dbEmp, empresaID, adminEmail)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "integracion": resumen})
-				return
 			}
 		}
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)

@@ -426,22 +426,6 @@
       showTab(tabBtn.getAttribute("data-tab"));
       return;
     }
-    var syncBtn = event.target.closest("#odontoSyncCoreBtn");
-    if (syncBtn) {
-      syncBtn.disabled = true;
-      setNotice("Sincronizando odontologia con el nucleo...", false);
-      fetchJSON(apiBase + "&action=sincronizar_nucleo", { method: "POST" }).then(function (resp) {
-        state.integracionNucleo = resp && resp.integracion ? resp.integracion : null;
-        renderCoreIntegration();
-        setNotice("Odontologia sincronizada con el nucleo.", false);
-        return refreshAll();
-      }).catch(function (err) {
-        setNotice(err.message || "No se pudo sincronizar con el nucleo", true);
-      }).finally(function () {
-        syncBtn.disabled = false;
-      });
-      return;
-    }
     var stateBtn = event.target.closest("[data-entity]");
     if (stateBtn) {
       changeEstado(stateBtn.getAttribute("data-entity"), stateBtn.getAttribute("data-id"), stateBtn.getAttribute("data-next")).catch(function (err) {

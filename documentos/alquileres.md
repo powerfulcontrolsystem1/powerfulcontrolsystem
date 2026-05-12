@@ -38,4 +38,3 @@ Modulo empresarial para administrar alquiler de herramientas, motos, maquinaria,
 - Activos y tarifas se sincronizan con `servicios` para no duplicar catalogo vendible.
 - Cada contrato con valor crea o reutiliza una venta central en `carritos_compras` y un item en `carrito_compra_items`.
 - Cuando el contrato queda sin saldo, el carrito se marca pagado con referencia reconciliable al contrato.
-- La accion `POST /api/empresa/alquileres?action=sincronizar_nucleo&empresa_id=...` migra datos historicos por empresa sin borrar garantias, GPS, kilometraje, mantenimientos ni devoluciones.

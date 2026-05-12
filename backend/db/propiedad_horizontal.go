@@ -153,18 +153,6 @@ type EmpresaPropiedadHorizontalDashboard struct {
 	Asambleas         []EmpresaPropiedadHorizontalAsamblea `json:"asambleas"`
 }
 
-type EmpresaPropiedadHorizontalIntegracionNucleoResumen struct {
-	EmpresaID              int64    `json:"empresa_id"`
-	EstadoIntegracion      string   `json:"estado_integracion"`
-	VisibleOperativo       bool     `json:"visible_operativo"`
-	ClientesSincronizados  int      `json:"clientes_sincronizados"`
-	ServiciosSincronizados int      `json:"servicios_sincronizados"`
-	RecaudosSincronizados  int      `json:"recaudos_sincronizados"`
-	RecaudosPendientes     int      `json:"recaudos_pendientes"`
-	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
-	Errores                []string `json:"errores,omitempty"`
-}
-
 func EnsureEmpresaPropiedadHorizontalSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_propiedad_horizontal_config (
@@ -1030,88 +1018,6 @@ func createPropHRecaudoCarrito(dbConn *sql.DB, recaudo EmpresaPropiedadHorizonta
 		return 0, 0, 0, 0, err
 	}
 	return carritoID, itemID, clienteID, servicioID, nil
-}
-
-func SyncEmpresaPropiedadHorizontalNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaPropiedadHorizontalIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaPropiedadHorizontalSchema(dbConn); err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaPropiedadHorizontalIntegracionNucleoResumen{EmpresaID: empresaID, EstadoIntegracion: "plantilla_integrada_nucleo", VisibleOperativo: true}
-	unidades, err := ListEmpresaPropiedadHorizontalUnidades(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, unidad := range unidades {
-		servicioID, err := ensurePropHUnidadServicio(dbConn, unidad, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("unidad %d servicio: %v", unidad.ID, err))
-			continue
-		}
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_unidades SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, unidad.ID)
-		}
-	}
-	personas, err := ListEmpresaPropiedadHorizontalPersonas(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, persona := range personas {
-		clienteID, err := ensurePropHPersonaClienteCore(dbConn, persona, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("persona %d cliente: %v", persona.ID, err))
-			continue
-		}
-		if clienteID > 0 {
-			resumen.ClientesSincronizados++
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_personas SET cliente_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), empresaID, persona.ID)
-		}
-	}
-	cargos, err := ListEmpresaPropiedadHorizontalCargos(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, cargo := range cargos {
-		servicioID, err := ensurePropHCargoServicio(dbConn, cargo, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("cargo %d servicio: %v", cargo.ID, err))
-			continue
-		}
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_cargos SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, cargo.ID)
-		}
-	}
-	recaudos, err := ListEmpresaPropiedadHorizontalRecaudos(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, recaudo := range recaudos {
-		if recaudo.CarritoID > 0 {
-			resumen.RecaudosSincronizados++
-			continue
-		}
-		if recaudo.ValorPagado <= 0 {
-			resumen.RecaudosPendientes++
-			continue
-		}
-		carritoID, itemID, clienteID, servicioID, err := createPropHRecaudoCarrito(dbConn, recaudo, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("recaudo %d carrito: %v", recaudo.ID, err))
-			continue
-		}
-		_, err = ExecCompat(dbConn, `UPDATE empresa_propiedad_horizontal_recaudos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), empresaID, recaudo.ID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("recaudo %d refs: %v", recaudo.ID, err))
-			continue
-		}
-		resumen.RecaudosSincronizados++
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 func normalizePropiedadHorizontalConfig(x EmpresaPropiedadHorizontalConfig) EmpresaPropiedadHorizontalConfig {

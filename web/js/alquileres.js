@@ -457,14 +457,6 @@
     byId("rentalSeedBtn").addEventListener("click", function () {
       sendJSON("seed_demo", {}).then(function () { return refreshAll(); }).then(function () { setMessage("Preconfiguración operativa aplicada.", false); }).catch(showError);
     });
-    byId("rentalSyncCoreBtn").addEventListener("click", function () {
-      sendJSON("sincronizar_nucleo", {}).then(function (payload) {
-        var x = payload.integracion || {};
-        return refreshAll().then(function () {
-          setMessage("Nucleo sincronizado: " + Number(x.clientes_sincronizados || 0) + " clientes, " + Number(x.servicios_sincronizados || 0) + " servicios y " + Number(x.contratos_sincronizados || 0) + " contratos conectados.", false);
-        });
-      }).catch(showError);
-    });
     byId("rentalUseMyLocation").addEventListener("click", function () {
       if (!navigator.geolocation) {
         setMessage("Este navegador no permite geolocalización.", true);

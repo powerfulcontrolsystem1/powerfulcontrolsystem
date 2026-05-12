@@ -7,13 +7,13 @@
     gimnasio: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza socios con clientes, planes con servicios vendibles y pagos con ventas/pagos centrales.",
+      motivo: "Plantilla fitness conectada al nucleo comun: socios, planes y pagos operan desde clientes, servicios, ventas y pagos centrales.",
       duplicados: []
     },
     odontologia: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza pacientes con clientes, tratamientos con servicios vendibles y pagos con ventas/pagos centrales.",
+      motivo: "Plantilla clinica conectada al nucleo comun: pacientes, tratamientos y recaudos usan clientes, servicios, ventas y pagos centrales.",
       duplicados: []
     },
     consultorio_odontologico: {
@@ -26,13 +26,13 @@
     parqueadero: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Cierra tickets creando venta, item de servicio y pago central en carritos.",
+      motivo: "Plantilla de parqueadero conectada al nucleo comun: tickets y cobros crean servicio, venta y pago central sin modulo comercial paralelo.",
       duplicados: []
     },
     taxi_system: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza clientes de viaje y servicios completados con clientes, servicios, ventas y pagos centrales.",
+      motivo: "Plantilla de transporte conectada al nucleo comun: clientes, servicios de viaje, ventas y pagos se gobiernan desde el nucleo.",
       duplicados: []
     },
     taxi: {
@@ -45,37 +45,37 @@
     domicilios: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza pedidos entregados con clientes, servicios de menu, ventas y pagos centrales.",
+      motivo: "Plantilla logistica conectada al nucleo comun: pedidos, clientes, menu, ventas y pagos se resuelven en los modulos centrales.",
       duplicados: []
     },
     apartamentos_turisticos: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza huespedes con clientes, apartamentos con servicios y reservas cerradas con ventas/pagos centrales.",
+      motivo: "Plantilla de alojamiento conectada al nucleo comun: huespedes, unidades vendibles, reservas, ventas y pagos comparten el motor central.",
       duplicados: []
     },
     propiedad_horizontal: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza propietarios/residentes con clientes, cargos con servicios y recaudos con ventas/pagos centrales.",
+      motivo: "Plantilla de copropiedad conectada al nucleo comun: terceros, unidades, cargos, recaudos, cartera y reportes no duplican clientes ni pagos.",
       duplicados: []
     },
     alquileres: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza clientes de contratos con clientes centrales, activos/tarifas con servicios y contratos con ventas/pagos centrales.",
+      motivo: "Plantilla de alquiler conectada al nucleo comun: clientes, activos vendibles, contratos, ventas y pagos usan la fuente unica.",
       duplicados: []
     },
     drogueria_farmacia: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Opera como expediente sanitario sobre el nucleo: productos, inventario, ventas, clientes y facturacion siguen en modulos centrales.",
+      motivo: "Plantilla sanitaria conectada al nucleo comun: productos, inventario, compras, clientes, ventas y facturacion siguen en modulos centrales.",
       duplicados: []
     },
     aiu_construccion: {
       estado: "plantilla_integrada_nucleo",
       visibleOperativo: true,
-      motivo: "Sincroniza clientes de obra, contratos y conceptos como servicios; facturas AIU quedan enlazadas a ventas centrales sin duplicar impuestos.",
+      motivo: "Plantilla de construccion conectada al nucleo comun: clientes, contratos, conceptos, ventas, impuestos y reportes se enlazan sin duplicar documentos comerciales.",
       duplicados: []
     },
     turnos_atencion: {
@@ -127,7 +127,6 @@
         reportsProduced: Array.isArray(item.reports_produced) ? item.reports_produced.slice() : [],
         flujoPropioPermitido: Array.isArray(item.own_flow_allowed) ? item.own_flow_allowed.slice() : [],
         decision: String(item.decision || "").trim(),
-        syncAction: String(item.sync_action || "").trim(),
         page: String(item.page || "").trim(),
         title: String(item.title || item.titulo || "").trim()
       }

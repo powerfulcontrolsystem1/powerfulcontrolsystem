@@ -56,7 +56,6 @@
         <p>Administra unidades, disponibilidad, huéspedes, pagos estimados, códigos de acceso, canales de venta y tareas posteriores al checkout.</p>
         <div class="apt-actions">
           <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
-          <button id="btnSyncCore" class="btn secondary" type="button">Sincronizar nucleo</button>
           <button class="btn" type="button" data-panel-jump="reservas">Nueva reserva</button>
           <button class="btn secondary" type="button" data-panel-jump="apartamentos">Nuevo apartamento</button>
         </div>
@@ -250,7 +249,7 @@
   <script>
     (function(){
       var state = { empresaID:getEmpresaID(), dashboard:null, tarifas:[], tareas:[], integracionNucleo:null };
-      var ids = ["kpiApartamentos","kpiDisponibles","kpiOcupados","kpiReservas","kpiCheckins","kpiIngresos","unitsSummary","operationsSummary","unitsList","reservasBody","tarifasBody","tasksList","aptMsg","btnRefresh","btnSyncCore","btnSaveUnit","btnSaveReserva","btnSaveTarifa","btnSaveTask","btnSaveConfig","btnSaveState","aptCodigo","aptNombre","aptTipo","aptUbicacion","aptCapacidad","aptHabitaciones","aptCamas","aptBanos","aptPrecio","aptLimpieza","aptDeposito","aptFoto","aptAmenidades","aptReglas","resApartamento","resCanal","resHuesped","resDocumento","resTelefono","resEmail","resEntrada","resSalida","resHuespedes","resObs","tarNombre","tarApartamento","tarCanal","tarPrecio","tarMinimo","tarDesde","tarHasta","tarSemanal","tarMensual","taskApartamento","taskTipo","taskPrioridad","taskResponsable","taskFecha","taskDescripcion","taskCosto","cfgNombre","cfgMoneda","cfgCheckin","cfgCheckout","cfgDeposito","cfgImpuesto","cfgAutoLimpieza","cfgPublicas","cfgDocumento","stateApartamento","stateOperativo","stateOcupacion"];
+      var ids = ["kpiApartamentos","kpiDisponibles","kpiOcupados","kpiReservas","kpiCheckins","kpiIngresos","unitsSummary","operationsSummary","unitsList","reservasBody","tarifasBody","tasksList","aptMsg","btnRefresh","btnSaveUnit","btnSaveReserva","btnSaveTarifa","btnSaveTask","btnSaveConfig","btnSaveState","aptCodigo","aptNombre","aptTipo","aptUbicacion","aptCapacidad","aptHabitaciones","aptCamas","aptBanos","aptPrecio","aptLimpieza","aptDeposito","aptFoto","aptAmenidades","aptReglas","resApartamento","resCanal","resHuesped","resDocumento","resTelefono","resEmail","resEntrada","resSalida","resHuespedes","resObs","tarNombre","tarApartamento","tarCanal","tarPrecio","tarMinimo","tarDesde","tarHasta","tarSemanal","tarMensual","taskApartamento","taskTipo","taskPrioridad","taskResponsable","taskFecha","taskDescripcion","taskCosto","cfgNombre","cfgMoneda","cfgCheckin","cfgCheckout","cfgDeposito","cfgImpuesto","cfgAutoLimpieza","cfgPublicas","cfgDocumento","stateApartamento","stateOperativo","stateOcupacion"];
       var els = {};
       ids.forEach(function(id){ els[id] = document.getElementById(id); });
 
@@ -426,17 +425,9 @@
         setMsg("Tarea actualizada.", "success");
         await load();
       }
-      async function syncCore(){
-        var r = await request(api("sincronizar_nucleo"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:"{}" });
-        state.integracionNucleo = r.integracion || r;
-        var s = state.integracionNucleo || {};
-        setMsg("Nucleo sincronizado: " + (s.reservas_sincronizadas || 0) + " reservas, " + (s.servicios_sincronizados || 0) + " servicios y " + (s.clientes_sincronizados || 0) + " clientes.", (s.errores && s.errores.length) ? "error" : "success");
-        await load();
-      }
       document.querySelectorAll(".apt-tab").forEach(function(btn){ btn.addEventListener("click", function(){ showPanel(btn.dataset.panel); }); });
       document.querySelectorAll("[data-panel-jump]").forEach(function(btn){ btn.addEventListener("click", function(){ showPanel(btn.dataset.panelJump); }); });
       els.btnRefresh.addEventListener("click", function(){ load().catch(function(err){ setMsg(err.message, "error"); }); });
-      els.btnSyncCore.addEventListener("click", function(){ syncCore().catch(function(err){ setMsg(err.message, "error"); }); });
       els.btnSaveUnit.addEventListener("click", function(){ saveUnit().catch(function(err){ setMsg(err.message, "error"); }); });
       els.btnSaveReserva.addEventListener("click", function(){ saveReserva().catch(function(err){ setMsg(err.message, "error"); }); });
       els.btnSaveTarifa.addEventListener("click", function(){ saveTarifa().catch(function(err){ setMsg(err.message, "error"); }); });

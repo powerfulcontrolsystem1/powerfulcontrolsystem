@@ -202,18 +202,6 @@ type EmpresaAlquilerDashboard struct {
 	IngresosPorSede        []EmpresaAlquilerResumenGrupo `json:"ingresos_por_sede"`
 }
 
-type EmpresaAlquilerIntegracionNucleoResumen struct {
-	EmpresaID              int64    `json:"empresa_id"`
-	EstadoIntegracion      string   `json:"estado_integracion"`
-	VisibleOperativo       bool     `json:"visible_operativo"`
-	ClientesSincronizados  int      `json:"clientes_sincronizados"`
-	ServiciosSincronizados int      `json:"servicios_sincronizados"`
-	ContratosSincronizados int      `json:"contratos_sincronizados"`
-	ContratosPendientes    int      `json:"contratos_pendientes"`
-	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
-	Errores                []string `json:"errores,omitempty"`
-}
-
 var (
 	empresaAlquileresSchemaEnsured sync.Map
 	empresaAlquileresSchemaMu      sync.Mutex
@@ -1427,79 +1415,6 @@ func limitAlquilerActivos(items []EmpresaAlquilerActivo, max int) []EmpresaAlqui
 		return items
 	}
 	return items[:max]
-}
-
-func SyncEmpresaAlquileresNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaAlquilerIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaAlquileresSchema(dbConn); err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaAlquilerIntegracionNucleoResumen{EmpresaID: empresaID, EstadoIntegracion: "plantilla_integrada_nucleo", VisibleOperativo: true}
-	activos, err := ListEmpresaAlquilerActivos(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, activo := range activos {
-		servicioID, err := ensureAlquilerActivoServicio(dbConn, activo, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("activo %d servicio: %v", activo.ID, err))
-			continue
-		}
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_activos SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, activo.ID)
-		}
-	}
-	tarifas, err := ListEmpresaAlquilerTarifas(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, tarifa := range tarifas {
-		servicioID, err := ensureAlquilerTarifaServicio(dbConn, tarifa, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("tarifa %d servicio: %v", tarifa.ID, err))
-			continue
-		}
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_tarifas SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(servicioID), empresaID, tarifa.ID)
-		}
-	}
-	contratos, err := ListEmpresaAlquilerContratos(dbConn, empresaID)
-	if err != nil {
-		return nil, err
-	}
-	for _, contrato := range contratos {
-		clienteID, servicioID, err := prepareAlquilerContratoCoreRefs(dbConn, contrato, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("contrato %d refs: %v", contrato.ID, err))
-			continue
-		}
-		if clienteID > 0 {
-			resumen.ClientesSincronizados++
-		}
-		if contrato.Total <= 0 {
-			resumen.ContratosPendientes++
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET cliente_id=?, servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contrato.ID)
-			continue
-		}
-		marcarPagado := contrato.SaldoPendiente <= 0 || normalizeAlquilerEstado(contrato.Estado) == "devuelto"
-		carritoID, itemID, clienteID, servicioID, err := createOrSyncAlquilerContratoCarrito(dbConn, contrato, marcarPagado, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("contrato %d carrito: %v", contrato.ID, err))
-			continue
-		}
-		_, err = ExecCompat(dbConn, `UPDATE empresa_alquileres_contratos SET cliente_id=?, servicio_id=?, carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), nullableID(carritoID), nullableID(itemID), empresaID, contrato.ID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("contrato %d refs carrito: %v", contrato.ID, err))
-			continue
-		}
-		resumen.ContratosSincronizados++
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 func SeedEmpresaAlquilerDemoData(dbConn *sql.DB, empresaID int64, usuario string) error {

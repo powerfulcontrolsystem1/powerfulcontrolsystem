@@ -40,7 +40,6 @@ El modulo AIU construccion agrega una capa empresarial para arquitectos, constru
 - `POST action=contrato`: crea o actualiza contrato.
 - `POST action=item`: agrega concepto/capitulo al contrato.
 - `POST action=generar_factura`: registra factura AIU y documento electronico.
-- `POST action=sincronizar_nucleo`: enlaza contratos, conceptos y facturas historicas con clientes, servicios y carritos centrales.
 - `POST action=estado`: cambia estado con validacion de flujo y aprobacion.
 - `POST action=seed_demo`: crea un ejemplo operativo.
 

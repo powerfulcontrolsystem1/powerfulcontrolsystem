@@ -11,7 +11,6 @@ El modulo de parqueadero permite operar entradas y salidas de vehiculos por empr
 - Cierre de salida con metodo de pago, recibo imprimible y venta/pago central en `carritos_compras`.
 - Validacion de salida por token QR desde endpoint publico de solo consulta.
 - Control de tickets abiertos, salidas del dia, anulaciones e ingresos diarios.
-- Sincronizacion historica de tickets cerrados hacia el nucleo comercial sin borrar trazabilidad de parqueadero.
 
 ## Rutas
 
@@ -29,7 +28,6 @@ El modulo de parqueadero permite operar entradas y salidas de vehiculos por empr
 - `POST action=entrada`: emite ticket de ingreso.
 - `POST action=calcular`: calcula el valor de salida sin cerrar.
 - `POST action=cobrar_salida`: cobra, cierra la salida, genera carrito central, item de servicio y pago reconciliable.
-- `POST action=sincronizar_nucleo`: sincroniza tickets cerrados historicos con clientes opcionales, servicios y ventas/pagos centrales.
 - `POST action=anular`: anula un ticket abierto.
 
 ## Integracion con nucleo

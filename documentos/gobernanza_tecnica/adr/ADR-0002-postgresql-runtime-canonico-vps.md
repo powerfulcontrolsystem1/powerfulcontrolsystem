@@ -13,7 +13,6 @@ Se declara PostgreSQL en VPS como runtime productivo canonico del sistema.
 
 motor legado retirado queda limitado a:
 
-- migracion historica,
 - respaldos tecnicos puntuales,
 - pruebas locales especificas cuando el modulo lo requiera.
 
@@ -22,7 +21,7 @@ motor legado retirado queda limitado a:
 ### Positivas
 
 - las decisiones nuevas se alinean con el entorno real del sistema.
-- obliga a diseñar inserciones, secuencias, migraciones y consultas pensando en PostgreSQL.
+- obliga a diseÃ±ar inserciones, secuencias, migraciones y consultas pensando en PostgreSQL.
 - reduce errores por diferencias de autoincremento, sintaxis o runtime local.
 
 ### Costos

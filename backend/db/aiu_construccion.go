@@ -134,18 +134,6 @@ type EmpresaAIUDashboard struct {
 	UltimosEventos     []EmpresaAIUEvento   `json:"ultimos_eventos"`
 }
 
-type EmpresaAIUIntegracionNucleoResumen struct {
-	EmpresaID              int64    `json:"empresa_id"`
-	EstadoIntegracion      string   `json:"estado_integracion"`
-	VisibleOperativo       bool     `json:"visible_operativo"`
-	ClientesSincronizados  int      `json:"clientes_sincronizados"`
-	ServiciosSincronizados int      `json:"servicios_sincronizados"`
-	FacturasSincronizadas  int      `json:"facturas_sincronizadas"`
-	FacturasPendientes     int      `json:"facturas_pendientes"`
-	RequiereRevisionDatos  bool     `json:"requiere_revision_datos"`
-	Errores                []string `json:"errores,omitempty"`
-}
-
 func EnsureEmpresaAIUConstruccionSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_aiu_contratos (
@@ -743,83 +731,6 @@ func SeedEmpresaAIUDemo(dbConn *sql.DB, empresaID int64, usuario string) error {
 		return err
 	}
 	return nil
-}
-
-func SyncEmpresaAIUConstruccionNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaAIUIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaAIUConstruccionSchema(dbConn); err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaAIUIntegracionNucleoResumen{
-		EmpresaID:         empresaID,
-		EstadoIntegracion: "integrado_nucleo",
-		VisibleOperativo:  true,
-	}
-	contratos, err := ListEmpresaAIUContratos(dbConn, empresaID, "", 500)
-	if err != nil {
-		return nil, err
-	}
-	for _, contrato := range contratos {
-		clienteID, servicioID, err := prepareAIUContratoCoreRefs(dbConn, contrato, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s: %s", contrato.Codigo, err.Error()))
-			continue
-		}
-		if clienteID > 0 {
-			resumen.ClientesSincronizados++
-		}
-		if servicioID > 0 {
-			resumen.ServiciosSincronizados++
-		}
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_contratos SET cliente_id=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contrato.ID)
-		items, itemErr := ListEmpresaAIUItems(dbConn, empresaID, contrato.ID)
-		if itemErr != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s conceptos: %s", contrato.Codigo, itemErr.Error()))
-			continue
-		}
-		for _, item := range items {
-			itemServicioID, err := ensureAIUItemServicio(dbConn, item, contrato, usuario)
-			if err != nil {
-				resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s/%s: %s", contrato.Codigo, item.Descripcion, err.Error()))
-				continue
-			}
-			if itemServicioID > 0 {
-				resumen.ServiciosSincronizados++
-				_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_items SET servicio_id=? WHERE empresa_id=? AND id=?`, nullableID(itemServicioID), empresaID, item.ID)
-			}
-		}
-	}
-	facturas, err := ListEmpresaAIUFacturas(dbConn, empresaID, 0, 500)
-	if err != nil {
-		return nil, err
-	}
-	for _, factura := range facturas {
-		if factura.CarritoID > 0 {
-			resumen.FacturasSincronizadas++
-			continue
-		}
-		if factura.TotalFactura <= 0 {
-			resumen.FacturasPendientes++
-			continue
-		}
-		contrato, err := GetEmpresaAIUContrato(dbConn, empresaID, factura.ContratoID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s: contrato no encontrado", factura.DocumentoCodigo))
-			continue
-		}
-		carritoID, itemID, clienteID, servicioID, err := createOrSyncAIUFacturaCarrito(dbConn, contrato, factura, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("%s: %s", factura.DocumentoCodigo, err.Error()))
-			continue
-		}
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_facturas SET carrito_id=?, carrito_item_id=? WHERE empresa_id=? AND id=?`, nullableID(carritoID), nullableID(itemID), empresaID, factura.ID)
-		_, _ = ExecCompat(dbConn, `UPDATE empresa_aiu_contratos SET cliente_id=?, servicio_id=?, fecha_actualizacion=CURRENT_TIMESTAMP WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(servicioID), empresaID, contrato.ID)
-		resumen.FacturasSincronizadas++
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 func prepareAIUContratoCoreRefs(dbConn *sql.DB, contrato EmpresaAIUContrato, usuario string) (int64, int64, error) {

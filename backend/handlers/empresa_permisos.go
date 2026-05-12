@@ -428,7 +428,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkChatTareas", Modulo: permModuleChatTareas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Operacion diaria y ventas"},
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atencion y fila", Grupo: "Operacion diaria y ventas"},
 
-	{PaginaClave: "linkVerticalesIntegracion", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Matriz de integracion de verticales", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkVerticalesIntegracion", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Matriz de integracion de verticales", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkGimnasio", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gestion de gimnasio", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkGimnasioDashboard", Modulo: permModuleGimnasio, Accion: permActionRead, Titulo: "Gimnasio - dashboard", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkGimnasioSocios", Modulo: permModuleGimnasio, Accion: permActionCreate, Titulo: "Gimnasio - socios", Grupo: "Verticales de negocio"},

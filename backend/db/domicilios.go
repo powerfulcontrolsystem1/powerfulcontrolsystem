@@ -206,18 +206,6 @@ type EmpresaDomiciliosDashboard struct {
 	Offers                   []EmpresaDomicilioOffer      `json:"offers"`
 }
 
-type EmpresaDomiciliosIntegracionNucleoResumen struct {
-	EmpresaID                  int64    `json:"empresa_id"`
-	EstadoIntegracion          string   `json:"estado_integracion"`
-	VisibleOperativo           bool     `json:"visible_operativo"`
-	MenuServiciosSincronizados int      `json:"menu_servicios_sincronizados"`
-	ClientesSincronizados      int      `json:"clientes_sincronizados"`
-	PedidosSincronizados       int      `json:"pedidos_sincronizados"`
-	PedidosPendientes          int      `json:"pedidos_pendientes"`
-	RequiereRevisionDatos      bool     `json:"requiere_revision_datos"`
-	Errores                    []string `json:"errores,omitempty"`
-}
-
 func EnsureEmpresaDomiciliosSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_domicilios_config (
@@ -1522,69 +1510,6 @@ func createDomicilioOrderCarrito(dbConn *sql.DB, order EmpresaDomicilioOrder, us
 		return 0, 0, err
 	}
 	return carritoID, clienteID, nil
-}
-
-func SyncEmpresaDomiciliosNucleo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaDomiciliosIntegracionNucleoResumen, error) {
-	if err := EnsureEmpresaDomiciliosSchema(dbConn); err != nil {
-		return nil, err
-	}
-	resumen := &EmpresaDomiciliosIntegracionNucleoResumen{
-		EmpresaID:         empresaID,
-		EstadoIntegracion: "plantilla_integrada_nucleo",
-		VisibleOperativo:  true,
-	}
-	menu, err := ListDomicilioMenuItems(dbConn, empresaID, 0, false)
-	if err != nil {
-		return nil, err
-	}
-	for _, item := range menu {
-		servicioID, err := ensureDomicilioMenuServicio(dbConn, item, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("menu %d servicio: %v", item.ID, err))
-			continue
-		}
-		if servicioID > 0 {
-			resumen.MenuServiciosSincronizados++
-		}
-	}
-	orders, err := ListDomicilioOrders(dbConn, empresaID, "entregado", 500)
-	if err != nil {
-		return nil, err
-	}
-	for _, order := range orders {
-		if order.CarritoID > 0 {
-			resumen.PedidosPendientes++
-			continue
-		}
-		clienteID, err := ensureDomicilioClienteCore(dbConn, order, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pedido %d cliente: %v", order.ID, err))
-			continue
-		}
-		order.ClienteID = clienteID
-		resumen.ClientesSincronizados++
-		if order.Total <= 0 {
-			_, _ = ExecCompat(dbConn, `UPDATE empresa_domicilios_orders SET cliente_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), order.EmpresaID, order.ID)
-			resumen.PedidosPendientes++
-			continue
-		}
-		carritoID, clienteID, err := createDomicilioOrderCarrito(dbConn, order, usuario)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pedido %d carrito: %v", order.ID, err))
-			continue
-		}
-		_, err = ExecCompat(dbConn, `UPDATE empresa_domicilios_orders SET cliente_id=?, carrito_id=? WHERE empresa_id=? AND id=?`, nullableID(clienteID), nullableID(carritoID), order.EmpresaID, order.ID)
-		if err != nil {
-			resumen.Errores = append(resumen.Errores, fmt.Sprintf("pedido %d refs: %v", order.ID, err))
-			continue
-		}
-		resumen.PedidosSincronizados++
-	}
-	if len(resumen.Errores) > 0 {
-		resumen.EstadoIntegracion = "integrado_con_observaciones"
-		resumen.RequiereRevisionDatos = true
-	}
-	return resumen, nil
 }
 
 func hashDomicilioPin(pin string) (string, string) {

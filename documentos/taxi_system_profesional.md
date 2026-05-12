@@ -59,7 +59,6 @@ Estas columnas viven en `empresa_taxi_drivers` y se migran automaticamente desde
 - `GET /api/empresa/taxi_system?action=drivers&empresa_id=...`
 - `POST /api/empresa/taxi_system?action=drivers&empresa_id=...`
 - `POST /api/empresa/taxi_system?action=dispatch&empresa_id=...&request_id=...`
-- `POST /api/empresa/taxi_system?action=sincronizar_nucleo&empresa_id=...`
 - `GET /api/empresa/taxi_system?action=route&empresa_id=...&request_id=...`
 - `GET /api/empresa/taxi_system?action=gps_devices&empresa_id=...`
 - `POST /api/empresa/taxi_system?action=gps_devices&empresa_id=...`
@@ -75,7 +74,6 @@ Taxi system no debe duplicar clientes, ventas ni pagos. Las tablas propias conse
 - `empresa_taxi_requests.carrito_id` y `carrito_item_id`: venta central creada al completar el viaje con tarifa.
 - `empresa_taxi_requests.metodo_pago`: metodo normalizado del flujo de carrito, por defecto `efectivo`.
 
-La accion `sincronizar_nucleo` migra viajes completados historicos sin borrar trazabilidad de rutas, GPS, conductores ni ofertas.
 
 ## Validacion
 
