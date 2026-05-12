@@ -24017,3 +24017,9 @@ Archivos modificados:
 - web/super/configuracion_avanzada.html
 - web/super/licencias.html
 - web/super/verticales_produccion_masiva.html
+2026-05-12: Menu empresarial ajustado
+- Modulos afectados: `administrar_empresa`, `verticales_integracion`.
+- Cambio funcional: se retira del encabezado lateral el cuadro informativo `Verticales · conteo · API/local` y `Soluciones por negocio` se mueve a la parte baja del menu, arriba de `Administracion`.
+- Frontend: `web/administrar_empresa.html` elimina el contenedor visual del indicador y reordena el bloque de navegacion sin alterar ids de enlaces, permisos ni rutas.
+- Alcance: no hay cambios de backend, base de datos, APIs, permisos ni dependencias.
+- Validacion prevista: parseo HTML/JS y busqueda de texto visible retirado.

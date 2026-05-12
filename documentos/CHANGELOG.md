@@ -596,3 +596,7 @@
 - [Licencias] La activacion de licencia aplica la preconfiguracion idempotente del tipo de empresa sin ejecutar migraciones automaticas.
 - [Frontend] La matriz empresarial queda como auditoria de plantilla, nucleo, permisos, flujo de venta y reportes; los dashboards clasicos ya no muestran botones de migracion manual.
 - [QA] `go test ./...`; validacion JS de catalogos y pantallas empresariales tocadas.
+## [2026-05-12] Menu empresarial ajustado
+- [Frontend] `web/administrar_empresa.html` elimina el cuadro de evidencia `Verticales · conteo · API/local` del encabezado del menu lateral.
+- [Navegacion] `Soluciones por negocio` queda reubicado en la parte baja del menu, inmediatamente encima de `Administracion`.
+- [Alcance] Sin cambios de API, permisos, base de datos ni dependencias.
