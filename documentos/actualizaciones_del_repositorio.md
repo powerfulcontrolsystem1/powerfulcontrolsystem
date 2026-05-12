@@ -9004,3 +9004,15 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
+
+2026-05-12 16:47:16 - Mensaje: feat: agregar ayuda contextual al CRM unificado; Commit: a7b92a62; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/crm_comercial.html
+- web/administrar_empresa/modulo_menu.html
+- web/js/crm_comercial.js
