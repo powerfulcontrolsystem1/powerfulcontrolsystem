@@ -8994,3 +8994,13 @@ Archivos modificados:
 - web/administrar_empresa/gimnasio_menu.html
 - web/estilos.css
 - web/js/gimnasio.js
+
+2026-05-12 16:41:29 - Mensaje: feat: adaptar totales del carrito por tipo de empresa; Commit: efa8d8cd; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- web/administrar_empresa/carrito_de_compras.html
+- web/estilos.css
