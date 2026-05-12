@@ -24023,3 +24023,11 @@ Archivos modificados:
 - Frontend: `web/administrar_empresa.html` elimina el contenedor visual del indicador y reordena el bloque de navegacion sin alterar ids de enlaces, permisos ni rutas.
 - Alcance: no hay cambios de backend, base de datos, APIs, permisos ni dependencias.
 - Validacion prevista: parseo HTML/JS y busqueda de texto visible retirado.
+
+2026-05-12: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa.html

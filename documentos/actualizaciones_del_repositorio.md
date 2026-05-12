@@ -8929,3 +8929,10 @@ Archivos modificados:
 - web/super/configuracion_avanzada.html
 - web/super/licencias.html
 - web/super/verticales_produccion_masiva.html
+
+2026-05-12 15:39:47 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: c95cb6d2; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
