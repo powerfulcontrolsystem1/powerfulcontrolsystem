@@ -99,11 +99,11 @@ El script de conmutacion deja `powerfulcontrolsystem.service` activo para rollba
 - `backend`: API Go de la plataforma.
 - `frontend`: Nginx con archivos de `web` y proxy interno al backend.
 - `onlyoffice-documentserver`: OnlyOffice con JWT.
-- `nextcloud-db`, `nextcloud-redis`, `nextcloud`: stack Nextcloud.
+- `nextcloud-db`, `nextcloud-redis`, `nextcloud`: stack Nextcloud con PostgreSQL 16 como base interna del perfil `cloud`.
 - `voice-stream`: servicio FastAPI/Piper para voz IA.
 - `rustdesk-hbbs`, `rustdesk-hbbr`: relay/ID server RustDesk.
 
-Todos los servicios comparten la red Docker `pcs_internal` y usan volumenes nombrados para persistencia.
+Todos los servicios comparten la red Docker `pcs_internal` y usan volumenes nombrados para persistencia. La plataforma y sus perfiles oficiales usan PostgreSQL como unico motor relacional; no se debe introducir MariaDB/MySQL en compose, scripts o runbooks operativos del proyecto.
 
 Perfiles opcionales:
 

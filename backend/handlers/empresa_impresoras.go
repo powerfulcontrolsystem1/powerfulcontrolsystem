@@ -420,7 +420,7 @@ func EmpresaImpresorasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 				if err := dbpkg.DeleteEmpresaImpresoraCombo(dbEmp, empresaID, comboID); err != nil {
 					log.Printf("[empresa_impresoras] delete combo empresa_id=%d combo_id=%d error: %v", empresaID, comboID, err)
-					http.Error(w, "No se pudo eliminar la asignaciÃ³n", http.StatusInternalServerError)
+					http.Error(w, "No se pudo eliminar la asignación", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "combo_id": comboID})

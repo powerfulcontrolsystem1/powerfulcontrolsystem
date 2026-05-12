@@ -64,7 +64,6 @@ if [ ! -f "$ENV_FILE" ]; then
   upsert_env "$ENV_FILE" POSTGRES_PASSWORD "$(rand_secret)"
   upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$(rand_secret)"
   upsert_env "$ENV_FILE" ONLYOFFICE_JWT_SECRET "$(rand_secret)"
-  upsert_env "$ENV_FILE" NEXTCLOUD_DB_ROOT_PASSWORD "$(rand_secret)"
   upsert_env "$ENV_FILE" NEXTCLOUD_DB_PASSWORD "$(rand_secret)"
   upsert_env "$ENV_FILE" NEXTCLOUD_ADMIN_PASSWORD "$(rand_secret)"
   echo "[preflight] Creado $ENV_FILE con secretos nuevos y permisos 600."
@@ -88,7 +87,7 @@ if [ -f "$BACKEND_ENV" ]; then
 fi
 
 echo "[preflight] Variables requeridas presentes:"
-for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET NEXTCLOUD_DB_ROOT_PASSWORD NEXTCLOUD_DB_PASSWORD NEXTCLOUD_ADMIN_PASSWORD; do
+for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET NEXTCLOUD_DB_PASSWORD NEXTCLOUD_ADMIN_PASSWORD; do
   value="$(get_env_value "$ENV_FILE" "$key")"
   if [ -z "$value" ] || [[ "$value" == change-me-* ]]; then
     echo "  - $key: FALTA"

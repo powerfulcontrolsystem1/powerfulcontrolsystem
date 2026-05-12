@@ -618,9 +618,9 @@ func RegisterEmpresaModulosFaltantesRoutes(dbEmp, dbSuper *sql.DB) {
 	http.HandleFunc("/api/empresa/compras/devoluciones_proveedor", WithEmpresaComprasPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaComprasDevolucionesProveedorHandler(dbEmp))))
 	http.HandleFunc("/api/empresa/rrhh/vacaciones_licencias", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaRRHHVacacionesLicenciasHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/crm/leads", WithEmpresaClientesPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMLeadsHandler(dbEmp))))
-	http.HandleFunc("/api/empresa/crm/interacciones", WithEmpresaClientesPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMInteraccionesHandler(dbEmp))))
-	http.HandleFunc("/api/empresa/crm/campanas", WithEmpresaClientesPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMCampanasHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/crm/leads", WithEmpresaCRMUnificadoPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMLeadsHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/crm/interacciones", WithEmpresaCRMUnificadoPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMInteraccionesHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/crm/campanas", WithEmpresaCRMUnificadoPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaCRMCampanasHandler(dbEmp))))
 
 	http.HandleFunc("/api/empresa/produccion/bom", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, empresaModuloGenericCRUDHandler(dbEmp, cfgProduccionBOM))))
 	http.HandleFunc("/api/empresa/produccion/bom_detalle", WithEmpresaInventarioPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, empresaModuloGenericCRUDHandler(dbEmp, cfgProduccionBOMDetalle))))

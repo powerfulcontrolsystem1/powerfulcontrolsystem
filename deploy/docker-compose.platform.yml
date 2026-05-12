@@ -114,21 +114,19 @@ services:
 
   nextcloud-db:
     profiles: ["cloud"]
-    image: mariadb:11
+    image: postgres:16-alpine
     container_name: pcs-nextcloud-db
     restart: unless-stopped
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     environment:
-      MYSQL_ROOT_PASSWORD: ${NEXTCLOUD_DB_ROOT_PASSWORD:?Defina NEXTCLOUD_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Defina NEXTCLOUD_DB_PASSWORD}
-      MARIADB_AUTO_UPGRADE: "1"
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Defina NEXTCLOUD_DB_PASSWORD}
       TZ: ${TZ:-America/Bogota}
+      PGTZ: ${TZ:-America/Bogota}
     volumes:
-      - pcs_nextcloud_db:/var/lib/mysql
+      - pcs_nextcloud_db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -157,10 +155,10 @@ services:
       nextcloud-redis:
         condition: service_started
     environment:
-      MYSQL_HOST: nextcloud-db
-      MYSQL_DATABASE: nextcloud
-      MYSQL_USER: nextcloud
-      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      POSTGRES_HOST: nextcloud-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
       NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
       NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:?Defina NEXTCLOUD_ADMIN_PASSWORD}
       REDIS_HOST: nextcloud-redis

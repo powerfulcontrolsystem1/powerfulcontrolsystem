@@ -64,7 +64,7 @@
     campanas: [],
     cotizaciones: [],
     embudo: { summary: {}, items: [], alertas: [] },
-    advanced: { embudo: [], agenda: [], top_leads: [], metas: [], alertas: [] }
+    advanced: { embudo: [], agenda: [], top_leads: [], metas: [], alertas: [], responsables: [], canales: [], acciones_prioritarias: [] }
   };
 
   function $(id) {
@@ -375,10 +375,14 @@
     const forecast = asNumber(adv.forecast_ponderado) || state.leads.reduce(function (sum, x) { return sum + asNumber(x.valor_potencial) * (asNumber(x.probabilidad) / 100); }, 0);
     const meta = asNumber(adv.meta_valor);
     const conversion = asNumber(adv.conversion_pct);
+    const health = asNumber(adv.salud_comercial_pct);
+    const riskValue = asNumber(adv.valor_riesgo);
     const kpis = [
+      ["Salud CRM", formatNumber(health, 0) + "%", health >= 80 ? "Operacion comercial controlada." : "Revisa alertas y acciones priorizadas."],
       ["Leads activos", formatNumber(activeLeads), "Oportunidades abiertas en seguimiento."],
       ["Pipeline", formatMoney(pipeline), "Valor bruto del embudo comercial."],
       ["Forecast", formatMoney(forecast), "Pipeline ponderado por probabilidad."],
+      ["Valor en riesgo", formatMoney(riskValue), "Oportunidades estancadas o sin avance reciente."],
       ["Meta del periodo", formatMoney(meta), meta > 0 ? formatNumber(adv.cumplimiento_meta_pct, 0) + "% de cumplimiento esperado." : "Configura metas por asesor o canal."],
       ["Cotizaciones abiertas", formatNumber(adv.cotizaciones_abiertas || state.cotizaciones.length), formatMoney(adv.cotizaciones_valor)],
       ["Conversion ganada", formatNumber(conversion, 0) + "%", "Ganados frente a perdidos."],
@@ -408,6 +412,18 @@
     renderMiniList("crmAgendaDashboard", agenda.slice(0, 8).map(function (item) {
       return "<strong>" + esc(normalize(item.tipo) + ": " + (normalize(item.nombre) || normalize(item.titulo) || normalize(item.referencia))) + "</strong><br><small>" + esc(formatDateTime(item.fecha)) + " | " + esc(normalize(item.responsable) || normalize(item.estado) || "-") + "</small>";
     }), "No hay acciones programadas.");
+
+    renderMiniList("crmActionPlan", safeArray(adv.acciones_prioritarias).map(function (item) {
+      return "<strong>" + esc(normalize(item.titulo) || "Accion comercial") + "</strong><br><small>" + esc(normalize(item.detalle) || "-") + "</small><br><span class=\"" + badgeClassForStatus(normalize(item.severidad) === "alta" ? "perdido" : (normalize(item.severidad) === "media" ? "propuesta" : "activa")) + "\">" + esc(normalize(item.severidad) || "baja") + "</span> <small>" + esc(normalize(item.accion) || "-") + (asNumber(item.valor) > 0 ? " | " + formatMoney(item.valor) : "") + "</small>";
+    }), "Sin acciones criticas para el periodo.");
+
+    renderMiniList("crmResponsablesWrap", safeArray(adv.responsables).map(function (item) {
+      return "<strong>" + esc(normalize(item.responsable) || "Sin asignar") + "</strong><br><small>" + formatNumber(item.leads_activos) + " leads | " + formatMoney(item.forecast_ponderado) + " forecast | " + formatNumber(item.probabilidad_promedio) + "% prob.</small>";
+    }), "Sin responsables con pipeline activo.");
+
+    renderMiniList("crmCanalesWrap", safeArray(adv.canales).map(function (item) {
+      return "<strong>" + esc(normalize(item.canal) || "Sin canal") + "</strong><br><small>" + formatNumber(item.leads) + " leads | " + formatMoney(item.forecast_ponderado) + " forecast | conversion " + formatNumber(item.conversion_pct) + "%</small>";
+    }), "Sin canales comerciales registrados.");
 
     renderScoresTable("crmTopLeadsDashboard", safeArray(adv.top_leads), 8);
   }
@@ -743,7 +759,7 @@
       safeFetch(buildURL("/api/empresa/crm/campanas"), []),
       safeFetch(buildURL("/api/empresa/ventas/cotizaciones"), []),
       safeFetch(buildURL("/api/empresa/ventas/cotizaciones", { action: "embudo", limit: 40 }), { summary: {}, items: [], alertas: [] }),
-      safeFetch(buildURL("/api/empresa/crm_avanzado", { action: "dashboard", periodo: state.periodo }), { embudo: [], agenda: [], top_leads: [], metas: [], alertas: [] })
+      safeFetch(buildURL("/api/empresa/crm_avanzado", { action: "dashboard", periodo: state.periodo }), { embudo: [], agenda: [], top_leads: [], metas: [], alertas: [], responsables: [], canales: [], acciones_prioritarias: [] })
     ]);
 
     state.leads = safeArray(results[0]);
@@ -751,7 +767,7 @@
     state.campanas = safeArray(results[2]);
     state.cotizaciones = safeArray(results[3]);
     state.embudo = results[4] || { summary: {}, items: [], alertas: [] };
-    state.advanced = results[5] || { embudo: [], agenda: [], top_leads: [], metas: [], alertas: [] };
+    state.advanced = results[5] || { embudo: [], agenda: [], top_leads: [], metas: [], alertas: [], responsables: [], canales: [], acciones_prioritarias: [] };
     renderAll();
   }
 

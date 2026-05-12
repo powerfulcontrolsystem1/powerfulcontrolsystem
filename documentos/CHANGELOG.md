@@ -1,3 +1,9 @@
+## [2026-05-12] CRM empresarial profesional
+- [Backend] `GET /api/empresa/crm_avanzado` con `action=dashboard` suma salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, responsables y canales.
+- [Frontend] `web/administrar_empresa/crm_comercial.html` y `web/js/crm_comercial.js` muestran cockpit ejecutivo, plan de accion, responsables y canales dentro de CRM unificado.
+- [Permisos] Los CRUD `/api/empresa/crm/*` quedan bajo `WithEmpresaCRMUnificadoPermissions`.
+- [Alcance] Sin tablas, rutas publicas ni dependencias nuevas.
+
 ## [2026-05-12] Nucleo configurable por plantilla
 - [Backend] `tipo_empresa_preconfiguraciones.config_json` normaliza `adaptacion_nucleo` para usuarios operativos, productos/servicios y estaciones como recursos del negocio.
 - [Aplicacion] Al aplicar una plantilla se guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` y `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`.
@@ -100,7 +106,7 @@
 - [Alcance] No hay endpoints, tablas, permisos, dependencias ni cambios en `go.mod`.
 
 ## [2026-05-11] Aseguramiento comercial de verticales
-- [Backend] `POST /super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias` llama `EnsureNuevosVerticalesProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
+- [Backend] `POST /super/api/verticales_nuevos/catalogoaction=asegurar_20_licencias` llama `EnsureNuevosVerticalesProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
 - [Producto] La accion asegura tipos de empresa, preconfiguraciones y cuatro planes recomendados para los 20 verticales.
 - [Frontend] `web/super/verticales_produccion_masiva.html` agrega `Asegurar 20` y refresca el semaforo despues de ejecutar.
 - [Alcance] No hay tablas, rutas nuevas, permisos nuevos ni dependencias.
@@ -141,7 +147,7 @@
 
 ## [2026-05-11] Pantalla de matriz vertical en empresa
 - [Frontend] Se agrega `web/administrar_empresa/verticales_integracion.html` para consultar KPIs, estado, nucleo, especialidad y sincronizacion por vertical.
-- [Menu] `web/administrar_empresa/configuracion_menu.html` incorpora `Matriz de integraciÃ³n` dentro de Configuracion > Base empresarial.
+- [Menu] `web/administrar_empresa/configuracion_menu.html` incorpora `Matriz de integración` dentro de Configuracion > Base empresarial.
 - [Permisos] `linkVerticalesIntegracion` queda registrado con `seguridad:R` en backend y frontend.
 
 ## [2026-05-11] Indicador de matriz vertical en panel empresa
@@ -461,7 +467,7 @@
 - [Contabilidad] Se amplia `contabilidad_colombia_avanzada` con activos fijos avanzados sin duplicar modulo: depreciacion por periodo, eventos, mantenimiento, traslados y bajas.
 - [Backend] La API `/api/empresa/contabilidad_colombia_avanzada` agrega `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento`.
 - [Base de datos] Se enriquecen activos fijos con serial, placa, metodo de depreciacion, centro de costo, proveedor, poliza y mantenimiento programado; se agregan `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos`.
-- [Frontend] La suite contable agrega pestaÃ±a `Activos avanzado` para generar depreciacion, registrar eventos y consultar inventario gerencial.
+- [Frontend] La suite contable agrega pestaña `Activos avanzado` para generar depreciacion, registrar eventos y consultar inventario gerencial.
 - [Docs/QA] Se crea `documentos/activos_fijos_avanzado.md` y el QA Calipso valida activo, depreciacion, mantenimiento y resumen avanzado.
 
 ## [2026-05-06] Nomina Colombia avanzada
@@ -510,7 +516,7 @@
 - [Contabilidad] Se agrega `contabilidad_colombia_avanzada` con informacion exogena DIAN/medios magneticos, nomina electronica, documento soporte, activos fijos, cartera/CxP y libros oficiales por empresa.
 - [Backend] Nueva API `/api/empresa/contabilidad_colombia_avanzada`, tablas empresariales aisladas por `empresa_id` y generacion de exogena/libros desde comprobantes contabilizados del nucleo `contabilidad_colombia`.
 - [Permisos] Nuevo modulo de licencia `contabilidad_colombia_avanzada`, pagina `linkContabilidadColombiaAvanzada` y wrapper `WithEmpresaContabilidadColombiaAvanzadaPermissions`.
-- [Frontend] Nueva vista `web/administrar_empresa/contabilidad_colombia_avanzada.html` con dashboard y pestaÃ±as profesionales para cada submodulo.
+- [Frontend] Nueva vista `web/administrar_empresa/contabilidad_colombia_avanzada.html` con dashboard y pestañas profesionales para cada submodulo.
 - [Docs/QA] Se crea `documentos/contabilidad_colombia_avanzada.md`; pruebas Go y auditoria de rutas/permisos actualizadas.
 
 ## [2026-05-05] Portal publico, carta QR y Motel Calipso publicado
@@ -545,7 +551,7 @@
 
 ## [2026-05-04] Control electrico Raspberry Pi por estacion
 - [Control electrico] Nuevo modulo en Administrar empresa para configurar Raspberry Pi, IP/puerto/ruta API, token opcional, timeout y sincronizacion automatica.
-- [Estaciones] Cada estacion puede mapearse a multiples relÃ©s GPIO con salida/carga (luces, jacuzzi, aire, puerta u otro), nombre, pin, logica activo alto, pulso opcional y prueba manual ON/OFF.
+- [Estaciones] Cada estacion puede mapearse a multiples relés GPIO con salida/carga (luces, jacuzzi, aire, puerta u otro), nombre, pin, logica activo alto, pulso opcional y prueba manual ON/OFF.
 - [Carrito] El carrito de estacion incorpora boton `Control electrico` para abrir un panel operativo y controlar manualmente salidas de la habitacion sin salir de la venta.
 - [Automatizacion] Al activar/recuperar/reabrir una estacion se envia `on`; al pagar/cerrar/desactivar se envia `off`. Tambien se engancha con autoactivacion por sensor de puertas.
 - [Auditoria] Se agrega bitacora electrica por empresa con comando, estado objetivo, GPIO, HTTP status, respuesta/error, actor, origen y fecha.
@@ -561,20 +567,20 @@
 ## [2026-04-30] Pagos, chat IA, empresas compartidas, hoja de vida operativa y documentos dinamicos
 - [Pagos/Epayco] Smart Checkout v2 conserva fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`; se elimina la redireccion GET que producia XML `AccessDenied` y se documenta el requisito de `epayco.customer_id` para fallback.
 - [Pagos/Epayco] El fallback clasico resuelve su modo con `epayco.customer_id` + `epayco.checkout_key`/`epayco.p_key`, separado de las llaves Smart Checkout, para no enviar cuentas reales como pruebas y evitar el error "El comercio no fue reconocido".
-- [Chat IA] La secretaria IA 3D se rediseÃ±a como avatar estilo caricatura ejecutiva joven y habla siempre con voz femenina (`es-CO-female`), manteniendo el robot con voz configurable.
+- [Chat IA] La secretaria IA 3D se rediseña como avatar estilo caricatura ejecutiva joven y habla siempre con voz femenina (`es-CO-female`), manteniendo el robot con voz configurable.
 - [Empresas compartidas] El editor de empresa permite consultar y retirar administradores compartidos desde ambos lados del acceso, con trazabilidad del actor.
 - [Administrar empresa] Se implementa la hoja de vida operativa universal para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con ficha, eventos, servicios, alertas y resumen operativo.
 - [Documentos IA] Se documenta el flujo `/generate` + `/download` para generar documentos dinamicos con IA/templates y exportar PDF, DOCX, XLSX, HTML, TXT o JSON.
-- Nueva funcionalidad: MÃƒÂ³dulo Red Social Comercial con portal pÃƒÂºblico y administraciÃƒÂ³n por empresa. EliminaciÃƒÂ³n de modulo juegos y venta de licencias desde cliente.
+- Nueva funcionalidad: MÒ³dulo Red Social Comercial con portal pÒºblico y administraciÒ³n por empresa. EliminaciÒ³n de modulo juegos y venta de licencias desde cliente.
 
 ## [2026-04-23] Retiro Tipos de usuario (panel super)
-- [Super/DB] EliminaciÃ³n del mÃ³dulo Tipos de usuario: sin API ni UI; tabla `tipos_de_usuario` removida al arranque; documentaciÃ³n alineada.
+- [Super/DB] Eliminación del módulo Tipos de usuario: sin API ni UI; tabla `tipos_de_usuario` removida al arranque; documentación alineada.
 
-## [2026-04-23] reCAPTCHA, backup y manual de instalaciÃ³n
-- [Docs/OperaciÃ³n] Se actualizÃ³ el manual de instalaciÃ³n con reCAPTCHA v2/v3/Enterprise, variables, panel super y fallos frecuentes (dominios, tipo de clave). Se documentan las claves y copias best-effort en `backup/super_administrador` y `backup/empresas/<empresa_id>`. Ajustes en `descripcion_de_archivos` e `historial_de_cambios` y alineaciÃ³n con `CHANGELOG.md` raÃ­z.
+## [2026-04-23] reCAPTCHA, backup y manual de instalación
+- [Docs/Operación] Se actualizó el manual de instalación con reCAPTCHA v2/v3/Enterprise, variables, panel super y fallos frecuentes (dominios, tipo de clave). Se documentan las claves y copias best-effort en `backup/super_administrador` y `backup/empresas/<empresa_id>`. Ajustes en `descripcion_de_archivos` e `historial_de_cambios` y alineación con `CHANGELOG.md` raíz.
 
 ## [2026-04-20] Limpieza Total Themes
-- [UI/Temas] AuditorÃ­a y barrido de mÃ¡s de 50 pÃ¡ginas y scripts en web/administrar_empresa, web/super y pÃ¡ginas pÃºblicas para limpiar colores fijos, migrando lÃ³gicas JS a .classList.add('text-danger') y respetando las 6 paletas dinÃ¡micas. Completado barrido masivo de vistas.
+- [UI/Temas] Auditoría y barrido de más de 50 páginas y scripts en web/administrar_empresa, web/super y páginas públicas para limpiar colores fijos, migrando lógicas JS a .classList.add('text-danger') y respetando las 6 paletas dinámicas. Completado barrido masivo de vistas.
 - **2026-04-30 - Pagos ePayco de licencias**: el fallback estandar ahora usa `checkout.js` con `external: "true"` y `PUBLIC_KEY`; se evita el POST legacy a `secure.payco.co/checkout.php`, `P_KEY` queda solo en backend para validacion de webhooks con SHA256 y el frontend `pagar_licencia.html` soporta `checkout_type=classic_js`. Verificacion: `go test ./handlers -run Test.*Epayco -count=1` y `go test ./... -count=1`.
 
 ## [2026-05-03] Documentacion, ayuda y estado operativo de modulos

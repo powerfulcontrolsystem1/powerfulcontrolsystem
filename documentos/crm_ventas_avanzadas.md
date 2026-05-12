@@ -9,6 +9,8 @@ Ampliacion del modulo `clientes`/CRM comercial. No reemplaza clientes, leads ni 
 - Embudo por estado de lead con valor, probabilidad y forecast.
 - Scoring de leads con recomendacion de accion comercial.
 - Agenda de proximos contactos e interacciones.
+- Salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas y plan de accion priorizado.
+- Rendimiento por responsable y canal de adquisicion para revision gerencial.
 - Conversion de lead a cotizacion de venta.
 
 ## Rutas
@@ -22,8 +24,8 @@ Ampliacion del modulo `clientes`/CRM comercial. No reemplaza clientes, leads ni 
 
 ## Seguridad
 
-Usa `WithEmpresaClientesPermissions`, pagina `linkCRMAvanzado` y el modulo/licencia existente `clientes`. Todas las tablas y consultas se filtran por `empresa_id`.
+Usa `WithEmpresaCRMUnificadoPermissions`, pagina `linkCRMComercial` y el modulo/licencia `crm_unificado`. Todas las tablas y consultas se filtran por `empresa_id`.
 
 ## QA
 
-La prueba de Motel Calipso crea un lead, interaccion, meta comercial, cotizacion desde lead y valida dashboard/scoring/forecast.
+La prueba de Motel Calipso crea un lead, interaccion, meta comercial, cotizacion desde lead y valida dashboard/scoring/forecast. La cobertura unitaria valida normalizacion de metas, scoring, alertas, salud comercial y acciones priorizadas.

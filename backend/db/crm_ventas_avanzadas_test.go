@@ -41,3 +41,32 @@ func TestCRMConversionPctAndAlerts(t *testing.T) {
 		t.Fatalf("alertas inesperadas: %+v", alertas)
 	}
 }
+
+func TestCRMCommercialHealthAndActions(t *testing.T) {
+	dashboard := EmpresaCRMVentasAvanzadasDashboard{
+		LeadsActivos:        8,
+		LeadsVencidos:       2,
+		LeadsSinContacto:    1,
+		LeadsEstancados:     1,
+		CampanasActivas:     0,
+		MetaValor:           10000000,
+		CumplimientoMetaPct: 60,
+		ValorRiesgo:         3500000,
+		TopLeads: []EmpresaCRMLeadScore{{
+			Codigo:         "LEAD-1",
+			Nombre:         "Cliente empresarial",
+			ValorPotencial: 7000000,
+			Recomendacion:  "priorizar_cierre",
+		}},
+	}
+	if got := crmCommercialHealthPct(dashboard); got != 62 {
+		t.Fatalf("salud comercial inesperada: %v", got)
+	}
+	acciones := buildEmpresaCRMAccionesPrioritarias(dashboard)
+	if len(acciones) < 5 {
+		t.Fatalf("acciones insuficientes: %+v", acciones)
+	}
+	if acciones[0].Titulo != "Recuperar seguimientos vencidos" || acciones[0].Severidad != "alta" {
+		t.Fatalf("primera accion inesperada: %+v", acciones[0])
+	}
+}

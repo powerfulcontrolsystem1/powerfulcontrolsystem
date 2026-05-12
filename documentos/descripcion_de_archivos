@@ -1,3 +1,10 @@
+- Actualizacion 2026-05-12: CRM empresarial profesional
+	- `backend/db/crm_ventas_avanzadas.go` : extiende el dashboard CRM con salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, rendimiento por responsable y canales.
+	- `backend/db/crm_ventas_avanzadas_test.go` : agrega cobertura unitaria para salud comercial y plan de accion.
+	- `backend/handlers/modulos_faltantes.go` : mueve leads, interacciones y campanas a `WithEmpresaCRMUnificadoPermissions`.
+	- `web/administrar_empresa/modulo_menu.html`, `web/administrar_empresa/crm_comercial.html` y `web/js/crm_comercial.js` : actualizan accesos/cache y agregan cockpit ejecutivo, plan de accion, responsables y canales al tablero CRM unificado.
+	- `documentos/crm_ventas_avanzadas.md`, `documentos/descripcion_de_modulos`, `documentos/estructura_bd.md` y `documentos/matriz_roles_permisos_pos_multiempresa.md` : alinean alcance, permisos y contrato multiempresa.
+
 - Actualizacion 2026-05-12: enlace Probar Gratis del index
 	- `web/descripcion_de_los_sistemas.html` : landing publica oficial para mostrar la informacion ampliada del sistema/vertical elegido desde las tarjetas del index.
 	- `web/descripcion_de_los_sistemas.ht` : queda como ruta legacy compatible; el backend la sirve como HTML para evitar descargas en navegadores.
@@ -443,7 +450,7 @@
 	- `backend/handlers/super_limitaciones_empresa.go` y `web/super/configuracion_avanzada.html` : nueva limitaciÃƒÆ’Ã‚Â³n `nextcloud_max_gb` (default 1 GB) editable desde super.
 	- `web/administrar_empresa/nextcloud.html` (nuevo) : pÃƒÆ’Ã‚Â¡gina empresarial para aprovisionar/resetear credenciales y abrir Nextcloud.
 	- `web/administrar_empresa.html` : enlace de menÃƒÆ’Ã‚Âº ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œNextcloudÃƒÂ¢Ã¢â€šÂ¬Ã‚Â.
-	- `deploy/nextcloud/docker-compose.yml` (nuevo) : compose base para desplegar Nextcloud + MariaDB + Redis en VPS.
+	- `deploy/nextcloud/docker-compose.yml` (nuevo) : compose base para desplegar Nextcloud + PostgreSQL + Redis en VPS.
 
 - Actualizacion 2026-04-26: MenÃƒÆ’Ã‚Âº flotante: Calculadora
 	- `web/menu.js` : agrega enlace ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œCalculadoraÃƒÂ¢Ã¢â€šÂ¬Ã‚Â al menÃƒÆ’Ã‚Âº flotante.

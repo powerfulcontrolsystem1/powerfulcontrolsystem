@@ -55,30 +55,68 @@ type EmpresaCRMLeadScore struct {
 	ProximoContacto string  `json:"proximo_contacto,omitempty"`
 }
 
+type EmpresaCRMResponsableRendimiento struct {
+	Responsable          string  `json:"responsable"`
+	LeadsActivos         int     `json:"leads_activos"`
+	LeadsVencidos        int     `json:"leads_vencidos"`
+	ValorPipeline        float64 `json:"valor_pipeline"`
+	ForecastPonderado    float64 `json:"forecast_ponderado"`
+	ProbabilidadPromedio float64 `json:"probabilidad_promedio"`
+}
+
+type EmpresaCRMCanalRendimiento struct {
+	Canal             string  `json:"canal"`
+	Leads             int     `json:"leads"`
+	Ganados           int     `json:"ganados"`
+	Perdidos          int     `json:"perdidos"`
+	ValorPipeline     float64 `json:"valor_pipeline"`
+	ForecastPonderado float64 `json:"forecast_ponderado"`
+	ConversionPct     float64 `json:"conversion_pct"`
+}
+
+type EmpresaCRMAccionPrioritaria struct {
+	Prioridad   int     `json:"prioridad"`
+	Severidad   string  `json:"severidad"`
+	Titulo      string  `json:"titulo"`
+	Detalle     string  `json:"detalle"`
+	Responsable string  `json:"responsable,omitempty"`
+	Referencia  string  `json:"referencia,omitempty"`
+	Fecha       string  `json:"fecha,omitempty"`
+	Valor       float64 `json:"valor,omitempty"`
+	Accion      string  `json:"accion"`
+}
+
 type EmpresaCRMVentasAvanzadasDashboard struct {
-	EmpresaID            int64                     `json:"empresa_id"`
-	Periodo              string                    `json:"periodo"`
-	LeadsActivos         int                       `json:"leads_activos"`
-	LeadsGanados         int                       `json:"leads_ganados"`
-	LeadsPerdidos        int                       `json:"leads_perdidos"`
-	LeadsVencidos        int                       `json:"leads_vencidos"`
-	AgendaHoy            int                       `json:"agenda_hoy"`
-	CampanasActivas      int                       `json:"campanas_activas"`
-	ValorPipeline        float64                   `json:"valor_pipeline"`
-	ForecastPonderado    float64                   `json:"forecast_ponderado"`
-	CotizacionesAbiertas int                       `json:"cotizaciones_abiertas"`
-	CotizacionesValor    float64                   `json:"cotizaciones_valor"`
-	PedidosAbiertos      int                       `json:"pedidos_abiertos"`
-	PedidosValor         float64                   `json:"pedidos_valor"`
-	MetaValor            float64                   `json:"meta_valor"`
-	CumplimientoMetaPct  float64                   `json:"cumplimiento_meta_pct"`
-	ConversionPct        float64                   `json:"conversion_pct"`
-	TicketPromedio       float64                   `json:"ticket_promedio"`
-	Alertas              []string                  `json:"alertas"`
-	Embudo               []EmpresaCRMEmbudoEstado  `json:"embudo"`
-	Agenda               []EmpresaCRMAgendaItem    `json:"agenda"`
-	TopLeads             []EmpresaCRMLeadScore     `json:"top_leads"`
-	Metas                []EmpresaCRMMetaComercial `json:"metas"`
+	EmpresaID            int64                              `json:"empresa_id"`
+	Periodo              string                             `json:"periodo"`
+	LeadsActivos         int                                `json:"leads_activos"`
+	LeadsGanados         int                                `json:"leads_ganados"`
+	LeadsPerdidos        int                                `json:"leads_perdidos"`
+	LeadsVencidos        int                                `json:"leads_vencidos"`
+	LeadsSinContacto     int                                `json:"leads_sin_contacto"`
+	LeadsEstancados      int                                `json:"leads_estancados"`
+	AgendaHoy            int                                `json:"agenda_hoy"`
+	CampanasActivas      int                                `json:"campanas_activas"`
+	ValorPipeline        float64                            `json:"valor_pipeline"`
+	ForecastPonderado    float64                            `json:"forecast_ponderado"`
+	ValorRiesgo          float64                            `json:"valor_riesgo"`
+	SaludComercialPct    float64                            `json:"salud_comercial_pct"`
+	CotizacionesAbiertas int                                `json:"cotizaciones_abiertas"`
+	CotizacionesValor    float64                            `json:"cotizaciones_valor"`
+	PedidosAbiertos      int                                `json:"pedidos_abiertos"`
+	PedidosValor         float64                            `json:"pedidos_valor"`
+	MetaValor            float64                            `json:"meta_valor"`
+	CumplimientoMetaPct  float64                            `json:"cumplimiento_meta_pct"`
+	ConversionPct        float64                            `json:"conversion_pct"`
+	TicketPromedio       float64                            `json:"ticket_promedio"`
+	Alertas              []string                           `json:"alertas"`
+	Embudo               []EmpresaCRMEmbudoEstado           `json:"embudo"`
+	Agenda               []EmpresaCRMAgendaItem             `json:"agenda"`
+	TopLeads             []EmpresaCRMLeadScore              `json:"top_leads"`
+	Metas                []EmpresaCRMMetaComercial          `json:"metas"`
+	Responsables         []EmpresaCRMResponsableRendimiento `json:"responsables"`
+	Canales              []EmpresaCRMCanalRendimiento       `json:"canales"`
+	AccionesPrioritarias []EmpresaCRMAccionPrioritaria      `json:"acciones_prioritarias"`
 }
 
 func EnsureEmpresaCRMVentasAvanzadasSchema(dbConn *sql.DB) error {
@@ -161,6 +199,8 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead='ganado'`, empresaID).Scan(&d.LeadsGanados)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead IN ('perdido','descalificado')`, empresaID).Scan(&d.LeadsPerdidos)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(proximo_contacto,'')<>'' AND datetime(proximo_contacto) < datetime('now')`, empresaID).Scan(&d.LeadsVencidos)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_leads l LEFT JOIN (SELECT empresa_id, lead_id, COUNT(1) AS interacciones FROM crm_interacciones WHERE empresa_id=? AND estado='activo' GROUP BY empresa_id, lead_id) i ON i.empresa_id=l.empresa_id AND i.lead_id=l.id WHERE l.empresa_id=? AND l.estado='activo' AND l.estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(i.interacciones,0)=0`, empresaID, empresaID).Scan(&d.LeadsSinContacto)
+	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(valor_potencial),0) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado') AND COALESCE(fecha_actualizacion,fecha_creacion,'')<>'' AND datetime(COALESCE(fecha_actualizacion,fecha_creacion)) < datetime('now','-14 days')`, empresaID).Scan(&d.LeadsEstancados, &d.ValorRiesgo)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1) FROM crm_campanas WHERE empresa_id=? AND estado='activo' AND estado_campana='activa'`, empresaID).Scan(&d.CampanasActivas)
 	_ = QueryRowCompat(dbConn, `SELECT COALESCE(SUM(valor_potencial),0), COALESCE(SUM(valor_potencial*(COALESCE(probabilidad,0)/100.0)),0) FROM crm_leads WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('perdido','descalificado','cerrado')`, empresaID).Scan(&d.ValorPipeline, &d.ForecastPonderado)
 	_ = QueryRowCompat(dbConn, `SELECT COUNT(1), COALESCE(SUM(total),0) FROM empresa_cotizaciones_venta WHERE empresa_id=? AND estado='activo' AND estado_documento IN ('borrador','emitida','aprobada')`, empresaID).Scan(&d.CotizacionesAbiertas, &d.CotizacionesValor)
@@ -202,7 +242,19 @@ func BuildEmpresaCRMVentasAvanzadasDashboard(dbConn *sql.DB, empresaID int64, pe
 		return d, err
 	}
 	d.TopLeads = top
+	responsables, err := buildEmpresaCRMResponsables(dbConn, empresaID)
+	if err != nil {
+		return d, err
+	}
+	d.Responsables = responsables
+	canales, err := buildEmpresaCRMCanales(dbConn, empresaID)
+	if err != nil {
+		return d, err
+	}
+	d.Canales = canales
+	d.SaludComercialPct = crmCommercialHealthPct(d)
 	d.Alertas = buildEmpresaCRMAlertas(d)
+	d.AccionesPrioritarias = buildEmpresaCRMAccionesPrioritarias(d)
 	return d, nil
 }
 
@@ -328,6 +380,66 @@ func buildEmpresaCRMAgenda(dbConn *sql.DB, empresaID int64) ([]EmpresaCRMAgendaI
 	return out, rows.Err()
 }
 
+func buildEmpresaCRMResponsables(dbConn *sql.DB, empresaID int64) ([]EmpresaCRMResponsableRendimiento, error) {
+	rows, err := ExecQueryCompat(dbConn, `SELECT COALESCE(NULLIF(TRIM(propietario),''),'Sin asignar') AS responsable,
+		COUNT(1),
+		SUM(CASE WHEN COALESCE(proximo_contacto,'')<>'' AND datetime(proximo_contacto) < datetime('now') THEN 1 ELSE 0 END),
+		COALESCE(SUM(valor_potencial),0),
+		COALESCE(SUM(valor_potencial*(COALESCE(probabilidad,0)/100.0)),0),
+		COALESCE(AVG(probabilidad),0)
+		FROM crm_leads
+		WHERE empresa_id=? AND estado='activo' AND estado_lead NOT IN ('ganado','perdido','descalificado','cerrado')
+		GROUP BY COALESCE(NULLIF(TRIM(propietario),''),'Sin asignar')
+		ORDER BY 5 DESC, 2 DESC
+		LIMIT 12`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaCRMResponsableRendimiento{}
+	for rows.Next() {
+		var x EmpresaCRMResponsableRendimiento
+		if err := rows.Scan(&x.Responsable, &x.LeadsActivos, &x.LeadsVencidos, &x.ValorPipeline, &x.ForecastPonderado, &x.ProbabilidadPromedio); err != nil {
+			return nil, err
+		}
+		x.ValorPipeline = crmRound(x.ValorPipeline)
+		x.ForecastPonderado = crmRound(x.ForecastPonderado)
+		x.ProbabilidadPromedio = crmRound(x.ProbabilidadPromedio)
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
+func buildEmpresaCRMCanales(dbConn *sql.DB, empresaID int64) ([]EmpresaCRMCanalRendimiento, error) {
+	rows, err := ExecQueryCompat(dbConn, `SELECT COALESCE(NULLIF(TRIM(canal_origen),''),'Sin canal') AS canal,
+		COUNT(1),
+		SUM(CASE WHEN estado_lead='ganado' THEN 1 ELSE 0 END),
+		SUM(CASE WHEN estado_lead IN ('perdido','descalificado') THEN 1 ELSE 0 END),
+		COALESCE(SUM(valor_potencial),0),
+		COALESCE(SUM(valor_potencial*(COALESCE(probabilidad,0)/100.0)),0)
+		FROM crm_leads
+		WHERE empresa_id=? AND estado='activo'
+		GROUP BY COALESCE(NULLIF(TRIM(canal_origen),''),'Sin canal')
+		ORDER BY 6 DESC, 2 DESC
+		LIMIT 12`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaCRMCanalRendimiento{}
+	for rows.Next() {
+		var x EmpresaCRMCanalRendimiento
+		if err := rows.Scan(&x.Canal, &x.Leads, &x.Ganados, &x.Perdidos, &x.ValorPipeline, &x.ForecastPonderado); err != nil {
+			return nil, err
+		}
+		x.ValorPipeline = crmRound(x.ValorPipeline)
+		x.ForecastPonderado = crmRound(x.ForecastPonderado)
+		x.ConversionPct = crmConversionPct(x.Ganados, x.Perdidos)
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
 func normalizeCRMMetaComercial(meta EmpresaCRMMetaComercial) EmpresaCRMMetaComercial {
 	meta.Periodo = strings.TrimSpace(meta.Periodo)
 	if meta.Periodo == "" {
@@ -382,10 +494,33 @@ func crmLeadRecommendation(x EmpresaCRMLeadScore) string {
 	return "nutrir_seguimiento"
 }
 
+func crmCommercialHealthPct(d EmpresaCRMVentasAvanzadasDashboard) float64 {
+	score := 100.0
+	score -= math.Min(30, float64(d.LeadsVencidos)*6)
+	score -= math.Min(20, float64(d.LeadsSinContacto)*4)
+	score -= math.Min(20, float64(d.LeadsEstancados)*5)
+	if d.MetaValor > 0 && d.CumplimientoMetaPct < 80 {
+		score -= math.Min(18, (80-d.CumplimientoMetaPct)*0.45)
+	}
+	if d.CampanasActivas == 0 {
+		score -= 8
+	}
+	if d.LeadsActivos == 0 {
+		score -= 20
+	}
+	return crmRound(math.Max(0, math.Min(100, score)))
+}
+
 func buildEmpresaCRMAlertas(d EmpresaCRMVentasAvanzadasDashboard) []string {
 	alertas := []string{}
 	if d.LeadsVencidos > 0 {
 		alertas = append(alertas, fmt.Sprintf("%d leads tienen seguimiento vencido.", d.LeadsVencidos))
+	}
+	if d.LeadsSinContacto > 0 {
+		alertas = append(alertas, fmt.Sprintf("%d leads activos aun no tienen interaccion registrada.", d.LeadsSinContacto))
+	}
+	if d.LeadsEstancados > 0 {
+		alertas = append(alertas, fmt.Sprintf("%d oportunidades llevan mas de 14 dias sin actualizacion.", d.LeadsEstancados))
 	}
 	if d.MetaValor <= 0 {
 		alertas = append(alertas, "No hay meta comercial activa para el periodo.")
@@ -399,6 +534,81 @@ func buildEmpresaCRMAlertas(d EmpresaCRMVentasAvanzadasDashboard) []string {
 		alertas = append(alertas, "No hay campanas activas alimentando el embudo.")
 	}
 	return alertas
+}
+
+func buildEmpresaCRMAccionesPrioritarias(d EmpresaCRMVentasAvanzadasDashboard) []EmpresaCRMAccionPrioritaria {
+	out := []EmpresaCRMAccionPrioritaria{}
+	if d.LeadsVencidos > 0 {
+		out = append(out, EmpresaCRMAccionPrioritaria{
+			Prioridad: 1,
+			Severidad: "alta",
+			Titulo:    "Recuperar seguimientos vencidos",
+			Detalle:   fmt.Sprintf("%d leads tienen fecha de contacto vencida y pueden enfriar el pipeline.", d.LeadsVencidos),
+			Valor:     d.ValorRiesgo,
+			Accion:    "Reasignar responsable o registrar contacto hoy",
+		})
+	}
+	if d.LeadsSinContacto > 0 {
+		out = append(out, EmpresaCRMAccionPrioritaria{
+			Prioridad: 2,
+			Severidad: "media",
+			Titulo:    "Asignar primer contacto",
+			Detalle:   fmt.Sprintf("%d leads activos no tienen interaccion registrada.", d.LeadsSinContacto),
+			Accion:    "Crear seguimiento inicial con responsable y proxima accion",
+		})
+	}
+	if d.LeadsEstancados > 0 {
+		out = append(out, EmpresaCRMAccionPrioritaria{
+			Prioridad: 3,
+			Severidad: "media",
+			Titulo:    "Reactivar oportunidades estancadas",
+			Detalle:   fmt.Sprintf("%d oportunidades llevan mas de 14 dias sin actualizacion.", d.LeadsEstancados),
+			Valor:     d.ValorRiesgo,
+			Accion:    "Actualizar etapa, descartar o programar cierre",
+		})
+	}
+	if d.MetaValor > 0 && d.CumplimientoMetaPct < 70 {
+		out = append(out, EmpresaCRMAccionPrioritaria{
+			Prioridad: 4,
+			Severidad: "media",
+			Titulo:    "Cerrar brecha contra meta",
+			Detalle:   fmt.Sprintf("El forecast ponderado cubre %.0f%% de la meta del periodo.", d.CumplimientoMetaPct),
+			Accion:    "Priorizar leads con score alto y activar campanas de demanda",
+		})
+	}
+	for _, lead := range d.TopLeads {
+		if len(out) >= 8 {
+			break
+		}
+		if lead.Recomendacion != "priorizar_cierre" {
+			continue
+		}
+		nombre := strings.TrimSpace(lead.Nombre)
+		if nombre == "" {
+			nombre = strings.TrimSpace(lead.EmpresaOrigen)
+		}
+		out = append(out, EmpresaCRMAccionPrioritaria{
+			Prioridad:   5 + len(out),
+			Severidad:   "alta",
+			Titulo:      "Cerrar oportunidad de alto score",
+			Detalle:     nombre,
+			Responsable: "",
+			Referencia:  lead.Codigo,
+			Fecha:       lead.ProximoContacto,
+			Valor:       lead.ValorPotencial,
+			Accion:      "Enviar propuesta final o confirmar decision de compra",
+		})
+	}
+	if len(out) == 0 {
+		out = append(out, EmpresaCRMAccionPrioritaria{
+			Prioridad: 1,
+			Severidad: "baja",
+			Titulo:    "Mantener cadencia comercial",
+			Detalle:   "El CRM no tiene alertas criticas para el periodo.",
+			Accion:    "Revisar pipeline y registrar proximas acciones semanalmente",
+		})
+	}
+	return out
 }
 
 func crmConversionPct(ganados, perdidos int) float64 {

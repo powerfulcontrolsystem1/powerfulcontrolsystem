@@ -98,8 +98,8 @@
 - Navegacion: `web/super_administrador.html` enlaza `Verticales 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar esa pagina como pagina principal del panel super.
 - Operacion: la vista consume `/super/api/verticales_nuevos/catalogo`, permite filtrar entre todos, produccion y no listos, buscar por modulo/permisos/reportes y exportar CSV.
 - Acciones: cada fila enlaza a `Tipos de empresa`, `Preconfiguraciones` y `Licencias` con parametros `q`, `vertical` o `modulo`; esas paginas aplican el filtro inicial para aterrizar en el vertical correcto.
-- Readiness: la vista cruza `/super/api/verticales_nuevos/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licencias?activo=1` para marcar `Listo venta` solo si el vertical esta en produccion masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
-- Aseguramiento: `Asegurar 20` ejecuta `POST /super/api/verticales_nuevos/catalogo?action=asegurar_20_licencias` y llama `EnsureNuevosVerticalesProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por cada vertical real. `asegurar_v1_licencias` queda como alias compatible.
+- Readiness: la vista cruza `/super/api/verticales_nuevos/catalogo`, `/super/api/tipos_empresas/preconfiguracion` y `/super/api/licenciasactivo=1` para marcar `Listo venta` solo si el vertical esta en produccion masiva, tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluya el modulo.
+- Aseguramiento: `Asegurar 20` ejecuta `POST /super/api/verticales_nuevos/catalogoaction=asegurar_20_licencias` y llama `EnsureNuevosVerticalesProduccionMasivaLicencias` para crear/actualizar tipos, preconfiguraciones y cuatro planes recomendados por cada vertical real. `asegurar_v1_licencias` queda como alias compatible.
 - Seguridad: no se agregan permisos ni endpoints nuevos; se reutiliza el alcance autenticado del panel super y el rol `control_super_administrador` conserva su navegacion limitada.
 
 2026-05-11: Sincronizacion segura desde matriz de verticales
@@ -209,7 +209,7 @@
 2026-05-10: Alertas automaticas del sistema super
 - Modulos afectados: `super_administrador`, `metricas`, `gmail_smtp`, `infraestructura`.
 - Cambio funcional: se agrega modulo privado `Alertas del sistema` para que el super administrador configure destino, umbrales y enfriamiento de notificaciones automaticas.
-- Backend: nuevo endpoint `/super/api/alertas_sistema` con `GET` de configuracion/estado/historial, `PUT` de configuracion, `POST?action=test` para prueba SMTP y `POST?action=evaluate` para evaluacion manual.
+- Backend: nuevo endpoint `/super/api/alertas_sistema` con `GET` de configuracion/estado/historial, `PUT` de configuracion, `POSTaction=test` para prueba SMTP y `POSTaction=evaluate` para evaluacion manual.
 - Worker: `super.alertas_worker` evalua cada minuto disco VPS, trafico, sesiones administrativas activas y conexiones PostgreSQL; usa Gmail SMTP existente y registra historial en base super.
 - Frontend: nueva pantalla `web/super/alertas_sistema.html` con submenu interno de configuracion, estado actual e historial.
 - Integracion: reutiliza la configuracion Gmail de `Configuracion avanzada` y el limite Hostinger de trafico si esta configurado; no introduce dependencias externas.
@@ -330,9 +330,17 @@
 - Cambio funcional: se amplia el CRM existente sin duplicar clientes ni ventas, agregando metas comerciales, forecast, scoring de leads, agenda y conversion de lead a cotizacion.
 - Backend: nueva API `/api/empresa/crm_avanzado` con acciones `dashboard`, `metas`, `scores`, `meta`, `cotizacion_desde_lead` y `seed_demo`.
 - Base de datos: nueva tabla `empresa_crm_metas_comerciales`; se reutilizan `crm_leads`, `crm_interacciones`, `crm_campanas`, `empresa_cotizaciones_venta` y `empresa_pedidos_venta`.
-- Seguridad: se reutiliza la licencia y permiso `clientes`; la pagina `linkCRMAvanzado` queda protegida por `WithEmpresaClientesPermissions`.
+- Seguridad: se usa la licencia y permiso `crm_unificado`; la pagina `linkCRMComercial` y los endpoints `/api/empresa/crm/*` y `/api/empresa/crm_avanzado` quedan protegidos por `WithEmpresaCRMUnificadoPermissions`.
 - Frontend: `web/administrar_empresa/crm_ventas_avanzadas.html` queda enlazada en el bloque de Ventas, clientes y caja.
 - Documentacion: se agrega `documentos/crm_ventas_avanzadas.md`.
+
+2026-05-12: CRM empresarial profesional
+- Modulos afectados: `crm_unificado`, `ventas`, `roles/licencias`, `administrar_empresa`.
+- Cambio funcional: el tablero de CRM incorpora salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, rendimiento por responsable y canales de adquisicion.
+- Backend: `GET /api/empresa/crm_avanzado` con `action=dashboard` extiende el contrato gerencial sin agregar tablas ni dependencias; todos los calculos siguen filtrados por `empresa_id`.
+- Frontend: `web/administrar_empresa/crm_comercial.html` y `web/js/crm_comercial.js` agregan cockpit ejecutivo, plan de accion y lecturas gerenciales dentro del tablero CRM unificado.
+- Seguridad: los CRUD de leads, interacciones y campanas dejan de depender de `clientes` y pasan a `WithEmpresaCRMUnificadoPermissions`.
+- QA: se amplian pruebas unitarias de salud comercial y acciones priorizadas; la auditoria UX mantiene estado OK.
 
 2026-05-06: Inventario avanzado
 - Modulos afectados: `inventario`, `productos`, `bodegas`, `roles/licencias`, `administrar_empresa`.
@@ -368,7 +376,7 @@
 - Backend: `/api/empresa/contabilidad_colombia_avanzada` agrega acciones `activos_resumen`, `activos_depreciaciones`, `activos_eventos`, `generar_depreciacion_activos` y `activo_evento`.
 - Base de datos: se enriquecen `empresa_contabilidad_activos_fijos` y se agregan `empresa_contabilidad_activos_depreciacion` y `empresa_contabilidad_activos_eventos`, todas con `empresa_id`.
 - Seguridad: se mantiene la licencia y wrapper de `contabilidad_colombia_avanzada`; no se crea modulo duplicado.
-- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` agrega pestaÃ±a `Activos avanzado`.
+- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` agrega pestaña `Activos avanzado`.
 - Documentacion: se agrega `documentos/activos_fijos_avanzado.md`.
 
 2026-05-06: Portal contador
@@ -447,17 +455,17 @@
 - Backend: nueva API `/api/empresa/contabilidad_colombia_avanzada` con dashboard, formatos exogena, registros, generacion desde asientos, nomina electronica, documentos soporte, activos, cartera y libros.
 - Base de datos: nuevas tablas `empresa_contabilidad_exogena_formatos`, `empresa_contabilidad_exogena_registros`, `empresa_contabilidad_nomina_electronica`, `empresa_contabilidad_documentos_soporte`, `empresa_contabilidad_activos_fijos` y `empresa_contabilidad_cartera_cxp`, todas aisladas por `empresa_id`.
 - Seguridad: modulo de licencia `contabilidad_colombia_avanzada`, pagina `linkContabilidadColombiaAvanzada`, wrapper `WithEmpresaContabilidadColombiaAvanzadaPermissions` y acciones contables para roles de contabilidad.
-- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` incluye pestaÃ±as profesionales para cada submodulo con formularios, tablas, KPIs y generacion de libros.
+- Frontend: `web/administrar_empresa/contabilidad_colombia_avanzada.html` incluye pestañas profesionales para cada submodulo con formularios, tablas, KPIs y generacion de libros.
 - Documentacion: se agrega `documentos/contabilidad_colombia_avanzada.md`.
 
-2026-05-05: Apartamentos turÃ­sticos - alquiler vacacional profesional
+2026-05-05: Apartamentos turísticos - alquiler vacacional profesional
 - Modulos afectados: `apartamentos_turisticos`, `administrar_empresa`, `roles/licencias`, `reservas`, `limpieza/mantenimiento`
-- Cambio funcional: se agrega `Apartamentos turÃ­sticos` en Administrar empresa > OperaciÃ³n y ventas para gestionar alquiler vacacional por empresa con apartamentos, suites, casas, estudios o cabaÃ±as.
-- Backend: nueva API `/api/empresa/apartamentos_turisticos` con dashboard, configuraciÃ³n, unidades, tarifas, reservas, check-in, checkout, cancelaciÃ³n, estados de apartamento y tareas operativas.
+- Cambio funcional: se agrega `Apartamentos turísticos` en Administrar empresa > Operación y ventas para gestionar alquiler vacacional por empresa con apartamentos, suites, casas, estudios o cabañas.
+- Backend: nueva API `/api/empresa/apartamentos_turisticos` con dashboard, configuración, unidades, tarifas, reservas, check-in, checkout, cancelación, estados de apartamento y tareas operativas.
 - Base de datos: nuevas tablas `empresa_apartamentos_turisticos_config`, `empresa_apartamentos_turisticos_unidades`, `empresa_apartamentos_turisticos_tarifas`, `empresa_apartamentos_turisticos_reservas` y `empresa_apartamentos_turisticos_tareas`, todas aisladas por `empresa_id`.
 - Seguridad: modulo independiente `apartamentos_turisticos`, pagina `linkApartamentosTuristicos`, wrapper `WithEmpresaApartamentosTuristicosPermissions` y cobertura en licencias `modulos_habilitados`.
-- Frontend: `web/administrar_empresa/apartamentos_turisticos.html` incluye dashboard, inventario de unidades, tarifas por canal/temporada, reservas, tareas de limpieza/mantenimiento y configuraciÃ³n operacional con apariencia centralizada.
-- DocumentaciÃ³n: se agrega `documentos/apartamentos_turisticos.md`.
+- Frontend: `web/administrar_empresa/apartamentos_turisticos.html` incluye dashboard, inventario de unidades, tarifas por canal/temporada, reservas, tareas de limpieza/mantenimiento y configuración operacional con apariencia centralizada.
+- Documentación: se agrega `documentos/apartamentos_turisticos.md`.
 
 2026-05-05: Carnets empresariales profesionales
 - Modulos afectados: `carnets`, `usuarios`, `roles/licencias`, `administrar_empresa`, `portal_publico`
@@ -481,9 +489,9 @@
 - Modulos afectados: `estaciones`, `carritos`, `seguridad`, `raspberry pi`, `habitaciones`
 - Cambio funcional: se agrega `Control electrico` en Administrar empresa para configurar la IP/puerto/ruta API de una Raspberry Pi, activar el modulo, definir timeout, token opcional y mapear cada estacion/habitacion contra un pin GPIO.
 - Operacion automatica: cuando una estacion se activa, recupera o reabre, el backend envia `on` al rele configurado; cuando se paga, cierra o desactiva, envia `off`. El envio ocurre en segundo plano para no bloquear la venta si la Raspberry no responde.
-- Control manual: la pantalla permite guardar relÃ©s por estacion, seleccionar GPIO, nombre del rele, logica `activo alto`, pulso opcional y probar encendido/apagado manual.
-- Control desde carrito: en el carrito de estaciÃ³n se agrega el botÃ³n `Control elÃ©ctrico`, con panel manual para encender/apagar salidas de la habitaciÃ³n como luces, jacuzzi, aire, puerta u otros circuitos configurados.
-- Varias salidas por estaciÃ³n: una misma estaciÃ³n puede tener mÃºltiples relÃ©s mediante `salida_codigo` y `tipo_carga`, manteniendo una bitÃ¡cora individual por GPIO.
+- Control manual: la pantalla permite guardar relés por estacion, seleccionar GPIO, nombre del rele, logica `activo alto`, pulso opcional y probar encendido/apagado manual.
+- Control desde carrito: en el carrito de estación se agrega el botón `Control eléctrico`, con panel manual para encender/apagar salidas de la habitación como luces, jacuzzi, aire, puerta u otros circuitos configurados.
+- Varias salidas por estación: una misma estación puede tener múltiples relés mediante `salida_codigo` y `tipo_carga`, manteniendo una bitácora individual por GPIO.
 - Trazabilidad: cada comando queda registrado en bitacora electrica con estacion, rele, GPIO, resultado, HTTP status, respuesta/error, actor, origen y fecha.
 - Endpoint Raspberry esperado: `POST http://<raspberry_ip>:<puerto>/api/gpio/relay` con JSON de empresa, estacion, relay, `gpio_pin`, `estado` (`on`/`off`), `active_high`, `pulso_ms`, actor y origen.
 
@@ -496,7 +504,7 @@
 2026-04-30: Checkout Epayco, secretaria IA, empresas compartidas y documentos dinamicos
 - Modulos afectados: `licencias`, `pagos`, `chat IA`, `administrar empresa`, `documentos`, `empresas compartidas`
 - Checkout Epayco: `backend/handlers/payments_handlers.go` conserva Smart Checkout v2 como ruta principal y agrega fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`. `web/pagar_licencia.html` envia el formulario `checkout_form` y bloquea URLs de checkout invalidas que antes podian mostrar XML `AccessDenied`. El modo del fallback clasico se calcula con las credenciales clasicas (`epayco.customer_id` + `epayco.checkout_key`/`epayco.p_key`) y no con las llaves Smart, evitando que una cuenta real llegue a Epayco marcada como prueba.
-- Chat flotante: `web/js/ai_chat_drawer.js` y `web/estilos.css` rediseÃ±an la secretaria IA 3D como avatar estilo caricatura ejecutiva joven. Cuando el modo activo es secretaria, la voz efectiva se fuerza a `es-CO-female` para servidor de voz y navegador; el robot conserva voz configurable.
+- Chat flotante: `web/js/ai_chat_drawer.js` y `web/estilos.css` rediseñan la secretaria IA 3D como avatar estilo caricatura ejecutiva joven. Cuando el modo activo es secretaria, la voz efectiva se fuerza a `es-CO-female` para servidor de voz y navegador; el robot conserva voz configurable.
 - Configuracion del chat: `web/administrar_empresa/configuracion_chat_flotante.html` documenta la seleccion de avatar como `Voz del avatar` y aclara que secretaria usa voz femenina automaticamente.
 - Actualizacion 2026-05-11: la misma configuracion agrega `Activar emisora online` debajo de avatares IA 3D. La preferencia `chat_flotante.radio_online_enabled` se guarda por `empresa_id` en `empresa_estacion_prefs` cuando existe contexto empresarial y el reproductor `web/js/radio_player.js` la respeta al cargar, activar o apagar la emisora.
 - Empresas compartidas: el editor de empresa lista administradores con acceso compartido y permite eliminar/revocar accesos, visible para quien compartio y para quien recibio, con trazabilidad del actor.
@@ -522,83 +530,83 @@
 - Tolerancia a fallos: la voz por servidor queda desactivada por defecto; si el microservicio no existe, no responde o devuelve error, el chat cae a voz del navegador o continua en texto sin romper el servidor.
 - Organizacion super: `web/super_administrador.html` agrupa accesos por operacion global, empresas/licencias, seguridad/acceso, IA/automatizacion e infraestructura/comunicaciones. `web/super/configuracion_avanzada.html` agrega mapa por categorias y separa infraestructura, pagos, comunicaciones, seguridad, IA, operacion y respaldos.
 
-2026-04-27: Carrito de estaciÃ³n â€” panel de cobro (toolbar, tabla fija, totales, montos por mÃ©todo)
-- MÃ³dulos afectados: `carritos`, `estaciones`
-- Cambio funcional: en `carrito_de_compras.html` modo estaciÃ³n, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/VehÃ­culo; debajo, bloque en dos columnas con lista completa de Ã­tems (scroll) y resumen ampliado (fechas entrada/salida, sumas por lÃ­neas de servicio vs producto/combo, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por mÃ©todo alineados al cÃ¡lculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estaciÃ³n para evitar duplicar la lista. Auto-refresco periÃ³dico mÃ¡s corto con sesiÃ³n activa en estaciÃ³n.
+2026-04-27: Carrito de estación ? panel de cobro (toolbar, tabla fija, totales, montos por método)
+- Módulos afectados: `carritos`, `estaciones`
+- Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/combo, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
 - Archivos clave: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`
 
-2026-04-25: FacturaciÃ³n electrÃ³nica â€” Ecuador y PanamÃ¡ (perfiles independientes de Colombia)
-- MÃ³dulos afectados: `facturaciÃ³n electrÃ³nica`, `licencias`, `administrar_empresa`
-- Cambio funcional: el catÃ¡logo por paÃ­s (CO, EC, PA) expone metadatos `vista` para textos legales, etiquetas de formulario y enlace al mÃ³dulo DIAN/documental **solo para Colombia**. Ecuador (SRI) y PanamÃ¡ (DGI) tienen bloques de captura estructurada que se fusionan con `campos_pais_json` sin tocar `empresa_dian` ni flujos DIAN. La detecciÃ³n automÃ¡tica considera `empresa_configuracion_avanzada`, `facturacion_electronica_pais`, **licencia activa** (`pais_codigo`), zona horaria e idioma.
+2026-04-25: Facturación electrónica ? Ecuador y Panamá (perfiles independientes de Colombia)
+- Módulos afectados: `facturación electrónica`, `licencias`, `administrar_empresa`
+- Cambio funcional: el catálogo por país (CO, EC, PA) expone metadatos `vista` para textos legales, etiquetas de formulario y enlace al módulo DIAN/documental **solo para Colombia**. Ecuador (SRI) y Panamá (DGI) tienen bloques de captura estructurada que se fusionan con `campos_pais_json` sin tocar `empresa_dian` ni flujos DIAN. La detección automática considera `empresa_configuracion_avanzada`, `facturacion_electronica_pais`, **licencia activa** (`pais_codigo`), zona horaria e idioma.
 - Archivos clave: `backend/db/facturacion_electronica.go`, `backend/handlers/facturacion_electronica.go`, `web/administrar_empresa/facturacion_electronica.html`
-- Impacto operativo: sin dependencias nuevas; el envÃ­o HTTP a proveedor usa moneda por configuraciÃ³n o paÃ­s si el monto iba sin moneda.
+- Impacto operativo: sin dependencias nuevas; el envío HTTP a proveedor usa moneda por configuración o país si el monto iba sin moneda.
 
-2026-04-25: Chat IA super â€” contexto ampliado y solo lectura empresas
+2026-04-25: Chat IA super ? contexto ampliado y solo lectura empresas
 - Modulos afectados: `chat IA`, `super`, `estaciones` (miniaturas CSS)
-- Cambio funcional: `configuracion_logica_del_chat_con_ia` mantiene la clave `ai.chat.super.contexto_amplio` en true; el chat global **siempre** inyecta inventario de metadatos de **todas** las tablas del esquema super (conteos, columnas, roles de admin). `ai.chat.super.empresa_solo_lectura` sigue gobernando fragmentos de lectura de la base empresas. `BuildSuperAIContextoForQuestion` (`SuperAIContextoOpts` con `EmpresaSoloLectura` solamente) arma el prompt. En el chat global, si no aplica solo lectura empresas, el modelo debe **preguntar confirmaciÃ³n** en un turno y solo entonces (tras respuesta explÃ­cita del usuario) emitir `PCS_ACTION`. En `estaciones` la vista `estaciones-thumb-mobile` ajusta tipografÃ­a con `clamp` y elimina un `font-size` fijo demasiado pequeÃ±o en las tarjetas.
+- Cambio funcional: `configuracion_logica_del_chat_con_ia` mantiene la clave `ai.chat.super.contexto_amplio` en true; el chat global **siempre** inyecta inventario de metadatos de **todas** las tablas del esquema super (conteos, columnas, roles de admin). `ai.chat.super.empresa_solo_lectura` sigue gobernando fragmentos de lectura de la base empresas. `BuildSuperAIContextoForQuestion` (`SuperAIContextoOpts` con `EmpresaSoloLectura` solamente) arma el prompt. En el chat global, si no aplica solo lectura empresas, el modelo debe **preguntar confirmación** en un turno y solo entonces (tras respuesta explícita del usuario) emitir `PCS_ACTION`. En `estaciones` la vista `estaciones-thumb-mobile` ajusta tipografía con `clamp` y elimina un `font-size` fijo demasiado pequeño en las tarjetas.
 - Archivos clave: `web/super/configuracion_logica_del_chat_con_ia.html`, `backend/handlers/super_chat_ia_logica.go`, `backend/handlers/chat_con_ia_global_super.go`, `backend/db/chat_inteligencia_artificial.go`, `web/estilos.css`, `web/super/chat_con_ia_global.html`
-- Impacto operativo: activar flags aumenta el tamaÃ±o del prompt; no se ejecuta SQL generado por el modelo.
+- Impacto operativo: activar flags aumenta el tamaño del prompt; no se ejecuta SQL generado por el modelo.
 
-2026-04-25: Super â€” permisos por rol y cobertura de licencia (gobernanza)
+2026-04-25: Super ? permisos por rol y cobertura de licencia (gobernanza)
 - Modulos afectados: `super`, `seguridad y permisos`, `licencias`
-- Cambio funcional: `web/super/permisos_rol.html` se rediseÃ±a como consola empresarial (resumen, mÃ³dulos en tarjetas con acciones R/C/U/D/A etiquetadas, funciones del panel agrupadas con bÃºsqueda sin perder estado al filtrar). El API `GET /super/api/roles_de_usuario/permisos` aÃ±ade `acciones_etiqueta`, `modulos_etiqueta` y cada fila de `paginas` incluye `titulo` y `grupo` (catÃ¡logo en `backend/handlers/empresa_permisos.go`). `web/super/licencias.html` mejora la secciÃ³n de mÃ³dulos habilitados con textos de negocio y enlace a permisos por rol. Estilos `pcs-pr-*` y `lic-coverage-*` en `web/estilos.css`.
-- Modelo recomendado: la **licencia** fija el techo de mÃ³dulos; el **rol** ajusta acciones y anulaciones por funciÃ³n de menÃº; no se aÃ±ade un tercer sistema universal duplicado.
+- Cambio funcional: `web/super/permisos_rol.html` se rediseña como consola empresarial (resumen, módulos en tarjetas con acciones R/C/U/D/A etiquetadas, funciones del panel agrupadas con búsqueda sin perder estado al filtrar). El API `GET /super/api/roles_de_usuario/permisos` añade `acciones_etiqueta`, `modulos_etiqueta` y cada fila de `paginas` incluye `titulo` y `grupo` (catálogo en `backend/handlers/empresa_permisos.go`). `web/super/licencias.html` mejora la sección de módulos habilitados con textos de negocio y enlace a permisos por rol. Estilos `pcs-pr-*` y `lic-coverage-*` en `web/estilos.css`.
+- Modelo recomendado: la **licencia** fija el techo de módulos; el **rol** ajusta acciones y anulaciones por función de menú; no se añade un tercer sistema universal duplicado.
 
-2026-04-24: Super â€” pagina principal (portal): tema claro/oscuro en iframe
+2026-04-24: Super ? pagina principal (portal): tema claro/oscuro en iframe
 - Modulos afectados: `super`, `portal publico` (solo editor super)
 - Cambio funcional: `web/super/pagina_principal.html` aplica el mismo arranque de tema que otras paginas en iframe (`pcs_theme` / `localStorage`). Para evitar gradientes rosados en temas oscuros, el editor deja de usar `mp-card` y pasa a `pp-main-card` con superficie neutra basada en variables. `web/estilos.css` define `body.super-page` con fondo y texto por variables; corrige el titulo `.super-page .page-header h1` en temas claros (sin texto transparente); unifica `.pp-image-preview-wrap` con mezclas por tema.
 - Impacto operativo: sin cambios de API ni permisos; mejora legibilidad al alternar apariencia. Las paginas super que usan `mp-card` (p. ej. formatos de email) se benefician del mismo bloque de tema claro.
 
-2026-04-24: Estaciones â€” pedidos con IA (voz/texto) y miniaturas en movil
+2026-04-24: Estaciones ? pedidos con IA (voz/texto) y miniaturas en movil
 - Modulos afectados: `estaciones`, `carritos`, `ventas`, `chat IA`, `administrar_empresa`
 - Cambio funcional: la configuracion JSON `estaciones_config` admite `ia_pedidos_enabled` y `ia_pedidos_placement` junto a Caja, YouTube y Notas. La pantalla de estaciones muestra una tarjeta especial con iframe a `estacion_ia_pedidos.html` donde el usuario dicta o escribe pedidos; el backend `POST /api/empresa/ia_pedidos_estacion/ejecutar` (permisos de ventas, misma cuota/reglas que el chat IA) interpreta el texto con el modelo disponible y agrega productos al carrito de la estacion (`EST-{empresa_id}-{estacion_id}`), activando sesion si hace falta. En vista movil, un boton `Ver miniaturas` alterna una rejilla de tres columnas con tarjetas mas compactas.
 - Archivos clave: `backend/handlers/ia_pedidos_estacion.go`, `backend/db/carritos_compras.go` (`GetCarritoCompraByCodigo`), `backend/handlers/chat_con_inteligencia_artificial_router.go`, `web/administrar_empresa/estacion_ia_pedidos.html`, `web/administrar_empresa/estaciones.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/estilos.css`, `tools/clean_styles_auto.js`, `.vscode/extensions.json`.
 - Impacto operativo: requiere proveedor IA activo, chat empresarial habilitado y productos activos; si el modelo no devuelve JSON valido, no se ejecutan acciones.
 
-2026-04-24: Asesor comercial â€” invitaciones, codigos y comisiones por licencias
+2026-04-24: Asesor comercial ? invitaciones, codigos y comisiones por licencias
 - Modulos afectados: `asesor comercial`, `licencias`, `pagos`, `super`, `seleccionar_empresa`
 - Cambio funcional: se elimina la pagina anterior de vendedores y se crea `web/super/asesor_comercial.html` para que super invite administradores registrados como asesores comerciales. Al aceptar por correo, el asesor queda activo con codigo unico, porcentaje de comision y plazo de asociacion por cliente.
 - Integracion de pagos: `web/pagar_licencia.html` conserva un campo de codigo de asesor comercial. Si una empresa paga con ese codigo, se registra comision; las renovaciones posteriores siguen asociadas al asesor hasta `meses_asociacion`.
 - Vista del asesor: `web/mis_clientes.html` aparece en `seleccionar_empresa` solo para asesores aceptados y lista empresas vigentes, valor pagado, fecha, comision y si la comision ya fue pagada.
 - Impacto operativo: super puede marcar comisiones como pagadas desde la misma pagina; el asesor ve ese estado en su portal. No se agregan dependencias externas.
 
-2026-04-24: Chat y tareas â€” resumen en tabla y apariencia alineada al tema
+2026-04-24: Chat y tareas ? resumen en tabla y apariencia alineada al tema
 - Modulos afectados: `chat y tareas`, `administrar_empresa`
 - Cambio funcional: `web/administrar_empresa/chat_y_tareas.html` prioriza botones rapidos y muestra metricas en tabla compacta bajo ellos; elimina titulo con nombre de empresa y texto introductorio fijo. Estilos del modulo pasan a depender de variables CSS de tema; lectura inicial de `theme` / cookie `pcs_theme` en la pagina para coherencia al abrirse en iframe.
 - Impacto operativo: la vista se ve coherente en modo claro u oscuro segun la apariencia elegida; el resumen ocupa menos espacio vertical.
 
-2026-04-25: Chat IA â€” acciones confirmables con auditoria (chat transaccional)
+2026-04-25: Chat IA ? acciones confirmables con auditoria (chat transaccional)
 - Modulos afectados: `chat IA`, `inventario/productos`, `finanzas`, `super`
 - Cambio funcional: el chat IA puede sugerir acciones operativas (crear producto, actualizar precio, registrar egreso, etc.) como un bloque estructurado `PCS_ACTION` (JSON) que el usuario debe confirmar. Al confirmar, el frontend ejecuta llamadas a los endpoints existentes del sistema con encabezado `X-PCS-Source=chat_ia` y `X-PCS-Chat-Conversation-ID` para trazabilidad.
 - Trazabilidad: la auditoria critica (`empresa_auditoria_eventos`) registra la fuente `chat_ia` y el id de conversacion; los endpoints mantienen los mismos permisos por rol y alcance por `empresa_id`.
 - Impacto operativo: no se agregan dependencias externas; el chat no ejecuta acciones sin confirmacion explicita del usuario. Si falta un dato, el asistente debe preguntarlo antes de proponer `PCS_ACTION`.
 
-2026-04-25: Chat IA (empresa) â€” CRUD de base de datos por empresa con confirmaciÃ³n y trazabilidad
-- Modulos afectados: `chat IA`, `seguridad y permisos`, `auditorÃ­a empresarial`
-- Cambio funcional: el chat IA empresarial ahora puede proponer (si el usuario tiene rol **administrador**) operaciones de consulta y CRUD sobre tablas con `empresa_id` usando `/api/empresa/db_admin`. Toda operaciÃ³n requiere confirmaciÃ³n del usuario; para `DELETE` se exige confirmaciÃ³n adicional escribiendo â€œELIMINARâ€. Todas las operaciones quedan registradas en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
+2026-04-25: Chat IA (empresa) ? CRUD de base de datos por empresa con confirmación y trazabilidad
+- Modulos afectados: `chat IA`, `seguridad y permisos`, `auditoría empresarial`
+- Cambio funcional: el chat IA empresarial ahora puede proponer (si el usuario tiene rol **administrador**) operaciones de consulta y CRUD sobre tablas con `empresa_id` usando `/api/empresa/db_admin`. Toda operación requiere confirmación del usuario; para `DELETE` se exige confirmación adicional escribiendo ?ELIMINAR?. Todas las operaciones quedan registradas en `empresa_auditoria_eventos` con `modulo=chat_ia_db`.
 - Alcance: solo tablas con `empresa_id` (aislamiento obligatorio). No se ejecuta SQL libre; se valida tabla/columna contra `information_schema`.
-- Impacto operativo: habilita soporte/operaciÃ³n avanzada con trazabilidad; reduce riesgo de inyecciÃ³n al usar valores parametrizados y validaciÃ³n de identificadores.
+- Impacto operativo: habilita soporte/operación avanzada con trazabilidad; reduce riesgo de inyección al usar valores parametrizados y validación de identificadores.
 
-2026-04-25: Permisos por rol â€” opciones para Chat IA (empresa y global) + rol administrador total
+2026-04-25: Permisos por rol ? opciones para Chat IA (empresa y global) + rol administrador total
 - Modulos afectados: `seguridad y permisos`, `chat IA`, `super`
-- Cambio funcional: el catÃ¡logo de pÃ¡ginas/funciones por rol incluye `Asistente IA (chat empresarial)` y `Chat IA global (super)` para administraciÃ³n desde `super/permisos_rol.html`. Se agrega el rol `administrador_total` con acceso completo a todos los mÃ³dulos y acciones (R/C/U/D/A) para operaciÃ³n administrativa sin restricciones por rol (sujeto a licencia).
+- Cambio funcional: el catálogo de páginas/funciones por rol incluye `Asistente IA (chat empresarial)` y `Chat IA global (super)` para administración desde `super/permisos_rol.html`. Se agrega el rol `administrador_total` con acceso completo a todos los módulos y acciones (R/C/U/D/A) para operación administrativa sin restricciones por rol (sujeto a licencia).
 
-2026-04-25: Reportes de inventario â€” exportaciÃ³n e impresiÃ³n (CSV/XLS/JSON/TXT/PDF)
+2026-04-25: Reportes de inventario ? exportación e impresión (CSV/XLS/JSON/TXT/PDF)
 - Modulos afectados: `reportes`, `inventario`, `administrar_empresa`
-- Cambio funcional: la pÃ¡gina `reportes_inventario` deja de ser placeholder y consume el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes`. Permite ver el inventario en tabla, abrirlo como documento PDF, imprimir (vÃ­a PDF) y exportar en formatos comunes (CSV/XLS/JSON/TXT/PDF).
+- Cambio funcional: la página `reportes_inventario` deja de ser placeholder y consume el dataset `operativo_inventario_bodega` desde `/api/empresa/reportes`. Permite ver el inventario en tabla, abrirlo como documento PDF, imprimir (vía PDF) y exportar en formatos comunes (CSV/XLS/JSON/TXT/PDF).
 
-2026-04-25: Portal pÃºblico â€” chat IA comercial en `index`
-2026-04-25: Chat IA â€” adjuntar documentos/imÃ¡genes con GPT-5.5 y lÃ­mite diario por empresa
+2026-04-25: Portal público ? chat IA comercial en `index`
+2026-04-25: Chat IA ? adjuntar documentos/im?genes con GPT-5.5 y l?mite diario por empresa
 - Modulos afectados: `chat IA`, `super`
-- Cambio funcional: los chats (empresa y global super) permiten adjuntar una foto o documento para anÃ¡lisis usando GPT-5.5 (OpenAI Responses). Para empresas se aplica un lÃ­mite diario configurable desde super (`ai.chat.empresa.max_gpt55_consultas_dia`, default 2). El chat normal puede seguir usando GPT-5.4 mini para texto.
+- Cambio funcional: los chats (empresa y global super) permiten adjuntar una foto o documento para análisis usando GPT-5.5 (OpenAI Responses). Para empresas se aplica un límite diario configurable desde super (`ai.chat.empresa.max_gpt55_consultas_dia`, default 2). El chat normal puede seguir usando GPT-5.4 mini para texto.
 - Modulos afectados: `portal_publico`
-- Cambio funcional: se agrega un chat IA pÃºblico al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (mÃ³dulos, planes/precios, novedades y contrataciÃ³n). No ejecuta acciones del sistema ni muestra informaciÃ³n sensible. Incluye limitaciÃ³n de uso de 10 consultas por usuario cada 5 minutos y mensaje de espera/WhatsApp/email al superar el lÃ­mite. El super administrador puede activar/desactivar este chat desde `ConfiguraciÃ³n lÃ³gica del chat con IA`.
+- Cambio funcional: se agrega un chat IA público al final de `index.html` para responder preguntas comerciales sobre Powerful Control System (módulos, planes/precios, novedades y contratación). No ejecuta acciones del sistema ni muestra información sensible. Incluye limitación de uso de 10 consultas por usuario cada 5 minutos y mensaje de espera/WhatsApp/email al superar el límite. El super administrador puede activar/desactivar este chat desde `Configuración lógica del chat con IA`.
 
-2026-04-25: Pedidos VIP pÃºblicos por estaciÃ³n (cliente mÃ³vil con cÃ³digo temporal)
+2026-04-25: Pedidos VIP públicos por estación (cliente móvil con código temporal)
 - Modulos afectados: `carritos`, `productos`, `estaciones`, `portal_publico`
-- Cambio funcional: desde el carrito de estaciÃ³n (panel empresa) se puede generar un **cÃ³digo VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el cÃ³digo y ve todos los productos activos como botones. Al pedir, el producto se agrega automÃ¡ticamente al carrito de la estaciÃ³n con una nota opcional. El acceso queda deshabilitado automÃ¡ticamente cuando el carrito se paga (cÃ³digos inactivados en backend).
-- Endpoints: `PUT /api/empresa/carritos_compra?action=generar_codigo_vip&id=...` (protegido) y `GET/POST /api/public/estacion_vip` (pÃºblico, basado en cÃ³digo).
-- Impacto operativo: no se permiten operaciones destructivas; el acceso pÃºblico queda acotado por un token aleatorio y caducable.
+- Cambio funcional: desde el carrito de estación (panel empresa) se puede generar un **código VIP temporal** para el cliente. El cliente entra a `productos_estacion_clientes_publico.html`, digita el código y ve todos los productos activos como botones. Al pedir, el producto se agrega automáticamente al carrito de la estación con una nota opcional. El acceso queda deshabilitado automáticamente cuando el carrito se paga (códigos inactivados en backend).
+- Endpoints: `PUT /api/empresa/carritos_compraaction=generar_codigo_vip&id=...` (protegido) y `GET/POST /api/public/estacion_vip` (público, basado en código).
+- Impacto operativo: no se permiten operaciones destructivas; el acceso público queda acotado por un token aleatorio y caducable.
 
 2026-04-20.3: Soporte remoto deja RustDesk activo por defecto en configuracion super
 - Modulos afectados: `soporte remoto`, `super`
@@ -607,13 +615,13 @@
 
 2026-04-21: Compras y finanzas agregan comprobantes adjuntos por empresa
 - Modulos afectados: `compras`, `finanzas`, `administrar_empresa`
-- Cambio funcional: `backend/handlers/compras.go` y `backend/handlers/finanzas.go` agregan endpoints protegidos para subir fotos, PDFs y documentos de soporte por `empresa_id`, guardÃ¡ndolos en carpetas fÃ­sicas separadas por empresa y mÃ³dulo. `backend/db/documentos_transaccionales.go` amplÃ­a `empresa_compras_documentos` con `comprobante_url` y `comprobante_nombre_archivo`, mientras `empresa_finanzas_movimientos` reutiliza `comprobante_url` con carga fÃ­sica real. `web/administrar_empresa/compras.html` y `web/administrar_empresa/finanzas.html` incorporan adjunto y enlace `Ver comprobante` dentro del flujo operativo y de los listados.
+- Cambio funcional: `backend/handlers/compras.go` y `backend/handlers/finanzas.go` agregan endpoints protegidos para subir fotos, PDFs y documentos de soporte por `empresa_id`, guardándolos en carpetas físicas separadas por empresa y módulo. `backend/db/documentos_transaccionales.go` amplía `empresa_compras_documentos` con `comprobante_url` y `comprobante_nombre_archivo`, mientras `empresa_finanzas_movimientos` reutiliza `comprobante_url` con carga física real. `web/administrar_empresa/compras.html` y `web/administrar_empresa/finanzas.html` incorporan adjunto y enlace `Ver comprobante` dentro del flujo operativo y de los listados.
 - Impacto operativo: la empresa puede adjuntar y luego consultar recibos o soportes de compras, egresos e ingresos sin salir del panel, manteniendo aislamiento por `empresa_id` y sin crear roles o wrappers nuevos fuera de los ya existentes para compras y finanzas.
 
-2026-04-21: Soporte remoto y servidores super simplifican la operaciÃ³n RustDesk
+2026-04-21: Soporte remoto y servidores super simplifican la operación RustDesk
 - Modulos afectados: `soporte remoto`, `super`, `administrar_empresa`, `portal_publico`
-- Cambio funcional: `web/super/servidores.html` deja de ser una tarjeta genÃ©rica y pasa a controlar de forma directa el servicio RustDesk del VPS con estado agregado, acciones `start/stop/restart` y prueba operativa del backend. `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` se recortan a una configuraciÃ³n mÃ­nima por empresa: host del VPS, clave pÃºblica, carpeta de transferencia, observaciones, instrucciones y descargas oficiales de cliente/servidor para Windows, Linux y macOS. `web/soporte_remoto_acceso.html` tambiÃ©n se simplifica para exponer solo las descargas y los datos de conexiÃ³n realmente necesarios al cliente final.
-- Impacto operativo: la empresa conserva una pantalla clara para publicar el acceso remoto de su operaciÃ³n, mientras el encendido y la salud del servicio RustDesk quedan centralizados en super. No se promete estado real del VPS cuando el backend corre en Windows local; la comprobaciÃ³n efectiva se materializa cuando este mismo backend se ejecuta en Linux o directamente en el VPS.
+- Cambio funcional: `web/super/servidores.html` deja de ser una tarjeta genérica y pasa a controlar de forma directa el servicio RustDesk del VPS con estado agregado, acciones `start/stop/restart` y prueba operativa del backend. `web/administrar_empresa/soporte_remoto.html` y `web/super/soporte_remoto.html` se recortan a una configuración mínima por empresa: host del VPS, clave pública, carpeta de transferencia, observaciones, instrucciones y descargas oficiales de cliente/servidor para Windows, Linux y macOS. `web/soporte_remoto_acceso.html` también se simplifica para exponer solo las descargas y los datos de conexión realmente necesarios al cliente final.
+- Impacto operativo: la empresa conserva una pantalla clara para publicar el acceso remoto de su operación, mientras el encendido y la salud del servicio RustDesk quedan centralizados en super. No se promete estado real del VPS cuando el backend corre en Windows local; la comprobación efectiva se materializa cuando este mismo backend se ejecuta en Linux o directamente en el VPS.
 
 2026-04-20: Backups empresariales agrega exportar/importar configuracion por empresa
 - Modulos afectados: `backups empresariales`, `administrar_empresa`, `configuracion`, `integraciones`
@@ -625,26 +633,26 @@
 - Cambio funcional: `web/administrar_empresa/configuracion_de_estaciones.html` ahora permite habilitar `Caja`, `YouTube` y la nueva estacion especial `Notas`, indicando para cada una si carga antes o despues de las estaciones normales. `Notas` incorpora texto inicial, minutos por defecto y switches para pitido y parpadeo. `web/administrar_empresa/estaciones.html` renderiza las especiales segun ese orden y agrega una tarjeta operativa `Notas` con textarea, temporizador programable, guardado del texto base y alerta visual/sonora al vencerse.
 - Impacto operativo: la empresa puede usar estaciones especiales auxiliares sin mezclarlas con carritos base numerados. `Caja`, `YouTube` y `Notas` quedan reordenables alrededor del grid principal y `Notas` sirve como recordatorio operativo temporizado dentro del panel de estaciones.
 
-2026-04-20: Estaciones amplÃ­a `Notas` con multiples recordatorios persistentes y repeticion automatica
+2026-04-20: Estaciones amplía `Notas` con multiples recordatorios persistentes y repeticion automatica
 - Modulos afectados: `estaciones`, `administrar_empresa`
 - Cambio funcional: `web/administrar_empresa/estaciones.html` reemplaza la logica de una sola nota por una lista de notas dentro de la misma estacion especial `Notas`, con seleccion activa, temporizadores independientes, cuenta regresiva restaurable tras recargar y repeticion automatica configurable por minutos hasta detener manualmente la alerta.
 - Cambio de configuracion: `web/administrar_empresa/configuracion_de_estaciones.html` agrega `notas_repeat_minutes` como valor por defecto y `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` preserva ese campo dentro de `estaciones_config`.
 - Impacto operativo: la estacion `Notas` puede gestionar varios recordatorios locales por `empresa_id` sin crear endpoints ni carritos adicionales. La configuracion base sigue compartida por backend, pero el runtime multiple queda aislado en el navegador de la empresa.
 
-2026-04-20: Login administrativo corrige la activacion del ojito de contraseÃ±a
+2026-04-20: Login administrativo corrige la activacion del ojito de contraseña
 - Modulos afectados: `autenticacion y sesiones`
 - Cambio funcional: `web/js/login.js` mueve la inicializacion de `initPasswordVisibilityToggles()` al flujo principal de carga del script. El boton de visibilidad del campo `adminPassword` en `web/login.html` vuelve a alternar entre texto visible y password sin depender de llamadas indirectas desde `showMsg`.
-- Impacto operativo: el login administrativo recupera el comportamiento esperado de mostrar y ocultar la contraseÃ±a escrita, sin cambios en permisos, sesiones ni endpoints.
+- Impacto operativo: el login administrativo recupera el comportamiento esperado de mostrar y ocultar la contraseña escrita, sin cambios en permisos, sesiones ni endpoints.
 
 2026-04-20: Configuracion avanzada agrega WhatsApp del boton flotante del portal publico
 - Modulos afectados: `super`, `portal_publico`, `pagina principal publica`
-- Cambio funcional: `web/super/configuracion_avanzada.html` incorpora una tarjeta dedicada para administrar el nÃºmero de WhatsApp del botÃ³n flotante del `index.html`. El backend persiste el valor en `portal.whatsapp_contact_number`, lo expone desde `/api/public/pagina_principal` y `web/index.html` deja de usar un `wa.me` fijo para construir el enlace pÃºblico desde configuraciÃ³n.
-- Impacto operativo: super puede cambiar el nÃºmero comercial del botÃ³n flotante sin editar archivos estÃ¡ticos. El portal pÃºblico conserva el mismo CTA visual, pero el destino de WhatsApp pasa a ser configurable desde panel.
+- Cambio funcional: `web/super/configuracion_avanzada.html` incorpora una tarjeta dedicada para administrar el número de WhatsApp del botón flotante del `index.html`. El backend persiste el valor en `portal.whatsapp_contact_number`, lo expone desde `/api/public/pagina_principal` y `web/index.html` deja de usar un `wa.me` fijo para construir el enlace público desde configuración.
+- Impacto operativo: super puede cambiar el número comercial del botón flotante sin editar archivos estáticos. El portal público conserva el mismo CTA visual, pero el destino de WhatsApp pasa a ser configurable desde panel.
 
 2026-04-20: Portal publico alinea el header del home con la landing descriptiva
 - Modulos afectados: `portal_publico`, `pagina principal publica`, `autenticacion y sesiones`
-- Cambio funcional: `web/index.html` deja de usar el botÃ³n visual propio `portal-header-btn` en la cabecera y reutiliza el mismo lenguaje visual compartido del header de `web/descripcion_de_los_sistemas.ht` mediante `btn dark`. En la misma fila del acceso `Iniciar sesiÃ³n` se agrega `Crear cuenta`, apuntando al registro pÃºblico de administradores en `/registrar_nuevo_usuario_administrador.html`, y el responsive mÃ³vil del header ajusta ambos botones con ancho y alto consistentes.
-- Impacto operativo: la portada mantiene su condiciÃ³n pÃºblica y no cambia permisos ni rutas protegidas; solo hace mÃ¡s visible el alta pÃºblica administrativa, corrige la rotulaciÃ³n del acceso a sesiÃ³n y unifica el estilo comercial entre el home y la landing descriptiva tambiÃ©n en mÃ³vil.
+- Cambio funcional: `web/index.html` deja de usar el botón visual propio `portal-header-btn` en la cabecera y reutiliza el mismo lenguaje visual compartido del header de `web/descripcion_de_los_sistemas.ht` mediante `btn dark`. En la misma fila del acceso `Iniciar sesión` se agrega `Crear cuenta`, apuntando al registro público de administradores en `/registrar_nuevo_usuario_administrador.html`, y el responsive móvil del header ajusta ambos botones con ancho y alto consistentes.
+- Impacto operativo: la portada mantiene su condición pública y no cambia permisos ni rutas protegidas; solo hace más visible el alta pública administrativa, corrige la rotulación del acceso a sesión y unifica el estilo comercial entre el home y la landing descriptiva también en móvil.
 
 2026-04-20: Portal publico simplifica la landing descriptiva y elimina los bloques superiores
 - Modulos afectados: `portal_publico`, `pagina principal publica`
@@ -668,7 +676,7 @@
 
 2026-04-26: Reportes agrega chat IA compacto con exportacion asistida
 - Modulos afectados: `reportes`, `finanzas`, `chat IA`, `permisos`
-- Cambio funcional: `reportes_menu.html` incluye `Chat IA reportes`. La nueva pantalla permite hacer preguntas sobre datos/reportes con GPT-5.4 mini (10 consultas diarias por empresa) y pedir exportes con GPT-5.5 (2 reportes diarios por empresa). El backend interpreta la solicitud, selecciona dataset/formato y retorna un enlace de exportacion sobre `/api/empresa/reportes?action=export`.
+- Cambio funcional: `reportes_menu.html` incluye `Chat IA reportes`. La nueva pantalla permite hacer preguntas sobre datos/reportes con GPT-5.4 mini (10 consultas diarias por empresa) y pedir exportes con GPT-5.5 (2 reportes diarios por empresa). El backend interpreta la solicitud, selecciona dataset/formato y retorna un enlace de exportacion sobre `/api/empresa/reportesaction=export`.
 - Impacto operativo: se reutiliza el catalogo de datasets y el motor de exportacion existente; no se agregan dependencias ni conectores externos nuevos. El acceso queda bajo permisos de lectura de finanzas/reportes.
 
 2026-04-20: Creditos y chat/tareas quedan validados en PostgreSQL sobre runtime real de Motel Calipso
@@ -679,7 +687,7 @@
 2026-04-20: Cartera financiera y resumen de creditos recuperan compatibilidad PostgreSQL
 - Modulos afectados: `creditos`, `finanzas`, `administrar_empresa`
 - Cambio funcional: `backend/db/modulos_faltantes.go` inserta registros genericos con `insertSQLCompat`, corrigiendo el alta de `cuentas_cobrar` y `cuentas_pagar` sobre PostgreSQL. `backend/db/creditos.go` normaliza la consulta de `resumen_cartera` para tolerar vencimientos vacios o legacy sin lanzar error del motor y cierra el cursor de cuotas antes del `commit` en abonos para evitar desconexiones del driver PostgreSQL.
-- Impacto operativo: el flujo de cartera deja de persistir datos con respuesta engaÃ±osa `400`, y el panel de creditos vuelve a poder consultar su resumen ejecutivo en la base PostgreSQL de Motel Calipso.
+- Impacto operativo: el flujo de cartera deja de persistir datos con respuesta engañosa `400`, y el panel de creditos vuelve a poder consultar su resumen ejecutivo en la base PostgreSQL de Motel Calipso.
 
 2026-04-20: Red social comercial queda operativa sobre PostgreSQL en flujo empresa/publico
 - Modulos afectados: `administrar_empresa`, `red_social_comercial`, `portal_publico`
@@ -688,8 +696,8 @@
 
 2026-04-20: Apariencia global y acceso a juegos quedan restaurados en autenticacion y portal publico
 - Modulos afectados: `autenticacion`, `portal_publico`, `super`, `administrar_empresa`, `Juegos`
-- Cambio funcional: `web/menu.js` pasa a ser el orquestador real de apariencia para todo el frontend. Aplica los seis temas desde el arranque, replica el tema en iframes mismo-origen, repara el popup de apariencia y vuelve a mostrar `Juegos` en el menÃº flotante. `backend/handlers/auth_admin_handlers.go` y `backend/handlers/usuarios_empresa.go` ahora retornan `apariencia` en el login exitoso para que `web/js/login.js` y `web/js/login_usuario.js` la persistan antes de redirigir. TambiÃ©n se vuelve a publicar `web/Juegos/menu_juegos.html` como entrada estable y `web/Juegos/n64/index.html` como destino funcional mÃ­nimo.
-- Impacto operativo: la persona usuaria vuelve a ver cambios reales entre los 3 modos oscuros y los 3 claros, incluso al entrar por login o navegar shells con iframe. No cambian roles ni wrappers; solo se estabiliza la experiencia visual y se evita un enlace roto en el menÃº global.
+- Cambio funcional: `web/menu.js` pasa a ser el orquestador real de apariencia para todo el frontend. Aplica los seis temas desde el arranque, replica el tema en iframes mismo-origen, repara el popup de apariencia y vuelve a mostrar `Juegos` en el menú flotante. `backend/handlers/auth_admin_handlers.go` y `backend/handlers/usuarios_empresa.go` ahora retornan `apariencia` en el login exitoso para que `web/js/login.js` y `web/js/login_usuario.js` la persistan antes de redirigir. También se vuelve a publicar `web/Juegos/menu_juegos.html` como entrada estable y `web/Juegos/n64/index.html` como destino funcional mínimo.
+- Impacto operativo: la persona usuaria vuelve a ver cambios reales entre los 3 modos oscuros y los 3 claros, incluso al entrar por login o navegar shells con iframe. No cambian roles ni wrappers; solo se estabiliza la experiencia visual y se evita un enlace roto en el menú global.
 
 2026-04-19: Chat y tareas agrega mensajeria multiusuario buscable y fotos dentro de la empresa
 - Modulos afectados: `administrar_empresa`, `chat_y_tareas`
@@ -708,31 +716,31 @@
 
 2026-04-19: Estaciones y carritos mejoran el mensaje visible cuando falla la apertura del carrito
 - Modulos afectados: `estaciones`, `carritos`
-- Cambio funcional: `carrito_de_compras.html` ya no deja al usuario solo con el texto `Error cargando carritos`. Cuando falla la carga inicial, la vista muestra un estado claro con contexto de la estaciÃ³n, traducciÃ³n segura del error, botÃ³n para reintentar y botÃ³n para volver al tablero de estaciones.
-- Impacto operativo: reduce ambigÃ¼edad en soporte y operaciÃ³n, porque el usuario entiende si debe reintentar, volver al tablero o revisar sesiÃ³n/permisos sin ver mensajes tÃ©cnicos crudos del backend.
+- Cambio funcional: `carrito_de_compras.html` ya no deja al usuario solo con el texto `Error cargando carritos`. Cuando falla la carga inicial, la vista muestra un estado claro con contexto de la estación, traducción segura del error, botón para reintentar y botón para volver al tablero de estaciones.
+- Impacto operativo: reduce ambigüedad en soporte y operación, porque el usuario entiende si debe reintentar, volver al tablero o revisar sesión/permisos sin ver mensajes técnicos crudos del backend.
 
 2026-04-19: Estaciones y carritos corrigen el listado backend para PostgreSQL
 - Modulos afectados: `estaciones`, `carritos`
 - Cambio funcional: el backend de `carritos_compra` deja de construir el listado principal con una agregacion sensible al motor SQL y mueve el redondeo de totales/metricas al lado Go. Con esto, abrir una estacion vuelve a cargar el carrito unificado aunque la empresa opere sobre PostgreSQL con clientes e items asociados.
 - Impacto operativo: elimina el error visible `Error cargando carritos` causado por el `GET /api/empresa/carritos_compra` y estabiliza tambien el panel de totales por metodo de pago en la misma pantalla.
 
-2026-04-19: Estaciones y carritos reutilizan carritos legado al abrir una estaciÃ³n
+2026-04-19: Estaciones y carritos reutilizan carritos legado al abrir una estación
 - Modulos afectados: `estaciones`, `carritos`
-- Cambio funcional: `carrito_de_compras.html` ya no falla si la empresa conserva un carrito legado de estaciÃ³n con nombre o `referencia_externa` vÃ¡lidos pero sin el cÃ³digo canÃ³nico esperado en la URL. El flujo primero resuelve el carrito existente y solo crea uno nuevo cuando no encuentra coincidencia por cÃ³digo, referencia o nombre.
-- Impacto operativo: evita errores al hacer clic en una estaciÃ³n en instalaciones evolucionadas o con datos previos a la sincronizaciÃ³n canÃ³nica de `estaciones_config`.
+- Cambio funcional: `carrito_de_compras.html` ya no falla si la empresa conserva un carrito legado de estación con nombre o `referencia_externa` válidos pero sin el código canónico esperado en la URL. El flujo primero resuelve el carrito existente y solo crea uno nuevo cuando no encuentra coincidencia por código, referencia o nombre.
+- Impacto operativo: evita errores al hacer clic en una estación en instalaciones evolucionadas o con datos previos a la sincronización canónica de `estaciones_config`.
 
 Descripcion compacta de modulos (POS multiempresa)
 Actualizacion: 2026-04-17
 
 Actualizacion 2026-04-24 (red social empresarial y venta publica por paginas):
 - Modulos afectados: `red_social_empresarial`, `venta_publica`, `pagos`, `administrar_empresa`, `portal_publico`.
-- Cambio funcional: la red social pÃºblica se presenta como feed empresarial de posts medianos, con nombre de empresa, imagen y contacto. El panel empresa agrega el mÃ³dulo `venta_publica`, donde la empresa configura su tienda, pasarelas propias Wompi/Epayco, crea pÃ¡ginas por slug bajo su dominio/tienda y publica productos ya existentes del sistema en cada pÃ¡gina.
-- Backend: `empresa_venta_publica_paginas` modela pÃ¡ginas por empresa; `empresa_venta_publica_items` soporta `pagina_id`; `/api/empresa/venta_publica?action=paginas` administra pÃ¡ginas y `/api/public/venta_publica?action=catalogo&pagina_slug=...` devuelve pÃ¡ginas, pÃ¡gina activa e items filtrados.
-- Frontend: `web/venta_publica.html` muestra pÃ¡ginas y productos con botÃ³n `Pagar`; `web/pagar_productos_de_venta_publica.html` crea la orden/pago con las credenciales propias de la empresa; `configuracion_integraciones.html` deja de contener configuraciÃ³n antigua de venta pÃºblica.
-- Impacto de permisos: administraciÃ³n bajo `WithEmpresaVentasPermissions`; catÃ¡logo y checkout se mantienen pÃºblicos y sanitizados, sin exponer claves privadas.
+- Cambio funcional: la red social pública se presenta como feed empresarial de posts medianos, con nombre de empresa, imagen y contacto. El panel empresa agrega el módulo `venta_publica`, donde la empresa configura su tienda, pasarelas propias Wompi/Epayco, crea páginas por slug bajo su dominio/tienda y publica productos ya existentes del sistema en cada página.
+- Backend: `empresa_venta_publica_paginas` modela páginas por empresa; `empresa_venta_publica_items` soporta `pagina_id`; `/api/empresa/venta_publicaaction=paginas` administra páginas y `/api/public/venta_publicaaction=catalogo&pagina_slug=...` devuelve páginas, página activa e items filtrados.
+- Frontend: `web/venta_publica.html` muestra páginas y productos con botón `Pagar`; `web/pagar_productos_de_venta_publica.html` crea la orden/pago con las credenciales propias de la empresa; `configuracion_integraciones.html` deja de contener configuración antigua de venta pública.
+- Impacto de permisos: administración bajo `WithEmpresaVentasPermissions`; catálogo y checkout se mantienen públicos y sanitizados, sin exponer claves privadas.
 
 Actualizacion 2026-04-24 (super: limitaciones por empresa en configuracion avanzada):
-- `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir lÃ­mites globales por empresa para (1) minutos de uso RustDesk, (2) nÃºmero de consultas del chat con IA y (3) mÃ¡ximo de dispositivos del mÃ³dulo de ubicaciÃ³n GPS por empresa (default 2), persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa` (clave GPS: `empresa.limitaciones.gps.max_dispositivos`).
+- `web/super/configuracion_avanzada.html` incorpora una tarjeta para definir límites globales por empresa para (1) minutos de uso RustDesk, (2) número de consultas del chat con IA y (3) máximo de dispositivos del módulo de ubicación GPS por empresa (default 2), persistidos en la base superadministrador mediante `GET/PUT /super/api/config/limitaciones_empresa` (clave GPS: `empresa.limitaciones.gps.max_dispositivos`).
 - `backend/handlers/ubicacion_gps.go` aplica ese tope en el alta de dispositivos (`POST`); si se supera, responde `409 Conflict` sin crear fila.
 
 Actualizacion 2026-04-24 (ubicacion GPS: cupo por empresa):
@@ -745,43 +753,43 @@ Actualizacion 2026-04-24 (super: configuracion logica del chat con IA):
 
 Actualizacion 2026-04-25 (chat IA: acceso para crear/editar sin eliminar):
 - Modulos afectados: `super`, `administrar_empresa`, `chat con IA`.
-- Cambio funcional: el chat global y el chat de empresas pueden proponer y ejecutar acciones operativas de **alta/ediciÃ³n** (POST/PUT) pero **no pueden eliminar** registros: cualquier acciÃ³n `DELETE` queda bloqueada en UI y se instruye al modelo a no sugerirla.
+- Cambio funcional: el chat global y el chat de empresas pueden proponer y ejecutar acciones operativas de **alta/edición** (POST/PUT) pero **no pueden eliminar** registros: cualquier acción `DELETE` queda bloqueada en UI y se instruye al modelo a no sugerirla.
 - Archivos clave: `web/super/chat_con_ia_global.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`.
 
 Actualizacion 2026-04-25 (chat IA: acceso a funciones del sistema / abrir vistas):
 - Modulos afectados: `super`, `administrar_empresa`, `facturacion_electronica`, `chat con IA`.
-- Cambio funcional: el chat IA puede proponer acciones de **lectura** (GET) y **abrir vistas internas** (OPEN) ademÃ¡s de POST/PUT. Se mantiene el bloqueo de DELETE.
-- Caso de uso: â€œmuÃ©strame la Ãºltima factura electrÃ³nicaâ€ â†’ la IA puede consultar `/api/empresa/facturacion_electronica?action=documentos...` (GET) y luego abrir `facturas_electronicas.html` con `auto_print=1` para ejecutar la visualizaciÃ³n/impresiÃ³n del documento.
+- Cambio funcional: el chat IA puede proponer acciones de **lectura** (GET) y **abrir vistas internas** (OPEN) además de POST/PUT. Se mantiene el bloqueo de DELETE.
+- Caso de uso: ?mu?strame la ?ltima factura electrónica? â†’ la IA puede consultar `/api/empresa/facturacion_electronicaaction=documentos...` (GET) y luego abrir `facturas_electronicas.html` con `auto_print=1` para ejecutar la visualización/impresión del documento.
 - Archivos clave: `web/super/chat_con_ia_global.html`, `web/administrar_empresa/chat_con_inteligencia_artificial.html`, `web/administrar_empresa/facturas_electronicas.html`, `backend/handlers/chat_con_ia_global_super.go`, `backend/handlers/chat_con_inteligencia_artificial_controller.go`.
 
 Actualizacion 2026-04-19 (super: plantillas de email configurables y guardado global de configuracion avanzada):
-- `backend/handlers/super_email_templates.go` crea la fuente de verdad del modulo super para plantillas de correo y expone `/super/api/config/email_templates` con plantillas configurables para confirmaciÃ³n administrativa, confirmaciÃ³n de usuario empresa, activaciÃ³n de licencias, recuperaciÃ³n de contraseÃ±a y alerta de reinicio del servidor.
-- `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` consumen ese render centralizado para que el panel super pueda cambiar correos reales sin tocar cÃ³digo.
-- `web/super/formato_para_emviar_email.html` agrega la subpÃ¡gina pedida dentro de `super_administrador.html`, organizada en pestaÃ±as de confirmaciÃ³n, licencias y formatos recomendados.
-- `web/super/configuracion_avanzada.html` centraliza el guardado de Wompi, Epayco, Gmail e IA mediante un Ãºnico botÃ³n `Guardar cambios` al inicio y otro al final de la vista.
-- Impacto de permisos: no se crean roles nuevos ni se amplÃ­an privilegios; la ediciÃ³n de plantillas y el guardado global siguen reservados al mismo frente autenticado de `super_administrador`.
+- `backend/handlers/super_email_templates.go` crea la fuente de verdad del modulo super para plantillas de correo y expone `/super/api/config/email_templates` con plantillas configurables para confirmación administrativa, confirmación de usuario empresa, activación de licencias, recuperación de contraseña y alerta de reinicio del servidor.
+- `backend/handlers/auth_admin_handlers.go`, `backend/handlers/usuarios_empresa.go`, `backend/handlers/payments_handlers.go` y `backend/handlers/server_runtime_notifications.go` consumen ese render centralizado para que el panel super pueda cambiar correos reales sin tocar código.
+- `web/super/formato_para_emviar_email.html` agrega la subpágina pedida dentro de `super_administrador.html`, organizada en pestañas de confirmación, licencias y formatos recomendados.
+- `web/super/configuracion_avanzada.html` centraliza el guardado de Wompi, Epayco, Gmail e IA mediante un único botón `Guardar cambios` al inicio y otro al final de la vista.
+- Impacto de permisos: no se crean roles nuevos ni se amplían privilegios; la edición de plantillas y el guardado global siguen reservados al mismo frente autenticado de `super_administrador`.
 
 Actualizacion 2026-04-19 (portal publico y selector: CTA seguros y navegacion acorde al alcance):
-- `web/descripcion_de_los_sistemas.ht` conserva la descripcion ampliada de cada solucion, pero el CTA `Probar Gratis` deja de reutilizar destinos privados del panel; cuando la tarjeta de origen apunta a una ruta protegida, el flujo pÃºblico deriva al registro de administrador para mantener coherencia entre descubrimiento pÃºblico y acceso autenticado.
-- `web/js/seleccionar_empresa.js` consulta `/me` para distinguir cuentas super principales de delegadas y administradores normales, y ajusta la visibilidad del menÃº lateral en consecuencia.
-- `web/seleccionar_empresa.html` mantiene `Licencias` como acceso operativo de alcance propio, pero `Administradores` y `Reportes globales` solo quedan visibles para super principales; por defecto permanecen ocultos hasta resolver la sesiÃ³n.
-- Impacto de permisos: no se crean roles nuevos; se reduce exposiciÃ³n visual de opciones fuera de alcance y se evita que el portal pÃºblico sugiera rutas que requieren autenticaciÃ³n o privilegios superiores.
+- `web/descripcion_de_los_sistemas.ht` conserva la descripcion ampliada de cada solucion, pero el CTA `Probar Gratis` deja de reutilizar destinos privados del panel; cuando la tarjeta de origen apunta a una ruta protegida, el flujo público deriva al registro de administrador para mantener coherencia entre descubrimiento público y acceso autenticado.
+- `web/js/seleccionar_empresa.js` consulta `/me` para distinguir cuentas super principales de delegadas y administradores normales, y ajusta la visibilidad del menú lateral en consecuencia.
+- `web/seleccionar_empresa.html` mantiene `Licencias` como acceso operativo de alcance propio, pero `Administradores` y `Reportes globales` solo quedan visibles para super principales; por defecto permanecen ocultos hasta resolver la sesión.
+- Impacto de permisos: no se crean roles nuevos; se reduce exposición visual de opciones fuera de alcance y se evita que el portal público sugiera rutas que requieren autenticación o privilegios superiores.
 
 Actualizacion 2026-04-19 (super/licencias: endurecimiento de alcance delegado y compatibilidad operativa):
-- `backend/handlers/system_empresas_handlers.go` y `backend/db/chat_inteligencia_artificial.go` dejan de tratar a un administrador delegado como super global solo por su rol; el alcance efectivo sigue anclado al administrador principal que lo creÃ³ y a las empresas de ese portafolio.
-- `backend/handlers/super_config_backup_handlers.go` preserva compatibilidad de exportaciÃ³n/restauraciÃ³n para claves sensibles legacy de IA usadas por respaldos histÃ³ricos, aun cuando el catÃ¡logo operativo actual ya no las exponga en la UI.
-- `backend/handlers/payments_handlers.go` separa la publicaciÃ³n pÃºblica de mÃ©todos de pago de los requisitos internos del checkout: Epayco puede anunciarse con `public_key`, mientras las credenciales privadas siguen siendo exigibles en pasos posteriores del cobro real.
-- `backend/handlers/postgres_performance.go` responde error de acciÃ³n invÃ¡lida antes de exigir entorno PostgreSQL para mantener coherencia del panel de diagnÃ³stico.
-- Impacto de permisos: el mÃ³dulo crÃ­tico `administrar_empresa` y el frente super de empresas mantienen aislamiento por `empresa_id` y por cadena principal/delegado; no se amplÃ­an privilegios, se cierran fugas de alcance.
+- `backend/handlers/system_empresas_handlers.go` y `backend/db/chat_inteligencia_artificial.go` dejan de tratar a un administrador delegado como super global solo por su rol; el alcance efectivo sigue anclado al administrador principal que lo creó y a las empresas de ese portafolio.
+- `backend/handlers/super_config_backup_handlers.go` preserva compatibilidad de exportación/restauración para claves sensibles legacy de IA usadas por respaldos históricos, aun cuando el catálogo operativo actual ya no las exponga en la UI.
+- `backend/handlers/payments_handlers.go` separa la publicación pública de métodos de pago de los requisitos internos del checkout: Epayco puede anunciarse con `public_key`, mientras las credenciales privadas siguen siendo exigibles en pasos posteriores del cobro real.
+- `backend/handlers/postgres_performance.go` responde error de acción inválida antes de exigir entorno PostgreSQL para mantener coherencia del panel de diagnóstico.
+- Impacto de permisos: el módulo crítico `administrar_empresa` y el frente super de empresas mantienen aislamiento por `empresa_id` y por cadena principal/delegado; no se amplían privilegios, se cierran fugas de alcance.
 
 Actualizacion 2026-04-18 (carritos/estaciones: carrito unificado configurable por empresa y estacion):
-- `web/administrar_empresa/carrito_de_compras.html` se consolida como unica superficie operativa para carritos generales y carritos de estacion; la vista lee `estaciones_config` desde `/api/empresa/estacion_prefs` y resuelve quÃ© bloques mostrar en cada estacion, incluyendo cliente, impuestos, resumen total del carrito y desglose del cobro.
+- `web/administrar_empresa/carrito_de_compras.html` se consolida como unica superficie operativa para carritos generales y carritos de estacion; la vista lee `estaciones_config` desde `/api/empresa/estacion_prefs` y resuelve qué bloques mostrar en cada estacion, incluyendo cliente, impuestos, resumen total del carrito y desglose del cobro.
 - `web/administrar_empresa/configuracion_de_estaciones.html` deja de administrar `venta_simple_habilitada` y pasa a administrar herencia global y checks de visibilidad del carrito por estacion, manteniendo sincronizacion de carritos base por `empresa_id`.
 - `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` deja de manejar un switch de carrito compacto y ahora gobierna la configuracion global del carrito unificado para toda la empresa.
 - `web/administrar_empresa/estaciones.html` ya no elige entre `ventas_simple.html` y `carrito_de_compras.html`; siempre abre el carrito unificado por estacion. `web/administrar_empresa/ventas_simple.html` queda como compatibilidad de redireccion.
 - Impacto de permisos: sin cambios en wrappers ni roles; la operacion sigue bajo el mismo alcance autenticado por `empresa_id`.
 
-Actualizacion 2026-04-18 (chat con IA: simplificacion visual en empresa y super) â€” **obsoleta** frente a 2026-04-24 (layout Gemini): la interfaz volvio a exponer selector de modelo, uso y sidebar; conservar solo el dato historico de que en esa fecha se redujo la UI antes de la revision mayor.
+Actualizacion 2026-04-18 (chat con IA: simplificacion visual en empresa y super) ? **obsoleta** frente a 2026-04-24 (layout Gemini): la interfaz volvio a exponer selector de modelo, uso y sidebar; conservar solo el dato historico de que en esa fecha se redujo la UI antes de la revision mayor.
 
 Actualizacion 2026-04-24 (chat IA: tema y retiro definitivo de sugerencias pill):
 - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` leen `pcs_theme` y `localStorage` al cargar para aplicar el mismo `data-theme` que el panel; se eliminan las pills de sugerencias bajo el formulario.
@@ -790,7 +798,7 @@ Actualizacion 2026-04-24 (chat IA: tema y retiro definitivo de sugerencias pill)
 
 Actualizacion 2026-04-24 (chat IA: layout tipo Gemini en empresa y super):
 - `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` adoptan layout de aplicacion: sidebar izquierda con conversaciones persistidas en el navegador (`localStorage`) mas lista del historial del servidor; area principal con barra superior (selector de modelo, pastilla de modelo en uso y resumen de cupo diario), mensajes y compositor.
-- Compartir respuesta del asistente vÃ­a Web Share API o, en su defecto, copia al portapapeles. Mensaje/banner explicativo cuando el backend responde 429 o codigos de limite o bloqueo (`free_tier_limit_reached`, `ai_empresa_chat_blocked`, etc.). En chat empresarial se retiran el titulo largo contextual y la tarjeta de chips Empresa/Cuenta.
+- Compartir respuesta del asistente vía Web Share API o, en su defecto, copia al portapapeles. Mensaje/banner explicativo cuando el backend responde 429 o codigos de limite o bloqueo (`free_tier_limit_reached`, `ai_empresa_chat_blocked`, etc.). En chat empresarial se retiran el titulo largo contextual y la tarjeta de chips Empresa/Cuenta.
 - `web/estilos.css` agrega bloque `.ai-gemini-app*` y overrides `html.theme-light` para contraste de textos en burbujas y banners.
 - Impacto de permisos: sin cambios en endpoints ni roles; solo UX y persistencia local opcional.
 
@@ -801,20 +809,20 @@ Actualizacion 2026-04-19 (chat IA super/empresa: Gemini-only sin Ollama ni DeepS
 - Impacto de permisos: sin cambios en wrappers ni roles; `super_administrador` sigue controlando la disponibilidad del servicio IA y `administrador` de empresa solo puede usar Gemini cuando ese servicio permanezca habilitado.
 
 Actualizacion 2026-04-18 (inventario/productos: compras preventivas y de proveedores pasan a la seccion Compras):
-- `web/administrar_empresa/administrar_productos.html` amplÃ­a la vista central a `view=productos|bodegas|categorias|proveedores|compras|precios`, separando las compras preventivas y el ciclo de orden por proveedor de la vista principal de inventario.
-- `web/administrar_empresa/productos/compras.html` deja de ser un placeholder y pasa a redirigir al modo `compras` de la vista central, preservando `empresa_id` sin duplicar la lÃ³gica de reposiciÃ³n y ordenes.
+- `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|compras|precios`, separando las compras preventivas y el ciclo de orden por proveedor de la vista principal de inventario.
+- `web/administrar_empresa/productos/compras.html` deja de ser un placeholder y pasa a redirigir al modo `compras` de la vista central, preservando `empresa_id` sin duplicar la lógica de reposición y ordenes.
 - La seccion `Compras` del submodulo ahora concentra plan de reposicion por proveedor, consolidado de compra y borrador/ciclo de orden; la vista `Productos` conserva inventario, existencias, alertas y analitica operativa.
 - Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste reorganiza frontend dentro del mismo modulo autenticado por `empresa_id`.
 
 Actualizacion 2026-04-18 (inventario/productos: proveedores y precios se separan en subpaginas dedicadas):
-- `web/administrar_empresa/administrar_productos.html` amplÃ­a la vista central a `view=productos|bodegas|categorias|proveedores|precios`, de modo que el CRUD de proveedores y el historial de cambios de precio ya no queden mezclados con la vista principal de productos.
+- `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|precios`, de modo que el CRUD de proveedores y el historial de cambios de precio ya no queden mezclados con la vista principal de productos.
 - `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` pasan a operar como wrappers de navegacion que preservan `empresa_id` y redirigen a la vista central sin duplicar formularios ni consultas.
 - `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada dedicada `Proveedores`, mientras `Precios` deja de ser un placeholder y ahora muestra el historial real de cambios de precio del modulo.
 - Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de navegacion y organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
 
 Actualizacion 2026-04-18 (chat IA super/empresa: autoreparacion PostgreSQL legacy y timeout mayor para Ambis):
 - `backend/db/chat_inteligencia_artificial.go` endurece el modulo para asegurar `empresa_ai_*` y `super_ai_*` al consultar modelo preferido, uso diario, historial y auditoria, evitando fallos cuando una instalacion PostgreSQL heredada llega con tablas o columnas incompletas.
-- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplÃ­a solo el timeout del proveedor `ollama:ambis`, manteniendo el resto de proveedores igual, para tolerar respuestas mÃ¡s lentas de `codellama:7b` cuando el backend local consume Ollama del VPS por tÃºnel.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go` amplía solo el timeout del proveedor `ollama:ambis`, manteniendo el resto de proveedores igual, para tolerar respuestas más lentas de `codellama:7b` cuando el backend local consume Ollama del VPS por túnel.
 - Impacto de permisos: sin cambios en roles, wrappers ni visibilidad; el ajuste corrige resiliencia runtime y persistencia del mismo modulo IA ya existente.
 
 Actualizacion 2026-04-18 (portal publico: retiro del arcade y permanencia exclusiva del emulador N64):
@@ -824,7 +832,7 @@ Actualizacion 2026-04-18 (portal publico: retiro del arcade y permanencia exclus
 - Impacto de permisos: sin cambios en roles, wrappers ni autenticacion; `/Juegos/*` se conserva publico solo para el emulador N64.
 
 Actualizacion 2026-04-18 (inventario/productos: subpaginas separadas para bodegas y categorias):
-- `web/administrar_empresa/administrar_productos.html` se mantiene como fuente unica del modulo y ahora admite `?view=productos`, `?view=bodegas` y `?view=categorias` para mostrar solo el bloque operativo correspondiente.
+- `web/administrar_empresa/administrar_productos.html` se mantiene como fuente unica del modulo y ahora admite `view=productos`, `view=bodegas` y `view=categorias` para mostrar solo el bloque operativo correspondiente.
 - `web/administrar_empresa/productos/administrar_productos.html`, `web/administrar_empresa/productos/bodegas.html` y `web/administrar_empresa/productos/categorias.html` pasan a ser wrappers de navegacion que preservan `empresa_id` y redirigen a la vista central sin duplicar formularios ni bindings.
 - Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
 
@@ -834,66 +842,66 @@ Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio)
 - Impacto de permisos: sin cambios de rol; la operacion sigue restringida a configuracion super para el control global y a los permisos ya existentes de los chats para lectura y uso.
 
 Actualizacion 2026-04-18 (chat IA super/empresa: interruptores por proveedor):
-- `web/super/configuracion_avanzada.html` agrega interruptores separados para `DeepSeek Chat` y `Ambis Local`, ademÃ¡s del interruptor global.
-- `backend/handlers/ai_config_handlers.go` persiste `ai.provider.deepseek.enabled` y `ai.provider.ollama.enabled` para decidir quÃ© proveedores quedan visibles en los chats.
-- Cuando un proveedor queda desactivado, desaparece del catÃ¡logo disponible de `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*`, y el sistema hace fallback al primer modelo habilitado.
-- Impacto de permisos: sin cambios de rol; solo `super_administrador` puede apagar o encender proveedores desde configuraciÃ³n avanzada.
+- `web/super/configuracion_avanzada.html` agrega interruptores separados para `DeepSeek Chat` y `Ambis Local`, además del interruptor global.
+- `backend/handlers/ai_config_handlers.go` persiste `ai.provider.deepseek.enabled` y `ai.provider.ollama.enabled` para decidir qué proveedores quedan visibles en los chats.
+- Cuando un proveedor queda desactivado, desaparece del catálogo disponible de `/api/empresa/chat_con_inteligencia_artificial/*` y `/super/api/chat_con_ia_global/*`, y el sistema hace fallback al primer modelo habilitado.
+- Impacto de permisos: sin cambios de rol; solo `super_administrador` puede apagar o encender proveedores desde configuración avanzada.
 
 Actualizacion 2026-04-18 (chat IA super/empresa: estado visual de servicio desactivado):
-- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` ahora muestran un mensaje visible cuando la IA global estÃ¡ desactivada y bloquean el formulario localmente.
-- `web/super/configuracion_avanzada.html` hace explÃ­cita la acciÃ³n `Probar IA contra VPS` como validaciÃ³n real del servicio Ollama a travÃ©s del backend.
-- Impacto de permisos: sin cambios; el ajuste es de experiencia operativa y comunicaciÃ³n de estado.
+- `web/administrar_empresa/chat_con_inteligencia_artificial.html` y `web/super/chat_con_ia_global.html` ahora muestran un mensaje visible cuando la IA global está desactivada y bloquean el formulario localmente.
+- `web/super/configuracion_avanzada.html` hace explícita la acción `Probar IA contra VPS` como validación real del servicio Ollama a través del backend.
+- Impacto de permisos: sin cambios; el ajuste es de experiencia operativa y comunicación de estado.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: integraciones externas y reconciliacion documental):
-- Se amplÃ­a el paquete transversal `gobernanza tecnica` con un contrato tÃ©cnico de integraciones empresariales y un runbook de reconciliacion documental fiscal/contable.
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico de integraciones empresariales y un runbook de reconciliacion documental fiscal/contable.
 - `documentos/gobernanza_tecnica/contratos/contrato_integraciones_bancarias_y_conectores_externos.md` fija entradas, salidas, invariantes, alertas y restricciones de `/api/empresa/integraciones/apis` y `/api/empresa/integraciones/bancos`.
 - `documentos/gobernanza_tecnica/runbooks/runbook_reconciliacion_documental_fiscal_y_contable_externa.md` documenta el diagnostico operativo de compras documentales, reintentos y reconciliacion fiscal, y versionado/acceso del repositorio empresarial.
 - Impacto de permisos: sin cambios funcionales en wrappers ni roles; el alcance es documental y operativo transversal.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: repositorio documental y firmas externas):
-- Se amplÃ­a el paquete transversal `gobernanza tecnica` con un contrato tÃ©cnico y un runbook del repositorio documental empresarial.
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico y un runbook del repositorio documental empresarial.
 - `documentos/gobernanza_tecnica/contratos/contrato_repositorio_documental_y_firmas_externas.md` fija rutas, acciones, columnas, invariantes y reglas de acceso de `/api/empresa/documentos/gestion` y `/api/empresa/documentos/firmas`.
 - `documentos/gobernanza_tecnica/runbooks/runbook_versionado_documental_y_firmas_externas.md` documenta el diagnostico operativo de versionado, historial, firmas asociadas y acceso por rol/modulo documental.
 - Impacto de permisos: sin cambios en wrappers ni roles vigentes; la mejora es documental y operativa transversal sobre el comportamiento ya implementado.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: reconciliacion documental y evidencia regulatoria endurecida):
-- Se endurece el paquete `gobernanza tecnica` para reconciliar explÃ­citamente repositorio documental, interoperabilidad fiscal/contable y exportes multiformato.
-- Los contratos de repositorio, interoperabilidad y reportes ahora dejan explÃ­cito que un exporte no reemplaza la versiÃ³n vigente ni la firma documental cuando el flujo exige evidencia reforzada.
-- Los runbooks de reconciliaciÃ³n y versionado ahora obligan a cruzar `documento_codigo`, versiÃ³n vigente, `hash_archivo`, `hash_firma` y dataset exportado cuando aplique.
+- Se endurece el paquete `gobernanza tecnica` para reconciliar explícitamente repositorio documental, interoperabilidad fiscal/contable y exportes multiformato.
+- Los contratos de repositorio, interoperabilidad y reportes ahora dejan explícito que un exporte no reemplaza la versión vigente ni la firma documental cuando el flujo exige evidencia reforzada.
+- Los runbooks de reconciliación y versionado ahora obligan a cruzar `documento_codigo`, versión vigente, `hash_archivo`, `hash_firma` y dataset exportado cuando aplique.
 - Impacto de permisos: sin cambios en wrappers ni roles; el ajuste fortalece trazabilidad operativa y disciplina documental.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: checklist QA/soporte para evidencia documental):
 - Se agrega una checklist corta en `documentos/gobernanza_tecnica/runbooks/checklist_evidencia_documental_para_qa_y_soporte.md` para acelerar triage y UAT en flujos documentales.
-- La descripcion del proyecto y la estructura del codigo ahora remiten explÃ­citamente a esa checklist como entrada rapida antes de escalar a runbooks completos.
+- La descripcion del proyecto y la estructura del codigo ahora remiten explícitamente a esa checklist como entrada rapida antes de escalar a runbooks completos.
 - Impacto de permisos: sin cambios en wrappers ni roles; el ajuste mejora el cierre operativo y la disciplina de soporte.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: interoperabilidad documental e integraciones externas):
-- Se amplÃ­a el paquete transversal `gobernanza tecnica` con un contrato tÃ©cnico del frente documental-contable/fiscal y un runbook de contingencias para conectores externos.
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del frente documental-contable/fiscal y un runbook de contingencias para conectores externos.
 - `documentos/gobernanza_tecnica/contratos/contrato_interoperabilidad_documental_contable_y_fiscal_externa.md` fija reglas de compras documentales, facturacion documental, cola de reintentos fiscales, validacion documental y versionado/control de acceso del repositorio empresarial.
 - `documentos/gobernanza_tecnica/runbooks/runbook_contingencias_integraciones_bancarias_y_conectores.md` documenta el diagnostico de `health_check`, `sync_manual`, monitoreo, latencia y rotacion segura de credenciales para `integraciones/apis` e `integraciones/bancos`.
 - Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: cierre de periodo y conciliacion bancaria):
-- Se amplÃ­a el paquete transversal `gobernanza tecnica` con un contrato tÃ©cnico y un runbook del frente financiero-contable.
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico y un runbook del frente financiero-contable.
 - `documentos/gobernanza_tecnica/contratos/contrato_conciliacion_bancaria_y_cierre_periodo_contable.md` fija el comportamiento de periodos, evidencia de autorizacion, importacion idempotente de extractos, conciliacion automatica y bloqueo de movimientos en periodos cerrados.
 - `documentos/gobernanza_tecnica/runbooks/runbook_cierre_periodo_y_conciliacion_bancaria.md` documenta el diagnostico de cierres fallidos, extractos sin match, tolerancias y resumenes con pendientes o desviaciones.
 - Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
 
 Actualizacion 2026-04-18 (estaciones: tarjeta especial YouTube con vista maximizable):
-- Se amplÃ­a el modulo `operacion por empresa / estaciones` con una estacion especial opcional tipo `YouTube`, activable desde la configuracion global de estaciones.
+- Se amplía el modulo `operacion por empresa / estaciones` con una estacion especial opcional tipo `YouTube`, activable desde la configuracion global de estaciones.
 - `web/administrar_empresa/configuracion_de_estaciones.html` agrega el toggle `youtube_enabled` dentro de `estaciones_config` y `web/administrar_empresa/estaciones.html` renderiza la tarjeta embebida con boton de ampliacion.
-- `web/administrar_empresa/youtube_station_browser.html` encapsula la vista de reproducciÃ³n embebida de YouTube para reutilizarla tanto en modo compacto dentro de la tarjeta como en la ventana ampliada de aproximadamente `500 x 500`.
+- `web/administrar_empresa/youtube_station_browser.html` encapsula la vista de reproducción embebida de YouTube para reutilizarla tanto en modo compacto dentro de la tarjeta como en la ventana ampliada de aproximadamente `500 x 500`.
 - Impacto de permisos: sin cambios; la mejora vive dentro de la misma vista autenticada de estaciones y no modifica wrappers ni roles.
 
-Actualizacion 2026-04-19 (estaciones: YouTube deja la bÃºsqueda embebida y usa reproducciÃ³n vÃ¡lida con fallback externo):
-- Se corrige el submodulo `estaciones` para que la tarjeta especial de YouTube ya no dependa de bÃºsquedas incrustadas que el proveedor externo dejÃ³ de soportar.
-- `web/administrar_empresa/configuracion_de_estaciones.html` incorpora un campo explÃ­cito para guardar la URL o el ID de un video/playlist, `web/administrar_empresa/youtube_station_browser.html` resuelve solo referencias embebibles vÃ¡lidas y `web/administrar_empresa/estaciones.html` muestra la fuente configurada dentro de la tarjeta.
-- Si la referencia guardada es texto libre y no un video o playlist vÃ¡lido, la estaciÃ³n deja un estado visible dentro del iframe y usa `Abrir YouTube` como fallback externo en lugar de simular una reproducciÃ³n rota.
+Actualizacion 2026-04-19 (estaciones: YouTube deja la búsqueda embebida y usa reproducción válida con fallback externo):
+- Se corrige el submodulo `estaciones` para que la tarjeta especial de YouTube ya no dependa de búsquedas incrustadas que el proveedor externo dejó de soportar.
+- `web/administrar_empresa/configuracion_de_estaciones.html` incorpora un campo explícito para guardar la URL o el ID de un video/playlist, `web/administrar_empresa/youtube_station_browser.html` resuelve solo referencias embebibles válidas y `web/administrar_empresa/estaciones.html` muestra la fuente configurada dentro de la tarjeta.
+- Si la referencia guardada es texto libre y no un video o playlist válido, la estación deja un estado visible dentro del iframe y usa `Abrir YouTube` como fallback externo en lugar de simular una reproducción rota.
 - Impacto de permisos: sin cambios en roles, wrappers ni alcance por `empresa_id`; el ajuste es exclusivamente funcional/visual dentro del modulo autenticado de estaciones.
 
 Actualizacion 2026-04-19 (estaciones: la misma tarjeta YouTube permite guardar la fuente y acepta Shorts):
-- Se refuerza el submodulo `estaciones` para que la operadora pegue y guarde desde la propia tarjeta la URL o el ID del contenido de YouTube, sin depender de entrar a la pantalla de configuraciÃ³n.
-- `web/administrar_empresa/estaciones.html` agrega un editor inline dentro de la tarjeta, guarda la referencia en `estaciones_config` y recarga la vista en el mismo bloque; `web/administrar_empresa/youtube_station_browser.html` ya interpreta tambiÃ©n enlaces de `Shorts` como video vÃ¡lido.
+- Se refuerza el submodulo `estaciones` para que la operadora pegue y guarde desde la propia tarjeta la URL o el ID del contenido de YouTube, sin depender de entrar a la pantalla de configuración.
+- `web/administrar_empresa/estaciones.html` agrega un editor inline dentro de la tarjeta, guarda la referencia en `estaciones_config` y recarga la vista en el mismo bloque; `web/administrar_empresa/youtube_station_browser.html` ya interpreta también enlaces de `Shorts` como video válido.
 - Impacto de permisos: sin cambios en roles, wrappers ni alcance; la tarjeta usa la misma persistencia autenticada de `empresa_estacion_prefs` ya existente para la empresa activa.
 
 Actualizacion 2026-04-19 (portal publico: explorar oferta adopta tarjetas del home y una landing visual propia):
@@ -902,16 +910,16 @@ Actualizacion 2026-04-19 (portal publico: explorar oferta adopta tarjetas del ho
 - Impacto de permisos: sin cambios en roles, wrappers ni rutas protegidas; el ajuste es completamente visual dentro del portal publico.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: soporte remoto y contingencia de reportes):
-- Se amplÃ­a el paquete transversal `gobernanza tecnica` con un contrato tÃ©cnico del mÃ³dulo de soporte remoto multiempresa y dos runbooks nuevos de contingencia operativa.
-- `documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md` fija entradas, estados, invariantes y lÃ­mites del flujo empresarial, pÃºblico y super de soporte remoto.
-- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` documenta la recuperaciÃ³n de plantillas, programaciones, ejecuciones, exportaciones tabulares y validaciones de consistencia.
-- `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` documenta diagnÃ³stico de heartbeats, PIN de dispositivo, sesiÃ³n con token, portal pÃºblico y bloqueos por plan.
+- Se amplía el paquete transversal `gobernanza tecnica` con un contrato técnico del módulo de soporte remoto multiempresa y dos runbooks nuevos de contingencia operativa.
+- `documentos/gobernanza_tecnica/contratos/contrato_soporte_remoto_por_empresa_y_mesa_tecnica_central.md` fija entradas, estados, invariantes y límites del flujo empresarial, público y super de soporte remoto.
+- `documentos/gobernanza_tecnica/runbooks/runbook_reportes_programados_y_exportaciones_contables.md` documenta la recuperación de plantillas, programaciones, ejecuciones, exportaciones tabulares y validaciones de consistencia.
+- `documentos/gobernanza_tecnica/runbooks/runbook_soporte_remoto_sesiones_y_dispositivos.md` documenta diagnóstico de heartbeats, PIN de dispositivo, sesión con token, portal público y bloqueos por plan.
 - Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental y operativa transversal.
 
 Actualizacion 2026-04-18 (gobernanza tecnica: DIAN, alertas de reinicio y reportes multiformato):
 - Se extiende el paquete transversal `gobernanza tecnica` con tres artefactos nuevos orientados a diagnostico y contratos de comportamiento real.
 - `documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md` fija el procedimiento operativo de DIAN para onboarding, checklist, credenciales, firma base, set de pruebas y clasificacion de brechas entre configuracion y transporte oficial aun pendiente.
-- `documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md` documenta el uso de `POST /super/api/config/gmail?action=test`, `super_servidor_eventos`, `gmail.restart_alert_to`, `gmail.restart_alert_enabled` y `gmail.smtp_test_mode`.
+- `documentos/gobernanza_tecnica/runbooks/runbook_alertas_reinicio_y_monitoreo_gmail_smtp.md` documenta el uso de `POST /super/api/config/gmailaction=test`, `super_servidor_eventos`, `gmail.restart_alert_to`, `gmail.restart_alert_enabled` y `gmail.smtp_test_mode`.
 - `documentos/gobernanza_tecnica/contratos/contrato_reportes_contables_financieros_y_exportacion_multiformato.md` formaliza el modulo de reportes empresariales y globales super, incluyendo datasets, exportes, plantillas, programacion, ejecuciones y consistencia multiformato.
 - Impacto de permisos: sin cambios en roles ni visibilidad; la mejora es documental, operativa y de gobernanza transversal.
 
@@ -927,21 +935,21 @@ Actualizacion 2026-04-18 (seleccionar empresa: tarjetas mas compactas y botones 
 - Impacto de permisos: sin cambios; el ajuste es solo visual sobre la misma vista autenticada.
 
 Actualizacion 2026-04-18 (super configuracion avanzada: prueba real de Gmail):
-- Se amplÃ­a el submodulo `administracion global (super) / configuracion avanzada` para que el boton `Probar Gmail` ejecute un envio SMTP real usando las credenciales guardadas en PostgreSQL.
-- `backend/handlers/usuarios_empresa.go` aÃ±ade `POST /super/api/config/gmail?action=test` y `web/super/configuracion_avanzada.html` consume esa accion para mostrar en la misma tarjeta si el correo de prueba fue enviado a `powerfulcontrolsystem@gmail.com`.
+- Se amplía el submodulo `administracion global (super) / configuracion avanzada` para que el boton `Probar Gmail` ejecute un envio SMTP real usando las credenciales guardadas en PostgreSQL.
+- `backend/handlers/usuarios_empresa.go` añade `POST /super/api/config/gmailaction=test` y `web/super/configuracion_avanzada.html` consume esa accion para mostrar en la misma tarjeta si el correo de prueba fue enviado a `powerfulcontrolsystem@gmail.com`.
 - Impacto de permisos: sin cambios; la capacidad sigue restringida a `super_administrador` dentro del mismo modulo autenticado.
 
 Actualizacion 2026-04-18 (licencias y pasarelas: total cero activa sin pago y solo una vez por empresa):
 - Se endurece el modulo `licencias y pasarelas de pago` para que una licencia de valor cero, o una licencia cuyo descuento deje el total en cero, no intente abrir Epayco/Wompi y se active de forma directa solo una vez por empresa.
-- `backend/handlers/payments_handlers.go` agrega el resumen publico de checkout, recalcula descuento y total antes de abrir pasarela y bloquea la activacion gratis repetida cuando la misma empresa ya consumiÃ³ esa licencia.
+- `backend/handlers/payments_handlers.go` agrega el resumen publico de checkout, recalcula descuento y total antes de abrir pasarela y bloquea la activacion gratis repetida cuando la misma empresa ya consumió esa licencia.
 - `backend/db/licencias_gratis.go` crea la persistencia `licencias_activaciones_gratis` para dejar la marca unica por `(licencia_id, empresa_id)` y mantener trazabilidad de descuentos/cortesia usados en activaciones sin cobro.
 - `web/pagar_licencia.html`, `web/elegir_licencia.html` y `web/estilos.css` muestran el total real, cambian el CTA a `Activar licencia` cuando corresponde y homogeneizan la altura visual de las tarjetas del selector de empresas.
 - Impacto de permisos: sin cambios; el checkout sigue siendo publico, pero la regla comercial de activacion gratis queda ahora validada en backend y no solo en frontend.
 
 Actualizacion 2026-04-18 (licencias y pasarelas: correo Epayco recuperable tras webhook o fallo inicial):
 - Se endurece el modulo `licencias y pasarelas de pago` para que el correo de activacion de Epayco no dependa exclusivamente de la primera activacion efectiva de la licencia.
-- `backend/handlers/payments_handlers.go` deja una marca idempotente en el `raw_payload` del pago cuando la notificacion se completa y, si el webhook aprobÃ³ primero o el primer intento de correo fallÃ³, el polling posterior puede reenviar una sola vez cuando ya exista destinatario valido.
-- `backend/handlers/payments_handlers.go` tambiÃ©n reconoce `customer_email` dentro del bloque `data` de la validacion Epayco, que es donde algunas respuestas aprobadas entregan el correo del comprador.
+- `backend/handlers/payments_handlers.go` deja una marca idempotente en el `raw_payload` del pago cuando la notificacion se completa y, si el webhook aprobó primero o el primer intento de correo falló, el polling posterior puede reenviar una sola vez cuando ya exista destinatario valido.
+- `backend/handlers/payments_handlers.go` también reconoce `customer_email` dentro del bloque `data` de la validacion Epayco, que es donde algunas respuestas aprobadas entregan el correo del comprador.
 - Impacto de permisos: sin cambios; sigue siendo un flujo publico del checkout de licencias bajo `/epayco/*`.
 
 Actualizacion 2026-04-18 (licencias y pasarelas: aislamiento multiempresa en checkout y correo con empresa logica):
@@ -964,7 +972,7 @@ Actualizacion 2026-04-18 (ventas simples por estacion: regreso directo a estacio
 - Impacto de permisos: sin cambios; el flujo sigue dentro del mismo modulo autenticado de operacion empresarial.
 
 Actualizacion 2026-04-18 (ventas simples por estacion: variante `carrito_compacto`):
-- Se materializa una variante ligera del mismo flujo operativo de carrito por estacion sin crear rutas backend nuevas ni duplicar la lÃ³gica de cobro.
+- Se materializa una variante ligera del mismo flujo operativo de carrito por estacion sin crear rutas backend nuevas ni duplicar la lógica de cobro.
 - `web/administrar_empresa/estaciones.html` abre `ventas_simple.html` con `variant=compacto` cuando la estacion usa venta simple, y `web/js/ventas_simple.js` tambien acepta una configuracion remota opcional desde `/api/empresa/configuracion_avanzada` si el backend ya publica `cart_variant` o aliases equivalentes.
 - `web/administrar_empresa/ventas_simple.html` muestra una barra de acciones rapidas para buscar producto, ver carrito, cobrar, sincronizar, iniciar nueva venta y saltar a correccion, manteniendo el mismo carrito por estacion y el mismo aislamiento por `empresa_id`.
 - Impacto de permisos: sin cambios; la variante reutiliza el mismo modulo autenticado y los mismos endpoints `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`.
@@ -974,15 +982,15 @@ Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus refuerza modo
 - El render del juego aclara cielo, suelo, minimapa y sprites para que el ambiente se sienta mas de dibujos animados y menos oscuro, conservando la misma historia y progresion por niveles.
 - Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
 
-Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus agrega campaÃ±a, poderes e IA avanzada):
+Actualizacion 2026-04-17 (arcade publico: Brigada burbujas 3D plus agrega campaña, poderes e IA avanzada):
 - Se amplia `web/Juegos/brigada_burbujas_3d_plus.html` con dos escenarios adicionales, tres transformaciones jugables (`Cometa Neon`, `Guardian Globo`, `Titan Prisma`) y rivales adultas estilizadas de pasarela caricaturesca como nueva variante legal de enemigos.
 - La IA enemiga ahora mezcla persecucion, orbita lateral, retirada tactica, emboscada y proyectiles remotos segun el tipo de rival, reforzando la sensacion de shooter retro moderno en movil.
-- `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan el resumen y la portada del lobby para reflejar la campaÃ±a ampliada.
+- `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` actualizan el resumen y la portada del lobby para reflejar la campaña ampliada.
 - Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
 
 Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega arsenal y mapa abierto/cerrado):
-- Se amplÃ­a `web/Juegos/brigada_burbujas_3d_plus.html` con un arsenal de tres armas (`Espuma base`, `Prisma triple`, `Meteor pop`), pickups de salud/municion/desbloqueo y un HUD adicional para arma activa y tipo de sector.
-- El shooter ahora alterna sectores cerrados, abiertos e hibridos dentro de la campaÃ±a, refuerza la sensacion pseudo-3D con lineas de suelo en perspectiva y aÃ±ade una IA enemiga que patrulla, busca al jugador tras perder vision, convoca refuerzos desde el jefe final y presiona mejor en arenas abiertas.
+- Se amplía `web/Juegos/brigada_burbujas_3d_plus.html` con un arsenal de tres armas (`Espuma base`, `Prisma triple`, `Meteor pop`), pickups de salud/municion/desbloqueo y un HUD adicional para arma activa y tipo de sector.
+- El shooter ahora alterna sectores cerrados, abiertos e hibridos dentro de la campaña, refuerza la sensacion pseudo-3D con lineas de suelo en perspectiva y añade una IA enemiga que patrulla, busca al jugador tras perder vision, convoca refuerzos desde el jefe final y presiona mejor en arenas abiertas.
 - Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
 
 Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus cierra UX real de celular):
@@ -997,7 +1005,7 @@ Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega joysti
 
 Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega auto-disparo, vibracion y ajustes tactiles):
 - `web/Juegos/brigada_burbujas_3d_plus.html` incorpora un panel de opciones persistentes para celular con auto-disparo opcional, vibracion, sensibilidad de joystick y sensibilidad de giro.
-- El shooter ahora aplica feedback mas fuerte con screen shake, flash de disparo y vibracion corta al disparar o recibir daÃ±o cuando el dispositivo lo soporta.
+- El shooter ahora aplica feedback mas fuerte con screen shake, flash de disparo y vibracion corta al disparar o recibir daño cuando el dispositivo lo soporta.
 - Impacto de permisos: sin cambios; el modulo `Juegos` sigue siendo publico bajo `/Juegos/*`.
 
 Actualizacion 2026-04-18 (arcade publico: Brigada burbujas 3D plus agrega HUD Auto y ayuda de mira):
@@ -1016,24 +1024,24 @@ Actualizacion 2026-04-17 (super seguridad: vista en modo oscuro):
 - Impacto de permisos: sin cambios; es un ajuste visual del mismo modulo `Seguridad VPS Linux (super)`.
 
 Actualizacion 2026-04-17 (ventas: documento automatico por empresa al pagar carrito):
-- Se amplÃ­a el modulo `carritos / ventas / facturacion` para que cada empresa elija si sus ventas generan `factura_electronica` o `comprobante_pago` sin alterar el flujo operativo de cobro.
+- Se amplía el modulo `carritos / ventas / facturacion` para que cada empresa elija si sus ventas generan `factura_electronica` o `comprobante_pago` sin alterar el flujo operativo de cobro.
 - `backend/db/empresa_configuracion_avanzada.go` agrega el campo `modo_documento_venta`; `backend/handlers/carritos_compras.go` crea el documento automaticamente al cerrar la venta y `web/administrar_empresa/configuracion.html` publica el selector dentro del panel empresarial.
-- `web/administrar_empresa/facturas_electronicas.html` amplÃ­a el historial documental para incluir comprobantes de pago dentro del mismo modulo de consulta.
+- `web/administrar_empresa/facturas_electronicas.html` amplía el historial documental para incluir comprobantes de pago dentro del mismo modulo de consulta.
 - Impacto de permisos: sin cambios en alcance por rol; sigue siendo configuracion propia de empresa y operacion del mismo modulo autenticado por `empresa_id`.
 
 Actualizacion 2026-04-17 (menus administrativos: ocultar/mostrar solo en movil):
-- Se ajusta la navegacion de `administrar_empresa.html`, `super_administrador.html` y `seleccionar_empresa.html` para agregar un boton final de `Ocultar menÃº` o `Mostrar menÃº` visible solo en pantallas moviles.
+- Se ajusta la navegacion de `administrar_empresa.html`, `super_administrador.html` y `seleccionar_empresa.html` para agregar un boton final de `Ocultar menú` o `Mostrar menú` visible solo en pantallas moviles.
 - `web/menu.js` coordina el estado colapsado del sidebar compartido y mantiene el menu completo sin cambios en escritorio.
 - `web/estilos.css` conserva el apilado vertical en movil y, cuando el menu se oculta, deja visible solo el boton final para volver a expandirlo.
 - Impacto de permisos: sin cambios; el ajuste es exclusivo de UX y no altera rutas, roles ni acciones disponibles.
 
 Actualizacion 2026-04-18 (submenu de configuracion: boton de ocultar menu en movil):
 - Se ajusta `web/administrar_empresa/configuracion_menu.html` para reutilizar el mismo patron responsive del sidebar plegable ya presente en los shells administrativos principales.
-- La vista carga `web/menu.js`, agrega `admin-sidebar-mobile-collapsible` y publica el boton final `Ocultar menÃº` / `Mostrar menÃº` dentro del submenÃº de configuracion, manteniendo intactos sus mismos accesos internos.
+- La vista carga `web/menu.js`, agrega `admin-sidebar-mobile-collapsible` y publica el boton final `Ocultar menú` / `Mostrar menú` dentro del submenú de configuracion, manteniendo intactos sus mismos accesos internos.
 - Impacto de permisos: sin cambios; es solo un ajuste de UX responsive dentro del modulo autenticado de configuracion empresarial.
 
 Actualizacion 2026-04-18 (submenu de configuracion: permisos e integraciones dejan de ser placeholders):
-- `web/administrar_empresa/configuracion_permisos.html` reemplaza los botones falsos de agregar/guardar por una consulta real al endpoint `/api/empresa/permisos_contexto?include_matrix=1`, mostrando rol detectado, rol efectivo, modulos y matriz de roles disponible para la empresa autenticada.
+- `web/administrar_empresa/configuracion_permisos.html` reemplaza los botones falsos de agregar/guardar por una consulta real al endpoint `/api/empresa/permisos_contextoinclude_matrix=1`, mostrando rol detectado, rol efectivo, modulos y matriz de roles disponible para la empresa autenticada.
 - `web/administrar_empresa/configuracion_integraciones.html` queda como pantalla informativa; la configuracion operativa de Wompi/Epayco, slug, dominio, paginas y productos publicados se administra desde `web/administrar_empresa/venta_publica.html`.
 - Impacto de permisos: sin ampliacion de privilegios; `Permisos` pasa a ser una vista informativa de solo lectura sobre el contexto ya permitido y `Integraciones` reutiliza el mismo alcance autenticado de venta publica que ya existia para la empresa.
 
@@ -1049,11 +1057,11 @@ Actualizacion 2026-04-18 (submenu de configuracion: enlace Avanzada corrige dest
 
 Actualizacion 2026-04-17 (editar empresa: CTA de compra para licencias vencidas):
 - La vista `editar_empresa.html` ahora muestra el boton `Comprar licencia` solo cuando la empresa consultada tiene licencias historicas vencidas y no conserva una licencia activa vigente.
-- `web/js/editar_empresa.js` consulta `/super/api/licencias?scope=mine&con_empresa=1`, filtra por `empresa_id` y habilita el CTA hacia `elegir_licencia.html` reutilizando el `tipo_id` y `tipo_nombre` de la empresa.
+- `web/js/editar_empresa.js` consulta `/super/api/licenciasscope=mine&con_empresa=1`, filtra por `empresa_id` y habilita el CTA hacia `elegir_licencia.html` reutilizando el `tipo_id` y `tipo_nombre` de la empresa.
 - Impacto de permisos: no cambia el alcance; la vista sigue usando solo lecturas permitidas y el CTA redirige al flujo comercial ya existente de compra de licencias.
 
 Actualizacion 2026-04-17 (editar empresa: edicion dedicada y eliminacion total confirmada):
-- Se amplÃ­a el submodulo `administracion global (super) / seleccionar empresa` con la nueva pantalla `editar_empresa.html`, destinada a actualizar el nombre visible y la descripcion operativa de la empresa seleccionada.
+- Se amplía el submodulo `administracion global (super) / seleccionar empresa` con la nueva pantalla `editar_empresa.html`, destinada a actualizar el nombre visible y la descripcion operativa de la empresa seleccionada.
 - `backend/db/empresas_delete.go` agrega la purga empresarial completa por `empresa_id` en la base operativa y en la base super, eliminando datos relacionados antes de borrar la fila principal de `empresas`.
 - `backend/handlers/system_empresas_handlers.go` extiende `/super/api/empresas` con `DELETE action=eliminar_total|purge`, validando confirmacion por nombre exacto; `web/js/editar_empresa.js` consume tambien `GET id`, `action=resumen_descarga` y `action=impacto_desactivacion` para mostrar el contexto previo.
 - `web/js/seleccionar_empresa.js` incorpora el boton `Editar` en cada tarjeta para abrir la nueva vista sin alterar la accion principal de entrar a la empresa o a la licencia.
@@ -1074,7 +1082,7 @@ Actualizacion 2026-04-17 (descarga de empresa: alias sin extension, descarga rea
 Actualizacion 2026-04-17 (selector de empresas: administradores recuperan operacion minima):
 - Se corrige el cruce entre la politica de roles y `seleccionar_empresa.html` para que el rol `administrador` no-super pueda volver a cargar el selector y crear su primera empresa sin recibir `403`.
 - `backend/utils/utils.go` permite a `administrador` usar `GET/POST` sobre `/super/api/empresas` y mantener `GET` sobre `/super/api/tipos_empresas` y `/super/api/licencias`, dejando el resto del panel super fuera de su alcance.
-- Impacto de permisos: `administrador` recupera el alcance minimo necesario para abrir y operar `seleccionar_empresa.html`; `PUT/DELETE` sobre empresas siguen controlados por scope y los demas endpoints globales continÃºan restringidos.
+- Impacto de permisos: `administrador` recupera el alcance minimo necesario para abrir y operar `seleccionar_empresa.html`; `PUT/DELETE` sobre empresas siguen controlados por scope y los demas endpoints globales continúan restringidos.
 
 Actualizacion 2026-04-17 (registro de contrasena Google: solo guardar centrado):
 - Se ajusta el submodulo `autenticacion y sesiones` para que `registrar_contrasena_usuario_de_google.html` muestre un unico CTA de guardado, eliminando la accion visual `Continuar`.
@@ -1101,16 +1109,16 @@ Actualizacion 2026-04-17 (autenticacion administrativa: super restringido al cor
 - Se corrige el modulo `autenticacion y sesiones` para que el registro administrativo publico y el callback de Google dejen las cuentas nuevas en rol `administrador` por defecto.
 - `backend/handlers/auth_admin_handlers.go` y `backend/utils/utils.go` eliminan la promocion automatica a `super_administrador` para cuentas legacy/autoregistradas y aplican la misma politica al pasar por `AuthMiddleware`.
 - Solo `powerfulcontrolsystem@gmail.com` conserva `super_administrador` dentro del flujo publico de autenticacion administrativa.
-- Impacto de permisos: el alta administrativa publica deja de escalar privilegios al panel super; la administracion global queda reservada al correo canÃ³nico del sistema y el resto de cuentas sigue en alcance `administrador` sin acceso a `/super/*`.
+- Impacto de permisos: el alta administrativa publica deja de escalar privilegios al panel super; la administracion global queda reservada al correo canónico del sistema y el resto de cuentas sigue en alcance `administrador` sin acceso a `/super/*`.
 
 Actualizacion 2026-04-17 (venta publica por empresa: Wompi y Epayco por empresa):
-- Se amplÃ­a el modulo `venta publica por empresa` para que cada empresa configure y active sus credenciales de Wompi y Epayco sin compartir llaves globales entre empresas.
-- `backend/db/venta_publica.go` incorpora columnas Epayco en `empresa_venta_publica_configuracion`; `backend/handlers/venta_publica.go` reutiliza esa configuracion tanto desde `administrar_empresa/venta_publica.html` como desde la nueva secciÃ³n de `administrar_empresa/configuracion.html`.
+- Se amplía el modulo `venta publica por empresa` para que cada empresa configure y active sus credenciales de Wompi y Epayco sin compartir llaves globales entre empresas.
+- `backend/db/venta_publica.go` incorpora columnas Epayco en `empresa_venta_publica_configuracion`; `backend/handlers/venta_publica.go` reutiliza esa configuracion tanto desde `administrar_empresa/venta_publica.html` como desde la nueva sección de `administrar_empresa/configuracion.html`.
 - `web/venta_publica.html` ahora detecta `payment_methods` activos por empresa, permite elegir la pasarela y abre `Smart Checkout` de Epayco cuando corresponde; los webhooks `/wompi/webhook` y `/epayco/webhook` actualizan tambien `empresa_venta_publica_ordenes`.
-- Impacto de permisos: la administracion de credenciales sigue restringida al contexto autenticado de empresa; la tienda pÃºblica solo consume el subconjunto sanitizado de metodos activos y nunca expone secretos.
+- Impacto de permisos: la administracion de credenciales sigue restringida al contexto autenticado de empresa; la tienda pública solo consume el subconjunto sanitizado de metodos activos y nunca expone secretos.
 
 Actualizacion 2026-04-17 (seleccionar empresa: descarga empresarial en pagina dedicada y multiformato):
-- Se amplÃ­a el modulo `administracion global (super) / seleccionar empresa` para que el boton de descarga de cada tarjeta abra una pagina nueva `descargar_informacion_de_la_empresa.html` en lugar del modal legado basado en backups.
+- Se amplía el modulo `administracion global (super) / seleccionar empresa` para que el boton de descarga de cada tarjeta abra una pagina nueva `descargar_informacion_de_la_empresa.html` en lugar del modal legado basado en backups.
 - `backend/handlers/system_empresas_export.go` construye un snapshot consolidado con informacion de la empresa seleccionada, recorriendo tablas relacionadas en la base operativa y en la base super; `/super/api/empresas` expone `action=resumen_descarga` y `action=exportar_informacion` para PDF, XLS, CSV, JSON y TXT.
 - `web/descargar_informacion_de_la_empresa.html`, `web/js/descargar_informacion_de_la_empresa.js` y `web/estilos.css` muestran resumen ejecutivo, tablas detectadas y accesos directos de exportacion profesional.
 - Impacto de permisos: sin cambio de rol; la funcionalidad sigue restringida al alcance del panel super y reutiliza el mismo control de acceso de `/super/api/empresas`.
@@ -1142,11 +1150,11 @@ Actualizacion 2026-04-17 (licencias publicas: tarjetas mas compactas para pagar)
 - La pantalla conserva el mismo flujo hacia `pagar_licencia.html`, pero deja visible solo la informacion comercial clave: descripcion, valor, duracion y boton de compra.
 - Impacto de permisos: sin cambios; el mismo flujo administrativo autenticado sigue llegando a la vista y al checkout publico de licencias.
 
-Actualizacion 2026-04-17 (navegacion general: misma pestaÃ±a por defecto):
-- Se ajusta transversalmente la navegacion del frontend para que los enlaces y cambios de pantalla del sistema usen la misma pestaÃ±a por defecto, evitando aperturas automÃ¡ticas en ventana nueva para modulos, portales publicos, ayudas y exportes comunes.
+Actualizacion 2026-04-17 (navegacion general: misma pestaña por defecto):
+- Se ajusta transversalmente la navegacion del frontend para que los enlaces y cambios de pantalla del sistema usen la misma pestaña por defecto, evitando aperturas automáticas en ventana nueva para modulos, portales publicos, ayudas y exportes comunes.
 - En `administrar_clientes`, `asistencia_empleados`, `backups`, `tarifas_por_dia` y `soporte_remoto`, las exportaciones operativas descargan el archivo en segundo plano y mantienen abierta la misma vista del modulo.
-- Se conservan como excepcion operativa los documentos legales (`contrato` y tÃ©rminos de pasarela) y los popups tÃ©cnicos de impresiÃ³n o vista previa documental.
-- Impacto de permisos: sin cambios; solo se modifica la forma de navegaciÃ³n del mismo conjunto de rutas ya autorizadas.
+- Se conservan como excepcion operativa los documentos legales (`contrato` y términos de pasarela) y los popups técnicos de impresión o vista previa documental.
+- Impacto de permisos: sin cambios; solo se modifica la forma de navegación del mismo conjunto de rutas ya autorizadas.
 
 Actualizacion 2026-04-17 (licencias super: valor 0 valido en CRUD):
 - Se corrige la vista `web/super/licencias.html` para que el modulo `licencias` no oculte el valor `0` al listar o reabrir una licencia en edicion.
@@ -1187,7 +1195,7 @@ Actualizacion 2026-04-17 (autenticacion administrativa: login en una sola tarjet
 - Impacto de permisos: sin cambios; el login administrativo sigue siendo publico y la administracion global permanece restringida a `super_administrador`.
 
 Actualizacion 2026-04-18 (portal publico: Brigada burbujas 3D plus):
-- Se amplÃ­a el submodulo `juegos publicos del portal` con un nuevo shooter original en primera persona y 3D simulado, pensado para movil y orientado a partidas cortas por niveles.
+- Se amplía el submodulo `juegos publicos del portal` con un nuevo shooter original en primera persona y 3D simulado, pensado para movil y orientado a partidas cortas por niveles.
 - `web/Juegos/brigada_burbujas_3d_plus.html` introduce recorrido por laberintos, enemigos caricaturescos, recoleccion de nucleos de color, guardado local de record y controles tactiles dedicados para movimiento, giro, paso lateral y disparo.
 - `web/Juegos/menu_juegos.html` y `web/img/juegos/brigada_burbujas_3d.svg` publican la decima tarjeta del lobby sin abrir permisos nuevos ni modificar el runtime compartido del arcade.
 - Impacto de permisos: sin cambios; `Portal publico - Juegos` sigue siendo un modulo recreativo publico y de solo uso.
@@ -1196,7 +1204,7 @@ Actualizacion 2026-04-17 (portal publico: arcade movil con runtime comun de pode
 - Se refuerza el submodulo `juegos publicos del portal` para que los nueve juegos activos del arcade compartan una misma capa movil de poderes, premios, records, sonido y countdown, sin reescribir la mecanica base de cada titulo.
 - `web/Juegos/arcade_shared.js` centraliza el runtime `createPowerSystem(...)` con biblioteca comun de poderes/premios y `web/Juegos/arcade_window.css` consolida el shell mobile-first vertical para la experiencia tactil.
 - `web/Juegos/patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html`, `ajedrez_vs_ia_plus.html` y `ajedrez_3d_plus.html` quedan enlazados al mismo runtime con hooks minimos de pausa, score, bonus, nivel, poderes y fin de sesion.
-- `web/Juegos/menu_juegos.html` amplÃ­a el lobby para mostrar avance del jugador, mejor juego personal, ranking propio por titulo y una lista movil mas informativa; `web/Juegos/arcade_shared.js` ajusta la economia compartida para que la ganancia de energia/poderes sea menos agresiva en juegos de eventos frecuentes.
+- `web/Juegos/menu_juegos.html` amplía el lobby para mostrar avance del jugador, mejor juego personal, ranking propio por titulo y una lista movil mas informativa; `web/Juegos/arcade_shared.js` ajusta la economia compartida para que la ganancia de energia/poderes sea menos agresiva en juegos de eventos frecuentes.
 - Impacto de permisos: sin cambios; `Portal publico - Juegos` sigue siendo un modulo recreativo publico y de solo uso.
 
 Actualizacion 2026-04-16 (reportes globales super por administrador creador):
@@ -1205,7 +1213,7 @@ Actualizacion 2026-04-16 (reportes globales super por administrador creador):
 - Impacto de permisos: sin cambios para roles empresariales; el acceso sigue siendo exclusivo del panel super y acotado a las empresas del mismo creador.
 
 Actualizacion 2026-04-17 (reportes globales super: graficos y lectura ejecutiva):
-- Se amplÃ­a el mismo modulo `reportes globales (super)` con un tablero ejecutivo visual para lectura rÃ¡pida del portafolio de empresas del administrador.
+- Se amplía el mismo modulo `reportes globales (super)` con un tablero ejecutivo visual para lectura rápida del portafolio de empresas del administrador.
 - `web/super/reportes_globales.html`, `web/js/super_reportes_globales.js` y `web/estilos.css` agregan tarjetas ejecutivas, narrativa automatica y graficos comparativos de ingresos, balance vs egresos y composicion activa/inactiva.
 - Impacto de permisos: sin cambios; el modulo sigue siendo de lectura exclusiva para `super_administrador`.
 
@@ -1217,7 +1225,7 @@ Actualizacion 2026-04-18 (gobernanza interna: equipo de agentes coordinado por a
 - Impacto de permisos: sin cambios en roles de usuarios finales ni visibilidad de pantallas; el alcance es interno al proceso de desarrollo y mantenimiento del repositorio.
 
 Actualizacion 2026-04-18 (gobernanza interna: protocolo de delegacion y plantilla por modulo):
-- Se amplÃ­a el mismo modulo transversal `gobernanza de agentes internos del repositorio` con un protocolo formal de delegacion y una plantilla unica de ejecucion por modulo.
+- Se amplía el mismo modulo transversal `gobernanza de agentes internos del repositorio` con un protocolo formal de delegacion y una plantilla unica de ejecucion por modulo.
 - `.github/agents/protocolo_delegacion.md` define cuando `agente_go` activa backend, frontend, QA o trabajo conjunto segun el tipo de tarea y el modulo afectado.
 - `.github/agents/plantilla_trabajo_por_modulo.md` define el ciclo comun de clasificacion, analisis, implementacion, validacion y cierre.
 - Los agentes especialistas agregan prioridad explicita para `pagos`, `licencias`, `venta_publica`, `facturacion electronica`, `DIAN`, `estaciones`, `carritos`, `autenticacion`, `reportes` y `paneles administrativos`.
@@ -1231,7 +1239,7 @@ Actualizacion 2026-04-18 (gobernanza interna: tabla rapida y participacion oblig
 - Impacto de permisos: sin cambios en roles ni visibilidad; el alcance sigue siendo interno a la disciplina de trabajo del repositorio.
 
 Actualizacion 2026-04-18 (gobernanza interna: semaforo ejecutivo y evidencia minima por frente):
-- Se amplÃ­a el mismo modulo transversal `gobernanza de agentes internos del repositorio` con una capa todavia mas ejecutiva para clasificacion y cierre.
+- Se amplía el mismo modulo transversal `gobernanza de agentes internos del repositorio` con una capa todavia mas ejecutiva para clasificacion y cierre.
 - `.github/agents/protocolo_delegacion.md` agrega un semaforo `Rojo/Amarillo/Verde` por modulo y un ejemplo completo de delegacion extremo a extremo.
 - `.github/agents/plantilla_trabajo_por_modulo.md` agrega la evidencia minima esperada por cada frente.
 - Los tres agentes especialistas agregan una regla explicita para rechazar cierres si no hay evidencia suficiente.
@@ -1283,25 +1291,25 @@ Actualizacion 2026-04-16 (estaciones: carrito enlazado por defecto desde backend
 - Impacto de permisos: sin cambios en roles ni visibilidad; la mejora asegura consistencia operativa dentro de `estaciones`, `ventas simple` y `carritos` sin ampliar privilegios.
 
 Actualizacion 2026-04-17 (soporte remoto: limites por plan y mesa tecnica central):
-- Se amplÃ­a el modulo `soporte remoto` para que cada empresa pueda operar con topes de `max_dispositivos`, `max_conexiones_mes` y `max_minutos_mes`, todos trazados dentro del mismo flujo operativo de sesiones.
+- Se amplía el modulo `soporte remoto` para que cada empresa pueda operar con topes de `max_dispositivos`, `max_conexiones_mes` y `max_minutos_mes`, todos trazados dentro del mismo flujo operativo de sesiones.
 - `backend/db/soporte_remoto.go` calcula consumo mensual, registra intentos bloqueados por plan y actualiza minutos consumidos al finalizar o expirar sesiones.
 - `backend/handlers/soporte_remoto.go` devuelve `uso` junto a configuracion/listados y `backend/handlers/super_soporte_remoto.go` agrega la mesa tecnica multiempresa en `/super/api/soporte_remoto`.
 - `web/super/soporte_remoto.html` incorpora el panel super para seleccionar empresa, abrir soporte, revisar cupos/consumo y operar un visor central sin romper el aislamiento por `empresa_id`.
 - Impacto de permisos: el panel empresa mantiene `linkSoporteRemoto` bajo modulo `seguridad` con accion `A`; el panel super queda reservado a `super_administrador` mediante `/super/api/soporte_remoto` y su vista dedicada.
 
 Actualizacion 2026-04-20 (soporte remoto: portal publico RustDesk y configuracion central desde super):
-- Se amplÃ­a el modulo `soporte remoto` para que la misma sesiÃ³n pÃºblica pueda funcionar como portal de acceso tipo RustDesk, mostrando descargas del cliente y del servidor junto con host, clave pÃºblica, ID del dispositivo, contraseÃ±a y carpeta de transferencia cuando la sesiÃ³n lo permita.
-- `backend/db/soporte_remoto.go` amplÃ­a la configuraciÃ³n empresarial con `servidor_windows_url`, `servidor_linux_url` e `instrucciones_publicas`, preservando la operaciÃ³n por `empresa_id` sin romper el esquema existente.
-- `backend/handlers/soporte_remoto.go` devuelve `portal_publico_url` al crear sesiones y expone el bundle pÃºblico completo en `/api/public/soporte_remoto?action=resolver_acceso_publico`.
-- `backend/handlers/super_soporte_remoto.go` aÃ±ade `action=config` para que `super_administrador` pueda editar la configuraciÃ³n pÃºblica de cada empresa desde la mesa tÃ©cnica central.
-- `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html` y `web/soporte_remoto_acceso.html` alinean la experiencia del mÃ³dulo con descargas de cliente/servidor RustDesk, visor web opcional y enlace pÃºblico reutilizable por sesiÃ³n.
-- Impacto de permisos: sin cambios en roles empresariales; `linkSoporteRemoto` sigue bajo `seguridad/A` y la configuraciÃ³n central continÃºa siendo exclusiva de `super_administrador` en `/super/api/soporte_remoto`.
+- Se amplía el modulo `soporte remoto` para que la misma sesión pública pueda funcionar como portal de acceso tipo RustDesk, mostrando descargas del cliente y del servidor junto con host, clave pública, ID del dispositivo, contraseña y carpeta de transferencia cuando la sesión lo permita.
+- `backend/db/soporte_remoto.go` amplía la configuración empresarial con `servidor_windows_url`, `servidor_linux_url` e `instrucciones_publicas`, preservando la operación por `empresa_id` sin romper el esquema existente.
+- `backend/handlers/soporte_remoto.go` devuelve `portal_publico_url` al crear sesiones y expone el bundle público completo en `/api/public/soporte_remotoaction=resolver_acceso_publico`.
+- `backend/handlers/super_soporte_remoto.go` añade `action=config` para que `super_administrador` pueda editar la configuración pública de cada empresa desde la mesa técnica central.
+- `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html` y `web/soporte_remoto_acceso.html` alinean la experiencia del módulo con descargas de cliente/servidor RustDesk, visor web opcional y enlace público reutilizable por sesión.
+- Impacto de permisos: sin cambios en roles empresariales; `linkSoporteRemoto` sigue bajo `seguridad/A` y la configuración central continúa siendo exclusiva de `super_administrador` en `/super/api/soporte_remoto`.
 
 Actualizacion 2026-04-20.2 (soporte remoto: limite diario RustDesk por empresa):
-- Se agrega un tope operativo `max_minutos_dia_rustdesk` por empresa para controlar desde super el tiempo diario de conexiÃ³n al servidor RustDesk, expresado en minutos.
-- `backend/db/soporte_remoto.go` calcula `minutos_consumidos_dia_rustdesk`, `minutos_disponibles_dia_rustdesk` y aplica el rechazo cuando una nueva sesiÃ³n activa o una aprobaciÃ³n supera el tope del dÃ­a.
-- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` devuelven `412 Precondition Failed` con el resumen de uso cuando el lÃ­mite diario se agota.
-- `web/super/soporte_remoto.html` incorpora el campo editable del lÃ­mite diario RustDesk y lo muestra junto al consumo diario del dÃ­a.
+- Se agrega un tope operativo `max_minutos_dia_rustdesk` por empresa para controlar desde super el tiempo diario de conexión al servidor RustDesk, expresado en minutos.
+- `backend/db/soporte_remoto.go` calcula `minutos_consumidos_dia_rustdesk`, `minutos_disponibles_dia_rustdesk` y aplica el rechazo cuando una nueva sesión activa o una aprobación supera el tope del día.
+- `backend/handlers/soporte_remoto.go` y `backend/handlers/super_soporte_remoto.go` devuelven `412 Precondition Failed` con el resumen de uso cuando el límite diario se agota.
+- `web/super/soporte_remoto.html` incorpora el campo editable del límite diario RustDesk y lo muestra junto al consumo diario del día.
 
 Actualizacion 2026-04-16 (portal publico: contacto reubicado bajo las tarjetas del home):
 - Se ajusta el submodulo `pagina principal publica` para mover `Informacion de contacto` fuera de la cabecera y dejarlo centrado debajo de todas las tarjetas dinamicas del home.
@@ -1321,11 +1329,11 @@ Actualizacion 2026-04-16 (checkout publico de licencias: alias `sambox` para Epa
 Actualizacion 2026-04-16 (portal publico: arcade activo con ocho juegos compactos):
 - Se rehace el submodulo `juegos publicos del portal` para operar con un set activo de ocho titulos compactos, unificados por `web/Juegos/arcade_window.css` y publicados desde un lobby que abre popup fijo `700x700` en escritorio.
 - `web/Juegos/menu_juegos.html` elimina `Pollitos al cataplum` del flujo activo y enlaza `patito_volando_plus.html`, `serpiente_pixel_plus.html`, `memoria_estelar_plus.html`, `rebote_bloques_plus.html`, `pacman_plus.html`, `tetris_plus.html`, `carton_fire_plus.html` y `ajedrez_vs_ia_plus.html`.
-- Todas las vistas nuevas reutilizan `web/Juegos/arcade_shared.js` para records locales, nombre de jugador y sonido global, y aÃ±aden pausa real; cuando hay IA u oponentes, la pausa tambien congela sus temporizadores o movimientos.
+- Todas las vistas nuevas reutilizan `web/Juegos/arcade_shared.js` para records locales, nombre de jugador y sonido global, y añaden pausa real; cuando hay IA u oponentes, la pausa tambien congela sus temporizadores o movimientos.
 - Impacto de permisos: sin cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
 
 Actualizacion 2026-04-17 (portal publico: Ajedrez 3D plus):
-- Se amplÃ­a el submodulo `juegos publicos del portal` con `Ajedrez 3D plus`, una variante separada del ajedrez existente que conserva el perfil arcade compartido y agrega un tablero en perspectiva 3D simulada.
+- Se amplía el submodulo `juegos publicos del portal` con `Ajedrez 3D plus`, una variante separada del ajedrez existente que conserva el perfil arcade compartido y agrega un tablero en perspectiva 3D simulada.
 - `web/Juegos/ajedrez_3d_plus.html` introduce cinco niveles de dificultad (`Rookie`, `Club`, `Pro`, `Elite`, `Maestro`) variando profundidad y comportamiento de la IA, junto con cronometro, countdown y ayudas tacticas para la sesion.
 - `web/Juegos/menu_juegos.html` y `web/img/juegos/ajedrez_3d.svg` publican la nueva tarjeta del lobby sin alterar permisos del resto del arcade.
 - Impacto de permisos: sin cambios en CRUD/A ni visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
@@ -1360,7 +1368,7 @@ Actualizacion 2026-04-16 (autenticacion administrativa: registro con pais y ciud
 - `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` ahora solicitan `pais` y `ciudad`, con sugerencia automatica de pais y posibilidad de correccion manual.
 - `backend/handlers/auth_admin_handlers.go` valida esos campos y `backend/db/db.go` los persiste en la tabla `administradores`.
 - El estado pendiente por confirmacion de correo se mantiene como requisito antes de iniciar sesion y seguir hacia `seleccionar_empresa.html`.
-- Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste amplÃ­a datos de registro del mismo flujo administrativo existente.
+- Impacto de permisos: sin cambios en roles ni rutas protegidas; el ajuste amplía datos de registro del mismo flujo administrativo existente.
 
 Actualizacion 2026-04-16 (autenticacion administrativa: esquema `administradores` estable en PostgreSQL; motor legado retirado retirado del runtime):
 - Se refuerza el modulo `autenticacion y sesiones` para que las columnas de seguridad del administrador no dependan de un bootstrap exclusivo ni de un motor legado.
@@ -1385,8 +1393,8 @@ Actualizacion 2026-04-16 (portal publico: boton de contacto al extremo derecho d
 Actualizacion 2026-04-16 (autenticacion unificada: sin recordar usuario/cuenta):
 - Se refuerza el modulo `autenticacion y sesiones` para eliminar la persistencia local de identidad (`recordar cuenta` en admin y `recordar usuario` en login empresa), que generaba diferencias entre hosts y navegadores.
 - `backend/handlers/auth_admin_handlers.go` deja de reenviar `login_hint` al proveedor OAuth; el inicio Google ahora es determinista desde `/auth/google/login` sin depender de `localStorage`.
-- `web/login.html`, `web/js/login.js`, `web/login_usuario.html` y `web/js/login_usuario.js` eliminan checkbox y lÃ³gica `remember*`, manteniendo solo autenticaciÃ³n directa por sesiÃ³n/cookies.
-- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran sincronizaciones/limpiezas de `remember*` y operan Ãºnicamente con estado de sesiÃ³n visible.
+- `web/login.html`, `web/js/login.js`, `web/login_usuario.html` y `web/js/login_usuario.js` eliminan checkbox y lógica `remember*`, manteniendo solo autenticación directa por sesión/cookies.
+- `web/menu.js`, `web/js/super_administrador.js`, `web/js/seleccionar_empresa.js`, `web/super/licencias.html` y `web/super/tipos_empresas.html` retiran sincronizaciones/limpiezas de `remember*` y operan únicamente con estado de sesión visible.
 - Impacto de permisos: sin cambios en roles, CRUD/A ni wrappers; el ajuste es de estabilidad transversal del login entre local (`localhost:8080`) y VPS (`powerfulcontrolsystem.com`, `www.powerfulcontrolsystem.com`).
 
 Actualizacion 2026-04-19 (autenticacion administrativa: recordar usuario por correo bajo demanda):
@@ -1395,8 +1403,8 @@ Actualizacion 2026-04-19 (autenticacion administrativa: recordar usuario por cor
 - Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance; el ajuste es exclusivamente de conveniencia en la UX del acceso administrativo por correo.
 
 Actualizacion 2026-04-20 (apariencia global: contraste unificado en los seis temas):
-- Se refuerzan los modulos `portal publico`, `autenticacion y sesiones`, `seleccion de empresa`, `estaciones`, `super` y vistas operativas embebidas para que los seis modos de apariencia (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`) mantengan contraste legible de textos, tarjetas, tablas, estados vacÃ­os y paneles auxiliares.
-- `web/estilos.css` deja de depender de varios colores fijos pensados para un solo fondo y migra bloques compartidos a variables semÃ¡nticas de tema para paneles, tarjetas empresariales, estaciones especiales (`YouTube`, `Notas`), mÃ³dulos de soporte remoto y estados de mensajes.
+- Se refuerzan los modulos `portal publico`, `autenticacion y sesiones`, `seleccion de empresa`, `estaciones`, `super` y vistas operativas embebidas para que los seis modos de apariencia (`dark`, `dark-violet`, `dark-emerald`, `light`, `light-rose`, `light-gold`) mantengan contraste legible de textos, tarjetas, tablas, estados vacíos y paneles auxiliares.
+- `web/estilos.css` deja de depender de varios colores fijos pensados para un solo fondo y migra bloques compartidos a variables semánticas de tema para paneles, tarjetas empresariales, estaciones especiales (`YouTube`, `Notas`), módulos de soporte remoto y estados de mensajes.
 - `web/administrar_empresa/soporte_remoto.html`, `web/super/soporte_remoto.html`, `web/administrar_empresa/publicar_red_social.html`, `web/red_social_comercial.html` y `web/pantalla_publica.html` alinean sus estilos embebidos con la apariencia activa para no quedar visualmente desconectados del resto del sistema.
 - Impacto de permisos: sin cambios en roles, CRUD/A, wrappers ni alcance funcional; el ajuste es visual y de legibilidad transversal en frontend.
 
@@ -1406,9 +1414,9 @@ Actualizacion 2026-04-16 (checkout de licencias: respuesta fija de Epayco):
 - `web/epayco/respuesta.html` no procesa el pago por si sola: normaliza parametros y reenvia al resumen de licencia para que el backend confirme el estado real antes de activar la licencia.
 - Impacto de permisos: sin cambios de rol; la respuesta y confirmacion de Epayco permanecen publicas como parte del checkout externo.
 
-Actualizacion 2026-04-16 (checkout de licencias: Epayco redirige la misma pestaÃ±a):
+Actualizacion 2026-04-16 (checkout de licencias: Epayco redirige la misma pestaña):
 - Se refuerza el submodulo `checkout publico de licencias` para que el pago con Epayco no dependa de popups ni de polling antes de que el usuario llegue a la pasarela.
-- `web/pagar_licencia.html` conserva la referencia pendiente y redirige la misma pestaÃ±a a `checkout.epayco.co`, usando `/epayco/respuesta.html` para volver al resumen del pago y retomar la verificacion real.
+- `web/pagar_licencia.html` conserva la referencia pendiente y redirige la misma pestaña a `checkout.epayco.co`, usando `/epayco/respuesta.html` para volver al resumen del pago y retomar la verificacion real.
 - Impacto de permisos: sin cambios en roles ni CRUD/A; el ajuste solo endurece el flujo publico de cobro con Epayco.
 
 Actualizacion 2026-04-16 (super: administracion PostgreSQL con tamano por empresa):
@@ -1425,18 +1433,18 @@ Actualizacion 2026-04-16 (checkout publico y seleccion de empresa: ajustes visua
 
 Actualizacion 2026-04-16 (autenticacion administrativa: registro separado y recuperacion guiada):
 - Se refuerza el modulo `autenticacion y sesiones` para separar el alta administrativa del formulario principal de login y dejar el acceso por correo como una superficie exclusivamente de autenticacion.
-- `web/login.html` conserva Google y correo/clave para acceso, elimina el campo de registro incrustado y agrega vistas visibles para solicitar y restablecer contraseÃ±a sin usar `prompt()` del navegador.
-- La vista de restablecimiento administrativo ya no exige que el usuario escriba un token recibido por correo: el enlace de recuperaciÃ³n abre directamente el formulario de nueva contraseÃ±a y el cÃ³digo de seguridad se consume internamente desde la URL.
-- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva pÃ¡gina pÃºblica de registro administrativo con `email`, `nombre completo`, `telefono`, contraseÃ±a y confirmaciÃ³n de contraseÃ±a.
-- `backend/handlers/auth_admin_handlers.go` exige datos mÃ­nimos del registro, evita reescribir cuentas ya confirmadas y corrige el enlace de recuperaciÃ³n para que vuelva a la propia `login.html` en modo `reset`.
-- `backend/utils/utils.go` deja pÃºblicas la nueva pÃ¡gina de registro y `/auth/confirmar_admin`, alineando middleware, correo de confirmaciÃ³n y experiencia de usuario.
-- Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; el login, el registro administrativo y la confirmaciÃ³n/recuperaciÃ³n siguen siendo pÃºblicos, mientras la administraciÃ³n global continÃºa reservada a `super_administrador`.
+- `web/login.html` conserva Google y correo/clave para acceso, elimina el campo de registro incrustado y agrega vistas visibles para solicitar y restablecer contraseña sin usar `prompt()` del navegador.
+- La vista de restablecimiento administrativo ya no exige que el usuario escriba un token recibido por correo: el enlace de recuperación abre directamente el formulario de nueva contraseña y el código de seguridad se consume internamente desde la URL.
+- `web/registrar_nuevo_usuario_administrador.html` y `web/js/registrar_nuevo_usuario_administrador.js` crean la nueva página pública de registro administrativo con `email`, `nombre completo`, `telefono`, contraseña y confirmación de contraseña.
+- `backend/handlers/auth_admin_handlers.go` exige datos mínimos del registro, evita reescribir cuentas ya confirmadas y corrige el enlace de recuperación para que vuelva a la propia `login.html` en modo `reset`.
+- `backend/utils/utils.go` deja públicas la nueva página de registro y `/auth/confirmar_admin`, alineando middleware, correo de confirmación y experiencia de usuario.
+- Impacto de permisos: no hay cambios en CRUD/A ni visibilidad por rol; el login, el registro administrativo y la confirmación/recuperación siguen siendo públicos, mientras la administración global continúa reservada a `super_administrador`.
 
-Actualizacion 2026-04-16 (autenticacion administrativa: Google exige registrar clave local cuando aÃºn no existe):
-- Se refuerza el modulo `autenticacion y sesiones` para que una cuenta administrativa autenticada con Google no quede sin vÃ­a posterior de acceso por correo y contraseÃ±a.
-- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen al formulario `web/registrar_contrasena_usuario_de_google.html` cuando la cuenta ya tiene sesiÃ³n vÃ¡lida pero todavÃ­a no ha definido contraseÃ±a local.
-- `backend/handlers/account_handlers.go` agrega el endpoint autenticado `/api/account/set_google_password` para registrar esa primera clave sin pedir contraseÃ±a actual, y `web/js/registrar_contrasena_usuario_de_google.js` completa el flujo en cliente.
-- Impacto de permisos: sin cambios en roles ni CRUD/A; la pÃ¡gina nueva es una pantalla operativa del mismo flujo autenticado administrativo y no amplÃ­a privilegios.
+Actualizacion 2026-04-16 (autenticacion administrativa: Google exige registrar clave local cuando aún no existe):
+- Se refuerza el modulo `autenticacion y sesiones` para que una cuenta administrativa autenticada con Google no quede sin vía posterior de acceso por correo y contraseña.
+- `backend/handlers/auth_admin_handlers.go` y `backend/handlers/accept_handlers.go` redirigen al formulario `web/registrar_contrasena_usuario_de_google.html` cuando la cuenta ya tiene sesión válida pero todavía no ha definido contraseña local.
+- `backend/handlers/account_handlers.go` agrega el endpoint autenticado `/api/account/set_google_password` para registrar esa primera clave sin pedir contraseña actual, y `web/js/registrar_contrasena_usuario_de_google.js` completa el flujo en cliente.
+- Impacto de permisos: sin cambios en roles ni CRUD/A; la página nueva es una pantalla operativa del mismo flujo autenticado administrativo y no amplía privilegios.
 
 Actualizacion 2026-04-16 (portal publico: arcade movil reforzado y countdown en Patito volando):
 - Se refuerza el submodulo `juegos publicos del portal` para que los cinco juegos del arcade se adapten mejor a celular sin perder sonido compartido ni persistencia de jugador.
@@ -1452,7 +1460,7 @@ Actualizacion 2026-04-16 (frontend compartido: ajustes base para celular y menu 
 - Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es visual y de interaccion del frontend compartido.
 
 Actualizacion 2026-04-16 (portal publico: botones superiores alineados al CTA de ofertas):
-- Se ajusta el submodulo `pagina principal publica` para que los accesos `Registrarse o iniciar sesiÃ³n` e `Informacion de contacto` usen la misma apariencia del boton `Explorar oferta` dentro de las tarjetas del home.
+- Se ajusta el submodulo `pagina principal publica` para que los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` usen la misma apariencia del boton `Explorar oferta` dentro de las tarjetas del home.
 - `web/estilos.css` reutiliza el estilo pill blanco del CTA comercial de tarjetas en la barra superior del portal sin alterar enlaces, textos ni el CTA flotante de WhatsApp.
 - Impacto de permisos: no hay cambios en roles ni CRUD/A; el ajuste es visual dentro del portal publico.
 
@@ -1466,7 +1474,7 @@ Actualizacion 2026-04-16 (checkout de licencias: Epayco sandbox estable en Postg
 Actualizacion 2026-04-16 (portal publico: arcade con perfil compartido y cinco juegos):
 - Se refuerza el submodulo `juegos publicos del portal` para operar como un arcade unificado con perfil de jugador, records persistentes y audio reutilizable entre titulos.
 - `web/Juegos/arcade_shared.js` centraliza nombre de jugador, top 5 local por juego y control global de sonido para todos los minijuegos del portal.
-- `web/Juegos/menu_juegos.html` se rediseÃ±a como lobby cuadrado con portadas SVG, resumen de records y boton de acceso por tarjeta.
+- `web/Juegos/menu_juegos.html` se rediseña como lobby cuadrado con portadas SVG, resumen de records y boton de acceso por tarjeta.
 - `web/Juegos/patito_volando.html` y `web/Juegos/pollitos_cataplum.html` ahora muestran jugador actual, record persistente y botones de sonido/cambio de jugador.
 - Se agregan `web/Juegos/serpiente_pixel.html`, `web/Juegos/memoria_estelar.html` y `web/Juegos/rebote_bloques.html` como tres juegos nuevos con mecanicas distintas y soporte tactil/escritorio.
 - Impacto de permisos: no hay cambios en CRUD/A ni en visibilidad por rol; `Portal publico - Juegos` sigue siendo un submodulo recreativo publico y de solo uso.
@@ -1530,8 +1538,8 @@ Actualizacion 2026-04-15 (checkout de licencias: Epayco visible con Public Key y
 - No hay cambios en roles, CRUD/A ni visibilidad por rol del panel: la configuracion de pasarelas sigue siendo exclusiva de `super_administrador`, pero el consumo del checkout vuelve a ser publico y consistente con la documentacion.
 
 Actualizacion 2026-04-15 (login admin sin hint visible y Gmail SMTP editable en directo):
-- Se ajusta el modulo `autenticacion y sesiones` para que el login administrativo mantenga `Recordar cuenta` sin exponer en pantalla el bloque `Se recordarÃ¡ ... / Olvidar`.
-- Se refuerza el submodulo `configuracion avanzada (super)` para que la seccion `Correo Gmail â€” ConfirmaciÃ³n de usuarios` permita editar directamente correo remitente, host, puerto, URL base y alertas cuando la configuraciÃ³n ya existe, sin depender de un modo de solo lectura.
+- Se ajusta el modulo `autenticacion y sesiones` para que el login administrativo mantenga `Recordar cuenta` sin exponer en pantalla el bloque `Se recordará ... / Olvidar`.
+- Se refuerza el submodulo `configuracion avanzada (super)` para que la seccion `Correo Gmail ? Confirmación de usuarios` permita editar directamente correo remitente, host, puerto, URL base y alertas cuando la configuración ya existe, sin depender de un modo de solo lectura.
 - `web/login.html` y `web/super/configuracion_avanzada.html` concentran el cambio de interfaz; la API `GET/PUT /super/api/config/gmail` permanece igual.
 - No hay cambios en wrappers, CRUD/A ni privilegios por rol: el login administrativo sigue publico y la configuracion Gmail sigue siendo exclusiva de `super_administrador`.
 
@@ -1544,13 +1552,13 @@ Actualizacion 2026-04-15 (portal publico: tamanos configurables en home y landin
 
 Actualizacion 2026-04-15 (portal publico: CTA superior de WhatsApp y botones tipo mini-tarjeta):
 - Se refuerza el submodulo `pagina principal dinamica (super)` en su capa publica para que `index.html` exponga una jerarquia comercial mas clara en el primer pliegue.
-- `web/estilos.css` mueve el CTA flotante de WhatsApp a la esquina superior derecha del home y redefine los accesos `Registrarse o iniciar sesiÃ³n` e `Informacion de contacto` con un estilo compacto inspirado en las tarjetas comerciales del portal.
+- `web/estilos.css` mueve el CTA flotante de WhatsApp a la esquina superior derecha del home y redefine los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` con un estilo compacto inspirado en las tarjetas comerciales del portal.
 - `web/index.html` conserva las mismas rutas publicas y el mismo flujo funcional; el ajuste es exclusivamente visual y responsive.
 - No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion de `pagina_principal` sigue siendo exclusiva de `super_administrador` y el portal continua como superficie publica de solo lectura.
 
 Actualizacion 2026-04-15 (portal publico: landing descriptiva configurable desde pagina_principal):
 - Se refuerza el submodulo `pagina principal dinamica (super)` para que la configuracion de tarjetas no gobierne solo `index.html`, sino tambien el contenido extendido de `/descripcion_de_los_sistemas.ht`.
-- `backend/handlers/pagina_principal_handlers.go` amplÃ­a el contrato de cada tarjeta con etiqueta, titular ampliado, dos parrafos y capacidades clave, manteniendo la misma API publica `/api/public/pagina_principal` para home y landing.
+- `backend/handlers/pagina_principal_handlers.go` amplía el contrato de cada tarjeta con etiqueta, titular ampliado, dos parrafos y capacidades clave, manteniendo la misma API publica `/api/public/pagina_principal` para home y landing.
 - `web/super/pagina_principal.html` incorpora esos campos en el editor super y `web/descripcion_de_los_sistemas.ht` deja de usar una libreria estatica por nombre de sistema.
 - `backend/handlers/pagina_principal_handlers_test.go` valida que los campos ampliados se normalicen y se publiquen correctamente.
 - No hay cambios en wrappers, CRUD/A ni privilegios por rol: la administracion sigue reservada a `super_administrador` y la landing continua como pagina publica de solo lectura.
@@ -1562,22 +1570,22 @@ Actualizacion 2026-04-15 (checkout de licencias: retorno recuperable post-pasare
 - `backend/handlers/payments_handlers_test.go` agrega cobertura para lookup Wompi por referencia y para los parametros de retorno del checkout Epayco.
 - No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuracion sigue siendo exclusiva de `super_administrador` y el checkout publico mantiene alcance de solo consumo.
 
-Actualizacion 2026-04-15 (checkout de licencias: fix Epayco para clave pÃºblica real y callbacks pÃºblicos):
-- Se refuerza el submodulo `pasarelas de licencias` para que Epayco use el contrato correcto de credenciales en super: `public_key`, `private_key` cifrada y `customer_id` opcional, manteniendo lectura compatible de configuraciones legacy mientras se normaliza la instalaciÃ³n.
-- `backend/handlers/payments_handlers.go` deja de construir `response`, `confirmation` y `redirect_url` desde `localhost`; ahora exige una base pÃºblica vÃ¡lida (`gmail.confirm_base_url` o dominio publicado) para Epayco y Wompi en el checkout de licencias.
-- `web/super/configuracion_avanzada.html` diferencia visualmente `Public Key` de `Customer ID`, evitando volver a guardar una llave pÃºblica en el campo histÃ³rico equivocado.
-- Se agregan pruebas focalizadas en `backend/handlers/payments_handlers_test.go` para validar dominio canÃ³nico de pagos y generaciÃ³n correcta de checkout Epayco.
-- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuraciÃ³n sigue siendo exclusiva de `super_administrador` y el checkout pÃºblico mantiene alcance de solo consumo.
+Actualizacion 2026-04-15 (checkout de licencias: fix Epayco para clave pública real y callbacks públicos):
+- Se refuerza el submodulo `pasarelas de licencias` para que Epayco use el contrato correcto de credenciales en super: `public_key`, `private_key` cifrada y `customer_id` opcional, manteniendo lectura compatible de configuraciones legacy mientras se normaliza la instalación.
+- `backend/handlers/payments_handlers.go` deja de construir `response`, `confirmation` y `redirect_url` desde `localhost`; ahora exige una base pública válida (`gmail.confirm_base_url` o dominio publicado) para Epayco y Wompi en el checkout de licencias.
+- `web/super/configuracion_avanzada.html` diferencia visualmente `Public Key` de `Customer ID`, evitando volver a guardar una llave pública en el campo histórico equivocado.
+- Se agregan pruebas focalizadas en `backend/handlers/payments_handlers_test.go` para validar dominio canónico de pagos y generación correcta de checkout Epayco.
+- No hay cambios en wrappers, CRUD/A ni privilegios por rol: la configuración sigue siendo exclusiva de `super_administrador` y el checkout público mantiene alcance de solo consumo.
 
-Actualizacion 2026-04-15 (login Google con host canÃ³nico y estaciones con carga visible):
-- Se refuerza el modulo `autenticacion y sesiones` para canonicalizar el acceso pÃºblico al dominio raÃ­z: `backend/utils/utils.go` redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de entrar a `AuthMiddleware` y al flujo `/auth/google/*`, estabilizando `redirect_uri`, cookies y sesiÃ³n administrativa.
-- `backend/main.go` encadena ese middleware de host canÃ³nico en la pila HTTP y los defaults de `backend/.env.example` y `scripts/sync_to_vps.ps1` quedan alineados al callback `https://powerfulcontrolsystem.com/auth/google/callback`.
-- Se refuerza el submodulo `estaciones` para mostrar `Cargando estaciones...` mientras la vista `web/administrar_empresa/estaciones.html` obtiene configuraciÃ³n, carritos y sensores, ademÃ¡s de exponer un mensaje claro cuando falla la carga.
+Actualizacion 2026-04-15 (login Google con host canónico y estaciones con carga visible):
+- Se refuerza el modulo `autenticacion y sesiones` para canonicalizar el acceso público al dominio raíz: `backend/utils/utils.go` redirige `www.powerfulcontrolsystem.com` hacia `powerfulcontrolsystem.com` antes de entrar a `AuthMiddleware` y al flujo `/auth/google/*`, estabilizando `redirect_uri`, cookies y sesión administrativa.
+- `backend/main.go` encadena ese middleware de host canónico en la pila HTTP y los defaults de `backend/.env.example` y `scripts/sync_to_vps.ps1` quedan alineados al callback `https://powerfulcontrolsystem.com/auth/google/callback`.
+- Se refuerza el submodulo `estaciones` para mostrar `Cargando estaciones...` mientras la vista `web/administrar_empresa/estaciones.html` obtiene configuración, carritos y sensores, además de exponer un mensaje claro cuando falla la carga.
 - No hay cambios en wrappers, CRUD/A ni privilegios por rol; el ajuste corrige estabilidad operativa del acceso y mejora UX en una vista empresarial existente.
 
 Actualizacion 2026-04-15 (portal publico: contacto visible y pagina de informacion):
 - Se refuerza el submodulo `pagina principal dinamica (super)` para que el portal publico muestre un acceso directo a `Informacion_de_contacto.html` y un CTA flotante `Contactenos` enlazado a WhatsApp.
-- El encabezado de `web/index.html` presenta juntos los accesos `Registrarse o iniciar sesiÃ³n` e `Informacion de contacto` para concentrar el ingreso comercial en una sola zona visible.
+- El encabezado de `web/index.html` presenta juntos los accesos `Registrarse o iniciar sesión` e `Informacion de contacto` para concentrar el ingreso comercial en una sola zona visible.
 - Se agrega la pagina publica `web/Informacion_de_contacto.html` con descripcion general del sistema y centralizacion de los canales `powerfulcontrolsystem@hmail.com` y `3043306506`.
 - `backend/utils/utils.go` mantiene esa pagina junto con `index.html` en el conjunto de rutas publicas exactas del middleware, evitando exigir sesion administrativa en el portal comercial.
 - `web/estilos.css` incorpora el tratamiento visual del boton flotante de WhatsApp y del nuevo layout de contacto sin introducir cambios en permisos por rol.
@@ -1601,7 +1609,7 @@ Actualizacion 2026-04-15 (checkout de licencias: disponibilidad gobernada de Epa
 Actualizacion 2026-04-15 (responsive transversal de portal y paneles administrativos):
 - Se refuerza el frontend compartido en `web/estilos.css` para adaptar mejor el portal publico, el panel super y el panel de empresa entre escritorio, tablet y movil.
 - `web/index.html` divide el titulo principal en dos segmentos flexibles para permitir salto natural en pantallas estrechas sin perder jerarquia visual.
-- Los layouts administrativos colapsan con mejor comportamiento en movil: titulo del sidebar multilÃ­nea, navegaciÃ³n horizontal desplazable y `iframe` con altura Ãºtil minima.
+- Los layouts administrativos colapsan con mejor comportamiento en movil: titulo del sidebar multilínea, navegación horizontal desplazable y `iframe` con altura útil minima.
 - Formularios, tablas y CTA priorizan apilado vertical y scroll horizontal controlado en anchos reducidos.
 - No hay cambios funcionales de rutas, datos ni permisos por rol; el ajuste es visual y de usabilidad.
 
@@ -1614,11 +1622,11 @@ Actualizacion 2026-04-14 (autenticacion Google VPS/local y recordar cuenta):
 - Se corrige el flujo de autenticacion administrativa para operar con callback OAuth dinamico segun host de la solicitud, forzando HTTPS en dominio publico y manteniendo `localhost` en entorno local.
 - Se ajusta el middleware global para exponer como publicos `GET /js/login.js` y `GET /api/public/pagina_principal`, eliminando bloqueos `401` que interrumpian el login y la carga del portal.
 - Se completa la UX de `recordar cuenta` en `login.html` (hint de cuenta recordada + accion olvidar) y se refuerza persistencia de `rememberedEmail` desde perfil autenticado.
-- Se agrega una seÃ±al visible de sesion (`browser_session_active`) emitida por backend junto a `session_token` para que `login.html` y `menu.js` detecten sesion activa sin intentar leer la cookie `HttpOnly` real.
+- Se agrega una señal visible de sesion (`browser_session_active`) emitida por backend junto a `session_token` para que `login.html` y `menu.js` detecten sesion activa sin intentar leer la cookie `HttpOnly` real.
 - Se mantiene la seguridad por sesion para rutas protegidas y se conserva aislamiento por `empresa_id` en modulos empresariales.
 
 Actualizacion 2026-04-14 (portal publico index - encabezado principal):
-- Se actualiza el titulo principal del portal a `Sistema de FacturaciÃ³n ElectrÃ³nica` y se agrega subtitulo operativo `Toma el control de tu negocio con Powerful Control System`.
+- Se actualiza el titulo principal del portal a `Sistema de Facturación Electrónica` y se agrega subtitulo operativo `Toma el control de tu negocio con Powerful Control System`.
 - El cambio es visual/UX en home publico y no altera wrappers de seguridad ni permisos por rol.
 
 Actualizacion 2026-04-14 (pagina principal dinamica en super):
@@ -1630,17 +1638,17 @@ Actualizacion 2026-04-14 (pagina principal dinamica en super):
 Actualizacion 2026-04-14 (checkout de licencias con Epayco):
 - Se completa la pasarela Epayco para licencias con endpoint de creacion de checkout (`POST /epayco/create_transaction`) y consulta de estado (`GET /epayco/transaction_status`).
 - Se agrega confirmacion server-to-server (`POST/GET /epayco/webhook`) para actualizar estado de pago y activar licencia aun cuando el cliente cierre la pagina.
-- `web/pagar_licencia.html` abre automaticamente el checkout de Epayco en una nueva pestaÃ±a y mantiene polling de estado para cierre del flujo.
+- `web/pagar_licencia.html` abre automaticamente el checkout de Epayco en una nueva pestaña y mantiene polling de estado para cierre del flujo.
 - No hay cambios en wrappers `/api/empresa/*`; el alcance permanece en contexto global de super para configuracion y flujo de licencias.
 
 Actualizacion 2026-04-14 (chat y tareas: agente de citas con calendario grande):
-- Se amplÃ­a el modulo `chat_y_tareas` con agenda de citas colaborativa por empresa, calendario mensual de gran formato y formulario de programacion de reuniones.
+- Se amplía el modulo `chat_y_tareas` con agenda de citas colaborativa por empresa, calendario mensual de gran formato y formulario de programacion de reuniones.
 - El backend incorpora `/api/empresa/chat_tareas/citas` (GET/POST/PUT/DELETE) bajo politica de ventas para gestionar citas con estado operativo (`programada/completada/cancelada`), activacion/inactivacion y recordatorio previo.
 - Las citas quedan compartidas por `empresa_id`: cuando un administrador agenda una reunion, todos los usuarios de esa empresa visualizan la cita en el calendario del modulo.
 - El frontend agrega recordatorios previos visibles en pantalla segun `notificar_minutos_antes` y sincronizacion periodica del calendario.
 
 Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
-- Se amplÃ­a el modulo de venta publica para resolver `empresa_slug` automaticamente desde subdominio (`{slug}.powerfulcontrolsystem.com`) ademas de query/path.
+- Se amplía el modulo de venta publica para resolver `empresa_slug` automaticamente desde subdominio (`{slug}.powerfulcontrolsystem.com`) ademas de query/path.
 - La ruta raiz del subdominio empresarial abre directamente `venta_publica.html` para experiencia de tienda publica sin parametros manuales.
 - En `administrar_empresa/venta_publica.html` se agrega enlace operativo sugerido por subdominio para publicacion automatizada por empresa.
 - No hay cambios de permisos por rol; se mantiene alcance publico en `/api/public/venta_publica` y aislamiento por `empresa_id` en el backend.
@@ -1689,7 +1697,7 @@ Actualizacion 2026-04-13 (persistencia backend de estaciones):
 Actualizacion 2026-04-18 (gobernanza tecnica de autenticacion y arranque PostgreSQL):
 - Se formaliza el contrato tecnico de autenticacion en `documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md`.
 - Se formaliza el runbook de arranque local PostgreSQL en `documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md`.
-- Ambos artefactos fijan reglas explicitas sobre rol administrado, contrato vigente, contraseÃ±a local de cuentas Google, alcance por `empresa_id`, bloqueo por intentos fallidos y reescritura del DSN hacia `DB_VPS_LOCAL_PORT` cuando hay tunel activo.
+- Ambos artefactos fijan reglas explicitas sobre rol administrado, contrato vigente, contraseña local de cuentas Google, alcance por `empresa_id`, bloqueo por intentos fallidos y reescritura del DSN hacia `DB_VPS_LOCAL_PORT` cuando hay tunel activo.
 
 Actualizacion 2026-04-18 (gobernanza tecnica de venta publica empresarial):
 - Se formaliza el contrato tecnico del modulo en `documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md`.
@@ -1705,9 +1713,9 @@ Actualizacion 2026-04-18 (gobernanza tecnica de facturacion y documentos transac
 
 Actualizacion 2026-04-12 (autenticacion administrativa: contrato y verificacion humana):
 - Se unifica el flujo de login de administradores en `login.html -> OAuth Google -> /accept.html -> /accept/complete`.
-- La aceptaciÃ³n de contrato queda trazable y persistente por administrador (`acepta_contrato`) y solo se exige una vez por cuenta.
-- La validaciÃ³n humana se realiza con reCAPTCHA real verificado en backend antes de crear sesiÃ³n.
-- Se elimina la dependencia funcional del modal legacy en `login.html`/`menu.js` para evitar rutas de autenticaciÃ³n duplicadas.
+- La aceptación de contrato queda trazable y persistente por administrador (`acepta_contrato`) y solo se exige una vez por cuenta.
+- La validación humana se realiza con reCAPTCHA real verificado en backend antes de crear sesión.
+- Se elimina la dependencia funcional del modal legacy en `login.html`/`menu.js` para evitar rutas de autenticación duplicadas.
 
 Actualizacion 2026-04-08 (chat IA empresarial):
 - Se retira la configuracion visual de Google Gemini en super administrador y se estandariza la credencial IA a DeepSeek (`deepseek:deepseek-chat`).
@@ -1732,7 +1740,7 @@ Actualizacion 2026-04-08 (chat y tareas colaborativo usuario-admin con adjuntos 
 
 Actualizacion 2026-04-08 (configuracion monetaria y numerica empresarial):
 - En `administrar_empresa/configuracion.html` se agrega configuracion por `empresa_id` para `moneda_codigo`, `sistema_numerico`, uso de decimales y precision decimal.
-- La configuracion se persiste en `empresa_configuracion_avanzada` y la moneda configurada se usa como valor por defecto al crear carritos cuando la solicitud no envÃ­a moneda.
+- La configuracion se persiste en `empresa_configuracion_avanzada` y la moneda configurada se usa como valor por defecto al crear carritos cuando la solicitud no envía moneda.
 
 Actualizacion 2026-04-08 (administracion global: alertas de inicio/reinicio de servidor):
 - En super administrador se agrega configuracion avanzada `gmail.restart_alert_to` para definir el correo destino de alertas operativas.
@@ -1745,8 +1753,8 @@ Criterio de esta guia:
 
 1) Autenticacion y sesiones
 - Login admin/empresa, sesiones, bloqueo temporal y recuperacion de password.
-- Login administrativo con selecciÃ³n obligatoria de cuenta Google (`select_account`) para evitar mezcla de identidades en navegador.
-- AceptaciÃ³n de contrato y verificaciÃ³n humana como prerrequisito de primera sesiÃ³n administrativa.
+- Login administrativo con selección obligatoria de cuenta Google (`select_account`) para evitar mezcla de identidades en navegador.
+- Aceptación de contrato y verificación humana como prerrequisito de primera sesión administrativa.
 - La UI cliente usa una cookie auxiliar visible de presencia de sesion para avatar y enlace de logout, mientras el token real permanece en `session_token` con `HttpOnly`.
 - El inicio OAuth administrativo se realiza sin `login_hint` ni estado local de cuenta recordada para mantener comportamiento uniforme entre hosts.
 
@@ -1860,9 +1868,9 @@ Criterio de esta guia:
 36) Venta publica y pagos Wompi por empresa
 - Tienda online por empresa con slug publico, catalogo, imagenes y pago Nequi por Wompi.
 
-43) Mensajes privados desde portal pÃºblico (red social / venta pÃºblica)
-- Visitantes pueden enviar mensajes privados a una empresa desde `red_social_comercial` y desde `venta_publica` (catÃ¡logo/checkout).
-- Los mensajes se registran como una conversaciÃ³n en `Chat y tareas` de la empresa para que el equipo continÃºe la conversaciÃ³n internamente.
+43) Mensajes privados desde portal público (red social / venta pública)
+- Visitantes pueden enviar mensajes privados a una empresa desde `red_social_comercial` y desde `venta_publica` (catálogo/checkout).
+- Los mensajes se registran como una conversación en `Chat y tareas` de la empresa para que el equipo continúe la conversación internamente.
 
 37) Descripcion de modulos (este documento)
 - Catalogo compacto de alcance funcional para consulta rapida tecnica/operativa.
@@ -1889,13 +1897,13 @@ Criterio de esta guia:
 - Cambio funcional: la auditoria empresarial pasa a alimentar a GPT-5.4 mini/modelo activo con una capa de contexto profundo: resumen en tiempo real, busqueda de eventos por intencion de pregunta y consultas DB seguras ya ejecutadas por el backend. Ademas, el chat empresarial recibe por defecto lectura total controlada de tablas con `empresa_id` (SELECT parametrizado, columnas sensibles omitidas), configurable desde super.
 - Trazabilidad: se crea `empresa_auditoria_ia_consultas` para registrar alcance, modelo, usuario, hash/resumen de pregunta, filtros usados, resultados compactos, eventos consultados y tamano de contexto.
 - Impacto operativo: si auditoria o IA fallan/deshabilitan, los endpoints continuan respondiendo con contexto degradado; la escritura de auditoria sigue siendo no bloqueante.
-2026-04-29: Administrar Empresa â€” navegacion empresarial por categorias
+2026-04-29: Administrar Empresa ? navegacion empresarial por categorias
 - Modulos afectados: `administrar_empresa`, `configuracion`, `seguridad y permisos`
 - Cambio funcional: el shell de `web/administrar_empresa.html` se organiza por grupos de trabajo: colaboracion, operacion/ventas, inventario/compras, finanzas/cumplimiento, personas/activos, analisis/control, documentos/nube/soporte y administracion. `configuracion_menu.html` separa los accesos por base empresarial, ventas/cobro, estaciones/tarifas, fiscal/automatizacion y avanzado. La pagina `configuracion.html` agrega un mapa ejecutivo de secciones sin cambiar IDs de controles ni endpoints de guardado.
 - Impacto operativo: se conserva compatibilidad con los iframes, `empresa_id`, permisos por rol y rutas existentes; el JS tambien oculta grupos vacios cuando todos sus enlaces quedan ocultos por permisos.
-2026-04-29: Pagina principal â€” tarjetas tipo banner
+2026-04-29: Pagina principal ? tarjetas tipo banner
 - Modulos afectados: `super`, `portal_publico`, `pagina_principal`
-- Cambio funcional: `web/super/pagina_principal.html` agrega por tarjeta el campo `tipo_tarjeta` con dos opciones: `info_foto` para la tarjeta actual de informacion mas foto, y `banner` para mostrar solo la imagen principal a todo el tamano de la tarjeta en `web/index.html`. El mismo editor puede subir imagenes nuevas a `web/img` mediante `/super/api/pagina_principal?action=upload_image`.
+- Cambio funcional: `web/super/pagina_principal.html` agrega por tarjeta el campo `tipo_tarjeta` con dos opciones: `info_foto` para la tarjeta actual de informacion mas foto, y `banner` para mostrar solo la imagen principal a todo el tamano de la tarjeta en `web/index.html`. El mismo editor puede subir imagenes nuevas a `web/img` mediante `/super/api/pagina_principalaction=upload_image`.
 - Impacto operativo: las configuraciones antiguas quedan en `info_foto` por defecto. El modo banner recomienda imagen 4:3 (640x480, 800x600 o 1000x750 segun tamano) y no requiere titulo, descripcion, enlace ni contenido ampliado para el index.
 
 ## Estado actualizado de modulos 2026-05-03
