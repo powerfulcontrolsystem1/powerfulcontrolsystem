@@ -23929,3 +23929,34 @@ Archivos modificados:
 - web/index.html
 - web/super/licencias_resumen.html
 - web/super/pagina_principal.html
+
+2026-05-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/db.go
+- backend/db/licencias_adicionales.go
+- backend/db/nuevos_verticales_bootstrap.go
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/tipo_empresa_preconfiguracion_test.go
+- backend/handlers/configuracion_guiada.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_verticales_integracion.go
+- backend/handlers/empresa_verticales_integracion_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_integracion_verticales.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/verticales_integracion.html
+- web/estilos.css
+- web/js/verticales_integracion_catalogo.js
+- web/super/licencias.html
+- web/super/preconfiguracion_tipos_empresa.html
