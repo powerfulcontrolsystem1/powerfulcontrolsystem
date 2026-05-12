@@ -23752,3 +23752,11 @@ Archivos modificados:
 - web/js/login.js
 - web/login.html
 - web/super/configuracion_avanzada.html
+
+2026-05-11: Alcance vertical por licencia y tipo de empresa
+- Modulos afectados: `licencias`, `roles/licencias`, `preconfiguracion_tipos_empresa`, `administrar_empresa`, `verticales_integracion`, verticales clasicos integrados al nucleo.
+- Cambio funcional: al comprar o activar licencia se valida que el plan base corresponda al tipo de empresa elegido; la activacion aplica la plantilla del tipo de forma idempotente y sincroniza el vertical con el nucleo cuando existe accion `Sync...Nucleo`.
+- Permisos: `/api/empresa/permisos_contexto` publica `vertical_scope` y deshabilita acciones/paginas de verticales ajenos al tipo activo, manteniendo disponibles los modulos universales de estaciones, ventas, productos, clientes, finanzas, pagos, facturacion y reportes segun licencia/rol.
+- Frontend: `elegir_licencia.html` solicita licencias filtradas por `tipo_id` y `editar_empresa.js` conserva `tipo_id/tipo_nombre` al abrir renovacion.
+- Seguridad: los endpoints verticales tambien se bloquean si el modulo no corresponde al alcance vertical de la empresa; no queda solo como ocultacion visual.
+- QA: `go test ./handlers` y `go test ./db` desde `backend/`.

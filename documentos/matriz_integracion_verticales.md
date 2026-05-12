@@ -12,6 +12,8 @@ Para produccion masiva se priorizan los 20 verticales nuevos con ranking 1-20. L
 
 El sistema debe mantener un solo nucleo operativo. Ningun vertical puede crear un circuito paralelo para clientes, productos/servicios vendibles, ventas, pagos, facturacion, permisos o reportes si ya existe un modulo central para esa responsabilidad.
 
+Desde 2026-05-11, la activacion de licencia tambien gobierna el alcance vertical de la empresa. La licencia base debe coincidir con el tipo de empresa, aplica la preconfiguracion de ese tipo de forma idempotente y deja un `vertical_scope` efectivo para que el menu y los endpoints solo permitan el vertical elegido mas los modulos del nucleo universal. Una empresa gimnasio no ve odontologia; una empresa odontologia no ve gimnasio; ambas comparten ventas, productos, clientes, finanzas, pagos, facturacion y reportes centrales.
+
 Nucleo obligatorio:
 
 - `clientes`

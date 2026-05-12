@@ -99,13 +99,14 @@ type empresaRateLimitBucket struct {
 }
 
 type empresaPermissionSnapshot struct {
-	AdminRole         string
-	EffectiveRole     string
-	CanAccess         bool
-	AllowedModules    map[string]bool
-	RoleModuleActions map[string]bool
-	AllowedPages      map[string]bool
-	LoadedAt          time.Time
+	AdminRole              string
+	EffectiveRole          string
+	CanAccess              bool
+	AllowedModules         map[string]bool
+	AllowedVerticalModules map[string]bool
+	RoleModuleActions      map[string]bool
+	AllowedPages           map[string]bool
+	LoadedAt               time.Time
 }
 
 type empresaPermissionSnapshotInflight struct {
@@ -145,6 +146,20 @@ var (
 
 const empresaPermissionCacheTTL = 60 * time.Second
 const permissionOverrideCacheTTL = 60 * time.Second
+
+func invalidateEmpresaPermissionCacheForEmpresa(empresaID int64) {
+	if empresaID <= 0 {
+		return
+	}
+	suffix := fmt.Sprintf("|%d", empresaID)
+	empresaPermissionCacheMu.Lock()
+	for key := range empresaPermissionCache {
+		if strings.HasSuffix(key, suffix) {
+			delete(empresaPermissionCache, key)
+		}
+	}
+	empresaPermissionCacheMu.Unlock()
+}
 
 var legacyPermissionVisibleTextReplacer = strings.NewReplacer(
 	"Operaci\u00c3\u00b3n", "Operaci\u00f3n",
@@ -592,6 +607,7 @@ type empresaPermisosContextResponse struct {
 	Paginas          map[string]bool             `json:"paginas,omitempty"`
 	Resumen          permissionSummary           `json:"resumen"`
 	Licencia         *empresaPermisosLicenciaCtx `json:"licencia,omitempty"`
+	VerticalScope    *empresaVerticalScopeCtx    `json:"vertical_scope,omitempty"`
 	EmpresaPolicy    *empresaPermisosFinosCtx    `json:"empresa_policy,omitempty"`
 	IncluyeMatriz    bool                        `json:"incluye_matriz"`
 	MatrizRoles      []empresaPermisosRolMatriz  `json:"matriz_roles,omitempty"`
@@ -603,6 +619,14 @@ type empresaPermisosLicenciaCtx struct {
 	ModulosHabilitados []string `json:"modulos_habilitados,omitempty"`
 	SuperRolHabilitado bool     `json:"super_rol_habilitado"`
 	RestringeModulos   bool     `json:"restringe_modulos"`
+}
+
+type empresaVerticalScopeCtx struct {
+	Restringe         bool     `json:"restringe"`
+	TipoEmpresaID     int64    `json:"tipo_empresa_id,omitempty"`
+	TipoEmpresaNombre string   `json:"tipo_empresa_nombre,omitempty"`
+	ModulosPermitidos []string `json:"modulos_permitidos,omitempty"`
+	Fuente            string   `json:"fuente,omitempty"`
 }
 
 type empresaPermisosFinosCtx struct {
@@ -670,6 +694,8 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		modulos := buildPermissionModuleMatrixForRoleDynamic(dbSuper, effectiveRole)
 		modulos = applyLicenciaRestriccionesToModuleRows(modulos, allowedModules)
+		verticalScope := resolveEmpresaVerticalScope(dbSuper, empresaID, licenciaPolicy)
+		modulos = applyEmpresaVerticalScopeToModuleRows(modulos, verticalScope)
 		empresaModuleOverrides, empresaPageOverrides, empresaPolicyCtx := loadEmpresaPermissionOverrides(dbSuper, empresaID)
 		modulos = applyEmpresaRestriccionesToModuleRows(modulos, empresaModuleOverrides)
 		paginas := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, modulos)
@@ -696,6 +722,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Paginas:          paginas,
 			Resumen:          summarizePermissionModules(modulos),
 			Licencia:         licenciaCtx,
+			VerticalScope:    verticalScope.toContext(),
 			EmpresaPolicy:    empresaPolicyCtx,
 			IncluyeMatriz:    false,
 		}
@@ -706,6 +733,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			for _, catalogRole := range permissionRolesCatalogOrdered {
 				rows := buildPermissionModuleMatrixForRoleDynamic(dbSuper, catalogRole)
 				rows = applyLicenciaRestriccionesToModuleRows(rows, allowedModules)
+				rows = applyEmpresaVerticalScopeToModuleRows(rows, verticalScope)
 				rows = applyEmpresaRestriccionesToModuleRows(rows, empresaModuleOverrides)
 				resp.MatrizRoles = append(resp.MatrizRoles, empresaPermisosRolMatriz{
 					Rol:     catalogRole,
@@ -1312,6 +1340,11 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		skipLicenciaModuloCheck := module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")
 		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, snapshot.AllowedModules) {
 			http.Error(w, "forbidden: modulo no habilitado por licencia activa", http.StatusForbidden)
+			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
+			return
+		}
+		if !skipLicenciaModuloCheck && len(snapshot.AllowedVerticalModules) > 0 && isEmpresaBusinessVerticalModule(module) && !snapshot.AllowedVerticalModules[normalizeVerticalScopeModule(module)] {
+			http.Error(w, "forbidden: vertical no corresponde al tipo de empresa/licencia activa", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
 			return
 		}
@@ -2699,6 +2732,200 @@ func parseLicenciaModulosCSV(raw string) (map[string]bool, []string) {
 	return allowed, ordered
 }
 
+type empresaVerticalScope struct {
+	Enabled           bool
+	TipoEmpresaID     int64
+	TipoEmpresaNombre string
+	Allowed           map[string]bool
+	AllowedList       []string
+	Source            string
+}
+
+func (scope empresaVerticalScope) toContext() *empresaVerticalScopeCtx {
+	if !scope.Enabled {
+		return nil
+	}
+	return &empresaVerticalScopeCtx{
+		Restringe:         true,
+		TipoEmpresaID:     scope.TipoEmpresaID,
+		TipoEmpresaNombre: strings.TrimSpace(scope.TipoEmpresaNombre),
+		ModulosPermitidos: append([]string{}, scope.AllowedList...),
+		Fuente:            strings.TrimSpace(scope.Source),
+	}
+}
+
+func isEmpresaBusinessVerticalModule(module string) bool {
+	clean := normalizeVerticalScopeModule(module)
+	if clean == "" {
+		return false
+	}
+	switch clean {
+	case permModuleGimnasio,
+		permModuleTaxiSystem,
+		permModuleDomicilios,
+		permModuleParqueadero,
+		permModuleApartTuristicos,
+		permModulePropiedadHorizontal,
+		permModuleAlquileres,
+		permModuleOdontologia,
+		permModuleDrogueriaFarmacia,
+		permModuleAIUConstruccion,
+		permModuleReservasHotel:
+		return true
+	default:
+		return isPermModuleNuevoVertical(clean)
+	}
+}
+
+func normalizeVerticalScopeModule(module string) string {
+	clean := strings.ToLower(strings.TrimSpace(module))
+	clean = strings.ReplaceAll(clean, "-", "_")
+	switch clean {
+	case "consultorio", "consultorio_odontologico", "odontologico", "pacientes":
+		return permModuleOdontologia
+	case "taxi":
+		return permModuleTaxiSystem
+	case "apartamentos", "apartamento_turistico", "apartamentos_turisticos":
+		return permModuleApartTuristicos
+	case "propiedad", "copropiedad", "ph":
+		return permModulePropiedadHorizontal
+	case "alquiler", "rentas":
+		return permModuleAlquileres
+	case "drogueria", "farmacia":
+		return permModuleDrogueriaFarmacia
+	case "aiu", "constructora", "construccion":
+		return permModuleAIUConstruccion
+	case "hotel", "motel", "reservas":
+		return permModuleReservasHotel
+	default:
+		if normalized := strings.TrimSpace(dbpkg.NormalizeEmpresaModuloColombia(clean)); normalized != "" {
+			return normalized
+		}
+		return clean
+	}
+}
+
+func addVerticalScopeModule(scope *empresaVerticalScope, module string) {
+	if scope == nil {
+		return
+	}
+	clean := normalizeVerticalScopeModule(module)
+	if clean == "" || !isEmpresaBusinessVerticalModule(clean) {
+		return
+	}
+	if scope.Allowed == nil {
+		scope.Allowed = map[string]bool{}
+	}
+	if scope.Allowed[clean] {
+		return
+	}
+	scope.Allowed[clean] = true
+	scope.AllowedList = append(scope.AllowedList, clean)
+}
+
+func verticalModulesFromLicenciaPolicy(policy *dbpkg.LicenciaPermisoPolicy) []string {
+	if policy == nil {
+		return nil
+	}
+	out := make([]string, 0)
+	seen := map[string]bool{}
+	for _, chunk := range strings.Split(policy.ModulosHabilitados, ",") {
+		clean := normalizeVerticalScopeModule(chunk)
+		if clean == "" || !isEmpresaBusinessVerticalModule(clean) || seen[clean] {
+			continue
+		}
+		seen[clean] = true
+		out = append(out, clean)
+	}
+	return out
+}
+
+func resolveEmpresaVerticalScope(dbSuper *sql.DB, empresaID int64, policy *dbpkg.LicenciaPermisoPolicy) empresaVerticalScope {
+	scope := empresaVerticalScope{Allowed: map[string]bool{}}
+	if empresaID <= 0 || dbSuper == nil {
+		return scope
+	}
+
+	var empresa *dbpkg.Empresa
+	if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+		if item, err := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); err == nil && item != nil {
+			empresa = item
+		}
+	}
+	if empresa == nil {
+		if item, err := dbpkg.GetEmpresaByID(dbSuper, empresaID); err == nil && item != nil {
+			empresa = item
+		}
+	}
+
+	activeLic, _ := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
+	tipoID := int64(0)
+	tipoNombre := ""
+	if empresa != nil {
+		tipoID = empresa.TipoID
+		tipoNombre = strings.TrimSpace(empresa.TipoNombre)
+	}
+	if activeLic != nil && activeLic.TipoID > 0 {
+		tipoID = activeLic.TipoID
+	}
+
+	if tipoID > 0 || tipoNombre != "" {
+		if preconfig, err := dbpkg.ResolveTipoEmpresaPreconfiguracion(dbSuper, tipoID, tipoNombre); err == nil && preconfig != nil && preconfig.Enabled {
+			if template, parseErr := dbpkg.ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON); parseErr == nil {
+				scope.TipoEmpresaID = tipoID
+				scope.TipoEmpresaNombre = strings.TrimSpace(firstNonEmptyString(tipoNombre, preconfig.TipoEmpresaNombre))
+				if template.IntegracionVertical != nil {
+					addVerticalScopeModule(&scope, template.IntegracionVertical.Modulo)
+					if len(scope.AllowedList) > 0 {
+						scope.Source = "preconfiguracion_tipo_empresa"
+					}
+				}
+				if template.Modulos.Gimnasio != nil {
+					addVerticalScopeModule(&scope, permModuleGimnasio)
+				}
+				if template.Modulos.Odontologia != nil {
+					addVerticalScopeModule(&scope, permModuleOdontologia)
+				}
+			}
+		}
+	}
+
+	if len(scope.AllowedList) == 0 && empresa != nil {
+		addVerticalScopeModule(&scope, empresa.TipoNombre)
+		if len(scope.AllowedList) > 0 {
+			scope.TipoEmpresaID = tipoID
+			scope.TipoEmpresaNombre = strings.TrimSpace(empresa.TipoNombre)
+			scope.Source = "tipo_empresa"
+		}
+	}
+
+	if len(scope.AllowedList) == 0 {
+		verticals := verticalModulesFromLicenciaPolicy(policy)
+		if len(verticals) == 1 {
+			addVerticalScopeModule(&scope, verticals[0])
+			scope.TipoEmpresaID = tipoID
+			scope.Source = "licencia_modulos"
+		}
+	}
+
+	scope.Enabled = len(scope.AllowedList) > 0
+	if scope.Source == "" && scope.Enabled {
+		scope.Source = "alcance_vertical"
+	}
+	return scope
+}
+
+func isModuloPermitidoByVerticalScope(modulo string, scope empresaVerticalScope) bool {
+	clean := normalizeVerticalScopeModule(modulo)
+	if clean == "" || !isEmpresaBusinessVerticalModule(clean) {
+		return true
+	}
+	if !scope.Enabled {
+		return true
+	}
+	return scope.Allowed[clean]
+}
+
 func isPermissionModuleKnown(modulo string) bool {
 	target := strings.ToLower(strings.TrimSpace(modulo))
 	if target == "" {
@@ -2760,6 +2987,29 @@ func applyLicenciaRestriccionesToModuleRows(rows []permissionModuleMatrixRow, al
 			next.Acciones[action] = row.Acciones[action]
 		}
 		if !isModuloPermitidoByLicencia(next.Modulo, allowed) {
+			setPermissionActionOnModuleRow(&next, permActionRead, false)
+			setPermissionActionOnModuleRow(&next, permActionCreate, false)
+			setPermissionActionOnModuleRow(&next, permActionUpdate, false)
+			setPermissionActionOnModuleRow(&next, permActionDelete, false)
+			setPermissionActionOnModuleRow(&next, permActionApprove, false)
+		}
+		out = append(out, next)
+	}
+	return out
+}
+
+func applyEmpresaVerticalScopeToModuleRows(rows []permissionModuleMatrixRow, scope empresaVerticalScope) []permissionModuleMatrixRow {
+	if !scope.Enabled {
+		return rows
+	}
+	out := make([]permissionModuleMatrixRow, 0, len(rows))
+	for _, row := range rows {
+		next := row
+		next.Acciones = map[string]bool{}
+		for _, action := range permissionActionsCatalogOrdered {
+			next.Acciones[action] = row.Acciones[action]
+		}
+		if !isModuloPermitidoByVerticalScope(next.Modulo, scope) {
 			setPermissionActionOnModuleRow(&next, permActionRead, false)
 			setPermissionActionOnModuleRow(&next, permActionCreate, false)
 			setPermissionActionOnModuleRow(&next, permActionUpdate, false)
@@ -3073,6 +3323,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	if licenciaPolicy != nil {
 		allowedModules, _ = parseLicenciaModulosCSV(licenciaPolicy.ModulosHabilitados)
 	}
+	verticalScope := resolveEmpresaVerticalScope(dbSuper, empresaID, licenciaPolicy)
 	effectiveRole := resolveEffectiveRoleByLicencia(role, licenciaPolicy)
 	if effectiveRole != role {
 		stepStarted = time.Now()
@@ -3080,6 +3331,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=module_rows_effective dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
 	}
 	moduleRows = applyLicenciaRestriccionesToModuleRows(moduleRows, allowedModules)
+	moduleRows = applyEmpresaVerticalScopeToModuleRows(moduleRows, verticalScope)
 	moduleRows = applyEmpresaRestriccionesToModuleRows(moduleRows, empresaModuleOverrides)
 	stepStarted = time.Now()
 	allowedPages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, moduleRows)
@@ -3094,13 +3346,14 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	}
 
 	snapshot := empresaPermissionSnapshot{
-		AdminRole:         role,
-		EffectiveRole:     effectiveRole,
-		CanAccess:         canAccess,
-		AllowedModules:    allowedModules,
-		RoleModuleActions: roleModuleActions,
-		AllowedPages:      allowedPages,
-		LoadedAt:          time.Now(),
+		AdminRole:              role,
+		EffectiveRole:          effectiveRole,
+		CanAccess:              canAccess,
+		AllowedModules:         allowedModules,
+		AllowedVerticalModules: verticalScope.Allowed,
+		RoleModuleActions:      roleModuleActions,
+		AllowedPages:           allowedPages,
+		LoadedAt:               time.Now(),
 	}
 
 	empresaPermissionCacheMu.Lock()

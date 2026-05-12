@@ -1,3 +1,10 @@
+## [2026-05-11] Alcance vertical por licencia
+- [Backend] `/api/empresa/permisos_contexto` calcula `vertical_scope` desde tipo/preconfiguracion/licencia y desactiva acciones de verticales ajenos sin tocar el nucleo universal.
+- [Licencias] El checkout, activacion manual/gratuita y confirmaciones de pago validan que la licencia base corresponda al tipo de empresa elegido.
+- [Plantillas] La activacion de licencia aplica la preconfiguracion de tipo de forma idempotente y ejecuta sincronizacion historica del vertical cuando existe funcion `Sync...Nucleo`.
+- [Frontend] `elegir_licencia.html` consulta licencias filtradas por `tipo_id` y `editar_empresa.js` conserva `tipo_id/tipo_nombre` al renovar.
+- [QA] `go test ./handlers`; `go test ./db`.
+
 ## [2026-05-11] 2FA del login desde configuracion avanzada
 - [Seguridad] El login de administradores oculta el campo de codigo 2FA salvo que `security.admin_2fa.enabled` este activo.
 - [Backend] `/config.js` publica `ADMIN_2FA_LOGIN_ENABLED` y `AdminLoginHandler` solo exige OTP cuando el switch global y el TOTP de la cuenta estan activos.

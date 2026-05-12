@@ -1,3 +1,9 @@
+2026-05-11: Alcance vertical por licencia
+- `licencias`: filtra catalogo por `tipo_id`, valida compatibilidad licencia/empresa antes del checkout y al activar pagos manuales, gratuitos, Wompi o Epayco.
+- `roles/licencias`: agrega `vertical_scope` al contexto efectivo de permisos para ocultar y bloquear verticales no correspondientes al tipo de empresa activo.
+- `preconfiguracion_tipos_empresa`: la activacion de licencia reaplica plantillas de forma idempotente y sincroniza verticales clasicos con el nucleo cuando existe funcion historica.
+- `administrar_empresa`: el menu empresarial queda limpio por tipo de empresa; los modulos universales siguen dependiendo de licencia y rol, no del vertical.
+
 2026-05-11: 2FA del login desde configuracion avanzada
 - Modulos afectados: `autenticacion`, `super_administrador`, `configuracion_avanzada`, `seguridad`.
 - Cambio funcional: `login.html` ya no muestra el campo `Codigo 2FA` de forma permanente; lo habilita con `ADMIN_2FA_LOGIN_ENABLED` publicado por `/config.js`.

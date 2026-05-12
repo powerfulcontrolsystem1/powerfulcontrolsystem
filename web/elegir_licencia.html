@@ -483,10 +483,7 @@
             }
           } catch (e) {}
 
-          // fetch licencias and empresas (to show company name)
-          const licURL = '/super/api/licencias?activo=1&pais_codigo=' + encodeURIComponent(paisCodigo);
-          const [licRes, empRes] = await Promise.all([fetch(licURL), fetch('/super/api/empresas')]);
-          const licencias = licRes.ok ? await licRes.json() : [];
+          const empRes = await fetch('/super/api/empresas');
           const empresas = empRes.ok ? await empRes.json() : [];
 
           let empresaName = '';
@@ -498,6 +495,14 @@
               if (!tipoNombre && (found.tipo_nombre || found.tipoNombre)) tipoNombre = found.tipo_nombre || found.tipoNombre;
             }
           }
+
+          // fetch licencias filtradas desde backend por tipo de empresa
+          const licParams = new URLSearchParams();
+          licParams.set('activo', '1');
+          licParams.set('pais_codigo', paisCodigo);
+          if (tipoId) licParams.set('tipo_id', String(tipoId));
+          const licRes = await fetch('/super/api/licencias?' + licParams.toString(), { credentials: 'same-origin' });
+          const licencias = licRes.ok ? await licRes.json() : [];
 
           const titleEl = document.getElementById('pageTitle');
           if (empresaName) titleEl.textContent = 'Elegir licencia para: ' + empresaName;

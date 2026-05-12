@@ -394,6 +394,8 @@
     var url = new URL("/pagar_licencia.html", window.location.origin);
     url.searchParams.set("empresa_id", String(empresaId));
     url.searchParams.set("licencia_id", String(base.id));
+    if (state.empresa && state.empresa.tipo_id) url.searchParams.set("tipo_id", String(state.empresa.tipo_id));
+    if (state.empresa && state.empresa.tipo_nombre) url.searchParams.set("tipo_nombre", String(state.empresa.tipo_nombre));
     if (mode) url.searchParams.set("checkout_mode", String(mode));
     if (addonLicenciaIds && addonLicenciaIds.length) {
       url.searchParams.set("addon_licencia_ids", addonLicenciaIds.join(","));

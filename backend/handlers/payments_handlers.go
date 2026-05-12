@@ -55,6 +55,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			conEmpresa := parseTruthy(q.Get("con_empresa"))
 			usuarioCreador := strings.TrimSpace(q.Get("usuario_creador"))
 			paisCodigo := strings.ToUpper(strings.TrimSpace(q.Get("pais_codigo")))
+			tipoIDFiltro, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmptyString(q.Get("tipo_id"), q.Get("tipo_empresa_id"))), 10, 64)
 
 			// scope=mine permite filtrar por el administrador autenticado sin exponer email en la URL.
 			if strings.EqualFold(strings.TrimSpace(q.Get("scope")), "mine") && usuarioCreador == "" {
@@ -77,6 +78,15 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			if tipoIDFiltro > 0 {
+				filtered := make([]dbpkg.Licencia, 0, len(licencias))
+				for _, lic := range licencias {
+					if lic.TipoID == tipoIDFiltro || lic.EsAdicional == 1 {
+						filtered = append(filtered, lic)
+					}
+				}
+				licencias = filtered
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(licencias)
 			return
@@ -93,6 +103,13 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if s := strings.TrimSpace(q.Get("tipo_id")); s != "" {
 					if v, perr := strconv.ParseInt(s, 10, 64); perr == nil && v > 0 {
 						tipoID = v
+					}
+				}
+				if s := strings.TrimSpace(q.Get("tipo_id")); s == "" {
+					if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+						if empresa, eerr := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); eerr == nil && empresa != nil && empresa.TipoID > 0 {
+							tipoID = empresa.TipoID
+						}
 					}
 				}
 				pais := strings.ToUpper(strings.TrimSpace(q.Get("pais_codigo")))
@@ -139,6 +156,11 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "failed to activate empresa after trial licencia: "+err.Error(), http.StatusInternalServerError)
 						return
 					}
+					if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licID, "licencias.prueba_15_dias"); err != nil {
+						http.Error(w, "failed to apply tipo empresa preconfig after trial licencia: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 				}
 
 				// Enviar correo de bienvenida/activación para pruebas.
@@ -1126,10 +1148,25 @@ func maxTime(a, b time.Time) time.Time {
 	return b
 }
 
-func activateLicenciaCheckoutContext(dbSuper *sql.DB, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, error) {
+func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, error) {
+	lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+	if licErr != nil {
+		return false, licErr
+	}
+	if err := validateLicenciaEmpresaTipoCompat(dbSuper, dbEmp, lic, empresaID); err != nil {
+		return false, err
+	}
 	mode := normalizeLicenciaCheckoutMode(checkoutMode)
 	if mode == "" {
-		return activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+		activated, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+		if err != nil || !activated {
+			return activated, err
+		}
+		if _, preErr := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, "licencias.activacion"); preErr != nil {
+			return activated, preErr
+		}
+		invalidateEmpresaPermissionCacheForEmpresa(empresaID)
+		return activated, nil
 	}
 
 	baseLic, err := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
@@ -1244,6 +1281,10 @@ func activateLicenciaCheckoutContext(dbSuper *sql.DB, licenciaID, empresaID int6
 				return activatedAny, err
 			}
 		}
+		if _, preErr := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, "licencias.activacion"); preErr != nil {
+			return activatedAny, preErr
+		}
+		invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 	}
 	return activatedAny, nil
 }
@@ -1416,6 +1457,9 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	if lic == nil {
 		return summary, errors.New("licencia no disponible")
 	}
+	if err := validateLicenciaEmpresaTipoCompat(dbSuper, nil, lic, empresaID); err != nil {
+		return summary, err
+	}
 	originalValue := roundLicenciaCheckoutAmount(lic.Valor)
 	discountValue, discountLabel, discountApplied, err := resolveLicenciaDiscountAmount(dbSuper, discountCode, originalValue)
 	if err != nil {
@@ -1477,11 +1521,37 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 	return summary, nil
 }
 
+func validateLicenciaEmpresaTipoCompat(dbSuper, dbEmp *sql.DB, lic *dbpkg.Licencia, empresaID int64) error {
+	if lic == nil || empresaID <= 0 || lic.TipoID <= 0 || lic.EsAdicional == 1 {
+		return nil
+	}
+	if dbEmp == nil {
+		dbEmp = dbpkg.GetDB()
+	}
+	var empresa *dbpkg.Empresa
+	if dbEmp != nil {
+		empresa, _ = dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
+	}
+	if empresa == nil && dbSuper != nil {
+		empresa, _ = dbpkg.GetEmpresaByID(dbSuper, empresaID)
+	}
+	if empresa == nil || empresa.TipoID <= 0 {
+		return nil
+	}
+	if empresa.TipoID != lic.TipoID {
+		return fmt.Errorf("esta licencia es para otro tipo de empresa; elige una licencia de %s", strings.TrimSpace(empresa.TipoNombre))
+	}
+	return nil
+}
+
 func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, asesorID, checkoutMode string, addonLicenciaIDs []int64) (licenciaCheckoutSummary, *dbpkg.EmpresaLicenciaBundleSummary, error) {
 	mode := normalizeLicenciaCheckoutMode(checkoutMode)
 	if mode == "" {
 		summary, err := resolveLicenciaCheckoutSummary(dbSuper, lic, empresaID, discountCode, asesorID)
 		return summary, nil, err
+	}
+	if err := validateLicenciaEmpresaTipoCompat(dbSuper, nil, lic, empresaID); err != nil {
+		return licenciaCheckoutSummary{}, nil, err
 	}
 	bundle, err := dbpkg.BuildEmpresaLicenciaBundleSummary(dbSuper, empresaID, mode, addonLicenciaIDs)
 	if err != nil {
@@ -4312,7 +4382,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					if payRec != nil && payRec.RawPayload.Valid {
 						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(payRec.RawPayload.String)
 					}
-					act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+					act, actErr := activateLicenciaCheckoutContext(dbSuper, nil, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 					if actErr != nil {
 						log.Println("warning: failed to activate licencia from Wompi:", actErr)
 					} else {
@@ -4469,7 +4539,11 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(byRef.RawPayload.String)
 					}
 				}
-				act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				var dbEmpConn *sql.DB
+				if len(dbEmp) > 0 {
+					dbEmpConn = dbEmp[0]
+				}
+				act, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpConn, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 				} else {
@@ -5202,7 +5276,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if rec != nil && rec.RawPayload.Valid {
 					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(rec.RawPayload.String)
 				}
-				act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, actErr := activateLicenciaCheckoutContext(dbSuper, nil, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 				} else {
@@ -5401,7 +5475,11 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if rec != nil && rec.RawPayload.Valid {
 					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(rec.RawPayload.String)
 				}
-				act, actErr := activateLicenciaCheckoutContext(dbSuper, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				var dbEmpConn *sql.DB
+				if len(dbEmp) > 0 {
+					dbEmpConn = dbEmp[0]
+				}
+				act, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpConn, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 				} else {
@@ -5535,9 +5613,14 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 					http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
+				if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, payload.EmpresaID, payload.LicenciaID, "licencias.activacion_sin_pago"); err != nil {
+					http.Error(w, "failed to apply tipo empresa preconfig: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 			}
 		} else {
-			activated, actErr := activateLicenciaCheckoutContext(dbSuper, payload.LicenciaID, payload.EmpresaID, payload.CheckoutMode, payload.AddonLicenciaIDs)
+			activated, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpresas, payload.LicenciaID, payload.EmpresaID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 			if actErr != nil {
 				http.Error(w, "failed to activate bundle de licencias: "+actErr.Error(), http.StatusInternalServerError)
 				return

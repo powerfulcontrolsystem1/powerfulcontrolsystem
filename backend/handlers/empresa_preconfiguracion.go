@@ -60,6 +60,16 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
 		return result, err
 	}
+	if pref, prefErr := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "preconfiguracion_tipo_empresa_aplicada"); prefErr == nil && pref != nil && strings.TrimSpace(pref.Valor) != "" {
+		var marker struct {
+			TipoEmpresaID int64 `json:"tipo_empresa_id"`
+		}
+		if json.Unmarshal([]byte(pref.Valor), &marker) == nil && marker.TipoEmpresaID == tipoEmpresaID {
+			result.Aplicada = true
+			result.Mensaje = "La preconfiguracion de este tipo de empresa ya estaba aplicada; se conserva sin duplicar datos guia."
+			return result, nil
+		}
+	}
 	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmp); err != nil {
 		return result, err
 	}
@@ -232,6 +242,94 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	result.Aplicada = true
 	result.Mensaje = "Empresa creada con preconfiguracion inicial. Puedes conservarla o eliminar la configuracion guia."
 	return result, nil
+}
+
+func applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper *sql.DB, empresaID, licenciaID int64, usuario string) (*empresaPreconfigApplyResult, error) {
+	if dbEmp == nil {
+		dbEmp = dbpkg.GetDB()
+	}
+	if empresaID <= 0 || dbEmp == nil || dbSuper == nil {
+		return nil, nil
+	}
+
+	lic, _ := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+	empresa, _ := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
+	tipoID := int64(0)
+	tipoNombre := ""
+	if empresa != nil {
+		tipoID = empresa.TipoID
+		tipoNombre = strings.TrimSpace(empresa.TipoNombre)
+	}
+	if lic != nil && lic.TipoID > 0 {
+		if tipoID > 0 && tipoID != lic.TipoID && lic.EsAdicional != 1 {
+			return nil, fmt.Errorf("la licencia pertenece a otro tipo de empresa")
+		}
+		tipoID = lic.TipoID
+	}
+	if tipoID <= 0 && tipoNombre == "" {
+		return nil, nil
+	}
+	result, err := applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, empresaID, tipoID, tipoNombre, usuario)
+	if err != nil {
+		return result, err
+	}
+	if err := syncEmpresaVerticalNucleoFromTipo(dbEmp, dbSuper, empresaID, tipoID, tipoNombre, usuario); err != nil {
+		if result != nil {
+			result.ModulosError = append(result.ModulosError, "sincronizacion_nucleo: "+err.Error())
+		}
+		log.Printf("[empresa_preconfiguracion] sync vertical licencia empresa_id=%d tipo_id=%d error: %v", empresaID, tipoID, err)
+	}
+	return result, nil
+}
+
+func syncEmpresaVerticalNucleoFromTipo(dbEmp, dbSuper *sql.DB, empresaID, tipoID int64, tipoNombre, usuario string) error {
+	if dbEmp == nil || dbSuper == nil || empresaID <= 0 {
+		return nil
+	}
+	preconfig, err := dbpkg.ResolveTipoEmpresaPreconfiguracion(dbSuper, tipoID, tipoNombre)
+	if err != nil || preconfig == nil || !preconfig.Enabled {
+		return err
+	}
+	template, err := dbpkg.ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON)
+	if err != nil || template.IntegracionVertical == nil {
+		return err
+	}
+	return syncEmpresaVerticalNucleoByModulo(dbEmp, empresaID, template.IntegracionVertical.Modulo, usuario)
+}
+
+func syncEmpresaVerticalNucleoByModulo(dbEmp *sql.DB, empresaID int64, modulo, usuario string) error {
+	clean := normalizeVerticalScopeModule(modulo)
+	switch clean {
+	case permModuleGimnasio:
+		_, err := dbpkg.SyncEmpresaGimnasioNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleOdontologia:
+		_, err := dbpkg.SyncEmpresaOdontologiaNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleParqueadero:
+		_, err := dbpkg.SyncEmpresaParqueaderoNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleTaxiSystem:
+		_, err := dbpkg.SyncEmpresaTaxiSystemNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleDomicilios:
+		_, err := dbpkg.SyncEmpresaDomiciliosNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleApartTuristicos:
+		_, err := dbpkg.SyncEmpresaApartamentosTuristicosNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModulePropiedadHorizontal:
+		_, err := dbpkg.SyncEmpresaPropiedadHorizontalNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleAlquileres:
+		_, err := dbpkg.SyncEmpresaAlquileresNucleo(dbEmp, empresaID, usuario)
+		return err
+	case permModuleAIUConstruccion:
+		_, err := dbpkg.SyncEmpresaAIUConstruccionNucleo(dbEmp, empresaID, usuario)
+		return err
+	default:
+		return nil
+	}
 }
 
 func applyEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64, operacion dbpkg.TipoEmpresaPreconfigOperacion, usuario string) error {

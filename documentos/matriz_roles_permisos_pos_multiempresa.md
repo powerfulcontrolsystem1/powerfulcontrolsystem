@@ -4,6 +4,13 @@
 - Cuando el switch global esta activo, solo las cuentas con `administradores.totp_enabled=1` y secreto confirmado deben enviar `otp_code`; las demas mantienen el flujo normal de correo/contrasena.
 - La vista `web/super/seguridad_2fa.html` sigue siendo el control por cuenta para generar, confirmar o desactivar el secreto; no concede permisos adicionales ni cambia roles de empresa.
 
+2026-05-11: Nota operativa para alcance vertical por licencia
+- El permiso efectivo de una empresa combina rol, licencia activa, reglas finas de empresa y `vertical_scope`.
+- `vertical_scope` se resuelve desde el tipo/preconfiguracion de empresa o, si no hay preconfiguracion, desde la licencia cuando declara un solo vertical. Solo restringe verticales de negocio; el nucleo universal de ventas, estaciones, productos, clientes, finanzas, pagos, facturacion, reportes y seguridad sigue gobernado por licencia y rol.
+- Ejemplo: una empresa tipo `gimnasio` puede ver y operar `gimnasio` si su rol/licencia lo permiten, pero `odontologia`, `parqueadero`, `domicilios`, `taxi_system`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `drogueria_farmacia`, `aiu_construccion`, `reservas_hotel` y los 20 verticales nuevos quedan ocultos/bloqueados salvo que correspondan al tipo activo.
+- Los endpoints verticales tambien quedan protegidos por esta regla; no basta ocultar el enlace del menu.
+- El checkout de licencias valida que la licencia base coincida con el tipo de empresa antes de crear pago, activar sin pago o procesar confirmaciones.
+
 2026-05-11: Nota operativa para integracion de verticales
 - `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` son rutas publicas de solo lectura para portada, tarjetas y matriz comercial. No conceden operacion sobre verticales, no exponen datos de empresas y no reemplazan los endpoints autenticados de `/api/empresa/...` o `/super/api/...`.
 - Los permisos/licencias siguen siendo necesarios, pero no son suficientes para mostrar un vertical: ademas debe estar marcado como visible operativo en la matriz de integracion.

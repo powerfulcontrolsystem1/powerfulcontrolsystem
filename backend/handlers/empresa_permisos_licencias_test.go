@@ -93,6 +93,48 @@ func TestApplyLicenciaRestriccionesDisablesActionsForInactiveModules(t *testing.
 	}
 }
 
+func TestEmpresaVerticalScopeKeepsCoreAndOnlyChosenVertical(t *testing.T) {
+	rows := []permissionModuleMatrixRow{
+		{Modulo: permModuleVentas, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+		{Modulo: permModuleInventario, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+		{Modulo: permModuleGimnasio, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+		{Modulo: permModuleOdontologia, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+	}
+	scope := empresaVerticalScope{
+		Enabled:     true,
+		Allowed:     map[string]bool{permModuleGimnasio: true},
+		AllowedList: []string{permModuleGimnasio},
+	}
+
+	filtered := applyEmpresaVerticalScopeToModuleRows(rows, scope)
+
+	if !filtered[0].Acciones[permActionRead] || !filtered[1].Acciones[permActionCreate] {
+		t.Fatal("expected core modules to remain enabled under vertical scope")
+	}
+	if !filtered[2].Acciones[permActionCreate] {
+		t.Fatal("expected selected gimnasio vertical to remain enabled")
+	}
+	for _, action := range permissionActionsCatalogOrdered {
+		if filtered[3].Acciones[action] {
+			t.Fatalf("expected odontologia action %s to be hidden for gimnasio company", action)
+		}
+	}
+}
+
+func TestNormalizeVerticalScopeAliases(t *testing.T) {
+	cases := map[string]string{
+		"consultorio_odontologico": permModuleOdontologia,
+		"taxi":                     permModuleTaxiSystem,
+		"constructora":             permModuleAIUConstruccion,
+		"apartamento-turistico":    permModuleApartTuristicos,
+	}
+	for raw, want := range cases {
+		if got := normalizeVerticalScopeModule(raw); got != want {
+			t.Fatalf("normalizeVerticalScopeModule(%q)=%q, want %q", raw, got, want)
+		}
+	}
+}
+
 func TestValidateEmpresaIDConsistencyRejectsBodyQueryMismatch(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/api/empresa/productos?empresa_id=7", bytes.NewBufferString(`{"empresa_id":8,"nombre":"Producto"}`))
 	r.Header.Set("Content-Type", "application/json")
