@@ -1,3 +1,9 @@
+2026-05-12: Carritos adaptables por tipo de empresa
+- Modulos afectados: `carritos`, `ventas`, `administrar_empresa`, `verticales_integracion`.
+- Cambio funcional: la tarjeta de totales del carrito usa el contexto `vertical_scope` de `/api/empresa/permisos_contexto` para presentar nombres de cuenta, cliente, servicios, productos, tiempos, total y saldo acordes al negocio activo.
+- Gobernanza: el carrito sigue siendo el nucleo unico de venta/pago/facturacion por `empresa_id`; la adaptacion es de UX y nomenclatura, sin duplicar modelos por vertical.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
 2026-05-12: Gimnasio empresarial
 - Modulos afectados: `gimnasio`, `administrar_empresa`.
 - Cambio funcional: el modulo presenta un tablero empresarial con salud operativa, alertas ejecutivas, acciones rapidas, busqueda/filtro global y estados visuales por tabla.

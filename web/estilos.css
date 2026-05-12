@@ -8014,6 +8014,9 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-station-payment-inputs-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
 .carrito-station-payment-inputs-row .form-col{flex:1;min-width:140px;}
 .carrito-summary-content{display:grid;gap:4px;margin-top:6px;}
+.carrito-summary-profile{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:8px;background:color-mix(in srgb, var(--surface-soft) 82%, var(--btn-primary) 18%);border:1px solid color-mix(in srgb, var(--content-soft-border) 78%, var(--btn-primary) 22%);min-height:28px;}
+.carrito-summary-profile span{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+.carrito-summary-profile strong{font-size:.78rem;text-align:right;color:var(--text);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .carrito-summary-row{display:flex;justify-content:space-between;gap:6px;align-items:center;padding:4px 8px;border-radius:7px;background:var(--content-soft-bg);border:1px solid var(--content-soft-border);min-height:28px;line-height:1.12;}
 .carrito-summary-row span{font-size:.82rem;line-height:1.1;}
 .carrito-summary-row strong{font-size:.86rem;line-height:1.1;text-align:right;}

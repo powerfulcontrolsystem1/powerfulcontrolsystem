@@ -130,7 +130,7 @@
           <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
         </div>
         <aside class="card carrito-summary-card carrito-station-totals-aside">
-          <h3 class="section-heading">Totales y detalles</h3>
+          <h3 id="carritoTotalsTitleStation" class="section-heading">Totales y detalles</h3>
           <div id="carritoTotalsContentStation" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
         </aside>
       </div>
@@ -474,7 +474,7 @@
 
         <div id="carritoSideColumn" class="carrito-side-column">
           <aside id="carritoTotalsPanel" class="card carrito-summary-card mt-10">
-            <h3 class="section-heading">Totales y detalles</h3>
+            <h3 id="carritoTotalsTitle" class="section-heading">Totales y detalles</h3>
             <div id="carritoTotalsContent" class="carrito-summary-content mt-10">Selecciona un carrito para ver el resumen.</div>
             <div class="carrito-summary-pay-actions">
               <button type="button" id="btnPagarCarrito" class="btn w-full" disabled title="El carrito se esta cargando.">Pagar y cerrar carrito</button>
@@ -494,6 +494,7 @@
       stationName: '',
       empresaGeneralConfig: null,
       empresaAvanzadaConfig: null,
+      empresaPermissionsContext: null,
       stationConfig: null,
       tarifaMinutosConfig: null,
       stationCartUI: null,
@@ -983,6 +984,25 @@
         state.empresaAvanzadaConfig = {};
       }
       return state.empresaAvanzadaConfig;
+    }
+
+    async function loadEmpresaPermissionsContextFromServer() {
+      if (!state.empresaID) {
+        state.empresaPermissionsContext = {};
+        return state.empresaPermissionsContext;
+      }
+      try {
+        const res = await fetchWithTimeout('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(state.empresaID), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error('No se pudo cargar el contexto de permisos.');
+        const payload = await res.json();
+        state.empresaPermissionsContext = payload && typeof payload === 'object' ? payload : {};
+      } catch (err) {
+        console.warn('No se pudo cargar el contexto empresarial para adaptar totales.', err);
+        state.empresaPermissionsContext = {};
+      }
+      return state.empresaPermissionsContext;
     }
 
     async function loadStationConfigFromServer() {
@@ -3865,9 +3885,487 @@
       renderCarritoSummaryPanel();
     }
 
-    function buildCarritoSummaryInnerHtml(selected) {
+    function normalizeBusinessKey(value) {
+      let key = normalize(value).toLowerCase();
+      try {
+        key = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      } catch (_) {}
+      return key.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function getCartBusinessContextValues() {
+      const values = [];
+      const push = function(value) {
+        const text = normalize(value);
+        if (text) values.push(text);
+      };
+      const ctx = state.empresaPermissionsContext && typeof state.empresaPermissionsContext === 'object'
+        ? state.empresaPermissionsContext
+        : {};
+      const verticalScope = ctx.vertical_scope && typeof ctx.vertical_scope === 'object' ? ctx.vertical_scope : {};
+      push(verticalScope.tipo_empresa_nombre);
+      push(verticalScope.fuente);
+      if (Array.isArray(verticalScope.modulos_permitidos)) {
+        verticalScope.modulos_permitidos.forEach(push);
+      }
+      const generalConfig = state.empresaGeneralConfig && typeof state.empresaGeneralConfig === 'object'
+        ? state.empresaGeneralConfig
+        : {};
+      [
+        'tipo_empresa_nombre',
+        'tipoEmpresaNombre',
+        'tipo_empresa',
+        'tipo_negocio',
+        'actividad_economica',
+        'sector',
+        'vertical',
+        'modulo'
+      ].forEach(function(key) {
+        push(generalConfig[key]);
+      });
+      return values;
+    }
+
+    function getPrimaryCartBusinessLabel() {
+      const ctx = state.empresaPermissionsContext && typeof state.empresaPermissionsContext === 'object'
+        ? state.empresaPermissionsContext
+        : {};
+      const verticalScope = ctx.vertical_scope && typeof ctx.vertical_scope === 'object' ? ctx.vertical_scope : {};
+      return normalize(verticalScope.tipo_empresa_nombre)
+        || normalize((state.empresaGeneralConfig || {}).tipo_empresa_nombre)
+        || normalize((state.empresaGeneralConfig || {}).tipo_empresa)
+        || 'POS universal';
+    }
+
+    function mergeCartSummaryProfile(overrides) {
+      return Object.assign({
+        key: 'general',
+        title: 'Totales y detalles',
+        badge: 'Operacion',
+        cartLabel: 'Carrito',
+        stationLabel: 'Estacion',
+        entryLabel: 'Entrada',
+        exitLabel: 'Salida',
+        itemsLabel: 'Items totales',
+        productItemsLabel: 'Productos / combos (items)',
+        serviceItemsLabel: 'Servicios (items)',
+        productAmountLabel: 'Productos facturados',
+        serviceAmountLabel: 'Servicios facturados',
+        timeLabel: 'Tiempo / extras',
+        customerLabel: 'Cliente',
+        subtotalLabel: 'Subtotal',
+        discountLabel: 'Descuento',
+        taxLabel: 'Impuesto',
+        totalLabel: 'Total',
+        paidLabel: 'Pagado',
+        balanceLabel: 'Saldo',
+        noSelectionText: 'Selecciona un carrito para ver el resumen.',
+        showTimeRow: false
+      }, overrides || {});
+    }
+
+    function getCartSummaryProfile() {
+      const contextValues = getCartBusinessContextValues();
+      const businessText = contextValues.map(normalizeBusinessKey).join(' ');
+      const containsAny = function(words) {
+        return words.some(function(word) {
+          return businessText.indexOf(normalizeBusinessKey(word)) >= 0;
+        });
+      };
+
+      if (containsAny(['motel', 'hotel', 'reservas_hotel', 'apartamentos_turisticos', 'hospedaje', 'habitacion'])) {
+        return mergeCartSummaryProfile({
+          key: 'estadia',
+          title: 'Cuenta de estadia',
+          badge: 'Estadia',
+          cartLabel: 'Reserva',
+          stationLabel: 'Habitacion',
+          entryLabel: 'Check-in',
+          exitLabel: 'Check-out',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Consumos (items)',
+          serviceItemsLabel: 'Alojamiento / servicios',
+          productAmountLabel: 'Consumos facturados',
+          serviceAmountLabel: 'Alojamiento facturado',
+          timeLabel: 'Tiempo / extras',
+          customerLabel: 'Huesped',
+          totalLabel: 'Total estadia',
+          paidLabel: 'Abonado',
+          balanceLabel: 'Saldo huesped',
+          noSelectionText: 'Selecciona una reserva para ver la cuenta.',
+          showTimeRow: true
+        });
+      }
+      if (containsAny(['gimnasio', 'club_deportivo', 'fitness', 'deporte'])) {
+        return mergeCartSummaryProfile({
+          key: 'gimnasio',
+          title: 'Resumen de membresia',
+          badge: 'Fitness',
+          cartLabel: 'Cuenta',
+          stationLabel: 'Puesto',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos / suplementos',
+          serviceItemsLabel: 'Planes / clases',
+          productAmountLabel: 'Productos facturados',
+          serviceAmountLabel: 'Planes y clases facturados',
+          customerLabel: 'Socio',
+          totalLabel: 'Total a cobrar',
+          balanceLabel: 'Saldo socio',
+          noSelectionText: 'Selecciona una cuenta para ver la membresia.'
+        });
+      }
+      if (containsAny(['odontologia', 'consultorio_odontologico', 'clinica', 'laboratorio', 'veterinaria', 'salud'])) {
+        return mergeCartSummaryProfile({
+          key: 'clinico',
+          title: 'Resumen clinico',
+          badge: 'Clinico',
+          cartLabel: 'Cuenta',
+          stationLabel: 'Consultorio',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Insumos / productos',
+          serviceItemsLabel: 'Tratamientos / servicios',
+          productAmountLabel: 'Insumos facturados',
+          serviceAmountLabel: 'Tratamientos facturados',
+          customerLabel: 'Paciente',
+          totalLabel: 'Total tratamiento',
+          balanceLabel: 'Saldo paciente',
+          noSelectionText: 'Selecciona una cuenta para ver el resumen clinico.'
+        });
+      }
+      if (containsAny(['domicilios', 'restaurante', 'bar', 'delivery', 'comida', 'carta'])) {
+        return mergeCartSummaryProfile({
+          key: 'pedido',
+          title: 'Resumen de pedido',
+          badge: 'Pedido',
+          cartLabel: 'Pedido',
+          stationLabel: 'Mesa',
+          entryLabel: 'Pedido creado',
+          exitLabel: 'Entregado / cerrado',
+          itemsLabel: 'Lineas del pedido',
+          productItemsLabel: 'Productos del pedido',
+          serviceItemsLabel: 'Servicios / domicilio',
+          productAmountLabel: 'Productos facturados',
+          serviceAmountLabel: 'Domicilio / servicios',
+          totalLabel: 'Total pedido',
+          balanceLabel: 'Saldo pedido',
+          noSelectionText: 'Selecciona un pedido para ver el resumen.'
+        });
+      }
+      if (containsAny(['taxi_system', 'taxi', 'transporte', 'flota', 'despacho'])) {
+        return mergeCartSummaryProfile({
+          key: 'transporte',
+          title: 'Resumen del servicio',
+          badge: 'Transporte',
+          cartLabel: 'Servicio',
+          stationLabel: 'Vehiculo',
+          entryLabel: 'Inicio',
+          exitLabel: 'Cierre',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos',
+          serviceItemsLabel: 'Viajes / servicios',
+          serviceAmountLabel: 'Viajes facturados',
+          customerLabel: 'Pasajero / cliente',
+          totalLabel: 'Total servicio',
+          balanceLabel: 'Saldo servicio',
+          noSelectionText: 'Selecciona un servicio para ver el resumen.',
+          showTimeRow: true
+        });
+      }
+      if (containsAny(['parqueadero', 'parqueo', 'parking'])) {
+        return mergeCartSummaryProfile({
+          key: 'parqueadero',
+          title: 'Resumen de parqueo',
+          badge: 'Parqueo',
+          cartLabel: 'Ticket',
+          stationLabel: 'Puesto',
+          entryLabel: 'Entrada',
+          exitLabel: 'Salida',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos',
+          serviceItemsLabel: 'Parqueo / servicios',
+          serviceAmountLabel: 'Parqueo facturado',
+          customerLabel: 'Cliente / placa',
+          totalLabel: 'Total parqueo',
+          balanceLabel: 'Saldo ticket',
+          noSelectionText: 'Selecciona un ticket para ver el parqueo.',
+          showTimeRow: true
+        });
+      }
+      if (containsAny(['alquileres', 'alquiler', 'renta', 'activos'])) {
+        return mergeCartSummaryProfile({
+          key: 'alquiler',
+          title: 'Resumen de alquiler',
+          badge: 'Alquiler',
+          cartLabel: 'Contrato',
+          stationLabel: 'Activo',
+          entryLabel: 'Entrega / inicio',
+          exitLabel: 'Devolucion / cierre',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos',
+          serviceItemsLabel: 'Activos / tarifas',
+          serviceAmountLabel: 'Tarifas facturadas',
+          customerLabel: 'Arrendatario / cliente',
+          totalLabel: 'Total alquiler',
+          balanceLabel: 'Saldo contrato',
+          noSelectionText: 'Selecciona un contrato para ver el alquiler.',
+          showTimeRow: true
+        });
+      }
+      if (containsAny(['propiedad_horizontal', 'copropiedad', 'condominio', 'conjunto'])) {
+        return mergeCartSummaryProfile({
+          key: 'copropiedad',
+          title: 'Resumen de recaudo',
+          badge: 'Copropiedad',
+          cartLabel: 'Recaudo',
+          stationLabel: 'Unidad',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos',
+          serviceItemsLabel: 'Cuotas / conceptos',
+          serviceAmountLabel: 'Cuotas facturadas',
+          customerLabel: 'Propietario / residente',
+          totalLabel: 'Total recaudo',
+          balanceLabel: 'Saldo cartera',
+          noSelectionText: 'Selecciona un recaudo para ver el resumen.'
+        });
+      }
+      if (containsAny(['drogueria_farmacia', 'drogueria', 'farmacia', 'farmaceutica'])) {
+        return mergeCartSummaryProfile({
+          key: 'farmacia',
+          title: 'Resumen farmaceutico',
+          badge: 'Farmacia',
+          itemsLabel: 'Lineas dispensadas',
+          productItemsLabel: 'Medicamentos / productos',
+          serviceItemsLabel: 'Servicios farmaceuticos',
+          productAmountLabel: 'Medicamentos facturados',
+          customerLabel: 'Paciente / cliente',
+          totalLabel: 'Total venta',
+          balanceLabel: 'Saldo venta',
+          noSelectionText: 'Selecciona una venta para ver el resumen.'
+        });
+      }
+      if (containsAny(['salon', 'belleza', 'barberia', 'spa'])) {
+        return mergeCartSummaryProfile({
+          key: 'belleza',
+          title: 'Resumen de servicio',
+          badge: 'Belleza',
+          stationLabel: 'Silla / cabina',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos usados / vendidos',
+          serviceItemsLabel: 'Servicios de belleza',
+          serviceAmountLabel: 'Servicios facturados',
+          totalLabel: 'Total servicio',
+          balanceLabel: 'Saldo cliente'
+        });
+      }
+      if (containsAny(['taller', 'mecanico', 'servicio_tecnico', 'servicios_tecnicos', 'reparacion'])) {
+        return mergeCartSummaryProfile({
+          key: 'orden_servicio',
+          title: 'Resumen de orden',
+          badge: 'Orden',
+          cartLabel: 'Orden',
+          stationLabel: 'Bahia',
+          entryLabel: 'Ingreso',
+          exitLabel: 'Entrega / cierre',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Repuestos / productos',
+          serviceItemsLabel: 'Mano de obra / servicios',
+          productAmountLabel: 'Repuestos facturados',
+          serviceAmountLabel: 'Mano de obra facturada',
+          customerLabel: 'Cliente / vehiculo',
+          totalLabel: 'Total orden',
+          balanceLabel: 'Saldo orden'
+        });
+      }
+      if (containsAny(['colegio', 'academia', 'guarderia', 'educacion', 'capacitacion'])) {
+        return mergeCartSummaryProfile({
+          key: 'academico',
+          title: 'Resumen academico',
+          badge: 'Academico',
+          cartLabel: 'Cuenta',
+          stationLabel: 'Aula',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos / materiales',
+          serviceItemsLabel: 'Matriculas / clases',
+          serviceAmountLabel: 'Servicios academicos',
+          customerLabel: 'Estudiante / acudiente',
+          totalLabel: 'Total academico',
+          balanceLabel: 'Saldo academico'
+        });
+      }
+      if (containsAny(['aiu_construccion', 'construccion', 'constructora', 'obra'])) {
+        return mergeCartSummaryProfile({
+          key: 'obra',
+          title: 'Resumen de obra',
+          badge: 'Obra',
+          cartLabel: 'Cuenta',
+          stationLabel: 'Frente',
+          entryLabel: 'Inicio',
+          exitLabel: 'Cierre',
+          itemsLabel: 'Conceptos',
+          productItemsLabel: 'Materiales / productos',
+          serviceItemsLabel: 'Capitulos / servicios',
+          productAmountLabel: 'Materiales facturados',
+          serviceAmountLabel: 'Capitulos facturados',
+          customerLabel: 'Cliente / contrato',
+          totalLabel: 'Total obra',
+          balanceLabel: 'Saldo obra'
+        });
+      }
+      if (containsAny(['operador_turistico', 'turismo', 'viajes', 'tours', 'eventos'])) {
+        return mergeCartSummaryProfile({
+          key: 'turismo',
+          title: 'Resumen de reserva',
+          badge: 'Turismo',
+          cartLabel: 'Reserva',
+          stationLabel: 'Cupo',
+          entryLabel: 'Inicio',
+          exitLabel: 'Cierre',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos / extras',
+          serviceItemsLabel: 'Tours / servicios',
+          productAmountLabel: 'Extras facturados',
+          serviceAmountLabel: 'Servicios turisticos',
+          customerLabel: 'Viajero / cliente',
+          totalLabel: 'Total reserva',
+          balanceLabel: 'Saldo reserva'
+        });
+      }
+      if (containsAny(['inmobiliaria_comercial', 'inmobiliaria', 'propiedades'])) {
+        return mergeCartSummaryProfile({
+          key: 'inmobiliario',
+          title: 'Resumen inmobiliario',
+          badge: 'Inmobiliario',
+          cartLabel: 'Operacion',
+          stationLabel: 'Inmueble',
+          itemsLabel: 'Conceptos',
+          productItemsLabel: 'Productos / gastos',
+          serviceItemsLabel: 'Servicios / comisiones',
+          serviceAmountLabel: 'Servicios facturados',
+          customerLabel: 'Cliente / inmueble',
+          totalLabel: 'Total operacion',
+          balanceLabel: 'Saldo operacion'
+        });
+      }
+      if (containsAny(['seguridad_privada', 'vigilancia_privada', 'guardas', 'rondas'])) {
+        return mergeCartSummaryProfile({
+          key: 'seguridad_privada',
+          title: 'Resumen de servicio',
+          badge: 'Vigilancia',
+          cartLabel: 'Servicio',
+          stationLabel: 'Puesto',
+          entryLabel: 'Inicio turno',
+          exitLabel: 'Cierre turno',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Dotacion / productos',
+          serviceItemsLabel: 'Turnos / servicios',
+          serviceAmountLabel: 'Servicios facturados',
+          customerLabel: 'Cliente / sede',
+          totalLabel: 'Total servicio',
+          balanceLabel: 'Saldo servicio',
+          showTimeRow: true
+        });
+      }
+      if (containsAny(['funeraria_exequial', 'funeraria', 'exequial'])) {
+        return mergeCartSummaryProfile({
+          key: 'funeraria',
+          title: 'Resumen exequial',
+          badge: 'Exequial',
+          cartLabel: 'Servicio',
+          stationLabel: 'Sala',
+          itemsLabel: 'Conceptos',
+          productItemsLabel: 'Productos / arreglos',
+          serviceItemsLabel: 'Servicios exequiales',
+          serviceAmountLabel: 'Servicios facturados',
+          customerLabel: 'Familia / cliente',
+          totalLabel: 'Total servicio',
+          balanceLabel: 'Saldo servicio'
+        });
+      }
+      if (containsAny(['parque_recreativo', 'recreativo', 'atracciones'])) {
+        return mergeCartSummaryProfile({
+          key: 'recreativo',
+          title: 'Resumen de admision',
+          badge: 'Recreacion',
+          cartLabel: 'Ingreso',
+          stationLabel: 'Atraccion',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos / consumos',
+          serviceItemsLabel: 'Entradas / servicios',
+          productAmountLabel: 'Consumos facturados',
+          serviceAmountLabel: 'Entradas facturadas',
+          customerLabel: 'Visitante / cliente',
+          totalLabel: 'Total admision',
+          balanceLabel: 'Saldo admision'
+        });
+      }
+      if (containsAny(['cooperativa_fondo', 'cooperativa', 'fondo'])) {
+        return mergeCartSummaryProfile({
+          key: 'cooperativa',
+          title: 'Resumen de aporte',
+          badge: 'Cooperativa',
+          cartLabel: 'Recaudo',
+          stationLabel: 'Cuenta',
+          itemsLabel: 'Conceptos',
+          productItemsLabel: 'Productos',
+          serviceItemsLabel: 'Aportes / servicios',
+          serviceAmountLabel: 'Aportes facturados',
+          customerLabel: 'Asociado',
+          totalLabel: 'Total recaudo',
+          balanceLabel: 'Saldo asociado'
+        });
+      }
+      if (containsAny(['lavanderia', 'lavado'])) {
+        return mergeCartSummaryProfile({
+          key: 'lavanderia',
+          title: 'Resumen de orden',
+          badge: 'Lavanderia',
+          cartLabel: 'Orden',
+          stationLabel: 'Maquina',
+          entryLabel: 'Recepcion',
+          exitLabel: 'Entrega',
+          itemsLabel: 'Prendas / cargos',
+          productItemsLabel: 'Productos',
+          serviceItemsLabel: 'Lavado / servicios',
+          serviceAmountLabel: 'Servicios facturados',
+          totalLabel: 'Total orden',
+          balanceLabel: 'Saldo orden'
+        });
+      }
+      if (containsAny(['logistica_wms', 'logistica', 'wms', 'transporte_tms'])) {
+        return mergeCartSummaryProfile({
+          key: 'logistica',
+          title: 'Resumen logistico',
+          badge: 'Logistica',
+          cartLabel: 'Operacion',
+          stationLabel: 'Bahia',
+          entryLabel: 'Despacho',
+          exitLabel: 'Cierre',
+          itemsLabel: 'Cargos',
+          productItemsLabel: 'Productos / mercancia',
+          serviceItemsLabel: 'Fletes / servicios',
+          serviceAmountLabel: 'Servicios logisticos',
+          customerLabel: 'Cliente / destino',
+          totalLabel: 'Total operacion',
+          balanceLabel: 'Saldo operacion'
+        });
+      }
+      return mergeCartSummaryProfile();
+    }
+
+    function updateCarritoSummaryTitles(profile) {
+      ['carritoTotalsTitle', 'carritoTotalsTitleStation'].forEach(function(id) {
+        const title = document.getElementById(id);
+        if (title) title.textContent = profile.title;
+      });
+      document.querySelectorAll('.carrito-summary-card').forEach(function(card) {
+        card.setAttribute('data-cart-profile', profile.key || 'general');
+      });
+    }
+
+    function buildCarritoSummaryInnerHtml(selected, profile) {
+      profile = profile || getCartSummaryProfile();
       if (!selected) {
-        return '<p class="text-empty">Selecciona un carrito para ver el resumen.</p>';
+        return '<p class="text-empty">' + escapeHtml(profile.noSelectionText) + '</p>';
       }
 
       const subtotal = Number(selected.subtotal || 0);
@@ -3891,7 +4389,7 @@
       const clienteName = cliente ? normalize(cliente.nombre) : '-';
       const estado = normalize(selected.estado_carrito) || 'abierto';
       const pagoActivo = isCarritoOperativoActivo(selected) ? 'Activo' : 'Inactivo';
-      const modeLabel = state.stationMode ? 'Estación' : 'Carrito';
+      const modeLabel = state.stationMode ? profile.stationLabel : profile.cartLabel;
       const entrada = normalize(selected.activado_en) || normalize(selected.fecha_creacion) || '-';
       const salida = normalize(selected.pagado_en) || '-';
       const tpm = selected.tarifa_por_minutos;
@@ -3904,46 +4402,50 @@
       }
 
       const rows = [
-        { label: modeLabel + ' ID', value: String(selected.id || 0) },
-        { label: 'Código', value: normalize(selected.codigo) || '-' },
-        { label: 'Estado', value: estado },
-        { label: 'Sesión', value: pagoActivo },
-        { label: 'Entrada', value: entrada },
-        { label: 'Salida', value: salida },
-        { label: 'Items totales', value: String(countItems) },
-        { label: 'Productos / combos (ítems)', value: String(productsCount) },
-        { label: 'Servicios (ítems)', value: String(servicesCount) },
-        { label: 'Productos facturados (suma líneas)', value: formatAmount(totalProductosLineas, selected.moneda) },
-        { label: 'Servicio facturado (suma líneas)', value: formatAmount(totalServiciosLineas, selected.moneda) },
-        { label: 'Horas extras (tarifa tiempo)', value: horasExtrasLabel },
-        { label: 'Cliente', value: clienteName },
-        { label: 'Subtotal', value: formatAmount(subtotal, selected.moneda) },
-        { label: 'Descuento', value: formatAmount(discountTotal, selected.moneda) },
-        { label: 'Impuesto', value: formatAmount(taxTotal, selected.moneda) },
-        { label: 'Total', value: formatAmount(total, selected.moneda) },
-        { label: 'Pagado', value: formatAmount(paid, selected.moneda) },
-        { label: 'Saldo', value: formatAmount(balance, selected.moneda) }
+        { label: modeLabel + ' ID', value: String(selected.id || 0), hidden: true },
+        { label: 'Codigo', value: normalize(selected.codigo) || '-', hidden: true },
+        { label: 'Estado', value: estado, hidden: true },
+        { label: 'Sesion', value: pagoActivo, hidden: true },
+        { label: profile.entryLabel, value: entrada },
+        { label: profile.exitLabel, value: salida },
+        { label: profile.itemsLabel, value: String(countItems) },
+        { label: profile.productItemsLabel, value: String(productsCount) },
+        { label: profile.serviceItemsLabel, value: String(servicesCount) },
+        { label: profile.productAmountLabel, value: formatAmount(totalProductosLineas, selected.moneda) },
+        { label: profile.serviceAmountLabel, value: formatAmount(totalServiciosLineas, selected.moneda) },
+        { label: profile.timeLabel, value: horasExtrasLabel, optionalTime: true },
+        { label: profile.customerLabel, value: clienteName },
+        { label: profile.subtotalLabel, value: formatAmount(subtotal, selected.moneda) },
+        { label: profile.discountLabel, value: formatAmount(discountTotal, selected.moneda) },
+        { label: profile.taxLabel, value: formatAmount(taxTotal, selected.moneda) },
+        { label: profile.totalLabel, value: formatAmount(total, selected.moneda), important: true },
+        { label: profile.paidLabel, value: formatAmount(paid, selected.moneda) },
+        { label: profile.balanceLabel, value: formatAmount(balance, selected.moneda), important: true }
       ];
 
-      const hiddenSummaryLabels = new Set(['Estación ID', 'Carrito ID', 'Código', 'Estado', 'Sesión']);
       const compactRows = rows.filter(function(row) {
-        return !hiddenSummaryLabels.has(row.label);
+        if (row.hidden) return false;
+        if (row.optionalTime && !profile.showTimeRow && row.value === '-') return false;
+        return true;
       });
       const totalRows = compactRows.filter(function(row) {
-        return row.label === 'Total' || row.label === 'Saldo';
+        return row.important;
       });
       const detailRows = compactRows.filter(function(row) {
-        return row.label !== 'Total' && row.label !== 'Saldo';
+        return !row.important;
       });
       const orderedRows = totalRows.concat(detailRows);
 
-      return orderedRows.map(function(row) {
+      const contextHtml = '<div class="carrito-summary-profile"><span>' + escapeHtml(profile.badge) + '</span><strong>' + escapeHtml(getPrimaryCartBusinessLabel()) + '</strong></div>';
+      return contextHtml + orderedRows.map(function(row) {
         return '<div class="carrito-summary-row"><span>' + escapeHtml(row.label) + '</span><strong>' + escapeHtml(row.value) + '</strong></div>';
       }).join('');
     }
 
     function renderCarritoSummaryPanel() {
-      const html = buildCarritoSummaryInnerHtml(getSelectedCarrito());
+      const profile = getCartSummaryProfile();
+      updateCarritoSummaryTitles(profile);
+      const html = buildCarritoSummaryInnerHtml(getSelectedCarrito(), profile);
       ['carritoTotalsContent', 'carritoTotalsContentStation'].forEach(function(id) {
         const panel = document.getElementById(id);
         if (panel) panel.innerHTML = html;
@@ -5291,8 +5793,10 @@
 
       await loadEmpresaGeneralConfigFromServer();
       await loadEmpresaAvanzadaConfigFromServer();
+      await loadEmpresaPermissionsContextFromServer();
       await loadStationConfigFromServer();
       await loadTarifaMinutosConfigFromServer();
+      renderCarritoSummaryPanel();
 
       await loadEmpresaTitle();
       await loadClientes();

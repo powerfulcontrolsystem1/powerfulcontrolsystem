@@ -1,3 +1,10 @@
+2026-05-12: Tarjeta de totales del carrito adaptable por tipo de empresa
+- Modulos afectados: `carritos`, `ventas`, `verticales_integracion`, `administrar_empresa`.
+- Cambio funcional: la tarjeta `Totales y detalles` cambia titulo, etiquetas y contexto segun el tipo de empresa/vertical activo, manteniendo el mismo carrito, items, pagos, impuestos, descuentos y saldos del nucleo universal.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` consulta `/api/empresa/permisos_contexto`, lee `vertical_scope`/configuracion general y aplica perfiles de negocio para estadia, gimnasio, clinico, pedidos, transporte, parqueadero, alquileres, copropiedad, farmacia, belleza, ordenes, educacion, obra y verticales nuevos; `web/estilos.css` agrega el indicador compacto del perfil.
+- Seguridad y datos: no se exponen secretos, no cambia aislamiento por `empresa_id`, no se crean endpoints, permisos, tablas, ventas ni pagos paralelos.
+- Validacion: parseo de scripts inline con Node y `git diff --check` sobre archivos frontend tocados.
+
 2026-05-12: Gimnasio elevado a modulo empresarial
 - Modulos afectados: `gimnasio`, `administrar_empresa`, `verticales_integracion`.
 - Cambio funcional: el dashboard de gimnasio incorpora salud operativa, alertas ejecutivas y acciones rapidas calculadas desde socios, planes, clases, pagos, dispositivos y eventos de acceso existentes.

@@ -1,3 +1,9 @@
+## [2026-05-12] Totales del carrito por tipo de empresa
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` adapta la tarjeta `Totales y detalles` con perfiles de negocio: estadia, gimnasio, clinico, pedido, transporte, parqueadero, alquiler, copropiedad, farmacia, belleza, orden de servicio, academico, obra y verticales nuevos.
+- [Contexto] La pagina consulta `/api/empresa/permisos_contexto` para leer `vertical_scope` y usa configuracion general como respaldo; si el contexto no llega, conserva el perfil POS universal.
+- [UX] `web/estilos.css` agrega un indicador compacto de perfil sin cambiar el ancho de la tarjeta ni el flujo de pago.
+- [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Gimnasio empresarial
 - [Frontend] `web/administrar_empresa/gimnasio.html` suma un mando ejecutivo con salud operativa, alertas, acciones rapidas y logo del vertical.
 - [UX] `web/js/gimnasio.js` calcula riesgos desde socios, planes, clases, pagos, dispositivos y bitacora de acceso; agrega busqueda/filtro global y badges de estado en tablas.
