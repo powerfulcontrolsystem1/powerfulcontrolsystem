@@ -1,3 +1,7 @@
+## [2026-05-12] Limpieza visual del super administrador
+- [Frontend] `web/super_administrador.html` retira los indicadores compactos `PostgreSQL`, `VPS`, `Licencias` y `Seguridad` del encabezado lateral.
+- [Alcance] Sin cambios de rutas, iframes, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Identidad visual empresarial
 - [Frontend] `web/administrar_empresa/configuracion.html` agrega una seccion visible para cargar el logo de la empresa y sincronizarlo con la configuracion de factura/documentos.
 - [Panel] `web/administrar_empresa/panel.html` muestra el logo encima de `Panel de <empresa>` con tamano fijo, sin modificar la columna ni dimensiones de la tarjeta de clima.

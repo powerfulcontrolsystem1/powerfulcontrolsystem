@@ -1,3 +1,9 @@
+2026-05-12: Limpieza visual del super administrador
+- Modulos afectados: `super_administrador`.
+- Cambio funcional: se retira del encabezado lateral el bloque de cuatro indicadores compactos `PostgreSQL`, `VPS`, `Licencias` y `Seguridad`.
+- Alcance: no cambian rutas del menu, iframes, permisos, endpoints, base de datos ni dependencias.
+- Archivos afectados: `web/super_administrador.html`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/historial_de_cambios`.
+
 2026-05-12: Identidad visual empresarial compartida
 - Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
 - Cambio funcional: la configuracion empresarial agrega una seccion visible para subir o pegar el logo de la empresa; el panel principal lo muestra encima del titulo `Panel de <empresa>` con tamano fijo, sin alterar la tarjeta del clima.
