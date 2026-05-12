@@ -1,3 +1,8 @@
+2026-05-12: Nota operativa para tema en login de usuarios
+- `web/login_usuario.html` y `web/menu.js` priorizan la cookie visible `pcs_theme` sobre `localStorage` para pintar el modo claro/oscuro antes de autenticar.
+- La cookie `pcs_theme` solo guarda preferencia visual; no reemplaza ni expone la cookie de sesion `HttpOnly`, no concede acceso y no altera wrappers ni permisos.
+- El comportamiento esperado es que el login operativo cargue con la apariencia del ultimo usuario que inicio sesion o cambio tema en ese navegador.
+
 2026-05-12: Nota operativa para ayuda de CRM unificado
 - El boton `Ayuda` agregado al menu de `crm_unificado` abre una pestana interna de `web/administrar_empresa/crm_comercial.html`; no crea pagina publica, endpoint nuevo ni permiso adicional.
 - La ayuda esta dentro del alcance ya protegido por `linkCRMComercial` y `crm_unificado`, y primero define CRM antes de explicar el tablero, leads, seguimientos, cotizaciones, forecast, metas y embudo.

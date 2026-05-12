@@ -1,3 +1,9 @@
+## [2026-05-12] Tema del login usuario desde cookies
+- [Frontend] `web/login_usuario.html` lee primero la cookie `pcs_theme` antes de caer a `localStorage`, aplicando el tema antes de cargar estilos.
+- [Tema global] `web/menu.js` tambien prioriza `pcs_theme` para que el gestor compartido no sobrescriba el login con un valor local antiguo.
+- [UX] El login de usuarios operativos conserva la apariencia clara/oscura del ultimo usuario que inicio sesion o cambio tema en el navegador.
+- [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Ayuda interna en CRM unificado
 - [Menu] `web/administrar_empresa/modulo_menu.html` agrega `Ayuda` como ultimo boton del menu de `crm_unificado`.
 - [Frontend] `web/administrar_empresa/crm_comercial.html` agrega una pestana `Ayuda` que primero define que es CRM y despues explica el uso del modulo.

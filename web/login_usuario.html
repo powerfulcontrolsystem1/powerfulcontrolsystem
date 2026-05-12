@@ -17,9 +17,9 @@
         return allowed[value] ? value : "light";
       }
       function storedTheme(){
-        var value = "";
-        try { value = localStorage.getItem("theme") || ""; } catch (_) {}
-        return normalize(value || cookieTheme());
+        var value = cookieTheme();
+        try { value = value || localStorage.getItem("theme") || ""; } catch (_) {}
+        return normalize(value);
       }
       function apply(theme){
         var normalized = normalize(theme);

@@ -38,11 +38,13 @@
   function readStoredTheme(){
     var stored = '';
     try {
-      stored = window.localStorage.getItem(THEME_STORAGE_KEY) || '';
-    } catch (error) {}
-    if (!stored) {
+      stored = decodeURIComponent(getCookie(THEME_COOKIE_NAME) || '');
+    } catch (error) {
       stored = getCookie(THEME_COOKIE_NAME) || '';
     }
+    try {
+      stored = stored || window.localStorage.getItem(THEME_STORAGE_KEY) || '';
+    } catch (error) {}
     return normalizeTheme(stored);
   }
 

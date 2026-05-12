@@ -1,3 +1,10 @@
+2026-05-12: Login usuario respeta tema guardado en cookies
+- Modulos afectados: `autenticacion`, `login_usuario`, `apariencia`.
+- Cambio funcional: el login de usuarios operativos toma primero la cookie `pcs_theme` y luego `localStorage`, de modo que cargue automaticamente el modo claro/oscuro configurado por el ultimo usuario que inicio sesion o cambio apariencia en ese navegador.
+- Frontend: `web/login_usuario.html` aplica el tema antes de cargar CSS y `web/menu.js` alinea el gestor global para no sobrescribir la cookie con un valor local anterior.
+- Seguridad y permisos: no cambia cookies de sesion `HttpOnly`, autenticacion, roles, permisos, endpoints, tablas ni dependencias; solo usa la cookie visible de preferencia visual.
+- Validacion: `node --check web/menu.js`, parseo de scripts inline de `login_usuario.html` y `git diff --check`.
+
 2026-05-12: Ayuda operativa en CRM unificado
 - Modulos afectados: `crm_unificado`, `administrar_empresa`, `roles/licencias`.
 - Cambio funcional: el menu de CRM unificado agrega un boton final `Ayuda` y la pagina `crm_comercial.html` agrega una pestana de ayuda que define primero que es CRM antes de explicar el flujo del modulo.

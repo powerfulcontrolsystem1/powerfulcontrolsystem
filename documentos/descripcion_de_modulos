@@ -1,3 +1,9 @@
+2026-05-12: Tema automatico en login de usuarios operativos
+- Modulos afectados: `autenticacion`, `login_usuario`, `apariencia`.
+- Cambio funcional: `login_usuario.html` carga automaticamente el tema claro/oscuro desde la cookie `pcs_theme` del navegador antes de usar `localStorage`.
+- UX: la pantalla queda sincronizada con la apariencia del ultimo usuario que inicio sesion o cambio tema en ese navegador, evitando que un valor local antiguo fuerce otro color.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
 2026-05-12: Ayuda contextual en CRM unificado
 - Modulos afectados: `crm_unificado`, `administrar_empresa`.
 - Cambio funcional: el menu del CRM incorpora un boton inferior `Ayuda` y el modulo muestra una pestana dedicada que comienza definiendo CRM como Gestion de Relaciones con Clientes.
