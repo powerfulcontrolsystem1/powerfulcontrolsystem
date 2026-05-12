@@ -23799,3 +23799,66 @@ Archivos modificados:
 - Backend: la activacion por licencia aplica preconfiguracion del tipo de empresa sin ejecutar migraciones automaticas; la matriz ya no publica rutas de sincronizacion.
 - Frontend: la matriz muestra plantilla, tablas, permisos, flujo de venta y reportes; los dashboards clasicos ya no presentan botones de sincronizacion manual.
 - Verificacion: go test ./... en backend; validacion JS de catalogos y scripts inline de pantallas empresariales tocadas.
+
+2026-05-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/aiu_construccion.go
+- backend/db/alquileres.go
+- backend/db/apartamentos_turisticos.go
+- backend/db/domicilios.go
+- backend/db/gimnasio.go
+- backend/db/odontologia.go
+- backend/db/parqueadero.go
+- backend/db/propiedad_horizontal.go
+- backend/db/taxi_system.go
+- backend/handlers/aiu_construccion.go
+- backend/handlers/alquileres.go
+- backend/handlers/apartamentos_turisticos.go
+- backend/handlers/domicilios.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_verticales_integracion.go
+- backend/handlers/empresa_verticales_integracion_test.go
+- backend/handlers/gimnasio.go
+- backend/handlers/odontologia.go
+- backend/handlers/parqueadero.go
+- backend/handlers/propiedad_horizontal.go
+- backend/handlers/taxi_system.go
+- documentos/CHANGELOG.md
+- documentos/aiu_construccion.md
+- documentos/alquileres.md
+- documentos/apartamentos_turisticos.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/domicilios_profesional.md
+- documentos/estructura_bd.md
+- documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md
+- documentos/historial_de_cambios
+- documentos/matriz_integracion_verticales.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- documentos/parqueadero_tickets_qr.md
+- documentos/propiedad_horizontal.md
+- documentos/taxi_system_profesional.md
+- web/administrar_empresa.html
+- web/administrar_empresa/aiu_construccion.html
+- web/administrar_empresa/alquileres.html
+- web/administrar_empresa/apartamentos_turisticos.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/consultorio_odontologico.html
+- web/administrar_empresa/domicilios.html
+- web/administrar_empresa/gimnasio.html
+- web/administrar_empresa/parqueadero.html
+- web/administrar_empresa/propiedad_horizontal.html
+- web/administrar_empresa/taxi_system.html
+- web/administrar_empresa/verticales_integracion.html
+- web/js/alquileres.js
+- web/js/consultorio_odontologico.js
+- web/js/domicilios.js
+- web/js/gimnasio.js
+- web/js/taxi_system.js
+- web/js/verticales_integracion_catalogo.js
+- web/super/licencias_resumen.html
