@@ -5,14 +5,22 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 	items := buildEmpresaVerticalesIntegracionCatalogo()
-	if len(items) < 12 {
-		t.Fatalf("catalogo clasico incompleto: %d", len(items))
+	if len(items) != 30 {
+		t.Fatalf("catalogo universal debe publicar 30 verticales canonicos exactos, obtuvo %d", len(items))
 	}
 	seen := map[string]bool{}
+	forbidden := map[string]string{
+		"consultorio_odontologico": "alias fusionado en odontologia",
+		"taxi":                     "alias fusionado en taxi_system",
+		"turnos_atencion":          "capacidad de soporte transversal",
+		"turnos":                   "alias de soporte transversal",
+	}
 	required := map[string]bool{
 		"gimnasio":                false,
 		"odontologia":             false,
@@ -32,17 +40,23 @@ func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 		if seen[item.Modulo] {
 			t.Fatalf("modulo duplicado: %s", item.Modulo)
 		}
+		if reason, ok := forbidden[item.Modulo]; ok {
+			t.Fatalf("modulo no canonico publicado como vertical: %s (%s)", item.Modulo, reason)
+		}
 		seen[item.Modulo] = true
 		if _, ok := required[item.Modulo]; ok {
 			required[item.Modulo] = true
 		}
+		if item.AliasDe != "" {
+			t.Fatalf("alias publicado como vertical canonico: %+v", item)
+		}
 		if item.OperationalVisible && len(item.DuplicatesCore) != 0 {
 			t.Fatalf("vertical visible con duplicados del nucleo: %+v", item)
 		}
-		if item.OperationalVisible && item.IntegrationStatus != "plantilla_integrada_nucleo" && item.IntegrationStatus != "integrado_soporte" {
+		if item.OperationalVisible && item.IntegrationStatus != "plantilla_integrada_nucleo" {
 			t.Fatalf("estado visible invalido para %s: %s", item.Modulo, item.IntegrationStatus)
 		}
-		if item.AliasDe == "" && len(item.OwnFlowAllowed) == 0 {
+		if len(item.OwnFlowAllowed) == 0 {
 			t.Fatalf("vertical sin flujo especializado declarado: %+v", item)
 		}
 		if item.OperationalVisible && len(item.TemplateActivates) == 0 {
@@ -60,6 +74,30 @@ func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 		if item.OperationalVisible && len(item.ReportsProduced) == 0 {
 			t.Fatalf("vertical visible sin reportes declarados: %+v", item)
 		}
+		if item.OperationalVisible && !hasAllStringValues(item.FinancialCoreModules, []string{"ventas", "pagos", "finanzas", "reportes"}) {
+			t.Fatalf("vertical visible sin nucleo financiero declarado: %+v", item)
+		}
+		if item.OperationalVisible && len(item.IncomeFlow) == 0 {
+			t.Fatalf("vertical visible sin flujo de ingresos del nucleo: %+v", item)
+		}
+		if item.OperationalVisible && len(item.ExpenseFlow) == 0 {
+			t.Fatalf("vertical visible sin flujo de egresos del nucleo: %+v", item)
+		}
+		if item.OperationalVisible && !hasAllStringValues(item.FinancialTables, []string{"empresa_finanzas_movimientos"}) {
+			t.Fatalf("vertical visible sin tablas financieras del nucleo: %+v", item)
+		}
+		if item.OperationalVisible && len(item.FinancialReports) == 0 {
+			t.Fatalf("vertical visible sin reportes financieros del nucleo: %+v", item)
+		}
+		if item.OperationalVisible && !item.ProfessionalReady {
+			t.Fatalf("vertical visible sin preparacion profesional completa: %+v", item)
+		}
+		if item.OperationalVisible && item.ReadinessScore != 100 {
+			t.Fatalf("vertical visible con readiness score invalido: %+v", item)
+		}
+		if item.OperationalVisible && len(item.ConfigurationScope) == 0 {
+			t.Fatalf("vertical visible sin alcance de configuracion: %+v", item)
+		}
 		payload, err := json.Marshal(item)
 		if err != nil {
 			t.Fatalf("marshal item: %v", err)
@@ -73,6 +111,33 @@ func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 			t.Fatalf("vertical requerido faltante en catalogo: %s", module)
 		}
 	}
+	for _, nuevo := range dbpkg.NuevosVerticalesTipoEmpresaCatalog() {
+		module := dbpkg.NormalizeEmpresaModuloColombia(nuevo.Modulo)
+		if module == "" {
+			continue
+		}
+		if !seen[module] {
+			t.Fatalf("nuevo vertical faltante en matriz universal: %s", module)
+		}
+	}
+	if len(items)-len(dbpkg.NuevosVerticalesTipoEmpresaCatalog()) != 10 {
+		t.Fatalf("la matriz debe conservar 10 verticales clasicos canonicos y 20 nuevos: total=%d nuevos=%d", len(items), len(dbpkg.NuevosVerticalesTipoEmpresaCatalog()))
+	}
+	if !hasAllStringValues(findVerticalForTest(items, "odontologia").FusedModules, []string{"consultorio_odontologico"}) {
+		t.Fatalf("odontologia debe declarar fusion de consultorio_odontologico")
+	}
+	if !hasAllStringValues(findVerticalForTest(items, "taxi_system").FusedModules, []string{"taxi"}) {
+		t.Fatalf("taxi_system debe declarar fusion de taxi")
+	}
+}
+
+func findVerticalForTest(items []empresaVerticalIntegracionItem, module string) empresaVerticalIntegracionItem {
+	for _, item := range items {
+		if item.Modulo == module {
+			return item
+		}
+	}
+	return empresaVerticalIntegracionItem{}
 }
 
 func jsonContainsKey(payload []byte, key string) bool {
@@ -99,7 +164,7 @@ func TestPublicVerticalesIntegracionCatalogoHandler(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&payload); err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if !payload.OK || payload.Total != len(payload.Items) || payload.Total < 12 {
+	if !payload.OK || payload.Total != len(payload.Items) || payload.Total != 30 {
 		t.Fatalf("payload inesperado: %+v", payload)
 	}
 }

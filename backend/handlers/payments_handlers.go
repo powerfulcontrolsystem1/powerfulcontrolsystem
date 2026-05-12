@@ -1544,6 +1544,18 @@ func validateLicenciaEmpresaTipoCompat(dbSuper, dbEmp *sql.DB, lic *dbpkg.Licenc
 	return nil
 }
 
+func licenciaVisibleParaClientes(lic *dbpkg.Licencia) bool {
+	return lic != nil && lic.Activo == 1
+}
+
+func rejectLicenciaOcultaParaClientes(w http.ResponseWriter, lic *dbpkg.Licencia) bool {
+	if licenciaVisibleParaClientes(lic) {
+		return false
+	}
+	http.Error(w, "licencia no disponible para clientes", http.StatusNotFound)
+	return true
+}
+
 func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, asesorID, checkoutMode string, addonLicenciaIDs []int64) (licenciaCheckoutSummary, *dbpkg.EmpresaLicenciaBundleSummary, error) {
 	mode := normalizeLicenciaCheckoutMode(checkoutMode)
 	if mode == "" {
@@ -1627,6 +1639,9 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 		lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 		if err != nil || lic == nil {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+		if rejectLicenciaOcultaParaClientes(w, lic) {
 			return
 		}
 		var empresa *dbpkg.Empresa
@@ -3612,6 +3627,9 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
 			return
 		}
+		if rejectLicenciaOcultaParaClientes(w, lic) {
+			return
+		}
 		if payload.EmpresaID <= 0 && lic.EmpresaID > 0 {
 			payload.EmpresaID = lic.EmpresaID
 		}
@@ -3815,6 +3833,9 @@ func WompiCreateNequiTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
 		if err != nil || lic == nil {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+		if rejectLicenciaOcultaParaClientes(w, lic) {
 			return
 		}
 		// Si no llegó empresa_id (algunos flujos solo pasan licencia_id), usar la empresa ya asociada a la licencia.
@@ -4728,6 +4749,9 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
 			return
 		}
+		if rejectLicenciaOcultaParaClientes(w, lic) {
+			return
+		}
 		if payload.EmpresaID <= 0 && lic.EmpresaID > 0 {
 			payload.EmpresaID = lic.EmpresaID
 		}
@@ -5575,6 +5599,9 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
 		if err != nil || lic == nil {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
+			return
+		}
+		if rejectLicenciaOcultaParaClientes(w, lic) {
 			return
 		}
 

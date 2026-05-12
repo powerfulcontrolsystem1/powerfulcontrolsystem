@@ -1396,19 +1396,30 @@ p{color:var(--muted);line-height:1.5}
 .verticales-integration-kpis div{min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
 .verticales-integration-kpis span{display:block;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
 .verticales-integration-kpis strong{display:block;margin-top:4px;font-size:1.5rem;line-height:1.1}
+.verticales-integration-readiness{display:grid;grid-template-columns:minmax(280px,.95fr) 2fr;gap:12px;align-items:stretch}
+.verticales-integration-readiness-main,.verticales-integration-readiness-grid div{min-width:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px}
+.verticales-integration-readiness-main{display:grid;gap:6px}
+.verticales-integration-readiness-main span,.verticales-integration-readiness-grid span{display:block;color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.verticales-integration-readiness-main strong{font-size:1.18rem;line-height:1.2}
+.verticales-integration-readiness-main small{color:var(--muted);line-height:1.35}
+.verticales-integration-readiness-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.verticales-integration-readiness-grid strong{display:block;margin-top:4px;font-size:1.35rem;line-height:1.1}
 .verticales-integration-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
-.verticales-integration-table{width:100%;border-collapse:collapse;min-width:920px}
+.verticales-integration-table{width:100%;border-collapse:collapse;min-width:1080px}
 .verticales-integration-table th,.verticales-integration-table td{padding:12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
 .verticales-integration-table th{color:var(--muted);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em;background:var(--surface-soft)}
 .verticales-integration-table td span,.verticales-integration-table td small{display:block;margin-top:4px;color:var(--muted);font-size:.78rem;line-height:1.35}
 .verticales-integration-table mark{display:inline-flex;padding:4px 8px;border-radius:999px;background:color-mix(in srgb,#dcfce7 72%,var(--surface));color:#166534;font-size:.75rem;font-weight:900}
 .verticales-integration-table mark[data-visible="0"]{background:color-mix(in srgb,#fee2e2 72%,var(--surface));color:#991b1b}
+.verticales-integration-table mark[data-ready="1"]{background:color-mix(in srgb,#dbeafe 72%,var(--surface));color:#1d4ed8}
+.verticales-integration-table mark[data-ready="0"]{background:color-mix(in srgb,#fef3c7 72%,var(--surface));color:#92400e}
 .verticales-integration-table code{white-space:normal;overflow-wrap:anywhere}
 .verticales-sync-btn{display:inline-flex;align-items:center;justify-content:center;margin-top:8px;min-height:32px;padding:6px 10px;border:1px solid color-mix(in srgb,var(--accent) 42%,var(--border));border-radius:8px;background:var(--accent);color:var(--btn-primary-text,#fff);font:inherit;font-size:.78rem;font-weight:900;cursor:pointer}
 .verticales-sync-btn:disabled{opacity:.65;cursor:wait}
 .verticales-sync-muted,.verticales-sync-result{display:block;margin-top:7px;color:var(--muted);font-size:.78rem;line-height:1.35}
 .verticales-sync-result[data-error="1"]{color:#b91c1c}
-@media (max-width:760px){.verticales-integration-shell{padding:14px}.verticales-integration-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.verticales-integration-table{min-width:760px}}
+@media (max-width:920px){.verticales-integration-readiness{grid-template-columns:1fr}.verticales-integration-readiness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.verticales-integration-shell{padding:14px}.verticales-integration-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.verticales-integration-table{min-width:860px}}
 .admin-sidebar .nav a:hover img.icon{transform:translateY(-1px)}
 .admin-sidebar .nav a.active img.icon{background:var(--menu-icon-active-bg,#fff);border-color:rgba(255,255,255,.55);box-shadow:0 8px 18px rgba(15,23,42,.18)}
 .admin-sidebar .nav a[id*="Panel"]{--menu-icon-bg:#dbeafe;--menu-icon-border:#60a5fa}

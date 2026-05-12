@@ -1,3 +1,11 @@
+- 2026-05-12: licencias ocultables para clientes. `web/super/licencias.html` renombra el estado como visibilidad comercial y permite mostrar/ocultar licencias del catálogo; el backend bloquea checkout público, Wompi, Nequi, Epayco, activación sin pago y addons seleccionados cuando `licencias.activo=0`. No agrega tablas ni dependencias.
+
+- 2026-05-12: nucleo configurable por plantilla de tipo de empresa. `tipo_empresa_preconfiguraciones.config_json` incorpora `adaptacion_nucleo`; al aplicar la plantilla se guarda la preferencia empresarial y `estaciones_config` declara el recurso que representa cada estacion. Usuarios operativos y productos/servicios quedan como nucleo comun configurable, no como duplicados por vertical. Sin tablas ni dependencias nuevas.
+
+- 2026-05-12: matriz profesional de 30 verticales canonicos. `/api/*/verticales_integracion/catalogo` ahora devuelve exactamente 10 clasicos reales + 20 nuevos; `consultorio_odontologico` se fusiona en `odontologia`, `taxi` en `taxi_system` y `turnos_atencion`/`turnos` quedan como soporte transversal. Cada item visible publica readiness profesional, fusiones/soportes, alcance de configuracion y amarre financiero con ingresos/egresos del nucleo (`empresa_finanzas_movimientos`, ventas, pagos, tesoreria y reportes). Sin cambios de esquema ni dependencias.
+
+- 2026-05-12: compactados los indicadores economicos del panel empresarial en escritorio. `web/administrar_empresa/panel.html` cambia las tarjetas grandes de mercado por una tabla de dos indicadores por fila en PC, manteniendo tarjetas compactas en movil. No cambia APIs, permisos ni dependencias.
+
 - 2026-05-12: corregido el enlace `Probar Gratis` del index. `web/index.html` ahora abre `/descripcion_de_los_sistemas.html` con contexto de tarjeta y ancla, `backend/main.go` sirve la ruta legacy `/descripcion_de_los_sistemas.ht` como HTML para evitar descargas, `AuthMiddleware` permite ambas rutas publicas y `web/super/pagina_principal.html` apunta a la landing oficial `.html`.
 
 - 2026-05-12: reparada la apariencia claro/oscuro del Centro de mando super. `web/super/licencias_resumen.html` ahora consume variables globales de tema, aplica temprano el tema guardado, corrige contrastes de botones/pills/tablas/tarjetas y deja graficas SVG y aro de score atados a CSS variables. No cambia endpoints, permisos ni dependencias.

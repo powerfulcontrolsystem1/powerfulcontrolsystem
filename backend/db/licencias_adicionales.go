@@ -166,6 +166,9 @@ func UpsertEmpresaLicenciaAdicional(dbConn *sql.DB, empresaID, licenciaID int64,
 	if lic == nil {
 		return 0, fmt.Errorf("licencia adicional no encontrada")
 	}
+	if lic.Activo != 1 {
+		return 0, fmt.Errorf("licencia adicional no disponible para clientes")
+	}
 	if lic.EsAdicional != 1 {
 		return 0, fmt.Errorf("la licencia seleccionada no esta marcada como adicional")
 	}
@@ -356,7 +359,7 @@ func BuildEmpresaLicenciaBundleSummary(dbConn *sql.DB, empresaID int64, checkout
 		if err != nil {
 			return nil, err
 		}
-		if lic == nil || lic.EsAdicional != 1 {
+		if lic == nil || lic.Activo != 1 || lic.EsAdicional != 1 {
 			continue
 		}
 		if _, already := activeAddonIDs[selectedID]; already {

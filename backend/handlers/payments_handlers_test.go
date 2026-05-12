@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestPickEpaycoFieldReadsNestedAliases(t *testing.T) {
@@ -289,6 +291,18 @@ func TestEpaycoApprovedStatusAliasesActivateLicenses(t *testing.T) {
 		if isApprovedPaymentStatus(status) {
 			t.Fatalf("did not expect %q to be treated as approved", status)
 		}
+	}
+}
+
+func TestLicenciaVisibleParaClientesRequiresActivo(t *testing.T) {
+	if licenciaVisibleParaClientes(nil) {
+		t.Fatal("nil license must not be visible")
+	}
+	if licenciaVisibleParaClientes(&dbpkg.Licencia{Activo: 0}) {
+		t.Fatal("inactive license must not be visible to clients")
+	}
+	if !licenciaVisibleParaClientes(&dbpkg.Licencia{Activo: 1}) {
+		t.Fatal("active license should be visible to clients")
 	}
 }
 

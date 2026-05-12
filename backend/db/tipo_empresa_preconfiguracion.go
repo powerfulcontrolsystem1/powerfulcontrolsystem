@@ -26,6 +26,7 @@ type TipoEmpresaPreconfiguracion struct {
 type TipoEmpresaPreconfigTemplate struct {
 	Estaciones          TipoEmpresaPreconfigEstaciones           `json:"estaciones"`
 	Operacion           TipoEmpresaPreconfigOperacion            `json:"operacion,omitempty"`
+	AdaptacionNucleo    TipoEmpresaPreconfigAdaptacionNucleo     `json:"adaptacion_nucleo,omitempty"`
 	IntegracionVertical *TipoEmpresaPreconfigIntegracionVertical `json:"integracion_vertical,omitempty"`
 	Productos           []TipoEmpresaPreconfigProducto           `json:"productos"`
 	Usuarios            []TipoEmpresaPreconfigUsuario            `json:"usuarios,omitempty"`
@@ -33,6 +34,19 @@ type TipoEmpresaPreconfigTemplate struct {
 	Modulos             TipoEmpresaPreconfigModulos              `json:"modulos,omitempty"`
 	Asistente           TipoEmpresaPreconfigAsistenteIA          `json:"asistente_ia,omitempty"`
 	TareasGuia          []TipoEmpresaPreconfigTareaGuia          `json:"tareas_guia,omitempty"`
+}
+
+type TipoEmpresaPreconfigAdaptacionNucleo struct {
+	FuenteUnica                        bool     `json:"fuente_unica"`
+	UsuariosDesdeNucleo                bool     `json:"usuarios_desde_nucleo"`
+	ProductosServiciosDesdeNucleo      bool     `json:"productos_servicios_desde_nucleo"`
+	EstacionesComoRecursosConfigurados bool     `json:"estaciones_como_recursos_configurados"`
+	EntidadEstacionSingular            string   `json:"entidad_estacion_singular,omitempty"`
+	EntidadEstacionPlural              string   `json:"entidad_estacion_plural,omitempty"`
+	UsuariosOperativos                 []string `json:"usuarios_operativos,omitempty"`
+	ProductosServiciosGuia             []string `json:"productos_servicios_guia,omitempty"`
+	EstacionesGuia                     []string `json:"estaciones_guia,omitempty"`
+	Reglas                             []string `json:"reglas,omitempty"`
 }
 
 type TipoEmpresaPreconfigEstaciones struct {
@@ -58,17 +72,22 @@ type TipoEmpresaPreconfigOperacion struct {
 }
 
 type TipoEmpresaPreconfigIntegracionVertical struct {
-	Modulo              string   `json:"modulo"`
-	EstadoIntegracion   string   `json:"estado_integracion"`
-	Decision            string   `json:"decision"`
-	ProduccionMasiva    bool     `json:"produccion_masiva"`
-	PrioridadProduccion int      `json:"prioridad_produccion,omitempty"`
-	MotivoDecision      string   `json:"motivo_decision,omitempty"`
-	TemplateActivates   []string `json:"template_activates,omitempty"`
-	TablesTouched       []string `json:"tables_touched,omitempty"`
-	RequiredPermissions []string `json:"required_permissions,omitempty"`
-	SaleFlow            []string `json:"sale_flow,omitempty"`
-	ReportsProduced     []string `json:"reports_produced,omitempty"`
+	Modulo               string   `json:"modulo"`
+	EstadoIntegracion    string   `json:"estado_integracion"`
+	Decision             string   `json:"decision"`
+	ProduccionMasiva     bool     `json:"produccion_masiva"`
+	PrioridadProduccion  int      `json:"prioridad_produccion,omitempty"`
+	MotivoDecision       string   `json:"motivo_decision,omitempty"`
+	TemplateActivates    []string `json:"template_activates,omitempty"`
+	TablesTouched        []string `json:"tables_touched,omitempty"`
+	RequiredPermissions  []string `json:"required_permissions,omitempty"`
+	SaleFlow             []string `json:"sale_flow,omitempty"`
+	ReportsProduced      []string `json:"reports_produced,omitempty"`
+	FinancialCoreModules []string `json:"financial_core_modules,omitempty"`
+	IncomeFlow           []string `json:"income_flow,omitempty"`
+	ExpenseFlow          []string `json:"expense_flow,omitempty"`
+	FinancialTables      []string `json:"financial_tables,omitempty"`
+	FinancialReports     []string `json:"financial_reports,omitempty"`
 }
 
 type TipoEmpresaPreconfigProducto struct {
@@ -1886,9 +1905,71 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 	if template.IntegracionVertical != nil {
 		template.IntegracionVertical = normalizeTipoEmpresaPreconfigIntegracionVertical(*template.IntegracionVertical)
 	}
+	template.AdaptacionNucleo = buildTipoEmpresaPreconfigAdaptacionNucleo(template)
 	template.Tarifas = normalizeTipoEmpresaPreconfigTarifas(template.Tarifas, template.Estaciones.Cantidad)
 	template.Modulos = normalizeTipoEmpresaPreconfigModulos(template.Modulos)
 	return template
+}
+
+func buildTipoEmpresaPreconfigAdaptacionNucleo(template TipoEmpresaPreconfigTemplate) TipoEmpresaPreconfigAdaptacionNucleo {
+	adaptacion := template.AdaptacionNucleo
+	adaptacion.FuenteUnica = true
+	adaptacion.UsuariosDesdeNucleo = true
+	adaptacion.ProductosServiciosDesdeNucleo = true
+	adaptacion.EstacionesComoRecursosConfigurados = template.Operacion.UsaEstaciones && template.Estaciones.Cantidad > 0
+	adaptacion.EntidadEstacionSingular = strings.TrimSpace(firstNonEmptyPreconfigString(adaptacion.EntidadEstacionSingular, template.Operacion.NombreEstacionSingular, template.Estaciones.Prefijo, "Estacion"))
+	adaptacion.EntidadEstacionPlural = strings.TrimSpace(firstNonEmptyPreconfigString(adaptacion.EntidadEstacionPlural, template.Operacion.NombreEstacionPlural, pluralizeTipoEmpresaStationName(adaptacion.EntidadEstacionSingular)))
+
+	roles := make([]string, 0, len(template.Usuarios)+len(template.Operacion.RolesOperativos))
+	for _, usuario := range template.Usuarios {
+		if strings.TrimSpace(usuario.Rol) != "" {
+			roles = append(roles, usuario.Rol)
+		}
+	}
+	roles = append(roles, template.Operacion.RolesOperativos...)
+	adaptacion.UsuariosOperativos = uniqueTrimmedStrings(append(adaptacion.UsuariosOperativos, roles...), true)
+
+	productos := make([]string, 0, len(template.Productos))
+	for _, producto := range template.Productos {
+		nombre := strings.TrimSpace(producto.Nombre)
+		if nombre == "" {
+			continue
+		}
+		categoria := strings.TrimSpace(producto.Categoria)
+		if categoria != "" {
+			nombre += " (" + categoria + ")"
+		}
+		productos = append(productos, nombre)
+	}
+	adaptacion.ProductosServiciosGuia = uniqueTrimmedStrings(append(adaptacion.ProductosServiciosGuia, productos...), false)
+
+	estaciones := make([]string, 0, template.Estaciones.Cantidad)
+	if adaptacion.EstacionesComoRecursosConfigurados {
+		max := template.Estaciones.Cantidad
+		if max > 6 {
+			max = 6
+		}
+		for i := 1; i <= max; i++ {
+			estaciones = append(estaciones, fmt.Sprintf("%s %d", adaptacion.EntidadEstacionSingular, i))
+		}
+	}
+	adaptacion.EstacionesGuia = uniqueTrimmedStrings(append(adaptacion.EstacionesGuia, estaciones...), false)
+	adaptacion.Reglas = uniqueTrimmedStrings(append(adaptacion.Reglas,
+		"Los usuarios operativos se crean en el nucleo de usuarios y roles de la empresa.",
+		"Los productos y servicios cobrables se administran en el nucleo de productos/servicios.",
+		"Las estaciones son recursos configurables del negocio: habitaciones, apartamentos, puestos, bahias, vehiculos, aulas, consultorios u oficinas segun la plantilla.",
+		"El vertical solo conserva su especialidad operativa; ventas, pagos, clientes, facturacion, finanzas y reportes permanecen centralizados.",
+	), false)
+	return adaptacion
+}
+
+func firstNonEmptyPreconfigString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func normalizeTipoEmpresaPreconfigIntegracionVertical(item TipoEmpresaPreconfigIntegracionVertical) *TipoEmpresaPreconfigIntegracionVertical {
@@ -1914,6 +1995,11 @@ func normalizeTipoEmpresaPreconfigIntegracionVertical(item TipoEmpresaPreconfigI
 	item.RequiredPermissions = uniqueTrimmedStrings(item.RequiredPermissions, false)
 	item.SaleFlow = uniqueTrimmedStrings(item.SaleFlow, false)
 	item.ReportsProduced = uniqueTrimmedStrings(item.ReportsProduced, false)
+	item.FinancialCoreModules = uniqueTrimmedStrings(item.FinancialCoreModules, false)
+	item.IncomeFlow = uniqueTrimmedStrings(item.IncomeFlow, false)
+	item.ExpenseFlow = uniqueTrimmedStrings(item.ExpenseFlow, false)
+	item.FinancialTables = uniqueTrimmedStrings(item.FinancialTables, false)
+	item.FinancialReports = uniqueTrimmedStrings(item.FinancialReports, false)
 	return &item
 }
 

@@ -1,3 +1,27 @@
+## [2026-05-12] Nucleo configurable por plantilla
+- [Backend] `tipo_empresa_preconfiguraciones.config_json` normaliza `adaptacion_nucleo` para usuarios operativos, productos/servicios y estaciones como recursos del negocio.
+- [Aplicacion] Al aplicar una plantilla se guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` y `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`.
+- [Super] `web/super/preconfiguracion_tipos_empresa.html` muestra la seccion `Nucleo configurable` y envia la metadata al guardar.
+- [Alcance] Sin tablas, columnas, permisos ni dependencias nuevas.
+
+## [2026-05-12] Matriz profesional de 30 verticales
+- [Backend] `/api/*/verticales_integracion/catalogo` publica exactamente 30 verticales canonicos: 10 clasicos reales y 20 nuevos. `consultorio_odontologico` se fusiona en `odontologia`, `taxi` en `taxi_system` y `turnos_atencion`/`turnos` quedan como soporte transversal.
+- [Contrato] Cada vertical calcula `professional_ready`, `readiness_score`, checks, alcance de configuracion, ingresos, egresos, tablas financieras y metadata de `fused_modules`, `support_modules` o `similar_templates` cuando aplica.
+- [Frontend] `web/administrar_empresa/verticales_integracion.html` muestra perfil activo por empresa, contrato, ventas/finanzas, reportes y configuracion; cada vertical queda marcado como `Profesional` o `Brecha`.
+- [Finanzas] Los 30 verticales quedan atados a `empresa_finanzas_movimientos` y a los modulos centrales de ventas, pagos, bancos/tesoreria y reportes para ingresos y egresos.
+- [Configuracion] El acceso conserva `linkVerticalesIntegracion` y permiso `seguridad:R`, pero se presenta como `Adaptacion por tipo`.
+- [Alcance] No hay tablas, endpoints de escritura, permisos ni dependencias nuevas.
+
+## [2026-05-12] Licencias ocultables para clientes
+- [Super] `web/super/licencias.html` expone la bandera como `Visibilidad comercial`: visible u oculta para clientes.
+- [Backend] Los checkouts públicos de licencia rechazan licencias con `activo=0`, incluyendo resumen público, Wompi, Nequi, Epayco, activación sin pago y addons seleccionados manualmente.
+- [Datos] Reutiliza `licencias.activo`; no agrega tablas, columnas ni dependencias.
+
+## [2026-05-12] Indicadores economicos compactos en panel empresarial
+- [Frontend] `web/administrar_empresa/panel.html` presenta los indicadores de mercado en una tabla compacta de dos indicadores por fila en escritorio.
+- [Responsive] En movil conserva las tarjetas reducidas existentes para evitar desbordes horizontales.
+- [Alcance] Sin cambios de API, permisos, base de datos ni dependencias.
+
 ## [2026-05-12] Enlace Probar Gratis del index
 - [Frontend] `web/index.html` cambia el destino de ficha comercial a `/descripcion_de_los_sistemas.html` conservando `accion=probar_gratis`, `tipo_empresa`, modulo, secciones y ancla de la tarjeta elegida.
 - [Backend] `backend/main.go` atiende la ruta legacy `/descripcion_de_los_sistemas.ht` sirviendo la version `.html` con `Content-Type: text/html`, evitando que navegadores la descarguen.

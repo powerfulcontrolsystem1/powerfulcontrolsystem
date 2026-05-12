@@ -30,6 +30,10 @@
     .preconfig-products-preview { display:grid; gap:8px; margin-top:10px; }
     .preconfig-product-row { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; border:1px solid var(--content-soft-border); border-radius:8px; padding:10px; background:var(--content-soft-bg); }
     .preconfig-product-row small { color:var(--muted); }
+    .preconfig-core-preview { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px; }
+    .preconfig-core-preview div { border:1px solid var(--content-soft-border); border-radius:8px; padding:10px; background:var(--content-soft-bg); }
+    .preconfig-core-preview strong { display:block; margin-bottom:4px; }
+    .preconfig-core-preview span { display:block; color:var(--muted); font-size:.84rem; line-height:1.35; }
     .preconfig-empty { border:1px dashed var(--content-soft-border); border-radius:8px; color:var(--muted); padding:16px; text-align:center; }
     .preconfig-message.error { color:#fca5a5; }
     .preconfig-message.success { color:#86efac; }
@@ -37,6 +41,7 @@
       .preconfig-layout { grid-template-columns:1fr; }
       .preconfig-summary { grid-template-columns:repeat(4,minmax(0,1fr)); }
       .preconfig-product-row { grid-template-columns:1fr; }
+      .preconfig-core-preview { grid-template-columns:1fr; }
     }
     @media (max-width: 560px) {
       .preconfig-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -189,6 +194,12 @@
           </section>
 
           <section class="preconfig-section">
+            <h3>Nucleo configurable</h3>
+            <div class="form-help">La plantilla adapta nombres y datos guia; la operacion real usa usuarios, productos/servicios y estaciones del nucleo.</div>
+            <div id="adaptacionPreview" class="preconfig-core-preview"></div>
+          </section>
+
+          <section class="preconfig-section">
             <h3>Productos guía</h3>
             <label class="form-label" for="productosText">Un producto por línea</label>
             <textarea id="productosText" class="form-textarea" rows="8" spellcheck="false"></textarea>
@@ -252,6 +263,7 @@
       var tareasText = document.getElementById('tareasText');
       var rolesOperativosText = document.getElementById('rolesOperativosText');
       var typeSearch = document.getElementById('typeSearch');
+      var adaptacionPreview = document.getElementById('adaptacionPreview');
       var saveBtn = form.querySelector('button[type="submit"]');
       var verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
       var initialParams = new URLSearchParams(window.location.search || '');
@@ -437,6 +449,66 @@
           });
       }
 
+      function uniqueList(values) {
+        var seen = {};
+        var out = [];
+        (values || []).forEach(function (value) {
+          var clean = String(value || '').trim();
+          var key = clean.toLowerCase();
+          if (!clean || seen[key]) return;
+          seen[key] = true;
+          out.push(clean);
+        });
+        return out;
+      }
+
+      function buildAdaptacionPayload(templateOverride) {
+        var productos = templateOverride && Array.isArray(templateOverride.productos) ? templateOverride.productos : parseProducts();
+        var usuarios = templateOverride && Array.isArray(templateOverride.usuarios) ? templateOverride.usuarios : parseUsuarios();
+        var operacion = templateOverride && templateOverride.operacion ? templateOverride.operacion : {
+          nombre_estacion_singular: document.getElementById('operacionSingular').value.trim(),
+          nombre_estacion_plural: document.getElementById('operacionPlural').value.trim(),
+          roles_operativos: parseRolesOperativos(),
+          usa_estaciones: !!document.getElementById('operacionUsaEstaciones').checked
+        };
+        var estaciones = templateOverride && templateOverride.estaciones ? templateOverride.estaciones : {
+          cantidad: Number(document.getElementById('estacionesCantidad').value || 0),
+          prefijo: document.getElementById('estacionesPrefijo').value.trim()
+        };
+        var singular = String(operacion.nombre_estacion_singular || estaciones.prefijo || 'Estacion').trim();
+        var plural = String(operacion.nombre_estacion_plural || (singular ? singular + 's' : 'Estaciones')).trim();
+        var roles = uniqueList([].concat((operacion.roles_operativos || []), usuarios.map(function (u) { return u.rol; })));
+        return {
+          fuente_unica: true,
+          usuarios_desde_nucleo: true,
+          productos_servicios_desde_nucleo: true,
+          estaciones_como_recursos_configurados: !!operacion.usa_estaciones && Number(estaciones.cantidad || 0) > 0,
+          entidad_estacion_singular: singular,
+          entidad_estacion_plural: plural,
+          usuarios_operativos: roles,
+          productos_servicios_guia: productos.map(function (p) { return p.nombre + (p.categoria ? ' (' + p.categoria + ')' : ''); }).filter(Boolean),
+          estaciones_guia: Array.from({ length: Math.min(Number(estaciones.cantidad || 0), 6) }, function (_, idx) { return singular + ' ' + (idx + 1); }),
+          reglas: [
+            'Usuarios operativos desde el nucleo de usuarios y roles.',
+            'Productos y servicios cobrables desde el nucleo de productos/servicios.',
+            'Estaciones como recursos configurables del negocio.',
+            'Ventas, pagos, finanzas y reportes centralizados.'
+          ]
+        };
+      }
+
+      function renderAdaptacionPreview(template) {
+        if (!adaptacionPreview) return;
+        var adaptacion = Object.assign(buildAdaptacionPayload(template), (template && template.adaptacion_nucleo) || {});
+        var roles = (adaptacion.usuarios_operativos || []).slice(0, 6).join(', ') || 'Roles por definir';
+        var productos = (adaptacion.productos_servicios_guia || []).slice(0, 4).join(', ') || 'Productos/servicios guia';
+        var estaciones = (adaptacion.estaciones_guia || []).slice(0, 4).join(', ') || (adaptacion.entidad_estacion_plural || 'Estaciones');
+        adaptacionPreview.innerHTML =
+          '<div><strong>Usuarios</strong><span>' + escapeHtml(roles) + '</span></div>' +
+          '<div><strong>Productos/servicios</strong><span>' + escapeHtml(productos) + '</span></div>' +
+          '<div><strong>Estaciones</strong><span>' + escapeHtml(estaciones) + '</span></div>';
+      }
+
       function renderProductsPreview() {
         var products = parseProducts();
         productsPreview.innerHTML = products.length ? products.map(function (p) {
@@ -493,6 +565,7 @@
         instruccionesText.value = (asistente.instrucciones || []).join('\n');
         tareasText.value = (template.tareas_guia || []).map(tareaToLine).join('\n');
         renderProductsPreview();
+        renderAdaptacionPreview(template);
         renderTypeList();
       }
 
@@ -618,6 +691,7 @@
             comision_porcentaje: parseNumber(document.getElementById('comisionPorcentaje').value),
             roles_operativos: parseRolesOperativos()
           },
+          adaptacion_nucleo: buildAdaptacionPayload(),
           productos: parseProducts(),
           usuarios: parseUsuarios(),
           asistente_ia: {
@@ -655,7 +729,14 @@
         }
       });
 
-      productsText.addEventListener('input', renderProductsPreview);
+      productsText.addEventListener('input', function () { renderProductsPreview(); renderAdaptacionPreview(); });
+      usuariosText.addEventListener('input', function () { renderAdaptacionPreview(); });
+      rolesOperativosText.addEventListener('input', function () { renderAdaptacionPreview(); });
+      ['estacionesCantidad','estacionesPrefijo','operacionSingular','operacionPlural','operacionUsaEstaciones'].forEach(function (id) {
+        var input = document.getElementById(id);
+        if (input) input.addEventListener('input', function () { renderAdaptacionPreview(); });
+        if (input) input.addEventListener('change', function () { renderAdaptacionPreview(); });
+      });
       typeSearch.addEventListener('input', renderTypeList);
       load();
     })();

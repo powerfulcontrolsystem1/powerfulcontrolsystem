@@ -1,3 +1,22 @@
+2026-05-12: Nota operativa para visibilidad de licencias
+- La pagina `web/super/licencias.html` permite a `super_administrador` mostrar u ocultar licencias para clientes usando `licencias.activo`.
+- Ocultar una licencia no borra historico ni permisos ya documentados; la retira del catalogo comercial y bloquea checkout publico nuevo.
+- Los flujos publicos de pago o activacion (`checkout_summary`, Wompi, Nequi, Epayco y activacion sin pago) rechazan licencias ocultas antes de iniciar la compra.
+
+2026-05-12: Nota operativa para adaptacion profesional por tipo de empresa
+- `linkVerticalesIntegracion` se muestra como `Adaptacion por tipo` en Configuracion empresarial y conserva el permiso `seguridad:R`; ver la matriz no concede operacion sobre verticales.
+- `/api/empresa/permisos_contexto` sigue siendo la fuente efectiva de rol, licencia, reglas finas y `vertical_scope`; la pantalla solo lo usa para mostrar el perfil activo y no para saltarse wrappers de API.
+- `/api/*/verticales_integracion/catalogo` ahora cubre exactamente 30 verticales canonicos como contrato unico y publica `professional_ready`/`readiness_score` para auditar que cada vertical visible tenga nucleo, permisos, flujo y reportes declarados.
+- Los alias `consultorio_odontologico` y `taxi` se fusionan en `odontologia` y `taxi_system`; `turnos_atencion`/`turnos` son soporte transversal y no amplian permisos como verticales comerciales independientes.
+- La misma matriz exige `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports`: ver o configurar un vertical no concede permisos financieros, pero todo ingreso/egreso operativo debe terminar en los modulos centrales `ventas`, `pagos`, `finanzas`, `bancos_pagos`, `tesoreria_presupuesto` y `reportes` segun licencia/rol.
+- Un vertical puede aparecer como profesional solo si no duplica clientes, productos, ventas ni pagos y declara alcance de configuracion, tablas, permisos, flujo y reportes; la prueba backend bloquea regresiones.
+
+2026-05-12: Nota operativa para nucleo configurable por plantilla
+- Los roles como `cajero`, `profesor`, `entrenador`, `paciente`, `odontologo`, `tecnico`, `estilista` o `asesor` se declaran en la plantilla, pero se crean/gobiernan desde usuarios y roles del nucleo.
+- Los productos y servicios cobrables de cada vertical se declaran como datos guia y se administran desde el nucleo de productos/servicios, no desde tablas paralelas del vertical.
+- Las estaciones son recursos configurables del negocio. La plantilla decide su nombre visible: habitaciones, apartamentos, puestos, carros/vehiculos, bahias, aulas, consultorios, oficinas, canchas, salas o similares.
+- `adaptacion_nucleo` es metadata de configuracion y no concede permisos por si sola; la operacion sigue dependiendo de licencia, rol, permisos de pagina/modulo y `empresa_id`.
+
 2026-05-12: Nota operativa para Probar Gratis del portal
 - `/descripcion_de_los_sistemas.html` es la landing publica oficial para mostrar la informacion del sistema o vertical elegido desde `web/index.html`.
 - `/descripcion_de_los_sistemas.ht` queda como compatibilidad publica legacy servida como HTML por backend; no concede sesion, rol ni acceso a datos empresariales.

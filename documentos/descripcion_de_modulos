@@ -1,3 +1,31 @@
+2026-05-12: Nucleo configurable desde plantilla de tipo de empresa
+- Modulos afectados: `preconfiguracion_tipos_empresa`, `configuracion_guiada`, `estaciones`, `usuarios`, `productos/servicios`, `roles/licencias`.
+- Cambio funcional: el JSON de plantilla incorpora `adaptacion_nucleo` para declarar que usuarios operativos, productos/servicios cobrables y estaciones/recurso viven en el nucleo comun.
+- Backend: al aplicar una plantilla se guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` en preferencias de empresa y `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`.
+- Configuracion: una estacion puede representar habitacion, apartamento, puesto de belleza, bahia, vehiculo/carro, aula, consultorio, oficina o cualquier recurso definido por la plantilla.
+- Frontend super: `web/super/preconfiguracion_tipos_empresa.html` muestra una vista `Nucleo configurable` y envia `adaptacion_nucleo` al guardar.
+- Gobernanza: no se duplican usuarios, clientes, productos, servicios, ventas ni pagos por vertical; solo se cambia la configuracion y nomenclatura del nucleo universal.
+
+2026-05-12: Matriz profesional de 30 verticales
+- Modulos afectados: `verticales_integracion`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `administrar_empresa`, `roles/licencias`, `reportes`.
+- Cambio funcional: el contrato `/api/*/verticales_integracion/catalogo` publica exactamente 30 verticales canonicos: 10 clasicos reales y 20 nuevos como plantillas reales sobre el mismo nucleo comun.
+- Backend: cada item visible publica `professional_ready`, `readiness_score`, `readiness_checks`, `configuration_scope`, `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables`, `financial_reports` y, cuando aplica, `fused_modules`, `support_modules` y `similar_templates`; la prueba de contrato exige preparacion profesional completa y bloquea alias/soportes como verticales independientes.
+- Frontend: `web/administrar_empresa/verticales_integracion.html` agrega panel `Perfil activo`, KPIs de contrato, ventas/finanzas, reportes y configuracion, y marca cada vertical como `Profesional` o `Brecha`.
+- Configuracion: el acceso `linkVerticalesIntegracion` se presenta como `Adaptacion por tipo`, manteniendo permiso `seguridad:R` y usando `/api/empresa/permisos_contexto` para identificar el vertical activo de la empresa.
+- Gobernanza: no se crean ventas, clientes, productos, pagos, ingresos, egresos ni reportes paralelos; la matriz audita que cada vertical opere como plantilla configurable del programa universal.
+- Finanzas: todos los verticales deben enviar ingresos y egresos al nucleo por ventas/pagos, `empresa_finanzas_movimientos`, conciliacion/tesoreria y reportes financieros consolidados.
+- Fusion: `consultorio_odontologico` queda dentro de `odontologia`, `taxi` dentro de `taxi_system`, y `turnos_atencion`/`turnos` quedan como soporte transversal.
+
+2026-05-12: Licencias ocultables para clientes
+- `licencias`: la bandera `activo` del catalogo se usa como visibilidad comercial. `activo=1` muestra la licencia a clientes; `activo=0` la mantiene administrable pero oculta y sin checkout publico.
+- `pagos`: los flujos Wompi, Nequi, Epayco y activacion sin pago bloquean licencias ocultas antes de iniciar o confirmar un checkout nuevo.
+- `super_administrador`: la pantalla de licencias muestra acciones `Mostrar/Ocultar` y filtro `Visibilidad`.
+
+2026-05-12: Indicadores economicos compactos en panel empresarial
+- `administrar_empresa`: el panel inicial muestra los indicadores USD/COP, EUR/COP, criptoactivos e indices en una tabla compacta para escritorio.
+- UX: la tabla agrupa dos indicadores por fila para ocupar menos altura; en movil se conserva el formato de tarjetas compactas.
+- Alcance: reutiliza `/api/public/market_symbol` y servicios publicos existentes, sin cambios de permisos ni backend.
+
 2026-05-12: Enlace Probar Gratis del index
 - `index_publico`: las tarjetas publicas abren la ficha del sistema elegido en `/descripcion_de_los_sistemas.html`, conservando modulo, tipo de empresa, titulo, descripcion, secciones y ancla.
 - `portal_publico`: la ruta legacy `/descripcion_de_los_sistemas.ht` sigue disponible como compatibilidad servida como HTML, no como descarga.

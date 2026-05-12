@@ -25,6 +25,7 @@ type empresaPreconfigApplyResult struct {
 	ModulosCreados    int      `json:"modulos_creados"`
 	VentaDirecta      bool     `json:"venta_directa"`
 	Comisiones        bool     `json:"comisiones"`
+	AdaptacionNucleo  any      `json:"adaptacion_nucleo,omitempty"`
 	ProductosError    []string `json:"productos_error,omitempty"`
 	UsuariosError     []string `json:"usuarios_error,omitempty"`
 	TarifasError      []string `json:"tarifas_error,omitempty"`
@@ -65,7 +66,10 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 			TipoEmpresaID int64 `json:"tipo_empresa_id"`
 		}
 		if json.Unmarshal([]byte(pref.Valor), &marker) == nil && marker.TipoEmpresaID == tipoEmpresaID {
+			_ = applyEmpresaPreconfigOperacion(dbEmp, empresaID, template.Operacion, usuario)
+			_ = applyEmpresaPreconfigAdaptacionNucleo(dbEmp, empresaID, template.AdaptacionNucleo, usuario)
 			result.Aplicada = true
+			result.AdaptacionNucleo = template.AdaptacionNucleo
 			result.Mensaje = "La preconfiguracion de este tipo de empresa ya estaba aplicada; se conserva sin duplicar datos guia."
 			return result, nil
 		}
@@ -81,15 +85,19 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 	if err := applyEmpresaPreconfigOperacion(dbEmp, empresaID, template.Operacion, usuario); err != nil {
 		return result, err
 	}
+	if err := applyEmpresaPreconfigAdaptacionNucleo(dbEmp, empresaID, template.AdaptacionNucleo, usuario); err != nil {
+		return result, err
+	}
 	result.VentaDirecta = template.Operacion.VentaDirectaEnabled
 	result.Comisiones = template.Operacion.ComisionesEnabled
+	result.AdaptacionNucleo = template.AdaptacionNucleo
 
 	productIDs := make([]int64, 0, len(template.Productos))
 	productSKUs := make([]string, 0, len(template.Productos))
 	userIDs := make([]int64, 0, len(template.Usuarios))
 	userEmails := make([]string, 0, len(template.Usuarios))
 	if template.Estaciones.Cantidad > 0 {
-		rawConfig, estaciones := buildEmpresaEstacionesPreconfig(template.Estaciones)
+		rawConfig, estaciones := buildEmpresaEstacionesPreconfig(template.Estaciones, template.AdaptacionNucleo)
 		if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 			EmpresaID:      empresaID,
 			EstacionID:     0,
@@ -189,6 +197,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"tipo_empresa_nombre": strings.TrimSpace(tipoEmpresaNombre),
 		"preconfiguracion":    strings.TrimSpace(preconfig.Nombre),
 		"operacion":           template.Operacion,
+		"adaptacion_nucleo":   template.AdaptacionNucleo,
 		"asistente_ia":        template.Asistente,
 		"tareas_guia":         template.TareasGuia,
 		"usuarios_guia":       template.Usuarios,
@@ -214,6 +223,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		"preconfiguracion_id": preconfig.ID,
 		"preconfiguracion":    strings.TrimSpace(preconfig.Nombre),
 		"operacion":           template.Operacion,
+		"adaptacion_nucleo":   template.AdaptacionNucleo,
 		"aplicada_en":         time.Now().Format(time.RFC3339),
 		"estaciones_creadas":  result.EstacionesCreadas,
 		"productos_creados":   result.ProductosCreados,
@@ -407,6 +417,40 @@ func applyEmpresaPreconfigOperacion(dbEmp *sql.DB, empresaID int64, operacion db
 	return nil
 }
 
+func applyEmpresaPreconfigAdaptacionNucleo(dbEmp *sql.DB, empresaID int64, adaptacion dbpkg.TipoEmpresaPreconfigAdaptacionNucleo, usuario string) error {
+	if empresaID <= 0 || dbEmp == nil {
+		return nil
+	}
+	raw, _ := json.Marshal(map[string]any{
+		"fuente_unica":                          adaptacion.FuenteUnica,
+		"usuarios_desde_nucleo":                 adaptacion.UsuariosDesdeNucleo,
+		"productos_servicios_desde_nucleo":      adaptacion.ProductosServiciosDesdeNucleo,
+		"estaciones_como_recursos_configurados": adaptacion.EstacionesComoRecursosConfigurados,
+		"entidad_estacion_singular":             strings.TrimSpace(adaptacion.EntidadEstacionSingular),
+		"entidad_estacion_plural":               strings.TrimSpace(adaptacion.EntidadEstacionPlural),
+		"usuarios_operativos":                   adaptacion.UsuariosOperativos,
+		"productos_servicios_guia":              adaptacion.ProductosServiciosGuia,
+		"estaciones_guia":                       adaptacion.EstacionesGuia,
+		"reglas":                                adaptacion.Reglas,
+		"usuarios_url":                          "/administrar_empresa/administrar_usuarios.html",
+		"productos_servicios_url":               "/administrar_empresa/administrar_productos_menu.html",
+		"estaciones_url":                        "/administrar_empresa/estaciones.html",
+		"configuracion_estaciones_url":          "/administrar_empresa/configuracion_de_estaciones.html",
+		"preconfiguracion_aplicada":             true,
+		"fecha_actualizacion":                   time.Now().Format(time.RFC3339),
+	})
+	_, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          "preconfiguracion_tipo_empresa_adaptacion_nucleo",
+		Valor:          string(raw),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " usuarios, productos/servicios y estaciones como nucleo configurable",
+	})
+	return err
+}
+
 func ensureEmpresaPreconfigVentaDirectaCarrito(dbEmp *sql.DB, empresaID int64, usuario string) error {
 	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
 		return err
@@ -441,7 +485,25 @@ func defaultString(value, fallback string) string {
 	return fallback
 }
 
-func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaciones) (string, int) {
+func pluralizeStationName(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "Estaciones"
+	}
+	lower := strings.ToLower(value)
+	if strings.HasSuffix(lower, "s") {
+		return value
+	}
+	if strings.HasSuffix(lower, "z") {
+		return value[:len(value)-1] + "ces"
+	}
+	if strings.HasSuffix(lower, "ion") || strings.HasSuffix(lower, "ad") || strings.HasSuffix(lower, "ed") {
+		return value + "es"
+	}
+	return value + "s"
+}
+
+func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaciones, adaptacion dbpkg.TipoEmpresaPreconfigAdaptacionNucleo) (string, int) {
 	cantidad := estaciones.Cantidad
 	if cantidad <= 0 {
 		cantidad = 1
@@ -453,11 +515,21 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 	if prefijo == "" {
 		prefijo = "Estacion"
 	}
+	tipoRecurso := strings.TrimSpace(adaptacion.EntidadEstacionSingular)
+	if tipoRecurso == "" {
+		tipoRecurso = prefijo
+	}
+	tipoRecursoPlural := strings.TrimSpace(adaptacion.EntidadEstacionPlural)
+	if tipoRecursoPlural == "" {
+		tipoRecursoPlural = pluralizeStationName(tipoRecurso)
+	}
 	items := make([]map[string]any, 0, cantidad)
 	for i := 1; i <= cantidad; i++ {
 		items = append(items, map[string]any{
 			"id":                            i,
 			"nombre":                        fmt.Sprintf("%s %d", prefijo, i),
+			"tipo_recurso":                  tipoRecurso,
+			"representa_recurso_negocio":    true,
 			"mostrar_fecha_hora_inicio":     true,
 			"mostrar_fecha_hora_fin_tarifa": true,
 			"mostrar_total":                 true,
@@ -471,16 +543,19 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 		cardSize = "medium"
 	}
 	raw, _ := json.Marshal(map[string]any{
-		"cantidad":           cantidad,
-		"estaciones":         items,
-		"card_size":          cardSize,
-		"caja_enabled":       estaciones.CajaEnabled,
-		"caja_placement":     "before",
-		"youtube_enabled":    false,
-		"notas_enabled":      false,
-		"ia_pedidos_enabled": false,
-		"carrito_ui_global":  defaultEmpresaPreconfigCarritoUI(),
-		"station_card_ui":    map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true},
+		"cantidad":            cantidad,
+		"estaciones":          items,
+		"tipo_recurso":        tipoRecurso,
+		"tipo_recurso_plural": tipoRecursoPlural,
+		"adaptacion_nucleo":   true,
+		"card_size":           cardSize,
+		"caja_enabled":        estaciones.CajaEnabled,
+		"caja_placement":      "before",
+		"youtube_enabled":     false,
+		"notas_enabled":       false,
+		"ia_pedidos_enabled":  false,
+		"carrito_ui_global":   defaultEmpresaPreconfigCarritoUI(),
+		"station_card_ui":     map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true},
 	})
 	return string(raw), cantidad
 }
@@ -1140,16 +1215,17 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 
 			var payload struct {
-				TipoEmpresaID int64                                 `json:"tipo_empresa_id"`
-				Enabled       bool                                  `json:"enabled"`
-				Nombre        string                                `json:"nombre"`
-				Descripcion   string                                `json:"descripcion"`
-				Estaciones    dbpkg.TipoEmpresaPreconfigEstaciones  `json:"estaciones"`
-				Operacion     dbpkg.TipoEmpresaPreconfigOperacion   `json:"operacion"`
-				Productos     []dbpkg.TipoEmpresaPreconfigProducto  `json:"productos"`
-				Usuarios      []dbpkg.TipoEmpresaPreconfigUsuario   `json:"usuarios"`
-				Asistente     dbpkg.TipoEmpresaPreconfigAsistenteIA `json:"asistente_ia"`
-				TareasGuia    []dbpkg.TipoEmpresaPreconfigTareaGuia `json:"tareas_guia"`
+				TipoEmpresaID int64                                      `json:"tipo_empresa_id"`
+				Enabled       bool                                       `json:"enabled"`
+				Nombre        string                                     `json:"nombre"`
+				Descripcion   string                                     `json:"descripcion"`
+				Estaciones    dbpkg.TipoEmpresaPreconfigEstaciones       `json:"estaciones"`
+				Operacion     dbpkg.TipoEmpresaPreconfigOperacion        `json:"operacion"`
+				Adaptacion    dbpkg.TipoEmpresaPreconfigAdaptacionNucleo `json:"adaptacion_nucleo"`
+				Productos     []dbpkg.TipoEmpresaPreconfigProducto       `json:"productos"`
+				Usuarios      []dbpkg.TipoEmpresaPreconfigUsuario        `json:"usuarios"`
+				Asistente     dbpkg.TipoEmpresaPreconfigAsistenteIA      `json:"asistente_ia"`
+				TareasGuia    []dbpkg.TipoEmpresaPreconfigTareaGuia      `json:"tareas_guia"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -1168,12 +1244,13 @@ func SuperTipoEmpresaPreconfiguracionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			configJSON, err := dbpkg.MarshalTipoEmpresaPreconfigTemplate(dbpkg.TipoEmpresaPreconfigTemplate{
-				Estaciones: payload.Estaciones,
-				Operacion:  payload.Operacion,
-				Productos:  payload.Productos,
-				Usuarios:   payload.Usuarios,
-				Asistente:  payload.Asistente,
-				TareasGuia: payload.TareasGuia,
+				Estaciones:       payload.Estaciones,
+				Operacion:        payload.Operacion,
+				AdaptacionNucleo: payload.Adaptacion,
+				Productos:        payload.Productos,
+				Usuarios:         payload.Usuarios,
+				Asistente:        payload.Asistente,
+				TareasGuia:       payload.TareasGuia,
 			})
 			if err != nil {
 				http.Error(w, "plantilla invalida: "+err.Error(), http.StatusBadRequest)

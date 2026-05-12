@@ -1,3 +1,19 @@
+## Actualizacion 2026-05-12 (nucleo configurable por plantilla)
+
+- `backend/db/tipo_empresa_preconfiguracion.go` agrega `TipoEmpresaPreconfigAdaptacionNucleo` dentro del template para declarar fuente unica de usuarios, productos/servicios y estaciones.
+- `backend/handlers/empresa_preconfiguracion.go` persiste la adaptacion en `empresa_estacion_prefs` y agrega metadata de recurso a `estaciones_config`.
+- `backend/handlers/configuracion_guiada.go` reutiliza el mismo generador de estaciones con recurso de negocio para los ajustes guiados.
+- `web/super/preconfiguracion_tipos_empresa.html` muestra `Nucleo configurable` y envia `adaptacion_nucleo` al guardar una plantilla.
+
+## Actualizacion 2026-05-12 (matriz profesional de 30 verticales)
+
+- `backend/handlers/empresa_verticales_integracion.go` construye el contrato universal de integracion con exactamente 30 verticales canonicos: 10 clasicos reales y 20 nuevos desde `db.NuevosVerticalesTipoEmpresaCatalog()` y `db.BuildTipoEmpresaPreconfigIntegracionVertical()`.
+- Los alias `consultorio_odontologico` y `taxi` quedan declarados en `fused_modules`; `turnos_atencion`/`turnos` quedan como `support_modules` cuando una plantilla los usa, no como verticales de producto.
+- Los endpoints `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo` exponen readiness profesional, flujos de ingreso, flujos de egreso y reportes financieros calculados sin crear tablas nuevas.
+- `backend/db/nuevos_verticales_bootstrap.go` y `backend/db/tipo_empresa_preconfiguracion.go` propagan `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports` dentro de `integracion_vertical`.
+- `web/administrar_empresa/verticales_integracion.html` es la vista de Configuracion > Adaptacion por tipo; consume la matriz, `/api/empresa/permisos_contexto` y los catalogos locales como fallback.
+- `web/js/verticales_integracion_catalogo.js` conserva respaldo frontend y puede fusionar la metadata extendida que llega del backend.
+
 ## Actualizacion 2026-05-12 (Probar Gratis index)
 
 - `web/index.html` construye el enlace de detalle hacia `/descripcion_de_los_sistemas.html`, preservando parametros comerciales y ancla por tarjeta.

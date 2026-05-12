@@ -537,7 +537,7 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 	var where []string
 	var args []interface{}
 	if soloActivas {
-		where = append(where, "l.activo = 1")
+		where = append(where, "COALESCE(l.activo, 1) = 1")
 		if isPostgresDialect() {
 			where = append(where, "(COALESCE(CAST(l.fecha_inicio AS TEXT), '') = '' OR CAST(l.fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)")
 			where = append(where, "(COALESCE(CAST(l.fecha_fin AS TEXT), '') = '' OR CAST(l.fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)")

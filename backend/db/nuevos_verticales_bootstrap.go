@@ -168,17 +168,22 @@ func BuildTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPre
 		motivo = "Mantener como plantilla real disponible sobre el nucleo unico."
 	}
 	return &TipoEmpresaPreconfigIntegracionVertical{
-		Modulo:              clean,
-		EstadoIntegracion:   "plantilla_integrada_nucleo",
-		Decision:            decision,
-		ProduccionMasiva:    produccion,
-		PrioridadProduccion: rank,
-		MotivoDecision:      motivo,
-		TemplateActivates:   []string{clean, "clientes", "inventario/servicios", "ventas", "pagos", "facturacion", "reportes", "seguridad", "empresa_modulos_colombia"},
-		TablesTouched:       []string{"empresa_modulos_colombia_registros", "empresa_modulos_colombia_eventos", "empresa_modulos_colombia_evidencias", "empresa_modulos_colombia_aprobaciones", "empresa_modulos_colombia_tareas", "clientes", "servicios", "carritos_compras", "carrito_compra_items"},
-		RequiredPermissions: []string{"seguridad:R", clean + ":R", clean + ":C", "clientes:R/C", "inventario:R/C servicios", "ventas:C", "pagos:C", "reportes:R"},
-		SaleFlow:            []string{"registro del vertical", "cliente y servicio central", "cotizacion o venta central", "pago/facturacion central", "seguimiento y cierre por empresa_modulos_colombia"},
-		ReportsProduced:     []string{"dashboard del vertical", "agenda y SLA", "responsables", "riesgo operativo", "ventas centrales", "auditoria por empresa"},
+		Modulo:               clean,
+		EstadoIntegracion:    "plantilla_integrada_nucleo",
+		Decision:             decision,
+		ProduccionMasiva:     produccion,
+		PrioridadProduccion:  rank,
+		MotivoDecision:       motivo,
+		TemplateActivates:    []string{clean, "clientes", "inventario/servicios", "ventas", "pagos", "facturacion", "reportes", "seguridad", "empresa_modulos_colombia"},
+		TablesTouched:        []string{"empresa_modulos_colombia_registros", "empresa_modulos_colombia_eventos", "empresa_modulos_colombia_evidencias", "empresa_modulos_colombia_aprobaciones", "empresa_modulos_colombia_tareas", "clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"},
+		RequiredPermissions:  []string{"seguridad:R", clean + ":R", clean + ":C", "clientes:R/C", "inventario:R/C servicios", "ventas:C", "pagos:C", "finanzas:R/C", "reportes:R"},
+		SaleFlow:             []string{"registro del vertical", "cliente y servicio central", "cotizacion o venta central", "pago/facturacion central", "ingreso conciliable en finanzas", "seguimiento y cierre por empresa_modulos_colombia"},
+		ReportsProduced:      []string{"dashboard del vertical", "agenda y SLA", "responsables", "riesgo operativo", "ventas centrales", "ingresos y egresos del nucleo", "auditoria por empresa"},
+		FinancialCoreModules: []string{"ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"},
+		IncomeFlow:           []string{"servicio/producto vendible del vertical", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
+		ExpenseFlow:          []string{"compra/gasto operativo del vertical", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
+		FinancialTables:      []string{"carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"},
+		FinancialReports:     []string{"ingresos por vertical", "egresos por vertical", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
 	}
 }
 
@@ -196,16 +201,21 @@ func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmp
 	switch strings.ToLower(strings.TrimSpace(modulo)) {
 	case "gimnasio", "odontologia", "turnos_atencion", "vehiculos", "taller", "lavadero_autos", "hotel", "motel", "drogueria_farmacia", "alquileres", "constructora":
 		return &TipoEmpresaPreconfigIntegracionVertical{
-			Modulo:              strings.ToLower(strings.TrimSpace(modulo)),
-			EstadoIntegracion:   "plantilla_integrada_nucleo",
-			Decision:            "mantener_como_plantilla",
-			ProduccionMasiva:    false,
-			MotivoDecision:      "Vertical clasico conectado a preconfiguracion; la produccion masiva de nuevos verticales se gobierna en el catalogo de 20 plantillas nuevas.",
-			TemplateActivates:   []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
-			TablesTouched:       []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items"},
-			RequiredPermissions: []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "reportes:R"},
-			SaleFlow:            []string{"registro especializado", "cliente/servicio central", "carrito central", "pago o factura central", "reporte consolidado"},
-			ReportsProduced:     []string{"reporte operativo", "ventas centrales", "auditoria por empresa"},
+			Modulo:               strings.ToLower(strings.TrimSpace(modulo)),
+			EstadoIntegracion:    "plantilla_integrada_nucleo",
+			Decision:             "mantener_como_plantilla",
+			ProduccionMasiva:     false,
+			MotivoDecision:       "Vertical clasico conectado a preconfiguracion; la produccion masiva de nuevos verticales se gobierna en el catalogo de 20 plantillas nuevas.",
+			TemplateActivates:    []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
+			TablesTouched:        []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"},
+			RequiredPermissions:  []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "pagos:C", "finanzas:R/C", "reportes:R"},
+			SaleFlow:             []string{"registro especializado", "cliente/servicio central", "carrito central", "pago o factura central", "ingreso conciliable en finanzas", "reporte consolidado"},
+			ReportsProduced:      []string{"reporte operativo", "ventas centrales", "ingresos y egresos del nucleo", "auditoria por empresa"},
+			FinancialCoreModules: []string{"ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"},
+			IncomeFlow:           []string{"servicio/producto vendible del vertical", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
+			ExpenseFlow:          []string{"compra/gasto operativo del vertical", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
+			FinancialTables:      []string{"carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"},
+			FinancialReports:     []string{"ingresos por vertical", "egresos por vertical", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
 		}
 	default:
 		return nil

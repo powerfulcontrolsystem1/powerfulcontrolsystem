@@ -314,7 +314,16 @@ func applyEmpresaConfiguracionGuiada(dbEmp *sql.DB, state *empresaConfiguracionG
 	estaciones.Prefijo = prefijoEstaciones
 
 	if estaciones.Enabled {
-		rawConfig, estacionesCreadas := buildEmpresaEstacionesPreconfig(estaciones)
+		adaptacion := dbpkg.TipoEmpresaPreconfigAdaptacionNucleo{
+			FuenteUnica:                        true,
+			UsuariosDesdeNucleo:                true,
+			ProductosServiciosDesdeNucleo:      true,
+			EstacionesComoRecursosConfigurados: true,
+			EntidadEstacionSingular:            strings.TrimSpace(defaultString(operacion.NombreEstacionSingular, estaciones.Prefijo)),
+			EntidadEstacionPlural:              strings.TrimSpace(defaultString(operacion.NombreEstacionPlural, pluralizeStationName(defaultString(operacion.NombreEstacionSingular, estaciones.Prefijo)))),
+			UsuariosOperativos:                 operacion.RolesOperativos,
+		}
+		rawConfig, estacionesCreadas := buildEmpresaEstacionesPreconfig(estaciones, adaptacion)
 		if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 			EmpresaID:      state.EmpresaID,
 			EstacionID:     0,

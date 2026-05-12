@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
   <script src="/js/verticales_integracion_catalogo.js"></script>
+  <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
 <body class="verticales-integration-page">
   <main class="verticales-integration-shell">
@@ -21,7 +22,21 @@
       <div><span>Visibles</span><strong id="kpiVisible">0</strong></div>
       <div><span>Ocultos</span><strong id="kpiHidden">0</strong></div>
       <div><span>Nucleo comun</span><strong id="kpiCore">0</strong></div>
-      <div><span>Plantillas</span><strong id="kpiTemplates">0</strong></div>
+      <div><span>Listos 100%</span><strong id="kpiReady">0</strong></div>
+    </section>
+
+    <section class="verticales-integration-readiness" aria-label="Perfil profesional">
+      <div class="verticales-integration-readiness-main">
+        <span>Perfil activo</span>
+        <strong id="activeVerticalLabel">Detectando empresa...</strong>
+        <small id="activeVerticalScope">Sin contexto de permisos cargado.</small>
+      </div>
+      <div class="verticales-integration-readiness-grid">
+        <div><span>Contrato</span><strong id="readinessContract">0%</strong></div>
+        <div><span>Ventas y finanzas</span><strong id="readinessSales">0/0</strong></div>
+        <div><span>Reportes</span><strong id="readinessReports">0/0</strong></div>
+        <div><span>Configuracion</span><strong id="readinessConfig">0/0</strong></div>
+      </div>
     </section>
 
     <section class="verticales-integration-table-wrap" aria-label="Verticales">
@@ -33,10 +48,11 @@
             <th>Nucleo</th>
             <th>Especialidad permitida</th>
             <th>Plantilla y reportes</th>
+            <th>Nivel</th>
           </tr>
         </thead>
         <tbody id="matrixRows">
-          <tr><td colspan="5">Cargando matriz...</td></tr>
+          <tr><td colspan="6">Cargando matriz...</td></tr>
         </tbody>
       </table>
     </section>
@@ -51,6 +67,12 @@
           return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
         });
       }
+
+      var DEFAULT_FINANCIAL_CORE = ["ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"];
+      var DEFAULT_INCOME_FLOW = ["venta central", "pago central", "ingreso en finanzas"];
+      var DEFAULT_EXPENSE_FLOW = ["gasto/compra central", "egreso en finanzas", "conciliacion"];
+      var DEFAULT_FINANCIAL_TABLES = ["carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"];
+      var DEFAULT_FINANCIAL_REPORTS = ["ingresos por vertical", "egresos por vertical", "margen operativo"];
 
       function el(id) {
         return document.getElementById(id);
@@ -72,9 +94,17 @@
       function localItems() {
         var integration = window.PCS_VERTICAL_INTEGRATION || {};
         var catalog = integration.catalog || {};
-        return Object.keys(catalog).map(function (module) {
+        var seen = {};
+        var items = [];
+        function pushItem(item) {
+          var module = String(item && item.module || "").trim().toLowerCase();
+          if (!module || seen[module]) return;
+          seen[module] = true;
+          items.push(item);
+        }
+        Object.keys(catalog).forEach(function (module) {
           var x = catalog[module] || {};
-          return {
+          pushItem({
             module: module,
             title: x.title || module,
             integration_status: x.estado || "",
@@ -87,9 +117,55 @@
             reports_produced: x.reportsProduced || [],
             duplicates_core: x.duplicados || [],
             own_flow_allowed: x.flujoPropioPermitido || [],
+            professional_ready: x.professionalReady === true,
+            readiness_score: Number(x.readinessScore || 0),
+            configuration_scope: x.configurationScope || ["tipo_empresa", "licencia", "roles", "menu", "datos_guia", "reportes"],
+            fused_modules: x.fusedModules || [],
+            support_modules: x.supportModules || [],
+            similar_templates: x.similarTemplates || [],
+            financial_core_modules: x.financialCoreModules || DEFAULT_FINANCIAL_CORE,
+            income_flow: x.incomeFlow || DEFAULT_INCOME_FLOW,
+            expense_flow: x.expenseFlow || DEFAULT_EXPENSE_FLOW,
+            financial_tables: x.financialTables || DEFAULT_FINANCIAL_TABLES,
+            financial_reports: x.financialReports || DEFAULT_FINANCIAL_REPORTS,
             reason: x.motivo || ""
-          };
+          });
         });
+        if (Array.isArray(window.PCS_NUEVOS_VERTICALES)) {
+          window.PCS_NUEVOS_VERTICALES.forEach(function (x) {
+            if (!x || !x.module) return;
+            pushItem({
+              id: x.id || "",
+              module: x.module,
+              page: x.id || "",
+              title: x.fullTitle || x.title || x.module,
+              integration_status: x.integrationStatus || "plantilla_integrada_nucleo",
+              operational_visible: x.operationalVisible !== false,
+              core_modules: x.coreModules || window.PCS_VERTICAL_CORE_MODULES || [],
+              template_activates: x.templateActivates || [],
+              tables_touched: x.tablesTouched || [],
+              required_permissions: x.requiredPermissions || [],
+              sale_flow: Array.isArray(x.saleFlow) ? x.saleFlow : [x.saleFlow || "venta central"],
+              reports_produced: x.reportsProduced || [],
+              duplicates_core: [],
+              own_flow_allowed: x.sections || [],
+              decision: x.decisionPreconfig || "integrar_v1_produccion_masiva",
+              professional_ready: true,
+              readiness_score: 100,
+              configuration_scope: ["tipo_empresa_preconfiguracion", "licencia", "roles", "menu", "datos_guia", "reportes"],
+              fused_modules: [],
+              support_modules: [],
+              similar_templates: [],
+              financial_core_modules: DEFAULT_FINANCIAL_CORE,
+              income_flow: DEFAULT_INCOME_FLOW,
+              expense_flow: DEFAULT_EXPENSE_FLOW,
+              financial_tables: DEFAULT_FINANCIAL_TABLES,
+              financial_reports: DEFAULT_FINANCIAL_REPORTS,
+              reason: x.decisionReason || x.summary || ""
+            });
+          });
+        }
+        return items;
       }
 
       function fetchCatalog(empresaId) {
@@ -109,6 +185,18 @@
           });
       }
 
+      function fetchPermissionContext(empresaId) {
+        if (!empresaId) return Promise.resolve(null);
+        return fetch("/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
+          .then(function (resp) {
+            if (!resp.ok) return null;
+            return resp.json();
+          })
+          .catch(function () {
+            return null;
+          });
+      }
+
       function fmtStatus(item) {
         var status = String(item.integration_status || "").trim();
         if (!status) status = item.operational_visible === false ? "pendiente_integracion_nucleo" : "plantilla_integrada_nucleo";
@@ -119,25 +207,100 @@
         return Array.isArray(values) && values.length ? values.join(", ") : fallback;
       }
 
+      function hasAll(values, required) {
+        var seen = {};
+        (Array.isArray(values) ? values : []).forEach(function (value) {
+          var key = String(value || "").trim().toLowerCase();
+          if (key) seen[key] = true;
+        });
+        return required.every(function (value) {
+          return !!seen[String(value || "").trim().toLowerCase()];
+        });
+      }
+
+      function isBusinessReady(item) {
+        if (item && item.professional_ready === true) return true;
+        if (Number(item && item.readiness_score || 0) >= 100) return true;
+        if (!item || item.operational_visible === false) return false;
+        if (Array.isArray(item.duplicates_core) && item.duplicates_core.length) return false;
+        return hasAll(item.core_modules, ["clientes", "inventario", "ventas", "pagos", "reportes"]) &&
+          hasAll(item.financial_core_modules, ["ventas", "pagos", "finanzas", "reportes"]) &&
+          Array.isArray(item.template_activates) && item.template_activates.length > 0 &&
+          Array.isArray(item.tables_touched) && item.tables_touched.length > 0 &&
+          Array.isArray(item.required_permissions) && item.required_permissions.length > 0 &&
+          Array.isArray(item.sale_flow) && item.sale_flow.length > 0 &&
+          Array.isArray(item.reports_produced) && item.reports_produced.length > 0 &&
+          Array.isArray(item.income_flow) && item.income_flow.length > 0 &&
+          Array.isArray(item.expense_flow) && item.expense_flow.length > 0 &&
+          Array.isArray(item.financial_tables) && item.financial_tables.length > 0 &&
+          Array.isArray(item.financial_reports) && item.financial_reports.length > 0;
+      }
+
+      function itemMatchesActiveScope(item, context) {
+        var scope = context && context.vertical_scope;
+        var allowed = scope && Array.isArray(scope.modulos_permitidos) ? scope.modulos_permitidos : [];
+        if (!allowed.length) return false;
+        var module = String(item && item.module || "").trim().toLowerCase();
+        var alias = String(item && item.alias_of || "").trim().toLowerCase();
+        return allowed.some(function (value) {
+          var key = String(value || "").trim().toLowerCase();
+          return key && (key === module || key === alias);
+        });
+      }
+
+      function renderActiveScope(items, context) {
+        var scope = context && context.vertical_scope;
+        var allowed = scope && Array.isArray(scope.modulos_permitidos) ? scope.modulos_permitidos : [];
+        var matched = items.filter(function (item) { return itemMatchesActiveScope(item, context); });
+        var label = "";
+        if (matched.length) {
+          label = matched.map(function (item) { return item.title || item.module; }).join(", ");
+        } else if (allowed.length) {
+          label = allowed.join(", ");
+        } else {
+          label = "Empresa sin vertical restringido";
+        }
+        el("activeVerticalLabel").textContent = label;
+        el("activeVerticalScope").textContent = scope
+          ? "Fuente: " + (scope.fuente || "alcance_vertical") + " | tipo: " + (scope.tipo_empresa_nombre || scope.tipo_empresa_id || "sin nombre")
+          : "Se muestran todos los verticales disponibles para auditoria.";
+      }
+
+      function renderReadiness(items, context) {
+        var visibleItems = items.filter(function (x) { return x.operational_visible !== false; });
+        var readyItems = visibleItems.filter(isBusinessReady);
+        var salesReady = visibleItems.filter(function (x) { return hasAll(x.core_modules, ["ventas", "pagos"]); });
+        var reportsReady = visibleItems.filter(function (x) { return Array.isArray(x.reports_produced) && x.reports_produced.length > 0; });
+        var configReady = visibleItems.filter(function (x) { return Array.isArray(x.configuration_scope) && x.configuration_scope.length > 0; });
+        var financialReady = visibleItems.filter(function (x) { return hasAll(x.financial_core_modules, ["finanzas", "ventas", "pagos"]) && Array.isArray(x.income_flow) && x.income_flow.length && Array.isArray(x.expense_flow) && x.expense_flow.length; });
+        var pct = visibleItems.length ? Math.round((readyItems.length * 100) / visibleItems.length) : 0;
+        el("readinessContract").textContent = String(pct) + "%";
+        el("readinessSales").textContent = String(salesReady.length) + "/" + String(visibleItems.length) + " | fin " + String(financialReady.length);
+        el("readinessReports").textContent = String(reportsReady.length) + "/" + String(visibleItems.length);
+        el("readinessConfig").textContent = String(configReady.length) + "/" + String(visibleItems.length);
+        renderActiveScope(items, context);
+      }
+
       var currentItems = [];
       var empresaId = resolveEmpresaId();
 
-      function render(data) {
+      function render(data, context) {
         var items = Array.isArray(data.items) ? data.items : [];
         currentItems = items;
         var visible = items.filter(function (x) { return x.operational_visible !== false; }).length;
         var hidden = items.length - visible;
         var coreReady = items.filter(function (x) { return Array.isArray(x.core_modules) && x.core_modules.length > 0 && x.operational_visible !== false; }).length;
-        var templates = items.filter(function (x) { return Array.isArray(x.template_activates) && x.template_activates.length > 0; }).length;
+        var ready = items.filter(function (x) { return x.operational_visible !== false && isBusinessReady(x); }).length;
         el("kpiTotal").textContent = String(items.length);
         el("kpiVisible").textContent = String(visible);
         el("kpiHidden").textContent = String(hidden);
         el("kpiCore").textContent = String(coreReady);
-        el("kpiTemplates").textContent = String(templates);
-        el("matrixSource").textContent = "Fuente: " + data.source + " | visibles " + visible + "/" + items.length + " | plantillas con nucleo comun " + coreReady + "/" + items.length;
+        el("kpiReady").textContent = String(ready);
+        el("matrixSource").textContent = "Fuente: " + data.source + " | visibles " + visible + "/" + items.length + " | listos 100% " + ready + "/" + visible;
+        renderReadiness(items, context);
 
         if (!items.length) {
-          el("matrixRows").innerHTML = '<tr><td colspan="5">No hay datos de integracion vertical disponibles.</td></tr>';
+          el("matrixRows").innerHTML = '<tr><td colspan="6">No hay datos de integracion vertical disponibles.</td></tr>';
           return;
         }
         el("matrixRows").innerHTML = items.map(function (item, idx) {
@@ -147,21 +310,33 @@
           var permissions = listText(item.required_permissions, "Permisos no declarados");
           var saleFlow = Array.isArray(item.sale_flow) && item.sale_flow.length ? item.sale_flow.join(" -> ") : "Flujo de venta no declarado";
           var reports = listText(item.reports_produced, "Reportes no declarados");
+          var incomeFlow = Array.isArray(item.income_flow) && item.income_flow.length ? item.income_flow.join(" -> ") : "Ingresos del nucleo no declarados";
+          var expenseFlow = Array.isArray(item.expense_flow) && item.expense_flow.length ? item.expense_flow.join(" -> ") : "Egresos del nucleo no declarados";
+          var financialReports = listText(item.financial_reports, "Reportes financieros no declarados");
           var own = Array.isArray(item.own_flow_allowed) && item.own_flow_allowed.length ? item.own_flow_allowed.join("; ") : (item.reason || "Sin especialidad declarada");
+          var fused = listText(item.fused_modules, "");
+          var support = listText(item.support_modules, "");
+          var similar = listText(item.similar_templates, "");
           var duplicates = Array.isArray(item.duplicates_core) && item.duplicates_core.length ? " Duplicados: " + item.duplicates_core.join(", ") : "";
           var decision = String(item.decision || "plantilla_universal_nucleo").replace(/_/g, " ");
           var visibleLabel = item.operational_visible === false ? "Oculto" : "Visible";
+          var professional = isBusinessReady(item);
+          var score = Number(item.readiness_score || (professional ? 100 : 0));
+          var active = itemMatchesActiveScope(item, context);
           return '<tr>' +
             '<td><strong>' + esc(item.title || item.module) + '</strong><span>' + esc(item.module || "") + '</span></td>' +
             '<td><mark data-visible="' + esc(item.operational_visible === false ? "0" : "1") + '">' + esc(visibleLabel) + '</mark><small>' + esc(fmtStatus(item)) + esc(duplicates) + '</small></td>' +
             '<td><strong>Modulos</strong><span>' + esc(core) + '</span><small>Plantilla: ' + esc(template) + '</small><small>Tablas: ' + esc(tables) + '</small></td>' +
-            '<td>' + esc(own) + '<span>Permisos: ' + esc(permissions) + '</span></td>' +
-            '<td><strong>' + esc(decision) + '</strong><span>Flujo: ' + esc(saleFlow) + '</span><span>Reportes: ' + esc(reports) + '</span></td>' +
+            '<td>' + esc(own) + (fused ? '<small>Fusiona: ' + esc(fused) + '</small>' : '') + (support ? '<small>Soportes: ' + esc(support) + '</small>' : '') + (similar ? '<small>Similar a: ' + esc(similar) + '</small>' : '') + '<span>Permisos: ' + esc(permissions) + '</span></td>' +
+            '<td><strong>' + esc(decision) + '</strong><span>Flujo: ' + esc(saleFlow) + '</span><span>Ingresos: ' + esc(incomeFlow) + '</span><span>Egresos: ' + esc(expenseFlow) + '</span><span>Reportes: ' + esc(reports) + '</span><small>Finanzas: ' + esc(financialReports) + '</small></td>' +
+            '<td><mark data-ready="' + esc(professional ? "1" : "0") + '">' + esc(professional ? "Profesional" : "Brecha") + '</mark><span>' + esc(score) + '%</span>' + (active ? '<small>Activo en esta empresa</small>' : '') + '</td>' +
           '</tr>';
         }).join("");
       }
 
-      fetchCatalog(empresaId).then(render);
+      Promise.all([fetchCatalog(empresaId), fetchPermissionContext(empresaId)]).then(function (results) {
+        render(results[0], results[1]);
+      });
     })();
   </script>
 </body>

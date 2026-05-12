@@ -21,6 +21,25 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-12 (adaptacion del nucleo por plantilla)
+- No se agregan tablas ni columnas fisicas.
+- El JSON `tipo_empresa_preconfiguraciones.config_json` puede incluir `adaptacion_nucleo` con `fuente_unica`, `usuarios_desde_nucleo`, `productos_servicios_desde_nucleo`, `estaciones_como_recursos_configurados`, nombres de entidad de estacion, roles, productos/servicios guia, estaciones guia y reglas.
+- Al aplicar una plantilla se guarda la preferencia `preconfiguracion_tipo_empresa_adaptacion_nucleo` en `empresa_estacion_prefs`.
+- `estaciones_config` agrega metadata JSON de recurso (`tipo_recurso`, `tipo_recurso_plural`, `representa_recurso_negocio`) para que la misma tabla de estaciones represente habitaciones, apartamentos, puestos, vehiculos, bahias, aulas, consultorios u otros recursos.
+
+Actualizacion 2026-05-12 (matriz profesional de 30 verticales)
+- No se agregan tablas ni columnas fisicas.
+- La matriz `/api/*/verticales_integracion/catalogo` consume metadatos ya existentes de `tipo_empresa_preconfiguraciones.config_json`, `empresa_modulos_colombia_*` y catalogos de licencias/tipos para publicar preparacion profesional de 30 verticales canonicos exactos.
+- `professional_ready`, `readiness_score`, `readiness_checks`, `configuration_scope`, `fused_modules`, `support_modules`, `similar_templates`, `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports` son campos de contrato API calculados; no se almacenan como columnas.
+- El amarre de ingresos/egresos usa las tablas existentes `carritos_compras`, `carrito_compra_items`, `empresa_finanzas_movimientos`, `empresa_finanzas_configuracion` y `empresa_finanzas_periodos`; no se crea una tabla financiera por vertical.
+- Los alias `consultorio_odontologico` y `taxi`, y los soportes `turnos_atencion`/`turnos`, no crean tablas nuevas ni filas de producto vertical; se resuelven por configuracion, permisos y plantilla canonica.
+- Los 20 verticales nuevos conservan sus datos operativos transversales en `empresa_modulos_colombia_*` por `empresa_id` y `modulo`; ventas, pagos, productos, clientes, facturacion y reportes siguen en las tablas centrales.
+
+Actualizacion 2026-05-12 (visibilidad comercial de licencias)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `pcs_superadministrador.licencias.activo`: `1` significa visible para clientes y habilitada para checkout; `0` significa oculta para clientes y bloqueada en compras/activaciones publicas nuevas.
+- Los filtros publicos de licencias usan `COALESCE(activo, 1) = 1` para compatibilidad con registros antiguos.
+
 Actualizacion 2026-05-11 (2FA login global)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `pcs_superadministrador.configuraciones` con la clave `security.admin_2fa.enabled` para activar/desactivar globalmente la exigencia de OTP en login de administradores.

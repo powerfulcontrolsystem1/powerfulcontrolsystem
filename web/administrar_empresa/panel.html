@@ -425,6 +425,73 @@
     }
 
     .empresa-market-grid {
+      display: block;
+    }
+
+    .empresa-market-table-wrap {
+      display: none;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%);
+    }
+
+    .empresa-market-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .empresa-market-table th,
+    .empresa-market-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+      color: var(--text);
+      font-size: .76rem;
+      line-height: 1.12;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .empresa-market-table th {
+      color: var(--muted);
+      font-size: .64rem;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      background: color-mix(in srgb, var(--surface) 72%, var(--accent) 28%);
+    }
+
+    .empresa-market-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empresa-market-table .num {
+      text-align: right;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .empresa-market-table .meta {
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empresa-market-table .empty {
+      color: var(--muted);
+    }
+
+    .empresa-market-table .empresa-market-change {
+      margin-top: 0;
+      padding: 2px 6px;
+      font-size: .68rem;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .empresa-market-cards {
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
@@ -491,34 +558,33 @@
     }
 
     @media (min-width: 900px) {
-      .empresa-market-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 10px;
+      .empresa-market-table-wrap {
+        display: block;
       }
 
-      .empresa-market-card {
-        min-height: 120px;
-        padding: 14px 13px;
+      .empresa-market-cards {
+        display: none;
       }
 
-      .empresa-market-name {
-        font-size: 1.08rem;
-        line-height: 1.14;
+      .empresa-market-table th:nth-child(1),
+      .empresa-market-table th:nth-child(4),
+      .empresa-market-table td:nth-child(1),
+      .empresa-market-table td:nth-child(4) {
+        width: 16%;
       }
 
-      .empresa-market-value {
-        font-size: clamp(1.92rem, 1.55vw, 2.18rem);
-        line-height: 1.08;
+      .empresa-market-table th:nth-child(2),
+      .empresa-market-table th:nth-child(5),
+      .empresa-market-table td:nth-child(2),
+      .empresa-market-table td:nth-child(5) {
+        width: 15%;
       }
 
-      .empresa-market-meta {
-        font-size: 1.03rem;
-        line-height: 1.2;
-      }
-
-      .empresa-market-change {
-        padding: 4px 9px;
-        font-size: .98rem;
+      .empresa-market-table th:nth-child(3),
+      .empresa-market-table th:nth-child(6),
+      .empresa-market-table td:nth-child(3),
+      .empresa-market-table td:nth-child(6) {
+        width: 19%;
       }
     }
 
@@ -900,7 +966,7 @@
         overflow: hidden;
       }
 
-      .empresa-market-grid {
+      .empresa-market-cards {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 4px;
       }
@@ -1069,7 +1135,7 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
-      .empresa-market-grid {
+      .empresa-market-cards {
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
@@ -1161,11 +1227,19 @@
         <div id="marketScope" class="empresa-market-scope">Detectando país y moneda...</div>
       </div>
       <div id="marketGrid" class="empresa-market-grid">
-        <article class="empresa-market-card local">
-          <p class="empresa-market-name">Moneda local</p>
-          <p class="empresa-market-value">--</p>
-          <p class="empresa-market-meta">Consultando indicadores del mercado.</p>
-        </article>
+        <div class="empresa-market-table-wrap">
+          <table class="empresa-market-table">
+            <thead><tr><th>Indicador</th><th>Valor</th><th>Referencia</th><th>Indicador</th><th>Valor</th><th>Referencia</th></tr></thead>
+            <tbody><tr><td>Moneda local</td><td class="num">--</td><td class="meta">Consultando indicadores del mercado.</td><td class="empty">--</td><td class="empty">--</td><td></td></tr></tbody>
+          </table>
+        </div>
+        <div class="empresa-market-cards">
+          <article class="empresa-market-card local">
+            <p class="empresa-market-name">Moneda local</p>
+            <p class="empresa-market-value">--</p>
+            <p class="empresa-market-meta">Consultando indicadores del mercado.</p>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -1993,27 +2067,81 @@
       function renderMarketCards(cards) {
         if (!marketGridEl) return;
         marketGridEl.innerHTML = "";
-        cards.forEach(function (card) {
-          var item = document.createElement("article");
-          item.className = "empresa-market-card" + (card.local ? " local" : "");
+        var tableWrap = document.createElement("div");
+        tableWrap.className = "empresa-market-table-wrap";
+        var table = document.createElement("table");
+        table.className = "empresa-market-table";
+        table.innerHTML = "<thead><tr><th>Indicador</th><th>Valor</th><th>Referencia</th><th>Indicador</th><th>Valor</th><th>Referencia</th></tr></thead><tbody></tbody>";
+        var tbody = table.querySelector("tbody");
+        var cardsWrap = document.createElement("div");
+        cardsWrap.className = "empresa-market-cards";
+        function changeInfo(card) {
           var change = text(card.change);
           var changeClass = "";
           var changeNumber = Number(String(change).replace("%", ""));
           if (Number.isFinite(changeNumber)) {
             changeClass = changeNumber > 0 ? " up" : (changeNumber < 0 ? " down" : "");
           }
+          return { text: change, className: changeClass };
+        }
+        function fillTableCard(row, offset, card) {
+          if (!card) {
+            row.children[offset].className = "empty";
+            row.children[offset].textContent = "--";
+            row.children[offset + 1].className = "empty";
+            row.children[offset + 1].textContent = "--";
+            row.children[offset + 2].className = "empty";
+            row.children[offset + 2].textContent = "";
+            return;
+          }
+          var info = changeInfo(card);
+          row.children[offset].textContent = card.name || "Indicador";
+          row.children[offset + 1].className = "num";
+          row.children[offset + 1].textContent = card.value || "--";
+          row.children[offset + 2].className = "meta";
+          row.children[offset + 2].textContent = card.meta || "";
+          if (info.text) {
+            var chip = document.createElement("span");
+            chip.className = "empresa-market-change" + info.className;
+            chip.textContent = info.text;
+            row.children[offset + 2].appendChild(document.createTextNode(" "));
+            row.children[offset + 2].appendChild(chip);
+          }
+        }
+        for (var i = 0; i < cards.length; i += 2) {
+          var row = document.createElement("tr");
+          row.innerHTML =
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>';
+          fillTableCard(row, 0, cards[i]);
+          fillTableCard(row, 3, cards[i + 1]);
+          tbody.appendChild(row);
+        }
+
+        cards.forEach(function (card) {
+          var info = changeInfo(card);
+
+          var item = document.createElement("article");
+          item.className = "empresa-market-card" + (card.local ? " local" : "");
           item.innerHTML =
             '<p class="empresa-market-name"></p>' +
             '<p class="empresa-market-value"></p>' +
             '<p class="empresa-market-meta"></p>' +
-            (change ? '<span class="empresa-market-change' + changeClass + '"></span>' : "");
+            (info.text ? '<span class="empresa-market-change' + info.className + '"></span>' : "");
           item.querySelector(".empresa-market-name").textContent = card.name || "Indicador";
           item.querySelector(".empresa-market-value").textContent = card.value || "--";
           item.querySelector(".empresa-market-meta").textContent = card.meta || "";
           var changeEl = item.querySelector(".empresa-market-change");
-          if (changeEl) changeEl.textContent = change;
-          marketGridEl.appendChild(item);
+          if (changeEl) changeEl.textContent = info.text;
+          cardsWrap.appendChild(item);
         });
+        tableWrap.appendChild(table);
+        marketGridEl.appendChild(tableWrap);
+        marketGridEl.appendChild(cardsWrap);
       }
 
       function fetchMarketSymbol(symbol, label) {

@@ -111,11 +111,11 @@
           </select>
         </div>
         <div>
-          <label class="form-label" for="licStatusFilter">Estado</label>
+          <label class="form-label" for="licStatusFilter">Visibilidad</label>
           <select id="licStatusFilter" class="form-input">
             <option value="">Todos</option>
-            <option value="activo">Activas</option>
-            <option value="inactivo">Inactivas</option>
+            <option value="activo">Visibles para clientes</option>
+            <option value="inactivo">Ocultas para clientes</option>
             <option value="asignada">Asignadas</option>
             <option value="catalogo">Catálogo</option>
           </select>
@@ -168,9 +168,9 @@
           <p class="form-help">Las licencias de prueba usan 500. Al superar el límite mensual se desactiva la licencia.</p>
         </div>
         <div class="form-col">
-          <label class="form-label">Estado de la licencia</label>
-          <label class="lic-superrol-item"><input id="licencia_activa" type="checkbox" checked> Licencia activa y disponible para uso/venta.</label>
-          <p class="form-help">Si desactivas esta opción, la licencia queda guardada pero no aplica a empresas ni aparece como vigente.</p>
+          <label class="form-label">Visibilidad comercial</label>
+          <label class="lic-superrol-item"><input id="licencia_activa" type="checkbox" checked> Visible para clientes y disponible en compra/activación.</label>
+          <p class="form-help">Si desactivas esta opción, la licencia queda guardada para administración interna, pero no aparece a clientes ni permite checkout público.</p>
         </div>
       </div>
       <div class="form-row">
@@ -641,7 +641,7 @@
         const avg = averageValue(rows);
         licKpiGrid.innerHTML = [
           '<div class="lic-admin-kpi"><span>Total catálogo</span><strong>' + total + '</strong><small>Planes base, addons y licencias asignadas.</small></div>',
-          '<div class="lic-admin-kpi"><span>Activas</span><strong>' + active + '</strong><small>' + (total ? Math.round(active * 100 / total) : 0) + '% del portafolio visible.</small></div>',
+          '<div class="lic-admin-kpi"><span>Visibles</span><strong>' + active + '</strong><small>' + (total ? Math.round(active * 100 / total) : 0) + '% visible para clientes.</small></div>',
           '<div class="lic-admin-kpi"><span>Licencias addon</span><strong>' + addons + '</strong><small>Ampliaciones modulares o funcionales.</small></div>',
           '<div class="lic-admin-kpi"><span>Asignadas</span><strong>' + assigned + '</strong><small>' + openCatalog + ' registros de catálogo sin empresa.</small></div>',
           '<div class="lic-admin-kpi"><span>Ticket promedio</span><strong>' + escapeHTML(renderMoney(avg)) + '</strong><small>' + unrestricted + ' planes sin techo modular.</small></div>'
@@ -650,7 +650,7 @@
         const riskItems = [];
         if (rows.some(function(item){ return isAddon(item) && !normalizeCSV(item.modulos_habilitados || ''); })) riskItems.push(['Addons sin módulo', 'Un addon debe declarar cobertura para evitar ampliaciones ambiguas.']);
         if (rows.some(function(item){ return Number(item.valor || 0) <= 0 && !String(item.nombre || '').toLowerCase().includes('prueba'); })) riskItems.push(['Planes en cero', 'Revisa si son cortesías controladas o errores de tarifa.']);
-        if (rows.some(function(item){ return isActiveLic(item) && Number(item.duracion_dias || 0) <= 0; })) riskItems.push(['Duración pendiente', 'Hay licencias activas sin duración comercial definida.']);
+        if (rows.some(function(item){ return isActiveLic(item) && Number(item.duracion_dias || 0) <= 0; })) riskItems.push(['Duración pendiente', 'Hay licencias visibles sin duración comercial definida.']);
         licHealthCards.innerHTML = [
           '<div class="lic-admin-health-card"><span>Salud comercial</span><strong>' + (riskItems.length ? 'Revisar' : 'Estable') + '</strong></div>',
           '<div class="lic-admin-health-card"><span>Países</span><strong>' + new Set(rows.map(function(i){ return String(i.pais_codigo || 'CO').toUpperCase(); })).size + '</strong></div>',
@@ -973,9 +973,9 @@
         data.forEach(function(i){
           const tr = document.createElement('tr');
           const activo = isActiveLic(i) ? 1 : 0;
-          const toggleLabel = activo ? 'Desactivar' : 'Activar';
+          const toggleLabel = activo ? 'Ocultar' : 'Mostrar';
           const statusClass = activo ? 'ok' : 'danger';
-          const statusLabel = activo ? 'Activa' : 'Inactiva';
+          const statusLabel = activo ? 'Visible a clientes' : 'Oculta a clientes';
           const classLabel = licenseClassLabel(i);
           const assigned = isAssigned(i);
           tr.innerHTML = '' +
@@ -1038,7 +1038,7 @@
           b.onclick = async function(){
             const id = b.getAttribute('data-id');
             const activo = b.getAttribute('data-activo') === '1' ? '0' : '1';
-            if(!confirm((activo === '1' ? 'Activar' : 'Desactivar') + ' licencia?')) return;
+            if(!confirm((activo === '1' ? 'Mostrar' : 'Ocultar') + ' esta licencia para clientes?')) return;
             await fetchTextOrThrow('/super/api/licencias?id=' + encodeURIComponent(id) + '&action=activar&activo=' + activo, { method: 'PUT' });
             await loadCrud();
           };

@@ -77,6 +77,20 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 			if len(template.TareasGuia) == 0 {
 				t.Fatalf("sin tareas guia")
 			}
+			if !template.AdaptacionNucleo.FuenteUnica ||
+				!template.AdaptacionNucleo.UsuariosDesdeNucleo ||
+				!template.AdaptacionNucleo.ProductosServiciosDesdeNucleo {
+				t.Fatalf("adaptacion al nucleo incompleta: %+v", template.AdaptacionNucleo)
+			}
+			if template.Operacion.UsaEstaciones && !template.AdaptacionNucleo.EstacionesComoRecursosConfigurados {
+				t.Fatalf("estaciones deben quedar como recursos configurables: %+v", template.AdaptacionNucleo)
+			}
+			if len(template.AdaptacionNucleo.UsuariosOperativos) < 3 {
+				t.Fatalf("adaptacion debe declarar usuarios operativos del nucleo: %+v", template.AdaptacionNucleo)
+			}
+			if len(template.AdaptacionNucleo.ProductosServiciosGuia) < 3 {
+				t.Fatalf("adaptacion debe declarar productos/servicios del nucleo: %+v", template.AdaptacionNucleo)
+			}
 			switch tc.nombre {
 			case "Motel":
 				if len(template.Tarifas.Motel) == 0 {
@@ -182,6 +196,18 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 			if len(template.TareasGuia) < 4 {
 				t.Fatalf("vertical debe tener tareas guia profesionales: got %d", len(template.TareasGuia))
 			}
+			if !template.AdaptacionNucleo.FuenteUnica ||
+				!template.AdaptacionNucleo.UsuariosDesdeNucleo ||
+				!template.AdaptacionNucleo.ProductosServiciosDesdeNucleo ||
+				!template.AdaptacionNucleo.EstacionesComoRecursosConfigurados {
+				t.Fatalf("vertical debe adaptar usuarios/productos/estaciones al nucleo: %+v", template.AdaptacionNucleo)
+			}
+			if template.AdaptacionNucleo.EntidadEstacionSingular != item.StationPrefix {
+				t.Fatalf("entidad estacion=%q want %q", template.AdaptacionNucleo.EntidadEstacionSingular, item.StationPrefix)
+			}
+			if len(template.AdaptacionNucleo.UsuariosOperativos) < len(item.Roles) {
+				t.Fatalf("roles operativos no cubiertos por adaptacion: %+v", template.AdaptacionNucleo)
+			}
 			if template.IntegracionVertical == nil {
 				t.Fatalf("vertical debe quedar conectado a la matriz extendida de integracion")
 			}
@@ -195,7 +221,12 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 				len(template.IntegracionVertical.TablesTouched) == 0 ||
 				len(template.IntegracionVertical.RequiredPermissions) == 0 ||
 				len(template.IntegracionVertical.SaleFlow) == 0 ||
-				len(template.IntegracionVertical.ReportsProduced) == 0 {
+				len(template.IntegracionVertical.ReportsProduced) == 0 ||
+				len(template.IntegracionVertical.FinancialCoreModules) == 0 ||
+				len(template.IntegracionVertical.IncomeFlow) == 0 ||
+				len(template.IntegracionVertical.ExpenseFlow) == 0 ||
+				len(template.IntegracionVertical.FinancialTables) == 0 ||
+				len(template.IntegracionVertical.FinancialReports) == 0 {
 				t.Fatalf("integracion extendida incompleta: %+v", template.IntegracionVertical)
 			}
 		})
@@ -246,6 +277,9 @@ func TestNuevosVerticalesProduccionMasivaSeleccionaVeinte(t *testing.T) {
 		if integracion.Decision != "integrar_v1_produccion_masiva" {
 			t.Fatalf("%s decision=%q", item.Modulo, integracion.Decision)
 		}
+		if len(integracion.IncomeFlow) == 0 || len(integracion.ExpenseFlow) == 0 || len(integracion.FinancialTables) == 0 {
+			t.Fatalf("%s debe declarar ingresos/egresos del nucleo financiero: %+v", item.Modulo, integracion)
+		}
 		masivos++
 	}
 	if masivos != 20 {
@@ -265,6 +299,9 @@ func TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1(t *testing.T) {
 			}
 			if integracion.ProduccionMasiva {
 				t.Fatalf("%s no debe entrar en ranking de nuevos verticales masivos", modulo)
+			}
+			if len(integracion.IncomeFlow) == 0 || len(integracion.ExpenseFlow) == 0 || len(integracion.FinancialTables) == 0 {
+				t.Fatalf("%s debe declarar ingresos/egresos del nucleo financiero: %+v", modulo, integracion)
 			}
 		})
 	}

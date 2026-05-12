@@ -1,3 +1,37 @@
+2026-05-12: Nucleo configurable por plantilla de empresa
+- Modulos afectados: preconfiguracion_tipos_empresa, configuracion_guiada, estaciones, usuarios, productos/servicios, roles/licencias.
+- Cambio funcional: las plantillas declaran `adaptacion_nucleo` para que usuarios operativos, productos/servicios y estaciones se configuren desde el nucleo universal.
+- Backend: `TipoEmpresaPreconfigAdaptacionNucleo` se normaliza al parsear/guardar plantillas; la aplicacion de plantilla guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` en preferencias de empresa.
+- Estaciones: `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`, permitiendo que una estacion represente habitacion, apartamento, puesto, bahia, carro/vehiculo, aula, consultorio u oficina segun plantilla.
+- Frontend super: la pantalla de preconfiguraciones muestra la seccion `Nucleo configurable` y envia la metadata al guardar.
+- Base de datos: no hay tablas ni columnas nuevas; se reutiliza JSON en `tipo_empresa_preconfiguraciones.config_json` y `empresa_estacion_prefs`.
+- Validacion: `go test ./db -run "TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes|TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog|TestNuevosVerticalesProduccionMasivaSeleccionaVeinte|TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1" -count=1`, `go test ./handlers -run "TestEmpresaVerticalesIntegracionCatalogoContrato|TestPublicVerticalesIntegracionCatalogoHandler|TestLicenciaVisibleParaClientes" -count=1`, parser inline de `web/super/preconfiguracion_tipos_empresa.html`.
+
+2026-05-12: Matriz profesional de 30 verticales
+- Modulos afectados: verticales_integracion, verticales_nuevos, preconfiguracion_tipos_empresa, administrar_empresa, roles/licencias, reportes.
+- Cambio funcional: el catalogo `/api/*/verticales_integracion/catalogo` publica exactamente 30 verticales canonicos, fusionando alias historicos y dejando soportes transversales fuera del conteo comercial.
+- Backend: cada vertical visible publica preparacion profesional (`professional_ready`, `readiness_score`, checks y alcance de configuracion), fusiones/soportes, nucleo financiero, flujo de ingresos, flujo de egresos, tablas financieras y reportes financieros cuando aplica; la prueba de contrato impide publicar verticales visibles incompletos o alias como verticales separados.
+- Frontend: Configuracion empresarial muestra `Adaptacion por tipo`, perfil activo desde `/api/empresa/permisos_contexto`, KPIs de contrato/ventas-finanzas/reportes/configuracion y estado `Profesional` o `Brecha` por vertical.
+- Base de datos: sin cambios de esquema; los 20 nuevos siguen usando `empresa_modulos_colombia_*` y el nucleo central mantiene clientes, productos, ventas, pagos, facturacion y reportes.
+- Finanzas: los 30 verticales declaran ingresos y egresos atados a ventas/pagos, `empresa_finanzas_movimientos`, conciliacion/tesoreria y reportes financieros consolidados.
+- Fusion: `consultorio_odontologico` queda dentro de `odontologia`, `taxi` dentro de `taxi_system`, y `turnos_atencion`/`turnos` quedan como soporte transversal reutilizable.
+- Validacion: `go test ./handlers -run "TestEmpresaVerticalesIntegracionCatalogoContrato|TestPublicVerticalesIntegracionCatalogoHandler" -count=1`, `node --check web/js/verticales_integracion_catalogo.js`, parser inline de `web/administrar_empresa/verticales_integracion.html` y conteo local exacto 30.
+
+2026-05-12: Licencias ocultables para clientes
+- Modulos afectados: `licencias`, `checkout_publico`, `pagos`.
+- Cambio funcional: el super administrador puede mostrar u ocultar licencias para clientes usando la bandera existente `licencias.activo`.
+- Backend: si una licencia esta oculta (`activo=0`), el resumen publico de checkout, Wompi, Nequi, Epayco, activacion sin pago y addons seleccionados no permiten iniciar compra/activacion.
+- Frontend: `web/super/licencias.html` renombra el control a `Visibilidad comercial`, con acciones `Mostrar` y `Ocultar`.
+- Alcance: no cambia esquema fisico, permisos privados ni dependencias.
+- Verificacion: `go test ./handlers -run "TestLicenciaVisibleParaClientes|TestBuildEpayco|TestBuildWompi|TestEpaycoApproved" -count=1`; parseo de scripts inline de `web/super/licencias.html` con Node; `git diff --check` sin errores.
+
+2026-05-12: Indicadores economicos compactos en panel empresarial
+- Modulo afectado: `administrar_empresa`.
+- Cambio funcional: los indicadores economicos del panel principal pasan de tarjetas grandes a una tabla compacta de dos indicadores por fila en escritorio, reduciendo el espacio vertical ocupado.
+- UX responsive: en movil se mantiene la vista de tarjetas compactas para conservar legibilidad tactil.
+- Alcance: no cambia endpoints, permisos, roles, tablas ni dependencias.
+- Verificacion: parseo de scripts inline de `web/administrar_empresa/panel.html` con Node; `git diff --check` sin errores.
+
 2026-05-12: Enlace Probar Gratis del index
 - Modulos afectados: `index_publico`, `portal_publico`, `autenticacion`, `super_administrador`.
 - Causa tecnica: el index enviaba a `/descripcion_de_los_sistemas.ht`; esa extension no se sirve como HTML estandar y podia descargarse en el navegador en vez de mostrar la ficha del sistema elegido.
