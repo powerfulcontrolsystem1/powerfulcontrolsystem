@@ -1,3 +1,10 @@
+2026-05-12: Gimnasio elevado a modulo empresarial
+- Modulos afectados: `gimnasio`, `administrar_empresa`, `verticales_integracion`.
+- Cambio funcional: el dashboard de gimnasio incorpora salud operativa, alertas ejecutivas y acciones rapidas calculadas desde socios, planes, clases, pagos, dispositivos y eventos de acceso existentes.
+- Frontend: `web/administrar_empresa/gimnasio.html` agrega logo del vertical, buscador/filtro global y bloque de mando ejecutivo; `web/js/gimnasio.js` agrega filtros, badges de estado y lectura de riesgos; `web/administrar_empresa/gimnasio_menu.html` organiza la navegacion en grupos empresariales.
+- Alcance: no cambian endpoints, permisos, backend, base de datos ni dependencias; se reutiliza `/api/empresa/gimnasio`.
+- Validacion: `node --check web/js/gimnasio.js`, parseo de scripts inline HTML y `git diff --check` sobre archivos tocados.
+
 2026-05-12: Menu de configuracion super alineado con Administrar empresa
 - Modulos afectados: `super_administrador`, `configuracion_avanzada`.
 - Cambio funcional: `web/super/configuracion_avanzada.html` reemplaza el submenu interno plano por un sidebar agrupado con el patron visual de Administrar empresa, manteniendo buscador, navegacion por secciones y colapso movil.

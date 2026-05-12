@@ -15939,6 +15939,18 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   min-width:0;
 }
 
+.gym-hero-logo{
+  width:64px;
+  height:64px;
+  object-fit:contain;
+  margin-bottom:12px;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid color-mix(in srgb, var(--gym-accent) 22%, var(--gym-line));
+  background:var(--gym-panel);
+  box-shadow:0 12px 24px color-mix(in srgb, #020617 14%, transparent);
+}
+
 .gym-hero-side h2{
   margin:0 0 10px;
   font-size:1rem;
@@ -16053,6 +16065,18 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   min-width:0;
 }
 
+.gym-context-card > div:first-child{
+  min-width:220px;
+}
+
+.gym-context-tools{
+  display:grid;
+  grid-template-columns:minmax(180px,260px) minmax(160px,210px);
+  gap:10px;
+  min-width:min(480px,100%);
+  align-items:center;
+}
+
 .gym-context-card h2{
   margin:8px 0 6px;
   color:var(--gym-ink);
@@ -16095,6 +16119,133 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   margin:0;
   line-height:1.55;
 }
+
+.gym-command-grid{
+  display:grid;
+  grid-template-columns:minmax(240px,1.05fr) minmax(240px,1fr) minmax(240px,1fr);
+  gap:14px;
+  margin-bottom:16px;
+}
+
+.gym-command-card{
+  display:grid;
+  gap:12px;
+  align-content:start;
+  min-width:0;
+  min-height:150px;
+  padding:16px;
+  border-radius:8px;
+  border:1px solid color-mix(in srgb, var(--gym-accent) 18%, var(--gym-line));
+  background:linear-gradient(180deg, color-mix(in srgb, var(--gym-panel) 94%, var(--gym-accent) 6%), var(--gym-panel));
+  box-shadow:0 12px 28px color-mix(in srgb, #020617 12%, transparent);
+}
+
+.gym-score-card{
+  grid-template-columns:minmax(0,1fr) 96px;
+  align-items:center;
+}
+
+.gym-score-card strong{
+  display:block;
+  margin:8px 0 4px;
+  font-size:2.55rem;
+  line-height:1;
+  color:var(--gym-ink);
+}
+
+.gym-score-card p{
+  margin:0;
+  line-height:1.4;
+}
+
+.gym-score-ring{
+  width:88px;
+  height:88px;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at center, var(--gym-panel) 56%, transparent 58%),
+    conic-gradient(color-mix(in srgb, var(--gym-accent) 82%, #22c55e 18%) var(--gym-score-fill, 0%), color-mix(in srgb, var(--gym-line) 76%, transparent) 0);
+  border:1px solid var(--gym-line);
+}
+
+.gym-alert-list,
+.gym-action-list{
+  display:grid;
+  gap:8px;
+}
+
+.gym-alert-item,
+.gym-action-item{
+  width:100%;
+  min-width:0;
+  border-radius:8px;
+  border:1px solid var(--gym-line);
+  background:var(--gym-panel);
+  color:var(--gym-ink);
+  text-align:left;
+  cursor:pointer;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease;
+}
+
+.gym-alert-item{
+  display:grid;
+  gap:4px;
+  padding:10px 12px;
+  border-left:4px solid color-mix(in srgb, var(--gym-accent) 62%, var(--gym-line));
+}
+
+.gym-alert-item:hover,
+.gym-action-item:hover{
+  transform:translateY(-1px);
+  background:var(--gym-panel-soft);
+  border-color:color-mix(in srgb, var(--gym-accent) 30%, var(--gym-line));
+}
+
+.gym-alert-item strong,
+.gym-action-item strong{
+  color:var(--gym-ink);
+}
+
+.gym-alert-item span{
+  color:var(--gym-muted);
+  font-size:.84rem;
+  line-height:1.35;
+}
+
+.gym-alert-ok{border-left-color:#22c55e}
+.gym-alert-warn{border-left-color:#f59e0b}
+.gym-alert-danger{border-left-color:#ef4444}
+
+.gym-action-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:11px 12px;
+}
+
+.gym-action-item span{
+  color:var(--gym-muted);
+  font-size:.86rem;
+}
+
+.gym-status-pill{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:0 9px;
+  border-radius:999px;
+  border:1px solid var(--gym-line);
+  background:var(--gym-panel-soft);
+  color:var(--gym-ink);
+  font-size:.78rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.gym-status-ok{border-color:#86efac;background:#dcfce7;color:#166534}
+.gym-status-warn{border-color:#fcd34d;background:#fef3c7;color:#92400e}
+.gym-status-danger{border-color:#fca5a5;background:#fee2e2;color:#991b1b}
 
 .gym-module-body .form,
 .gym-module-body .form-row,
@@ -16197,7 +16348,8 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
 
 @media (max-width: 1080px){
   .gym-hero-card,
-  .gym-workspace{
+  .gym-workspace,
+  .gym-command-grid{
     grid-template-columns:1fr;
   }
 
@@ -16223,10 +16375,20 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
     flex-direction:column;
   }
 
+  .gym-context-tools{
+    width:100%;
+    min-width:0;
+    grid-template-columns:1fr;
+  }
+
   .gym-context-msg{
     width:100%;
     min-width:0;
     margin-left:0;
+  }
+
+  .gym-score-card{
+    grid-template-columns:1fr;
   }
 }
 

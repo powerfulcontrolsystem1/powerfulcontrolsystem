@@ -1,3 +1,10 @@
+2026-05-12: Gimnasio empresarial
+- Modulos afectados: `gimnasio`, `administrar_empresa`.
+- Cambio funcional: el modulo presenta un tablero empresarial con salud operativa, alertas ejecutivas, acciones rapidas, busqueda/filtro global y estados visuales por tabla.
+- UX: el menu de gimnasio queda agrupado por Direccion, Comercial, Operacion deportiva y Acceso; la pagina principal muestra el logo del vertical y mantiene el flujo de socios, planes, entrenadores, clases, inscripciones, asistencias, pagos y acceso.
+- Gobernanza: los datos siguen aislados por `empresa_id` y el modulo conserva la integracion con clientes, servicios, ventas y pagos centrales sin duplicar el nucleo comercial.
+- Alcance: no cambia permisos, endpoints, tablas, backend ni dependencias.
+
 2026-05-12: Configuracion avanzada del super administrador
 - Modulos afectados: `super_administrador`, `configuracion_avanzada`.
 - Cambio funcional: la pagina `web/super/configuracion_avanzada.html` presenta sus ajustes globales con el mismo menu lateral agrupado usado por Administrar empresa.

@@ -14,6 +14,9 @@
     accesoConfig: null,
     preconfiguracion: null,
     integracionNucleo: null,
+    dashboard: null,
+    search: "",
+    statusFilter: "",
     credenciales: [],
     dispositivos: [],
     eventosAcceso: []
@@ -64,6 +67,34 @@
   function byId(id) { return document.getElementById(id); }
   function escapeHTML(value) { return String(value || "").replace(/[&<>\"']/g, function (c) { return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]; }); }
   function formatMoney(value) { return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(Number(value || 0)); }
+  function normalizeText(value) {
+    var text = String(value || "").toLowerCase().trim();
+    if (typeof text.normalize === "function") text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return text;
+  }
+  function parseDate(value) {
+    var raw = String(value || "").trim();
+    if (!raw) return null;
+    var date = new Date(raw.replace(" ", "T"));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  function daysUntil(value) {
+    var date = parseDate(value);
+    if (!date) return null;
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    return Math.round((date.getTime() - today.getTime()) / 86400000);
+  }
+  function statusBadge(value) {
+    var text = String(value || "sin estado").trim() || "sin estado";
+    var key = normalizeText(text).replace(/\s+/g, "-");
+    var tone = "neutral";
+    if (/retirado|inactivo|bloqueada|expirada|denegado|cancelado|rechazado/.test(key)) tone = "danger";
+    else if (/espera|pendiente|mantenimiento|congelado/.test(key)) tone = "warn";
+    else if (/activo|activa|aprobado|pagado|confirmado/.test(key)) tone = "ok";
+    return '<span class="gym-status-pill gym-status-' + tone + '">' + escapeHTML(text) + '</span>';
+  }
   function setMessage(text, isError) {
     var node = byId("gymMsg"); if (!node) return;
     node.textContent = text || "";
@@ -106,6 +137,7 @@
     if (!items || !items.length) return '<p class="form-help">Sin registros todavía.</p>';
     var rows = items.map(function (item) {
       return "<tr>" + fields.map(function (field) {
+        if (field.html) return "<td>" + field.html(item) + "</td>";
         var value = field.format ? field.format(item[field.key], item) : item[field.key];
         return "<td>" + escapeHTML(value) + "</td>";
       }).join("") + (fields.actions ? "<td>" + fields.actions(item) + "</td>" : "") + "</tr>";
@@ -147,6 +179,25 @@
     if (currentValue) select.value = currentValue;
   }
 
+  function rowMatchesFilters(row) {
+    var query = normalizeText(state.search);
+    var status = normalizeText(state.statusFilter);
+    var haystack = normalizeText(JSON.stringify(row || {}));
+    if (query && haystack.indexOf(query) < 0) return false;
+    if (status) {
+      var rowStatus = normalizeText([row.estado, row.resultado, row.asistencia_marcada ? "asistencia" : ""].join(" "));
+      var statusTokens = rowStatus.split(/\s+/);
+      if (statusTokens.indexOf(status) < 0) return false;
+    }
+    return true;
+  }
+
+  function filteredRows(items) {
+    items = Array.isArray(items) ? items : [];
+    if (!state.search && !state.statusFilter) return items;
+    return items.filter(rowMatchesFilters);
+  }
+
   function syncSelects() {
     populateSelect("gymSocioPlan", state.planes, "id", function (i) { return i.nombre; }, true);
     populateSelect("gymClassTrainer", state.entrenadores, "id", function (i) { return i.nombre_completo; }, true);
@@ -161,6 +212,7 @@
   }
 
   function renderDashboard(data) {
+    data = data || {};
     var cards = [
       ["Socios activos", data.socios_activos || 0],
       ["Planes activos", data.planes_activos || 0],
@@ -188,6 +240,62 @@
     byId("gymBySede").innerHTML = renderList(data.rentabilidad_por_sede || [], [
       { key: "etiqueta", label: "Sede" }, { key: "monto", label: "Ingresos", format: function (v) { return formatMoney(v); } }, { key: "margen", label: "Margen", format: function (v) { return formatMoney(v); } }
     ]);
+    renderEnterpriseInsights(data);
+  }
+
+  function renderEnterpriseInsights(data) {
+    data = data || {};
+    var overdue = state.socios.filter(function (s) { var d = daysUntil(s.fecha_fin_plan); return d !== null && d < 0 && normalizeText(s.estado) === "activo"; });
+    var renewSoon = state.socios.filter(function (s) { var d = daysUntil(s.fecha_fin_plan); return d !== null && d >= 0 && d <= 7 && normalizeText(s.estado) === "activo"; });
+    var debt = state.socios.filter(function (s) { return Number(s.saldo || 0) > 0; });
+    var activePlans = state.planes.filter(function (p) { return normalizeText(p.estado || "activo") === "activo"; });
+    var deniedAccess = state.eventosAcceso.filter(function (e) { return normalizeText(e.resultado).indexOf("deneg") >= 0; });
+    var activeDevices = state.dispositivos.filter(function (d) { return normalizeText(d.estado || "activo") === "activo"; });
+    var score = 100;
+    if (!state.preconfiguracion || !state.preconfiguracion.acceso_configurado) score -= 14;
+    if (!activePlans.length) score -= 16;
+    if (!state.clases.length) score -= 12;
+    if (!activeDevices.length) score -= 10;
+    score -= Math.min(18, overdue.length * 3);
+    score -= Math.min(12, debt.length * 2);
+    score -= Math.min(10, deniedAccess.length * 2);
+    score = Math.max(0, Math.min(100, score));
+
+    var label = score >= 86 ? "Operacion lista para escala" : score >= 70 ? "Operacion estable con focos" : score >= 50 ? "Requiere seguimiento operativo" : "Riesgo alto de operacion";
+    var scoreEl = byId("gymHealthScore");
+    var labelEl = byId("gymHealthLabel");
+    var ringEl = byId("gymHealthRing");
+    if (scoreEl) scoreEl.textContent = String(score);
+    if (labelEl) labelEl.textContent = label;
+    if (ringEl) ringEl.style.setProperty("--gym-score-fill", String(score) + "%");
+
+    var alerts = [];
+    if (overdue.length) alerts.push({ tone: "danger", title: overdue.length + " membresias vencidas", detail: "Prioriza renovacion y bloqueo preventivo de acceso.", tab: "socios" });
+    if (debt.length) alerts.push({ tone: "warn", title: debt.length + " socios con saldo", detail: "Revisar recaudo antes de habilitar beneficios.", tab: "pagos" });
+    if (deniedAccess.length) alerts.push({ tone: "warn", title: deniedAccess.length + " accesos denegados recientes", detail: "Auditar credenciales, mora o dispositivos.", tab: "acceso" });
+    if (!activePlans.length) alerts.push({ tone: "danger", title: "Sin planes activos", detail: "Crea al menos un plan vendible para operar recaudo.", tab: "planes" });
+    if (!state.clases.length) alerts.push({ tone: "warn", title: "Agenda sin clases", detail: "Programa clases para medir ocupacion y entrenadores.", tab: "clases" });
+    if (!alerts.length) alerts.push({ tone: "ok", title: "Sin alertas criticas", detail: "Socios, recaudo, agenda y acceso se ven estables.", tab: "dashboard" });
+
+    var alertNode = byId("gymExecutiveAlerts");
+    if (alertNode) {
+      alertNode.innerHTML = alerts.slice(0, 4).map(function (item) {
+        return '<button type="button" class="gym-alert-item gym-alert-' + item.tone + '" data-gym-jump="' + escapeHTML(item.tab) + '"><strong>' + escapeHTML(item.title) + '</strong><span>' + escapeHTML(item.detail) + '</span></button>';
+      }).join("");
+    }
+
+    var actions = [
+      { tab: "socios", label: "Renovar socios", value: renewSoon.length + " proximas" },
+      { tab: "pagos", label: "Conciliar recaudo", value: formatMoney(data.ingresos_mes || 0) },
+      { tab: "clases", label: "Optimizar agenda", value: (data.clases_hoy || 0) + " hoy" },
+      { tab: "acceso", label: "Auditar ingreso", value: (data.accesos_hoy || 0) + " accesos" }
+    ];
+    var actionsNode = byId("gymActionPlan");
+    if (actionsNode) {
+      actionsNode.innerHTML = actions.map(function (item) {
+        return '<button type="button" class="gym-action-item" data-gym-jump="' + escapeHTML(item.tab) + '"><span>' + escapeHTML(item.label) + '</span><strong>' + escapeHTML(item.value) + '</strong></button>';
+      }).join("");
+    }
   }
 
   function payloadPreconfig() {
@@ -234,43 +342,44 @@
   }
 
   function renderTables() {
-    byId("gymSociosTable").innerHTML = renderList(state.socios, [
+    byId("gymSociosTable").innerHTML = renderList(filteredRows(state.socios), [
       { key: "nombre_completo", label: "Socio" }, { key: "plan_nombre", label: "Plan" }, { key: "telefono", label: "Teléfono" }, { key: "fecha_fin_plan", label: "Fin del plan" },
       { key: "saldo", label: "Saldo", format: function (v) { return formatMoney(v); } },
+      { label: "Estado", html: function (item) { return statusBadge(item.estado || "activo"); } },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-edit="socio" data-id="' + item.id + '">Editar</button> <button type="button" class="btn secondary small" data-delete="socios" data-id="' + item.id + '">Eliminar</button>'; } }
     ]);
-    byId("gymPlanesTable").innerHTML = renderList(state.planes, [
-      { key: "nombre", label: "Plan" }, { key: "precio", label: "Precio", format: function (v) { return formatMoney(v); } }, { key: "duracion_dias", label: "Días" }, { key: "clases_incluidas", label: "Clases" }, { key: "estado", label: "Estado" },
+    byId("gymPlanesTable").innerHTML = renderList(filteredRows(state.planes), [
+      { key: "nombre", label: "Plan" }, { key: "precio", label: "Precio", format: function (v) { return formatMoney(v); } }, { key: "duracion_dias", label: "Días" }, { key: "clases_incluidas", label: "Clases" }, { label: "Estado", html: function (item) { return statusBadge(item.estado || "activo"); } },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-edit="plan" data-id="' + item.id + '">Editar</button> <button type="button" class="btn secondary small" data-delete="planes" data-id="' + item.id + '">Eliminar</button>'; } }
     ]);
-    byId("gymTrainersTable").innerHTML = renderList(state.entrenadores, [
-      { key: "nombre_completo", label: "Entrenador" }, { key: "especialidad", label: "Especialidad" }, { key: "telefono", label: "Teléfono" }, { key: "estado", label: "Estado" },
+    byId("gymTrainersTable").innerHTML = renderList(filteredRows(state.entrenadores), [
+      { key: "nombre_completo", label: "Entrenador" }, { key: "especialidad", label: "Especialidad" }, { key: "telefono", label: "Teléfono" }, { label: "Estado", html: function (item) { return statusBadge(item.estado || "activo"); } },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-edit="trainer" data-id="' + item.id + '">Editar</button> <button type="button" class="btn secondary small" data-delete="entrenadores" data-id="' + item.id + '">Eliminar</button>'; } }
     ]);
-    byId("gymClassesTable").innerHTML = renderList(state.clases, [
+    byId("gymClassesTable").innerHTML = renderList(filteredRows(state.clases), [
       { key: "nombre", label: "Clase" }, { key: "categoria", label: "Categoría" }, { key: "entrenador_nombre", label: "Entrenador" }, { key: "fecha_programada", label: "Programación" }, { key: "cupos", label: "Cupos" },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-edit="class" data-id="' + item.id + '">Editar</button> <button type="button" class="btn secondary small" data-delete="clases" data-id="' + item.id + '">Eliminar</button>'; } }
     ]);
-    byId("gymEnrollmentsTable").innerHTML = renderList(state.inscripciones, [
-      { key: "socio_nombre", label: "Socio" }, { key: "clase_nombre", label: "Clase" }, { key: "estado", label: "Estado" }, { key: "asistencia_marcada", label: "Asistencia", format: function (v) { return v ? "Sí" : "No"; } },
+    byId("gymEnrollmentsTable").innerHTML = renderList(filteredRows(state.inscripciones), [
+      { key: "socio_nombre", label: "Socio" }, { key: "clase_nombre", label: "Clase" }, { label: "Estado", html: function (item) { return statusBadge(item.estado || "activa"); } }, { key: "asistencia_marcada", label: "Asistencia", format: function (v) { return v ? "Sí" : "No"; } },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-cancel-enrollment="' + item.id + '">Cancelar</button>'; } }
     ]);
-    byId("gymAttendanceTable").innerHTML = renderList(state.asistencias, [
+    byId("gymAttendanceTable").innerHTML = renderList(filteredRows(state.asistencias), [
       { key: "socio_nombre", label: "Socio" }, { key: "clase_nombre", label: "Clase" }, { key: "fecha_hora", label: "Fecha y hora" }, { key: "sede", label: "Sede" }, { key: "canal", label: "Canal" }
     ]);
-    byId("gymPaymentsTable").innerHTML = renderList(state.pagos, [
+    byId("gymPaymentsTable").innerHTML = renderList(filteredRows(state.pagos), [
       { key: "socio_nombre", label: "Socio" }, { key: "concepto", label: "Concepto" }, { key: "monto", label: "Monto", format: function (v) { return formatMoney(v); } }, { key: "metodo_pago", label: "Método" }, { key: "fecha_pago", label: "Fecha" }
     ]);
-    byId("gymCredentialsTable").innerHTML = renderList(state.credenciales, [
-      { key: "socio_nombre", label: "Socio" }, { key: "tipo_credencial", label: "Tipo" }, { key: "codigo_credencial", label: "Código" }, { key: "estado", label: "Estado" }, { key: "fecha_expiracion", label: "Expira" },
+    byId("gymCredentialsTable").innerHTML = renderList(filteredRows(state.credenciales), [
+      { key: "socio_nombre", label: "Socio" }, { key: "tipo_credencial", label: "Tipo" }, { key: "codigo_credencial", label: "Código" }, { label: "Estado", html: function (item) { return statusBadge(item.estado || "activa"); } }, { key: "fecha_expiracion", label: "Expira" },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-edit="credential" data-id="' + item.id + '">Editar</button> <button type="button" class="btn secondary small" data-delete="credenciales" data-id="' + item.id + '">Eliminar</button>'; } }
     ]);
-    byId("gymDevicesTable").innerHTML = renderList(state.dispositivos, [
-      { key: "nombre", label: "Dispositivo" }, { key: "tipo_dispositivo", label: "Tipo" }, { key: "ubicacion", label: "Ubicación" }, { key: "estado", label: "Estado" }, { key: "identificador", label: "Identificador" },
+    byId("gymDevicesTable").innerHTML = renderList(filteredRows(state.dispositivos), [
+      { key: "nombre", label: "Dispositivo" }, { key: "tipo_dispositivo", label: "Tipo" }, { key: "ubicacion", label: "Ubicación" }, { label: "Estado", html: function (item) { return statusBadge(item.estado || "activo"); } }, { key: "identificador", label: "Identificador" },
       { actions: function (item) { return '<button type="button" class="btn secondary small" data-edit="device" data-id="' + item.id + '">Editar</button> <button type="button" class="btn secondary small" data-delete="dispositivos" data-id="' + item.id + '">Eliminar</button>'; } }
     ]);
-    byId("gymAccessEventsTable").innerHTML = renderList(state.eventosAcceso, [
-      { key: "fecha_evento", label: "Fecha" }, { key: "socio_nombre", label: "Socio" }, { key: "metodo_acceso", label: "Método" }, { key: "resultado", label: "Resultado" }, { key: "motivo", label: "Motivo" }, { key: "dispositivo_nombre", label: "Dispositivo" }
+    byId("gymAccessEventsTable").innerHTML = renderList(filteredRows(state.eventosAcceso), [
+      { key: "fecha_evento", label: "Fecha" }, { key: "socio_nombre", label: "Socio" }, { key: "metodo_acceso", label: "Método" }, { label: "Resultado", html: function (item) { return statusBadge(item.resultado || "sin resultado"); } }, { key: "motivo", label: "Motivo" }, { key: "dispositivo_nombre", label: "Dispositivo" }
     ]);
   }
 
@@ -348,7 +457,7 @@
 
   function refreshAll() {
     return Promise.all([
-      loadModulePart("Dashboard", function () { return fetchJSON("dashboard").then(renderDashboard); }),
+      loadModulePart("Dashboard", function () { return fetchJSON("dashboard").then(function (row) { state.dashboard = row || {}; renderDashboard(state.dashboard); }); }),
       loadModulePart("Socios", function () { return fetchJSON("socios").then(function (rows) { state.socios = rows || []; }); }),
       loadModulePart("Planes", function () { return fetchJSON("planes").then(function (rows) { state.planes = rows || []; }); }),
       loadModulePart("Entrenadores", function () { return fetchJSON("entrenadores").then(function (rows) { state.entrenadores = rows || []; }); }),
@@ -367,6 +476,7 @@
       renderPreconfig();
       renderCoreIntegration();
       renderTables();
+      renderEnterpriseInsights(state.dashboard || {});
       errors = errors.filter(Boolean);
       if (errors.length) {
         setMessage("Modulo cargado parcialmente: " + errors.slice(0, 3).join(" | "), true);
@@ -394,8 +504,26 @@
   function bindStaticEvents() {
     Array.prototype.slice.call(document.querySelectorAll("[data-gym-tab]")).forEach(function (button) { button.addEventListener("click", function () { setTab(button.getAttribute("data-gym-tab")); }); });
     Array.prototype.slice.call(document.querySelectorAll("[data-gym-reset]")).forEach(function (button) { button.addEventListener("click", function () { resetForm(button.getAttribute("data-gym-reset")); }); });
+    var search = byId("gymGlobalSearch");
+    if (search) {
+      search.addEventListener("input", function () {
+        state.search = search.value || "";
+        renderTables();
+      });
+    }
+    var status = byId("gymStatusFilter");
+    if (status) {
+      status.addEventListener("change", function () {
+        state.statusFilter = status.value || "";
+        renderTables();
+      });
+    }
     document.body.addEventListener("click", function (event) {
       var target = event.target;
+      if (target && target.closest) {
+        var jump = target.closest("[data-gym-jump]");
+        if (jump) { setTab(jump.getAttribute("data-gym-jump")); return; }
+      }
       var editKind = target.getAttribute("data-edit");
       var deleteAction = target.getAttribute("data-delete");
       var cancelEnrollment = target.getAttribute("data-cancel-enrollment");

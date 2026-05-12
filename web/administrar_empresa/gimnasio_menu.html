@@ -11,16 +11,39 @@
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Gimnasio</h2>
-      <ul class="nav" id="gimnasioSidebarNav">
-        <li><a id="linkGimnasioDashboard" href="/administrar_empresa/gimnasio.html?tab=dashboard&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Dashboard</a></li>
-        <li><a id="linkGimnasioSocios" href="/administrar_empresa/gimnasio.html?tab=socios&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/customer.svg" alt="">Socios</a></li>
-        <li><a id="linkGimnasioPlanes" href="/administrar_empresa/gimnasio.html?tab=planes&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Planes</a></li>
-        <li><a id="linkGimnasioEntrenadores" href="/administrar_empresa/gimnasio.html?tab=entrenadores&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Entrenadores</a></li>
-        <li><a id="linkGimnasioClases" href="/administrar_empresa/gimnasio.html?tab=clases&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Clases</a></li>
-        <li><a id="linkGimnasioInscripciones" href="/administrar_empresa/gimnasio.html?tab=inscripciones&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/tags-color.svg" alt="">Inscripciones</a></li>
-        <li><a id="linkGimnasioAsistencias" href="/administrar_empresa/gimnasio.html?tab=asistencias&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Asistencias</a></li>
-        <li><a id="linkGimnasioPagos" href="/administrar_empresa/gimnasio.html?tab=pagos&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/money.svg" alt="">Pagos</a></li>
-        <li><a id="linkGimnasioAcceso" href="/administrar_empresa/gimnasio.html?tab=acceso&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/gps.svg" alt="">Control de acceso</a></li>
+      <div class="admin-sidebar-summary">
+        <p>Operacion fitness integrada: socios, agenda, recaudo, acceso y lectura ejecutiva.</p>
+      </div>
+      <ul class="nav admin-nav-grouped" id="gimnasioSidebarNav">
+        <li class="admin-nav-group is-open">
+          <div class="admin-nav-group-title">Direccion</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkGimnasioDashboard" href="/administrar_empresa/gimnasio.html?tab=dashboard&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Dashboard</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Comercial</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkGimnasioSocios" href="/administrar_empresa/gimnasio.html?tab=socios&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/customer.svg" alt="">Socios</a></li>
+            <li><a id="linkGimnasioPlanes" href="/administrar_empresa/gimnasio.html?tab=planes&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Planes</a></li>
+            <li><a id="linkGimnasioPagos" href="/administrar_empresa/gimnasio.html?tab=pagos&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/money.svg" alt="">Pagos</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Operacion deportiva</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkGimnasioEntrenadores" href="/administrar_empresa/gimnasio.html?tab=entrenadores&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/user-avatar-color.svg" alt="">Entrenadores</a></li>
+            <li><a id="linkGimnasioClases" href="/administrar_empresa/gimnasio.html?tab=clases&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Clases</a></li>
+            <li><a id="linkGimnasioInscripciones" href="/administrar_empresa/gimnasio.html?tab=inscripciones&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/tags-color.svg" alt="">Inscripciones</a></li>
+            <li><a id="linkGimnasioAsistencias" href="/administrar_empresa/gimnasio.html?tab=asistencias&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Asistencias</a></li>
+          </ul>
+        </li>
+        <li class="admin-nav-group">
+          <div class="admin-nav-group-title">Acceso</div>
+          <ul class="admin-nav-sublist">
+            <li><a id="linkGimnasioAcceso" href="/administrar_empresa/gimnasio.html?tab=acceso&submenu=1" target="gimnasioContentFrame"><img class="icon" src="/img/gps.svg" alt="">Control de acceso</a></li>
+          </ul>
+        </li>
         <li class="admin-menu-visibility-item">
           <button type="button" class="admin-menu-visibility-toggle" aria-controls="gimnasioSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
@@ -90,10 +113,45 @@
       function markActive(link) {
         if (activeLink) activeLink.classList.remove("active");
         activeLink = link || null;
-        if (activeLink) activeLink.classList.add("active");
+        if (activeLink) {
+          activeLink.classList.add("active");
+          openGroup(activeLink.closest(".admin-nav-group"));
+        }
+      }
+
+      function openGroup(group) {
+        if (!group || !group.parentElement) return;
+        Array.prototype.slice.call(group.parentElement.querySelectorAll(".admin-nav-group")).forEach(function (item) {
+          var open = item === group;
+          item.classList.toggle("is-open", open);
+          var title = item.querySelector(".admin-nav-group-title");
+          if (title) title.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+      }
+
+      function setupGroups() {
+        Array.prototype.slice.call(document.querySelectorAll("#gimnasioSidebarNav .admin-nav-group")).forEach(function (group, index) {
+          var title = group.querySelector(".admin-nav-group-title");
+          if (!title) return;
+          title.setAttribute("role", "button");
+          title.setAttribute("tabindex", "0");
+          if (index === 0) openGroup(group);
+          var toggle = function () {
+            var willOpen = !group.classList.contains("is-open");
+            if (willOpen) openGroup(group);
+          };
+          title.addEventListener("click", toggle);
+          title.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggle();
+            }
+          });
+        });
       }
 
       var links = Array.prototype.slice.call(document.querySelectorAll("#gimnasioSidebarNav a[href]"));
+      setupGroups();
       links.forEach(function (link, index) {
         link.setAttribute("href", withEmpresaAndVersion(link.getAttribute("href")));
         link.addEventListener("click", function () { markActive(link); });

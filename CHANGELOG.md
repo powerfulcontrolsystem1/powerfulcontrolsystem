@@ -1,3 +1,5 @@
+- 2026-05-12: gimnasio elevado a consola empresarial. `web/administrar_empresa/gimnasio.html`, `web/js/gimnasio.js`, `web/administrar_empresa/gimnasio_menu.html` y `web/estilos.css` agregan salud operativa, alertas ejecutivas, acciones rapidas, busqueda/filtro global, estados visuales y menu agrupado por direccion, comercial, operacion deportiva y acceso. Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 - 2026-05-12: menu de configuracion super alineado con Administrar empresa. `web/super/configuracion_avanzada.html` reemplaza el submenu plano por un sidebar agrupado con clases `admin-sidebar`/`admin-nav-grouped`, buscador, colapso movil e iconos por seccion. Sin cambios de API, permisos, backend, base de datos ni dependencias.
 
 - 2026-05-12: licencias ocultables para clientes. `web/super/licencias.html` renombra el estado como visibilidad comercial y permite mostrar/ocultar licencias del catálogo; el backend bloquea checkout público, Wompi, Nequi, Epayco, activación sin pago y addons seleccionados cuando `licencias.activo=0`. No agrega tablas ni dependencias.

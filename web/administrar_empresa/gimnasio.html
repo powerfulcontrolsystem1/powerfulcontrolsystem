@@ -29,6 +29,7 @@
         </div>
       </div>
       <aside class="gym-hero-side">
+        <img class="gym-hero-logo" src="/img/gym-logo.svg" alt="Gimnasio">
         <h2>Flujo operativo del gimnasio</h2>
         <ol>
           <li>Configurar sede, acceso y planes base.</li>
@@ -93,6 +94,20 @@
             <h2 id="gymSectionTitle">Dashboard</h2>
             <p id="gymSectionSummary" class="form-help">Consulta indicadores clave, renovaciones próximas, clases de hoy y rentabilidad del gimnasio.</p>
           </div>
+          <div class="gym-context-tools" aria-label="Filtros del modulo">
+            <input id="gymGlobalSearch" class="form-input" type="search" placeholder="Buscar socio, plan, clase, sede, estado...">
+            <select id="gymStatusFilter" class="form-input" aria-label="Filtrar por estado">
+              <option value="">Todos los estados</option>
+              <option value="activo">Activos</option>
+              <option value="inactivo">Inactivos</option>
+              <option value="congelado">Congelados</option>
+              <option value="retirado">Retirados</option>
+              <option value="activa">Inscripcion activa</option>
+              <option value="espera">Lista de espera</option>
+              <option value="bloqueada">Bloqueadas</option>
+              <option value="denegado">Accesos denegados</option>
+            </select>
+          </div>
           <div id="gymMsg" class="form-help auth-message is-hidden gym-context-msg"></div>
         </article>
 
@@ -103,6 +118,24 @@
               <h3>Dashboard del gimnasio</h3>
             </div>
             <p class="form-help">Lee socios activos, ingresos del mes, renovaciones y clases programadas desde un mismo tablero.</p>
+          </div>
+          <div class="gym-command-grid">
+            <article class="gym-command-card gym-score-card">
+              <div>
+                <span class="gym-sidebar-kicker">Salud operativa</span>
+                <strong id="gymHealthScore">0</strong>
+                <p id="gymHealthLabel">Calculando estado...</p>
+              </div>
+              <div id="gymHealthRing" class="gym-score-ring" aria-hidden="true"></div>
+            </article>
+            <article class="gym-command-card">
+              <span class="gym-sidebar-kicker">Alertas ejecutivas</span>
+              <div id="gymExecutiveAlerts" class="gym-alert-list"></div>
+            </article>
+            <article class="gym-command-card">
+              <span class="gym-sidebar-kicker">Acciones rapidas</span>
+              <div id="gymActionPlan" class="gym-action-list"></div>
+            </article>
           </div>
           <div id="gymDashboardCards" class="kpi-grid"></div>
           <article class="card gym-nested-card" style="margin-top:16px;">
@@ -457,6 +490,6 @@
   </div>
 
   <script src="/js/administrar_empresa.js"></script>
-  <script src="/js/gimnasio.js?v=20260502-access-enterprise"></script>
+  <script src="/js/gimnasio.js?v=20260512-enterprise-command"></script>
 </body>
 </html>

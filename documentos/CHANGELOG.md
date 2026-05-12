@@ -1,3 +1,9 @@
+## [2026-05-12] Gimnasio empresarial
+- [Frontend] `web/administrar_empresa/gimnasio.html` suma un mando ejecutivo con salud operativa, alertas, acciones rapidas y logo del vertical.
+- [UX] `web/js/gimnasio.js` calcula riesgos desde socios, planes, clases, pagos, dispositivos y bitacora de acceso; agrega busqueda/filtro global y badges de estado en tablas.
+- [Menu] `web/administrar_empresa/gimnasio_menu.html` organiza el modulo por Direccion, Comercial, Operacion deportiva y Acceso, usando el patron agrupado del panel empresarial.
+- [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Menu de configuracion super alineado
 - [Frontend] `web/super/configuracion_avanzada.html` usa el mismo patron visual de menu lateral agrupado que Administrar empresa: `admin-sidebar`, `admin-nav-grouped`, grupos plegables, iconos y boton de colapso movil.
 - [UX] El buscador de secciones se conserva y ahora abre/oculta grupos completos segun coincidencias, manteniendo scroll interno a cada tarjeta.
