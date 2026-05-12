@@ -1,3 +1,9 @@
+2026-05-12: Scroll superior en tabla de Tipos de empresa
+- Modulos afectados: `super_administrador`, `tipos_empresas`.
+- Cambio funcional: `web/super/tipos_empresas.html` envuelve la tabla con una barra de scroll horizontal superior sincronizada con el contenedor inferior, facilitando navegar columnas desde el inicio de la tabla.
+- Alcance: no cambian endpoints, permisos, backend, base de datos ni dependencias.
+- Validacion prevista: sintaxis de scripts inline, `git diff --check`, preflight profesional y verificacion publica tras despliegue.
+
 2026-05-12: Actualizacion de pagina super Verticales 20
 - Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
 - Cambio funcional: `web/super/verticales_produccion_masiva.html` se actualiza como consola ejecutiva con semaforo comercial, brechas principales, tarjetas de foco, KPIs ampliados y filtros por `Sin licencia` y `Sin preconfig`.

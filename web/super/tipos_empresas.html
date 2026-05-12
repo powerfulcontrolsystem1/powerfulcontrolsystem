@@ -24,6 +24,11 @@
     .tipo-vertical-name strong{color:var(--text)}
     .tipo-vertical-chip{display:inline-flex;align-items:center;width:max-content;min-height:24px;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
     .tipo-row-vertical td{background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%)}
+    .tipos-table-scroll-top,
+    .tipos-table-scroll-body{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+    .tipos-table-scroll-top{height:18px;margin:0 0 6px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .tipos-table-scroll-top-inner{height:1px}
+    .tipos-table-scroll-body .table{margin-top:0}
     @media (max-width:760px){.tipos-vertical-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.tipo-vertical-cell{align-items:flex-start}}
   </style>
   <script src="/js/nuevos_verticales_catalogo.js"></script>
@@ -121,6 +126,39 @@
         '  </span>' +
         '</div>';
     }
+    function mountScrollableTable(host, table){
+      const top = document.createElement('div');
+      top.className = 'tipos-table-scroll-top';
+      top.setAttribute('aria-hidden', 'true');
+      const topInner = document.createElement('div');
+      topInner.className = 'tipos-table-scroll-top-inner';
+      top.appendChild(topInner);
+
+      const body = document.createElement('div');
+      body.className = 'tipos-table-scroll-body';
+      body.appendChild(table);
+
+      let syncing = false;
+      function syncScroll(from, to){
+        if (syncing) return;
+        syncing = true;
+        to.scrollLeft = from.scrollLeft;
+        syncing = false;
+      }
+      function updateWidth(){
+        topInner.style.width = Math.max(table.scrollWidth, body.scrollWidth, body.clientWidth) + 'px';
+      }
+      top.addEventListener('scroll', function(){ syncScroll(top, body); });
+      body.addEventListener('scroll', function(){ syncScroll(body, top); });
+      host.appendChild(top);
+      host.appendChild(body);
+      requestAnimationFrame(updateWidth);
+      if (window.ResizeObserver) {
+        new ResizeObserver(updateWidth).observe(body);
+      } else {
+        window.addEventListener('resize', updateWidth, { passive: true });
+      }
+    }
     async function load(){
       const res = await fetch('/super/api/tipos_empresas');
       const data = await res.json();
@@ -149,7 +187,7 @@
       if (!rows.length) {
         list.innerHTML = '<div class="form-help">No hay tipos que coincidan con la busqueda.</div>';
       } else {
-        list.appendChild(table);
+        mountScrollableTable(list, table);
       }
       document.querySelectorAll('.edit').forEach(b=>b.onclick = async ()=>{
         const id = b.getAttribute('data-id');

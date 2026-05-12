@@ -1,3 +1,7 @@
+## [2026-05-12] Scroll superior en Tipos de empresa
+- [Frontend] `web/super/tipos_empresas.html` agrega un scroll horizontal arriba de la tabla y lo sincroniza con el scroll inferior.
+- [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
+
 ## [2026-05-12] Verticales 20 actualizado
 - [Frontend] `web/super/verticales_produccion_masiva.html` muestra semaforo ejecutivo, brechas principales, tarjetas de foco comercial y KPIs de licencias/base/readiness.
 - [Operacion] Se agregan filtros `Sin licencia` y `Sin preconfig` para priorizar tareas antes de publicar comercialmente un vertical.
