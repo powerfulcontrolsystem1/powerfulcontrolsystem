@@ -29,6 +29,26 @@
         <button id="btnExportarConfiguracionEmpresa" type="button" class="btn">Exportar configuración</button>
         <button id="btnImportarConfiguracionEmpresa" type="button" class="btn secondary">Importar configuración</button>
       </div>
+      <div class="backups-toolbar-grid mt-10">
+        <label class="form-help creditos-filter-check backups-filter-check">
+          <input id="bkAutoEnabled" type="checkbox"> Backup automatico local
+        </label>
+        <select id="bkAutoScope" class="form-input">
+          <option value="full">Datos completos de la empresa</option>
+          <option value="config">Solo configuracion</option>
+        </select>
+        <select id="bkAutoInterval" class="form-input">
+          <option value="30">Cada 30 minutos</option>
+          <option value="60">Cada 1 hora</option>
+          <option value="360">Cada 6 horas</option>
+          <option value="1440">Cada dia</option>
+        </select>
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnGuardarBackupAutomatico" type="button" class="btn secondary">Guardar backup automatico</button>
+        <button id="btnEjecutarBackupLocalAhora" type="button" class="btn">Ejecutar local ahora</button>
+      </div>
+      <p class="form-help">Los backups automaticos locales se descargan en el equipo o celular mientras esta pagina este abierta y con sesion activa. No crean archivo en el VPS ni registro en el historial.</p>
       <div id="configBackupMsg" class="form-help"></div>
     </section>
 
@@ -43,7 +63,7 @@
         <input id="bkExclude" class="form-input" type="text" placeholder="Excluir tablas (coma), ej: logs_tmp">
       </div>
       <div class="form-actions creditos-actions-top">
-        <button id="btnCrearBackup" type="button" class="btn">Crear backup</button>
+        <button id="btnCrearBackup" type="button" class="btn">Crear snapshot interno</button>
         <select id="bkDownloadFormat" class="form-input" style="width:160px;max-width:40%;margin-left:8px">
           <option value="json">JSON (completo)</option>
           <option value="json.gz">JSON (.gz)</option>
@@ -52,7 +72,7 @@
           <option value="txt">TXT (resumen)</option>
           <option value="pdf">PDF (resumen)</option>
         </select>
-        <button id="btnDescargarDatosEmpresa" type="button" class="btn" style="margin-left:8px">Descargar datos</button>
+        <button id="btnDescargarDatosEmpresa" type="button" class="btn" style="margin-left:8px">Descargar datos al equipo</button>
         <input id="bkEmailTo" class="form-input" type="email" placeholder="Enviar a correo@dominio.com" style="width:260px;max-width:45%;margin-left:8px">
         <button id="btnEnviarBackupEmail" type="button" class="btn secondary" style="margin-left:8px">Enviar por correo</button>
         <button id="btnRefrescarBackups" type="button" class="btn secondary">Refrescar</button>
@@ -130,6 +150,7 @@
         rows: [],
         detalleId: 0
       };
+      var autoBackupTimer = null;
 
       var contextoEl = document.getElementById('backupsContexto');
       var crearMsgEl = document.getElementById('crearBackupMsg');
@@ -263,6 +284,105 @@
         URL.revokeObjectURL(objectURL);
       }
 
+      function backupAutoStorageKey() {
+        return 'pcs_backup_auto_local_' + String(empresaId || '0');
+      }
+
+      function readAutoBackupSettings() {
+        var fallback = { enabled: false, scope: 'full', intervalMinutes: 60, lastRun: 0 };
+        try {
+          var parsed = JSON.parse(localStorage.getItem(backupAutoStorageKey()) || '{}');
+          return {
+            enabled: parsed.enabled === true,
+            scope: parsed.scope === 'config' ? 'config' : 'full',
+            intervalMinutes: Math.max(30, Number(parsed.intervalMinutes || 60)),
+            lastRun: Number(parsed.lastRun || 0)
+          };
+        } catch (_) {
+          return fallback;
+        }
+      }
+
+      function writeAutoBackupSettings(settings) {
+        var normalized = {
+          enabled: settings && settings.enabled === true,
+          scope: settings && settings.scope === 'config' ? 'config' : 'full',
+          intervalMinutes: Math.max(30, Number(settings && settings.intervalMinutes || 60)),
+          lastRun: Number(settings && settings.lastRun || 0)
+        };
+        try {
+          localStorage.setItem(backupAutoStorageKey(), JSON.stringify(normalized));
+        } catch (_) {}
+        return normalized;
+      }
+
+      function fillAutoBackupForm() {
+        var cfg = readAutoBackupSettings();
+        document.getElementById('bkAutoEnabled').checked = cfg.enabled;
+        document.getElementById('bkAutoScope').value = cfg.scope;
+        document.getElementById('bkAutoInterval').value = String(cfg.intervalMinutes);
+      }
+
+      function collectAutoBackupForm() {
+        return writeAutoBackupSettings({
+          enabled: document.getElementById('bkAutoEnabled').checked,
+          scope: document.getElementById('bkAutoScope').value,
+          intervalMinutes: Number(document.getElementById('bkAutoInterval').value || 60),
+          lastRun: readAutoBackupSettings().lastRun
+        });
+      }
+
+      async function descargarBackupLocal(scope) {
+        var action = scope === 'config' ? 'exportar_configuracion_local' : 'exportar_local';
+        var payload = {
+          empresa_id: empresaId,
+          include_tables: parseTableList(document.getElementById('bkInclude').value || ''),
+          exclude_tables: parseTableList(document.getElementById('bkExclude').value || '')
+        };
+        var resp = await fetch(buildBaseURL(action).toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) {
+          var raw = await resp.text().catch(function () { return ''; });
+          throw new Error(raw || ('HTTP ' + resp.status));
+        }
+        var blob = await resp.blob();
+        var fallbackName = (scope === 'config' ? 'configuracion_empresa_local_' : 'backup_empresa_local_') + empresaId + '.json';
+        saveBlob(blob, getDownloadFilename(resp, fallbackName));
+        var cfg = readAutoBackupSettings();
+        cfg.lastRun = Date.now();
+        writeAutoBackupSettings(cfg);
+        return true;
+      }
+
+      function scheduleAutoBackup() {
+        if (autoBackupTimer) {
+          clearInterval(autoBackupTimer);
+          autoBackupTimer = null;
+        }
+        var cfg = readAutoBackupSettings();
+        if (!cfg.enabled) return;
+        autoBackupTimer = setInterval(async function () {
+          var current = readAutoBackupSettings();
+          if (!current.enabled) {
+            scheduleAutoBackup();
+            return;
+          }
+          if (document.hidden) return;
+          var elapsed = Date.now() - Number(current.lastRun || 0);
+          if (elapsed < current.intervalMinutes * 60 * 1000) return;
+          try {
+            await descargarBackupLocal(current.scope);
+            setMsg(configMsgEl, 'Backup automatico local descargado en este dispositivo.', 'success');
+          } catch (err) {
+            setMsg(configMsgEl, 'Error en backup automatico local: ' + (err && err.message ? err.message : err), 'error');
+          }
+        }, 60 * 1000);
+      }
+
       async function downloadInBackground(url, fallbackName) {
         var resp = await fetch(url, { credentials: 'same-origin' });
         if (!resp.ok) {
@@ -274,18 +394,16 @@
       }
 
       async function exportarConfiguracionEmpresa() {
-        var payload = {
-          empresa_id: empresaId,
-          nombre: document.getElementById('bkConfigNombre').value || '',
-          descripcion: document.getElementById('bkConfigDescripcion').value || ''
-        };
-
-        var url = buildBaseURL('exportar_configuracion');
+        var url = buildBaseURL('exportar_configuracion_local');
         var resp = await fetch(url.toString(), {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            empresa_id: empresaId,
+            nombre: document.getElementById('bkConfigNombre').value || '',
+            descripcion: document.getElementById('bkConfigDescripcion').value || ''
+          })
         });
         if (!resp.ok) {
           var raw = await resp.text().catch(function () { return ''; });
@@ -295,8 +413,7 @@
         var blob = await resp.blob();
         var fallbackName = 'configuracion_empresa_' + empresaId + '.json';
         saveBlob(blob, getDownloadFilename(resp, fallbackName));
-        setMsg(configMsgEl, 'Configuracion exportada correctamente.', 'success');
-        await cargarBackups();
+        setMsg(configMsgEl, 'Configuracion descargada en este dispositivo. No se creo archivo en el VPS.', 'success');
       }
 
       async function importarConfiguracionEmpresa() {
@@ -577,6 +694,9 @@
         document.getElementById('btnDescargarDatosEmpresa').addEventListener('click', async function () {
           try {
             setMsg(crearMsgEl, '', '');
+            await descargarBackupLocal('full');
+            setMsg(crearMsgEl, 'Backup descargado en este dispositivo. No se creo archivo en el VPS ni historial interno.', 'success');
+            return;
             var format = document.getElementById('bkDownloadFormat').value || 'json';
             var backup = await crearBackup();
             var backupId = backup && backup.id ? backup.id : 0;
@@ -662,6 +782,24 @@
           }
         });
 
+        document.getElementById('btnGuardarBackupAutomatico').addEventListener('click', function () {
+          var cfg = collectAutoBackupForm();
+          scheduleAutoBackup();
+          setMsg(configMsgEl, cfg.enabled ? 'Backup automatico local activado para este navegador.' : 'Backup automatico local desactivado.', 'success');
+        });
+
+        document.getElementById('btnEjecutarBackupLocalAhora').addEventListener('click', async function () {
+          try {
+            setMsg(configMsgEl, '', '');
+            var cfg = collectAutoBackupForm();
+            await descargarBackupLocal(cfg.scope);
+            scheduleAutoBackup();
+            setMsg(configMsgEl, 'Backup local descargado en este dispositivo.', 'success');
+          } catch (err) {
+            setMsg(configMsgEl, 'Error ejecutando backup local: ' + (err && err.message ? err.message : err), 'error');
+          }
+        });
+
         document.getElementById('bkQ').addEventListener('keyup', function (ev) {
           if (ev.key === 'Enter') {
             document.getElementById('btnRefrescarBackups').click();
@@ -684,7 +822,9 @@
         }
         contextoEl.textContent = 'Empresa activa: ' + empresaId;
 
+        fillAutoBackupForm();
         bindEvents();
+        scheduleAutoBackup();
         try {
           await cargarBackups();
         } catch (err) {

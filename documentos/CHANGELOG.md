@@ -1,3 +1,57 @@
+## [2026-05-12] Index con carrusel de sistemas
+- [Frontend] `web/index.html` renderiza las primeras 6 tarjetas en la grilla principal y las demas en una hilera horizontal navegable.
+- [UX] La barra de tarjetas restantes queda antes de `Modulos del sistema` y se controla con flechas izquierda/derecha.
+- [Alcance] Sin cambios de backend, permisos, tablas ni dependencias.
+
+## [2026-05-12] Fotos del index en landing descriptiva
+- [Frontend] `web/descripcion_de_los_sistemas.html` ahora usa `imagen_secundaria_url` como imagen principal de cada tarjeta descriptiva, igual que las tarjetas del index.
+- [UX] La landing conserva el logo pequeno de cada sistema como apoyo, pero la foto/ilustracion visible queda sincronizada con el portal principal.
+- [Alcance] Sin cambios de backend, permisos, tablas ni dependencias.
+
+## [2026-05-12] VPS portable 100% Docker
+- [Deploy] `deploy/docker-compose.platform.yml` agrega perfil `edge` con Nginx publico para `80/443` y perfil `certbot` para certificados Let's Encrypt.
+- [Operacion] Nuevos scripts `deploy/scripts/vps-docker-edge-up.sh` y `deploy/scripts/vps-docker-edge-renew.sh` permiten mover TLS/Nginx publico al stack Docker y renovar certificados sin depender de Nginx del host.
+- [Portabilidad] Se agregan volumenes `pcs_letsencrypt` y `pcs_certbot_www`; migrar un VPS futuro requiere proyecto/imagenes, `deploy/.env.platform` y volumenes Docker.
+- [Limpieza] Las plantillas `.env` y scripts de staging dejan de generar variables Nextcloud legacy.
+
+## [2026-05-12] Explorador de Archivos super
+- [Super] `web/super/explorador_archivos.html` agrega una vista tipo explorador de Windows para navegar carpetas del filesystem visible para el backend en el VPS.
+- [Backend] Nuevo `GET /super/api/explorador_archivos?action=list&path=...`, protegido con `paginaPrincipalRequireSuperAdmin`, devuelve raices, ruta actual, ruta padre y metadata de archivos/carpetas sin leer contenido.
+- [Seguridad] La operacion queda en modo solo lectura y no expone acciones de borrar, editar, subir, descargar ni abrir archivos; sin tablas ni dependencias nuevas.
+
+## [2026-05-12] Retiro de Nextcloud y cuota DB por empresa
+- [Backend] Se retiran rutas y handlers Nextcloud; el arranque elimina la tabla legacy `empresa_nextcloud_accounts` y las claves super `nextcloud.*`.
+- [Super] `Limitaciones por empresa` cambia la cuota de almacenamiento por `db_max_gb`, usada como tamano maximo de base de datos por empresa y visible en el panel PostgreSQL por empresa.
+- [Deploy] Nextcloud sale del Compose oficial; `deploy/scripts/vps-remove-nextcloud.sh` apaga contenedores legacy y puede purgar volumenes con confirmacion operativa.
+
+## [2026-05-12] Documentos y backups locales por dispositivo
+- [OnlyOffice] `web/administrar_empresa/documentos_onlyoffice.html` crea documentos en modo local por defecto; `backend/handlers/onlyoffice.go` devuelve el archivo como descarga con `action=create_local` sin guardarlo en el VPS.
+- [Backups] `web/administrar_empresa/backups.html` agrega backup automatico local por navegador y descarga directa al equipo/celular.
+- [Backend] `/api/empresa/backups` suma `exportar_local` y `exportar_configuracion_local`, construyendo JSON en memoria sin crear historial ni archivos en disco.
+
+## [2026-05-12] Logos configurables en documentos empresariales
+- [Backend] `empresa_configuracion_avanzada` agrega `mostrar_logo_empresa` y `mostrar_logo_sistema`, manteniendo `mostrar_logo` como compatibilidad general.
+- [Frontend] Configuracion de empresa muestra checks separados para activar el logo empresarial o el logo del sistema en facturas, recibos, reportes y documentos imprimibles.
+- [Impresion] `web/js/print_documents.js` soporta varios logos por documento; facturas, ventas y carrito pasan la configuracion avanzada al motor comun.
+
+## [2026-05-12] Regreso a estaciones en ultimos movimientos de caja
+- [Frontend] `web/administrar_empresa/ultimos_movimientos_de_caja.html` agrega `Regresar a estaciones` en el encabezado.
+- [UX] El enlace conserva `empresa_id` para volver a `estaciones.html` dentro de la misma empresa.
+- [Alcance] Sin backend, permisos, tablas ni dependencias nuevas.
+
+## [2026-05-12] Login usuario simplificado y reenvio de invitacion
+- [Frontend] `web/login_usuario.html` retira controles y enlaces no necesarios del login operativo: apariencia manual, inicio, acceso admin, completar/cambiar/volver redundantes.
+- [UX] El formulario principal conserva solo `¿Olvidó su contraseña?` y `Recuperar email de invitación`.
+- [Backend] Nuevo `POST /api/empresa/usuarios/recuperar_invitacion`, con reCAPTCHA y respuesta enmascarada, reenvia invitacion si el usuario ya fue creado por el administrador y no completo password.
+- [Seguridad] El reenvio rota el token de invitacion por 48 horas y no revela existencia de correos.
+
+## [2026-05-12] Registro operativo solo por invitacion
+- [Backend] `EmpresaUsuarioSetPasswordHandler` ahora exige `token_invitacion` para el primer registro, valida expiracion y consume el token al guardar la contrasena.
+- [Correo] Las invitaciones apuntan a `login_usuario.html?token_invitacion=...&modo=registro`; la ruta legacy `/auth/confirmar_correo` redirige al mismo flujo sin confirmar por separado.
+- [Sesion] El primer ingreso confirma correo, abre sesion, devuelve `empresa_id`, `rol` y `redirect_url` hacia `administrar_empresa.html?id=...`.
+- [Permisos] `administrar_empresa` conserva `/api/empresa/permisos_contexto` como fuente efectiva para ocultar/ver acciones por rol, licencia y reglas finas.
+- [Alcance] Sin dependencias nuevas ni columnas nuevas; se reutilizan `email_confirm_token`, `email_confirm_expira` y `email_confirmado`.
+
 ## [2026-05-12] Tema del login usuario desde cookies
 - [Frontend] `web/login_usuario.html` lee primero la cookie `pcs_theme` antes de caer a `localStorage`, aplicando el tema antes de cargar estilos.
 - [Tema global] `web/menu.js` tambien prioriza `pcs_theme` para que el gestor compartido no sobrescriba el login con un valor local antiguo.

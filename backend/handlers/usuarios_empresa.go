@@ -608,7 +608,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"password_setup_required": true,
 				"empresa_id":              item.EmpresaID,
 				"email":                   item.Email,
-				"message":                 "Primer ingreso: debes crear tu contraseña para continuar.",
+				"message":                 "Primer ingreso: abre la invitacion enviada por el administrador para crear tu contrasena.",
 			})
 			return
 		}
@@ -681,6 +681,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			DocumentoIdentidad string `json:"documento_identidad"`
 			Password           string `json:"password"`
 			PasswordConfirm    string `json:"password_confirm"`
+			TokenInvitacion    string `json:"token_invitacion"`
 			AcceptContract     bool   `json:"accept_contract"`
 			RecaptchaToken     string `json:"recaptcha_token"`
 		}
@@ -737,8 +738,13 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "documento inválido", http.StatusUnauthorized)
 			return
 		}
-		if item.EmailConfirmado != 1 {
-			http.Error(w, "debes confirmar tu correo antes de crear contraseña", http.StatusForbidden)
+		invitationToken := strings.TrimSpace(payload.TokenInvitacion)
+		if invitationToken == "" {
+			http.Error(w, "el registro solo puede completarse desde la invitacion enviada por correo por el administrador", http.StatusForbidden)
+			return
+		}
+		if status, msg := validateEmpresaUsuarioInvitationToken(item, invitationToken, time.Now()); status != http.StatusOK {
+			http.Error(w, msg, status)
 			return
 		}
 		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
@@ -766,7 +772,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "no se pudo generar password hash", http.StatusInternalServerError)
 			return
 		}
-		if err := dbpkg.SetEmpresaUsuarioPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
+		if err := dbpkg.CompleteEmpresaUsuarioInvitationPassword(dbEmp, item.EmpresaID, item.ID, hash, salt); err != nil {
 			log.Printf("[usuarios_empresa] failed to set password empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
 			http.Error(w, "No se pudo actualizar la contraseña", http.StatusInternalServerError)
 			return
@@ -775,6 +781,9 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		item.PasswordHash = hash
 		item.PasswordSalt = salt
 		item.PasswordSet = 1
+		item.EmailConfirmado = 1
+		item.EmailConfirmToken = ""
+		item.EmailConfirmExpira = ""
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
@@ -859,6 +868,88 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 
 		if _, mailErr := sendEmpresaUsuarioPasswordRecoveryEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token); mailErr != nil {
 			log.Printf("[usuarios_empresa] password recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, mailErr)
+			respondAccepted("manual")
+			return
+		}
+
+		respondAccepted("email")
+	}
+}
+
+// EmpresaUsuarioRequestInvitationRecoveryHandler reenvia una invitacion pendiente sin revelar si el correo existe.
+func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var payload struct {
+			EmpresaID      int64  `json:"empresa_id"`
+			Email          string `json:"email"`
+			RecaptchaToken string `json:"recaptcha_token"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		email := strings.TrimSpace(payload.Email)
+		if email == "" {
+			http.Error(w, "email es obligatorio", http.StatusBadRequest)
+			return
+		}
+		if _, err := mail.ParseAddress(email); err != nil {
+			http.Error(w, "email inválido", http.StatusBadRequest)
+			return
+		}
+		if payload.EmpresaID <= 0 {
+			if qEmpresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && qEmpresaID > 0 {
+				payload.EmpresaID = qEmpresaID
+			}
+		}
+		if err := validateRecaptchaToken(dbSuper, r, payload.RecaptchaToken); err != nil {
+			writeRecaptchaValidationError(w, err)
+			return
+		}
+
+		respondAccepted := func(delivery string) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"ok":       true,
+				"delivery": delivery,
+				"message":  "Si ese correo tiene una invitacion pendiente, enviaremos nuevamente el email de invitacion.",
+			})
+		}
+
+		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				respondAccepted("masked")
+				return
+			}
+			log.Printf("[usuarios_empresa] failed to query user (invitation_recovery) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
+			http.Error(w, "No se pudo procesar la solicitud", http.StatusInternalServerError)
+			return
+		}
+		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") || (item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "") {
+			respondAccepted("masked")
+			return
+		}
+
+		token, expira, err := newEmailConfirmationTokenAndExpiration()
+		if err != nil {
+			http.Error(w, "failed to generate invitation token", http.StatusInternalServerError)
+			return
+		}
+		if err := dbpkg.SetEmpresaUsuarioConfirmToken(dbEmp, item.EmpresaID, item.ID, token, expira); err != nil {
+			log.Printf("[usuarios_empresa] failed to set invitation recovery token empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			http.Error(w, "No se pudo preparar la invitacion", http.StatusInternalServerError)
+			return
+		}
+
+		if _, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, item.EmpresaID, item.Email, item.Nombre, token, "Reenvio de invitacion solicitado desde el portal de usuarios."); mailErr != nil {
+			log.Printf("[usuarios_empresa] invitation recovery email not sent empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, mailErr)
 			respondAccepted("manual")
 			return
 		}
@@ -1112,27 +1203,30 @@ func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "token required", http.StatusBadRequest)
 			return
 		}
-		empresaID, err := dbpkg.ConfirmEmpresaUsuarioByToken(dbEmp, token)
+		item, err := dbpkg.GetEmpresaUsuarioByConfirmToken(dbEmp, token)
 		if err != nil {
-			if qEmpresaID, qErr := parseInt64QueryOptional(r, "empresa_id"); qErr == nil && qEmpresaID > 0 {
-				empresaID = qEmpresaID
-			}
 			loginURL := "/login_usuario.html"
-			if empresaID > 0 {
-				loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+			if qEmpresaID, qErr := parseInt64QueryOptional(r, "empresa_id"); qErr == nil && qEmpresaID > 0 {
+				loginURL += "?empresa_id=" + strconv.FormatInt(qEmpresaID, 10)
 			}
 			msg := html.EscapeString(err.Error())
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo confirmar el correo</h2><p>%s</p><p><a href='%s' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", msg, html.EscapeString(loginURL))
+			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo abrir la invitacion</h2><p>%s</p><p><a href='%s' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", msg, html.EscapeString(loginURL))
 			return
 		}
-		loginURL := "/login_usuario.html"
-		if empresaID > 0 {
-			loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
+		if status, msg := validateEmpresaUsuarioInvitationToken(item, token, time.Now()); status != http.StatusOK {
+			loginURL := "/login_usuario.html"
+			if item.EmpresaID > 0 {
+				loginURL += "?empresa_id=" + strconv.FormatInt(item.EmpresaID, 10)
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(status)
+			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo abrir la invitacion</h2><p>%s</p><p><a href='%s' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", html.EscapeString(msg), html.EscapeString(loginURL))
+			return
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>Correo confirmado correctamente</h2><p>Tu cuenta ya está confirmada.</p><p><a href='%s' style='color:#7fb2ff'>Ir al login de usuario</a></p></body></html>", html.EscapeString(loginURL))
+		invitationURL := buildEmpresaUsuarioInvitationURL(r, dbEmp, nil, item.EmpresaID, item.Email, token)
+		http.Redirect(w, r, invitationURL, http.StatusSeeOther)
 	}
 }
 
@@ -1520,6 +1614,29 @@ func newEmailConfirmationTokenAndExpiration() (string, string, error) {
 	return token, expira, nil
 }
 
+func validateEmpresaUsuarioInvitationToken(item *dbpkg.EmpresaUsuario, token string, now time.Time) (int, string) {
+	if item == nil {
+		return http.StatusForbidden, "invitacion invalida"
+	}
+	storedToken := strings.TrimSpace(item.EmailConfirmToken)
+	token = strings.TrimSpace(token)
+	if storedToken == "" || token == "" || subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) != 1 {
+		return http.StatusForbidden, "invitacion invalida o ya utilizada"
+	}
+	expiraRaw := strings.TrimSpace(item.EmailConfirmExpira)
+	if expiraRaw == "" {
+		return http.StatusForbidden, "invitacion sin vencimiento valido"
+	}
+	expiraAt, err := time.ParseInLocation("2006-01-02 15:04:05", expiraRaw, time.Local)
+	if err != nil {
+		return http.StatusForbidden, "invitacion con vencimiento invalido"
+	}
+	if now.After(expiraAt) {
+		return http.StatusGone, "invitacion expirada; solicita al administrador que reenvie la invitacion"
+	}
+	return http.StatusOK, ""
+}
+
 func newPasswordRecoveryTokenAndExpiration() (string, string, error) {
 	token, err := utils.GenerateSecureToken(32)
 	if err != nil {
@@ -1754,10 +1871,12 @@ func captureEmpresaUsuarioMailNotification(
 }
 
 func resolveBaseURLForConfirmation(r *http.Request, dbSuper *sql.DB) string {
-	if configured, err := getDecryptedConfigValue(dbSuper, "gmail.confirm_base_url"); err == nil {
-		configured = strings.TrimSpace(configured)
-		if configured != "" {
-			return strings.TrimRight(configured, "/")
+	if dbSuper != nil {
+		if configured, err := getDecryptedConfigValue(dbSuper, "gmail.confirm_base_url"); err == nil {
+			configured = strings.TrimSpace(configured)
+			if configured != "" {
+				return strings.TrimRight(configured, "/")
+			}
 		}
 	}
 
@@ -1775,12 +1894,27 @@ func resolveBaseURLForConfirmation(r *http.Request, dbSuper *sql.DB) string {
 	return scheme + "://" + host
 }
 
+func buildEmpresaUsuarioInvitationURL(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, toEmail, token string) string {
+	loginURL := resolveEmpresaUsuarioLoginURL(r, dbEmp, dbSuper, empresaID)
+	parsed, err := url.Parse(loginURL)
+	if err != nil {
+		baseURL := strings.TrimRight(resolveBaseURLForConfirmation(r, dbSuper), "/")
+		parsed, _ = url.Parse(baseURL + "/login_usuario.html")
+	}
+	query := parsed.Query()
+	if empresaID > 0 {
+		query.Set("empresa_id", strconv.FormatInt(empresaID, 10))
+	}
+	query.Set("email", strings.TrimSpace(toEmail))
+	query.Set("token_invitacion", strings.TrimSpace(token))
+	query.Set("modo", "registro")
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
+}
+
 func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, toEmail, toName, token string, adminMessage string) (string, error) {
 	baseURL := resolveBaseURLForConfirmation(r, dbSuper)
-	confirmURL := strings.TrimRight(baseURL, "/") + "/auth/confirmar_correo?token=" + url.QueryEscape(token)
-	if empresaID > 0 {
-		confirmURL += "&empresa_id=" + strconv.FormatInt(empresaID, 10)
-	}
+	confirmURL := buildEmpresaUsuarioInvitationURL(r, dbEmp, dbSuper, empresaID, toEmail, token)
 	loginURL := resolveEmpresaUsuarioLoginURL(r, dbEmp, dbSuper, empresaID)
 
 	safeName := strings.TrimSpace(toName)

@@ -41,6 +41,7 @@
           titulo: 'Punto de venta',
           descripcion: 'Solucion completa para ventas rapidas y facturacion electronica.',
           imagen_url: '/img/punto_venta.png',
+          imagen_secundaria_url: '/img/sistema punto de venta.png',
           enlace: '/administrar_empresa.html?module=punto_venta',
           detalle_etiqueta: 'Retail y mostrador',
           detalle_titular: 'Vende rapido, factura mejor y controla la caja desde una sola pantalla.',
@@ -57,6 +58,7 @@
           titulo: 'Motel',
           descripcion: 'Gestion por tiempo de servicio y facturacion tarifada por estancia.',
           imagen_url: '/img/motel.png',
+          imagen_secundaria_url: '/img/sistema motel.png',
           enlace: '/administrar_empresa.html?module=motel',
           detalle_etiqueta: 'Operacion por estancias',
           detalle_titular: 'Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.',
@@ -73,6 +75,7 @@
           titulo: 'Restaurante',
           descripcion: 'Gestion de mesas, pedidos y facturacion para restaurantes.',
           imagen_url: '/img/restaurante.png',
+          imagen_secundaria_url: '/img/sistema restaurante.png',
           enlace: '/administrar_empresa.html?module=restaurante',
           detalle_etiqueta: 'Mesas y cocina',
           detalle_titular: 'Administra mesas, pedidos, cocina y cobro final con flujo continuo.',
@@ -89,6 +92,7 @@
           titulo: 'Control por sensor',
           descripcion: 'Integracion y alertas con sensores para control de accesos.',
           imagen_url: '/img/sensor.png',
+          imagen_secundaria_url: '/img/sistema sensor.png',
           enlace: '/administrar_empresa.html?module=sensor',
           detalle_etiqueta: 'Monitoreo y automatizacion',
           detalle_titular: 'Conecta eventos fisicos con alertas, estados y control operativo centralizado.',
@@ -104,7 +108,8 @@
         {
           titulo: 'Hotel',
           descripcion: 'Administracion de empresas, reservas y operacion hotelera con control por habitacion.',
-          imagen_url: '/img/settings-color.svg',
+          imagen_url: '/img/hotel-logo.svg',
+          imagen_secundaria_url: '/img/sistema motel.png',
           enlace: '/administrar_empresa.html?module=configuracion',
           detalle_etiqueta: 'Reservas y hospedaje',
           detalle_titular: 'Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.',
@@ -121,6 +126,7 @@
           titulo: 'Sistema para Gimnasios',
           descripcion: 'Maneja membresias, accesos RFID, clases, pagos y renovaciones desde una sola plataforma.',
           imagen_url: '/img/gym-logo.svg',
+          imagen_secundaria_url: '/img/gym-system-hero.svg',
           enlace: '/administrar_empresa.html?module=gimnasio',
           detalle_etiqueta: 'Membresias y acceso',
           detalle_titular: 'Controla socios, accesos, clases y recaudo con una operacion pensada para gimnasios modernos.',
@@ -137,6 +143,7 @@
           titulo: 'Sistema para consultorios odontologicos',
           descripcion: 'Gestiona agenda clinica, historias, odontograma, tratamientos, presupuestos y recaudo por paciente.',
           imagen_url: '/img/dental-logo.svg',
+          imagen_secundaria_url: '/img/dental-system-hero.svg',
           enlace: '/administrar_empresa.html?module=consultorio_odontologico',
           detalle_etiqueta: 'Agenda y gestion clinica',
           detalle_titular: 'Organiza la consulta, el tratamiento y el recaudo en una sola plataforma para odontologia.',
@@ -190,6 +197,7 @@
           titulo: title,
           descripcion: summary,
           imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
+          imagen_secundaria_url: local.secondaryIcon || (item && (item.secondaryIcon || item.secondary_icon)) || '/img/report.svg',
           enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module),
           detalle_etiqueta: 'Vertical empresarial',
           detalle_titular: 'Activa ' + title + ' con roles, licencia, configuracion y operacion lista para trabajar.',
@@ -325,6 +333,7 @@
           var titulo = String((card && card.titulo) || '').trim() || fallback.titulo;
           var descripcion = String((card && card.descripcion) || '').trim() || fallback.descripcion;
           var imagen = normalizeImage((card && card.imagen_url) || fallback.imagen_url);
+          var imagenSec = normalizeImage((card && card.imagen_secundaria_url) || (card && card.secondaryIcon) || fallback.imagen_secundaria_url || imagen);
           var enlace = normalizeLink((card && card.enlace) || fallback.enlace);
           var detalleId = normalizeDetailId(card && card.detalle_id, slugifyTitle(titulo, idx));
           var trialLink = buildPublicTrialLink((card && card.enlace) || fallback.enlace, card, titulo, descripcion, detalleId);
@@ -332,6 +341,7 @@
             titulo: titulo,
             descripcion: descripcion,
             imagen_url: imagen,
+            imagen_secundaria_url: imagenSec,
             enlace: enlace,
             trial_link: trialLink,
             detalle_id: detalleId,
@@ -529,8 +539,9 @@
             '<article id="' + escapeHTML(card.detalle_id) + '" class="system-detail-card home-offer-card" tabindex="-1">' +
             '  <div class="system-detail-media">' +
             '    <span class="system-detail-tag">' + escapeHTML(card.detalle_etiqueta) + '</span>' +
-            '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Icono ' + escapeHTML(card.titulo) + '">' +
-            '    <p class="system-detail-caption">Llegaste a esta seccion desde la tarjeta del portal principal.</p>' +
+            '    <img class="system-detail-photo" src="' + escapeHTML(card.imagen_secundaria_url || card.imagen_url) + '" alt="Imagen ' + escapeHTML(card.titulo) + '">' +
+            '    <img class="system-detail-logo" src="' + escapeHTML(card.imagen_url) + '" alt="Logo ' + escapeHTML(card.titulo) + '">' +
+            '    <p class="system-detail-caption">Imagen sincronizada con la tarjeta del portal principal.</p>' +
             '  </div>' +
             '  <div class="system-detail-body">' +
             '    <p class="system-detail-kicker">' + escapeHTML(card.titulo) + '</p>' +

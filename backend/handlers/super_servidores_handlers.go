@@ -98,10 +98,10 @@ func buildRustDeskServiceState(dbSuper *sql.DB, includeProbe bool) ServicioEstad
 	}
 
 	state := ServicioEstado{
-		ID:      "rustdesk",
-		Nombre:  "RustDesk (Soporte Remoto)",
-		Estado:  overall,
-		Detalle: detalle,
+		ID:         "rustdesk",
+		Nombre:     "RustDesk (Soporte Remoto)",
+		Estado:     overall,
+		Detalle:    detalle,
 		Habilitado: panelCfg.Enabled,
 		Componentes: map[string]string{
 			"rustdesk-hbbs": hbbsStatus,
@@ -120,7 +120,6 @@ func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 		servicios := []ServicioEstado{
 			buildRustDeskServiceState(dbSuper, false),
 			buildOnlyOfficeServiceState(dbSuper),
-			buildNextcloudServiceState(dbSuper),
 			buildPCSBackendServiceState(dbSuper),
 			buildNginxServiceState(dbSuper),
 			buildPostgresServiceState(dbSuper),
@@ -128,37 +127,6 @@ func SuperServidoresListHandler(dbSuper *sql.DB) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "servicios": servicios})
 	}
-}
-
-func buildNextcloudServiceState(dbSuper *sql.DB) ServicioEstado {
-	enabled := isNextcloudEnabled(dbSuper)
-	state := ServicioEstado{
-		ID:         "nextcloud",
-		Nombre:     "Nextcloud (Archivos/Drive)",
-		Estado:     "inactive",
-		Detalle:    "Servicio Nextcloud en VPS (Docker) para almacenamiento por empresa.",
-		Habilitado: enabled,
-		Componentes: map[string]string{
-			"docker": "unknown",
-		},
-	}
-	if runtime.GOOS == "windows" {
-		state.Estado = "unavailable"
-		state.Detalle = "Backend en Windows: no se puede inspeccionar Nextcloud localmente."
-		return state
-	}
-	out, _ := exec.Command("bash", "-lc", "docker ps --format '{{.Names}}' 2>/dev/null | grep -E '^(pcs-nextcloud|nextcloud)$' || true").Output()
-	if strings.TrimSpace(string(out)) != "" {
-		state.Estado = "active"
-		state.Componentes["docker"] = "active"
-		rss, _ := readLinuxProcessRSSKBByGrep("nextcloud|apache2|php-fpm")
-		if rss > 0 {
-			state.Componentes["mem_rss_kb"] = fmt.Sprintf("%d", rss)
-		}
-		return state
-	}
-	state.Componentes["docker"] = "inactive"
-	return state
 }
 
 func readLinuxProcessRSSKBByGrep(expr string) (int64, error) {
@@ -261,11 +229,11 @@ func buildNginxServiceState(dbSuper *sql.DB) ServicioEstado {
 
 func buildPostgresServiceState(dbSuper *sql.DB) ServicioEstado {
 	state := ServicioEstado{
-		ID:         "postgres",
-		Nombre:     "PostgreSQL",
-		Estado:     "unknown",
-		Detalle:    "Base de datos del sistema (VPS).",
-		Habilitado: true,
+		ID:          "postgres",
+		Nombre:      "PostgreSQL",
+		Estado:      "unknown",
+		Detalle:     "Base de datos del sistema (VPS).",
+		Habilitado:  true,
 		Componentes: map[string]string{},
 	}
 	if runtime.GOOS == "windows" {

@@ -27,7 +27,6 @@ func TestEmpresaConfigBackupDefaultTablesCoverModernCompanyConfiguration(t *test
 		"empresa_integraciones_apis",
 		"empresa_integraciones_bancos",
 		"empresa_payment_settings",
-		"empresa_nextcloud_accounts",
 		"empresa_sensor_puertas_devices",
 		"empresa_reportes_plantillas",
 		"empresa_reportes_programaciones",

@@ -2142,6 +2142,7 @@
           title: 'Orden de servicio',
           kind: 'orden',
           format: printFormat,
+          logos: window.PCSPrint.resolveDocumentLogos(state.empresaAvanzadaConfig || {}),
           company: 'Empresa #' + String(state.empresaID || ''),
           subtitle: 'Destino: ' + area + ' | Carrito: ' + ((carrito && carrito.nombre) || 'Sin nombre'),
           badge: printFormat.toUpperCase(),
@@ -2282,6 +2283,7 @@
           title: 'Apertura cajon monedero',
           kind: 'comprobante',
           format: 'pos',
+          logos: window.PCSPrint.resolveDocumentLogos(state.empresaAvanzadaConfig || {}),
           company: drawer.name + (drawer.code ? (' / ' + drawer.code) : ''),
           subtitle: 'Pulso: ' + drawer.command,
           badge: 'Caja',
@@ -2368,6 +2370,7 @@
           title: 'Recibo de cobro',
           kind: 'recibo',
           format: printFormat,
+          logos: window.PCSPrint.resolveDocumentLogos(cfg),
           company: 'Empresa #' + String(state.empresaID || ''),
           subtitle: 'Carrito: ' + ((carrito && carrito.nombre) || '') + ' | Codigo: ' + ((carrito && carrito.codigo) || ''),
           badge: printFormat.toUpperCase(),
@@ -2467,6 +2470,7 @@
           title: 'Factura electronica',
           kind: 'factura',
           format: formato,
+          logos: window.PCSPrint.resolveDocumentLogos(cfg),
           company: empresaLabel,
           subtitle: 'Numero: ' + (normalize(doc.numero_legal || doc.documento_codigo || 'Pendiente')) + ' | Ambiente: ' + normalize(doc.ambiente_fe || ''),
           badge: formato.toUpperCase(),
@@ -2496,7 +2500,7 @@
         : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(normalize(doc.documento_codigo || doc.numero_legal || 'Factura electr?nica')) + '</title>' +
         '<style>' + pageStyle + bodyStyle + '</style></head><body>' +
-        (logoUrl && cfg.mostrar_logo !== false ? ('<img class="logo" src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '') +
+        (logoUrl && cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false ? ('<img class="logo" src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '') +
         '<h1>Factura electr?nica</h1>' +
         '<div class="meta">' +
           '<div><strong>Empresa:</strong> ' + escapeHtml(empresaLabel) + '</div>' +

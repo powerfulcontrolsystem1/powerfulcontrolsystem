@@ -40,24 +40,8 @@
   <div class="login-page login-usuario-page">
     <div class="login-header">
       <h1 class="login-title">Acceso de usuarios operativos</h1>
-      <div class="login-header-actions">
-        <label class="login-theme-control" for="loginThemeSelect">
-          <span>Apariencia</span>
-          <select id="loginThemeSelect" class="form-input">
-            <option value="light">Claro</option>
-            <option value="dark">Oscuro</option>
-            <option value="dark-neon">Oscuro neon</option>
-            <option value="light-wood">Claro madera</option>
-          </select>
-        </label>
-        <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
-      </div>
     </div>
     <div class="container">
-      <div class="form-actions auth-alt-actions auth-actions-top" style="margin-bottom: 20px; justify-content: center;">
-        <a class="btn secondary admin-link-btn" href="/login.html">Acceso de administradores</a>
-      </div>
-
       <div class="card">
         <h2>Iniciar sesión</h2>
 
@@ -92,20 +76,15 @@
           </div>
           <div id="empresaLoginRecaptcha" class="form-help" style="display:none"></div>
           <div class="login-inline-links">
-            <a href="#" id="linkGoSetup">Completar registro</a>
             <a href="#" id="linkGoRecovery">¿Olvidó su contraseña?</a>
-            <a href="#" id="linkGoChangePassword">Cambiar contraseña</a>
-          </div>
-          <div class="login-inline-links">
-            <a href="#" id="btnMostrarRegistro">Registro por invitación</a>
-            <a href="#" id="btnMostrarRecuperacionHero">Recuperar acceso</a>
-            <a href="#" id="btnVolverALoginHero">Volver al login</a>
+            <a href="#" id="linkGoInviteRecovery">Recuperar email de invitación</a>
           </div>
           <div id="msg" class="form-help auth-message is-hidden"></div>
         </form>
 
         <form id="setupPasswordForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
-          <h3>Crear contraseña inicial</h3>
+          <h3>Completar invitación</h3>
+          <input id="setupInvitationToken" type="hidden" autocomplete="off">
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="setupEmail">Correo</label>
@@ -160,7 +139,7 @@
         </form>
 
         <form id="recoveryRequestForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
-          <h3>Solicitar recuperación</h3>
+          <h3>Recuperar contraseña</h3>
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="recoveryEmail">Correo</label>
@@ -174,6 +153,23 @@
           </div>
           <div id="empresaRecoveryRecaptcha" class="form-help" style="display:none"></div>
           <div id="recoveryMsg" class="form-help auth-message is-hidden"></div>
+        </form>
+
+        <form id="inviteRecoveryForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
+          <h3>Recuperar email de invitación</h3>
+          <p class="login-card-note">Si el administrador ya creó tu usuario y borraste el correo, te enviaremos una nueva invitación al mismo email.</p>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="inviteRecoveryEmail">Correo</label>
+              <input id="inviteRecoveryEmail" type="email" class="form-input" autocomplete="email" required placeholder="usuario@empresa.com">
+            </div>
+          </div>
+          <div class="form-actions auth-alt-actions">
+            <button id="btnRecuperarInvitacion" type="submit" class="btn">Reenviar invitación</button>
+            <button id="btnVolverDesdeInvitacion" type="button" class="btn secondary">Volver</button>
+          </div>
+          <div id="empresaInviteRecoveryRecaptcha" class="form-help" style="display:none"></div>
+          <div id="inviteRecoveryMsg" class="form-help auth-message is-hidden"></div>
         </form>
 
         <form id="resetPasswordForm" class="form auth-alt-form is-hidden" autocomplete="on" novalidate>
@@ -263,51 +259,6 @@
 
   <script src="/config.js?v=20260510-mobile-login"></script>
   <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
-  <script>
-    (function(){
-      var select = document.getElementById("loginThemeSelect");
-      if (!select) return;
-      function normalize(theme){
-        if (window.__pcsLoginTheme && typeof window.__pcsLoginTheme.normalize === "function") {
-          return window.__pcsLoginTheme.normalize(theme);
-        }
-        return String(theme || "light").trim().toLowerCase();
-      }
-      function readCurrent(){
-        if (window.__pcsThemeManager && typeof window.__pcsThemeManager.getTheme === "function") {
-          return normalize(window.__pcsThemeManager.getTheme());
-        }
-        if (window.__pcsLoginTheme && typeof window.__pcsLoginTheme.current === "function") {
-          return normalize(window.__pcsLoginTheme.current());
-        }
-        return "light";
-      }
-      function applyTheme(theme){
-        var normalized = normalize(theme);
-        if (window.__pcsThemeManager && typeof window.__pcsThemeManager.setTheme === "function") {
-          normalized = window.__pcsThemeManager.setTheme(normalized);
-        } else {
-          try { localStorage.setItem("theme", normalized); } catch (_) {}
-          try { document.cookie = "pcs_theme=" + encodeURIComponent(normalized) + "; Path=/; Max-Age=31536000; SameSite=Lax"; } catch (_) {}
-          if (window.__pcsLoginTheme && typeof window.__pcsLoginTheme.apply === "function") {
-            window.__pcsLoginTheme.apply(normalized);
-          }
-        }
-        select.value = normalized;
-      }
-      select.value = readCurrent();
-      select.addEventListener("change", function(){ applyTheme(select.value); });
-      window.addEventListener("storage", function(event){
-        if (event && event.key === "theme" && event.newValue) {
-          select.value = normalize(event.newValue);
-        }
-      });
-      window.addEventListener("pcs:theme-changed", function(event){
-        var next = event && event.detail ? event.detail.theme : "";
-        if (next) select.value = normalize(next);
-      });
-    })();
-  </script>
   <script src="/js/login_usuario.js?v=20260510-mobile-login"></script>
 </body>
 </html>

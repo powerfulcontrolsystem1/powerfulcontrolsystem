@@ -30,6 +30,40 @@
     return 'recibo';
   }
 
+  function safeLogoURL(value) {
+    var raw = text(value).trim();
+    var lower = raw.toLowerCase();
+    if (!raw) return '';
+    if (raw.charAt(0) === '/' || lower.indexOf('https://') === 0 || lower.indexOf('http://') === 0) return raw;
+    return '';
+  }
+
+  function resolveDocumentLogos(config) {
+    var cfg = config || {};
+    var logos = [];
+    var companyLogo = safeLogoURL(cfg.logo_url);
+    var systemLogo = safeLogoURL(cfg.logo_sistema_url || '/img/logo.png');
+    var showCompany = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
+    var showSystem = cfg.mostrar_logo_sistema === true;
+    if (showCompany && companyLogo) {
+      logos.push({ src: companyLogo, alt: 'Logo empresa' });
+    }
+    if (showSystem && systemLogo) {
+      logos.push({ src: systemLogo, alt: 'Logo sistema' });
+    }
+    return logos;
+  }
+
+  function logosHTML(logos) {
+    var list = Array.isArray(logos) ? logos : [];
+    var html = list.map(function(item) {
+      var src = safeLogoURL(item && item.src);
+      if (!src) return '';
+      return '<img class="pcs-print-logo" src="' + escapeHTML(src) + '" alt="' + escapeHTML((item && item.alt) || 'Logo') + '">';
+    }).join('');
+    return html ? '<div class="pcs-print-logos">' + html + '</div>' : '';
+  }
+
   function documentCSS(format, kind) {
     format = normalizeFormat(format);
     kind = normalizeKind(kind);
@@ -43,6 +77,8 @@
       'body{box-sizing:border-box;}*{box-sizing:border-box;}',
       '.pcs-print-doc{width:100%;margin:0 auto;background:#fff;color:#111827;overflow-wrap:anywhere;word-break:break-word;}',
       '.pcs-print-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:2px solid ' + accent + ';padding-bottom:10px;margin-bottom:12px;}',
+      '.pcs-print-logos{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:220px;}',
+      '.pcs-print-logo{max-width:100px;max-height:54px;object-fit:contain;display:block;}',
       '.pcs-print-brand h1{margin:0 0 4px;font-size:22px;line-height:1.1;color:#111827;}',
       '.pcs-print-brand p{margin:2px 0;color:#4b5563;font-size:12px;line-height:1.35;}',
       '.pcs-print-badge{border:1px solid ' + accent + ';color:' + accent + ';border-radius:8px;padding:6px 9px;font-weight:900;font-size:12px;text-transform:uppercase;white-space:nowrap;}',
@@ -66,6 +102,8 @@
         'body{padding:0;font-size:11px;line-height:1.28;}',
         '.pcs-print-doc{font-family:"Courier New",monospace;}',
         '.pcs-print-head{display:block;text-align:center;border-bottom:1px dashed #111827;padding-bottom:7px;margin-bottom:8px;}',
+        '.pcs-print-logos{justify-content:center;max-width:100%;margin:0 auto 6px;}',
+        '.pcs-print-logo{max-width:80px;max-height:42px;}',
         '.pcs-print-brand h1{font-size:14px;margin-bottom:4px;}',
         '.pcs-print-brand p{font-size:10px;color:#111827;}',
         '.pcs-print-badge{display:inline-block;margin-top:5px;border-style:dashed;border-radius:0;padding:3px 6px;font-size:10px;}',
@@ -113,6 +151,7 @@
     var company = text(options.company || '');
     var subtitle = text(options.subtitle || '');
     var badge = text(options.badge || (format === 'pos' ? 'POS' : 'Carta'));
+    var headerLogos = Array.isArray(options.logos) ? options.logos : (options.logoUrl ? [{ src: options.logoUrl, alt: options.logoAlt || 'Logo' }] : []);
     var tableHeaders = Array.isArray(options.tableHeaders) ? options.tableHeaders : [];
     var table = '';
     if (tableHeaders.length || (Array.isArray(options.rows) && options.rows.length)) {
@@ -130,7 +169,7 @@
       if (options.signatures !== false && format === 'carta') body += '<section class="pcs-print-signatures"><div>Recibe</div><div>Entrega / registra</div></section>';
     }
     var auto = options.autoPrint === false ? '' : '<script>window.addEventListener("load",function(){setTimeout(function(){try{window.focus();window.print();' + (options.closeAfterPrint === false ? '' : 'window.close();') + '}catch(e){}},180);});<\/script>';
-    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + escapeHTML(title) + '</title><style>' + documentCSS(format, kind) + '</style></head><body><article class="pcs-print-doc pcs-print-' + escapeHTML(format) + ' pcs-print-' + escapeHTML(kind) + '"><header class="pcs-print-head"><div class="pcs-print-brand"><h1>' + escapeHTML(title) + '</h1>' + (company ? '<p><strong>' + escapeHTML(company) + '</strong></p>' : '') + (subtitle ? '<p>' + escapeHTML(subtitle) + '</p>' : '') + '</div><div class="pcs-print-badge">' + escapeHTML(badge) + '</div></header>' + body + (text(options.footer).trim() ? '<footer class="pcs-print-footer">' + escapeHTML(options.footer) + '</footer>' : '') + '</article>' + auto + '</body></html>';
+    return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + escapeHTML(title) + '</title><style>' + documentCSS(format, kind) + '</style></head><body><article class="pcs-print-doc pcs-print-' + escapeHTML(format) + ' pcs-print-' + escapeHTML(kind) + '"><header class="pcs-print-head">' + logosHTML(headerLogos) + '<div class="pcs-print-brand"><h1>' + escapeHTML(title) + '</h1>' + (company ? '<p><strong>' + escapeHTML(company) + '</strong></p>' : '') + (subtitle ? '<p>' + escapeHTML(subtitle) + '</p>' : '') + '</div><div class="pcs-print-badge">' + escapeHTML(badge) + '</div></header>' + body + (text(options.footer).trim() ? '<footer class="pcs-print-footer">' + escapeHTML(options.footer) + '</footer>' : '') + '</article>' + auto + '</body></html>';
   }
 
   function openDocument(options) {
@@ -148,6 +187,8 @@
   global.PCSPrint = {
     escapeHTML: escapeHTML,
     normalizeFormat: normalizeFormat,
+    resolveDocumentLogos: resolveDocumentLogos,
+    logosHTML: logosHTML,
     documentCSS: documentCSS,
     buildDocument: buildDocument,
     openDocument: openDocument

@@ -1,3 +1,39 @@
+- Actualizacion 2026-05-12: Index con seis tarjetas y carrusel horizontal
+	- `web/index.html` : limita la grilla principal de sistemas a las primeras 6 tarjetas, agrega una seccion `Mas sistemas` con flechas izquierda/derecha para navegar las tarjetas restantes en una sola hilera horizontal, y mantiene los modulos del sistema debajo del carrusel.
+
+- Actualizacion 2026-05-12: Boton completo en tarjeta Caja de estaciones
+	- `web/estilos.css` : ajusta `.caja-card .caja-actions .btn` para mostrar completo `Ver ultimos movimientos` dentro de la tarjeta, incluyendo modo miniatura movil.
+
+- Actualizacion 2026-05-12: Fotos del index en landing descriptiva
+	- `web/descripcion_de_los_sistemas.html` : usa `imagen_secundaria_url` como foto principal de cada tarjeta descriptiva y mantiene `imagen_url` como logo pequeno.
+	- `web/estilos.css` : agrega estilos para `system-detail-photo` y `system-detail-logo` dentro de la landing descriptiva.
+
+- Actualizacion 2026-05-12: VPS portable 100% Docker
+	- `deploy/docker-compose.platform.yml` : agrega perfiles `edge` y `certbot`, puertos `80/443` y volumenes `pcs_letsencrypt`/`pcs_certbot_www`.
+	- `deploy/nginx/edge.conf.template` : Nginx publico HTTPS dockerizado para dominio principal y OnlyOffice.
+	- `deploy/nginx/edge-http-only.conf.template` : Nginx temporal HTTP para validacion ACME antes de emitir certificado.
+	- `deploy/scripts/vps-docker-edge-up.sh` : conmuta la publicacion publica al edge Docker con confirmacion explicita.
+	- `deploy/scripts/vps-docker-edge-renew.sh` : renueva certificados con Certbot en Docker y recarga `pcs-edge`.
+	- `deploy/scripts/vps-backup-operacion.sh`, `scripts/vps_backup_operacion.ps1` y `scripts/vps_restore_validation.ps1` : incluyen los volumenes de certificados en backup y validacion de restauracion.
+	- `deploy/.env.platform.example`, `deploy/.env.staging.example`, `deploy/scripts/vps-docker-preflight.sh` y `deploy/scripts/vps-staging-up.sh` : eliminan variables Nextcloud legacy y agregan variables de edge.
+	- `deploy/README-compose-platform.md`, `documentos/docker_vps_operacion.md` y `documentos/gobernanza_tecnica/runbooks/runbook_recuperacion_desastre_docker_vps.md` : documentan activacion, renovacion, rollback y migracion futura a otro VPS.
+
+- Actualizacion 2026-05-12: Explorador de Archivos super
+	- `backend/handlers/super_file_explorer.go` : handler super de solo lectura para listar raices, carpetas y metadata del filesystem visible para el backend.
+	- `web/super/explorador_archivos.html` : nueva pagina tipo explorador para super administrador con ruta editable, raices, subida a carpeta padre, recarga y tabla de archivos.
+	- `backend/main.go` : registra `GET /super/api/explorador_archivos`.
+	- `web/super_administrador.html` y `web/js/super_administrador.js` : agregan y permiten restaurar la pagina en el menu Plataforma del panel super.
+	- `documentos/api/openapi.generated.yaml` : registra la ruta inventariada del explorador.
+
+- Actualizacion 2026-05-12: Retiro de Nextcloud y cuota DB empresarial
+	- `backend/db/nextcloud_decommission.go` : elimina tabla legacy `empresa_nextcloud_accounts` y claves super `nextcloud.*` durante el arranque.
+	- `backend/handlers/super_limitaciones_empresa.go` : reemplaza la cuota `nextcloud_max_gb` por `db_max_gb`, con lectura compatible del valor antiguo.
+	- `backend/handlers/postgres_performance.go` y `web/super/administrar_base_de_datos.html` : muestran cuota DB, porcentaje de uso y estado por empresa.
+	- `web/super/configuracion_avanzada.html`, `web/super/licencias.html`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js` y `web/administrar_empresa/modulo_menu.html` : retiran Nextcloud de menus, permisos visibles y licencias.
+	- `documentos/api/openapi.generated.yaml` : retira las rutas inventariadas de Nextcloud.
+	- `deploy/scripts/vps-remove-nextcloud.sh` : script operativo para retirar contenedores y volumenes legacy Nextcloud en VPS.
+	- Eliminados: `backend/db/nextcloud.go`, `backend/handlers/nextcloud_empresa.go`, `backend/handlers/nextcloud_super_config.go`, `web/administrar_empresa/nextcloud.html` y `deploy/nextcloud/docker-compose.yml`.
+
 - Actualizacion 2026-05-12: CRM empresarial profesional
 	- `backend/db/crm_ventas_avanzadas.go` : extiende el dashboard CRM con salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, rendimiento por responsable y canales.
 	- `backend/db/crm_ventas_avanzadas_test.go` : agrega cobertura unitaria para salud comercial y plan de accion.
@@ -9041,3 +9077,26 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- `web/administrar_empresa/verticales_integracion.html` : muestra KPIs de nucleo comun y plantillas, con flujo de venta y reportes por vertical.
 	- `web/js/verticales_integracion_catalogo.js` : alinea los 10 verticales clasicos con el mismo lenguaje de plantilla universal usado por los 20 nuevos.
 	- Dashboards clasicos (`gimnasio`, `odontologia`, `parqueadero`, `taxi_system`, `domicilios`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `aiu_construccion`) : retiran acciones visibles de migracion manual.
+2026-05-12 - Documentos y backups locales por dispositivo
+- `backend/handlers/onlyoffice.go`:
+	- agrega `action=create_local` para crear documentos OOXML y devolverlos como descarga local sin persistirlos bajo `/data/empresas`.
+- `web/administrar_empresa/documentos_onlyoffice.html`:
+	- agrega selector de modo de almacenamiento; por defecto crea archivos en el dispositivo y no lista/sube archivos del VPS.
+- `backend/handlers/backups_empresariales.go`:
+	- agrega `exportar_local` y `exportar_configuracion_local` para construir snapshots en memoria y descargarlos sin historial ni copia en disco del VPS.
+	- elimina la escritura best-effort de copias JSON al exportar backups.
+- `web/administrar_empresa/backups.html`:
+	- agrega configuracion de backup automatico local por navegador, descarga manual local y mensajes operativos sobre alcance en equipo/celular.
+
+2026-05-12 - Logos configurables en documentos empresariales
+- `backend/db/empresa_configuracion_avanzada.go`:
+	- agrega `mostrar_logo_empresa`, `mostrar_logo_sistema` y `logo_sistema_url` calculado en el modelo de configuracion avanzada empresarial.
+	- sincroniza la bandera legacy `mostrar_logo` con los dos controles nuevos para mantener compatibilidad con documentos existentes.
+- `backend/handlers/empresa_configuracion_avanzada.go`:
+	- conserva payloads legacy de `mostrar_logo`, fusiona las nuevas banderas por `empresa_id` y activa `mostrar_logo_empresa` cuando se sube un logo.
+- `web/administrar_empresa/configuracion.html`:
+	- agrega checks separados para logo de empresa y logo del sistema en facturas, recibos, reportes y documentos imprimibles.
+- `web/js/print_documents.js`:
+	- incorpora renderizado de multiples logos y resolucion estandar desde la configuracion avanzada.
+- `web/administrar_empresa/facturas_electronicas.html`, `web/administrar_empresa/ventas.html`, `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/reportes.html`, `web/administrar_empresa/panel.html`, `web/administrar_empresa/configuracion_impresora.html`, `web/administrar_empresa/facturacion_electronica.html`, `web/estilos.css`:
+	- alinean vistas, previews y documentos imprimibles con `mostrar_logo_empresa` y `mostrar_logo_sistema`.

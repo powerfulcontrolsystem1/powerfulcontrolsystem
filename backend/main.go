@@ -690,6 +690,10 @@ func main() {
 			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_usuario_config_schema")
+		if err := dbpkg.DecommissionNextcloudArtifacts(dbEmpresas, dbSuper); err != nil {
+			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
+		}
+		startupTrace("after_nextcloud_decommission")
 		if err := dbpkg.EnsureAsesorComercialSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure asesor comercial schema in superadministrador db: %v", err)
 		}
@@ -736,10 +740,6 @@ func main() {
 		log.Fatalf("failed to ensure users auth schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_usuarios_auth_schema")
-	if err := dbpkg.EnsureEmpresaNextcloudSchema(dbEmpresas); err != nil {
-		log.Fatalf("failed to ensure nextcloud schema in empresas db: %v", err)
-	}
-	startupTrace("after_empresa_nextcloud_schema")
 	if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
 	}
@@ -993,6 +993,7 @@ func main() {
 	http.HandleFunc("/api/empresa/servicios", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaServiciosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/usuarios/login", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioLoginHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/establecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioSetPasswordHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/usuarios/recuperar_invitacion", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/solicitar_recuperacion_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/restablecer_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioResetPasswordHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/usuarios/cambiar_password", handlers.WithEmpresaPublicScope(handlers.EmpresaUsuarioChangePasswordHandler(dbEmpresas, dbSuper)))
@@ -1103,7 +1104,6 @@ func main() {
 	http.HandleFunc("/api/public/certificados_tributarios", handlers.PublicCertificadosTributariosHandler(dbEmpresas))
 	http.HandleFunc("/api/empresa/backups", handlers.WithEmpresaBackupsPermissions(dbEmpresas, dbSuper, handlers.EmpresaBackupsHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/documentos", handlers.WithEmpresaDocumentosOnlyOfficePermissions(dbEmpresas, dbSuper, handlers.OnlyOfficeDocumentosHandler(dbSuper)))
-	http.HandleFunc("/api/empresa/nextcloud", handlers.WithEmpresaNextcloudPermissions(dbEmpresas, dbSuper, handlers.EmpresaNextcloudHandler(dbEmpresas, dbSuper)))
 	startupTrace("after_empresa_routes")
 
 	// OnlyOffice public endpoints (token temporal)
@@ -1182,8 +1182,6 @@ func main() {
 	// Endpoints para generar y descargar documentos dinamicos asistidos por IA.
 	http.HandleFunc("/generate", handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbSuper))
-	// Endpoint para configurar Nextcloud en el VPS (GET/PUT)
-	http.HandleFunc("/super/api/config/nextcloud", handlers.NextcloudConfigHandler(dbSuper))
 	superAIChatController := handlers.NewSuperAIChatController(dbEmpresas, dbSuper)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelos", superAIChatController.ModelosHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/modelo_preferido", superAIChatController.ModeloPreferidoHandler)
@@ -1227,6 +1225,7 @@ func main() {
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
 	http.HandleFunc("/super/api/reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/postgres/performance", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
 	// Endpoint de seguridad: listado de procesos en memoria RAM

@@ -43,6 +43,10 @@
           <option value="excel">Nueva hoja (Excel)</option>
           <option value="powerpoint">Nueva presentación (PowerPoint)</option>
         </select>
+        <select id="docStorageMode" class="form-input" style="max-width:260px">
+          <option value="local">Guardar en este dispositivo</option>
+          <option value="server">Editar colaborativo en servidor</option>
+        </select>
         <button id="btnNewDoc" class="btn secondary" type="button">Crear</button>
         <input id="fileInput" class="form-input" type="file" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx">
         <button id="btnUpload" class="btn secondary" type="button">Subir</button>
@@ -56,7 +60,7 @@
         <div class="empresa-section-header">
           <h2 class="m-0">Crear</h2>
         </div>
-        <div class="form-help">Accesos tipo Office 365: crea un archivo nuevo con un clic.</div>
+        <div class="form-help" id="storageModeHelp">Modo local: los archivos nuevos se descargan en el computador o celular donde abriste la aplicacion; no se guardan ni se buscan en el VPS.</div>
         <div class="oo-create-grid mt-10">
           <button class="oo-create-tile" id="tileWord" type="button">
             <span class="oo-app-icon" aria-hidden="true">
@@ -92,7 +96,7 @@
         <div class="empresa-section-header">
           <h2 class="m-0">Subir archivos</h2>
         </div>
-        <div class="form-help">Carga documentos compatibles con OnlyOffice para editarlos sin salir del sistema.</div>
+        <div class="form-help">Disponible solo en modo colaborativo en servidor. En modo local, abre y guarda los archivos desde la aplicacion de oficina del equipo.</div>
         <div class="empresa-inline-actions mt-10">
           <input id="fileInputSection" class="form-input" type="file" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx">
           <button id="btnUploadSection" class="btn secondary" type="button">Subir archivo</button>
@@ -104,14 +108,14 @@
         <div class="empresa-section-header">
           <h2 class="m-0">Archivos de esta empresa</h2>
         </div>
-        <div id="list" class="oo-list">Cargando...</div>
+        <div id="list" class="oo-list">Modo local activo: los archivos quedan en tu dispositivo y no se listan desde el VPS.</div>
       </section>
 
       <section class="card empresa-section" data-pcs-submenu-section="editor">
         <div class="empresa-section-header">
           <h2 class="m-0">Editor</h2>
         </div>
-        <div class="form-help">El editor se abre aquí, debajo del listado, ocupando todo el ancho.</div>
+        <div class="form-help">El editor OnlyOffice requiere modo colaborativo en servidor. En modo local, el sistema descarga el archivo para abrirlo en el equipo o celular.</div>
         <div id="editorHost" class="mt-10">
           <div id="editorFrame" class="ai-gemini-chat-area" style="display:grid;place-items:center;color:var(--muted);">
             Selecciona un documento.
@@ -147,6 +151,66 @@
         if(ext === 'xls' || ext === 'xlsx' || ext === 'ods' || ext === 'csv') return 'excel';
         if(ext === 'ppt' || ext === 'pptx' || ext === 'odp') return 'powerpoint';
         return 'doc';
+      }
+
+      function storageKey(){
+        return 'pcs_onlyoffice_storage_mode_' + String(empresaId || '0');
+      }
+
+      function getStorageMode(){
+        var select = document.getElementById('docStorageMode');
+        var value = txt(select && select.value);
+        return value === 'server' ? 'server' : 'local';
+      }
+
+      function setLocalLibraryState(){
+        var host = document.getElementById('list');
+        if (host) {
+          host.innerHTML = '<div class="form-help">Modo local activo: los archivos quedan en tu dispositivo y no se listan desde el VPS.</div>';
+        }
+        var frame = document.getElementById('editorFrame');
+        if (frame) {
+          frame.innerHTML = 'Modo local activo. Crea o descarga el archivo y abrelo desde tu equipo o celular.';
+        }
+      }
+
+      function syncStorageModeUI(){
+        var mode = getStorageMode();
+        var help = document.getElementById('storageModeHelp');
+        if (help) {
+          help.textContent = mode === 'local'
+            ? 'Modo local: los archivos nuevos se descargan en el computador o celular donde abriste la aplicacion; no se guardan ni se buscan en el VPS.'
+            : 'Modo colaborativo: OnlyOffice necesita guardar temporalmente y listar archivos en el servidor para que Document Server pueda editarlos.';
+        }
+        document.getElementById('btnUpload').disabled = mode === 'local';
+        document.getElementById('btnReload').disabled = mode === 'local';
+        var btnUploadSection = document.getElementById('btnUploadSection');
+        if (btnUploadSection) btnUploadSection.disabled = mode === 'local';
+        var btnReloadSection = document.getElementById('btnReloadSection');
+        if (btnReloadSection) btnReloadSection.disabled = mode === 'local';
+        var fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.disabled = mode === 'local';
+        var fileInputSection = document.getElementById('fileInputSection');
+        if (fileInputSection) fileInputSection.disabled = mode === 'local';
+        try { localStorage.setItem(storageKey(), mode); } catch (_) {}
+        if (mode === 'local') setLocalLibraryState();
+      }
+
+      function downloadBlob(blob, filename){
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'documento';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      function responseFilename(resp, fallback){
+        var disposition = String(resp.headers.get('Content-Disposition') || '');
+        var match = disposition.match(/filename="?([^";]+)"?/i);
+        return match && match[1] ? match[1] : fallback;
       }
 
       function appIconSVG(kind){
@@ -270,6 +334,10 @@
         } catch (e) {
           name = suggested;
         }
+        if (getStorageMode() === 'local') {
+          await createLocal(tipo, name || suggested);
+          return;
+        }
         setMsg('Creando documento...', false);
         var url = buildBase('create').toString();
         var payload = { tipo: tipo };
@@ -281,19 +349,43 @@
         }
       }
 
+      async function createLocal(tipo, name){
+        setMsg('Creando archivo local...', false);
+        var payload = { tipo: tipo };
+        if (txt(name)) payload.nombre = txt(name);
+        var resp = await fetch(buildBase('create_local').toString(), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) {
+          var raw = await resp.text().catch(function(){ return ''; });
+          throw new Error(raw || ('HTTP ' + resp.status));
+        }
+        var blob = await resp.blob();
+        downloadBlob(blob, responseFilename(resp, txt(name) || 'documento'));
+        setMsg('Archivo descargado en este dispositivo. No se guardo en el VPS.', false);
+        setLocalLibraryState();
+      }
+
       document.getElementById('btnReload').addEventListener('click', function(){
+        if (getStorageMode() === 'local') { setLocalLibraryState(); return; }
         loadList().catch(function(e){ setMsg(e.message||String(e), true); });
       });
       document.getElementById('btnUpload').addEventListener('click', function(){
+        if (getStorageMode() === 'local') { setMsg('En modo local no se suben archivos al VPS.', true); return; }
         upload().catch(function(e){ setMsg(e.message||String(e), true); });
       });
       var btnUploadSection = document.getElementById('btnUploadSection');
       if (btnUploadSection) btnUploadSection.addEventListener('click', function(){
+        if (getStorageMode() === 'local') { setMsg('En modo local no se suben archivos al VPS.', true); return; }
         var sectionInput = document.getElementById('fileInputSection');
         upload('fileInputSection').then(function(){ if (sectionInput) sectionInput.value = ''; }).catch(function(e){ setMsg(e.message||String(e), true); });
       });
       var btnReloadSection = document.getElementById('btnReloadSection');
       if (btnReloadSection) btnReloadSection.addEventListener('click', function(){
+        if (getStorageMode() === 'local') { setLocalLibraryState(); return; }
         loadList().catch(function(e){ setMsg(e.message||String(e), true); });
       });
       document.getElementById('btnNewDoc').addEventListener('click', function(){
@@ -322,7 +414,24 @@
         setMsg('Falta empresa_id en la URL.', true);
         return;
       }
-      loadList().catch(function(e){ setMsg(e.message||String(e), true); });
+      var storageModeSelect = document.getElementById('docStorageMode');
+      if (storageModeSelect) {
+        try {
+          storageModeSelect.value = localStorage.getItem(storageKey()) || 'local';
+        } catch (_) {
+          storageModeSelect.value = 'local';
+        }
+        storageModeSelect.addEventListener('change', function(){
+          syncStorageModeUI();
+          if (getStorageMode() === 'server') {
+            loadList().catch(function(e){ setMsg(e.message||String(e), true); });
+          }
+        });
+      }
+      syncStorageModeUI();
+      if (getStorageMode() === 'server') {
+        loadList().catch(function(e){ setMsg(e.message||String(e), true); });
+      }
     })();
   </script>
   <script src="/js/personas_activos_submenu.js"></script>

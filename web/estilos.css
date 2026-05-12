@@ -3216,6 +3216,28 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
   filter:drop-shadow(0 8px 14px rgba(0,0,0,0.28));
 }
 
+.systems-page .system-detail-media .system-detail-photo{
+  width:min(240px,100%);
+  max-height:190px;
+  aspect-ratio:4/3;
+  object-fit:contain;
+  border-radius:14px;
+  padding:10px;
+  background:color-mix(in srgb, var(--public-panel-bg) 72%, transparent);
+  border:1px solid var(--public-panel-soft-border);
+}
+
+.systems-page .system-detail-media .system-detail-logo{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+  align-self:flex-start;
+  border-radius:10px;
+  padding:6px;
+  background:var(--public-panel-soft-bg);
+  border:1px solid var(--public-panel-soft-border);
+}
+
 .systems-page .system-detail-tag{
   background:color-mix(in srgb, var(--public-panel-accent) 14%, transparent);
   border-color:color-mix(in srgb, var(--public-panel-accent) 24%, transparent);
@@ -3269,8 +3291,10 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
 .systems-main[data-card-size="pequeno"] .system-detail-card{min-height:280px;padding:18px;border-radius:18px}
 .systems-main[data-card-size="mediano"] .system-detail-card{min-height:320px}
 .systems-main[data-card-size="grande"] .system-detail-card{min-height:360px;padding:28px;border-radius:24px}
-.systems-main[data-card-size="pequeno"] .system-detail-media img{width:108px}
-.systems-main[data-card-size="grande"] .system-detail-media img{width:154px}
+.systems-main[data-card-size="pequeno"] .system-detail-media .system-detail-photo{width:min(200px,100%);max-height:160px}
+.systems-main[data-card-size="grande"] .system-detail-media .system-detail-photo{width:min(280px,100%);max-height:220px}
+.systems-main[data-card-size="pequeno"] .system-detail-media .system-detail-logo{width:36px;height:36px}
+.systems-main[data-card-size="grande"] .system-detail-media .system-detail-logo{width:48px;height:48px}
 .systems-main[data-text-size="pequeno"] .system-detail-title{font-size:clamp(1.2rem, 2vw, 1.6rem)}
 .systems-main[data-text-size="pequeno"] .system-detail-copy p{font-size:.96rem}
 .systems-main[data-text-size="grande"] .system-detail-title{font-size:clamp(1.5rem, 2.5vw, 2.15rem)}
@@ -3348,8 +3372,21 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
 .caja-card .caja-totals .caja-row .caja-label{ font-weight:700; color:var(--portal-card-solid-text); margin-right:6px; }
 .caja-card .caja-totals .caja-row .caja-value{ font-weight:900; color:var(--portal-card-solid-text); }
 .caja-card .caja-title { text-align: center; margin-bottom: 2px; color: var(--portal-card-solid-text); font-weight:800; }
-.caja-card .caja-actions{ margin-top:4px; display:block; width:100%; }
-.caja-card .caja-actions .btn{ width:100%; padding:6px 8px; font-size:0.92rem; border-radius:8px; line-height:1; }
+.caja-card .caja-actions{ margin-top:4px; display:flex; width:100%; min-width:0; }
+.caja-card .caja-actions .btn{
+  width:100%;
+  min-height:34px;
+  padding:6px 8px;
+  border-radius:8px;
+  font-size:clamp(0.78rem, 0.82em, 0.92rem);
+  line-height:1.15;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
 
 /* Corte de caja */
 .corte-caja-page .corte-report-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
@@ -7180,6 +7217,12 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   align-items:flex-start;
   gap:12px;
 }
+.factura-print-logo .pcs-print-logos{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
 .factura-print-logo img{
   width:auto;
   max-width:120px;
@@ -9792,6 +9835,13 @@ html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) td{
 
 #estacionesGrid.estaciones-thumb-mobile .caja-title{
   font-size:1.05em;
+}
+
+#estacionesGrid.estaciones-thumb-mobile .caja-actions .btn{
+  min-height:30px;
+  padding:4px 6px;
+  font-size:0.72rem;
+  line-height:1.1;
 }
 
 #estacionesGrid.estaciones-thumb-mobile .ia-pedidos-station-head p,

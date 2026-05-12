@@ -1359,19 +1359,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/nextcloud":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/nextcloud
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/nextcloud
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/nomina":
     get:
       tags: [empresa]
@@ -1850,6 +1837,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/usuarios/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/usuarios/recuperar_invitacion":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/recuperar_invitacion
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/usuarios/recuperar_invitacion
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -2854,19 +2854,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/super/api/config/nextcloud":
-    get:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/config/nextcloud
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/config/nextcloud
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/config/onlyoffice":
     get:
       tags: [super-administrador]
@@ -3033,6 +3020,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/errores
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/explorador_archivos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/explorador_archivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/explorador_archivos
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

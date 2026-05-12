@@ -851,7 +851,7 @@
       document.getElementById("adv_formato_impresion").value = txt(cfg.formato_impresion) || "carta";
       document.getElementById("adv_imprimir_copia_factura").checked = cfg.imprimir_copia_factura === true;
       document.getElementById("adv_logo_url").value = txt(cfg.logo_url);
-      document.getElementById("adv_mostrar_logo").checked = cfg.mostrar_logo !== false;
+      document.getElementById("adv_mostrar_logo").checked = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
       document.getElementById("adv_pie_factura").value = txt(cfg.pie_factura);
       document.getElementById("adv_notas_legales").value = txt(cfg.notas_legales);
       document.getElementById("adv_color_carrito_activo").value = normalizeColorHex(cfg.color_carrito_activo, "#d9fbe8");
@@ -891,6 +891,7 @@
         formato_impresion: txt(document.getElementById("adv_formato_impresion").value) || "carta",
         imprimir_copia_factura: !!document.getElementById("adv_imprimir_copia_factura").checked,
         mostrar_logo: !!document.getElementById("adv_mostrar_logo").checked,
+        mostrar_logo_empresa: !!document.getElementById("adv_mostrar_logo").checked,
         logo_url: txt(document.getElementById("adv_logo_url").value),
         pie_factura: txt(document.getElementById("adv_pie_factura").value),
         notas_legales: txt(document.getElementById("adv_notas_legales").value),

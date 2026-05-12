@@ -89,9 +89,13 @@
             <img id="empresaLogoPreview" alt="Logo de la empresa" hidden>
             <span id="empresaLogoEmpty" class="empresa-logo-config-empty">Sin logo cargado.</span>
           </div>
-          <label class="empresa-config-check" for="empresaMostrarLogo">
-            <input id="empresaMostrarLogo" type="checkbox" checked>
-            <span>Mostrar logo en panel, factura y documentos</span>
+          <label class="empresa-config-check" for="empresaMostrarLogoEmpresa">
+            <input id="empresaMostrarLogoEmpresa" type="checkbox" checked>
+            <span>Usar logo de la empresa en panel, facturas, recibos, reportes y documentos imprimibles</span>
+          </label>
+          <label class="empresa-config-check" for="empresaMostrarLogoSistema">
+            <input id="empresaMostrarLogoSistema" type="checkbox">
+            <span>Usar logo del sistema en facturas, recibos, reportes y documentos imprimibles</span>
           </label>
         </div>
         <div class="form">
@@ -2289,7 +2293,7 @@
       document.getElementById('facturaImprimirVenta').checked = src.imprimir_venta === true;
       document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
-      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo !== false;
+      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_empresa !== false && src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
     }
 
@@ -2325,23 +2329,29 @@
     function setIdentidadVisualFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       const logoURL = normalizeLogoURL(src.logo_url);
-      const mostrarLogo = src.mostrar_logo !== false;
+      const mostrarLogoEmpresa = src.mostrar_logo_empresa !== false && src.mostrar_logo !== false;
+      const mostrarLogoSistema = src.mostrar_logo_sistema === true;
       document.getElementById('empresaLogoURL').value = logoURL;
-      document.getElementById('empresaMostrarLogo').checked = mostrarLogo;
-      setEmpresaLogoPreview(logoURL, mostrarLogo);
+      document.getElementById('empresaMostrarLogoEmpresa').checked = mostrarLogoEmpresa;
+      document.getElementById('empresaMostrarLogoSistema').checked = mostrarLogoSistema;
+      setEmpresaLogoPreview(logoURL, mostrarLogoEmpresa);
       if (document.getElementById('facturaLogoURL')) {
         document.getElementById('facturaLogoURL').value = logoURL;
       }
       if (document.getElementById('facturaMostrarLogo')) {
-        document.getElementById('facturaMostrarLogo').checked = mostrarLogo;
+        document.getElementById('facturaMostrarLogo').checked = mostrarLogoEmpresa;
       }
     }
 
     function getIdentidadVisualFormData() {
+      const mostrarLogoEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;
+      const mostrarLogoSistema = document.getElementById('empresaMostrarLogoSistema').checked;
       return {
         empresa_id: Number(empresaId),
         logo_url: normalizeLogoURL(document.getElementById('empresaLogoURL').value),
-        mostrar_logo: document.getElementById('empresaMostrarLogo').checked
+        mostrar_logo: mostrarLogoEmpresa || mostrarLogoSistema,
+        mostrar_logo_empresa: mostrarLogoEmpresa,
+        mostrar_logo_sistema: mostrarLogoSistema
       };
     }
 
@@ -2364,6 +2374,7 @@
         imprimir_factura_electronica: document.getElementById('facturaImprimirFacturaElectronica').checked,
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
+        mostrar_logo_empresa: document.getElementById('facturaMostrarLogo').checked,
         logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()
       };
     }
@@ -2430,7 +2441,7 @@
         const cfg = await upsertEmpresaConfigAvanzada(payload);
         setIdentidadVisualFormData(cfg || payload);
         setFacturaFormData(cfg || payload);
-        setIdentidadVisualMessage('Logo de empresa guardado correctamente para panel, factura y documentos.', 'success');
+        setIdentidadVisualMessage('Identidad visual guardada para panel, facturas, recibos, reportes y documentos.', 'success');
       } catch (err) {
         setIdentidadVisualMessage('No se pudo guardar el logo: ' + (err && err.message ? err.message : err), 'error');
       }
@@ -2466,10 +2477,10 @@
         if (!res.ok) {
           throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
         }
-        const cfg = data && data.configuracion ? data.configuracion : { logo_url: data.logo_url, mostrar_logo: true };
+        const cfg = data && data.configuracion ? data.configuracion : { logo_url: data.logo_url, mostrar_logo: true, mostrar_logo_empresa: true };
         setIdentidadVisualFormData(cfg);
         setFacturaFormData(cfg);
-        setIdentidadVisualMessage('Logo subido y guardado para panel, factura y documentos.', 'success');
+        setIdentidadVisualMessage('Logo subido y guardado para panel, facturas, recibos, reportes y documentos.', 'success');
       } catch (err) {
         setIdentidadVisualMessage('No se pudo subir el logo: ' + (err && err.message ? err.message : err), 'error');
       }
@@ -2731,10 +2742,10 @@
       document.getElementById('btnGuardarLogoEmpresa').addEventListener('click', guardarIdentidadVisualConfig);
       document.getElementById('btnSubirLogoEmpresa').addEventListener('click', subirLogoEmpresa);
       document.getElementById('empresaLogoURL').addEventListener('input', function() {
-        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogo').checked);
+        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogoEmpresa').checked);
       });
-      document.getElementById('empresaMostrarLogo').addEventListener('change', function() {
-        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogo').checked);
+      document.getElementById('empresaMostrarLogoEmpresa').addEventListener('change', function() {
+        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogoEmpresa').checked);
       });
       document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
       document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);

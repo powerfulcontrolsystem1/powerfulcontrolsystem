@@ -1,3 +1,21 @@
+- 2026-05-12: el index muestra solo las primeras 6 tarjetas de sistemas en la grilla principal y mueve las tarjetas restantes a una barra horizontal navegable con flechas izquierda/derecha antes de la seccion de modulos. Sin backend, tablas, permisos ni dependencias nuevas.
+
+- 2026-05-12: corregido el boton `Ver ultimos movimientos` en la tarjeta de Caja de `estaciones.html`; ahora usa altura minima, centrado flexible y texto en varias lineas para mostrarse completo dentro de la tarjeta. Sin backend, permisos ni tablas.
+
+- 2026-05-12: la landing `/descripcion_de_los_sistemas.html` sincroniza sus tarjetas con la misma foto grande configurada en cada tarjeta del index (`imagen_secundaria_url`), conservando el logo como apoyo visual pequeno. Sin backend, tablas, permisos ni dependencias nuevas.
+
+- 2026-05-12: despliegue VPS preparado para modo 100% Docker. `docker-compose.platform.yml` agrega `edge` Nginx publico y `certbot` con volumenes `pcs_letsencrypt`/`pcs_certbot_www`; se agregan plantillas `deploy/nginx/edge*.conf.template` y scripts `vps-docker-edge-up.sh`/`vps-docker-edge-renew.sh` para mover 80/443, TLS y certificados al stack Docker. Se limpian variables legacy Nextcloud de entornos de plataforma/staging.
+
+- 2026-05-12: agregado Explorador de Archivos para super administrador. `web/super/explorador_archivos.html` muestra una vista tipo explorador por carpetas del filesystem visible para el backend/VPS y `GET /super/api/explorador_archivos` lista raices, rutas y metadata sin leer contenido ni permitir escritura. Acceso exclusivo de `super_administrador`; sin tablas ni dependencias nuevas.
+
+- 2026-05-12: Nextcloud retirado del producto empresarial y del despliegue VPS. Se eliminan rutas `/api/empresa/nextcloud` y `/super/api/config/nextcloud`, pagina empresarial, menu, permisos/licencias, Compose Nextcloud y catalogo de backup de configuracion. El antiguo rango de GB se reconvierte a `empresa.limitaciones.db.max_gb` como cuota maxima de base de datos por empresa, con lectura compatible del valor legacy. Se agrega `deploy/scripts/vps-remove-nextcloud.sh` para apagar contenedores/volumenes legacy en la VPS.
+
+- 2026-05-12: agregada accion `Regresar a estaciones` en `web/administrar_empresa/ultimos_movimientos_de_caja.html`, conservando `empresa_id` al volver al tablero de estaciones. Sin backend, permisos, tablas ni dependencias nuevas.
+
+- 2026-05-12: login de usuarios operativos simplificado. `web/login_usuario.html` elimina controles y enlaces innecesarios del acceso operativo y deja solo recuperacion de contrasena y recuperacion de email de invitacion. Se agrega `POST /api/empresa/usuarios/recuperar_invitacion`, con reCAPTCHA y respuesta enmascarada, para reenviar la invitacion a usuarios ya creados por el administrador que todavia no completaron su contrasena.
+
+- 2026-05-12: registro de usuarios operativos cerrado a invitacion por email. El administrador crea el usuario y el enlace enviado abre `login_usuario.html` con `token_invitacion`; el primer password exige token vigente, documento, contrato y reCAPTCHA, consume la invitacion, confirma correo y abre sesion redirigiendo a `administrar_empresa.html?id=...` con rol cargado para que `/api/empresa/permisos_contexto` filtre el panel. Sin columnas ni dependencias nuevas.
+
 - 2026-05-12: login de usuarios operativos toma primero el tema desde cookies. `web/login_usuario.html` aplica `pcs_theme` antes de cargar estilos y `web/menu.js` prioriza esa cookie sobre `localStorage`, para que el login use la apariencia del ultimo usuario que inicio sesion o cambio tema en ese navegador. Sin cambios de API, permisos, backend, base de datos ni dependencias.
 
 - 2026-05-12: ayuda interna para CRM unificado. `web/administrar_empresa/modulo_menu.html` agrega el boton `Ayuda` al final del menu de CRM y `web/administrar_empresa/crm_comercial.html` incorpora la pestana de ayuda iniciando con la definicion de CRM antes de explicar tablero, leads, seguimientos, cotizaciones, forecast, metas y embudo. Sin cambios de API, permisos, backend, base de datos ni dependencias.

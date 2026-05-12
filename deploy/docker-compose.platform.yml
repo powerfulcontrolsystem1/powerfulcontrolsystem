@@ -47,9 +47,6 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ONLYOFFICE_DOCUMENT_SERVER_URL: ${ONLYOFFICE_DOCUMENT_SERVER_URL:-https://onlyoffice.powerfulcontrolsystem.com}
       ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:-}
-      NEXTCLOUD_BASE_URL: ${NEXTCLOUD_BASE_URL:-https://nextcloud.powerfulcontrolsystem.com}
-      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
-      NEXTCLOUD_ADMIN_SECRET: ${NEXTCLOUD_ADMIN_PASSWORD:-}
       VOICE_STREAM_BASE_URL: ${VOICE_STREAM_BASE_URL:-http://voice-stream:8000}
       GOOGLE_RECAPTCHA_SITE_KEY: ${GOOGLE_RECAPTCHA_SITE_KEY:-}
       GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
@@ -90,6 +87,37 @@ services:
     networks:
       - pcs_internal
 
+  edge:
+    profiles: ["edge"]
+    image: nginx:1.27-alpine
+    container_name: pcs-edge
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_started
+    environment:
+      EDGE_DOMAIN: ${EDGE_DOMAIN:-powerfulcontrolsystem.com}
+      EDGE_WWW_DOMAIN: ${EDGE_WWW_DOMAIN:-www.powerfulcontrolsystem.com}
+      EDGE_ONLYOFFICE_DOMAIN: ${EDGE_ONLYOFFICE_DOMAIN:-onlyoffice.powerfulcontrolsystem.com}
+      EDGE_CERT_NAME: ${EDGE_CERT_NAME:-powerfulcontrolsystem.com}
+    ports:
+      - "${EDGE_HTTP_BIND:-0.0.0.0}:80:80"
+      - "${EDGE_HTTPS_BIND:-0.0.0.0}:443:443"
+    volumes:
+      - ${EDGE_NGINX_TEMPLATE:-./nginx/edge.conf.template}:/etc/nginx/templates/default.conf.template:ro
+      - pcs_letsencrypt:/etc/letsencrypt:ro
+      - pcs_certbot_www:/var/www/certbot:ro
+    networks:
+      - pcs_internal
+
+  certbot:
+    profiles: ["certbot"]
+    image: certbot/certbot:v2.11.0
+    container_name: pcs-certbot
+    volumes:
+      - pcs_letsencrypt:/etc/letsencrypt
+      - pcs_certbot_www:/var/www/certbot
+
   onlyoffice-documentserver:
     profiles: ["office"]
     image: onlyoffice/documentserver:${ONLYOFFICE_TAG:-latest}
@@ -109,73 +137,6 @@ services:
       - "80"
     ports:
       - "${ONLYOFFICE_BIND:-127.0.0.1}:${ONLYOFFICE_PORT:-8088}:80"
-    networks:
-      - pcs_internal
-
-  nextcloud-db:
-    profiles: ["cloud"]
-    image: postgres:16-alpine
-    container_name: pcs-nextcloud-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: nextcloud
-      POSTGRES_USER: nextcloud
-      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD:?Defina NEXTCLOUD_DB_PASSWORD}
-      TZ: ${TZ:-America/Bogota}
-      PGTZ: ${TZ:-America/Bogota}
-    volumes:
-      - pcs_nextcloud_db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks:
-      - pcs_internal
-
-  nextcloud-redis:
-    profiles: ["cloud"]
-    image: redis:7-alpine
-    container_name: pcs-nextcloud-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - pcs_nextcloud_redis:/data
-    networks:
-      - pcs_internal
-
-  nextcloud:
-    profiles: ["cloud"]
-    image: nextcloud:${NEXTCLOUD_TAG:-29-apache}
-    container_name: pcs-nextcloud
-    restart: unless-stopped
-    depends_on:
-      nextcloud-db:
-        condition: service_healthy
-      nextcloud-redis:
-        condition: service_started
-    environment:
-      POSTGRES_HOST: nextcloud-db
-      POSTGRES_DB: nextcloud
-      POSTGRES_USER: nextcloud
-      POSTGRES_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
-      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:-admin}
-      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:?Defina NEXTCLOUD_ADMIN_PASSWORD}
-      REDIS_HOST: nextcloud-redis
-      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1 frontend}
-      OVERWRITEPROTOCOL: ${NEXTCLOUD_OVERWRITEPROTOCOL:-https}
-      OVERWRITEHOST: ${NEXTCLOUD_OVERWRITEHOST:-nextcloud.powerfulcontrolsystem.com}
-      NEXTCLOUD_TRUSTED_DOMAINS: ${NEXTCLOUD_TRUSTED_DOMAINS:-nextcloud.powerfulcontrolsystem.com}
-      TZ: ${TZ:-America/Bogota}
-    volumes:
-      - pcs_nextcloud_html:/var/www/html
-      - pcs_nextcloud_data:/var/www/html/data
-      - pcs_nextcloud_apps:/var/www/html/custom_apps
-      - pcs_nextcloud_config:/var/www/html/config
-    expose:
-      - "80"
-    ports:
-      - "${NEXTCLOUD_BIND:-127.0.0.1}:${NEXTCLOUD_PORT:-8090}:80"
     networks:
       - pcs_internal
 
@@ -249,16 +210,12 @@ volumes:
   pcs_web_uploads:
   pcs_backups:
   pcs_downloads:
+  pcs_letsencrypt:
+  pcs_certbot_www:
   pcs_onlyoffice_data:
   pcs_onlyoffice_logs:
   pcs_onlyoffice_lib:
   pcs_onlyoffice_db:
-  pcs_nextcloud_db:
-  pcs_nextcloud_redis:
-  pcs_nextcloud_html:
-  pcs_nextcloud_data:
-  pcs_nextcloud_apps:
-  pcs_nextcloud_config:
   pcs_voice_models:
   pcs_voice_cache:
   pcs_rustdesk_data:

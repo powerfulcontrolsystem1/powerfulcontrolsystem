@@ -2324,7 +2324,7 @@
         var img = document.getElementById("empresaLogoPanel");
         if (!wrap || !img) return;
         var cfg = config && typeof config === "object" ? config : {};
-        var showLogo = cfg.mostrar_logo !== false;
+        var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
         var logoURL = showLogo ? normalizeEmpresaLogoURL(cfg.logo_url) : "";
         wrap.hidden = !logoURL;
         img.src = logoURL || "";

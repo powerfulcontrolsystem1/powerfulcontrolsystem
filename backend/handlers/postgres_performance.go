@@ -104,30 +104,35 @@ type postgresPerformanceResponse struct {
 }
 
 type postgresEmpresaStorageItem struct {
-	EmpresaID            int64   `json:"empresa_id"`
-	Nombre               string  `json:"nombre"`
-	Nit                  string  `json:"nit"`
-	Estado               string  `json:"estado"`
-	TotalBytes           int64   `json:"total_bytes"`
-	TotalPretty          string  `json:"total_pretty"`
-	TotalMB              float64 `json:"total_mb"`
-	RowsCount            int64   `json:"rows_count"`
-	TablesWithData       int64   `json:"tables_with_data"`
-	LargestTable         string  `json:"largest_table"`
-	LargestTableBytes    int64   `json:"largest_table_bytes"`
-	LargestTablePretty   string  `json:"largest_table_pretty"`
-	LargestTableMB       float64 `json:"largest_table_mb"`
+	EmpresaID          int64   `json:"empresa_id"`
+	Nombre             string  `json:"nombre"`
+	Nit                string  `json:"nit"`
+	Estado             string  `json:"estado"`
+	TotalBytes         int64   `json:"total_bytes"`
+	TotalPretty        string  `json:"total_pretty"`
+	TotalMB            float64 `json:"total_mb"`
+	RowsCount          int64   `json:"rows_count"`
+	TablesWithData     int64   `json:"tables_with_data"`
+	LargestTable       string  `json:"largest_table"`
+	LargestTableBytes  int64   `json:"largest_table_bytes"`
+	LargestTablePretty string  `json:"largest_table_pretty"`
+	LargestTableMB     float64 `json:"largest_table_mb"`
+	QuotaGB            int64   `json:"quota_gb"`
+	QuotaBytes         int64   `json:"quota_bytes"`
+	QuotaPretty        string  `json:"quota_pretty"`
+	QuotaUsagePct      float64 `json:"quota_usage_pct"`
+	QuotaStatus        string  `json:"quota_status"`
 }
 
 type postgresEmpresaStorageResponse struct {
-	Ok              bool                        `json:"ok"`
-	Engine          string                      `json:"engine"`
-	GeneratedAt     string                      `json:"generated_at"`
-	TablesScanned   int                         `json:"tables_scanned"`
-	TotalEmpresas   int                         `json:"total_empresas"`
-	TotalBytes      int64                       `json:"total_bytes"`
-	TotalPretty     string                      `json:"total_pretty"`
-	Empresas        []postgresEmpresaStorageItem `json:"empresas"`
+	Ok            bool                         `json:"ok"`
+	Engine        string                       `json:"engine"`
+	GeneratedAt   string                       `json:"generated_at"`
+	TablesScanned int                          `json:"tables_scanned"`
+	TotalEmpresas int                          `json:"total_empresas"`
+	TotalBytes    int64                        `json:"total_bytes"`
+	TotalPretty   string                       `json:"total_pretty"`
+	Empresas      []postgresEmpresaStorageItem `json:"empresas"`
 }
 
 // PostgresPerformanceHandler expone metricas operativas del motor PostgreSQL para el panel super.
@@ -176,7 +181,7 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 		case "", "performance":
 			// continua con la ruta actual
 		case "empresas_storage":
-			handlePostgresEmpresaStorage(w, r, dbEmpresas)
+			handlePostgresEmpresaStorage(w, r, dbEmpresas, dbSuper)
 			return
 		default:
 			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
@@ -241,7 +246,7 @@ func PostgresPerformanceHandler(dbEmpresas, dbSuper *sql.DB) http.HandlerFunc {
 	}
 }
 
-func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpresas *sql.DB) {
+func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpresas, dbSuper *sql.DB) {
 	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
 	defer cancel()
 
@@ -253,6 +258,7 @@ func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpr
 		})
 		return
 	}
+	applyPostgresEmpresaStorageQuotas(dbSuper, items)
 
 	writeJSON(w, http.StatusOK, postgresEmpresaStorageResponse{
 		Ok:            true,
@@ -264,6 +270,39 @@ func handlePostgresEmpresaStorage(w http.ResponseWriter, r *http.Request, dbEmpr
 		TotalPretty:   humanizeBytesBinary(totalBytes),
 		Empresas:      items,
 	})
+}
+
+func applyPostgresEmpresaStorageQuotas(dbSuper *sql.DB, items []postgresEmpresaStorageItem) {
+	if len(items) == 0 {
+		return
+	}
+	quotaGB, _, _, err := getLimitacionInt64WithLegacy(dbSuper, superEmpresaLimitDBMaxGBKey, superEmpresaLimitLegacyNextcloudMaxGBKey, defaultEmpresaDBMaxGB)
+	if err != nil {
+		quotaGB = defaultEmpresaDBMaxGB
+	}
+	if quotaGB < 0 {
+		quotaGB = 0
+	}
+	quotaBytes := quotaGB * 1024 * 1024 * 1024
+	quotaPretty := humanizeBytesBinary(quotaBytes)
+	for i := range items {
+		items[i].QuotaGB = quotaGB
+		items[i].QuotaBytes = quotaBytes
+		items[i].QuotaPretty = quotaPretty
+		items[i].QuotaStatus = "sin_limite"
+		if quotaBytes <= 0 {
+			continue
+		}
+		items[i].QuotaUsagePct = round2(percentFloat(float64(items[i].TotalBytes), float64(quotaBytes)))
+		switch {
+		case items[i].TotalBytes >= quotaBytes:
+			items[i].QuotaStatus = "excedido"
+		case items[i].QuotaUsagePct >= 85:
+			items[i].QuotaStatus = "alerta"
+		default:
+			items[i].QuotaStatus = "ok"
+		}
+	}
 }
 
 type postgresEmpresaStorageAccumulator struct {

@@ -91,9 +91,8 @@
           <div class="admin-nav-group-title">Infraestructura</div>
           <ul class="admin-nav-sublist">
             <li><button type="button" data-target="rustdeskVpsCard" data-search="infraestructura vps rustdesk soporte remoto hbbs hbbr" aria-label="RustDesk VPS Soporte remoto"><img class="icon" src="/img/network-color.svg" alt=""><strong>RustDesk VPS</strong><span>Soporte remoto</span></button></li>
-            <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps nextcloud rustdesk cuotas" aria-label="Limitaciones API, DB, cuotas"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
+            <li><button type="button" data-target="empresaLimitacionesCard" data-search="limitaciones empresa api db ia gps rustdesk cuotas base datos" aria-label="Limitaciones API, DB, cuotas"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Limitaciones</strong><span>API, DB, cuotas</span></button></li>
             <li><button type="button" data-target="onlyofficeConfigCard" data-search="onlyoffice documentos colaborativos edicion oficina" aria-label="OnlyOffice Documentos"><img class="icon" src="/img/report.svg" alt=""><strong>OnlyOffice</strong><span>Documentos</span></button></li>
-            <li><button type="button" data-target="nextcloudConfigCard" data-search="nextcloud nube almacenamiento archivos privada" aria-label="Nextcloud Nube privada"><img class="icon" src="/img/google-drive.svg" alt=""><strong>Nextcloud</strong><span>Nube privada</span></button></li>
             <li><button type="button" data-target="voiceStreamConfigCard" data-search="voz ia streaming piper tts audio token" aria-label="Voz IA Streaming"><img class="icon" src="/img/gpt.svg" alt=""><strong>Voz IA</strong><span>Streaming</span></button></li>
           </ul>
         </li>
@@ -362,9 +361,9 @@
     <section class="card form advanced-card" data-brand="system" id="empresaLimitacionesCard">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 6v6l4 2"></path></svg>
-        Limitaciones por empresa (API, DB, IA, GPS, Nextcloud y RustDesk)
+        Limitaciones por empresa (API, DB, IA, GPS y RustDesk)
       </h2>
-      <p class="form-help">Define topes globales por empresa para consumo de API, consultas de base de datos, RustDesk, chat con IA, dispositivos GPS y cuota de almacenamiento de Nextcloud. Se guardan en la base <strong>superadministrador</strong>.</p>
+      <p class="form-help">Define topes globales por empresa para consumo de API, consultas de base de datos, tamano maximo de base de datos asignado, RustDesk, chat con IA y dispositivos GPS. Se guardan en la base <strong>superadministrador</strong>.</p>
 
       <div class="form-row">
         <div class="form-col">
@@ -398,10 +397,10 @@
           <div id="empresaLimitGPSStatus" class="form-help">Cargando estado...</div>
         </div>
         <div class="form-col">
-          <label class="form-label" for="empresaLimitNextcloudGB">Nextcloud (cuota de almacenamiento por empresa, GB)</label>
-          <input id="empresaLimitNextcloudGB" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="1">
-          <div class="form-help">Por defecto: 1 GB. Usa 0 para bloquear aprovisionamiento/uso por empresa (no se crearán usuarios nuevos).</div>
-          <div id="empresaLimitNextcloudStatus" class="form-help">Cargando estado...</div>
+          <label class="form-label" for="empresaLimitDBMaxGB">Base de datos por empresa (tamano maximo, GB)</label>
+          <input id="empresaLimitDBMaxGB" class="form-input" type="number" min="0" step="1" inputmode="numeric" placeholder="1">
+          <div class="form-help">Por defecto: 1 GB. Usa 0 para dejar la cuota sin limite operativo desde esta configuracion.</div>
+          <div id="empresaLimitDBMaxStatus" class="form-help">Cargando estado...</div>
         </div>
       </div>
 
@@ -452,55 +451,6 @@
         <button id="onlyofficeTestBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar conexión</button>
       </div>
       <div id="onlyofficeMsg" class="form-help"></div>
-    </section>
-
-    <section class="card form advanced-card" data-brand="system" id="nextcloudConfigCard">
-      <h2>
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M4 12a8 8 0 0 1 16 0"></path></svg>
-        Nextcloud (VPS)
-      </h2>
-      <p class="form-help">Activa/desactiva Nextcloud y configura la URL y credenciales de administración (se guarda cifrado). La cuota por empresa se controla en <strong>Limitaciones por empresa</strong>.</p>
-
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Activar Nextcloud</label>
-          <label class="mode-switch-row" for="nextcloudEnabledToggle">
-            <span class="mode-label">Off</span>
-            <input id="nextcloudEnabledToggle" type="checkbox" role="switch" aria-label="Activar Nextcloud">
-            <span class="mode-label">On</span>
-          </label>
-          <div id="nextcloudEnabledHelp" class="form-help">Si está desactivado, las empresas no podrán aprovisionar ni abrir Nextcloud desde el panel.</div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label" for="nextcloudBaseUrl">URL Nextcloud</label>
-          <input id="nextcloudBaseUrl" class="form-input" type="text" placeholder="https://nextcloud.tudominio.com">
-          <div class="form-help">Recomendado: subdominio HTTPS (Nginx) apuntando al contenedor.</div>
-        </div>
-        <div class="form-col">
-          <label class="form-label" for="nextcloudAdminUser">Admin user</label>
-          <input id="nextcloudAdminUser" class="form-input" type="text" placeholder="admin">
-          <div class="form-help">Usuario administrador para crear usuarios y fijar cuota (OCS Provisioning API).</div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label" for="nextcloudAdminSecret">Admin secret (secreta)</label>
-          <input id="nextcloudAdminSecret" class="form-input" type="password" placeholder="********">
-          <div class="form-help">Password o App Password de Nextcloud. Se guarda cifrada en super.</div>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button id="nextcloudSaveBtn" type="button" class="btn" style="display:none;">Guardar Nextcloud</button>
-        <button id="nextcloudEditBtn" type="button" class="btn secondary" style="margin-left:8px;">Editar</button>
-        <button id="nextcloudCancelBtn" type="button" class="btn secondary" style="display:none;margin-left:8px;">Cancelar</button>
-        <button id="nextcloudTestBtn" type="button" class="btn secondary" style="margin-left:8px;">Probar conexión</button>
-      </div>
-      <div id="nextcloudMsg" class="form-help"></div>
     </section>
 
     <section class="card form advanced-card" data-brand="ai" id="voiceStreamConfigCard">
@@ -1143,18 +1093,13 @@
       }
 
       function setEmpresaLimitacionesEditMode(isEditing){
-        setDisabledByIds(['empresaLimitAPIRequests','empresaLimitDBQueries','empresaLimitRustDeskMinutes','empresaLimitAIConsultas','empresaLimitGPSDispositivos','empresaLimitNextcloudGB'], !isEditing);
+        setDisabledByIds(['empresaLimitAPIRequests','empresaLimitDBQueries','empresaLimitDBMaxGB','empresaLimitRustDeskMinutes','empresaLimitAIConsultas','empresaLimitGPSDispositivos'], !isEditing);
         setEditButtons('saveEmpresaLimitacionesBtn', 'editEmpresaLimitacionesBtn', 'cancelEmpresaLimitacionesBtn', isEditing);
       }
 
       function setOnlyOfficeEditMode(isEditing){
         setDisabledByIds(['onlyofficeEnabledToggle','onlyofficeDSUrl','onlyofficeJWTSecret'], !isEditing);
         setEditButtons('onlyofficeSaveBtn', 'onlyofficeEditBtn', 'onlyofficeCancelBtn', isEditing);
-      }
-
-      function setNextcloudEditMode(isEditing){
-        setDisabledByIds(['nextcloudEnabledToggle','nextcloudBaseUrl','nextcloudAdminUser','nextcloudAdminSecret'], !isEditing);
-        setEditButtons('nextcloudSaveBtn', 'nextcloudEditBtn', 'nextcloudCancelBtn', isEditing);
       }
 
       function setRecaptchaEditMode(isEditing){
@@ -1195,16 +1140,6 @@
 
       function cancelEditOnlyOfficeConfig(){
         loadOnlyOfficeConfig();
-      }
-
-      function enableEditNextcloudConfig(){
-        setNextcloudEditMode(true);
-        const msgEl = document.getElementById('nextcloudMsg');
-        if (msgEl) msgEl.innerText = 'Modo edición activo para Nextcloud.';
-      }
-
-      function cancelEditNextcloudConfig(){
-        loadNextcloudConfig();
       }
 
       function enableEditRecaptchaConfig(){
@@ -1401,15 +1336,15 @@
         const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
         const aiInput = document.getElementById('empresaLimitAIConsultas');
         const gpsInput = document.getElementById('empresaLimitGPSDispositivos');
-        const nextcloudInput = document.getElementById('empresaLimitNextcloudGB');
+        const dbMaxInput = document.getElementById('empresaLimitDBMaxGB');
         const apiStatus = document.getElementById('empresaLimitAPIStatus');
         const dbStatus = document.getElementById('empresaLimitDBStatus');
         const rustdeskStatus = document.getElementById('empresaLimitRustDeskStatus');
         const aiStatus = document.getElementById('empresaLimitAIStatus');
         const gpsStatus = document.getElementById('empresaLimitGPSStatus');
-        const nextcloudStatus = document.getElementById('empresaLimitNextcloudStatus');
+        const dbMaxStatus = document.getElementById('empresaLimitDBMaxStatus');
         const btn = document.getElementById('saveEmpresaLimitacionesBtn');
-        if (!apiInput || !dbInput || !rustdeskInput || !aiInput || !gpsInput || !nextcloudInput || !btn) return;
+        if (!apiInput || !dbInput || !rustdeskInput || !aiInput || !gpsInput || !dbMaxInput || !btn) return;
 
         if (msgEl) msgEl.innerText = 'Cargando limitaciones...';
         try {
@@ -1425,21 +1360,21 @@
           const rustdeskInfo = values.rustdesk_max_minutos || {};
           const aiInfo = values.ai_max_consultas || {};
           const gpsInfo = values.gps_max_dispositivos || {};
-          const nextcloudInfo = values.nextcloud_max_gb || {};
+          const dbMaxInfo = values.db_max_gb || {};
 
           const apiDefault = normalizeNonNegativeInt(defaults.api_max_requests_minuto, 600);
           const dbDefault = normalizeNonNegativeInt(defaults.db_max_consultas_minuto, 120);
           const rustdeskDefault = normalizeNonNegativeInt(defaults.rustdesk_max_minutos, 30);
           const aiDefault = normalizeNonNegativeInt(defaults.ai_max_consultas, 10);
           const gpsDefault = normalizeNonNegativeInt(defaults.gps_max_dispositivos, 2);
-          const nextcloudDefault = normalizeNonNegativeInt(defaults.nextcloud_max_gb, 1);
+          const dbMaxDefault = normalizeNonNegativeInt(defaults.db_max_gb, 1);
 
           apiInput.value = String(normalizeNonNegativeInt(apiInfo.value, apiDefault));
           dbInput.value = String(normalizeNonNegativeInt(dbInfo.value, dbDefault));
           rustdeskInput.value = String(normalizeNonNegativeInt(rustdeskInfo.value, rustdeskDefault));
           aiInput.value = String(normalizeNonNegativeInt(aiInfo.value, aiDefault));
           gpsInput.value = String(normalizeNonNegativeInt(gpsInfo.value, gpsDefault));
-          nextcloudInput.value = String(normalizeNonNegativeInt(nextcloudInfo.value, nextcloudDefault));
+          dbMaxInput.value = String(normalizeNonNegativeInt(dbMaxInfo.value, dbMaxDefault));
 
           const apiUpdatedAt = String(apiInfo.updated_at || '').trim();
           const apiUpdatedBy = String(apiInfo.updated_by || '').trim();
@@ -1451,8 +1386,8 @@
           const aiUpdatedBy = String(aiInfo.updated_by || '').trim();
           const gpsUpdatedAt = String(gpsInfo.updated_at || '').trim();
           const gpsUpdatedBy = String(gpsInfo.updated_by || '').trim();
-          const nextcloudUpdatedAt = String(nextcloudInfo.updated_at || '').trim();
-          const nextcloudUpdatedBy = String(nextcloudInfo.updated_by || '').trim();
+          const dbMaxUpdatedAt = String(dbMaxInfo.updated_at || '').trim();
+          const dbMaxUpdatedBy = String(dbMaxInfo.updated_by || '').trim();
 
           if (apiStatus) {
             apiStatus.innerText = apiUpdatedAt
@@ -1479,9 +1414,9 @@
               ? ('Última actualización: ' + gpsUpdatedAt + (gpsUpdatedBy ? (' - ' + gpsUpdatedBy) : ''))
               : 'Valor por defecto o no configurado todavía.';
           }
-          if (nextcloudStatus) {
-            nextcloudStatus.innerText = nextcloudUpdatedAt
-              ? ('Última actualización: ' + nextcloudUpdatedAt + (nextcloudUpdatedBy ? (' - ' + nextcloudUpdatedBy) : ''))
+          if (dbMaxStatus) {
+            dbMaxStatus.innerText = dbMaxUpdatedAt
+              ? ('Última actualización: ' + dbMaxUpdatedAt + (dbMaxUpdatedBy ? (' - ' + dbMaxUpdatedBy) : ''))
               : 'Valor por defecto o no configurado todavía.';
           }
 
@@ -1494,7 +1429,7 @@
           if (rustdeskStatus) rustdeskStatus.innerText = 'Error al leer.';
           if (aiStatus) aiStatus.innerText = 'Error al leer.';
           if (gpsStatus) gpsStatus.innerText = 'Error al leer.';
-          if (nextcloudStatus) nextcloudStatus.innerText = 'Error al leer.';
+          if (dbMaxStatus) dbMaxStatus.innerText = 'Error al leer.';
           setEmpresaLimitacionesEditMode(false);
         }
       }
@@ -1506,9 +1441,9 @@
         const rustdeskInput = document.getElementById('empresaLimitRustDeskMinutes');
         const aiInput = document.getElementById('empresaLimitAIConsultas');
         const gpsInput = document.getElementById('empresaLimitGPSDispositivos');
-        const nextcloudInput = document.getElementById('empresaLimitNextcloudGB');
+        const dbMaxInput = document.getElementById('empresaLimitDBMaxGB');
         const btn = document.getElementById('saveEmpresaLimitacionesBtn');
-        if (!apiInput || !dbInput || !rustdeskInput || !aiInput || !gpsInput || !nextcloudInput || !btn) return;
+        if (!apiInput || !dbInput || !rustdeskInput || !aiInput || !gpsInput || !dbMaxInput || !btn) return;
 
         const prevText = btn.innerText;
         btn.disabled = true;
@@ -1521,7 +1456,7 @@
             rustdesk_max_minutos: normalizeNonNegativeInt(rustdeskInput.value, 30),
             ai_max_consultas: normalizeNonNegativeInt(aiInput.value, 10),
             gps_max_dispositivos: normalizeNonNegativeInt(gpsInput.value, 2),
-            nextcloud_max_gb: normalizeNonNegativeInt(nextcloudInput.value, 1),
+            db_max_gb: normalizeNonNegativeInt(dbMaxInput.value, 1),
           };
           const res = await fetch('/super/api/config/limitaciones_empresa', {
             method: 'PUT',
@@ -1718,92 +1653,6 @@
           }
         }
       }
-
-      async function loadNextcloudConfig(){
-        const msgEl = document.getElementById('nextcloudMsg');
-        const toggleEl = document.getElementById('nextcloudEnabledToggle');
-        const baseEl = document.getElementById('nextcloudBaseUrl');
-        const userEl = document.getElementById('nextcloudAdminUser');
-        const secretEl = document.getElementById('nextcloudAdminSecret');
-        if (!toggleEl || !baseEl || !userEl || !secretEl) return;
-        if (msgEl) msgEl.innerText = 'Cargando Nextcloud...';
-        try {
-          const res = await fetch('/super/api/config/nextcloud', { method: 'GET', credentials: 'same-origin' });
-          const raw = await res.text();
-          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
-          const data = raw ? JSON.parse(raw) : {};
-          toggleEl.checked = !!data.enabled;
-          baseEl.value = String(data.base_url || '').trim();
-          userEl.value = String(data.admin_user || '').trim();
-          secretEl.value = '';
-          if (msgEl) msgEl.innerText = data.enabled ? 'Nextcloud activo.' : 'Nextcloud desactivado.';
-          setNextcloudEditMode(false);
-        } catch (err) {
-          if (msgEl) msgEl.innerText = err.message || 'No se pudo cargar Nextcloud.';
-          setNextcloudEditMode(false);
-        }
-      }
-
-      async function saveNextcloudConfig(){
-        const msgEl = document.getElementById('nextcloudMsg');
-        const btn = document.getElementById('nextcloudSaveBtn');
-        const toggleEl = document.getElementById('nextcloudEnabledToggle');
-        const baseEl = document.getElementById('nextcloudBaseUrl');
-        const userEl = document.getElementById('nextcloudAdminUser');
-        const secretEl = document.getElementById('nextcloudAdminSecret');
-        if (!btn || !toggleEl || !baseEl || !userEl || !secretEl) return;
-        const prev = btn.innerText;
-        btn.disabled = true;
-        btn.innerText = 'Guardando...';
-        if (msgEl) msgEl.innerText = 'Guardando Nextcloud...';
-        try {
-          const payload = {
-            enabled: !!toggleEl.checked,
-            base_url: String(baseEl.value || '').trim(),
-            admin_user: String(userEl.value || '').trim(),
-            admin_secret: String(secretEl.value || '').trim()
-          };
-          if (!payload.base_url) delete payload.base_url;
-          if (!payload.admin_user) delete payload.admin_user;
-          if (!payload.admin_secret) delete payload.admin_secret;
-          const res = await fetch('/super/api/config/nextcloud', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify(payload)
-          });
-          const raw = await res.text();
-          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
-          if (msgEl) msgEl.innerText = 'Nextcloud guardado.';
-          secretEl.value = '';
-          await loadNextcloudConfig();
-        } catch (err) {
-          if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar Nextcloud.';
-        } finally {
-          btn.disabled = false;
-          btn.innerText = prev;
-        }
-      }
-
-      async function testNextcloudConfig(){
-        const msgEl = document.getElementById('nextcloudMsg');
-        const btn = document.getElementById('nextcloudTestBtn');
-        const prev = btn ? btn.innerText : '';
-        if (btn) { btn.disabled = true; btn.innerText = 'Probando...'; }
-        if (msgEl) msgEl.innerText = 'Probando conexión...';
-        try {
-          const res = await fetch('/super/api/config/nextcloud?action=test', { method: 'POST', credentials: 'same-origin' });
-          const raw = await res.text();
-          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
-          const data = raw ? JSON.parse(raw) : {};
-          if (msgEl) msgEl.innerText = data.ok ? ('OK: ' + (data.status_url || '')) : ('No OK: ' + (data.status_url || ''));
-        } catch (err) {
-          if (msgEl) msgEl.innerText = err.message || 'No se pudo probar Nextcloud.';
-        } finally {
-          if (btn) { btn.disabled = false; btn.innerText = prev; }
-        }
-      }
-
       async function loadVoiceStreamQuickStatus(){
         const msgEl = document.getElementById('voiceStreamQuickMsg');
         if (!msgEl) return;
@@ -2043,7 +1892,6 @@
         await loadEmpresaLimitacionesConfig();
         await loadMantenimientoConfig();
         await loadOnlyOfficeConfig();
-        await loadNextcloudConfig();
         await loadVoiceStreamQuickStatus();
         // cargar estado Wompi
         try {
@@ -3299,10 +3147,6 @@
       document.getElementById('onlyofficeEditBtn').addEventListener('click', enableEditOnlyOfficeConfig);
       document.getElementById('onlyofficeCancelBtn').addEventListener('click', cancelEditOnlyOfficeConfig);
       document.getElementById('onlyofficeTestBtn').addEventListener('click', testOnlyOfficeConfig);
-      document.getElementById('nextcloudSaveBtn').addEventListener('click', saveNextcloudConfig);
-      document.getElementById('nextcloudEditBtn').addEventListener('click', enableEditNextcloudConfig);
-      document.getElementById('nextcloudCancelBtn').addEventListener('click', cancelEditNextcloudConfig);
-      document.getElementById('nextcloudTestBtn').addEventListener('click', testNextcloudConfig);
       document.getElementById('voiceStreamQuickActivateTestBtn').addEventListener('click', activateAndTestVoiceStreamQuickConfig);
       document.getElementById('voiceStreamQuickTestBtn').addEventListener('click', testVoiceStreamQuickConfig);
       document.getElementById('rustdeskActiveToggle').addEventListener('change', function(){
@@ -3337,9 +3181,6 @@
 	  });
       document.getElementById('onlyofficeEnabledToggle').addEventListener('change', function(){
         document.getElementById('onlyofficeSaveBtn').disabled = false;
-      });
-      document.getElementById('nextcloudEnabledToggle').addEventListener('change', function(){
-        document.getElementById('nextcloudSaveBtn').disabled = false;
       });
       document.getElementById('recaptchaSiteKey').addEventListener('input', function(){
   		document.getElementById('saveRecaptchaBtn').disabled = false;

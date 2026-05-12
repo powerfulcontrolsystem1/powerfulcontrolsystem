@@ -97,6 +97,8 @@ powerful-control-system_pcs_downloads
 powerful-control-system_pcs_backend_logs
 powerful-control-system_pcs_backups
 powerful-control-system_pcs_postgres_data
+powerful-control-system_pcs_letsencrypt
+powerful-control-system_pcs_certbot_www
 "
 
 for volume in `$volumes; do

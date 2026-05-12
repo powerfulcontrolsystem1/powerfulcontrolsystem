@@ -64,8 +64,6 @@ if [ ! -f "$ENV_FILE" ]; then
   upsert_env "$ENV_FILE" POSTGRES_PASSWORD "$(rand_secret)"
   upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$(rand_secret)"
   upsert_env "$ENV_FILE" ONLYOFFICE_JWT_SECRET "$(rand_secret)"
-  upsert_env "$ENV_FILE" NEXTCLOUD_DB_PASSWORD "$(rand_secret)"
-  upsert_env "$ENV_FILE" NEXTCLOUD_ADMIN_PASSWORD "$(rand_secret)"
   echo "[preflight] Creado $ENV_FILE con secretos nuevos y permisos 600."
 fi
 
@@ -87,7 +85,7 @@ if [ -f "$BACKEND_ENV" ]; then
 fi
 
 echo "[preflight] Variables requeridas presentes:"
-for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET NEXTCLOUD_DB_PASSWORD NEXTCLOUD_ADMIN_PASSWORD; do
+for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET; do
   value="$(get_env_value "$ENV_FILE" "$key")"
   if [ -z "$value" ] || [[ "$value" == change-me-* ]]; then
     echo "  - $key: FALTA"
@@ -110,4 +108,6 @@ echo "[preflight] docker compose config: OK"
 
 echo "[preflight] Listo. Siguiente paso seguro:"
 echo "  PROJECT_DIR=$PROJECT_DIR bash $PROJECT_DIR/deploy/scripts/vps-compose-sidecar-up.sh"
-echo "[preflight] Nota: OnlyOffice, Nextcloud, voz IA y RustDesk estan definidos como perfiles para evitar colisiones con servicios existentes."
+echo "[preflight] Para mover tambien 80/443 a Docker, valida DNS y ejecuta despues:"
+echo "  CONFIRM_DOCKER_EDGE=YES PROJECT_DIR=$PROJECT_DIR bash $PROJECT_DIR/deploy/scripts/vps-docker-edge-up.sh"
+echo "[preflight] Nota: OnlyOffice, voz IA, RustDesk y edge publico estan definidos como perfiles para evitar colisiones durante la migracion."

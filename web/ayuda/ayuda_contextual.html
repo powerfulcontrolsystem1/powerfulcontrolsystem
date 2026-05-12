@@ -207,11 +207,11 @@
           troubleshooting: ['Si no actualiza, revisa token, marca y frecuencia.', 'Si la ubicacion es incorrecta, valida zona horaria y formato.', 'Si no aparece en mapa, confirma que tenga coordenadas validas.']
         },
         {
-          match: ['onlyoffice', 'nextcloud', 'documento'],
-          purpose: 'Permite configurar y usar documentos colaborativos con Nextcloud y OnlyOffice.',
+          match: ['onlyoffice', 'documento'],
+          purpose: 'Permite configurar y usar documentos colaborativos con OnlyOffice y almacenamiento local del navegador cuando aplique.',
           before: ['Verifica URLs, secretos y estado de servicio.', 'Confirma que los secretos fueron registrados.', 'Valida permisos del usuario.'],
           steps: ['Revisa la configuracion del servicio.', 'Prueba crear o abrir un documento.', 'Confirma edicion y guardado.'],
-          troubleshooting: ['Si no abre editor, valida URL publica y certificados.', 'Si falla guardado, revisa callback y secreto.', 'Si no lista archivos, revisa credenciales de Nextcloud.']
+          troubleshooting: ['Si no abre editor, valida URL publica y certificados.', 'Si falla guardado, revisa callback y secreto.', 'Si no lista archivos, revisa permisos, empresa activa y configuracion de OnlyOffice.']
         }
       ];
 

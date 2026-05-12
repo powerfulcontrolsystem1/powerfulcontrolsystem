@@ -79,7 +79,6 @@ const (
 	permModuleAuditoria            = "auditoria"
 	permModuleBackups              = "backups"
 	permModuleDocumentosOnlyOffice = "documentos_onlyoffice"
-	permModuleNextcloud            = "nextcloud"
 
 	permissionApprovalHeaderBy       = "X-Permission-Approved-By"
 	permissionApprovalHeaderCode     = "X-Permission-Approval-Code"
@@ -313,7 +312,6 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleAuditoria,
 	permModuleBackups,
 	permModuleDocumentosOnlyOffice,
-	permModuleNextcloud,
 }
 
 var permissionActionsCatalogOrdered = []string{
@@ -389,7 +387,6 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleAuditoria:            "Auditoria empresarial",
 	permModuleBackups:              "Backups empresariales",
 	permModuleDocumentosOnlyOffice: "Documentos OnlyOffice",
-	permModuleNextcloud:            "Nextcloud empresarial",
 }
 
 var permissionRolesCatalogOrdered = []string{
@@ -538,7 +535,6 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkGestionDocumental", Modulo: permModuleGestionDocumental, Accion: permActionCreate, Titulo: "Gestion documental y aprobaciones", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkContratosObligaciones", Modulo: permModuleContratosOblig, Accion: permActionCreate, Titulo: "Contratos y obligaciones", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkHelpdesk", Modulo: permModuleHelpdesk, Accion: permActionCreate, Titulo: "Mesa de ayuda / Helpdesk", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkNextcloud", Modulo: permModuleNextcloud, Accion: permActionRead, Titulo: "Nextcloud", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
 
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de empresa", Grupo: "Administracion y configuracion"},
@@ -989,11 +985,6 @@ func WithEmpresaBackupsPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc
 // WithEmpresaDocumentosOnlyOfficePermissions aplica permisos para documentos OnlyOffice.
 func WithEmpresaDocumentosOnlyOfficePermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleDocumentosOnlyOffice, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaNextcloudPermissions aplica permisos para nube empresarial Nextcloud.
-func WithEmpresaNextcloudPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleNextcloud, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaReportesPermissions aplica permisos para analitica y reportes ejecutivos.
@@ -2173,7 +2164,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
-	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleHelpdesk, permModuleCalidadProcesos, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice, permModuleNextcloud:
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleHelpdesk, permModuleCalidadProcesos, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -2953,7 +2944,6 @@ var permissionModuleLicenseFallbacks = map[string][]string{
 	permModuleAuditoria:            {permModuleSeguridad},
 	permModuleBackups:              {permModuleSeguridad},
 	permModuleDocumentosOnlyOffice: {permModuleSeguridad},
-	permModuleNextcloud:            {permModuleSeguridad},
 }
 
 func isModuloPermitidoByLicencia(modulo string, allowed map[string]bool) bool {
@@ -3215,8 +3205,6 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkTesoreriaPresupuesto"
 	case path == "/api/empresa/documentos":
 		return "linkDocumentosOnlyOffice"
-	case path == "/api/empresa/nextcloud":
-		return "linkNextcloud"
 	case strings.HasPrefix(path, "/api/empresa/reportes"):
 		if strings.Contains(path, "/ia") {
 			return "linkReportesIAChat"

@@ -1,8 +1,22 @@
 ## Descripcion del proyecto (version compacta)
 
-Actualizacion: 2026-05-11
+Actualizacion: 2026-05-12
 
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, helpdesk, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
+
+Revision index 2026-05-12: `web/index.html` organiza la portada publica con las primeras 6 tarjetas de sistemas visibles en la grilla principal. Las demas tarjetas pasan a una sola hilera horizontal navegable con flechas izquierda/derecha bajo esa grilla, y los `Modulos del sistema` quedan debajo del carrusel. El cambio es solo frontend y no modifica APIs, permisos, base de datos ni dependencias.
+
+Revision landing descriptiva 2026-05-12: `/descripcion_de_los_sistemas.html` mantiene continuidad visual con `index.html` usando la misma foto/ilustracion grande configurada en cada tarjeta del portal (`imagen_secundaria_url`) y dejando el logo (`imagen_url`) como apoyo pequeno dentro de la tarjeta descriptiva.
+
+Revision VPS portable Docker 2026-05-12: el despliegue oficial queda preparado para operar la plataforma completa bajo Docker. El Compose principal contiene PostgreSQL, backend, frontend, Nginx publico `edge`, Certbot, OnlyOffice opcional, voz IA opcional y RustDesk opcional con volumenes nombrados; `deploy/scripts/vps-docker-edge-up.sh` mueve `80/443` y TLS al stack Docker para facilitar migracion futura a otro VPS restaurando volumenes y `deploy/.env.platform`.
+
+Revision explorador de archivos super 2026-05-12: el panel `super_administrador` incorpora `/super/explorador_archivos.html`, una vista de solo lectura tipo explorador para listar raices, carpetas y metadata del filesystem visible para el backend/VPS mediante `GET /super/api/explorador_archivos`. El endpoint exige rol `super_administrador`, no lee contenido de archivos y no permite escritura, borrado, subida ni descarga.
+
+Revision retiro Nextcloud 2026-05-12: Nextcloud deja de ser modulo empresarial y servicio del VPS. Se retiran pagina, menu, rutas API, configuracion super, permisos/licencias y Compose; el arranque limpia la tabla legacy `empresa_nextcloud_accounts` y claves `nextcloud.*`. El antiguo rango de GB se reutiliza como `empresa.limitaciones.db.max_gb`, cuota maxima de base de datos por empresa visible en el panel PostgreSQL por empresa.
+
+Revision login usuario simplificado 2026-05-12: el acceso operativo retira controles y enlaces ajenos al usuario final (`Apariencia`, `Ir al inicio`, `Acceso de administradores`, registro/cambio redundante) y deja solo recuperacion de contrasena y recuperacion de email de invitacion. El nuevo endpoint publico `/api/empresa/usuarios/recuperar_invitacion` usa reCAPTCHA y respuesta enmascarada para reenviar la invitacion a usuarios ya creados por el administrador que aun no completan contrasena, rotando el token de invitacion sin revelar existencia de cuentas.
+
+Revision registro usuarios por invitacion 2026-05-12: el portal `login_usuario.html` deja de funcionar como registro abierto para usuarios operativos. El administrador crea el usuario desde Usuarios de empresa y el correo de invitacion incluye `token_invitacion`; solo ese enlace permite crear la contrasena inicial tras validar documento, contrato vigente y reCAPTCHA. El mismo paso confirma el correo, consume el token y abre sesion con redireccion a `administrar_empresa.html?id=...`. El panel carga rol y visibilidad efectiva desde `/api/empresa/permisos_contexto`, manteniendo aislamiento por `empresa_id`.
 
 Revision tema login usuario 2026-05-12: `web/login_usuario.html` y `web/menu.js` priorizan la cookie visible `pcs_theme` sobre `localStorage` para cargar automaticamente el modo claro/oscuro del ultimo usuario que inicio sesion o cambio apariencia en el navegador. La cookie solo contiene preferencia visual y no modifica sesion, roles, permisos, backend ni base de datos.
 
@@ -217,6 +231,7 @@ Actualizacion operativa 2026-05-05:
 - Monitoreo operativo de inicio/reinicio del backend con bitacora central (`super_servidor_eventos`), log local runtime y notificacion por correo configurable (`gmail.restart_alert_to`), con interruptor explicito en configuracion avanzada para activar o desactivar la alerta (`gmail.restart_alert_enabled`) sin perder el correo destino.
 - Monitor centralizado de errores del sistema con recuperacion de panicos, sanitizacion de respuestas `5xx`, persistencia en base super (`super_errores_sistema`) y panel dedicado para super en `/super/errores.html` consumiendo `/super/api/errores`.
 - Seguridad VPS Linux (super): auditoria operativa del servidor Ubuntu desde `/super/seguridad.html`, con configuracion persistente en `backend/secure/vps_security_config.json`, ejecucion de Lynis/Nmap/Trivy + chequeos propios, historial en filesystem `backend/logs/vps_security/`, comparacion contra el escaneo anterior y exportes `JSON`, `TXT`, `HTML`, `CSV`, `PDF` y `XLS`. La API protegida vive bajo `/super/api/security/vps/*` y el soporte de consola se apoya en `backend/tools/vps_security_scan/main.go` y scripts Linux de instalacion/cron.
+- Explorador de Archivos super: pagina privada `/super/explorador_archivos.html` y API `GET /super/api/explorador_archivos` para listar carpetas y metadata del filesystem visible para el backend, en modo solo lectura y exclusivo de `super_administrador`.
 - Administracion profesional de PostgreSQL desde super con vista dedicada de rendimiento (`/super/administrar_base_de_datos.html`) y API protegida de telemetria (`/super/api/postgres/performance`).
 - La vista super de administracion PostgreSQL incorpora una carga bajo demanda de consumo estimado por empresa dentro de `pcs_empresas`, ordenada de mayor a menor y calculada desde la accion `GET /super/api/postgres/performanceaction=empresas_storage`.
 - Gestion del contrato administrativo desde super (`/super/contrato.html`) con persistencia en la base `pcs_superadministrador`, historial de versiones, resumen de cambio obligatorio por publicacion y exposicion publica del contrato vigente mediante `/api/public/contrato` para el flujo de aceptacion del login administrativo.
@@ -261,6 +276,7 @@ Actualizacion operativa 2026-05-05:
 - Venta publica por empresa con pagos Wompi (cierre funcional): modulo empresarial en `/api/empresa/venta_publica` para configurar tienda online por `empresa_id` (`slug`, branding, stock visible, modo Wompi y referencias seguras de credenciales), administrar catalogo publico con imagen/precio/descripcion y consultar ordenes; expone API publica `/api/public/venta_publica` para catalogo (`action=catalogo`), creacion de pago Nequi (`action=crear_pago`) y consulta de estado (`action=estado_pago`), con persistencia en `empresa_venta_publica_ordenes`; incluye vista administrativa `administrar_empresa/venta_publica.html`, pagina publica `venta_publica.html`, patron productivo `/{slug}/venta_publica.html` y soporte de subdominio por empresa (`{slug}.powerfulcontrolsystem.com`) con resolucion automatica de slug por host.
 - Soporte remoto por empresa y mesa tecnica central: endpoint empresarial `/api/empresa/soporte_remoto` para configurar proveedor/modo, definir topes `max_conexiones_mes`, `max_minutos_mes` y `max_dispositivos`, administrar dispositivos remotos, solicitar/aprobar/finalizar sesiones y resolver visualizacion por token temporal; endpoint publico `/api/public/soporte_remoto` para heartbeat y actualizacion de estado desde agente/plugin local; endpoint super `/super/api/soporte_remoto` para mesa tecnica multiempresa con resumen por empresa, consulta de dispositivos/sesiones y apertura centralizada de soporte; incluye vistas `administrar_empresa/soporte_remoto.html`, `administrar_empresa/soporte_remoto_view.html` y `super/soporte_remoto.html`; mantiene aislamiento por `empresa_id`, trazabilidad por `codigo_dispositivo`/`codigo_sesion`, registro de intentos bloqueados por plan y exportacion de sesiones en `PDF`, `XLS`, `CSV`, `JSON` y `TXT`.
 - Backups empresariales (cierre funcional): modulo empresarial en `/api/empresa/backups` para crear snapshots por `empresa_id`, listar historial con filtros, consultar detalle con payload, exportar respaldo en `JSON` y resumen en `PDF`, `XLS`, `CSV` y `TXT`, restaurar datos con trazabilidad en bitacora de restauraciones, activar/desactivar snapshots y depurar informacion de la empresa por fecha de corte (con backup previo opcional); incluye vista dedicada `administrar_empresa/backups.html` e integracion de menu `linkBackups` con control de permisos en modulo seguridad, donde `action=restaurar|restore` y `action=depurar_fecha` se manejan como acciones de aprobacion.
+- Modo local de documentos y backups 2026-05-12: OnlyOffice permite crear documentos nuevos como descarga directa al equipo/celular sin guardarlos ni buscarlos en el VPS; el modo colaborativo en servidor queda como opcion explicita. Backups empresariales suma descarga local directa y programacion automatica local por navegador, sin crear archivos permanentes en el VPS ni historial interno cuando se usa el modo local.
 - Inventario extendido: lotes/series y devoluciones a proveedor con CRUD por empresa en `/api/empresa/inventario/lotes_series` y `/api/empresa/compras/devoluciones_proveedor`.
 - RRHH extendido: vacaciones/licencias por empresa en `/api/empresa/rrhh/vacaciones_licencias`.
 - CRM/Produccion/Logistica: operacion multiempresa para leads/interacciones/campanas, BOM/ordenes y transportistas/rutas/envios en rutas `/api/empresa/crm/*`, `/api/empresa/produccion/*` y `/api/empresa/logistica/*`, incluyendo planificacion de capacidad en produccion (`action=plan_capacidad`) y seguimiento logistico por hitos/SLA (`action=seguimiento_hitos`).
@@ -308,7 +324,7 @@ Regla general de tablas:
 - Contrato publico: `/contrato.html`.
 ## Actualizacion operativa 2026-05-12 - Identidad visual por empresa
 
-El panel empresarial y la configuracion de documentos comparten una sola identidad visual por `empresa_id`. La configuracion empresarial permite cargar o pegar el logo; el panel lo muestra encima del texto `Panel de <empresa>` con tamano fijo para no alterar la tarjeta de clima. Facturas, comprobantes y documentos que ya consumen `empresa_configuracion_avanzada.logo_url` y `mostrar_logo` usan el mismo logo, evitando duplicidad por modulo.
+El panel empresarial y la configuracion de documentos comparten una sola identidad visual por `empresa_id`. La configuracion empresarial permite cargar o pegar el logo; el panel lo muestra encima del texto `Panel de <empresa>` con tamano fijo para no alterar la tarjeta de clima. Facturas, comprobantes, reportes y documentos imprimibles usan `empresa_configuracion_avanzada.logo_url`, `mostrar_logo_empresa` y `mostrar_logo_sistema` para decidir si muestran el logo de la empresa, el logo del sistema o ambos sin duplicar configuracion por modulo.
 
 - Landing descriptiva del portal: `/descripcion_de_los_sistemas.ht`.
 - Informacion de contacto publica: `/Informacion_de_contacto.html`.
@@ -323,6 +339,7 @@ El panel empresarial y la configuracion de documentos comparten una sola identid
 - Panel super: `/super_administrador.html`.
 - Descarga empresarial super: `/descargar_informacion_de_la_empresa.html`.
 - Seguridad VPS Linux (super): `/super/seguridad.html`.
+- Explorador de Archivos super: `/super/explorador_archivos.html`.
 - Editor super del contrato: `/super/contrato.html`.
 - Monitor super de errores: `/super/errores.html`.
 - Administracion DB super: `/super/administrar_base_de_datos.html`.
@@ -330,6 +347,7 @@ El panel empresarial y la configuracion de documentos comparten una sola identid
 - Editor super de formatos de email: `/super/formato_para_emviar_email.html`.
 - API de seguridad VPS (super): `/super/api/security/vps/config`, `/super/api/security/vps/run`, `/super/api/security/vps/status`, `/super/api/security/vps/history`, `/super/api/security/vps/report`, `/super/api/security/vps/compare`.
 - API de rendimiento PostgreSQL (super): `/super/api/postgres/performance`.
+- API de explorador de archivos (super): `/super/api/explorador_archivos`.
 - API de tamano estimado por empresa (super): `/super/api/postgres/performanceaction=empresas_storage`.
 - API super de empresas: `/super/api/empresas` con acciones `impacto_desactivacion`, `resumen_descarga` y `exportar_informacion`.
 - API super de plantillas de email: `/super/api/config/email_templates`.

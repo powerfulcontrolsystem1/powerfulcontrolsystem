@@ -1,3 +1,83 @@
+2026-05-12: Index con seis tarjetas principales y carrusel horizontal
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: `web/index.html` muestra las primeras 6 tarjetas de sistemas en la grilla principal y mueve las tarjetas restantes a una sola hilera horizontal navegable con flechas izquierda/derecha.
+- UX: el visitante ve primero una seleccion compacta de sistemas destacados, luego puede recorrer el resto sin empujar los `Modulos del sistema`; la seccion de modulos queda debajo del carrusel.
+- Alcance: no cambia backend, endpoints, permisos, tablas, datos multiempresa ni dependencias.
+- Validacion: parseo de scripts inline de `web/index.html` y `git diff --check`.
+
+2026-05-12: Boton completo en tarjeta Caja de estaciones
+- Modulos afectados: `estaciones`, `caja`, `administrar_empresa`.
+- Cambio funcional: el boton `Ver ultimos movimientos` dentro de la tarjeta Caja permite texto completo en una o dos lineas, con altura minima y centrado flexible.
+- Alcance: cambio solo CSS en `web/estilos.css`; no cambia backend, permisos, tablas ni rutas.
+- Validacion: `git diff --check`.
+
+2026-05-12: Fotos del index en descripcion de sistemas
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: `web/descripcion_de_los_sistemas.html` toma `imagen_secundaria_url` como imagen principal de cada tarjeta, igual que el index, y conserva `imagen_url` como logo pequeno.
+- UX: las tarjetas de la landing descriptiva muestran la misma foto/ilustracion que el visitante vio en el portal principal.
+- Alcance: no cambia backend, endpoints, permisos, tablas ni dependencias.
+- Validacion: parseo de scripts inline de `web/descripcion_de_los_sistemas.html`.
+
+2026-05-12: VPS portable en modo 100% Docker
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `staging`, `backups`.
+- Cambio funcional: el Compose oficial incorpora `edge` para Nginx publico `80/443` y `certbot` para certificados, permitiendo que la publicacion HTTPS deje de depender del Nginx instalado en el host.
+- Archivos nuevos: `deploy/nginx/edge.conf.template`, `deploy/nginx/edge-http-only.conf.template`, `deploy/scripts/vps-docker-edge-up.sh`, `deploy/scripts/vps-docker-edge-renew.sh`.
+- Operacion: `CONFIRM_DOCKER_EDGE=YES bash deploy/scripts/vps-docker-edge-up.sh` valida stack interno, detiene Nginx del host, emite certificado y deja `pcs-edge` publicando el dominio.
+- Portabilidad: se agregan volumenes `pcs_letsencrypt` y `pcs_certbot_www`; un VPS futuro se mueve restaurando volumenes Docker, `deploy/.env.platform` y el proyecto/imagenes.
+- Limpieza: `.env.platform.example`, `.env.staging.example`, preflight y staging eliminan variables Nextcloud legacy.
+- Validacion: pendiente ejecutar bateria final despues de cerrar todos los parches del cambio.
+
+2026-05-12: Explorador de Archivos para super administrador
+- Modulos afectados: `super_administrador`, `seguridad`, `operacion_vps`.
+- Cambio funcional: se agrega `web/super/explorador_archivos.html` al menu Plataforma del panel super para navegar carpetas del VPS con una experiencia tipo explorador de archivos.
+- Backend: `GET /super/api/explorador_archivos?action=list&path=...` lista raices, ruta actual, ruta padre y metadata de entradas usando Go estandar, sin leer contenido de archivos ni depender de base de datos.
+- Seguridad: el endpoint exige sesion y rol `super_administrador` mediante `paginaPrincipalRequireSuperAdmin`; no se agregan acciones de escritura, borrado, descarga ni apertura de archivos.
+- Validacion: pendiente ejecutar bateria final despues de cerrar todos los parches del cambio.
+
+2026-05-12: Retiro de Nextcloud y cuota DB por empresa
+- Modulos afectados: `administrar_empresa`, `super_administrador`, `permisos`, `licencias`, `backups`, `postgresql`, `deploy`.
+- Cambio funcional: Nextcloud deja de estar disponible para empresas y super administrador; se eliminan menu, pagina, endpoints, configuracion, permisos y licencia visible.
+- Backend y datos: el arranque elimina `empresa_nextcloud_accounts` y claves `nextcloud.*`; el antiguo limite de GB se migra logicamente a `empresa.limitaciones.db.max_gb` como tamano maximo de base de datos por empresa.
+- Operacion VPS: el Compose oficial ya no define servicios/volumenes Nextcloud y se agrega script de retiro de contenedores legacy.
+- Validacion: pendiente ejecutar bateria final despues de cerrar todos los parches del cambio.
+
+2026-05-12: Documentos y backups locales por dispositivo
+- Modulos afectados: `documentos_onlyoffice`, `backups`, `administrar_empresa`.
+- Cambio funcional: la pagina OnlyOffice agrega modo local predeterminado para crear documentos Word/Excel/PowerPoint como descarga directa en el equipo o celular, sin guardarlos ni buscarlos en el VPS. El modo colaborativo en servidor queda disponible como opcion explicita.
+- Backend: `/api/empresa/documentos?action=create_local` genera el OOXML en memoria y lo entrega como attachment; `/api/empresa/backups?action=exportar_local` y `exportar_configuracion_local` construyen snapshots JSON y los entregan al navegador sin insertar historial ni escribir archivos en disco del VPS.
+- Backups automaticos: cada empresa puede activar una programacion local por navegador con alcance completo o solo configuracion; se ejecuta mientras la vista de backups esta abierta y la sesion sigue activa.
+- Limitacion operativa: por seguridad del navegador, una app web no puede escribir silenciosamente en cualquier carpeta del celular/PC si la pagina esta cerrada; el almacenamiento local automatico se materializa como descarga del navegador en el dispositivo.
+- Validacion: `go test ./...` en backend y parseo de scripts inline de `documentos_onlyoffice.html` y `backups.html`.
+
+2026-05-12: Logos configurables en documentos empresariales
+- Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `reportes`, `carritos`, `ventas`.
+- Cambio funcional: la configuracion de empresa agrega checks separados para activar el logo empresarial y el logo del sistema en facturas, recibos, reportes y documentos imprimibles.
+- Backend y datos: `empresa_configuracion_avanzada` incorpora `mostrar_logo_empresa` y `mostrar_logo_sistema`; `mostrar_logo` se conserva como bandera de compatibilidad y se sincroniza con las dos nuevas opciones.
+- Frontend e impresion: `web/js/print_documents.js` acepta multiples logos por documento; facturas, ventas, carrito, reportes y panel empresarial respetan la visibilidad del logo empresarial y del sistema segun configuracion por `empresa_id`.
+- Seguridad y permisos: se reutilizan `/api/empresa/configuracion_avanzada` y `/api/empresa/configuracion_avanzada/logo` bajo los permisos existentes; no hay rutas publicas ni dependencias nuevas.
+
+2026-05-12: Regresar a estaciones desde ultimos movimientos de caja
+- Modulos afectados: `estaciones`, `caja`.
+- Cambio funcional: la pagina `web/administrar_empresa/ultimos_movimientos_de_caja.html` muestra el enlace `Regresar a estaciones` en el encabezado junto a `Actualizar`.
+- UX: el enlace mantiene `empresa_id` para devolver al operador al tablero de estaciones de la empresa activa.
+- Alcance: no cambia endpoints, permisos, tablas ni dependencias.
+
+2026-05-12: Login operativo limpio y recuperacion de invitacion
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`.
+- Cambio funcional: se retiran del login operativo el selector manual de apariencia, `Ir al inicio`, `Acceso de administradores` y los enlaces redundantes del formulario principal.
+- UX: quedan solo `Olvido contrasena` y `Recuperar email de invitacion`; este ultimo cubre el caso de un usuario ya creado por el administrador que borro por error el correo inicial.
+- Backend: `POST /api/empresa/usuarios/recuperar_invitacion` valida reCAPTCHA, responde de forma enmascarada y reenvia la invitacion si el usuario existe, esta activo y no tiene contrasena configurada.
+- Seguridad: cada reenvio rota `email_confirm_token` y `email_confirm_expira`; no revela existencia de cuentas ni concede sesion.
+
+2026-05-12: Registro de usuarios operativos por invitacion
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`, `administrar_empresa`, `permisos`.
+- Cambio funcional: el primer registro de usuarios operativos solo se completa desde el enlace de invitacion enviado por el administrador; `login_usuario.html` bloquea el alta directa sin `token_invitacion`.
+- Backend: `EmpresaUsuarioSetPasswordHandler` valida token vigente, documento, contrato y reCAPTCHA; al guardar contrasena confirma correo, consume `email_confirm_token`, limpia expiracion y abre sesion.
+- Correo: las invitaciones ahora apuntan al login con `token_invitacion`; `/auth/confirmar_correo` queda como compatibilidad y redirige al mismo flujo sin confirmar por separado.
+- Permisos: la sesion entrega `empresa_id`, `rol` y `redirect_url` a `administrar_empresa.html?id=...`; el menu y acciones visibles siguen saliendo de `/api/empresa/permisos_contexto` por rol/licencia/paginas/empresa.
+- Base de datos: sin columnas nuevas; se reutilizan `users.email_confirm_token`, `email_confirm_expira` y `email_confirmado`.
+- Validacion: `go test ./handlers ./db` en `backend`, `node --check web/js/login_usuario.js` y `git diff --check`.
+
 2026-05-12: Login usuario respeta tema guardado en cookies
 - Modulos afectados: `autenticacion`, `login_usuario`, `apariencia`.
 - Cambio funcional: el login de usuarios operativos toma primero la cookie `pcs_theme` y luego `localStorage`, de modo que cargue automaticamente el modo claro/oscuro configurado por el ultimo usuario que inicio sesion o cambio apariencia en ese navegador.

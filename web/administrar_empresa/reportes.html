@@ -1153,7 +1153,7 @@
       const cfg = state.config || {};
       const formato = normalize(cfg.formato_impresion) || 'carta';
       const copia = cfg.imprimir_copia_factura === true ? 'Sí' : 'No';
-      const logo = cfg.mostrar_logo !== false ? 'Sí' : 'No';
+      const logo = (cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false) || cfg.mostrar_logo_sistema === true ? 'Sí' : 'No';
       const pie = normalize(cfg.pie_factura) || 'Sin pie configurado';
       document.getElementById('impresionResumen').textContent =
         'Formato: ' + formato.toUpperCase() + ' | Imprimir copia: ' + copia + ' | Mostrar logo: ' + logo + ' | Pie: ' + pie;
@@ -1192,7 +1192,7 @@
       const venta = sample.sale;
       const items = sample.items.filter(it => normalize(it.estado || 'activo').toLowerCase() === 'activo');
       const empresa = normalize(cfg.razon_social) || normalize(cfg.nombre_comercial) || ('Empresa #' + state.empresaID);
-      const showLogo = cfg.mostrar_logo !== false;
+      const showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
       const logoUrl = (function(){
         const v = normalize(cfg.logo_url);
         const lower = v.toLowerCase();
@@ -1200,6 +1200,17 @@
         if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || v.indexOf('/') === 0) return v;
         return '';
       })();
+      const systemLogoUrl = (function(){
+        const v = normalize(cfg.logo_sistema_url) || '/img/logo.png';
+        const lower = v.toLowerCase();
+        if (!v) return '';
+        if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || v.indexOf('/') === 0) return v;
+        return '';
+      })();
+      const logosHtml = [
+        (showLogo && logoUrl ? ('<img src="'+sanitize(logoUrl)+'" alt="Logo empresa">') : ''),
+        (cfg.mostrar_logo_sistema === true && systemLogoUrl ? ('<img src="'+sanitize(systemLogoUrl)+'" alt="Logo sistema">') : '')
+      ].join('');
       const legalLines = (function(){
         const out = [];
         const nit = normalize(cfg.nit);
@@ -1221,7 +1232,7 @@
           '<tr><td>' + sanitize(it.descripcion || '') + '</td><td style="text-align:center;">' + Number(it.cantidad || 0).toFixed(2) + '</td><td style="text-align:right;">' + fmtMoney(it.total_linea || 0) + '</td></tr>'
         ).join('');
         return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa POS</title><style>body{font-family:monospace;padding:12px;color:#111}h1{font-size:18px;margin:0 0 10px}table{width:100%;border-collapse:collapse}td{padding:3px 0;border-bottom:1px dashed #ccc}small{color:#666}img{max-width:220px;max-height:64px;object-fit:contain;display:block;margin:0 auto 8px}hr{border:0;border-top:1px dashed #999;margin:10px 0}</style></head><body>' +
-          (showLogo && logoUrl ? ('<img src="'+sanitize(logoUrl)+'" alt="Logo">') : '') +
+          logosHtml +
           '<h1>Tiquete POS</h1>' +
           '<p><strong>' + sanitize(empresa) + '</strong>' +
           (legalLines.length ? ('<br><small>' + sanitize(legalLines.join(' | ')) + '</small>') : '') +
@@ -1238,7 +1249,8 @@
       const rowsCarta = items.map(it =>
         '<tr><td>' + sanitize(it.descripcion || '') + '</td><td>' + Number(it.cantidad || 0).toFixed(2) + '</td><td>' + fmtMoney(it.precio_unitario || 0) + '</td><td>' + fmtMoney(it.total_linea || 0) + '</td></tr>'
       ).join('');
-      return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa Carta</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h1{margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #bbb;padding:6px;text-align:left}small{color:#666}</style></head><body>' +
+      return '<!doctype html><html><head><meta charset="utf-8"><title>Vista previa Carta</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h1{margin:0 0 8px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #bbb;padding:6px;text-align:left}small{color:#666}img{max-width:140px;max-height:64px;object-fit:contain;margin:0 10px 10px 0}</style></head><body>' +
+        logosHtml +
         '<h1>Factura (vista carta)</h1>' +
         '<p><strong>' + sanitize(empresa) + '</strong><br>Fecha pago: ' + sanitize(formatDate(getFechaPago(venta))) + '<br>Cliente: ' + sanitize(venta.cliente_nombre || 'Sin cliente') + '</p>' +
         '<p><small>Impresora objetivo: ' + sanitize(printerName) + (printerSource ? (' (' + sanitize(printerSource) + ')') : '') + '</small></p>' +

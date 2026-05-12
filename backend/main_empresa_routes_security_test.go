@@ -83,13 +83,13 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaAuditoriaPermissions(",
 		"WithEmpresaBackupsPermissions(",
 		"WithEmpresaDocumentosOnlyOfficePermissions(",
-		"WithEmpresaNextcloudPermissions(",
 		"WithEmpresaPublicScope(",
 		"WithEmpresaSelfServicePermissions(",
 	}
 	allowedPublicPaths := map[string]bool{
 		"/api/empresa/usuarios/login":                           true,
 		"/api/empresa/usuarios/establecer_password":             true,
+		"/api/empresa/usuarios/recuperar_invitacion":            true,
 		"/api/empresa/usuarios/solicitar_recuperacion_password": true,
 		"/api/empresa/usuarios/restablecer_password":            true,
 		"/api/empresa/usuarios/cambiar_password":                true,

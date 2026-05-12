@@ -37,6 +37,8 @@ type EmpresaUsuario struct {
 	RolUsuarioID             int64  `json:"rol_usuario_id"`
 	RolNombre                string `json:"rol_nombre,omitempty"`
 	EmailConfirmado          int    `json:"email_confirmado"`
+	EmailConfirmToken        string `json:"-"`
+	EmailConfirmExpira       string `json:"-"`
 	EmailConfirmadoEn        string `json:"email_confirmado_en,omitempty"`
 	FechaCreacion            string `json:"fecha_creacion,omitempty"`
 	FechaActualizacion       string `json:"fecha_actualizacion,omitempty"`
@@ -237,6 +239,8 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
 		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
 		COALESCE(email_confirmado_en, ''),
 		COALESCE(acepta_contrato, 0),
 		COALESCE(contrato_version_aceptada, 0),
@@ -273,6 +277,8 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 			&item.RolUsuarioID,
 			&item.RolNombre,
 			&item.EmailConfirmado,
+			&item.EmailConfirmToken,
+			&item.EmailConfirmExpira,
 			&item.EmailConfirmadoEn,
 			&item.AceptaContrato,
 			&item.ContratoVersionAceptada,
@@ -304,6 +310,8 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
 		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
 		COALESCE(email_confirmado_en, ''),
 		COALESCE(acepta_contrato, 0),
 		COALESCE(contrato_version_aceptada, 0),
@@ -327,6 +335,8 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 		&item.RolUsuarioID,
 		&item.RolNombre,
 		&item.EmailConfirmado,
+		&item.EmailConfirmToken,
+		&item.EmailConfirmExpira,
 		&item.EmailConfirmadoEn,
 		&item.AceptaContrato,
 		&item.ContratoVersionAceptada,
@@ -366,6 +376,8 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
 		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
 		COALESCE(email_confirmado_en, ''),
 		COALESCE(acepta_contrato, 0),
 		COALESCE(contrato_version_aceptada, 0),
@@ -406,6 +418,8 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		&item.RolUsuarioID,
 		&item.RolNombre,
 		&item.EmailConfirmado,
+		&item.EmailConfirmToken,
+		&item.EmailConfirmExpira,
 		&item.EmailConfirmadoEn,
 		&item.AceptaContrato,
 		&item.ContratoVersionAceptada,
@@ -424,6 +438,86 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 // GetEmpresaUsuarioByEmail obtiene un usuario por correo (case-insensitive).
 func GetEmpresaUsuarioByEmail(dbConn *sql.DB, email string) (*EmpresaUsuario, error) {
 	return GetEmpresaUsuarioByEmailScoped(dbConn, email, 0)
+}
+
+// GetEmpresaUsuarioByConfirmToken obtiene la invitacion pendiente asociada a un token.
+func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsuario, error) {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return nil, err
+	}
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return nil, sql.ErrNoRows
+	}
+	row := queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(password_hash, ''),
+		COALESCE(password_salt, ''),
+		COALESCE(password_set, 0),
+		COALESCE(password_actualizada_en, ''),
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, ''),
+		COALESCE(password_reset_token, ''),
+		COALESCE(password_reset_expira, ''),
+		COALESCE(password_reset_requested_en, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE email_confirm_token = ?
+	LIMIT 1`, token)
+
+	var item EmpresaUsuario
+	if err := row.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.Email,
+		&item.Nombre,
+		&item.DocumentoIdentidad,
+		&item.PasswordHash,
+		&item.PasswordSalt,
+		&item.PasswordSet,
+		&item.PasswordActualizadaEn,
+		&item.LoginFailedAttempts,
+		&item.LoginFailedLastAt,
+		&item.LoginLockedUntil,
+		&item.PasswordResetToken,
+		&item.PasswordResetExpira,
+		&item.PasswordResetRequestedEn,
+		&item.RolUsuarioID,
+		&item.RolNombre,
+		&item.EmailConfirmado,
+		&item.EmailConfirmToken,
+		&item.EmailConfirmExpira,
+		&item.EmailConfirmadoEn,
+		&item.AceptaContrato,
+		&item.ContratoVersionAceptada,
+		&item.FechaAceptaContrato,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	return &item, nil
 }
 
 // SetEmpresaUsuarioPassword define la contraseña de acceso para un usuario de empresa.
@@ -447,7 +541,33 @@ func SetEmpresaUsuarioPassword(dbConn *sql.DB, empresaID, id int64, passwordHash
 	return err
 }
 
-// SetEmpresaUsuarioPasswordResetToken registra un token temporal para recuperación de contraseña.
+// CompleteEmpresaUsuarioInvitationPassword consume la invitacion, confirma el correo y define la contrasena inicial.
+func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int64, passwordHash, passwordSalt string) error {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return err
+	}
+	_, err := dbConn.Exec(`UPDATE users
+		SET password_hash = ?,
+			password_salt = ?,
+			password_set = 1,
+			password_actualizada_en = datetime('now','localtime'),
+			email_confirmado = 1,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN datetime('now','localtime') ELSE email_confirmado_en END,
+			email_confirm_token = '',
+			email_confirm_expira = '',
+			password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			estado = 'activo',
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`, passwordHash, passwordSalt, id, empresaID)
+	return err
+}
+
+// SetEmpresaUsuarioPasswordResetToken registra un token temporal para recuperacion de contrasena.
 func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, token, expira string) error {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
 		return err

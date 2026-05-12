@@ -49,7 +49,6 @@ func TestLicenciaModulosLegacyFallbacksKeepSplitModulesEnabled(t *testing.T) {
 		permModuleAuditoria,
 		permModuleBackups,
 		permModuleDocumentosOnlyOffice,
-		permModuleNextcloud,
 		permModuleCRMUnificado,
 	}
 	for _, module := range cases {

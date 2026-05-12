@@ -266,6 +266,9 @@
               <th>Estado</th>
               <th>Tamano total</th>
               <th>MB</th>
+              <th>Cuota DB</th>
+              <th>Uso cuota</th>
+              <th>Estado cuota</th>
               <th>Filas estimadas</th>
               <th>Tablas con datos</th>
               <th>Tabla mayor</th>
@@ -523,7 +526,7 @@
 
       if (!rows.length) {
         const tr = document.createElement('tr')
-        tr.innerHTML = '<td colspan="10">No hay empresas para mostrar.</td>'
+        tr.innerHTML = '<td colspan="13">No hay empresas para mostrar.</td>'
         tbody.appendChild(tr)
         return
       }
@@ -537,6 +540,9 @@
           '<td>' + escapeHtml(item.estado || '-') + '</td>',
           '<td>' + escapeHtml(item.total_pretty || formatBytes(item.total_bytes)) + '</td>',
           '<td>' + formatNumber(Number(item.total_mb || 0).toFixed ? Number(item.total_mb || 0).toFixed(2) : item.total_mb) + '</td>',
+          '<td>' + escapeHtml(item.quota_pretty || (Number(item.quota_gb) > 0 ? (formatNumber(item.quota_gb) + ' GB') : 'Sin limite')) + '</td>',
+          '<td>' + (Number(item.quota_bytes || 0) > 0 ? formatPercent(item.quota_usage_pct) : '-') + '</td>',
+          '<td>' + escapeHtml(item.quota_status || '-') + '</td>',
           '<td>' + formatNumber(item.rows_count) + '</td>',
           '<td>' + formatNumber(item.tables_with_data) + '</td>',
           '<td>' + escapeHtml(item.largest_table || '-') + '</td>',

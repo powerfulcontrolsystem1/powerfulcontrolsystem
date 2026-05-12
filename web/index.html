@@ -101,10 +101,97 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 30px;
-      margin: 0 auto 60px auto;
+      margin: 0 auto 28px auto;
       max-width: 1200px;
       padding: 0 20px;
     }
+
+    .portal-systems-carousel {
+      max-width: 1200px;
+      margin: 0 auto 42px;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
+    .portal-systems-carousel[hidden] {
+      display: none !important;
+    }
+
+    .portal-carousel-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .portal-carousel-title {
+      margin: 0;
+      color: var(--text);
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .portal-carousel-arrows {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .portal-carousel-arrow {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      font-size: 1.4rem;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .portal-carousel-arrow:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .portal-carousel-arrow:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .portal-cards-carousel {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(280px, 31%);
+      gap: 18px;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline mandatory;
+      scroll-behavior: smooth;
+      padding: 4px 2px 14px;
+      scrollbar-width: thin;
+    }
+
+    .portal-cards-carousel .home-offer-card {
+      scroll-snap-align: start;
+      min-width: 0;
+    }
+
+    .portal-cards-carousel .home-offer-card:nth-child(6n+1){--home-offer-a:#ff7b54;--home-offer-b:#ff4d8d}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+2){--home-offer-a:#2563eb;--home-offer-b:#06b6d4}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+3){--home-offer-a:#14b8a6;--home-offer-b:#84cc16}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+4){--home-offer-a:#f59e0b;--home-offer-b:#ef4444}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+5){--home-offer-a:#8b5cf6;--home-offer-b:#ec4899}
+    .portal-cards-carousel .home-offer-card:nth-child(6n+6){--home-offer-a:#0ea5e9;--home-offer-b:#22c55e}
 
     .portal-modules-section {
       max-width: 1240px;
@@ -752,6 +839,20 @@
         padding-inline: 14px;
       }
 
+      .portal-systems-carousel {
+        padding-inline: 14px;
+        margin-bottom: 32px;
+      }
+
+      .portal-carousel-toolbar {
+        align-items: flex-start;
+      }
+
+      .portal-cards-carousel {
+        grid-auto-columns: minmax(250px, 84%);
+        gap: 14px;
+      }
+
       .home-offer-card {
         border-radius: 10px;
         padding: 20px 14px !important;
@@ -832,6 +933,16 @@
     <main class="portal-main container">
       <!-- Sección principal reservada para tarjetas, sin texto introductorio superior -->
       <section id="portalCardsGrid" class="portal-grid portal-home-grid" aria-live="polite"></section>
+      <section id="portalCardsCarouselSection" class="portal-systems-carousel" aria-labelledby="portalCardsCarouselTitle" hidden>
+        <div class="portal-carousel-toolbar">
+          <h2 id="portalCardsCarouselTitle" class="portal-carousel-title">Mas sistemas</h2>
+          <div class="portal-carousel-arrows" role="group" aria-label="Navegar tarjetas de sistemas">
+            <button type="button" id="portalCarouselPrev" class="portal-carousel-arrow" aria-controls="portalCardsCarousel" aria-label="Ver tarjetas anteriores">&lsaquo;</button>
+            <button type="button" id="portalCarouselNext" class="portal-carousel-arrow" aria-controls="portalCardsCarousel" aria-label="Ver tarjetas siguientes">&rsaquo;</button>
+          </div>
+        </div>
+        <div id="portalCardsCarousel" class="portal-cards-carousel portal-home-grid" tabindex="0" aria-live="polite"></div>
+      </section>
       <p id="portalCardsStatus" class="form-help portal-cards-status" role="status" style="text-align:center;"></p>
 
       
@@ -936,6 +1047,10 @@
       })();
 
       var gridEl = document.getElementById('portalCardsGrid');
+      var carouselSectionEl = document.getElementById('portalCardsCarouselSection');
+      var carouselEl = document.getElementById('portalCardsCarousel');
+      var carouselPrevBtn = document.getElementById('portalCarouselPrev');
+      var carouselNextBtn = document.getElementById('portalCarouselNext');
       var statusEl = document.getElementById('portalCardsStatus');
       var whatsAppFloatingCTA = document.querySelector('.whatsapp-floating-cta');
 
@@ -1302,6 +1417,10 @@
         var settings = normalizeVisualSettings(raw);
         gridEl.setAttribute('data-card-size', settings.index_card_size);
         gridEl.setAttribute('data-text-size', settings.index_text_size);
+        if (carouselEl) {
+          carouselEl.setAttribute('data-card-size', settings.index_card_size);
+          carouselEl.setAttribute('data-text-size', settings.index_text_size);
+        }
       }
 
       function normalizeWhatsAppNumber(raw) {
@@ -1401,16 +1520,15 @@
         }).concat(publicVerticalCards);
       }
 
-      function renderCards(cards) {
-        var html = cards.map(function (card, idx) {
+      function buildPortalCardHTML(card, idx, carouselMode) {
           if (card.tipo_tarjeta === 'banner') {
             return '' +
-              '<article class="portal-card home-offer-card home-offer-card-banner" style="animation-delay:' + (idx * 90) + 'ms" aria-label="Banner: ' + escapeHTML(card.titulo) + '">' +
+              '<article class="portal-card home-offer-card home-offer-card-banner' + (carouselMode ? ' portal-carousel-card' : '') + '" style="animation-delay:' + (idx * 90) + 'ms" aria-label="Banner: ' + escapeHTML(card.titulo) + '">' +
               '  <img class="home-offer-banner-img" src="' + escapeHTML(card.imagen_url) + '" alt="Banner: ' + escapeHTML(card.titulo) + '">' +
               '</article>';
           }
           return '' +
-            '<article class="portal-card home-offer-card" style="animation-delay:' + (idx * 90) + 'ms">' +
+            '<article class="portal-card home-offer-card' + (carouselMode ? ' portal-carousel-card' : '') + '" style="animation-delay:' + (idx * 90) + 'ms">' +
             '  <div class="home-offer-head">' +
             '    <img src="' + escapeHTML(card.imagen_url) + '" alt="Logo: ' + escapeHTML(card.titulo) + '" class="card-logo" width="36" height="36">' +
             '    <h3 class="home-offer-title">' + escapeHTML(card.titulo) + '</h3>' +
@@ -1425,9 +1543,45 @@
         '    <a class="home-offer-btn" href="' + escapeHTML(card.detalle_href) + '" data-source="index" data-module="' + escapeHTML(card.module || '') + '" data-title="' + escapeHTML(card.full_title || card.titulo) + '" data-description="' + escapeHTML(card.descripcion) + '">Probar Gratis</a>' +
             '  </div>' +
             '</article>';
+      }
+
+      function renderCards(cards) {
+        var primaryCards = cards.slice(0, 6);
+        var carouselCards = cards.slice(6);
+        gridEl.innerHTML = primaryCards.map(function (card, idx) {
+          return buildPortalCardHTML(card, idx, false);
         }).join('');
-        gridEl.innerHTML = html;
+        if (carouselEl && carouselSectionEl) {
+          carouselSectionEl.hidden = carouselCards.length === 0;
+          carouselEl.innerHTML = carouselCards.map(function (card, idx) {
+            return buildPortalCardHTML(card, idx, true);
+          }).join('');
+          carouselEl.scrollLeft = 0;
+          updateCarouselButtons();
+        }
         fitHomeOfferTitles();
+      }
+
+      function getCarouselStep() {
+        if (!carouselEl) return 320;
+        var firstCard = carouselEl.querySelector('.home-offer-card');
+        if (!firstCard) return Math.max(280, Math.round(carouselEl.clientWidth * 0.8));
+        var rect = firstCard.getBoundingClientRect();
+        return Math.max(260, Math.round(rect.width + 18));
+      }
+
+      function updateCarouselButtons() {
+        if (!carouselEl || !carouselPrevBtn || !carouselNextBtn) return;
+        var maxScroll = Math.max(0, carouselEl.scrollWidth - carouselEl.clientWidth - 2);
+        var hasOverflow = maxScroll > 4;
+        carouselPrevBtn.disabled = !hasOverflow || carouselEl.scrollLeft <= 2;
+        carouselNextBtn.disabled = !hasOverflow || carouselEl.scrollLeft >= maxScroll;
+      }
+
+      function scrollCarousel(direction) {
+        if (!carouselEl) return;
+        carouselEl.scrollBy({ left: getCarouselStep() * direction, behavior: 'smooth' });
+        window.setTimeout(updateCarouselButtons, 260);
       }
 
       var __homeOfferTitleFitScheduled = false;
@@ -1442,7 +1596,12 @@
 
       function fitHomeOfferTitles() {
         if (!gridEl) return;
-        var titles = gridEl.querySelectorAll('.home-offer-title');
+        var titleNodes = [];
+        titleNodes = titleNodes.concat(Array.prototype.slice.call(gridEl.querySelectorAll('.home-offer-title')));
+        if (carouselEl) {
+          titleNodes = titleNodes.concat(Array.prototype.slice.call(carouselEl.querySelectorAll('.home-offer-title')));
+        }
+        var titles = titleNodes;
         if (!titles || !titles.length) return;
 
         for (var i = 0; i < titles.length; i += 1) {
@@ -1719,11 +1878,26 @@
         if (btnClear) btnClear.addEventListener("click", function () { box.innerHTML = ""; history = []; setMsg("", false); });
       })();
 
+      if (carouselPrevBtn) {
+        carouselPrevBtn.addEventListener('click', function () { scrollCarousel(-1); });
+      }
+      if (carouselNextBtn) {
+        carouselNextBtn.addEventListener('click', function () { scrollCarousel(1); });
+      }
+      if (carouselEl) {
+        carouselEl.addEventListener('scroll', function () {
+          window.requestAnimationFrame(updateCarouselButtons);
+        }, { passive: true });
+      }
+
       loadCards();
 
       // Reajustar títulos si cambia el ancho (móvil/desktop)
       try {
-        window.addEventListener('resize', scheduleFitHomeOfferTitles);
+        window.addEventListener('resize', function () {
+          scheduleFitHomeOfferTitles();
+          updateCarouselButtons();
+        });
       } catch (e) { }
     })();
   </script>

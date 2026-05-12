@@ -64,11 +64,6 @@
       ["subir", "Subir"],
       ["archivos", "Archivos"],
       ["editor", "Editor"]
-    ],
-    "nextcloud.html": [
-      ["resumen", "Resumen"],
-      ["configuracion", "Configuración"],
-      ["archivos", "Archivos"]
     ]
   };
 

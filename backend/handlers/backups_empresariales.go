@@ -43,10 +43,10 @@ type empresaBackupPurgePayload struct {
 }
 
 type empresaBackupImportPayload struct {
-	EmpresaID      int64                     `json:"empresa_id"`
-	Nombre         string                    `json:"nombre"`
-	Descripcion    string                    `json:"descripcion"`
-	UsuarioCreador string                    `json:"usuario_creador"`
+	EmpresaID      int64                       `json:"empresa_id"`
+	Nombre         string                      `json:"nombre"`
+	Descripcion    string                      `json:"descripcion"`
+	UsuarioCreador string                      `json:"usuario_creador"`
 	Payload        *dbpkg.EmpresaBackupPayload `json:"payload"`
 }
 
@@ -69,10 +69,14 @@ func empresaBackupsNormalizeAction(raw string) string {
 		return "detalle"
 	case "export", "exportar", "descargar", "download":
 		return "export"
+	case "exportar_local", "export_local", "descargar_local", "download_local":
+		return "exportar_local"
 	case "restaurar", "restore":
 		return "restaurar"
 	case "exportar_configuracion", "export_config", "descargar_configuracion":
 		return "exportar_configuracion"
+	case "exportar_configuracion_local", "export_config_local", "descargar_configuracion_local":
+		return "exportar_configuracion_local"
 	case "importar_configuracion", "import_config", "restaurar_configuracion":
 		return "importar_configuracion"
 	case "depurar_fecha", "purgar_fecha", "eliminar_hasta_fecha", "depurar_hasta_fecha":
@@ -186,8 +190,14 @@ func EmpresaBackupsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			case "export":
 				empresaBackupsHandleExport(w, r, dbEmp)
 				return
+			case "exportar_local":
+				empresaBackupsHandleExportLocal(w, r, dbEmp)
+				return
 			case "exportar_configuracion":
 				empresaBackupsHandleExportConfig(w, r, dbEmp)
+				return
+			case "exportar_configuracion_local":
+				empresaBackupsHandleExportConfigLocal(w, r, dbEmp)
 				return
 			default:
 				http.Error(w, "action invalida", http.StatusBadRequest)
@@ -203,6 +213,12 @@ func EmpresaBackupsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			case "exportar_configuracion":
 				empresaBackupsHandleExportConfig(w, r, dbEmp)
+				return
+			case "exportar_local":
+				empresaBackupsHandleExportLocal(w, r, dbEmp)
+				return
+			case "exportar_configuracion_local":
+				empresaBackupsHandleExportConfigLocal(w, r, dbEmp)
 				return
 			case "importar_configuracion":
 				empresaBackupsHandleImportConfig(w, r, dbEmp)
@@ -408,13 +424,6 @@ func empresaBackupsHandleCreate(w http.ResponseWriter, r *http.Request, dbEmp *s
 		return
 	}
 
-	// Asegurar carpeta de backup en disco (best-effort) para esta empresa.
-	if empresaID > 0 {
-		if err := ensureDir(empresaBackupDir(empresaID)); err != nil {
-			// no bloquear: es una facilidad operativa
-		}
-	}
-
 	var payload empresaBackupCreatePayload
 	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil && err != io.EOF {
 		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
@@ -526,13 +535,6 @@ func empresaBackupsHandleExport(w http.ResponseWriter, r *http.Request, dbEmp *s
 	}
 	if format == "json" {
 		fileName := fmt.Sprintf("backup_empresa_%d_%s.json", empresaID, strings.TrimSpace(backupMeta.Codigo))
-		// Persistir copia en disco (backup/empresas/<id>/...) como trazabilidad (best-effort).
-		func() {
-			defer func() { _ = recover() }()
-			stamp := backupTimestampForFile()
-			diskName := fmt.Sprintf("backup_empresa_%d_%s_%s.json", empresaID, stamp, strings.TrimSpace(backupMeta.Codigo))
-			_, _ = writeJSONBackupFile(empresaBackupDir(empresaID), diskName, payload)
-		}()
 		w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
 		writeJSON(w, http.StatusOK, payload)
 		return
@@ -582,12 +584,94 @@ func empresaBackupsHandleExport(w http.ResponseWriter, r *http.Request, dbEmp *s
 	}
 }
 
+func empresaBackupLocalFilename(prefix string, empresaID int64) string {
+	cleanPrefix := strings.TrimSpace(prefix)
+	if cleanPrefix == "" {
+		cleanPrefix = "backup_empresa"
+	}
+	return fmt.Sprintf("%s_%d_%s.json", cleanPrefix, empresaID, time.Now().In(time.Local).Format("20060102_150405"))
+}
+
+func empresaBackupsDecodeLocalExportPayload(r *http.Request) (empresaBackupCreatePayload, error) {
+	var payload empresaBackupCreatePayload
+	if r == nil {
+		return payload, nil
+	}
+	if r.Method == http.MethodGet {
+		payload.IncludeTables = parseCSVStrings(r.URL.Query().Get("include_tables"))
+		payload.ExcludeTables = parseCSVStrings(r.URL.Query().Get("exclude_tables"))
+		return payload, nil
+	}
+	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil && err != io.EOF {
+		return payload, err
+	}
+	return payload, nil
+}
+
+func empresaBackupsHandleExportLocal(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	payloadReq, err := empresaBackupsDecodeLocalExportPayload(r)
+	if err != nil {
+		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payloadReq.EmpresaID > 0 && payloadReq.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+	usuario := empresaBackupsUsuarioFromRequest(r, payloadReq.UsuarioCreador)
+	payload, err := dbpkg.BuildEmpresaBackupPayload(dbEmp, empresaID, dbpkg.EmpresaBackupBuildOptions{
+		IncludeTables: payloadReq.IncludeTables,
+		ExcludeTables: payloadReq.ExcludeTables,
+		CreatedBy:     usuario,
+	})
+	if err != nil {
+		http.Error(w, "No se pudo generar backup local empresarial", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+empresaBackupLocalFilename("backup_empresa_local", empresaID)+"\"")
+	w.Header().Set("X-PCS-Storage", "cliente")
+	writeJSON(w, http.StatusOK, payload)
+}
+
 func empresaBackupsConfigDefaultName(prefix string, empresaID int64) string {
 	base := strings.TrimSpace(prefix)
 	if base == "" {
 		base = "Configuracion empresa"
 	}
 	return fmt.Sprintf("%s %d %s", base, empresaID, time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
+}
+
+func empresaBackupsHandleExportConfigLocal(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	var payloadReq empresaBackupCreatePayload
+	if r.Method != http.MethodGet {
+		if err := empresaBackupsDecodeBodyJSON(r, &payloadReq); err != nil && err != io.EOF {
+			http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+			return
+		}
+	}
+	if payloadReq.EmpresaID > 0 && payloadReq.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+	usuario := empresaBackupsUsuarioFromRequest(r, payloadReq.UsuarioCreador)
+	payload, _, err := dbpkg.BuildEmpresaConfigBackupPayload(dbEmp, empresaID, usuario)
+	if err != nil {
+		http.Error(w, "No se pudo exportar configuracion empresarial local", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+empresaBackupLocalFilename("configuracion_empresa_local", empresaID)+"\"")
+	w.Header().Set("X-PCS-Storage", "cliente")
+	writeJSON(w, http.StatusOK, payload)
 }
 
 func empresaBackupsHandleExportConfig(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
@@ -630,13 +714,6 @@ func empresaBackupsHandleExportConfig(w http.ResponseWriter, r *http.Request, db
 	}
 
 	fileName := fmt.Sprintf("configuracion_empresa_%d_%s.json", empresaID, strings.TrimSpace(backupMeta.Codigo))
-	// Persistir copia en disco (backup/empresas/<id>/...) como trazabilidad (best-effort).
-	func() {
-		defer func() { _ = recover() }()
-		stamp := backupTimestampForFile()
-		diskName := fmt.Sprintf("configuracion_empresa_%d_%s_%s.json", empresaID, stamp, strings.TrimSpace(backupMeta.Codigo))
-		_, _ = writeJSONBackupFile(empresaBackupDir(empresaID), diskName, exportPayload)
-	}()
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
 	w.Header().Set("X-Backup-Id", strconv.FormatInt(backupID, 10))
 	w.Header().Set("X-Backup-Code", strings.TrimSpace(backupMeta.Codigo))
@@ -765,11 +842,11 @@ func empresaBackupsHandleImportConfig(w http.ResponseWriter, r *http.Request, db
 
 	updated, _ := dbpkg.GetEmpresaBackupByID(dbEmp, empresaID, backupID, false)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":               true,
-		"empresa_id":       empresaID,
+		"ok":                true,
+		"empresa_id":        empresaID,
 		"source_empresa_id": sourceEmpresaID,
-		"resultado":        result,
-		"backup":           updated,
+		"resultado":         result,
+		"backup":            updated,
 	})
 }
 

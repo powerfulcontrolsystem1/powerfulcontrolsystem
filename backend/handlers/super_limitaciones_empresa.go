@@ -14,7 +14,8 @@ const (
 	superEmpresaLimitRustDeskMinutesKey      = "empresa.limitaciones.rustdesk.max_minutos"
 	superEmpresaLimitAIConsultasKey          = "empresa.limitaciones.ai.max_consultas"
 	superEmpresaLimitGPSDispositivosKey      = "empresa.limitaciones.gps.max_dispositivos"
-	superEmpresaLimitNextcloudMaxGBKey       = "empresa.limitaciones.nextcloud.max_gb"
+	superEmpresaLimitDBMaxGBKey              = "empresa.limitaciones.db.max_gb"
+	superEmpresaLimitLegacyNextcloudMaxGBKey = "empresa.limitaciones.nextcloud.max_gb"
 	superEmpresaLimitAPIRequestsPerMinuteKey = "empresa.limitaciones.api.max_requests_minuto"
 	superEmpresaLimitDBQueriesPerMinuteKey   = "empresa.limitaciones.db.max_consultas_minuto"
 
@@ -23,7 +24,7 @@ const (
 	defaultEmpresaRustDeskMaxMinutos   = int64(30)
 	defaultEmpresaAIMaxConsultas       = int64(10)
 	defaultEmpresaGPSMaxDispositivos   = int64(2)
-	defaultEmpresaNextcloudMaxGB       = int64(1)
+	defaultEmpresaDBMaxGB              = int64(1)
 	defaultEmpresaAPIRequestsPerMinute = int64(600)
 	defaultEmpresaDBQueriesPerMinute   = int64(120)
 )
@@ -61,6 +62,18 @@ func getLimitacionInt64(dbSuper *sql.DB, key string, fallback int64) (int64, str
 	return parsePositiveInt64OrDefault(val, fallback), strings.TrimSpace(updatedAt), strings.TrimSpace(updatedBy), nil
 }
 
+func getLimitacionInt64WithLegacy(dbSuper *sql.DB, key, legacyKey string, fallback int64) (int64, string, string, error) {
+	val, updatedAt, updatedBy, err := getLimitacionInt64(dbSuper, key, fallback)
+	if err != nil || strings.TrimSpace(legacyKey) == "" {
+		return val, updatedAt, updatedBy, err
+	}
+	currentRaw, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, key)
+	if strings.TrimSpace(currentRaw) != "" {
+		return val, updatedAt, updatedBy, nil
+	}
+	return getLimitacionInt64(dbSuper, legacyKey, fallback)
+}
+
 // SuperEmpresaLimitacionesConfigHandler permite configurar límites por empresa desde super.
 // Persistencia: tabla configuraciones en pcs_superadministrador.
 func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
@@ -82,7 +95,7 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "error leyendo limitaciones: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			nextcloudGB, nextcloudUpdatedAt, nextcloudUpdatedBy, err := getLimitacionInt64(dbSuper, superEmpresaLimitNextcloudMaxGBKey, defaultEmpresaNextcloudMaxGB)
+			dbMaxGB, dbMaxGBUpdatedAt, dbMaxGBUpdatedBy, err := getLimitacionInt64WithLegacy(dbSuper, superEmpresaLimitDBMaxGBKey, superEmpresaLimitLegacyNextcloudMaxGBKey, defaultEmpresaDBMaxGB)
 			if err != nil {
 				http.Error(w, "error leyendo limitaciones: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -103,7 +116,7 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"rustdesk_max_minutos":    defaultEmpresaRustDeskMaxMinutos,
 					"ai_max_consultas":        defaultEmpresaAIMaxConsultas,
 					"gps_max_dispositivos":    defaultEmpresaGPSMaxDispositivos,
-					"nextcloud_max_gb":        defaultEmpresaNextcloudMaxGB,
+					"db_max_gb":               defaultEmpresaDBMaxGB,
 					"api_max_requests_minuto": defaultEmpresaAPIRequestsPerMinute,
 					"db_max_consultas_minuto": defaultEmpresaDBQueriesPerMinute,
 				},
@@ -126,11 +139,11 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 						"updated_by": gpsUpdatedBy,
 						"config_key": superEmpresaLimitGPSDispositivosKey,
 					},
-					"nextcloud_max_gb": map[string]interface{}{
-						"value":      nextcloudGB,
-						"updated_at": nextcloudUpdatedAt,
-						"updated_by": nextcloudUpdatedBy,
-						"config_key": superEmpresaLimitNextcloudMaxGBKey,
+					"db_max_gb": map[string]interface{}{
+						"value":      dbMaxGB,
+						"updated_at": dbMaxGBUpdatedAt,
+						"updated_by": dbMaxGBUpdatedBy,
+						"config_key": superEmpresaLimitDBMaxGBKey,
 					},
 					"api_max_requests_minuto": map[string]interface{}{
 						"value":      apiRequests,
@@ -153,6 +166,7 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				RustDeskMaxMinutos   *int64 `json:"rustdesk_max_minutos"`
 				AIMaxConsultas       *int64 `json:"ai_max_consultas"`
 				GPSMaxDispositivos   *int64 `json:"gps_max_dispositivos"`
+				DBMaxGB              *int64 `json:"db_max_gb"`
 				NextcloudMaxGB       *int64 `json:"nextcloud_max_gb"`
 				APIMaxRequestsMinuto *int64 `json:"api_max_requests_minuto"`
 				DBMaxConsultasMinuto *int64 `json:"db_max_consultas_minuto"`
@@ -184,12 +198,14 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if gps < 0 {
 				gps = 0
 			}
-			nextcloudGB := defaultEmpresaNextcloudMaxGB
-			if payload.NextcloudMaxGB != nil {
-				nextcloudGB = *payload.NextcloudMaxGB
+			dbMaxGB := defaultEmpresaDBMaxGB
+			if payload.DBMaxGB != nil {
+				dbMaxGB = *payload.DBMaxGB
+			} else if payload.NextcloudMaxGB != nil {
+				dbMaxGB = *payload.NextcloudMaxGB
 			}
-			if nextcloudGB < 0 {
-				nextcloudGB = 0
+			if dbMaxGB < 0 {
+				dbMaxGB = 0
 			}
 			apiRequests := defaultEmpresaAPIRequestsPerMinute
 			if payload.APIMaxRequestsMinuto != nil {
@@ -225,11 +241,11 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitGPSDispositivosKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
 
-			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitNextcloudMaxGBKey, strconv.FormatInt(nextcloudGB, 10), false); err != nil {
-				http.Error(w, "error guardando limite nextcloud: "+err.Error(), http.StatusInternalServerError)
+			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitDBMaxGBKey, strconv.FormatInt(dbMaxGB, 10), false); err != nil {
+				http.Error(w, "error guardando limite maximo de base de datos: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitNextcloudMaxGBKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
+			_ = dbpkg.SetConfigValue(dbSuper, superEmpresaLimitDBMaxGBKey+superEmpresaLimitUpdatedByKeySuffix, adminEmail, false)
 			if err := dbpkg.SetConfigValue(dbSuper, superEmpresaLimitAPIRequestsPerMinuteKey, strconv.FormatInt(apiRequests, 10), false); err != nil {
 				http.Error(w, "error guardando limite api: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -247,7 +263,7 @@ func SuperEmpresaLimitacionesConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"rustdesk_max_minutos":    rustdesk,
 					"ai_max_consultas":        ai,
 					"gps_max_dispositivos":    gps,
-					"nextcloud_max_gb":        nextcloudGB,
+					"db_max_gb":               dbMaxGB,
 					"api_max_requests_minuto": apiRequests,
 					"db_max_consultas_minuto": dbQueries,
 				},

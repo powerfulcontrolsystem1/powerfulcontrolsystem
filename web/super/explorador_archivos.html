@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Explorador de Archivos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f7fb;
+      color: #172033;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .file-explorer-page {
+      min-height: 100vh;
+      padding: 22px;
+      box-sizing: border-box;
+    }
+
+    .file-explorer-shell {
+      display: grid;
+      gap: 14px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .file-explorer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .file-explorer-title h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .file-explorer-title p {
+      margin: 4px 0 0;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .file-explorer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .file-explorer-toolbar,
+    .file-explorer-roots,
+    .file-explorer-table-wrap {
+      border: 1px solid #dbe3ef;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .file-explorer-toolbar {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 1fr) auto auto;
+      gap: 10px;
+      padding: 12px;
+      align-items: center;
+    }
+
+    .file-explorer-toolbar button,
+    .file-explorer-root-btn {
+      min-height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #172033;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .file-explorer-toolbar button {
+      padding: 0 14px;
+    }
+
+    .file-explorer-toolbar button:hover,
+    .file-explorer-root-btn:hover {
+      border-color: #2563eb;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+
+    .file-explorer-toolbar button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .file-explorer-path {
+      min-width: 0;
+      height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0 12px;
+      font: 13px/1.4 "Cascadia Mono", Consolas, monospace;
+      color: #0f172a;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+
+    .file-explorer-roots {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      overflow-x: auto;
+    }
+
+    .file-explorer-root-btn {
+      flex: 0 0 auto;
+      padding: 0 12px;
+      font-size: 13px;
+    }
+
+    .file-explorer-status {
+      min-height: 22px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .file-explorer-status.is-error {
+      color: #b91c1c;
+      font-weight: 800;
+    }
+
+    .file-explorer-table-wrap {
+      overflow: auto;
+    }
+
+    .file-explorer-table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .file-explorer-table th,
+    .file-explorer-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf2f7;
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .file-explorer-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .file-explorer-name-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 380px;
+      border: 0;
+      background: transparent;
+      color: #172033;
+      font: inherit;
+      font-weight: 700;
+      cursor: default;
+      padding: 0;
+      text-align: left;
+    }
+
+    .file-explorer-name-btn[data-dir="true"] {
+      color: #1d4ed8;
+      cursor: pointer;
+    }
+
+    .file-explorer-name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-explorer-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      background: #94a3b8;
+      flex: 0 0 18px;
+      box-shadow: inset 0 -3px 0 rgba(15, 23, 42, 0.15);
+    }
+
+    .file-explorer-icon.is-folder {
+      background: #f59e0b;
+    }
+
+    .file-explorer-icon.is-link {
+      background: #8b5cf6;
+    }
+
+    .file-explorer-muted {
+      color: #64748b;
+    }
+
+    .file-explorer-path-cell {
+      max-width: 420px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      color: #475569;
+    }
+
+    @media (max-width: 760px) {
+      .file-explorer-page {
+        padding: 14px;
+      }
+
+      .file-explorer-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .file-explorer-toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .file-explorer-path {
+        grid-column: 1 / -1;
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="file-explorer-page">
+    <section class="file-explorer-shell">
+      <header class="file-explorer-header">
+        <div class="file-explorer-title">
+          <h1>Explorador de Archivos</h1>
+          <p id="fileExplorerSummary">Sistema de archivos visible para el backend.</p>
+        </div>
+        <span class="file-explorer-badge">Solo lectura</span>
+      </header>
+
+      <form class="file-explorer-toolbar" id="fileExplorerToolbar">
+        <button type="button" id="fileExplorerUp">Arriba</button>
+        <input class="file-explorer-path" id="fileExplorerPath" autocomplete="off" spellcheck="false" aria-label="Ruta actual">
+        <button type="submit">Abrir</button>
+        <button type="button" id="fileExplorerRefresh">Recargar</button>
+      </form>
+
+      <nav class="file-explorer-roots" id="fileExplorerRoots" aria-label="Raices del sistema"></nav>
+      <div class="file-explorer-status" id="fileExplorerStatus">Cargando...</div>
+
+      <div class="file-explorer-table-wrap">
+        <table class="file-explorer-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Tamano</th>
+              <th>Modificado</th>
+              <th>Permisos</th>
+              <th>Ruta</th>
+            </tr>
+          </thead>
+          <tbody id="fileExplorerRows">
+            <tr>
+              <td colspan="6" class="file-explorer-muted">Cargando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var pathInput = document.getElementById("fileExplorerPath");
+      var rootsBox = document.getElementById("fileExplorerRoots");
+      var statusBox = document.getElementById("fileExplorerStatus");
+      var rowsBox = document.getElementById("fileExplorerRows");
+      var summary = document.getElementById("fileExplorerSummary");
+      var upButton = document.getElementById("fileExplorerUp");
+      var refreshButton = document.getElementById("fileExplorerRefresh");
+      var toolbar = document.getElementById("fileExplorerToolbar");
+      var state = { currentPath: "", parentPath: "", loading: false };
+
+      function setStatus(message, isError) {
+        statusBox.textContent = message || "";
+        statusBox.classList.toggle("is-error", !!isError);
+      }
+
+      function formatDate(value) {
+        if (!value) return "-";
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        return new Intl.DateTimeFormat("es-CO", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        }).format(date);
+      }
+
+      function typeLabel(entry) {
+        if (entry.type === "folder") return "Carpeta";
+        if (entry.type === "symlink") return "Acceso directo";
+        if (entry.type === "unknown") return "Sin lectura";
+        return entry.extension ? "Archivo " + entry.extension.toUpperCase() : "Archivo";
+      }
+
+      function clearRows(message) {
+        rowsBox.replaceChildren();
+        var row = document.createElement("tr");
+        var cell = document.createElement("td");
+        cell.colSpan = 6;
+        cell.className = "file-explorer-muted";
+        cell.textContent = message;
+        row.appendChild(cell);
+        rowsBox.appendChild(row);
+      }
+
+      function appendCell(row, text, className) {
+        var cell = document.createElement("td");
+        if (className) cell.className = className;
+        cell.textContent = text || "-";
+        row.appendChild(cell);
+        return cell;
+      }
+
+      function renderRoots(roots) {
+        rootsBox.replaceChildren();
+        (roots || []).forEach(function (root) {
+          var button = document.createElement("button");
+          button.type = "button";
+          button.className = "file-explorer-root-btn";
+          button.textContent = root.label || root.path;
+          button.addEventListener("click", function () {
+            loadPath(root.path);
+          });
+          rootsBox.appendChild(button);
+        });
+      }
+
+      function renderRows(entries) {
+        rowsBox.replaceChildren();
+        if (!entries || entries.length === 0) {
+          clearRows("Carpeta vacia.");
+          return;
+        }
+        entries.forEach(function (entry) {
+          var row = document.createElement("tr");
+          var nameCell = document.createElement("td");
+          var nameButton = document.createElement("button");
+          var icon = document.createElement("span");
+          var text = document.createElement("span");
+
+          nameButton.type = "button";
+          nameButton.className = "file-explorer-name-btn";
+          nameButton.dataset.dir = entry.is_dir ? "true" : "false";
+          if (entry.is_dir) {
+            nameButton.addEventListener("click", function () {
+              loadPath(entry.path);
+            });
+          }
+          icon.className = "file-explorer-icon";
+          if (entry.is_dir) icon.classList.add("is-folder");
+          if (entry.is_symlink) icon.classList.add("is-link");
+          text.className = "file-explorer-name-text";
+          text.textContent = entry.name || entry.path;
+          nameButton.appendChild(icon);
+          nameButton.appendChild(text);
+          nameCell.appendChild(nameButton);
+          row.appendChild(nameCell);
+
+          appendCell(row, typeLabel(entry));
+          appendCell(row, entry.is_dir ? "-" : entry.size_pretty);
+          appendCell(row, formatDate(entry.modified_at));
+          appendCell(row, entry.mode || entry.error || "-", "file-explorer-muted");
+          appendCell(row, entry.path, "file-explorer-path-cell");
+          rowsBox.appendChild(row);
+        });
+      }
+
+      function renderExplorer(data) {
+        state.currentPath = data.current_path || "";
+        state.parentPath = data.parent_path || "";
+        pathInput.value = state.currentPath;
+        upButton.disabled = !state.parentPath;
+        summary.textContent = "Sistema " + (data.runtime_os || "-") + " - " + (data.total_entries || 0) + " elementos.";
+        renderRoots(data.roots || []);
+        renderRows(data.entries || []);
+        setStatus(state.currentPath, false);
+      }
+
+      async function loadPath(path) {
+        if (state.loading) return;
+        state.loading = true;
+        refreshButton.disabled = true;
+        upButton.disabled = true;
+        setStatus("Cargando...", false);
+        try {
+          var url = "/super/api/explorador_archivos?action=list";
+          if (path) url += "&path=" + encodeURIComponent(path);
+          var response = await fetch(url, { credentials: "same-origin" });
+          var data = await response.json().catch(function () { return {}; });
+          if (!response.ok || data.ok === false) {
+            renderRoots(data.roots || []);
+            pathInput.value = data.current_path || path || "";
+            clearRows(data.error || "No fue posible leer la ruta.");
+            setStatus(data.error || "No fue posible leer la ruta.", true);
+            state.parentPath = data.parent_path || "";
+            upButton.disabled = !state.parentPath;
+            return;
+          }
+          renderExplorer(data);
+        } catch (error) {
+          clearRows("No fue posible conectar con el servidor.");
+          setStatus("No fue posible conectar con el servidor.", true);
+        } finally {
+          state.loading = false;
+          refreshButton.disabled = false;
+          upButton.disabled = !state.parentPath;
+        }
+      }
+
+      toolbar.addEventListener("submit", function (event) {
+        event.preventDefault();
+        loadPath(pathInput.value);
+      });
+
+      upButton.addEventListener("click", function () {
+        if (state.parentPath) loadPath(state.parentPath);
+      });
+
+      refreshButton.addEventListener("click", function () {
+        loadPath(state.currentPath || pathInput.value);
+      });
+
+      loadPath("");
+    })();
+  </script>
+</body>
+</html>

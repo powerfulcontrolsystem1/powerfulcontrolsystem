@@ -16,7 +16,7 @@ Levantar Powerful Control System en un VPS nuevo usando imagenes Docker, volumen
 
 ```bash
 apt update
-apt install -y docker.io docker-compose-plugin nginx certbot python3-certbot-nginx
+apt install -y docker.io docker-compose-plugin curl
 systemctl enable --now docker
 ```
 
@@ -32,6 +32,12 @@ systemctl enable --now docker
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml up -d --build
 ```
 
+Para publicar tambien `80/443` desde Docker:
+
+```bash
+CONFIRM_DOCKER_EDGE=YES bash deploy/scripts/vps-docker-edge-up.sh
+```
+
 ## Verificacion
 
 ```bash
@@ -39,6 +45,12 @@ docker ps
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml ps
 curl -I http://127.0.0.1:8081/
 curl -I https://powerfulcontrolsystem.com
+```
+
+Verificar que `pcs-edge` este activo cuando el VPS nuevo opere sin Nginx del host:
+
+```bash
+docker inspect -f '{{.State.Status}}' pcs-edge
 ```
 
 ## Prueba de restauracion periodica

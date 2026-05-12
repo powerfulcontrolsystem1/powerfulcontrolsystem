@@ -4,13 +4,15 @@
   var state = {
     empresaID: 0,
     activeForm: "login",
-    contract: null
+    contract: null,
+    invitationToken: ""
   };
 
   var forms = {
     login: document.getElementById("loginUsuarioForm"),
     setup: document.getElementById("setupPasswordForm"),
     recovery: document.getElementById("recoveryRequestForm"),
+    inviteRecovery: document.getElementById("inviteRecoveryForm"),
     reset: document.getElementById("resetPasswordForm"),
     change: document.getElementById("changePasswordForm")
   };
@@ -19,6 +21,7 @@
     login: document.getElementById("msg"),
     setup: document.getElementById("setupMsg"),
     recovery: document.getElementById("recoveryMsg"),
+    inviteRecovery: document.getElementById("inviteRecoveryMsg"),
     reset: document.getElementById("resetMsg"),
     change: document.getElementById("changePasswordMsg")
   };
@@ -42,6 +45,7 @@
     login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaLoginRecaptcha", action: "empresa_login" }) : null,
     setup: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaSetupRecaptcha", action: "empresa_setup_password" }) : null,
     recovery: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaRecoveryRecaptcha", action: "empresa_recovery" }) : null,
+    inviteRecovery: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaInviteRecoveryRecaptcha", action: "empresa_invitation_recovery" }) : null,
     reset: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaResetRecaptcha", action: "empresa_reset_password" }) : null
   };
 
@@ -133,6 +137,30 @@
   function setContractPanelAttention(required) {
     if (!contractPanel) return;
     contractPanel.classList.toggle("requires-attention", !!required);
+  }
+
+  function getInvitationTokenFromURL() {
+    return String(
+      getQueryParam("token_invitacion") ||
+      getQueryParam("invitation_token") ||
+      getQueryParam("token_confirmacion") ||
+      ""
+    ).trim();
+  }
+
+  function setSetupInvitationToken(token) {
+    state.invitationToken = String(token || "").trim();
+    var input = document.getElementById("setupInvitationToken");
+    if (input) input.value = state.invitationToken;
+  }
+
+  function invitationRequiredMessage() {
+    return "El registro solo se completa desde la invitacion enviada por el administrador. Si borraste ese correo, usa Recuperar email de invitacion.";
+  }
+
+  function showInvitationRequiredOnLogin() {
+    showForm("login", { email: document.getElementById("email").value || getQueryParam("email") });
+    setMessage("login", invitationRequiredMessage(), true);
   }
 
   function formatContractContent(content) {
@@ -237,6 +265,9 @@
     if (options.email) {
       prefillEmail(options.email);
     }
+    if (options.invitationToken) {
+      setSetupInvitationToken(options.invitationToken);
+    }
     if (options.token) {
       var resetToken = document.getElementById("resetToken");
       if (resetToken) resetToken.value = options.token;
@@ -271,7 +302,7 @@
   function prefillEmail(email) {
     var normalized = String(email || "").trim();
     if (!normalized) return;
-    ["email", "setupEmail", "recoveryEmail", "resetEmail", "changeEmail"].forEach(function (id) {
+    ["email", "setupEmail", "recoveryEmail", "inviteRecoveryEmail", "resetEmail", "changeEmail"].forEach(function (id) {
       var input = document.getElementById(id);
       if (input) input.value = normalized;
     });
@@ -362,8 +393,14 @@
         state.empresaID = persistEmpresaID(payload.empresa_id);
         updateEmpresaContextHint();
       }
+      if (!state.invitationToken) {
+        showForm("login", { email: payload.email });
+        setMessage("login", payload.message || invitationRequiredMessage(), true);
+        return;
+      }
       showForm("setup", {
         email: payload.email,
+        invitationToken: state.invitationToken,
         message: payload.message || "Completa tu contraseña inicial para continuar."
       });
       return;
@@ -453,6 +490,12 @@
       btn.textContent = isBusy ? "Guardando..." : prevText;
     }
     setMessage("setup", "", false);
+    var invitationToken = state.invitationToken || (document.getElementById("setupInvitationToken") && document.getElementById("setupInvitationToken").value) || "";
+    invitationToken = String(invitationToken || "").trim();
+    if (!invitationToken) {
+      setMessage("setup", invitationRequiredMessage(), true);
+      return;
+    }
     setSetupBusy(true);
 
     ensureRecaptcha("setup").then(function (token) {
@@ -462,6 +505,7 @@
         documento_identidad: document.getElementById("setupDocumento").value,
         password: document.getElementById("setupPassword").value,
         password_confirm: document.getElementById("setupPasswordConfirm").value,
+        token_invitacion: invitationToken,
         accept_contract: !!(contractCheckbox && contractCheckbox.checked),
         recaptcha_token: token
       }));
@@ -510,6 +554,40 @@
       .finally(function () {
         setRecoveryBusy(false);
         if (recaptchaManagers.recovery) recaptchaManagers.recovery.reset();
+      });
+  }
+
+  function onInviteRecoverySubmit(event) {
+    event.preventDefault();
+
+    var btn = document.getElementById("btnRecuperarInvitacion");
+    var prevText = btn ? String(btn.textContent || "") : "";
+    function setInviteRecoveryBusy(isBusy) {
+      if (!btn) return;
+      btn.disabled = !!isBusy;
+      btn.textContent = isBusy ? "Enviando..." : prevText;
+    }
+    setMessage("inviteRecovery", "", false);
+    setInviteRecoveryBusy(true);
+
+    ensureRecaptcha("inviteRecovery").then(function (token) {
+      if (token === null) return;
+      return submitJSON("/api/empresa/usuarios/recuperar_invitacion", withBasePayload({
+        email: document.getElementById("inviteRecoveryEmail").value,
+        recaptcha_token: token
+      }));
+    })
+      .then(function (payload) {
+        if (!payload) return;
+        prefillEmail(document.getElementById("inviteRecoveryEmail").value);
+        setMessage("inviteRecovery", normalizeErrorMessage(payload, "Si ese correo tiene una invitacion pendiente, enviaremos nuevamente el email de invitacion."), false);
+      })
+      .catch(function (error) {
+        setMessage("inviteRecovery", error.message || "No fue posible solicitar la invitacion.", true);
+      })
+      .finally(function () {
+        setInviteRecoveryBusy(false);
+        if (recaptchaManagers.inviteRecovery) recaptchaManagers.inviteRecovery.reset();
       });
   }
 
@@ -594,6 +672,10 @@
 
   var urlEmail = String(getQueryParam("email") || "").trim();
   var urlToken = String(getQueryParam("token_recuperacion") || "").trim();
+  var urlInvitationToken = getInvitationTokenFromURL();
+  if (urlInvitationToken) {
+    setSetupInvitationToken(urlInvitationToken);
+  }
   if (urlEmail) {
     prefillEmail(urlEmail);
   }
@@ -643,11 +725,16 @@
   if (forms.login) forms.login.addEventListener("submit", onLoginSubmit);
   if (forms.setup) forms.setup.addEventListener("submit", onSetupSubmit);
   if (forms.recovery) forms.recovery.addEventListener("submit", onRecoverySubmit);
+  if (forms.inviteRecovery) forms.inviteRecovery.addEventListener("submit", onInviteRecoverySubmit);
   if (forms.reset) forms.reset.addEventListener("submit", onResetSubmit);
   if (forms.change) forms.change.addEventListener("submit", onChangePasswordSubmit);
 
   bindButton("btnMostrarRegistro", function () {
-    showForm("setup", { email: document.getElementById("email").value || urlEmail });
+    if (!state.invitationToken) {
+      showInvitationRequiredOnLogin();
+      return;
+    }
+    showForm("setup", { email: document.getElementById("email").value || urlEmail, invitationToken: state.invitationToken });
   });
   bindButton("btnVolverALoginHero", function () {
     showForm("login");
@@ -656,10 +743,17 @@
     showForm("recovery", { email: document.getElementById("email").value || urlEmail });
   });
   bindButton("linkGoSetup", function () {
-    showForm("setup", { email: document.getElementById("email").value || urlEmail });
+    if (!state.invitationToken) {
+      showInvitationRequiredOnLogin();
+      return;
+    }
+    showForm("setup", { email: document.getElementById("email").value || urlEmail, invitationToken: state.invitationToken });
   });
   bindButton("linkGoRecovery", function () {
     showForm("recovery", { email: document.getElementById("email").value || urlEmail });
+  });
+  bindButton("linkGoInviteRecovery", function () {
+    showForm("inviteRecovery", { email: document.getElementById("email").value || urlEmail });
   });
   bindButton("linkGoChangePassword", function () {
     showForm("change", { email: document.getElementById("email").value || urlEmail });
@@ -669,6 +763,9 @@
   });
   bindButton("btnVolverDesdeRecuperacion", function () {
     showForm("login", { email: document.getElementById("recoveryEmail").value });
+  });
+  bindButton("btnVolverDesdeInvitacion", function () {
+    showForm("login", { email: document.getElementById("inviteRecoveryEmail").value });
   });
   bindButton("btnIrAReset", function () {
     showForm("reset", { email: document.getElementById("recoveryEmail").value });
@@ -680,7 +777,13 @@
     showForm("login", { email: document.getElementById("changeEmail").value });
   });
 
-  if (urlToken) {
+  if (urlInvitationToken) {
+    showForm("setup", {
+      email: urlEmail,
+      invitationToken: urlInvitationToken,
+      message: "Invitacion detectada. Crea tu contrasena para entrar al panel de la empresa."
+    });
+  } else if (urlToken) {
     showForm("reset", {
       email: urlEmail,
       token: urlToken,

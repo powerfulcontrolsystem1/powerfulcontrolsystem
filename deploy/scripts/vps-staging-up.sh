@@ -25,8 +25,6 @@ replace_if_placeholder() {
 replace_if_placeholder "POSTGRES_PASSWORD" "$(secret_hex 24)"
 replace_if_placeholder "CONFIG_ENC_KEY" "$(secret_hex 32)"
 replace_if_placeholder "ONLYOFFICE_JWT_SECRET" "$(secret_hex 24)"
-replace_if_placeholder "NEXTCLOUD_DB_PASSWORD" "$(secret_hex 24)"
-replace_if_placeholder "NEXTCLOUD_ADMIN_PASSWORD" "$(secret_hex 24)"
 chmod 600 "$ENV_FILE" || true
 
 docker compose \

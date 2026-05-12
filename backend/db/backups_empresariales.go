@@ -37,7 +37,6 @@ var empresaConfigBackupDefaultTables = []string{
 	"empresa_integraciones_apis",
 	"empresa_integraciones_bancos",
 	"empresa_inventario_configuracion",
-	"empresa_nextcloud_accounts",
 	"empresa_nomina_configuracion",
 	"empresa_payment_settings",
 	"empresa_permisos_modulos",

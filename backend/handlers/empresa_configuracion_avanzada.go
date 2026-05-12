@@ -95,6 +95,17 @@ func EmpresaConfiguracionAvanzadaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			for k, v := range raw {
 				existMap[k] = v
 			}
+			_, hasLogoLegacy := raw["mostrar_logo"]
+			if v, ok := raw["mostrar_logo"]; ok {
+				if _, hasEmpresaLogo := raw["mostrar_logo_empresa"]; !hasEmpresaLogo {
+					existMap["mostrar_logo_empresa"] = v
+				}
+			}
+			_, hasLogoEmpresa := raw["mostrar_logo_empresa"]
+			_, hasLogoSistema := raw["mostrar_logo_sistema"]
+			if hasLogoLegacy || hasLogoEmpresa || hasLogoSistema {
+				existMap["mostrar_logo"] = boolFromJSONLike(existMap["mostrar_logo_empresa"]) || boolFromJSONLike(existMap["mostrar_logo_sistema"])
+			}
 			mergedBytes, merr := json.Marshal(existMap)
 			if merr != nil {
 				log.Printf("[empresa_config_avanzada] marshal merged error: %v", merr)
@@ -213,6 +224,7 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 		}
 		cfg.LogoURL = logoURL
 		cfg.MostrarLogo = true
+		cfg.MostrarLogoEmpresa = true
 		cfg.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 		if _, err := dbpkg.UpsertEmpresaConfiguracionAvanzada(dbEmp, *cfg); err != nil {
 			log.Printf("[empresa_config_avanzada_logo] upsert empresa_id=%d error: %v", empresaID, err)
@@ -228,6 +240,22 @@ func EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmp *sql.DB) http.HandlerFu
 			"logo_url":      logoURL,
 			"configuracion": stored,
 		})
+	}
+}
+
+func boolFromJSONLike(v interface{}) bool {
+	switch value := v.(type) {
+	case bool:
+		return value
+	case float64:
+		return value != 0
+	case int:
+		return value != 0
+	case string:
+		normalized := strings.TrimSpace(strings.ToLower(value))
+		return normalized == "true" || normalized == "1" || normalized == "si" || normalized == "sí" || normalized == "on"
+	default:
+		return false
 	}
 }
 

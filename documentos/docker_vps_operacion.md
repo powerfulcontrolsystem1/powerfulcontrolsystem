@@ -12,6 +12,8 @@ La VPS actual (`2.24.197.58`) ya tiene Docker Engine y Docker Compose v2. El nuc
 - PostgreSQL Docker: `pcs-postgres:5432` dentro de la red Docker.
 - Red Docker: `pcs_internal`.
 
+Actualizacion 2026-05-12: el despliegue ya incluye modo `edge` para que tambien el frente publico `80/443`, TLS y certificados Let's Encrypt queden bajo Docker con `pcs-edge` y `pcs-certbot`. El Nginx del host queda solo como fase de transicion o rollback.
+
 El archivo activo de Compose es:
 
 ```bash
@@ -139,19 +141,57 @@ sudo systemctl reload nginx
 
 El servicio anterior `powerfulcontrolsystem.service` quedo activo para rollback operativo rapido mientras se estabiliza Docker. Cuando se confirme estabilidad por varios dias, puede evaluarse pausarlo o deshabilitarlo.
 
+## Edge Docker 80/443
+
+Para dejar la plataforma completa bajo Docker:
+
+```bash
+cd /root/powerfulcontrolsystem
+bash deploy/scripts/vps-compose-sidecar-up.sh
+CONFIRM_DOCKER_EDGE=YES bash deploy/scripts/vps-docker-edge-up.sh
+```
+
+El script:
+
+- Levanta `postgres`, `backend` y `frontend`.
+- Detiene Nginx del host para liberar `80/443`.
+- Inicia `pcs-edge` temporal en HTTP para ACME.
+- Emite certificado Let's Encrypt con `pcs-certbot`.
+- Recrea `pcs-edge` con HTTPS y proxy hacia `pcs-frontend`.
+
+Renovacion:
+
+```bash
+bash deploy/scripts/vps-docker-edge-renew.sh
+```
+
+Cron sugerido:
+
+```bash
+0 4 * * * cd /root/powerfulcontrolsystem && bash deploy/scripts/vps-docker-edge-renew.sh >/var/log/pcs-edge-renew.log 2>&1
+```
+
+Rollback del edge:
+
+```bash
+docker stop pcs-edge
+sudo systemctl start nginx
+sudo nginx -t
+```
+
 ## Servicios definidos como perfiles
 
-OnlyOffice, Nextcloud, voz IA y RustDesk estan definidos en el Compose, pero no se levantan por defecto para evitar colisiones con servicios ya existentes en la VPS:
+OnlyOffice, edge publico, voz IA y RustDesk estan definidos en el Compose por perfiles. Nextcloud queda retirado del producto y del Compose oficial:
 
 - OnlyOffice ya existia como contenedor en `127.0.0.1:8088`.
-- Nextcloud ya existia como contenedores en `127.0.0.1:8090`.
 - RustDesk ya usaba puertos publicos `21115`, `21116` y `21117` en el host.
+- Si quedan contenedores Nextcloud legacy, retirar con `deploy/scripts/vps-remove-nextcloud.sh`; usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
 
 Perfiles disponibles:
 
 ```bash
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile office up -d
-docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile cloud up -d
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile voice up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile rustdesk up -d
 ```
@@ -222,7 +262,7 @@ El contexto Docker tambien excluye `documentos/evidencias_qa`, `test_runs`, llav
 No falta nada para que el nucleo publico funcione por Docker. Quedan tareas recomendadas para cerrar el ciclo profesional:
 
 - Definir si `powerfulcontrolsystem.service` se deja como rollback temporal o se deshabilita tras varios dias de estabilidad.
-- Decidir si OnlyOffice, Nextcloud y RustDesk se migran al Compose unificado o se mantienen como servicios separados.
+- Decidir si OnlyOffice y RustDesk se migran al Compose unificado o se mantienen como servicios separados.
 - Publicar imagenes `pcs-backend`, `pcs-frontend` y `pcs-voice-stream` en un registry privado si se quiere mover la VPS sin reconstruir.
 - Programar backups periodicos de volumenes Docker y dumps PostgreSQL.
 - Documentar el procedimiento exacto de restauracion en servidor nuevo con volumenes e imagenes.
@@ -239,7 +279,6 @@ Para mover a otra VPS:
    - `pcs_downloads`
    - `pcs_backend_logs`
    - `pcs_backups`
-   - `pcs_nextcloud_*`
    - `pcs_onlyoffice_*`
    - `pcs_voice_*`
    - `pcs_rustdesk_data`

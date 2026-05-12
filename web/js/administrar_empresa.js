@@ -208,7 +208,6 @@ try {
     document.getElementById("linkPortalTercerosCertificadosMenu"),
     document.getElementById("linkNominaMenu"),
     document.getElementById("linkERPExtendidoMenu"),
-    document.getElementById("linkNextcloud"),
     document.getElementById("linkPropinas"),
     document.getElementById("linkComisiones"),
     document.getElementById("linkConfigEstaciones"),
@@ -278,7 +277,6 @@ try {
   var permModuleAuditoria = "auditoria";
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
-  var permModuleNextcloud = "nextcloud";
   var menuPermissionCatalog = {
     linkCarritoCompras: { module: permModuleVentas, action: permActionCreate },
     linkVentaDirecta: { module: permModuleVentas, action: permActionCreate },
@@ -407,7 +405,6 @@ try {
     linkGestionDocumental: { module: permModuleGestionDocumental, action: permActionCreate },
     linkContratosObligaciones: { module: permModuleContratosObligaciones, action: permActionCreate },
     linkHelpdesk: { module: permModuleHelpdesk, action: permActionCreate },
-    linkNextcloud: { module: permModuleNextcloud, action: permActionRead },
     linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
 
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
@@ -1012,7 +1009,6 @@ try {
       case permModuleAuditoria:
       case permModuleBackups:
       case permModuleDocumentosOnlyOffice:
-      case permModuleNextcloud:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "contabilidad", "auditor"]);

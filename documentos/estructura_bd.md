@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-05-11.1.0
-Ultima actualizacion: 2026-05-11
+Version: 2026-05-12.1.0
+Ultima actualizacion: 2026-05-12
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -20,6 +20,18 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-05-12 (retiro de Nextcloud y cuota DB)
+- Se elimina el uso runtime de la tabla legacy `empresa_nextcloud_accounts`; el arranque ejecuta `DROP TABLE IF EXISTS empresa_nextcloud_accounts` para retirar credenciales antiguas de empresas.
+- Se eliminan las claves super `nextcloud.enabled`, `nextcloud.base_url`, `nextcloud.admin_user` y `nextcloud.admin_secret`.
+- No se crea una tabla nueva para cuotas. La configuracion `pcs_superadministrador.configuraciones.config_key='empresa.limitaciones.db.max_gb'` define el tamano maximo de base de datos asignado por empresa.
+- Para conservar el valor ya configurado en instalaciones existentes, el backend lee el valor legacy `empresa.limitaciones.nextcloud.max_gb` cuando la nueva clave aun no existe y luego guarda en `empresa.limitaciones.db.max_gb`.
+
+Actualizacion 2026-05-12 (registro operativo por invitacion)
+- No se agregan tablas ni columnas fisicas.
+- El flujo de primer ingreso reutiliza `pcs_empresas.users.email_confirm_token`, `email_confirm_expira` y `email_confirmado` como invitacion de un solo uso.
+- Al completar el primer password, el backend confirma el correo, consume el token, limpia expiracion y mantiene el usuario aislado por `empresa_id`.
+- La sesion se materializa en `pcs_superadministrador.administradores`, `sessions` y acceso compartido existente para que `/api/empresa/permisos_contexto` cargue rol efectivo y paginas permitidas.
 
 Actualizacion 2026-05-12 (adaptacion del nucleo por plantilla)
 - No se agregan tablas ni columnas fisicas.
@@ -776,7 +788,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - ambiente_fe, tipo_operacion, prefijo_factura
   - resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - consecutivo_desde, consecutivo_hasta, proximo_consecutivo
-  - formato_impresion, imprimir_copia_factura, mostrar_logo, logo_url
+  - formato_impresion, imprimir_copia_factura, mostrar_logo, mostrar_logo_empresa, mostrar_logo_sistema, logo_url
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
   - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
@@ -1270,8 +1282,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_documentos_gestion.id -> empresa_documentos_firmas.documento_gestion_id
 ## Actualizacion 2026-05-12 - Identidad visual empresarial
 
-- No se agregan tablas ni columnas.
-- Se reutiliza `empresa_configuracion_avanzada.logo_url` como URL canonica del logo empresarial y `empresa_configuracion_avanzada.mostrar_logo` como bandera de visibilidad.
+- No se agregan tablas nuevas. La configuracion avanzada ahora usa `mostrar_logo_empresa` y `mostrar_logo_sistema` para separar la visibilidad del logo empresarial y del logo del sistema en documentos imprimibles; `mostrar_logo` queda como compatibilidad general.
+- Se reutiliza `empresa_configuracion_avanzada.logo_url` como URL canonica del logo empresarial.
 - Los archivos cargados por el endpoint empresarial se almacenan bajo `web/uploads/empresa_logos/empresa_<id>/` y se sirven como ruta publica `/uploads/empresa_logos/empresa_<id>/<archivo>`.
 - El dato queda aislado por `empresa_id` y es compartido por panel, factura, comprobantes y documentos empresariales que leen la configuracion avanzada.
 
@@ -1309,6 +1321,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `pcs_superadministrador` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
 - 2026-04-08: se agregan `roles_de_usuario_permisos` y `roles_de_usuario_paginas_permisos` en `pcs_superadministrador` para configuracion dinamica de permisos por rol (modulo/accion y pagina), con indices unicos por rol para garantizar consistencia de matriz.
 - 2026-04-07: se agregan `empresa_backups` y `empresa_backups_restauraciones` para el modulo 36 de backups empresariales, incluyendo snapshot JSON por `empresa_id`, trazabilidad de hash de contenido y bitacora de restauraciones.
+- 2026-05-12: se agregan exportes locales de backups y configuracion que construyen el snapshot en memoria y lo descargan al dispositivo del usuario sin insertar registros en `empresa_backups` ni escribir copias en disco del VPS.
 - 2026-04-07: se agrega `empresa_creditos_clientes_limites` para gobernar limites por cliente (`limite_saldo_total`, `max_creditos_activos`, `requiere_aprobacion_exceso`) y reforzar aislamiento por `empresa_id` en validaciones de alta/edicion de creditos.
 - 2026-04-07: se agregan `empresa_creditos`, `empresa_creditos_cuotas` y `empresa_creditos_movimientos` para base del modulo 35 (creditos), con trazabilidad de cupo/saldo, amortizacion por cuotas, abonos y movimientos por `empresa_id`/`credito_id`/`cliente_id`.
 - 2026-04-07: se agregan objetos de busqueda full-text para auditoria empresarial (`empresa_auditoria_eventos_fts` + triggers `ai/au/ad`) para soportar `search` con mejor rendimiento y fallback seguro.

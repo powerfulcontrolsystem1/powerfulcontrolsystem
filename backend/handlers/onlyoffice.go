@@ -72,6 +72,19 @@ type onlyOfficeCreateDocRequest struct {
 	Nombre string `json:"nombre,omitempty"` // opcional, sin path
 }
 
+func onlyOfficeBuildEmptyFileByExt(ext string) ([]byte, error) {
+	switch strings.ToLower(strings.TrimSpace(ext)) {
+	case "docx":
+		return onlyOfficeBuildEmptyDOCX()
+	case "xlsx":
+		return onlyOfficeBuildEmptyXLSX()
+	case "pptx":
+		return onlyOfficeBuildEmptyPPTX()
+	default:
+		return nil, fmt.Errorf("tipo no soportado")
+	}
+}
+
 func onlyOfficeDataRoot() string {
 	if v := strings.TrimSpace(os.Getenv("PCS_DATA_ROOT")); v != "" {
 		return v
@@ -541,7 +554,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "empresa_id": empresaID, "name": name})
 			return
 
-		case "create":
+		case "create", "create_local":
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
@@ -567,6 +580,23 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if strings.ToLower(strings.TrimPrefix(filepath.Ext(name), ".")) != ext {
 				name = strings.TrimSuffix(name, filepath.Ext(name)) + "." + ext
 			}
+			if action == "create_local" {
+				name, err = onlyOfficeSafeBaseName(name)
+				if err != nil {
+					http.Error(w, "nombre de archivo invalido", http.StatusBadRequest)
+					return
+				}
+				fileBytes, err := onlyOfficeBuildEmptyFileByExt(ext)
+				if err != nil {
+					http.Error(w, "no se pudo crear documento", http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", onlyOfficeMIMEByExt(name))
+				w.Header().Set("Content-Disposition", "attachment; filename=\""+name+"\"")
+				w.Header().Set("X-PCS-Storage", "cliente")
+				_, _ = w.Write(fileBytes)
+				return
+			}
 			name, err = onlyOfficeEnsureUniqueName(empresaID, name)
 			if err != nil {
 				http.Error(w, "nombre de archivo invalido", http.StatusBadRequest)
@@ -577,17 +607,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "ruta invalida", http.StatusBadRequest)
 				return
 			}
-			var fileBytes []byte
-			switch ext {
-			case "docx":
-				fileBytes, err = onlyOfficeBuildEmptyDOCX()
-			case "xlsx":
-				fileBytes, err = onlyOfficeBuildEmptyXLSX()
-			case "pptx":
-				fileBytes, err = onlyOfficeBuildEmptyPPTX()
-			default:
-				err = fmt.Errorf("tipo no soportado")
-			}
+			fileBytes, err := onlyOfficeBuildEmptyFileByExt(ext)
 			if err != nil {
 				http.Error(w, "no se pudo crear documento", http.StatusInternalServerError)
 				return

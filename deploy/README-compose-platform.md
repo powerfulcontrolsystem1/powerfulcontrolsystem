@@ -57,6 +57,8 @@ EXTERNAL_BACKUP_TARGET=s3 S3_URI=s3://bucket/powerfulcontrolsystem bash deploy/s
 - `deploy/scripts/vps-postgres-migrate-to-volume.sh`: migra las bases actuales al volumen Docker PostgreSQL, con confirmacion explicita.
 - `deploy/scripts/vps-migrate-files-to-volumes.sh`: copia uploads, descargas, logs y respaldos actuales a volumenes Docker.
 - `deploy/scripts/vps-cutover-docker-nginx.sh`: cambia el upstream de Nginx de `127.0.0.1:8080` a Docker, con backup y confirmacion explicita.
+- `deploy/scripts/vps-docker-edge-up.sh`: mueve el frente publico `80/443` al contenedor `pcs-edge` con Nginx y certificados Let's Encrypt.
+- `deploy/scripts/vps-docker-edge-renew.sh`: renueva certificados desde Docker/Certbot y recarga `pcs-edge`.
 
 ## Flujo seguro en la VPS actual
 
@@ -67,7 +69,7 @@ bash deploy/scripts/vps-docker-preflight.sh
 bash deploy/scripts/vps-compose-sidecar-up.sh
 ```
 
-Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice y Nextcloud ya existen como contenedores y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion.
+Ese arranque levanta el nucleo `postgres`, `backend` y `frontend`. En la VPS actual, OnlyOffice puede operar como contenedor separado y RustDesk ya usa los puertos publicos del host; por eso esos servicios quedan definidos en perfiles para no causar colisiones durante la migracion. Nextcloud queda retirado del producto y del Compose.
 
 El wrapper local `scripts/sync_to_vps.ps1` reconstruye este stack y, por defecto, limpia temporales antiguos de sincronizacion y cache Docker no usado al final del despliegue. La limpieza no ejecuta `docker volume prune` ni elimina datos persistentes. Para desactivarla temporalmente:
 
@@ -93,13 +95,46 @@ curl -I https://powerfulcontrolsystem.com
 
 El script de conmutacion deja `powerfulcontrolsystem.service` activo para rollback rapido. Si necesitas volver al backend antiguo, restaura el backup indicado por el script o cambia el upstream de Nginx de nuevo a `127.0.0.1:8080` y recarga Nginx.
 
+## Modo 100% Docker en la VPS
+
+Cuando el stack interno ya este validado, puedes mover tambien el Nginx publico y TLS a Docker. Este modo deja la aplicacion, PostgreSQL, frontend, certificados, OnlyOffice opcional, voz IA opcional y RustDesk opcional dentro de contenedores con volumenes nombrados.
+
+Requisitos antes de ejecutar:
+
+- DNS de `EDGE_DOMAIN` y dominios extra apuntando a la VPS.
+- `EDGE_CERT_EMAIL` configurado con un correo real en `deploy/.env.platform`.
+- Puertos `80` y `443` libres o autorizacion para detener el Nginx del host.
+- Stack interno validado con `bash deploy/scripts/vps-compose-sidecar-up.sh`.
+
+Activacion:
+
+```bash
+CONFIRM_DOCKER_EDGE=YES bash deploy/scripts/vps-docker-edge-up.sh
+```
+
+Renovacion de certificados:
+
+```bash
+bash deploy/scripts/vps-docker-edge-renew.sh
+```
+
+Para cron:
+
+```bash
+0 4 * * * cd /root/powerfulcontrolsystem && bash deploy/scripts/vps-docker-edge-renew.sh >/var/log/pcs-edge-renew.log 2>&1
+```
+
+En este modo, el host conserva solo Docker, firewall/SSH, cron de renovacion si se usa y herramientas basicas de recuperacion. La operacion de la plataforma queda en Compose.
+
 ## Servicios incluidos
 
 - `postgres`: PostgreSQL 16 para `pcs_superadministrador` y `pcs_empresas`.
 - `backend`: API Go de la plataforma.
 - `frontend`: Nginx con archivos de `web` y proxy interno al backend.
+- `edge`: Nginx publico Docker para `80/443`, proxy HTTPS y ACME webroot.
+- `certbot`: emision/renovacion de certificados Let's Encrypt usando volumen Docker.
 - `onlyoffice-documentserver`: OnlyOffice con JWT.
-- `nextcloud-db`, `nextcloud-redis`, `nextcloud`: stack Nextcloud con PostgreSQL 16 como base interna del perfil `cloud`.
+- Nextcloud ya no forma parte del Compose oficial. Si quedan contenedores o volumenes antiguos, ejecutar `deploy/scripts/vps-remove-nextcloud.sh` en la VPS y usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
 - `voice-stream`: servicio FastAPI/Piper para voz IA.
 - `rustdesk-hbbs`, `rustdesk-hbbr`: relay/ID server RustDesk.
 
@@ -109,7 +144,7 @@ Perfiles opcionales:
 
 ```bash
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile office up -d
-docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile cloud up -d
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile voice up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile rustdesk up -d
 ```
@@ -136,8 +171,8 @@ bash deploy/scripts/vps-staging-up.sh
 Para mover la plataforma despues:
 
 - Exporta o publica las imagenes `pcs-backend`, `pcs-frontend` y `pcs-voice-stream`.
-- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_nextcloud_*`, `pcs_onlyoffice_*`, `pcs_voice_*`, `pcs_rustdesk_data`.
+- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `pcs_voice_*`, `pcs_rustdesk_data`. Los volumenes `pcs_nextcloud_*` son legado retirado.
 - Conserva `deploy/.env.platform` con los mismos secretos.
-- En el nuevo servidor, restaura volumenes, copia el proyecto o las imagenes y ejecuta `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml up -d`.
+- En el nuevo servidor, restaura volumenes, copia el proyecto o las imagenes y ejecuta `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d`.
 
 No subas `deploy/.env.platform` al repositorio: contiene secretos operativos.

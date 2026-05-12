@@ -2209,7 +2209,7 @@
       document.getElementById('facturaImprimirVenta').checked = src.imprimir_venta === true;
       document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
-      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo !== false;
+      document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_empresa !== false && src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
     }
 
@@ -2232,6 +2232,7 @@
         imprimir_factura_electronica: document.getElementById('facturaImprimirFacturaElectronica').checked,
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
+        mostrar_logo_empresa: document.getElementById('facturaMostrarLogo').checked,
         logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()
       };
     }

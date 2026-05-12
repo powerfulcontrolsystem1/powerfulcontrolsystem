@@ -1,3 +1,21 @@
+2026-05-12: Retiro de Nextcloud
+- `nextcloud` deja de ser modulo licenciado o pagina de empresa.
+- Se retiran `linkNextcloud`, `WithEmpresaNextcloudPermissions`, `/api/empresa/nextcloud` y `/super/api/config/nextcloud`.
+- Las licencias nuevas no deben incluir `nextcloud`; `documentos_onlyoffice`, `gestion_documental`, `backups` y soporte remoto conservan sus permisos independientes.
+- La cuota de GB que antes se asociaba a almacenamiento se interpreta ahora como `db_max_gb`, limite administrativo de tamano maximo de base de datos por empresa.
+
+2026-05-12: Recuperacion publica de invitacion operativa
+- `POST /api/empresa/usuarios/recuperar_invitacion` es publico solo para solicitar reenvio de invitacion; no inicia sesion, no devuelve datos del usuario y no revela si el correo existe.
+- El reenvio se ejecuta unicamente para usuarios activos sin contrasena configurada; usuarios inexistentes, inactivos o ya registrados reciben la misma respuesta enmascarada.
+- La accion rota `email_confirm_token`/`email_confirm_expira`; el acceso real sigue exigiendo completar invitacion y luego cargar permisos por `/api/empresa/permisos_contexto`.
+
+2026-05-12: Registro operativo por invitacion y permisos al primer ingreso
+- `login_usuario.html` no concede alta publica: el usuario operativo solo crea contrasena desde una invitacion enviada por un administrador autorizado de la empresa.
+- El token de invitacion vive en `users.email_confirm_token`, vence con `email_confirm_expira` y se consume al guardar el primer password; el documento y el contrato vigente siguen siendo controles adicionales.
+- Al completar invitacion, `createEmpresaUsuarioSessionAndRespond` registra/acopla el correo al rol asignado, crea sesion y devuelve `redirect_url=/administrar_empresa.html?id={empresa_id}`.
+- La visibilidad final en el panel empresarial no depende de texto del login: `web/js/administrar_empresa.js` consulta `/api/empresa/permisos_contexto` y aplica rol efectivo, licencia, paginas y reglas finas por `empresa_id`.
+- No se agregan roles ni privilegios nuevos; solo se endurece el canal de incorporacion de usuarios operativos.
+
 2026-05-12: Nota operativa para tema en login de usuarios
 - `web/login_usuario.html` y `web/menu.js` priorizan la cookie visible `pcs_theme` sobre `localStorage` para pintar el modo claro/oscuro antes de autenticar.
 - La cookie `pcs_theme` solo guarda preferencia visual; no reemplaza ni expone la cookie de sesion `HttpOnly`, no concede acceso y no altera wrappers ni permisos.
@@ -9,6 +27,10 @@
 - La regla operativa queda explicita: CRM complementa clientes, ventas y facturacion, pero no duplica esos nucleos ni cambia sus permisos.
 
 2026-05-12: Nota operativa para visibilidad de licencias
+- 2026-05-12: Explorador de Archivos super
+- `web/super/explorador_archivos.html` y `GET /super/api/explorador_archivos` quedan reservados a `super_administrador`; no hay acceso para `control_super_administrador`, roles empresariales ni usuarios operativos.
+- La operacion es de solo lectura sobre metadata de archivos/carpetas y no agrega permisos empresariales, wrappers `/api/empresa/*`, tablas, acciones de descarga, edicion, subida o borrado.
+
 - La pagina `web/super/licencias.html` permite a `super_administrador` mostrar u ocultar licencias para clientes usando `licencias.activo`.
 - Ocultar una licencia no borra historico ni permisos ya documentados; la retira del catalogo comercial y bloquea checkout publico nuevo.
 - Los flujos publicos de pago o activacion (`checkout_summary`, Wompi, Nequi, Epayco y activacion sin pago) rechazan licencias ocultas antes de iniciar la compra.
@@ -318,6 +340,11 @@
 - `super_administrador` mantiene el control exclusivo del servicio base RustDesk desde `web/super/servidores.html`, incluyendo acciones de encendido, apagado, reinicio y prueba. El cambio no crea un rol nuevo ni delega esas acciones al panel empresarial.
 - `administrador` de empresa sigue limitado a configurar los datos visibles del acceso remoto de su empresa en `web/administrar_empresa/soporte_remoto.html`: host, clave, instrucciones y enlaces de descarga. No obtiene permisos para operar el servicio del VPS.
 - La pÒ¡gina pÒºblica `web/soporte_remoto_acceso.html` continÒºa siendo solo de consulta del acceso compartido por sesiÒ³n; expone descargas y datos de conexiÒ³n ya autorizados, sin ampliar privilegios a visitantes o usuarios sin sesiÒ³n.
+
+2026-05-12: Nota operativa para `documentos_onlyoffice` y `backups`
+- Los modos locales agregados para documentos y backups no abren permisos nuevos: siguen protegidos por `WithEmpresaDocumentosOnlyOfficePermissions` y `WithEmpresaBackupsPermissions`.
+- `create_local`, `exportar_local` y `exportar_configuracion_local` descargan al navegador del usuario autenticado y no crean artefactos permanentes en el VPS.
+- Los backups automaticos locales dependen de una sesion activa en la pagina de backups y de las reglas de descarga del navegador del dispositivo.
 
 2026-04-20: Nota operativa para `backups empresariales`, `administrar_empresa` y `configuracion`
 - La exportacion/importacion de configuracion por empresa reutiliza el modulo `backups empresariales` y no abre permisos nuevos: sigue limitada al acceso ya existente al enlace `Backups empresariales` del panel de empresa.
@@ -995,6 +1022,7 @@ Leyenda:
 | Seguridad y permisos | CRUDA | CRUA | R | R | R | R | R | R |
 | Impresoras operativas | CRUDA | CRUA | R | R | R | R | R | R |
 | Seguridad VPS Linux (super) | CRUA | - | - | - | - | - | - | - |
+| Explorador de Archivos (super) | R | - | - | - | - | - | - | - |
 | Administracion DB PostgreSQL (super) | R | - | - | - | - | - | - | - |
 | Reportes globales (super) | R | - | - | - | - | - | - | - |
 | Pagina principal (tarjetas index) | CRUA | - | - | - | - | - | - | - |

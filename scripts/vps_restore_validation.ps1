@@ -74,7 +74,9 @@ for artifact in \
   powerful-control-system_pcs_downloads.tar.gz \
   powerful-control-system_pcs_backend_logs.tar.gz \
   powerful-control-system_pcs_backups.tar.gz \
-  powerful-control-system_pcs_postgres_data.tar.gz; do
+  powerful-control-system_pcs_postgres_data.tar.gz \
+  powerful-control-system_pcs_letsencrypt.tar.gz \
+  powerful-control-system_pcs_certbot_www.tar.gz; do
   if [ -f "`$backup_dir/`$artifact" ]; then
     tar -tzf "`$backup_dir/`$artifact" >/dev/null
     echo "[OK] Tarball valido: `$artifact"

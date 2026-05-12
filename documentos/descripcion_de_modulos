@@ -1,3 +1,57 @@
+2026-05-12: Portada publica con tarjetas destacadas y carrusel
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: la portada separa la oferta de sistemas en 6 tarjetas principales y un carrusel horizontal para las demas tarjetas.
+- UX: el carrusel usa flechas de navegacion, conserva tarjetas en una sola hilera y deja los `Modulos del sistema` inmediatamente despues de esta barra.
+- Alcance: no cambia contratos API, permisos, tablas, backend ni dependencias externas.
+
+2026-05-12: Fotos del index en landing descriptiva
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: `descripcion_de_los_sistemas.html` reutiliza la foto grande de las tarjetas del index (`imagen_secundaria_url`) dentro de cada tarjeta descriptiva.
+- UX: la landing conserva continuidad visual entre `index.html` y la descripcion ampliada; el logo del sistema se mantiene como apoyo pequeno.
+- Alcance: no cambia backend, permisos, tablas ni dependencias.
+
+2026-05-12: VPS portable 100% Docker
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `staging`, `backups`.
+- Cambio funcional: el despliegue oficial permite dejar backend, frontend, PostgreSQL, TLS/Nginx publico, certificados, OnlyOffice opcional, voz IA opcional y RustDesk opcional dentro de Docker.
+- Operacion: `deploy/scripts/vps-docker-edge-up.sh` mueve `80/443` a `pcs-edge` con confirmacion explicita y `deploy/scripts/vps-docker-edge-renew.sh` renueva certificados con Certbot en contenedor.
+- Portabilidad: el traslado futuro a otro VPS depende de restaurar volumenes Docker, copiar `deploy/.env.platform` privado y levantar Compose con perfiles necesarios.
+- Alcance: no cambia base de datos de la aplicacion, permisos empresariales, rutas de negocio ni dependencias Go.
+
+2026-05-12: Explorador de Archivos super
+- Modulos afectados: `super_administrador`, `seguridad`, `operacion_vps`.
+- Cambio funcional: el panel super incorpora `Explorador de Archivos` para navegar por carpetas del filesystem visible para el backend en el VPS.
+- UX: la vista presenta raices, ruta editable, boton de subir a carpeta padre, recarga y tabla con nombre, tipo, tamano, fecha, permisos y ruta.
+- Seguridad: modo solo lectura, exclusivo de `super_administrador`; no hay lectura de contenido, descargas, cargas, edicion ni borrado.
+- Alcance: no cambia bases de datos, permisos empresariales, tablas ni dependencias.
+
+2026-05-12: Retiro de Nextcloud y cuota DB empresarial
+- Modulos afectados: `administrar_empresa`, `super_administrador`, `permisos`, `licencias`, `backups`, `postgresql`, `deploy`.
+- Cambio funcional: `nextcloud` deja de ser modulo empresarial, licencia visible y servicio VPS administrado por el sistema.
+- UX: `super_administrador > Configuracion > Limitaciones` reemplaza la cuota Nextcloud por `Base de datos por empresa (tamano maximo, GB)`.
+- Backend: `/api/empresa/nextcloud` y `/super/api/config/nextcloud` quedan retirados; el arranque elimina credenciales legacy y el panel PostgreSQL muestra cuota/uso/estado por empresa.
+- Operacion: el Compose oficial ya no define Nextcloud y `deploy/scripts/vps-remove-nextcloud.sh` retira contenedores legacy.
+
+2026-05-12: Regreso a estaciones desde ultimos movimientos de caja
+- Modulos afectados: `estaciones`, `caja`.
+- Cambio funcional: `web/administrar_empresa/ultimos_movimientos_de_caja.html` agrega la accion `Regresar a estaciones` junto a `Actualizar`.
+- UX: el enlace conserva `empresa_id` para volver al tablero de estaciones de la misma empresa.
+- Alcance: sin cambios de backend, permisos, tablas ni dependencias.
+
+2026-05-12: Login operativo simplificado y recuperacion de invitacion
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`.
+- Cambio funcional: `login_usuario.html` retira selector de apariencia, acceso al inicio, acceso de administradores y enlaces redundantes del formulario principal.
+- UX: el login muestra solo acciones necesarias: recuperar contrasena y recuperar email de invitacion.
+- Backend: se agrega `POST /api/empresa/usuarios/recuperar_invitacion`, publico con reCAPTCHA y respuesta enmascarada, que reenvia la invitacion solo si el usuario ya existe, esta activo y aun no completo su contrasena.
+- Seguridad: el reenvio genera un nuevo token de invitacion de 48 horas y no revela si el correo existe o si ya esta registrado.
+
+2026-05-12: Registro de usuarios operativos solo por invitacion
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `administrar_empresa`, `permisos`.
+- Cambio funcional: el alta de usuarios operativos queda cerrada al enlace de invitacion enviado por el administrador; el primer password exige `token_invitacion`, documento, contrato vigente y reCAPTCHA.
+- Seguridad: el token de invitacion se valida contra `users.email_confirm_token`, vence a las 48 horas, se consume al crear la contrasena y en ese mismo paso confirma el correo.
+- UX: `login_usuario.html` ya no presenta un registro publico abierto; si no hay enlace de invitacion, informa que debe solicitar reenvio al administrador.
+- Permisos: al completar invitacion o iniciar sesion se crea sesion, se persiste `empresa_id`, se redirige a `administrar_empresa.html?id=...` y el panel carga rol/permisos desde `/api/empresa/permisos_contexto`.
+- Alcance: no agrega dependencias ni columnas; reutiliza los campos existentes de confirmacion en `users`.
+
 2026-05-12: Tema automatico en login de usuarios operativos
 - Modulos afectados: `autenticacion`, `login_usuario`, `apariencia`.
 - Cambio funcional: `login_usuario.html` carga automaticamente el tema claro/oscuro desde la cookie `pcs_theme` del navegador antes de usar `localStorage`.
@@ -1868,6 +1922,12 @@ Criterio de esta guia:
 26) Carritos de compra e items
 - Operacion de carrito, pago validado, concurrencia de stock y recuperacion de sesiones.
 
+2026-05-12: Documentos y backups locales por dispositivo
+- Modulos afectados: `documentos_onlyoffice`, `backups`, `administrar_empresa`, `seguridad`.
+- Cambio funcional: OnlyOffice agrega modo predeterminado `Guardar en este dispositivo` para crear documentos Word/Excel/PowerPoint como descarga local sin guardarlos ni listarlos en el VPS. El modo `Editar colaborativo en servidor` queda disponible solo cuando se requiere Document Server.
+- Backups: el modulo empresarial agrega export local directa (`exportar_local` y `exportar_configuracion_local`) para descargar respaldos en el equipo/celular sin crear archivo en disco del VPS ni registro de historial. La configuracion de backups automaticos locales se guarda en el navegador por empresa y ejecuta descargas mientras la pagina esta abierta con sesion activa.
+- Seguridad: se reutilizan permisos existentes de `documentos_onlyoffice` y `backups`; no se agregan rutas publicas, dependencias ni motores de base de datos.
+
 2026-05-12: Verticales 20 en super administrador
 - Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
 - Cambio funcional: la vista `Verticales 20` ahora presenta semaforo ejecutivo, tarjetas de foco, conteo de brechas, metadata completa, listos para venta y licencias base.
@@ -1877,7 +1937,7 @@ Criterio de esta guia:
 2026-05-12: Identidad visual empresarial
 - Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
 - Cambio funcional: Configuracion empresarial expone una seccion visible para cargar o pegar el logo de la empresa; el panel principal lo muestra encima del titulo de empresa sin modificar la tarjeta de clima.
-- Fuente unica: el logo se guarda en `empresa_configuracion_avanzada.logo_url` con control `mostrar_logo`, campos compartidos por factura, comprobantes y documentos empresariales que consumen la configuracion avanzada.
+- Fuente unica: el logo se guarda en `empresa_configuracion_avanzada.logo_url`; `mostrar_logo_empresa` y `mostrar_logo_sistema` controlan de forma separada si facturas, recibos, reportes y documentos imprimibles muestran el logo empresarial, el logo del sistema o ambos. `mostrar_logo` queda como compatibilidad de visibilidad general.
 - Seguridad: la carga usa `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions` y conserva aislamiento por `empresa_id`.
 
 27) Ventas simples por estacion

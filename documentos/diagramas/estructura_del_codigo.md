@@ -1,3 +1,26 @@
+## Actualizacion 2026-05-12 (portal: seis tarjetas y carrusel)
+
+- `web/index.html` divide las tarjetas publicas de sistemas en `primaryCards = cards.slice(0, 6)` y `carouselCards = cards.slice(6)`.
+- `#portalCardsGrid` renderiza solo las 6 primeras tarjetas para mantener la portada inicial compacta.
+- `#portalCardsCarouselSection` contiene una sola hilera horizontal `#portalCardsCarousel` con las tarjetas restantes y botones `#portalCarouselPrev`/`#portalCarouselNext`.
+- Flujo visual: `Hero` -> grilla de 6 sistemas -> carrusel `Mas sistemas` -> seccion `Modulos del sistema`.
+- Alcance: frontend puro; no agrega endpoints, tablas, permisos ni dependencias.
+
+## Actualizacion 2026-05-12 (portal: fotos del index en landing descriptiva)
+
+- `web/index.html` sigue usando `imagen_url` como logo de tarjeta e `imagen_secundaria_url` como foto/ilustracion principal.
+- `web/descripcion_de_los_sistemas.html` ahora normaliza tambien `imagen_secundaria_url` y la renderiza como `system-detail-photo`, dejando `imagen_url` como `system-detail-logo`.
+- `web/estilos.css` define tamanos responsivos para la foto y el logo en la landing descriptiva.
+- Flujo: `index.html` -> `descripcion_de_los_sistemas.html?detalle_id=...` -> `GET /api/public/pagina_principal` -> tarjeta descriptiva con la misma imagen secundaria del portal.
+
+## Actualizacion 2026-05-12 (VPS portable 100% Docker)
+
+- `deploy/docker-compose.platform.yml` define el nucleo Docker (`postgres`, `backend`, `frontend`) y agrega perfiles `edge`/`certbot` para publicar `80/443` y administrar certificados dentro de contenedores.
+- `deploy/nginx/edge-http-only.conf.template` se usa durante ACME inicial; `deploy/nginx/edge.conf.template` queda como Nginx publico HTTPS final con proxy hacia `frontend` y OnlyOffice cuando el perfil `office` esta activo.
+- `deploy/scripts/vps-docker-edge-up.sh` orquesta: validar Compose -> levantar nucleo -> detener Nginx host -> iniciar edge HTTP -> emitir certificado -> recrear edge HTTPS.
+- `deploy/scripts/vps-docker-edge-renew.sh` ejecuta renovacion Certbot en contenedor y recarga `pcs-edge`.
+- Flujo de migracion futura: restaurar volumenes Docker + copiar `deploy/.env.platform` privado + levantar `docker compose --profile edge up -d` + apuntar DNS al nuevo VPS.
+
 ## Actualizacion 2026-05-12 (nucleo configurable por plantilla)
 
 - `backend/db/tipo_empresa_preconfiguracion.go` agrega `TipoEmpresaPreconfigAdaptacionNucleo` dentro del template para declarar fuente unica de usuarios, productos/servicios y estaciones.
@@ -22,6 +45,12 @@
 - `backend/utils/utils.go` mantiene publicas ambas rutas exactas en `AuthMiddleware`; no hay cambios de permisos privados ni endpoints de empresa.
 
 ## Actualizacion 2026-05-12 (Centro de mando super)
+
+- Actualizacion 2026-05-12 (super: Explorador de Archivos):
+  - `backend/handlers/super_file_explorer.go` expone `GET /super/api/explorador_archivos` para listar raices, carpetas y metadata de entradas del filesystem visible para el backend.
+  - `web/super/explorador_archivos.html` consume el endpoint y presenta una tabla tipo explorador con ruta editable, carpeta padre, recarga y raices disponibles.
+  - `web/super_administrador.html` y `web/js/super_administrador.js` agregan la pagina al grupo Plataforma solo para la navegacion completa de `super_administrador`; el rol `control_super_administrador` no recibe este acceso.
+  - Flujo: `super_administrador.html` -> `super/explorador_archivos.html` -> `GET /super/api/explorador_archivos?action=list&path=...` -> `os.ReadDir`/`os.Stat` -> JSON de metadata sin lectura de contenido ni escritura.
 
 - `web/super_administrador.html` mantiene `web/super/licencias_resumen.html` como entrada de Centro de mando para super administrador.
 - `web/super/licencias_resumen.html` se reconstruye como consola ejecutiva frontend pura, sin dependencias externas, consumiendo los contratos super existentes de metricas, PostgreSQL, alertas, errores, servidores, licencias, empresas y consumos.
@@ -300,6 +329,17 @@
   - `compras.htmlempresa_id=...` -> `POST /api/empresa/compras/documentos` -> opcional `POST /api/empresa/compras/documentos/comprobante` -> persistencia de `comprobante_url` y visualización desde la tabla.
   - `finanzas.htmlempresa_id=...` -> `POST|PUT /api/empresa/finanzas/movimientos` -> opcional `POST /api/empresa/finanzas/movimientos/comprobante` -> persistencia de `comprobante_url` y visualización desde el listado.
 
+## Actualizacion 2026-05-12 (documentos y backups locales)
+
+- Backend documentos:
+  - `backend/handlers/onlyoffice.go` agrega `action=create_local` en `/api/empresa/documentos` para generar OOXML vacio y devolverlo como descarga, sin crear archivo en `/data/empresas`.
+- Frontend documentos:
+  - `web/administrar_empresa/documentos_onlyoffice.html` usa por defecto `Guardar en este dispositivo`; en ese modo no lista archivos del VPS ni activa upload/editor. El modo colaborativo en servidor queda opt-in.
+- Backend backups:
+  - `backend/handlers/backups_empresariales.go` agrega `action=exportar_local` y `action=exportar_configuracion_local`, que construyen el snapshot con `BuildEmpresaBackupPayload`/`BuildEmpresaConfigBackupPayload` y lo devuelven como attachment sin persistir historial ni copia en disco.
+- Frontend backups:
+  - `web/administrar_empresa/backups.html` descarga datos/configuracion al equipo y agrega programacion local por navegador para ejecutar respaldos automaticos mientras la pagina este abierta.
+
 ## Actualizacion 2026-04-20 (backups empresariales: exporte e importacion de configuracion por empresa)
 
 - Backend backups/configuracion:
@@ -350,6 +390,14 @@
 - Flujo:
   - `estaciones.htmlempresa_id=...` -> carga `estaciones_config` -> restaura runtime de `Notas` desde `localStorage` aislado por empresa -> muestra varias notas con temporizador, repeticion y countdown persistente tras recarga.
   - `Guardar nota` sigue persistiendo solo la configuracion base de la estacion en `empresa_estacion_prefs`; el runtime multiple de recordatorios queda local al navegador.
+
+### Retiro de Nextcloud y cuota DB por empresa (2026-05-12)
+
+- `backend/main.go` ya no registra `/api/empresa/nextcloud` ni `/super/api/config/nextcloud`.
+- `backend/db/nextcloud_decommission.go` retira la tabla legacy `empresa_nextcloud_accounts` y las claves `nextcloud.*` de configuracion super.
+- `backend/handlers/super_limitaciones_empresa.go` usa `empresa.limitaciones.db.max_gb` como cuota maxima de base de datos por empresa, leyendo el valor legacy solo como compatibilidad.
+- `backend/handlers/postgres_performance.go` agrega cuota, porcentaje y estado al ranking `action=empresas_storage`.
+- El frontend retira Nextcloud de menu empresarial, modulo menu, licencias y configuracion avanzada; el Compose oficial ya no define servicios Nextcloud.
 
 # Estructura del codigo
 

@@ -290,15 +290,18 @@
         var numeroLegal = norm(item && item.numero_legal) || norm(item && item.documento_codigo) || "Pendiente";
         var cfg = state.cfg || {};
         var empresaLabel = norm(state.empresaNombre) || norm(cfg.razon_social) || norm(cfg.nombre_comercial) || ("Empresa #"+String(empresaID||""));
-        var showLogo = cfg.mostrar_logo !== false;
+        var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
         var logoUrl = showLogo ? safeUrl(cfg.logo_url) : "";
+        var logoHtml = window.PCSPrint && window.PCSPrint.resolveDocumentLogos && window.PCSPrint.logosHTML
+          ? window.PCSPrint.logosHTML(window.PCSPrint.resolveDocumentLogos(cfg))
+          : (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo empresa">') : '');
         var legalBlock = buildLegalBlock(cfg);
         if(viewMode === "pos"){
           return '' +
             '<article class="factura-print-sheet '+esc(meta.accent)+' factura-print-pos-preview">' +
               '<header class="factura-print-head">' +
                 '<div class="factura-print-logo">' +
-                  (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo empresa">') : '') +
+                  logoHtml +
                   '<div><span class="factura-print-kicker">Ticket POS</span><h3>'+esc(meta.title)+'</h3><p>'+esc(empresaLabel)+'</p></div>' +
                 '</div>' +
               '</header>' +
@@ -316,7 +319,7 @@
           '<article class="factura-print-sheet '+esc(meta.accent)+' '+(viewMode==="compacta" ? "factura-print-compacta" : "")+'">' +
             '<header class="factura-print-head">' +
               '<div class="factura-print-logo">' +
-                (logoUrl ? ('<img src="'+esc(logoUrl)+'" alt="Logo empresa">') : '') +
+                logoHtml +
                 '<div><span class="factura-print-kicker">Venta</span><h3>'+esc(meta.title)+'</h3><p>'+esc(meta.subtitle)+'</p></div>' +
               '</div>' +
               '<div class="factura-print-company"><strong>'+esc(empresaLabel)+'</strong><span>'+esc(companyLegalLines(cfg).join(" · ") || ("ID empresa "+String(empresaID||0)))+'</span></div>' +
@@ -437,7 +440,7 @@
         var formato = currentViewMode();
         if(formato === "pos"){
           var lines = companyLegalLines(cfg);
-          var showLogo = cfg.mostrar_logo !== false;
+          var showLogo = cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false;
           var logoUrl = showLogo ? safeUrl(cfg.logo_url) : "";
           var notas = norm(cfg.notas_legales);
           var pie = norm(cfg.pie_factura);
@@ -447,6 +450,7 @@
               title: "Recibo de venta",
               kind: norm(item && item.tipo_documento).indexOf("factura") >= 0 ? "factura" : "recibo",
               format: "pos",
+              logos: window.PCSPrint.resolveDocumentLogos(cfg),
               company: lines[0] || "Empresa",
               subtitle: lines.slice(1).join(" | "),
               badge: "POS",

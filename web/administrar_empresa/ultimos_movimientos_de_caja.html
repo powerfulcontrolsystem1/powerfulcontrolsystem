@@ -13,6 +13,7 @@
       <div class="header">
         <h1>Últimos movimientos de caja</h1>
         <div>
+          <a id="backToStationsLink" class="btn secondary" href="/administrar_empresa/estaciones.html">Regresar a estaciones</a>
           <button id="reloadBtn" class="btn secondary">Actualizar</button>
         </div>
       </div>
@@ -226,6 +227,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    const backToStations = document.getElementById('backToStationsLink');
+    if (backToStations && empresaId) {
+      backToStations.href = '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(empresaId);
+    }
     const reload = document.getElementById('reloadBtn');
     if (reload) reload.addEventListener('click', () => { loadProductos(); loadFacturas(); });
     loadProductos();
