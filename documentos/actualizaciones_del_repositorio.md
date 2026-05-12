@@ -8764,3 +8764,19 @@ Archivos modificados:
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/elegir_licencia.html
 - web/js/editar_empresa.js
+
+2026-05-11 20:17:52 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 609ed3e7; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/chat_flotante_config.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/configuracion_chat_flotante.html
+- web/js/ai_chat_drawer.js
+- web/js/radio_player.js
