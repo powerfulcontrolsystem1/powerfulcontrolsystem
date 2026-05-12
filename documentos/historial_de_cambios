@@ -23760,3 +23760,19 @@ Archivos modificados:
 - Frontend: `elegir_licencia.html` solicita licencias filtradas por `tipo_id` y `editar_empresa.js` conserva `tipo_id/tipo_nombre` al abrir renovacion.
 - Seguridad: los endpoints verticales tambien se bloquean si el modulo no corresponde al alcance vertical de la empresa; no queda solo como ocultacion visual.
 - QA: `go test ./handlers` y `go test ./db` desde `backend/`.
+2026-05-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/matriz_integracion_verticales.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/elegir_licencia.html
+- web/js/editar_empresa.js
