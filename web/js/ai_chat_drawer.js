@@ -26,6 +26,7 @@
   var CONFIG_SAVE_ID = 'aiChatCompactConfigSave';
   var CONFIG_CHAT_ENABLED_ID = 'aiChatCompactConfigEnabled';
   var CONFIG_ROBOT_ENABLED_ID = 'aiChatCompactConfigRobotEnabled';
+  var CONFIG_RADIO_ENABLED_ID = 'aiChatCompactConfigRadioEnabled';
   var CONFIG_VOICE_ID = 'aiChatCompactConfigVoice';
   var CONFIG_ROBOT_VOICE_ID = 'aiChatCompactConfigRobotVoice';
   var DOCUMENT_TOOLS_ID = 'aiChatDocumentTools';
@@ -60,6 +61,7 @@
     voiceQueueVersion: 0,
     streamingSpeechBuffer: '',
     robotVoice: 'es-CO',
+    radioEnabled: true,
     robotAssistantVisible: false,
     robotMoodTimer: null,
     lastResponseModelMeta: null,
@@ -433,8 +435,17 @@
   var CHAT_PERSONALITY_STORAGE_KEY = 'pcs_ai_chat_personality';
   var CHAT_ENABLED_STORAGE_KEY = 'pcs_ai_chat_enabled';
   var ROBOT_ENABLED_STORAGE_KEY = 'pcs_ai_robot_enabled';
+  var RADIO_ENABLED_STORAGE_KEY = 'pcs_radio_online_enabled';
   var VOICE_COMMAND_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
   var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
+
+  function buildChatPrefsEndpoint() {
+    var empresaId = parsePositiveInt(getCurrentEmpresaId());
+    if (!empresaId) {
+      return CHAT_PREFS_ENDPOINT;
+    }
+    return CHAT_PREFS_ENDPOINT + '?empresa_id=' + encodeURIComponent(String(empresaId));
+  }
 
   function normalizeChatPersonalityMode(value) {
     var mode = normalize(value).toLowerCase();
@@ -519,6 +530,16 @@
     return state.robotEnabled;
   }
 
+  function setRadioEnabledPreference(enabled) {
+    state.radioEnabled = writeEnabledPreference(RADIO_ENABLED_STORAGE_KEY, enabled);
+    if (typeof window.__pcsRadioPlayerSetEnabled === 'function') {
+      try {
+        window.__pcsRadioPlayerSetEnabled(state.radioEnabled);
+      } catch (error) {}
+    }
+    return state.radioEnabled;
+  }
+
   function setRobotVoicePreference(value) {
     state.robotVoice = normalizeRobotVoice(value);
     try {
@@ -538,7 +559,7 @@
 
   function persistChatPersonalityPreference(value) {
     var mode = setChatPersonalityMode(value);
-    return fetch(CHAT_PREFS_ENDPOINT, {
+    return fetch(buildChatPrefsEndpoint(), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -613,7 +634,7 @@
     try {
       window.localStorage.setItem(VOICE_COMMAND_STORAGE_KEY, value ? '1' : '0');
     } catch (error) {}
-    return fetch(CHAT_PREFS_ENDPOINT, {
+    return fetch(buildChatPrefsEndpoint(), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -626,7 +647,7 @@
 
   function persistChatEnabledPreference(enabled) {
     var value = setChatEnabledPreference(enabled);
-    return fetch(CHAT_PREFS_ENDPOINT, {
+    return fetch(buildChatPrefsEndpoint(), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -639,7 +660,7 @@
 
   function persistRobotEnabledPreference(enabled) {
     var value = setRobotEnabledPreference(enabled);
-    return fetch(CHAT_PREFS_ENDPOINT, {
+    return fetch(buildChatPrefsEndpoint(), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -652,7 +673,7 @@
 
   function persistRobotVoicePreference(value) {
     var voice = setRobotVoicePreference(value);
-    return fetch(CHAT_PREFS_ENDPOINT, {
+    return fetch(buildChatPrefsEndpoint(), {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
@@ -678,12 +699,13 @@
     try {
       state.chatEnabled = isPublicPortalContext() ? true : readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
       state.robotEnabled = readEnabledPreference(ROBOT_ENABLED_STORAGE_KEY, true);
+      state.radioEnabled = readEnabledPreference(RADIO_ENABLED_STORAGE_KEY, true);
       state.voiceEnabled = window.localStorage.getItem(VOICE_COMMAND_STORAGE_KEY) === '1';
       setRobotVoicePreference(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || state.robotVoice);
     } catch (error) {}
     applyChatPersonalityMode();
     updateVoiceButtons(micBtn, voiceBtn, convBtn);
-    fetch(CHAT_PREFS_ENDPOINT, { credentials: 'same-origin' })
+    fetch(buildChatPrefsEndpoint(), { credentials: 'same-origin' })
       .then(function (res) {
         if (!res.ok) return null;
         return res.json();
@@ -695,6 +717,9 @@
         }
         if (typeof data.robot_enabled === 'boolean') {
           setRobotEnabledPreference(data.robot_enabled);
+        }
+        if (typeof data.radio_online_enabled === 'boolean') {
+          setRadioEnabledPreference(data.radio_online_enabled);
         }
         if (typeof data.voice_enabled === 'boolean') {
           applyVoicePreference(data.voice_enabled);
@@ -1362,16 +1387,20 @@
     return normalizeChatPersonalityMode(selected && selected.value);
   }
 
-  function setCompactConfigState(mode, voiceEnabled, robotVoice, chatEnabled, robotEnabled) {
+  function setCompactConfigState(mode, voiceEnabled, robotVoice, chatEnabled, robotEnabled, radioEnabled) {
     if (typeof chatEnabled === 'boolean') {
       state.chatEnabled = chatEnabled;
     }
     if (typeof robotEnabled === 'boolean') {
       state.robotEnabled = robotEnabled;
     }
+    if (typeof radioEnabled === 'boolean') {
+      state.radioEnabled = radioEnabled;
+    }
     var normalizedMode = normalizeChatPersonalityMode(mode);
     var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
     var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
+    var radioInput = document.getElementById(CONFIG_RADIO_ENABLED_ID);
     var modeInput = document.querySelector('input[name="aiChatCompactMode"][value="' + normalizedMode + '"]');
     var voiceInput = document.getElementById(CONFIG_VOICE_ID);
     var robotVoiceInput = document.getElementById(CONFIG_ROBOT_VOICE_ID);
@@ -1382,6 +1411,9 @@
     if (robotInput) {
       robotInput.checked = !!state.robotEnabled;
       robotInput.disabled = !state.chatEnabled;
+    }
+    if (radioInput) {
+      radioInput.checked = !!state.radioEnabled;
     }
     modeInputs.forEach(function (input) {
       input.disabled = !state.chatEnabled || ((input.value === 'robot' || input.value === 'secretary') && !state.robotEnabled);
@@ -1416,6 +1448,7 @@
       '<div class="ai-chat-compact-config-body">' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_CHAT_ENABLED_ID + '" type="checkbox"><span><b>Activar chat IA</b><small>Muestra u oculta el chat flotante completo.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input id="' + CONFIG_ROBOT_ENABLED_ID + '" type="checkbox"><span><b>Activar robot IA</b><small>Permite el avatar 3D, la guia inicial y avisos de recordatorios.</small></span></label>' +
+      '<label class="ai-chat-compact-option"><input id="' + CONFIG_RADIO_ENABLED_ID + '" type="checkbox"><span><b>Activar emisora</b><small>Muestra el reproductor de musica latina para esta empresa.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="normal"><span><b>Chat cuadrado</b><small>Ventana lateral tradicional con historial y controles completos.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="robot"><span><b>Robot IA</b><small>Avatar 3D con conversación en globos sobre el robot.</small></span></label>' +
       '<label class="ai-chat-compact-option"><input type="radio" name="aiChatCompactMode" value="secretary"><span><b>Secretaria IA 3D</b><small>Avatar estilo caricatura ejecutiva joven con voz femenina.</small></span></label>' +
@@ -1442,13 +1475,15 @@
     function applyCompactPreview() {
       var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
       var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
+      var radioInput = document.getElementById(CONFIG_RADIO_ENABLED_ID);
       var chatOn = setChatEnabledPreference(chatInput ? chatInput.checked : state.chatEnabled);
       var robotOn = setRobotEnabledPreference(robotInput ? robotInput.checked : state.robotEnabled);
+      var radioOn = setRadioEnabledPreference(radioInput ? radioInput.checked : state.radioEnabled);
       var mode = setChatPersonalityMode(getCompactConfigMode());
       applyVoicePreference(!!document.getElementById(CONFIG_VOICE_ID).checked);
       setRobotVoicePreference(mode === 'secretary' ? 'es-CO-female' : document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
-      setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, chatOn, robotOn);
-      setConfigStatus('Vista previa aplicada. Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Voz del avatar: ' + labelForRobotVoice(getEffectiveRobotVoice()) + '. Presiona Guardar para persistirla.');
+      setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, chatOn, robotOn, radioOn);
+      setConfigStatus('Vista previa aplicada. Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Emisora: ' + (radioOn ? 'activa' : 'desactivada') + '. Voz del avatar: ' + labelForRobotVoice(getEffectiveRobotVoice()) + '. Presiona Guardar para persistirla.');
     }
 
     var chatInput = document.getElementById(CONFIG_CHAT_ENABLED_ID);
@@ -1458,6 +1493,10 @@
     var robotInput = document.getElementById(CONFIG_ROBOT_ENABLED_ID);
     if (robotInput) {
       robotInput.addEventListener('change', applyCompactPreview);
+    }
+    var radioInput = document.getElementById(CONFIG_RADIO_ENABLED_ID);
+    if (radioInput) {
+      radioInput.addEventListener('change', applyCompactPreview);
     }
     Array.prototype.slice.call(panel.querySelectorAll('input[name="aiChatCompactMode"]')).forEach(function (input) {
       input.addEventListener('change', applyCompactPreview);
@@ -1484,28 +1523,30 @@
       saveBtn.addEventListener('click', function () {
         var chatOn = setChatEnabledPreference(!!document.getElementById(CONFIG_CHAT_ENABLED_ID).checked);
         var robotOn = setRobotEnabledPreference(!!document.getElementById(CONFIG_ROBOT_ENABLED_ID).checked);
+        var radioOn = setRadioEnabledPreference(!!document.getElementById(CONFIG_RADIO_ENABLED_ID).checked);
         var mode = setChatPersonalityMode(getCompactConfigMode());
         var voice = !!document.getElementById(CONFIG_VOICE_ID).checked;
         var robotVoice = setRobotVoicePreference(mode === 'secretary' ? 'es-CO-female' : document.getElementById(CONFIG_ROBOT_VOICE_ID).value);
         applyVoicePreference(voice);
         setConfigStatus('Guardando configuración...');
-        fetch(CHAT_PREFS_ENDPOINT, {
+        fetch(buildChatPrefsEndpoint(), {
           method: 'PUT',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
+          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, radio_online_enabled: radioOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
         }).then(function (res) {
           if (!res.ok) throw new Error('No se pudo guardar en servidor.');
           return res.json();
         }).then(function (data) {
           var savedChat = typeof (data && data.chat_enabled) === 'boolean' ? setChatEnabledPreference(data.chat_enabled) : chatOn;
           var savedRobot = typeof (data && data.robot_enabled) === 'boolean' ? setRobotEnabledPreference(data.robot_enabled) : robotOn;
+          var savedRadio = typeof (data && data.radio_online_enabled) === 'boolean' ? setRadioEnabledPreference(data.radio_online_enabled) : radioOn;
           var savedMode = setChatPersonalityMode(data && data.personality_mode ? data.personality_mode : mode);
           var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? data.voice_enabled : voice;
           var savedRobotVoice = setRobotVoicePreference(data && data.robot_voice ? data.robot_voice : robotVoice);
           applyVoicePreference(savedVoice);
-          setCompactConfigState(savedMode, savedVoice, savedRobotVoice, savedChat, savedRobot);
-          setConfigStatus('Configuración guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Voz del avatar: ' + labelForRobotVoice(savedMode === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
+          setCompactConfigState(savedMode, savedVoice, savedRobotVoice, savedChat, savedRobot, savedRadio);
+          setConfigStatus('Configuración guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (savedRadio ? 'activa' : 'desactivada') + '. Voz del avatar: ' + labelForRobotVoice(savedMode === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
         }).catch(function (err) {
           setConfigStatus('Configuración aplicada localmente, pero no se pudo guardar. ' + String(err && err.message ? err.message : ''), true);
         });
@@ -1522,9 +1563,9 @@
       return;
     }
     var panel = ensureCompactConfigPanel();
-    setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled);
+    setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled, state.radioEnabled);
     panel.hidden = false;
-    fetch(CHAT_PREFS_ENDPOINT, { credentials: 'same-origin' })
+    fetch(buildChatPrefsEndpoint(), { credentials: 'same-origin' })
       .then(function (res) {
         if (!res.ok) return null;
         return res.json();
@@ -1537,6 +1578,9 @@
         if (typeof data.robot_enabled === 'boolean') {
           setRobotEnabledPreference(data.robot_enabled);
         }
+        if (typeof data.radio_online_enabled === 'boolean') {
+          setRadioEnabledPreference(data.radio_online_enabled);
+        }
         if (data.personality_mode) {
           setChatPersonalityMode(data.personality_mode);
         }
@@ -1546,7 +1590,7 @@
         if (data.robot_voice) {
           setRobotVoicePreference(data.robot_voice);
         }
-        setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled);
+        setCompactConfigState(getChatPersonalityMode(), state.voiceEnabled, state.robotVoice, state.chatEnabled, state.robotEnabled, state.radioEnabled);
       })
       .catch(function () {});
   }

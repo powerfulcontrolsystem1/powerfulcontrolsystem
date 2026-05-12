@@ -227,7 +227,7 @@
 - La pagina publica `visualizar_productos_y_precios_publico.html` usa `/api/public/venta_publica?action=catalogo` y solo expone catalogo de lectura: no crea pedidos, pagos ni carrito.
 
 2026-04-30: Nota operativa para `chat IA`, `documentos dinamicos`, `empresas compartidas` y `pagos`
-- La configuracion del chat flotante, robot y secretaria queda en Administrar empresa > Configuracion > Configurar chat/robot; es una configuracion empresarial y no una concesion de permisos super.
+- La configuracion del chat flotante, robot, secretaria y emisora online queda en Administrar empresa > Configuracion > Configurar chat/robot; es una configuracion empresarial por `empresa_id` y no una concesion de permisos super.
 - `/generate` y `/download` para documentos dinamicos requieren sesion y deben asociarse al contexto empresarial cuando se usen desde empresa; no entregan credenciales ni SQL libre a la IA.
 - La consulta/revocacion de administradores compartidos se controla por pertenencia administrativa a la empresa compartida; quien compartio y quien recibio pueden retirar acceso, registrando actor y fecha.
 - El fallback clasico de Epayco no cambia permisos de checkout: solo modifica el transporte hacia la pasarela usando POST firmado cuando Smart Checkout no entrega token.

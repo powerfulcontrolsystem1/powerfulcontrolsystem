@@ -344,6 +344,13 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - codigos_descuento
   - lector_codigo_barras_habilitado, lector_codigo_barras_autofoco, lector_codigo_barras_acumular
 
+### Preferencias empresariales por clave
+- empresa_estacion_prefs:
+  - empresa_id, estacion_id, clave
+  - valor, estado, observaciones, usuario_creador, fecha_creacion, fecha_actualizacion
+  - clave `chat_flotante.radio_online_enabled`: activa/desactiva la emisora online por empresa cuando `estacion_id = 0`
+  - claves `chat_flotante.*`: permiten que chat, robot, secretaria, voz y emisora se persistan por `empresa_id` sin mezclar empresas.
+
 ### Tablas de venta publica por empresa
 - empresa_venta_publica_configuracion:
   - empresa_id (UNIQUE), empresa_slug (UNIQUE)

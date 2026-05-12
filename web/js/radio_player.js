@@ -7,6 +7,7 @@
 
   var STORAGE_KEY = "pcs_radio_player_state";
   var ENABLED_KEY = "pcs_radio_online_enabled";
+  var PREFS_ENDPOINT = "/api/chat_flotante/preferencias";
   var stations = window.__pcsRadioStations.slice();
   var drawer = document.getElementById("radioDrawer");
   var openBtn = document.getElementById("openRadioDrawer");
@@ -28,6 +29,46 @@
     volume: 0.7,
     enabled: true
   };
+
+  function parsePositiveInt(raw) {
+    var value = Number(String(raw || "").trim());
+    if (!Number.isFinite(value)) return 0;
+    value = Math.trunc(value);
+    return value > 0 ? value : 0;
+  }
+
+  function getCurrentEmpresaId() {
+    if (typeof window.__resolveEmpresaIdContext === "function") {
+      try {
+        var resolved = parsePositiveInt(window.__resolveEmpresaIdContext());
+        if (resolved > 0) return resolved;
+      } catch (_) {}
+    }
+    var params = new URLSearchParams(window.location.search || "");
+    var fromUrl = parsePositiveInt(params.get("empresa_id") || params.get("id") || "");
+    if (fromUrl > 0) return fromUrl;
+    var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+    var stores = [];
+    try { stores.push(window.sessionStorage); } catch (_) {}
+    try { stores.push(window.localStorage); } catch (_) {}
+    for (var s = 0; s < stores.length; s += 1) {
+      var store = stores[s];
+      if (!store) continue;
+      for (var i = 0; i < keys.length; i += 1) {
+        try {
+          var parsed = parsePositiveInt(store.getItem(keys[i]) || "");
+          if (parsed > 0) return parsed;
+        } catch (_) {}
+      }
+    }
+    return 0;
+  }
+
+  function buildPrefsEndpoint() {
+    var empresaId = getCurrentEmpresaId();
+    if (!empresaId) return PREFS_ENDPOINT;
+    return PREFS_ENDPOINT + "?empresa_id=" + encodeURIComponent(String(empresaId));
+  }
 
   function saveState() {
     try {
@@ -173,6 +214,41 @@
     updateMiniPlayer();
   }
 
+  function persistRadioEnabled(enabled) {
+    return fetch(buildPrefsEndpoint(), {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ radio_online_enabled: !!enabled })
+    }).then(function (res) {
+      if (!res.ok) throw new Error("No se pudo guardar la emisora.");
+      return res.json();
+    }).then(function (data) {
+      if (data && typeof data.radio_online_enabled === "boolean") {
+        setRadioEnabled(data.radio_online_enabled);
+      }
+    }).catch(function (err) {
+      if (enabledStatus) {
+        enabledStatus.textContent = state.enabled ? "Activa localmente, sin guardar" : "Apagada localmente, sin guardar";
+      }
+      console.warn("No se pudo guardar la preferencia de emisora:", err);
+    });
+  }
+
+  function loadCompanyRadioPreference() {
+    fetch(buildPrefsEndpoint(), { credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && typeof data.radio_online_enabled === "boolean") {
+          setRadioEnabled(data.radio_online_enabled);
+        }
+      })
+      .catch(function () {});
+  }
+
   function togglePlayback() {
     if (!state.enabled || !state.stationId) return;
     if (miniAudio.paused) {
@@ -198,6 +274,7 @@
     if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
     if (enabledToggle) enabledToggle.addEventListener("change", function () {
       setRadioEnabled(!!enabledToggle.checked);
+      persistRadioEnabled(state.enabled);
     });
     if (miniClose) miniClose.addEventListener("click", stopPlayback);
     if (miniPlayPause) miniPlayPause.addEventListener("click", togglePlayback);
@@ -246,6 +323,7 @@
   wireEvents();
   renderGrid();
   setRadioEnabled(state.enabled);
+  loadCompanyRadioPreference();
   if (state.stationId) {
     playStation(state.stationId, false);
     updateMiniPlayer();

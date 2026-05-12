@@ -313,7 +313,8 @@
 	- `web/pagar_licencia.html` : recibe `checkout_form`, valida la accion segura de Epayco y envia el formulario temporal por POST para evitar XML `AccessDenied`.
 	- `backend/handlers/payments_handlers_test.go` : cubre firma del formulario clasico y saneamiento de `p_key`.
 	- `web/js/ai_chat_drawer.js` y `web/estilos.css` : la secretaria IA se rediseÃ±a como avatar estilo caricatura ejecutiva joven, usa voz femenina efectiva y mantiene robot/chat cuadrado con fallback a texto.
-	- `web/administrar_empresa/configuracion_chat_flotante.html` : configuracion empresarial del chat/robot/secretaria y voz del avatar.
+	- `web/administrar_empresa/configuracion_chat_flotante.html` : configuracion empresarial del chat/robot/secretaria, voz del avatar y emisora online por empresa.
+	- `backend/handlers/chat_flotante_config.go`, `web/js/radio_player.js` : preferencias del chat flotante y la emisora online persistidas por `empresa_id` mediante `empresa_estacion_prefs`.
 	- `backend/handlers/empresa_compartida_handlers.go`, `web/js/editar_empresa.js`, `web/js/seleccionar_empresa.js` : consulta y revocacion de administradores compartidos desde el editor de empresa, con trazabilidad.
 	- `backend/db/hoja_vida_operativa.go`, `backend/handlers/hoja_vida_operativa.go`, `web/administrar_empresa/hoja_vida_operativa.html` : hoja de vida operativa universal para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con eventos, servicios, alertas y resumen.
 	- `backend/handlers/dynamic_documents.go` y `backend/handlers/dynamic_documents_test.go` : endpoints `/generate` y `/download` para generar documentos dinamicos con IA/templates y exportar PDF, DOCX, XLSX, HTML, TXT o JSON.

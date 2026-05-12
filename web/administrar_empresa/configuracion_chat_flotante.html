@@ -103,6 +103,14 @@
         </span>
       </label>
 
+      <label class="chat-voice-toggle" for="radioOnlineEnabled">
+        <input id="radioOnlineEnabled" type="checkbox">
+        <span>
+          <span class="chat-appearance-title">Activar emisora online</span>
+          <span class="chat-appearance-copy">Muestra el reproductor de musica latina flotante para esta empresa y permite apagarlo sin afectar a otras empresas.</span>
+        </span>
+      </label>
+
       <label class="form-label">Apariencia del chat con IA</label>
       <div class="chat-appearance-grid" role="radiogroup" aria-label="Apariencia del chat flotante">
         <label class="chat-appearance-option" for="chatModeNormal">
@@ -162,12 +170,14 @@
       var STORAGE_KEY = 'pcs_ai_chat_personality';
       var CHAT_ENABLED_STORAGE_KEY = 'pcs_ai_chat_enabled';
       var ROBOT_ENABLED_STORAGE_KEY = 'pcs_ai_robot_enabled';
+      var RADIO_ENABLED_STORAGE_KEY = 'pcs_radio_online_enabled';
       var VOICE_STORAGE_KEY = 'pcs_ai_chat_voice_enabled';
       var ROBOT_VOICE_STORAGE_KEY = 'pcs_ai_chat_robot_voice';
       var PREFS_ENDPOINT = '/api/chat_flotante/preferencias';
       var modeInputs = Array.prototype.slice.call(document.querySelectorAll('input[name="chatMode"]'));
       var chatEnabledCheckbox = document.getElementById('chatEnabled');
       var robotEnabledCheckbox = document.getElementById('robotEnabled');
+      var radioEnabledCheckbox = document.getElementById('radioOnlineEnabled');
       var voiceCheckbox = document.getElementById('chatVoiceEnabled');
       var robotVoiceSelect = document.getElementById('chatRobotVoice');
       var saveBtn = document.getElementById('saveChatModeBtn');
@@ -175,6 +185,41 @@
       var status = document.getElementById('chatModeStatus');
       var currentChatEnabled = true;
       var currentRobotEnabled = true;
+      var currentRadioEnabled = true;
+
+      function parsePositiveInt(raw) {
+        var value = Number(String(raw || '').trim());
+        if (!Number.isFinite(value)) return 0;
+        value = Math.trunc(value);
+        return value > 0 ? value : 0;
+      }
+
+      function getCurrentEmpresaId() {
+        var params = new URLSearchParams(window.location.search || '');
+        var fromUrl = parsePositiveInt(params.get('empresa_id') || params.get('id') || '');
+        if (fromUrl > 0) return fromUrl;
+        var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+        var stores = [];
+        try { stores.push(window.sessionStorage); } catch (err) {}
+        try { stores.push(window.localStorage); } catch (err) {}
+        for (var s = 0; s < stores.length; s += 1) {
+          var store = stores[s];
+          if (!store) continue;
+          for (var i = 0; i < keys.length; i += 1) {
+            try {
+              var parsed = parsePositiveInt(store.getItem(keys[i]) || '');
+              if (parsed > 0) return parsed;
+            } catch (err) {}
+          }
+        }
+        return 0;
+      }
+
+      function buildPrefsEndpoint() {
+        var empresaId = getCurrentEmpresaId();
+        if (!empresaId) return PREFS_ENDPOINT;
+        return PREFS_ENDPOINT + '?empresa_id=' + encodeURIComponent(String(empresaId));
+      }
 
       function normalize(value) {
         var mode = String(value || '').trim().toLowerCase();
@@ -306,6 +351,19 @@
         return currentRobotEnabled;
       }
 
+      function setRadioEnabled(enabled) {
+        currentRadioEnabled = storeLocalEnabled(RADIO_ENABLED_STORAGE_KEY, enabled);
+        if (radioEnabledCheckbox) radioEnabledCheckbox.checked = currentRadioEnabled;
+        try {
+          if (window.parent && typeof window.parent.__pcsRadioPlayerSetEnabled === 'function') {
+            window.parent.__pcsRadioPlayerSetEnabled(currentRadioEnabled);
+          } else if (window.top && typeof window.top.__pcsRadioPlayerSetEnabled === 'function') {
+            window.top.__pcsRadioPlayerSetEnabled(currentRadioEnabled);
+          }
+        } catch (err) {}
+        return currentRadioEnabled;
+      }
+
       function storeLocalVoice(enabled) {
         var value = !!enabled;
         try {
@@ -349,6 +407,12 @@
         try { window.top.postMessage(message, '*'); } catch (err) {}
       }
 
+      function notifyRadioEnabled(enabled) {
+        var message = { type: 'pcs-radio-online-enabled-updated', enabled: !!enabled };
+        try { window.parent.postMessage(message, '*'); } catch (err) {}
+        try { window.top.postMessage(message, '*'); } catch (err) {}
+      }
+
       function notifyChatVoice(enabled) {
         var message = { type: 'pcs-ai-chat-voice-updated', enabled: !!enabled };
         try { window.parent.postMessage(message, '*'); } catch (err) {}
@@ -366,11 +430,13 @@
         var current = 'normal';
         var currentChat = true;
         var currentRobot = true;
+        var currentRadio = true;
         var currentVoice = false;
         var currentRobotVoice = 'es-CO';
         try {
           currentChat = readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
           currentRobot = readLocalEnabled(ROBOT_ENABLED_STORAGE_KEY, true);
+          currentRadio = readLocalEnabled(RADIO_ENABLED_STORAGE_KEY, true);
           current = normalize(window.localStorage.getItem(STORAGE_KEY) || 'normal');
           currentVoice = window.localStorage.getItem(VOICE_STORAGE_KEY) === '1';
           currentRobotVoice = normalizeRobotVoice(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || 'es-CO');
@@ -378,17 +444,19 @@
           current = 'normal';
           currentChat = true;
           currentRobot = true;
+          currentRadio = true;
           currentVoice = false;
           currentRobotVoice = 'es-CO';
         }
         setChatEnabled(currentChat);
         setRobotEnabled(currentRobot);
+        setRadioEnabled(currentRadio);
         setSelectedMode(current);
         setVoiceEnabled(currentVoice);
         setSelectedRobotVoice(currentRobotVoice);
-        updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '.');
+        updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (currentRadio ? 'activa' : 'desactivada') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '.');
 
-        fetch(PREFS_ENDPOINT, { credentials: 'same-origin' })
+        fetch(buildPrefsEndpoint(), { credentials: 'same-origin' })
           .then(function (res) {
             if (!res.ok) return null;
             return res.json();
@@ -397,55 +465,61 @@
             if (!data) return;
             var chatOn = typeof data.chat_enabled === 'boolean' ? setChatEnabled(data.chat_enabled) : currentChat;
             var robotOn = typeof data.robot_enabled === 'boolean' ? setRobotEnabled(data.robot_enabled) : currentRobot;
+            var radioOn = typeof data.radio_online_enabled === 'boolean' ? setRadioEnabled(data.radio_online_enabled) : currentRadio;
             var mode = storeLocalMode(data.personality_mode || current);
             var voice = typeof data.voice_enabled === 'boolean' ? setVoiceEnabled(data.voice_enabled) : currentVoice;
             var robotVoice = setSelectedRobotVoice(data.robot_voice || currentRobotVoice);
             setSelectedMode(mode);
             notifyChatEnabled(chatOn);
             notifyRobotEnabled(robotOn);
+            notifyRadioEnabled(radioOn);
             notifyChatMode(mode);
             notifyChatVoice(voice);
             notifyRobotVoice(robotVoice);
-            updateStatus('Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(mode) + '. Voz: ' + (voice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(mode === 'secretary' ? 'es-CO-female' : robotVoice) + '.');
+            updateStatus('Chat: ' + (chatOn ? 'activo' : 'desactivado') + '. Robot: ' + (robotOn ? 'activo' : 'desactivado') + '. Emisora: ' + (radioOn ? 'activa' : 'desactivada') + '. Modo actual: ' + labelFor(mode) + '. Voz: ' + (voice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(mode === 'secretary' ? 'es-CO-female' : robotVoice) + '.');
           })
           .catch(function () {
-            updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '. Se usara la configuracion local si el servidor no responde.');
+            updateStatus('Chat: ' + (currentChat ? 'activo' : 'desactivado') + '. Robot: ' + (currentRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (currentRadio ? 'activa' : 'desactivada') + '. Modo actual: ' + labelFor(current) + '. Voz: ' + (currentVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(current === 'secretary' ? 'es-CO-female' : currentRobotVoice) + '. Se usara la configuracion local si el servidor no responde.');
           });
       }
 
       function saveMode() {
         var chatOn = setChatEnabled(chatEnabledCheckbox ? chatEnabledCheckbox.checked : true);
         var robotOn = setRobotEnabled(robotEnabledCheckbox ? robotEnabledCheckbox.checked : true);
+        var radioOn = setRadioEnabled(radioEnabledCheckbox ? radioEnabledCheckbox.checked : true);
         var mode = storeLocalMode(getSelectedMode());
         var voice = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
         var robotVoice = setSelectedRobotVoice(getSelectedRobotVoice());
         notifyChatEnabled(chatOn);
         notifyRobotEnabled(robotOn);
+        notifyRadioEnabled(radioOn);
         notifyChatMode(mode);
         notifyChatVoice(voice);
         notifyRobotVoice(robotVoice);
         updateStatus('Guardando configuracion...');
-        fetch(PREFS_ENDPOINT, {
+        fetch(buildPrefsEndpoint(), {
           method: 'PUT',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
+          body: JSON.stringify({ chat_enabled: chatOn, robot_enabled: robotOn, radio_online_enabled: radioOn, personality_mode: mode, voice_enabled: voice, robot_voice: robotVoice })
         }).then(function (res) {
           if (!res.ok) throw new Error('No se pudo guardar en servidor.');
           return res.json();
         }).then(function (data) {
           var savedChat = typeof (data && data.chat_enabled) === 'boolean' ? setChatEnabled(data.chat_enabled) : chatOn;
           var savedRobot = typeof (data && data.robot_enabled) === 'boolean' ? setRobotEnabled(data.robot_enabled) : robotOn;
+          var savedRadio = typeof (data && data.radio_online_enabled) === 'boolean' ? setRadioEnabled(data.radio_online_enabled) : radioOn;
           var saved = storeLocalMode(data && data.personality_mode ? data.personality_mode : mode);
           var savedVoice = typeof (data && data.voice_enabled) === 'boolean' ? setVoiceEnabled(data.voice_enabled) : voice;
           var savedRobotVoice = setSelectedRobotVoice(data && data.robot_voice ? data.robot_voice : robotVoice);
           setSelectedMode(saved);
           notifyChatEnabled(savedChat);
           notifyRobotEnabled(savedRobot);
+          notifyRadioEnabled(savedRadio);
           notifyChatMode(saved);
           notifyChatVoice(savedVoice);
           notifyRobotVoice(savedRobotVoice);
-          updateStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Modo: ' + labelFor(saved) + '. Voz: ' + (savedVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(saved === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
+          updateStatus('Configuracion guardada. Chat: ' + (savedChat ? 'activo' : 'desactivado') + '. Robot: ' + (savedRobot ? 'activo' : 'desactivado') + '. Emisora: ' + (savedRadio ? 'activa' : 'desactivada') + '. Modo: ' + labelFor(saved) + '. Voz: ' + (savedVoice ? 'activa' : 'inactiva') + '. Voz del avatar: ' + labelForRobotVoice(saved === 'secretary' ? 'es-CO-female' : savedRobotVoice) + '.');
         }).catch(function (err) {
           updateStatus('Configuracion aplicada localmente, pero no se pudo guardar en servidor. ' + String(err && err.message ? err.message : ''), true);
         });
@@ -454,6 +528,7 @@
       function resetMode() {
         setChatEnabled(true);
         setRobotEnabled(true);
+        setRadioEnabled(true);
         setSelectedMode('normal');
         saveMode();
       }
@@ -480,6 +555,13 @@
           notifyRobotEnabled(enabled);
           notifyChatMode(getSelectedMode());
           updateStatus('Vista previa aplicada: robot ' + (enabled ? 'activo' : 'desactivado') + '. Presiona Guardar configuración para persistirla.');
+        });
+      }
+      if (radioEnabledCheckbox) {
+        radioEnabledCheckbox.addEventListener('change', function () {
+          var enabled = setRadioEnabled(radioEnabledCheckbox.checked);
+          notifyRadioEnabled(enabled);
+          updateStatus('Vista previa aplicada: emisora ' + (enabled ? 'activa' : 'desactivada') + '. Presiona Guardar configuracion para persistirla.');
         });
       }
       if (voiceCheckbox) {

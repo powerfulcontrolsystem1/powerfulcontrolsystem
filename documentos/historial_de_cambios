@@ -1,3 +1,9 @@
+2026-05-11: Emisora online configurable por empresa
+- Modulos afectados: administrar empresa, chat IA flotante, radio online.
+- Cambio funcional: Configurar chat y robot agrega el check Activar emisora online; el panel compacto del chat tambien permite activar/desactivar la emisora.
+- Backend: /api/chat_flotante/preferencias acepta empresa_id y guarda chat_flotante.radio_online_enabled y demas preferencias chat_flotante.* por empresa en empresa_estacion_prefs.
+- Frontend: web/js/radio_player.js carga y persiste la preferencia empresarial; web/js/ai_chat_drawer.js sincroniza la vista compacta con el reproductor.
+- Verificacion: node --check web/js/ai_chat_drawer.js; node --check web/js/radio_player.js; go test ./... en backend/.
 2026-05-11: Correccion de cargas parciales en verticales integrados
 - Modulos afectados: odontologia, gimnasio, lquileres, clientes, servicios, carritos, entas, pagos.
 - Causa tecnica: en bases PostgreSQL existentes, odontologia y gimnasio podian crear indices sobre columnas de integracion antes de asegurar esas columnas, provocando errores parciales en consultas del dashboard.

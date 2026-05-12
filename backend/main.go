@@ -1177,7 +1177,7 @@ func main() {
 	http.HandleFunc("/super/api/config/voice_stream", handlers.SuperVoiceStreamConfigHandler(dbSuper))
 	http.HandleFunc("/api/voice_stream/status", handlers.VoiceStreamStatusHandler(dbSuper))
 	http.HandleFunc("/api/voice_stream/tts", handlers.VoiceStreamTTSProxyHandler(dbSuper))
-	http.HandleFunc("/api/chat_flotante/preferencias", handlers.ChatFlotantePreferenciasHandler(dbSuper))
+	http.HandleFunc("/api/chat_flotante/preferencias", handlers.ChatFlotantePreferenciasHandler(dbSuper, dbEmpresas))
 	// Endpoints para generar y descargar documentos dinamicos asistidos por IA.
 	http.HandleFunc("/generate", handlers.DynamicDocumentGenerateHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/download", handlers.DynamicDocumentDownloadHandler(dbSuper))

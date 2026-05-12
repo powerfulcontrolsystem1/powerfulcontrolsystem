@@ -1,3 +1,8 @@
+## [2026-05-11] Emisora online por empresa
+- [Backend] `/api/chat_flotante/preferencias` acepta `empresa_id` y persiste `chat_flotante.*`, incluida `radio_online_enabled`, en `empresa_estacion_prefs`.
+- [Frontend] `Configurar chat y robot` agrega el check `Activar emisora online`; el panel compacto del chat y `radio_player.js` sincronizan el reproductor flotante con esa preferencia.
+- [QA] `node --check web/js/ai_chat_drawer.js`; `node --check web/js/radio_player.js`; `go test ./...` en `backend/`.
+
 ## [2026-05-11] Alcance vertical por licencia
 - [Backend] `/api/empresa/permisos_contexto` calcula `vertical_scope` desde tipo/preconfiguracion/licencia y desactiva acciones de verticales ajenos sin tocar el nucleo universal.
 - [Licencias] El checkout, activacion manual/gratuita y confirmaciones de pago validan que la licencia base corresponda al tipo de empresa elegido.
