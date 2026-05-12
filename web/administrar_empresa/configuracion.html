@@ -11,6 +11,30 @@
     #configuracionImpresorasSistema {
       display: none !important;
     }
+    .empresa-logo-config-preview {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 96px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+    .empresa-logo-config-preview img {
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .empresa-logo-config-empty {
+      color: var(--muted);
+      font-weight: 700;
+    }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -24,6 +48,10 @@
         <a href="#configuracionFormatoNumerico" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Operaci?n comercial</span>
           <span>Productos, pedidos y descuentos.</span>
+        </a>
+        <a href="#configuracionIdentidadVisual" class="empresa-config-map-item">
+          <span class="empresa-config-map-title">Identidad visual</span>
+          <span>Logo visible en el panel y documentos.</span>
         </a>
         <a href="#configuracionCobroOperativo" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Cobro y comisiones</span>
@@ -46,6 +74,39 @@
           <span>Backups y pasarelas para venta p?blica.</span>
         </a>
       </div>
+    </section>
+
+    <section id="configuracionIdentidadVisual" class="card empresa-section">
+      <div class="empresa-section-header">
+        <h2>Identidad visual</h2>
+        <button id="btnGuardarLogoEmpresa" type="button" class="btn">Guardar logo</button>
+      </div>
+      <p class="form-help">Carga el logo de esta empresa para mostrarlo en el panel principal y reutilizarlo en documentos. Si no hay logo, el panel conserva el diseno actual.</p>
+
+      <div class="empresa-config-grid">
+        <div class="form">
+          <div class="empresa-logo-config-preview" aria-live="polite">
+            <img id="empresaLogoPreview" alt="Logo de la empresa" hidden>
+            <span id="empresaLogoEmpty" class="empresa-logo-config-empty">Sin logo cargado.</span>
+          </div>
+          <label class="empresa-config-check" for="empresaMostrarLogo">
+            <input id="empresaMostrarLogo" type="checkbox" checked>
+            <span>Mostrar logo en panel, factura y documentos</span>
+          </label>
+        </div>
+        <div class="form">
+          <label class="form-label" for="empresaLogoFile">Subir logo</label>
+          <input id="empresaLogoFile" class="form-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+          <p class="form-help">Formatos permitidos: PNG, JPG, WEBP o GIF. Tamano maximo: 5 MB.</p>
+          <div class="form-actions">
+            <button id="btnSubirLogoEmpresa" type="button" class="btn secondary">Subir archivo</button>
+          </div>
+          <label class="form-label" for="empresaLogoURL">URL del logo</label>
+          <input id="empresaLogoURL" class="form-input" placeholder="/uploads/empresa_logos/empresa_1/logo.png o URL publica">
+          <p class="form-help">Tambien puedes pegar una URL publica si el logo ya esta alojado.</p>
+        </div>
+      </div>
+      <div id="empresaLogoMsg" class="form-help"></div>
     </section>
 
     <section id="configuracionImpresoraAtajo" class="card empresa-section">
@@ -1017,6 +1078,13 @@
 
     function setFormatoNumericoMessage(text, type) {
       const box = document.getElementById('formatoNumericoMsg');
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setIdentidadVisualMessage(text, type) {
+      const box = document.getElementById('empresaLogoMsg');
+      if (!box) return;
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
@@ -2225,6 +2293,58 @@
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
     }
 
+    function normalizeLogoURL(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (raw.charAt(0) === '/') {
+        return (/^\/(uploads|img)\//.test(raw)) ? raw : '';
+      }
+      try {
+        const url = new URL(raw);
+        return (url.protocol === 'https:' || url.protocol === 'http:') ? raw : '';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function setEmpresaLogoPreview(logoURL, mostrarLogo) {
+      const preview = document.getElementById('empresaLogoPreview');
+      const empty = document.getElementById('empresaLogoEmpty');
+      const safeURL = normalizeLogoURL(logoURL);
+      const visible = !!safeURL && mostrarLogo !== false;
+      if (preview) {
+        preview.hidden = !visible;
+        preview.src = visible ? safeURL : '';
+      }
+      if (empty) {
+        empty.hidden = visible;
+        empty.textContent = safeURL && mostrarLogo === false ? 'Logo guardado, oculto en panel, factura y documentos.' : 'Sin logo cargado.';
+      }
+    }
+
+    function setIdentidadVisualFormData(cfg) {
+      const src = cfg && typeof cfg === 'object' ? cfg : {};
+      const logoURL = normalizeLogoURL(src.logo_url);
+      const mostrarLogo = src.mostrar_logo !== false;
+      document.getElementById('empresaLogoURL').value = logoURL;
+      document.getElementById('empresaMostrarLogo').checked = mostrarLogo;
+      setEmpresaLogoPreview(logoURL, mostrarLogo);
+      if (document.getElementById('facturaLogoURL')) {
+        document.getElementById('facturaLogoURL').value = logoURL;
+      }
+      if (document.getElementById('facturaMostrarLogo')) {
+        document.getElementById('facturaMostrarLogo').checked = mostrarLogo;
+      }
+    }
+
+    function getIdentidadVisualFormData() {
+      return {
+        empresa_id: Number(empresaId),
+        logo_url: normalizeLogoURL(document.getElementById('empresaLogoURL').value),
+        mostrar_logo: document.getElementById('empresaMostrarLogo').checked
+      };
+    }
+
     function setFormatoNumericoFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       const usarDecimales = src.usar_decimales !== false;
@@ -2288,10 +2408,70 @@
       try {
         const cfg = await fetchEmpresaConfigAvanzada();
         setFacturaFormData(cfg || {});
+        setIdentidadVisualFormData(cfg || {});
         setFormatoNumericoFormData(cfg || {});
       } catch (err) {
         setFacturaMessage('No se pudo cargar configuración de facturas: ' + (err && err.message ? err.message : err), 'error');
         setFormatoNumericoMessage('No se pudo cargar configuración monetaria: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarIdentidadVisualConfig() {
+      if (!empresaId) {
+        setIdentidadVisualMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      try {
+        const payload = getIdentidadVisualFormData();
+        if (String(document.getElementById('empresaLogoURL').value || '').trim() && !payload.logo_url) {
+          setIdentidadVisualMessage('La URL del logo debe iniciar por /uploads/, /img/ o ser http(s).', 'error');
+          return;
+        }
+        const cfg = await upsertEmpresaConfigAvanzada(payload);
+        setIdentidadVisualFormData(cfg || payload);
+        setFacturaFormData(cfg || payload);
+        setIdentidadVisualMessage('Logo de empresa guardado correctamente para panel, factura y documentos.', 'success');
+      } catch (err) {
+        setIdentidadVisualMessage('No se pudo guardar el logo: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function subirLogoEmpresa() {
+      if (!empresaId) {
+        setIdentidadVisualMessage('No se puede subir sin empresa seleccionada.', 'error');
+        return;
+      }
+      const input = document.getElementById('empresaLogoFile');
+      const file = input && input.files && input.files[0];
+      if (!file) {
+        setIdentidadVisualMessage('Selecciona un archivo de logo primero.', 'error');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setIdentidadVisualMessage('El logo supera 5 MB.', 'error');
+        return;
+      }
+      const form = new FormData();
+      form.append('empresa_id', String(empresaId));
+      form.append('logo', file);
+      setIdentidadVisualMessage('Subiendo logo...', '');
+      try {
+        const res = await fetch('/api/empresa/configuracion_avanzada/logo?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: form
+        });
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!res.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
+        }
+        const cfg = data && data.configuracion ? data.configuracion : { logo_url: data.logo_url, mostrar_logo: true };
+        setIdentidadVisualFormData(cfg);
+        setFacturaFormData(cfg);
+        setIdentidadVisualMessage('Logo subido y guardado para panel, factura y documentos.', 'success');
+      } catch (err) {
+        setIdentidadVisualMessage('No se pudo subir el logo: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -2304,6 +2484,7 @@
         const payload = getFacturaFormData();
         const cfg = await upsertEmpresaConfigAvanzada(payload);
         setFacturaFormData(cfg || {});
+        setIdentidadVisualFormData(cfg || {});
         setFacturaMessage('Configuración de documento de venta guardada correctamente.', 'success');
       } catch (err) {
         setFacturaMessage('No se pudo guardar configuración de documento de venta: ' + (err && err.message ? err.message : err), 'error');
@@ -2547,6 +2728,14 @@
       document.getElementById('opPoliticaSucursalId').addEventListener('change', syncOperativaPoliticaFormFromCache);
       document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
+      document.getElementById('btnGuardarLogoEmpresa').addEventListener('click', guardarIdentidadVisualConfig);
+      document.getElementById('btnSubirLogoEmpresa').addEventListener('click', subirLogoEmpresa);
+      document.getElementById('empresaLogoURL').addEventListener('input', function() {
+        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogo').checked);
+      });
+      document.getElementById('empresaMostrarLogo').addEventListener('change', function() {
+        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogo').checked);
+      });
       document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
       document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);
       document.getElementById('formatoCantidadDecimales').addEventListener('blur', syncFormatoDecimalesUI);

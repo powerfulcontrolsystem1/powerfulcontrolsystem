@@ -137,6 +137,32 @@
       color: var(--panel-text);
     }
 
+    .empresa-home-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 104px;
+      height: 104px;
+      margin: 0 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-glass-border);
+      background: var(--panel-glass-bg);
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 12%, transparent);
+    }
+
+    .empresa-home-brand[hidden] {
+      display: none !important;
+    }
+
+    .empresa-home-brand img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
     .empresa-home-kicker {
       margin: 0 0 8px;
       color: var(--panel-kicker);
@@ -833,6 +859,16 @@
         line-height: 1.1;
       }
 
+      .empresa-home-brand {
+        width: 54px;
+        height: 54px;
+        margin-bottom: 5px;
+      }
+
+      .empresa-home-brand img {
+        padding: 6px;
+      }
+
       .empresa-home-title {
         font-size: clamp(1.05rem, 7vw, 1.55rem);
         line-height: 1.05;
@@ -1127,6 +1163,12 @@
         -webkit-line-clamp: 1;
       }
 
+      .empresa-home-brand {
+        width: 44px;
+        height: 44px;
+        margin-bottom: 3px;
+      }
+
       .empresa-weather-grid {
         gap: 3px;
       }
@@ -1168,6 +1210,9 @@
 <section id="homeHero" class="empresa-home-hero weather-clear">
       <div class="empresa-home-hero-inner">
         <div class="empresa-home-copy">
+          <div id="empresaLogoPanelWrap" class="empresa-home-brand" hidden>
+            <img id="empresaLogoPanel" alt="Logo de la empresa">
+          </div>
           <p id="homeKicker" class="empresa-home-kicker">Panel de empresa</p>
           <h1 id="homeTitle" class="empresa-home-title">Bienvenido</h1>
           <p id="homeSubtitle" class="empresa-home-subtitle">Preparando el contexto de la empresa y el clima actual.</p>
@@ -2260,6 +2305,31 @@
           : "Bienvenido al centro operativo de " + empresaName + ".";
       }
 
+      function normalizeEmpresaLogoURL(value) {
+        var raw = text(value);
+        if (!raw) return "";
+        if (raw.charAt(0) === "/") {
+          return /^\/(uploads|img)\//.test(raw) ? raw : "";
+        }
+        try {
+          var url = new URL(raw);
+          return (url.protocol === "https:" || url.protocol === "http:") ? raw : "";
+        } catch (_) {
+          return "";
+        }
+      }
+
+      function applyEmpresaLogo(config) {
+        var wrap = document.getElementById("empresaLogoPanelWrap");
+        var img = document.getElementById("empresaLogoPanel");
+        if (!wrap || !img) return;
+        var cfg = config && typeof config === "object" ? config : {};
+        var showLogo = cfg.mostrar_logo !== false;
+        var logoURL = showLogo ? normalizeEmpresaLogoURL(cfg.logo_url) : "";
+        wrap.hidden = !logoURL;
+        img.src = logoURL || "";
+      }
+
       function refreshWeatherLocation(location) {
         detectedLocation = location;
         persistTrustedWeatherLocation(location);
@@ -2335,11 +2405,16 @@
             }).catch(function () { return {}; })
           : Promise.resolve({});
         var weatherConfigPromise = loadSavedWeatherLocation();
-        Promise.all([adminPromise, empresaPromise, weatherConfigPromise]).then(function (values) {
+        var identidadPromise = empresaId
+          ? fetchJSON("/api/empresa/configuracion_avanzada?empresa_id=" + encodeURIComponent(empresaId)).catch(function () { return {}; })
+          : Promise.resolve({});
+        Promise.all([adminPromise, empresaPromise, weatherConfigPromise, identidadPromise]).then(function (values) {
           var admin = values[0] || {};
           var empresa = values[1] || {};
           var savedLocation = values[2] || null;
+          var identidad = values[3] || {};
           renderWelcome(admin, empresa);
+          applyEmpresaLogo(identidad);
           return detectLocation(admin, empresa, savedLocation).then(function (location) {
             loadMarketIndicators(location);
             return loadWeather(location);

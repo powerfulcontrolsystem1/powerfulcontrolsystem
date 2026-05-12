@@ -1837,6 +1837,12 @@ Criterio de esta guia:
 26) Carritos de compra e items
 - Operacion de carrito, pago validado, concurrencia de stock y recuperacion de sesiones.
 
+2026-05-12: Identidad visual empresarial
+- Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
+- Cambio funcional: Configuracion empresarial expone una seccion visible para cargar o pegar el logo de la empresa; el panel principal lo muestra encima del titulo de empresa sin modificar la tarjeta de clima.
+- Fuente unica: el logo se guarda en `empresa_configuracion_avanzada.logo_url` con control `mostrar_logo`, campos compartidos por factura, comprobantes y documentos empresariales que consumen la configuracion avanzada.
+- Seguridad: la carga usa `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions` y conserva aislamiento por `empresa_id`.
+
 27) Ventas simples por estacion
 - Cobro rapido por estacion, operacion offline y metricas de atencion/rendimiento.
 

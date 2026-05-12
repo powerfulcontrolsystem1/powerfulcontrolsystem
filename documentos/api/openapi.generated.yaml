@@ -605,6 +605,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/configuracion_avanzada/logo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_avanzada/logo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/configuracion_avanzada/logo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/configuracion_general":
     get:
       tags: [empresa]

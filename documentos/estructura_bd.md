@@ -1268,6 +1268,13 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - logistica_transportistas.id -> logistica_envios.transportista_id
 - logistica_rutas.id -> logistica_envios.ruta_id
 - empresa_documentos_gestion.id -> empresa_documentos_firmas.documento_gestion_id
+## Actualizacion 2026-05-12 - Identidad visual empresarial
+
+- No se agregan tablas ni columnas.
+- Se reutiliza `empresa_configuracion_avanzada.logo_url` como URL canonica del logo empresarial y `empresa_configuracion_avanzada.mostrar_logo` como bandera de visibilidad.
+- Los archivos cargados por el endpoint empresarial se almacenan bajo `web/uploads/empresa_logos/empresa_<id>/` y se sirven como ruta publica `/uploads/empresa_logos/empresa_<id>/<archivo>`.
+- El dato queda aislado por `empresa_id` y es compartido por panel, factura, comprobantes y documentos empresariales que leen la configuracion avanzada.
+
 - carritos_compras.id -> carrito_compra_items.carrito_id
 - carritos_compras.id -> reservas_hotel.carrito_id
 - carritos_compras.id -> codigos_descuento_redenciones.carrito_id

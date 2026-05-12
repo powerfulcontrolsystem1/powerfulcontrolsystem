@@ -298,6 +298,10 @@ Regla general de tablas:
 
 - Portal: `/`, `/index.html`.
 - Contrato publico: `/contrato.html`.
+## Actualizacion operativa 2026-05-12 - Identidad visual por empresa
+
+El panel empresarial y la configuracion de documentos comparten una sola identidad visual por `empresa_id`. La configuracion empresarial permite cargar o pegar el logo; el panel lo muestra encima del texto `Panel de <empresa>` con tamano fijo para no alterar la tarjeta de clima. Facturas, comprobantes y documentos que ya consumen `empresa_configuracion_avanzada.logo_url` y `mostrar_logo` usan el mismo logo, evitando duplicidad por modulo.
+
 - Landing descriptiva del portal: `/descripcion_de_los_sistemas.ht`.
 - Informacion de contacto publica: `/Informacion_de_contacto.html`.
 - Entrada publica del emulador N64: `/Juegos/menu_juegos.html`.

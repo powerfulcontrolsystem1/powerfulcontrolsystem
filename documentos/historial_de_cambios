@@ -1,3 +1,10 @@
+2026-05-12: Identidad visual empresarial compartida
+- Modulos afectados: `administrar_empresa`, `configuracion`, `facturacion/documentos`, `seguridad y permisos`.
+- Cambio funcional: la configuracion empresarial agrega una seccion visible para subir o pegar el logo de la empresa; el panel principal lo muestra encima del titulo `Panel de <empresa>` con tamano fijo, sin alterar la tarjeta del clima.
+- Backend: se registra `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions`; acepta PNG/JPG/WEBP/GIF hasta 5 MB, guarda en `/uploads/empresa_logos/empresa_<id>/` y persiste la URL en `empresa_configuracion_avanzada.logo_url`.
+- Base de datos: no hay tablas ni columnas nuevas; se reutilizan `logo_url` y `mostrar_logo` como fuente unica para panel, factura, comprobantes y documentos empresariales.
+- Archivos afectados: `backend/handlers/empresa_configuracion_avanzada.go`, `backend/main.go`, `web/administrar_empresa/configuracion.html`, `web/administrar_empresa/panel.html`, `documentos/CHANGELOG.md`, `CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/estructura_bd.md`, `documentos/diagramas/estructura_del_codigo.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`.
+
 2026-05-12: CRM empresarial profesional
 - Modulos afectados: `crm_unificado`, `ventas`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: el dashboard CRM suma salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, rendimiento por responsable y canales de adquisicion.

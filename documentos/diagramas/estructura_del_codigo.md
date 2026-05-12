@@ -5716,3 +5716,9 @@ flowchart TD
 Flujo operativo documentado: `configuracion_de_estaciones.html` guarda `card_size=auto_text`; `estaciones.html` aplica `station-size-auto_text`, calcula `--station-card-auto-height` con la tarjeta mas alta y mantiene todas las tarjetas con altura uniforme; `carrito_de_compras.html` ejecuta el pago y vuelve a `estaciones.html` mediante `buildStationsURL()`; `panel.html` renderiza `USD / COP` como primer indicador de mercado.
 
 La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto de modulos queda en `documentos/reporte_estado_modulos_2026-05-03.md`.
+## Actualizacion 2026-05-12 - Logo empresarial compartido
+
+- `web/administrar_empresa/configuracion.html` agrega la seccion `Identidad visual`, que guarda `logo_url` y `mostrar_logo` en la configuracion avanzada de la empresa.
+- `web/administrar_empresa/panel.html` consulta `/api/empresa/configuracion_avanzada` y muestra el logo con dimensiones fijas dentro de la columna izquierda del hero, sin tocar la tarjeta de clima.
+- `backend/handlers/empresa_configuracion_avanzada.go` incorpora el upload multipart de logo, con limite de 5 MB y almacenamiento en `web/uploads/empresa_logos/empresa_<id>/`.
+- `backend/main.go` registra `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions`.

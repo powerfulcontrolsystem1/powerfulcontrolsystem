@@ -1394,6 +1394,7 @@ Regla de lectura comun (R):
 | `/api/empresa/finanzas/cierres_caja` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=aprobar` restringido por permiso `A` |
 | `/api/empresa/usuarios` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/usuarios solo administracion empresa |
 | `/api/empresa/configuracion_avanzada` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/configuracion sensible |
+| `/api/empresa/configuracion_avanzada/logo` | `WithEmpresaSeguridadPermissions` | - | SA, AE | carga multipart del logo empresarial; persiste `empresa_configuracion_avanzada.logo_url` y `mostrar_logo` por `empresa_id` |
 | `/api/empresa/impresoras` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | CRUD impresoras y acciones `predeterminada|activar|desactivar|funcionalidad|producto` por empresa |
 | `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`/`producto_id` |
 | `/api/empresa/control_electrico` | `WithEmpresaControlElectricoPermissions` | SA, AE, SS | SA, AE | configuracion Raspberry Pi, reles GPIO por estacion, pruebas manuales y sincronizacion electrica; acciones de prueba/sincronizacion requieren `A` |

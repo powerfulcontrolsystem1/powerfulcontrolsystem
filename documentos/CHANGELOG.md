@@ -1,3 +1,9 @@
+## [2026-05-12] Identidad visual empresarial
+- [Frontend] `web/administrar_empresa/configuracion.html` agrega una seccion visible para cargar el logo de la empresa y sincronizarlo con la configuracion de factura/documentos.
+- [Panel] `web/administrar_empresa/panel.html` muestra el logo encima de `Panel de <empresa>` con tamano fijo, sin modificar la columna ni dimensiones de la tarjeta de clima.
+- [Backend] `/api/empresa/configuracion_avanzada/logo` acepta PNG/JPG/WEBP/GIF hasta 5 MB, guarda en `/uploads/empresa_logos/empresa_<id>/` y persiste `logo_url` + `mostrar_logo`.
+- [Datos] No hay tablas nuevas; se reutiliza `empresa_configuracion_avanzada` como fuente unica para panel, factura y documentos.
+
 ## [2026-05-12] CRM empresarial profesional
 - [Backend] `GET /api/empresa/crm_avanzado` con `action=dashboard` suma salud comercial, valor en riesgo, leads sin contacto, oportunidades estancadas, acciones priorizadas, responsables y canales.
 - [Frontend] `web/administrar_empresa/crm_comercial.html` y `web/js/crm_comercial.js` muestran cockpit ejecutivo, plan de accion, responsables y canales dentro de CRM unificado.
