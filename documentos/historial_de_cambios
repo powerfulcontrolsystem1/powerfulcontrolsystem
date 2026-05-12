@@ -23731,3 +23731,24 @@ Validacion:
 - validacion de scripts inline de web/super/configuracion_avanzada.html
 Motivo:
 - Ocultar el campo de codigo 2FA en login y gobernar su activacion desde Configuracion avanzada sin eliminar secretos TOTP por cuenta.
+2026-05-11: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/admin_totp_handlers.go
+- backend/handlers/admin_totp_handlers_test.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/recaptcha.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/js/login.js
+- web/login.html
+- web/super/configuracion_avanzada.html

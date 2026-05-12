@@ -8727,3 +8727,24 @@ Archivos modificados:
 - documentos/diagramas/estructura_del_codigo.md
 - documentos/historial_de_cambios
 - documentos/matriz_roles_permisos_pos_multiempresa.md
+
+2026-05-11 19:46:19 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: d84ce84f; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/admin_totp_handlers.go
+- backend/handlers/admin_totp_handlers_test.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/recaptcha.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/js/login.js
+- web/login.html
+- web/super/configuracion_avanzada.html
