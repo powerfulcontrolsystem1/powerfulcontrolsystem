@@ -83,6 +83,7 @@
         <li><button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email"><strong>Gmail SMTP</strong><span>Correo</span></button></li>
         <li><button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono"><strong>WhatsApp portal</strong><span>Contacto</span></button></li>
         <li><button type="button" data-target="recaptchaConfigCard" data-search="seguridad captcha recaptcha verificacion formularios"><strong>reCAPTCHA</strong><span>Seguridad</span></button></li>
+        <li><button type="button" data-target="admin2FAConfigCard" data-search="seguridad 2fa doble factor login administradores otp totp"><strong>2FA login</strong><span>Acceso</span></button></li>
         <li><button type="button" data-target="aiConfigCard" data-search="ia inteligencia artificial modelos credenciales chat gpt openai google"><strong>IA global</strong><span>Modelos</span></button></li>
         <li><button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema"><strong>Mantenimiento</strong><span>Sistema</span></button></li>
         <li><button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion"><strong>Respaldo</strong><span>Backup</span></button></li>
@@ -817,6 +818,37 @@
       </div>
     </section>
 
+    <section class="card form advanced-card" data-brand="system" id="admin2FAConfigCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.5 7.8-8 9-4.5-1.2-8-4-8-9V7l8-4z"></path><path d="M9 12l2 2 4-4"></path></svg>
+        2FA en login de administradores
+      </h2>
+      <p class="form-help">Control global para mostrar y exigir el codigo 2FA en el login de administradores cuando una cuenta tenga autenticador configurado.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar 2FA en login</label>
+          <label class="mode-switch-row" for="admin2FAEnabledToggle">
+            <span class="mode-label">Off</span>
+            <input id="admin2FAEnabledToggle" type="checkbox" role="switch" aria-label="Activar 2FA en login de administradores">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="admin2FAEnabledHelp" class="form-help">Si esta desactivado, el campo de codigo 2FA permanece oculto en login.html.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado</label>
+          <div id="admin2FAConfigStatus" class="form-help">Cargando estado 2FA...</div>
+          <div id="admin2FAUpdatedStatus" class="form-help">Validando configuracion global...</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="saveAdmin2FABtn" class="btn" type="button" style="display:none;">Guardar 2FA login</button>
+        <button id="editAdmin2FABtn" class="btn secondary" type="button" style="margin-left:8px;">Editar</button>
+        <button id="cancelAdmin2FABtn" class="btn secondary" type="button" style="display:none;margin-left:8px;">Cancelar</button>
+        <a class="btn secondary" href="/super/seguridad_2fa.html" style="margin-left:8px;">Gestionar secreto 2FA</a>
+      </div>
+      <div id="admin2FAConfigMsg" class="form-help"></div>
+    </section>
+
     <div id="categoriaIA" class="advanced-category-heading">
       <h2>Inteligencia artificial</h2>
       <p>Modelos, credenciales y servicios que complementan el chat empresarial y global.</p>
@@ -1076,6 +1108,11 @@
         setEditButtons('saveRecaptchaBtn', 'editRecaptchaBtn', 'cancelRecaptchaBtn', isEditing);
       }
 
+      function setAdmin2FAEditMode(isEditing){
+        setDisabledByIds(['admin2FAEnabledToggle'], !isEditing);
+        setEditButtons('saveAdmin2FABtn', 'editAdmin2FABtn', 'cancelAdmin2FABtn', isEditing);
+      }
+
       function enableEditRustDeskSshConfig(){
         setRustDeskSshEditMode(true);
         const msgEl = document.getElementById('rustdeskSshMsg');
@@ -1124,6 +1161,16 @@
 
       function cancelEditRecaptchaConfig(){
         loadRecaptchaConfig();
+      }
+
+      function enableEditAdmin2FAConfig(){
+        setAdmin2FAEditMode(true);
+        const msgEl = document.getElementById('admin2FAConfigMsg');
+        if (msgEl) msgEl.innerText = 'Modo edicion activo para 2FA login.';
+      }
+
+      function cancelEditAdmin2FAConfig(){
+        loadAdmin2FAConfig();
       }
 
       function normalizeRustDeskStatus(value){
@@ -1975,6 +2022,7 @@
 		await loadGmailConfig();
     await loadPortalWhatsAppConfig();
     await loadRecaptchaConfig();
+    await loadAdmin2FAConfig();
     		// cargar estado Epayco
     		await loadEpaycoConfig();
     // cargar estado credenciales IA
@@ -2339,6 +2387,66 @@
       if (btn) { btn.disabled = false; btn.innerText = 'Probar reCAPTCHA'; }
     }
   }
+
+      function refreshAdmin2FAEnabledHint(){
+        const enabledEl = document.getElementById('admin2FAEnabledToggle');
+        const helpEl = document.getElementById('admin2FAEnabledHelp');
+        if (!enabledEl || !helpEl) return;
+        helpEl.innerText = enabledEl.checked
+          ? '2FA activado en login: las cuentas con autenticador confirmado deberan ingresar codigo temporal.'
+          : '2FA desactivado en login: el campo de codigo permanece oculto y no se exige OTP al iniciar sesion.';
+      }
+
+      async function loadAdmin2FAConfig(){
+        const statusEl = document.getElementById('admin2FAConfigStatus');
+        const updatedEl = document.getElementById('admin2FAUpdatedStatus');
+        const msgEl = document.getElementById('admin2FAConfigMsg');
+        const toggleEl = document.getElementById('admin2FAEnabledToggle');
+        try {
+          const res = await fetch('/super/api/config/admin_2fa', { credentials: 'same-origin' });
+          const data = await res.json().catch(function(){ return null; });
+          if (!res.ok || !data || !data.ok) {
+            throw new Error((data && data.message) || ('HTTP ' + res.status));
+          }
+          toggleEl.checked = !!data.enabled;
+          refreshAdmin2FAEnabledHint();
+          statusEl.innerText = data.enabled ? '2FA login activo para administradores.' : '2FA login desactivado; el login no muestra codigo.';
+          updatedEl.innerText = data.updated_at
+            ? ('Ultima actualizacion: ' + data.updated_at + (data.updated_by ? ' por ' + data.updated_by : ''))
+            : 'Sin actualizacion manual registrada.';
+          msgEl.innerText = '';
+          setAdmin2FAEditMode(false);
+        } catch (err) {
+          if (statusEl) statusEl.innerText = 'No se pudo cargar 2FA login.';
+          if (updatedEl) updatedEl.innerText = err.message || 'Error al consultar configuracion.';
+          setAdmin2FAEditMode(false);
+        }
+      }
+
+      async function saveAdmin2FAConfig(){
+        const btn = document.getElementById('saveAdmin2FABtn');
+        const msgEl = document.getElementById('admin2FAConfigMsg');
+        const toggleEl = document.getElementById('admin2FAEnabledToggle');
+        if (btn) { btn.disabled = true; btn.innerText = 'Guardando...'; }
+        try {
+          const res = await fetch('/super/api/config/admin_2fa', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: !!(toggleEl && toggleEl.checked) })
+          });
+          const data = await res.json().catch(function(){ return null; });
+          if (!res.ok || !data || !data.ok) {
+            throw new Error((data && data.message) || ('HTTP ' + res.status));
+          }
+          await loadAdmin2FAConfig();
+          if (msgEl) msgEl.innerText = 'Configuracion 2FA guardada correctamente.';
+        } catch (err) {
+          if (msgEl) msgEl.innerText = err.message || 'No se pudo guardar 2FA login.';
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerText = 'Guardar 2FA login'; }
+        }
+      }
 
       async function loadAIConfig(){
         const msg = document.getElementById('aiConfigMsg');
@@ -3158,6 +3266,10 @@
       document.getElementById('editRecaptchaBtn').addEventListener('click', enableEditRecaptchaConfig);
       document.getElementById('cancelRecaptchaBtn').addEventListener('click', cancelEditRecaptchaConfig);
       document.getElementById('recaptchaTestBtn').addEventListener('click', testRecaptchaService);
+      document.getElementById('saveAdmin2FABtn').addEventListener('click', saveAdmin2FAConfig);
+      document.getElementById('editAdmin2FABtn').addEventListener('click', enableEditAdmin2FAConfig);
+      document.getElementById('cancelAdmin2FABtn').addEventListener('click', cancelEditAdmin2FAConfig);
+      document.getElementById('admin2FAEnabledToggle').addEventListener('change', refreshAdmin2FAEnabledHint);
       document.getElementById('saveAiConfigBtn').addEventListener('click', saveAIConfig);
       document.getElementById('editAiConfigBtn').addEventListener('click', enableEditAIConfig);
       document.getElementById('cancelAiConfigBtn').addEventListener('click', cancelEditAIConfig);

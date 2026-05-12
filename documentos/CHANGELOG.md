@@ -1,3 +1,9 @@
+## [2026-05-11] 2FA del login desde configuracion avanzada
+- [Seguridad] El login de administradores oculta el campo de codigo 2FA salvo que `security.admin_2fa.enabled` este activo.
+- [Backend] `/config.js` publica `ADMIN_2FA_LOGIN_ENABLED` y `AdminLoginHandler` solo exige OTP cuando el switch global y el TOTP de la cuenta estan activos.
+- [Frontend] `web/super/configuracion_avanzada.html` agrega la tarjeta `2FA login` para activar/desactivar la exigencia global sin tocar secretos por cuenta.
+- [QA] `go test ./handlers -run "TestAdminTOTPLoginRequiredForAdmin" -count=1`; `go test ./... -count=1`; validacion JS de `login.js` y scripts inline.
+
 ## [2026-05-11] Catalogos publicos de verticales sin sesion
 - [Seguridad] `backend/utils/utils.go` agrega a la lista publica `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo`.
 - [Producto] La portada publica y las fichas comerciales pueden consultar el catalogo real de verticales sin depender de una sesion administrativa.

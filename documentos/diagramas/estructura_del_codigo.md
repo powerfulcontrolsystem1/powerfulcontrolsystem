@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-11 (2FA login desde configuracion avanzada)
+
+- `backend/handlers/admin_totp_handlers.go` centraliza `security.admin_2fa.enabled`, expone `/super/api/config/admin_2fa` y separa la activacion global del secreto TOTP por administrador.
+- `backend/handlers/auth_admin_handlers.go` exige `otp_code` solo cuando la bandera global y el TOTP de la cuenta estan activos.
+- `backend/handlers/recaptcha.go` publica `window.ADMIN_2FA_LOGIN_ENABLED` dentro de `/config.js` para que el login oculte/muestre el campo sin una llamada adicional.
+- `web/login.html` y `web/js/login.js` mantienen oculto y deshabilitado el input `adminOtpCode` cuando la bandera global esta apagada.
+- `web/super/configuracion_avanzada.html` agrega la tarjeta `2FA login`; `web/super/seguridad_2fa.html` sigue siendo la vista para generar, confirmar o desactivar el secreto TOTP de la cuenta.
+
 ## Actualizacion 2026-05-11 (catalogos publicos de verticales sin sesion)
 
 - `backend/main.go` registra los catalogos `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` como contratos publicos de lectura para portada, tarjetas y matriz comercial.

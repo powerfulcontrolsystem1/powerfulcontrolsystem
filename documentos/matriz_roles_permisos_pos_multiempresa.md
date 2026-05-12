@@ -1,3 +1,9 @@
+2026-05-11: Nota operativa para 2FA en login de administradores
+- `security.admin_2fa.enabled` vive en configuracion avanzada y solo lo gobierna `super_administrador` mediante `/super/api/config/admin_2fa`.
+- Cuando el switch global esta apagado, `login.html` oculta el campo de codigo 2FA y `AdminLoginHandler` no exige OTP aunque la cuenta conserve secreto TOTP guardado.
+- Cuando el switch global esta activo, solo las cuentas con `administradores.totp_enabled=1` y secreto confirmado deben enviar `otp_code`; las demas mantienen el flujo normal de correo/contrasena.
+- La vista `web/super/seguridad_2fa.html` sigue siendo el control por cuenta para generar, confirmar o desactivar el secreto; no concede permisos adicionales ni cambia roles de empresa.
+
 2026-05-11: Nota operativa para integracion de verticales
 - `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` son rutas publicas de solo lectura para portada, tarjetas y matriz comercial. No conceden operacion sobre verticales, no exponen datos de empresas y no reemplazan los endpoints autenticados de `/api/empresa/...` o `/super/api/...`.
 - Los permisos/licencias siguen siendo necesarios, pero no son suficientes para mostrar un vertical: ademas debe estar marcado como visible operativo en la matriz de integracion.

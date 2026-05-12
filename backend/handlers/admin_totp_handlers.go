@@ -19,6 +19,7 @@ import (
 )
 
 const adminTOTPIssuer = "Powerful Control System"
+const superAdmin2FAEnabledConfigKey = "security.admin_2fa.enabled"
 
 func generateAdminTOTPSecret() (string, error) {
 	raw := make([]byte, 20)
@@ -82,6 +83,78 @@ func adminTOTPProvisioningURI(email, secret string) string {
 	return "otpauth://totp/" + label + "?" + q.Encode()
 }
 
+func isAdminTOTPLoginEnabled(dbSuper *sql.DB) bool {
+	if dbSuper == nil {
+		return false
+	}
+	value, err := getDecryptedConfigValue(dbSuper, superAdmin2FAEnabledConfigKey)
+	if err != nil {
+		return false
+	}
+	return parseTruthyConfigValue(value, false)
+}
+
+func adminTOTPLoginRequiredForAdmin(admin *dbpkg.Admin, globalEnabled bool) bool {
+	return globalEnabled && admin != nil && admin.TOTPEnabled == 1 && strings.TrimSpace(admin.TOTPSecret) != ""
+}
+
+func AdminTwoFactorGlobalConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+
+		if r.Method == http.MethodGet {
+			raw, _, _, updatedAt, _ := dbpkg.GetConfigEntry(dbSuper, superAdmin2FAEnabledConfigKey)
+			updatedBy, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, superAdmin2FAEnabledConfigKey+".updated_by")
+			enabled := parseTruthyConfigValue(raw, false)
+			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":          true,
+				"enabled":     enabled,
+				"updated_at":  updatedAt,
+				"updated_by":  strings.TrimSpace(updatedBy),
+				"config_key":  superAdmin2FAEnabledConfigKey,
+				"description": "Gobierna si el login de administradores muestra y exige codigo 2FA cuando la cuenta tiene TOTP activo.",
+			})
+			return
+		}
+
+		if r.Method != http.MethodPost && r.Method != http.MethodPut {
+			writeAdminAuthError(w, http.StatusMethodNotAllowed, "Metodo no permitido.")
+			return
+		}
+		adminEmail := strings.TrimSpace(adminEmailFromRequest(r))
+		if adminEmail == "" || adminEmail == "sistema" {
+			writeAdminAuthError(w, http.StatusUnauthorized, "Sesion no autenticada.")
+			return
+		}
+		var payload struct {
+			Enabled *bool `json:"enabled"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "Solicitud de configuracion 2FA invalida.")
+			return
+		}
+		if payload.Enabled == nil {
+			writeAdminAuthError(w, http.StatusBadRequest, "Debes enviar enabled.")
+			return
+		}
+		value := "0"
+		if *payload.Enabled {
+			value = "1"
+		}
+		if err := dbpkg.SetConfigValue(dbSuper, superAdmin2FAEnabledConfigKey, value, false); err != nil {
+			writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo guardar la configuracion global 2FA.")
+			return
+		}
+		_ = dbpkg.SetConfigValue(dbSuper, superAdmin2FAEnabledConfigKey+".updated_by", adminEmail, false)
+		writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":      true,
+			"enabled": *payload.Enabled,
+		})
+	}
+}
+
 func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		adminEmail, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper)
@@ -95,13 +168,15 @@ func AdminTwoFactorHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		if r.Method == http.MethodGet {
+			globalEnabled := isAdminTOTPLoginEnabled(dbSuper)
 			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":                 true,
 				"enabled":            admin.TOTPEnabled == 1,
 				"configured":         strings.TrimSpace(admin.TOTPSecret) != "",
 				"confirmed_at":       admin.TOTPConfirmadoEn,
 				"issuer":             adminTOTPIssuer,
-				"login_requires_otp": admin.TOTPEnabled == 1,
+				"global_enabled":     globalEnabled,
+				"login_requires_otp": adminTOTPLoginRequiredForAdmin(admin, globalEnabled),
 			})
 			return
 		}

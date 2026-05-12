@@ -1,3 +1,10 @@
+2026-05-11: 2FA del login desde configuracion avanzada
+- Modulos afectados: `autenticacion`, `super_administrador`, `configuracion_avanzada`, `seguridad`.
+- Cambio funcional: `login.html` ya no muestra el campo `Codigo 2FA` de forma permanente; lo habilita con `ADMIN_2FA_LOGIN_ENABLED` publicado por `/config.js`.
+- Seguridad: el backend exige OTP solo cuando la configuracion global `security.admin_2fa.enabled` esta activa y la cuenta administrativa tiene TOTP confirmado.
+- Operacion: Configuracion avanzada agrega una tarjeta `2FA login` para activar/desactivar la exigencia global; la pantalla `2FA super` conserva la gestion del secreto por cuenta.
+- QA: se agregan pruebas puras para fijar que el switch global gobierna la exigencia de OTP.
+
 2026-05-11: Catalogos publicos de verticales sin sesion
 - Modulos afectados: `verticales_nuevos`, `verticales_integracion`, `portal_publico`, `autenticacion`.
 - Cambio funcional: los endpoints `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` quedan disponibles sin cookie de administrador, como corresponde a su contrato publico.

@@ -2711,6 +2711,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/config/admin_2fa":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/admin_2fa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/config/admin_2fa
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/config/ai":
     get:
       tags: [super-administrador]

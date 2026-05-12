@@ -1,3 +1,13 @@
+- Actualizacion 2026-05-11: 2FA del login desde configuracion avanzada
+	- `backend/handlers/admin_totp_handlers.go` : agrega la configuracion global `security.admin_2fa.enabled`, endpoint `/super/api/config/admin_2fa` y helper para decidir si el login debe exigir OTP.
+	- `backend/handlers/auth_admin_handlers.go` : exige `otp_code` solo cuando el switch global y el TOTP de la cuenta estan activos.
+	- `backend/handlers/recaptcha.go` : publica `ADMIN_2FA_LOGIN_ENABLED` desde `/config.js` para el frontend publico.
+	- `backend/main.go` : registra el endpoint super de configuracion global 2FA.
+	- `backend/handlers/admin_totp_handlers_test.go` : valida el contrato del switch global para cuentas con/sin TOTP.
+	- `web/login.html` y `web/js/login.js` : ocultan y deshabilitan el campo `adminOtpCode` cuando 2FA login global esta apagado.
+	- `web/super/configuracion_avanzada.html` : agrega la tarjeta `2FA login` con activar/desactivar y enlace a la gestion del secreto.
+	- Verificacion: `go test ./handlers -run "TestAdminTOTPLoginRequiredForAdmin" -count=1`; `go test ./... -count=1`; `node --check web/js/login.js`; validacion de scripts inline de configuracion avanzada.
+
 - Actualizacion 2026-05-11: catalogos publicos de verticales sin sesion
 	- `backend/utils/utils.go` : declara como publicos de solo lectura `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo`.
 	- `backend/utils/auth_middleware_test.go` : valida que ambos catalogos puedan consultarse sin sesion y que las rutas protegidas sigan exigiendo autenticacion.

@@ -1140,6 +1140,7 @@ func main() {
 	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/2fa", handlers.AdminTwoFactorHandler(dbSuper))
+	http.HandleFunc("/super/api/config/admin_2fa", handlers.AdminTwoFactorGlobalConfigHandler(dbSuper))
 	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))

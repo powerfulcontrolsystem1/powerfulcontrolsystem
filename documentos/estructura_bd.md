@@ -21,6 +21,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-11 (2FA login global)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `pcs_superadministrador.configuraciones` con la clave `security.admin_2fa.enabled` para activar/desactivar globalmente la exigencia de OTP en login de administradores.
+- Las credenciales TOTP por cuenta permanecen en `administradores.totp_enabled`, `administradores.totp_secret` y `administradores.totp_confirmado_en`.
+
 Actualizacion 2026-05-11 (integracion profesional de verticales)
 - La primera tanda de matriz/visibilidad no agrego tablas ni columnas.
 - Los 20 verticales nuevos siguen usando las tablas compartidas `empresa_modulos_colombia_*` por `empresa_id` y `modulo`.

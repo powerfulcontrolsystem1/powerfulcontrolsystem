@@ -49,10 +49,10 @@
               </div>
             </div>
           </div>
-          <div class="form-row">
+          <div class="form-row is-hidden" id="adminOtpRow">
             <div class="form-col">
               <label class="form-label" for="adminOtpCode">Código 2FA</label>
-              <input id="adminOtpCode" class="form-input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Opcional para cuentas protegidas" maxlength="8">
+              <input id="adminOtpCode" class="form-input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Código de la aplicación autenticadora" maxlength="8" disabled>
             </div>
           </div>
           <div class="remember-row">
@@ -120,8 +120,8 @@
     </div>
   </div>
 
-  <script src="/config.js?v=20260510-mobile-login"></script>
+  <script src="/config.js?v=20260511-admin-2fa"></script>
   <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
-  <script src="/js/login.js?v=20260510-mobile-login"></script>
+  <script src="/js/login.js?v=20260511-admin-2fa"></script>
 </body>
 </html>

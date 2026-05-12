@@ -284,7 +284,7 @@ func AdminLoginHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 		// crear sesión
-		if admin.TOTPEnabled == 1 && !verifyAdminTOTPCode(admin.TOTPSecret, payload.OTPCode, time.Now()) {
+		if adminTOTPLoginRequiredForAdmin(admin, isAdminTOTPLoginEnabled(dbSuper)) && !verifyAdminTOTPCode(admin.TOTPSecret, payload.OTPCode, time.Now()) {
 			writeAdminAuthJSON(w, http.StatusUnauthorized, map[string]interface{}{"ok": false, "two_factor_required": true, "message": "Ingresa el codigo 2FA de tu aplicacion autenticadora."})
 			return
 		}

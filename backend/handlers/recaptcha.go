@@ -204,13 +204,14 @@ func PublicConfigJSHandler(dbSuper *sql.DB) http.HandlerFunc {
 		w.Header().Set("Expires", "0")
 		fmt.Fprintf(
 			w,
-			"window.RECAPTCHA_SITE_KEY = %q; window.RECAPTCHA_ENABLED = %t; window.RECAPTCHA_REQUESTED_ENABLED = %t; window.RECAPTCHA_CONFIGURED = %t; window.RECAPTCHA_DEV_BYPASS = %t; window.RECAPTCHA_PROVIDER = %q;",
+			"window.RECAPTCHA_SITE_KEY = %q; window.RECAPTCHA_ENABLED = %t; window.RECAPTCHA_REQUESTED_ENABLED = %t; window.RECAPTCHA_CONFIGURED = %t; window.RECAPTCHA_DEV_BYPASS = %t; window.RECAPTCHA_PROVIDER = %q; window.ADMIN_2FA_LOGIN_ENABLED = %t;",
 			strings.TrimSpace(fmt.Sprint(cfg["site_key"])),
 			cfg["enabled"].(bool),
 			cfg["requested_enabled"].(bool),
 			cfg["configured"].(bool),
 			cfg["dev_bypass"].(bool),
 			cfg["provider"].(string),
+			isAdminTOTPLoginEnabled(dbSuper),
 		)
 	}
 }
