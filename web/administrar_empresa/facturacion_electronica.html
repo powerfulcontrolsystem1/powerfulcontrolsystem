@@ -45,8 +45,9 @@
           <label class="form-label" for="feFirmaPassword">Clave del P12/PFX o llave cifrada</label>
           <input id="feFirmaPassword" class="form-input" type="password" autocomplete="new-password" placeholder="Opcional">
         </div>
-        <div class="form-col form-col-end" style="display:flex; align-items:flex-end; gap:10px;">
+        <div class="form-col form-col-end" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
           <button id="feFirmaUploadBtn" class="btn" type="button">Cargar firma</button>
+          <a id="feFirmaProviderBtn" class="btn secondary" href="/administrar_empresa/proveedores_firma_digital.html" target="_self">Adquirir Firma Electr&oacute;nica</a>
         </div>
       </div>
       <div id="feFirmaMsg" class="form-help"></div>
@@ -1936,6 +1937,10 @@
       state.empresaID = empresaID;
       document.getElementById("empresa_id").value = String(empresaID);
       document.getElementById("adv_empresa_id").value = String(empresaID);
+      var providerBtn = document.getElementById("feFirmaProviderBtn");
+      if (providerBtn) {
+        providerBtn.href = "/administrar_empresa/proveedores_firma_digital.html?empresa_id=" + encodeURIComponent(empresaID);
+      }
       try {
         localStorage.setItem("active_empresa_id", String(empresaID));
       } catch (_) {}

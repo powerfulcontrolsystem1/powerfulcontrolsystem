@@ -1,3 +1,47 @@
+2026-05-13 - Logos empresariales Calipso y Bollon
+- `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg`:
+	- nuevo logo vectorial para Motel Calipso, con luna, ola y estrella.
+- `web/uploads/empresa_logos/empresa_32/gimnasio-el-bollon-logo.svg`:
+	- nuevo logo vectorial para Gimnasio el bollon, con monograma EB, barra y energia.
+
+2026-05-13 - Indicadores economicos moviles completos
+- `web/administrar_empresa/panel.html`:
+	- ajusta el responsive de `Indicadores economicos importantes` para mostrar textos grandes y completos en celular, sin `ellipsis`, con referencias visibles y una columna en pantallas muy estrechas.
+
+2026-05-13 - Proveedores de firma digital para facturacion electronica
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- agrega el boton `Adquirir Firma Electronica` junto a `Cargar firma` y conserva `empresa_id` al navegar.
+- `web/administrar_empresa/proveedores_firma_digital.html`:
+	- nueva pagina interna `Proveedores de Firma Digital` con tarjeta de Sensiyo y enlace externo para comprar certificado digital/firma DIAN.
+- `web/administrar_empresa/facturacion_electronica_menu.html`:
+	- agrega acceso lateral a `Proveedores de Firma Digital` dentro del submenu de facturacion electronica.
+
+2026-05-13 - Tarjeta Caja compacta en estaciones
+- `web/administrar_empresa/estaciones.html`:
+	- restaura la tarjeta especial `Caja` al formato compacto con totales y boton `Ver ultimos movimientos`, aplica el color configurado de estaciones y conserva el clic general hacia `corte_de_caja.html`.
+- `documentos/descripcion_de_modulos`, `documentos/CHANGELOG.md`:
+	- registran el ajuste UX sin cambios de backend, permisos, tablas ni dependencias.
+
+2026-05-13 - Prueba de recuperacion de esquema de carritos
+- `backend/db/carritos_compras.go`:
+	- completa columnas legacy faltantes de `carritos_compras` y `carrito_compra_items` antes de responder el listado, usa helpers SQL compatibles en lecturas directas del flujo y corrige la consulta degradada para no seleccionar `ic.item_count` sin join.
+- `backend/db/carritos_compras_schema_test.go`:
+	- prueba enfocada para confirmar que errores PostgreSQL por columna o relacion faltante en `carritos_compras` disparan refresco de esquema antes de fallar el listado de estaciones/carritos, y que el listado sin conteo de items no referencia el alias `ic`.
+
+2026-05-13 - Juegos moviles con records
+- `web/Juegos/juegos_records.js`:
+	- puente publico del modulo Juegos para resolver jugador/empresa, enviar records a `/api/public/juegos/records`, leer rankings y reportar puntajes desde wrappers o iframes.
+- `web/Juegos/arcade_embed.js`, `web/Juegos/open_game_embed.js`, `web/Juegos/arcade_embed.css`:
+	- agregan sonido WebAudio, panel compacto de records, reporte automatico de puntaje y ajustes tactiles para juegos embebidos.
+- `web/Juegos/menu_juegos.html`:
+	- muestra tarjetas de juegos con el mismo tamano visual y portadas PNG reales generadas desde capturas visuales de cada titulo.
+- `web/img/juegos/*.png`:
+	- portadas/capturas reales usadas por el lobby de juegos para arcade, 3D, Patito, N64 y emulador.
+- `juegos/public/index.html`, `juegos/public/styles.css`, `juegos/public/app.js`:
+	- incorporan controles tactiles del emulador para movil con D-pad, Start, Select, A y B.
+- `web/Juegos/n64/index.html`:
+	- vista responsive que embebe el emulador real en vez de la tarjeta informativa anterior.
+
 2026-05-13 - Actualizacion general de documentacion y ayuda
 - `web/img/login-admin-real.png`:
 	- imagen fotografica realista del login administrativo, con ejecutivo visto desde atras observando el sistema en pantalla.

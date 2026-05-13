@@ -40,6 +40,7 @@
       <span><strong>Buscaminas</strong></span>
       <span>Minas: <strong id="mines">20</strong></span>
       <span>Tiempo: <strong id="time">0</strong></span>
+      <span hidden>Record: <strong id="score" data-score="0">0</strong></span>
       <span id="mode">Abrir</span>
     </div>
     <div class="game-board-wrap">
@@ -54,7 +55,7 @@
   <script>
     (function(){
       var size = 12, totalMines = 20, board = [], started = false, done = false, flagMode = false, timer = 0, timerId = 0;
-      var boardEl = document.getElementById("board"), minesEl = document.getElementById("mines"), timeEl = document.getElementById("time"), msg = document.getElementById("message"), mode = document.getElementById("mode");
+      var boardEl = document.getElementById("board"), minesEl = document.getElementById("mines"), timeEl = document.getElementById("time"), scoreEl = document.getElementById("score"), msg = document.getElementById("message"), mode = document.getElementById("mode");
       function idx(x,y){ return y * size + x; }
       function neighbors(x,y){
         var out = [];
@@ -71,7 +72,7 @@
         timerId = setInterval(function(){ timer++; timeEl.textContent = timer; }, 1000);
       }
       function reset(){
-        clearInterval(timerId); timer = 0; started = false; done = false; flagMode = false; timeEl.textContent = "0"; mode.textContent = "Abrir"; msg.hidden = true;
+        clearInterval(timerId); timer = 0; started = false; done = false; flagMode = false; timeEl.textContent = "0"; scoreEl.textContent = "0"; scoreEl.setAttribute("data-score", "0"); mode.textContent = "Abrir"; msg.hidden = true;
         board = [];
         for (var y=0; y<size; y++) for (var x=0; x<size; x++) board.push({x:x,y:y,mine:false,open:false,flag:false,count:0});
         var placed = 0;
@@ -94,7 +95,11 @@
         }
         if (cell.count === 0) neighbors(cell.x,cell.y).forEach(reveal);
         if (board.filter(function(c){ return !c.mine && c.open; }).length === size*size-totalMines) {
-          done = true; clearInterval(timerId); show("Ganaste en " + timer + " segundos.");
+          done = true; clearInterval(timerId);
+          var record = Math.max(1, 10000 - (timer * 50));
+          scoreEl.textContent = String(record);
+          scoreEl.setAttribute("data-score", String(record));
+          show("Ganaste en " + timer + " segundos.");
         }
         render();
       }

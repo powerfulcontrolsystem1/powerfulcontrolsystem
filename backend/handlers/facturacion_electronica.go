@@ -1291,6 +1291,7 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 	ambiente := "sandbox"
 	apiBaseURL := ""
 	camposPaisJSON := "{}"
+	paisCodigo := ""
 
 	if cfg != nil {
 		if strings.TrimSpace(cfg.Proveedor) != "" {
@@ -1301,6 +1302,7 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 		}
 		apiBaseURL = strings.TrimSpace(cfg.APIBaseURL)
 		camposPaisJSON = strings.TrimSpace(cfg.CamposPaisJSON)
+		paisCodigo = strings.ToUpper(strings.TrimSpace(cfg.PaisCodigo))
 	}
 
 	if ambiente != "produccion" {
@@ -1314,6 +1316,12 @@ func dispatchFacturacionProveedor(cfg *dbpkg.FacturacionElectronicaPaisConfig, p
 
 	referenciaLocal := fmt.Sprintf("%s-%d-%s", strings.ToUpper(proveedor), doc.EmpresaID, strings.ToUpper(strings.TrimSpace(doc.DocumentoCodigo)))
 	if proveedor == "manual" || proveedor == "interno" || proveedor == "local" {
+		if paisCodigo == "CO" {
+			return facturacionProveedorDispatchResult{
+				Success: false,
+				Error:   "proveedor DIAN real no configurado para Colombia en produccion",
+			}
+		}
 		respuesta := map[string]interface{}{
 			"ok":                 true,
 			"provider":           proveedor,
@@ -1429,10 +1437,10 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 		return out
 	}
 	if proveedor == "" || proveedor == "manual" || proveedor == "interno" || proveedor == "local" {
-		out["online"] = true
-		out["estado_conexion"] = "online"
-		out["mensaje"] = "proveedor local disponible"
-		out["accion_recomendada"] = "continuar_online"
+		out["online"] = false
+		out["estado_conexion"] = "sin_proveedor_dian"
+		out["mensaje"] = "proveedor DIAN real no configurado para Colombia en produccion"
+		out["accion_recomendada"] = "bloquear_facturacion_electronica"
 		return out
 	}
 	if strings.HasPrefix(strings.ToLower(apiBaseURL), "mock://") {

@@ -247,6 +247,46 @@ button:disabled {
   gap: 8px;
 }
 
+.touch-controls {
+  display: none;
+  grid-template-columns: minmax(112px, 160px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--panel-soft) 86%, var(--bg) 14%);
+}
+
+.touch-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    ". up ."
+    "left down right";
+  gap: 6px;
+}
+
+.touch-dpad button,
+.touch-actions button {
+  min-height: 44px;
+  border-radius: 10px;
+  font-weight: 900;
+  touch-action: none;
+  user-select: none;
+}
+
+.touch-dpad [data-emulator-key="ArrowUp"] { grid-area: up; }
+.touch-dpad [data-emulator-key="ArrowLeft"] { grid-area: left; }
+.touch-dpad [data-emulator-key="ArrowDown"] { grid-area: down; }
+.touch-dpad [data-emulator-key="ArrowRight"] { grid-area: right; }
+
+.touch-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
 .player-shell {
   position: relative;
   flex: 0 0 auto;
@@ -425,6 +465,11 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .touch-controls {
+    display: grid;
+    margin: 0 8px;
+  }
+
   .toolbar-actions button {
     min-height: 36px;
     padding: 0 9px;
@@ -438,6 +483,25 @@ button:disabled {
 
   .save-status {
     margin-top: -5px;
+  }
+}
+
+@media (max-width: 430px) {
+  .touch-controls {
+    grid-template-columns: 118px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .touch-dpad button,
+  .touch-actions button {
+    min-height: 38px;
+    padding: 0 6px;
+    font-size: .78rem;
+  }
+
+  .touch-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -456,5 +520,16 @@ button:disabled {
     height: calc(100vh - 110px);
     max-height: calc(100vh - 110px);
     min-height: 320px;
+  }
+
+  .touch-controls {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 12;
+    grid-template-columns: 150px minmax(220px, 1fr);
+    background: color-mix(in srgb, var(--panel) 72%, transparent 28%);
+    backdrop-filter: blur(10px);
   }
 }

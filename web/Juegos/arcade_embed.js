@@ -34,6 +34,8 @@
   if (!frame) {
     return;
   }
+  var gameSlug = (window.PCSJuegos && window.PCSJuegos.slugFromPath) ? window.PCSJuegos.slugFromPath() : "juego";
+  var audioCtx = null;
 
   function normalizeTheme(theme) {
     var value = String(theme || "").trim().toLowerCase();
@@ -73,6 +75,12 @@
       link.rel = "stylesheet";
       link.href = "/Juegos/open_game_source.css";
       (doc.head || doc.documentElement).appendChild(link);
+    }
+    if (!doc.getElementById("pcsOpenGameEmbedRuntime") && !doc.querySelector('script[src*="/Juegos/open_game_embed.js"]')) {
+      var script = doc.createElement("script");
+      script.id = "pcsOpenGameEmbedRuntime";
+      script.src = "/Juegos/open_game_embed.js";
+      (doc.body || doc.documentElement).appendChild(script);
     }
   }
 
@@ -126,6 +134,7 @@
   }
 
   function press(keyCode, hold) {
+    arcadeTone(hold ? 420 : 620, 0.055);
     sendKey(keyCode, "keydown");
     sendKey(keyCode, "keypress");
     if (!hold) {
@@ -133,6 +142,26 @@
         sendKey(keyCode, "keyup");
       }, 80);
     }
+  }
+
+  function arcadeTone(freq, duration) {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume().catch(function () {});
+    }
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = "square";
+    osc.frequency.value = freq || 520;
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.035, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (duration || 0.06));
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + (duration || 0.06) + 0.02);
   }
 
   document.querySelectorAll("[data-key]").forEach(function (button) {
@@ -166,6 +195,14 @@
     window.setTimeout(resizeFrameToViewport, 120);
     frame.focus();
   });
+
+  if (window.PCSJuegos && typeof window.PCSJuegos.enhanceWrapper === "function") {
+    window.PCSJuegos.enhanceWrapper({
+      frame: frame,
+      juego: gameSlug,
+      title: frame.getAttribute("title") || document.title || gameSlug
+    });
+  }
 
   window.addEventListener("resize", resizeFrameToViewport);
   window.addEventListener("orientationchange", function () {

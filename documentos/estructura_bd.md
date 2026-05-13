@@ -1335,6 +1335,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.
 - 2026-05-13: se agrega `licencia_vencimiento_notificaciones` en `pcs_superadministrador` para registrar avisos de vencimiento enviados/capturados por licencia base o adicional, empresa, correo administrador, fecha de vencimiento y umbral de dias. La configuracion global vive en `configuraciones` con claves `licencias.vencimiento_alertas.*`.
@@ -1388,7 +1389,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-02: se agregan tablas del modulo chat_y_tareas en pcs_empresas y se actualiza este documento.
 - 2026-04-02: se agregan `empresa_gps_dispositivos` y `empresa_gps_recorridos` para tracking de ubicacion GPS por empresa, con registro periodico de recorridos.
 ### Tabla: super_juegos_records (pcs_superadministrador)
-Almacena los top scores globales de los juegos (Buscaminas, Solitario, Pacman) para todas las empresas y el público.
+Almacena los top scores globales de todos los juegos publicados en `/Juegos/*` y el emulador, para todas las empresas y el público. El frontend envía records mediante `/api/public/juegos/records` con `juego`, `nombre_jugador`, `empresa_id`, `puntaje` y `nivel`.
 - **Columnas**: `id` (INTEGER/SERIAL), `juego` (TEXT), `nombre_jugador` (TEXT), `empresa_id` (TEXT, DEFAULT 'Publico'), `puntaje` (INTEGER), `nivel` (INTEGER), `fecha_creacion` (TEXT/TIMESTAMP), `fecha_actualizacion` (TEXT/TIMESTAMP), `usuario_creador` (TEXT), `estado` (TEXT), `observaciones` (TEXT).
 - **Ãšnico**: `id` autoincremental.
 - **Índice**: `idx_super_juegos_records_top` en (`juego`, `puntaje` DESC, `fecha_creacion` ASC).

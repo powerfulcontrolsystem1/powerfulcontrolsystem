@@ -1,3 +1,53 @@
+2026-05-13: factura electronica de venta no se marca emitida sin confirmacion fiscal
+- Modulos afectados: `carritos`, `venta_directa`, `facturacion_electronica`, `DIAN`.
+- Backend: `registrarFacturaElectronicaDesdeDocumentoVenta` ahora verifica el resultado de integracion fiscal y, para Colombia en ambiente `produccion`, solo conserva `estado_documento=emitida` cuando `estado_envio=enviado`.
+- Backend: `dispatchFacturacionProveedor` y `facturacionProveedorConnectionStatus` bloquean Colombia produccion cuando el proveedor queda `manual`, `local` o `interno`, evitando simular acuse fiscal local.
+- Operacion: si la DIAN/proveedor no esta disponible, rechaza o no confirma el envio, la factura asociada queda `pendiente_emision` con evento `factura_integracion_fallida`, observacion de causa y cola de reintentos, mientras la venta/comprobante queda registrada.
+- Cumplimiento: se alinea el flujo de venta con validacion previa DIAN para no presentar como aceptada una factura sin acuse fiscal.
+- Pruebas: se agrega cobertura enfocada en `backend/handlers/facturacion_documentos_electronicos_test.go` y se corren pruebas dirigidas de handlers/db.
+
+2026-05-13: logos empresariales creados y activados para Calipso y Bollon
+- Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `carritos`, `facturacion`, `reportes`.
+- Activos: se agregan logos SVG para Motel Calipso y Gimnasio el bollon en `/uploads/empresa_logos/empresa_7/` y `/uploads/empresa_logos/empresa_32/`.
+- Datos: en PostgreSQL se actualiza `empresa_configuracion_avanzada` para `empresa_id=7` y `empresa_id=32`, con `logo_url` apuntando a los nuevos activos y `mostrar_logo`/`mostrar_logo_empresa` activos.
+- Validacion: XML SVG valido, render PNG local de revision, copia al volumen `pcs_web_uploads`, URLs publicas 200 y consulta SQL confirmando configuracion activa.
+
+2026-05-13: panel empresarial muestra indicadores economicos completos en movil
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Frontend: `web/administrar_empresa/panel.html` deja de comprimir los indicadores economicos a 4 columnas en celular y elimina `white-space: nowrap`, `overflow: hidden` y `text-overflow: ellipsis` del titulo, alcance, nombres, valores y referencias moviles.
+- UX: las referencias vuelven a mostrarse en movil; el grid usa 2 columnas legibles y una columna en pantallas pequenas o bajas, permitiendo scroll vertical para no cortar contenido.
+- Validacion: parseo de scripts inline con Node y prueba visual Playwright en 390x844 y 360x640 con 8 tarjetas sin elementos truncados.
+
+2026-05-13: facturacion electronica agrega proveedor externo para firma digital
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega `Adquirir Firma Electronica` en la fila de carga de firma/certificado DIAN Colombia.
+- Navegacion: el boton abre `web/administrar_empresa/proveedores_firma_digital.html` dentro del iframe del submenu de facturacion; el menu lateral tambien publica esta nueva pagina.
+- Proveedor: se registra Sensiyo como proveedor externo de certificado digital/firma DIAN mediante enlace a `https://sensiyo.co/certificados-digitales/`.
+- Alcance: no se guardan credenciales ni certificados del proveedor; la compra se realiza fuera del sistema. Sin cambios de tablas, endpoints, permisos ni dependencias.
+- Validacion: parseo de scripts inline de `facturacion_electronica.html`, `facturacion_electronica_menu.html` y `proveedores_firma_digital.html` con Node, sin errores.
+
+2026-05-13: Caja conserva corte de caja y recupera presentacion compacta
+- Modulos afectados: `estaciones`, `corte_caja`.
+- Frontend: `web/administrar_empresa/estaciones.html` vuelve a renderizar la tarjeta `Caja` en formato compacto con titulo, totales y boton `Ver ultimos movimientos`, quitando el texto descriptivo largo.
+- UX: la tarjeta ahora aplica el color configurado de estaciones mediante `--station-state-bg` para que respete los colores operativos de caja/estaciones.
+- Navegacion: el clic o teclado sobre la tarjeta sigue abriendo `corte_de_caja.html`; el boton interno conserva la navegacion a `ultimos_movimientos_de_caja.html`.
+- Validacion: parseo de scripts inline de `estaciones.html` con Node, sin errores.
+
+2026-05-13: carritos corrige 500 por esquema empresarial incompleto
+- Modulos afectados: `estaciones`, `carritos`, `ventas_simple`.
+- Backend: `backend/db/carritos_compras.go` ya no considera listo el esquema solo por tablas/indices y dos columnas; ahora valida y completa las columnas usadas por el listado de carritos, items y metricas de estacion, y cachea esa preparacion por base/esquema PostgreSQL.
+- Recuperacion: si PostgreSQL responde `column does not exist` o `relation does not exist` al listar `/api/empresa/carritos_compra`, el backend marca el esquema como pendiente, ejecuta de nuevo las migraciones ligeras y reintenta antes de devolver error.
+- Compatibilidad: el reintento sin conteo de items corrige la seleccion de `ic.item_count` para no usar el alias `ic` cuando el join esta desactivado.
+- Pruebas: se agrega `backend/db/carritos_compras_schema_test.go`, se valida con pruebas enfocadas de `db` y `handlers`, y se ejecuta smoke visual controlado de Estaciones -> `Zona 1` -> carrito sin el mensaje `No se pudo abrir esta estacion`.
+
+2026-05-13: juegos adaptados a movil con records globales
+- Modulos afectados: `juegos`, `emulador`, `portal_publico`.
+- Backend: `main.go` vuelve operativo `EnsureSuperJuegosSchema` y registra `/api/public/juegos/records`; la tabla `super_juegos_records` queda como repositorio global de mejores puntajes por juego.
+- Frontend: se crea `web/Juegos/juegos_records.js`, se conectan wrappers arcade al ranking, se agrega sonido por WebAudio y se reportan puntajes desde juegos DOM/canvas como Tetris, Breakout, Space Invaders, Pong, Pacman, Patito, Memoria y Buscaminas.
+- UX movil: `arcade_embed.css` conserva controles tactiles compactos, el lobby usa tarjetas uniformes con capturas reales PNG y `/Juegos/n64/index.html` embebe el emulador real.
+- Emulador: `/emulador/` agrega control tactil D-pad/Start/Select/A/B para celulares, sin guardar ROMs ni records fuera del esquema ya previsto.
+- Validacion: `go test ./...`, `node --check` de JS modificados y prueba visual Playwright en 390x844/1365x900 sobre menu, 12 juegos, N64 y emulador.
+
 2026-05-13: Caja se fuerza siempre a corte de caja desde estaciones
 - Modulos afectados: `estaciones`, `corte_caja`.
 - Frontend: `web/administrar_empresa/estaciones.html` identifica la tarjeta especial `Caja` por id/nombre y la saca del flujo generico de estaciones, evitando que termine en `carrito_de_compras.html`.

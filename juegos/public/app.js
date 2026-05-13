@@ -558,6 +558,53 @@ function bindEvents() {
   });
   window.addEventListener("gamepadconnected", updateGamepadStatus);
   window.addEventListener("gamepaddisconnected", updateGamepadStatus);
+  bindTouchControls();
+}
+
+function keyMeta(code) {
+  const map = {
+    ArrowUp: { key: "ArrowUp", keyCode: 38 },
+    ArrowDown: { key: "ArrowDown", keyCode: 40 },
+    ArrowLeft: { key: "ArrowLeft", keyCode: 37 },
+    ArrowRight: { key: "ArrowRight", keyCode: 39 },
+    Enter: { key: "Enter", keyCode: 13 },
+    Shift: { key: "Shift", keyCode: 16 },
+    KeyZ: { key: "z", keyCode: 90 },
+    KeyX: { key: "x", keyCode: 88 }
+  };
+  return map[code] || { key: code, keyCode: 0 };
+}
+
+function dispatchEmulatorKey(code, type) {
+  const meta = keyMeta(code);
+  const event = new KeyboardEvent(type, {
+    key: meta.key,
+    code,
+    bubbles: true,
+    cancelable: true,
+    keyCode: meta.keyCode,
+    which: meta.keyCode
+  });
+  Object.defineProperty(event, "keyCode", { get: () => meta.keyCode });
+  Object.defineProperty(event, "which", { get: () => meta.keyCode });
+  document.dispatchEvent(event);
+  window.dispatchEvent(event);
+  if (els.game) els.game.dispatchEvent(event);
+}
+
+function bindTouchControls() {
+  document.querySelectorAll("[data-emulator-key]").forEach((button) => {
+    const code = button.getAttribute("data-emulator-key");
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      dispatchEmulatorKey(code, "keydown");
+      if (navigator.vibrate) navigator.vibrate(12);
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
+      button.addEventListener(type, () => dispatchEmulatorKey(code, "keyup"));
+    });
+    button.addEventListener("click", (event) => event.preventDefault());
+  });
 }
 
 async function bootstrap() {

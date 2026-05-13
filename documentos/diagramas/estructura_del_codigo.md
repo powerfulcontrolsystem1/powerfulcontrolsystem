@@ -1,3 +1,17 @@
+## Actualizacion 2026-05-13 (venta directa y factura electronica DIAN)
+- `backend/handlers/carritos_compras.go` mantiene el cierre de venta/comprobante separado del estado fiscal de la factura electronica asociada.
+- Al generar factura electronica desde una venta, el flujo `registrarDocumentoVentaDesdeCarritoPagado` -> `registrarFacturaElectronicaDesdeDocumentoVenta` -> `processFacturacionIntegracionForDocumento` conserva `empresa_id`, documento origen y cola de reintentos.
+- Para Colombia en ambiente `produccion`, si `integracion_fiscal.estado_envio` no queda `enviado`, la factura asociada se actualiza a `estado_documento=pendiente_emision` y `evento_ultimo=factura_integracion_fallida`; la venta/comprobante permanece emitida.
+- `dispatchFacturacionProveedor` y `facturacionProveedorConnectionStatus` ya no tratan `manual`, `local` ni `interno` como proveedor valido para Colombia produccion; esas configuraciones quedan bloqueadas hasta configurar DIAN/proveedor real.
+- `backend/handlers/facturacion_documentos_electronicos_test.go` cubre que solo Colombia produccion exige acuse fiscal para mantener la factura automatica como emitida.
+- No se agregan tablas, rutas ni permisos; se reutilizan `empresa_facturacion_documentos` y `facturacion_electronica_reintentos`.
+
+## Actualizacion 2026-05-13 (juegos moviles con records)
+- `backend/main.go` asegura `super_juegos_records` y publica `/api/public/juegos/records` usando `backend/handlers/super_juegos.go`.
+- `web/Juegos/menu_juegos.html` funciona como lobby responsive con tarjetas uniformes y portadas PNG reales en `web/img/juegos/`.
+- `web/Juegos/juegos_records.js` centraliza ranking y guardado; `arcade_embed.js` orquesta iframes, controles tactiles, sonido y panel de records; `open_game_embed.js` reporta puntajes desde los juegos embebidos.
+- `juegos/public/*` es el frontend del emulador web servido por `/emulador/`; ahora incorpora controles tactiles y `web/Juegos/n64/index.html` lo embebe como pantalla N64.
+
 ## Actualizacion 2026-05-13 (submenu de Configuracion super)
 - `web/super/configuracion_avanzada.html` mantiene sus tarjetas de configuracion y buscador, pero el submenu interno adopta el patron de sidebar simple usado por `seleccionar_empresa.html`.
 - `web/menu.js` extiende el autocierre movil de `.admin-sidebar-mobile-collapsible` para botones de seccion (`button[data-target]`), ademas de enlaces.
@@ -437,6 +451,14 @@
 - `backend/handlers/super_limitaciones_empresa.go` usa `empresa.limitaciones.db.max_gb` como cuota maxima de base de datos por empresa, leyendo el valor legacy solo como compatibilidad.
 - `backend/handlers/postgres_performance.go` agrega cuota, porcentaje y estado al ranking `action=empresas_storage`.
 - El frontend retira Nextcloud de menu empresarial, modulo menu, licencias y configuracion avanzada; el Compose oficial ya no define servicios Nextcloud.
+
+## Actualizacion 2026-05-13 (facturacion electronica: proveedores de firma digital)
+
+- Frontend empresarial:
+  - `web/administrar_empresa/facturacion_electronica.html` agrega el boton `Adquirir Firma Electronica` junto al upload de firma DIAN Colombia.
+  - `web/administrar_empresa/facturacion_electronica_menu.html` expone la nueva pagina en el submenu/iframe del modulo.
+  - `web/administrar_empresa/proveedores_firma_digital.html` lista proveedores externos de certificado/firma digital, iniciando con Sensiyo.
+- No agrega rutas API, tablas ni permisos. La compra ocurre fuera del sistema y la carga del certificado sigue usando el endpoint existente de DIAN.
 
 # Estructura del codigo
 

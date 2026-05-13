@@ -25,18 +25,18 @@
 </head>
 <body>
   <div class="game-root">
-    <div class="game-hud"><span><strong>Memoria</strong></span><span>Movimientos: <strong id="moves">0</strong></span><span>Parejas: <strong id="pairs">0</strong>/8</span></div>
+    <div class="game-hud"><span><strong>Memoria</strong></span><span>Movimientos: <strong id="moves">0</strong></span><span>Parejas: <strong id="pairs">0</strong>/8</span><span hidden>Record: <strong id="score" data-score="0">0</strong></span></div>
     <div class="game-board-wrap"><div id="board" class="memory-board game-board"></div><div id="message" class="game-message" hidden></div></div>
     <div class="game-actions"><button id="reset" class="game-btn" type="button">Nuevo</button></div>
   </div>
   <script>
     (function(){
       var icons = ["7","K","A","Q","J","9","8","$"], cards = [], first = null, lock = false, moves = 0, pairs = 0;
-      var board = document.getElementById("board"), movesEl = document.getElementById("moves"), pairsEl = document.getElementById("pairs"), msg = document.getElementById("message");
+      var board = document.getElementById("board"), movesEl = document.getElementById("moves"), pairsEl = document.getElementById("pairs"), scoreEl = document.getElementById("score"), msg = document.getElementById("message");
       function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
       function reset(){
         cards = shuffle(icons.concat(icons)).map(function(v,i){ return {v:v,i:i,open:false,done:false}; });
-        first = null; lock = false; moves = 0; pairs = 0; msg.hidden = true; render();
+        first = null; lock = false; moves = 0; pairs = 0; scoreEl.textContent = "0"; scoreEl.setAttribute("data-score", "0"); msg.hidden = true; render();
       }
       function choose(card){
         if(lock || card.open || card.done) return;
@@ -45,7 +45,7 @@
         moves++;
         if(first.v === card.v){
           first.done = card.done = true; first = null; pairs++;
-          if(pairs === icons.length) { msg.textContent = "Completado en " + moves + " movimientos."; msg.hidden = false; }
+          if(pairs === icons.length) { var record = Math.max(1, 10000 - (moves * 100)); scoreEl.textContent = String(record); scoreEl.setAttribute("data-score", String(record)); msg.textContent = "Completado en " + moves + " movimientos."; msg.hidden = false; }
           render(); return;
         }
         lock = true; render();

@@ -2074,6 +2074,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/juegos/records":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/juegos/records
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/juegos/records
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/public/licencias/checkout_summary":
     get:
       tags: [publico]

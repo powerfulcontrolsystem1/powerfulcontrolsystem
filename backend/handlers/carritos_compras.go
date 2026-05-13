@@ -1932,6 +1932,21 @@ func carritoAutoFacturaElectronicaActiva(cfg *dbpkg.EmpresaConfiguracionAvanzada
 	return normalizeVentaDocumentMode(cfg.ModoDocumentoVenta) == "factura_electronica"
 }
 
+func facturaElectronicaVentaRequiereAcuseFiscal(doc *dbpkg.EmpresaDocumentoFacturacion, resultado facturacionIntegracionResultado) bool {
+	if doc == nil || !resultado.Aplica {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(doc.TipoDocumento), "factura_electronica") {
+		return false
+	}
+	return strings.EqualFold(strings.TrimSpace(doc.PaisCodigo), "CO") &&
+		strings.EqualFold(strings.TrimSpace(doc.AmbienteFE), "produccion")
+}
+
+func facturaElectronicaVentaIntegracionConfirmada(resultado facturacionIntegracionResultado) bool {
+	return normalizeFacturacionEstadoEnvio(resultado.EstadoEnvio) == "enviado"
+}
+
 func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, ventaDoc *dbpkg.EmpresaDocumentoFacturacion, usuario, observaciones string) (map[string]interface{}, error) {
 	if dbEmp == nil || ventaDoc == nil || ventaDoc.EmpresaID <= 0 || strings.TrimSpace(ventaDoc.DocumentoCodigo) == "" {
 		return nil, nil
@@ -2045,6 +2060,25 @@ func registrarFacturaElectronicaDesdeDocumentoVenta(dbEmp, dbSuper *sql.DB, vent
 		integracionFiscal["resultado"] = resultadoIntegracion
 		if retryItem != nil {
 			integracionFiscal["cola_reintentos"] = retryItem
+		}
+		if facturaElectronicaVentaRequiereAcuseFiscal(docPersistido, resultadoIntegracion) && !facturaElectronicaVentaIntegracionConfirmada(resultadoIntegracion) {
+			motivo := strings.TrimSpace(resultadoIntegracion.Error)
+			if motivo == "" {
+				motivo = "integracion fiscal DIAN/proveedor no confirmada"
+			}
+			docPendiente := *docPersistido
+			docPendiente.EstadoAnterior = strings.TrimSpace(docPersistido.EstadoDocumento)
+			docPendiente.EstadoDocumento = "pendiente_emision"
+			docPendiente.EventoUltimo = "factura_integracion_fallida"
+			docPendiente.Observaciones = strings.TrimSpace(docPendiente.Observaciones + ". Pendiente de acuse fiscal: " + motivo)
+			docActualizado, upErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPendiente)
+			if upErr != nil {
+				integracionFiscal["actualizacion_estado_error"] = upErr.Error()
+			} else if docActualizado != nil {
+				docPersistido = docActualizado
+				warning = strings.TrimSpace(facturacionFirstNonBlank(warning, motivo))
+				integracionFiscal["estado_documento_actualizado"] = docPersistido.EstadoDocumento
+			}
 		}
 	}
 

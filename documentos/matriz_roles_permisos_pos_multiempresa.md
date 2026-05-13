@@ -1,3 +1,12 @@
+2026-05-13: Proveedores de firma digital en facturacion electronica
+- `web/administrar_empresa/proveedores_firma_digital.html` queda dentro del submenu empresarial de `Facturacion electronica`.
+- No agrega permisos, roles ni licencias: hereda el acceso vigente al modulo `facturacion_electronica` y solo publica informacion/enlaces externos para adquirir certificados.
+- La compra externa no modifica credenciales DIAN, secretos ni configuracion fiscal dentro del sistema.
+
+2026-05-13: Juegos y records publicos
+- `/Juegos/menu_juegos.html`, `/Juegos/*` y `/api/public/juegos/records` se mantienen como superficie publica del portal. El endpoint de records solo guarda/lee `juego`, `nombre_jugador`, `empresa_id`, `puntaje` y `nivel`; no otorga acceso a modulos privados ni modifica permisos de `super_administrador`, `administrador` o usuarios de empresa.
+- Cuando existe `empresa_id` en sesion/localStorage/URL, el record se etiqueta para trazabilidad, pero el juego sigue sin habilitar acciones empresariales protegidas.
+
 2026-05-13: Shell empresarial exige sesion administrativa valida
 - `web/js/administrar_empresa.js` valida `/me` antes de montar el iframe del panel empresarial. Si `/me` responde `401/403`, redirige a `login.html` y no deja visible un shell operativo sin sesion.
 - `web/administrar_empresa/carrito_de_compras.html`, `administrar_clientes.html` y `bodega.html` diferencian `401` y `403`: el primero reenvia al login administrativo por sesion expirada; el segundo informa que el rol no tiene permiso para usar ese modulo.

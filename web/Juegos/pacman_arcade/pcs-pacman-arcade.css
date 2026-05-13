@@ -57,6 +57,48 @@ body {
   grid-column: 1 / -1;
 }
 
+.arcade-records-panel {
+  display: grid;
+  gap: 4px;
+  min-width: 170px;
+  border: 1px solid color-mix(in srgb, var(--accent-yellow) 32%, var(--border) 68%);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent 12%);
+}
+
+.arcade-records-panel strong {
+  color: var(--accent-yellow);
+  font-size: .86rem;
+}
+
+.arcade-records-status,
+.arcade-records-list {
+  color: var(--muted);
+  font-size: .76rem;
+}
+
+.arcade-records-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.arcade-records-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.arcade-records-list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arcade-records-list b {
+  color: var(--text);
+}
+
 .pacman-stage {
   display: grid;
   grid-template-columns: minmax(0, 480px) 150px;
@@ -173,6 +215,12 @@ body {
     justify-self: stretch;
     min-height: 32px;
     padding: 0 8px;
+  }
+
+  .arcade-records-panel {
+    grid-column: 1 / -1;
+    order: 4;
+    min-width: 0;
   }
 
   .pacman-stage {

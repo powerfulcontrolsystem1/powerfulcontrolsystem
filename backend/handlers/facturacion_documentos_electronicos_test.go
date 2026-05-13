@@ -1,6 +1,10 @@
 package handlers
 
-import "testing"
+import (
+	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
+)
 
 func TestNormalizeFacturacionDocumentoElectronicoTipoIncluyeDocumentosSiigoDian(t *testing.T) {
 	cases := map[string]string{
@@ -43,5 +47,58 @@ func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.
 				t.Fatalf("unexpected transition: %#v", got)
 			}
 		})
+	}
+}
+
+func TestFacturaElectronicaVentaRequiereAcuseFiscalSoloColombiaProduccion(t *testing.T) {
+	doc := &dbpkg.EmpresaDocumentoFacturacion{
+		TipoDocumento: "factura_electronica",
+		PaisCodigo:    "CO",
+		AmbienteFE:    "produccion",
+	}
+	resultado := facturacionIntegracionResultado{Aplica: true, EstadoEnvio: "fallido"}
+	if !facturaElectronicaVentaRequiereAcuseFiscal(doc, resultado) {
+		t.Fatalf("expected Colombia production invoice to require fiscal acknowledgment")
+	}
+	if facturaElectronicaVentaIntegracionConfirmada(resultado) {
+		t.Fatalf("failed fiscal integration must not be treated as confirmed")
+	}
+
+	resultado.EstadoEnvio = "enviado"
+	if !facturaElectronicaVentaIntegracionConfirmada(resultado) {
+		t.Fatalf("sent fiscal integration must be treated as confirmed")
+	}
+
+	doc.AmbienteFE = "habilitacion"
+	if facturaElectronicaVentaRequiereAcuseFiscal(doc, resultado) {
+		t.Fatalf("sandbox/habilitacion invoice must not require production fiscal acknowledgment")
+	}
+}
+
+func TestFacturacionColombiaProduccionBloqueaProveedorManual(t *testing.T) {
+	cfg := &dbpkg.FacturacionElectronicaPaisConfig{
+		EmpresaID:  1,
+		PaisCodigo: "CO",
+		Ambiente:   "produccion",
+		Proveedor:  "manual",
+		Estado:     "activo",
+	}
+	status := facturacionProveedorConnectionStatus(cfg)
+	if online, _ := status["online"].(bool); online {
+		t.Fatalf("manual provider must not be online for Colombia production: %#v", status)
+	}
+	if got := status["estado_conexion"]; got != "sin_proveedor_dian" {
+		t.Fatalf("unexpected connection state: %#v", status)
+	}
+
+	result := dispatchFacturacionProveedor(cfg, facturacionOperacionPayload{PaisCodigo: "CO"}, dbpkg.EmpresaDocumentoFacturacion{
+		EmpresaID:       1,
+		TipoDocumento:   "factura_electronica",
+		DocumentoCodigo: "FV-TEST",
+		PaisCodigo:      "CO",
+		AmbienteFE:      "produccion",
+	}, "emitir")
+	if result.Success {
+		t.Fatalf("manual provider must not dispatch as success for Colombia production")
 	}
 }

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <link rel="stylesheet" href="./pcs-pacman-arcade.css">
   <script src="/menu.js"></script>
+  <script src="/Juegos/juegos_records.js"></script>
 </head>
 <body>
   <main class="pacman-page">
@@ -41,6 +42,7 @@
     (function () {
       var gameHost = document.getElementById("pacman");
       var touchStart = null;
+      var records = window.PCSJuegos && window.PCSJuegos.enhanceWrapper ? window.PCSJuegos.enhanceWrapper({ juego: "pacman_arcade", title: "Pacman Arcade" }) : null;
 
       function dispatchGameKey(code) {
         ["keydown", "keypress"].forEach(function (type) {
@@ -98,6 +100,11 @@
         window.setTimeout(function () {
           PACMAN.init(gameHost, "./");
         }, 0);
+        window.setInterval(function () {
+          if (records && window.PCSPacmanScore > 0) {
+            records.recordScore(window.PCSPacmanScore, 1, false);
+          }
+        }, 1600);
       } else {
         gameHost.innerHTML = "<p class='pacman-error'>Este navegador no tiene canvas, audio o almacenamiento local compatible.</p>";
       }

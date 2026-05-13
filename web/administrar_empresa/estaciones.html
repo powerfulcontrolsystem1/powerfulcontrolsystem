@@ -1210,10 +1210,10 @@
     }
 
     function generateCajaCardHtml() {
-      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
+      const cajaColor = sanitize(state.colores.disponible || state.colores.inactivo || '#fff9ef');
+      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" style="--station-state-bg:' + cajaColor + ';" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
         '<div class="station-sensor-indicator"></div>' +
         '<h3 class="caja-title">Caja</h3>' +
-        '<p class="form-help caja-description">Cerrar turno, hacer corte de caja e imprimir el reporte completo del cajero.</p>' +
         '<div class="caja-totals">' +
           '<div class="caja-row"><span class="caja-label">Efectivo</span><span class="caja-value" id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
           '<div class="caja-row"><span class="caja-label">Débito</span><span class="caja-value" id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +

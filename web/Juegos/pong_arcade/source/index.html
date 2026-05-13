@@ -84,6 +84,15 @@
       footprints:  footprints.checked,
       predictions: predictions.checked
     });
+    window.PCSPong = pong;
+    window.PCSPongScore = 0;
+    window.setInterval(function() {
+      if (!window.PCSPong || !window.PCSPong.scores) return;
+      window.PCSPongScore = Math.max(window.PCSPong.scores[0] || 0, window.PCSPong.scores[1] || 0);
+      if (window.parent && window.parent !== window && window.PCSPongScore > 0) {
+        window.parent.postMessage({ type: 'pcs-game-score', juego: 'pong_arcade', puntaje: window.PCSPongScore, nivel: 1, final: !window.PCSPong.playing }, window.location.origin);
+      }
+    }, 1200);
 
     Game.addEvent(sound,       'change', function() { pong.enableSound(sound.checked);           });
     Game.addEvent(stats,       'change', function() { pong.showStats(stats.checked);             });

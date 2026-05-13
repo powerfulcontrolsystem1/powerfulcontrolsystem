@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Proveedores de Firma Digital</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .firma-provider-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .firma-provider-card {
+      border: 1px solid var(--border-color, rgba(148, 163, 184, 0.25));
+      border-radius: 8px;
+      padding: 18px;
+      background: var(--card-bg, rgba(255, 255, 255, 0.04));
+    }
+    .firma-provider-card h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .firma-provider-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .firma-provider-pill {
+      border: 1px solid var(--border-color, rgba(148, 163, 184, 0.3));
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.88rem;
+      line-height: 1.3;
+    }
+    .firma-provider-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body class="empresa-subpage form-bg-dark">
+  <main class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
+        <div>
+          <h1>Proveedores de Firma Digital</h1>
+          <p class="form-help">Opciones externas para adquirir firma electronica o certificado digital compatible con facturacion electronica DIAN Colombia.</p>
+        </div>
+      </div>
+
+      <div class="firma-provider-grid">
+        <article class="firma-provider-card">
+          <h2>Sensiyo</h2>
+          <p class="form-help">
+            Proveedor colombiano de certificados digitales para facturacion electronica DIAN y firma digital. La compra y entrega se realizan directamente con el proveedor externo.
+          </p>
+          <div class="firma-provider-meta" aria-label="Caracteristicas del proveedor">
+            <span class="firma-provider-pill">Colombia / DIAN</span>
+            <span class="firma-provider-pill">Certificado digital</span>
+            <span class="firma-provider-pill">Firma digital</span>
+            <span class="firma-provider-pill">Proceso digital</span>
+          </div>
+          <div class="firma-provider-actions">
+            <a class="btn" href="https://sensiyo.co/certificados-digitales/" target="_blank" rel="noopener noreferrer">Comprar en Sensiyo</a>
+            <a class="btn secondary" href="/administrar_empresa/facturacion_electronica.html">Volver a cargar firma</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

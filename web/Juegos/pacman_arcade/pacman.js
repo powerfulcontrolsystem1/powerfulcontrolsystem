@@ -293,6 +293,7 @@ Pacman.User = function (game, map) {
 
     function addScore(nScore) { 
         score += nScore;
+        window.PCSPacmanScore = score;
         if (score >= 10000 && score - nScore < 10000) { 
             lives += 1;
         }
@@ -312,6 +313,7 @@ Pacman.User = function (game, map) {
 
     function initUser() {
         score = 0;
+        window.PCSPacmanScore = score;
         lives = 3;
         newLevel();
     }
@@ -924,6 +926,10 @@ var PACMAN = (function () {
     function loseLife() {        
         setState(WAITING);
         user.loseLife();
+        window.PCSPacmanScore = user.theScore();
+        if (user.getLives() <= 0 && window.PCSJuegos) {
+            window.PCSJuegos.submitRecord({ juego: "pacman_arcade", puntaje: user.theScore(), nivel: level }, { force: true });
+        }
         if (user.getLives() > 0) {
             startLevel();
         }

@@ -2,6 +2,12 @@
 
 Actualizacion: 2026-05-13
 
+Revision logos empresariales 2026-05-13: Motel Calipso (`empresa_id=7`) y Gimnasio el bollon (`empresa_id=32`) quedan con logos SVG propios cargados en `/uploads/empresa_logos`, activados por `empresa_configuracion_avanzada.logo_url`, `mostrar_logo` y `mostrar_logo_empresa` para mostrarse en panel, carrito, facturas, recibos y reportes.
+
+Revision indicadores economicos movil 2026-05-13: el panel empresarial `web/administrar_empresa/panel.html` muestra `Indicadores economicos importantes` con textos completos y mas grandes en celulares. En movil normal usa tarjetas de dos columnas; en pantallas muy estrechas o bajas pasa a una columna con scroll, sin ocultar referencia, variacion, nombre ni valor.
+
+Juegos publico opera como lobby multi-juego profesional: tarjetas uniformes con capturas reales, adaptacion movil/tactil, sonido WebAudio, emulador responsive y records globales guardados en `super_juegos_records` mediante `/api/public/juegos/records`.
+
 Sistema POS/ERP multiempresa con backend en Go y persistencia PostgreSQL, orientado a operacion comercial por empresa: usuarios, clientes, inventario, carritos, pagos, facturacion, venta publica, red social comercial, carta QR, domicilios, taxi/flotas, odontologia, gimnasio, turnos, carnets empresariales, bancos y pagos masivos, gestion documental, KYC/KYB y riesgo LAFT, contratos y obligaciones, tickets de ayuda propios, calidad/procesos, centros de costo/rentabilidad, activos fijos e intangibles NIIF/Fiscal, certificados tributarios para terceros, contabilidad Colombia avanzada, control electrico y configuracion modular por roles/licencias.
 
 Revision documental general 2026-05-13: el estado consolidado vigente queda resumido en `documentos/estado_documentacion_2026-05-13.md`, con reglas de producto, rutas canonicas, licencias/cajas, soporte, comunicaciones, operacion VPS, portal publico y validacion recomendada antes de produccion.

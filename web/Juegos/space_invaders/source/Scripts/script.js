@@ -82,6 +82,16 @@ let numOfEnemies = 0;
 let level = 1;
 let nextLevelDelay = 0;
 let gamePausedDelay = 0;
+window.PCSGameScore = score;
+
+let reportPCSScore = function(final) {
+  window.PCSGameScore = score;
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "pcs-game-score", juego: "space_invaders", puntaje: Math.max(0, score), nivel: level, final: Boolean(final) }, window.location.origin);
+    }
+  } catch (error) {}
+}
 
 /* Base Functions (not used for game loop) */
 let playSounds = function(sound) {
@@ -554,6 +564,7 @@ let init = function() {
   levels[0]();
   level = 1;
   score = 0;
+  reportPCSScore(false);
   audioTick = 0;
 
   let playerWidth = canvas.width / 16;
@@ -580,6 +591,7 @@ let laserHitCheck = function() {
         playerLasers[i].clear();
 
         score += 100;
+        reportPCSScore(false);
         enemies[j].clear();
       }
     }
@@ -592,6 +604,7 @@ let laserHitCheck = function() {
         enemyLasers[i].clear();
 
         score -= 1100;
+        reportPCSScore(false);
         gamePaused = true;
         player.loseLife();
     }
@@ -680,6 +693,7 @@ let youWin = function() {
   drawRestart();
 
   gameWon = true;
+  reportPCSScore(true);
 }
 
 //draw the text indicating that the user has won
@@ -711,6 +725,7 @@ let checkGameOver = function() {
     context.fillStyle = "white";
     context.fillText("Game Over", canvas.width / 2 - 175, canvas.height / 2);
     drawRestart();
+    reportPCSScore(true);
   }
 }
 

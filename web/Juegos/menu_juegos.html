@@ -322,7 +322,8 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
-      min-height: 286px;
+      height: 100%;
+      min-height: 322px;
       border: 1px solid var(--border);
       border-radius: 8px;
       overflow: hidden;
@@ -382,10 +383,20 @@
       position: relative;
       display: block;
       width: 100%;
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 1.08 / 1;
       overflow: hidden;
       background: #06111f;
       border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    }
+
+    .cover-art img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(1.08) contrast(1.02);
     }
 
     .games-quick-card .cover-art {
@@ -407,6 +418,10 @@
     .cover-art::after {
       background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 42%, rgba(0,0,0,.3));
       opacity: .7;
+    }
+
+    .cover-art:has(img)::before {
+      display: none;
     }
 
     .cover-pacman {
@@ -694,7 +709,7 @@
       }
 
       .cover-art {
-        aspect-ratio: 16 / 8.8;
+        aspect-ratio: 1.18 / 1;
       }
     }
   </style>
@@ -735,7 +750,7 @@
 
       <div class="games-quick" aria-label="Accesos rapidos">
         <a class="games-quick-card" href="/emulador/">
-          <span class="cover-art cover-emulator" aria-hidden="true"></span>
+          <span class="cover-art cover-emulator" aria-hidden="true"><img src="/img/juegos/emulator.png" alt="" loading="lazy"></span>
           <span>
             <span class="games-chip">Emulador web</span>
             <h3>EmulatorJS</h3>
@@ -743,7 +758,7 @@
           </span>
         </a>
         <a class="games-quick-card" href="/Juegos/cube_runner_3d/index.html">
-          <span class="cover-art cover-cube" aria-hidden="true"></span>
+          <span class="cover-art cover-cube" aria-hidden="true"><img src="/img/juegos/cube_runner_3d.png" alt="" loading="lazy"></span>
           <span>
             <span class="games-chip">3D</span>
             <h3>Cube Runner 3D</h3>
@@ -769,7 +784,7 @@
 
       <div class="games-grid">
         <a class="game-card" href="/Juegos/space_dock_3d/index.html">
-          <span class="cover-art cover-dock" aria-hidden="true"></span>
+          <span class="cover-art cover-dock" aria-hidden="true"><img src="/img/juegos/space_dock_3d.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Space Dock 3D</h2>
             <p>Nave espacial con objetos 3D, energia, asteroides y movimiento en dos ejes.</p>
@@ -778,7 +793,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/minesweeper_arcade/index.html">
-          <span class="cover-art cover-mines" aria-hidden="true"></span>
+          <span class="cover-art cover-mines" aria-hidden="true"><img src="/img/juegos/minesweeper_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Buscaminas Arcade</h2>
             <p>Logica clasica con banderas, temporizador, reinicio y tablero adaptable.</p>
@@ -787,7 +802,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/memory_arcade/index.html">
-          <span class="cover-art cover-memory" aria-hidden="true"></span>
+          <span class="cover-art cover-memory" aria-hidden="true"><img src="/img/juegos/memory_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Memoria Arcade</h2>
             <p>Juego de parejas con racha visual, conteo de movimientos y tarjetas tactiles.</p>
@@ -796,7 +811,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/frogger_arcade/index.html">
-          <span class="cover-art cover-frogger" aria-hidden="true"></span>
+          <span class="cover-art cover-frogger" aria-hidden="true"><img src="/img/juegos/frogger_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Frogger Calle</h2>
             <p>Cruce de carriles con niveles, autos animados, vidas y cruceta movil.</p>
@@ -805,7 +820,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/tetris_arcade/index.html">
-          <span class="cover-art cover-tetris" aria-hidden="true"></span>
+          <span class="cover-art cover-tetris" aria-hidden="true"><img src="/img/juegos/tetris_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Tetris Arcade</h2>
             <p>HTML5 con teclado, tactil, pausa, hard drop y pieza fantasma.</p>
@@ -814,7 +829,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/space_invaders/index.html">
-          <span class="cover-art cover-invaders" aria-hidden="true"></span>
+          <span class="cover-art cover-invaders" aria-hidden="true"><img src="/img/juegos/space_invaders.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Space Invaders</h2>
             <p>Tres niveles, vidas, disparos, enemigos animados y sonido local.</p>
@@ -823,7 +838,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/asteroids_arcade/index.html">
-          <span class="cover-art cover-asteroids" aria-hidden="true"></span>
+          <span class="cover-art cover-asteroids" aria-hidden="true"><img src="/img/juegos/asteroids_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Asteroids</h2>
             <p>Asteroids vectorial en JavaScript puro, con nave, disparos y sonido.</p>
@@ -832,7 +847,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/breakout_arcade/index.html">
-          <span class="cover-art cover-breakout" aria-hidden="true"></span>
+          <span class="cover-art cover-breakout" aria-hidden="true"><img src="/img/juegos/breakout_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Breakout</h2>
             <p>Rompe ladrillos HTML5 con colisiones, puntaje, vidas y paleta.</p>
@@ -841,7 +856,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/snake_arcade/index.html">
-          <span class="cover-art cover-snake" aria-hidden="true"></span>
+          <span class="cover-art cover-snake" aria-hidden="true"><img src="/img/juegos/snake_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Snake</h2>
             <p>Serpiente clasica responsive, con puntaje, comida y velocidad progresiva.</p>
@@ -850,7 +865,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/pong_arcade/index.html">
-          <span class="cover-art cover-pong" aria-hidden="true"></span>
+          <span class="cover-art cover-pong" aria-hidden="true"><img src="/img/juegos/pong_arcade.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Pong</h2>
             <p>Modo un jugador, dos jugadores, IA, sonido y ajustes visuales.</p>
@@ -859,7 +874,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/patito_volando.html">
-          <span class="cover-art cover-duck" aria-hidden="true"></span>
+          <span class="cover-art cover-duck" aria-hidden="true"><img src="/img/juegos/patito_volando.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>Patito Volando</h2>
             <p>Arcade de obstaculos con toques en celular y tecla espacio en PC.</p>
@@ -868,7 +883,7 @@
         </a>
 
         <a class="game-card" href="/Juegos/n64/index.html">
-          <span class="cover-art cover-n64" aria-hidden="true"></span>
+          <span class="cover-art cover-n64" aria-hidden="true"><img src="/img/juegos/n64.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>N64</h2>
             <p>Entrada dedicada para el emulador N64 integrado dentro del sistema.</p>

@@ -1,3 +1,52 @@
+2026-05-13: Factura electronica automatica exige acuse fiscal en Colombia produccion
+- Modulos afectados: `carritos`, `venta_directa`, `facturacion_electronica`, `DIAN`.
+- Backend: al generar factura electronica desde una venta/comprobante, `backend/handlers/carritos_compras.go` conserva la venta cerrada pero no mantiene la factura asociada como `emitida` si la integracion fiscal aplicable a Colombia en produccion falla o queda sin confirmar.
+- Backend: `backend/handlers/facturacion_electronica.go` ya no considera `manual`, `local` o `interno` como proveedor fiscal valido para Colombia en produccion.
+- Nuevo comportamiento: cuando DIAN/proveedor no confirma `estado_envio=enviado`, la factura electronica queda `pendiente_emision`, con `factura_integracion_fallida`, observacion operativa y cola de reintentos para seguimiento.
+- Cumplimiento: evita presentar como factura fiscal aceptada un documento que aun no tiene confirmacion DIAN/proveedor, en linea con validacion previa y acuse fiscal.
+- Alcance: no cambia tablas, permisos, endpoints ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Logos empresariales para Motel Calipso y Gimnasio el bollon
+- Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `carritos`, `facturacion`, `reportes`.
+- Cambio funcional: Motel Calipso (`empresa_id=7`) y Gimnasio el bollon (`empresa_id=32`) quedan con logos propios cargados y activados desde `empresa_configuracion_avanzada`.
+- Activos: los SVG viven en `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg` y `web/uploads/empresa_logos/empresa_32/gimnasio-el-bollon-logo.svg`.
+- Alcance: no cambia backend, base de datos estructural, permisos ni dependencias; reutiliza `logo_url`, `mostrar_logo` y `mostrar_logo_empresa`.
+
+2026-05-13: Indicadores economicos moviles completos
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Cambio UX: la seccion `Indicadores economicos importantes` de `web/administrar_empresa/panel.html` aumenta legibilidad en celulares y deja de ocultar referencias o recortar nombres/valores.
+- Responsive: usa dos columnas en movil normal y una columna en pantallas muy estrechas o de poca altura, con scroll vertical cuando sea necesario.
+- Alcance: solo frontend; conserva las mismas fuentes publicas de mercado y no cambia backend, permisos, base de datos ni dependencias.
+
+2026-05-13: Facturacion electronica muestra proveedor para adquirir firma digital
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio UX: la tarjeta `Cargar firma electronica (Colombia / DIAN)` agrega el boton `Adquirir Firma Electronica` en la misma fila del boton `Cargar firma`.
+- Nueva pagina: `web/administrar_empresa/proveedores_firma_digital.html` abre dentro del submenu de facturacion electronica y lista proveedores externos de certificado/firma digital.
+- Proveedor inicial: Sensiyo queda enlazado como opcion externa para comprar certificado digital compatible con facturacion electronica DIAN Colombia.
+- Alcance: solo frontend y navegacion; no cambia backend, base de datos, permisos, licencias ni manejo de secretos.
+
+2026-05-13: Caja recupera tarjeta compacta con ultimos movimientos
+- Modulos afectados: `estaciones`, `corte_caja`.
+- Cambio UX: la tarjeta especial `Caja` vuelve al formato compacto con titulo, totales de efectivo/debito/credito y boton `Ver ultimos movimientos`, sin el texto descriptivo largo.
+- Navegacion: hacer clic o usar teclado sobre la tarjeta completa conserva el flujo nuevo hacia `corte_de_caja.html`; el boton interno mantiene la ruta a `ultimos_movimientos_de_caja.html`.
+- Alcance: solo frontend; no cambia backend, permisos, tablas, endpoints ni dependencias.
+
+2026-05-13: Recuperacion profesional del listado de carritos por estacion
+- Modulos afectados: `estaciones`, `carritos`, `ventas_simple`.
+- Problema corregido: abrir una estacion como `Zona 1` podia terminar en `No se pudo abrir esta estacion` cuando `/api/empresa/carritos_compra?empresa_id=...&include_inactive=1` respondia 500 por columnas faltantes en una base empresarial con migraciones rezagadas.
+- Backend: `backend/db/carritos_compras.go` valida y completa la matriz completa de columnas de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` antes de cachear el esquema como listo, y esa cache queda atada a la base/esquema PostgreSQL actual.
+- Recuperacion: ante errores de columna o relacion inexistente, el listado marca el esquema como pendiente, ejecuta de nuevo las migraciones ligeras y reintenta la consulta sin perder el aislamiento por `empresa_id`.
+- Compatibilidad: el listado degradado sin conteo de items ya no referencia el alias `ic`, de modo que la ruta puede responder aun si debe omitir temporalmente `carrito_compra_items`.
+- QA: prueba enfocada `backend/db/carritos_compras_schema_test.go`, corridas dirigidas de `db` y `handlers`, y smoke visual controlado de apertura de `Zona 1`.
+
+2026-05-13: Juegos moviles con sonido, records y emulador tactil
+- Modulos afectados: `juegos`, `emulador`, `portal_publico`.
+- Backend: `backend/main.go` registra el esquema `super_juegos_records` en el arranque y publica `/api/public/juegos/records` para guardar/consultar records globales por juego, jugador y empresa/publico.
+- Frontend: `web/Juegos/juegos_records.js` centraliza envio de records, lectura de ranking y deteccion de puntajes; `arcade_embed.js` y `open_game_embed.js` reportan scores desde iframes, agregan sonido WebAudio y mejoran controles tactiles.
+- UX: `web/Juegos/menu_juegos.html` usa tarjetas de igual tamano con portadas PNG reales capturadas visualmente desde cada juego en `web/img/juegos/`.
+- Emulador: `/emulador/` agrega controles tactiles para movil y `/Juegos/n64/index.html` pasa a ser una vista responsive que embebe el emulador real.
+- Alcance: usa PostgreSQL existente para records, sin dependencias nuevas ni motores adicionales; `/Juegos/*` y records siguen siendo publicos.
+
 2026-05-13: Caja en estaciones se blinda contra apertura accidental de carrito
 - Modulos afectados: `estaciones`, `corte_caja`.
 - Cambio funcional: `web/administrar_empresa/estaciones.html` agrega una guarda explicita para que la tarjeta especial `Caja` nunca entre al flujo generico de activacion/apertura de carrito, aunque cambie la configuracion visual de estaciones.

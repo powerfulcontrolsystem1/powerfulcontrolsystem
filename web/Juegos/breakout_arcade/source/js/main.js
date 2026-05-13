@@ -20,6 +20,16 @@ let brickOffsetTop = 30;
 let brickOffsetLeft = 30;
 let score = 0;
 let lives = 3;
+window.PCSGameScore = score;
+
+function reportScore(final) {
+    window.PCSGameScore = score;
+    try {
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "pcs-game-score", juego: "breakout_arcade", puntaje: score, nivel: 1, final: Boolean(final) }, window.location.origin);
+        }
+    } catch (error) {}
+}
 
 const bricks = [];
 for (c = 0; c < brickColumnCount; c++) {
@@ -64,7 +74,9 @@ function collisionDetection() {
                     dy = -dy;
                     b.status = 0;
                     score++;
+                    reportScore(false);
                     if (score == brickRowCount * brickColumnCount) {
+                        reportScore(true);
                         alert("YOU WIN, CONGRATS!");
                         document.location.reload();
                     }
@@ -138,6 +150,7 @@ function draw() {
         else {
             lives--;
             if (!lives) {
+                reportScore(true);
                 alert("GAME OVER");
                 document.location.reload();
             }

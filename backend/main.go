@@ -690,6 +690,10 @@ func main() {
 			log.Fatalf("failed to ensure licencia vencimiento notificaciones schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_licencia_vencimiento_notificaciones_schema")
+		if err := dbpkg.EnsureSuperJuegosSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure super juegos schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_ensure_super_juegos_schema")
 		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
 		}
@@ -1049,6 +1053,7 @@ func main() {
 	http.HandleFunc("/api/public/verticales_nuevos/catalogo", handlers.PublicVerticalesNuevosCatalogoHandler())
 	http.HandleFunc("/api/public/verticales_integracion/catalogo", handlers.PublicVerticalesIntegracionCatalogoHandler())
 	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))
+	http.HandleFunc("/api/public/juegos/records", handlers.PublicJuegosRecordsHandler(dbSuper))
 	http.HandleFunc("/api/public/geo", handlers.PublicGeoHandler())
 	http.HandleFunc("/api/empresa/reservas_hotel", handlers.WithEmpresaReservasHotelPermissions(dbEmpresas, dbSuper, handlers.EmpresaReservasHotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tarifas_por_minutos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasPorMinutosHandler(dbEmpresas)))

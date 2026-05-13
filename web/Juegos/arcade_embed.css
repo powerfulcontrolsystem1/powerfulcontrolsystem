@@ -53,6 +53,63 @@ body {
   background: color-mix(in srgb, var(--surface-soft) 84%, transparent 16%);
 }
 
+.arcade-records-panel {
+  display: grid;
+  gap: 5px;
+  min-width: 170px;
+  max-width: 230px;
+  border: 1px solid color-mix(in srgb, var(--accent-yellow) 28%, var(--border) 72%);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent 12%);
+  color: var(--text);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+}
+
+.arcade-records-panel strong {
+  color: var(--accent-yellow-light);
+  font-size: 0.86rem;
+}
+
+.arcade-records-status {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.25;
+}
+
+.arcade-records-list {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.arcade-records-list li {
+  padding-left: 2px;
+}
+
+.arcade-records-list li::marker {
+  color: var(--accent-yellow-light);
+  font-weight: 900;
+}
+
+.arcade-records-list span {
+  display: inline-block;
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.arcade-records-list b {
+  float: right;
+  color: var(--text);
+  margin-left: 8px;
+}
+
 .arcade-panel {
   max-width: 100%;
   box-sizing: border-box;
@@ -130,6 +187,30 @@ body {
     grid-column: 1 / -1;
     order: 3;
     justify-self: stretch;
+  }
+
+  .arcade-records-panel {
+    grid-column: 1 / -1;
+    order: 4;
+    min-width: 0;
+    max-width: none;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    padding: 7px 8px;
+  }
+
+  .arcade-records-list {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 0 0 2px;
+    list-style-position: inside;
+  }
+
+  .arcade-records-list li {
+    flex: 0 0 auto;
+    min-width: 116px;
   }
 
   .arcade-license {

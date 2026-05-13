@@ -6,6 +6,7 @@
   <title>Patito Volando</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
+  <script src="/Juegos/juegos_records.js"></script>
   <style>
     body {
       margin: 0; padding: 0; overflow: hidden;
@@ -77,6 +78,19 @@
       flex-direction: column; justify-content: center; align-items: center;
       color: white; z-index: 30;
     }
+    #recordBadge {
+      position: absolute; top: 10px; left: 12px;
+      z-index: 20;
+      max-width: min(48vw, 240px);
+      border: 1px solid rgba(255,255,255,.32);
+      border-radius: 8px;
+      padding: 7px 9px;
+      background: rgba(15,23,42,.52);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      backdrop-filter: blur(10px);
+    }
     html[data-theme="light"] #gameArea,
     html[data-theme="light-rose"] #gameArea,
     html[data-theme="light-gold"] #gameArea {
@@ -111,6 +125,7 @@
 </head>
 <body>
   <div id="gameArea">
+    <div id="recordBadge">Record listo</div>
     <div id="scoreBoard">0</div>
     <div id="pato"></div>
 
@@ -134,6 +149,7 @@
     const startScreen = document.getElementById('startScreen');
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScoreLabel = document.getElementById('finalScore');
+    const recordBadge = document.getElementById('recordBadge');
 
     let gameInterval;
     let patoY = 50;
@@ -144,6 +160,7 @@
     let score = 0;
     let obstaculos = [];
     let frameCount = 0;
+    let audioCtx = null;
     
     // Altura dinámica basada en el contenedor
     let areaH = gameArea.clientHeight;
@@ -156,8 +173,27 @@
 
     function jump() {
       if (isGameOver) return;
+      tone(620, 0.055);
       velocity = jumpPower;
       pato.style.transform = 'rotate(-20deg)';
+    }
+
+    function tone(freq, duration) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!audioCtx) audioCtx = new Ctx();
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq || 520;
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.035, audioCtx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + (duration || 0.06));
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + (duration || 0.06) + 0.02);
     }
 
     // Controles
@@ -266,6 +302,8 @@
         // Puntuación
         if (!obs.passed && obs.x < patoRel.left) {
           score++;
+          window.PCSGameScore = score;
+          tone(780, 0.05);
           scoreBoard.innerText = score;
           obs.passed = true;
         }
@@ -289,6 +327,12 @@
       clearInterval(gameInterval);
       finalScoreLabel.innerText = score;
       gameOverScreen.style.display = 'flex';
+      tone(160, 0.16);
+      if (window.PCSJuegos) {
+        window.PCSJuegos.submitRecord({ juego: 'patito_volando', puntaje: score, nivel: 1 }, { force: true }).then(() => {
+          recordBadge.textContent = score > 0 ? 'Record enviado: ' + score : 'Partida sin puntos';
+        });
+      }
       
       // Opcional: pequeño efecto visual de caída final
       pato.style.transform = 'rotate(90deg) translateY(20px)';
@@ -313,6 +357,7 @@
       velocity = 0;
       isGameOver = false;
       score = 0;
+      window.PCSGameScore = score;
       frameCount = 0;
       scoreBoard.innerText = score;
       startScreen.style.display = 'none';
@@ -321,6 +366,15 @@
 
       clearInterval(gameInterval);
       gameInterval = setInterval(gameLoop, 20); // ~50fps
+    }
+
+    if (window.PCSJuegos) {
+      window.PCSJuegos.loadTop('patito_volando', 1).then(records => {
+        if (records && records[0]) {
+          recordBadge.textContent = 'Mejor: ' + records[0].puntaje + ' - ' + (records[0].nombre_jugador || 'Jugador');
+        }
+      }).catch(() => {});
+      window.PCSJuegos.installAutoReporter({ juego: 'patito_volando' });
     }
   </script>
 </body>

@@ -1,3 +1,46 @@
+## [2026-05-13] Factura electronica de venta no queda emitida sin acuse fiscal
+- [Backend] `backend/handlers/carritos_compras.go` mantiene cerrada la venta/comprobante, pero degrada la factura electronica asociada a `pendiente_emision` cuando Colombia produccion requiere acuse fiscal y la integracion DIAN/proveedor no queda `enviado`.
+- [Backend] `backend/handlers/facturacion_electronica.go` bloquea Colombia produccion con proveedor `manual`, `local` o `interno`, para no simular como exitoso un envio que debe pasar por DIAN/proveedor real.
+- [Operacion] El resultado conserva `integracion_fiscal`, `cola_reintentos` y una observacion con la causa para que el usuario reprocesar o corregir configuracion sin confundir una factura pendiente con una aceptada.
+- [QA] Se agrega cobertura en `backend/handlers/facturacion_documentos_electronicos_test.go` para exigir acuse solo en Colombia produccion y confirmar que `fallido` no sea tratado como enviado.
+- [Alcance] No cambia tablas, permisos, endpoints publicos ni dependencias; conserva aislamiento por `empresa_id`.
+
+## [2026-05-13] Logos empresariales activos para Calipso y Bollon
+- [Activos] Se agregan `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg` y `web/uploads/empresa_logos/empresa_32/gimnasio-el-bollon-logo.svg`.
+- [Datos] En produccion se actualiza `empresa_configuracion_avanzada.logo_url` para `empresa_id=7` y `empresa_id=32`, dejando `mostrar_logo` y `mostrar_logo_empresa` activos.
+- [UX] Panel empresarial, carrito, facturas, recibos y reportes usan esos logos a traves de la configuracion avanzada existente.
+- [Alcance] No se crean tablas, endpoints, permisos ni dependencias nuevas; se reutiliza el almacenamiento `/uploads/empresa_logos`.
+
+## [2026-05-13] Indicadores economicos legibles en movil
+- [Frontend] `web/administrar_empresa/panel.html` elimina recortes de texto en la seccion `Indicadores economicos importantes` para pantallas moviles.
+- [UX] En celulares las tarjetas usan 2 columnas legibles y pasan a 1 columna en pantallas muy estrechas o bajas; nombre, valor, referencia y variacion quedan completos.
+- [Alcance] Cambio solo responsive del panel empresarial; no modifica datos, endpoints, permisos, tablas ni dependencias.
+- [QA] Validado con parseo de scripts inline y prueba visual Playwright en 390x844 y 360x640 sin elementos truncados.
+
+## [2026-05-13] Facturacion electronica enlaza proveedores de firma digital
+- [Frontend] `web/administrar_empresa/facturacion_electronica.html` agrega el boton `Adquirir Firma Electronica` junto a `Cargar firma` en la tarjeta de carga DIAN Colombia.
+- [Frontend] `web/administrar_empresa/proveedores_firma_digital.html` publica la pagina `Proveedores de Firma Digital` dentro del submenu de facturacion electronica.
+- [Proveedor externo] La pagina agrega a Sensiyo como opcion para adquirir certificado digital/firma electronica DIAN y abre la compra en `https://sensiyo.co/certificados-digitales/`.
+- [Alcance] Cambio solo de navegacion/frontend; no modifica endpoints, tablas, permisos ni dependencias.
+
+## [2026-05-13] Caja recupera tarjeta compacta con boton de movimientos
+- [Frontend] `web/administrar_empresa/estaciones.html` vuelve a mostrar la tarjeta `Caja` como bloque compacto con titulo, totales y boton `Ver ultimos movimientos`, sin el texto descriptivo largo.
+- [UX] La tarjeta `Caja` toma el color configurado de estaciones mediante `--station-state-bg`, conservando el boton independiente para ultimos movimientos.
+- [Operacion] El clic o teclado sobre la tarjeta completa sigue abriendo `corte_de_caja.html`; solo el boton interno navega a `ultimos_movimientos_de_caja.html`.
+
+## [2026-05-13] Carritos recupera esquema incompleto antes de responder 500
+- [Backend] `backend/db/carritos_compras.go` valida y completa todas las columnas requeridas por el listado de carritos, items y metricas de estacion antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL.
+- [Backend] El reintento reducido del listado ya no selecciona `ic.item_count` cuando se desactiva el join de items, evitando otro 500 en bases con tablas auxiliares rezagadas.
+- [Operacion] Si `/api/empresa/carritos_compra` encuentra columnas o relaciones faltantes en una base empresarial rezagada, refresca migraciones ligeras y reintenta la consulta antes de mostrar error en estaciones.
+- [QA] Se agrega `backend/db/carritos_compras_schema_test.go`, pasan pruebas enfocadas de `db` y `handlers`, y se valida visualmente el flujo Estaciones -> Zona 1 -> carrito sin mostrar el error inicial.
+
+## [2026-05-13] Juegos moviles, sonido y records globales
+- [Backend] `backend/main.go` registra `EnsureSuperJuegosSchema` y `/api/public/juegos/records` para guardar/consultar records en `super_juegos_records`.
+- [Frontend] `web/Juegos/juegos_records.js`, `arcade_embed.js` y `open_game_embed.js` agregan ranking, reporte automatico de puntajes, panel de records, controles tactiles y sonido WebAudio.
+- [UX] `web/Juegos/menu_juegos.html` muestra tarjetas uniformes con capturas PNG reales de cada juego en `web/img/juegos/`.
+- [Emulador] `/emulador/` suma D-pad tactil y `/Juegos/n64/index.html` embebe el emulador real en una pantalla responsive.
+- [QA] Validado con `go test ./...`, `node --check` y Playwright movil/escritorio sobre menu, juegos, N64 y emulador.
+
 ## [2026-05-13] Caja en estaciones deja de caer al flujo de carrito
 - [Frontend] `web/administrar_empresa/estaciones.html` agrega una guarda explicita para la tarjeta `Caja`, de modo que nunca use la activacion generica de estaciones ni abra `carrito_de_compras.html`.
 - [Operacion] Clic o teclado sobre `Caja` siempre abren `corte_de_caja.html` para cierre de turno, corte e impresion del reporte del cajero actual.
