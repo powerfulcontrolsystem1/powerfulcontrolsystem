@@ -1292,7 +1292,7 @@ Fecha de actualizacion: 2026-04-18
   - `backend/vpssecurity/config/config.go` define `Settings`, herramientas activas, cron y rutas runtime (`backend/secure/vps_security_config.json`, `backend/logs/vps_security/`).
   - `backend/vpssecurity/scanner/runner.go` orquesta Lynis, Nmap, Trivy y los chequeos propios de `backend/vpssecurity/scanner/checks.go`.
   - `backend/vpssecurity/parser/lynis.go`, `parser/nmap.go` y `parser/trivy.go` normalizan la salida de cada herramienta hacia un modelo comun de hallazgos.
-  - `backend/vpssecurity/reports/report.go` genera resumen, comparacion y exportes `json/txt/html/csv/pdf/xls`; `backend/vpssecurity/logs/store.go` persiste historial y artefactos por `scan_id`.
+  - `backend/vpssecurity/reports/report.go` genera resumen, comparacion y exportes `json/txt/html/csv/pdf/xls`; `backend/vpssecurity/logstore/store.go` persiste historial y artefactos por `scan_id`.
   - `backend/vpssecurity/service.go` expone el servicio asincrono central y `backend/handlers/security_vps_handlers.go` publica `/super/api/security/vps/config|run|status|history|report|compare`; `backend/main.go` registra el servicio y las rutas.
   - `backend/tools/vps_security_scan/main.go` permite ejecutar el mismo flujo desde consola, reutilizando `vpssecurity.RunOnce(...)`.
 - Frontend:

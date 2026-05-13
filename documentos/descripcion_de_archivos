@@ -1,3 +1,10 @@
+- Actualizacion 2026-05-12: Paquete Go vpssecurity/logstore en Docker
+	- `backend/vpssecurity/logstore/store.go` : reemplaza al antiguo paquete `backend/vpssecurity/logs` para evitar conflicto con carpetas runtime `logs` ignoradas por Docker.
+	- `backend/vpssecurity/service.go` y `backend/tools/vps_security_scan/main.go` : actualizan imports al paquete `github.com/you/pos-backend/vpssecurity/logstore`.
+
+- Actualizacion 2026-05-12: Limpieza de codigo backend en sync VPS
+	- `scripts/sync_to_vps.ps1` : antes de extraer el paquete en el VPS borra codigo fuente backend remoto obsoleto, preservando `.env`, `.env.local`, `logs`, `bin`, `tmp` y `secure`; evita que handlers retirados localmente sigan compilando en Docker.
+
 - Actualizacion 2026-05-12: SSH VPS restablecido al puerto 22
 	- `scripts/pcs_deployment.local.ps1` : configura el despliegue local del VPS con `$script:PcsVpsPort = 22`.
 	- `scripts/pcs_deployment.local.ps1.example` : plantilla actualizada para recordar que Hostinger quedo restablecido en SSH puerto `22`.
@@ -2280,7 +2287,7 @@ Actualizacion 2026-04-16: modulo super de seguridad VPS Linux con CLI, cron, exp
 	 - backend/vpssecurity/scanner/checks.go : Ejecuta chequeos propios de firewall, SSH, Nginx, permisos, servicios y actualizaciones.
 	 - backend/vpssecurity/reports/report.go : Modelo del reporte, comparacion historica y exportes JSON/TXT/HTML/CSV/PDF/XLS.
 	 - backend/vpssecurity/reports/report_test.go : Cobertura de exportes y comparacion del modulo VPS.
-	 - backend/vpssecurity/logs/store.go : Persiste historial, reportes y artefactos por `scan_id` en filesystem.
+	 - backend/vpssecurity/logstore/store.go : Persiste historial, reportes y artefactos por `scan_id` en filesystem.
 	 - backend/vpssecurity/service.go : Servicio central asincrono del modulo de seguridad VPS.
 	 - backend/handlers/security_vps_handlers.go : API super protegida para configuracion, ejecucion, historial, reportes y comparacion del VPS.
 	 - backend/handlers/security_vps_handlers_test.go : Pruebas unitarias del API super del modulo VPS.

@@ -1,3 +1,16 @@
+2026-05-12: Correccion Docker para paquete vpssecurity/logstore
+- Modulos afectados: `deploy`, `seguridad_vps`, `docker`.
+- Causa tecnica: `.dockerignore` excluia cualquier carpeta llamada `logs`, incluyendo `backend/vpssecurity/logs`, que era codigo Go y no log runtime.
+- Cambio funcional: el paquete se mueve a `backend/vpssecurity/logstore` y los imports se actualizan a `github.com/you/pos-backend/vpssecurity/logstore`.
+- Validacion: pendiente redeploy Docker VPS despues de aplicar el ajuste.
+
+2026-05-12: Limpieza de codigo backend obsoleto antes de sync VPS
+- Modulos afectados: `deploy`, `operacion_vps`, `docker`.
+- Cambio operativo: `scripts/sync_to_vps.ps1` limpia el codigo fuente backend remoto antes de extraer el paquete local.
+- Proteccion de datos: conserva `.env`, `.env.local`, `logs`, `bin`, `tmp` y `secure` para no borrar secretos, logs ni artefactos runtime.
+- Causa tecnica: el VPS conservaba `backend/handlers/nextcloud_empresa.go` aunque el archivo ya no existia localmente, y Docker fallaba al compilar por constantes Nextcloud retiradas.
+- Alcance: no cambia reglas de negocio, permisos, tablas ni dependencias.
+
 2026-05-12: SSH VPS restablecido al puerto 22
 - Modulos afectados: `deploy`, `operacion_vps`, `seguridad`.
 - Cambio operativo: Hostinger queda restablecido para usar SSH en el puerto `22`.

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/you/pos-backend/vpssecurity/config"
-	storepkg "github.com/you/pos-backend/vpssecurity/logs"
+	storepkg "github.com/you/pos-backend/vpssecurity/logstore"
 	"github.com/you/pos-backend/vpssecurity/reports"
 	"github.com/you/pos-backend/vpssecurity/scanner"
 )
@@ -26,13 +26,13 @@ type StartRequest struct {
 }
 
 type JobStatus struct {
-	ScanID      string               `json:"scan_id,omitempty"`
-	Status      string               `json:"status"`
-	Active      bool                 `json:"active"`
-	StartedAt   string               `json:"started_at,omitempty"`
-	CompletedAt string               `json:"completed_at,omitempty"`
-	Error       string               `json:"error,omitempty"`
-	Report      *reports.ScanReport  `json:"report,omitempty"`
+	ScanID      string              `json:"scan_id,omitempty"`
+	Status      string              `json:"status"`
+	Active      bool                `json:"active"`
+	StartedAt   string              `json:"started_at,omitempty"`
+	CompletedAt string              `json:"completed_at,omitempty"`
+	Error       string              `json:"error,omitempty"`
+	Report      *reports.ScanReport `json:"report,omitempty"`
 }
 
 type Service struct {

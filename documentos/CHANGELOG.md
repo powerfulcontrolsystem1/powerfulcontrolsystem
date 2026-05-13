@@ -1,3 +1,12 @@
+## [2026-05-12] Paquete vpssecurity/logstore en Docker
+- [Docker] El paquete Go de almacenamiento del escaner VPS se mueve a `backend/vpssecurity/logstore`.
+- [Correccion] El backend Docker deja de confundir codigo Go con carpetas runtime llamadas `logs` ignoradas por `.dockerignore`.
+
+## [2026-05-12] Limpieza de codigo backend remoto
+- [Deploy] `scripts/sync_to_vps.ps1` borra codigo fuente backend obsoleto antes de extraer el paquete en el VPS.
+- [Proteccion] Conserva `.env`, `.env.local`, `logs`, `bin`, `tmp` y `secure`.
+- [Correccion] Evita builds Docker rotos por archivos eliminados localmente que seguian presentes en el VPS.
+
 ## [2026-05-12] SSH VPS restablecido a 22
 - [Operacion VPS] Hostinger queda restablecido para SSH en el puerto `22`.
 - [Deploy] `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` vuelven a usar `$script:PcsVpsPort = 22`.

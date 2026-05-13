@@ -10,7 +10,7 @@ import (
 
 	"github.com/you/pos-backend/vpssecurity"
 	"github.com/you/pos-backend/vpssecurity/config"
-	storepkg "github.com/you/pos-backend/vpssecurity/logs"
+	storepkg "github.com/you/pos-backend/vpssecurity/logstore"
 	"github.com/you/pos-backend/vpssecurity/scanner"
 )
 

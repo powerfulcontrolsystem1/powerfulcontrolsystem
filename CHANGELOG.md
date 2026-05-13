@@ -1,3 +1,7 @@
+- 2026-05-12: el paquete Go de almacenamiento del escaner VPS se mueve de `backend/vpssecurity/logs` a `backend/vpssecurity/logstore` para que Docker no lo confunda con carpetas runtime `logs` ignoradas por `.dockerignore`.
+
+- 2026-05-12: `sync_to_vps.ps1` limpia codigo fuente backend obsoleto en el VPS antes de extraer el paquete, preservando `.env`, logs, binarios, `tmp` y `secure`; evita que archivos eliminados localmente, como handlers Nextcloud retirados, queden fantasma y rompan el build Docker.
+
 - 2026-05-12: SSH del VPS restablecido al puerto `22` desde Hostinger. `scripts/pcs_deployment.local.ps1`, su plantilla, tuneles locales, RustDesk remoto, escaner VPS y documentacion operativa quedan alineados nuevamente con `22`.
 
 - 2026-05-12: el index muestra solo las primeras 6 tarjetas de sistemas en la grilla principal y mueve las tarjetas restantes a una barra horizontal navegable con flechas izquierda/derecha antes de la seccion de modulos. Sin backend, tablas, permisos ni dependencias nuevas.
