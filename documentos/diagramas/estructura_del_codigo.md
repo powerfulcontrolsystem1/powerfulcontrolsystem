@@ -1,3 +1,19 @@
+## Actualizacion 2026-05-13 (submenu de Configuracion super)
+- `web/super/configuracion_avanzada.html` mantiene sus tarjetas de configuracion y buscador, pero el submenu interno adopta el patron de sidebar simple usado por `seleccionar_empresa.html`.
+- `web/menu.js` extiende el autocierre movil de `.admin-sidebar-mobile-collapsible` para botones de seccion (`button[data-target]`), ademas de enlaces.
+- No cambia el contrato de guardado de configuraciones ni las rutas `/super/api/config/*`.
+
+## Actualizacion 2026-05-13 (tema del Explorador de Archivos super)
+- `web/super/explorador_archivos.html` sincroniza el tema antes de cargar CSS usando `localStorage`/cookie `pcs_theme`.
+- La hoja inline de la pagina usa variables globales (`--bg`, `--surface`, `--surface-soft`, `--border`, `--text`, `--muted`, `--accent`) para que el iframe respete claro/oscuro y variantes del super administrador.
+- No cambia `GET /super/api/explorador_archivos`, ni las restricciones de solo lectura del handler.
+
+## Actualizacion 2026-05-12 (tickets de ayuda empresariales profesionalizados)
+- `web/menu.js` mantiene la accion `Crear ticket de ayuda` en el menu flotante global y ahora captura preferencia de contacto, telefono opcional, tickets recientes y contexto tecnico seguro de la pantalla activa.
+- `backend/handlers/super_tickets_ayuda.go` expone detalle y mensajes propios por empresa en `/api/empresa/tickets_ayuda`, siempre validando `empresa_id` y ocultando notas internas.
+- `backend/db/tickets_ayuda.go` amplia `super_tickets_ayuda` con `contacto_telefono`, `contacto_preferido` y `contexto_json`, y reabre a revision tickets cerrados cuando una empresa agrega nuevo mensaje.
+- `web/super/tickets_ayuda.html` muestra triage con categoria, modulo, contacto, ruta y contexto tecnico para soporte SaaS.
+
 ## Actualizacion 2026-05-12 (mesa central de tickets de ayuda)
 
 - `web/administrar_empresa.html` deja `Control electrico` fuera del sidebar principal y mantiene un unico acceso a Configuracion.
@@ -345,12 +361,23 @@
 
 - Backend documentos:
   - `backend/handlers/onlyoffice.go` agrega `action=create_local` en `/api/empresa/documentos` para generar OOXML vacio y devolverlo como descarga, sin crear archivo en `/data/empresas`.
+  - `backend/handlers/onlyoffice.go` agrega `action=create_edit_local` para crear una sesion temporal editable por OnlyOffice y `action=download&delete=1` para entregar el archivo final al dispositivo eliminando la copia temporal del VPS.
 - Frontend documentos:
   - `web/administrar_empresa/documentos_onlyoffice.html` usa por defecto `Guardar en este dispositivo`; en ese modo no lista archivos del VPS ni activa upload/editor. El modo colaborativo en servidor queda opt-in.
+  - Desde 2026-05-13 la misma pagina es el flujo unico: elegir tipo, crear, editar embebido y descargar al PC/celular. `documentos_onlyoffice_menu.html` queda como redireccion compatible.
 - Backend backups:
   - `backend/handlers/backups_empresariales.go` agrega `action=exportar_local` y `action=exportar_configuracion_local`, que construyen el snapshot con `BuildEmpresaBackupPayload`/`BuildEmpresaConfigBackupPayload` y lo devuelven como attachment sin persistir historial ni copia en disco.
 - Frontend backups:
   - `web/administrar_empresa/backups.html` descarga datos/configuracion al equipo y agrega programacion local por navegador para ejecutar respaldos automaticos mientras la pagina este abierta.
+
+## Actualizacion 2026-05-13 (mantenimiento programado)
+
+- Backend:
+  - `backend/handlers/super_mantenimiento_handlers.go` mantiene el modo de bloqueo `mantenimiento_activo` y agrega configuracion `mantenimiento_programado.*` para aviso informativo.
+  - `backend/main.go` registra `/api/empresa/mantenimiento_programado` con `WithEmpresaSelfServicePermissions`, separado de `/super/api/config/mantenimiento`.
+- Frontend:
+  - `web/super/configuracion_avanzada.html` permite activar el aviso, definir fecha, horas, zona horaria y mensaje publico.
+  - `web/administrar_empresa/panel.html` muestra la franja de aviso cuando el endpoint empresarial responde `visible=true`.
 
 ## Actualizacion 2026-04-20 (backups empresariales: exporte e importacion de configuracion por empresa)
 
@@ -2706,11 +2733,11 @@ flowchart TD
   - `web/administrar_empresa/ventas_simple.html`:
     - migra logica de negocio a script dedicado y agrega barra de estado de sincronizacion, panel de metricas y bloque de correccion post-cobro.
   - `web/js/ventas_simple.js` (nuevo):
-    - implementa operacion offline por estacion con cola local y checksum SHA-256 para verificacion de integridad.
-    - implementa sincronizacion segura manual/automatica al recuperar red, con reconciliacion de items sobre carrito servidor.
+    - se retira la operacion offline por estacion: ventas, facturacion y cobros requieren conexion activa con el backend.
+    - la sincronizacion de carritos se mantiene como proceso servidor-servidor para asegurar consistencia, no como cola local de operacion sin internet.
     - integra flujo de correccion post-cobro y consumo de metricas por estacion.
   - `web/estilos.css`:
-    - agrega estilos para estado de sincronizacion (`en linea`, `offline`, `sincronizando`) y visualizacion de metricas operativas.
+    - conserva visualizacion de metricas operativas y elimina el estado offline como modo de trabajo disponible para clientes.
 
 - Pruebas de cierre modulo 27:
   - `backend/handlers/auth_users_carritos_test.go`:
@@ -5288,10 +5315,12 @@ flowchart TD
 ## Indice de diagramas de referencia
 
 - diagrama_entidad_relacion.md
-- diagrama_casos_de_uso.md
-- diagrama_roles_permisos.md
-- diagrama_flujo_procesos.md
-- diagrama_arquitectura_sistema.md
+- diagrama_entidad_relacion.svg
+- docker_vps_estructura.svg
+
+Nota:
+- Los nombres historicos `diagrama_casos_de_uso.md`, `diagrama_roles_permisos.md`, `diagrama_flujo_procesos.md`, `diagrama_arquitectura_sistema.md` y `versionado.md` ya no se conservan como artefactos vigentes en `documentos/diagramas`.
+- La referencia canonica actual para relaciones de datos es `diagrama_entidad_relacion.md` junto con `documentos/estructura_bd.md`.
 
 ## Actualizacion 2026-04-03 (observabilidad transversal por empresa)
 
@@ -5782,3 +5811,23 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
 - `web/administrar_empresa/panel.html` consulta `/api/empresa/configuracion_avanzada` y muestra el logo con dimensiones fijas dentro de la columna izquierda del hero, sin tocar la tarjeta de clima.
 - `backend/handlers/empresa_configuracion_avanzada.go` incorpora el upload multipart de logo, con limite de 5 MB y almacenamiento en `web/uploads/empresa_logos/empresa_<id>/`.
 - `backend/main.go` registra `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions`.
+
+## Actualizacion 2026-05-13 - Alertas de vencimiento de licencias
+
+- Backend DB: `backend/db/licencias_vencimiento_notificaciones.go` crea `licencia_vencimiento_notificaciones` y lista licencias base/adicionales proximas a vencer cruzando `pcs_superadministrador` con `pcs_empresas` para resolver administrador principal.
+- Backend handlers: `backend/handlers/licencias_vencimiento_alertas.go` publica `/super/api/licencias/vencimiento_alertas`, ejecuta vista previa/envio manual y arranca `licencias.vencimiento_alertas_worker` cada 12 horas.
+- Plantillas: `backend/handlers/super_email_templates.go` agrega `licencia_expiry_warning` reutilizable desde configuracion de correos.
+- Frontend: `web/super/configuracion_avanzada.html` agrega la tarjeta `Alertas de vencimiento de licencias` dentro de Comunicaciones.
+
+## Actualizacion 2026-05-13 - Correos masivos globales
+
+- Backend DB: `backend/db/super_correos_masivos.go` crea `super_correos_masivos` y `super_correos_masivos_destinatarios` para historial de campanas, resultados por destinatario y modo prueba.
+- Backend handlers: `backend/handlers/super_correos_masivos.go` publica `/super/api/correos_masivos`, resuelve administradores y usuarios de empresa, deduplica emails, valida payload y envia por SMTP existente.
+- Frontend: `web/super/correos_masivos.html` agrega consola de previsualizacion, formulario de comunicado, confirmacion de envio e historial; `web/super_administrador.html` y `web/js/super_administrador.js` incorporan la opcion al menu super.
+
+## Actualizacion 2026-05-13 - Cajas simultaneas por licencia
+
+- Backend DB: `backend/db/db.go` agrega `max_cajas_simultaneas` a `licencias` y `backend/db/finanzas.go` expone conteo de cajas abiertas activas por `empresa_id`.
+- Backend handlers: `/api/empresa/finanzas/cierres_caja` recibe `dbSuper` para resolver la licencia activa y bloquear aperturas/reaperturas cuando se supera el cupo.
+- Carrito/ventas: `carritos_compras` y metricas de estacion guardan `cierre_caja_id`, `caja_codigo`, `caja_turno` y sucursal para separar arqueos.
+- Frontend: `web/super/licencias.html` administra el cupo y `web/administrar_empresa/carrito_de_compras.html` exige seleccionar caja abierta antes de cobrar.

@@ -1333,6 +1333,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/mantenimiento_programado":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/mantenimiento_programado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/mantenimiento_programado
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/mi_horario":
     get:
       tags: [empresa]
@@ -2958,6 +2971,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/correos_masivos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/correos_masivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/correos_masivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/empresa_licencias_adicionales":
     get:
       tags: [super-administrador]
@@ -3046,6 +3072,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/licencias
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/licencias/vencimiento_alertas":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/vencimiento_alertas
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/vencimiento_alertas
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

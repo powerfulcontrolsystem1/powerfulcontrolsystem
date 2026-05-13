@@ -192,6 +192,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if err := dbpkg.EnsureEmpresaCarritosSchema(dbEmp); err != nil {
+				log.Printf("[carritos] ensure schema empresa_id=%d error: %v", empresaID, err)
+				http.Error(w, "No se pudo preparar la estructura de carritos", http.StatusInternalServerError)
+				return
+			}
 			if err := dbpkg.RefreshCarritosActivosConTarifasTiempo(dbEmp, empresaID, time.Now()); err != nil {
 				log.Printf("[carritos] refresh tarifas_tiempo empresa_id=%d error: %v", empresaID, err)
 			}
@@ -485,6 +490,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					TotalPagado     float64                   `json:"total_pagado"`
 					AplicarPropina  *bool                     `json:"aplicar_propina"`
 					UsuarioLavador  string                    `json:"usuario_lavador"`
+					CierreCajaID    int64                     `json:"cierre_caja_id"`
+					CajaCodigo      string                    `json:"caja_codigo"`
+					CajaTurno       string                    `json:"caja_turno"`
+					CajaSucursalID  int64                     `json:"caja_sucursal_id"`
 				}
 				if r.Body != nil {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
@@ -668,6 +677,30 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 
 				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+				usuarioOperacionID := int64(0)
+				if usuarioOperacionItem, errUsuario := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, usuarioOperacion); errUsuario == nil && usuarioOperacionItem != nil {
+					usuarioOperacionID = usuarioOperacionItem.ID
+				}
+				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID)
+				if errCierreCaja != nil {
+					if errors.Is(errCierreCaja, sql.ErrNoRows) {
+						http.Error(w, "debes seleccionar una caja abierta y activa antes de pagar", http.StatusConflict)
+						return
+					}
+					log.Printf("[carritos] resolver caja abierta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errCierreCaja)
+					http.Error(w, "No se pudo validar la caja abierta para este pago", http.StatusInternalServerError)
+					return
+				}
+				montoEfectivoCaja := 0.0
+				if metodoPago == "efectivo" {
+					montoEfectivoCaja = totalEsperadoConPropina
+				} else if metodoPago == "mixto" {
+					for _, tramo := range pagosMixtos {
+						if tramo.Metodo == "efectivo" {
+							montoEfectivoCaja += tramo.Monto
+						}
+					}
+				}
 
 				if err := dbpkg.PayCarritoStationSession(
 					dbEmp,
@@ -681,6 +714,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					devolucionTotal,
 					totalPagado,
 					codigoDescuentoID,
+					cierreCaja.ID,
+					cierreCaja.CajaCodigo,
+					cierreCaja.Turno,
+					cierreCaja.SucursalID,
 					usuarioOperacion,
 				); err != nil {
 					log.Printf("[carritos] pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, err)
@@ -717,7 +754,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						CarritoID:         id,
 						VentaReferencia:   strings.TrimSpace(carrito.Codigo),
 						UsuarioOrigen:     usuarioOperacion,
+						UsuarioOrigenID:   usuarioOperacionID,
 						UsuarioAsignado:   usuarioOperacion,
+						UsuarioAsignadoID: usuarioOperacionID,
 						ModoDistribucion:  propinaModo,
 						Moneda:            strings.TrimSpace(carrito.Moneda),
 						BaseCobro:         totalEsperado,
@@ -729,6 +768,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 					if movimientoPropina.ModoDistribucion == dbpkg.EmpresaPropinaModoUniversal {
 						movimientoPropina.UsuarioAsignado = ""
+						movimientoPropina.UsuarioAsignadoID = 0
 					}
 					propinaRegistroIDTmp, errReg := dbpkg.CreateEmpresaPropinaMovimiento(dbEmp, movimientoPropina)
 					if errReg != nil {
@@ -780,16 +820,22 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"total_pagado":          totalPagado,
 					"total_esperado":        totalEsperado,
 					"total_esperado_final":  totalEsperadoConPropina,
+					"cierre_caja_id":        cierreCaja.ID,
+					"caja_codigo":           cierreCaja.CajaCodigo,
+					"caja_turno":            cierreCaja.Turno,
+					"caja_sucursal_id":      cierreCaja.SucursalID,
 					"propina_aplicada":      propinaAplicada,
 					"propina_porcentaje":    propinaPorcentaje,
 					"propina_monto":         montoPropina,
 					"propina_modo":          propinaModo,
 					"propina_registro_id":   propinaRegistroID,
 					"propina_registrada":    propinaRegistrada,
+					"propina_usuario_id":    usuarioOperacionID,
 					"comision_aplicada":     comisionResultado.Aplicada,
 					"comision_porcentaje":   comisionResultado.PorcentajeComision,
 					"comision_filtro":       comisionResultado.FiltroServicio,
 					"comision_lavador":      comisionResultado.UsuarioLavador,
+					"comision_lavador_id":   comisionResultado.UsuarioLavadorID,
 					"comision_base":         comisionResultado.BaseServicios,
 					"comision_monto":        comisionResultado.MontoComision,
 					"comision_movimientos":  comisionResultado.MovimientosRegistrados,
@@ -822,10 +868,19 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					ActivadoEn:          carritoPagado.ActivadoEn,
 					PagadoEn:            carritoPagado.PagadoEn,
 					ReferenciaOperacion: referenciaPago,
+					CierreCajaID:        cierreCaja.ID,
+					CajaCodigo:          cierreCaja.CajaCodigo,
+					CajaTurno:           cierreCaja.Turno,
+					CajaSucursalID:      cierreCaja.SucursalID,
 					UsuarioCreador:      usuarioOperacion,
 					Observaciones:       "cierre de venta simple por estacion",
 				}); errMetric != nil {
 					log.Printf("[carritos] metrica venta_pagada empresa_id=%d carrito_id=%d error: %v", empresaID, id, errMetric)
+				}
+				if montoEfectivoCaja > 0 {
+					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCaja(dbEmp, empresaID, cierreCaja.ID, montoEfectivoCaja); errCaja != nil {
+						log.Printf("[carritos] actualizar efectivo cierre_caja empresa_id=%d cierre_id=%d carrito_id=%d error: %v", empresaID, cierreCaja.ID, id, errCaja)
+					}
 				}
 
 				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalEsperadoConPropina, usuarioOperacion)
@@ -851,6 +906,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"modo_distribucion": propinaModo,
 						"registrada":        propinaRegistrada,
 						"registro_id":       propinaRegistroID,
+						"usuario_id":        usuarioOperacionID,
 						"warning":           propinaWarning,
 					},
 					"comision": map[string]interface{}{
@@ -860,6 +916,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"porcentaje_comision":     comisionResultado.PorcentajeComision,
 						"filtro_servicio":         comisionResultado.FiltroServicio,
 						"usuario_lavador":         comisionResultado.UsuarioLavador,
+						"usuario_lavador_id":      comisionResultado.UsuarioLavadorID,
 						"base_servicios":          comisionResultado.BaseServicios,
 						"monto_comision":          comisionResultado.MontoComision,
 						"movimientos_registrados": comisionResultado.MovimientosRegistrados,
@@ -875,6 +932,13 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						"metodo_pago_codigo_descuento":       permisosOperativos.MetodoPagoCodigoDescuento,
 						"habilitar_propinas":                 permisosOperativos.HabilitarPropinas,
 						"habilitar_comisiones":               permisosOperativos.HabilitarComisiones,
+					},
+					"caja": map[string]interface{}{
+						"cierre_caja_id":   cierreCaja.ID,
+						"caja_codigo":      cierreCaja.CajaCodigo,
+						"caja_turno":       cierreCaja.Turno,
+						"caja_sucursal_id": cierreCaja.SucursalID,
+						"efectivo_sumado":  montoEfectivoCaja,
 					},
 					"documento_venta": documentoVenta,
 				})

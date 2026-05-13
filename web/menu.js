@@ -280,8 +280,8 @@
       });
 
       nav.addEventListener('click', function(event){
-        var target = event.target && event.target.closest ? event.target.closest('a') : null;
-        if (!target || !isMobile()) return;
+        var target = event.target && event.target.closest ? event.target.closest('a, button[data-target]') : null;
+        if (!target || target.classList.contains('admin-menu-visibility-toggle') || !isMobile()) return;
         window.setTimeout(function(){
           applySidebarState(true);
         }, 0);
@@ -419,6 +419,8 @@
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
             '<a class="fm-item fm-subitem" href="/calculadora.html?compact=1" data-open-calculator="1">Calculadora</a>' +
+            '<button class="fm-item fm-subitem fm-action-item" type="button" data-share-current="whatsapp">Compartir por WhatsApp</button>' +
+            '<button class="fm-item fm-subitem fm-action-item" type="button" data-share-current="email">Compartir por correo</button>' +
             '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html" target="_blank" rel="noopener">Juegos</a>' +
             '<a class="fm-item fm-subitem" href="/emulador/" target="_blank" rel="noopener">Emulador</a>' +
           '</div>' +
@@ -461,6 +463,7 @@
     var utilitiesToggle = wrapper.querySelector('#utilitiesMenuToggle');
     var utilitiesPopup = wrapper.querySelector('#utilitiesMenuPopup');
     var calculatorLauncher = wrapper.querySelector('[data-open-calculator]');
+    var shareLaunchers = wrapper.querySelectorAll('[data-share-current]');
     var helpTicketLauncher = wrapper.querySelector('#createHelpTicketLink');
 
     function setPanelOpen(isOpen){
@@ -551,6 +554,11 @@
       try {
         var frame = document.getElementById('contentFrame') || document.querySelector('iframe.admin-empresa-frame');
         if (frame) {
+          try {
+            var nested = frame.contentDocument && frame.contentDocument.querySelector ? frame.contentDocument.querySelector('#configuracionContentFrame, iframe[src]') : null;
+            var nestedSrc = nested ? (nested.getAttribute('src') || nested.src || '') : '';
+            if (nestedSrc) return nestedSrc;
+          } catch (nestedError) {}
           var src = frame.getAttribute('src') || frame.src || '';
           if (src) return src;
         }
@@ -559,6 +567,55 @@
         return window.location.pathname + window.location.search;
       } catch (error) {
         return '';
+      }
+    }
+
+    function getActiveSystemTitle(){
+      try {
+        var frame = document.getElementById('contentFrame') || document.querySelector('iframe.admin-empresa-frame');
+        if (frame && frame.contentDocument) {
+          var nested = frame.contentDocument.querySelector('#configuracionContentFrame, iframe[src]');
+          if (nested && nested.contentDocument && nested.contentDocument.title) return nested.contentDocument.title;
+          if (frame.contentDocument.title) return frame.contentDocument.title;
+        }
+      } catch (error) {}
+      return document.title || 'Powerful Control System';
+    }
+
+    function buildActiveShareURL(){
+      var raw = getActiveSystemPath();
+      try {
+        var u = new URL(raw || '/', window.location.origin);
+        return u.toString();
+      } catch (error) {
+        try {
+          return window.location.href;
+        } catch (e) {
+          return '';
+        }
+      }
+    }
+
+    function shareCurrentSystem(channel){
+      var title = getActiveSystemTitle() || 'Powerful Control System';
+      var url = buildActiveShareURL();
+      var moduleName = getActiveSystemModule();
+      if (window.PCSPrint && typeof window.PCSPrint.shareDocument === 'function') {
+        window.PCSPrint.shareDocument({
+          channel: channel,
+          title: title,
+          code: moduleName,
+          message: 'Documento, reporte o pantalla compartida desde Powerful Control System.',
+          url: url
+        });
+        return;
+      }
+      var body = encodeURIComponent(title + '\nModulo: ' + moduleName + '\nEnlace: ' + url);
+      var href = channel === 'whatsapp' ? ('https://wa.me/?text=' + body) : ('mailto:?subject=' + encodeURIComponent(title) + '&body=' + body);
+      try {
+        window.open(href, '_blank', 'noopener,noreferrer');
+      } catch (error) {
+        window.location.href = href;
       }
     }
 
@@ -575,6 +632,25 @@
       }
     }
 
+    function collectHelpTicketContext(){
+      var theme = '';
+      try {
+        theme = document.documentElement.getAttribute('data-theme') || document.body.getAttribute('data-theme') || '';
+      } catch (error) {}
+      return {
+        titulo: getActiveSystemTitle(),
+        ruta: getActiveSystemPath(),
+        modulo: getActiveSystemModule(),
+        viewport: String(window.innerWidth || '') + 'x' + String(window.innerHeight || ''),
+        screen: window.screen ? String(window.screen.width || '') + 'x' + String(window.screen.height || '') : '',
+        user_agent: navigator.userAgent || '',
+        idioma: navigator.language || '',
+        tema: theme,
+        online: navigator.onLine ? 'true' : 'false',
+        hora_local: new Date().toString()
+      };
+    }
+
     function ensureHelpTicketDialog(){
       var existing = document.getElementById('pcsHelpTicketBackdrop');
       if (existing) return existing;
@@ -585,20 +661,30 @@
       backdrop.innerHTML =
         '<section class="pcs-help-ticket-dialog" role="dialog" aria-modal="true" aria-labelledby="pcsHelpTicketTitle">' +
           '<div class="pcs-help-ticket-header">' +
-            '<div><h2 id="pcsHelpTicketTitle">Crear ticket de ayuda</h2><p>El equipo de soporte recibira tu solicitud con la pagina donde estas trabajando.</p></div>' +
+            '<div><h2 id="pcsHelpTicketTitle">Crear ticket de ayuda</h2><p>El equipo de soporte recibira tu solicitud con la empresa, pagina activa y datos tecnicos basicos.</p></div>' +
             '<button id="pcsHelpTicketClose" class="pcs-help-ticket-close" type="button" aria-label="Cerrar">x</button>' +
           '</div>' +
           '<form id="pcsHelpTicketForm" class="pcs-help-ticket-form">' +
+            '<div id="pcsHelpTicketContext" class="pcs-help-ticket-context">Pagina activa: sistema</div>' +
             '<label class="form-label" for="pcsHelpTicketSubject">Asunto</label>' +
             '<input id="pcsHelpTicketSubject" class="form-input" type="text" maxlength="180" required placeholder="Ej: No puedo cerrar caja">' +
             '<div class="pcs-help-ticket-grid">' +
               '<label class="form-col"><span class="form-label">Categoria</span><select id="pcsHelpTicketCategory" class="form-input"><option value="general">General</option><option value="tecnico">Tecnico</option><option value="operacion">Operacion</option><option value="configuracion">Configuracion</option><option value="facturacion">Facturacion</option><option value="pagos">Pagos</option><option value="licencias">Licencias</option><option value="usuarios">Usuarios</option><option value="seguridad">Seguridad</option></select></label>' +
               '<label class="form-col"><span class="form-label">Prioridad</span><select id="pcsHelpTicketPriority" class="form-input"><option value="media">Media</option><option value="baja">Baja</option><option value="alta">Alta</option><option value="critica">Critica</option></select></label>' +
             '</div>' +
+            '<div class="pcs-help-ticket-grid">' +
+              '<label class="form-col"><span class="form-label">Contacto preferido</span><select id="pcsHelpTicketContactPreference" class="form-input"><option value="email">Email</option><option value="whatsapp">WhatsApp</option><option value="telefono">Telefono</option></select></label>' +
+              '<label class="form-col"><span class="form-label">Telefono o WhatsApp</span><input id="pcsHelpTicketContactPhone" class="form-input" type="tel" maxlength="80" placeholder="Opcional"></label>' +
+            '</div>' +
             '<label class="form-label" for="pcsHelpTicketMessage">Mensaje</label>' +
             '<textarea id="pcsHelpTicketMessage" class="form-textarea" maxlength="4000" required placeholder="Describe que intentabas hacer, que viste y que necesitas resolver."></textarea>' +
+            '<label class="pcs-help-ticket-toggle"><input id="pcsHelpTicketIncludeContext" type="checkbox" checked> Incluir contexto tecnico de esta pantalla</label>' +
+            '<section class="pcs-help-ticket-recent" aria-label="Tickets recientes">' +
+              '<div class="pcs-help-ticket-recent-title">Tickets recientes de esta empresa</div>' +
+              '<div id="pcsHelpTicketRecent" class="pcs-help-ticket-recent-list">Cargando...</div>' +
+            '</section>' +
             '<div id="pcsHelpTicketStatus" class="pcs-help-ticket-status" aria-live="polite"></div>' +
-            '<div class="pcs-help-ticket-actions"><button type="button" id="pcsHelpTicketCancel" class="btn secondary">Cancelar</button><button type="submit" class="btn primary">Enviar ticket</button></div>' +
+            '<div class="pcs-help-ticket-actions"><button type="button" id="pcsHelpTicketCancel" class="btn secondary">Cancelar</button><button id="pcsHelpTicketSubmit" type="submit" class="btn primary">Enviar ticket</button></div>' +
           '</form>' +
         '</section>';
       document.body.appendChild(backdrop);
@@ -626,14 +712,81 @@
       status.classList.toggle('is-error', !!isError);
     }
 
+    function setHelpTicketBusy(dialog, busy){
+      var submit = dialog ? dialog.querySelector('#pcsHelpTicketSubmit') : null;
+      var cancel = dialog ? dialog.querySelector('#pcsHelpTicketCancel') : null;
+      if (submit) {
+        submit.disabled = !!busy;
+        submit.textContent = busy ? 'Enviando...' : 'Enviar ticket';
+      }
+      if (cancel) cancel.disabled = !!busy;
+    }
+
+    function formatHelpTicketDate(value){
+      var raw = String(value || '').trim();
+      if (!raw) return '';
+      return raw.length > 19 ? raw.slice(0, 19).replace('T', ' ') : raw.replace('T', ' ');
+    }
+
+    function escapeHtml(value){
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch){
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function renderRecentHelpTickets(dialog, tickets){
+      var box = dialog ? dialog.querySelector('#pcsHelpTicketRecent') : null;
+      if (!box) return;
+      if (!Array.isArray(tickets) || !tickets.length) {
+        box.innerHTML = '<div class="pcs-help-ticket-empty">Aun no hay tickets recientes para esta empresa.</div>';
+        return;
+      }
+      box.innerHTML = tickets.slice(0, 5).map(function(ticket){
+        var code = escapeHtml(ticket.codigo || ('#' + ticket.id));
+        var status = escapeHtml(String(ticket.estado || 'nuevo').replace('_', ' '));
+        var subject = escapeHtml(ticket.asunto || 'Sin asunto');
+        var date = escapeHtml(formatHelpTicketDate(ticket.fecha_actualizacion || ticket.fecha_creacion));
+        return '<article class="pcs-help-ticket-recent-item"><strong>' + code + '</strong><span>' + status + '</span><p>' + subject + '</p><small>' + date + '</small></article>';
+      }).join('');
+    }
+
+    function loadRecentHelpTickets(dialog, empresaID){
+      var box = dialog ? dialog.querySelector('#pcsHelpTicketRecent') : null;
+      if (!box) return;
+      if (!empresaID) {
+        box.innerHTML = '<div class="pcs-help-ticket-empty">Abre una empresa para ver sus tickets recientes.</div>';
+        return;
+      }
+      box.textContent = 'Cargando...';
+      fetch('/api/empresa/tickets_ayuda?empresa_id=' + encodeURIComponent(empresaID) + '&limit=5', { credentials: 'same-origin' })
+        .then(function(res){
+          return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, data: data }; });
+        })
+        .then(function(result){
+          if (!result.ok || !result.data || !result.data.ok) throw new Error('No disponible');
+          renderRecentHelpTickets(dialog, result.data.tickets || []);
+        })
+        .catch(function(){
+          box.innerHTML = '<div class="pcs-help-ticket-empty">No se pudieron cargar los tickets recientes.</div>';
+        });
+    }
+
     function openHelpTicketDialog(){
       var dialog = ensureHelpTicketDialog();
       var empresaID = getActiveEmpresaID();
       setHelpTicketStatus(dialog, empresaID ? '' : 'Abre una empresa antes de crear el ticket para asociarlo correctamente.', !empresaID);
+      setHelpTicketBusy(dialog, false);
+      var contextLabel = dialog.querySelector('#pcsHelpTicketContext');
+      if (contextLabel) {
+        contextLabel.textContent = 'Pagina activa: ' + getActiveSystemTitle() + ' - ' + getActiveSystemModule();
+      }
       var subject = dialog.querySelector('#pcsHelpTicketSubject');
       var message = dialog.querySelector('#pcsHelpTicketMessage');
+      var phone = dialog.querySelector('#pcsHelpTicketContactPhone');
       if (subject && !subject.value) subject.value = '';
       if (message && !message.value) message.value = '';
+      if (phone && !phone.value) phone.value = '';
+      loadRecentHelpTickets(dialog, empresaID);
       dialog.classList.add('is-open');
       dialog.setAttribute('aria-hidden', 'false');
       window.setTimeout(function(){ if (subject) subject.focus(); }, 20);
@@ -649,6 +802,9 @@
       var category = dialog.querySelector('#pcsHelpTicketCategory');
       var priority = dialog.querySelector('#pcsHelpTicketPriority');
       var message = dialog.querySelector('#pcsHelpTicketMessage');
+      var contactPreference = dialog.querySelector('#pcsHelpTicketContactPreference');
+      var contactPhone = dialog.querySelector('#pcsHelpTicketContactPhone');
+      var includeContext = dialog.querySelector('#pcsHelpTicketIncludeContext');
       var payload = {
         empresa_id: Number(empresaID),
         asunto: subject ? subject.value.trim() : '',
@@ -657,13 +813,21 @@
         mensaje: message ? message.value.trim() : '',
         modulo: getActiveSystemModule(),
         ruta: getActiveSystemPath(),
-        origen: 'menu_flotante'
+        origen: 'menu_flotante',
+        contacto_preferido: contactPreference ? contactPreference.value : 'email',
+        contacto_telefono: contactPhone ? contactPhone.value.trim() : '',
+        contexto: includeContext && includeContext.checked ? collectHelpTicketContext() : {}
       };
       if (!payload.asunto || !payload.mensaje) {
         setHelpTicketStatus(dialog, 'Completa el asunto y el mensaje para enviar el ticket.', true);
         return;
       }
+      if (payload.mensaje.length < 12) {
+        setHelpTicketStatus(dialog, 'Agrega un poco mas de detalle para que soporte pueda ayudarte mejor.', true);
+        return;
+      }
       setHelpTicketStatus(dialog, 'Enviando ticket...', false);
+      setHelpTicketBusy(dialog, true);
       fetch('/api/empresa/tickets_ayuda?empresa_id=' + encodeURIComponent(empresaID), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -681,6 +845,7 @@
           setHelpTicketStatus(dialog, 'Ticket ' + code + ' enviado correctamente.', false);
           if (subject) subject.value = '';
           if (message) message.value = '';
+          loadRecentHelpTickets(dialog, empresaID);
           window.setTimeout(function(){
             dialog.classList.remove('is-open');
             dialog.setAttribute('aria-hidden', 'true');
@@ -688,6 +853,9 @@
         })
         .catch(function(error){
           setHelpTicketStatus(dialog, error && error.message ? error.message : 'No se pudo enviar el ticket.', true);
+        })
+        .finally(function(){
+          setHelpTicketBusy(dialog, false);
         });
     }
 
@@ -774,6 +942,20 @@
         closePanel();
         openCalculatorWindow();
       });
+    }
+
+    if (shareLaunchers && shareLaunchers.length) {
+      for (var shareIndex = 0; shareIndex < shareLaunchers.length; shareIndex += 1) {
+        shareLaunchers[shareIndex].addEventListener('click', function(event){
+          event.preventDefault();
+          event.stopPropagation();
+          var channel = this.getAttribute('data-share-current') || 'email';
+          closeThemePopup();
+          closeUtilitiesPopup();
+          closePanel();
+          shareCurrentSystem(channel);
+        });
+      }
     }
 
     if (helpTicketLauncher) {

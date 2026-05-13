@@ -21,9 +21,37 @@ func EmpresaAyudaTicketsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		switch r.Method {
 		case http.MethodGet:
+			id := parsePositiveInt64(strings.TrimSpace(r.URL.Query().Get("id")))
+			if id > 0 {
+				detail, err := dbpkg.GetAyudaTicketDetalle(dbSuper, id)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": "ticket no encontrado"})
+						return
+					}
+					log.Printf("[tickets_ayuda] empresa detail id=%d empresa_id=%d error: %v", id, empresaID, err)
+					writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "No se pudo consultar el ticket"})
+					return
+				}
+				if detail.Ticket.EmpresaID != empresaID {
+					writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": "ticket no encontrado"})
+					return
+				}
+				publicMessages := make([]dbpkg.AyudaTicketMensaje, 0, len(detail.Mensajes))
+				for _, msg := range detail.Mensajes {
+					if msg.Interno == 1 {
+						continue
+					}
+					publicMessages = append(publicMessages, msg)
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "ticket": detail.Ticket, "mensajes": publicMessages})
+				return
+			}
 			items, err := dbpkg.ListAyudaTickets(dbSuper, dbpkg.AyudaTicketFilter{
 				EmpresaID: empresaID,
 				Estado:    r.URL.Query().Get("estado"),
+				Prioridad: r.URL.Query().Get("prioridad"),
+				Query:     r.URL.Query().Get("q"),
 				Limit:     parseAyudaTicketLimit(r.URL.Query().Get("limit"), 80),
 			})
 			if err != nil {
@@ -34,14 +62,20 @@ func EmpresaAyudaTicketsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "tickets": items})
 		case http.MethodPost:
 			var payload struct {
-				Asunto    string `json:"asunto"`
-				Categoria string `json:"categoria"`
-				Prioridad string `json:"prioridad"`
-				Mensaje   string `json:"mensaje"`
-				Modulo    string `json:"modulo"`
-				Ruta      string `json:"ruta"`
-				Origen    string `json:"origen"`
+				TicketID          int64                  `json:"ticket_id"`
+				ID                int64                  `json:"id"`
+				Asunto            string                 `json:"asunto"`
+				Categoria         string                 `json:"categoria"`
+				Prioridad         string                 `json:"prioridad"`
+				Mensaje           string                 `json:"mensaje"`
+				Modulo            string                 `json:"modulo"`
+				Ruta              string                 `json:"ruta"`
+				Origen            string                 `json:"origen"`
+				ContactoTelefono  string                 `json:"contacto_telefono"`
+				ContactoPreferido string                 `json:"contacto_preferido"`
+				Contexto          map[string]interface{} `json:"contexto"`
 			}
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido", http.StatusBadRequest)
 				return
@@ -55,11 +89,60 @@ func EmpresaAyudaTicketsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if admin, err := dbpkg.GetAdminByEmailFull(dbSuper, adminEmail); err == nil && admin != nil {
 				solicitanteNombre = admin.Name
 			}
+			ticketID := payload.TicketID
+			if ticketID <= 0 {
+				ticketID = payload.ID
+			}
+			if ticketID > 0 {
+				detail, err := dbpkg.GetAyudaTicketDetalle(dbSuper, ticketID)
+				if err != nil {
+					if err == sql.ErrNoRows {
+						writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": "ticket no encontrado"})
+						return
+					}
+					log.Printf("[tickets_ayuda] empresa detail for message ticket=%d empresa_id=%d error: %v", ticketID, empresaID, err)
+					writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "No se pudo consultar el ticket"})
+					return
+				}
+				if detail.Ticket.EmpresaID != empresaID {
+					writeJSON(w, http.StatusNotFound, map[string]interface{}{"ok": false, "error": "ticket no encontrado"})
+					return
+				}
+				if err := dbpkg.AddAyudaTicketMensaje(dbSuper, ticketID, dbpkg.AyudaTicketMensaje{
+					AutorTipo:      "usuario",
+					AutorNombre:    solicitanteNombre,
+					AutorEmail:     adminEmail,
+					Mensaje:        payload.Mensaje,
+					UsuarioCreador: adminEmail,
+				}); err != nil {
+					status := http.StatusInternalServerError
+					message := "No se pudo agregar el mensaje"
+					if strings.Contains(strings.ToLower(err.Error()), "obligatorio") {
+						status = http.StatusBadRequest
+						message = err.Error()
+					}
+					log.Printf("[tickets_ayuda] empresa message ticket=%d empresa_id=%d error: %v", ticketID, empresaID, err)
+					writeJSON(w, status, map[string]interface{}{"ok": false, "error": message})
+					return
+				}
+				detail, _ = dbpkg.GetAyudaTicketDetalle(dbSuper, ticketID)
+				publicMessages := make([]dbpkg.AyudaTicketMensaje, 0, len(detail.Mensajes))
+				for _, msg := range detail.Mensajes {
+					if msg.Interno == 1 {
+						continue
+					}
+					publicMessages = append(publicMessages, msg)
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "ticket": detail.Ticket, "mensajes": publicMessages})
+				return
+			}
 			ticket, err := dbpkg.CreateAyudaTicket(dbSuper, dbpkg.AyudaTicketCreateRequest{
 				EmpresaID:         empresaID,
 				EmpresaNombre:     empresaNombre,
 				SolicitanteNombre: solicitanteNombre,
 				SolicitanteEmail:  adminEmail,
+				ContactoTelefono:  payload.ContactoTelefono,
+				ContactoPreferido: payload.ContactoPreferido,
 				Origen:            firstNonEmptyString(payload.Origen, "administrar_empresa"),
 				Modulo:            payload.Modulo,
 				Ruta:              payload.Ruta,
@@ -67,6 +150,7 @@ func EmpresaAyudaTicketsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				Categoria:         payload.Categoria,
 				Prioridad:         payload.Prioridad,
 				Mensaje:           payload.Mensaje,
+				Contexto:          payload.Contexto,
 				UsuarioCreador:    adminEmail,
 			})
 			if err != nil {

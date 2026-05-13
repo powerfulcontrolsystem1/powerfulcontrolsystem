@@ -1221,9 +1221,44 @@ func superAuditoriaAIActiveUsers(dbConn *sql.DB, limit int) []string {
 func auditAIQuestionFilter(pregunta string) EmpresaAuditoriaEventoFilter {
 	folded := aiFoldText(pregunta)
 	filter := EmpresaAuditoriaEventoFilter{IncludeInactive: false}
-	for _, module := range []string{"ventas", "inventario", "finanzas", "clientes", "usuarios", "compras", "facturacion", "reportes", "chat", "seguridad", "auditoria"} {
-		if strings.Contains(folded, module) {
-			filter.Modulo = module
+	for _, candidate := range []struct {
+		modulo string
+		tokens []string
+	}{
+		{"ventas", []string{"ventas", "venta", "vender"}},
+		{"carritos", []string{"carritos", "carrito", "cierre de venta", "cerrar venta"}},
+		{"venta_publica", []string{"venta_publica", "venta publica", "ecommerce", "tienda publica"}},
+		{"inventario", []string{"inventario", "stock", "existencias"}},
+		{"finanzas", []string{"finanzas", "ingresos", "egresos", "caja", "corte de caja"}},
+		{"contabilidad_colombia", []string{"contabilidad_colombia", "contabilidad colombia", "niif", "dian"}},
+		{"clientes", []string{"clientes", "cliente"}},
+		{"crm_unificado", []string{"crm_unificado", "crm", "leads", "seguimientos"}},
+		{"usuarios", []string{"usuarios", "usuario"}},
+		{"compras", []string{"compras", "proveedores", "ordenes de compra"}},
+		{"facturacion", []string{"facturacion", "factura", "facturas", "comprobante", "nota credito"}},
+		{"reportes", []string{"reportes", "reporte", "informe", "exportacion"}},
+		{"auditoria", []string{"auditoria", "auditar", "actividad"}},
+		{"backups", []string{"backups", "backup", "copia", "copias", "respaldo"}},
+		{"documentos_onlyoffice", []string{"documentos_onlyoffice", "onlyoffice", "documentos", "ofimatica"}},
+		{"tickets_ayuda", []string{"tickets_ayuda", "ticket ayuda", "tickets de ayuda", "soporte"}},
+		{"mantenimiento_programado", []string{"mantenimiento_programado", "mantenimiento programado"}},
+		{"licencias", []string{"licencias", "licencia"}},
+		{"propinas", []string{"propinas", "propina"}},
+		{"comisiones", []string{"comisiones", "comision"}},
+		{"gimnasio", []string{"gimnasio", "socios", "membresias"}},
+		{"parqueadero", []string{"parqueadero", "parking"}},
+		{"domicilios", []string{"domicilios", "delivery"}},
+		{"turnos_atencion", []string{"turnos_atencion", "turnos", "fila"}},
+		{"control_electrico", []string{"control_electrico", "control electrico", "rele", "raspberry"}},
+		{"seguridad", []string{"seguridad", "permisos", "roles"}},
+	} {
+		for _, token := range candidate.tokens {
+			if strings.Contains(folded, token) {
+				filter.Modulo = candidate.modulo
+				break
+			}
+		}
+		if filter.Modulo != "" {
 			break
 		}
 	}
@@ -1444,9 +1479,9 @@ func resolveAuditoriaSeveridad(modulo, accion, resultado string, codigoHTTP int6
 		return auditoriaSeveridadCritica
 	case resultado == "error" && codigoHTTP >= 400:
 		return auditoriaSeveridadAlta
-	case modulo == "seguridad" || modulo == "auditoria":
+	case modulo == "seguridad" || modulo == "auditoria" || modulo == "backups" || modulo == "licencias":
 		return auditoriaSeveridadAlta
-	case modulo == "finanzas" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina":
+	case modulo == "finanzas" || modulo == "facturacion" || modulo == "compras" || modulo == "nomina" || modulo == "documentos_onlyoffice":
 		return auditoriaSeveridadMedia
 	default:
 		return auditoriaSeveridadBaja
@@ -1486,7 +1521,7 @@ func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
 	}
 
 	switch modulo {
-	case "seguridad", "auditoria":
+	case "seguridad", "auditoria", "backups", "licencias":
 		switch severidad {
 		case auditoriaSeveridadCritica:
 			return 3650
@@ -1508,7 +1543,7 @@ func resolveAuditoriaPoliticaRetencionDias(modulo, severidad string) int64 {
 		default:
 			return 365
 		}
-	case "facturacion", "compras", "nomina":
+	case "facturacion", "compras", "nomina", "documentos_onlyoffice":
 		switch severidad {
 		case auditoriaSeveridadCritica:
 			return 1825

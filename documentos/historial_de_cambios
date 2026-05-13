@@ -1,3 +1,124 @@
+2026-05-13: estacion Caja abre cierre de turno
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
+- Frontend: `web/administrar_empresa/estaciones.html` redirige la tarjeta especial `Caja` hacia `corte_de_caja.html` en vez de abrir carrito/venta directa; la tarjeta explica que sirve para cerrar turno, hacer corte e imprimir el reporte completo del cajero.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` recibe contexto desde estaciones, muestra `Regresar a estaciones`, cambia el CTA a `Cerrar turno`, auto-genera el reporte al abrir desde caja y aplica `caja_codigo` configurado por empresa al filtro del corte.
+- Validacion: parseo inline JS y verificacion visual con Playwright sobre servidor mock local; evidencia en `tmp/estaciones_caja_before_click.png` y `tmp/estaciones_caja_after_click.png`.
+
+2026-05-13: reparacion de carga en carritos y venta directa
+- Modulos afectados: `carritos`, `ventas`, `administrar_empresa`.
+- Backend: `backend/handlers/carritos_compras.go` reasegura el esquema antes de listar carritos y `backend/db/carritos_compras.go` agrega reintentos compatibles cuando una base antigua no tiene `clientes` o `carrito_compra_items` listos, evitando que el listado caiga por migraciones rezagadas.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` encapsula toda la carga inicial en el mismo manejo de error visual para no dejar el iframe muerto si un fallo ocurre antes de cargar items.
+- Validacion: `go test ./handlers -run "TestResolvePermissionPageKeyForDirectSaleCart|TestResolvePermissionPageKeyForRegularCart"`, `go test ./db -run "TestNormalizeAyudaContextoJSONKeepsOnlySafeKeys|TestNormalizeAyudaContactoPreferidoDefaultsToEmail"`, parseo inline JS y verificacion visual con Playwright sobre `carrito_de_compras.html` y `venta_directa.html` en servidor mock local.
+
+2026-05-13: limpieza de diagramas vigentes y creacion del DER canonico
+Archivos modificados:
+- documentos/diagramas/diagrama_entidad_relacion.md
+- documentos/diagramas/diagrama_entidad_relacion.svg
+- documentos/diagramas/diagrama_entidad_relacion.png
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/README.md
+- documentos/estructura_bd.md
+- documentos/descripcion_de_archivos
+
+2026-05-13: imagen de estructura Docker del VPS
+Archivos modificados:
+- documentos/diagramas/docker_vps_estructura.svg
+- documentos/descripcion_de_archivos
+
+2026-05-13: actualizacion general de documentacion y ayuda
+Archivos modificados:
+- documentos/estado_documentacion_2026-05-13.md
+- documentos/README.md
+- documentos/descripcion_del_proyecto
+- documentos/descripcion_de_modulos
+- documentos/descripcion_de_archivos
+- documentos/CHANGELOG.md
+- CHANGELOG.md
+- web/ayuda/ayuda.html
+
+2026-05-13: Revision profesional del nucleo operativo y compartido documental
+- Modulos afectados: `ventas`, `carritos`, `finanzas`, `facturacion`, `reportes`, `auditoria`, `backups`, `menu_flotante`.
+- Backend: se actualiza la inteligencia de auditoria para filtrar y clasificar modulos nuevos del producto, reforzando retencion/severidad en `backups`, `licencias` y `documentos_onlyoffice`.
+- Frontend: se agrega utilidad comun `PCSPrint.shareDocument` y botones de compartir por WhatsApp/correo en ventas, facturas electronicas, comprobantes de ingresos/egresos, reportes de inventario y menu flotante.
+- Operacion: se revisa que backups automaticos locales ya descargan en el dispositivo con sesion activa, sin persistir archivos de empresa en el VPS.
+- Validacion: `go test ./...` en `backend/`, `node --check` para JS tocados y parseo de scripts inline en ventas, facturas electronicas, auditoria y reportes de inventario.
+
+2026-05-13: Proporcion corregida en carrusel del index
+- Modulos afectados: `portal_publico`, `pagina_principal`.
+- Cambio UX: el carrusel horizontal de sistemas restantes en `web/index.html` deja de estirar todas las tarjetas al alto de la tarjeta mas larga.
+- Detalle visual: las tarjetas de la barra horizontal usan alto controlado en escritorio, texto de descripcion limitado dentro del cuerpo y conservan comportamiento natural en movil.
+- Alcance: no cambia backend, API, permisos, tablas ni dependencias.
+
+2026-05-13: Propinas y comisiones enlazadas a usuarios creados
+- Modulos afectados: `propinas`, `comisiones_servicio`, `carritos`, `usuarios_empresa`, `reportes`.
+- Backend/db: `empresa_propinas_movimientos` agrega `usuario_origen_id` y `usuario_asignado_id`; `empresa_comisiones_servicio_movimientos` agrega `usuario_origen_id` y `usuario_lavador_id`.
+- Backend/reglas: al crear movimientos automaticos o manuales se resuelve el usuario de la empresa por id, correo, documento, nombre o etiqueta `Nombre (correo)`, manteniendo la etiqueta historica para compatibilidad.
+- Frontend: las pantallas de propinas, comisiones y cobro de carrito cargan usuarios creados como sugerencias y muestran el id vinculado en reportes.
+- Validacion: `go test ./...` en `backend/`; validacion sintactica de scripts inline HTML con Node.
+
+2026-05-13: Backup profesional al lado de Configuracion
+- Modulos afectados: `administrar_empresa`, `backups`, `seguridad`.
+- Cambio funcional/UX: el enlace del modulo `backups` se reubica desde `Analisis y control` al grupo `Administracion`, inmediatamente despues de `Configuracion`, con el texto visible `Backup profesional`.
+- Seguridad: conserva `id=linkBackups`, ruta `modulo_menu.html?module=backups`, permisos existentes y aislamiento por `empresa_id`; no se modifican endpoints, tablas ni dependencias.
+
+2026-05-13: Imagen profesional en login de usuarios
+- Modulos afectados: `login_usuario`, `autenticacion`, `tema_visual`.
+- Cambio UX: `login_usuario.html` muestra una ilustracion profesional de una persona iniciando sesion frente a un computador en la esquina superior derecha en escritorio y compacta sobre el encabezado en pantallas pequenas.
+- Archivos: se agrega `web/img/login-usuario-computador.svg` y se ajustan `web/login_usuario.html` y `web/estilos.css`.
+- Alcance: no cambia backend, permisos, rutas, tablas ni dependencias.
+
+2026-05-13: Login unico global para usuarios de empresa
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`, `permisos`.
+- Cambio funcional: `login_usuario.html` deja de depender del subdominio de cada empresa. Los usuarios operativos ingresan desde el portal global con email y clave; el backend resuelve `empresa_id`, crea sesion y redirige al panel empresarial correspondiente.
+- Backend/datos: se agrega consulta global por correo en `backend/db/usuarios_empresa.go` y resolucion segura en `backend/handlers/usuarios_empresa.go`; no se agregan tablas ni dependencias.
+- Seguridad: el primer ingreso se valida por `token_invitacion`, email y documento; si un correo pertenece a varias empresas y la clave/token no permite resolver una unica cuenta, no se abre sesion hacia una empresa arbitraria.
+- UX: `web/login_usuario.html` y `web/js/login_usuario.js` muestran acceso por correo y contrasena, conservando compatibilidad con enlaces antiguos que incluyan `empresa_id`.
+- Validacion: `go test ./...` en `backend/`, `node --check web/js/login_usuario.js` y `git diff --check`.
+
+2026-05-13: Aviso de mantenimiento programado para empresas
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`, `administrar_empresa`, `operacion_sistema`.
+- Cambio funcional: super administrador puede activar un aviso de mantenimiento programado con fecha, hora inicio, hora fin, zona horaria y mensaje publico.
+- Backend: `/super/api/config/mantenimiento` conserva el bloqueo real `mantenimiento_activo` y agrega configuracion de aviso `mantenimiento_programado.*`; `/api/empresa/mantenimiento_programado` devuelve el aviso a usuarios autenticados con alcance de empresa.
+- UX: `web/administrar_empresa/panel.html` muestra una franja `Aviso del sistema` cuando el check de aviso esta activo, sin cambiar el tamano de la tarjeta del clima ni los indicadores.
+- Seguridad/datos: no agrega tablas ni dependencias; el endpoint empresarial usa `WithEmpresaSelfServicePermissions`; el bloqueo global de mantenimiento queda separado del aviso informativo.
+- Validacion: `go test ./...` en `backend/`, parseo de scripts inline de `configuracion_avanzada.html` y `panel.html`, y `git diff --check`.
+
+2026-05-13: Alertas de vencimiento de licencias por correo
+- Modulos afectados: `super_administrador`, `licencias`, `comunicaciones`.
+- Cambio funcional: super administrador configura alertas de licencia proxima a vencer, dias de aviso y maximo por ejecucion; puede ver pendientes y ejecutar envio manual.
+- Backend: se agrega `/super/api/licencias/vencimiento_alertas`, worker `licencias.vencimiento_alertas_worker`, plantilla `licencia_expiry_warning` y tabla `licencia_vencimiento_notificaciones` para no repetir avisos.
+- Seguridad/datos: acceso exclusivo de `super_administrador`; el correo se envia al administrador principal de la empresa resuelto por `empresa_id` y se reutiliza modo de prueba SMTP sin imprimir secretos.
+- Validacion: `go test ./...` en `backend/` OK.
+
+2026-05-13: OnlyOffice local editable en una sola pagina
+- Modulos afectados: `documentos_onlyoffice`, `administrar_empresa`.
+- Cambio funcional: se reemplaza el flujo de varias vistas por `web/administrar_empresa/documentos_onlyoffice.html`, una pantalla unica que crea documento Word/Excel/PowerPoint, carga el editor OnlyOffice alli mismo y descarga el resultado al PC o celular.
+- Backend: `/api/empresa/documentos?action=create_edit_local` crea el archivo temporal editable por empresa; `/api/empresa/documentos?action=download&delete=1` entrega el archivo como attachment y borra la copia temporal del VPS.
+- UX: el menu principal de Administrar empresa abre directo la pantalla unica; `documentos_onlyoffice_menu.html` queda como redireccion compatible para enlaces antiguos.
+- Seguridad/datos: conserva permisos `documentos_onlyoffice`, aislamiento por `empresa_id`, saneamiento de nombres y no agrega tablas, motores ni dependencias.
+- Validacion: `go test ./...` en `backend/`, parseo de scripts inline de `documentos_onlyoffice.html` y `documentos_onlyoffice_menu.html`, y `git diff --check` sobre archivos afectados.
+
+2026-05-13: Submenu de Configuracion super alineado con Seleccionar empresa
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`, `tema_visual`.
+- Cambio UX: el submenu interno de `/super/configuracion_avanzada.html` adopta el patron visual del sidebar de `seleccionar_empresa.html`: titulo simple, lista de navegacion, tarjetas de menu compactas y colapso movil.
+- Frontend: se ajusta el layout del submenu a 260px, se simplifica la cabecera PCS interna, se armonizan botones activos/hover con `.admin-sidebar .nav` y el menu movil se autocierra tambien al tocar botones de seccion.
+- Alcance: no cambia backend, endpoints, permisos, configuraciones guardadas, base de datos ni dependencias.
+
+2026-05-13: Apariencia claro/oscuro del Explorador de Archivos super
+- Modulos afectados: `super_administrador`, `explorador_archivos`, `tema_visual`.
+- Cambio UX: `/super/explorador_archivos.html` deja de usar colores fijos y hereda variables globales para modo oscuro, claro y variantes configuradas.
+- Frontend: se agrega inicializacion temprana del tema desde `localStorage`/cookie `pcs_theme` y se ajustan fondos, tarjetas, tabla, botones, input de ruta, estados y hover con variables CSS.
+- Alcance: cambio visual solamente; no modifica endpoint, permisos, lectura de archivos, backend, base de datos ni dependencias.
+- Validacion: parseo de scripts inline de `web/super/explorador_archivos.html` y `git diff --check`.
+
+2026-05-12: Tickets de ayuda empresariales profesionalizados
+- Modulos afectados: `tickets_ayuda`, `menu_flotante`, `super_administrador`, `soporte_saas`.
+- Cambio funcional: el menu flotante de cada empresa crea tickets con categoria, prioridad, preferencia de contacto, telefono opcional y contexto tecnico seguro de la pantalla activa; tambien muestra tickets recientes de la empresa.
+- Backend: `/api/empresa/tickets_ayuda` permite listar, consultar detalle propio y agregar mensajes propios con aislamiento por `empresa_id`; `super_tickets_ayuda` guarda `contacto_telefono`, `contacto_preferido` y `contexto_json`.
+- Super administrador: `/super/tickets_ayuda.html` muestra categoria, modulo, contacto, ruta y contexto tecnico para triage profesional sin exponer cookies, localStorage ni secretos.
+- Seguridad: los mensajes internos no se devuelven a la empresa; el detalle empresarial valida pertenencia por `empresa_id`.
+- Validacion: `go test ./...`, `node --check web/menu.js`, parseo del script inline de `web/super/tickets_ayuda.html` y `git diff --check`.
+
 2026-05-12: SSH VPS cambiado al puerto 49222
 - Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `arranque_local`, `rustdesk`, `vpssecurity`.
 - Cambio operativo: SSH del VPS queda escuchando solo en `49222`; el puerto `22` se cerro despues de probar conexion externa real por el puerto nuevo.
@@ -14248,6 +14369,59 @@ Archivos modificados:
 - scripts/logs/actualizar_repositorio-20260413-231233.log
 - scripts/sync_to_vps.ps1
 - scripts/sync_to_vps.sh
+
+2026-05-13: ilustracion ejecutiva en login administrador
+Archivos modificados:
+- web/login.html
+- web/estilos.css
+- web/img/login-admin-executive-dashboard.svg
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+
+2026-05-13: cajas simultaneas por licencia
+Archivos modificados:
+- backend/db/db.go: agrega `max_cajas_simultaneas`, defaults 2/4 y resolucion efectiva por licencia.
+- backend/db/finanzas.go: agrega conteo de cajas abiertas activas por empresa.
+- backend/handlers/finanzas.go: valida el cupo de licencia al abrir o reabrir cajas.
+- backend/db/carritos_compras.go y backend/handlers/carritos_compras.go: enlazan pagos de carrito con caja abierta para cierres separados.
+- web/super/licencias.html: permite configurar el maximo de cajas simultaneas en cada licencia.
+- web/administrar_empresa/carrito_de_compras.html: exige seleccionar caja abierta antes de cobrar.
+- documentos/estructura_bd.md, documentos/descripcion_de_modulos y documentos/matriz_roles_permisos_pos_multiempresa.md: documentan la regla operativa.
+
+2026-05-13: correos masivos globales super administrador
+PushStatus: pendiente
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/super_correos_masivos.go
+- backend/handlers/super_correos_masivos.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/js/super_administrador.js
+- web/super/correos_masivos.html
+- web/super_administrador.html
+
+2026-05-13: retirar operacion y facturacion offline
+PushStatus: pendiente
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/handlers/facturacion_electronica.go
+- backend/handlers/super_portal_chat_ia_info.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica.html
+- web/ayuda/ayuda.html
+- web/estilos.css
 - web/index.html
 - web/js/login.js
 - web/login.html

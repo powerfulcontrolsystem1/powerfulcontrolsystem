@@ -1,7 +1,104 @@
+## [2026-05-13] Caja en Estaciones abre cierre de turno
+- [Estaciones] La tarjeta especial `Caja` en `web/administrar_empresa/estaciones.html` deja de lanzar `carrito_de_compras.html` en modo venta directa.
+- [Corte de caja] Al entrar desde estaciones, `web/administrar_empresa/corte_de_caja.html` muestra contexto de caja, boton `Cerrar turno`, enlace `Regresar a estaciones`, auto-generacion del reporte y filtro por `caja_codigo` de la empresa.
+- [QA] Validacion visual con Playwright en servidor mock local, confirmando navegacion `Caja -> corte_de_caja.html` y carga del reporte del cajero.
+
+## [2026-05-13] Carritos y venta directa vuelven a cargar en Administrar empresa
+- [Backend] `backend/handlers/carritos_compras.go` vuelve a asegurar el esquema antes del listado y `backend/db/carritos_compras.go` reintenta la consulta sin joins opcionales cuando una base vieja todavia no tiene `clientes` o `carrito_compra_items` alineados.
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` protege toda la secuencia de carga inicial con el mismo fallback visual, evitando iframes en blanco si el fallo ocurre antes de `loadCarritos()`.
+- [QA] Verificacion visual con Playwright en `carrito_de_compras.html` y `venta_directa.html` sobre servidor mock local, mas `go test ./handlers` y `go test ./db` enfocados.
+
+## [2026-05-13] Diagrama entidad relacion canonico
+- [Diagramas] Se agrega `documentos/diagramas/diagrama_entidad_relacion.md` como DER resumido y vigente del proyecto.
+- [Imagen] Se agrega `documentos/diagramas/diagrama_entidad_relacion.svg` para visualizacion rapida del modelo relacional.
+- [Limpieza] `documentos/diagramas/estructura_del_codigo.md` deja de listar como vigentes diagramas historicos que ya no existen fisicamente.
+
+## [2026-05-13] Documentacion y ayuda actualizadas
+- [Docs] Se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa consolidado del estado vigente del proyecto.
+- [Indice] `documentos/README.md` y `documentos/descripcion_del_proyecto` quedan alineados con operacion conectada, cajas simultaneas, login global, comunicaciones, soporte, Docker/VPS y validacion.
+- [Ayuda] `web/ayuda/ayuda.html` suma secciones de acceso de usuarios, operacion conectada, cajas simultaneas, soporte/comunicaciones, documentos locales y backups.
+
+## [2026-05-13] Cajas simultaneas por licencia
+- [Licencias] Se agrega `max_cajas_simultaneas` con default 2 y default 4 para planes de 4000 documentos.
+- [Finanzas] Apertura y reapertura de cajas validan el cupo contra la licencia activa de la empresa.
+- [Ventas] Cada pago de carrito se enlaza a una caja abierta para mantener cierres y arqueos separados.
+- [Super] La pantalla de licencias permite configurar el maximo de cajas simultaneas.
+
+## [2026-05-13] Conexion obligatoria para operacion y facturacion
+- [Facturacion] `web/administrar_empresa/facturacion_electronica.html` retira controles de modo offline/contingencia DIAN y muestra conexion obligatoria.
+- [Backend] `backend/handlers/facturacion_electronica.go` ignora banderas offline antiguas y bloquea la emision cuando DIAN/proveedor no esta disponible.
+- [Operacion] Las ventas, cobros y facturacion quedan documentadas como flujos que requieren conexion activa con el servidor.
+
+## [2026-05-13] Correos masivos globales
+- [Super] Se agrega `web/super/correos_masivos.html` al menu del super administrador para enviar comunicados de politicas, actualizaciones, mantenimiento, seguridad o informacion general.
+- [Backend] Nuevo endpoint `/super/api/correos_masivos` con validacion de rol super, vista previa con emails enmascarados, deduplicacion de destinatarios y confirmacion obligatoria.
+- [DB] Nuevas tablas `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para trazabilidad de campanas y resultado por destinatario.
+
+## [2026-05-13] Proporcion de tarjetas en carrusel del index
+- [Portal] `web/index.html` corrige la barra horizontal para que sus tarjetas no se estiren verticalmente por la tarjeta mas larga.
+- [UX] Se controla el alto en escritorio y se limita la descripcion dentro del carrusel, manteniendo las tarjetas superiores sin cambios.
+- [Alcance] Solo frontend; sin cambios de backend, tablas, permisos ni dependencias.
+
+## [2026-05-13] Propinas y comisiones enlazadas a usuarios
+- [Datos] `empresa_propinas_movimientos` y `empresa_comisiones_servicio_movimientos` guardan ids de `users` para origen, asignado y lavador.
+- [Backend] Los movimientos automaticos/manuales resuelven usuarios por id, correo, documento, nombre o etiqueta `Nombre (correo)` dentro del mismo `empresa_id`.
+- [UX] Propinas, comisiones y carrito sugieren usuarios creados y muestran el id vinculado en reportes.
+- [Validacion] `go test ./...` en `backend/` y parseo de scripts inline HTML con Node.
+
+## [2026-05-13] Backup profesional junto a Configuracion
+- [Empresa] `web/administrar_empresa.html` mueve el acceso de backups al grupo `Administracion`, inmediatamente junto a `Configuracion`.
+- [Permisos] Se conserva `linkBackups`, `module=backups` y la misma regla existente de permisos; no hay cambios de backend, tablas ni dependencias.
+
+## [2026-05-13] Imagen profesional en login de usuarios
+- [UX] `login_usuario.html` agrega una ilustracion de usuario iniciando sesion frente a un computador.
+- [Frontend] La imagen queda en la esquina superior derecha en escritorio y se adapta como visual compacto sobre el encabezado en movil.
+- [Activo] Nuevo `web/img/login-usuario-computador.svg`; no hay cambios de backend, tablas, permisos ni dependencias.
+
+## [2026-05-13] Login unico para usuarios de empresa
+- [Auth] `login_usuario.html` opera como portal global para usuarios de todas las empresas, sin subdominio empresarial obligatorio.
+- [Backend] El login resuelve la empresa por email y clave con consulta global por correo; si hay ambiguedad no abre una empresa arbitraria.
+- [Invitaciones] El primer password se valida por `token_invitacion`, email y documento, y los enlaces ya no agregan `empresa_id`.
+- [UX] La pantalla mantiene compatibilidad con enlaces antiguos, persiste `empresa_id` al autenticar y redirige a `administrar_empresa.html?id=...`.
+- [Validacion] `go test ./...` en `backend/`, `node --check web/js/login_usuario.js` y `git diff --check`.
+
+## [2026-05-13] Aviso de mantenimiento programado
+- [Super] `web/super/configuracion_avanzada.html` agrega check para publicar aviso, fecha, hora inicio, hora fin, zona horaria y mensaje publico.
+- [Backend] `/super/api/config/mantenimiento` conserva `mantenimiento_activo` y persiste `mantenimiento_programado.*`; `/api/empresa/mantenimiento_programado` expone el aviso activo bajo alcance de empresa.
+- [Empresa] `web/administrar_empresa/panel.html` muestra una franja de aviso cuando el check esta activo.
+- [Seguridad] El aviso no activa el bloqueo global de mantenimiento; no hay tablas ni dependencias nuevas.
+
+## [2026-05-13] OnlyOffice local editable en una sola pantalla
+- [Empresa] `web/administrar_empresa/documentos_onlyoffice.html` permite elegir tipo, crear documento, abrir OnlyOffice embebido en la misma vista y guardar el resultado en el PC/celular.
+- [Backend] `/api/empresa/documentos?action=create_edit_local` crea una sesion temporal editable y `/api/empresa/documentos?action=download&delete=1` descarga el archivo final eliminando la copia temporal del VPS.
+- [Compatibilidad] `documentos_onlyoffice_menu.html` redirige a la pantalla unica y el menu de Administrar empresa apunta directo al nuevo flujo.
+- [Seguridad] Sin tablas ni permisos nuevos; se conserva `empresa_id`, saneamiento de nombres y el wrapper de permisos de `documentos_onlyoffice`.
+
+## [2026-05-13] Alertas de vencimiento de licencias
+- [Super] `/super/configuracion_avanzada.html` agrega configuracion para activar alertas, definir dias de aviso, revisar pendientes y ejecutar envio manual.
+- [Backend] Nuevo `/super/api/licencias/vencimiento_alertas`, worker periodico cada 12 horas y plantilla `licencia_expiry_warning`.
+- [Datos] `licencia_vencimiento_notificaciones` registra envios/capturas y evita duplicados por licencia, empresa, correo, fecha y umbral.
+- [Validacion] `go test ./...` en `backend/` OK.
+
 ## [2026-05-12] SSH VPS cambiado a 49222
 - [Operacion VPS] SSH queda escuchando solo en `49222`; el puerto `22` fue cerrado despues de probar conexion externa real por el puerto nuevo.
 - [Seguridad] `ssh.socket` queda desactivado y `ssh.service` gestiona el listener para evitar el bloqueo ocurrido anteriormente con socket activation.
 - [Deploy] `scripts/pcs_deployment.local.ps1`, `scripts/pcs_deployment.local.ps1.example`, tuneles locales, RustDesk remoto y escaner VPS usan `49222`.
+
+## [2026-05-13] Submenu de Configuracion super alineado
+- [UX] `/super/configuracion_avanzada.html` adopta el patron visual del sidebar de `seleccionar_empresa.html` para su submenu interno.
+- [Frontend] El submenu usa titulo simple, ancho estable, botones compactos, estados activo/hover coherentes y colapso movil.
+- [Alcance] No cambia backend, endpoints, permisos, configuraciones guardadas, base de datos ni dependencias.
+
+## [2026-05-13] Apariencia claro/oscuro del Explorador de Archivos super
+- [Frontend] `/super/explorador_archivos.html` inicializa tema desde `localStorage`/cookie `pcs_theme`.
+- [UX] Fondos, tarjetas, tabla, botones, input de ruta, estados y hover ahora usan variables globales compatibles con claro/oscuro.
+- [Alcance] No cambia backend, endpoint, permisos, filesystem, base de datos ni dependencias.
+
+## [2026-05-12] Tickets de ayuda empresariales profesionalizados
+- [Empresa] El menu flotante crea tickets con contacto preferido, telefono opcional, contexto tecnico seguro de la pantalla activa y tickets recientes de la empresa.
+- [Backend] `/api/empresa/tickets_ayuda` permite detalle y comentarios propios con validacion por `empresa_id`; `super_tickets_ayuda` guarda contacto y contexto tecnico.
+- [Super] `/super/tickets_ayuda.html` muestra categoria, modulo, ruta, contacto y diagnostico para triage profesional.
+- [Seguridad] Las notas internas no se devuelven a empresas y el contexto no incluye cookies, localStorage, tokens ni secretos.
 
 ## [2026-05-12] Retiro de mesa de ayuda legado
 - [Backend] Se elimina la ruta empresarial heredada y su wrapper de permisos; el soporte oficial queda en `/api/empresa/tickets_ayuda`.

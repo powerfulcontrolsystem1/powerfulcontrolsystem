@@ -1,3 +1,62 @@
+2026-05-13 - Actualizacion general de documentacion y ayuda
+- `documentos/diagramas/diagrama_entidad_relacion.md`:
+	- DER canonico resumido del proyecto en formato Mermaid, con foco en el nucleo `pcs_empresas` y `pcs_superadministrador`.
+- `documentos/diagramas/diagrama_entidad_relacion.svg`:
+	- imagen SVG profesional del DER para visualizacion rapida sin depender del render Mermaid.
+- `documentos/diagramas/diagrama_entidad_relacion.png`:
+	- exportacion PNG del DER para vista previa inmediata y uso en reportes, presentaciones o ayuda visual.
+- `documentos/diagramas/docker_vps_estructura.svg`:
+	- diagrama visual de la topologia Docker del VPS, con nucleo `postgres` + `backend` + `frontend`, `pcs-edge`, volumenes persistentes y perfiles opcionales como OnlyOffice, Certbot, voz IA y RustDesk.
+- `documentos/estado_documentacion_2026-05-13.md`:
+	- mapa consolidado del estado vigente del proyecto, reglas de producto, fuentes canonicas, autenticacion, licencias/cajas, soporte, comunicaciones, VPS y validacion recomendada.
+- `documentos/README.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/CHANGELOG.md`, `CHANGELOG.md`:
+	- alinean el indice y la vision del proyecto con los cambios vigentes de mayo de 2026.
+- `web/ayuda/ayuda.html`:
+	- agrega ayuda de acceso global de usuarios, operacion conectada, cajas simultaneas, soporte/comunicaciones, documentos locales, backups y mantenimiento programado.
+
+- Actualizacion 2026-05-13: Backup profesional junto a Configuracion
+	- `web/administrar_empresa.html` : mueve `linkBackups` al grupo `Administracion`, junto a `Configuracion`, y ajusta el texto visible a `Backup profesional`.
+	- `documentos/descripcion_de_modulos` y `documentos/historial_de_cambios` : registran la reubicacion sin cambios de backend ni permisos.
+
+- Actualizacion 2026-05-13: Imagen profesional en login de usuarios
+	- `web/img/login-usuario-computador.svg` : nueva ilustracion local de una persona iniciando sesion frente a un computador.
+	- `web/login_usuario.html` : incorpora la imagen en la parte superior derecha del portal de usuarios operativos.
+	- `web/estilos.css` : posiciona la imagen como elemento profesional responsive, fija en escritorio y compacta sobre el encabezado en movil.
+
+- Actualizacion 2026-05-13: Login unico global para usuarios de empresa
+	- `backend/db/usuarios_empresa.go` : agrega consulta global por correo para resolver cuentas de usuarios operativos sin depender de subdominio ni `empresa_id` visible.
+	- `backend/handlers/usuarios_empresa.go` : centraliza URLs de `login_usuario.html`, valida invitaciones por token/email/documento y resuelve login/cambio/reset por cuenta empresarial concreta.
+	- `web/login_usuario.html` : actualiza el texto y versionado del recurso JS para el flujo global por correo y contrasena.
+	- `web/js/login_usuario.js` : conserva compatibilidad con enlaces antiguos y persiste la empresa devuelta por el backend antes de redirigir al panel.
+	- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`, `documentos/CHANGELOG.md` y `CHANGELOG.md` : documentan el acceso global sin subdominio empresarial.
+
+- Actualizacion 2026-05-13: Aviso de mantenimiento programado
+	- `backend/handlers/super_mantenimiento_handlers.go` : amplia la configuracion de mantenimiento con aviso programado, fecha, horas, zona horaria, mensaje publico y endpoint empresarial de consulta.
+	- `backend/main.go` : registra `/api/empresa/mantenimiento_programado` bajo `WithEmpresaSelfServicePermissions`.
+	- `web/super/configuracion_avanzada.html` : agrega campos para publicar el aviso de mantenimiento programado desde super administrador.
+	- `web/administrar_empresa/panel.html` : muestra el aviso activo en una franja visible del panel empresarial.
+
+- Actualizacion 2026-05-13: OnlyOffice local editable en pantalla unica
+	- `backend/handlers/onlyoffice.go` : agrega `action=create_edit_local` para crear una sesion temporal editable por empresa y `action=download` con `delete=1` para descargar el archivo final al dispositivo y borrar la copia temporal del VPS.
+	- `web/administrar_empresa/documentos_onlyoffice.html` : reemplaza el flujo documental por una pantalla unica para crear Word/Excel/PowerPoint, cargar OnlyOffice embebido y guardar el resultado en PC/celular.
+	- `web/administrar_empresa/documentos_onlyoffice_menu.html` : queda como redireccion compatible hacia la pantalla unica para enlaces antiguos.
+	- `web/administrar_empresa.html` : el enlace `OnlyOffice` abre directamente la pantalla unica.
+
+- Actualizacion 2026-05-13: Submenu de Configuracion super alineado
+	- `web/super/configuracion_avanzada.html` : ajusta el submenu interno para usar el patron visual del sidebar de `seleccionar_empresa.html`, con titulo simple, ancho estable, lista compacta y estados activo/hover alineados.
+	- `web/menu.js` : el colapso movil de sidebars tambien se activa al tocar botones de seccion (`button[data-target]`), no solo enlaces.
+
+- Actualizacion 2026-05-13: Apariencia claro/oscuro del Explorador de Archivos super
+	- `web/super/explorador_archivos.html` : reemplaza colores fijos por variables globales de tema, agrega inicializacion temprana desde `localStorage`/cookie `pcs_theme` y ajusta fondos, tabla, botones, input de ruta y estados para claro/oscuro.
+
+- Actualizacion 2026-05-12: Tickets de ayuda empresariales profesionalizados
+	- `backend/db/tickets_ayuda.go` : amplia el modelo con preferencia de contacto, telefono y contexto tecnico seguro; la busqueda super incluye categoria, modulo y contacto.
+	- `backend/db/tickets_ayuda_test.go` : prueba el saneamiento de contexto tecnico para no guardar claves inseguras y normaliza preferencia de contacto.
+	- `backend/handlers/super_tickets_ayuda.go` : permite detalle y mensajes propios desde empresa con validacion por `empresa_id`, sin devolver notas internas.
+	- `web/menu.js` : el menu flotante crea tickets con contexto de pantalla activa, contacto preferido, telefono opcional y listado de tickets recientes de la empresa.
+	- `web/estilos.css` : agrega estilos del formulario profesional de tickets, contexto y tickets recientes.
+	- `web/super/tickets_ayuda.html` : enriquece la consola super con categoria, modulo, contacto, ruta y contexto tecnico.
+
 - Actualizacion 2026-05-12: SSH VPS cambiado al puerto 49222
 	- `scripts/pcs_deployment.local.ps1` : configura el despliegue local del VPS con `$script:PcsVpsPort = 49222`.
 	- `scripts/pcs_deployment.local.ps1.example` : plantilla actualizada para recordar que el SSH operativo del VPS usa `49222` y fijar la huella SSH esperada del host para PuTTY.
@@ -9142,3 +9201,37 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- incorpora renderizado de multiples logos y resolucion estandar desde la configuracion avanzada.
 - `web/administrar_empresa/facturas_electronicas.html`, `web/administrar_empresa/ventas.html`, `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/reportes.html`, `web/administrar_empresa/panel.html`, `web/administrar_empresa/configuracion_impresora.html`, `web/administrar_empresa/facturacion_electronica.html`, `web/estilos.css`:
 	- alinean vistas, previews y documentos imprimibles con `mostrar_logo_empresa` y `mostrar_logo_sistema`.
+
+2026-05-13 - Alertas de vencimiento de licencias
+- `backend/db/licencias_vencimiento_notificaciones.go`:
+	- esquema `licencia_vencimiento_notificaciones`, busqueda de licencias base/adicionales proximas a vencer y deduplicacion de avisos por empresa/licencia/correo/fecha.
+- `backend/handlers/licencias_vencimiento_alertas.go`:
+	- API super `/super/api/licencias/vencimiento_alertas`, configuracion, vista previa, ejecucion manual, worker periodico y envio/captura de correo por SMTP.
+- `backend/handlers/licencias_vencimiento_alertas_test.go`:
+	- pruebas de parseo de dias de aviso y seleccion de umbral.
+- `backend/handlers/super_email_templates.go`:
+	- plantilla `licencia_expiry_warning` para correos de licencia proxima a vencer.
+- `web/super/configuracion_avanzada.html`:
+	- tarjeta super para activar alertas, configurar dias, ver pendientes y ejecutar envio manual.
+
+2026-05-13 - Correos masivos globales
+- `backend/db/super_correos_masivos.go`:
+	- esquema y helpers de auditoria para campanas globales y resultados por destinatario.
+- `backend/handlers/super_correos_masivos.go`:
+	- API super `/super/api/correos_masivos` para previsualizar destinatarios, validar comunicados, deduplicar correos y enviar por SMTP configurado.
+- `web/super/correos_masivos.html`:
+	- consola del super administrador para seleccionar alcance/categoria, redactar comunicado, confirmar envio y consultar historial.
+
+2026-05-13 - Conexion obligatoria para operacion y facturacion
+- `backend/handlers/facturacion_electronica.go`:
+	- bloquea la emision electronica cuando DIAN/proveedor no esta disponible y deja de aceptar continuidad por modo offline.
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- retira checks de modo offline/contingencia DIAN y deja solo prueba de conexion y procesamiento de cola con servidor disponible.
+- `web/ayuda/ayuda.html`:
+	- actualiza la ayuda DIAN para indicar que no se debe continuar sin conexion activa.
+
+2026-05-13 - Ilustracion login administrador
+- `web/img/login-admin-executive-dashboard.svg`:
+	- asset SVG transparente para el login de administradores con ejecutivo revisando estadisticas del sistema.
+- `web/login.html`, `web/estilos.css`:
+	- integran la ilustracion como fondo decorativo visible solo en escritorio, sin afectar el formulario ni la vista movil.

@@ -717,7 +717,7 @@ func createEmpresaOdontologiaPagoCarrito(dbConn *sql.DB, pago EmpresaOdontologia
 	if err != nil {
 		return 0, 0, err
 	}
-	if err := PayCarritoStationSession(dbConn, pago.EmpresaID, carritoID, metodo, pago.Referencia, "", "", 0, 0, pago.Monto, 0, pago.UsuarioCreador); err != nil {
+	if err := PayCarritoStationSession(dbConn, pago.EmpresaID, carritoID, metodo, pago.Referencia, "", "", 0, 0, pago.Monto, 0, 0, "", "", 0, pago.UsuarioCreador); err != nil {
 		return 0, 0, err
 	}
 	return carritoID, itemID, nil

@@ -200,6 +200,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			valor DOUBLE PRECISION DEFAULT 0,
 			duracion_dias INTEGER DEFAULT 0,
 			max_documentos_mensuales INTEGER DEFAULT 0,
+			max_cajas_simultaneas INTEGER DEFAULT 2,
 			modulos_habilitados TEXT,
 			es_adicional INTEGER DEFAULT 0,
 			codigo_funcion TEXT,
@@ -221,6 +222,7 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS valor DOUBLE PRECISION DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS duracion_dias INTEGER DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_documentos_mensuales INTEGER DEFAULT 0`,
+		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS max_cajas_simultaneas INTEGER DEFAULT 2`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS modulos_habilitados TEXT`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS es_adicional INTEGER DEFAULT 0`,
 		`ALTER TABLE licencias ADD COLUMN IF NOT EXISTS codigo_funcion TEXT`,
@@ -265,6 +267,13 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 			OR LOWER(COALESCE(nombre, '')) LIKE '%trial%'
 			OR LOWER(COALESCE(descripcion, '')) LIKE '%trial%'
 		  )`)
+	_, _ = dbConn.Exec(`UPDATE licencias
+		SET max_cajas_simultaneas = 2
+		WHERE COALESCE(max_cajas_simultaneas, 0) <= 0`)
+	_, _ = dbConn.Exec(`UPDATE licencias
+		SET max_cajas_simultaneas = 4
+		WHERE COALESCE(max_documentos_mensuales, 0) = 4000
+		  AND COALESCE(max_cajas_simultaneas, 0) <> 4`)
 	return nil
 }
 
@@ -442,6 +451,7 @@ type Licencia struct {
 	Valor                  float64 `json:"valor"`
 	DuracionDias           int     `json:"duracion_dias"`
 	MaxDocumentosMensuales int     `json:"max_documentos_mensuales"`
+	MaxCajasSimultaneas    int     `json:"max_cajas_simultaneas"`
 	ModulosHab             string  `json:"modulos_habilitados,omitempty"`
 	EsAdicional            int     `json:"es_adicional"`
 	CodigoFuncion          string  `json:"codigo_funcion,omitempty"`
@@ -450,6 +460,23 @@ type Licencia struct {
 	FechaFin               string  `json:"fecha_fin,omitempty"`
 	FechaCreacion          string  `json:"fecha_creacion"`
 	Activo                 int     `json:"activo"`
+}
+
+func DefaultLicenciaMaxCajasSimultaneas(maxDocumentosMensuales int) int {
+	if maxDocumentosMensuales == 4000 {
+		return 4
+	}
+	return 2
+}
+
+func ResolveLicenciaMaxCajasSimultaneas(lic *Licencia) int {
+	if lic == nil {
+		return 2
+	}
+	if lic.MaxCajasSimultaneas > 0 {
+		return lic.MaxCajasSimultaneas
+	}
+	return DefaultLicenciaMaxCajasSimultaneas(lic.MaxDocumentosMensuales)
 }
 
 // CreateLicencia inserta una nueva licencia en dbSuper
@@ -462,12 +489,19 @@ func CreateLicenciaAdvanced(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, de
 }
 
 func CreateLicenciaAdvancedWithLimits(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int) (int64, error) {
+	return CreateLicenciaAdvancedWithLimitsAndCajas(dbConn, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, 0)
+}
+
+func CreateLicenciaAdvancedWithLimitsAndCajas(dbConn *sql.DB, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, maxCajasSimultaneas int) (int64, error) {
 	if maxDocumentosMensuales < 0 {
 		maxDocumentosMensuales = 0
 	}
+	if maxCajasSimultaneas <= 0 {
+		maxCajasSimultaneas = DefaultLicenciaMaxCajasSimultaneas(maxDocumentosMensuales)
+	}
 	nowExpr := sqlNowExpr()
-	query := "INSERT INTO licencias (tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, max_documentos_mensuales, modulos_habilitados, es_adicional, codigo_funcion, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
-	id, err := insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
+	query := "INSERT INTO licencias (tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, max_documentos_mensuales, max_cajas_simultaneas, modulos_habilitados, es_adicional, codigo_funcion, super_rol_habilitado, fecha_creacion, fecha_actualizacion, activo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " + nowExpr + ", " + nowExpr + ", 1, 'activo')"
+	id, err := insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
 	if err == nil {
 		return id, nil
 	}
@@ -477,7 +511,7 @@ func CreateLicenciaAdvancedWithLimits(dbConn *sql.DB, tipoID int64, paisCodigo, 
 	if schemaErr := EnsureLicenciasSchema(dbConn); schemaErr != nil {
 		return 0, err
 	}
-	return insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
+	return insertSQLCompat(dbConn, query, tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado)
 }
 
 // GetLicencias obtiene todas las licencias (comportamiento legado sin filtros)
@@ -511,7 +545,7 @@ func GetLicenciasFilteredByPais(dbConn *sql.DB, soloActivas bool, usuarioCreador
 
 // GetLicenciasFiltered obtiene licencias con filtros opcionales.
 func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador string, conEmpresa bool) ([]Licencia, error) {
-	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, COALESCE(l.pais_codigo,'CO'), l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.max_documentos_mensuales, 0), COALESCE(l.modulos_habilitados, ''), COALESCE(l.es_adicional, 0), COALESCE(l.codigo_funcion, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
+	q := `SELECT l.id, l.empresa_id, l.tipo_id, t.nombre, COALESCE(l.pais_codigo,'CO'), l.nombre, l.descripcion, l.valor, l.duracion_dias, COALESCE(l.max_documentos_mensuales, 0), COALESCE(NULLIF(l.max_cajas_simultaneas, 0), CASE WHEN COALESCE(l.max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(l.modulos_habilitados, ''), COALESCE(l.es_adicional, 0), COALESCE(l.codigo_funcion, ''), COALESCE(l.super_rol_habilitado, 0), COALESCE(l.fecha_inicio, ''), COALESCE(l.fecha_fin, ''), l.fecha_creacion, l.activo`
 	baseFrom := `
 		FROM licencias l LEFT JOIN tipos_de_empresas t ON l.tipo_id = t.id`
 	q += baseFrom
@@ -584,7 +618,7 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 		var fechaInicio sql.NullString
 		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := rows.Scan(&lic.ID, &empresaID, &empresaNombre, &lic.TipoID, &tipoNombre, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+		if err := rows.Scan(&lic.ID, &empresaID, &empresaNombre, &lic.TipoID, &tipoNombre, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &lic.MaxCajasSimultaneas, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
@@ -623,7 +657,7 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 
 // GetLicenciaByID devuelve una licencia por id
 func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
-	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(NULLIF(max_cajas_simultaneas, 0), CASE WHEN COALESCE(max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo FROM licencias WHERE id = ? LIMIT 1`
 	scanLicencia := func() (*Licencia, error) {
 		row := queryRowSQLCompat(dbConn, q, id)
 		var lic Licencia
@@ -634,7 +668,7 @@ func GetLicenciaByID(dbConn *sql.DB, id int64) (*Licencia, error) {
 		var fechaInicio sql.NullString
 		var fechaFin sql.NullString
 		var fechaCreacion sql.NullString
-		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+		if err := row.Scan(&lic.ID, &empresaID, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &lic.MaxCajasSimultaneas, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 			return nil, err
 		}
 		if empresaID.Valid {
@@ -681,7 +715,7 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 	if empresaID <= 0 {
 		return nil, sql.ErrNoRows
 	}
-	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+	q := `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(NULLIF(max_cajas_simultaneas, 0), CASE WHEN COALESCE(max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
 	FROM licencias
 	WHERE empresa_id = ?
 		AND COALESCE(activo, 1) = 1
@@ -693,7 +727,7 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 		id DESC
 	LIMIT 1`
 	if isPostgresDialect() {
-		q = `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
+		q = `SELECT id, empresa_id, tipo_id, COALESCE(pais_codigo,'CO'), nombre, descripcion, valor, duracion_dias, COALESCE(max_documentos_mensuales, 0), COALESCE(NULLIF(max_cajas_simultaneas, 0), CASE WHEN COALESCE(max_documentos_mensuales, 0) = 4000 THEN 4 ELSE 2 END), COALESCE(modulos_habilitados, ''), COALESCE(es_adicional, 0), COALESCE(codigo_funcion, ''), COALESCE(super_rol_habilitado, 0), COALESCE(fecha_inicio, ''), COALESCE(fecha_fin, ''), fecha_creacion, activo
 		FROM licencias
 		WHERE empresa_id = ?
 			AND COALESCE(activo, 1) = 1
@@ -714,7 +748,7 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 	var fechaInicio sql.NullString
 	var fechaFin sql.NullString
 	var fechaCreacion sql.NullString
-	if err := row.Scan(&lic.ID, &empresaIDVal, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
+	if err := row.Scan(&lic.ID, &empresaIDVal, &lic.TipoID, &paisCodigo, &lic.Nombre, &descripcion, &lic.Valor, &lic.DuracionDias, &lic.MaxDocumentosMensuales, &lic.MaxCajasSimultaneas, &modulosHab, &lic.EsAdicional, &lic.CodigoFuncion, &lic.SuperRol, &fechaInicio, &fechaFin, &fechaCreacion, &lic.Activo); err != nil {
 		return nil, err
 	}
 	if empresaIDVal.Valid {
@@ -749,22 +783,33 @@ func UpdateLicencia(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descri
 }
 
 func UpdateLicenciaAdvanced(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int) error {
-	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, 0, false)
+	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, 0, 0, false, false)
 }
 
 func UpdateLicenciaAdvancedWithLimits(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int) error {
-	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, true)
+	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, 0, true, false)
 }
 
-func updateLicenciaAdvancedInternal(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, updateDocumentLimit bool) error {
+func UpdateLicenciaAdvancedWithLimitsAndCajas(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, maxCajasSimultaneas int) error {
+	return updateLicenciaAdvancedInternal(dbConn, id, tipoID, paisCodigo, nombre, descripcion, valor, duracionDias, modulosHabilitados, esAdicional, codigoFuncion, superRolHabilitado, maxDocumentosMensuales, maxCajasSimultaneas, true, true)
+}
+
+func updateLicenciaAdvancedInternal(dbConn *sql.DB, id, tipoID int64, paisCodigo, nombre, descripcion string, valor float64, duracionDias int, modulosHabilitados string, esAdicional int, codigoFuncion string, superRolHabilitado int, maxDocumentosMensuales int, maxCajasSimultaneas int, updateDocumentLimit bool, updateCashRegisterLimit bool) error {
 	if maxDocumentosMensuales < 0 {
 		maxDocumentosMensuales = 0
+	}
+	if maxCajasSimultaneas <= 0 {
+		maxCajasSimultaneas = DefaultLicenciaMaxCajasSimultaneas(maxDocumentosMensuales)
 	}
 	nowExpr := sqlNowExpr()
 	query := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
 	fallbackQuery := "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
 	args := []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado, id}
-	if updateDocumentLimit {
+	if updateDocumentLimit && updateCashRegisterLimit {
+		query = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, max_cajas_simultaneas = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
+		fallbackQuery = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, max_cajas_simultaneas = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
+		args = []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, maxCajasSimultaneas, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado, id}
+	} else if updateDocumentLimit {
 		query = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ?, fecha_actualizacion = " + nowExpr + " WHERE id = ?"
 		fallbackQuery = "UPDATE licencias SET tipo_id = ?, pais_codigo = ?, nombre = ?, descripcion = ?, valor = ?, duracion_dias = ?, max_documentos_mensuales = ?, modulos_habilitados = ?, es_adicional = ?, codigo_funcion = ?, super_rol_habilitado = ? WHERE id = ?"
 		args = []interface{}{tipoID, strings.TrimSpace(paisCodigo), nombre, descripcion, valor, duracionDias, maxDocumentosMensuales, strings.TrimSpace(modulosHabilitados), esAdicional, strings.TrimSpace(codigoFuncion), superRolHabilitado, id}

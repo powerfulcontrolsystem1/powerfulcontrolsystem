@@ -18,6 +18,7 @@ const (
 	superEmailTemplateKeyEmpresaAdminShareInvite = "empresa_admin_share_invitation"
 	superEmailTemplateKeyLicenciaActivation      = "licencia_activation_payment"
 	superEmailTemplateKeyLicenciaPaymentRejected = "licencia_payment_rejected"
+	superEmailTemplateKeyLicenciaExpiryWarning   = "licencia_expiry_warning"
 	superEmailTemplateKeyAdminPasswordRecovery   = "admin_password_recovery"
 	superEmailTemplateKeyEmpresaPasswordRecovery = "empresa_user_password_recovery"
 	superEmailTemplateKeyServerRestartAlert      = "server_restart_alert"
@@ -98,6 +99,17 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultSubject:  "Tu pago fue rechazado (puedes reintentar)",
 		DefaultBodyText: "Hola,\n\nLa pasarela reportó que el pago de tu licencia no se completó.\n\nEmpresa: {{company_name}}\n{{license_name_line}}{{reference_line}}Pasarela: {{provider}}\nEstado: {{status}}\n\nPuedes reintentar el pago más tarde desde este enlace:\n{{retry_url}}\n\nSi necesitas ayuda, responde este correo.\n\nPowerful Control System\n",
 		DefaultBodyHTML: "<html><body><p>Hola,</p><p>La pasarela reportó que el pago de tu licencia no se completó.</p><p><strong>Empresa:</strong> {{company_name}}<br/>{{license_name_line}}{{reference_line}}<strong>Pasarela:</strong> {{provider}}<br/><strong>Estado:</strong> {{status}}</p><p><a href=\"{{retry_url}}\" style=\"display:inline-block;padding:12px 18px;background:#0f4c81;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;\">Reintentar pago</a></p><p>Si el botón no abre correctamente, usa este enlace:</p><p><a href=\"{{retry_url}}\">{{retry_url}}</a></p><p>Si necesitas ayuda, responde este correo.</p><p>Powerful Control System</p></body></html>",
+	},
+	{
+		Key:             superEmailTemplateKeyLicenciaExpiryWarning,
+		Label:           "Licencia proxima a vencer",
+		Category:        "licencias",
+		Description:     "Aviso automatico al administrador de empresa cuando una licencia base o adicional esta cerca de vencer.",
+		Recommended:     true,
+		Variables:       []string{"name", "company_name", "license_name", "license_type", "days_remaining", "notice_threshold", "end_date", "renew_url"},
+		DefaultSubject:  "Tu licencia esta proxima a vencer",
+		DefaultBodyText: "Hola {{name}},\n\nLa licencia {{license_name}} de la empresa {{company_name}} esta proxima a vencer.\n\nTipo: {{license_type}}\nFecha de vencimiento: {{end_date}}\nDias restantes: {{days_remaining}}\n\nPuedes revisar o renovar la licencia desde este enlace:\n{{renew_url}}\n\nSi ya realizaste el pago, puedes ignorar este aviso.\n\nPowerful Control System\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>La licencia <strong>{{license_name}}</strong> de la empresa <strong>{{company_name}}</strong> esta proxima a vencer.</p><p><strong>Tipo:</strong> {{license_type}}<br/><strong>Fecha de vencimiento:</strong> {{end_date}}<br/><strong>Dias restantes:</strong> {{days_remaining}}</p><p><a href=\"{{renew_url}}\" style=\"display:inline-block;padding:12px 18px;background:#0f4c81;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;\">Revisar licencia</a></p><p>Si el boton no abre correctamente, usa este enlace:</p><p><a href=\"{{renew_url}}\">{{renew_url}}</a></p><p>Si ya realizaste el pago, puedes ignorar este aviso.</p><p>Powerful Control System</p></body></html>",
 	},
 	{
 		Key:             superEmailTemplateKeyAdminPasswordRecovery,

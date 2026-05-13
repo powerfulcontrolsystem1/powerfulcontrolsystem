@@ -125,6 +125,7 @@ func EmpresaPropinasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					CierreCajaID      int64   `json:"cierre_caja_id"`
 					VentaReferencia   string  `json:"venta_referencia"`
 					UsuarioAsignado   string  `json:"usuario_asignado"`
+					UsuarioAsignadoID int64   `json:"usuario_asignado_id"`
 					ModoDistribucion  string  `json:"modo_distribucion"`
 					MontoAjuste       float64 `json:"monto_ajuste"`
 					MontoPropina      float64 `json:"monto_propina"`
@@ -182,6 +183,7 @@ func EmpresaPropinasHandler(dbEmp *sql.DB) http.HandlerFunc {
 					VentaReferencia:   strings.TrimSpace(payload.VentaReferencia),
 					UsuarioOrigen:     usuarioOperacion,
 					UsuarioAsignado:   strings.TrimSpace(payload.UsuarioAsignado),
+					UsuarioAsignadoID: payload.UsuarioAsignadoID,
 					ModoDistribucion:  strings.TrimSpace(payload.ModoDistribucion),
 					Moneda:            strings.TrimSpace(payload.Moneda),
 					BaseCobro:         payload.BaseCobro,

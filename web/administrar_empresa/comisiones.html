@@ -147,7 +147,8 @@
       <div class="form-row">
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="ajUsuarioLavador">Lavador</label>
-          <input id="ajUsuarioLavador" class="form-input" placeholder="email o codigo" maxlength="180">
+          <input id="ajUsuarioLavador" class="form-input" placeholder="email o codigo" maxlength="180" list="usuariosEmpresaList">
+          <datalist id="usuariosEmpresaList"></datalist>
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="ajRolOperacion">Rol operación</label>
@@ -442,6 +443,7 @@
       }
 
       var empresaID = Number(getQueryParam('empresa_id') || 0);
+      var usuariosEmpresa = [];
       if (!empresaID) {
         setMessage('cfgMsg', 'empresa_id es obligatorio en la URL', true);
         setMessage('reporteMsg', 'empresa_id es obligatorio en la URL', true);
@@ -627,6 +629,7 @@
           servicio_nombre: normalize(document.getElementById('ajServicioNombre').value),
           servicio_categoria: normalize(document.getElementById('ajServicioCategoria').value),
           usuario_lavador: normalize(document.getElementById('ajUsuarioLavador').value),
+          usuario_lavador_id: usuarioIDPorEntrada(document.getElementById('ajUsuarioLavador').value),
           rol_operacion: normalize(document.getElementById('ajRolOperacion').value),
           venta_referencia: normalize(document.getElementById('ajVentaRef').value),
           moneda: normalize(document.getElementById('ajMoneda').value) || 'COP',
@@ -730,8 +733,10 @@
         }
 
         body.innerHTML = rows.map(function (item) {
+          var lavador = item.usuario_lavador || '-';
+          if (item.usuario_id) lavador += ' #' + String(item.usuario_id);
           return '<tr>' +
-            '<td>' + escapeHtml(item.usuario_lavador || '-') + '</td>' +
+            '<td>' + escapeHtml(lavador) + '</td>' +
             '<td>' + Number(item.cantidad_movimientos || 0) + '</td>' +
             '<td>' + money(item.total_base_servicios) + '</td>' +
             '<td>' + money(item.total_comision) + '</td>' +
@@ -766,8 +771,8 @@
             '<td>' + escapeHtml(ajusteEstado) + '</td>' +
             '<td>' + escapeHtml(item.servicio_nombre || item.servicio_codigo || '-') + '</td>' +
             '<td>' + escapeHtml(item.servicio_categoria || '-') + '</td>' +
-            '<td>' + escapeHtml(item.usuario_origen || '-') + '</td>' +
-            '<td>' + escapeHtml(item.usuario_lavador || '-') + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_origen, item.usuario_origen_id)) + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_lavador, item.usuario_lavador_id)) + '</td>' +
             '<td>' + escapeHtml(item.rol_operacion || '-') + '</td>' +
             '<td>' + money(item.base_servicio) + '</td>' +
             '<td>' + money(item.porcentaje_comision) + '</td>' +
@@ -778,6 +783,45 @@
             '<td>' + acciones + '</td>' +
             '</tr>';
         }).join('');
+      }
+
+      function formatUsuarioMovimiento(nombre, id) {
+        var label = normalize(nombre) || '-';
+        if (id) label += ' #' + String(id);
+        return label;
+      }
+
+      function usuarioIDPorEntrada(value) {
+        var v = normalize(value).toLowerCase();
+        if (!v) return 0;
+        for (var i = 0; i < usuariosEmpresa.length; i++) {
+          var u = usuariosEmpresa[i] || {};
+          var id = toInt(u.id);
+          var email = normalize(u.email).toLowerCase();
+          var nombre = normalize(u.nombre || u.name).toLowerCase();
+          var label = normalize(u.nombre || u.name || u.email);
+          var option = normalize(label + (u.email ? ' (' + u.email + ')' : '')).toLowerCase();
+          if (v === String(id) || v === email || v === nombre || v === option) return id;
+        }
+        return 0;
+      }
+
+      function loadUsuariosEmpresa() {
+        return requestJSON('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(empresaID))
+          .then(function (rows) {
+            usuariosEmpresa = Array.isArray(rows) ? rows : [];
+            var list = document.getElementById('usuariosEmpresaList');
+            if (!list) return;
+            list.innerHTML = usuariosEmpresa.map(function (u) {
+              var label = normalize(u.nombre || u.name || u.email);
+              var email = normalize(u.email);
+              var value = label + (email && email !== label ? ' (' + email + ')' : '');
+              return '<option value="' + escapeHtml(value) + '"></option>';
+            }).join('');
+          })
+          .catch(function () {
+            usuariosEmpresa = [];
+          });
       }
 
       function resolverAjuste(movimientoID, approve) {
@@ -910,7 +954,7 @@
 
       defaultDateRange();
       resetEscalaForm();
-      fetchConfig()
+      Promise.all([loadUsuariosEmpresa(), fetchConfig()])
         .then(function () {
           return Promise.all([loadEscalas(), loadReport()]);
         })

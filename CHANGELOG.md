@@ -1,3 +1,31 @@
+- 2026-05-13: en `Estaciones`, la tarjeta especial `Caja` ya no abre `venta_directa` ni un carrito. Ahora redirige a `web/administrar_empresa/corte_de_caja.html` para cerrar turno, generar corte e imprimir el reporte del cajero, con regreso a estaciones y filtro por `caja_codigo` configurado por empresa.
+
+- 2026-05-13: `Carritos` y `Venta directa` quedan reforzados para volver a cargar desde `administrar_empresa.html` aun si la base empresarial venia con migraciones atrasadas. El backend reasegura el esquema antes de listar y la consulta de carritos degrada sin joins opcionales cuando faltan `clientes` o `carrito_compra_items`; el frontend de `carrito_de_compras.html` encapsula toda la carga inicial en el mismo manejo de error visual para no dejar el iframe muerto.
+
+- 2026-05-13: se crea el diagrama entidad relacion vigente del proyecto en `documentos/diagramas/diagrama_entidad_relacion.md` y su imagen `documentos/diagramas/diagrama_entidad_relacion.svg`. Tambien se limpia el indice actual de diagramas para quitar referencias vigentes a artefactos historicos que ya no existen fisicamente.
+
+- 2026-05-13: documentacion general y ayuda actualizadas. Se agrega `documentos/estado_documentacion_2026-05-13.md`, se alinean `documentos/README.md` y `documentos/descripcion_del_proyecto`, y `web/ayuda/ayuda.html` incorpora acceso global de usuarios, operacion conectada, cajas simultaneas, soporte/comunicaciones, documentos locales y backups.
+
+- 2026-05-13: revision profesional del nucleo operativo. Auditoria reconoce modulos recientes (carritos, venta publica, CRM, reportes, backups, OnlyOffice, tickets, mantenimiento, propinas/comisiones y verticales), y ventas/facturas/ingresos/egresos/reportes/menu flotante agregan compartir por WhatsApp o correo. Validado con `go test ./...`, `node --check` de JS y parseo de scripts inline HTML.
+
+- 2026-05-13: `Backup profesional` se mueve en `web/administrar_empresa.html` al grupo `Administracion`, junto al boton `Configuracion`, conservando `linkBackups`, ruta y permisos existentes. Sin cambios de backend, tablas ni dependencias.
+
+- 2026-05-13: `login_usuario.html` incorpora una ilustracion profesional de usuario frente al computador en la esquina superior derecha, con adaptacion responsive para movil. Nuevo activo local `web/img/login-usuario-computador.svg`; sin cambios de backend, permisos, tablas ni dependencias.
+
+- 2026-05-13: `login_usuario.html` queda como acceso global para usuarios operativos de todas las empresas. El backend resuelve la empresa por email y clave, valida el primer ingreso por `token_invitacion` sin depender de subdominio, y redirige a `administrar_empresa.html?id=...` con rol/permisos de la empresa. Sin tablas ni dependencias nuevas; validado con `go test ./...`.
+
+- 2026-05-13: agregado aviso de mantenimiento programado. Super administrador configura check de aviso, fecha, hora inicio/fin, zona horaria y mensaje publico; el panel de Administrar empresa consulta `/api/empresa/mantenimiento_programado` y muestra una franja visible cuando el aviso esta activo, separada del bloqueo real `mantenimiento_activo`.
+
+- 2026-05-13: OnlyOffice empresarial queda en una sola pantalla local editable. `web/administrar_empresa/documentos_onlyoffice.html` permite crear Word/Excel/PowerPoint, abrir el editor embebido alli mismo y descargar el resultado al PC/celular; `backend/handlers/onlyoffice.go` agrega `create_edit_local` y `download&delete=1` para borrar la copia temporal del VPS. El menu antiguo redirige a la pantalla unica.
+
+- 2026-05-13: agregado sistema de alertas de vencimiento de licencias por correo. Super administrador configura dias de aviso en `/super/configuracion_avanzada.html`; el backend agrega `/super/api/licencias/vencimiento_alertas`, worker periodico, plantilla `licencia_expiry_warning` y deduplicacion en `licencia_vencimiento_notificaciones`. Validado con `go test ./...`.
+
+- 2026-05-13: reparado el submenu de Configuracion en super administrador para alinearlo con el sidebar de `seleccionar_empresa.html`: titulo simple, ancho estable, lista compacta, estados activo/hover coherentes y autocierre movil al tocar secciones. Sin cambios de backend, permisos ni base de datos.
+
+- 2026-05-13: corregida la apariencia claro/oscuro del Explorador de Archivos del super administrador. La pagina `/super/explorador_archivos.html` inicializa el tema desde `localStorage`/cookie `pcs_theme` y reemplaza colores fijos por variables globales para fondos, tabla, botones, input y estados. Sin cambios de backend, permisos ni base de datos.
+
+- 2026-05-12: profesionalizado el sistema propio de tickets de ayuda. El menu flotante empresarial envia tickets con contacto preferido, telefono opcional, contexto tecnico seguro y tickets recientes; el backend permite detalle/comentarios propios aislados por `empresa_id`; la consola super muestra categoria, modulo, contacto, ruta y diagnostico sin exponer secretos.
+
 - 2026-05-12: SSH del VPS cambiado de `22` a `49222` con procedimiento seguro: primero se habilitaron ambos puertos, se probo conexion externa por `49222`, luego se cerro `22` y se verifico que solo `49222` quedara escuchando. Scripts de despliegue, tuneles locales, RustDesk remoto, escaner VPS y documentacion operativa quedan alineados con `49222`.
 
 - 2026-05-12: `Control electrico` se mueve dentro de Configuracion de empresa. El sidebar principal de Administrar empresa deja un solo acceso a `Configuracion`, y `web/administrar_empresa/configuracion_menu.html` incorpora el enlace en `Estaciones, sensores y tarifas`; `configuracion.html` agrega un acceso directo en el mapa ejecutivo. Sin cambios de backend, tablas ni dependencias.
@@ -4180,3 +4208,5 @@
 - 2026-05-12: limpieza visual del super administrador. `web/super_administrador.html` retira los cuatro indicadores compactos del encabezado lateral (`PostgreSQL`, `VPS`, `Licencias`, `Seguridad`) sin cambiar accesos, iframes, permisos ni endpoints.
 
 - 2026-05-12: identidad visual empresarial. `web/administrar_empresa/configuracion.html` agrega una seccion visible para subir o pegar el logo de la empresa, `web/administrar_empresa/panel.html` lo muestra encima del titulo sin alterar la tarjeta de clima, y `/api/empresa/configuracion_avanzada/logo` guarda el archivo en `/uploads/empresa_logos/empresa_<id>/`. Se reutilizan `empresa_configuracion_avanzada.logo_url` y `mostrar_logo`, los mismos campos usados por factura y documentos.
+- 2026-05-13: correos masivos globales. Super administrador agrega `web/super/correos_masivos.html` y `/super/api/correos_masivos` para previsualizar destinatarios, enviar comunicados por SMTP a administradores/usuarios y auditar campanas en `super_correos_masivos`.
+- 2026-05-13: conexion obligatoria para operacion. Se retira la opcion de modo offline/contingencia DIAN en facturacion electronica y el backend bloquea emisiones cuando DIAN/proveedor no esta disponible; ventas, cobros y facturacion requieren conexion activa con el servidor.

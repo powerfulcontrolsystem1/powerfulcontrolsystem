@@ -38,6 +38,9 @@
 </head>
 <body class="login-usuario-body">
   <div class="login-page login-usuario-page">
+    <figure class="login-usuario-hero-visual" aria-label="Usuario iniciando sesión en computador">
+      <img src="/img/login-usuario-computador.svg" alt="Persona frente a un computador iniciando sesión">
+    </figure>
     <div class="login-header">
       <h1 class="login-title">Acceso de usuarios operativos</h1>
     </div>
@@ -46,7 +49,7 @@
         <h2>Iniciar sesión</h2>
 
         <form id="loginUsuarioForm" class="form email-login" autocomplete="on" novalidate>
-          <h3 class="text-center-lowercase">continúa con tu correo único</h3>
+          <h3 class="text-center-lowercase">continúa con tu correo y contraseña</h3>
           <input id="empresaID" type="hidden">
           <p id="empresaContextHint" class="login-card-note login-usuario-context-note">El sistema abrirá automáticamente la empresa asociada a tu correo y cargará tus roles asignados.</p>
 
@@ -257,8 +260,8 @@
     </div>
   </div>
 
-  <script src="/config.js?v=20260510-mobile-login"></script>
-  <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
-  <script src="/js/login_usuario.js?v=20260510-mobile-login"></script>
+  <script src="/config.js?v=20260513-global-user-login"></script>
+  <script src="/js/recaptcha_helper.js?v=20260513-global-user-login"></script>
+  <script src="/js/login_usuario.js?v=20260513-global-user-login"></script>
 </body>
 </html>

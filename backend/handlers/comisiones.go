@@ -197,6 +197,7 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 					ServicioNombre    string  `json:"servicio_nombre"`
 					ServicioCategoria string  `json:"servicio_categoria"`
 					UsuarioLavador    string  `json:"usuario_lavador"`
+					UsuarioLavadorID  int64   `json:"usuario_lavador_id"`
 					RolOperacion      string  `json:"rol_operacion"`
 					VentaReferencia   string  `json:"venta_referencia"`
 					Moneda            string  `json:"moneda"`
@@ -249,6 +250,7 @@ func EmpresaComisionesServicioHandler(dbEmp *sql.DB) http.HandlerFunc {
 					ServicioCategoria:  strings.TrimSpace(payload.ServicioCategoria),
 					UsuarioOrigen:      usuarioOperacion,
 					UsuarioLavador:     strings.TrimSpace(payload.UsuarioLavador),
+					UsuarioLavadorID:   payload.UsuarioLavadorID,
 					RolOperacion:       strings.TrimSpace(payload.RolOperacion),
 					VentaReferencia:    strings.TrimSpace(payload.VentaReferencia),
 					Moneda:             strings.TrimSpace(payload.Moneda),

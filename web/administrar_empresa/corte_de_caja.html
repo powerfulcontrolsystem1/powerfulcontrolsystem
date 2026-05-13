@@ -49,10 +49,11 @@
     <section class="card empresa-section no-print">
       <div class="empresa-section-header">
         <div>
-          <h1 class="empresa-section-title">Corte de caja profesional</h1>
-          <p class="form-help">Cierra turno, concilia efectivo, revisa ventas/anulaciones y elige exactamente que reportes se imprimen.</p>
+          <h1 id="pageTitle" class="empresa-section-title">Corte de caja profesional</h1>
+          <p id="pageSubtitle" class="form-help">Cierra turno, concilia efectivo, revisa ventas/anulaciones y elige exactamente que reportes se imprimen.</p>
         </div>
         <div class="cash-close-actions">
+          <a id="btnVolverEstaciones" class="btn secondary" href="/administrar_empresa/estaciones.html" hidden>Regresar a estaciones</a>
           <button id="btnGenerar" class="btn" type="button">Generar corte</button>
           <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
           <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
@@ -260,6 +261,7 @@
   var empresaId = resolveEmpresaId();
   var lastReport = null;
   var printFormat = 'carta';
+  var pageContext = resolvePageContext();
   var reporteConfig = {
     mostrar_resumen: true,
     mostrar_numero_facturas: true,
@@ -282,6 +284,21 @@
     mostrar_auditoria: true,
     formato_impresion: 'carta'
   };
+
+  function resolvePageContext() {
+    var params = new URLSearchParams(window.location.search || '');
+    return {
+      source: String(params.get('source') || '').trim().toLowerCase(),
+      returnTo: String(params.get('return_to') || '').trim().toLowerCase(),
+      autoGenerar: String(params.get('auto_generar') || '').trim() === '1',
+      cajaNombre: String(params.get('caja_nombre') || '').trim(),
+      cajaCodigo: String(params.get('caja_codigo') || '').trim(),
+      usuario: String(params.get('usuario') || '').trim(),
+      turno: String(params.get('turno') || '').trim().toLowerCase(),
+      desde: String(params.get('desde') || '').trim(),
+      hasta: String(params.get('hasta') || '').trim()
+    };
+  }
 
   function escapeHtml(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -409,6 +426,71 @@
     var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
     document.getElementById('desde').value = toLocalInputValue(start);
     document.getElementById('hasta').value = toLocalInputValue(now);
+  }
+
+  function toInputDateTimeValue(raw) {
+    var value = String(raw || '').trim();
+    if (!value) return '';
+    value = value.replace(' ', 'T');
+    if (value.length >= 19) return value.slice(0, 16);
+    if (value.length === 16) return value;
+    var parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return toLocalInputValue(parsed);
+  }
+
+  function applyPageContext() {
+    var title = document.getElementById('pageTitle');
+    var subtitle = document.getElementById('pageSubtitle');
+    var closeBtn = document.getElementById('btnCerrar');
+    var backBtn = document.getElementById('btnVolverEstaciones');
+
+    if (pageContext.cajaNombre) {
+      title.textContent = 'Cierre de turno y corte de caja - ' + pageContext.cajaNombre;
+      subtitle.textContent = 'Desde esta caja puedes generar el corte, cerrar turno e imprimir el reporte completo del cajero.';
+    }
+    if (pageContext.source === 'estaciones' && closeBtn) {
+      closeBtn.textContent = 'Cerrar turno';
+    }
+    if (backBtn && pageContext.returnTo === 'estaciones') {
+      backBtn.hidden = false;
+      backBtn.href = '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(String(empresaId || 0));
+    }
+    if (pageContext.turno) {
+      document.getElementById('turno').value = pageContext.turno;
+    }
+    if (pageContext.usuario) {
+      document.getElementById('usuario').value = pageContext.usuario;
+    }
+    if (pageContext.cajaCodigo) {
+      document.getElementById('cajaCodigo').value = pageContext.cajaCodigo;
+    }
+    if (pageContext.desde) {
+      var desdeValue = toInputDateTimeValue(pageContext.desde);
+      if (desdeValue) document.getElementById('desde').value = desdeValue;
+    }
+    if (pageContext.hasta) {
+      var hastaValue = toInputDateTimeValue(pageContext.hasta);
+      if (hastaValue) document.getElementById('hasta').value = hastaValue;
+    }
+  }
+
+  async function preloadCajaDefaults() {
+    if (!empresaId) return;
+    try {
+      var data = await requestJSON('/api/empresa/configuracion_general?empresa_id=' + encodeURIComponent(empresaId));
+      var caja = data && data.caja ? data.caja : {};
+      var cajaCodigo = String(caja.caja_codigo || '').trim();
+      var cajaNombre = String(caja.caja_nombre || '').trim();
+      var cajaCodigoInput = document.getElementById('cajaCodigo');
+      var currentCajaCodigo = cajaCodigoInput ? String(cajaCodigoInput.value || '').trim() : '';
+      if (cajaCodigo && cajaCodigoInput && (!currentCajaCodigo || currentCajaCodigo === 'CAJA-PRINCIPAL')) {
+        cajaCodigoInput.value = cajaCodigo;
+      }
+      if (cajaNombre && !pageContext.cajaNombre) {
+        document.getElementById('pageTitle').textContent = 'Cierre de turno y corte de caja - ' + cajaNombre;
+      }
+    } catch (_) {}
   }
 
   function toLocalInputValue(date) {
@@ -543,6 +625,8 @@
     params.set('hasta', document.getElementById('hasta').value || '');
     params.set('usuario', document.getElementById('usuario').value || '');
     params.set('apertura_efectivo', document.getElementById('apertura').value || '0');
+    params.set('caja_codigo', document.getElementById('cajaCodigo').value || '');
+    params.set('turno', document.getElementById('turno').value || '');
     params.set('reportes', selectedReports().join(','));
     return params;
   }
@@ -611,9 +695,14 @@
 
   document.addEventListener('DOMContentLoaded', function() {
     setDefaultDates();
-    preloadAccount();
+    applyPageContext();
     applyPrintFormat(document.getElementById('modoVista').value);
     cargarConfigReporte();
+    Promise.allSettled([preloadAccount(), preloadCajaDefaults()]).then(function() {
+      if (pageContext.autoGenerar) {
+        generar();
+      }
+    });
     document.getElementById('btnGenerar').addEventListener('click', generar);
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });

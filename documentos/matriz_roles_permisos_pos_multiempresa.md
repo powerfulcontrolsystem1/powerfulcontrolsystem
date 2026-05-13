@@ -1,3 +1,23 @@
+2026-05-13: Auditoria y compartido documental del nucleo
+- `auditoria` no agrega permisos nuevos, pero sus filtros visibles y contexto IA ahora cubren modulos recientes: `carritos`, `venta_publica`, `crm_unificado`, `reportes`, `backups`, `documentos_onlyoffice`, `tickets_ayuda`, `mantenimiento_programado`, `propinas`, `comisiones`, verticales operativos y `control_electrico`.
+- Las opciones de compartir por WhatsApp/correo en ventas, facturas, reportes, ingresos, egresos y menu flotante no conceden acceso nuevo: comparten texto/enlace de la pantalla o documento activo y el receptor sigue necesitando permisos/sesion cuando el recurso no es publico.
+- Los backups automaticos locales siguen bajo `linkBackups`/modulo `backups`; la descarga al equipo depende de sesion activa y `empresa_id`, y no sustituye los permisos de snapshot/restauracion.
+
+2026-05-13: Vinculo de propinas y comisiones con usuarios creados
+- `propinas` y `comisiones por servicio` no agregan permisos nuevos; siguen bajo sus paginas/API empresariales existentes y el `empresa_id` efectivo.
+- Los movimientos ahora guardan `users.id` de la misma empresa (`usuario_origen_id`, `usuario_asignado_id`, `usuario_lavador_id`) ademas de la etiqueta texto historica.
+- Los reportes y filtros pueden resolver por email, nombre, documento o id de usuario, pero no conceden acceso a usuarios de otra empresa.
+
+2026-05-13: Reubicacion de Backup profesional
+- El acceso `linkBackups` se muestra junto a `Configuracion` dentro del grupo `Administracion` de `administrar_empresa.html`.
+- No cambia la matriz efectiva: `/api/empresa/backups` sigue bajo `WithEmpresaSeguridadPermissions` y las acciones de restauracion/depuracion mantienen aprobacion.
+
+2026-05-13: Login global de usuarios operativos
+- `login_usuario.html` es la entrada unica para usuarios de todas las empresas; no requiere subdominio empresarial ni `empresa_id` visible para iniciar sesion.
+- El backend resuelve la cuenta por email y clave; si un correo esta en varias empresas y no puede resolverse de forma unica, no concede acceso a una empresa al azar.
+- El primer ingreso sigue cerrado a invitacion: `token_invitacion`, email, documento y contrato vigente se validan antes de crear sesion.
+- No se agregan roles ni privilegios nuevos; tras autenticar, el panel empresarial sigue filtrando por `/api/empresa/permisos_contexto` y `empresa_id`.
+
 2026-05-12: Retiro de Nextcloud
 - `nextcloud` deja de ser modulo licenciado o pagina de empresa.
 - Se retiran `linkNextcloud`, `WithEmpresaNextcloudPermissions`, `/api/empresa/nextcloud` y `/super/api/config/nextcloud`.
@@ -20,6 +40,12 @@
 - `web/login_usuario.html` y `web/menu.js` priorizan la cookie visible `pcs_theme` sobre `localStorage` para pintar el modo claro/oscuro antes de autenticar.
 - La cookie `pcs_theme` solo guarda preferencia visual; no reemplaza ni expone la cookie de sesion `HttpOnly`, no concede acceso y no altera wrappers ni permisos.
 - El comportamiento esperado es que el login operativo cargue con la apariencia del ultimo usuario que inicio sesion o cambio tema en ese navegador.
+
+2026-05-12: Nota operativa para tickets de ayuda empresariales profesionalizados
+- `GET /api/empresa/tickets_ayuda?id=...` y comentarios empresariales validan que el ticket pertenezca al `empresa_id` activo; si no pertenece, responde como no encontrado.
+- Las notas internas (`interno=1`) del super administrador no se devuelven al usuario empresarial; solo la bandeja super puede verlas.
+- El menu flotante puede enviar contexto tecnico seguro de la pantalla activa, pero no cookies, localStorage, tokens, claves ni secretos.
+- La administracion global de estado, prioridad, asignacion y cierre sigue reservada a `super_administrador`.
 
 2026-05-12: Nota operativa para mesa central de tickets de ayuda
 - `POST/GET /api/empresa/tickets_ayuda` queda disponible para usuarios autenticados con alcance validado sobre la empresa solicitada mediante `WithEmpresaSelfServicePermissions`; no concede permisos de administracion central ni acceso a tickets de otras empresas.
@@ -350,6 +376,16 @@
 - Los modos locales agregados para documentos y backups no abren permisos nuevos: siguen protegidos por `WithEmpresaDocumentosOnlyOfficePermissions` y `WithEmpresaBackupsPermissions`.
 - `create_local`, `exportar_local` y `exportar_configuracion_local` descargan al navegador del usuario autenticado y no crean artefactos permanentes en el VPS.
 - Los backups automaticos locales dependen de una sesion activa en la pagina de backups y de las reglas de descarga del navegador del dispositivo.
+
+2026-05-13: Nota operativa para `documentos_onlyoffice`
+- `create_edit_local` y `download&delete=1` siguen bajo `WithEmpresaDocumentosOnlyOfficePermissions`; no habilitan rutas publicas ni permisos nuevos.
+- El editor OnlyOffice necesita una copia temporal por `empresa_id` para la sesion de edicion, pero el flujo oficial descarga el resultado al dispositivo y elimina el temporal al guardar.
+- La autorizacion efectiva sigue dependiendo del acceso al modulo `documentos_onlyoffice` y del aislamiento por empresa.
+
+2026-05-13: Nota operativa para `mantenimiento programado`
+- La configuracion del aviso vive en super administrador y sigue restringida al panel super mediante `/super/api/config/mantenimiento`.
+- La consulta empresarial `/api/empresa/mantenimiento_programado` usa `WithEmpresaSelfServicePermissions`: exige usuario autenticado y alcance sobre `empresa_id`, pero no abre permisos administrativos nuevos.
+- El check de aviso programado solo muestra mensaje en `administrar_empresa/panel.html`; no activa el bloqueo real `mantenimiento_activo`.
 
 2026-04-20: Nota operativa para `backups empresariales`, `administrar_empresa` y `configuracion`
 - La exportacion/importacion de configuracion por empresa reutiliza el modulo `backups empresariales` y no abre permisos nuevos: sigue limitada al acceso ya existente al enlace `Backups empresariales` del panel de empresa.
@@ -1461,6 +1497,8 @@ Regla de lectura comun (R):
 | `/super/api/chat_con_ia_global/modelo_preferido` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
 | `/super/api/chat_con_ia_global/consultar` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
 | `/super/api/chat_con_ia_global/historial` | `paginaPrincipalRequireSuperAdmin` | requiere sesion super valida y rol `super_administrador` |
+| `/super/api/licencias/vencimiento_alertas` | `paginaPrincipalRequireSuperAdmin` | configuracion, vista previa y ejecucion manual de alertas de licencia proximas a vencer; acceso exclusivo de `super_administrador` |
+| `/super/api/correos_masivos` | `paginaPrincipalRequireSuperAdmin` | previsualizacion y envio de comunicados globales a administradores y usuarios de empresa; acceso exclusivo de `super_administrador` y confirmacion obligatoria para enviar |
 
 ## Checklist UAT de Punto 3 (permisos y seguridad)
 
@@ -1490,6 +1528,7 @@ Ejecucion de validacion actual (2026-04-05):
 3. Toda accion critica debe dejar auditoria con request_id, empresa_id, usuario, accion y timestamp.
 4. Operaciones de cierre/aprobacion deben requerir rol con permiso A.
 5. Eliminaciones funcionales deben implementarse como anulacion/inactivacion cuando aplique trazabilidad legal.
+6. La apertura o reapertura de cajas debe respetar el limite `max_cajas_simultaneas` de la licencia activa de la empresa; si no hay licencia vigente se aplica el default conservador de 2 cajas.
 
 ## Acciones tecnicas siguientes (cierre operativo punto 3)
 

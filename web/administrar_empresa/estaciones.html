@@ -720,6 +720,16 @@
         (directMode ? '&modo=venta_directa' : '');
       window.location.href = url;
     }
+    function openCajaClosePage(stationName) {
+      if (!empresaId) return;
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId));
+      params.set('source', 'estaciones');
+      params.set('return_to', 'estaciones');
+      params.set('auto_generar', '1');
+      params.set('caja_nombre', String(stationName || 'Caja').trim() || 'Caja');
+      window.location.href = '/administrar_empresa/corte_de_caja.html?' + params.toString();
+    }
     function isCarritoOperativoActivo(carrito) {
       if (!carrito) return false;
       const estado = normalizeText(carrito.estado) || 'activo';
@@ -1180,6 +1190,7 @@
       return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
         '<div class="station-sensor-indicator"></div>' +
         '<h3 class="caja-title">Caja</h3>' +
+        '<p class="form-help caja-description">Cerrar turno, hacer corte de caja e imprimir el reporte completo del cajero.</p>' +
         '<div class="caja-totals">' +
           '<div class="caja-row"><span class="caja-label">Efectivo</span><span class="caja-value" id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
           '<div class="caja-row"><span class="caja-label">Débito</span><span class="caja-value" id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +
@@ -1849,8 +1860,8 @@
         if (cajaEl) {
           cajaEl.classList.add('station-launch-card');
           cajaEl.style.cursor = 'pointer';
-          cajaEl.addEventListener('click', () => { openStationCarrito(0, 'Caja', true); });
-          cajaEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openStationCarrito(0, 'Caja', true); } });
+          cajaEl.addEventListener('click', () => { openCajaClosePage('Caja'); });
+          cajaEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openCajaClosePage('Caja'); } });
           try {
             const movBtn = cajaEl.querySelector('.ver-ultimos-movimientos');
             if (movBtn) {

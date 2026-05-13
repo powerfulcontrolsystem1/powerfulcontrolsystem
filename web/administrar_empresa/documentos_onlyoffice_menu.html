@@ -3,42 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>OnlyOffice - Menu</title>
-  <link rel="stylesheet" href="/estilos.css">
-  <script src="/js/empresa_submenu_context.js"></script>
+  <title>OnlyOffice</title>
+  <script>
+    (function(){
+      var target = '/administrar_empresa/documentos_onlyoffice.html' + (location.search || '');
+      location.replace(target);
+    })();
+  </script>
 </head>
-<body class="admin-empresa-shell empresa-submenu-shell">
-  <div class="admin-layout">
-    <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
-      <p class="admin-sidebar-kicker">Documentos</p>
-      <h2>OnlyOffice</h2>
-      <p class="admin-sidebar-summary">Crea, sube, consulta y edita documentos colaborativos de la empresa.</p>
-      <ul class="nav" id="onlyofficeSidebarNav">
-        <li><a href="/administrar_empresa/documentos_onlyoffice.html#tab-crear" target="onlyofficeContentFrame" data-submenu-link><img class="icon" src="/img/excel.svg" alt=""> Crear documentos</a></li>
-        <li><a href="/administrar_empresa/documentos_onlyoffice.html#tab-subir" target="onlyofficeContentFrame" data-submenu-link><img class="icon" src="/img/network-color.svg" alt=""> Subir archivos</a></li>
-        <li><a href="/administrar_empresa/documentos_onlyoffice.html#tab-archivos" target="onlyofficeContentFrame" data-submenu-link><img class="icon" src="/img/report.svg" alt=""> Biblioteca</a></li>
-        <li><a href="/administrar_empresa/documentos_onlyoffice.html#tab-editor" target="onlyofficeContentFrame" data-submenu-link><img class="icon" src="/img/settings-color.svg" alt=""> Editor</a></li>
-        <li class="admin-menu-visibility-item">
-          <button type="button" class="admin-menu-visibility-toggle" aria-controls="onlyofficeSidebarNav" aria-expanded="true" data-show-label="Mostrar menu" data-hide-label="Ocultar menu">
-            <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
-            <span class="admin-menu-visibility-label">Ocultar menu</span>
-          </button>
-        </li>
-      </ul>
-    </aside>
-
-    <main class="admin-content">
-      <iframe
-        name="onlyofficeContentFrame"
-        id="onlyofficeContentFrame"
-        src="/administrar_empresa/documentos_onlyoffice.html#tab-crear"
-        title="Contenido de OnlyOffice"
-        class="admin-empresa-frame"
-        data-submenu-frame></iframe>
-    </main>
-  </div>
-
-  <script src="/js/empresa_submenu_shell.js" data-version="20260508-onlyoffice-menu"></script>
-  <script src="/menu.js"></script>
-</body>
+<body></body>
 </html>

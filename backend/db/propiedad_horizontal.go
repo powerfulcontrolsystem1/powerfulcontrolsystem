@@ -1014,7 +1014,7 @@ func createPropHRecaudoCarrito(dbConn *sql.DB, recaudo EmpresaPropiedadHorizonta
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-	if err := PayCarritoStationSession(dbConn, recaudo.EmpresaID, carritoID, metodo, referencia, "", "", 0, 0, recaudo.ValorPagado, 0, strings.TrimSpace(usuario)); err != nil {
+	if err := PayCarritoStationSession(dbConn, recaudo.EmpresaID, carritoID, metodo, referencia, "", "", 0, 0, recaudo.ValorPagado, 0, 0, "", "", 0, strings.TrimSpace(usuario)); err != nil {
 		return 0, 0, 0, 0, err
 	}
 	return carritoID, itemID, clienteID, servicioID, nil

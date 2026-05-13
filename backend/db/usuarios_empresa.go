@@ -352,6 +352,101 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 	return &item, nil
 }
 
+// ResolveEmpresaUsuarioByReference vincula un identificador operativo con un usuario creado de la empresa.
+func ResolveEmpresaUsuarioByReference(dbConn *sql.DB, empresaID int64, reference string) (*EmpresaUsuario, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	reference = strings.TrimSpace(reference)
+	if reference == "" {
+		return nil, sql.ErrNoRows
+	}
+	lookupReference := normalizeEmpresaUsuarioReferenceLookup(reference)
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return nil, err
+	}
+
+	scan := func(row *sql.Row) (*EmpresaUsuario, error) {
+		var item EmpresaUsuario
+		if err := row.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Email,
+			&item.Nombre,
+			&item.DocumentoIdentidad,
+			&item.RolUsuarioID,
+			&item.RolNombre,
+			&item.Estado,
+		); err != nil {
+			return nil, err
+		}
+		return &item, nil
+	}
+
+	row := queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(estado, 'activo')
+	FROM users
+	WHERE empresa_id = ?
+		AND (
+			lower(email) = lower(?)
+			OR CAST(id AS TEXT) = ?
+			OR lower(COALESCE(documento_identidad, '')) = lower(?)
+		)
+	ORDER BY CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END, id ASC
+	LIMIT 1`, empresaID, lookupReference, lookupReference, lookupReference)
+	if item, err := scan(row); err == nil {
+		return item, nil
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	row = queryRowSQLCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(estado, 'activo')
+	FROM users
+	WHERE empresa_id = ? AND lower(COALESCE(name, '')) = lower(?)
+	ORDER BY CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END, id ASC
+	LIMIT 1`, empresaID, reference)
+	return scan(row)
+}
+
+func normalizeEmpresaUsuarioReferenceLookup(reference string) string {
+	reference = strings.TrimSpace(reference)
+	start := strings.LastIndex(reference, "(")
+	end := strings.LastIndex(reference, ")")
+	if start >= 0 && end > start {
+		inside := strings.TrimSpace(reference[start+1 : end])
+		if strings.Contains(inside, "@") {
+			return inside
+		}
+	}
+	return reference
+}
+
+func resolveEmpresaUsuarioIDByReferenceSilent(dbConn *sql.DB, empresaID, currentID int64, reference string) int64 {
+	if currentID > 0 {
+		return currentID
+	}
+	item, err := ResolveEmpresaUsuarioByReference(dbConn, empresaID, reference)
+	if err != nil || item == nil || item.EmpresaID != empresaID {
+		return 0
+	}
+	return item.ID
+}
+
 // GetEmpresaUsuarioByEmailScoped obtiene un usuario por correo con alcance opcional por empresa.
 func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int64) (*EmpresaUsuario, error) {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
@@ -433,6 +528,93 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		return nil, err
 	}
 	return &item, nil
+}
+
+// GetEmpresaUsuariosByEmail lista todas las cuentas asociadas a un correo sin asumir empresa.
+func GetEmpresaUsuariosByEmail(dbConn *sql.DB, email string) ([]EmpresaUsuario, error) {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := ExecQueryCompat(dbConn, `SELECT
+		id,
+		empresa_id,
+		email,
+		COALESCE(name, ''),
+		COALESCE(documento_identidad, ''),
+		COALESCE(password_hash, ''),
+		COALESCE(password_salt, ''),
+		COALESCE(password_set, 0),
+		COALESCE(password_actualizada_en, ''),
+		COALESCE(login_failed_attempts, 0),
+		COALESCE(login_failed_last_at, ''),
+		COALESCE(login_locked_until, ''),
+		COALESCE(password_reset_token, ''),
+		COALESCE(password_reset_expira, ''),
+		COALESCE(password_reset_requested_en, ''),
+		COALESCE(rol_usuario_id, 0),
+		COALESCE(role, ''),
+		COALESCE(email_confirmado, 0),
+		COALESCE(email_confirm_token, ''),
+		COALESCE(email_confirm_expira, ''),
+		COALESCE(email_confirmado_en, ''),
+		COALESCE(acepta_contrato, 0),
+		COALESCE(contrato_version_aceptada, 0),
+		COALESCE(fecha_acepta_contrato, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM users
+	WHERE lower(email) = lower(?)
+	ORDER BY empresa_id ASC, id DESC`, strings.TrimSpace(email))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaUsuario, 0)
+	for rows.Next() {
+		var item EmpresaUsuario
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Email,
+			&item.Nombre,
+			&item.DocumentoIdentidad,
+			&item.PasswordHash,
+			&item.PasswordSalt,
+			&item.PasswordSet,
+			&item.PasswordActualizadaEn,
+			&item.LoginFailedAttempts,
+			&item.LoginFailedLastAt,
+			&item.LoginLockedUntil,
+			&item.PasswordResetToken,
+			&item.PasswordResetExpira,
+			&item.PasswordResetRequestedEn,
+			&item.RolUsuarioID,
+			&item.RolNombre,
+			&item.EmailConfirmado,
+			&item.EmailConfirmToken,
+			&item.EmailConfirmExpira,
+			&item.EmailConfirmadoEn,
+			&item.AceptaContrato,
+			&item.ContratoVersionAceptada,
+			&item.FechaAceptaContrato,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // GetEmpresaUsuarioByEmail obtiene un usuario por correo (case-insensitive).

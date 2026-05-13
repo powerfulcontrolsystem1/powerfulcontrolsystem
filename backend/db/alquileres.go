@@ -821,7 +821,7 @@ func createOrSyncAlquilerContratoCarrito(dbConn *sql.DB, contrato EmpresaAlquile
 	if err == nil && carritoExistente > 0 {
 		_ = QueryRowCompat(dbConn, `SELECT id FROM carrito_compra_items WHERE empresa_id=? AND carrito_id=? AND referencia_id=? AND tipo_item='servicio' LIMIT 1`, contrato.EmpresaID, carritoExistente, servicioID).Scan(&itemExistente)
 		if marcarPagado && strings.TrimSpace(pagadoEn) == "" {
-			_ = PayCarritoStationSession(dbConn, contrato.EmpresaID, carritoExistente, "transferencia_bancaria", contrato.Codigo, "", "", 0, 0, contrato.Total, 0, strings.TrimSpace(usuario))
+			_ = PayCarritoStationSession(dbConn, contrato.EmpresaID, carritoExistente, "transferencia_bancaria", contrato.Codigo, "", "", 0, 0, contrato.Total, 0, 0, "", "", 0, strings.TrimSpace(usuario))
 		}
 		return carritoExistente, itemExistente, clienteID, servicioID, nil
 	}
@@ -868,7 +868,7 @@ func createOrSyncAlquilerContratoCarrito(dbConn *sql.DB, contrato EmpresaAlquile
 		return 0, 0, 0, 0, err
 	}
 	if marcarPagado {
-		if err := PayCarritoStationSession(dbConn, contrato.EmpresaID, carritoID, "transferencia_bancaria", contrato.Codigo, "", "", 0, 0, contrato.Total, 0, strings.TrimSpace(usuario)); err != nil {
+		if err := PayCarritoStationSession(dbConn, contrato.EmpresaID, carritoID, "transferencia_bancaria", contrato.Codigo, "", "", 0, 0, contrato.Total, 0, 0, "", "", 0, strings.TrimSpace(usuario)); err != nil {
 			return 0, 0, 0, 0, err
 		}
 	}

@@ -6,6 +6,7 @@ Ultima actualizacion: 2026-05-12
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
 - `documentos/estructura_bd.md` es la fuente canonica del esquema fisico.
+- `documentos/diagramas/diagrama_entidad_relacion.md` y `documentos/diagramas/diagrama_entidad_relacion.svg` resumen visualmente el DER vigente, pero no sustituyen el detalle completo de este documento.
 Bases operativas PostgreSQL en VPS:
 - `pcs_empresas`
 - `pcs_superadministrador`
@@ -20,6 +21,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-05-12 (tickets de ayuda empresariales profesionalizados)
+- `pcs_superadministrador.super_tickets_ayuda` agrega `contacto_telefono`, `contacto_preferido` y `contexto_json` para soporte profesional. El contexto se limita a claves tecnicas seguras de pantalla/modulo/navegador y no guarda cookies, localStorage, claves ni secretos.
+- `pcs_superadministrador.super_ticket_ayuda_mensajes` conserva `interno` para notas privadas del super administrador; las consultas empresariales no devuelven mensajes internos.
+- Aislamiento: todo detalle o comentario empresarial se valida por `empresa_id`; la vista global queda exclusiva del super administrador.
 
 Actualizacion 2026-05-12 (tickets de ayuda SaaS)
 - Se agregan tablas en `pcs_superadministrador` para la mesa central de soporte:
@@ -304,6 +310,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - password_hash, password_salt, password_set, password_actualizada_en
   - login_failed_attempts, login_failed_last_at, login_locked_until
   - password_reset_token, password_reset_expira, password_reset_requested_en
+  - El login operativo global consulta por `lower(email)` sin `empresa_id` visible y luego resuelve la cuenta concreta con clave o token; las sesiones siguen quedando aisladas por `empresa_id`.
 - empresas:
   - nombre, nit, tipo_id, tipo_nombre
 
@@ -519,7 +526,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - porcentaje_impuesto_propina
 - empresa_propinas_movimientos:
   - empresa_id, carrito_id, cierre_caja_id, venta_referencia
-  - usuario_origen, usuario_asignado
+  - usuario_origen, usuario_origen_id, usuario_asignado, usuario_asignado_id
+  - `usuario_origen_id` y `usuario_asignado_id` enlazan con `users.id` dentro de la misma empresa; el texto se conserva como etiqueta historica.
   - modo_distribucion, origen_movimiento (`venta`/`ajuste_manual`)
   - ajuste_manual (0/1), referencia_ajuste
   - moneda
@@ -542,7 +550,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_comisiones_servicio_movimientos:
   - empresa_id, carrito_id, carrito_item_id
   - servicio_id, servicio_codigo, servicio_nombre, servicio_categoria
-  - usuario_origen, usuario_lavador, rol_operacion, escala_id
+  - usuario_origen, usuario_origen_id, usuario_lavador, usuario_lavador_id, rol_operacion, escala_id
+  - `usuario_origen_id` y `usuario_lavador_id` enlazan con `users.id` dentro de la misma empresa; el texto se conserva como etiqueta historica.
   - venta_referencia, moneda
   - base_servicio, porcentaje_comision, monto_comision_bruto, tope_comision_aplicado, monto_comision
   - origen_movimiento (`venta`/`ajuste_manual`)
@@ -1310,6 +1319,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - servicios.id -> empresa_comisiones_servicio_movimientos.servicio_id
 - empresa_comisiones_servicio_escalas.id -> empresa_comisiones_servicio_movimientos.escala_id
 - empresa_nomina_liquidaciones.id -> empresa_comisiones_servicio_movimientos.liquidacion_nomina_id
+- users.id -> empresa_propinas_movimientos.usuario_origen_id, empresa_propinas_movimientos.usuario_asignado_id
+- users.id -> empresa_comisiones_servicio_movimientos.usuario_origen_id, empresa_comisiones_servicio_movimientos.usuario_lavador_id
 - codigos_de_descuento.id -> codigos_descuento_redenciones.codigo_descuento_id
 - clientes.id -> codigos_descuento_redenciones.cliente_id
 - chat_tareas_conversaciones.id -> chat_tareas_participantes.conversacion_id, chat_tareas_mensajes.conversacion_id, chat_tareas.conversacion_id
@@ -1319,9 +1330,14 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - roles_de_usuario.id -> roles_de_usuario_permisos.rol_id
 - roles_de_usuario.id -> roles_de_usuario_paginas_permisos.rol_id
 - empresas.id -> super_correo_notificaciones_prueba.empresa_id (trazabilidad de notificaciones en modo pruebas)
+- empresas.id -> super_correos_masivos_destinatarios.empresa_id (trazabilidad de destinatarios usuario_empresa en comunicados globales)
+- super_correos_masivos.id -> super_correos_masivos_destinatarios.correo_masivo_id
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
+- 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.
+- 2026-05-13: se agrega `licencia_vencimiento_notificaciones` en `pcs_superadministrador` para registrar avisos de vencimiento enviados/capturados por licencia base o adicional, empresa, correo administrador, fecha de vencimiento y umbral de dias. La configuracion global vive en `configuraciones` con claves `licencias.vencimiento_alertas.*`.
 - 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar relés GPIO en Raspberry Pi por estacion/habitacion. La configuracion guarda conexion HTTP por empresa; los relés asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
 - 2026-04-08: se agrega `super_servidor_eventos` en `pcs_superadministrador` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
 - 2026-04-08: se amplía `licencias` en `pcs_superadministrador` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
@@ -1338,6 +1354,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-06: se amplía `empresa_compras_documentos` para cierre del modulo 16 de compras con aprobacion multinivel (`requiere_aprobacion`, `niveles_aprobacion_requeridos`, `nivel_aprobacion_actual`, `aprobadores_json`), recepcion parcial por item (`recepcion_detalle_json`, `recepcion_resumen_json`) y validacion documental proveedor-factura-entrada (`validacion_documental_estado`, `proveedor_documento_ref`, `factura_documento_ref`, `entrada_documento_ref`).
 - 2026-04-06: se amplía comisiones por servicio con tabla de escalas/topes (`empresa_comisiones_servicio_escalas`), flujo de ajustes manuales con aprobacion (`ajuste_estado`, `aprobado_por`, `aprobado_en`) y enlace a nomina (`liquidacion_nomina_id`, `periodo_liquidacion_*`, `liquidado_*`); `empresa_nomina_liquidaciones` incorpora `comisiones_servicio_total`, `comisiones_servicio_movimientos` y `comisiones_servicio_ajustes`.
 - 2026-04-06: se amplía el modulo de propinas con reglas fiscales por empresa (`pais_fiscal`, `regimen_fiscal`, `tratamiento_fiscal`, `porcentaje_impuesto_propina`), ajustes manuales auditados (`origen_movimiento`, `ajuste_manual`, `referencia_ajuste`) y conciliacion por `cierre_caja_id`; `empresa_cierres_caja` incorpora resumen persistido de propinas conciliadas (`propinas_*`).
+- 2026-05-13: propinas y comisiones por servicio agregan vinculo duro a usuarios creados (`users.id`) mediante `usuario_origen_id`, `usuario_asignado_id` y `usuario_lavador_id`, manteniendo las etiquetas texto para compatibilidad historica.
 - 2026-04-06: se amplía `codigos_de_descuento` con reglas avanzadas por contexto (segmento/canal/horario/dias) y controles antifraude por cliente (`max_usos_por_cliente`, `ventana_horas_fraude`); se agrega `codigos_descuento_redenciones` para trazabilidad de estados `aplicada/revertida/anulada` por carrito/cliente.
 - 2026-04-06: se agregan `empresa_inventario_configuracion`, `inventario_costos_lotes` e `inventario_conteos_ciclicos` para cierre del modulo 11 de inventario (politica promedio/peps por empresa, trazabilidad por lotes de costo y conteo ciclico con ajuste auditado).
 - 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.

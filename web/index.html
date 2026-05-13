@@ -171,19 +171,102 @@
     .portal-cards-carousel {
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: minmax(280px, calc((100% - 60px) / 3));
-      gap: 30px;
+      grid-auto-columns: clamp(210px, 22vw, 250px);
+      align-items: start;
+      gap: 18px;
       overflow-x: auto;
       overscroll-behavior-inline: contain;
       scroll-snap-type: inline mandatory;
       scroll-behavior: smooth;
-      padding: 4px 2px 14px;
+      padding: 8px 2px 16px;
       scrollbar-width: thin;
     }
 
     .portal-cards-carousel .home-offer-card {
       scroll-snap-align: start;
       min-width: 0;
+    }
+
+    .portal-cards-carousel .portal-carousel-card {
+      border-radius: 14px;
+      border-color: color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+      box-shadow: 0 14px 34px color-mix(in srgb, #020617 12%, transparent);
+    }
+
+    .portal-cards-carousel .portal-carousel-card:not(.home-offer-card-banner) {
+      aspect-ratio: 5 / 6;
+      min-height: 0 !important;
+      height: auto;
+      padding: 15px 14px !important;
+      overflow: hidden;
+    }
+
+    .portal-cards-carousel .portal-carousel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 18px 38px color-mix(in srgb, #020617 18%, transparent);
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-head {
+      min-height: 42px;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-head .card-logo {
+      width: 30px !important;
+      height: 30px !important;
+      min-width: 30px !important;
+      min-height: 30px !important;
+      flex-basis: 30px !important;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-title {
+      font-size: clamp(.92rem, 1.15vw, 1.04rem) !important;
+      line-height: 1.16;
+      max-height: calc(1.16em * 2);
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-figure {
+      height: clamp(82px, 8vw, 106px);
+      margin-bottom: 10px;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-body {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .portal-cards-carousel .home-offer-body {
+      overflow: hidden;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-body p {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+      font-size: .84rem;
+      line-height: 1.34;
+      text-align: left;
+      margin-bottom: 10px;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .card-actions {
+      margin-top: 6px !important;
+    }
+
+    .portal-cards-carousel .portal-carousel-card .home-offer-btn {
+      min-height: 36px;
+      padding: 8px 10px;
+      font-size: .86rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .portal-cards-carousel .home-offer-card-banner {
+      aspect-ratio: 5 / 6;
+      min-height: 0;
     }
 
     .portal-cards-carousel .home-offer-card:nth-child(6n+1){--home-offer-a:#ff7b54;--home-offer-b:#ff4d8d}
@@ -195,7 +278,8 @@
 
     @media (max-width: 920px) {
       .portal-cards-carousel {
-        grid-auto-columns: minmax(280px, calc((100% - 30px) / 2));
+        grid-auto-columns: clamp(210px, 42vw, 250px);
+        gap: 16px;
       }
     }
 
@@ -855,8 +939,34 @@
       }
 
       .portal-cards-carousel {
-        grid-auto-columns: minmax(0, 100%);
-        gap: 18px;
+        grid-auto-columns: clamp(205px, 74vw, 260px);
+        gap: 14px;
+        padding-bottom: 14px;
+      }
+
+      .portal-cards-carousel .portal-carousel-card:not(.home-offer-card-banner) {
+        aspect-ratio: 5 / 6;
+        height: auto;
+        min-height: 0 !important;
+        padding: 14px 12px !important;
+      }
+
+      .portal-cards-carousel .portal-carousel-card .home-offer-figure {
+        height: 86px;
+        margin-bottom: 9px;
+      }
+
+      .portal-cards-carousel .portal-carousel-card .home-offer-body p {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        font-size: .82rem;
+        line-height: 1.32;
+      }
+
+      .portal-cards-carousel .portal-carousel-card .home-offer-btn {
+        min-height: 34px;
+        font-size: .82rem;
       }
 
       .home-offer-card {
@@ -1589,6 +1699,32 @@
         window.setTimeout(updateCarouselButtons, 260);
       }
 
+      var carouselAutoScrollTimer = null;
+      var carouselAutoDirection = 1;
+
+      function stopCarouselAutoScroll() {
+        if (carouselAutoScrollTimer) {
+          window.clearInterval(carouselAutoScrollTimer);
+          carouselAutoScrollTimer = null;
+        }
+      }
+
+      function startCarouselAutoScroll() {
+        if (!carouselEl || carouselAutoScrollTimer || window.matchMedia('(hover: none)').matches) return;
+        carouselAutoScrollTimer = window.setInterval(function () {
+          if (!carouselEl) return;
+          var maxScroll = Math.max(0, carouselEl.scrollWidth - carouselEl.clientWidth - 2);
+          if (maxScroll <= 4) return;
+          if (carouselAutoDirection > 0 && carouselEl.scrollLeft >= maxScroll - 2) {
+            carouselAutoDirection = -1;
+          } else if (carouselAutoDirection < 0 && carouselEl.scrollLeft <= 2) {
+            carouselAutoDirection = 1;
+          }
+          carouselEl.scrollBy({ left: Math.max(120, Math.round(getCarouselStep() * 0.55)) * carouselAutoDirection, behavior: 'smooth' });
+          window.requestAnimationFrame(updateCarouselButtons);
+        }, 1150);
+      }
+
       var __homeOfferTitleFitScheduled = false;
       function scheduleFitHomeOfferTitles() {
         if (__homeOfferTitleFitScheduled) return;
@@ -1893,6 +2029,15 @@
         carouselEl.addEventListener('scroll', function () {
           window.requestAnimationFrame(updateCarouselButtons);
         }, { passive: true });
+        carouselEl.addEventListener('mouseenter', function () {
+          startCarouselAutoScroll();
+        });
+        carouselEl.addEventListener('mouseleave', function () {
+          stopCarouselAutoScroll();
+        });
+        carouselEl.addEventListener('touchstart', function () {
+          stopCarouselAutoScroll();
+        }, { passive: true });
       }
 
       loadCards();
@@ -1900,6 +2045,7 @@
       // Reajustar títulos si cambia el ancho (móvil/desktop)
       try {
         window.addEventListener('resize', function () {
+          stopCarouselAutoScroll();
           scheduleFitHomeOfferTitles();
           updateCarouselButtons();
         });

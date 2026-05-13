@@ -807,7 +807,7 @@ func createTaxiRequestCarrito(dbConn *sql.DB, req EmpresaTaxiRequest, usuario st
 	if err != nil {
 		return 0, 0, 0, 0, err
 	}
-	if err := PayCarritoStationSession(dbConn, req.EmpresaID, carritoID, metodo, req.CodigoServicio, "", "", 0, 0, req.TarifaEstimada, 0, strings.TrimSpace(usuario)); err != nil {
+	if err := PayCarritoStationSession(dbConn, req.EmpresaID, carritoID, metodo, req.CodigoServicio, "", "", 0, 0, req.TarifaEstimada, 0, 0, "", "", 0, strings.TrimSpace(usuario)); err != nil {
 		return 0, 0, 0, 0, err
 	}
 	return carritoID, itemID, clienteID, servicioID, nil

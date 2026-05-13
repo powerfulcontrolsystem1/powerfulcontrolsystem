@@ -225,7 +225,8 @@
         </div>
         <div class="form-col" style="max-width:240px;">
           <label class="form-label" for="ajUsuario">Usuario asignado</label>
-          <input id="ajUsuario" class="form-input" type="text" maxlength="180" placeholder="usuario@empresa.com">
+          <input id="ajUsuario" class="form-input" type="text" maxlength="180" placeholder="usuario@empresa.com" list="usuariosEmpresaList">
+          <datalist id="usuariosEmpresaList"></datalist>
         </div>
         <div class="form-col" style="max-width:220px;">
           <label class="form-label" for="ajModo">Modo de distribución</label>
@@ -331,6 +332,7 @@
       }
 
       var empresaID = Number(getQueryParam('empresa_id') || 0);
+      var usuariosEmpresa = [];
       if (!empresaID) {
         setMessage('cfgMsg', 'empresa_id es obligatorio en la URL', true);
         setMessage('reporteMsg', 'empresa_id es obligatorio en la URL', true);
@@ -464,8 +466,10 @@
         }
 
         body.innerHTML = rows.map(function (item) {
+          var usuario = item.usuario_etiqueta || item.usuario_clave || '-';
+          if (item.usuario_id) usuario += ' #' + String(item.usuario_id);
           return '<tr>' +
-            '<td>' + escapeHtml(item.usuario_etiqueta || item.usuario_clave || '-') + '</td>' +
+            '<td>' + escapeHtml(usuario) + '</td>' +
             '<td>' + (item.es_usuario_activo ? 'si' : 'no') + '</td>' +
             '<td>' + money(item.propina_por_usuario) + '</td>' +
             '<td>' + money(item.propina_universal) + '</td>' +
@@ -492,8 +496,8 @@
             '<td>' + (item.es_ajuste_manual ? 'si' : 'no') + '</td>' +
             '<td>' + escapeHtml(item.cierre_caja_id || '-') + '</td>' +
             '<td>' + escapeHtml(item.modo_distribucion || '-') + '</td>' +
-            '<td>' + escapeHtml(item.usuario_origen || '-') + '</td>' +
-            '<td>' + escapeHtml(item.usuario_asignado || '-') + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_origen, item.usuario_origen_id)) + '</td>' +
+            '<td>' + escapeHtml(formatUsuarioMovimiento(item.usuario_asignado, item.usuario_asignado_id)) + '</td>' +
             '<td>' + money(item.base_cobro) + '</td>' +
             '<td>' + money(item.porcentaje_propina) + '</td>' +
             '<td>' + money(item.fiscal_monto_impuesto) + '</td>' +
@@ -501,6 +505,47 @@
             '<td>' + money(item.fiscal_total_propina) + '</td>' +
             '</tr>';
         }).join('');
+      }
+
+      function formatUsuarioMovimiento(nombre, id) {
+        var label = normalize(nombre) || '-';
+        if (id) label += ' #' + String(id);
+        return label;
+      }
+
+      function usuarioIDPorEntrada(value) {
+        var v = normalize(value).toLowerCase();
+        if (!v) return 0;
+        for (var i = 0; i < usuariosEmpresa.length; i++) {
+          var u = usuariosEmpresa[i] || {};
+          var id = parseOptionalInt(u.id);
+          var email = normalize(u.email).toLowerCase();
+          var nombre = normalize(u.nombre || u.name).toLowerCase();
+          var label = normalize(u.nombre || u.name || u.email);
+          var option = normalize(label + (u.email ? ' (' + u.email + ')' : '')).toLowerCase();
+          if (v === String(id) || v === email || v === nombre || v === option) return id;
+        }
+        return 0;
+      }
+
+      function loadUsuariosEmpresa() {
+        return fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(empresaID))
+          .then(ensureOk)
+          .then(function (res) { return res.json(); })
+          .then(function (rows) {
+            usuariosEmpresa = Array.isArray(rows) ? rows : [];
+            var list = document.getElementById('usuariosEmpresaList');
+            if (!list) return;
+            list.innerHTML = usuariosEmpresa.map(function (u) {
+              var label = normalize(u.nombre || u.name || u.email);
+              var email = normalize(u.email);
+              var value = label + (email && email !== label ? ' (' + email + ')' : '');
+              return '<option value="' + escapeHtml(value) + '"></option>';
+            }).join('');
+          })
+          .catch(function () {
+            usuariosEmpresa = [];
+          });
       }
 
       function parseOptionalInt(value) {
@@ -523,6 +568,7 @@
           cierre_caja_id: parseOptionalInt(document.getElementById('ajCierreCajaId').value),
           venta_referencia: normalize(document.getElementById('ajVentaRef').value),
           usuario_asignado: normalize(document.getElementById('ajUsuario').value),
+          usuario_asignado_id: usuarioIDPorEntrada(document.getElementById('ajUsuario').value),
           modo_distribucion: normalize(document.getElementById('ajModo').value) || 'por_usuario',
           monto_ajuste: parseOptionalDecimal(document.getElementById('ajMonto').value),
           motivo: normalize(document.getElementById('ajMotivo').value),
@@ -613,7 +659,7 @@
       document.getElementById('btnRegistrarAjuste').addEventListener('click', registrarAjusteManual);
       document.getElementById('btnConciliarCierre').addEventListener('click', conciliarCierre);
 
-      fetchConfig()
+      Promise.all([loadUsuariosEmpresa(), fetchConfig()])
         .then(loadReport)
         .catch(function (err) {
           setMessage('cfgMsg', err.message || 'No se pudo cargar la configuracion de propinas.', true);

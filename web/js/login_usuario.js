@@ -95,7 +95,7 @@
     }
     if (!empresaContextHint) return;
     if (state.empresaID > 0) {
-      empresaContextHint.textContent = "Empresa detectada desde la invitación. También puedes entrar solo con tu correo único.";
+      empresaContextHint.textContent = "Referencia de empresa detectada desde un enlace anterior. Tambien puedes entrar solo con tu correo y clave.";
     } else {
       empresaContextHint.textContent = "El sistema abrirá automáticamente la empresa asociada a tu correo y cargará tus roles asignados.";
     }

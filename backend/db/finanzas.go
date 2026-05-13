@@ -48,6 +48,10 @@ type EmpresaFinanzasMovimiento struct {
 	NumeroComprobante  string  `json:"numero_comprobante"`
 	ComprobanteURL     string  `json:"comprobante_url"`
 	ReferenciaExterna  string  `json:"referencia_externa"`
+	CierreCajaID       int64   `json:"cierre_caja_id,omitempty"`
+	CajaCodigo         string  `json:"caja_codigo,omitempty"`
+	CajaTurno          string  `json:"caja_turno,omitempty"`
+	CajaSucursalID     int64   `json:"caja_sucursal_id,omitempty"`
 	AprobadoPor        string  `json:"aprobado_por"`
 	FechaCreacion      string  `json:"fecha_creacion"`
 	FechaActualizacion string  `json:"fecha_actualizacion"`
@@ -63,6 +67,8 @@ type EmpresaFinanzasMovimientoFilter struct {
 	Hasta           string
 	Periodo         string
 	Q               string
+	CierreCajaID    int64
+	CajaCodigo      string
 	IncludeInactive bool
 	Limit           int
 }
@@ -208,6 +214,10 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			numero_comprobante TEXT,
 			comprobante_url TEXT,
 			referencia_externa TEXT,
+			cierre_caja_id INTEGER DEFAULT 0,
+			caja_codigo TEXT,
+			caja_turno TEXT,
+			caja_sucursal_id INTEGER DEFAULT 0,
 			aprobado_por TEXT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -379,6 +389,18 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "total_neto", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "cierre_caja_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "caja_turno", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_movimientos", "caja_sucursal_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 
@@ -624,6 +646,8 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	// para mantener compatibilidad con bases existentes.
 	postMigrationIndexes := []string{
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_empresa_periodo ON empresa_finanzas_movimientos(empresa_id, periodo_contable, estado);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_cierre_caja ON empresa_finanzas_movimientos(empresa_id, cierre_caja_id, fecha_movimiento DESC);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_movimientos_caja_codigo ON empresa_finanzas_movimientos(empresa_id, caja_codigo, caja_turno, fecha_movimiento DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_periodos_empresa_estado ON empresa_finanzas_periodos(empresa_id, estado, periodo DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_empresa_sucursal ON empresa_cierres_caja(empresa_id, sucursal_id, caja_codigo, fecha_operacion DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_finanzas_bancos_movimientos_empresa_hash ON empresa_finanzas_bancos_movimientos(empresa_id, hash_movimiento);`,
@@ -877,7 +901,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		total, total_neto,
 		tercero_nombre, tercero_documento,
 		tipo_comprobante, numero_comprobante, comprobante_url,
-		referencia_externa, aprobado_por,
+		referencia_externa, cierre_caja_id, caja_codigo, caja_turno, caja_sucursal_id, aprobado_por,
 		usuario_creador, estado, observaciones,
 		fecha_creacion, fecha_actualizacion
 	) VALUES (
@@ -889,7 +913,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		?, ?,
 		?, ?,
 		?, ?, ?,
-		?, ?,
+		?, ?, ?, ?, ?, ?,
 		?, ?, ?,
 		datetime('now','localtime'), datetime('now','localtime')
 	)`,
@@ -901,7 +925,7 @@ func CreateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		m.Total, m.TotalNeto,
 		m.TerceroNombre, m.TerceroDocumento,
 		m.TipoComprobante, m.NumeroComprobante, m.ComprobanteURL,
-		m.ReferenciaExterna, m.AprobadoPor,
+		m.ReferenciaExterna, m.CierreCajaID, m.CajaCodigo, m.CajaTurno, m.CajaSucursalID, m.AprobadoPor,
 		m.UsuarioCreador, m.Estado, m.Observaciones,
 	)
 	if err != nil {
@@ -921,7 +945,8 @@ func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFi
 		COALESCE(total, 0), COALESCE(total_neto, 0),
 		COALESCE(tercero_nombre, ''), COALESCE(tercero_documento, ''),
 		COALESCE(tipo_comprobante, 'recibo_interno'), COALESCE(numero_comprobante, ''), COALESCE(comprobante_url, ''),
-		COALESCE(referencia_externa, ''), COALESCE(aprobado_por, ''),
+		COALESCE(referencia_externa, ''), COALESCE(cierre_caja_id, 0), COALESCE(caja_codigo, ''),
+		COALESCE(caja_turno, ''), COALESCE(caja_sucursal_id, 0), COALESCE(aprobado_por, ''),
 		COALESCE(fecha_creacion, ''), COALESCE(fecha_actualizacion, ''), COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'), COALESCE(observaciones, '')
 	FROM empresa_finanzas_movimientos
@@ -947,6 +972,14 @@ func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFi
 	if p := normalizePeriodoContable(f.Periodo); p != "" {
 		query += ` AND COALESCE(periodo_contable, '') = ?`
 		args = append(args, p)
+	}
+	if f.CierreCajaID > 0 {
+		query += ` AND COALESCE(cierre_caja_id, 0) = ?`
+		args = append(args, f.CierreCajaID)
+	}
+	if caja := sanitizeCajaCodigo(f.CajaCodigo); caja != "" {
+		query += ` AND UPPER(COALESCE(caja_codigo, '')) = ?`
+		args = append(args, caja)
 	}
 	if q := strings.TrimSpace(strings.ToLower(f.Q)); q != "" {
 		like := "%" + q + "%"
@@ -1004,6 +1037,10 @@ func ListEmpresaFinanzasMovimientos(dbConn *sql.DB, empresaID int64, f EmpresaFi
 			&m.NumeroComprobante,
 			&m.ComprobanteURL,
 			&m.ReferenciaExterna,
+			&m.CierreCajaID,
+			&m.CajaCodigo,
+			&m.CajaTurno,
+			&m.CajaSucursalID,
 			&m.AprobadoPor,
 			&m.FechaCreacion,
 			&m.FechaActualizacion,
@@ -1052,6 +1089,10 @@ func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		numero_comprobante = ?,
 		comprobante_url = ?,
 		referencia_externa = ?,
+		cierre_caja_id = ?,
+		caja_codigo = ?,
+		caja_turno = ?,
+		caja_sucursal_id = ?,
 		aprobado_por = ?,
 		observaciones = ?,
 		estado = ?,
@@ -1081,6 +1122,10 @@ func UpdateEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimiento
 		m.NumeroComprobante,
 		m.ComprobanteURL,
 		m.ReferenciaExterna,
+		m.CierreCajaID,
+		m.CajaCodigo,
+		m.CajaTurno,
+		m.CajaSucursalID,
 		m.AprobadoPor,
 		m.Observaciones,
 		m.Estado,
@@ -1410,6 +1455,35 @@ func CreateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) (int64, e
 	return id, nil
 }
 
+func CountEmpresaCierresCajaAbiertos(dbConn *sql.DB, empresaID int64) (int, error) {
+	return CountEmpresaCierresCajaAbiertosExcepto(dbConn, empresaID, 0)
+}
+
+func CountEmpresaCierresCajaAbiertosExcepto(dbConn *sql.DB, empresaID int64, excludeID int64) (int, error) {
+	if dbConn == nil || empresaID <= 0 {
+		return 0, nil
+	}
+	var total int
+	query := `SELECT COUNT(*)
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ?
+	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
+	args := []interface{}{empresaID}
+	if excludeID > 0 {
+		query += ` AND id <> ?`
+		args = append(args, excludeID)
+	}
+	err := dbConn.QueryRow(query, args...).Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	if total < 0 {
+		total = 0
+	}
+	return total, nil
+}
+
 func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCajaFilter) ([]EmpresaCierreCaja, error) {
 	query := `SELECT
 		id,
@@ -1534,6 +1608,184 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 		items = append(items, item)
 	}
 	return items, rows.Err()
+}
+
+// GetEmpresaCierreCajaAbierta resuelve una caja abierta activa para registrar operaciones simultaneas.
+func GetEmpresaCierreCajaAbierta(dbConn *sql.DB, empresaID, cierreCajaID int64, cajaCodigo, turno string, sucursalID int64) (*EmpresaCierreCaja, error) {
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id es obligatorio")
+	}
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(sucursal_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(turno, 'general'),
+		COALESCE(fecha_operacion, ''),
+		COALESCE(fecha_apertura, ''),
+		COALESCE(fecha_cierre, ''),
+		COALESCE(estado_cierre, 'abierto'),
+		COALESCE(apertura_monto, 0),
+		COALESCE(ingresos_efectivo, 0),
+		COALESCE(egresos_efectivo, 0),
+		COALESCE(retiros_efectivo, 0),
+		COALESCE(caja_teorica, 0),
+		COALESCE(caja_fisica, 0),
+		COALESCE(diferencia_caja, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(cerrado_por, ''),
+		COALESCE(aprobado_por, ''),
+		COALESCE(aprobado_en, ''),
+		COALESCE(tiene_incidencia, 0),
+		COALESCE(umbral_incidencia, 0),
+		COALESCE(propinas_movimientos, 0),
+		COALESCE(propinas_total, 0),
+		COALESCE(propinas_ajustes, 0),
+		COALESCE(propinas_impuesto, 0),
+		COALESCE(propinas_neto, 0),
+		COALESCE(propinas_conciliado_en, ''),
+		COALESCE(propinas_conciliado_por, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ?
+	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
+	args := []interface{}{empresaID}
+	if cierreCajaID > 0 {
+		query += ` AND id = ?`
+		args = append(args, cierreCajaID)
+	} else {
+		cajaCodigo = sanitizeCajaCodigo(cajaCodigo)
+		if cajaCodigo == "" {
+			return nil, fmt.Errorf("caja_codigo es obligatorio")
+		}
+		turno = strings.ToLower(strings.TrimSpace(turno))
+		if turno == "" {
+			turno = "general"
+		}
+		if sucursalID < 0 {
+			sucursalID = 0
+		}
+		query += ` AND UPPER(COALESCE(caja_codigo, '')) = ? AND LOWER(COALESCE(turno, 'general')) = ? AND COALESCE(sucursal_id, 0) = ?`
+		args = append(args, cajaCodigo, turno, sucursalID)
+	}
+	query += ` ORDER BY datetime(fecha_apertura) DESC, id DESC LIMIT 1`
+
+	var item EmpresaCierreCaja
+	var incidencia int
+	err := dbConn.QueryRow(query, args...).Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.SucursalID,
+		&item.CajaCodigo,
+		&item.Turno,
+		&item.FechaOperacion,
+		&item.FechaApertura,
+		&item.FechaCierre,
+		&item.EstadoCierre,
+		&item.AperturaMonto,
+		&item.IngresosEfectivo,
+		&item.EgresosEfectivo,
+		&item.RetirosEfectivo,
+		&item.CajaTeorica,
+		&item.CajaFisica,
+		&item.DiferenciaCaja,
+		&item.Moneda,
+		&item.CerradoPor,
+		&item.AprobadoPor,
+		&item.AprobadoEn,
+		&incidencia,
+		&item.UmbralIncidencia,
+		&item.PropinasMovimientos,
+		&item.PropinasTotal,
+		&item.PropinasAjustes,
+		&item.PropinasImpuesto,
+		&item.PropinasNeto,
+		&item.PropinasConciliadoEn,
+		&item.PropinasConciliadoPor,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	)
+	if err != nil {
+		return nil, err
+	}
+	item.TieneIncidencia = incidencia == 1
+	return &item, nil
+}
+
+// RegistrarIngresoEfectivoCierreCaja suma efectivo esperado en la caja abierta de forma atomica.
+func RegistrarIngresoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID int64, montoEfectivo float64) error {
+	if empresaID <= 0 || cierreCajaID <= 0 || montoEfectivo <= 0 {
+		return nil
+	}
+	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
+	SET ingresos_efectivo = COALESCE(ingresos_efectivo, 0) + ?,
+		caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0),
+		diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) + ? - COALESCE(egresos_efectivo, 0) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ?
+	  AND id = ?
+	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`,
+		roundReportesMoney(montoEfectivo),
+		roundReportesMoney(montoEfectivo),
+		roundReportesMoney(montoEfectivo),
+		empresaID,
+		cierreCajaID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+// RegistrarMovimientoEfectivoCierreCaja suma ingresos o egresos manuales a una caja abierta.
+func RegistrarMovimientoEfectivoCierreCaja(dbConn *sql.DB, empresaID, cierreCajaID int64, tipoMovimiento string, montoEfectivo float64) error {
+	if empresaID <= 0 || cierreCajaID <= 0 || montoEfectivo <= 0 {
+		return nil
+	}
+	tipoMovimiento = normalizeTipoMovimiento(tipoMovimiento)
+	if tipoMovimiento == "ingreso" {
+		return RegistrarIngresoEfectivoCierreCaja(dbConn, empresaID, cierreCajaID, montoEfectivo)
+	}
+	if tipoMovimiento != "egreso" {
+		return nil
+	}
+	monto := roundReportesMoney(montoEfectivo)
+	res, err := dbConn.Exec(`UPDATE empresa_cierres_caja
+	SET egresos_efectivo = COALESCE(egresos_efectivo, 0) + ?,
+		caja_teorica = COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) - (COALESCE(egresos_efectivo, 0) + ?) - COALESCE(retiros_efectivo, 0),
+		diferencia_caja = (COALESCE(apertura_monto, 0) + COALESCE(ingresos_efectivo, 0) - (COALESCE(egresos_efectivo, 0) + ?) - COALESCE(retiros_efectivo, 0)) - COALESCE(caja_fisica, 0),
+		fecha_actualizacion = datetime('now','localtime')
+	WHERE empresa_id = ?
+	  AND id = ?
+	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`,
+		monto,
+		monto,
+		monto,
+		empresaID,
+		cierreCajaID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func UpdateEmpresaCierreCaja(dbConn *sql.DB, cierre EmpresaCierreCaja) error {
@@ -1978,6 +2230,14 @@ func normalizeEmpresaFinanzasMovimiento(dbConn *sql.DB, m EmpresaFinanzasMovimie
 	}
 	m.ComprobanteURL = strings.TrimSpace(m.ComprobanteURL)
 	m.ReferenciaExterna = strings.TrimSpace(m.ReferenciaExterna)
+	if m.CierreCajaID < 0 {
+		m.CierreCajaID = 0
+	}
+	m.CajaCodigo = sanitizeCajaCodigo(m.CajaCodigo)
+	m.CajaTurno = strings.ToLower(strings.TrimSpace(m.CajaTurno))
+	if m.CajaSucursalID < 0 {
+		m.CajaSucursalID = 0
+	}
 	m.AprobadoPor = strings.TrimSpace(m.AprobadoPor)
 	m.UsuarioCreador = strings.TrimSpace(m.UsuarioCreador)
 	if m.UsuarioCreador == "" {

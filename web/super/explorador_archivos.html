@@ -4,16 +4,55 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Explorador de Archivos</title>
+  <script>
+    (function () {
+      var valid = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-neon": 1, light: 1, "light-rose": 1, "light-gold": 1, "light-wood": 1 };
+      function cookie(name) {
+        var match = String(document.cookie || "").match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+        return match ? decodeURIComponent(match.pop()) : "";
+      }
+      var theme = "";
+      try { theme = window.localStorage.getItem("theme") || ""; } catch (error) {}
+      theme = String(theme || cookie("pcs_theme") || "dark").trim().toLowerCase();
+      if (theme === "dark-protect") theme = "dark";
+      if (!valid[theme]) theme = "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.classList.toggle("theme-light", theme.indexOf("light") === 0);
+      document.documentElement.classList.toggle("theme-dark", theme.indexOf("light") !== 0);
+    })();
+  </script>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
-      color-scheme: light;
+      color-scheme: light dark;
+      --file-bg: var(--bg, #f5f7fb);
+      --file-panel: var(--surface, #ffffff);
+      --file-panel-soft: var(--surface-soft, #f8fafc);
+      --file-line: var(--border, #dbe3ef);
+      --file-text: var(--text, #172033);
+      --file-muted: var(--muted, #64748b);
+      --file-accent: var(--accent, #2563eb);
+      --file-accent-2: var(--accent-2, #0c8c8b);
+      --file-danger: var(--danger, #b91c1c);
+      --file-warning: var(--warning, #f59e0b);
+      --file-shadow: 0 12px 30px color-mix(in srgb, #020617 8%, transparent);
     }
 
-    body {
+    html[data-theme^="dark"],
+    html.theme-dark {
+      color-scheme: dark;
+      --file-panel: color-mix(in srgb, var(--surface, #16253a) 94%, #000 6%);
+      --file-panel-soft: color-mix(in srgb, var(--surface-soft, #1d2f48) 86%, #000 14%);
+      --file-line: color-mix(in srgb, var(--border, rgba(152,176,206,.28)) 82%, var(--text, #e8f0fb) 8%);
+      --file-shadow: 0 16px 34px rgba(0, 0, 0, .26);
+    }
+
+    body.super-page {
       margin: 0;
-      background: #f5f7fb;
-      color: #172033;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--file-accent) 7%, transparent), transparent 28rem),
+        linear-gradient(180deg, var(--file-bg), color-mix(in srgb, var(--file-bg) 90%, var(--file-panel) 10%));
+      color: var(--file-text);
       font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
@@ -44,11 +83,12 @@
       line-height: 1.2;
       font-weight: 800;
       letter-spacing: 0;
+      color: var(--file-text);
     }
 
     .file-explorer-title p {
       margin: 4px 0 0;
-      color: #64748b;
+      color: var(--file-muted);
       font-size: 13px;
     }
 
@@ -58,10 +98,10 @@
       gap: 8px;
       min-height: 34px;
       padding: 0 12px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--file-line);
       border-radius: 8px;
-      background: #ffffff;
-      color: #334155;
+      background: var(--file-panel);
+      color: var(--file-text);
       font-size: 13px;
       font-weight: 700;
       white-space: nowrap;
@@ -70,10 +110,10 @@
     .file-explorer-toolbar,
     .file-explorer-roots,
     .file-explorer-table-wrap {
-      border: 1px solid #dbe3ef;
+      border: 1px solid var(--file-line);
       border-radius: 8px;
-      background: #ffffff;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      background: var(--file-panel);
+      box-shadow: var(--file-shadow);
     }
 
     .file-explorer-toolbar {
@@ -87,10 +127,10 @@
     .file-explorer-toolbar button,
     .file-explorer-root-btn {
       min-height: 38px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--file-line);
       border-radius: 8px;
-      background: #f8fafc;
-      color: #172033;
+      background: var(--file-panel-soft);
+      color: var(--file-text);
       font-weight: 800;
       cursor: pointer;
     }
@@ -101,9 +141,9 @@
 
     .file-explorer-toolbar button:hover,
     .file-explorer-root-btn:hover {
-      border-color: #2563eb;
-      color: #1d4ed8;
-      background: #eff6ff;
+      border-color: color-mix(in srgb, var(--file-accent) 54%, var(--file-line));
+      color: color-mix(in srgb, var(--file-accent) 82%, var(--file-text));
+      background: color-mix(in srgb, var(--file-accent) 12%, var(--file-panel));
     }
 
     .file-explorer-toolbar button:disabled {
@@ -114,13 +154,19 @@
     .file-explorer-path {
       min-width: 0;
       height: 38px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--file-line);
       border-radius: 8px;
       padding: 0 12px;
       font: 13px/1.4 "Cascadia Mono", Consolas, monospace;
-      color: #0f172a;
-      background: #ffffff;
+      color: var(--file-text);
+      background: var(--input-bg, var(--file-panel));
       box-sizing: border-box;
+    }
+
+    .file-explorer-path:focus {
+      outline: 0;
+      border-color: color-mix(in srgb, var(--file-accent) 62%, var(--file-line));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--file-accent) 24%, transparent);
     }
 
     .file-explorer-roots {
@@ -138,12 +184,12 @@
 
     .file-explorer-status {
       min-height: 22px;
-      color: #475569;
+      color: var(--file-muted);
       font-size: 13px;
     }
 
     .file-explorer-status.is-error {
-      color: #b91c1c;
+      color: var(--file-danger);
       font-weight: 800;
     }
 
@@ -161,21 +207,26 @@
     .file-explorer-table th,
     .file-explorer-table td {
       padding: 10px 12px;
-      border-bottom: 1px solid #edf2f7;
+      border-bottom: 1px solid color-mix(in srgb, var(--file-line) 78%, transparent);
       text-align: left;
       vertical-align: middle;
       white-space: nowrap;
+      color: var(--file-text);
     }
 
     .file-explorer-table th {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #f8fafc;
-      color: #475569;
+      background: var(--file-panel-soft);
+      color: var(--file-muted);
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0;
+    }
+
+    .file-explorer-table tbody tr:hover {
+      background: color-mix(in srgb, var(--file-accent) 7%, transparent);
     }
 
     .file-explorer-name-btn {
@@ -185,7 +236,7 @@
       max-width: 380px;
       border: 0;
       background: transparent;
-      color: #172033;
+      color: var(--file-text);
       font: inherit;
       font-weight: 700;
       cursor: default;
@@ -194,7 +245,7 @@
     }
 
     .file-explorer-name-btn[data-dir="true"] {
-      color: #1d4ed8;
+      color: color-mix(in srgb, var(--file-accent) 84%, var(--file-text));
       cursor: pointer;
     }
 
@@ -207,21 +258,21 @@
       width: 18px;
       height: 18px;
       border-radius: 4px;
-      background: #94a3b8;
+      background: color-mix(in srgb, var(--file-muted) 78%, var(--file-panel));
       flex: 0 0 18px;
-      box-shadow: inset 0 -3px 0 rgba(15, 23, 42, 0.15);
+      box-shadow: inset 0 -3px 0 color-mix(in srgb, #020617 18%, transparent);
     }
 
     .file-explorer-icon.is-folder {
-      background: #f59e0b;
+      background: var(--file-warning);
     }
 
     .file-explorer-icon.is-link {
-      background: #8b5cf6;
+      background: color-mix(in srgb, var(--file-accent-2) 72%, var(--file-accent));
     }
 
     .file-explorer-muted {
-      color: #64748b;
+      color: var(--file-muted);
     }
 
     .file-explorer-path-cell {
@@ -229,7 +280,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       font-family: "Cascadia Mono", Consolas, monospace;
-      color: #475569;
+      color: var(--file-muted);
     }
 
     @media (max-width: 760px) {
@@ -253,7 +304,7 @@
     }
   </style>
 </head>
-<body>
+<body class="super-page">
   <main class="file-explorer-page">
     <section class="file-explorer-shell">
       <header class="file-explorer-header">

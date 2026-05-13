@@ -184,6 +184,63 @@
     return win;
   }
 
+  function buildSharePayload(options) {
+    options = options || {};
+    var title = text(options.title || options.documentTitle || global.document && global.document.title || 'Documento');
+    var code = text(options.code || options.documentCode || '').trim();
+    var total = text(options.total || '').trim();
+    var company = text(options.company || '').trim();
+    var url = text(options.url || '').trim();
+    if (!url) {
+      try {
+        url = global.location && global.location.href ? global.location.href : '';
+      } catch (e) {
+        url = '';
+      }
+    }
+    var parts = [title];
+    if (code) parts.push('Codigo: ' + code);
+    if (company) parts.push('Empresa: ' + company);
+    if (total) parts.push('Total: ' + total);
+    if (text(options.message).trim()) parts.push(text(options.message).trim());
+    if (url) parts.push('Enlace: ' + url);
+    return {
+      title: title,
+      text: parts.join('\n'),
+      url: url
+    };
+  }
+
+  function openShareChannel(channel, payload) {
+    var target = String(channel || '').toLowerCase();
+    var subject = encodeURIComponent(payload.title || 'Documento');
+    var body = encodeURIComponent(payload.text || payload.url || '');
+    var href = '';
+    if (target === 'whatsapp' || target === 'wa') {
+      href = 'https://wa.me/?text=' + body;
+    } else {
+      href = 'mailto:?subject=' + subject + '&body=' + body;
+    }
+    try {
+      global.open(href, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      try { global.location.href = href; } catch (_) {}
+    }
+  }
+
+  function shareDocument(options) {
+    options = options || {};
+    var channel = String(options.channel || '').toLowerCase();
+    var payload = buildSharePayload(options);
+    if (!channel && global.navigator && typeof global.navigator.share === 'function') {
+      return global.navigator.share(payload).catch(function() {
+        openShareChannel('email', payload);
+      });
+    }
+    openShareChannel(channel || 'email', payload);
+    return Promise.resolve();
+  }
+
   global.PCSPrint = {
     escapeHTML: escapeHTML,
     normalizeFormat: normalizeFormat,
@@ -191,6 +248,8 @@
     logosHTML: logosHTML,
     documentCSS: documentCSS,
     buildDocument: buildDocument,
-    openDocument: openDocument
+    openDocument: openDocument,
+    buildSharePayload: buildSharePayload,
+    shareDocument: shareDocument
   };
 })(window);

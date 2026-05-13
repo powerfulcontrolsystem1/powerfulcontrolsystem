@@ -1,3 +1,67 @@
+2026-05-13: Estacion Caja orientada a cierre de turno
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
+- Cambio funcional: la tarjeta especial `Caja` dentro de `web/administrar_empresa/estaciones.html` deja de abrir `carrito_de_compras.html` en modo venta directa.
+- Nuevo flujo operativo: al hacer clic en `Caja`, el usuario abre `web/administrar_empresa/corte_de_caja.html` con contexto de estaciones, regreso directo al tablero, auto-generacion del corte y foco en cierre de turno del cajero.
+- UX: la pantalla de corte muestra titulo contextual, boton `Cerrar turno`, enlace `Regresar a estaciones` y carga el `caja_codigo` configurado por empresa cuando existe.
+- Alcance: solo frontend y navegacion; no agrega tablas, permisos ni dependencias y mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Nucleo operativo, auditoria y compartido documental
+- Modulos afectados: `ventas`, `carritos`, `finanzas`, `facturacion`, `reportes`, `auditoria`, `backups`, `menu_flotante`.
+- Revision profesional: se valida el nucleo de ventas/documentos/ingresos/egresos con pruebas Go completas y parseo de scripts de las pantallas criticas tocadas.
+- Auditoria: el filtro empresarial y el contexto IA reconocen modulos recientes como carritos, venta publica, CRM, reportes, backups, OnlyOffice, tickets, mantenimiento, propinas, comisiones y verticales operativos.
+- Documentos: ventas, facturas electronicas, comprobantes de ingreso/egreso, reportes de inventario y menu flotante agregan opciones de compartir por WhatsApp o correo usando enlace/documento activo, sin exponer secretos ni crear dependencias.
+- Backups: se confirma el flujo automatico local existente: se programa en el navegador, descarga al dispositivo del usuario y no guarda archivos permanentes en el VPS.
+- Alcance: no agrega tablas, motores, dependencias externas ni permisos nuevos; mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Proporcion de tarjetas en carrusel publico
+- Modulo: `portal_publico`.
+- Cambio UX: el carrusel horizontal de `web/index.html` evita que todas las tarjetas se estiren al alto de la tarjeta mas larga; las tarjetas de la barra conservan una proporcion similar a las 6 superiores.
+- Alcance: solo frontend; no cambia rutas, endpoints, permisos, tablas ni dependencias.
+
+2026-05-13: Backup profesional junto a Configuracion
+- Modulo: `backups`.
+- Cambio UX: el acceso `Backup profesional` se mueve al grupo `Administracion` del menu principal de `administrar_empresa.html`, justo junto a `Configuracion`.
+- Permisos: conserva `linkBackups`, ruta `modulo_menu.html?module=backups` y control existente por modulo `backups`/accion de aprobacion; no cambia backend, tablas ni dependencias.
+
+2026-05-13: Login unico para usuarios de todas las empresas
+- Modulos afectados: `autenticacion`, `usuarios_empresa`, `login_usuario`, `permisos`.
+- Cambio funcional: `login_usuario.html` queda como entrada global para usuarios operativos de cualquier empresa, sin exigir subdominio empresarial ni parametro `empresa_id`.
+- Backend: el login busca las cuentas por correo y solo abre sesion cuando la clave identifica una cuenta concreta; la invitacion inicial se valida por `token_invitacion`, email y documento, y las recuperaciones usan el mismo portal central.
+- UX: el formulario comunica acceso por correo y contrasena; al autenticar se persiste `empresa_id` y se redirige a `administrar_empresa.html?id=...` para cargar rol y permisos de la empresa.
+- Seguridad: si un mismo correo queda asociado a varias empresas sin poder resolverse con la clave/token, el sistema no selecciona una empresa al azar y devuelve conflicto o respuesta enmascarada segun el flujo.
+
+2026-05-13: Submenu de Configuracion super alineado
+- Modulo: `configuracion_avanzada`.
+- Cambio UX: el submenu interno del super administrador se alinea con el patron de `seleccionar_empresa.html`, usando sidebar simple, ancho estable, navegacion compacta y colapso movil.
+- Alcance tecnico: solo cambia frontend (`web/super/configuracion_avanzada.html` y comportamiento comun en `web/menu.js`); no modifica API, permisos, configuraciones, base de datos ni dependencias.
+
+2026-05-13: Aviso de mantenimiento programado
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`, `administrar_empresa`, `operacion_sistema`.
+- Cambio funcional: super administrador programa fecha, hora inicio/fin, zona horaria y mensaje publico de mantenimiento. Un check independiente publica el aviso en el panel empresarial sin activar el bloqueo real del sistema.
+- Backend: `/super/api/config/mantenimiento` conserva `mantenimiento_activo` y agrega claves `mantenimiento_programado.*`; `/api/empresa/mantenimiento_programado` expone solo el aviso activo a usuarios autenticados con alcance sobre la empresa.
+- UX empresa: `web/administrar_empresa/panel.html` muestra una franja de aviso sobre los indicadores cuando `aviso_activo` esta habilitado.
+- Seguridad: no se agregan tablas ni dependencias; el aviso empresarial usa `WithEmpresaSelfServicePermissions` y el bloqueo global sigue separado en `mantenimiento_activo`.
+
+2026-05-13: OnlyOffice local editable en una sola pantalla
+- Modulo: `documentos_onlyoffice`.
+- Definicion: herramienta empresarial para crear documentos ofimaticos con OnlyOffice y conservar el archivo final en el dispositivo del usuario, no como repositorio permanente del VPS.
+- Cambio funcional: la empresa elige tipo de documento y nombre, el editor se carga embebido en `documentos_onlyoffice.html`, y la accion `Guardar en este dispositivo` descarga el archivo al PC/celular eliminando la copia temporal usada por el editor.
+- Backend: `/api/empresa/documentos?action=create_edit_local` crea la sesion temporal editable y `/api/empresa/documentos?action=download&delete=1` entrega el archivo final como attachment y borra el temporal.
+- Seguridad: se mantiene `WithEmpresaDocumentosOnlyOfficePermissions`, aislamiento por `empresa_id`, nombres saneados y sin permisos nuevos, tablas nuevas ni dependencias externas.
+
+2026-05-13: Apariencia claro/oscuro del Explorador de Archivos super
+- Modulo: `explorador_archivos`.
+- Cambio UX: la pagina super de exploracion de archivos respeta el tema visual global del panel, incluyendo oscuro, claro y variantes.
+- Alcance tecnico: solo se ajusta `web/super/explorador_archivos.html`; no cambia API, permisos, filesystem, backend, base de datos ni dependencias.
+
+2026-05-12: Tickets de ayuda empresariales profesionalizados
+- Modulo: `tickets_ayuda`.
+- Definicion: canal central de soporte SaaS para que cada empresa solicite ayuda desde cualquier pantalla operativa y el super administrador atienda el caso con contexto, conversacion y trazabilidad.
+- Alcance empresa: el menu flotante permite enviar ticket asociado al `empresa_id`, modulo/ruta activa, categoria, prioridad, preferencia de contacto, telefono opcional y diagnostico tecnico seguro; el panel muestra tickets recientes de la misma empresa.
+- Alcance super administrador: `/super/tickets_ayuda.html` agrega triage con categoria, modulo, ruta, contacto y contexto tecnico, manteniendo respuesta, notas internas, asignacion, prioridad y cierre.
+- Datos: `super_tickets_ayuda` conserva `contacto_telefono`, `contacto_preferido` y `contexto_json`; `super_ticket_ayuda_mensajes` separa mensajes visibles de notas internas.
+- Permisos: empresas solo ven y comentan tickets de su `empresa_id`; administracion global exclusiva de `super_administrador`.
+
 2026-05-12: Control electrico reubicado en configuracion empresarial
 - Modulo: `control_electrico`.
 - Cambio funcional: el boton deja de mostrarse como acceso independiente en el sidebar principal de Administrar empresa y pasa a `Configuracion > Estaciones, sensores y tarifas`.
@@ -1387,12 +1451,11 @@ Actualizacion 2026-04-16 (seleccionar empresa: tarjetas clasicas restauradas):
 - `web/js/seleccionar_empresa.js` vuelve al render `portal-card warm` centrado, priorizando nombre, observaciones y estado de licencia sin el layout enriquecido por tipo/metadatos.
 - Impacto de permisos: sin cambios en roles ni visibilidad; el ajuste es visual dentro del mismo modulo super.
 
-Actualizacion 2026-04-17 (portal publico de usuarios de empresa con contrato vigente y subdominio propio):
+Actualizacion 2026-04-17 (portal publico de usuarios de empresa con contrato vigente; flujo de subdominio reemplazado en 2026-05-13 por login global):
 - Se refuerza el modulo `usuarios de empresa` para operar como portal publico de acceso por invitacion, con login por correo/contrasena, primer password, recuperacion, reset y cambio de contrasena en una sola superficie.
 - `backend/db/usuarios_empresa.go` persiste aceptacion de contrato por usuario (`acepta_contrato`, `contrato_version_aceptada`, `fecha_acepta_contrato`) y `backend/handlers/usuarios_empresa.go` obliga a aceptar la version vigente antes de crear sesion o completar credenciales.
 - `web/login_usuario.html`, `web/js/login_usuario.js` y `web/estilos.css` describen el flujo, muestran el contrato vigente y eliminan cualquier acceso de Google del portal interno.
-- `backend/handlers/usuarios_empresa.go` reutiliza la configuracion de venta publica (`empresa_slug` y `dominio_publico`) para que correos de invitacion y recuperacion apunten al subdominio propio de cada empresa.
-- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` publican el enlace operativo del menu lateral hacia el subdominio o dominio publico configurado por empresa; `web/administrar_empresa/administrar_usuarios.html` elimina el acceso duplicado fuera del menu.
+- El enlace operativo y los correos de invitacion fueron consolidados despues en el portal global `login_usuario.html`, sin subdominio empresarial obligatorio.
 - Impacto de permisos: sin cambios en el modelo de permisos por rol dentro del panel; el acceso al portal es publico, pero la experiencia final sigue limitada por `permisos_contexto` y visibilidad dinamica de menu en `administrar_empresa`.
 
 Actualizacion 2026-04-16 (estaciones: carrito enlazado por defecto desde backend):
@@ -1907,9 +1970,11 @@ Criterio de esta guia:
 
 14) Propinas
 - Configuracion fiscal, movimientos, ajustes manuales y conciliacion en cierre de caja.
+- Los movimientos quedan enlazados al usuario creado en `users` por `usuario_origen_id` y `usuario_asignado_id`, conservando la etiqueta historica para reportes y auditoria.
 
 15) Comisiones por servicio
 - Reglas por rol/servicio, topes, ajustes y vinculacion a nomina.
+- Las comisiones automaticas y manuales quedan asociadas al usuario creado en `users` por `usuario_origen_id` y `usuario_lavador_id`, para liquidacion, filtros y reportes por empleado real.
 
 16) Compras
 - Documentos de compra con flujo de aprobacion, recepcion y contabilizacion.
@@ -1967,7 +2032,7 @@ Criterio de esta guia:
 - Seguridad: la carga usa `/api/empresa/configuracion_avanzada/logo` bajo `WithEmpresaSeguridadPermissions` y conserva aislamiento por `empresa_id`.
 
 27) Ventas simples por estacion
-- Cobro rapido por estacion, operacion offline y metricas de atencion/rendimiento.
+- Cobro rapido por estacion con conexion obligatoria al servidor y metricas de atencion/rendimiento.
 
 28) Finanzas y contabilidad
 - Movimientos, periodos, cierres de caja, asientos, plan de cuentas operativo, cartera CxC/CxP, abonos/pagos trazables y conciliacion bancaria por extractos importados.
@@ -2045,3 +2110,30 @@ Parqueadero y tickets QR
 
 Captura inteligente de compras y gastos
 - Modulo por empresa para radicar fotos, PDF o XML de compras/gastos, extraer datos con OCR/IA usando `openai:gpt-5.5`, detectar duplicados, exigir revision humana por confianza, aprobar/rechazar y convertir soportes aprobados en cuentas por pagar.
+
+2026-05-13: Alertas de vencimiento de licencias
+- Modulos afectados: `super_administrador`, `licencias`, `comunicaciones`.
+- Super administrador configura dias de aviso, activacion y maximo por ejecucion desde `web/super/configuracion_avanzada.html`.
+- El worker `licencias.vencimiento_alertas_worker` evalua licencias base y adicionales proximas a vencer, resuelve la empresa en la base operativa y envia/captura correo al administrador principal de la empresa mediante SMTP/plantillas existentes.
+- La tabla `licencia_vencimiento_notificaciones` evita avisos duplicados por licencia, empresa, correo, fecha de vencimiento y umbral configurado.
+
+2026-05-13: Correos masivos globales
+- Modulos afectados: `super_administrador`, `comunicaciones`, `seguridad y permisos`.
+- El super administrador dispone de `web/super/correos_masivos.html` para enviar comunicados globales por categoria a administradores, usuarios de empresa o ambos grupos.
+- `/super/api/correos_masivos` previsualiza destinatarios con correos enmascarados, deduplica emails repetidos entre roles y exige confirmacion explicita antes de enviar.
+- El envio usa la configuracion SMTP existente (`gmail.smtp_*`) y respeta el modo pruebas de correo, dejando trazabilidad en `super_correos_masivos` y `super_correos_masivos_destinatarios`.
+
+2026-05-13: Conexion obligatoria para operacion y facturacion
+- Modulos afectados: `ventas simples por estacion`, `carritos`, `facturacion electronica`, `ayuda`.
+- Se retira la opcion de operar o facturar sin conexion. El sistema requiere conexion activa con el backend para ventas, cobros, facturas, documentos y reintentos fiscales.
+- En facturacion electronica Colombia, la pantalla ya no muestra controles de modo offline/contingencia DIAN; si DIAN/proveedor no responde, el backend bloquea la emision y registra el fallo para reintentar cuando vuelva la conexion.
+
+2026-05-13: Cajas simultaneas por licencia
+- Modulos afectados: `licencias`, `finanzas`, `corte de caja`, `carritos`, `ventas por estacion`.
+- Cada licencia define `max_cajas_simultaneas`; por defecto son 2 cajas por empresa y 4 en planes de 4000 documentos.
+- El backend valida el cupo al abrir o reabrir cajas, y cada pago de carrito debe asociarse a una caja abierta para mantener cierres, arqueos y movimientos de efectivo separados.
+
+2026-05-13: Actualizacion general de documentacion y ayuda
+- Modulos afectados: `documentacion`, `ayuda`, `super_administrador`, `administrar_empresa`, `licencias`, `soporte`, `operacion`.
+- Se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa consolidado de reglas vigentes, rutas canonicas, operacion conectada, licencias/cajas, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
+- `web/ayuda/ayuda.html` incorpora secciones de acceso global de usuarios, operacion conectada obligatoria, cajas simultaneas por licencia, soporte por tickets, correos masivos, mantenimiento programado, documentos locales y backups.

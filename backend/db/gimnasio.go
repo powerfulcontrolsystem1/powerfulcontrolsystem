@@ -1171,7 +1171,7 @@ func createEmpresaGimnasioPagoCarrito(dbConn *sql.DB, pago EmpresaGimnasioPago) 
 	if err != nil {
 		return 0, 0, err
 	}
-	if err := PayCarritoStationSession(dbConn, pago.EmpresaID, carritoID, pago.MetodoPago, pago.Referencia, "", "", 0, 0, pago.Monto, 0, pago.UsuarioCreador); err != nil {
+	if err := PayCarritoStationSession(dbConn, pago.EmpresaID, carritoID, pago.MetodoPago, pago.Referencia, "", "", 0, 0, pago.Monto, 0, 0, "", "", 0, pago.UsuarioCreador); err != nil {
 		return 0, 0, err
 	}
 	return carritoID, itemID, nil

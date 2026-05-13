@@ -89,6 +89,10 @@ type CarritoCompra struct {
 	TotalPagado        float64                         `json:"total_pagado"`
 	MetodoPago         string                          `json:"metodo_pago,omitempty"`
 	ReferenciaPago     string                          `json:"referencia_pago,omitempty"`
+	CierreCajaID       int64                           `json:"cierre_caja_id,omitempty"`
+	CajaCodigo         string                          `json:"caja_codigo,omitempty"`
+	CajaTurno          string                          `json:"caja_turno,omitempty"`
+	CajaSucursalID     int64                           `json:"caja_sucursal_id,omitempty"`
 	ItemCount          int64                           `json:"item_count"`
 	FechaCreacion      string                          `json:"fecha_creacion,omitempty"`
 	FechaActualizacion string                          `json:"fecha_actualizacion,omitempty"`
@@ -144,6 +148,10 @@ type CarritoStationMetricInput struct {
 	ActivadoEn          string
 	PagadoEn            string
 	ReferenciaOperacion string
+	CierreCajaID        int64
+	CajaCodigo          string
+	CajaTurno           string
+	CajaSucursalID      int64
 	FechaEvento         string
 	UsuarioCreador      string
 	Observaciones       string
@@ -211,6 +219,10 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			total_pagado REAL DEFAULT 0,
 			metodo_pago TEXT DEFAULT 'efectivo',
 			referencia_pago TEXT,
+			cierre_caja_id INTEGER DEFAULT 0,
+			caja_codigo TEXT,
+			caja_turno TEXT,
+			caja_sucursal_id INTEGER DEFAULT 0,
 			tarifa_tiempo_tipo TEXT DEFAULT 'auto',
 			tarifa_tiempo_id INTEGER DEFAULT 0,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
@@ -262,6 +274,10 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			activado_en TEXT,
 			pagado_en TEXT,
 			referencia_operacion TEXT,
+			cierre_caja_id INTEGER DEFAULT 0,
+			caja_codigo TEXT,
+			caja_turno TEXT,
+			caja_sucursal_id INTEGER DEFAULT 0,
 			fecha_evento TEXT DEFAULT (datetime('now','localtime')),
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -285,12 +301,15 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		{name: "ix_carritos_empresa_estado", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado ON carritos_compras(empresa_id, estado, estado_carrito);`},
 		{name: "ix_carritos_empresa_estado_pagado", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_estado_pagado ON carritos_compras(empresa_id, estado_carrito, pagado_en DESC, id DESC);`},
 		{name: "ix_carritos_empresa_referencia_externa", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_referencia_externa ON carritos_compras(empresa_id, referencia_externa, id DESC);`},
+		{name: "ix_carritos_empresa_cierre_caja", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_cierre_caja ON carritos_compras(empresa_id, cierre_caja_id, pagado_en DESC);`},
+		{name: "ix_carritos_empresa_caja_codigo", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_caja_codigo ON carritos_compras(empresa_id, caja_codigo, caja_turno, pagado_en DESC);`},
 		{name: "ix_carrito_items_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`},
 		{name: "ix_carrito_items_empresa_referencia", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`},
 		{name: "ix_ventas_estacion_metricas_empresa_estacion_fecha", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_empresa_evento", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_carrito", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_carrito ON empresa_ventas_estacion_metricas(empresa_id, carrito_id, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_empresa_evento_carrito", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento_carrito ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, carrito_id);`},
+		{name: "ix_ventas_estacion_metricas_cierre_caja", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_cierre_caja ON empresa_ventas_estacion_metricas(empresa_id, cierre_caja_id, fecha_evento DESC);`},
 	}
 	for _, idx := range indexStmts {
 		if err := ensureIndexIfMissing(dbConn, idx.name, idx.query); err != nil {
@@ -353,6 +372,18 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "referencia_pago", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "cierre_caja_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "caja_turno", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "caja_sucursal_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "carritos_compras", "tarifa_tiempo_tipo", "TEXT DEFAULT 'auto'"); err != nil {
@@ -468,6 +499,18 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "referencia_operacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "cierre_caja_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "caja_turno", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "caja_sucursal_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "fecha_evento", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
@@ -941,17 +984,40 @@ func CreateCarritoCompra(dbConn *sql.DB, payload CarritoCompra) (int64, error) {
 
 // GetCarritosCompraByEmpresa lista carritos por empresa.
 func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive bool, q string) ([]CarritoCompra, error) {
-	query, args := buildCarritosCompraByEmpresaQuery(empresaID, includeInactive, q, true)
+	if err := EnsureEmpresaCarritosSchema(dbConn); err != nil {
+		return nil, err
+	}
+
+	attempts := []struct {
+		includeClientes   bool
+		includeItemCounts bool
+	}{
+		{includeClientes: true, includeItemCounts: true},
+		{includeClientes: false, includeItemCounts: true},
+		{includeClientes: true, includeItemCounts: false},
+		{includeClientes: false, includeItemCounts: false},
+	}
+
+	var lastErr error
+	for _, attempt := range attempts {
+		out, err := listCarritosCompraByEmpresaWithOptions(dbConn, empresaID, includeInactive, q, attempt.includeClientes, attempt.includeItemCounts)
+		if err == nil {
+			return out, nil
+		}
+		lastErr = err
+		if !shouldRetryCarritosCompraWithReducedJoins(err) {
+			return nil, err
+		}
+	}
+
+	return nil, lastErr
+}
+
+func listCarritosCompraByEmpresaWithOptions(dbConn *sql.DB, empresaID int64, includeInactive bool, q string, includeClientes bool, includeItemCounts bool) ([]CarritoCompra, error) {
+	query, args := buildCarritosCompraByEmpresaQuery(empresaID, includeInactive, q, includeClientes, includeItemCounts)
 	rows, err := dbConn.Query(query, args...)
 	if err != nil {
-		if !shouldRetryCarritosCompraWithoutClientes(err) {
-			return nil, err
-		}
-		query, args = buildCarritosCompraByEmpresaQuery(empresaID, includeInactive, q, false)
-		rows, err = dbConn.Query(query, args...)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -982,6 +1048,10 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 			&item.TotalPagado,
 			&item.MetodoPago,
 			&item.ReferenciaPago,
+			&item.CierreCajaID,
+			&item.CajaCodigo,
+			&item.CajaTurno,
+			&item.CajaSucursalID,
 			&item.TarifaTiempoTipo,
 			&item.TarifaTiempoID,
 			&item.ItemCount,
@@ -1002,16 +1072,19 @@ func GetCarritosCompraByEmpresa(dbConn *sql.DB, empresaID int64, includeInactive
 	return out, nil
 }
 
-func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q string, includeClientes bool) (string, []interface{}) {
+func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q string, includeClientes bool, includeItemCounts bool) (string, []interface{}) {
 	clienteNombreExpr := `''`
 	joinClientes := ""
-	joinItemCounts := `
+	joinItemCounts := ""
+	if includeItemCounts {
+		joinItemCounts = `
 	LEFT JOIN (
 		SELECT empresa_id, carrito_id, COUNT(id) AS item_count
 		FROM carrito_compra_items
 		WHERE COALESCE(estado, 'activo') = 'activo'
 		GROUP BY empresa_id, carrito_id
 	) ic ON ic.empresa_id = c.empresa_id AND ic.carrito_id = c.id`
+	}
 	searchClienteExpr := ""
 	if includeClientes {
 		clienteNombreExpr = `COALESCE(cl.nombre_razon_social, '')`
@@ -1045,6 +1118,10 @@ func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q 
 		COALESCE(c.total_pagado, 0),
 		COALESCE(c.metodo_pago, 'efectivo'),
 		COALESCE(c.referencia_pago, ''),
+		COALESCE(c.cierre_caja_id, 0),
+		COALESCE(c.caja_codigo, ''),
+		COALESCE(c.caja_turno, ''),
+		COALESCE(c.caja_sucursal_id, 0),
 		COALESCE(c.tarifa_tiempo_tipo, 'auto'),
 		COALESCE(c.tarifa_tiempo_id, 0),
 		COALESCE(ic.item_count, 0),
@@ -1076,7 +1153,7 @@ func buildCarritosCompraByEmpresaQuery(empresaID int64, includeInactive bool, q 
 	return query, args
 }
 
-func shouldRetryCarritosCompraWithoutClientes(err error) bool {
+func shouldRetryCarritosCompraWithReducedJoins(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -1084,7 +1161,10 @@ func shouldRetryCarritosCompraWithoutClientes(err error) bool {
 	if msg == "" {
 		return false
 	}
-	return (strings.Contains(msg, "clientes") || strings.Contains(msg, "nombre_razon_social")) &&
+	return (strings.Contains(msg, "clientes") ||
+		strings.Contains(msg, "nombre_razon_social") ||
+		strings.Contains(msg, "carrito_compra_items") ||
+		strings.Contains(msg, "item_count")) &&
 		(strings.Contains(msg, "no such table") || strings.Contains(msg, "does not exist") || strings.Contains(msg, "no such column") || strings.Contains(msg, "unknown column"))
 }
 
@@ -1113,6 +1193,10 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		COALESCE(total_pagado, 0),
 		COALESCE(metodo_pago, 'efectivo'),
 		COALESCE(referencia_pago, ''),
+		COALESCE(cierre_caja_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(caja_turno, ''),
+		COALESCE(caja_sucursal_id, 0),
 		COALESCE(tarifa_tiempo_tipo, 'auto'),
 		COALESCE(tarifa_tiempo_id, 0),
 		COALESCE(fecha_creacion, ''),
@@ -1149,6 +1233,10 @@ func GetCarritoCompraByID(dbConn *sql.DB, empresaID, carritoID int64) (*CarritoC
 		&item.TotalPagado,
 		&item.MetodoPago,
 		&item.ReferenciaPago,
+		&item.CierreCajaID,
+		&item.CajaCodigo,
+		&item.CajaTurno,
+		&item.CajaSucursalID,
 		&item.TarifaTiempoTipo,
 		&item.TarifaTiempoID,
 		&item.FechaCreacion,
@@ -1192,6 +1280,10 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 		COALESCE(total_pagado, 0),
 		COALESCE(metodo_pago, 'efectivo'),
 		COALESCE(referencia_pago, ''),
+		COALESCE(cierre_caja_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(caja_turno, ''),
+		COALESCE(caja_sucursal_id, 0),
 		COALESCE(tarifa_tiempo_tipo, 'auto'),
 		COALESCE(tarifa_tiempo_id, 0),
 		COALESCE(fecha_creacion, ''),
@@ -1228,6 +1320,10 @@ func GetCarritoCompraByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*
 		&item.TotalPagado,
 		&item.MetodoPago,
 		&item.ReferenciaPago,
+		&item.CierreCajaID,
+		&item.CajaCodigo,
+		&item.CajaTurno,
+		&item.CajaSucursalID,
 		&item.TarifaTiempoTipo,
 		&item.TarifaTiempoID,
 		&item.FechaCreacion,
@@ -1279,6 +1375,10 @@ func GetCarritoCompraByStation(dbConn *sql.DB, empresaID, estacionID int64) (*Ca
 		COALESCE(total_pagado, 0),
 		COALESCE(metodo_pago, 'efectivo'),
 		COALESCE(referencia_pago, ''),
+		COALESCE(cierre_caja_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(caja_turno, ''),
+		COALESCE(caja_sucursal_id, 0),
 		COALESCE(tarifa_tiempo_tipo, 'auto'),
 		COALESCE(tarifa_tiempo_id, 0),
 		COALESCE(fecha_creacion, ''),
@@ -1316,6 +1416,10 @@ func GetCarritoCompraByStation(dbConn *sql.DB, empresaID, estacionID int64) (*Ca
 		&byRef.TotalPagado,
 		&byRef.MetodoPago,
 		&byRef.ReferenciaPago,
+		&byRef.CierreCajaID,
+		&byRef.CajaCodigo,
+		&byRef.CajaTurno,
+		&byRef.CajaSucursalID,
 		&byRef.TarifaTiempoTipo,
 		&byRef.TarifaTiempoID,
 		&byRef.FechaCreacion,
@@ -1725,7 +1829,7 @@ func CancelCarritoSale(dbConn *sql.DB, empresaID, carritoID int64, motivo, usuar
 }
 
 // PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.
-func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64, usuarioCreador string) error {
+func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo string, descuentoValor, devolucionTotal, totalPagado float64, codigoDescuentoID int64, cierreCajaID int64, cajaCodigo, cajaTurno string, cajaSucursalID int64, usuarioCreador string) error {
 	metodoPago = NormalizeMetodoPagoCarrito(metodoPago)
 	if metodoPago == "" {
 		return fmt.Errorf("metodo_pago invalido")
@@ -1742,6 +1846,14 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	}
 	if totalPagado < 0 {
 		totalPagado = 0
+	}
+	if cierreCajaID < 0 {
+		cierreCajaID = 0
+	}
+	cajaCodigo = sanitizeCajaCodigo(cajaCodigo)
+	cajaTurno = strings.ToLower(strings.TrimSpace(cajaTurno))
+	if cajaSucursalID < 0 {
+		cajaSucursalID = 0
 	}
 
 	tx, err := dbConn.Begin()
@@ -1767,6 +1879,10 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		descuento_valor = ?,
 		devolucion_total = ?,
 		total_pagado = ?,
+		cierre_caja_id = ?,
+		caja_codigo = ?,
+		caja_turno = ?,
+		caja_sucursal_id = ?,
 		fecha_actualizacion = datetime('now','localtime')
 	WHERE empresa_id = ? AND id = ?`,
 		metodoPago,
@@ -1776,6 +1892,10 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		round2(descuentoValor),
 		round2(devolucionTotal),
 		round2(totalPagado),
+		cierreCajaID,
+		cajaCodigo,
+		cajaTurno,
+		cajaSucursalID,
 		empresaID,
 		carritoID,
 	)
@@ -1847,13 +1967,17 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 		activado_en,
 		pagado_en,
 		referencia_operacion,
+		cierre_caja_id,
+		caja_codigo,
+		caja_turno,
+		caja_sucursal_id,
 		fecha_evento,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
 		input.EmpresaID,
 		input.CarritoID,
 		input.EstacionID,
@@ -1870,6 +1994,10 @@ func RecordCarritoStationMetric(dbConn *sql.DB, input CarritoStationMetricInput)
 		strings.TrimSpace(input.ActivadoEn),
 		strings.TrimSpace(input.PagadoEn),
 		strings.TrimSpace(input.ReferenciaOperacion),
+		input.CierreCajaID,
+		sanitizeCajaCodigo(input.CajaCodigo),
+		strings.ToLower(strings.TrimSpace(input.CajaTurno)),
+		maxInt64(input.CajaSucursalID, 0),
 		fechaEvento,
 		strings.TrimSpace(input.UsuarioCreador),
 		strings.TrimSpace(input.Observaciones),

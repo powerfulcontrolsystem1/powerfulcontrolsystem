@@ -1174,23 +1174,14 @@ func facturacionAnyToBool(v interface{}) bool {
 func facturacionDianOfflineSettingsFromConfig(cfg *dbpkg.FacturacionElectronicaPaisConfig) facturacionDianOfflineSettings {
 	settings := facturacionDianOfflineSettings{
 		Enabled:           false,
-		AskBeforeContinue: true,
-		AutoRetry:         true,
+		AskBeforeContinue: false,
+		AutoRetry:         false,
 		ContingencyType:   "servicio_dian",
 	}
 	if cfg == nil {
 		return settings
 	}
 	extra := facturacionTryParseJSONMap(cfg.CamposPaisJSON)
-	if _, ok := extra["modo_offline_dian_activo"]; ok {
-		settings.Enabled = facturacionAnyToBool(extra["modo_offline_dian_activo"])
-	}
-	if _, ok := extra["modo_offline_preguntar"]; ok {
-		settings.AskBeforeContinue = facturacionAnyToBool(extra["modo_offline_preguntar"])
-	}
-	if _, ok := extra["modo_offline_auto_reintentar"]; ok {
-		settings.AutoRetry = facturacionAnyToBool(extra["modo_offline_auto_reintentar"])
-	}
 	if raw := strings.TrimSpace(fmt.Sprintf("%v", extra["dian_contingencia_tipo"])); raw != "" && raw != "<nil>" {
 		settings.ContingencyType = strings.ToLower(raw)
 	}
@@ -1426,7 +1417,7 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 	if paisCodigo != "CO" {
 		out["online"] = true
 		out["estado_conexion"] = "no_aplica"
-		out["mensaje"] = "modo offline DIAN solo aplica para Colombia"
+		out["mensaje"] = "validacion de conexion DIAN solo aplica para Colombia"
 		out["accion_recomendada"] = "continuar_online"
 		return out
 	}
@@ -1490,11 +1481,6 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 		}
 	}
 
-	if settings.Enabled {
-		out["accion_recomendada"] = "preguntar_modo_offline"
-		out["requiere_confirmacion_offline"] = settings.AskBeforeContinue
-		return out
-	}
 	out["accion_recomendada"] = "bloquear_facturacion_electronica"
 	return out
 }
@@ -1528,19 +1514,11 @@ func facturacionOfflineDianPreflight(dbEmp *sql.DB, payload facturacionOperacion
 	if online {
 		return nil, nil
 	}
-	settings := facturacionDianOfflineSettingsFromConfig(cfg)
-	confirmed := payload.PermitirModoOffline || payload.ConfirmarModoOffline
-	if settings.Enabled && (!settings.AskBeforeContinue || confirmed) {
-		return nil, nil
-	}
 	status["ok"] = false
 	status["bloqueado"] = true
-	if settings.Enabled {
-		status["requiere_confirmacion_offline"] = true
-		status["error"] = "DIAN/proveedor no disponible; confirme modo offline para continuar"
-		return status, nil
-	}
-	status["error"] = "DIAN/proveedor no disponible y modo offline DIAN desactivado"
+	status["requiere_confirmacion_offline"] = false
+	status["modo_offline_dian_activo"] = false
+	status["error"] = "DIAN/proveedor no disponible; se requiere conexion activa para facturar"
 	return status, nil
 }
 
@@ -1605,10 +1583,9 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 	}
 	offlineSettings := facturacionDianOfflineSettingsFromConfig(cfg)
 	offlineAplicaDIAN := paisCodigo == "CO"
-	offlineConfirmado := payload.PermitirModoOffline || payload.ConfirmarModoOffline
 	if offlineAplicaDIAN {
 		resultado.OfflineDisponible = offlineSettings.Enabled
-		resultado.OfflineConfirmado = offlineConfirmado
+		resultado.OfflineConfirmado = false
 		resultado.ConexionEstado = "online"
 	}
 
@@ -1717,45 +1694,22 @@ func processFacturacionIntegracionForDocumento(dbEmp *sql.DB, payload facturacio
 		if offlineAplicaDIAN && dispatch.ConnectivityFailure {
 			resultado.ConexionEstado = "offline"
 			resultado.ConexionMensaje = facturacionConnectivityMessage(dispatch.Error)
-			if offlineSettings.Enabled && (!offlineSettings.AskBeforeContinue || offlineConfirmado) {
-				retryPayload.EstadoEnvio = "contingencia"
-				retryPayload.ContingenciaActiva = true
-				if strings.TrimSpace(retryPayload.FechaContingencia) == "" {
-					retryPayload.FechaContingencia = now
-				}
-				retryPayload.ProximoIntento = ""
-				retryPayload.UltimoError = "Modo offline DIAN activo: " + facturacionConnectivityMessage(dispatch.Error)
-				resultado.EstadoEnvio = "contingencia"
-				resultado.ContingenciaActiva = true
-				resultado.OfflineConfirmado = true
-				resultado.AccionRecomendada = "reintentar_al_volver_online"
-			} else if offlineSettings.Enabled {
-				retryPayload.EstadoEnvio = "fallido"
-				retryPayload.ContingenciaActiva = false
-				retryPayload.FechaContingencia = ""
-				retryPayload.ProximoIntento = facturacionNextRetryAt(retryPayload.Intentos)
-				retryPayload.UltimoError = "Se requiere confirmacion para continuar en modo offline DIAN: " + facturacionConnectivityMessage(dispatch.Error)
-				resultado.EstadoEnvio = "fallido"
-				resultado.ProximoIntento = retryPayload.ProximoIntento
-				resultado.RequiereConfirmacionOffline = true
-				resultado.AccionRecomendada = "confirmar_modo_offline"
-			} else {
-				retryPayload.EstadoEnvio = "fallido"
-				retryPayload.ContingenciaActiva = false
-				retryPayload.FechaContingencia = ""
-				retryPayload.ProximoIntento = facturacionNextRetryAt(retryPayload.Intentos)
-				retryPayload.UltimoError = "No hay internet o no se detecta DIAN/proveedor y el modo offline esta desactivado"
-				resultado.EstadoEnvio = "fallido"
-				resultado.ProximoIntento = retryPayload.ProximoIntento
-				resultado.AccionRecomendada = "bloquear_facturacion_electronica"
-			}
+			retryPayload.EstadoEnvio = "fallido"
+			retryPayload.ContingenciaActiva = false
+			retryPayload.FechaContingencia = ""
+			retryPayload.ProximoIntento = facturacionNextRetryAt(retryPayload.Intentos)
+			retryPayload.UltimoError = "No hay conexion activa con DIAN/proveedor; la facturacion electronica no puede continuar"
+			resultado.EstadoEnvio = "fallido"
+			resultado.ProximoIntento = retryPayload.ProximoIntento
+			resultado.RequiereConfirmacionOffline = false
+			resultado.AccionRecomendada = "bloquear_facturacion_electronica"
 		} else if retryPayload.Intentos >= retryPayload.MaxIntentos {
-			retryPayload.EstadoEnvio = "contingencia"
-			retryPayload.ContingenciaActiva = true
-			retryPayload.FechaContingencia = now
+			retryPayload.EstadoEnvio = "fallido"
+			retryPayload.ContingenciaActiva = false
+			retryPayload.FechaContingencia = ""
 			retryPayload.ProximoIntento = ""
-			resultado.EstadoEnvio = "contingencia"
-			resultado.ContingenciaActiva = true
+			resultado.EstadoEnvio = "fallido"
+			resultado.ContingenciaActiva = false
 		} else {
 			retryPayload.EstadoEnvio = "fallido"
 			retryPayload.ContingenciaActiva = false
@@ -1880,9 +1834,9 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 				actualizado.UsuarioCreador = usuario
 				actualizado.Estado = "activo"
 				if actualizado.Intentos >= actualizado.MaxIntentos {
-					actualizado.EstadoEnvio = "contingencia"
-					actualizado.ContingenciaActiva = true
-					actualizado.FechaContingencia = actualizado.FechaUltimoIntento
+					actualizado.EstadoEnvio = "fallido"
+					actualizado.ContingenciaActiva = false
+					actualizado.FechaContingencia = ""
 					actualizado.ProximoIntento = ""
 				} else {
 					actualizado.EstadoEnvio = "fallido"
@@ -1898,11 +1852,7 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 					detail["estado_nuevo"] = persistido.EstadoEnvio
 					detail["intentos"] = persistido.Intentos
 					detail["ultimo_error"] = persistido.UltimoError
-					if persistido.EstadoEnvio == "contingencia" {
-						contingencia += 1
-					} else {
-						fallidos += 1
-					}
+					fallidos += 1
 					procesados += 1
 				}
 				resumenItems = append(resumenItems, detail)
@@ -1915,11 +1865,6 @@ func processFacturacionRetryQueue(dbEmp *sql.DB, empresaID int64, limit int, usu
 		}
 
 		payload := facturacionBuildOperacionPayloadFromDocumento(*doc)
-		if retryItem.ContingenciaActiva || normalizeFacturacionEstadoEnvio(retryItem.EstadoEnvio) == "contingencia" {
-			payload.PermitirModoOffline = true
-			payload.ConfirmarModoOffline = true
-			payload.OrigenModoOffline = "cola_reintentos"
-		}
 		accion := facturacionDeriveAccionByDocumento(*doc)
 		resultado, persistido, procErr := processFacturacionIntegracionForDocumento(dbEmp, payload, *doc, accion, usuario)
 		if procErr != nil {

@@ -366,6 +366,8 @@
         '<td class="actions">' +
           '<button type="button" class="btn secondary" data-action="edit" data-id="' + Number(item.id || 0) + '">Editar</button>' +
           '<button type="button" class="btn secondary" data-action="print" data-id="' + Number(item.id || 0) + '">Imprimir</button>' +
+          '<button type="button" class="btn secondary" data-action="share_whatsapp" data-id="' + Number(item.id || 0) + '">WhatsApp</button>' +
+          '<button type="button" class="btn secondary" data-action="share_email" data-id="' + Number(item.id || 0) + '">Correo</button>' +
           '<button type="button" class="btn danger" data-action="anular" data-id="' + Number(item.id || 0) + '">Anular</button>' +
         '</td>' +
       '</tr>';
@@ -409,6 +411,11 @@
     if (action === 'print') {
       const item = movimientos.find(row => Number(row.id) === id);
       if (item) printMovimiento(item);
+      return;
+    }
+    if (action === 'share_whatsapp' || action === 'share_email') {
+      const item = movimientos.find(row => Number(row.id) === id);
+      if (item) shareMovimiento(item, action === 'share_whatsapp' ? 'whatsapp' : 'email');
       return;
     }
     if (action === 'anular') {
@@ -531,6 +538,40 @@
     setTimeout(() => {
       try { frame.remove(); } catch (_) {}
     }, 3000);
+  }
+
+  function shareMovimiento(item, channel) {
+    if (!item) return;
+    const title = tipoMovimiento === 'egreso' ? 'Comprobante de egreso' : 'Comprobante de ingreso';
+    let url = '';
+    try {
+      const shareUrl = new URL(window.location.pathname || '', window.location.origin);
+      shareUrl.searchParams.set('empresa_id', String(empresaId));
+      if (item.codigo) shareUrl.searchParams.set('q', normalize(item.codigo));
+      url = shareUrl.toString();
+    } catch (_) {
+      url = window.location.href;
+    }
+    const message = [
+      'Concepto: ' + normalize(item.concepto),
+      'Tercero: ' + (normalize(item.tercero_nombre) || 'No registrado'),
+      'Fecha: ' + formatDateTime(item.fecha_movimiento)
+    ].join('\n');
+    if (window.PCSPrint && typeof window.PCSPrint.shareDocument === 'function') {
+      window.PCSPrint.shareDocument({
+        channel: channel,
+        title: title,
+        code: normalize(item.codigo) || ('MOV-' + Number(item.id || 0)),
+        total: formatMoney(item.total_neto || item.total || item.monto, item.moneda),
+        company: empresaNombre || ('Empresa #' + empresaId),
+        message: message,
+        url: url
+      });
+      return;
+    }
+    const body = encodeURIComponent(title + '\nCodigo: ' + (normalize(item.codigo) || ('MOV-' + Number(item.id || 0))) + '\nTotal: ' + formatMoney(item.total_neto || item.total || item.monto, item.moneda) + '\n' + message + '\nEnlace: ' + url);
+    const href = channel === 'whatsapp' ? ('https://wa.me/?text=' + body) : ('mailto:?subject=' + encodeURIComponent(title) + '&body=' + body);
+    window.open(href, '_blank', 'noopener,noreferrer');
   }
 
   async function init() {

@@ -6,6 +6,7 @@
   <title>Reportes - Inventario</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/print_documents.js"></script>
 </head>
 <body class="empresa-subpage">
   <div class="container">
@@ -16,6 +17,8 @@
           <button id="btnRefrescarInv" class="btn secondary" type="button">Refrescar</button>
           <button id="btnVerInvPDF" class="btn secondary" type="button">Ver PDF</button>
           <button id="btnImprimirInv" class="btn secondary" type="button">Imprimir</button>
+          <button id="btnCompartirInvWhatsapp" class="btn secondary" type="button">WhatsApp</button>
+          <button id="btnCompartirInvCorreo" class="btn secondary" type="button">Correo</button>
           <select id="exportFormat" class="form-input" style="max-width:160px;">
             <option value="csv">CSV</option>
             <option value="xls">XLS</option>
@@ -147,6 +150,8 @@
       var btnExportar = document.getElementById("btnExportarInv");
       var btnVerPDF = document.getElementById("btnVerInvPDF");
       var btnImprimir = document.getElementById("btnImprimirInv");
+      var btnCompartirWhatsapp = document.getElementById("btnCompartirInvWhatsapp");
+      var btnCompartirCorreo = document.getElementById("btnCompartirInvCorreo");
       var fmt = document.getElementById("exportFormat");
 
       if (btnRefrescar) btnRefrescar.addEventListener("click", function(){ loadDataset(); });
@@ -164,6 +169,27 @@
           if (w) w.focus();
         } catch (e) {}
       });
+
+      function compartirReporteInventario(channel) {
+        var url = buildExportURL("pdf") || window.location.href;
+        if (window.PCSPrint && typeof window.PCSPrint.shareDocument === "function") {
+          window.PCSPrint.shareDocument({
+            channel: channel,
+            title: "Reporte de inventario",
+            code: "inventario_empresa_" + String(empresaId || ""),
+            company: "Empresa #" + String(empresaId || ""),
+            message: "Reporte de stock por bodega y producto en formato PDF.",
+            url: url
+          });
+          return;
+        }
+        var body = encodeURIComponent("Reporte de inventario\nEmpresa: " + String(empresaId || "") + "\nEnlace: " + url);
+        var href = channel === "whatsapp" ? ("https://wa.me/?text=" + body) : ("mailto:?subject=Reporte de inventario&body=" + body);
+        window.open(href, "_blank", "noopener,noreferrer");
+      }
+
+      if (btnCompartirWhatsapp) btnCompartirWhatsapp.addEventListener("click", function(){ compartirReporteInventario("whatsapp"); });
+      if (btnCompartirCorreo) btnCompartirCorreo.addEventListener("click", function(){ compartirReporteInventario("email"); });
 
       loadDataset();
     })();

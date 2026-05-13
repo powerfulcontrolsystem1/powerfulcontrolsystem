@@ -59,7 +59,9 @@ type EmpresaComisionServicioMovimiento struct {
 	ServicioNombre          string  `json:"servicio_nombre,omitempty"`
 	ServicioCategoria       string  `json:"servicio_categoria,omitempty"`
 	UsuarioOrigen           string  `json:"usuario_origen,omitempty"`
+	UsuarioOrigenID         int64   `json:"usuario_origen_id,omitempty"`
 	UsuarioLavador          string  `json:"usuario_lavador,omitempty"`
+	UsuarioLavadorID        int64   `json:"usuario_lavador_id,omitempty"`
 	RolOperacion            string  `json:"rol_operacion,omitempty"`
 	EscalaID                int64   `json:"escala_id,omitempty"`
 	VentaReferencia         string  `json:"venta_referencia,omitempty"`
@@ -120,6 +122,7 @@ type EmpresaComisionesServicioResumen struct {
 
 // EmpresaComisionServicioLavadorResumen presenta acumulado por lavador.
 type EmpresaComisionServicioLavadorResumen struct {
+	UsuarioID           int64   `json:"usuario_id,omitempty"`
 	UsuarioLavador      string  `json:"usuario_lavador"`
 	TotalBaseServicios  float64 `json:"total_base_servicios"`
 	TotalComision       float64 `json:"total_comision"`
@@ -146,6 +149,7 @@ type EmpresaComisionServicioRegistroResultado struct {
 	PorcentajeComision     float64 `json:"porcentaje_comision"`
 	FiltroServicio         string  `json:"filtro_servicio,omitempty"`
 	UsuarioLavador         string  `json:"usuario_lavador,omitempty"`
+	UsuarioLavadorID       int64   `json:"usuario_lavador_id,omitempty"`
 	RolOperacion           string  `json:"rol_operacion,omitempty"`
 	BaseServicios          float64 `json:"base_servicios"`
 	MontoComision          float64 `json:"monto_comision"`
@@ -220,7 +224,9 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 			servicio_nombre TEXT,
 			servicio_categoria TEXT,
 			usuario_origen TEXT,
+			usuario_origen_id INTEGER DEFAULT 0,
 			usuario_lavador TEXT,
+			usuario_lavador_id INTEGER DEFAULT 0,
 			rol_operacion TEXT,
 			escala_id INTEGER DEFAULT 0,
 			venta_referencia TEXT,
@@ -332,7 +338,13 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "usuario_origen", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "usuario_origen_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "usuario_lavador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "usuario_lavador_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_comisiones_servicio_movimientos", "rol_operacion", "TEXT"); err != nil {
@@ -418,6 +430,7 @@ func EnsureEmpresaComisionesServicioSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_comisiones_servicio_escala_empresa_rol ON empresa_comisiones_servicio_escalas(empresa_id, rol_operacion, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_comisiones_servicio_mov_empresa_fecha ON empresa_comisiones_servicio_movimientos(empresa_id, fecha_movimiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_comisiones_servicio_mov_empresa_lavador ON empresa_comisiones_servicio_movimientos(empresa_id, usuario_lavador);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_comisiones_servicio_mov_empresa_lavador_id ON empresa_comisiones_servicio_movimientos(empresa_id, usuario_lavador_id, usuario_origen_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_comisiones_servicio_mov_empresa_ajuste ON empresa_comisiones_servicio_movimientos(empresa_id, ajuste_manual, ajuste_estado, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_comisiones_servicio_mov_empresa_liquidacion ON empresa_comisiones_servicio_movimientos(empresa_id, liquidacion_nomina_id, periodo_liquidacion_desde, periodo_liquidacion_hasta);`,
 		`DROP INDEX IF EXISTS ux_empresa_comisiones_servicio_mov_item_lavador;`,
@@ -956,6 +969,8 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 	}
 	payload.UsuarioOrigen = strings.TrimSpace(payload.UsuarioOrigen)
 	payload.UsuarioLavador = defaultComisionLavador(payload.UsuarioLavador, payload.UsuarioOrigen)
+	payload.UsuarioOrigenID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, payload.EmpresaID, payload.UsuarioOrigenID, payload.UsuarioOrigen)
+	payload.UsuarioLavadorID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, payload.EmpresaID, payload.UsuarioLavadorID, payload.UsuarioLavador)
 	payload.RolOperacion = normalizeComisionRol(payload.RolOperacion)
 	payload.Moneda = normalizeComisionMoneda(payload.Moneda)
 	payload.BaseServicio = round2(payload.BaseServicio)
@@ -1065,7 +1080,9 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 		servicio_nombre,
 		servicio_categoria,
 		usuario_origen,
+		usuario_origen_id,
 		usuario_lavador,
+		usuario_lavador_id,
 		rol_operacion,
 		escala_id,
 		venta_referencia,
@@ -1092,7 +1109,7 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		payload.CarritoID,
 		payload.CarritoItemID,
@@ -1101,7 +1118,9 @@ func CreateEmpresaComisionServicioMovimiento(dbConn *sql.DB, payload EmpresaComi
 		payload.ServicioNombre,
 		payload.ServicioCategoria,
 		payload.UsuarioOrigen,
+		payload.UsuarioOrigenID,
 		payload.UsuarioLavador,
+		payload.UsuarioLavadorID,
 		payload.RolOperacion,
 		payload.EscalaID,
 		strings.TrimSpace(payload.VentaReferencia),
@@ -1228,8 +1247,11 @@ func buildEmpresaComisionServicioMovWhere(empresaID int64, filter EmpresaComisio
 	}
 	if usuario := strings.TrimSpace(filter.UsuarioLavador); usuario != "" {
 		like := "%" + strings.ToLower(usuario) + "%"
-		clauses = append(clauses, "(lower(COALESCE(usuario_lavador, '')) LIKE ? OR lower(COALESCE(usuario_origen, '')) LIKE ?)")
-		args = append(args, like, like)
+		clauses = append(clauses, `(lower(COALESCE(usuario_lavador, '')) LIKE ?
+			OR lower(COALESCE(usuario_origen, '')) LIKE ?
+			OR CAST(COALESCE(usuario_lavador_id, 0) AS TEXT) = ?
+			OR CAST(COALESCE(usuario_origen_id, 0) AS TEXT) = ?)`)
+		args = append(args, like, like, usuario, usuario)
 	}
 	if rol := normalizeComisionRol(filter.RolOperacion); rol != "" {
 		clauses = append(clauses, "lower(COALESCE(rol_operacion, '')) = ?")
@@ -1290,7 +1312,9 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 		COALESCE(servicio_nombre, ''),
 		COALESCE(servicio_categoria, ''),
 		COALESCE(usuario_origen, ''),
+		COALESCE(usuario_origen_id, 0),
 		COALESCE(usuario_lavador, ''),
+		COALESCE(usuario_lavador_id, 0),
 		COALESCE(rol_operacion, ''),
 		COALESCE(escala_id, 0),
 		COALESCE(venta_referencia, ''),
@@ -1342,7 +1366,9 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 			&row.ServicioNombre,
 			&row.ServicioCategoria,
 			&row.UsuarioOrigen,
+			&row.UsuarioOrigenID,
 			&row.UsuarioLavador,
+			&row.UsuarioLavadorID,
 			&row.RolOperacion,
 			&row.EscalaID,
 			&row.VentaReferencia,
@@ -1381,7 +1407,13 @@ func ListEmpresaComisionServicioMovimientos(dbConn *sql.DB, empresaID int64, fil
 		row.OrigenMovimiento = normalizeComisionOrigen(row.OrigenMovimiento)
 		row.EsAjusteManual = ajusteManualInt == 1 || row.OrigenMovimiento == EmpresaComisionServicioOrigenAjusteManual
 		row.AjusteEstado = normalizeComisionAjusteEstado(row.AjusteEstado)
+		if row.UsuarioOrigenID == 0 {
+			row.UsuarioOrigenID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, row.EmpresaID, 0, row.UsuarioOrigen)
+		}
 		row.UsuarioLavador = defaultComisionLavador(row.UsuarioLavador, row.UsuarioOrigen)
+		if row.UsuarioLavadorID == 0 {
+			row.UsuarioLavadorID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, row.EmpresaID, 0, row.UsuarioLavador)
+		}
 		row.RolOperacion = normalizeComisionRol(row.RolOperacion)
 		row.Estado = normalizeComisionEstado(row.Estado)
 		result = append(result, row)
@@ -1452,10 +1484,19 @@ func GetEmpresaComisionesServicioReporte(dbConn *sql.DB, empresaID int64, filter
 		}
 
 		key := defaultComisionLavador(mov.UsuarioLavador, mov.UsuarioOrigen)
+		if mov.UsuarioLavadorID > 0 {
+			key = fmt.Sprintf("usuario:%d", mov.UsuarioLavadorID)
+		}
 		entry := byLavador[key]
 		if entry == nil {
-			entry = &EmpresaComisionServicioLavadorResumen{UsuarioLavador: key}
+			entry = &EmpresaComisionServicioLavadorResumen{
+				UsuarioID:      mov.UsuarioLavadorID,
+				UsuarioLavador: defaultComisionLavador(mov.UsuarioLavador, mov.UsuarioOrigen),
+			}
 			byLavador[key] = entry
+		}
+		if entry.UsuarioID == 0 {
+			entry.UsuarioID = mov.UsuarioLavadorID
 		}
 		entry.TotalBaseServicios = round2(entry.TotalBaseServicios + mov.BaseServicio)
 		entry.TotalComision = round2(entry.TotalComision + mov.MontoComision)
@@ -1617,8 +1658,10 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 		PorcentajeComision:   cfg.PorcentajeComision,
 		FiltroServicio:       cfg.FiltroServicio,
 		UsuarioLavador:       defaultComisionLavador(usuarioLavador, usuarioOrigen),
+		UsuarioLavadorID:     resolveEmpresaUsuarioIDByReferenceSilent(dbConn, empresaID, 0, defaultComisionLavador(usuarioLavador, usuarioOrigen)),
 		RolOperacion:         normalizeComisionRol(rolOperacion),
 	}
+	usuarioOrigenID := resolveEmpresaUsuarioIDByReferenceSilent(dbConn, empresaID, 0, usuarioOrigen)
 
 	if !cfg.HabilitarComisiones {
 		result.Warning = "configuracion de comisiones deshabilitada"
@@ -1710,7 +1753,9 @@ func RegisterEmpresaComisionesServicioDesdeCarrito(dbConn *sql.DB, empresaID, ca
 			ServicioNombre:       firstNonEmpty(item.ServicioNombre, item.Descripcion),
 			ServicioCategoria:    item.ServicioCategoria,
 			UsuarioOrigen:        usuarioOrigen,
+			UsuarioOrigenID:      usuarioOrigenID,
 			UsuarioLavador:       result.UsuarioLavador,
+			UsuarioLavadorID:     result.UsuarioLavadorID,
 			RolOperacion:         result.RolOperacion,
 			EscalaID:             escalaID,
 			VentaReferencia:      ventaReferencia,
@@ -1785,8 +1830,14 @@ func GetEmpresaComisionServicioLiquidacionResumen(dbConn *sql.DB, empresaID int6
 	}
 
 	aliasPH := strings.TrimRight(strings.Repeat("?,", len(ids)), ",")
-	args := make([]interface{}, 0, 5+len(ids)*2)
+	args := make([]interface{}, 0, 5+len(ids)*4)
 	args = append(args, empresaID, desde, hasta, desde, hasta)
+	for _, alias := range ids {
+		args = append(args, alias)
+	}
+	for _, alias := range ids {
+		args = append(args, alias)
+	}
 	for _, alias := range ids {
 		args = append(args, alias)
 	}
@@ -1815,6 +1866,8 @@ func GetEmpresaComisionServicioLiquidacionResumen(dbConn *sql.DB, empresaID int6
 		AND (
 			lower(COALESCE(usuario_lavador, '')) IN (` + aliasPH + `)
 			OR lower(COALESCE(usuario_origen, '')) IN (` + aliasPH + `)
+			OR CAST(COALESCE(usuario_lavador_id, 0) AS TEXT) IN (` + aliasPH + `)
+			OR CAST(COALESCE(usuario_origen_id, 0) AS TEXT) IN (` + aliasPH + `)
 		)
 	ORDER BY id ASC`
 

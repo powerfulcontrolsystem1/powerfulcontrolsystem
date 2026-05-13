@@ -1962,9 +1962,10 @@ ul{padding-left:18px}
 }
 
 /* Estilos específicos para la página de login centrada */
-.login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px}
+.login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px;position:relative;overflow:hidden}
 .login-page .container{max-width:420px;margin:0}
 .login-page .card{text-align:center;padding:28px}
+.login-executive-visual{display:none}
 .login-page h2{font-size:1.4rem;margin-bottom:6px}
 .login-page p{margin-bottom:18px}
 .login-page .login-subtitle{margin:0 0 16px 0;color:var(--muted)}
@@ -2022,6 +2023,36 @@ ul{padding-left:18px}
 .login-help-icon{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--accent);font-weight:900;font-size:1.1rem;text-decoration:none;box-shadow:var(--shadow-soft);transition:transform .18s ease,border-color .18s ease,background .18s ease,color .18s ease}
 .login-help-icon:hover,.login-help-icon:focus-visible{transform:translateY(-1px);border-color:color-mix(in srgb,var(--accent) 55%,var(--border));background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--text);outline:none}
 .login-page .login-help-link{color:var(--login-link-color);text-decoration:underline;font-weight:700;font-size:0.95rem;font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif}
+
+@media (min-width: 980px) {
+  .login-page .login-header,
+  .login-page .container {
+    position: relative;
+    z-index: 2;
+  }
+
+  .login-executive-visual {
+    display: block;
+    position: fixed;
+    right: clamp(18px, 4vw, 72px);
+    bottom: clamp(10px, 3vw, 48px);
+    width: clamp(280px, 31vw, 500px);
+    max-height: min(62vh, 520px);
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    opacity: .9;
+    z-index: 1;
+    filter: drop-shadow(0 26px 42px color-mix(in srgb, #020617 24%, transparent));
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1240px) {
+  .login-executive-visual {
+    right: -52px;
+    opacity: .46;
+  }
+}
 .register-admin-page .container{max-width:640px}
 .register-admin-page .login-header{max-width:640px}
 .register-admin-page .card{padding:30px 32px}
@@ -2108,7 +2139,10 @@ ul{padding-left:18px}
 .epayco-response-copy{max-width:32rem;margin-left:auto;margin-right:auto}
 
 .login-usuario-body{min-height:100vh;background:var(--bg);color:var(--text)}
-.login-usuario-page{min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text);transition:background .2s ease,color .2s ease}
+.login-usuario-page{position:relative;min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text);transition:background .2s ease,color .2s ease;overflow:hidden}
+.login-usuario-hero-visual{position:absolute;top:18px;right:24px;width:clamp(150px,18vw,260px);aspect-ratio:32/21;margin:0;z-index:0;pointer-events:none;filter:drop-shadow(0 22px 34px color-mix(in srgb,#020617 20%,transparent))}
+.login-usuario-hero-visual img{display:block;width:100%;height:100%;object-fit:contain}
+.login-usuario-page .login-header,.login-usuario-page .container{position:relative;z-index:1}
 .login-usuario-page .card{background:var(--surface);border:1px solid var(--border);color:var(--text);box-shadow:var(--shadow-soft)}
 .login-usuario-page .form-input,.login-usuario-page input,.login-usuario-page select,.login-usuario-page textarea{background:var(--form-input-bg);border-color:var(--form-border);color:var(--text)}
 .login-usuario-page .form-input::placeholder,.login-usuario-page input::placeholder,.login-usuario-page textarea::placeholder{color:color-mix(in srgb,var(--muted) 74%,transparent)}
@@ -2161,11 +2195,14 @@ ul{padding-left:18px}
 .login-usuario-modal .modal__body p{margin:0 0 12px;color:var(--text)}
 
 @media (max-width:960px){
+  .login-usuario-page{overflow:visible}
+  .login-usuario-hero-visual{position:static;width:min(220px,62vw);margin:0 auto 8px;filter:drop-shadow(0 16px 24px color-mix(in srgb,#020617 16%,transparent))}
   .login-usuario-grid{grid-template-columns:1fr}
   .login-usuario-highlights{grid-template-columns:1fr}
 }
 
 @media (max-width:420px){
+  .login-usuario-hero-visual{width:min(170px,58vw);margin-bottom:4px}
   .login-usuario-card{padding:18px !important}
   .login-usuario-contract-head{flex-direction:column}
 }
@@ -3679,13 +3716,26 @@ body.super-page{
 
 .pcs-help-ticket-backdrop{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(8,12,24,.52)}
 .pcs-help-ticket-backdrop.is-open{display:flex}
-.pcs-help-ticket-dialog{width:min(560px,100%);max-height:calc(100vh - 36px);overflow:auto;border:1px solid var(--border);border-radius:12px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));color:var(--text);box-shadow:0 28px 80px rgba(3,10,20,.36)}
+.pcs-help-ticket-dialog{width:min(620px,100%);max-height:calc(100vh - 36px);overflow:auto;border:1px solid var(--border);border-radius:8px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));color:var(--text);box-shadow:0 28px 80px rgba(3,10,20,.36)}
 .pcs-help-ticket-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px 16px 12px;border-bottom:1px solid var(--border)}
 .pcs-help-ticket-header h2{margin:0;font-size:1.06rem;line-height:1.2;color:var(--text)}
 .pcs-help-ticket-header p{margin:5px 0 0;color:var(--muted);font-size:.86rem;line-height:1.35}
-.pcs-help-ticket-close{width:38px;height:38px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:900;cursor:pointer}
+.pcs-help-ticket-close{width:38px;height:38px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-weight:900;cursor:pointer}
 .pcs-help-ticket-form{display:grid;gap:10px;padding:16px}
 .pcs-help-ticket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pcs-help-ticket-context{border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font-size:.8rem;font-weight:800;line-height:1.35;padding:10px 12px;overflow-wrap:anywhere}
+.pcs-help-ticket-toggle{display:flex;align-items:center;gap:8px;color:var(--text);font-size:.84rem;font-weight:800;line-height:1.35}
+.pcs-help-ticket-toggle input{width:17px;height:17px;accent-color:var(--accent);flex:0 0 auto}
+.pcs-help-ticket-recent{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;display:grid;gap:8px}
+.pcs-help-ticket-recent-title{color:var(--text);font-size:.82rem;font-weight:900}
+.pcs-help-ticket-recent-list{display:grid;gap:6px;color:var(--muted);font-size:.82rem}
+.pcs-help-ticket-recent-item{display:grid;grid-template-columns:auto auto;gap:3px 8px;align-items:start;border-top:1px solid var(--border);padding-top:7px}
+.pcs-help-ticket-recent-item:first-child{border-top:0;padding-top:0}
+.pcs-help-ticket-recent-item strong{color:var(--text);font-size:.8rem}
+.pcs-help-ticket-recent-item span{justify-self:end;text-transform:capitalize;color:var(--accent);font-weight:900;font-size:.75rem}
+.pcs-help-ticket-recent-item p{grid-column:1/-1;margin:0;color:var(--text);line-height:1.3;overflow-wrap:anywhere}
+.pcs-help-ticket-recent-item small{grid-column:1/-1;color:var(--muted)}
+.pcs-help-ticket-empty{color:var(--muted);font-weight:750}
 .pcs-help-ticket-status{min-height:20px;color:var(--muted);font-size:.86rem;font-weight:750}
 .pcs-help-ticket-status.is-error{color:var(--danger,#ef4444)}
 .pcs-help-ticket-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
@@ -8700,12 +8750,6 @@ body.cart-touch-mode #carritoBtnBuscarBotones{
   border-color:rgba(92,245,144,0.4);
   background:rgba(92,245,144,0.12);
   color:#c4ffd9;
-}
-
-.ventas-simple-sync-tag.is-offline{
-  border-color:rgba(255,166,75,0.45);
-  background:rgba(255,166,75,0.14);
-  color:#ffd6ae;
 }
 
 .ventas-simple-sync-tag.is-syncing{

@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -15,6 +16,8 @@ type AyudaTicket struct {
 	EmpresaNombre      string `json:"empresa_nombre"`
 	SolicitanteNombre  string `json:"solicitante_nombre"`
 	SolicitanteEmail   string `json:"solicitante_email"`
+	ContactoTelefono   string `json:"contacto_telefono"`
+	ContactoPreferido  string `json:"contacto_preferido"`
 	Origen             string `json:"origen"`
 	Modulo             string `json:"modulo"`
 	Ruta               string `json:"ruta"`
@@ -23,6 +26,7 @@ type AyudaTicket struct {
 	Prioridad          string `json:"prioridad"`
 	Estado             string `json:"estado"`
 	UltimoMensaje      string `json:"ultimo_mensaje"`
+	ContextoJSON       string `json:"contexto_json"`
 	AsignadoA          string `json:"asignado_a"`
 	CerradoEn          string `json:"cerrado_en"`
 	FechaCreacion      string `json:"fecha_creacion"`
@@ -47,6 +51,8 @@ type AyudaTicketCreateRequest struct {
 	EmpresaNombre     string
 	SolicitanteNombre string
 	SolicitanteEmail  string
+	ContactoTelefono  string
+	ContactoPreferido string
 	Origen            string
 	Modulo            string
 	Ruta              string
@@ -54,6 +60,7 @@ type AyudaTicketCreateRequest struct {
 	Categoria         string
 	Prioridad         string
 	Mensaje           string
+	Contexto          map[string]interface{}
 	UsuarioCreador    string
 }
 
@@ -92,6 +99,8 @@ func EnsureAyudaTicketsSchema(dbConn *sql.DB) error {
 			empresa_nombre TEXT,
 			solicitante_nombre TEXT,
 			solicitante_email TEXT,
+			contacto_telefono TEXT,
+			contacto_preferido TEXT DEFAULT 'email',
 			origen TEXT DEFAULT 'sistema',
 			modulo TEXT,
 			ruta TEXT,
@@ -100,6 +109,7 @@ func EnsureAyudaTicketsSchema(dbConn *sql.DB) error {
 			prioridad TEXT DEFAULT 'media',
 			estado TEXT DEFAULT 'nuevo',
 			ultimo_mensaje TEXT,
+			contexto_json TEXT,
 			asignado_a TEXT,
 			cerrado_en TEXT,
 			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP::text,
@@ -121,6 +131,8 @@ func EnsureAyudaTicketsSchema(dbConn *sql.DB) error {
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS empresa_nombre TEXT`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS solicitante_nombre TEXT`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS solicitante_email TEXT`,
+		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS contacto_telefono TEXT`,
+		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS contacto_preferido TEXT DEFAULT 'email'`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS origen TEXT DEFAULT 'sistema'`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS modulo TEXT`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS ruta TEXT`,
@@ -128,6 +140,7 @@ func EnsureAyudaTicketsSchema(dbConn *sql.DB) error {
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS prioridad TEXT DEFAULT 'media'`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'nuevo'`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS ultimo_mensaje TEXT`,
+		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS contexto_json TEXT`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS asignado_a TEXT`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS cerrado_en TEXT`,
 		`ALTER TABLE super_tickets_ayuda ADD COLUMN IF NOT EXISTS fecha_actualizacion TEXT DEFAULT CURRENT_TIMESTAMP::text`,
@@ -165,18 +178,22 @@ func CreateAyudaTicket(dbConn *sql.DB, req AyudaTicketCreateRequest) (AyudaTicke
 	req.Prioridad = normalizeAyudaPrioridad(req.Prioridad)
 	req.Origen = firstNonEmptyDB(strings.TrimSpace(req.Origen), "sistema")
 	req.UsuarioCreador = firstNonEmptyDB(strings.TrimSpace(req.UsuarioCreador), strings.TrimSpace(req.SolicitanteEmail), "sistema")
+	req.ContactoPreferido = normalizeAyudaContactoPreferido(req.ContactoPreferido)
+	contextoJSON := normalizeAyudaContextoJSON(req.Contexto)
 	codigo := nextAyudaTicketCodigo(dbConn)
 
 	var id int64
 	err := QueryRowCompat(dbConn, `INSERT INTO super_tickets_ayuda
-		(codigo, empresa_id, empresa_nombre, solicitante_nombre, solicitante_email, origen, modulo, ruta, asunto, categoria, prioridad, estado, ultimo_mensaje, fecha_creacion, fecha_actualizacion, usuario_creador)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'nuevo', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+		(codigo, empresa_id, empresa_nombre, solicitante_nombre, solicitante_email, contacto_telefono, contacto_preferido, origen, modulo, ruta, asunto, categoria, prioridad, estado, ultimo_mensaje, contexto_json, fecha_creacion, fecha_actualizacion, usuario_creador)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'nuevo', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
 		RETURNING id`,
 		codigo,
 		req.EmpresaID,
 		truncateTextDB(strings.TrimSpace(req.EmpresaNombre), 180),
 		truncateTextDB(strings.TrimSpace(req.SolicitanteNombre), 140),
 		truncateTextDB(strings.TrimSpace(strings.ToLower(req.SolicitanteEmail)), 180),
+		truncateTextDB(strings.TrimSpace(req.ContactoTelefono), 80),
+		req.ContactoPreferido,
 		truncateTextDB(req.Origen, 80),
 		truncateTextDB(strings.TrimSpace(req.Modulo), 120),
 		truncateTextDB(strings.TrimSpace(req.Ruta), 500),
@@ -184,6 +201,7 @@ func CreateAyudaTicket(dbConn *sql.DB, req AyudaTicketCreateRequest) (AyudaTicke
 		req.Categoria,
 		req.Prioridad,
 		req.Mensaje,
+		contextoJSON,
 		req.UsuarioCreador,
 	).Scan(&id)
 	if err != nil {
@@ -224,12 +242,12 @@ func ListAyudaTickets(dbConn *sql.DB, filter AyudaTicketFilter) ([]AyudaTicket, 
 		args = append(args, prioridad)
 	}
 	if q := strings.TrimSpace(filter.Query); q != "" {
-		where = append(where, "(LOWER(COALESCE(codigo,'')) LIKE LOWER(?) OR LOWER(COALESCE(asunto,'')) LIKE LOWER(?) OR LOWER(COALESCE(empresa_nombre,'')) LIKE LOWER(?) OR LOWER(COALESCE(solicitante_email,'')) LIKE LOWER(?))")
+		where = append(where, "(LOWER(COALESCE(codigo,'')) LIKE LOWER(?) OR LOWER(COALESCE(asunto,'')) LIKE LOWER(?) OR LOWER(COALESCE(empresa_nombre,'')) LIKE LOWER(?) OR LOWER(COALESCE(solicitante_email,'')) LIKE LOWER(?) OR LOWER(COALESCE(contacto_telefono,'')) LIKE LOWER(?) OR LOWER(COALESCE(categoria,'')) LIKE LOWER(?) OR LOWER(COALESCE(modulo,'')) LIKE LOWER(?))")
 		like := "%" + q + "%"
-		args = append(args, like, like, like, like)
+		args = append(args, like, like, like, like, like, like, like)
 	}
 	args = append(args, limit)
-	rows, err := ExecQueryCompat(dbConn, `SELECT id, COALESCE(codigo,''), COALESCE(empresa_id,0), COALESCE(empresa_nombre,''), COALESCE(solicitante_nombre,''), COALESCE(solicitante_email,''), COALESCE(origen,''), COALESCE(modulo,''), COALESCE(ruta,''), COALESCE(asunto,''), COALESCE(categoria,''), COALESCE(prioridad,''), COALESCE(estado,''), COALESCE(ultimo_mensaje,''), COALESCE(asignado_a,''), COALESCE(cerrado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	rows, err := ExecQueryCompat(dbConn, `SELECT id, COALESCE(codigo,''), COALESCE(empresa_id,0), COALESCE(empresa_nombre,''), COALESCE(solicitante_nombre,''), COALESCE(solicitante_email,''), COALESCE(contacto_telefono,''), COALESCE(contacto_preferido,''), COALESCE(origen,''), COALESCE(modulo,''), COALESCE(ruta,''), COALESCE(asunto,''), COALESCE(categoria,''), COALESCE(prioridad,''), COALESCE(estado,''), COALESCE(ultimo_mensaje,''), COALESCE(contexto_json,''), COALESCE(asignado_a,''), COALESCE(cerrado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
 		FROM super_tickets_ayuda
 		WHERE `+strings.Join(where, " AND ")+`
 		ORDER BY CASE LOWER(COALESCE(estado,'')) WHEN 'nuevo' THEN 0 WHEN 'en_revision' THEN 1 WHEN 'respondido' THEN 2 ELSE 3 END, id DESC
@@ -253,7 +271,7 @@ func GetAyudaTicket(dbConn *sql.DB, id int64) (AyudaTicket, error) {
 	if err := EnsureAyudaTicketsSchema(dbConn); err != nil {
 		return AyudaTicket{}, err
 	}
-	row := QueryRowCompat(dbConn, `SELECT id, COALESCE(codigo,''), COALESCE(empresa_id,0), COALESCE(empresa_nombre,''), COALESCE(solicitante_nombre,''), COALESCE(solicitante_email,''), COALESCE(origen,''), COALESCE(modulo,''), COALESCE(ruta,''), COALESCE(asunto,''), COALESCE(categoria,''), COALESCE(prioridad,''), COALESCE(estado,''), COALESCE(ultimo_mensaje,''), COALESCE(asignado_a,''), COALESCE(cerrado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
+	row := QueryRowCompat(dbConn, `SELECT id, COALESCE(codigo,''), COALESCE(empresa_id,0), COALESCE(empresa_nombre,''), COALESCE(solicitante_nombre,''), COALESCE(solicitante_email,''), COALESCE(contacto_telefono,''), COALESCE(contacto_preferido,''), COALESCE(origen,''), COALESCE(modulo,''), COALESCE(ruta,''), COALESCE(asunto,''), COALESCE(categoria,''), COALESCE(prioridad,''), COALESCE(estado,''), COALESCE(ultimo_mensaje,''), COALESCE(contexto_json,''), COALESCE(asignado_a,''), COALESCE(cerrado_en,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,'')
 		FROM super_tickets_ayuda WHERE id = ? LIMIT 1`, id)
 	return scanAyudaTicketRow(row)
 }
@@ -314,13 +332,19 @@ func AddAyudaTicketMensaje(dbConn *sql.DB, ticketID int64, msg AyudaTicketMensaj
 	if err != nil {
 		return err
 	}
+	if interno == 1 {
+		_, err = ExecCompat(dbConn, `UPDATE super_tickets_ayuda
+			SET fecha_actualizacion = CURRENT_TIMESTAMP
+			WHERE id = ?`, ticketID)
+		return err
+	}
 	nextState := "en_revision"
 	if msg.AutorTipo == "super" {
 		nextState = "respondido"
 	}
 	_, err = ExecCompat(dbConn, `UPDATE super_tickets_ayuda
-		SET ultimo_mensaje = ?, estado = CASE WHEN LOWER(COALESCE(estado,'')) = 'cerrado' THEN estado ELSE ? END, fecha_actualizacion = CURRENT_TIMESTAMP
-		WHERE id = ?`, msg.Mensaje, nextState, ticketID)
+		SET ultimo_mensaje = ?, estado = CASE WHEN LOWER(COALESCE(estado,'')) = 'cerrado' AND ? <> 'en_revision' THEN estado ELSE ? END, fecha_actualizacion = CURRENT_TIMESTAMP
+		WHERE id = ?`, msg.Mensaje, nextState, nextState, ticketID)
 	return err
 }
 
@@ -371,13 +395,13 @@ func nextAyudaTicketCodigo(dbConn *sql.DB) string {
 
 func scanAyudaTicketRow(row *sql.Row) (AyudaTicket, error) {
 	var item AyudaTicket
-	err := row.Scan(&item.ID, &item.Codigo, &item.EmpresaID, &item.EmpresaNombre, &item.SolicitanteNombre, &item.SolicitanteEmail, &item.Origen, &item.Modulo, &item.Ruta, &item.Asunto, &item.Categoria, &item.Prioridad, &item.Estado, &item.UltimoMensaje, &item.AsignadoA, &item.CerradoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador)
+	err := row.Scan(&item.ID, &item.Codigo, &item.EmpresaID, &item.EmpresaNombre, &item.SolicitanteNombre, &item.SolicitanteEmail, &item.ContactoTelefono, &item.ContactoPreferido, &item.Origen, &item.Modulo, &item.Ruta, &item.Asunto, &item.Categoria, &item.Prioridad, &item.Estado, &item.UltimoMensaje, &item.ContextoJSON, &item.AsignadoA, &item.CerradoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador)
 	return item, err
 }
 
 func scanAyudaTicketRows(rows *sql.Rows) (AyudaTicket, error) {
 	var item AyudaTicket
-	err := rows.Scan(&item.ID, &item.Codigo, &item.EmpresaID, &item.EmpresaNombre, &item.SolicitanteNombre, &item.SolicitanteEmail, &item.Origen, &item.Modulo, &item.Ruta, &item.Asunto, &item.Categoria, &item.Prioridad, &item.Estado, &item.UltimoMensaje, &item.AsignadoA, &item.CerradoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador)
+	err := rows.Scan(&item.ID, &item.Codigo, &item.EmpresaID, &item.EmpresaNombre, &item.SolicitanteNombre, &item.SolicitanteEmail, &item.ContactoTelefono, &item.ContactoPreferido, &item.Origen, &item.Modulo, &item.Ruta, &item.Asunto, &item.Categoria, &item.Prioridad, &item.Estado, &item.UltimoMensaje, &item.ContextoJSON, &item.AsignadoA, &item.CerradoEn, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador)
 	return item, err
 }
 
@@ -430,6 +454,37 @@ func normalizeAyudaAutorTipo(value string) string {
 	default:
 		return "usuario"
 	}
+}
+
+func normalizeAyudaContactoPreferido(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "telefono", "whatsapp", "email":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return "email"
+	}
+}
+
+func normalizeAyudaContextoJSON(value map[string]interface{}) string {
+	if len(value) == 0 {
+		return ""
+	}
+	safe := make(map[string]interface{}, len(value))
+	for key, raw := range value {
+		k := strings.ToLower(strings.TrimSpace(key))
+		switch k {
+		case "titulo", "title", "url", "ruta", "modulo", "viewport", "screen", "user_agent", "idioma", "tema", "online", "hora_local":
+			safe[k] = truncateTextDB(fmt.Sprint(raw), 700)
+		}
+	}
+	if len(safe) == 0 {
+		return ""
+	}
+	b, err := json.Marshal(safe)
+	if err != nil {
+		return ""
+	}
+	return truncateTextDB(string(b), 2500)
 }
 
 func firstNonEmptyDB(values ...string) string {

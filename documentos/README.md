@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
-Fecha: 2026-05-10
-Estado: vigente, actualizado con roles y permisos finos para nuevos modulos/paginas, tickets de ayuda propios, ayuda privada del super administrador, 20 verticales empresariales 2026, Modulos empresariales Colombia (bancos/pagos, gestion documental, KYC/KYB, contratos y calidad), Logistica avanzada / WMS, Declaraciones Tributarias y Motor de Impuestos Colombia, Portal de Terceros y Certificados Tributarios, Activos Fijos e Intangibles NIIF/Fiscal, Propiedad Horizontal, promocion de licencias por asesor, Cierre y bloqueo fiscal, Centros de costo y rentabilidad, CRM y ventas avanzadas, Inventario avanzado, Compras avanzadas, Captura inteligente de compras/gastos OCR/IA, Importaciones y costeo, Activos fijos avanzado, Nomina Colombia avanzada, Tesoreria y presupuesto, Produccion / MRP empresarial, reportes colombianos avanzados, suite contable Colombia avanzada, domicilios profesional, Taxi System profesional, carta publica de productos y QA transversal de modulos 2026-05-06
+Fecha: 2026-05-13
+Estado: vigente, actualizado con operacion conectada obligatoria, cajas simultaneas por licencia, tickets de ayuda propios, correos masivos, alertas de vencimiento de licencias, mantenimiento programado, login global de usuarios de empresa, OnlyOffice local editable, backups locales, retiro de Nextcloud, VPS portable Docker, seguridad SSH 49222, 30 verticales canonicos, roles y permisos finos, modulos empresariales Colombia, suite contable Colombia avanzada, reportes, auditoria y QA transversal.
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -9,8 +9,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 1. `documentos/descripcion_del_proyecto`
 2. `documentos/estructura_bd.md`
-3. `documentos/diagramas/estructura_del_codigo.md`
-4. `documentos/descripcion_de_modulos`
+3. `documentos/diagramas/diagrama_entidad_relacion.md`
+4. `documentos/diagramas/estructura_del_codigo.md`
 5. `documentos/matriz_roles_permisos_pos_multiempresa.md`
 6. `documentos/reporte_estado_modulos_2026-05-05.md`
 7. `documentos/gobernanza_tecnica/README.md`
@@ -18,6 +18,11 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-13: se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa rapido del estado vigente: reglas de producto, autenticacion, licencias/cajas, operacion conectada, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
+- 2026-05-13: la ayuda principal `web/ayuda/ayuda.html` se actualiza con operacion conectada, cajas simultaneas, login por invitacion, soporte por tickets, documentos locales, backups, mantenimiento, correos globales y criterios de validacion.
+- 2026-05-13: licencias incorporan `max_cajas_simultaneas`; el default es 2 cajas por empresa y 4 cajas para licencias de 4000 documentos.
+- 2026-05-13: se retira la operacion/facturacion offline para clientes; ventas, cobros, documentos y facturacion requieren servidor activo.
+- 2026-05-13: `login_usuario.html` queda como acceso global de usuarios operativos y `login.html` mantiene acceso administrativo con presentacion visual profesional.
 - 2026-05-10: implementados y documentados los 20 verticales empresariales 2026 sobre el motor comun `empresa_modulos_colombia_*`, con catalogo backend/frontend, licencias por tipo, preconfiguracion, selector de empresas, portada publica, checkout, permisos, ayuda administrativa e IA. Ver `documentos/plan_20_modulos_verticales_2026-05-10.md` y `documentos/arquitectura_modulos_universales.md`.
 - 2026-05-10: actualizado el sistema documental de roles/permisos con modulos finos (`crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`), wrappers API especificos y compatibilidad de licencias amplias. Ver `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
 - 2026-05-10: la ayuda administrativa completa `/ayuda/ayuda.html` se mantiene exclusiva para `super_administrador` y se abre desde el boton `Ayuda super administrador` en `web/super_administrador.html`; el rol `control_super_administrador` no ve ese acceso.
@@ -69,6 +74,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 - Vision funcional y alcance actual: `documentos/descripcion_del_proyecto`
 - Esquema fisico de base de datos: `documentos/estructura_bd.md`
+- Diagrama entidad relacion vigente: `documentos/diagramas/diagrama_entidad_relacion.md`
+- Imagen del DER: `documentos/diagramas/diagrama_entidad_relacion.svg`
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
@@ -103,6 +110,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Historial detallado de trabajo: `documentos/historial_de_cambios`
 - Resumen ejecutivo de cambios: `CHANGELOG.md`
 - Gobernanza tecnica, ADRs, contratos y runbooks: `documentos/gobernanza_tecnica/README.md`
+- Estado documental consolidado 2026-05-13: `documentos/estado_documentacion_2026-05-13.md`
 - Runbook actualizado de pagos de licencias: `documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md`
 - Contrato actualizado de checkout publico: `documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md`
 - Contrato de documentos dinamicos IA: `documentos/gobernanza_tecnica/contratos/contrato_documentos_dinamicos_ia_exportacion.md`

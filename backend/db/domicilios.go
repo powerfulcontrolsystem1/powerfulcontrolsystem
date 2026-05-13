@@ -1506,7 +1506,7 @@ func createDomicilioOrderCarrito(dbConn *sql.DB, order EmpresaDomicilioOrder, us
 	if order.Descuento > 0 {
 		descuentoTipo = "manual"
 	}
-	if err := PayCarritoStationSession(dbConn, order.EmpresaID, carritoID, metodo, order.CodigoPedido, descuentoTipo, "", order.Descuento, 0, order.Total, 0, strings.TrimSpace(usuario)); err != nil {
+	if err := PayCarritoStationSession(dbConn, order.EmpresaID, carritoID, metodo, order.CodigoPedido, descuentoTipo, "", order.Descuento, 0, order.Total, 0, 0, "", "", 0, strings.TrimSpace(usuario)); err != nil {
 		return 0, 0, err
 	}
 	return carritoID, clienteID, nil

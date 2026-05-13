@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Correos masivos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .mass-mail-shell{max-width:1280px;margin:0 auto;padding:16px;display:grid;gap:12px}
+    .mass-mail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .mass-mail-header h1{margin:0;color:var(--text);font-size:1.4rem}
+    .mass-mail-header p{margin:4px 0 0;color:var(--muted);font-size:.84rem;line-height:1.35}
+    .mass-mail-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .mass-mail-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);gap:12px;align-items:start}
+    .mass-mail-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .mass-mail-kpi{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px;min-width:0}
+    .mass-mail-kpi span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;font-weight:900}
+    .mass-mail-kpi strong{display:block;margin-top:5px;color:var(--text);font-size:1.2rem}
+    .mass-mail-form{display:grid;gap:12px}
+    .mass-mail-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .mass-mail-preview{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;display:grid;gap:12px}
+    .mass-mail-preview-list{display:grid;gap:7px}
+    .mass-mail-preview-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:9px}
+    .mass-mail-preview-item strong{display:block;color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
+    .mass-mail-preview-item span{display:block;color:var(--muted);font-size:.74rem;margin-top:2px}
+    .mass-mail-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:4px 8px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text);font-size:.7rem;font-weight:900;text-transform:capitalize;white-space:nowrap}
+    .mass-mail-confirm{display:flex;align-items:flex-start;gap:10px;border:1px solid color-mix(in srgb,#f59e0b 36%,var(--border));border-radius:8px;background:color-mix(in srgb,#f59e0b 9%,var(--surface));padding:10px;color:var(--text);font-weight:780;line-height:1.35}
+    .mass-mail-confirm input{width:18px;height:18px;margin-top:2px;accent-color:var(--accent)}
+    .mass-mail-status{min-height:22px;color:var(--muted);font-weight:780}
+    .mass-mail-status.is-error{color:var(--danger,#ef4444)}
+    .mass-mail-status.is-ok{color:#15803d}
+    .mass-mail-history-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .mass-mail-history{min-width:960px;width:100%;border-collapse:collapse}
+    .mass-mail-test-mode{border:1px solid color-mix(in srgb,#2563eb 40%,var(--border));background:color-mix(in srgb,#2563eb 10%,var(--surface));color:var(--text);border-radius:8px;padding:10px;font-weight:820}
+    @media(max-width:980px){.mass-mail-grid,.mass-mail-row{grid-template-columns:1fr}.mass-mail-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.mass-mail-shell{padding:12px}.mass-mail-kpis{grid-template-columns:1fr}.mass-mail-actions .btn{flex:1 1 auto}.mass-mail-preview-item{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="mass-mail-shell">
+    <header class="mass-mail-header">
+      <div>
+        <h1>Correos masivos</h1>
+        <p>Comunicados globales para administradores y usuarios de empresa con historial de envio.</p>
+      </div>
+      <div class="mass-mail-actions">
+        <button id="btnPreview" type="button" class="btn secondary">Previsualizar</button>
+        <button id="btnReload" type="button" class="btn secondary">Actualizar</button>
+      </div>
+    </header>
+
+    <section class="mass-mail-kpis" aria-label="Resumen destinatarios">
+      <div class="mass-mail-kpi"><span>Total</span><strong id="kpiTotal">0</strong></div>
+      <div class="mass-mail-kpi"><span>Administradores</span><strong id="kpiAdmins">0</strong></div>
+      <div class="mass-mail-kpi"><span>Usuarios empresa</span><strong id="kpiUsuarios">0</strong></div>
+      <div class="mass-mail-kpi"><span>Omitidos</span><strong id="kpiOmitidos">0</strong></div>
+    </section>
+
+    <section class="mass-mail-grid">
+      <article class="card form">
+        <form id="massMailForm" class="mass-mail-form">
+          <div class="mass-mail-row">
+            <label class="form-col">
+              <span class="form-label">Alcance</span>
+              <select id="alcance" class="form-input">
+                <option value="todos">Administradores y usuarios</option>
+                <option value="administradores">Solo administradores</option>
+                <option value="usuarios_empresa">Solo usuarios de empresa</option>
+              </select>
+            </label>
+            <label class="form-col">
+              <span class="form-label">Categoria</span>
+              <select id="categoria" class="form-input">
+                <option value="informacion">Informacion importante</option>
+                <option value="politicas">Politicas</option>
+                <option value="actualizaciones">Actualizaciones</option>
+                <option value="mantenimiento">Mantenimiento</option>
+                <option value="seguridad">Seguridad</option>
+                <option value="otro">Otro</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="form-col">
+            <span class="form-label">Asunto</span>
+            <input id="asunto" class="form-input" type="text" maxlength="180" placeholder="Actualizacion importante de Powerful Control System" required>
+          </label>
+
+          <label class="form-col">
+            <span class="form-label">Mensaje</span>
+            <textarea id="cuerpoTexto" class="form-textarea" rows="11" maxlength="20000" placeholder="Escribe el comunicado que recibiran los destinatarios." required></textarea>
+          </label>
+
+          <label class="form-col">
+            <span class="form-label">Observaciones internas</span>
+            <input id="observaciones" class="form-input" type="text" maxlength="400" placeholder="Motivo interno de la campaña">
+          </label>
+
+          <label class="mass-mail-confirm">
+            <input id="confirmar" type="checkbox">
+            <span>Confirmo el envio del comunicado al alcance seleccionado.</span>
+          </label>
+
+          <div class="mass-mail-actions">
+            <button id="btnSend" type="submit" class="btn">Enviar correo masivo</button>
+          </div>
+          <div id="status" class="mass-mail-status"></div>
+        </form>
+      </article>
+
+      <aside class="mass-mail-preview">
+        <div id="testModeBox" class="mass-mail-test-mode" hidden>Modo pruebas de correo activo: el envio queda simulado y auditado.</div>
+        <div>
+          <h2 style="margin:0 0 6px;font-size:1rem;color:var(--text)">Destinatarios</h2>
+          <div class="form-help">Muestra protegida de correos incluidos en el lote.</div>
+        </div>
+        <div id="previewList" class="mass-mail-preview-list">
+          <div class="muted">Cargando destinatarios...</div>
+        </div>
+      </aside>
+    </section>
+
+    <section>
+      <div class="mass-mail-header" style="margin-bottom:8px">
+        <div>
+          <h2 style="margin:0;color:var(--text);font-size:1.08rem">Historial</h2>
+        </div>
+      </div>
+      <div class="mass-mail-history-wrap">
+        <table class="table mass-mail-history">
+          <thead>
+            <tr><th>Fecha</th><th>Codigo</th><th>Categoria</th><th>Alcance</th><th>Asunto</th><th>Total</th><th>Enviados</th><th>Fallidos</th><th>Estado</th><th>Usuario</th></tr>
+          </thead>
+          <tbody id="historyRows"><tr><td colspan="10" class="muted">Cargando historial...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const API = '/super/api/correos_masivos';
+      const $ = (id) => document.getElementById(id);
+      let lastPreview = null;
+
+      function esc(v){
+        return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+      }
+      function setStatus(text, type){
+        const el = $('status');
+        el.textContent = text || '';
+        el.classList.toggle('is-error', type === 'error');
+        el.classList.toggle('is-ok', type === 'ok');
+      }
+      function fmtDate(v){
+        const raw = String(v || '').trim();
+        return raw.length > 19 ? raw.slice(0,19).replace('T',' ') : raw.replace('T',' ');
+      }
+      function payload(extra){
+        return Object.assign({
+          alcance: $('alcance').value,
+          categoria: $('categoria').value,
+          asunto: $('asunto').value.trim(),
+          cuerpo_texto: $('cuerpoTexto').value.trim(),
+          observaciones: $('observaciones').value.trim(),
+          confirmar: $('confirmar').checked
+        }, extra || {});
+      }
+      function renderPreview(preview){
+        lastPreview = preview || {};
+        const omitidos = Number(lastPreview.duplicados_omitidos || 0) + Number(lastPreview.invalidos_omitidos || 0);
+        $('kpiTotal').textContent = lastPreview.total || 0;
+        $('kpiAdmins').textContent = lastPreview.administradores || 0;
+        $('kpiUsuarios').textContent = lastPreview.usuarios_empresa || 0;
+        $('kpiOmitidos').textContent = omitidos;
+        const muestra = Array.isArray(lastPreview.muestra) ? lastPreview.muestra : [];
+        $('previewList').innerHTML = muestra.length ? muestra.map(item => (
+          '<div class="mass-mail-preview-item">' +
+            '<div><strong>' + esc(item.email_masked || 'correo protegido') + '</strong><span>' + esc(item.nombre || item.empresa_nombre || 'Sin nombre') + '</span></div>' +
+            '<span class="mass-mail-pill">' + esc((item.tipo_destinatario || '').replace('_',' ')) + '</span>' +
+          '</div>'
+        )).join('') : '<div class="muted">No hay destinatarios para el alcance seleccionado.</div>';
+      }
+      function renderHistory(rows){
+        const body = $('historyRows');
+        rows = Array.isArray(rows) ? rows : [];
+        if (!rows.length) {
+          body.innerHTML = '<tr><td colspan="10" class="muted">Sin campañas registradas.</td></tr>';
+          return;
+        }
+        body.innerHTML = rows.map(item => (
+          '<tr>' +
+            '<td>' + esc(fmtDate(item.fecha_envio || item.fecha_creacion)) + '</td>' +
+            '<td><strong>' + esc(item.codigo) + '</strong></td>' +
+            '<td>' + esc(item.categoria) + '</td>' +
+            '<td>' + esc(String(item.alcance || '').replace('_',' ')) + '</td>' +
+            '<td>' + esc(item.asunto) + '</td>' +
+            '<td>' + esc(item.total_destinatarios || 0) + '</td>' +
+            '<td>' + esc(item.enviados || 0) + '</td>' +
+            '<td>' + esc(item.fallidos || 0) + '</td>' +
+            '<td><span class="mass-mail-pill">' + esc(String(item.estado_envio || '').replace('_',' ')) + '</span></td>' +
+            '<td>' + esc(item.usuario_creador || '') + '</td>' +
+          '</tr>'
+        )).join('');
+      }
+      async function loadAll(){
+        setStatus('Cargando...', '');
+        try {
+          const url = API + '?alcance=' + encodeURIComponent($('alcance').value);
+          const res = await fetch(url, {credentials:'same-origin'});
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data.ok === false) throw new Error(data.error || 'No se pudo cargar');
+          renderPreview(data.preview);
+          renderHistory(data.historial);
+          $('testModeBox').hidden = !data.mail_test_mode;
+          setStatus('', '');
+        } catch (error) {
+          setStatus(error.message || 'Error cargando datos', 'error');
+        }
+      }
+      async function previewOnly(){
+        setStatus('Previsualizando...', '');
+        try {
+          const res = await fetch(API + '?action=preview&alcance=' + encodeURIComponent($('alcance').value), {credentials:'same-origin'});
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data.ok === false) throw new Error(data.error || 'No se pudo previsualizar');
+          renderPreview(data.preview);
+          $('testModeBox').hidden = !data.mail_test_mode;
+          setStatus('Previsualizacion actualizada.', 'ok');
+        } catch (error) {
+          setStatus(error.message || 'Error de previsualizacion', 'error');
+        }
+      }
+      async function send(event){
+        event.preventDefault();
+        const body = payload();
+        if (!body.confirmar) {
+          setStatus('Marca la confirmacion antes de enviar.', 'error');
+          return;
+        }
+        if (!body.asunto || !body.cuerpo_texto) {
+          setStatus('Asunto y mensaje son obligatorios.', 'error');
+          return;
+        }
+        const total = lastPreview && Number(lastPreview.total || 0);
+        if (!total) {
+          setStatus('Previsualiza un alcance con destinatarios antes de enviar.', 'error');
+          return;
+        }
+        $('btnSend').disabled = true;
+        setStatus('Enviando campaña...', '');
+        try {
+          const res = await fetch(API, {
+            method:'POST',
+            credentials:'same-origin',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || data.ok === false) throw new Error(data.error || 'No se pudo enviar');
+          const result = data.result || {};
+          setStatus('Campaña ' + (result.codigo || '') + ' finalizada. Enviados/capturados: ' + (result.enviados_o_capturados || 0) + ', fallidos: ' + (result.fallidos || 0) + '.', 'ok');
+          $('confirmar').checked = false;
+          await loadAll();
+        } catch (error) {
+          setStatus(error.message || 'Error enviando campaña', 'error');
+        } finally {
+          $('btnSend').disabled = false;
+        }
+      }
+
+      $('alcance').addEventListener('change', previewOnly);
+      $('btnPreview').addEventListener('click', previewOnly);
+      $('btnReload').addEventListener('click', loadAll);
+      $('massMailForm').addEventListener('submit', send);
+      loadAll();
+    })();
+  </script>
+</body>
+</html>

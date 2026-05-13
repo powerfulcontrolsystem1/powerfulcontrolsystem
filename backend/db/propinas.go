@@ -53,7 +53,9 @@ type EmpresaPropinaMovimiento struct {
 	CierreCajaID       int64   `json:"cierre_caja_id,omitempty"`
 	VentaReferencia    string  `json:"venta_referencia,omitempty"`
 	UsuarioOrigen      string  `json:"usuario_origen,omitempty"`
+	UsuarioOrigenID    int64   `json:"usuario_origen_id,omitempty"`
 	UsuarioAsignado    string  `json:"usuario_asignado,omitempty"`
+	UsuarioAsignadoID  int64   `json:"usuario_asignado_id,omitempty"`
 	ModoDistribucion   string  `json:"modo_distribucion"`
 	OrigenMovimiento   string  `json:"origen_movimiento"`
 	EsAjusteManual     bool    `json:"es_ajuste_manual"`
@@ -120,6 +122,7 @@ type EmpresaPropinaConciliacionCierre struct {
 
 // EmpresaPropinaUsuarioResumen presenta acumulados por usuario.
 type EmpresaPropinaUsuarioResumen struct {
+	UsuarioID         int64   `json:"usuario_id,omitempty"`
 	UsuarioClave      string  `json:"usuario_clave"`
 	UsuarioEtiqueta   string  `json:"usuario_etiqueta"`
 	EsUsuarioActivo   bool    `json:"es_usuario_activo"`
@@ -140,6 +143,7 @@ type EmpresaPropinasReporte struct {
 }
 
 type propinaActiveUser struct {
+	ID       int64
 	Clave    string
 	Etiqueta string
 }
@@ -186,7 +190,9 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 			cierre_caja_id INTEGER DEFAULT 0,
 			venta_referencia TEXT,
 			usuario_origen TEXT,
+			usuario_origen_id INTEGER DEFAULT 0,
 			usuario_asignado TEXT,
+			usuario_asignado_id INTEGER DEFAULT 0,
 			modo_distribucion TEXT DEFAULT 'por_usuario',
 			origen_movimiento TEXT DEFAULT 'venta',
 			ajuste_manual INTEGER DEFAULT 0,
@@ -265,7 +271,13 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "usuario_origen", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "usuario_origen_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "usuario_asignado", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "usuario_asignado_id", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_propinas_movimientos", "modo_distribucion", "TEXT DEFAULT 'por_usuario'"); err != nil {
@@ -334,6 +346,7 @@ func EnsureEmpresaPropinasSchema(dbConn *sql.DB) error {
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_configuracion_estado ON empresa_propinas_configuracion(empresa_id, estado);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_fecha ON empresa_propinas_movimientos(empresa_id, fecha_movimiento DESC, id DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_usuario ON empresa_propinas_movimientos(empresa_id, usuario_asignado, usuario_origen);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_usuario_id ON empresa_propinas_movimientos(empresa_id, usuario_asignado_id, usuario_origen_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_modo ON empresa_propinas_movimientos(empresa_id, modo_distribucion);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_cierre ON empresa_propinas_movimientos(empresa_id, cierre_caja_id, fecha_movimiento DESC);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_propinas_movimientos_empresa_origen ON empresa_propinas_movimientos(empresa_id, origen_movimiento, ajuste_manual);`,
@@ -362,6 +375,7 @@ func empresaPropinasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		"ux_empresa_propinas_configuracion_empresa",
 		"ix_empresa_propinas_movimientos_empresa_fecha",
 		"ix_empresa_propinas_movimientos_empresa_cierre",
+		"ix_empresa_propinas_movimientos_empresa_usuario_id",
 	}
 	for _, indexName := range requiredIndexes {
 		indexOK, idxErr := empresaPropinasIndexExists(dbConn, indexName)
@@ -681,6 +695,12 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 	if payload.ModoDistribucion == EmpresaPropinaModoPorUsuario && payload.UsuarioAsignado == "" {
 		payload.UsuarioAsignado = payload.UsuarioOrigen
 	}
+	payload.UsuarioOrigenID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, payload.EmpresaID, payload.UsuarioOrigenID, payload.UsuarioOrigen)
+	if payload.ModoDistribucion == EmpresaPropinaModoPorUsuario {
+		payload.UsuarioAsignadoID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, payload.EmpresaID, payload.UsuarioAsignadoID, payload.UsuarioAsignado)
+	} else {
+		payload.UsuarioAsignadoID = 0
+	}
 	payload.FiscalPais = strings.TrimSpace(payload.FiscalPais)
 	payload.FiscalRegimen = strings.TrimSpace(payload.FiscalRegimen)
 	payload.FiscalTratamiento = strings.TrimSpace(payload.FiscalTratamiento)
@@ -724,7 +744,9 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 		cierre_caja_id,
 		venta_referencia,
 		usuario_origen,
+		usuario_origen_id,
 		usuario_asignado,
+		usuario_asignado_id,
 		modo_distribucion,
 		origen_movimiento,
 		ajuste_manual,
@@ -746,13 +768,15 @@ func CreateEmpresaPropinaMovimiento(dbConn *sql.DB, payload EmpresaPropinaMovimi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(NULLIF(?, ''), datetime('now','localtime')), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		payload.CarritoID,
 		payload.CierreCajaID,
 		strings.TrimSpace(payload.VentaReferencia),
 		payload.UsuarioOrigen,
+		payload.UsuarioOrigenID,
 		payload.UsuarioAsignado,
+		payload.UsuarioAsignadoID,
 		payload.ModoDistribucion,
 		payload.OrigenMovimiento,
 		boolToInt(payload.EsAjusteManual),
@@ -795,7 +819,9 @@ func ListEmpresaPropinaMovimientos(dbConn *sql.DB, empresaID int64, filter Empre
 		COALESCE(cierre_caja_id, 0),
 		COALESCE(venta_referencia, ''),
 		COALESCE(usuario_origen, ''),
+		COALESCE(usuario_origen_id, 0),
 		COALESCE(usuario_asignado, ''),
+		COALESCE(usuario_asignado_id, 0),
 		COALESCE(modo_distribucion, 'por_usuario'),
 		COALESCE(origen_movimiento, 'venta'),
 		COALESCE(ajuste_manual, 0),
@@ -849,7 +875,9 @@ func ListEmpresaPropinaMovimientos(dbConn *sql.DB, empresaID int64, filter Empre
 			&item.CierreCajaID,
 			&item.VentaReferencia,
 			&item.UsuarioOrigen,
+			&item.UsuarioOrigenID,
 			&item.UsuarioAsignado,
+			&item.UsuarioAsignadoID,
 			&item.ModoDistribucion,
 			&item.OrigenMovimiento,
 			&ajusteManualInt,
@@ -876,6 +904,12 @@ func ListEmpresaPropinaMovimientos(dbConn *sql.DB, empresaID int64, filter Empre
 		}
 		item.ModoDistribucion = normalizePropinaModo(item.ModoDistribucion)
 		item.OrigenMovimiento = normalizePropinaOrigen(item.OrigenMovimiento)
+		if item.UsuarioOrigenID == 0 {
+			item.UsuarioOrigenID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, item.EmpresaID, 0, item.UsuarioOrigen)
+		}
+		if item.UsuarioAsignadoID == 0 && item.ModoDistribucion == EmpresaPropinaModoPorUsuario {
+			item.UsuarioAsignadoID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, item.EmpresaID, 0, item.UsuarioAsignado)
+		}
 		item.EsAjusteManual = ajusteManualInt == 1 || item.OrigenMovimiento == EmpresaPropinaOrigenAjusteManual
 		item.Moneda = normalizePropinaMoneda(item.Moneda)
 		item.BaseCobro = round2(item.BaseCobro)
@@ -947,13 +981,14 @@ func GetEmpresaPropinasReporte(dbConn *sql.DB, empresaID int64, filter EmpresaPr
 	resumen.TotalPropinasUniversal = round2(resumen.TotalPropinasUniversal)
 
 	directUsersQuery := `SELECT
+		COALESCE(usuario_asignado_id, 0),
 		COALESCE(NULLIF(TRIM(usuario_asignado), ''), NULLIF(TRIM(usuario_origen), ''), 'sistema') AS usuario,
 		COALESCE(SUM(monto_propina), 0)
 	FROM empresa_propinas_movimientos
 	WHERE empresa_id = ? AND COALESCE(modo_distribucion, 'por_usuario') = 'por_usuario'`
 	directArgs := []interface{}{empresaID}
 	directUsersQuery, directArgs = appendPropinaCommonFilters(directUsersQuery, directArgs, filter)
-	directUsersQuery += ` GROUP BY usuario ORDER BY COALESCE(SUM(monto_propina), 0) DESC, usuario ASC`
+	directUsersQuery += ` GROUP BY COALESCE(usuario_asignado_id, 0), usuario ORDER BY COALESCE(SUM(monto_propina), 0) DESC, usuario ASC`
 
 	perUser := map[string]*EmpresaPropinaUsuarioResumen{}
 	rows, err := dbConn.Query(directUsersQuery, directArgs...)
@@ -961,14 +996,22 @@ func GetEmpresaPropinasReporte(dbConn *sql.DB, empresaID int64, filter EmpresaPr
 		return nil, err
 	}
 	for rows.Next() {
+		var usuarioID int64
 		var usuario string
 		var total float64
-		if err := rows.Scan(&usuario, &total); err != nil {
+		if err := rows.Scan(&usuarioID, &usuario, &total); err != nil {
 			rows.Close()
 			return nil, err
 		}
+		if usuarioID == 0 {
+			usuarioID = resolveEmpresaUsuarioIDByReferenceSilent(dbConn, empresaID, 0, usuario)
+		}
 		clave := normalizePropinaUsuarioClave(usuario, "")
+		if usuarioID > 0 {
+			clave = fmt.Sprintf("usuario:%d", usuarioID)
+		}
 		item := &EmpresaPropinaUsuarioResumen{
+			UsuarioID:         usuarioID,
 			UsuarioClave:      clave,
 			UsuarioEtiqueta:   strings.TrimSpace(usuario),
 			PropinaPorUsuario: round2(total),
@@ -995,10 +1038,14 @@ func GetEmpresaPropinasReporte(dbConn *sql.DB, empresaID int64, filter EmpresaPr
 		entry, ok := perUser[user.Clave]
 		if !ok {
 			entry = &EmpresaPropinaUsuarioResumen{
+				UsuarioID:       user.ID,
 				UsuarioClave:    user.Clave,
 				UsuarioEtiqueta: user.Etiqueta,
 			}
 			perUser[user.Clave] = entry
+		}
+		if entry.UsuarioID == 0 {
+			entry.UsuarioID = user.ID
 		}
 		entry.EsUsuarioActivo = true
 		if strings.TrimSpace(entry.UsuarioEtiqueta) == "" {
@@ -1208,14 +1255,17 @@ func appendPropinaCommonFilters(query string, args []interface{}, filter Empresa
 		query += ` AND (
 			LOWER(COALESCE(usuario_asignado, '')) LIKE ?
 			OR LOWER(COALESCE(usuario_origen, '')) LIKE ?
+			OR CAST(COALESCE(usuario_asignado_id, 0) AS TEXT) = ?
+			OR CAST(COALESCE(usuario_origen_id, 0) AS TEXT) = ?
 		)`
-		args = append(args, like, like)
+		args = append(args, like, like, usuario, usuario)
 	}
 	return query, args
 }
 
 func listActiveUsersForPropinas(dbConn *sql.DB, empresaID int64) ([]propinaActiveUser, error) {
 	rows, err := dbConn.Query(`SELECT
+		id,
 		COALESCE(email, ''),
 		COALESCE(name, '')
 	FROM users
@@ -1232,12 +1282,19 @@ func listActiveUsersForPropinas(dbConn *sql.DB, empresaID int64) ([]propinaActiv
 	out := make([]propinaActiveUser, 0)
 	seen := map[string]bool{}
 	for rows.Next() {
+		var id int64
 		var email string
 		var name string
-		if err := rows.Scan(&email, &name); err != nil {
+		if err := rows.Scan(&id, &email, &name); err != nil {
 			return nil, err
 		}
-		key := normalizePropinaUsuarioClave(email, name)
+		key := ""
+		if id > 0 {
+			key = fmt.Sprintf("usuario:%d", id)
+		}
+		if key == "" {
+			key = normalizePropinaUsuarioClave(email, name)
+		}
 		if key == "" {
 			continue
 		}
@@ -1246,6 +1303,7 @@ func listActiveUsersForPropinas(dbConn *sql.DB, empresaID int64) ([]propinaActiv
 		}
 		seen[key] = true
 		out = append(out, propinaActiveUser{
+			ID:       id,
 			Clave:    key,
 			Etiqueta: normalizePropinaUsuarioEtiqueta(email, name),
 		})

@@ -1089,7 +1089,7 @@ func createApartTurReservaCarrito(dbConn *sql.DB, reserva EmpresaApartamentoTuri
 			return 0, 0, 0, 0, err
 		}
 	}
-	if err := PayCarritoStationSession(dbConn, reserva.EmpresaID, carritoID, metodo, reserva.CodigoReserva, "", "", 0, 0, reserva.Total, 0, strings.TrimSpace(usuario)); err != nil {
+	if err := PayCarritoStationSession(dbConn, reserva.EmpresaID, carritoID, metodo, reserva.CodigoReserva, "", "", 0, 0, reserva.Total, 0, 0, "", "", 0, strings.TrimSpace(usuario)); err != nil {
 		return 0, 0, 0, 0, err
 	}
 	return carritoID, itemID, clienteID, servicioID, nil

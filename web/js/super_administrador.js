@@ -37,6 +37,7 @@
     "/super/alertas_sistema.html": true,
     "/super/seguridad.html": true,
     "/super/tickets_ayuda.html": true,
+    "/super/correos_masivos.html": true,
     "/super/explorador_archivos.html": true,
     "/super/administrar_base_de_datos.html": true,
     "/super/configuracion_avanzada.html": true

@@ -146,17 +146,20 @@
       <nav class="card empresa-section help-nav" aria-label="Temas de ayuda">
         <a href="#inicio">Inicio <span>base</span></a>
         <a href="#roles">Roles y acceso <span>seguridad</span></a>
+        <a href="#acceso-usuarios">Acceso usuarios <span>login</span></a>
         <a href="#super">Super administrador <span>plataforma</span></a>
         <a href="#empresa">Administrar empresa <span>operacion</span></a>
         <a href="#modulos-organizados">Modulos organizados <span>estructura</span></a>
         <a href="#verticales-2026">20 soluciones nuevas <span>negocio</span></a>
         <a href="#productos">Productos e inventario <span>stock</span></a>
         <a href="#ventas">Estaciones, carrito y caja <span>POS</span></a>
+        <a href="#operacion-conectada">Operacion conectada <span>servidor</span></a>
         <a href="#pagos">Licencias y pagos <span>Epayco</span></a>
         <a href="#dian">Facturacion DIAN <span>Colombia</span></a>
         <a href="#ia">IA, voz y documentos <span>asistente</span></a>
         <a href="#publico">Venta publica y red social <span>web</span></a>
         <a href="#reportes">Reportes y auditoria <span>control</span></a>
+        <a href="#soporte-comunicaciones">Soporte y avisos <span>tickets</span></a>
         <a href="#integraciones">Integraciones <span>servicios</span></a>
         <a href="#estado-operativo">Estado operativo <span>calidad</span></a>
         <a href="#faq">Solucion de problemas <span>FAQ</span></a>
@@ -217,13 +220,37 @@
           </div>
         </section>
 
+        <section id="acceso-usuarios" class="card empresa-section help-section" data-help="login usuario invitacion email clave acceso global empresa recuperar invitacion administrador">
+          <h2>Acceso de usuarios de empresa</h2>
+          <p class="form-help">Los usuarios operativos entran desde un portal unico. No necesitan subdominio de empresa: el sistema resuelve la empresa correcta por email, clave e invitacion valida.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Login global</h3>
+              <p>Usa <a href="/login_usuario.html">/login_usuario.html</a> para usuarios de cualquier empresa. Al iniciar sesion, el sistema redirige al panel de la empresa y carga rol/permisos efectivos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Registro por invitacion</h3>
+              <p>El administrador crea el usuario y envia una invitacion por correo. El usuario solo puede completar su primer acceso desde ese enlace, validando token, email y documento cuando aplique.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Recuperar invitacion</h3>
+              <p>Si el usuario borro el correo, puede solicitar reenvio de invitacion desde el login. La respuesta se mantiene enmascarada por seguridad.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Login administrador</h3>
+              <p>Los administradores de plataforma usan <a href="/login.html">/login.html</a>. En escritorio se muestra una ilustracion profesional decorativa sin afectar el formulario.</p>
+            </article>
+          </div>
+        </section>
+
         <section id="super" class="card empresa-section help-section" data-help="super administrador licencias tipos empresas preconfiguracion ia voz pagos metricas">
           <h2>Super administrador</h2>
           <ol class="help-step-list">
             <li>Usa <strong>Panel</strong> para ver estado general, metricas, empresas y alertas.</li>
             <li>Usa <strong>Ayuda super administrador</strong> para abrir esta guia privada dentro del panel; no se muestra al rol <code>control_super_administrador</code> ni a administradores de empresa.</li>
             <li>Usa <strong>Tipos de empresas</strong> y <strong>Preconfiguracion de tipos</strong> para preparar empresas nuevas con estaciones, productos, usuarios guia y reglas por tipo.</li>
-            <li>Usa <strong>Licencias</strong> para crear planes, pruebas de 15 dias, valores por pais, descuentos y vigencias.</li>
+            <li>Usa <strong>Licencias</strong> para crear planes, pruebas de 15 dias, valores por pais, descuentos, vigencias, documentos mensuales y maximo de cajas simultaneas.</li>
+            <li>Usa <strong>Correos masivos</strong> para comunicar politicas, mantenimientos, actualizaciones o avisos importantes a administradores y usuarios.</li>
             <li>Usa <strong>Configuración avanzada</strong> para Epayco, Gmail, OnlyOffice, RustDesk, voz IA, seguridad, base de datos y costos.</li>
             <li>Usa <strong>Contexto IA negocio</strong> para editar el documento que la IA debe tomar como marco permanente de negocio.</li>
           </ol>
@@ -238,7 +265,7 @@
             </article>
             <article class="help-mini-card">
               <h3>Configuración</h3>
-              <p>Agrupa chat/robot, impresoras, caja, estaciones, sensores, facturacion, Raspberry Pi, respaldos, apariencia y parametros por empresa.</p>
+              <p>Agrupa chat/robot, impresoras, caja, estaciones, sensores, facturacion, Raspberry Pi, Backup profesional, identidad visual, apariencia y parametros por empresa.</p>
             </article>
             <article class="help-mini-card">
               <h3>Favoritos</h3>
@@ -330,7 +357,11 @@
             </article>
             <article class="help-mini-card">
               <h3>Caja y corte</h3>
-              <p>El corte de caja agrupa movimientos por cajero, efectivo esperado, tarjetas, otros medios, ventas de productos, servicios y alertas de sensor no facturadas.</p>
+              <p>El corte de caja agrupa movimientos por caja abierta, cajero, efectivo esperado, tarjetas, otros medios, ventas de productos, servicios y alertas de sensor no facturadas.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Cajas simultaneas</h3>
+              <p>Cada licencia define cuantas cajas puede abrir una empresa al mismo tiempo. Todas las licencias tienen 2 por defecto; las de 4000 documentos permiten 4. Cada pago debe seleccionar una caja abierta.</p>
             </article>
             <article class="help-mini-card">
               <h3>Sensores y tarifas por minutos</h3>
@@ -339,10 +370,34 @@
           </div>
         </section>
 
+        <section id="operacion-conectada" class="card empresa-section help-section" data-help="conexion obligatoria servidor online offline facturacion ventas pagos documentos">
+          <h2>Operacion conectada obligatoria</h2>
+          <p class="form-help">El sistema ya no permite operar ventas, cobros, documentos ni facturacion sin conexion activa con el servidor. Esto protege inventario, auditoria, caja, consecutivos fiscales y permisos por rol.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Ventas y cobros</h3>
+              <p>Antes de cobrar, valida conexion, licencia activa, caja abierta, permisos del usuario, productos/servicios disponibles y metodo de pago habilitado.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Facturacion electronica</h3>
+              <p>Si DIAN o el proveedor fiscal no responde, la emision se bloquea y queda trazabilidad para reintentar cuando vuelva la conexion.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Backups locales</h3>
+              <p>Los backups empresariales configurados para equipo local se descargan en el computador o celular mientras la pagina este abierta con sesion activa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Documentos locales</h3>
+              <p>OnlyOffice crea una sesion temporal de edicion y luego descarga el documento al dispositivo; no funciona como repositorio permanente del VPS.</p>
+            </article>
+          </div>
+        </section>
+
         <section id="pagos" class="card empresa-section help-section" data-help="licencias epayco descuento prueba pago cero activar licencia">
           <h2>Licencias y pagos</h2>
           <ol class="help-step-list">
             <li>Las licencias vencidas desactivan la empresa hasta renovacion o compra.</li>
+            <li>Cada licencia define documentos mensuales y maximo de cajas simultaneas; si no se configura, se aplican 2 cajas por defecto o 4 para planes de 4000 documentos.</li>
             <li>Los codigos de descuento y licencias de prueba solo aplican una vez por empresa.</li>
             <li>Si el valor final queda en cero, la licencia se activa sin pasar por Epayco y debe enviarse correo de confirmacion.</li>
             <li>Si hay pago Epayco, la licencia se activa solo con estado aprobado, webhook valido o retorno con evidencia fuerte.</li>
@@ -350,14 +405,14 @@
           </ol>
         </section>
 
-        <section id="dian" class="card empresa-section help-section" data-help="dian facturacion electronica colombia firma resolucion contingencia offline notas credito">
+        <section id="dian" class="card empresa-section help-section" data-help="dian facturacion electronica colombia firma resolucion conexion servidor notas credito">
           <h2>Facturación electrónica DIAN</h2>
           <p class="form-help">La facturacion electronica requiere datos fiscales completos, firma electronica, resolucion, prefijo, consecutivos, ambiente y pruebas de habilitacion cuando aplique.</p>
           <ol class="help-step-list">
             <li>Configura empresa, responsabilidad fiscal, correo, NIT, ciudad, direccion y certificado.</li>
             <li>Ejecuta <strong>Pruebas DIAN</strong> cuando la firma y datos esten listos.</li>
-            <li>Usa modo offline/contingencia solo si esta habilitado y DIAN o internet no responden.</li>
-            <li>Al volver internet o DIAN, el sistema debe regresar a modo online y sincronizar pendientes segun el flujo implementado.</li>
+            <li>La emision requiere conexion activa con el servidor y DIAN/proveedor; si no hay conexion, no se debe continuar la operacion.</li>
+            <li>Cuando vuelva la conexion, procesa la cola de reintentos desde el modulo para enviar pendientes fallidos.</li>
           </ol>
         </section>
 
@@ -407,7 +462,34 @@
             </article>
             <article class="help-mini-card">
               <h3>Backups</h3>
-              <p>Permiten exportar/importar configuracion completa por empresa y generar evidencia antes de eliminar o purgar datos.</p>
+              <p>Permiten exportar/importar configuracion completa por empresa y generar evidencia antes de eliminar o purgar datos. El Backup profesional esta junto a Configuracion en el menu empresarial.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Compartir documentos</h3>
+              <p>Ventas, facturas, comprobantes, reportes y documentos pueden compartirse por WhatsApp o correo cuando la pantalla tenga documento/enlace disponible.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="soporte-comunicaciones" class="card empresa-section help-section" data-help="soporte tickets ayuda correos masivos mantenimiento licencias vencimiento avisos">
+          <h2>Soporte, comunicaciones y avisos</h2>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Tickets de ayuda</h3>
+              <p>Desde el menu flotante de cada empresa se crea un ticket con asunto, mensaje, categoria, prioridad, contacto preferido, telefono opcional y contexto tecnico seguro de la pantalla activa.</p>
+              <span class="help-route">Super: /super/tickets_ayuda.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Correos masivos</h3>
+              <p>El super administrador puede enviar comunicados globales a administradores y usuarios. El sistema previsualiza destinatarios, deduplica correos y exige confirmacion antes de enviar.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Licencias por vencer</h3>
+              <p>Las alertas de vencimiento avisan por correo al administrador de la empresa segun dias configurados, evitando duplicados por licencia, empresa, fecha y umbral.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Mantenimiento programado</h3>
+              <p>Un aviso de mantenimiento puede mostrarse en el panel empresarial con fecha, hora y mensaje, separado del bloqueo real de mantenimiento del sistema.</p>
             </article>
           </div>
         </section>
@@ -417,7 +499,7 @@
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>OnlyOffice y documentos</h3>
-              <p>Gestionan nube privada, archivos empresariales y documentos colaborativos. Configurar URL, credenciales, JWT y permisos.</p>
+              <p>Permiten crear Word, Excel o PowerPoint en una pantalla unica, editar con OnlyOffice y descargar el archivo al PC o celular. Configura URL, JWT y permisos cuando se use Document Server.</p>
             </article>
             <article class="help-mini-card">
               <h3>RustDesk y soporte</h3>
@@ -437,11 +519,11 @@
 
         <section id="estado-operativo" class="card empresa-section help-section" data-help="estado operativo modulos terminados errores estaciones carrito tarjetas dolar cop vps calidad">
           <h2>Estado operativo de modulos</h2>
-          <p class="form-help">Actualizacion 2026-05-10: la plataforma tiene los modulos principales implementados u operativos, con roles finos alineados entre backend, frontend, paginas, wrappers API y licencias. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
+          <p class="form-help">Actualizacion 2026-05-13: la plataforma tiene los modulos principales implementados u operativos, con roles finos, operacion conectada obligatoria, cajas simultaneas por licencia, tickets propios, documentos locales, backups locales y comunicaciones globales. No se debe declarar cero errores absoluto sin pruebas integrales por rol, hardware real y proveedores externos.</p>
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>Estaciones y carrito</h3>
-              <p>Al abrir una estacion, el carrito asociado debe cargar su tarifa o productos. Al pagar, el carrito se cierra y regresa automaticamente al mapa de estaciones.</p>
+              <p>Al abrir una estacion, el carrito asociado debe cargar su tarifa o productos. Al pagar, se selecciona una caja abierta, el carrito se cierra y regresa automaticamente al mapa de estaciones.</p>
               <span class="help-route">Rutas: /administrar_empresa/estaciones.html y /administrar_empresa/carrito_de_compras.html</span>
             </article>
             <article class="help-mini-card">
@@ -474,7 +556,7 @@
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>No aparece botón pagar</h3>
-              <p>Revisa licencia activa, configuracion de carrito, medios de pago visibles, formato de factura, caja e impresoras.</p>
+              <p>Revisa licencia activa, configuracion de carrito, medios de pago visibles, formato de factura, caja abierta seleccionada e impresoras.</p>
             </article>
             <article class="help-mini-card">
               <h3>Producto no entra al carrito</h3>
@@ -483,6 +565,10 @@
             <article class="help-mini-card">
               <h3>Epayco queda pendiente</h3>
               <p>Comprueba estado en Epayco, webhook, referencia interna, evidencia de retorno, credenciales, modo sandbox/produccion y auditoria de pagos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>No permite abrir otra caja</h3>
+              <p>La licencia activa llego al maximo de cajas simultaneas. Cierra una caja abierta o ajusta el cupo desde Super administrador &gt; Licencias.</p>
             </article>
             <article class="help-mini-card">
               <h3>La voz de IA es lenta</h3>

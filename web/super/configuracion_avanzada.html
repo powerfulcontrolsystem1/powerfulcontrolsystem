@@ -19,24 +19,28 @@
     .rustdesk-download-item span { display:block; color:var(--muted); font-size:.88rem; }
     .rustdesk-probe-list { margin:0; padding-left:18px; display:grid; gap:8px; }
     .rustdesk-steps { margin:0; padding-left:18px; display:grid; gap:8px; }
-    .advanced-config-layout { display:grid; grid-template-columns:minmax(250px,300px) minmax(0,1fr); gap:18px; align-items:start; }
+    .advanced-config-layout { display:grid; grid-template-columns:260px minmax(0,1fr); gap:18px; align-items:start; }
     .advanced-config-main { min-width:0; display:block; }
-    .advanced-section-finder { position:sticky; top:14px; z-index:2; width:100%; max-height:calc(100vh - 28px); overflow:auto; border-radius:8px; box-sizing:border-box; }
-    .advanced-section-finder .super-console-brand { margin:0 0 12px; }
-    .advanced-section-finder .admin-sidebar-summary { margin-bottom:12px; }
-    .advanced-section-finder-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .advanced-section-finder-row input { flex:1 1 170px; min-width:0; }
-    .advanced-section-finder-row .btn { min-height:40px; padding-inline:12px; }
-    .advanced-category-map { margin:12px 0 0; }
+    .advanced-section-finder { position:sticky; top:14px; z-index:2; width:260px!important; max-height:calc(100vh - 28px); overflow:auto; border-radius:8px; box-sizing:border-box; }
+    .advanced-section-finder h2 { margin-bottom:6px; }
+    .advanced-section-finder .admin-sidebar-kicker { margin-bottom:12px; }
+    .advanced-section-finder-row { display:grid; grid-template-columns:1fr; gap:8px; align-items:center; margin:0 0 10px; }
+    .advanced-section-finder-row input { width:100%; min-width:0; }
+    .advanced-section-finder-row .btn { min-height:40px; padding-inline:12px; width:100%; }
+    .advanced-category-map { margin:0; gap:8px; }
     .advanced-category-map li { display:block; }
-    .advanced-category-map button:not(.admin-menu-visibility-toggle) { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:40px; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font:inherit; font-size:.84rem; font-weight:800; text-align:left; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease; }
-    .advanced-category-map button img.icon { width:28px; height:28px; margin-right:2px; vertical-align:middle; transition:transform .15s ease; background:var(--menu-icon-bg,#e0f2fe); border:1px solid var(--menu-icon-border,rgba(14,165,233,.28)); border-radius:8px; padding:5px; box-sizing:border-box; filter:none!important; box-shadow:0 8px 16px rgba(15,23,42,.12); flex:0 0 auto; }
-    .advanced-category-map button strong { flex:1 1 auto; min-width:0; }
-    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:var(--surface-soft); border-color:color-mix(in srgb,var(--accent) 30%,var(--border)); outline:none; transform:translateX(2px); }
+    .advanced-category-map .admin-nav-group { padding:0!important; border:0!important; background:transparent!important; gap:6px!important; }
+    .advanced-category-map .admin-nav-group-title { padding:7px 2px 2px!important; }
+    .advanced-category-map .admin-nav-sublist { gap:8px!important; }
+    .advanced-category-map button:not(.admin-menu-visibility-toggle) { display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-areas:"icon title" "icon hint"; align-items:center; column-gap:8px; row-gap:2px; width:100%; min-height:44px; padding:9px 12px; border:1px solid var(--border); border-radius:10px; background:linear-gradient(180deg,var(--surface-soft),var(--surface)); color:var(--text); font:inherit; font-size:.9rem; font-weight:800; text-align:left; cursor:pointer; transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease; }
+    .advanced-category-map button img.icon { grid-area:icon; width:28px; height:28px; margin-right:0; vertical-align:middle; transition:transform .15s ease; background:var(--menu-icon-bg,#e0f2fe); border:1px solid var(--menu-icon-border,rgba(14,165,233,.28)); border-radius:8px; padding:5px; box-sizing:border-box; filter:none!important; box-shadow:0 8px 16px rgba(15,23,42,.12); }
+    .advanced-category-map button strong { grid-area:title; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .advanced-category-map button:hover, .advanced-category-map button:focus-visible { background:linear-gradient(180deg,var(--focus),var(--surface)); border-color:color-mix(in srgb,var(--accent) 30%,var(--border)); outline:none; transform:translateX(2px); }
     .advanced-category-map button:hover img.icon { transform:translateY(-1px); }
-    .advanced-category-map button.is-active { background:linear-gradient(135deg, color-mix(in srgb,var(--accent) 22%,var(--surface) 78%), color-mix(in srgb,#22c55e 14%,var(--surface) 86%)); border-color:color-mix(in srgb,var(--accent) 62%,var(--border) 38%); box-shadow:inset 3px 0 0 var(--accent); }
+    .advanced-category-map button.is-active { background:linear-gradient(180deg,var(--accent),var(--sidebar-active-end)); border-color:var(--sidebar-active-border); color:var(--btn-primary-text); box-shadow:0 10px 18px var(--sidebar-active-shadow); }
     .advanced-category-map button.is-active img.icon { background:var(--menu-icon-active-bg,#fff); border-color:rgba(255,255,255,.7); box-shadow:0 8px 18px rgba(15,23,42,.18); }
-    .advanced-category-map button span { color:var(--muted); font-weight:750; font-size:.78rem; text-align:right; flex:0 0 auto; max-width:96px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .advanced-category-map button span { grid-area:hint; color:var(--muted); font-weight:750; font-size:.74rem; text-align:left; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .advanced-category-map button.is-active span { color:color-mix(in srgb,var(--btn-primary-text,#fff) 82%,transparent); }
     .advanced-category-map li.is-hidden { display:none; }
     .advanced-category-map button.is-hidden { display:none; }
     .advanced-category-map .admin-nav-group.is-hidden { display:none; }
@@ -49,12 +53,12 @@
     .consumos-config-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
     .consumos-config-form .form-col { min-width:0; }
     .consumos-config-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
-    @media (max-width: 980px) { .advanced-config-layout { grid-template-columns:1fr; } .advanced-section-finder { position:relative; top:auto; max-height:none; overflow:visible; } }
+    @media (max-width: 980px) { .advanced-config-layout { grid-template-columns:1fr; } .advanced-section-finder { position:relative; top:auto; width:100%!important; max-height:none; overflow:visible; } }
     @media (max-width: 760px) { .consumos-config-form { grid-template-columns:1fr; } .consumos-config-actions { justify-content:flex-start; } .advanced-section-finder-row input { flex-basis:100%; } .advanced-section-finder-row .btn { width:100%; } }
     @media (max-width: 900px) { .rustdesk-download-item { flex-direction:column; align-items:flex-start; } }
   </style>
 </head>
-<body class="super-page form-bg-dark advanced-config-page">
+<body class="super-page form-bg-dark advanced-config-page" data-auto-collapse-menu="true">
   <script src="/config.js"></script>
   <script src="/js/recaptcha_helper.js?v=20260423-login-fix"></script>
   <div class="container">
@@ -65,17 +69,9 @@
     </div>
 
     <div class="advanced-config-layout">
-    <aside class="admin-sidebar admin-sidebar-mobile-collapsible advanced-section-finder" aria-label="Submenu de configuracion avanzada">
-      <div class="super-console-brand">
-        <span class="super-console-mark" aria-hidden="true">PCS</span>
-        <div>
-          <h2>Configuracion</h2>
-          <p class="admin-sidebar-kicker">Super administrador</p>
-        </div>
-      </div>
-      <div class="admin-sidebar-summary">
-        <p>Ajustes globales del sistema organizados por area operativa.</p>
-      </div>
+    <aside class="admin-sidebar admin-sidebar-mobile-collapsible is-collapsed advanced-section-finder" aria-label="Submenu de configuracion avanzada">
+      <h2>Configuracion</h2>
+      <p class="admin-sidebar-kicker">Super administrador</p>
       <div class="advanced-section-finder-row">
         <input id="advancedSectionSearch" class="form-input" type="search" placeholder="Buscar seccion: IA, pagos, Gmail, RustDesk, voz, respaldo...">
         <button id="advancedSectionClear" class="btn secondary" type="button">Limpiar</button>
@@ -107,6 +103,7 @@
           <div class="admin-nav-group-title">Comunicaciones</div>
           <ul class="admin-nav-sublist">
             <li><button type="button" data-target="gmailConfig" data-search="comunicaciones gmail correo smtp alertas email" aria-label="Gmail SMTP Correo"><img class="icon" src="/img/settings-color.svg" alt=""><strong>Gmail SMTP</strong><span>Correo</span></button></li>
+            <li><button type="button" data-target="licenciaVencimientoAlertasCard" data-search="licencias vencimiento alertas correo administradores empresas" aria-label="Alertas de licencia"><img class="icon" src="/img/shield-license-color.svg" alt=""><strong>Alertas licencia</strong><span>Vencimiento</span></button></li>
             <li><button type="button" data-target="portalWhatsAppConfig" data-search="whatsapp contacto portal comercial telefono" aria-label="WhatsApp portal Contacto"><img class="icon" src="/img/social.svg" alt=""><strong>WhatsApp portal</strong><span>Contacto</span></button></li>
           </ul>
         </li>
@@ -725,6 +722,50 @@
       <div id="gmailTestResult" class="form-help"></div>
     </section>
 
+    <section class="card form advanced-card" data-brand="system" id="licenciaVencimientoAlertasCard">
+      <h2>
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+        Alertas de vencimiento de licencias
+      </h2>
+      <p class="form-help">Configura los avisos que se envian al administrador principal de una empresa cuando su licencia base o adicional esta proxima a vencer.</p>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Activar alertas automaticas</label>
+          <label class="mode-switch-row" for="licenciaVencimientoEnabled">
+            <span class="mode-label">Off</span>
+            <input id="licenciaVencimientoEnabled" type="checkbox" role="switch" aria-label="Activar alertas de vencimiento de licencias">
+            <span class="mode-label">On</span>
+          </label>
+          <div id="licenciaVencimientoEnabledStatus" class="form-help">Cargando estado...</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="licenciaVencimientoDias">Dias de aviso</label>
+          <input id="licenciaVencimientoDias" class="form-input" type="text" placeholder="15,7,3,1">
+          <div class="form-help">Usa valores separados por coma. El sistema no repite el mismo aviso para la misma licencia, fecha y correo.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="licenciaVencimientoMax">Maximo por ejecucion</label>
+          <input id="licenciaVencimientoMax" class="form-input" type="number" min="1" max="500" step="1" placeholder="100">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado del sistema</label>
+          <div id="licenciaVencimientoStatus" class="form-help">Cargando estado...</div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button id="saveLicenciaVencimientoBtn" class="btn" type="button">Guardar alertas</button>
+        <button id="previewLicenciaVencimientoBtn" class="btn secondary" type="button" style="margin-left:8px;">Vista previa</button>
+        <button id="runLicenciaVencimientoBtn" class="btn secondary" type="button" style="margin-left:8px;">Enviar ahora</button>
+      </div>
+      <div id="licenciaVencimientoMsg" class="form-help"></div>
+      <div id="licenciaVencimientoPreview" class="form-help"></div>
+    </section>
+
     <section class="card form advanced-card" data-brand="system" id="portalWhatsAppConfig">
       <h2>
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4A8.5 8.5 0 1 1 21 11.5Z"></path><path d="M8 12h.01M12 12h.01M16 12h.01"></path></svg>
@@ -911,13 +952,47 @@
       <section class="card form advanced-card" data-brand="system" id="mantenimientoConfigCard">
         <h2>
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4m0 4h.01"></path></svg>
-          Modo Mantenimiento
+          Mantenimiento del sistema
         </h2>
-        <p class="form-help">Bloquea temporalmente el tráfico a empresas para mantenimiento.</p>
+        <p class="form-help">Programa un aviso visible para empresas antes de una ventana de mantenimiento. El bloqueo real del sistema queda separado para evitar activarlo por accidente.</p>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">Aviso programado</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px">
+              <input id="mantenimientoAvisoToggle" type="checkbox" role="switch" aria-label="Mostrar aviso de mantenimiento programado">
+              Mostrar aviso en el panel de administrar empresa
+            </label>
+          </div>
+          <div class="form-col">
+            <label class="form-label">Modo mantenimiento real</label>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px">
+              <input id="mantenimientoToggle" type="checkbox" role="switch" aria-label="Activar modo mantenimiento">
+              Bloquear temporalmente el trafico a empresas
+            </label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="mantenimientoFecha">Fecha</label>
+            <input id="mantenimientoFecha" class="form-input" type="date">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mantenimientoHoraInicio">Hora inicio</label>
+            <input id="mantenimientoHoraInicio" class="form-input" type="time">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mantenimientoHoraFin">Hora fin</label>
+            <input id="mantenimientoHoraFin" class="form-input" type="time">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="mantenimientoZonaHoraria">Zona horaria</label>
+            <input id="mantenimientoZonaHoraria" class="form-input" placeholder="America/Bogota">
+          </div>
+        </div>
         <div class="form-group mb-12">
-          <label>Activo
-            <input id="mantenimientoToggle" type="checkbox" role="switch" aria-label="Activar modo mantenimiento">
-          </label>
+          <label class="form-label" for="mantenimientoMensaje">Mensaje publico opcional</label>
+          <textarea id="mantenimientoMensaje" class="form-textarea" rows="3" maxlength="260" placeholder="Ej: Mantenimiento programado para el 25 de junio de 2026, de 3 am a 4 am."></textarea>
+          <div class="form-help">Si lo dejas vacio, el sistema genera el mensaje automaticamente con la fecha y las horas.</div>
         </div>
         <div class="form-group" style="display:flex; gap:8px;">
           <button id="saveMantenimientoBtn" class="btn" style="display:none;">Guardar Mantenimiento</button>
@@ -1478,11 +1553,17 @@
 
       async function loadMantenimientoConfig(){
         const toggleEl = document.getElementById('mantenimientoToggle');
+        const avisoEl = document.getElementById('mantenimientoAvisoToggle');
+        const fechaEl = document.getElementById('mantenimientoFecha');
+        const horaInicioEl = document.getElementById('mantenimientoHoraInicio');
+        const horaFinEl = document.getElementById('mantenimientoHoraFin');
+        const zonaEl = document.getElementById('mantenimientoZonaHoraria');
+        const mensajeEl = document.getElementById('mantenimientoMensaje');
         const msgEl = document.getElementById('mantenimientoMsg');
         const saveBtn = document.getElementById('saveMantenimientoBtn');
         const editBtn = document.getElementById('editMantenimientoBtn');
         const cancelBtn = document.getElementById('cancelMantenimientoBtn');
-        if (!toggleEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
+        if (!toggleEl || !avisoEl || !fechaEl || !horaInicioEl || !horaFinEl || !zonaEl || !mensajeEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
         try {
           const res = await fetch('/super/api/config/mantenimiento', { credentials: 'same-origin' });
           if (!res.ok) {
@@ -1493,16 +1574,29 @@
           }
           const data = await res.json();
           toggleEl.checked = !!data.mantenimiento_activo;
-          toggleEl.disabled = true;
+          avisoEl.checked = !!data.aviso_activo;
+          fechaEl.value = data.fecha || '';
+          horaInicioEl.value = data.hora_inicio || '';
+          horaFinEl.value = data.hora_fin || '';
+          zonaEl.value = data.zona_horaria || 'America/Bogota';
+          mensajeEl.value = data.mensaje_publico || '';
+          setMantenimientoEditMode(false);
           saveBtn.style.display = 'none';
           cancelBtn.style.display = 'none';
           editBtn.style.display = '';
-          msgEl.innerText = toggleEl.checked
-            ? 'Modo mantenimiento activo.'
-            : 'Modo mantenimiento inactivo.';
+          msgEl.innerText = avisoEl.checked
+            ? 'Aviso programado activo para empresas.'
+            : (toggleEl.checked ? 'Modo mantenimiento real activo.' : 'Sin aviso programado visible.');
         } catch (err) {
           msgEl.innerText = 'Error cargando mantenimiento: ' + (err.message || err);
         }
+      }
+
+      function setMantenimientoEditMode(isEditing){
+        ['mantenimientoToggle','mantenimientoAvisoToggle','mantenimientoFecha','mantenimientoHoraInicio','mantenimientoHoraFin','mantenimientoZonaHoraria','mantenimientoMensaje'].forEach(function(id){
+          const el = document.getElementById(id);
+          if (el) el.disabled = !isEditing;
+        });
       }
 
       function enableEditMantenimiento(){
@@ -1512,7 +1606,7 @@
         const editBtn = document.getElementById('editMantenimientoBtn');
         const cancelBtn = document.getElementById('cancelMantenimientoBtn');
         if (!toggleEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
-        toggleEl.disabled = false;
+        setMantenimientoEditMode(true);
         saveBtn.style.display = '';
         cancelBtn.style.display = '';
         editBtn.style.display = 'none';
@@ -1525,9 +1619,15 @@
 
       async function saveMantenimientoConfig(){
         const toggleEl = document.getElementById('mantenimientoToggle');
+        const avisoEl = document.getElementById('mantenimientoAvisoToggle');
+        const fechaEl = document.getElementById('mantenimientoFecha');
+        const horaInicioEl = document.getElementById('mantenimientoHoraInicio');
+        const horaFinEl = document.getElementById('mantenimientoHoraFin');
+        const zonaEl = document.getElementById('mantenimientoZonaHoraria');
+        const mensajeEl = document.getElementById('mantenimientoMensaje');
         const msgEl = document.getElementById('mantenimientoMsg');
         const saveBtn = document.getElementById('saveMantenimientoBtn');
-        if (!toggleEl || !msgEl || !saveBtn) return;
+        if (!toggleEl || !avisoEl || !fechaEl || !horaInicioEl || !horaFinEl || !zonaEl || !mensajeEl || !msgEl || !saveBtn) return;
         saveBtn.disabled = true;
         saveBtn.innerText = 'Guardando...';
         try {
@@ -1535,7 +1635,15 @@
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'same-origin',
-            body: JSON.stringify({ mantenimiento_activo: !!toggleEl.checked })
+            body: JSON.stringify({
+              mantenimiento_activo: !!toggleEl.checked,
+              aviso_activo: !!avisoEl.checked,
+              fecha: fechaEl.value || '',
+              hora_inicio: horaInicioEl.value || '',
+              hora_fin: horaFinEl.value || '',
+              zona_horaria: zonaEl.value || 'America/Bogota',
+              mensaje_publico: mensajeEl.value || ''
+            })
           });
           const raw = await res.text();
           if (!res.ok) {
@@ -1980,6 +2088,7 @@
 
 		// cargar estado Gmail SMTP
 		await loadGmailConfig();
+    await loadLicenciaVencimientoAlertas();
     await loadPortalWhatsAppConfig();
     await loadRecaptchaConfig();
     await loadAdmin2FAConfig();
@@ -2049,6 +2158,107 @@
         helpEl.innerText = enabledEl.checked
           ? 'Alerta activada: se enviará correo cuando el servidor inicie o detecte reinicio inesperado, siempre que exista correo destino válido.'
           : 'Alerta desactivada: el sistema seguirá registrando bitácora y log local, pero no enviará correo.';
+      }
+
+      function escapeHtml(value){
+        return String(value || '').replace(/[&<>"']/g, function(ch){
+          return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[ch] || ch;
+        });
+      }
+
+      function renderLicenciaVencimientoPreview(items){
+        const box = document.getElementById('licenciaVencimientoPreview');
+        if (!box) return;
+        const list = Array.isArray(items) ? items : [];
+        if (!list.length) {
+          box.innerHTML = 'No hay licencias pendientes dentro de los dias configurados.';
+          return;
+        }
+        const rows = list.slice(0, 10).map(function(item){
+          const empresa = escapeHtml(item.empresa_nombre || ('Empresa ' + (item.empresa_id || '')));
+          const licencia = escapeHtml(item.licencia_nombre || 'Licencia');
+          const fecha = escapeHtml(item.fecha_fin || '--');
+          const dias = Number(item.dias_restantes || 0);
+          const aviso = Number(item.dias_aviso || 0);
+          return '<li><strong>' + empresa + '</strong> - ' + licencia + ' vence el ' + fecha + ' (' + dias + ' dias, aviso ' + aviso + ')</li>';
+        }).join('');
+        box.innerHTML = '<ul style="margin:8px 0 0 18px;padding:0;">' + rows + '</ul>';
+      }
+
+      function refreshLicenciaVencimientoHint(){
+        const enabled = document.getElementById('licenciaVencimientoEnabled');
+        const status = document.getElementById('licenciaVencimientoEnabledStatus');
+        if (!enabled || !status) return;
+        status.innerText = enabled.checked
+          ? 'Alertas activas: el worker revisa periodicamente y envia correos si SMTP esta configurado.'
+          : 'Alertas desactivadas: solo se puede consultar vista previa o ejecutar manualmente desde aqui.';
+      }
+
+      async function loadLicenciaVencimientoAlertas(){
+        const msg = document.getElementById('licenciaVencimientoMsg');
+        const status = document.getElementById('licenciaVencimientoStatus');
+        try {
+          const res = await fetch('/super/api/licencias/vencimiento_alertas', { credentials: 'same-origin' });
+          const body = await res.json();
+          if (!res.ok || !body.ok) throw new Error((body && body.error) || 'No se pudo cargar la configuracion');
+          const cfg = body.config || {};
+          document.getElementById('licenciaVencimientoEnabled').checked = typeof cfg.enabled === 'boolean' ? cfg.enabled : true;
+          document.getElementById('licenciaVencimientoDias').value = cfg.dias_aviso_raw || '15,7,3,1';
+          document.getElementById('licenciaVencimientoMax').value = cfg.max_por_ejecucion || 100;
+          refreshLicenciaVencimientoHint();
+          const lastRun = cfg.ultimo_run ? ('Ultima ejecucion: ' + cfg.ultimo_run + '. ') : 'Sin ejecuciones registradas. ';
+          const lastResult = cfg.ultimo_resultado ? ('Resultado: ' + cfg.ultimo_resultado + '. ') : '';
+          status.innerText = lastRun + lastResult + 'Pendientes visibles: ' + (Array.isArray(body.preview) ? body.preview.length : 0) + '.';
+          renderLicenciaVencimientoPreview(body.preview || []);
+          if (msg) msg.innerText = '';
+        } catch (err) {
+          if (msg) msg.innerText = 'Error: ' + err.message;
+          if (status) status.innerText = 'No se pudo cargar el estado.';
+        }
+      }
+
+      async function saveLicenciaVencimientoAlertas(){
+        const msg = document.getElementById('licenciaVencimientoMsg');
+        const payload = {
+          enabled: !!document.getElementById('licenciaVencimientoEnabled').checked,
+          dias_aviso_raw: document.getElementById('licenciaVencimientoDias').value.trim(),
+          max_por_ejecucion: Number(document.getElementById('licenciaVencimientoMax').value || 100)
+        };
+        if (msg) msg.innerText = 'Guardando alertas de vencimiento...';
+        try {
+          const res = await fetch('/super/api/licencias/vencimiento_alertas', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const body = await res.json();
+          if (!res.ok || !body.ok) throw new Error((body && body.error) || 'No se pudo guardar');
+          if (msg) msg.innerText = 'Configuracion guardada.';
+          await loadLicenciaVencimientoAlertas();
+        } catch (err) {
+          if (msg) msg.innerText = 'Error: ' + err.message;
+        }
+      }
+
+      async function runLicenciaVencimientoAlertas(dryRun){
+        const msg = document.getElementById('licenciaVencimientoMsg');
+        if (msg) msg.innerText = dryRun ? 'Calculando vista previa...' : 'Ejecutando envio de alertas...';
+        try {
+          const action = dryRun ? 'preview' : 'run_now';
+          const res = await fetch('/super/api/licencias/vencimiento_alertas?action=' + action, { method: 'POST', credentials: 'same-origin' });
+          const body = await res.json();
+          if (!res.ok || body.ok === false) throw new Error((body && body.error) || 'No se pudo ejecutar');
+          if (dryRun) {
+            renderLicenciaVencimientoPreview(body.candidatas || []);
+            if (msg) msg.innerText = 'Vista previa lista: ' + (body.pendientes || 0) + ' avisos pendientes.';
+          } else {
+            if (msg) msg.innerText = 'Ejecucion finalizada: enviadas=' + (body.enviadas || 0) + ', capturadas=' + (body.capturadas || 0) + ', errores=' + (body.errores || 0) + '.';
+            await loadLicenciaVencimientoAlertas();
+          }
+        } catch (err) {
+          if (msg) msg.innerText = 'Error: ' + err.message;
+        }
       }
 
       function normalizePortalWhatsAppNumber(value){
@@ -3171,6 +3381,7 @@
         refreshGmailRestartAlertHint();
         document.getElementById('saveGmailBtn').disabled = false;
       });
+      document.getElementById('licenciaVencimientoEnabled').addEventListener('change', refreshLicenciaVencimientoHint);
       document.getElementById('portalWhatsAppNumber').addEventListener('input', function(){
         refreshPortalWhatsAppPreview();
         document.getElementById('savePortalWhatsAppBtn').disabled = false;
@@ -3212,6 +3423,9 @@
       document.getElementById('saveGmailBtn').addEventListener('click', saveGmail);
       document.getElementById('editGmailBtn').addEventListener('click', enableEditGmail);
       document.getElementById('cancelGmailBtn').addEventListener('click', cancelEditGmail);
+      document.getElementById('saveLicenciaVencimientoBtn').addEventListener('click', saveLicenciaVencimientoAlertas);
+      document.getElementById('previewLicenciaVencimientoBtn').addEventListener('click', function(){ runLicenciaVencimientoAlertas(true); });
+      document.getElementById('runLicenciaVencimientoBtn').addEventListener('click', function(){ runLicenciaVencimientoAlertas(false); });
       document.getElementById('savePortalWhatsAppBtn').addEventListener('click', savePortalWhatsApp);
       document.getElementById('editPortalWhatsAppBtn').addEventListener('click', enableEditPortalWhatsApp);
       document.getElementById('cancelPortalWhatsAppBtn').addEventListener('click', cancelEditPortalWhatsApp);

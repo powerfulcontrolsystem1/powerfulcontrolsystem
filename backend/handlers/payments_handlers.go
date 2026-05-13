@@ -208,6 +208,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Valor                  float64 `json:"valor"`
 				DuracionDias           int     `json:"duracion_dias"`
 				MaxDocumentosMensuales int     `json:"max_documentos_mensuales"`
+				MaxCajasSimultaneas    int     `json:"max_cajas_simultaneas"`
 				ModulosHab             string  `json:"modulos_habilitados"`
 				EsAdicional            int     `json:"es_adicional"`
 				CodigoFuncion          string  `json:"codigo_funcion"`
@@ -237,7 +238,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 			}
-			id, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol, payload.MaxDocumentosMensuales)
+			id, err := dbpkg.CreateLicenciaAdvancedWithLimitsAndCajas(dbSuper, payload.TipoID, pais, payload.Nombre, payload.Descripcion, payload.Valor, payload.DuracionDias, payload.ModulosHab, payload.EsAdicional, payload.CodigoFuncion, payload.SuperRol, payload.MaxDocumentosMensuales, payload.MaxCajasSimultaneas)
 			if err != nil {
 				log.Println("POST /super/api/licencias error:", err)
 				http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
@@ -294,6 +295,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				Valor                  float64 `json:"valor"`
 				DuracionDias           int     `json:"duracion_dias"`
 				MaxDocumentosMensuales int     `json:"max_documentos_mensuales"`
+				MaxCajasSimultaneas    int     `json:"max_cajas_simultaneas"`
 				ModulosHab             string  `json:"modulos_habilitados"`
 				EsAdicional            int     `json:"es_adicional"`
 				CodigoFuncion          string  `json:"codigo_funcion"`
@@ -309,7 +311,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "pais_codigo required", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.UpdateLicenciaAdvancedWithLimits(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.EsAdicional, payloadUpdate.CodigoFuncion, payloadUpdate.SuperRol, payloadUpdate.MaxDocumentosMensuales); err != nil {
+			if err := dbpkg.UpdateLicenciaAdvancedWithLimitsAndCajas(dbSuper, id, payloadUpdate.TipoID, pais, payloadUpdate.Nombre, payloadUpdate.Descripcion, payloadUpdate.Valor, payloadUpdate.DuracionDias, payloadUpdate.ModulosHab, payloadUpdate.EsAdicional, payloadUpdate.CodigoFuncion, payloadUpdate.SuperRol, payloadUpdate.MaxDocumentosMensuales, payloadUpdate.MaxCajasSimultaneas); err != nil {
 				log.Println("PUT /super/api/licencias error:", err)
 				http.Error(w, "failed to update licencia: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -1664,6 +1666,7 @@ func LicenciaCheckoutSummaryHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"valor":                    lic.Valor,
 				"duracion_dias":            lic.DuracionDias,
 				"max_documentos_mensuales": lic.MaxDocumentosMensuales,
+				"max_cajas_simultaneas":    dbpkg.ResolveLicenciaMaxCajasSimultaneas(lic),
 				"modulos_habilitados":      lic.ModulosHab,
 				"tipo_id":                  lic.TipoID,
 				"tipo_nombre":              lic.TipoNombre,

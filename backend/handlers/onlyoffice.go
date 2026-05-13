@@ -68,8 +68,9 @@ type onlyOfficeCallbackPayload struct {
 }
 
 type onlyOfficeCreateDocRequest struct {
-	Tipo   string `json:"tipo"`             // word|excel|powerpoint|docx|xlsx|pptx
-	Nombre string `json:"nombre,omitempty"` // opcional, sin path
+	Tipo         string `json:"tipo"`             // word|excel|powerpoint|docx|xlsx|pptx
+	Nombre       string `json:"nombre,omitempty"` // opcional, sin path
+	LocalSession bool   `json:"local_session,omitempty"`
 }
 
 func onlyOfficeBuildEmptyFileByExt(ext string) ([]byte, error) {
@@ -111,9 +112,20 @@ func onlyOfficeSafeBaseName(name string) (string, error) {
 	if name == "" {
 		return "", fmt.Errorf("nombre de archivo invalido")
 	}
-	name = filepath.Base(name)
 	name = strings.ReplaceAll(name, "\\", "_")
 	name = strings.ReplaceAll(name, "/", "_")
+	name = filepath.Base(name)
+	name = strings.Map(func(r rune) rune {
+		if r < 32 || r == 127 {
+			return -1
+		}
+		switch r {
+		case ':', '*', '?', '"', '<', '>', '|':
+			return '_'
+		default:
+			return r
+		}
+	}, name)
 	name = strings.TrimSpace(name)
 	if name == "" || name == "." || name == ".." {
 		return "", fmt.Errorf("nombre de archivo invalido")
@@ -554,7 +566,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "empresa_id": empresaID, "name": name})
 			return
 
-		case "create", "create_local":
+		case "create", "create_local", "create_edit_local":
 			if r.Method != http.MethodPost {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
@@ -597,6 +609,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				_, _ = w.Write(fileBytes)
 				return
 			}
+			localSession := action == "create_edit_local" || req.LocalSession
 			name, err = onlyOfficeEnsureUniqueName(empresaID, name)
 			if err != nil {
 				http.Error(w, "nombre de archivo invalido", http.StatusBadRequest)
@@ -618,7 +631,59 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				return
 			}
 			_ = os.Rename(tmp, full)
-			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "empresa_id": empresaID, "name": name})
+			writeJSON(w, http.StatusOK, map[string]any{"ok": true, "empresa_id": empresaID, "name": name, "local_session": localSession})
+			return
+
+		case "download":
+			if r.Method != http.MethodGet {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			fileName := strings.TrimSpace(r.URL.Query().Get("file"))
+			base, err := onlyOfficeSafeBaseName(fileName)
+			if err != nil {
+				http.Error(w, "file invalido", http.StatusBadRequest)
+				return
+			}
+			full, err := onlyOfficeJoinEmpresaFile(empresaID, base)
+			if err != nil {
+				http.Error(w, "file invalido", http.StatusBadRequest)
+				return
+			}
+			deleteAfter := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("delete")), "1") || strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("delete")), "true")
+			w.Header().Set("Content-Type", onlyOfficeMIMEByExt(base))
+			w.Header().Set("Content-Disposition", "attachment; filename=\""+base+"\"")
+			w.Header().Set("X-PCS-Storage", "cliente")
+			if deleteAfter {
+				fileBytes, err := os.ReadFile(full)
+				if err != nil {
+					if errors.Is(err, os.ErrNotExist) {
+						http.Error(w, "archivo no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "no se pudo leer archivo", http.StatusInternalServerError)
+					return
+				}
+				_, _ = w.Write(fileBytes)
+				_ = os.Remove(full)
+				return
+			}
+			f, err := os.Open(full)
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					http.Error(w, "archivo no encontrado", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "no se pudo leer archivo", http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+			info, _ := f.Stat()
+			modTime := time.Now()
+			if info != nil {
+				modTime = info.ModTime()
+			}
+			http.ServeContent(w, r, base, modTime, f)
 			return
 
 		case "editor_config":

@@ -120,6 +120,7 @@ type corteCajaCerrarPayload struct {
 	Usuario          string   `json:"usuario"`
 	AperturaEfectivo float64  `json:"apertura_efectivo"`
 	CajaFisica       float64  `json:"caja_fisica"`
+	CierreCajaID     int64    `json:"cierre_caja_id"`
 	CajaCodigo       string   `json:"caja_codigo"`
 	Turno            string   `json:"turno"`
 	Reportes         []string `json:"reportes"`
@@ -199,7 +200,7 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, apertura)
+		resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, apertura, strings.TrimSpace(r.URL.Query().Get("caja_codigo")), parseCorteCajaInt64(r.URL.Query().Get("cierre_caja_id")))
 		if err != nil {
 			http.Error(w, "No se pudo generar el corte de caja", http.StatusInternalServerError)
 			return
@@ -281,9 +282,13 @@ func EmpresaCorteCajaConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, hasta, usuario string, apertura float64, reportes []string, cfg *dbpkg.EmpresaCorteCajaConfiguracion) string {
 	rawDesde := ""
 	rawHasta := ""
+	rawCajaCodigo := ""
+	rawCierreCajaID := ""
 	if r != nil && r.URL != nil {
 		rawDesde = strings.TrimSpace(r.URL.Query().Get("desde"))
 		rawHasta = strings.TrimSpace(r.URL.Query().Get("hasta"))
+		rawCajaCodigo = strings.TrimSpace(r.URL.Query().Get("caja_codigo"))
+		rawCierreCajaID = strings.TrimSpace(r.URL.Query().Get("cierre_caja_id"))
 	}
 	keyDesde := strings.TrimSpace(desde)
 	keyHasta := strings.TrimSpace(hasta)
@@ -299,6 +304,8 @@ func buildCorteCajaCacheKeyFromRequest(r *http.Request, empresaID int64, desde, 
 		keyHasta,
 		strings.ToLower(strings.TrimSpace(usuario)),
 		strconv.FormatFloat(apertura, 'f', 2, 64),
+		strings.ToUpper(rawCajaCodigo),
+		rawCierreCajaID,
 		strings.Join(normalizeCorteCajaReportes(reportes), ","),
 		corteCajaConfigCacheFingerprint(cfg),
 	}, "|")
@@ -444,6 +451,18 @@ func parseCorteCajaFloat(raw string) float64 {
 	return out
 }
 
+func parseCorteCajaInt64(raw string) int64 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || v < 0 {
+		return 0
+	}
+	return v
+}
+
 func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64, payload corteCajaCerrarPayload, reportes []string, r *http.Request) (*corteCajaResponse, int64, error) {
 	if dbEmp == nil {
 		return nil, 0, sql.ErrConnDone
@@ -452,7 +471,7 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 		return nil, 0, err
 	}
 	reportes = normalizeCorteCajaReportes(reportes)
-	resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, apertura)
+	resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, apertura, payload.CajaCodigo, payload.CierreCajaID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -522,7 +541,7 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 	return resp, cierreID, nil
 }
 
-func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64) (*corteCajaResponse, error) {
+func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64, cajaCodigo string, cierreCajaID int64) (*corteCajaResponse, error) {
 	startedAt := time.Now()
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] buildCorteCajaReport empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
@@ -559,7 +578,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	resp.Resumen.Moneda = "COP"
 	resp.Resumen.AperturaEfectivo = apertura
 
-	ventas, err := listCorteCajaVentas(dbEmp, empresaID, desde, hasta, usuario)
+	ventas, err := listCorteCajaVentas(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
 	if err != nil {
 		return nil, err
 	}
@@ -603,7 +622,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		}
 	}
 
-	anulaciones, err := listCorteCajaVentasAnuladas(dbEmp, empresaID, desde, hasta, usuario)
+	anulaciones, err := listCorteCajaVentasAnuladas(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
 	if err != nil {
 		return nil, err
 	}
@@ -621,7 +640,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		resp.Resumen.VentasAnuladasTotal += amount
 	}
 
-	items, err := listCorteCajaItemsPorTipo(dbEmp, empresaID, desde, hasta, usuario)
+	items, err := listCorteCajaItemsPorTipo(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
 	if err != nil {
 		return nil, err
 	}
@@ -638,7 +657,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		}
 	}
 
-	movimientos, err := listCorteCajaMovimientos(dbEmp, empresaID, desde, hasta, usuario)
+	movimientos, err := listCorteCajaMovimientos(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
 	if err != nil {
 		return nil, err
 	}
@@ -680,7 +699,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	return resp, nil
 }
 
-func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaVenta, error) {
+func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaVenta, error) {
 	startedAt := time.Now()
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaVentas empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
@@ -717,8 +736,11 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario s
 	  AND COALESCE(c.pagado_en, '') <= ?
 	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
 	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
 	ORDER BY c.pagado_en ASC, c.id ASC`
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario)
+	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
 	if err != nil {
 		return nil, err
 	}
@@ -734,7 +756,7 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario s
 	return out, rows.Err()
 }
 
-func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaVenta, error) {
+func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaVenta, error) {
 	startedAt := time.Now()
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaVentasAnuladas empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
@@ -772,8 +794,11 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 	  AND COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') >= ?
 	  AND COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') <= ?
 	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
 	ORDER BY COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, '') ASC, c.id ASC`
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario)
+	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
 	if err != nil {
 		return nil, err
 	}
@@ -789,7 +814,7 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 	return out, rows.Err()
 }
 
-func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaTipoItem, error) {
+func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaTipoItem, error) {
 	startedAt := time.Now()
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaItemsPorTipo empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
@@ -814,9 +839,12 @@ func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usu
 	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
 	  AND LOWER(COALESCE(i.estado, 'activo')) = 'activo'
 	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
 	GROUP BY LOWER(COALESCE(i.tipo_item, 'producto'))
 	ORDER BY total DESC`
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario)
+	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
 	if err != nil {
 		return nil, err
 	}
@@ -832,7 +860,7 @@ func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usu
 	return out, rows.Err()
 }
 
-func listCorteCajaMovimientos(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string) ([]corteCajaMovimientoGrupo, error) {
+func listCorteCajaMovimientos(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64) ([]corteCajaMovimientoGrupo, error) {
 	startedAt := time.Now()
 	defer func() {
 		dbpkg.PerfLogf("[perf][corte] listCorteCajaMovimientos empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
@@ -850,9 +878,12 @@ func listCorteCajaMovimientos(dbEmp *sql.DB, empresaID int64, desde, hasta, usua
 	  AND COALESCE(fecha_movimiento, fecha_creacion, '') <= ?
 	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
 	  AND (? = '' OR LOWER(COALESCE(usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(caja_codigo, '')) = ?)
 	GROUP BY LOWER(COALESCE(tipo_movimiento, '')), LOWER(COALESCE(metodo_pago, '')), COALESCE(categoria, ''), COALESCE(usuario_creador, '')
 	ORDER BY 1, 2, 3, 4`
-	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, desde, hasta, usuario, usuario)
+	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo)
 	if err != nil {
 		return nil, err
 	}

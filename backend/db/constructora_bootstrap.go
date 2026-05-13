@@ -146,6 +146,7 @@ func ensureConstructoraLicenciaPlan(dbConn *sql.DB, tipoID int64, usuario string
 				valor = ?,
 				duracion_dias = ?,
 				max_documentos_mensuales = ?,
+				max_cajas_simultaneas = ?,
 				modulos_habilitados = ?,
 				es_adicional = 0,
 				codigo_funcion = '',
@@ -154,7 +155,7 @@ func ensureConstructoraLicenciaPlan(dbConn *sql.DB, tipoID int64, usuario string
 				estado = 'activo',
 				usuario_creador = COALESCE(NULLIF(TRIM(usuario_creador), ''), ?),
 				fecha_actualizacion = `+nowExpr+`
-			WHERE id = ?`, plan.Descripcion, plan.Valor, plan.DuracionDias, plan.MaxDocumentosMensuales, plan.ModulosHabilitados, usuario, existingID)
+			WHERE id = ?`, plan.Descripcion, plan.Valor, plan.DuracionDias, plan.MaxDocumentosMensuales, DefaultLicenciaMaxCajasSimultaneas(plan.MaxDocumentosMensuales), plan.ModulosHabilitados, usuario, existingID)
 		return err
 	}
 	if err != nil && err != sql.ErrNoRows {

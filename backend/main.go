@@ -686,6 +686,10 @@ func main() {
 			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_licencias_schema")
+		if err := dbpkg.EnsureLicenciaVencimientoNotificacionesSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure licencia vencimiento notificaciones schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_ensure_licencia_vencimiento_notificaciones_schema")
 		if err := dbpkg.EnsureUsuarioConfiguracionSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
 		}
@@ -893,6 +897,11 @@ func main() {
 		dbpkg.StartLicenciaEmpresaEstadoWorker(dbEmpresas, dbSuper, time.Hour, stopLicenciasEstado)
 	})
 
+	stopLicenciasVencimiento := make(chan struct{})
+	go utils.RunProtectedProcess("licencias.vencimiento_alertas_worker", map[string]interface{}{"interval_hours": 12}, func() {
+		handlers.StartLicenciaVencimientoAlertasWorker(dbSuper, dbEmpresas, 12*time.Hour, stopLicenciasVencimiento)
+	})
+
 	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()
 	log.Printf("[asientos_worker] policy interval=%s batch=%d max_reintentos=%d", asientosInterval, asientosBatchSize, asientosMaxRetries)
 	stopAsientosWorker := make(chan struct{})
@@ -952,6 +961,7 @@ func main() {
 	http.HandleFunc("/api/asesor_comercial/mis_clientes", handlers.AsesorComercialMisClientesHandler(dbSuper))
 	http.HandleFunc("/super/api/soporte_remoto", handlers.SuperSoporteRemotoHandler(dbEmpresas))
 	http.HandleFunc("/super/api/tickets_ayuda", handlers.SuperAyudaTicketsHandler(dbSuper))
+	http.HandleFunc("/super/api/correos_masivos", handlers.SuperCorreosMasivosHandler(dbEmpresas, dbSuper))
 	startupTrace("after_super_and_core_routes")
 	// Módulo de productos por empresa (persistido en pcs_empresas PostgreSQL)
 	http.HandleFunc("/api/empresa/bodegas", handlers.WithEmpresaInventarioPermissions(dbEmpresas, dbSuper, handlers.EmpresaBodegasHandler(dbEmpresas)))
@@ -1080,7 +1090,7 @@ func main() {
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia", handlers.WithEmpresaContabilidadColombiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia_avanzada", handlers.WithEmpresaContabilidadColombiaAvanzadaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/activos_fijos_niif_fiscal", handlers.WithEmpresaActivosFijosNIIFPermissions(dbEmpresas, dbSuper, handlers.EmpresaActivosFijosNIIFiscalHandler(dbEmpresas)))
@@ -1149,6 +1159,7 @@ func main() {
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
 	http.HandleFunc("/super/api/empresa_licencias_adicionales", handlers.EmpresaLicenciasAdicionalesHandler(dbSuper))
+	http.HandleFunc("/super/api/licencias/vencimiento_alertas", handlers.SuperLicenciaVencimientoAlertasHandler(dbSuper, dbEmpresas))
 	// Endpoint super: lista de administradores autorizados (Frecuencia FE/FP)
 	http.HandleFunc("/super/api/administradores_frecuencia_fe", handlers.SuperAdministradoresFrecuenciaFEHandler(dbSuper))
 	// Endpoint publico para exponer metodos de pago activos del checkout de licencias
@@ -1194,6 +1205,7 @@ func main() {
 	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
 	// Endpoint para configuración de modo mantenimiento global
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper))
+	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))

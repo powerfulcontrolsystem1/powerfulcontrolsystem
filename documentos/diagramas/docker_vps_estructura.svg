@@ -1,0 +1,154 @@
+<svg width="1600" height="1120" viewBox="0 0 1600 1120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="60" x2="1480" y2="1040" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F7FB"/>
+      <stop offset="1" stop-color="#E4ECF5"/>
+    </linearGradient>
+    <linearGradient id="vpsGrad" x1="140" y1="160" x2="1460" y2="1020" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#112D4E"/>
+      <stop offset="1" stop-color="#1B496F"/>
+    </linearGradient>
+    <linearGradient id="coreGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#1F8A70"/>
+      <stop offset="1" stop-color="#136F63"/>
+    </linearGradient>
+    <linearGradient id="webGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#3A86FF"/>
+      <stop offset="1" stop-color="#265DAB"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FF8C42"/>
+      <stop offset="1" stop-color="#D96C1C"/>
+    </linearGradient>
+    <linearGradient id="optGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#7B61FF"/>
+      <stop offset="1" stop-color="#5A43CB"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0B1F33" flood-opacity="0.18"/>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0B1F33" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2F6FED"/>
+    </marker>
+    <marker id="arrowMint" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#39C6A4"/>
+    </marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF9B54"/>
+    </marker>
+    <style>
+      .title { font: 700 42px 'Segoe UI', Arial, sans-serif; fill: #0D2036; }
+      .subtitle { font: 500 18px 'Segoe UI', Arial, sans-serif; fill: #33506F; }
+      .panel-title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #FFFFFF; }
+      .panel-sub { font: 500 15px 'Segoe UI', Arial, sans-serif; fill: #D7E4F2; }
+      .box-title { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #FFFFFF; }
+      .box-small { font: 600 15px 'Segoe UI', Arial, sans-serif; fill: #E9F3FF; }
+      .box-body { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #EAF3FF; }
+      .label { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #12304A; }
+      .label-soft { font: 600 14px 'Segoe UI', Arial, sans-serif; fill: #49637B; }
+      .chip { font: 700 13px 'Segoe UI', Arial, sans-serif; fill: #12304A; }
+      .footer { font: 600 15px 'Segoe UI', Arial, sans-serif; fill: #E4EEF8; }
+      .footer-small { font: 500 13px 'Segoe UI', Arial, sans-serif; fill: #C6D6E8; }
+      .mono { font: 700 13px 'Consolas', 'Courier New', monospace; fill: #F9FDFF; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1120" fill="url(#bg)"/>
+
+  <text x="120" y="88" class="title">Estructura Docker del VPS</text>
+  <text x="120" y="122" class="subtitle">Powerful Control System · topologia del stack Docker oficial y sus perfiles operativos en la VPS</text>
+
+  <rect x="118" y="170" width="1364" height="900" rx="34" fill="url(#vpsGrad)" filter="url(#shadow)"/>
+  <text x="156" y="226" class="panel-title">VPS Linux Ubuntu + Docker Engine + Docker Compose</text>
+  <text x="156" y="254" class="panel-sub">Red interna: pcs_internal · Persistencia: volumenes Docker nombrados · Motor relacional unico: PostgreSQL</text>
+
+  <rect x="156" y="286" width="1288" height="120" rx="26" fill="#F8FBFF" filter="url(#softShadow)"/>
+  <text x="194" y="332" class="label">Entrada publica y dominios</text>
+  <text x="194" y="360" class="label-soft">powerfulcontrolsystem.com · www.powerfulcontrolsystem.com · onlyoffice.powerfulcontrolsystem.com</text>
+  <rect x="980" y="314" width="418" height="58" rx="16" fill="#E8F1FD"/>
+  <text x="1008" y="349" class="chip">Puertos publicos: 80 / 443 · RustDesk: 21115-21117</text>
+
+  <rect x="202" y="474" width="244" height="184" rx="24" fill="url(#webGrad)" filter="url(#softShadow)"/>
+  <text x="226" y="516" class="box-title">pcs-edge</text>
+  <text x="226" y="542" class="box-small">Perfil: edge</text>
+  <text x="226" y="570" class="box-body">Nginx publico</text>
+  <text x="226" y="592" class="box-body">TLS / Let's Encrypt</text>
+  <text x="226" y="614" class="box-body">Proxy HTTPS al frontend</text>
+  <text x="226" y="636" class="box-body">Proxy OnlyOffice si profile office esta activo</text>
+  <text x="226" y="650" class="mono">80, 443</text>
+
+  <rect x="510" y="474" width="254" height="184" rx="24" fill="url(#webGrad)" filter="url(#softShadow)"/>
+  <text x="536" y="516" class="box-title">pcs-frontend</text>
+  <text x="536" y="542" class="box-small">Nginx interno</text>
+  <text x="536" y="570" class="box-body">Sirve /web</text>
+  <text x="536" y="592" class="box-body">Monta uploads y descargas</text>
+  <text x="536" y="614" class="box-body">Expuesto en localhost del VPS</text>
+  <text x="536" y="636" class="mono">127.0.0.1:8081 -> 80</text>
+
+  <rect x="820" y="474" width="254" height="184" rx="24" fill="url(#coreGrad)" filter="url(#softShadow)"/>
+  <text x="846" y="516" class="box-title">pcs-backend</text>
+  <text x="846" y="542" class="box-small">API Go</text>
+  <text x="846" y="570" class="box-body">Reglas de negocio</text>
+  <text x="846" y="592" class="box-body">Auth, ventas, licencias, modulos</text>
+  <text x="846" y="614" class="box-body">Lee secretos desde .env.local</text>
+  <text x="846" y="636" class="mono">8080 interno</text>
+
+  <rect x="1130" y="474" width="264" height="184" rx="24" fill="url(#dbGrad)" filter="url(#softShadow)"/>
+  <text x="1156" y="516" class="box-title">pcs-postgres</text>
+  <text x="1156" y="542" class="box-small">PostgreSQL 16</text>
+  <text x="1156" y="570" class="box-body">Bases: pcs_superadministrador</text>
+  <text x="1156" y="592" class="box-body">y pcs_empresas</text>
+  <text x="1156" y="614" class="box-body">Volumen: pcs_postgres_data</text>
+  <text x="1156" y="636" class="mono">5432 interno</text>
+
+  <path d="M 446 566 C 474 566, 476 566, 510 566" stroke="#2F6FED" stroke-width="6" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M 764 566 C 788 566, 790 566, 820 566" stroke="#39C6A4" stroke-width="6" fill="none" marker-end="url(#arrowMint)"/>
+  <path d="M 1074 566 C 1096 566, 1100 566, 1130 566" stroke="#FF9B54" stroke-width="6" fill="none" marker-end="url(#arrowOrange)"/>
+
+  <text x="270" y="454" class="label-soft">HTTPS publico</text>
+  <text x="598" y="454" class="label-soft">proxy interno</text>
+  <text x="908" y="454" class="label-soft">consultas SQL</text>
+
+  <rect x="202" y="720" width="360" height="208" rx="24" fill="url(#optGrad)" filter="url(#softShadow)"/>
+  <text x="228" y="762" class="box-title">OnlyOffice</text>
+  <text x="228" y="788" class="box-small">Contenedor: pcs-onlyoffice-documentserver</text>
+  <text x="228" y="816" class="box-body">Perfil opcional: office</text>
+  <text x="228" y="838" class="box-body">Editor documental con JWT</text>
+  <text x="228" y="860" class="box-body">Dominio dedicado: onlyoffice.powerfulcontrolsystem.com</text>
+  <text x="228" y="882" class="box-body">Bind local: 127.0.0.1:8088 -> 80</text>
+  <text x="228" y="904" class="box-body">Volumenes: pcs_onlyoffice_data, logs, lib, db</text>
+
+  <rect x="620" y="720" width="310" height="208" rx="24" fill="#294866" filter="url(#softShadow)"/>
+  <text x="646" y="762" class="box-title">Certificados y edge</text>
+  <text x="646" y="788" class="box-small">Contenedor: pcs-certbot</text>
+  <text x="646" y="816" class="box-body">Perfil opcional: certbot</text>
+  <text x="646" y="838" class="box-body">Emite y renueva Let's Encrypt</text>
+  <text x="646" y="860" class="box-body">Comparte volumenes con pcs-edge</text>
+  <text x="646" y="882" class="box-body">Volumenes: pcs_letsencrypt y pcs_certbot_www</text>
+
+  <rect x="988" y="720" width="406" height="208" rx="24" fill="#365372" filter="url(#softShadow)"/>
+  <text x="1014" y="762" class="box-title">Servicios opcionales de soporte</text>
+  <text x="1014" y="788" class="box-small">Perfiles: voice y rustdesk</text>
+  <text x="1014" y="816" class="box-body">pcs-voice-stream: TTS / voz IA, puerto local 8011</text>
+  <text x="1014" y="838" class="box-body">pcs-rustdesk-hbbs y pcs-rustdesk-hbbr</text>
+  <text x="1014" y="860" class="box-body">Acceso remoto seguro por puertos 21115-21117</text>
+  <text x="1014" y="882" class="box-body">Volumenes: pcs_voice_* y pcs_rustdesk_data</text>
+
+  <path d="M 324 658 C 324 692, 300 692, 300 720" stroke="#8F7DFF" stroke-width="5" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M 322 658 C 322 688, 760 688, 760 720" stroke="#8F7DFF" stroke-width="5" fill="none" marker-end="url(#arrowBlue)"/>
+  <path d="M 324 658 C 324 688, 1190 688, 1190 720" stroke="#8F7DFF" stroke-width="5" fill="none" marker-end="url(#arrowBlue)"/>
+
+  <rect x="200" y="952" width="1196" height="82" rx="22" fill="#0F243C" opacity="0.94"/>
+  <text x="228" y="988" class="footer">Volumenes persistentes clave</text>
+  <text x="228" y="1014" class="footer-small">pcs_postgres_data · pcs_web_uploads · pcs_downloads · pcs_backups · pcs_backend_logs · pcs_letsencrypt · pcs_certbot_www · pcs_onlyoffice_* · pcs_voice_* · pcs_rustdesk_data</text>
+
+  <rect x="126" y="316" width="40" height="40" rx="12" fill="#D8E8FF"/>
+  <circle cx="146" cy="336" r="7" fill="#2F6FED"/>
+  <circle cx="134" cy="336" r="4" fill="#2F6FED" opacity="0.45"/>
+  <circle cx="158" cy="336" r="4" fill="#2F6FED" opacity="0.45"/>
+
+  <text x="1210" y="1083" class="label-soft">Fuente: deploy/docker-compose.platform.yml y deploy/README-compose-platform.md</text>
+</svg>

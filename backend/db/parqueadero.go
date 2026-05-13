@@ -508,7 +508,7 @@ func createEmpresaParqueaderoCarrito(dbConn *sql.DB, cfg EmpresaParqueaderoConfi
 	if err != nil {
 		return 0, 0, 0, err
 	}
-	if err := PayCarritoStationSession(dbConn, ticket.EmpresaID, carritoID, metodo, ticket.CodigoTicket, "", "", 0, 0, cobro.Total, 0, ticket.UsuarioCierre); err != nil {
+	if err := PayCarritoStationSession(dbConn, ticket.EmpresaID, carritoID, metodo, ticket.CodigoTicket, "", "", 0, 0, cobro.Total, 0, 0, "", "", 0, ticket.UsuarioCierre); err != nil {
 		return 0, 0, 0, err
 	}
 	return carritoID, itemID, servicioID, nil

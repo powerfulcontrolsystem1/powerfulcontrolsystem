@@ -425,7 +425,9 @@
               accionesFactura +
               accionesAnulacion +
               '<button type="button" class="btn secondary" data-action="ver_facturas" data-key="'+esc(key)+'">Ver en Facturas electrónicas</button> ' +
-              '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Enviar correo</button>' +
+              '<button type="button" class="btn secondary" data-action="enviar" data-key="'+esc(key)+'">Enviar correo</button> ' +
+              '<button type="button" class="btn secondary" data-action="compartir_whatsapp" data-key="'+esc(key)+'">WhatsApp</button> ' +
+              '<button type="button" class="btn secondary" data-action="compartir_correo" data-key="'+esc(key)+'">Compartir correo</button>' +
             '</td>' +
           '</tr>';
         });
@@ -534,6 +536,36 @@
         }).catch(function(err){
           msg(err.message || "No se pudo reenviar el correo", "error");
         });
+      }
+
+      function compartirVenta(item, channel){
+        if(!item) return;
+        var docUrl = new URL("/administrar_empresa/ventas.html", window.location.origin);
+        docUrl.searchParams.set("empresa_id", String(empresaID));
+        if(norm(item.tipo_documento)) docUrl.searchParams.set("tipo_documento", norm(item.tipo_documento));
+        if(norm(item.documento_codigo)) docUrl.searchParams.set("q", norm(item.documento_codigo));
+        var meta = getPrintableMeta(item);
+        var total = formatMoney(item.monto_total, item.moneda || "COP");
+        var company = norm(state.empresaNombre) || norm((state.cfg || {}).razon_social) || norm((state.cfg || {}).nombre_comercial);
+        var message = [
+          "Cliente: " + (norm(item.cliente_nombre) || norm(item.cliente_email) || "Consumidor final"),
+          "Estado: " + (norm(item.estado_documento) || "borrador")
+        ].join("\n");
+        if(window.PCSPrint && typeof window.PCSPrint.shareDocument === "function"){
+          window.PCSPrint.shareDocument({
+            channel: channel,
+            title: meta.title,
+            code: norm(item.numero_legal) || norm(item.documento_codigo),
+            total: total,
+            company: company,
+            message: message,
+            url: docUrl.toString()
+          });
+          return;
+        }
+        var body = encodeURIComponent(meta.title + "\nCodigo: " + (norm(item.numero_legal) || norm(item.documento_codigo)) + "\nTotal: " + total + "\n" + message + "\nEnlace: " + docUrl.toString());
+        var href = channel === "whatsapp" ? ("https://wa.me/?text=" + body) : ("mailto:?subject=" + encodeURIComponent(meta.title) + "&body=" + body);
+        window.open(href, "_blank", "noopener,noreferrer");
       }
 
       function facturarDesdeVenta(item){
@@ -703,6 +735,8 @@
           return;
         }
         if(action==="enviar"){ reenviarCorreo(item); return; }
+        if(action==="compartir_whatsapp"){ compartirVenta(item, "whatsapp"); return; }
+        if(action==="compartir_correo"){ compartirVenta(item, "email"); return; }
       });
 
       (function init(){

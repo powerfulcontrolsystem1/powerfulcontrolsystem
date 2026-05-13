@@ -90,61 +90,28 @@ func IsEmpresaUsuarioLoginSubdomainRequest(r *http.Request) bool {
 }
 
 func resolveEmpresaUsuarioLoginURLFromBase(baseURL, empresaSlug, dominioPublico string, empresaID int64) string {
+	_ = empresaSlug
+	_ = dominioPublico
+	_ = empresaID
 	trimmed := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if trimmed == "" {
 		trimmed = "https://powerfulcontrolsystem.com"
 	}
 
-	configuredDomain := strings.TrimSpace(dominioPublico)
-	if configuredDomain != "" {
-		if !strings.Contains(configuredDomain, "://") {
-			configuredDomain = "https://" + configuredDomain
-		}
-		if parsedDomain, err := url.Parse(configuredDomain); err == nil && parsedDomain.Host != "" {
-			// Si el host es solo un slug (sin dot), presumir subdominio bajo powerfulcontrolsystem.com
-			host := parsedDomain.Host
-			if !strings.Contains(host, ".") {
-				host = host + ".powerfulcontrolsystem.com"
-			}
-			parsedDomain.Scheme = "https"
-			parsedDomain.Host = host
-			parsedDomain.Path = "/login_usuario.html"
-			parsedDomain.RawPath = ""
-			parsedDomain.Fragment = ""
-			query := parsedDomain.Query()
-			if empresaID > 0 {
-				query.Set("empresa_id", strconv.FormatInt(empresaID, 10))
-			}
-			parsedDomain.RawQuery = query.Encode()
-			return parsedDomain.String()
-		}
-	}
-
 	parsed, err := url.Parse(trimmed)
 	if err != nil || parsed.Host == "" {
-		loginURL := trimmed + "/login_usuario.html"
-		if empresaID > 0 {
-			loginURL += "?empresa_id=" + strconv.FormatInt(empresaID, 10)
-		}
-		return loginURL
+		return trimmed + "/login_usuario.html"
 	}
 
 	host := strings.ToLower(splitHostPortSafe(parsed.Host))
-	normalizedSlug := dbpkg.NormalizeEmpresaPublicSlug(empresaSlug)
-	if normalizedSlug != "" && (host == "powerfulcontrolsystem.com" || host == "www.powerfulcontrolsystem.com" || strings.HasSuffix(host, ".powerfulcontrolsystem.com")) {
+	if host == "www.powerfulcontrolsystem.com" || strings.HasSuffix(host, ".powerfulcontrolsystem.com") {
 		parsed.Scheme = "https"
-		parsed.Host = normalizedSlug + ".powerfulcontrolsystem.com"
+		parsed.Host = "powerfulcontrolsystem.com"
 	}
 	parsed.Path = "/login_usuario.html"
 	parsed.RawPath = ""
 	parsed.RawQuery = ""
 	parsed.Fragment = ""
-
-	query := parsed.Query()
-	if empresaID > 0 {
-		query.Set("empresa_id", strconv.FormatInt(empresaID, 10))
-	}
-	parsed.RawQuery = query.Encode()
 	return parsed.String()
 }
 
@@ -156,6 +123,90 @@ func resolveEmpresaUsuarioLoginURL(r *http.Request, dbEmp, dbSuper *sql.DB, empr
 		}
 	}
 	return resolveEmpresaUsuarioLoginURLFromBase(baseURL, "", "", empresaID)
+}
+
+var errEmpresaUsuarioEmailAmbiguo = errors.New("empresa user email resolves to multiple companies")
+
+func resolveUniqueEmpresaUsuarioByEmail(dbEmp *sql.DB, email string, empresaID int64) (*dbpkg.EmpresaUsuario, error) {
+	if empresaID > 0 {
+		return dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
+	}
+	items, err := dbpkg.GetEmpresaUsuariosByEmail(dbEmp, email)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	if len(items) > 1 {
+		return nil, errEmpresaUsuarioEmailAmbiguo
+	}
+	return &items[0], nil
+}
+
+func resolveEmpresaUsuarioForPasswordLogin(dbEmp *sql.DB, email, password string, empresaID int64) (*dbpkg.EmpresaUsuario, bool, error) {
+	if empresaID > 0 {
+		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
+		return item, false, err
+	}
+
+	items, err := dbpkg.GetEmpresaUsuariosByEmail(dbEmp, email)
+	if err != nil {
+		return nil, false, err
+	}
+	if len(items) == 0 {
+		return nil, false, sql.ErrNoRows
+	}
+	if len(items) == 1 {
+		return &items[0], false, nil
+	}
+
+	password = strings.TrimSpace(password)
+	if password == "" {
+		return nil, false, errEmpresaUsuarioEmailAmbiguo
+	}
+	matches := make([]*dbpkg.EmpresaUsuario, 0, 1)
+	for i := range items {
+		item := &items[i]
+		if item.PasswordSet == 1 && strings.TrimSpace(item.PasswordHash) != "" && strings.TrimSpace(item.PasswordSalt) != "" && verifyEmpresaUsuarioPassword(password, item) {
+			matches = append(matches, item)
+		}
+	}
+	if len(matches) == 1 {
+		return matches[0], true, nil
+	}
+	if len(matches) > 1 {
+		return nil, false, errEmpresaUsuarioEmailAmbiguo
+	}
+	return nil, false, sql.ErrNoRows
+}
+
+func resolveEmpresaUsuarioForPasswordReset(dbEmp *sql.DB, email, token string, empresaID int64) (*dbpkg.EmpresaUsuario, error) {
+	if empresaID > 0 {
+		return dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, empresaID)
+	}
+	items, err := dbpkg.GetEmpresaUsuariosByEmail(dbEmp, email)
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, sql.ErrNoRows
+	}
+	token = strings.TrimSpace(token)
+	var matched *dbpkg.EmpresaUsuario
+	for i := range items {
+		storedToken := strings.TrimSpace(items[i].PasswordResetToken)
+		if storedToken != "" && token != "" && subtle.ConstantTimeCompare([]byte(token), []byte(storedToken)) == 1 {
+			if matched != nil {
+				return nil, errEmpresaUsuarioEmailAmbiguo
+			}
+			matched = &items[i]
+		}
+	}
+	if matched == nil {
+		return nil, sql.ErrNoRows
+	}
+	return matched, nil
 }
 
 func empresaUsuarioContractAccepted(item *dbpkg.EmpresaUsuario, contract *dbpkg.SuperContractVersion) bool {
@@ -577,10 +628,14 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		item, passwordAlreadyVerified, err := resolveEmpresaUsuarioForPasswordLogin(dbEmp, email, payload.Password, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
+				return
+			}
+			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
+				http.Error(w, "este correo esta asociado a mas de una empresa; solicita al administrador usar un correo unico por empresa", http.StatusConflict)
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (login) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
@@ -617,7 +672,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "password es obligatorio", http.StatusBadRequest)
 			return
 		}
-		if !verifyEmpresaUsuarioPassword(payload.Password, item) {
+		if !passwordAlreadyVerified && !verifyEmpresaUsuarioPassword(payload.Password, item) {
 			_, lockUntil, registerErr := dbpkg.RegisterEmpresaUsuarioLoginFailure(
 				dbEmp,
 				item.EmpresaID,
@@ -717,6 +772,11 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeRecaptchaValidationError(w, err)
 			return
 		}
+		invitationToken := strings.TrimSpace(payload.TokenInvitacion)
+		if invitationToken == "" {
+			http.Error(w, "el registro solo puede completarse desde la invitacion enviada por correo por el administrador", http.StatusForbidden)
+			return
+		}
 
 		policy := resolveEmpresaUsuarioPasswordPolicy(dbSuper)
 		if err := validateEmpresaUsuarioPasswordWithPolicy(payload.Password, policy); err != nil {
@@ -724,7 +784,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		item, err := dbpkg.GetEmpresaUsuarioByConfirmToken(dbEmp, invitationToken)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "usuario no encontrado", http.StatusNotFound)
@@ -734,13 +794,16 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "No se pudo validar el usuario", http.StatusInternalServerError)
 			return
 		}
-		if !strings.EqualFold(strings.TrimSpace(item.DocumentoIdentidad), documento) {
-			http.Error(w, "documento inválido", http.StatusUnauthorized)
+		if payload.EmpresaID > 0 && item.EmpresaID != payload.EmpresaID {
+			http.Error(w, "invitacion invalida para la empresa indicada", http.StatusUnauthorized)
 			return
 		}
-		invitationToken := strings.TrimSpace(payload.TokenInvitacion)
-		if invitationToken == "" {
-			http.Error(w, "el registro solo puede completarse desde la invitacion enviada por correo por el administrador", http.StatusForbidden)
+		if !strings.EqualFold(strings.TrimSpace(item.Email), email) {
+			http.Error(w, "invitacion invalida para el correo indicado", http.StatusUnauthorized)
+			return
+		}
+		if !strings.EqualFold(strings.TrimSpace(item.DocumentoIdentidad), documento) {
+			http.Error(w, "documento inválido", http.StatusUnauthorized)
 			return
 		}
 		if status, msg := validateEmpresaUsuarioInvitationToken(item, invitationToken, time.Now()); status != http.StatusOK {
@@ -840,9 +903,9 @@ func EmpresaUsuarioRequestPasswordRecoveryHandler(dbEmp, dbSuper *sql.DB) http.H
 			})
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmp, email, payload.EmpresaID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
 				respondAccepted("masked")
 				return
 			}
@@ -922,9 +985,9 @@ func EmpresaUsuarioRequestInvitationRecoveryHandler(dbEmp, dbSuper *sql.DB) http
 			})
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmp, email, payload.EmpresaID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
+			if errors.Is(err, sql.ErrNoRows) || errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
 				respondAccepted("masked")
 				return
 			}
@@ -1013,10 +1076,14 @@ func EmpresaUsuarioResetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		item, err := resolveEmpresaUsuarioForPasswordReset(dbEmp, email, token, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "token de recuperación inválido", http.StatusUnauthorized)
+				return
+			}
+			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
+				http.Error(w, "este correo esta asociado a mas de una empresa; solicita un nuevo token de recuperacion", http.StatusConflict)
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (password_reset) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
@@ -1129,10 +1196,14 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			return
 		}
 
-		item, err := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+		item, currentPasswordAlreadyVerified, err := resolveEmpresaUsuarioForPasswordLogin(dbEmp, email, currentPassword, payload.EmpresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
+				return
+			}
+			if errors.Is(err, errEmpresaUsuarioEmailAmbiguo) {
+				http.Error(w, "este correo esta asociado a mas de una empresa; solicita al administrador usar un correo unico por empresa", http.StatusConflict)
 				return
 			}
 			log.Printf("[usuarios_empresa] failed to query user (change_password) empresa_id=%d email=%s error=%v", payload.EmpresaID, email, err)
@@ -1152,7 +1223,7 @@ func EmpresaUsuarioChangePasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFun
 			http.Error(w, "debes establecer tu contraseña inicial antes de cambiarla", http.StatusConflict)
 			return
 		}
-		if !verifyEmpresaUsuarioPassword(currentPassword, item) {
+		if !currentPasswordAlreadyVerified && !verifyEmpresaUsuarioPassword(currentPassword, item) {
 			http.Error(w, "credenciales inválidas", http.StatusUnauthorized)
 			return
 		}
@@ -1206,9 +1277,6 @@ func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 		item, err := dbpkg.GetEmpresaUsuarioByConfirmToken(dbEmp, token)
 		if err != nil {
 			loginURL := "/login_usuario.html"
-			if qEmpresaID, qErr := parseInt64QueryOptional(r, "empresa_id"); qErr == nil && qEmpresaID > 0 {
-				loginURL += "?empresa_id=" + strconv.FormatInt(qEmpresaID, 10)
-			}
 			msg := html.EscapeString(err.Error())
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusBadRequest)
@@ -1217,9 +1285,6 @@ func ConfirmarCorreoUsuarioHandler(dbEmp *sql.DB) http.HandlerFunc {
 		}
 		if status, msg := validateEmpresaUsuarioInvitationToken(item, token, time.Now()); status != http.StatusOK {
 			loginURL := "/login_usuario.html"
-			if item.EmpresaID > 0 {
-				loginURL += "?empresa_id=" + strconv.FormatInt(item.EmpresaID, 10)
-			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(status)
 			fmt.Fprintf(w, "<html><body style='font-family:sans-serif;background:#10141f;color:#e9eefb;padding:24px'><h2>No se pudo abrir la invitacion</h2><p>%s</p><p><a href='%s' style='color:#7fb2ff'>Volver al login de usuario</a></p></body></html>", html.EscapeString(msg), html.EscapeString(loginURL))
@@ -1902,9 +1967,6 @@ func buildEmpresaUsuarioInvitationURL(r *http.Request, dbEmp, dbSuper *sql.DB, e
 		parsed, _ = url.Parse(baseURL + "/login_usuario.html")
 	}
 	query := parsed.Query()
-	if empresaID > 0 {
-		query.Set("empresa_id", strconv.FormatInt(empresaID, 10))
-	}
 	query.Set("email", strings.TrimSpace(toEmail))
 	query.Set("token_invitacion", strings.TrimSpace(token))
 	query.Set("modo", "registro")
