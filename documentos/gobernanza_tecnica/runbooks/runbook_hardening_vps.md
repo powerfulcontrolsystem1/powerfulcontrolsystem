@@ -3,7 +3,7 @@
 ## Controles base
 
 - SSH: `PermitRootLogin no` o `prohibit-password` y `PasswordAuthentication no` cuando las llaves esten instaladas.
-- SSH productivo: Hostinger quedo restablecido para usar el puerto `22`.
+- SSH productivo: el VPS usa el puerto `49222`; el puerto `22` debe permanecer cerrado salvo recuperacion temporal desde consola del proveedor.
 - Firewall: permitir solo `22`, 80, 443 y puertos internos necesarios ligados a `127.0.0.1`.
 - Fail2ban: habilitado para SSH y Nginx si aplica.
 - Docker: revisar `docker ps`, redes internas y volumenes antes de limpiar.

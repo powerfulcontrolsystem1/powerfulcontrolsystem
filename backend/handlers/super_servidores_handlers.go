@@ -489,7 +489,7 @@ func resolveRustDeskRemoteConfig(dbSuper *sql.DB) (rustDeskRemoteConfig, error) 
 	host := strings.TrimSpace(panelCfg.Host)
 	user := strings.TrimSpace(panelCfg.User)
 	keyPath := strings.TrimSpace(panelCfg.KeyPath)
-	port := 22
+	port := 49222
 	if host == "" {
 		host = strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST"))
 	}

@@ -1,3 +1,13 @@
+- Actualizacion 2026-05-12: SSH VPS cambiado al puerto 49222
+	- `scripts/pcs_deployment.local.ps1` : configura el despliegue local del VPS con `$script:PcsVpsPort = 49222`.
+	- `scripts/pcs_deployment.local.ps1.example` : plantilla actualizada para recordar que el SSH operativo del VPS usa `49222` y fijar la huella SSH esperada del host para PuTTY.
+	- `scripts/sync_to_vps.ps1` y `scripts/sync_to_vps.sh` : aceptan `PcsVpsHostKey` / `PLINK_HOSTKEY` para que PuTTY pueda desplegar por el nuevo puerto en modo batch sin detenerse por cache de host key.
+	- `scripts/iniciar_servidor.ps1` : usa `DB_VPS_SSH_PORT` con valor por defecto `49222` al abrir tuneles PostgreSQL con `plink`.
+	- `backend/.env.example` : documenta `DB_VPS_SSH_PORT=49222`.
+	- `backend/vpssecurity/config/default_vps_security_config.json`, `backend/vpssecurity/config/config.go` y `backend/vpssecurity/scanner/runner.go` : escanean `49222` como puerto SSH esperado.
+	- `backend/handlers/super_servidores_handlers.go` : comandos remotos de RustDesk usan `DB_VPS_SSH_PORT` con valor por defecto `49222`.
+	- `documentos/manual_de_instalacion.md`, `documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md`, `documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md` y `documentos/manual_vps_seguridad.md` : documentan el puerto SSH operativo actual.
+
 - Actualizacion 2026-05-12: Control electrico dentro de Configuracion de empresa
 	- `web/administrar_empresa.html` : retira el boton independiente de Control electrico del sidebar principal de Administrar empresa.
 	- `web/administrar_empresa/configuracion_menu.html` : agrega `linkControlElectrico` en el grupo Estaciones, sensores y tarifas.
@@ -27,14 +37,8 @@
 - Actualizacion 2026-05-12: Limpieza de codigo backend en sync VPS
 	- `scripts/sync_to_vps.ps1` : antes de extraer el paquete en el VPS borra codigo fuente backend remoto obsoleto, preservando `.env`, `.env.local`, `logs`, `bin`, `tmp` y `secure`; evita que handlers retirados localmente sigan compilando en Docker.
 
-- Actualizacion 2026-05-12: SSH VPS restablecido al puerto 22
-	- `scripts/pcs_deployment.local.ps1` : configura el despliegue local del VPS con `$script:PcsVpsPort = 22`.
-	- `scripts/pcs_deployment.local.ps1.example` : plantilla actualizada para recordar que Hostinger quedo restablecido en SSH puerto `22`.
-	- `scripts/iniciar_servidor.ps1` : usa `DB_VPS_SSH_PORT` con valor por defecto `22` al abrir tuneles PostgreSQL con `plink`.
-	- `backend/.env.example` : documenta `DB_VPS_SSH_PORT=22`.
-	- `backend/vpssecurity/config/default_vps_security_config.json` : escanea `22` como puerto SSH esperado.
-	- `backend/handlers/super_servidores_handlers.go` : comandos remotos de RustDesk usan `DB_VPS_SSH_PORT` con valor por defecto `22`.
-	- `documentos/manual_de_instalacion.md`, `documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md` y `documentos/manual_vps_seguridad.md` : documentan el puerto SSH operativo actual.
+- Actualizacion 2026-05-12: SSH VPS restablecido temporalmente al puerto 22
+	- Cambio historico previo al ajuste actual: Hostinger se restablecio temporalmente en SSH puerto `22`; luego el puerto operativo fue migrado de forma segura a `49222`.
 
 - Actualizacion 2026-05-12: Index con seis tarjetas y carrusel horizontal
 	- `web/index.html` : limita la grilla principal de sistemas a las primeras 6 tarjetas, agrega una seccion `Mas sistemas` con flechas izquierda/derecha para navegar las tarjetas restantes en una sola hilera horizontal, y mantiene los modulos del sistema debajo del carrusel.

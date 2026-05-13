@@ -30,17 +30,17 @@ type ScheduleSettings struct {
 }
 
 type Settings struct {
-	TargetHost          string                    `json:"target_host"`
-	PortList            string                    `json:"port_list"`
-	Profile             string                    `json:"profile"`
-	MaxHistory          int                       `json:"max_history"`
-	MaxFindingsPerTool  int                       `json:"max_findings_per_tool"`
-	DataDir             string                    `json:"data_dir"`
-	ConfigPath          string                    `json:"config_path,omitempty"`
-	Schedule            ScheduleSettings          `json:"schedule"`
-	Lynis               ToolSettings              `json:"lynis"`
-	Nmap                ToolSettings              `json:"nmap"`
-	VulnerabilityScan   VulnerabilityToolSettings `json:"vulnerability_scan"`
+	TargetHost         string                    `json:"target_host"`
+	PortList           string                    `json:"port_list"`
+	Profile            string                    `json:"profile"`
+	MaxHistory         int                       `json:"max_history"`
+	MaxFindingsPerTool int                       `json:"max_findings_per_tool"`
+	DataDir            string                    `json:"data_dir"`
+	ConfigPath         string                    `json:"config_path,omitempty"`
+	Schedule           ScheduleSettings          `json:"schedule"`
+	Lynis              ToolSettings              `json:"lynis"`
+	Nmap               ToolSettings              `json:"nmap"`
+	VulnerabilityScan  VulnerabilityToolSettings `json:"vulnerability_scan"`
 }
 
 type Manager struct {
@@ -95,7 +95,7 @@ func DefaultSettings() Settings {
 	dataDir := DefaultDataDir()
 	settings := Settings{
 		TargetHost:         "127.0.0.1",
-		PortList:           "22,80,443,5432,8080,8443",
+		PortList:           "49222,80,443,5432,8080,8443",
 		Profile:            "full",
 		MaxHistory:         60,
 		MaxFindingsPerTool: 150,

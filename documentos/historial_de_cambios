@@ -1,3 +1,10 @@
+2026-05-12: SSH VPS cambiado al puerto 49222
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `arranque_local`, `rustdesk`, `vpssecurity`.
+- Cambio operativo: SSH del VPS queda escuchando solo en `49222`; el puerto `22` se cerro despues de probar conexion externa real por el puerto nuevo.
+- Proteccion anti-bloqueo: se habilitaron temporalmente `22` y `49222`, se verifico `plink` por `49222`, luego se elimino `22`; `ssh.socket` queda `inactive/disabled` y `ssh.service` queda `active/enabled`.
+- Configuracion local: `scripts/pcs_deployment.local.ps1`, plantilla, tuneles PostgreSQL, RustDesk remoto y escaner VPS quedan alineados con `49222`.
+- Alcance: no cambia backend de negocio, tablas, permisos empresariales ni secretos.
+
 2026-05-12: Control electrico dentro de Configuracion de empresa
 - Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `control_electrico`.
 - Cambio funcional: el acceso principal de Administrar empresa elimina el boton independiente de Control electrico y lo ubica dentro de Configuracion > Estaciones, sensores y tarifas.
@@ -37,10 +44,10 @@
 - Causa tecnica: el VPS conservaba `backend/handlers/nextcloud_empresa.go` aunque el archivo ya no existia localmente, y Docker fallaba al compilar por constantes Nextcloud retiradas.
 - Alcance: no cambia reglas de negocio, permisos, tablas ni dependencias.
 
-2026-05-12: SSH VPS restablecido al puerto 22
+2026-05-12: SSH VPS restablecido temporalmente al puerto 22
 - Modulos afectados: `deploy`, `operacion_vps`, `seguridad`.
-- Cambio operativo: Hostinger queda restablecido para usar SSH en el puerto `22`.
-- Configuracion local: `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` vuelven a `$script:PcsVpsPort = 22`.
+- Cambio operativo: Hostinger queda restablecido temporalmente para usar SSH en el puerto `22` antes del cambio seguro posterior a `49222`.
+- Configuracion local temporal: `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` vuelven a `$script:PcsVpsPort = 22` en ese momento.
 - Documentacion: se actualizan manual de instalacion, runbook de hardening VPS, manual de seguridad VPS, tuneles locales y escaner VPS con el puerto esperado.
 - Alcance: no cambia backend, base de datos, endpoints, permisos ni secretos.
 

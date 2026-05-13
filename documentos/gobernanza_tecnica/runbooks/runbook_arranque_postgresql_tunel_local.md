@@ -27,7 +27,7 @@ Aplica al arranque local del backend cuando la base canonica productiva es Postg
 1. confirmar que el proyecto este operando con `DB_DIALECT=postgres`.
 2. verificar que `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN` existan y apunten inicialmente a `127.0.0.1` o `localhost` si dependen del tunel.
 3. confirmar si `DB_VPS_TUNNEL_ENABLED=1` y si `DB_VPS_LOCAL_PORT` contiene el puerto real esperado.
-4. validar que existan `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER` y `DB_VPS_SSH_PORT=22` cuando el tunel se abre desde `scripts/iniciar_servidor.ps1`.
+4. validar que existan `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER` y `DB_VPS_SSH_PORT=49222` cuando el tunel se abre desde `scripts/iniciar_servidor.ps1`.
 5. comprobar si ya existe un listener local en el puerto del tunel antes de culpar al backend.
 
 ## Causas probables
@@ -45,7 +45,7 @@ Aplica al arranque local del backend cuando la base canonica productiva es Postg
 3. confirmar que `resolveRuntimePostgresDSN` del backend reescribe solo DSN cuyo host sea `127.0.0.1` o `localhost`; si el DSN apunta a otro host, no habra reescritura.
 4. validar que el proceso del backend haya heredado las mismas variables del entorno que usó el script para abrir el tunel.
 5. si el helper de verificacion temporal conecta pero `go run .` falla, comparar el puerto reescrito por el helper con el puerto que realmente ve el backend en su entorno de proceso.
-6. si el problema es SSH, corregir primero `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER`, `DB_VPS_SSH_PORT=22`, llave privada o puerto remoto antes de reintentar el arranque.
+6. si el problema es SSH, corregir primero `DB_VPS_SSH_HOST`, `DB_VPS_SSH_USER`, `DB_VPS_SSH_PORT=49222`, llave privada o puerto remoto antes de reintentar el arranque.
 7. una vez restablecido el tunel, volver a iniciar el backend y confirmar que las dos bases `pcs_empresas` y `pcs_superadministrador` abren sin error.
 
 ## Validacion posterior

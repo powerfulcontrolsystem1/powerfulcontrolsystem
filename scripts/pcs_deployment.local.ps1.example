@@ -15,7 +15,8 @@ $script:PcsGitRemoteUrl = "https://github.com/TU_USUARIO/TU_REPO.git"
 $script:PcsVpsHost = "2.24.197.58"
 $script:PcsVpsUser = "root"
 $script:PcsVpsRemotePath = "/root/powerfulcontrolsystem"
-$script:PcsVpsPort = 22
+$script:PcsVpsPort = 49222
+$script:PcsVpsHostKey = "SHA256:mDBX0SnNik0QapfC2K0rsZ8hE23TvOR5Wi2yKtdhl1U"
 
 # Opcionales (descomenta y ajusta):
 # $script:PcsVpsIdentityFile = "clave privada ssh.ppk"

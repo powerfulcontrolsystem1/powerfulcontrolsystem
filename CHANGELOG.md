@@ -1,3 +1,5 @@
+- 2026-05-12: SSH del VPS cambiado de `22` a `49222` con procedimiento seguro: primero se habilitaron ambos puertos, se probo conexion externa por `49222`, luego se cerro `22` y se verifico que solo `49222` quedara escuchando. Scripts de despliegue, tuneles locales, RustDesk remoto, escaner VPS y documentacion operativa quedan alineados con `49222`.
+
 - 2026-05-12: `Control electrico` se mueve dentro de Configuracion de empresa. El sidebar principal de Administrar empresa deja un solo acceso a `Configuracion`, y `web/administrar_empresa/configuracion_menu.html` incorpora el enlace en `Estaciones, sensores y tarifas`; `configuracion.html` agrega un acceso directo en el mapa ejecutivo. Sin cambios de backend, tablas ni dependencias.
 
 - 2026-05-12: retirado el modulo legado de mesa de ayuda empresarial. Se eliminan su ruta, permiso, pagina, opcion de licencias y plantillas demo; el flujo oficial queda en tickets propios con `/api/empresa/tickets_ayuda` y `/super/api/tickets_ayuda`.
@@ -10,7 +12,7 @@
 
 - 2026-05-12: `sync_to_vps.ps1` limpia codigo fuente backend obsoleto en el VPS antes de extraer el paquete, preservando `.env`, logs, binarios, `tmp` y `secure`; evita que archivos eliminados localmente, como handlers Nextcloud retirados, queden fantasma y rompan el build Docker.
 
-- 2026-05-12: SSH del VPS restablecido al puerto `22` desde Hostinger. `scripts/pcs_deployment.local.ps1`, su plantilla, tuneles locales, RustDesk remoto, escaner VPS y documentacion operativa quedan alineados nuevamente con `22`.
+- 2026-05-12: SSH del VPS se habia restablecido temporalmente al puerto `22` desde Hostinger antes de aplicar el cambio seguro posterior a `49222`.
 
 - 2026-05-12: el index muestra solo las primeras 6 tarjetas de sistemas en la grilla principal y mueve las tarjetas restantes a una barra horizontal navegable con flechas izquierda/derecha antes de la seccion de modulos. Sin backend, tablas, permisos ni dependencias nuevas.
 

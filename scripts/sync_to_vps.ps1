@@ -8,7 +8,7 @@
   cuando WSL no está instalado o no tiene distribuciones.
   No programa tareas; se ejecuta manualmente cuando el usuario lo necesite.
   Config opcional: scripts/pcs_deployment.local.ps1 (ver pcs_deployment.local.ps1.example) para
-  PcsVpsHost, PcsVpsUser, PcsVpsRemotePath, PcsVpsPort, PcsVpsIdentityFile, PcsVpsServerPort, PcsVpsPublicBaseUrl
+  PcsVpsHost, PcsVpsUser, PcsVpsRemotePath, PcsVpsPort, PcsVpsHostKey, PcsVpsIdentityFile, PcsVpsServerPort, PcsVpsPublicBaseUrl
   cuando no pasas -RemoteHost, etc. en linea de comandos.
 #>
 
@@ -22,6 +22,7 @@ param(
   [string]$RemoteHost = "2.24.197.58",
   [string]$RemotePath = "/root/powerfulcontrolsystem",
   [int]$Port = 22,
+  [string]$SshHostKey = "",
   [string]$IdentityFile = "",
   [string]$ExcludeFile = "",
   [bool]$CompressPackage = $true,
@@ -80,6 +81,9 @@ if (Test-Path -LiteralPath $pcsDeployVps) {
   }
   if (-not $PSBoundParameters.ContainsKey('Port') -and (Get-Variable PcsVpsPort -Scope Script -ErrorAction SilentlyContinue) -and $null -ne $script:PcsVpsPort) {
     $Port = [int]$script:PcsVpsPort
+  }
+  if (-not $PSBoundParameters.ContainsKey('SshHostKey') -and (Get-Variable PcsVpsHostKey -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsHostKey)) {
+    $SshHostKey = $script:PcsVpsHostKey.Trim()
   }
   if (-not $PSBoundParameters.ContainsKey('IdentityFile') -and (Get-Variable PcsVpsIdentityFile -Scope Script -ErrorAction SilentlyContinue) -and -not [string]::IsNullOrWhiteSpace($script:PcsVpsIdentityFile)) {
     $IdentityFile = $script:PcsVpsIdentityFile.Trim()
@@ -1102,6 +1106,17 @@ function Parse-IntOrDefault {
   return $DefaultValue
 }
 
+if ([string]::IsNullOrWhiteSpace($SshHostKey)) {
+  $envHostKey = [Environment]::GetEnvironmentVariable('PCS_VPS_SSH_HOSTKEY', 'Process')
+  if (-not [string]::IsNullOrWhiteSpace($envHostKey)) {
+    $SshHostKey = $envHostKey.Trim()
+  }
+}
+$script:PlinkHostKeyArgs = @()
+if (-not [string]::IsNullOrWhiteSpace($SshHostKey)) {
+  $script:PlinkHostKeyArgs = @('-hostkey', $SshHostKey.Trim())
+}
+
 function Format-ByteSize {
   param([long]$Bytes)
 
@@ -1474,9 +1489,10 @@ function Invoke-PuttySync {
     $extractCommandPath = $plink
     $bootstrapCommandPath = $plink
 
-    $verifyArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, $remoteTarget, $mkdirCmd)
-    $uploadArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, $archivePath, "${remoteTarget}:$remoteArchive")
-    $extractArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, $remoteTarget, $extractCmd)
+    $plinkBaseArgs = @('-batch') + $script:PlinkHostKeyArgs + @('-P', "$Port", '-i', $identityResolved)
+    $verifyArgs = $plinkBaseArgs + @($remoteTarget, $mkdirCmd)
+    $uploadArgs = $plinkBaseArgs + @($archivePath, "${remoteTarget}:$remoteArchive")
+    $extractArgs = $plinkBaseArgs + @($remoteTarget, $extractCmd)
   } else {
     $sshExe = Resolve-SshExe
     $scpExe = Resolve-ScpExe
@@ -1519,7 +1535,7 @@ function Invoke-PuttySync {
     if ($isPpkIdentity) {
       $bootstrapScriptPath = New-TempRemoteCommandFile -Prefix "bootstrap_remote" -Content $bootstrapCmd
       $tempCommandFiles += $bootstrapScriptPath
-      $bootstrapArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, '-m', $bootstrapScriptPath, $remoteTarget)
+      $bootstrapArgs = $plinkBaseArgs + @('-m', $bootstrapScriptPath, $remoteTarget)
     } else {
       $bootstrapArgs = @(
         '-o', 'BatchMode=yes',
@@ -1540,7 +1556,7 @@ function Invoke-PuttySync {
     if ($isPpkIdentity) {
       $restartScriptPath = New-TempRemoteCommandFile -Prefix "restart_remote" -Content $restartCmd
       $tempCommandFiles += $restartScriptPath
-      $restartArgs = @('-batch', '-P', "$Port", '-i', $identityResolved, '-m', $restartScriptPath, $remoteTarget)
+      $restartArgs = $plinkBaseArgs + @('-m', $restartScriptPath, $remoteTarget)
     } else {
       $restartArgs = @(
         '-o', 'BatchMode=yes',
@@ -1694,7 +1710,8 @@ function Invoke-RemoteCommandSimple {
     if ([string]::IsNullOrWhiteSpace($IdentityContext.PlinkKeyWin)) {
       throw "Falta PlinkKeyWin (clave .ppk) para ejecutar comando remoto."
     }
-    & $plinkExe -batch -P $Port -i $IdentityContext.PlinkKeyWin "$RemoteUser@$RemoteHost" $Command
+    $plinkArgs = @('-batch') + $script:PlinkHostKeyArgs + @('-P', "$Port", '-i', $IdentityContext.PlinkKeyWin, "$RemoteUser@$RemoteHost", $Command)
+    & $plinkExe @plinkArgs
     if ($LASTEXITCODE -ne 0) {
       throw "Fallo comando remoto via plink (exit=$LASTEXITCODE)"
     }
@@ -2136,6 +2153,9 @@ try {
       "PLINK_EXE=$(Convert-ToBashLiteral $identityContext.PlinkExeWsl)",
       "PLINK_KEY_WIN=$(Convert-ToBashLiteral $identityContext.PlinkKeyWin)"
     )
+    if (-not [string]::IsNullOrWhiteSpace($SshHostKey)) {
+      $envParts += "PLINK_HOSTKEY=$(Convert-ToBashLiteral $SshHostKey)"
+    }
   }
 
   $envPrefix = ""

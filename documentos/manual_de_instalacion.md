@@ -32,7 +32,8 @@ Despliegue recomendado desde Windows/local:
 .\scripts\sync_to_vps.ps1
 ```
 
-Nota operativa: desde el 2026-05-12 Hostinger quedo restablecido para SSH en el puerto `22`. La configuracion local de despliegue debe mantener `scripts/pcs_deployment.local.ps1` con `$script:PcsVpsPort = 22`.
+Nota operativa: desde el 2026-05-12 SSH del VPS usa el puerto `49222`. La configuracion local de despliegue debe mantener `scripts/pcs_deployment.local.ps1` con `$script:PcsVpsPort = 49222`. El puerto `22` debe permanecer cerrado salvo recuperacion temporal desde consola del proveedor.
+Para despliegues con PuTTY en modo batch, `scripts/pcs_deployment.local.ps1` tambien debe mantener `$script:PcsVpsHostKey = "SHA256:mDBX0SnNik0QapfC2K0rsZ8hE23TvOR5Wi2yKtdhl1U"` para validar la identidad del VPS sin pedir confirmacion interactiva.
 
 Antes de desplegar, validar desde Windows/local con `Test-NetConnection 2.24.197.58 -Port 22` y luego ejecutar `.\scripts\sync_to_vps.ps1`.
 

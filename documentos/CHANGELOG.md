@@ -1,3 +1,8 @@
+## [2026-05-12] SSH VPS cambiado a 49222
+- [Operacion VPS] SSH queda escuchando solo en `49222`; el puerto `22` fue cerrado despues de probar conexion externa real por el puerto nuevo.
+- [Seguridad] `ssh.socket` queda desactivado y `ssh.service` gestiona el listener para evitar el bloqueo ocurrido anteriormente con socket activation.
+- [Deploy] `scripts/pcs_deployment.local.ps1`, `scripts/pcs_deployment.local.ps1.example`, tuneles locales, RustDesk remoto y escaner VPS usan `49222`.
+
 ## [2026-05-12] Retiro de mesa de ayuda legado
 - [Backend] Se elimina la ruta empresarial heredada y su wrapper de permisos; el soporte oficial queda en `/api/empresa/tickets_ayuda`.
 - [Frontend] Se retiran la pagina, el enlace de menu y la opcion de licencias del modulo legado.
@@ -23,10 +28,8 @@
 - [Proteccion] Conserva `.env`, `.env.local`, `logs`, `bin`, `tmp` y `secure`.
 - [Correccion] Evita builds Docker rotos por archivos eliminados localmente que seguian presentes en el VPS.
 
-## [2026-05-12] SSH VPS restablecido a 22
-- [Operacion VPS] Hostinger queda restablecido para SSH en el puerto `22`.
-- [Deploy] `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` vuelven a usar `$script:PcsVpsPort = 22`.
-- [Seguridad] Tuneles locales, RustDesk remoto, escaner VPS y documentacion operativa quedan alineados con el puerto `22`.
+## [2026-05-12] SSH VPS restablecido temporalmente a 22
+- [Operacion VPS] Hostinger quedo restablecido temporalmente para SSH en el puerto `22` antes del cambio seguro posterior a `49222`.
 
 ## [2026-05-12] Index con carrusel de sistemas
 - [Frontend] `web/index.html` renderiza las primeras 6 tarjetas en la grilla principal y las demas en una hilera horizontal navegable.

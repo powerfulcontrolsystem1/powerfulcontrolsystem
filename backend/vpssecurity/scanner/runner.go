@@ -243,7 +243,7 @@ func runNmap(ctx context.Context, settings config.Settings, executor Executor) (
 
 func quickPorts(portList string) string {
 	if strings.TrimSpace(portList) == "" {
-		return "22,80,443"
+		return "49222,80,443"
 	}
 	parts := strings.Split(portList, ",")
 	selected := make([]string, 0, 3)
@@ -255,7 +255,7 @@ func quickPorts(portList string) string {
 		}
 	}
 	if len(selected) == 0 {
-		return "22,80,443"
+		return "49222,80,443"
 	}
 	return strings.Join(selected, ",")
 }

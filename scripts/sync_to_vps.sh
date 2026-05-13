@@ -18,6 +18,7 @@ SSH_STRICT_HOSTKEY="${SSH_STRICT_HOSTKEY:-accept-new}"
 SSH_CLIENT="${SSH_CLIENT:-ssh}"
 PLINK_EXE="${PLINK_EXE:-}"
 PLINK_KEY_WIN="${PLINK_KEY_WIN:-}"
+PLINK_HOSTKEY="${PLINK_HOSTKEY:-${PCS_VPS_SSH_HOSTKEY:-}}"
 RESTART_SERVER="${RESTART_SERVER:-1}"
 SERVER_PORT="${SERVER_PORT:-8080}"
 REMOTE_BINARY="${REMOTE_BINARY:-backend/bin/server_linux_amd64}"
@@ -376,7 +377,11 @@ if [[ "$SSH_CLIENT" == "ssh" ]]; then
     SSH_ARGS=(-i "$SSH_KEY" "${SSH_ARGS[@]}")
   fi
 else
-  PLINK_ARGS=(-batch -P "$REMOTE_PORT" -i "$PLINK_KEY_WIN")
+  PLINK_ARGS=(-batch)
+  if [[ -n "$PLINK_HOSTKEY" ]]; then
+    PLINK_ARGS+=(-hostkey "$PLINK_HOSTKEY")
+  fi
+  PLINK_ARGS+=(-P "$REMOTE_PORT" -i "$PLINK_KEY_WIN")
 fi
 
 run_remote() {
@@ -426,7 +431,11 @@ if [[ "$SSH_CLIENT" == "ssh" ]]; then
     RSYNC_SSH="ssh -i '$SSH_KEY' -p $REMOTE_PORT -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=$SSH_STRICT_HOSTKEY -o LogLevel=ERROR"
   fi
 else
-  RSYNC_SSH="\"$PLINK_EXE\" -batch -P $REMOTE_PORT -i \"$PLINK_KEY_WIN\""
+  if [[ -n "$PLINK_HOSTKEY" ]]; then
+    RSYNC_SSH="\"$PLINK_EXE\" -batch -hostkey \"$PLINK_HOSTKEY\" -P $REMOTE_PORT -i \"$PLINK_KEY_WIN\""
+  else
+    RSYNC_SSH="\"$PLINK_EXE\" -batch -P $REMOTE_PORT -i \"$PLINK_KEY_WIN\""
+  fi
 fi
 
 set_step "sincronizando archivos con rsync"

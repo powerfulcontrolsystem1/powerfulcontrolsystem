@@ -342,7 +342,7 @@ function Ensure-VpsSshTunnel {
         [string]$SshHost,
         [string]$SshUser,
         [string]$SshKeyPath,
-        [int]$SshPort = 22,
+        [int]$SshPort = 49222,
         [int]$LocalPort,
         [string]$RemoteHost,
         [int]$RemotePort,
@@ -461,7 +461,7 @@ function Ensure-VpsPostgresTunnel {
         [string]$SshHost,
         [string]$SshUser,
         [string]$SshKeyPath,
-        [int]$SshPort = 22,
+        [int]$SshPort = 49222,
         [int]$LocalPort,
         [string]$RemoteHost,
         [int]$RemotePort
@@ -489,7 +489,7 @@ if ($tunnelEnabled) {
     $sshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
     $sshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
     $sshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
-    $sshPort = 22
+    $sshPort = 49222
     $rawSshPort = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_PORT', 'Process')
     if (-not [string]::IsNullOrWhiteSpace($rawSshPort)) {
         $parsedSshPort = 0

@@ -1,6 +1,6 @@
 {
   "target_host": "127.0.0.1",
-  "port_list": "22,80,443,5432,8080,8443",
+  "port_list": "49222,80,443,5432,8080,8443",
   "profile": "full",
   "max_history": 60,
   "max_findings_per_tool": 150,
