@@ -1,3 +1,7 @@
+- 2026-05-13: `administrar_empresa.html` ahora valida sesion administrativa con `/me` antes de abrir el shell empresarial; si la sesion no existe o expiro, redirige a `login.html` en lugar de dejar el menu y el iframe en un estado falso de acceso.
+
+- 2026-05-13: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/administrar_clientes.html` y `web/administrar_empresa/bodega.html` ya no muestran errores crudos de `unauthorized` o `Error cargando ...` cuando la sesion expiro. Un `401` redirige al login y un `403` informa que el rol no tiene permiso para ese modulo.
+
 - 2026-05-13: `login.html` y `login_usuario.html` pasan a usar imagenes reales (`web/img/login-admin-real.png` y `web/img/login-usuario-real.png`) con un iluminado exterior suave adaptado a modo claro/oscuro para mejorar presencia visual sin perder limpieza.
 
 - 2026-05-13: en `Estaciones`, la tarjeta especial `Caja` ya no abre `venta_directa` ni un carrito. Ahora redirige a `web/administrar_empresa/corte_de_caja.html` para cerrar turno, generar corte e imprimir el reporte del cajero, con regreso a estaciones y filtro por `caja_codigo` configurado por empresa.

@@ -1515,18 +1515,42 @@ try {
     });
   }
 
-  function fetchCurrentAdminRole() {
+  function redirectToAdminLogin() {
+    try {
+      if (window.top && window.top !== window) {
+        window.top.location.href = "/login.html";
+        return;
+      }
+    } catch (error) {
+      // fallback local
+    }
+    window.location.href = "/login.html";
+  }
+
+  function fetchCurrentAdminSession() {
     return fetch("/me", { credentials: "same-origin" })
       .then(function (resp) {
-        if (!resp.ok) return null;
-        return resp.json();
-      })
-      .then(function (data) {
-        if (!data || typeof data !== "object") return "";
-        return String(data.role || data.Role || "").trim();
+        if (resp.status === 401 || resp.status === 403) {
+          return { authenticated: false, role: "" };
+        }
+        if (!resp.ok) {
+          return { authenticated: null, role: "" };
+        }
+        return resp.json()
+          .then(function (data) {
+            return {
+              authenticated: true,
+              role: (!data || typeof data !== "object")
+                ? ""
+                : String(data.role || data.Role || "").trim()
+            };
+          })
+          .catch(function () {
+            return { authenticated: true, role: "" };
+          });
       })
       .catch(function () {
-        return "";
+        return { authenticated: null, role: "" };
       });
   }
 
@@ -1658,9 +1682,14 @@ try {
   fetchVerticalIntegrationCatalog(id)
     .then(function (integrationResult) {
       setVerticalIntegrationEvidence(integrationResult);
-      return fetchCurrentAdminRole();
+      return fetchCurrentAdminSession();
     })
-    .then(function (role) {
+    .then(function (session) {
+      if (session && session.authenticated === false) {
+        redirectToAdminLogin();
+        return null;
+      }
+      var role = session && session.role ? session.role : "";
       if (id) {
         return applyMenuPermissionsWithSource(id, role)
           .then(function () {

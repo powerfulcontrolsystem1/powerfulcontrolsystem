@@ -3298,12 +3298,28 @@
 
     async function ensureOk(res) {
       if (res.ok) return;
+      if (res.status === 401) {
+        try {
+          if (window.top && window.top !== window) {
+            window.top.location.href = '/login.html';
+            throw new Error('Tu sesión expiró. Redirigiendo al login.');
+          }
+        } catch (_) {}
+        window.location.href = '/login.html';
+        throw new Error('Tu sesión expiró. Redirigiendo al login.');
+      }
       const t = await res.text();
       let payload = null;
       try {
         payload = t ? JSON.parse(t) : null;
       } catch (_) {
         payload = null;
+      }
+      if (res.status === 403) {
+        const denied = new Error('No tienes permiso para usar este módulo con tu rol actual.');
+        denied.status = res.status;
+        denied.payload = payload;
+        throw denied;
       }
       const msg = payload && (payload.message || payload.error || payload.title)
         ? String(payload.message || payload.error || payload.title)

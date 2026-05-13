@@ -1,3 +1,9 @@
+2026-05-13: endurecimiento de sesion en administrar empresa y modulos operativos
+- Modulos afectados: `administrar_empresa`, `carritos`, `clientes`, `bodegas`, `autenticacion`.
+- Frontend shell: `web/js/administrar_empresa.js` deja de montar el menu/iframe empresarial como si fuera una sesion valida cuando `/me` responde `401/403`; ahora redirige a `login.html` antes de abrir modulos protegidos.
+- Frontend modulos: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/administrar_clientes.html` y `web/administrar_empresa/bodega.html` traducen `401` a redireccion al login administrativo y `403` a mensaje claro de permiso, evitando iframes con errores crudos como `unauthorized` o `Error cargando ...`.
+- QA operativa: barrido visual con navegador sobre `administrar_empresa.html` detecto que varias paginas estaticas cargaban aunque la API ya negaba sesion; evidencia remota en `docker logs pcs-backend` confirmo `401` real sobre `/api/empresa/carritos_compra?empresa_id=7&include_inactive=1`.
+
 2026-05-13: imagenes reales para login admin y login usuario
 - Modulos afectados: `autenticacion`, `login_usuario`, `portal_acceso`.
 - Frontend: `web/login.html` y `web/login_usuario.html` reemplazan las ilustraciones anteriores por `web/img/login-admin-real.png` y `web/img/login-usuario-real.png`.

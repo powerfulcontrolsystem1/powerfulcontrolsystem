@@ -1,3 +1,8 @@
+## [2026-05-13] Administrar empresa exige sesion valida antes de abrir modulos
+- [Frontend] `web/js/administrar_empresa.js` valida `/me` al arrancar el shell empresarial y redirige a `login.html` cuando la sesion ya expiro o no existe, en vez de dejar cargar menus e iframes protegidos como si hubiera acceso.
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/administrar_clientes.html` y `web/administrar_empresa/bodega.html` convierten `401` en redireccion al login administrativo y `403` en mensaje claro de permiso insuficiente.
+- [QA] La verificacion visual sobre `administrar_empresa.html` y modulos de `Carritos`, `Venta directa`, `Clientes` y `Bodegas` confirmo que el problema observable provenia de respuestas `401` del API, no de una caida general del frontend.
+
 ## [2026-05-13] Login con imagenes reales y glow adaptable
 - [Frontend] `web/login.html` y `web/login_usuario.html` usan imagenes reales PNG en lugar de las ilustraciones previas.
 - [Assets] Se agregan `web/img/login-admin-real.png` y `web/img/login-usuario-real.png` como copias estables para despliegue web sin espacios en el nombre.
