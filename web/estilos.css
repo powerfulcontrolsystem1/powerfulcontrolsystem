@@ -3644,6 +3644,7 @@ body.super-page{
 .floating-menu .fm-panel{display:none;position:absolute;top:56px;right:0;background:linear-gradient(180deg,var(--surface-soft),var(--surface));border:1px solid var(--border);padding:8px;border-radius:10px;min-width:180px;box-shadow:0 14px 30px rgba(4,11,21,0.56)}
 .floating-menu .fm-panel.open{display:block}
 .floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600;word-break:break-word;touch-action:manipulation}
+.floating-menu button.fm-item{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
 .floating-menu .fm-item:hover{background:var(--focus)}
 .floating-menu .fm-submenu{position:relative}
 .floating-menu .fm-submenu-toggle{width:100%;background:transparent;border:0;text-align:left;font-family:inherit;cursor:pointer}
@@ -3675,6 +3676,20 @@ body.super-page{
 }
 .theme-option:hover { background:var(--input-bg-soft); border-color:var(--border); }
 .theme-option.active { background:var(--focus); border-color:var(--accent); color:var(--accent); font-weight:800; }
+
+.pcs-help-ticket-backdrop{position:fixed;inset:0;z-index:10020;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(8,12,24,.52)}
+.pcs-help-ticket-backdrop.is-open{display:flex}
+.pcs-help-ticket-dialog{width:min(560px,100%);max-height:calc(100vh - 36px);overflow:auto;border:1px solid var(--border);border-radius:12px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));color:var(--text);box-shadow:0 28px 80px rgba(3,10,20,.36)}
+.pcs-help-ticket-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+.pcs-help-ticket-header h2{margin:0;font-size:1.06rem;line-height:1.2;color:var(--text)}
+.pcs-help-ticket-header p{margin:5px 0 0;color:var(--muted);font-size:.86rem;line-height:1.35}
+.pcs-help-ticket-close{width:38px;height:38px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:900;cursor:pointer}
+.pcs-help-ticket-form{display:grid;gap:10px;padding:16px}
+.pcs-help-ticket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pcs-help-ticket-status{min-height:20px;color:var(--muted);font-size:.86rem;font-weight:750}
+.pcs-help-ticket-status.is-error{color:var(--danger,#ef4444)}
+.pcs-help-ticket-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+@media(max-width:640px){.pcs-help-ticket-grid{grid-template-columns:1fr}.pcs-help-ticket-actions .btn{flex:1 1 auto}}
 
 @media(max-width: 640px) {
   .floating-menu .fm-submenu {
@@ -16626,7 +16641,7 @@ html[data-theme] :is(.status.ok, .is-success, .message.success, .form-help.is-su
     justify-content:flex-start;
   }
 }
-/* Modulos empresariales Colombia: bancos, documentos, cumplimiento, contratos, helpdesk y calidad */
+/* Modulos empresariales Colombia: bancos, documentos, cumplimiento, contratos y calidad */
 body.modulo-colombia-page {
   margin: 0;
   --primary: var(--accent, #1769e0);

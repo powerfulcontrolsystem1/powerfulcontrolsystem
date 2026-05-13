@@ -171,8 +171,8 @@
     .portal-cards-carousel {
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: minmax(280px, 31%);
-      gap: 18px;
+      grid-auto-columns: minmax(280px, calc((100% - 60px) / 3));
+      gap: 30px;
       overflow-x: auto;
       overscroll-behavior-inline: contain;
       scroll-snap-type: inline mandatory;
@@ -192,6 +192,12 @@
     .portal-cards-carousel .home-offer-card:nth-child(6n+4){--home-offer-a:#f59e0b;--home-offer-b:#ef4444}
     .portal-cards-carousel .home-offer-card:nth-child(6n+5){--home-offer-a:#8b5cf6;--home-offer-b:#ec4899}
     .portal-cards-carousel .home-offer-card:nth-child(6n+6){--home-offer-a:#0ea5e9;--home-offer-b:#22c55e}
+
+    @media (max-width: 920px) {
+      .portal-cards-carousel {
+        grid-auto-columns: minmax(280px, calc((100% - 30px) / 2));
+      }
+    }
 
     .portal-modules-section {
       max-width: 1240px;
@@ -849,8 +855,8 @@
       }
 
       .portal-cards-carousel {
-        grid-auto-columns: minmax(250px, 84%);
-        gap: 14px;
+        grid-auto-columns: minmax(0, 100%);
+        gap: 18px;
       }
 
       .home-offer-card {
@@ -949,7 +955,7 @@
           <article class="portal-modules-intro">
             <span class="portal-modules-kicker">Módulos del sistema</span>
             <h2 id="portalModulesTitle">Todo lo que resuelve Powerful Control System en una sola plataforma</h2>
-            <p>Powerful Control System reune la operacion completa de una empresa en un nucleo unico: clientes, productos/servicios, inventario, ventas, pagos, factura electronica, caja, reportes, roles, permisos y licencias. Encima de ese nucleo activa plantillas reales por tipo de empresa: POS, reservas, hotel/motel, apartamentos turisticos, propiedad horizontal, parqueaderos, gimnasio, odontologia, drogueria/farmacia, alquileres, domicilios, taxi, turnos, carnets, logistica WMS, produccion/MRP, compras con OCR/IA, bancos y pagos masivos, gestion documental, KYC/KYB, contratos, helpdesk, calidad, finanzas Colombia, AIU construccion, venta publica con QR y 20 verticales nuevos de produccion masiva.</p>
+            <p>Powerful Control System reune la operacion completa de una empresa en un nucleo unico: clientes, productos/servicios, inventario, ventas, pagos, factura electronica, caja, reportes, roles, permisos y licencias. Encima de ese nucleo activa plantillas reales por tipo de empresa: POS, reservas, hotel/motel, apartamentos turisticos, propiedad horizontal, parqueaderos, gimnasio, odontologia, drogueria/farmacia, alquileres, domicilios, taxi, turnos, carnets, logistica WMS, produccion/MRP, compras con OCR/IA, bancos y pagos masivos, gestion documental, KYC/KYB, contratos, tickets de ayuda, calidad, finanzas Colombia, AIU construccion, venta publica con QR y 20 verticales nuevos de produccion masiva.</p>
           </article>
           <aside class="portal-modules-note">
             <h3>Cobertura empresarial real</h3>
@@ -973,7 +979,7 @@
         <article class="portal-module-card"><h3>Clientes y CRM comercial</h3><p>Relacion comercial completa desde el lead hasta la fidelizacion y recompra.</p><ul><li>Base fiscal y comercial, historial, preferencias y segmentacion.</li><li>Pipeline, campanas, seguimientos, scoring, forecast y metas comerciales.</li><li>Conversion de leads a cotizaciones, actividad comercial y trazabilidad por empresa.</li></ul></article>
           <article class="portal-module-card"><h3>Inventario, productos y compras</h3><p>Catalogo profesional para productos, servicios, combos, bodegas, abastecimiento y operacion WMS.</p><ul><li>Productos, servicios, categorias, existencias, precios e imagenes.</li><li>Lotes, seriales, vencimientos, reservas, valorizacion, bodegas y kardex.</li><li>Compras documentales, requisiciones, cotizaciones, aprobaciones, recepcion y proveedores.</li><li>Logistica WMS con ubicaciones internas, picking, packing, despachos, rutas, conteos y bitacora por empresa.</li></ul></article>
           <article class="portal-module-card"><h3>Compras con OCR e IA</h3><p>Captura inteligente de compras y gastos desde foto, PDF o XML para acelerar la contabilidad.</p><ul><li>Radicacion de soportes, lectura OCR/IA, proveedor, NIT, documento, impuestos y total.</li><li>Deteccion de duplicados por hash o numero de documento.</li><li>Aprobacion, rechazo y contabilizacion como cuenta por pagar.</li></ul></article>
-          <article class="portal-module-card"><h3>Gestion empresarial Colombia</h3><p>Modulos transversales para operar controles administrativos que suelen exigir las empresas en crecimiento.</p><ul><li>Bancos, conciliacion, extractos y lotes de pagos masivos con aprobaciones.</li><li>Gestion documental, expedientes, contratos, obligaciones, vencimientos y firma externa/manual.</li><li>KYC/KYB, riesgo LAFT, helpdesk, SLA, calidad, auditorias y no conformidades por empresa.</li></ul></article>
+          <article class="portal-module-card"><h3>Gestion empresarial Colombia</h3><p>Modulos transversales para operar controles administrativos que suelen exigir las empresas en crecimiento.</p><ul><li>Bancos, conciliacion, extractos y lotes de pagos masivos con aprobaciones.</li><li>Gestion documental, expedientes, contratos, obligaciones, vencimientos y firma externa/manual.</li><li>KYC/KYB, riesgo LAFT, tickets de ayuda, calidad, auditorias y no conformidades por empresa.</li></ul></article>
           <article class="portal-module-card"><h3>Produccion, compras e importaciones</h3><p>Planeacion, abastecimiento y costeo para empresas que producen, compran o importan inventario.</p><ul><li>Recetas/BOM, ordenes de produccion, consumos, lotes, responsables, estados y calidad.</li><li>Importaciones con incoterm, TRM, fletes, aduana, aranceles y costo aterrizado por producto.</li><li>Plan MRP por periodo con requerimientos y cantidades sugeridas a producir o comprar.</li></ul></article>
           <article class="portal-module-card"><h3>Finanzas, contabilidad y activos</h3><p>Control financiero y contable para caja, bancos, pagos masivos, cartera, cierres fiscales, centros de costo, declaraciones tributarias, libros, activos fijos e intangibles y cumplimiento Colombia.</p><ul><li>Ingresos, egresos, cierres, extractos, conciliacion bancaria y aprobacion de pagos.</li><li>Cierre y bloqueo fiscal con politicas por modulo, excepciones aprobadas, simulador y bitacora post-cierre.</li><li>Centros de costo con reglas, presupuesto, rentabilidad por sucursal/area/proyecto y dashboard comparativo.</li><li>Declaraciones tributarias Colombia con motor para IVA, retenciones, ICA, renta, regimen simple, calendario, preliquidacion, saldos y soportes.</li><li>Activos fijos NIIF/Fiscal con deterioro, vida util contable/fiscal, valor fiscal, traslados, bajas, seguros y mantenimientos.</li></ul></article>
           <article class="portal-module-card"><h3>Cobranza, contador y terceros</h3><p>Gestiona cartera, promesas de pago, oficina virtual para contadores y certificados tributarios de terceros desde el centro financiero.</p><ul><li>Cartera priorizada, plantillas, campanas, gestiones, promesas y alertas de mora.</li><li>Portal contador con clientes, obligaciones DIAN/contables, solicitudes y comunicaciones.</li><li>Certificados de retencion, ingresos y soportes tributarios con enlace publico seguro, impresion y bitacora.</li></ul></article>
@@ -1207,11 +1213,11 @@
           enlace: '/administrar_empresa.html?module=gestion_documental'
         },
         {
-          titulo: 'Helpdesk y calidad',
-          descripcion: 'Mesa de ayuda, tickets, SLA, auditorias, procesos, no conformidades, responsables y evidencias para operacion interna.',
+          titulo: 'Tickets de ayuda y calidad',
+          descripcion: 'Tickets propios de soporte, conversaciones, prioridades, auditorias, procesos, no conformidades, responsables y evidencias para operacion interna.',
           imagen_url: '/img/customer.svg',
           imagen_secundaria_url: '/img/audit.svg',
-          enlace: '/administrar_empresa.html?module=helpdesk'
+          enlace: '/administrar_empresa.html'
         },
         {
           titulo: 'Tesoreria y presupuesto',
@@ -1564,7 +1570,9 @@
         var firstCard = carouselEl.querySelector('.home-offer-card');
         if (!firstCard) return Math.max(280, Math.round(carouselEl.clientWidth * 0.8));
         var rect = firstCard.getBoundingClientRect();
-        return Math.max(260, Math.round(rect.width + 18));
+        var styles = window.getComputedStyle(carouselEl);
+        var gap = parseFloat(styles.columnGap || styles.gap) || 0;
+        return Math.max(260, Math.round(rect.width + gap));
       }
 
       function updateCarouselButtons() {

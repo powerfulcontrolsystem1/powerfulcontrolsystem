@@ -1021,19 +1021,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/helpdesk":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/helpdesk
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/helpdesk
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/hoja_vida_operativa":
     get:
       tags: [empresa]
@@ -1746,6 +1733,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/tesoreria_presupuesto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/tickets_ayuda":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tickets_ayuda
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/tickets_ayuda
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -3293,6 +3293,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/soporte_remoto
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/tickets_ayuda":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/tickets_ayuda
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/tickets_ayuda
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

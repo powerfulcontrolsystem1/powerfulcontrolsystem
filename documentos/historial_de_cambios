@@ -1,3 +1,29 @@
+2026-05-12: Control electrico dentro de Configuracion de empresa
+- Modulos afectados: `administrar_empresa`, `configuracion_empresa`, `control_electrico`.
+- Cambio funcional: el acceso principal de Administrar empresa elimina el boton independiente de Control electrico y lo ubica dentro de Configuracion > Estaciones, sensores y tarifas.
+- UX: `configuracion.html` agrega un acceso directo en el mapa ejecutivo para abrir la configuracion de Raspberry Pi, reles y salidas por estacion.
+- Alcance: no cambia backend, base de datos, permisos, endpoints ni dependencias.
+
+2026-05-12: Retiro del modulo legado de mesa de ayuda
+- Modulos afectados: `administrar_empresa`, `licencias`, `permisos`, `modulos_empresariales_colombia`, `tickets_ayuda`.
+- Cambio funcional: se elimina la ruta empresarial heredada de mesa de ayuda, su pagina, su enlace de menu, su clave de permisos/licencias y sus plantillas demo.
+- Reemplazo oficial: las solicitudes de soporte de empresas quedan en el sistema propio de tickets con `/api/empresa/tickets_ayuda`, `/super/api/tickets_ayuda`, `super_tickets_ayuda` y `super_ticket_ayuda_mensajes`.
+- Seguridad: se conserva aislamiento por `empresa_id`; no se agregan dependencias ni tablas fuera de PostgreSQL.
+
+2026-05-12: Mesa central de tickets de ayuda
+- Modulos afectados: `super_administrador`, `administrar_empresa`, `ayuda_soporte`, `menu_flotante`.
+- Cambio funcional: las empresas autenticadas pueden crear tickets desde el menu flotante; el ticket guarda empresa, solicitante, modulo/ruta, asunto, prioridad, categoria y mensaje inicial.
+- Backend: se agregan `super_tickets_ayuda` y `super_ticket_ayuda_mensajes` en `pcs_superadministrador`, endpoints empresariales con validacion de alcance por `empresa_id` y endpoints super protegidos por `paginaPrincipalRequireSuperAdmin`.
+- Super administrador: nueva pagina `/super/tickets_ayuda.html` para filtrar, ver conversacion, responder, cambiar estado/prioridad, asignar responsable y cerrar casos.
+- Seguridad: no expone secretos; usuarios solo consultan/crean tickets de su empresa validada; la bandeja central queda exclusiva de `super_administrador`.
+- Validacion: `go test ./...` en backend y `node --check web/menu.js web/js/super_administrador.js`.
+
+2026-05-12: Carrusel del index con tarjetas del mismo tamano
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: las tarjetas restantes del carrusel horizontal usan el mismo ancho visual que las tarjetas principales del index.
+- UX responsive: 3 columnas en escritorio, 2 en tablet y 1 en movil; las flechas avanzan segun el ancho real de tarjeta mas el gap CSS.
+- Alcance: no cambia backend, endpoints, permisos, tablas ni dependencias.
+
 2026-05-12: Correccion Docker para paquete vpssecurity/logstore
 - Modulos afectados: `deploy`, `seguridad_vps`, `docker`.
 - Causa tecnica: `.dockerignore` excluia cualquier carpeta llamada `logs`, incluyendo `backend/vpssecurity/logs`, que era codigo Go y no log runtime.
@@ -263,11 +289,11 @@
 - Cambio: `backend/db/parqueadero.go` asegura `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` antes de crear el indice por carrito.
 - Alcance: no agrega tablas, endpoints, permisos ni dependencias; solo corrige orden de migracion ligera PostgreSQL.
 2026-05-11: Portada index alineada a modulos y verticales reales
-- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
+- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `tickets_ayuda`, `calidad_procesos`, `facturacion`.
 - Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` presentan los 20 verticales nuevos como ofertas operativas cuando el catalogo los marca en produccion masiva.
 - Catalogo: `web/js/nuevos_verticales_catalogo.js` agrega decision de produccion, ranking, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica.
 - Backend publico: `backend/handlers/pagina_principal_handlers.go` actualiza las tarjetas por defecto que entrega el endpoint publico cuando no hay configuracion guardada.
-- UX publica: se agregan tarjetas para modulos reales del nucleo y transversales como CRM, drogueria/farmacia, alquileres, WMS, bancos/pagos, gestion documental, helpdesk/calidad y facturacion electronica Colombia.
+- UX publica: se agregan tarjetas para modulos reales del nucleo y transversales como CRM, drogueria/farmacia, alquileres, WMS, bancos/pagos, gestion documental, tickets de ayuda/calidad y facturacion electronica Colombia.
 - Gobernanza: las 20 plantillas nuevas se ofrecen como boton operativo de `Probar gratis` y siguen usando el nucleo unico.
 - Verificacion: `node --check web/js/nuevos_verticales_catalogo.js`, validacion de scripts inline de `web/index.html` y conteo de catalogo 20 total / 20 publicables.
 2026-05-11: Aseguramiento comercial de verticales 20

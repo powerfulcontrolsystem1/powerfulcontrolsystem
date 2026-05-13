@@ -212,7 +212,6 @@
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="soportes_compras_ia"><span class="lic-coverage-h">Soportes de compras IA</span><span class="lic-coverage-d">Lectura asistida de soportes, validación y evidencias de compra.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="gestion_documental"><span class="lic-coverage-h">Gestión documental</span><span class="lic-coverage-d">Expedientes, versiones, vencimientos, aprobaciones y retención.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="contratos_obligaciones"><span class="lic-coverage-h">Contratos y obligaciones</span><span class="lic-coverage-d">Contratos, pólizas, hitos, renovaciones y firma externa.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="helpdesk"><span class="lic-coverage-h">Helpdesk</span><span class="lic-coverage-d">Tickets, SLA, responsables, evidencias y bitácora de soporte.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="facturacion"><span class="lic-coverage-h">Facturación electrónica universal (DIAN)</span><span class="lic-coverage-d">Emisión y consulta de documentos.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="seguridad"><span class="lic-coverage-h">Administración universal e integración</span><span class="lic-coverage-d">Usuarios, backups, remoto, auditoría, ERP.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="auditoria"><span class="lic-coverage-h">Auditoría y trazabilidad</span><span class="lic-coverage-d">Eventos críticos, bitácoras, revisiones y control de cambios.</span></label>
@@ -323,7 +322,6 @@
         soportes_compras_ia: 'Soportes de compras IA',
         gestion_documental: 'Gestión documental universal',
         contratos_obligaciones: 'Contratos y obligaciones',
-        helpdesk: 'Helpdesk',
         facturacion: 'Facturación universal',
         seguridad: 'Administración universal',
         auditoria: 'Auditoría y trazabilidad',
@@ -372,10 +370,10 @@
         const verticalesCSV = nuevosVerticalesCSV();
         return {
           all: '',
-          operativo: normalizeCSV('ventas,inventario,clientes,chat_tareas,gimnasio,turnos_atencion,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,helpdesk,calidad_procesos,' + verticalesCSV),
+          operativo: normalizeCSV('ventas,inventario,clientes,chat_tareas,gimnasio,turnos_atencion,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,calidad_procesos,' + verticalesCSV),
           financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,facturacion,nomina_sueldos,cobranza,reportes,portal_contador,aiu_construccion',
           comercial: 'ventas,venta_publica,clientes,crm_unificado,chat_tareas,reservas_hotel,compras,domicilios',
-          enterprise: normalizeCSV('ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,crm_unificado,compras,soportes_compras_ia,gestion_documental,contratos_obligaciones,helpdesk,facturacion,seguridad,auditoria,backups,documentos_onlyoffice,venta_publica,reservas_hotel,chat_tareas,gimnasio,taxi_system,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,aiu_construccion,nomina_sueldos,cobranza,reportes,portal_contador,' + verticalesCSV)
+          enterprise: normalizeCSV('ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,crm_unificado,compras,soportes_compras_ia,gestion_documental,contratos_obligaciones,facturacion,seguridad,auditoria,backups,documentos_onlyoffice,venta_publica,reservas_hotel,chat_tareas,gimnasio,taxi_system,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,aiu_construccion,nomina_sueldos,cobranza,reportes,portal_contador,' + verticalesCSV)
         };
       }
 

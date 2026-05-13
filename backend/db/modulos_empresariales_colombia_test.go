@@ -27,21 +27,21 @@ func TestNormalizeModuloColombiaCodigo(t *testing.T) {
 
 func TestNormalizeEmpresaModuloColombiaRegistroDefaults(t *testing.T) {
 	got := normalizeEmpresaModuloColombiaRegistro(EmpresaModuloColombiaRegistro{
-		Modulo:    "helpdesk",
-		Codigo:    " tck/001 ",
-		Nombre:    "Ticket demo",
+		Modulo:    "calidad_procesos",
+		Codigo:    " nc/001 ",
+		Nombre:    "No conformidad demo",
 		Prioridad: "rara",
 		Estado:    "desconocido",
-		Metadata:  map[string]interface{}{"sla_horas": float64(8)},
+		Metadata:  map[string]interface{}{"hallazgos": float64(2)},
 	})
-	if got.Codigo != "TCK-001" || got.Prioridad != "normal" || got.Estado != "pendiente" || got.Fecha == "" {
+	if got.Codigo != "NC-001" || got.Prioridad != "normal" || got.Estado != "pendiente" || got.Fecha == "" {
 		t.Fatalf("defaults inesperados: %#v", got)
 	}
 	var meta map[string]interface{}
 	if err := json.Unmarshal([]byte(got.MetadataJSON), &meta); err != nil {
 		t.Fatalf("metadata json invalido: %v", err)
 	}
-	if meta["sla_horas"] != float64(8) {
+	if meta["hallazgos"] != float64(2) {
 		t.Fatalf("metadata inesperado: %#v", meta)
 	}
 }
@@ -94,14 +94,14 @@ func TestBuildEmpresaModuloColombiaDiagnostico(t *testing.T) {
 
 func TestBuildEmpresaModuloColombiaDiagnosticoDetectaFallos(t *testing.T) {
 	plantilla := EmpresaModuloColombiaPlantilla{
-		Modulo:          "helpdesk",
-		Titulo:          "Helpdesk",
-		Tipos:           []string{"ticket"},
-		Categorias:      []string{"soporte"},
+		Modulo:          "calidad_procesos",
+		Titulo:          "Calidad",
+		Tipos:           []string{"auditoria"},
+		Categorias:      []string{"operacion"},
 		EstadosFlujo:    []string{"abierto"},
 		MetadataEjemplo: "{mal",
 	}
-	got := buildEmpresaModuloColombiaDiagnostico(0, "helpdesk", plantilla, 0, false, "sin conexion")
+	got := buildEmpresaModuloColombiaDiagnostico(0, "calidad_procesos", plantilla, 0, false, "sin conexion")
 	if got.Estado != "revisar" || got.Puntuacion >= 100 {
 		t.Fatalf("diagnostico debio requerir revision: %#v", got)
 	}

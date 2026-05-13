@@ -414,6 +414,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html" target="_blank" rel="noopener">Red social comercial</a>' +
+        '<button id="createHelpTicketLink" class="fm-item fm-action-item" type="button">Crear ticket de ayuda</button>' +
         '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
@@ -460,6 +461,7 @@
     var utilitiesToggle = wrapper.querySelector('#utilitiesMenuToggle');
     var utilitiesPopup = wrapper.querySelector('#utilitiesMenuPopup');
     var calculatorLauncher = wrapper.querySelector('[data-open-calculator]');
+    var helpTicketLauncher = wrapper.querySelector('#createHelpTicketLink');
 
     function setPanelOpen(isOpen){
       if (!panel || !toggle) return;
@@ -509,6 +511,184 @@
       } else {
         window.location.href = '/calculadora.html?compact=1';
       }
+    }
+
+    function getStoredEmpresaID(){
+      var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
+      var stores = [];
+      try { stores.push(window.sessionStorage); } catch (error) {}
+      try { stores.push(window.localStorage); } catch (error) {}
+      for (var s = 0; s < stores.length; s += 1) {
+        var store = stores[s];
+        if (!store) continue;
+        for (var i = 0; i < keys.length; i += 1) {
+          try {
+            var raw = store.getItem(keys[i]) || '';
+            var id = parseInt(String(raw).trim(), 10);
+            if (Number.isFinite(id) && id > 0) return String(id);
+          } catch (error) {}
+        }
+      }
+      return '';
+    }
+
+    function getActiveEmpresaID(){
+      try {
+        if (typeof window.__resolveEmpresaIdContext === 'function') {
+          var resolved = window.__resolveEmpresaIdContext();
+          if (resolved) return String(resolved);
+        }
+      } catch (error) {}
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var id = parseInt(params.get('empresa_id') || params.get('id') || '', 10);
+        if (Number.isFinite(id) && id > 0) return String(id);
+      } catch (error) {}
+      return getStoredEmpresaID();
+    }
+
+    function getActiveSystemPath(){
+      try {
+        var frame = document.getElementById('contentFrame') || document.querySelector('iframe.admin-empresa-frame');
+        if (frame) {
+          var src = frame.getAttribute('src') || frame.src || '';
+          if (src) return src;
+        }
+      } catch (error) {}
+      try {
+        return window.location.pathname + window.location.search;
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function getActiveSystemModule(){
+      var raw = getActiveSystemPath();
+      try {
+        var u = new URL(raw, window.location.origin);
+        var moduleParam = u.searchParams.get('module') || '';
+        if (moduleParam) return moduleParam;
+        var file = (u.pathname.split('/').pop() || '').replace(/\.html$/i, '');
+        return file || 'sistema';
+      } catch (error) {
+        return 'sistema';
+      }
+    }
+
+    function ensureHelpTicketDialog(){
+      var existing = document.getElementById('pcsHelpTicketBackdrop');
+      if (existing) return existing;
+      var backdrop = document.createElement('div');
+      backdrop.id = 'pcsHelpTicketBackdrop';
+      backdrop.className = 'pcs-help-ticket-backdrop';
+      backdrop.setAttribute('aria-hidden', 'true');
+      backdrop.innerHTML =
+        '<section class="pcs-help-ticket-dialog" role="dialog" aria-modal="true" aria-labelledby="pcsHelpTicketTitle">' +
+          '<div class="pcs-help-ticket-header">' +
+            '<div><h2 id="pcsHelpTicketTitle">Crear ticket de ayuda</h2><p>El equipo de soporte recibira tu solicitud con la pagina donde estas trabajando.</p></div>' +
+            '<button id="pcsHelpTicketClose" class="pcs-help-ticket-close" type="button" aria-label="Cerrar">x</button>' +
+          '</div>' +
+          '<form id="pcsHelpTicketForm" class="pcs-help-ticket-form">' +
+            '<label class="form-label" for="pcsHelpTicketSubject">Asunto</label>' +
+            '<input id="pcsHelpTicketSubject" class="form-input" type="text" maxlength="180" required placeholder="Ej: No puedo cerrar caja">' +
+            '<div class="pcs-help-ticket-grid">' +
+              '<label class="form-col"><span class="form-label">Categoria</span><select id="pcsHelpTicketCategory" class="form-input"><option value="general">General</option><option value="tecnico">Tecnico</option><option value="operacion">Operacion</option><option value="configuracion">Configuracion</option><option value="facturacion">Facturacion</option><option value="pagos">Pagos</option><option value="licencias">Licencias</option><option value="usuarios">Usuarios</option><option value="seguridad">Seguridad</option></select></label>' +
+              '<label class="form-col"><span class="form-label">Prioridad</span><select id="pcsHelpTicketPriority" class="form-input"><option value="media">Media</option><option value="baja">Baja</option><option value="alta">Alta</option><option value="critica">Critica</option></select></label>' +
+            '</div>' +
+            '<label class="form-label" for="pcsHelpTicketMessage">Mensaje</label>' +
+            '<textarea id="pcsHelpTicketMessage" class="form-textarea" maxlength="4000" required placeholder="Describe que intentabas hacer, que viste y que necesitas resolver."></textarea>' +
+            '<div id="pcsHelpTicketStatus" class="pcs-help-ticket-status" aria-live="polite"></div>' +
+            '<div class="pcs-help-ticket-actions"><button type="button" id="pcsHelpTicketCancel" class="btn secondary">Cancelar</button><button type="submit" class="btn primary">Enviar ticket</button></div>' +
+          '</form>' +
+        '</section>';
+      document.body.appendChild(backdrop);
+
+      function closeDialog(){
+        backdrop.classList.remove('is-open');
+        backdrop.setAttribute('aria-hidden', 'true');
+      }
+      backdrop.querySelector('#pcsHelpTicketClose').addEventListener('click', closeDialog);
+      backdrop.querySelector('#pcsHelpTicketCancel').addEventListener('click', closeDialog);
+      backdrop.addEventListener('click', function(event){
+        if (event.target === backdrop) closeDialog();
+      });
+      backdrop.querySelector('#pcsHelpTicketForm').addEventListener('submit', function(event){
+        event.preventDefault();
+        submitHelpTicket(backdrop);
+      });
+      return backdrop;
+    }
+
+    function setHelpTicketStatus(dialog, text, isError){
+      var status = dialog ? dialog.querySelector('#pcsHelpTicketStatus') : null;
+      if (!status) return;
+      status.textContent = text || '';
+      status.classList.toggle('is-error', !!isError);
+    }
+
+    function openHelpTicketDialog(){
+      var dialog = ensureHelpTicketDialog();
+      var empresaID = getActiveEmpresaID();
+      setHelpTicketStatus(dialog, empresaID ? '' : 'Abre una empresa antes de crear el ticket para asociarlo correctamente.', !empresaID);
+      var subject = dialog.querySelector('#pcsHelpTicketSubject');
+      var message = dialog.querySelector('#pcsHelpTicketMessage');
+      if (subject && !subject.value) subject.value = '';
+      if (message && !message.value) message.value = '';
+      dialog.classList.add('is-open');
+      dialog.setAttribute('aria-hidden', 'false');
+      window.setTimeout(function(){ if (subject) subject.focus(); }, 20);
+    }
+
+    function submitHelpTicket(dialog){
+      var empresaID = getActiveEmpresaID();
+      if (!empresaID) {
+        setHelpTicketStatus(dialog, 'No pude detectar la empresa activa. Entra desde Administrar empresa e intenta de nuevo.', true);
+        return;
+      }
+      var subject = dialog.querySelector('#pcsHelpTicketSubject');
+      var category = dialog.querySelector('#pcsHelpTicketCategory');
+      var priority = dialog.querySelector('#pcsHelpTicketPriority');
+      var message = dialog.querySelector('#pcsHelpTicketMessage');
+      var payload = {
+        empresa_id: Number(empresaID),
+        asunto: subject ? subject.value.trim() : '',
+        categoria: category ? category.value : 'general',
+        prioridad: priority ? priority.value : 'media',
+        mensaje: message ? message.value.trim() : '',
+        modulo: getActiveSystemModule(),
+        ruta: getActiveSystemPath(),
+        origen: 'menu_flotante'
+      };
+      if (!payload.asunto || !payload.mensaje) {
+        setHelpTicketStatus(dialog, 'Completa el asunto y el mensaje para enviar el ticket.', true);
+        return;
+      }
+      setHelpTicketStatus(dialog, 'Enviando ticket...', false);
+      fetch('/api/empresa/tickets_ayuda?empresa_id=' + encodeURIComponent(empresaID), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+      })
+        .then(function(res){
+          return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, status: res.status, data: data }; });
+        })
+        .then(function(result){
+          if (!result.ok || !result.data || !result.data.ok) {
+            throw new Error((result.data && result.data.error) || ('HTTP ' + result.status));
+          }
+          var code = result.data.ticket && result.data.ticket.codigo ? result.data.ticket.codigo : 'creado';
+          setHelpTicketStatus(dialog, 'Ticket ' + code + ' enviado correctamente.', false);
+          if (subject) subject.value = '';
+          if (message) message.value = '';
+          window.setTimeout(function(){
+            dialog.classList.remove('is-open');
+            dialog.setAttribute('aria-hidden', 'true');
+          }, 1200);
+        })
+        .catch(function(error){
+          setHelpTicketStatus(dialog, error && error.message ? error.message : 'No se pudo enviar el ticket.', true);
+        });
     }
 
     function setSessionLinkAuthenticated(isAuthenticated){
@@ -593,6 +773,17 @@
         closeUtilitiesPopup();
         closePanel();
         openCalculatorWindow();
+      });
+    }
+
+    if (helpTicketLauncher) {
+      helpTicketLauncher.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        closeThemePopup();
+        closeUtilitiesPopup();
+        closePanel();
+        openHelpTicketDialog();
       });
     }
 

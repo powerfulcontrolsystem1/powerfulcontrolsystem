@@ -194,7 +194,6 @@ try {
     document.getElementById("linkDocumentosOnlyOffice"),
     document.getElementById("linkGestionDocumental"),
     document.getElementById("linkContratosObligaciones"),
-    document.getElementById("linkHelpdesk"),
     document.getElementById("linkRadioOnline"),
     document.getElementById("linkImpuestos"),
     document.getElementById("linkEgresosIngresos"),
@@ -244,7 +243,6 @@ try {
   var permModuleGestionDocumental = "gestion_documental";
   var permModuleCumplimientoKYC = "cumplimiento_kyc";
   var permModuleContratosObligaciones = "contratos_obligaciones";
-  var permModuleHelpdesk = "helpdesk";
   var permModuleCalidadProcesos = "calidad_procesos";
   var permModuleDrogueriaFarmacia = "drogueria_farmacia";
   var permModuleAIUConstruccion = "aiu_construccion";
@@ -404,7 +402,6 @@ try {
     linkDocumentosOnlyOffice: { module: permModuleDocumentosOnlyOffice, action: permActionRead },
     linkGestionDocumental: { module: permModuleGestionDocumental, action: permActionCreate },
     linkContratosObligaciones: { module: permModuleContratosObligaciones, action: permActionCreate },
-    linkHelpdesk: { module: permModuleHelpdesk, action: permActionCreate },
     linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
 
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
@@ -1004,7 +1001,6 @@ try {
       case permModuleGestionDocumental:
       case permModuleCumplimientoKYC:
       case permModuleContratosObligaciones:
-      case permModuleHelpdesk:
       case permModuleCalidadProcesos:
       case permModuleAuditoria:
       case permModuleBackups:

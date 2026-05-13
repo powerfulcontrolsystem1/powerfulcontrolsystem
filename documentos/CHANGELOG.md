@@ -1,3 +1,19 @@
+## [2026-05-12] Retiro de mesa de ayuda legado
+- [Backend] Se elimina la ruta empresarial heredada y su wrapper de permisos; el soporte oficial queda en `/api/empresa/tickets_ayuda`.
+- [Frontend] Se retiran la pagina, el enlace de menu y la opcion de licencias del modulo legado.
+- [Producto] Los tickets propios quedan centralizados en `super_tickets_ayuda` y `super_ticket_ayuda_mensajes`, con bandeja exclusiva del super administrador.
+
+## [2026-05-12] Mesa central de tickets de ayuda
+- [Backend] Se agregan `/api/empresa/tickets_ayuda` y `/super/api/tickets_ayuda` con almacenamiento PostgreSQL en `super_tickets_ayuda` y `super_ticket_ayuda_mensajes`.
+- [Empresa] El menu flotante global suma `Crear ticket de ayuda`, detecta empresa activa, modulo y ruta para enviar la solicitud al soporte del SaaS.
+- [Super] `web/super/tickets_ayuda.html` permite filtrar, responder, cambiar estado/prioridad, asignar responsable y cerrar tickets.
+- [Seguridad] La creacion valida alcance por `empresa_id`; la bandeja central queda exclusiva de `super_administrador`.
+
+## [2026-05-12] Carrusel index con tarjetas iguales
+- [Frontend] `web/index.html` alinea el ancho de las tarjetas del carrusel con la grilla superior.
+- [Responsive] El carrusel usa 3 tarjetas por vista en escritorio, 2 en tablet y 1 en movil, igualando la lectura visual de la grilla.
+- [UX] Las flechas avanzan una tarjeta usando el gap real calculado por CSS.
+
 ## [2026-05-12] Paquete vpssecurity/logstore en Docker
 - [Docker] El paquete Go de almacenamiento del escaner VPS se mueve a `backend/vpssecurity/logstore`.
 - [Correccion] El backend Docker deja de confundir codigo Go con carpetas runtime llamadas `logs` ignoradas por `.dockerignore`.
@@ -447,7 +463,7 @@
 - [Riesgos externos] Queda documentado que impresora fisica, sensores electricos reales, GPS fisico, DIAN y pasarelas en produccion requieren credenciales/dispositivos externos para prueba final fuera del entorno local.
 
 ## [2026-05-06] Modulos empresariales Colombia - fases compartidas
-- [ERP Colombia] Se implementan `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos` sobre nucleo compartido por `empresa_id`.
+- [ERP Colombia] Se implementan `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones` y `calidad_procesos` sobre nucleo compartido por `empresa_id`.
 - [Backend] APIs privadas por modulo con acciones `dashboard`, `plantilla`, `reporte`, `registros`, `eventos`, `evidencias`, `registro`, `estado`, `evento`, `evidencia`, `importar_registros` y `seed_demo`.
 - [UI] Pantallas administrativas compartidas con KPIs, reporte ejecutivo, CSV, seguimiento, cambio de estado y evidencias/soportes.
 - [Workflow] Se agrega flujo de aprobaciones por nivel, destinatario, vencimiento, decision y bitacora.
@@ -707,7 +723,7 @@
 - **Logistica avanzada / WMS**: nuevo modulo `logistica_wms` con ubicaciones internas, ordenes WMS, picking, packing, despachos, rutas, bitacora, permisos/licencia, pantalla administrativa y documentacion. Verificacion prevista: pruebas unitarias del motor WMS, `go test ./... -count=1` y `git diff --check`.
 
 - **Declaraciones Tributarias y Motor de Impuestos Colombia**: nuevo modulo `declaraciones_tributarias` con API privada, dashboard, preliquidacion, calendario editable, saldos a pagar/favor, movimientos de conciliacion, permisos/licencia, pantalla administrativa y documentacion. Verificacion prevista: pruebas unitarias del motor, `go test ./... -count=1` y `git diff --check`.
-- 2026-05-06: implementados modulos empresariales Colombia `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos` con nucleo compartido, APIs privadas por empresa, paginas administrativas, permisos/licencias y documentacion.
+- 2026-05-06: implementados modulos empresariales Colombia `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones` y `calidad_procesos` con nucleo compartido, APIs privadas por empresa, paginas administrativas, permisos/licencias y documentacion.
 ## [2026-05-11] Contrato universal de 30 verticales
 - [Backend] `backend/handlers/empresa_verticales_integracion.go` deja de publicar acciones de migracion manual antigua y declara las verticales clasicas como plantillas sobre nucleo comun.
 - [Licencias] La activacion de licencia aplica la preconfiguracion idempotente del tipo de empresa sin ejecutar migraciones automaticas.

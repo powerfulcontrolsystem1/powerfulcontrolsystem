@@ -111,7 +111,7 @@ El arranque del backend ejecuta `EnsureNuevosVerticalesTipoEmpresaYLicencias`, q
 - 30 dias: 2000 documentos;
 - 30 dias: 4000 documentos.
 
-Cada licencia incluye el modulo vertical correspondiente y los modulos base de ventas, inventario, compras, clientes/CRM, finanzas, bancos, tesoreria, cobranza, gestion documental, contratos, helpdesk, calidad, facturacion y seguridad.
+Cada licencia incluye el modulo vertical correspondiente y los modulos base de ventas, inventario, compras, clientes/CRM, finanzas, bancos, tesoreria, cobranza, gestion documental, contratos, calidad, facturacion y seguridad. Los tickets de ayuda se gestionan aparte en el sistema propio centralizado.
 
 ## Evidencia visual
 

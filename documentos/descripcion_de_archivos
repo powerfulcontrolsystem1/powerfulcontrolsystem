@@ -1,3 +1,25 @@
+- Actualizacion 2026-05-12: Control electrico dentro de Configuracion de empresa
+	- `web/administrar_empresa.html` : retira el boton independiente de Control electrico del sidebar principal de Administrar empresa.
+	- `web/administrar_empresa/configuracion_menu.html` : agrega `linkControlElectrico` en el grupo Estaciones, sensores y tarifas.
+	- `web/administrar_empresa/configuracion.html` : agrega acceso directo en el mapa ejecutivo de configuracion para Raspberry Pi, reles y salidas por estacion.
+
+- Actualizacion 2026-05-12: Retiro del modulo legado de mesa de ayuda
+	- `backend/main.go` y `backend/handlers/empresa_permisos.go` : eliminan la ruta heredada de mesa de ayuda, su wrapper de permisos y su pagina de menu.
+	- `backend/db/modulos_empresariales_colombia.go` : retira la plantilla y datos demo heredados; el soporte queda en tickets propios.
+	- `web/administrar_empresa.html`, `web/administrar_empresa/modulo_menu.html`, `web/js/administrar_empresa.js` y `web/super/licencias.html` : eliminan menu, pagina y opcion de licenciamiento del modulo retirado.
+	- Pagina empresarial heredada de mesa de ayuda: archivo retirado.
+
+- Actualizacion 2026-05-12: Mesa central de tickets de ayuda
+	- `backend/db/tickets_ayuda.go` : crea/migra tablas PostgreSQL `super_tickets_ayuda` y `super_ticket_ayuda_mensajes`, y concentra operaciones de crear, listar, responder, reasignar, priorizar y cerrar tickets.
+	- `backend/handlers/super_tickets_ayuda.go` : expone `POST/GET /api/empresa/tickets_ayuda` para empresas autenticadas y `GET/POST/PATCH /super/api/tickets_ayuda` para super administrador.
+	- `web/super/tickets_ayuda.html` : nueva consola super para filtrar tickets, revisar conversacion, responder, marcar prioridad, asignar responsable y cerrar casos.
+	- `web/menu.js` : agrega `Crear ticket de ayuda` al menu flotante global, detectando `empresa_id`, ruta y modulo activo.
+	- `web/estilos.css`, `web/super_administrador.html`, `web/js/super_administrador.js` y `backend/main.go` : integran estilos, navegacion super y rutas del modulo.
+	- `documentos/api/openapi.generated.yaml` : registra las rutas inventariadas de tickets empresariales y super.
+
+- Actualizacion 2026-05-12: Carrusel index con tarjetas iguales
+	- `web/index.html` : ajusta `.portal-cards-carousel` para que las tarjetas restantes tengan el mismo tamano que las tarjetas superiores del index y actualiza el calculo de avance de flechas con el gap CSS real.
+
 - Actualizacion 2026-05-12: Paquete Go vpssecurity/logstore en Docker
 	- `backend/vpssecurity/logstore/store.go` : reemplaza al antiguo paquete `backend/vpssecurity/logs` para evitar conflicto con carpetas runtime `logs` ignoradas por Docker.
 	- `backend/vpssecurity/service.go` y `backend/tools/vps_security_scan/main.go` : actualizan imports al paquete `github.com/you/pos-backend/vpssecurity/logstore`.

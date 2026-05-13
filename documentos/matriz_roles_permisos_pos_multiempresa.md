@@ -21,6 +21,11 @@
 - La cookie `pcs_theme` solo guarda preferencia visual; no reemplaza ni expone la cookie de sesion `HttpOnly`, no concede acceso y no altera wrappers ni permisos.
 - El comportamiento esperado es que el login operativo cargue con la apariencia del ultimo usuario que inicio sesion o cambio tema en ese navegador.
 
+2026-05-12: Nota operativa para mesa central de tickets de ayuda
+- `POST/GET /api/empresa/tickets_ayuda` queda disponible para usuarios autenticados con alcance validado sobre la empresa solicitada mediante `WithEmpresaSelfServicePermissions`; no concede permisos de administracion central ni acceso a tickets de otras empresas.
+- `web/super/tickets_ayuda.html` y `/super/api/tickets_ayuda` quedan reservados a `super_administrador` por `paginaPrincipalRequireSuperAdmin`; `control_super_administrador` no recibe este modulo en su navegacion limitada.
+- El menu flotante solo crea tickets para la empresa activa detectada; la bandeja de respuesta, cierre, prioridad y asignacion se administra exclusivamente desde super administrador.
+
 2026-05-12: Nota operativa para ayuda de CRM unificado
 - El boton `Ayuda` agregado al menu de `crm_unificado` abre una pestana interna de `web/administrar_empresa/crm_comercial.html`; no crea pagina publica, endpoint nuevo ni permiso adicional.
 - La ayuda esta dentro del alcance ya protegido por `linkCRMComercial` y `crm_unificado`, y primero define CRM antes de explicar el tablero, leads, seguimientos, cotizaciones, forecast, metas y embudo.
@@ -119,8 +124,8 @@
 - Validacion: `go test ./...`, `node --check web/js/administrar_empresa.js`, `node --check web/js/super_administrador.js` y auditoria de IDs `link...` contra catalogos backend/frontend.
 
 2026-05-06: Nota operativa para modulos empresariales Colombia
-- Se agregan claves independientes: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk` y `calidad_procesos`, activables por licencia mediante `licencias.modulos_habilitados`.
-- Las paginas `linkBancosPagos`, `linkGestionDocumental`, `linkCumplimientoKYC`, `linkContratosObligaciones`, `linkHelpdesk` y `linkCalidadProcesos` quedan registradas en el catalogo de paginas y en el menu de Administrar empresa.
+- Se mantienen claves independientes: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones` y `calidad_procesos`, activables por licencia mediante `licencias.modulos_habilitados`.
+- Las paginas `linkBancosPagos`, `linkGestionDocumental`, `linkCumplimientoKYC`, `linkContratosObligaciones` y `linkCalidadProcesos` quedan registradas en el catalogo de paginas y en el menu de Administrar empresa. Los tickets de ayuda usan flujo propio desde menu flotante y bandeja de super administrador.
 - Cada endpoint usa wrapper propio `WithEmpresa*Permissions` y mantiene alcance estricto por `empresa_id`.
 - Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `contabilidad` y `auditor`; eliminar para `admin_empresa`.
 - Se comparte un nucleo tecnico para evitar duplicar formularios, dashboards, bitacoras o tablas por modulo.

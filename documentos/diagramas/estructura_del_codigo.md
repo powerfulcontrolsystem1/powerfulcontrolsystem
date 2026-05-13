@@ -1,3 +1,15 @@
+## Actualizacion 2026-05-12 (mesa central de tickets de ayuda)
+
+- `web/administrar_empresa.html` deja `Control electrico` fuera del sidebar principal y mantiene un unico acceso a Configuracion.
+- `web/administrar_empresa/configuracion_menu.html` ubica `linkControlElectrico` dentro de `Estaciones, sensores y tarifas`, cargando el modulo en `configuracionContentFrame`.
+- `web/administrar_empresa/configuracion.html` agrega una tarjeta del mapa ejecutivo para abrir la configuracion de Raspberry Pi, reles y salidas por estacion.
+
+- `web/menu.js` agrega la accion `Crear ticket de ayuda` al menu flotante global. La accion detecta `empresa_id`, ruta y modulo activo, y envia la solicitud a `/api/empresa/tickets_ayuda`.
+- `backend/main.go` registra `/api/empresa/tickets_ayuda` con `WithEmpresaSelfServicePermissions` y `/super/api/tickets_ayuda` para la consola central.
+- `backend/handlers/super_tickets_ayuda.go` separa el flujo empresarial de creacion/listado propio y el flujo super de bandeja, detalle, respuesta y cambio de estado.
+- `backend/db/tickets_ayuda.go` mantiene el esquema PostgreSQL y las operaciones sobre `super_tickets_ayuda` y `super_ticket_ayuda_mensajes`.
+- `web/super/tickets_ayuda.html` consume `/super/api/tickets_ayuda` desde el iframe del panel super.
+
 ## Actualizacion 2026-05-12 (portal: seis tarjetas y carrusel)
 
 - `web/index.html` divide las tarjetas publicas de sistemas en `primaryCards = cards.slice(0, 6)` y `carouselCards = cards.slice(6)`.
@@ -81,7 +93,7 @@
 
 - `web/index.html` consume `web/js/nuevos_verticales_catalogo.js` antes de construir tarjetas publicas.
 - `backend/handlers/pagina_principal_handlers.go` mantiene los defaults de `/api/public/pagina_principal` alineados con la misma oferta real cuando no existe configuracion guardada en super.
-- Las tarjetas base de la portada cubren modulos reales del nucleo y transversales: POS, CRM, hotel/motel, apartamentos, propiedad horizontal, gimnasio, odontologia, drogueria/farmacia, alquileres, domicilios, taxi, turnos, carnets, produccion/MRP, compras OCR/IA, WMS, bancos/pagos, gestion documental, helpdesk/calidad, tesoreria, facturacion, cierre fiscal, centros de costo, activos, cobranza, contador, certificados y AIU.
+- Las tarjetas base de la portada cubren modulos reales del nucleo y transversales: POS, CRM, hotel/motel, apartamentos, propiedad horizontal, gimnasio, odontologia, drogueria/farmacia, alquileres, domicilios, taxi, turnos, carnets, produccion/MRP, compras OCR/IA, WMS, bancos/pagos, gestion documental, tickets de ayuda/calidad, tesoreria, facturacion, cierre fiscal, centros de costo, activos, cobranza, contador, certificados y AIU.
 - El catalogo local de los 20 verticales nuevos agrega estado de producto (`productionMass`, `productionRank`, `decisionPreconfig`) y metadata de plantilla (`templateActivates`, `tablesTouched`, `requiredPermissions`, `saleFlow`, `reportsProduced`).
 - `index.html` transforma en tarjetas publicas los 20 verticales nuevos porque todos quedan con visibilidad operativa y produccion masiva.
 

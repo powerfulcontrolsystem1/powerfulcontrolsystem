@@ -76,7 +76,6 @@ func TestEmpresaRoutesUsePermissionWrappers(t *testing.T) {
 		"WithEmpresaGestionDocumentalPermissions(",
 		"WithEmpresaCumplimientoKYCPermissions(",
 		"WithEmpresaContratosObligacionesPermissions(",
-		"WithEmpresaHelpdeskPermissions(",
 		"WithEmpresaCalidadProcesosPermissions(",
 		"WithEmpresaDrogueriaFarmaciaPermissions(",
 		"WithEmpresaModuloVerticalPermissions(",

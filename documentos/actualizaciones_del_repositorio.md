@@ -4359,7 +4359,6 @@ Archivos modificados:
 - web/administrar_empresa/declaraciones_tributarias.html
 - web/administrar_empresa/gestion_documental.html
 - web/administrar_empresa/graficos_estadisticas.html
-- web/administrar_empresa/helpdesk.html
 - web/administrar_empresa/logistica_wms.html
 - web/administrar_empresa/parqueadero.html
 - web/administrar_empresa/publicar_red_social.html
@@ -4476,7 +4475,6 @@ Archivos modificados:
 - web/administrar_empresa/generador_codigos_barras.html
 - web/administrar_empresa/gestion_documental.html
 - web/administrar_empresa/graficos_estadisticas.html
-- web/administrar_empresa/helpdesk.html
 - web/administrar_empresa/historial_productos.html
 - web/administrar_empresa/importaciones_costeo.html
 - web/administrar_empresa/impuestos.html

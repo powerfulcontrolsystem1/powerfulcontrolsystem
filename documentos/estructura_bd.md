@@ -21,6 +21,13 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-12 (tickets de ayuda SaaS)
+- Se agregan tablas en `pcs_superadministrador` para la mesa central de soporte:
+  - `super_tickets_ayuda`: ticket maestro con `codigo`, `empresa_id`, `empresa_nombre`, solicitante, origen, modulo/ruta, asunto, categoria, prioridad, estado, ultimo mensaje, asignacion y cierre.
+  - `super_ticket_ayuda_mensajes`: mensajes del ticket con `ticket_id`, tipo de autor (`usuario`, `super`, `sistema`), autor, mensaje, bandera `interno` y trazabilidad de creacion.
+- El endpoint empresarial valida alcance por `empresa_id`; el panel super consulta la bandeja central sin escribir en bases empresariales.
+- No se agregan motores, dependencias ni almacenamiento de archivos adjuntos.
+
 Actualizacion 2026-05-12 (retiro de Nextcloud y cuota DB)
 - Se elimina el uso runtime de la tabla legacy `empresa_nextcloud_accounts`; el arranque ejecuta `DROP TABLE IF EXISTS empresa_nextcloud_accounts` para retirar credenciales antiguas de empresas.
 - Se eliminan las claves super `nextcloud.enabled`, `nextcloud.base_url`, `nextcloud.admin_user` y `nextcloud.admin_secret`.
@@ -147,7 +154,7 @@ Actualizacion 2026-05-10 (alertas automaticas super)
 - El trafico por porcentaje usa `hostinger.bandwidth.limit_gb` de `configuraciones` cuando existe; si no, el modulo permite umbral absoluto en GB.
 
 Actualizacion 2026-05-06 (modulos empresariales Colombia)
-- `empresa_modulos_colombia_registros`: registro transversal por `empresa_id` y `modulo` para bancos/pagos, gestion documental, KYC/KYB, contratos, helpdesk y calidad. Incluye tipo, codigo, nombre, tercero, responsable, categoria, referencia, prioridad, estado, fechas, valor, metadata JSON y auditoria.
+- `empresa_modulos_colombia_registros`: registro transversal por `empresa_id` y `modulo` para bancos/pagos, gestion documental, KYC/KYB, contratos y calidad. Incluye tipo, codigo, nombre, tercero, responsable, categoria, referencia, prioridad, estado, fechas, valor, metadata JSON y auditoria. Los tickets de ayuda ya no usan esta tabla; se almacenan en `super_tickets_ayuda` y `super_ticket_ayuda_mensajes`.
 - `empresa_modulos_colombia_eventos`: bitacora por `empresa_id`, modulo y registro, con evento, cambio de estado, detalle, usuario y fecha.
 - `empresa_modulos_colombia_evidencias`: soportes por `empresa_id`, modulo y registro. Incluye tipo, nombre, URL/ruta, descripcion, usuario y fecha.
 - `empresa_modulos_colombia_aprobaciones`: flujo de aprobaciones por `empresa_id`, modulo y registro. Incluye nivel, destinatario, solicitante, estado, comentario, decisor, vencimiento y fechas.

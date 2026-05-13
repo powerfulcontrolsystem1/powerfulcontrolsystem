@@ -63,7 +63,7 @@ La ayuda administrativa y el contexto de IA forman parte de la arquitectura. Cua
 - Finanzas universales y cumplimiento: caja, bancos, cartera, contabilidad, impuestos, facturacion y reportes.
 - Personas y activos universales: usuarios, empleados, asistencia, carnets, vehiculos, equipos e historial.
 - Analisis universal y control: auditoria, calidad, procesos, indicadores, backups y control ejecutivo.
-- Documentos universales, nube y soporte: documentos, contratos, aprobaciones, nube, soporte remoto y helpdesk.
+- Documentos universales, nube y soporte: documentos, contratos, aprobaciones, nube, soporte remoto y tickets de ayuda propios.
 - Administracion universal: configuracion, seguridad, integraciones, sensores, tarifas y reglas operativas.
 
 ## Regla de integridad tecnica

@@ -73,7 +73,6 @@ const (
 	permModuleGestionDocumental    = "gestion_documental"
 	permModuleCumplimientoKYC      = "cumplimiento_kyc"
 	permModuleContratosOblig       = "contratos_obligaciones"
-	permModuleHelpdesk             = "helpdesk"
 	permModuleCalidadProcesos      = "calidad_procesos"
 	permModuleDrogueriaFarmacia    = "drogueria_farmacia"
 	permModuleAuditoria            = "auditoria"
@@ -306,7 +305,6 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleGestionDocumental,
 	permModuleCumplimientoKYC,
 	permModuleContratosOblig,
-	permModuleHelpdesk,
 	permModuleCalidadProcesos,
 	permModuleDrogueriaFarmacia,
 	permModuleAuditoria,
@@ -381,7 +379,6 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleGestionDocumental:    "Gestion documental y aprobaciones",
 	permModuleCumplimientoKYC:      "Cumplimiento KYC/KYB y riesgo LAFT",
 	permModuleContratosOblig:       "Contratos, obligaciones y firma electronica",
-	permModuleHelpdesk:             "Mesa de ayuda / Helpdesk",
 	permModuleCalidadProcesos:      "Calidad, procesos y no conformidades",
 	permModuleDrogueriaFarmacia:    "Drogueria y farmacia",
 	permModuleAuditoria:            "Auditoria empresarial",
@@ -534,7 +531,6 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleDocumentosOnlyOffice, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkGestionDocumental", Modulo: permModuleGestionDocumental, Accion: permActionCreate, Titulo: "Gestion documental y aprobaciones", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkContratosObligaciones", Modulo: permModuleContratosOblig, Accion: permActionCreate, Titulo: "Contratos y obligaciones", Grupo: "Documentos, nube y soporte"},
-	{PaginaClave: "linkHelpdesk", Modulo: permModuleHelpdesk, Accion: permActionCreate, Titulo: "Mesa de ayuda / Helpdesk", Grupo: "Documentos, nube y soporte"},
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
 
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de empresa", Grupo: "Administracion y configuracion"},
@@ -1100,11 +1096,6 @@ func WithEmpresaCumplimientoKYCPermissions(dbEmp, dbSuper *sql.DB, next http.Han
 // WithEmpresaContratosObligacionesPermissions aplica permisos para contratos, polizas y vencimientos.
 func WithEmpresaContratosObligacionesPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleContratosOblig, resolveVerticalPermissionAction, next)
-}
-
-// WithEmpresaHelpdeskPermissions aplica permisos para tickets, SLA y soporte empresarial.
-func WithEmpresaHelpdeskPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
-	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleHelpdesk, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaCalidadProcesosPermissions aplica permisos para auditorias, procesos y no conformidades.
@@ -2164,7 +2155,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
-	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleHelpdesk, permModuleCalidadProcesos, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -3109,8 +3100,6 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkCumplimientoKYC"
 	case path == "/api/empresa/contratos_obligaciones":
 		return "linkContratosObligaciones"
-	case path == "/api/empresa/helpdesk":
-		return "linkHelpdesk"
 	case path == "/api/empresa/calidad_procesos":
 		return "linkCalidadProcesos"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||

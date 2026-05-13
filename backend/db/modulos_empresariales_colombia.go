@@ -316,7 +316,6 @@ var empresaModuloColombiaTitulos = map[string]string{
 	"gestion_documental":     "Gestion documental empresarial",
 	"cumplimiento_kyc":       "Cumplimiento KYC/KYB y riesgo LAFT",
 	"contratos_obligaciones": "Contratos, obligaciones y firma electronica",
-	"helpdesk":               "Mesa de ayuda / Helpdesk",
 	"calidad_procesos":       "Calidad, procesos y no conformidades",
 	"drogueria_farmacia":     "Drogueria y farmacia",
 }
@@ -372,13 +371,6 @@ func GetEmpresaModuloColombiaPlantilla(modulo string) EmpresaModuloColombiaPlant
 		base.EtiquetaTercero = "Contraparte"
 		base.EtiquetaReferencia = "Contrato / poliza"
 		base.MetadataEjemplo = `{"firma":"pendiente","renovacion":"2026-12-31","alerta_dias":30,"valor_mensual":800000}`
-	case "helpdesk":
-		base.Tipos = []string{"ticket", "incidente", "solicitud", "cambio", "problema", "base_conocimiento"}
-		base.Categorias = []string{"hardware", "software", "configuracion", "facturacion", "operacion", "cliente"}
-		base.EstadosFlujo = []string{"abierto", "en_gestion", "en_revision", "resuelto", "cerrado", "cancelado"}
-		base.EtiquetaTercero = "Solicitante / area"
-		base.EtiquetaReferencia = "Equipo / caso"
-		base.MetadataEjemplo = `{"sla_horas":8,"canal":"interno","impacto":"medio","evidencia_url":""}`
 	case "calidad_procesos":
 		base.Tipos = []string{"proceso", "checklist", "auditoria", "no_conformidad", "accion_correctiva", "accion_preventiva"}
 		base.Categorias = []string{"servicio", "finanzas", "inventario", "seguridad", "operacion", "cliente"}
@@ -2086,7 +2078,7 @@ func NormalizeEmpresaModuloColombia(v string) string {
 		return clean
 	}
 	switch clean {
-	case "bancos_pagos", "gestion_documental", "cumplimiento_kyc", "contratos_obligaciones", "helpdesk", "calidad_procesos", "drogueria_farmacia":
+	case "bancos_pagos", "gestion_documental", "cumplimiento_kyc", "contratos_obligaciones", "calidad_procesos", "drogueria_farmacia":
 		return clean
 	default:
 		return ""
@@ -2320,11 +2312,6 @@ func demoEmpresaModuloColombiaRows(empresaID int64, modulo, usuario string) []Em
 		return []EmpresaModuloColombiaRegistro{
 			mergeModuloDemo(base, "CTR-001", "Contrato de mantenimiento anual", "contrato", "Proveedor mantenimiento", "Administracion", "servicios", "POL-001", 9600000, map[string]interface{}{"firma": "pendiente", "renovacion": today.AddDate(1, 0, 0).Format("2006-01-02")}),
 			mergeModuloDemo(base, "OBL-001", "Poliza de cumplimiento", "obligacion", "Aseguradora", "Gerencia", "poliza", "POL-001", 0, map[string]interface{}{"vigencia": due, "alerta_dias": 15}),
-		}
-	case "helpdesk":
-		return []EmpresaModuloColombiaRegistro{
-			mergeModuloDemo(base, "TCK-001", "Impresora de recepcion no imprime", "ticket", "Recepcion", "Soporte", "hardware", "IMP-01", 0, map[string]interface{}{"sla_horas": 8, "canal": "interno"}),
-			mergeModuloDemo(base, "TCK-002", "Solicitud ajuste tarifa habitacion", "ticket", "Administracion", "Operacion", "configuracion", "TAR-01", 0, map[string]interface{}{"sla_horas": 24, "impacto": "medio"}),
 		}
 	case "calidad_procesos":
 		return []EmpresaModuloColombiaRegistro{

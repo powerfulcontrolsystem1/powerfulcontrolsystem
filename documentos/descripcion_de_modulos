@@ -1,3 +1,23 @@
+2026-05-12: Control electrico reubicado en configuracion empresarial
+- Modulo: `control_electrico`.
+- Cambio funcional: el boton deja de mostrarse como acceso independiente en el sidebar principal de Administrar empresa y pasa a `Configuracion > Estaciones, sensores y tarifas`.
+- UX: la pantalla principal de configuracion agrega una tarjeta de acceso para Raspberry Pi, reles y salidas por estacion.
+- Alcance tecnico: conserva `linkControlElectrico`, ruta `/administrar_empresa/modulo_menu.html?module=control_electrico`, permisos existentes y backend sin cambios.
+
+2026-05-12: Mesa de ayuda por tickets
+- Modulo: `tickets_ayuda`.
+- Definicion: sistema central de soporte SaaS donde una empresa registra una solicitud de ayuda y el super administrador la atiende como conversacion trazable por ticket.
+- Alcance empresa: desde el menu flotante global, el usuario autenticado crea un ticket asociado a su `empresa_id`, modulo/ruta activa, categoria, prioridad, asunto y mensaje.
+- Alcance super administrador: `/super/tickets_ayuda.html` lista, filtra, revisa mensajes, responde, marca notas internas, cambia estado/prioridad, asigna responsable y cierra tickets.
+- Datos: `pcs_superadministrador.super_tickets_ayuda` y `super_ticket_ayuda_mensajes`; los registros guardan `empresa_id` para trazabilidad multiempresa sin mezclar tickets entre empresas.
+- Permisos: creacion empresarial validada por alcance de empresa; administracion central exclusiva de `super_administrador`.
+
+2026-05-12: Carrusel publico con tarjetas consistentes
+- Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
+- Cambio funcional: la barra horizontal de sistemas restantes en `index.html` mantiene tarjetas del mismo tamano que las 6 tarjetas destacadas superiores.
+- UX: el carrusel conserva navegacion por flechas izquierda/derecha y mantiene los modulos del sistema debajo.
+- Alcance: no cambia backend, permisos, tablas ni dependencias.
+
 2026-05-12: Seguridad VPS y puerto SSH 22
 - Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `arranque_local`.
 - Cambio operativo: Hostinger queda restablecido para usar SSH en el puerto `22`.
@@ -162,7 +182,7 @@
 - Gobernanza: todos siguen operando como plantillas sobre el nucleo unico; no se crean ventas, clientes, productos ni pagos paralelos.
 
 2026-05-11: Portada publica alineada con modulos y verticales reales
-- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `helpdesk`, `calidad_procesos`, `facturacion`.
+- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `tickets_ayuda`, `calidad_procesos`, `facturacion`.
 - Cambio funcional: las tarjetas del index y los valores por defecto de `/api/public/pagina_principal` presentan los 20 verticales nuevos como operativos de produccion masiva cuando el catalogo los marca como reales.
 - Producto: las 20 plantillas nuevas quedan publicables como `Probar gratis`.
 - Gobernanza: las tarjetas refuerzan que ventas, clientes, productos, pagos, facturacion y reportes viven en el nucleo unico, no en verticales paralelos.
@@ -316,9 +336,9 @@
 - Documentacion: se agrega `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
 
 2026-05-06: Modulos empresariales Colombia faltantes
-- Modulos afectados: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `helpdesk`, `calidad_procesos`, `roles/licencias`, `administrar_empresa`.
+- Modulos afectados: `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones`, `calidad_procesos`, `tickets_ayuda`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se agrega una familia profesional de modulos empresariales para bancos/pagos masivos, gestion documental, KYC/KYB y LAFT, contratos/obligaciones, mesa de ayuda y calidad/procesos.
-- Backend: APIs `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones`, `/api/empresa/helpdesk` y `/api/empresa/calidad_procesos`, todas sobre handler comun.
+- Backend: APIs `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones` y `/api/empresa/calidad_procesos` sobre handler comun; los tickets de soporte usan el sistema propio `/api/empresa/tickets_ayuda`.
 - Base de datos: tablas compartidas `empresa_modulos_colombia_registros` y `empresa_modulos_colombia_eventos`, aisladas por `empresa_id` y discriminadas por `modulo`.
 - Frontend: pantallas livianas en `web/administrar_empresa/` usando `web/js/modulo_colombia_admin.js` y estilos centrales.
 - Continuacion: se agregan plantillas por modulo, filtro por estado, seguimiento profesional, cambio rapido de estado y bitacora de eventos sin duplicar UI ni tablas.

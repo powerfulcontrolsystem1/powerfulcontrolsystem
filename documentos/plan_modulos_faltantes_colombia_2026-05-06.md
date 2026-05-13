@@ -33,7 +33,7 @@ El sistema ya cubre POS, inventario, compras, produccion/MRP, logistica WMS, con
 - Hitos, renovaciones, polizas, vencimientos, responsables y alertas.
 - Plantillas, anexos, aprobaciones y firma electronica externa o manual.
 
-5. Mesa de ayuda / Helpdesk empresarial
+5. Mesa de ayuda empresarial (retirada luego en favor de tickets propios)
 - Tickets internos y externos.
 - SLA, prioridades, categorias, responsables, estados y comentarios.
 - Base de conocimiento, evidencias y tablero de soporte.
@@ -48,7 +48,7 @@ El sistema ya cubre POS, inventario, compras, produccion/MRP, logistica WMS, con
 
 Implementacion 2026-05-06:
 - Se creo un nucleo comun para los seis modulos en `backend/db/modulos_empresariales_colombia.go`, evitando duplicar tablas, handlers y UI.
-- Se agregaron APIs privadas por empresa: `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones`, `/api/empresa/helpdesk` y `/api/empresa/calidad_procesos`.
+- Se agregaron APIs privadas por empresa: `/api/empresa/bancos_pagos`, `/api/empresa/gestion_documental`, `/api/empresa/cumplimiento_kyc`, `/api/empresa/contratos_obligaciones` y `/api/empresa/calidad_procesos`. La mesa de ayuda heredada fue reemplazada posteriormente por `/api/empresa/tickets_ayuda`.
 - Se agregaron pantallas administrativas, permisos, licencias, menu empresarial, datos demo y documentacion.
 - Todas las entidades quedan aisladas por `empresa_id` y discriminadas por `modulo`.
 - Continuacion de fases: se agregan plantillas por modulo, seguimiento profesional, cambio rapido de estado, bitacora enriquecida y filtros por estado, todo sobre el mismo nucleo compartido.
@@ -92,7 +92,7 @@ Fase 4: Contratos y obligaciones
 - Alertas y dashboard.
 - Integracion con terceros, activos, propiedad horizontal y compras.
 
-Fase 5: Helpdesk
+Fase 5: Mesa de ayuda empresarial
 - Tickets, SLA, comentarios y evidencias.
 - Portal interno y publico opcional.
 - Integracion con usuarios, clientes y activos.

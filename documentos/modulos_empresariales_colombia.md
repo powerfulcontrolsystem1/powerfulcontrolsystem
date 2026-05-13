@@ -4,18 +4,17 @@ Fecha: 2026-05-06
 
 ## Alcance
 
-Se implementa una familia de seis modulos empresariales faltantes comparables con funcionalidades de suites ERP/contables usadas en Colombia:
+Se implementa una familia de modulos empresariales faltantes comparables con funcionalidades de suites ERP/contables usadas en Colombia:
 
 - `bancos_pagos`: bancos, conciliacion y pagos masivos.
 - `gestion_documental`: expedientes, versiones, aprobaciones y vencimientos.
 - `cumplimiento_kyc`: debida diligencia KYC/KYB, riesgo LAFT y alertas.
 - `contratos_obligaciones`: contratos, polizas, hitos, renovaciones y firma externa/manual.
-- `helpdesk`: mesa de ayuda, tickets, SLA, prioridades y evidencias.
 - `calidad_procesos`: procesos, auditorias, no conformidades y acciones correctivas.
 
 ## Arquitectura
 
-Los seis modulos comparten el mismo nucleo tecnico para evitar duplicacion:
+Los modulos comparten el mismo nucleo tecnico para evitar duplicacion:
 
 - Backend comun: `backend/db/modulos_empresariales_colombia.go`.
 - Handler comun parametrizado: `backend/handlers/modulos_empresariales_colombia.go`.
@@ -31,7 +30,6 @@ Cada registro tiene `empresa_id`, `modulo`, `codigo`, `tipo`, tercero/area, resp
   - `/api/empresa/gestion_documental`
   - `/api/empresa/cumplimiento_kyc`
   - `/api/empresa/contratos_obligaciones`
-  - `/api/empresa/helpdesk`
   - `/api/empresa/calidad_procesos`
 - Acciones: `dashboard`, `registros`, `eventos`, `registro` y `seed_demo`.
 - Acciones profesionales compartidas:
@@ -60,7 +58,7 @@ Cada registro tiene `empresa_id`, `modulo`, `codigo`, `tipo`, tercero/area, resp
   - `importar_registros`: importa hasta 1000 registros por lote desde CSV/JSON y registra el evento de importacion.
 - Menus:
   - Finanzas y cumplimiento: Bancos y pagos, KYC/KYB y LAFT.
-  - Documentos, nube y soporte: Gestion documental, Contratos, Helpdesk.
+  - Documentos, nube y soporte: Gestion documental y Contratos. Los tickets de ayuda operan en el sistema propio centralizado.
   - Analisis y control: Calidad y procesos.
 - Licencias: cada modulo se activa/desactiva con su propia clave en `licencias.modulos_habilitados`.
 - Roles: lectura transversal; creacion/actualizacion/aprobacion para `admin_empresa`, `supervisor_sucursal`, `contabilidad` y `auditor`; eliminacion solo para `admin_empresa`, salvo overrides finos.
@@ -74,10 +72,10 @@ Cada registro tiene `empresa_id`, `modulo`, `codigo`, `tipo`, tercero/area, resp
 
 ## Fase 2 implementada
 
-Se agrega una capa profesional comun para los seis modulos:
+Se agrega una capa profesional comun para los modulos:
 
 - Plantillas operativas por modulo con tipos, categorias, estados y etiquetas de negocio.
-- Formulario dinamico que cambia su lenguaje segun bancos, documentos, KYC, contratos, helpdesk o calidad.
+- Formulario dinamico que cambia su lenguaje segun bancos, documentos, KYC, contratos o calidad.
 - Seguimiento por registro con bitacora, usuario, detalle y fecha.
 - Cambio rapido de estado con auditoria de estado anterior y nuevo.
 - Filtro por estado y exportacion CSV desde la misma pantalla.

@@ -236,7 +236,6 @@ func DefaultNuevoVerticalLicenciaModules(modulo string) string {
 		"cobranza",
 		"gestion_documental",
 		"contratos_obligaciones",
-		"helpdesk",
 		"calidad_procesos",
 		"facturacion",
 		"seguridad",

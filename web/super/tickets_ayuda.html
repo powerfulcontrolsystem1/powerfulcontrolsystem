@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tickets de ayuda</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .tickets-ayuda-super{max-width:1400px;margin:0 auto;padding:16px;display:grid;gap:12px}
+    .tickets-ayuda-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .tickets-ayuda-header h1{margin:0;color:var(--text);font-size:1.35rem}
+    .tickets-ayuda-header p{margin:4px 0 0;color:var(--muted);font-size:.86rem;line-height:1.35}
+    .tickets-ayuda-toolbar{display:grid;grid-template-columns:1.2fr repeat(3,minmax(130px,.45fr)) auto;gap:10px;align-items:end}
+    .tickets-ayuda-layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr);gap:12px;align-items:start}
+    .tickets-ayuda-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .tickets-ayuda-table{min-width:980px;width:100%;border-collapse:collapse}
+    .tickets-ayuda-table tr{cursor:pointer}
+    .tickets-ayuda-table tr.is-selected{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+    .tickets-ayuda-detail{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;display:grid;gap:12px;min-height:420px}
+    .tickets-ayuda-empty{display:grid;place-items:center;min-height:280px;color:var(--muted);font-weight:800;text-align:center}
+    .tickets-ayuda-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .tickets-ayuda-kpi{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px}
+    .tickets-ayuda-kpi span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;font-weight:900}
+    .tickets-ayuda-kpi strong{display:block;margin-top:5px;color:var(--text);font-size:1.15rem}
+    .tickets-ayuda-badge{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:.72rem;font-weight:900;text-transform:capitalize}
+    .tickets-ayuda-badge.nuevo{background:color-mix(in srgb,#2563eb 15%,transparent);color:#2563eb}
+    .tickets-ayuda-badge.en_revision{background:color-mix(in srgb,#f59e0b 18%,transparent);color:#b45309}
+    .tickets-ayuda-badge.respondido{background:color-mix(in srgb,#16a34a 14%,transparent);color:#15803d}
+    .tickets-ayuda-badge.cerrado{background:color-mix(in srgb,#64748b 18%,transparent);color:#475569}
+    .tickets-ayuda-priority.critica{color:#dc2626;font-weight:900}
+    .tickets-ayuda-priority.alta{color:#f97316;font-weight:900}
+    .tickets-ayuda-messages{display:grid;gap:8px;max-height:340px;overflow:auto;padding-right:4px}
+    .tickets-ayuda-message{border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface-soft)}
+    .tickets-ayuda-message.super{border-color:color-mix(in srgb,var(--accent) 42%,var(--border));background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+    .tickets-ayuda-message header{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:.78rem;font-weight:850;margin-bottom:6px}
+    .tickets-ayuda-message p{margin:0;color:var(--text);white-space:pre-wrap;line-height:1.42}
+    .tickets-ayuda-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .tickets-ayuda-response{display:grid;gap:10px}
+    .tickets-ayuda-toggle{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:780}
+    .tickets-ayuda-toggle input{width:18px;height:18px;accent-color:var(--accent)}
+    .tickets-ayuda-status{min-height:20px;color:var(--muted);font-weight:750}
+    .tickets-ayuda-status.is-error{color:var(--danger,#ef4444)}
+    @media(max-width:1100px){.tickets-ayuda-layout{grid-template-columns:1fr}.tickets-ayuda-toolbar{grid-template-columns:1fr 1fr}.tickets-ayuda-kpis{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.tickets-ayuda-super{padding:12px}.tickets-ayuda-toolbar,.tickets-ayuda-actions,.tickets-ayuda-kpis{grid-template-columns:1fr}.tickets-ayuda-header .btn{width:100%}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="tickets-ayuda-super">
+    <header class="tickets-ayuda-header">
+      <div>
+        <h1>Tickets de ayuda</h1>
+        <p>Mesa central para recibir solicitudes de las empresas, responderlas y cerrar casos con trazabilidad.</p>
+      </div>
+      <button id="btnReload" type="button" class="btn secondary">Actualizar</button>
+    </header>
+
+    <section class="tickets-ayuda-kpis" aria-label="Resumen tickets">
+      <div class="tickets-ayuda-kpi"><span>Nuevos</span><strong id="kpiNuevo">0</strong></div>
+      <div class="tickets-ayuda-kpi"><span>En revision</span><strong id="kpiRevision">0</strong></div>
+      <div class="tickets-ayuda-kpi"><span>Respondidos</span><strong id="kpiRespondido">0</strong></div>
+      <div class="tickets-ayuda-kpi"><span>Cerrados</span><strong id="kpiCerrado">0</strong></div>
+    </section>
+
+    <section class="card form">
+      <div class="tickets-ayuda-toolbar">
+        <label class="form-col">
+          <span class="form-label">Buscar</span>
+          <input id="filterQ" class="form-input" type="search" placeholder="Codigo, empresa, asunto o email">
+        </label>
+        <label class="form-col">
+          <span class="form-label">Estado</span>
+          <select id="filterEstado" class="form-input">
+            <option value="">Todos</option>
+            <option value="nuevo">Nuevo</option>
+            <option value="en_revision">En revision</option>
+            <option value="respondido">Respondido</option>
+            <option value="cerrado">Cerrado</option>
+          </select>
+        </label>
+        <label class="form-col">
+          <span class="form-label">Prioridad</span>
+          <select id="filterPrioridad" class="form-input">
+            <option value="">Todas</option>
+            <option value="critica">Critica</option>
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </label>
+        <label class="form-col">
+          <span class="form-label">Limite</span>
+          <input id="filterLimit" class="form-input" type="number" min="20" max="300" step="10" value="150">
+        </label>
+        <button id="btnApplyFilters" type="button" class="btn">Filtrar</button>
+      </div>
+    </section>
+
+    <section class="tickets-ayuda-layout">
+      <div class="tickets-ayuda-table-wrap">
+        <table class="table tickets-ayuda-table">
+          <thead><tr><th>Codigo</th><th>Estado</th><th>Prioridad</th><th>Empresa</th><th>Asunto</th><th>Solicitante</th><th>Actualizado</th></tr></thead>
+          <tbody id="ticketRows"><tr><td colspan="7" class="muted">Cargando tickets...</td></tr></tbody>
+        </table>
+      </div>
+
+      <aside id="ticketDetail" class="tickets-ayuda-detail">
+        <div class="tickets-ayuda-empty">Selecciona un ticket para revisar la conversacion.</div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const API = '/super/api/tickets_ayuda';
+      const $ = (id) => document.getElementById(id);
+      let tickets = [];
+      let selectedID = 0;
+
+      function esc(v){
+        return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+      }
+      function badge(estado){
+        const value = String(estado || 'nuevo');
+        return '<span class="tickets-ayuda-badge ' + esc(value) + '">' + esc(value.replace('_',' ')) + '</span>';
+      }
+      function fmtDate(v){
+        const raw = String(v || '').trim();
+        if (!raw) return '';
+        return raw.length > 19 ? raw.slice(0, 19).replace('T', ' ') : raw.replace('T', ' ');
+      }
+      function setStatus(text, isError){
+        const el = $('ticketStatus');
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.toggle('is-error', !!isError);
+      }
+      function updateKPIs(){
+        const counts = { nuevo:0, en_revision:0, respondido:0, cerrado:0 };
+        tickets.forEach(t => { counts[t.estado] = (counts[t.estado] || 0) + 1; });
+        $('kpiNuevo').textContent = counts.nuevo || 0;
+        $('kpiRevision').textContent = counts.en_revision || 0;
+        $('kpiRespondido').textContent = counts.respondido || 0;
+        $('kpiCerrado').textContent = counts.cerrado || 0;
+      }
+      function renderRows(){
+        const body = $('ticketRows');
+        if (!tickets.length) {
+          body.innerHTML = '<tr><td colspan="7" class="muted">Sin tickets con estos filtros.</td></tr>';
+          return;
+        }
+        body.innerHTML = tickets.map(t => (
+          '<tr data-id="' + esc(t.id) + '" class="' + (Number(t.id) === Number(selectedID) ? 'is-selected' : '') + '">' +
+            '<td><strong>' + esc(t.codigo) + '</strong></td>' +
+            '<td>' + badge(t.estado) + '</td>' +
+            '<td class="tickets-ayuda-priority ' + esc(t.prioridad) + '">' + esc(t.prioridad) + '</td>' +
+            '<td>' + esc(t.empresa_nombre || ('Empresa ' + t.empresa_id)) + '</td>' +
+            '<td>' + esc(t.asunto) + '</td>' +
+            '<td>' + esc(t.solicitante_email) + '</td>' +
+            '<td>' + esc(fmtDate(t.fecha_actualizacion || t.fecha_creacion)) + '</td>' +
+          '</tr>'
+        )).join('');
+      }
+      function renderDetail(data){
+        const t = data.ticket || {};
+        const messages = Array.isArray(data.mensajes) ? data.mensajes : [];
+        $('ticketDetail').innerHTML =
+          '<div>' +
+            '<h2 style="margin:0 0 6px;font-size:1.05rem">' + esc(t.codigo || '') + ' · ' + esc(t.asunto || '') + '</h2>' +
+            '<div class="form-help">' + esc(t.empresa_nombre || ('Empresa ' + (t.empresa_id || ''))) + ' · ' + esc(t.solicitante_email || '') + ' · ' + esc(t.modulo || 'sistema') + '</div>' +
+            '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">' + badge(t.estado) + '<span class="tickets-ayuda-priority ' + esc(t.prioridad) + '">' + esc(t.prioridad || '') + '</span></div>' +
+          '</div>' +
+          '<div class="tickets-ayuda-messages">' + (messages.length ? messages.map(m => (
+            '<article class="tickets-ayuda-message ' + (m.autor_tipo === 'super' ? 'super' : '') + '">' +
+              '<header><span>' + esc(m.autor_tipo === 'super' ? 'Soporte' : (m.autor_nombre || m.autor_email || 'Usuario')) + '</span><span>' + esc(fmtDate(m.fecha_creacion)) + '</span></header>' +
+              '<p>' + esc(m.mensaje) + '</p>' +
+            '</article>'
+          )).join('') : '<div class="muted">Sin mensajes.</div>') + '</div>' +
+          '<div class="tickets-ayuda-actions">' +
+            '<label class="form-col"><span class="form-label">Estado</span><select id="detailEstado" class="form-input"><option value="nuevo">Nuevo</option><option value="en_revision">En revision</option><option value="respondido">Respondido</option><option value="cerrado">Cerrado</option></select></label>' +
+            '<label class="form-col"><span class="form-label">Prioridad</span><select id="detailPrioridad" class="form-input"><option value="baja">Baja</option><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option></select></label>' +
+            '<label class="form-col"><span class="form-label">Asignado a</span><input id="detailAsignado" class="form-input" type="text" placeholder="email o responsable"></label>' +
+          '</div>' +
+          '<form id="responseForm" class="tickets-ayuda-response">' +
+            '<label class="form-label" for="responseMessage">Respuesta</label>' +
+            '<textarea id="responseMessage" class="form-textarea" placeholder="Escribe la respuesta para la empresa o deja vacio para solo cambiar estado."></textarea>' +
+            '<label class="tickets-ayuda-toggle"><input id="responseInternal" type="checkbox"> Nota interna</label>' +
+            '<div id="ticketStatus" class="tickets-ayuda-status"></div>' +
+            '<div class="tickets-ayuda-actions"><button id="btnSaveTicket" type="submit" class="btn">Guardar respuesta</button><button id="btnCloseTicket" type="button" class="btn secondary">Cerrar ticket</button></div>' +
+          '</form>';
+        $('detailEstado').value = t.estado || 'nuevo';
+        $('detailPrioridad').value = t.prioridad || 'media';
+        $('detailAsignado').value = t.asignado_a || '';
+        $('responseForm').addEventListener('submit', saveDetail);
+        $('btnCloseTicket').addEventListener('click', () => saveDetail(null, 'cerrado'));
+        const box = $('ticketDetail').querySelector('.tickets-ayuda-messages');
+        if (box) box.scrollTop = box.scrollHeight;
+      }
+      async function loadTickets(){
+        const params = new URLSearchParams();
+        if ($('filterEstado').value) params.set('estado', $('filterEstado').value);
+        if ($('filterPrioridad').value) params.set('prioridad', $('filterPrioridad').value);
+        if ($('filterQ').value.trim()) params.set('q', $('filterQ').value.trim());
+        params.set('limit', $('filterLimit').value || '150');
+        $('ticketRows').innerHTML = '<tr><td colspan="7" class="muted">Cargando tickets...</td></tr>';
+        const res = await fetch(API + '?' + params.toString(), { credentials:'same-origin' });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+        tickets = Array.isArray(data.tickets) ? data.tickets : [];
+        updateKPIs();
+        renderRows();
+      }
+      async function loadDetail(id){
+        selectedID = Number(id || 0);
+        renderRows();
+        $('ticketDetail').innerHTML = '<div class="tickets-ayuda-empty">Cargando detalle...</div>';
+        const res = await fetch(API + '?id=' + encodeURIComponent(selectedID), { credentials:'same-origin' });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) throw new Error((data && data.error) || ('HTTP ' + res.status));
+        renderDetail(data);
+      }
+      async function saveDetail(event, forcedEstado){
+        if (event && event.preventDefault) event.preventDefault();
+        if (!selectedID) return;
+        setStatus('Guardando...', false);
+        const payload = {
+          ticket_id: selectedID,
+          estado: forcedEstado || $('detailEstado').value,
+          prioridad: $('detailPrioridad').value,
+          asignado_a: $('detailAsignado').value.trim(),
+          mensaje: $('responseMessage').value.trim(),
+          interno: $('responseInternal').checked
+        };
+        const res = await fetch(API, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials:'same-origin',
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok) {
+          setStatus((data && data.error) || ('HTTP ' + res.status), true);
+          return;
+        }
+        setStatus('Ticket actualizado.', false);
+        await loadTickets();
+        await loadDetail(selectedID);
+      }
+      $('ticketRows').addEventListener('click', function(event){
+        const row = event.target.closest('tr[data-id]');
+        if (row) loadDetail(row.getAttribute('data-id')).catch(err => alert(err.message));
+      });
+      $('btnReload').addEventListener('click', () => loadTickets().catch(err => alert(err.message)));
+      $('btnApplyFilters').addEventListener('click', () => loadTickets().catch(err => alert(err.message)));
+      $('filterQ').addEventListener('keydown', event => { if (event.key === 'Enter') loadTickets().catch(err => alert(err.message)); });
+      loadTickets().catch(err => {
+        $('ticketRows').innerHTML = '<tr><td colspan="7" class="muted">' + esc(err.message) + '</td></tr>';
+      });
+    })();
+  </script>
+</body>
+</html>
