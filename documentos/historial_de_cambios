@@ -1,3 +1,14 @@
+2026-05-13: Caja se fuerza siempre a corte de caja desde estaciones
+- Modulos afectados: `estaciones`, `corte_caja`.
+- Frontend: `web/administrar_empresa/estaciones.html` identifica la tarjeta especial `Caja` por id/nombre y la saca del flujo generico de estaciones, evitando que termine en `carrito_de_compras.html`.
+- Navegacion: clic y teclado sobre `Caja` ahora detienen propagacion y redirigen de forma obligatoria a `corte_de_caja.html` con contexto de estaciones.
+
+2026-05-13: estaciones reabren carritos legado por nombre sin romper apertura
+- Modulos afectados: `estaciones`, `carritos`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` deja de pedir el listado ya filtrado por `estacion_id` al abrir una estacion, para poder rescatar carritos historicos de la empresa que solo coinciden por nombre.
+- Frontend: cuando ese carrito legado pertenece realmente a la estacion, la apertura lo normaliza al `codigo`/`referencia_externa` canónicos antes de activar o recuperar la sesion, evitando recreaciones fallidas por nombre duplicado.
+- Riesgo corregido: estaciones como `Zona 1` podian quedar atrapadas en `No se pudo abrir esta estación` porque el flujo no veia el carrito legado, intentaba crear otro con el mismo nombre y recibia `400` por duplicado.
+
 2026-05-13: endurecimiento de sesion en administrar empresa y modulos operativos
 - Modulos afectados: `administrar_empresa`, `carritos`, `clientes`, `bodegas`, `autenticacion`.
 - Frontend shell: `web/js/administrar_empresa.js` deja de montar el menu/iframe empresarial como si fuera una sesion valida cuando `/me` responde `401/403`; ahora redirige a `login.html` antes de abrir modulos protegidos.

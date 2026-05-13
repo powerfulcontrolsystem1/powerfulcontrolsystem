@@ -2183,13 +2183,13 @@ body.theme-dark .login-page{
 
 .login-usuario-body{min-height:100vh;background:var(--bg);color:var(--text)}
 .login-usuario-page{position:relative;min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text);transition:background .2s ease,color .2s ease;overflow:hidden}
-.login-usuario-hero-visual{position:absolute;top:18px;right:8px;width:clamp(126px,15.5vw,214px);aspect-ratio:32/21;margin:0;z-index:0;pointer-events:none;isolation:isolate}
+.login-usuario-hero-visual{position:fixed;right:clamp(-10px,2vw,28px);bottom:clamp(10px,3vw,48px);top:auto;width:clamp(232px,25vw,408px);max-height:min(56vh,430px);aspect-ratio:32/21;margin:0;z-index:1;pointer-events:none;user-select:none;opacity:.96;isolation:isolate}
 .login-usuario-hero-visual::before,
 .login-usuario-hero-visual::after{content:"";position:absolute;border-radius:999px;pointer-events:none;z-index:-1;filter:blur(22px)}
 .login-usuario-hero-visual::before{width:62%;height:42%;left:6%;bottom:10%;background:radial-gradient(circle, var(--login-visual-glow-secondary) 0%, transparent 74%);opacity:.92}
 .login-usuario-hero-visual::after{width:48%;height:38%;right:4%;top:12%;background:radial-gradient(circle, var(--login-visual-glow-tertiary) 0%, transparent 72%);opacity:.88}
 .login-usuario-hero-visual img{display:block;width:100%;height:100%;object-fit:cover;border-radius:24px;box-shadow:0 16px 30px color-mix(in srgb,#020617 14%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 44%,transparent);filter:drop-shadow(0 10px 18px color-mix(in srgb,var(--login-visual-shadow, #020617) 18%,transparent))}
-.login-usuario-page .login-header,.login-usuario-page .container{position:relative;z-index:1}
+.login-usuario-page .login-header,.login-usuario-page .container{position:relative;z-index:2}
 .login-usuario-page .card{background:var(--surface);border:1px solid var(--border);color:var(--text);box-shadow:var(--shadow-soft)}
 .login-usuario-page .form-input,.login-usuario-page input,.login-usuario-page select,.login-usuario-page textarea{background:var(--form-input-bg);border-color:var(--form-border);color:var(--text)}
 .login-usuario-page .form-input::placeholder,.login-usuario-page input::placeholder,.login-usuario-page textarea::placeholder{color:color-mix(in srgb,var(--muted) 74%,transparent)}
@@ -2240,6 +2240,14 @@ body.theme-dark .login-page{
 .login-usuario-modal .modal__header h2{margin:0;color:var(--text)}
 .login-usuario-modal .modal__body{padding:18px 20px;color:var(--text);background:var(--surface)}
 .login-usuario-modal .modal__body p{margin:0 0 12px;color:var(--text)}
+
+@media (min-width: 980px) and (max-width: 1240px){
+  .login-usuario-hero-visual{
+    right:-34px;
+    width:clamp(204px,22vw,318px);
+    opacity:.62;
+  }
+}
 
 @media (max-width:960px){
   .login-usuario-page{overflow:visible}

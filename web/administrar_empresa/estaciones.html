@@ -1012,6 +1012,12 @@
       return !state.stationCardUI || state.stationCardUI.abrir_carrito_al_activar !== false;
     }
 
+    function isCajaStationCard(card, stationID, stationName) {
+      const normalizedName = normalizeText(stationName || '');
+      if (card && String(card.id || '') === 'cajaCard') return true;
+      return Number(stationID || 0) <= 0 && normalizedName === 'caja';
+    }
+
     function findStationCarritoInfo(stationID) {
       const code = normalizeCode(getCarritoCodeForStation(stationID));
       const stationKey = 'station:' + Number(stationID || 0);
@@ -1086,6 +1092,15 @@
     }
 
     function continueStationCardActivation(ev, card, stationID, stationName) {
+      if (isCajaStationCard(card, stationID, stationName)) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        openCajaClosePage(stationName || 'Caja');
+        return;
+      }
+
       if (shouldOpenCartWhenStationClicked()) {
         openStationCarrito(stationID, stationName);
         return;
@@ -1110,6 +1125,14 @@
     async function handleStationCardActivation(ev, card) {
       const stationID = Number(card.getAttribute('data-estacion-id') || 0);
       const stationName = String(card.getAttribute('data-estacion-nombre') || '').trim();
+      if (isCajaStationCard(card, stationID, stationName)) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        openCajaClosePage(stationName || 'Caja');
+        return;
+      }
       if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
         if (ev) {
           ev.preventDefault();
@@ -1860,8 +1883,18 @@
         if (cajaEl) {
           cajaEl.classList.add('station-launch-card');
           cajaEl.style.cursor = 'pointer';
-          cajaEl.addEventListener('click', () => { openCajaClosePage('Caja'); });
-          cajaEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openCajaClosePage('Caja'); } });
+          cajaEl.addEventListener('click', ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            openCajaClosePage('Caja');
+          });
+          cajaEl.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              ev.stopPropagation();
+              openCajaClosePage('Caja');
+            }
+          });
           try {
             const movBtn = cajaEl.querySelector('.ver-ultimos-movimientos');
             if (movBtn) {

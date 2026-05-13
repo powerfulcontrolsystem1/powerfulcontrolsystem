@@ -1,3 +1,7 @@
+- 2026-05-13: `web/administrar_empresa/estaciones.html` blinda la tarjeta especial `Caja` para que nunca abra carrito. Ahora clic o teclado sobre `Caja` siempre llevan a `web/administrar_empresa/corte_de_caja.html` con el flujo de cierre de turno, corte de caja e impresion del reporte del usuario actual.
+
+- 2026-05-13: `web/administrar_empresa/carrito_de_compras.html` recupera de nuevo carritos legado por nombre al abrir una estación. La carga inicial ya no se cierra al filtro `estacion_id`, y si encuentra un carrito histórico de la estación lo normaliza al `codigo` y `referencia_externa` canónicos antes de activarlo o reanudarlo.
+
 - 2026-05-13: `administrar_empresa.html` ahora valida sesion administrativa con `/me` antes de abrir el shell empresarial; si la sesion no existe o expiro, redirige a `login.html` en lugar de dejar el menu y el iframe en un estado falso de acceso.
 
 - 2026-05-13: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/administrar_clientes.html` y `web/administrar_empresa/bodega.html` ya no muestran errores crudos de `unauthorized` o `Error cargando ...` cuando la sesion expiro. Un `401` redirige al login y un `403` informa que el rol no tiene permiso para ese modulo.

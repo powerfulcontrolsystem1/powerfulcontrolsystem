@@ -5370,9 +5370,6 @@
       const url = new URL('/api/empresa/carritos_compra', window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('include_inactive', '1');
-      if (state.stationMode && state.stationID > 0) {
-        url.searchParams.set('estacion_id', String(state.stationID));
-      }
       if (state.directSaleMode) {
         url.searchParams.set('modo', 'venta_directa');
         url.searchParams.set('perm_page', 'linkVentaDirecta');
@@ -5437,6 +5434,47 @@
       applyStationCartUIConfig();
     }
 
+    function stationCarritoNeedsCanonicalSync(carrito) {
+      if (!state.stationMode || !carrito) return false;
+      const expectedCode = normalizedCode(state.selectedCarritoCode || getDefaultStationCarritoCode());
+      const expectedReference = normalizedCode(getStationReference());
+      const expectedName = normalize(state.stationName || ('Estación ' + state.stationID));
+      if (expectedCode && normalizedCode(carrito.codigo) !== expectedCode) return true;
+      if (expectedReference && normalizedCode(carrito.referencia_externa) !== expectedReference) return true;
+      if (expectedName && normalize(carrito.nombre) !== expectedName) return true;
+      return false;
+    }
+
+    async function syncStationCarritoCanonicalIdentity(carrito) {
+      if (!state.stationMode || !carrito || !Number(carrito.id || 0)) return carrito;
+      if (!stationCarritoNeedsCanonicalSync(carrito)) return carrito;
+
+      const payload = {
+        id: Number(carrito.id || 0),
+        empresa_id: Number(state.empresaID),
+        codigo: getDefaultStationCarritoCode(),
+        nombre: state.stationName || ('Estación ' + state.stationID),
+        canal_venta: String(carrito.canal_venta || 'mostrador'),
+        cliente_id: Number(carrito.cliente_id || 0),
+        estado_carrito: String(carrito.estado_carrito || 'abierto'),
+        moneda: String(carrito.moneda || 'COP'),
+        referencia_externa: getStationReference(),
+        observaciones: String(carrito.observaciones || 'Carrito automático de estación')
+      };
+
+      const res = await fetch('/api/empresa/carritos_compra', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(res);
+
+      state.selectedCarritoID = Number(carrito.id || 0);
+      state.selectedCarritoCode = '';
+      await loadCarritos();
+      return getSelectedCarrito() || findExistingStationCarrito() || carrito;
+    }
+
     async function ensureStationCarritoLifecycle() {
       if (!state.stationMode) return;
 
@@ -5477,6 +5515,7 @@
       }
 
       if (!selected) return;
+      selected = await syncStationCarritoCanonicalIdentity(selected);
 
       const isActive = isCarritoOperativoActivo(selected);
       const hasActivationStamp = !!normalize(selected.activado_en);

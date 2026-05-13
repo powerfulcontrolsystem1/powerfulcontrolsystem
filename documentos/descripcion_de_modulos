@@ -1,3 +1,16 @@
+2026-05-13: Caja en estaciones se blinda contra apertura accidental de carrito
+- Modulos afectados: `estaciones`, `corte_caja`.
+- Cambio funcional: `web/administrar_empresa/estaciones.html` agrega una guarda explicita para que la tarjeta especial `Caja` nunca entre al flujo generico de activacion/apertura de carrito, aunque cambie la configuracion visual de estaciones.
+- Nuevo comportamiento: clic o teclado sobre `Caja` siempre abre `web/administrar_empresa/corte_de_caja.html` para cerrar turno, hacer corte de caja e imprimir el reporte del cajero o usuario actual.
+- Alcance: solo frontend y navegacion; no agrega tablas, permisos ni dependencias.
+
+2026-05-13: Estaciones recuperan carritos legado por nombre al abrir una estacion
+- Modulos afectados: `estaciones`, `carritos`.
+- Cambio funcional: `web/administrar_empresa/carrito_de_compras.html` deja de limitar la carga inicial al filtro `estacion_id` cuando entra en modo estacion, para volver a encontrar carritos legado de la misma empresa aunque solo coincidan por nombre visible.
+- Estabilizacion: si el carrito rescatado pertenece a la estacion pero aun no tenia `codigo` o `referencia_externa` canonicos (`EST-{empresa}-{estacion}` / `ESTACION_{id}`), la misma apertura lo normaliza antes de activar o reanudar la sesion.
+- Impacto operativo: estaciones como `Zona 1` vuelven a abrir sin chocar por nombre duplicado ni mostrar el error `No se pudo abrir esta estación`, incluso en empresas con datos previos a la sincronizacion canonica de `estaciones_config`.
+- Alcance: solo frontend sobre el flujo del carrito de estacion; no agrega tablas, permisos ni dependencias y mantiene aislamiento por `empresa_id`.
+
 2026-05-13: Estacion Caja orientada a cierre de turno
 - Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
 - Cambio funcional: la tarjeta especial `Caja` dentro de `web/administrar_empresa/estaciones.html` deja de abrir `carrito_de_compras.html` en modo venta directa.

@@ -1,3 +1,12 @@
+## [2026-05-13] Caja en estaciones deja de caer al flujo de carrito
+- [Frontend] `web/administrar_empresa/estaciones.html` agrega una guarda explicita para la tarjeta `Caja`, de modo que nunca use la activacion generica de estaciones ni abra `carrito_de_compras.html`.
+- [Operacion] Clic o teclado sobre `Caja` siempre abren `corte_de_caja.html` para cierre de turno, corte e impresion del reporte del cajero actual.
+
+## [2026-05-13] Estaciones vuelven a abrir carritos legado por nombre
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` ya no restringe la carga inicial del modo estación al filtro `estacion_id`, para poder encontrar carritos previos de la misma empresa que todavía solo coincidían por nombre.
+- [Frontend] Si el carrito rescatado pertenece a la estación pero quedó con identidad vieja, la misma apertura lo actualiza a `EST-{empresa}-{estacion}` y `ESTACION_{id}` antes de activar o recuperar la sesión.
+- [Operación] Se elimina el escenario donde una estación como `Zona 1` intentaba recrear un carrito con nombre duplicado y terminaba mostrando `No se pudo abrir esta estación`.
+
 ## [2026-05-13] Administrar empresa exige sesion valida antes de abrir modulos
 - [Frontend] `web/js/administrar_empresa.js` valida `/me` al arrancar el shell empresarial y redirige a `login.html` cuando la sesion ya expiro o no existe, en vez de dejar cargar menus e iframes protegidos como si hubiera acceso.
 - [Frontend] `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/administrar_clientes.html` y `web/administrar_empresa/bodega.html` convierten `401` en redireccion al login administrativo y `403` en mensaje claro de permiso insuficiente.
