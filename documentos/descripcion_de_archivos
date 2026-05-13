@@ -1,4 +1,10 @@
 2026-05-13 - Actualizacion general de documentacion y ayuda
+- `web/img/login-admin-real.png`:
+	- imagen fotografica realista del login administrativo, con ejecutivo visto desde atras observando el sistema en pantalla.
+- `web/img/login-usuario-real.png`:
+	- imagen fotografica realista del login de usuarios operativos, con trabajador usando el sistema desde su puesto.
+- `web/login.html`, `web/login_usuario.html`, `web/estilos.css`:
+	- reemplazan ilustraciones SVG por imagenes reales PNG y agregan un iluminado exterior suave adaptable a apariencia clara u oscura.
 - `documentos/diagramas/diagrama_entidad_relacion.md`:
 	- DER canonico resumido del proyecto en formato Mermaid, con foco en el nucleo `pcs_empresas` y `pcs_superadministrador`.
 - `documentos/diagramas/diagrama_entidad_relacion.svg`:

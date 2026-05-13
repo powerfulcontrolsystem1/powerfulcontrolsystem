@@ -1,3 +1,5 @@
+- 2026-05-13: `login.html` y `login_usuario.html` pasan a usar imagenes reales (`web/img/login-admin-real.png` y `web/img/login-usuario-real.png`) con un iluminado exterior suave adaptado a modo claro/oscuro para mejorar presencia visual sin perder limpieza.
+
 - 2026-05-13: en `Estaciones`, la tarjeta especial `Caja` ya no abre `venta_directa` ni un carrito. Ahora redirige a `web/administrar_empresa/corte_de_caja.html` para cerrar turno, generar corte e imprimir el reporte del cajero, con regreso a estaciones y filtro por `caja_codigo` configurado por empresa.
 
 - 2026-05-13: `Carritos` y `Venta directa` quedan reforzados para volver a cargar desde `administrar_empresa.html` aun si la base empresarial venia con migraciones atrasadas. El backend reasegura el esquema antes de listar y la consulta de carritos degrada sin joins opcionales cuando faltan `clientes` o `carrito_compra_items`; el frontend de `carrito_de_compras.html` encapsula toda la carga inicial en el mismo manejo de error visual para no dejar el iframe muerto.

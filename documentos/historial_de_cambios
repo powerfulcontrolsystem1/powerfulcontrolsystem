@@ -1,3 +1,10 @@
+2026-05-13: imagenes reales para login admin y login usuario
+- Modulos afectados: `autenticacion`, `login_usuario`, `portal_acceso`.
+- Frontend: `web/login.html` y `web/login_usuario.html` reemplazan las ilustraciones anteriores por `web/img/login-admin-real.png` y `web/img/login-usuario-real.png`.
+- UX visual: `web/estilos.css` agrega un halo exterior suave con variables adaptadas a tema claro/oscuro, manteniendo presencia profesional sin endurecer el fondo.
+- Activos: se crean copias con nombres limpios para despliegue web (`login-admin-real.png`, `login-usuario-real.png`) a partir de los archivos entregados por el usuario.
+- Validacion: parseo inline JS y verificacion visual local de ambas pantallas con capturas en `tmp/login_admin_real_image.png` y `tmp/login_usuario_real_image.png`.
+
 2026-05-13: estacion Caja abre cierre de turno
 - Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
 - Frontend: `web/administrar_empresa/estaciones.html` redirige la tarjeta especial `Caja` hacia `corte_de_caja.html` en vez de abrir carrito/venta directa; la tarjeta explica que sirve para cerrar turno, hacer corte e imprimir el reporte completo del cajero.

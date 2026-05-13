@@ -1,3 +1,8 @@
+## [2026-05-13] Login con imagenes reales y glow adaptable
+- [Frontend] `web/login.html` y `web/login_usuario.html` usan imagenes reales PNG en lugar de las ilustraciones previas.
+- [Assets] Se agregan `web/img/login-admin-real.png` y `web/img/login-usuario-real.png` como copias estables para despliegue web sin espacios en el nombre.
+- [UX] `web/estilos.css` incorpora un iluminado exterior suave que responde bien a apariencia clara y oscura en ambos logins.
+
 ## [2026-05-13] Caja en Estaciones abre cierre de turno
 - [Estaciones] La tarjeta especial `Caja` en `web/administrar_empresa/estaciones.html` deja de lanzar `carrito_de_compras.html` en modo venta directa.
 - [Corte de caja] Al entrar desde estaciones, `web/administrar_empresa/corte_de_caja.html` muestra contexto de caja, boton `Cerrar turno`, enlace `Regresar a estaciones`, auto-generacion del reporte y filtro por `caja_codigo` de la empresa.

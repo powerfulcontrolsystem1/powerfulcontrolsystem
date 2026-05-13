@@ -1965,7 +1965,22 @@ ul{padding-left:18px}
 .login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px;position:relative;overflow:hidden}
 .login-page .container{max-width:420px;margin:0}
 .login-page .card{text-align:center;padding:28px}
-.login-executive-visual{display:none}
+.login-executive-visual-wrap{display:none}
+.login-executive-visual{display:block;width:100%;height:100%;object-fit:cover;border-radius:28px;box-shadow:0 18px 34px color-mix(in srgb,#020617 14%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 44%,transparent);filter:drop-shadow(0 12px 22px color-mix(in srgb,var(--login-visual-shadow, #020617) 18%,transparent))}
+.login-page{
+  --login-visual-shadow:#0f172a;
+  --login-visual-glow-primary:color-mix(in srgb,#ffffff 70%,transparent);
+  --login-visual-glow-secondary:color-mix(in srgb,var(--accent-yellow) 22%,transparent);
+  --login-visual-glow-tertiary:color-mix(in srgb,var(--accent-2) 14%,transparent);
+}
+html[data-theme^="dark"] .login-page,
+html.theme-dark .login-page,
+body.theme-dark .login-page{
+  --login-visual-shadow:#020617;
+  --login-visual-glow-primary:color-mix(in srgb,#93c5fd 20%,transparent);
+  --login-visual-glow-secondary:color-mix(in srgb,var(--accent-yellow) 18%,transparent);
+  --login-visual-glow-tertiary:color-mix(in srgb,var(--accent-2) 20%,transparent);
+}
 .login-page h2{font-size:1.4rem;margin-bottom:6px}
 .login-page p{margin-bottom:18px}
 .login-page .login-subtitle{margin:0 0 16px 0;color:var(--muted)}
@@ -2031,26 +2046,53 @@ ul{padding-left:18px}
     z-index: 2;
   }
 
-  .login-executive-visual {
+  .login-executive-visual-wrap {
     display: block;
     position: fixed;
     right: clamp(18px, 4vw, 72px);
     bottom: clamp(10px, 3vw, 48px);
     width: clamp(280px, 31vw, 500px);
     max-height: min(62vh, 520px);
-    object-fit: contain;
     pointer-events: none;
     user-select: none;
-    opacity: .9;
+    opacity: .96;
     z-index: 1;
-    filter: drop-shadow(0 26px 42px color-mix(in srgb, #020617 24%, transparent));
+    isolation: isolate;
+  }
+
+  .login-executive-visual-wrap::before,
+  .login-executive-visual-wrap::after{
+    content:"";
+    position:absolute;
+    inset:auto;
+    border-radius:999px;
+    pointer-events:none;
+    z-index:-1;
+    filter:blur(26px);
+    opacity:.95;
+  }
+
+  .login-executive-visual-wrap::before{
+    width:58%;
+    height:42%;
+    left:8%;
+    bottom:8%;
+    background:radial-gradient(circle, var(--login-visual-glow-secondary) 0%, transparent 74%);
+  }
+
+  .login-executive-visual-wrap::after{
+    width:48%;
+    height:36%;
+    right:6%;
+    top:10%;
+    background:radial-gradient(circle, var(--login-visual-glow-primary) 0%, transparent 72%);
   }
 }
 
 @media (min-width: 980px) and (max-width: 1240px) {
-  .login-executive-visual {
+  .login-executive-visual-wrap {
     right: -52px;
-    opacity: .46;
+    opacity: .62;
   }
 }
 .register-admin-page .container{max-width:640px}
@@ -2140,8 +2182,12 @@ ul{padding-left:18px}
 
 .login-usuario-body{min-height:100vh;background:var(--bg);color:var(--text)}
 .login-usuario-page{position:relative;min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text);transition:background .2s ease,color .2s ease;overflow:hidden}
-.login-usuario-hero-visual{position:absolute;top:18px;right:24px;width:clamp(150px,18vw,260px);aspect-ratio:32/21;margin:0;z-index:0;pointer-events:none;filter:drop-shadow(0 22px 34px color-mix(in srgb,#020617 20%,transparent))}
-.login-usuario-hero-visual img{display:block;width:100%;height:100%;object-fit:contain}
+.login-usuario-hero-visual{position:absolute;top:18px;right:24px;width:clamp(150px,18vw,260px);aspect-ratio:32/21;margin:0;z-index:0;pointer-events:none;isolation:isolate}
+.login-usuario-hero-visual::before,
+.login-usuario-hero-visual::after{content:"";position:absolute;border-radius:999px;pointer-events:none;z-index:-1;filter:blur(22px)}
+.login-usuario-hero-visual::before{width:62%;height:42%;left:6%;bottom:10%;background:radial-gradient(circle, var(--login-visual-glow-secondary) 0%, transparent 74%);opacity:.92}
+.login-usuario-hero-visual::after{width:48%;height:38%;right:4%;top:12%;background:radial-gradient(circle, var(--login-visual-glow-tertiary) 0%, transparent 72%);opacity:.88}
+.login-usuario-hero-visual img{display:block;width:100%;height:100%;object-fit:cover;border-radius:24px;box-shadow:0 16px 30px color-mix(in srgb,#020617 14%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 44%,transparent);filter:drop-shadow(0 10px 18px color-mix(in srgb,var(--login-visual-shadow, #020617) 18%,transparent))}
 .login-usuario-page .login-header,.login-usuario-page .container{position:relative;z-index:1}
 .login-usuario-page .card{background:var(--surface);border:1px solid var(--border);color:var(--text);box-shadow:var(--shadow-soft)}
 .login-usuario-page .form-input,.login-usuario-page input,.login-usuario-page select,.login-usuario-page textarea{background:var(--form-input-bg);border-color:var(--form-border);color:var(--text)}
@@ -2196,7 +2242,7 @@ ul{padding-left:18px}
 
 @media (max-width:960px){
   .login-usuario-page{overflow:visible}
-  .login-usuario-hero-visual{position:static;width:min(220px,62vw);margin:0 auto 8px;filter:drop-shadow(0 16px 24px color-mix(in srgb,#020617 16%,transparent))}
+  .login-usuario-hero-visual{position:static;width:min(220px,62vw);margin:0 auto 8px}
   .login-usuario-grid{grid-template-columns:1fr}
   .login-usuario-highlights{grid-template-columns:1fr}
 }
