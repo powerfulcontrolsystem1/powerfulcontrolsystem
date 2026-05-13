@@ -24834,3 +24834,18 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/estilos.css
 - web/js/administrar_empresa.js
+
+2026-05-13: fix: validar estaciones carritos caja
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- tmp/visual_caja_corte.png
+- tmp/visual_estacion_carrito_abierto.png
+- tmp/visual_estacion_despues_pago.png
+- tmp/visual_estaciones_inicio.png
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
