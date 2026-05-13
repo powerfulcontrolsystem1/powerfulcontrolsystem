@@ -63,14 +63,14 @@ Desde la raiz del repositorio:
 Con override de host, puertos o perfil:
 
 ```bash
-./scripts/run_vps_security_scan.sh --target 127.0.0.1 --ports 49222,80,443,8080 --profile full --trigger manual --triggered-by super_admin
+./scripts/run_vps_security_scan.sh --target 127.0.0.1 --ports 22,80,443,8080 --profile full --trigger manual --triggered-by super_admin
 ```
 
 Tambien puede ejecutarse directamente la CLI:
 
 ```bash
 cd backend
-go run ./tools/vps_security_scan --config ./secure/vps_security_config.json --target 127.0.0.1 --ports 49222,80,443 --profile quick
+go run ./tools/vps_security_scan --config ./secure/vps_security_config.json --target 127.0.0.1 --ports 22,80,443 --profile quick
 ```
 
 ## Programacion por cron
@@ -117,7 +117,7 @@ REPORT_XLS=/opt/powerfulcontrolsystem/backend/logs/vps_security/runs/vps-2026041
     "low": 5,
     "total_findings": 12,
     "health": "warning",
-    "open_ports": [49222, 80, 443]
+    "open_ports": [22, 80, 443]
   },
   "findings": [
     {

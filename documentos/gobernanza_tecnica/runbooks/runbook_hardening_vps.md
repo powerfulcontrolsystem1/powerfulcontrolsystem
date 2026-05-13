@@ -3,11 +3,15 @@
 ## Controles base
 
 - SSH: `PermitRootLogin no` o `prohibit-password` y `PasswordAuthentication no` cuando las llaves esten instaladas.
-- SSH productivo: por hardening el puerto oficial del VPS es `49222`; no usar `22` para despliegues, tuneles ni diagnosticos.
-- Firewall: permitir solo `49222`, 80, 443 y puertos internos necesarios ligados a `127.0.0.1`.
+- SSH productivo: Hostinger quedo restablecido para usar el puerto `22`.
+- Firewall: permitir solo `22`, 80, 443 y puertos internos necesarios ligados a `127.0.0.1`.
 - Fail2ban: habilitado para SSH y Nginx si aplica.
 - Docker: revisar `docker ps`, redes internas y volumenes antes de limpiar.
 - Secretos: no versionar `.env.platform`, `.env.staging`, claves de Grafana ni credenciales de backup externo.
+
+## Verificacion de acceso SSH
+
+Si `rs` o `sync_to_vps.ps1` fallan con conectividad TCP al puerto `22`, entrar por la consola web del proveedor VPS y verificar que `sshd` este escuchando en `22`, que el firewall de Hostinger permita TCP `22` y que el servicio `ssh` este activo.
 
 ## Auditoria rapida
 

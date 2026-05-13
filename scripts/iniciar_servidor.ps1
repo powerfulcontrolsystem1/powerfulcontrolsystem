@@ -342,6 +342,7 @@ function Ensure-VpsSshTunnel {
         [string]$SshHost,
         [string]$SshUser,
         [string]$SshKeyPath,
+        [int]$SshPort = 22,
         [int]$LocalPort,
         [string]$RemoteHost,
         [int]$RemotePort,
@@ -393,7 +394,7 @@ function Ensure-VpsSshTunnel {
     if ($keyArg -match '\s') {
         $keyArg = '"' + ($keyArg -replace '"', '\"') + '"'
     }
-    $plinkArgs = @('-batch', '-N', '-i', $keyArg, '-L', $forwardSpec, $target)
+    $plinkArgs = @('-batch', '-N', '-P', "$SshPort", '-i', $keyArg, '-L', $forwardSpec, $target)
 
     $tmpDir = Join-Path $BackendDir 'tmp'
     if (-not (Test-Path $tmpDir)) {
@@ -408,7 +409,7 @@ function Ensure-VpsSshTunnel {
 
     $proc = Start-Process -FilePath $plink.Source -ArgumentList $plinkArgs -WindowStyle Hidden -RedirectStandardOutput $plinkStdOut -RedirectStandardError $plinkStdErr -PassThru
     if ($null -eq $proc -or $proc.HasExited) {
-        throw ("{0}: no se pudo iniciar tunel SSH a {1} ({2})." -f $TunnelLabel, $target, $forwardSpec)
+        throw ("{0}: no se pudo iniciar tunel SSH a {1}:{2} ({3})." -f $TunnelLabel, $target, $SshPort, $forwardSpec)
     }
 
     $listenerReady = $false
@@ -446,9 +447,9 @@ function Ensure-VpsSshTunnel {
 
     if (-not $listenerReady) {
         if ($proc.HasExited) {
-            throw ("{0}: el tunel SSH se cerro al iniciar (PID={1}, ExitCode={2}) para {3} ({4}).{5}" -f $TunnelLabel, $proc.Id, $proc.ExitCode, $target, $forwardSpec, $diagnosticDetail)
+            throw ("{0}: el tunel SSH se cerro al iniciar (PID={1}, ExitCode={2}) para {3}:{4} ({5}).{6}" -f $TunnelLabel, $proc.Id, $proc.ExitCode, $target, $SshPort, $forwardSpec, $diagnosticDetail)
         }
-        throw ("{0}: no se detecto listener en localhost:{1} tras iniciar tunel SSH (PID={2}) hacia {3} ({4}).{5}" -f $TunnelLabel, $LocalPort, $proc.Id, $target, $forwardSpec, $diagnosticDetail)
+        throw ("{0}: no se detecto listener en localhost:{1} tras iniciar tunel SSH (PID={2}) hacia {3}:{4} ({5}).{6}" -f $TunnelLabel, $LocalPort, $proc.Id, $target, $SshPort, $forwardSpec, $diagnosticDetail)
     }
 
     Write-Info ("Tunel {0} iniciado: localhost:{1} -> {2}:{3} (PID={4})" -f $TunnelLabel, $LocalPort, $RemoteHost, $RemotePort, $proc.Id)
@@ -460,12 +461,13 @@ function Ensure-VpsPostgresTunnel {
         [string]$SshHost,
         [string]$SshUser,
         [string]$SshKeyPath,
+        [int]$SshPort = 22,
         [int]$LocalPort,
         [string]$RemoteHost,
         [int]$RemotePort
     )
 
-    Ensure-VpsSshTunnel -BackendDir $BackendDir -SshHost $SshHost -SshUser $SshUser -SshKeyPath $SshKeyPath -LocalPort $LocalPort -RemoteHost $RemoteHost -RemotePort $RemotePort -TunnelLabel 'DB'
+    Ensure-VpsSshTunnel -BackendDir $BackendDir -SshHost $SshHost -SshUser $SshUser -SshKeyPath $SshKeyPath -SshPort $SshPort -LocalPort $LocalPort -RemoteHost $RemoteHost -RemotePort $RemotePort -TunnelLabel 'DB'
 }
 
 Load-PostgresEnvFromFiles -BackendDir $backend
@@ -487,6 +489,14 @@ if ($tunnelEnabled) {
     $sshHost = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_HOST', 'Process')
     $sshUser = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_USER', 'Process')
     $sshKeyPath = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_KEY_PATH', 'Process')
+    $sshPort = 22
+    $rawSshPort = [Environment]::GetEnvironmentVariable('DB_VPS_SSH_PORT', 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($rawSshPort)) {
+        $parsedSshPort = 0
+        if ([int]::TryParse($rawSshPort, [ref]$parsedSshPort) -and $parsedSshPort -gt 0) {
+            $sshPort = $parsedSshPort
+        }
+    }
     $remoteHost = [Environment]::GetEnvironmentVariable('DB_VPS_REMOTE_HOST', 'Process')
     if ([string]::IsNullOrWhiteSpace($remoteHost)) {
         $remoteHost = '127.0.0.1'
@@ -510,7 +520,7 @@ if ($tunnelEnabled) {
         }
     }
 
-    Ensure-VpsPostgresTunnel -BackendDir $backend -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -LocalPort $localPort -RemoteHost $remoteHost -RemotePort $remotePort
+    Ensure-VpsPostgresTunnel -BackendDir $backend -SshHost $sshHost -SshUser $sshUser -SshKeyPath $sshKeyPath -SshPort $sshPort -LocalPort $localPort -RemoteHost $remoteHost -RemotePort $remotePort
 
     $env:DB_EMPRESAS_DSN = Rewrite-PostgresDSNForTunnel -Dsn $env:DB_EMPRESAS_DSN -LocalPort $localPort
     $env:DB_SUPERADMIN_DSN = Rewrite-PostgresDSNForTunnel -Dsn $env:DB_SUPERADMIN_DSN -LocalPort $localPort

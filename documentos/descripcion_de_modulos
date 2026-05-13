@@ -1,3 +1,9 @@
+2026-05-12: Seguridad VPS y puerto SSH 22
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`, `arranque_local`.
+- Cambio operativo: Hostinger queda restablecido para usar SSH en el puerto `22`.
+- Integracion local: despliegue, tuneles PostgreSQL, RustDesk remoto y escaneo VPS quedan alineados con el puerto `22`.
+- Alcance: no cambia backend de negocio, permisos empresariales, tablas ni dependencias externas.
+
 2026-05-12: Portada publica con tarjetas destacadas y carrusel
 - Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
 - Cambio funcional: la portada separa la oferta de sistemas en 6 tarjetas principales y un carrusel horizontal para las demas tarjetas.

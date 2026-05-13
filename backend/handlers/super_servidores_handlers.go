@@ -39,6 +39,7 @@ type rustDeskRemoteConfig struct {
 	Host     string
 	User     string
 	KeyPath  string
+	Port     int
 	ExecPath string
 	UsePlink bool
 }
@@ -468,9 +469,9 @@ func runRustDeskRemoteShell(dbSuper *sql.DB, script string) (string, error) {
 	target := fmt.Sprintf("%s@%s", cfg.User, cfg.Host)
 	var cmd *exec.Cmd
 	if cfg.UsePlink {
-		cmd = exec.Command(cfg.ExecPath, "-batch", "-i", cfg.KeyPath, target, "sh", "-lc", script)
+		cmd = exec.Command(cfg.ExecPath, "-batch", "-P", strconv.Itoa(cfg.Port), "-i", cfg.KeyPath, target, "sh", "-lc", script)
 	} else {
-		cmd = exec.Command(cfg.ExecPath, "-o", "BatchMode=yes", "-i", cfg.KeyPath, target, "sh", "-lc", script)
+		cmd = exec.Command(cfg.ExecPath, "-o", "BatchMode=yes", "-p", strconv.Itoa(cfg.Port), "-i", cfg.KeyPath, target, "sh", "-lc", script)
 	}
 	out, runErr := cmd.CombinedOutput()
 	output := strings.TrimSpace(string(out))
@@ -488,6 +489,7 @@ func resolveRustDeskRemoteConfig(dbSuper *sql.DB) (rustDeskRemoteConfig, error) 
 	host := strings.TrimSpace(panelCfg.Host)
 	user := strings.TrimSpace(panelCfg.User)
 	keyPath := strings.TrimSpace(panelCfg.KeyPath)
+	port := 22
 	if host == "" {
 		host = strings.TrimSpace(os.Getenv("DB_VPS_SSH_HOST"))
 	}
@@ -496,6 +498,11 @@ func resolveRustDeskRemoteConfig(dbSuper *sql.DB) (rustDeskRemoteConfig, error) 
 	}
 	if keyPath == "" {
 		keyPath = strings.TrimSpace(os.Getenv("DB_VPS_SSH_KEY_PATH"))
+	}
+	if rawPort := strings.TrimSpace(os.Getenv("DB_VPS_SSH_PORT")); rawPort != "" {
+		if parsed, parseErr := strconv.Atoi(rawPort); parseErr == nil && parsed > 0 && parsed <= 65535 {
+			port = parsed
+		}
 	}
 	if host == "" || user == "" {
 		return rustDeskRemoteConfig{}, fmt.Errorf("faltan DB_VPS_SSH_HOST o DB_VPS_SSH_USER para gestionar RustDesk en el VPS")
@@ -529,6 +536,7 @@ func resolveRustDeskRemoteConfig(dbSuper *sql.DB) (rustDeskRemoteConfig, error) 
 		Host:     host,
 		User:     user,
 		KeyPath:  resolvedKeyPath,
+		Port:     port,
 		ExecPath: execPath,
 		UsePlink: usePlink,
 	}, nil

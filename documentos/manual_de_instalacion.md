@@ -32,7 +32,9 @@ Despliegue recomendado desde Windows/local:
 .\scripts\sync_to_vps.ps1
 ```
 
-Nota de seguridad: el SSH productivo del VPS usa el puerto `49222`, no el puerto `22`. La configuracion local de despliegue debe mantener `scripts/pcs_deployment.local.ps1` con `$script:PcsVpsPort = 49222`; si `sync_to_vps.ps1` intenta conectar a `:22`, la configuracion local esta desactualizada.
+Nota operativa: desde el 2026-05-12 Hostinger quedo restablecido para SSH en el puerto `22`. La configuracion local de despliegue debe mantener `scripts/pcs_deployment.local.ps1` con `$script:PcsVpsPort = 22`.
+
+Antes de desplegar, validar desde Windows/local con `Test-NetConnection 2.24.197.58 -Port 22` y luego ejecutar `.\scripts\sync_to_vps.ps1`.
 
 Ese comando usa por defecto `DeploymentMode=docker`: sincroniza el proyecto, no reinicia el backend legacy por `systemd`, reconstruye Docker Compose y valida que `pcs-backend` y `pcs-frontend` queden saludables. Para rollback temporal existe `-DeploymentMode legacy`; para doble despliegue temporal existe `-DeploymentMode hybrid`.
 

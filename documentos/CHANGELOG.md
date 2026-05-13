@@ -1,7 +1,7 @@
-## [2026-05-12] Puerto SSH productivo 49222
-- [Seguridad] El puerto SSH oficial del VPS queda documentado como `49222`; no se debe usar `22` en despliegues, tuneles ni diagnosticos operativos.
-- [Deploy] `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` quedan alineados para que `sync_to_vps.ps1` use el puerto correcto.
-- [Documentacion] Manual de instalacion, hardening VPS y manual de seguridad VPS actualizan los puertos permitidos/escaneados.
+## [2026-05-12] SSH VPS restablecido a 22
+- [Operacion VPS] Hostinger queda restablecido para SSH en el puerto `22`.
+- [Deploy] `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` vuelven a usar `$script:PcsVpsPort = 22`.
+- [Seguridad] Tuneles locales, RustDesk remoto, escaner VPS y documentacion operativa quedan alineados con el puerto `22`.
 
 ## [2026-05-12] Index con carrusel de sistemas
 - [Frontend] `web/index.html` renderiza las primeras 6 tarjetas en la grilla principal y las demas en una hilera horizontal navegable.
