@@ -24481,3 +24481,25 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/tickets_ayuda.html
 - web/super_administrador.html
+
+2026-05-12: seguridad vps cambiar ssh a 49222
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/.env.example
+- backend/handlers/super_servidores_handlers.go
+- backend/vpssecurity/config/config.go
+- backend/vpssecurity/config/default_vps_security_config.json
+- backend/vpssecurity/scanner/runner.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/gobernanza_tecnica/runbooks/runbook_arranque_postgresql_tunel_local.md
+- documentos/gobernanza_tecnica/runbooks/runbook_hardening_vps.md
+- documentos/historial_de_cambios
+- documentos/manual_de_instalacion.md
+- documentos/manual_vps_seguridad.md
+- scripts/iniciar_servidor.ps1
+- scripts/pcs_deployment.local.ps1.example
+- scripts/sync_to_vps.ps1
+- scripts/sync_to_vps.sh
