@@ -1,3 +1,10 @@
+2026-05-12: Puerto SSH productivo 49222
+- Modulos afectados: `deploy`, `operacion_vps`, `seguridad`.
+- Cambio operativo: el puerto SSH oficial del VPS queda registrado como `49222`; el puerto `22` no debe usarse para sync, tuneles ni diagnosticos.
+- Configuracion local: `scripts/pcs_deployment.local.ps1` y `scripts/pcs_deployment.local.ps1.example` quedan con `$script:PcsVpsPort = 49222` para que `sync_to_vps.ps1` apunte al puerto correcto.
+- Documentacion: se actualizan manual de instalacion, runbook de hardening VPS y manual de seguridad VPS con los puertos esperados.
+- Alcance: no cambia backend, base de datos, endpoints, permisos ni secretos.
+
 2026-05-12: Index con seis tarjetas principales y carrusel horizontal
 - Modulos afectados: `portal_publico`, `pagina_principal`, `landing_descriptiva`.
 - Cambio funcional: `web/index.html` muestra las primeras 6 tarjetas de sistemas en la grilla principal y mueve las tarjetas restantes a una sola hilera horizontal navegable con flechas izquierda/derecha.

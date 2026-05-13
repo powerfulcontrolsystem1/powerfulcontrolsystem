@@ -1,3 +1,5 @@
+- 2026-05-12: documentado hardening SSH del VPS con puerto productivo `49222`. `scripts/pcs_deployment.local.ps1` y su plantilla quedan alineados para que `sync_to_vps.ps1` no intente desplegar por `22`; manuales y runbooks de seguridad actualizan los puertos esperados.
+
 - 2026-05-12: el index muestra solo las primeras 6 tarjetas de sistemas en la grilla principal y mueve las tarjetas restantes a una barra horizontal navegable con flechas izquierda/derecha antes de la seccion de modulos. Sin backend, tablas, permisos ni dependencias nuevas.
 
 - 2026-05-12: corregido el boton `Ver ultimos movimientos` en la tarjeta de Caja de `estaciones.html`; ahora usa altura minima, centrado flexible y texto en varias lineas para mostrarse completo dentro de la tarjeta. Sin backend, permisos ni tablas.

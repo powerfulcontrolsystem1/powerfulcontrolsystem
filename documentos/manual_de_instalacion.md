@@ -32,6 +32,8 @@ Despliegue recomendado desde Windows/local:
 .\scripts\sync_to_vps.ps1
 ```
 
+Nota de seguridad: el SSH productivo del VPS usa el puerto `49222`, no el puerto `22`. La configuracion local de despliegue debe mantener `scripts/pcs_deployment.local.ps1` con `$script:PcsVpsPort = 49222`; si `sync_to_vps.ps1` intenta conectar a `:22`, la configuracion local esta desactualizada.
+
 Ese comando usa por defecto `DeploymentMode=docker`: sincroniza el proyecto, no reinicia el backend legacy por `systemd`, reconstruye Docker Compose y valida que `pcs-backend` y `pcs-frontend` queden saludables. Para rollback temporal existe `-DeploymentMode legacy`; para doble despliegue temporal existe `-DeploymentMode hybrid`.
 
 Antes de despliegues importantes se recomienda ejecutar:
