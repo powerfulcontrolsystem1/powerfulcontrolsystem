@@ -1,3 +1,63 @@
+2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: las tarjetas del carrito se pegan entre si y adoptan lectura plana tipo tabla, sin espacios visuales, radios ni sombras.
+- Implementacion: `web/estilos.css` ajusta gaps, margenes, radios y sombras dentro de `carrito-flat-page`, manteniendo el alcance limitado a `web/administrar_empresa/carrito_de_compras.html`.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Carrito de compras con tarjetas planas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: la pagina `web/administrar_empresa/carrito_de_compras.html` elimina sombras de tarjetas y formularios para una apariencia plana, sin relieve ni efecto 3D.
+- Implementacion: se usa la clase scoped `carrito-flat-page` y reglas en `web/estilos.css`, sin afectar otras paginas del sistema.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Carrito de estacion con contexto en encabezado
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: en `web/administrar_empresa/carrito_de_compras.html`, el nombre de la estacion se muestra arriba como `Estacion: <nombre>` junto al encabezado principal.
+- Limpieza visual: la tarjeta de items ya no repite `Items de estacion: <nombre>` y queda como `Items del carrito`.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: OnlyOffice corrige apertura visual del editor
+- Modulo: `documentos_onlyoffice`.
+- Cambio funcional: al crear y abrir un documento, `editor_config` devuelve una URL de Document Server alcanzable por el navegador cuando la configuracion interna viene de Docker.
+- Backend: `backend/handlers/onlyoffice.go` corrige la ruta temporal por `empresa_id`, evita duplicar `/empresas/empresas` y deriva `https://onlyoffice.<dominio>` desde la URL publica del sistema cuando detecta hosts internos como `onlyoffice-documentserver`.
+- Frontend: `web/administrar_empresa/documentos_onlyoffice.html` verifica que `api.js` cargue `DocsAPI.DocEditor` y deja un mensaje visible si la URL de OnlyOffice no es publica o no responde correctamente.
+- Seguridad: no agrega permisos, tablas ni dependencias; conserva `empresa_id`, tokens temporales y `WithEmpresaDocumentosOnlyOfficePermissions`.
+
+2026-05-13: Reportes ejecutivos profesionales
+- Modulos afectados: `reportes`, `administrar_empresa`.
+- Cambio UX: `web/administrar_empresa/reportes_menu.html` simplifica el submenu y evita exponer una lista larga de datasets como navegacion principal.
+- Nueva portada: `web/administrar_empresa/reportes_ejecutivos.html` organiza accesos gerenciales por direccion, ventas/margen, inventario/compras, finanzas/cartera, contabilidad/impuestos e IA.
+- Reparacion: `web/administrar_empresa/reportes_finanzas.html` deja de usar `alert()` placeholder; ahora consulta `contable_movimientos_financieros`, muestra KPIs y permite exportar en PDF/CSV/XLS/JSON/TXT.
+- Alcance: no cambia endpoints, tablas, permisos ni dependencias; reutiliza `/api/empresa/reportes` y conserva `empresa_id`.
+
+2026-05-13: Facturacion electronica separa configuracion y pruebas DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio UX: `web/administrar_empresa/facturacion_electronica.html` queda enfocada en configurar la facturacion electronica de la empresa y elimina el boton `Abrir modulo DIAN / documental`.
+- Nueva subpagina: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` concentra diagnostico DIAN, set de habilitacion, conexion/procesamiento de cola y emision documental manual.
+- Navegacion: el submenu `facturacion_electronica_menu.html` agrega `Pruebas DIAN y documentos`.
+- Alcance: no cambia backend, tablas, permisos ni dependencias; reutiliza los endpoints existentes de facturacion electronica.
+
+2026-05-13: Control y reporte de aseo por estacion
+- Modulos afectados: `estaciones`, `usuarios_empresa`, `reportes`, `carritos`.
+- Cambio funcional: los usuarios creados pueden activar/desactivar la opcion `Control de aseo`; si esta activa, al hacer clic sobre una estacion sucia se reporta el aseo terminado en vez de abrir el carrito.
+- Backend: `/api/empresa/estacion_aseo` usa autoservicio autenticado para contexto y finalizacion, crea eventos en `empresa_estacion_aseo_eventos` y calcula `duracion_segundos` desde que el pago marco la estacion como sucia.
+- Reporte: `web/administrar_empresa/reporte_aseo_estaciones.html` lista habitacion/estacion, aseadora, hora sucia, hora de fin y demora, con resumen promedio/minimo/maximo.
+- Seguridad: mantiene `empresa_id`, atribuye el cierre al usuario autenticado y deja el reporte gerencial para roles administrativos/supervision.
+
+2026-05-13: Corte automatico de turno de caja
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
+- Cambio funcional: `web/administrar_empresa/corte_de_caja.html` incorpora `Corte automatico` para generar el corte del usuario actual sin escoger fechas manualmente.
+- Operacion: el sistema resuelve la caja abierta del usuario, usa su `fecha_apertura` como inicio del turno y la hora actual del corte como fin; autocompleta caja, turno, usuario y efectivo inicial.
+- Cierre: al guardar desde el modo automatico se envia `cierre_caja_id` y el backend cierra esa caja abierta existente, evitando duplicar cierres.
+- Alcance: no agrega tablas, permisos ni dependencias; reutiliza el modo seguro `mi_caja_actual` de `corte_caja`.
+
+2026-05-13: Ultimos movimientos de caja aislados por usuario y caja actual
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`, `carritos`.
+- Cambio funcional: el boton `Ver ultimos movimientos` de la tarjeta especial `Caja` abre la pagina con alcance `solo_usuario_actual` y `mi_caja_actual`, evitando listados globales de la empresa.
+- Backend: `corte_caja` agrega el modo `mi_caja_actual`, que resuelve la caja abierta del usuario autenticado y genera el reporte solo con ventas, productos y movimientos de ese `cierre_caja_id`/`caja_codigo`.
+- UX: `web/administrar_empresa/ultimos_movimientos_de_caja.html` muestra el contexto de caja, usuario, turno y apertura, y lista productos vendidos, ventas/facturas y movimientos financieros del alcance actual.
+- Alcance: no cambia tablas, permisos ni dependencias; mantiene aislamiento por `empresa_id` y evita ver movimientos de otros usuarios.
+
 2026-05-13: Factura electronica automatica exige acuse fiscal en Colombia produccion
 - Modulos afectados: `carritos`, `venta_directa`, `facturacion_electronica`, `DIAN`.
 - Backend: al generar factura electronica desde una venta/comprobante, `backend/handlers/carritos_compras.go` conserva la venta cerrada pero no mantiene la factura asociada como `emitida` si la integracion fiscal aplicable a Colombia en produccion falla o queda sin confirmar.

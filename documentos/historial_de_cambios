@@ -1,3 +1,66 @@
+2026-05-13: carrito de compras compacta tarjetas pegadas sin separaciones
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Estilos: `web/estilos.css` refuerza `carrito-flat-page` para quitar gaps, margenes verticales, radios y sombras en tarjetas/contenedores del carrito.
+- UX: el modulo queda con apariencia plana y continua, similar a la tabla de items donde se ven columnas como ID, descripcion, cantidad, precio, descuentos, impuestos, total y acciones.
+- Validacion: parseo de scripts inline con Node y prueba visual Playwright con servidor mock confirmando `gap: 0`, `margin: 0`, `border-radius: 0` y `box-shadow: none` en contenedores clave del carrito.
+- Alcance: sin backend, permisos, tablas ni dependencias nuevas.
+
+2026-05-13: carrito de compras queda con tarjetas planas sin sombra
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega la clase `carrito-flat-page` al `body`.
+- Estilos: `web/estilos.css` elimina `box-shadow` para `.card`, `.form`, `advanced-card` y tarjetas internas del carrito solo dentro de esa pagina.
+- Validacion: parseo de scripts inline con Node y prueba visual Playwright con servidor mock confirmando que las tarjetas del carrito computan `box-shadow: none`.
+- Alcance: sin backend, permisos, tablas ni dependencias nuevas.
+
+2026-05-13: carrito de estacion mueve el nombre de estacion al encabezado
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega `stationHeaderTitle` debajo del titulo principal y lo alimenta con `state.stationName` o el carrito seleccionado.
+- UX: se elimina el titulo interno `Items de estacion: Zona 1`; la tarjeta de items queda con `Items del carrito`, mientras el contexto visible queda arriba como `Estacion: Zona 1`.
+- Validacion: parseo de scripts inline con Node y prueba visual Playwright con servidor mock confirmando encabezado `Carrito de compras`, subtitulo `Estacion: Zona 1` y tarjeta `Items del carrito`.
+- Alcance: sin backend, permisos, tablas ni dependencias nuevas.
+
+2026-05-13: OnlyOffice repara apertura del editor al crear documentos
+- Modulos afectados: `documentos_onlyoffice`, `administrar_empresa`, `operacion_vps`.
+- Backend: `onlyOfficeEmpresaDocsDir` ahora interpreta correctamente `PCS_DATA_ROOT` cuando ya termina en `empresas`, evitando rutas temporales duplicadas como `/data/empresas/empresas/{empresa_id}/documentos`.
+- Backend: `editor_config` mantiene la configuracion interna para el servidor, pero devuelve al navegador una `ds_url` publica cuando detecta hosts Docker internos (`onlyoffice`, `onlyoffice-documentserver`, `pcs-onlyoffice-documentserver`); se agrega override operativo `ONLYOFFICE_PUBLIC_DOCUMENT_SERVER_URL`/`ONLYOFFICE_BROWSER_DOCUMENT_SERVER_URL`.
+- Frontend: `documentos_onlyoffice.html` valida que el script `api.js` de OnlyOffice cargue `DocsAPI.DocEditor`, recrea el script si quedo fallido y muestra un error visible dentro del marco del editor cuando el Document Server no es accesible desde el navegador.
+- Validacion: `go test ./handlers -run OnlyOffice -count=1`, prueba visual Playwright con mock de Document Server confirmando `Crear y abrir editor`, carga de `api.js`, render del editor y boton de descarga habilitado.
+- Alcance: sin tablas, permisos ni dependencias nuevas; conserva tokens temporales, saneamiento de nombres y aislamiento por `empresa_id`.
+
+2026-05-13: reportes ejecutivos profesionales y botones reparados
+- Modulos afectados: `reportes`, `administrar_empresa`.
+- Frontend: `reportes_menu.html` reduce el submenu a seis accesos de alto nivel, dejando los datasets detallados dentro de la suite y una portada ejecutiva.
+- Nueva pagina: `web/administrar_empresa/reportes_ejecutivos.html` concentra accesos por area para direccion, ventas, inventario, finanzas, fiscal/contable e IA.
+- Reparacion: `reportes_finanzas.html` reemplaza botones placeholder por carga real del dataset `contable_movimientos_financieros`, KPIs y exportacion por formato.
+- Validacion: parseo JS inline, `go test ./handlers -run "Reportes|Graficos" -count=1` desde `backend`, `git diff --check` y verificacion visual Playwright con servidor mock confirmando menu simplificado, portada y exportacion financiera.
+
+2026-05-13: facturacion electronica separa configuracion y pruebas DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Frontend: se elimina de la pagina principal el boton `Abrir modulo DIAN / documental (solo Colombia)` y se retiran de esa vista las tarjetas de pruebas DIAN, conexion/cola y emision documental manual.
+- Nueva pagina: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrupa diagnostico DIAN, pruebas de habilitacion, activacion local de produccion, prueba/procesamiento de cola y operaciones documentales manuales.
+- Navegacion: `web/administrar_empresa/facturacion_electronica_menu.html` incorpora `Pruebas DIAN y documentos`.
+- Validacion: parseo JS inline de las tres paginas, `go test ./handlers -count=1` desde `backend` y verificacion visual Playwright con servidor mock confirmando pagina principal limpia, subpagina DIAN visible y enlace del submenu con `empresa_id`.
+
+2026-05-13: control de aseo por usuario en estaciones
+- Modulos afectados: `estaciones`, `usuarios_empresa`, `reportes`, `carritos`.
+- Backend: se agrega `users.control_aseo_estaciones`, la tabla `empresa_estacion_aseo_eventos`, el endpoint `/api/empresa/estacion_aseo` y el arranque de evento cuando `estacion_estado_sucia=1`.
+- Frontend: `administrar_usuarios.html` permite activar/desactivar el control de aseo; `estaciones.html` permite que una aseadora habilitada reporte el aseo al hacer clic en la estacion sucia; `reporte_aseo_estaciones.html` muestra tiempos por habitacion.
+- Validacion: `go test ./db -run "EmpresaEstacion|EmpresaUsuario|Carritos" -count=1`, `go test ./handlers -count=1` y parseo JS inline de las paginas tocadas.
+
+2026-05-13: corte automatico de turno desde la caja actual
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` agrega el boton `Corte automatico`, que consulta la caja abierta del usuario actual y completa automaticamente `desde`, `hasta`, usuario, caja, turno y efectivo inicial.
+- Flujo desde estaciones: cuando se entra a Caja con `auto_generar=1`, el reporte ya no toma desde medianoche sino desde `fecha_apertura` de la caja abierta hasta la hora de generacion/cierre.
+- Backend: si el cierre se guarda con `cierre_caja_id`, `cerrarCorteCaja` cierra esa caja abierta existente con `SetEmpresaCierreCajaEstado` en vez de crear un cierre duplicado.
+- Validacion: parseo JS inline de `corte_de_caja.html`, pruebas Go de `handlers` y `db`, `git diff --check`, y prueba visual Playwright con servidor mock confirmando autollenado y habilitacion de `Cerrar turno`.
+
+2026-05-13: ultimos movimientos de caja se limitan al usuario y caja actual
+- Modulos afectados: `estaciones`, `corte_caja`, `finanzas`, `carritos`.
+- Backend: `GET /api/empresa/corte_caja?action=mi_caja_actual` fuerza el usuario autenticado mediante `adminEmailFromRequest`, busca solo una caja abierta creada por ese usuario y filtra ventas, productos y movimientos por `cierre_caja_id`, `caja_codigo` y usuario.
+- Frontend: el boton `Ver ultimos movimientos` de la tarjeta `Caja` envia `solo_usuario_actual=1` y la pagina `ultimos_movimientos_de_caja.html` deja de leer inventario/facturacion global; ahora consume el reporte de la caja actual.
+- Seguridad multiempresa: se conserva `empresa_id` en todas las consultas y no se permite ver movimientos de otra caja abierta por otro usuario aunque se modifique la URL.
+- Validacion: `go test ./handlers -count=1`, `go test ./db -run "CierreCaja|Finanzas|Carritos" -count=1`, parseo JS inline con Node y `git diff --check`.
+
 2026-05-13: factura electronica de venta no se marca emitida sin confirmacion fiscal
 - Modulos afectados: `carritos`, `venta_directa`, `facturacion_electronica`, `DIAN`.
 - Backend: `registrarFacturaElectronicaDesdeDocumentoVenta` ahora verifica el resultado de integracion fiscal y, para Colombia en ambiente `produccion`, solo conserva `estado_documento=emitida` cuando `estado_envio=enviado`.

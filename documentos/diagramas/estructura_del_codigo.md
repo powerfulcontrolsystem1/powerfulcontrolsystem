@@ -1,3 +1,41 @@
+## Actualizacion 2026-05-13 (reportes ejecutivos)
+
+- Frontend:
+  - `web/administrar_empresa/reportes_menu.html` queda como shell de reportes con sidebar reducido y `iframe` central.
+  - `web/administrar_empresa/reportes_ejecutivos.html` es la portada ejecutiva que enlaza vistas y datasets existentes sin crear endpoints.
+  - `web/administrar_empresa/reportes_finanzas.html` consume `/api/empresa/reportes?action=dataset&dataset=contable_movimientos_financieros` y exporta con `action=export`.
+- Flujo:
+  - Menu principal empresarial -> `reportes_menu.html` -> `reportes_ejecutivos.html`.
+  - Accesos gerenciales -> `reportes.html?dataset=...`, `graficos_estadisticas.html`, `reportes_inventario.html`, `reportes_finanzas.html` o `reportes_ia_chat.html`.
+- Alcance:
+  - Se reutiliza `WithEmpresaReportesPermissions`, `empresa_id` y el catalogo de datasets existente.
+  - No se agregan tablas, rutas backend ni dependencias.
+
+## Actualizacion 2026-05-13 (facturacion electronica: configuracion separada de pruebas)
+
+- Frontend:
+  - `web/administrar_empresa/facturacion_electronica.html` deja de mostrar el enlace `Abrir modulo DIAN / documental` y ya no contiene las tarjetas de pruebas DIAN, conexion/cola ni emision documental manual.
+  - `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrupa diagnostico DIAN, pruebas de habilitacion, activacion local de produccion, prueba/procesamiento de cola y emision documental manual.
+  - `web/administrar_empresa/facturacion_electronica_menu.html` agrega la opcion `Pruebas DIAN y documentos`.
+- Flujo:
+  - Configuracion empresarial -> `facturacion_electronica.html`.
+  - Validacion operativa DIAN/documental -> `facturacion_electronica_pruebas_dian.html`.
+- Alcance:
+  - No se agregan endpoints ni permisos; la subpagina reutiliza `/api/empresa/facturacion_electronica` y `/api/empresa/facturacion_electronica/dian`.
+
+## Actualizacion 2026-05-13 (estaciones: control de aseo)
+
+- Backend:
+  - `backend/db/empresa_estacion_aseo.go` crea `empresa_estacion_aseo_eventos` y calcula `duracion_segundos` entre `sucia_desde` y `aseo_fin`.
+  - `backend/handlers/empresa_estacion_prefs.go` inicia el evento cuando el carrito marca `estacion_estado_sucia=1`.
+  - `backend/handlers/empresa_estacion_aseo.go` expone `/api/empresa/estacion_aseo` para contexto de usuario, reporte de aseo terminado y reporte gerencial.
+- Frontend:
+  - `web/administrar_empresa/administrar_usuarios.html` agrega la opcion `Control de aseo`.
+  - `web/administrar_empresa/estaciones.html` cambia el clic sobre una estacion sucia para usuarios habilitados: registra el aseo y deja la estacion disponible.
+  - `web/administrar_empresa/reporte_aseo_estaciones.html` muestra tiempos por habitacion/aseadora.
+- Flujo:
+  - `carrito_de_compras.html` paga estacion -> `PUT /api/empresa/estacion_prefs` con `estacion_estado_sucia=1` -> `empresa_estacion_aseo_eventos` queda pendiente -> aseadora habilitada hace clic en la estacion sucia -> `POST /api/empresa/estacion_aseo?action=finalizar` -> se guarda duracion y se limpia el estado sucio.
+
 ## Actualizacion 2026-05-13 (venta directa y factura electronica DIAN)
 - `backend/handlers/carritos_compras.go` mantiene el cierre de venta/comprobante separado del estado fiscal de la factura electronica asociada.
 - Al generar factura electronica desde una venta, el flujo `registrarDocumentoVentaDesdeCarritoPagado` -> `registrarFacturaElectronicaDesdeDocumentoVenta` -> `processFacturacionIntegracionForDocumento` conserva `empresa_id`, documento origen y cola de reintentos.
@@ -376,9 +414,11 @@
 - Backend documentos:
   - `backend/handlers/onlyoffice.go` agrega `action=create_local` en `/api/empresa/documentos` para generar OOXML vacio y devolverlo como descarga, sin crear archivo en `/data/empresas`.
   - `backend/handlers/onlyoffice.go` agrega `action=create_edit_local` para crear una sesion temporal editable por OnlyOffice y `action=download&delete=1` para entregar el archivo final al dispositivo eliminando la copia temporal del VPS.
+  - Desde 2026-05-13 `backend/handlers/onlyoffice.go` normaliza la raiz de almacenamiento para no duplicar `empresas` y reescribe `ds_url` hacia una URL publica cuando la configuracion del Document Server usa un hostname interno Docker.
 - Frontend documentos:
   - `web/administrar_empresa/documentos_onlyoffice.html` usa por defecto `Guardar en este dispositivo`; en ese modo no lista archivos del VPS ni activa upload/editor. El modo colaborativo en servidor queda opt-in.
   - Desde 2026-05-13 la misma pagina es el flujo unico: elegir tipo, crear, editar embebido y descargar al PC/celular. `documentos_onlyoffice_menu.html` queda como redireccion compatible.
+  - La carga del editor valida `DocsAPI.DocEditor` despues de traer `/web-apps/apps/api/documents/api.js`, para mostrar error operativo claro si OnlyOffice no es accesible desde el navegador.
 - Backend backups:
   - `backend/handlers/backups_empresariales.go` agrega `action=exportar_local` y `action=exportar_configuracion_local`, que construyen el snapshot con `BuildEmpresaBackupPayload`/`BuildEmpresaConfigBackupPayload` y lo devuelven como attachment sin persistir historial ni copia en disco.
 - Frontend backups:
@@ -5840,6 +5880,33 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
 - Backend handlers: `backend/handlers/licencias_vencimiento_alertas.go` publica `/super/api/licencias/vencimiento_alertas`, ejecuta vista previa/envio manual y arranca `licencias.vencimiento_alertas_worker` cada 12 horas.
 - Plantillas: `backend/handlers/super_email_templates.go` agrega `licencia_expiry_warning` reutilizable desde configuracion de correos.
 - Frontend: `web/super/configuracion_avanzada.html` agrega la tarjeta `Alertas de vencimiento de licencias` dentro de Comunicaciones.
+
+## Actualizacion 2026-05-13 - Corte automatico de turno de caja
+
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` agrega `btnCorteAutomatico`.
+  - `generarCorteAutomatico()` llama `GET /api/empresa/corte_caja?action=mi_caja_actual&solo_usuario_actual=1`.
+  - El resultado `caja_actual` autocompleta `desde`, `hasta`, `usuario`, `caja_codigo`, `turno`, `apertura_efectivo` y deja listo `cierre_caja_id` para guardar el cierre del turno correcto.
+  - El acceso desde `web/administrar_empresa/estaciones.html` conserva `auto_generar=1`, pero ahora dispara el corte automatico por apertura de caja en vez de usar medianoche.
+- Backend:
+  - `cerrarCorteCaja` mantiene el cierre historico por creacion cuando no hay `cierre_caja_id`.
+  - Cuando recibe `cierre_caja_id`, actualiza la caja abierta existente a `cerrado` mediante `SetEmpresaCierreCajaEstado`, evitando duplicar cierres.
+- Datos:
+  - Sin nuevas tablas ni dependencias.
+  - El alcance sigue atado a `empresa_id` y al usuario autenticado por `adminEmailFromRequest`.
+
+## Actualizacion 2026-05-13 - Ultimos movimientos de caja por usuario actual
+
+- Backend:
+  - `backend/handlers/corte_caja.go` agrega el modo `GET /api/empresa/corte_caja?action=mi_caja_actual`.
+  - El modo resuelve la caja abierta con `empresa_id`, `usuario_creador` igual al usuario autenticado, `caja_codigo` opcional, `turno` opcional y `cierre_caja_id` opcional.
+  - El reporte resultante filtra ventas, productos vendidos y movimientos financieros por `cierre_caja_id`, `caja_codigo` y usuario para evitar mezclar cajas de otros usuarios.
+- Frontend:
+  - `web/administrar_empresa/estaciones.html` envia `solo_usuario_actual=1` y `mi_caja_actual=1` desde `Ver ultimos movimientos`.
+  - `web/administrar_empresa/ultimos_movimientos_de_caja.html` consume el corte acotado y muestra contexto de caja/turno/usuario/apertura, productos vendidos, ventas/facturas y movimientos financieros.
+- Datos/permisos:
+  - No se agregan tablas ni dependencias.
+  - Se mantiene el aislamiento por `empresa_id` y los permisos existentes de finanzas/corte de caja.
 
 ## Actualizacion 2026-05-13 - Correos masivos globales
 

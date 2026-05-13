@@ -55,6 +55,7 @@
         <div class="cash-close-actions">
           <a id="btnVolverEstaciones" class="btn secondary" href="/administrar_empresa/estaciones.html" hidden>Regresar a estaciones</a>
           <button id="btnGenerar" class="btn" type="button">Generar corte</button>
+          <button id="btnCorteAutomatico" class="btn secondary" type="button">Corte automatico</button>
           <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
           <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
         </div>
@@ -260,6 +261,8 @@
 
   var empresaId = resolveEmpresaId();
   var lastReport = null;
+  var automaticCierreCajaID = 0;
+  var automaticCajaSucursalID = 0;
   var printFormat = 'carta';
   var pageContext = resolvePageContext();
   var reporteConfig = {
@@ -631,6 +634,32 @@
     return params;
   }
 
+  function buildAutomaticParams() {
+    var params = new URLSearchParams();
+    params.set('empresa_id', String(empresaId));
+    params.set('action', 'mi_caja_actual');
+    params.set('solo_usuario_actual', '1');
+    params.set('mi_caja_actual', '1');
+    params.set('reportes', selectedReports().join(','));
+    if (automaticCierreCajaID > 0) params.set('cierre_caja_id', String(automaticCierreCajaID));
+    return params;
+  }
+
+  function applyAutomaticCajaContext(payload) {
+    var caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    var resumen = payload && payload.resumen ? payload.resumen : {};
+    automaticCierreCajaID = Number(caja.id || 0);
+    automaticCajaSucursalID = Number(caja.sucursal_id || 0);
+    var desde = toInputDateTimeValue(caja.fecha_apertura || resumen.desde || '');
+    var hasta = toInputDateTimeValue(resumen.hasta || payload.generado_en || '');
+    if (desde) document.getElementById('desde').value = desde;
+    if (hasta) document.getElementById('hasta').value = hasta;
+    if (caja.usuario || resumen.usuario_filtro) document.getElementById('usuario').value = caja.usuario || resumen.usuario_filtro;
+    if (caja.caja_codigo) document.getElementById('cajaCodigo').value = caja.caja_codigo;
+    if (caja.turno) document.getElementById('turno').value = caja.turno;
+    if (typeof resumen.apertura_efectivo !== 'undefined') document.getElementById('apertura').value = String(Number(resumen.apertura_efectivo || 0));
+  }
+
   async function generar() {
     var msg = document.getElementById('msg');
     msg.textContent = '';
@@ -638,6 +667,8 @@
     try {
       applyPrintFormat(document.getElementById('modoVista').value);
       reporteConfig = collectReporteConfig();
+      automaticCierreCajaID = 0;
+      automaticCajaSucursalID = 0;
       msg.textContent = 'Generando corte...';
       lastReport = await requestJSON('/api/empresa/corte_caja?' + buildParams().toString());
       lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
@@ -652,10 +683,38 @@
     }
   }
 
+  async function generarCorteAutomatico() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      applyPrintFormat(document.getElementById('modoVista').value);
+      reporteConfig = collectReporteConfig();
+      msg.textContent = 'Analizando caja abierta del usuario actual...';
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + buildAutomaticParams().toString());
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+      applyAutomaticCajaContext(lastReport);
+      renderReport(lastReport);
+      document.getElementById('btnImprimir').disabled = false;
+      document.getElementById('btnCerrar').disabled = automaticCierreCajaID <= 0;
+      var caja = lastReport && lastReport.caja_actual ? lastReport.caja_actual : {};
+      msg.textContent = automaticCierreCajaID > 0
+        ? 'Corte automatico listo desde la apertura de ' + (caja.caja_codigo || 'la caja') + ' hasta este momento.'
+        : 'No se encontro una caja abierta para el usuario actual. Revisa apertura de caja antes de cerrar turno.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo generar el corte automatico.';
+      document.getElementById('btnImprimir').disabled = true;
+      document.getElementById('btnCerrar').disabled = true;
+    }
+  }
+
   async function cerrarCorte() {
     var msg = document.getElementById('msg');
     if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
-    if (!lastReport) { await generar(); if (!lastReport) return; }
+    if (!lastReport) { await generarCorteAutomatico(); if (!lastReport) return; }
+    if (lastReport && lastReport.caja_actual && Number(lastReport.caja_actual.id || 0) > 0) {
+      applyAutomaticCajaContext(lastReport);
+    }
     var ok = window.confirm('Guardar cierre de caja con los reportes seleccionados?');
     if (!ok) return;
     var payload = {
@@ -664,6 +723,7 @@
       usuario: document.getElementById('usuario').value || '',
       apertura_efectivo: Number(document.getElementById('apertura').value || 0),
       caja_fisica: Number(document.getElementById('cajaFisica').value || 0),
+      cierre_caja_id: automaticCierreCajaID > 0 ? automaticCierreCajaID : 0,
       caja_codigo: document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL',
       turno: document.getElementById('turno').value || 'general',
       reportes: selectedReports(),
@@ -700,10 +760,11 @@
     cargarConfigReporte();
     Promise.allSettled([preloadAccount(), preloadCajaDefaults()]).then(function() {
       if (pageContext.autoGenerar) {
-        generar();
+        generarCorteAutomatico();
       }
     });
     document.getElementById('btnGenerar').addEventListener('click', generar);
+    document.getElementById('btnCorteAutomatico').addEventListener('click', generarCorteAutomatico);
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
     document.getElementById('btnGuardarConfigReporte').addEventListener('click', guardarConfigReporte);

@@ -67,6 +67,9 @@ func EmpresaEstacionPrefsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				Estado:         payload.Estado,
 				Observaciones:  strings.TrimSpace(payload.Observaciones),
 			}
+			if p.UsuarioCreador == "" {
+				p.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			}
 			id, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, p)
 			if err != nil {
 				log.Printf("[estacion_prefs] upsert empresa_id=%d estacion=%d clave=%s error: %v", empresaID, p.EstacionID, p.Clave, err)
@@ -74,6 +77,16 @@ func EmpresaEstacionPrefsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			response := map[string]interface{}{"ok": true, "id": id}
+			if p.EstacionID > 0 && p.Clave == "estacion_estado_sucia" && dbpkg.IsEmpresaEstacionDirtyValue(p.Valor) {
+				stationName := dbpkg.ResolveEmpresaEstacionNombre(dbEmp, empresaID, p.EstacionID)
+				eventID, startErr := dbpkg.StartEmpresaEstacionAseoEvento(dbEmp, empresaID, p.EstacionID, stationName, "", p.UsuarioCreador)
+				if startErr != nil {
+					log.Printf("[estacion_prefs] start aseo empresa_id=%d estacion=%d error: %v", empresaID, p.EstacionID, startErr)
+					response["aseo_error"] = "No se pudo iniciar el control de aseo"
+				} else {
+					response["aseo_evento_id"] = eventID
+				}
+			}
 			if p.EstacionID == 0 && p.Clave == "estaciones_config" {
 				syncResult, syncErr := dbpkg.SyncEmpresaEstacionCarritos(dbEmp, empresaID, p.Valor, p.UsuarioCreador)
 				if syncErr != nil {

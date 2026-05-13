@@ -164,6 +164,7 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 			nombre,
 			"",
 			0,
+			0,
 			rol,
 			observaciones,
 			usuario,

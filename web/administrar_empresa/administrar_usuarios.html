@@ -46,6 +46,13 @@
           <label class="form-label">Observaciones</label>
           <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
         </div>
+        <div class="form-col">
+          <label class="form-label">Control de aseo</label>
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+            <input id="control_aseo_estaciones" type="checkbox">
+            Activar reporte de aseo de estaciones
+          </label>
+        </div>
       </div>
         <div class="form-row">
           <div class="form-col">
@@ -116,6 +123,7 @@
       document.getElementById('nombre').value = '';
       document.getElementById('documento_identidad').value = '';
       document.getElementById('observaciones').value = '';
+      document.getElementById('control_aseo_estaciones').checked = false;
         document.getElementById('mensaje_invitacion').value = '';
       fillRolesSelect('');
       document.getElementById('saveBtn').textContent = 'Guardar';
@@ -137,6 +145,7 @@
         '<th>Nombre</th>' +
         '<th>Documento</th>' +
         '<th>Rol</th>' +
+        '<th>Aseo</th>' +
         '<th>Confirmación</th>' +
         '<th>Estado</th>' +
         '<th>Acciones</th>' +
@@ -154,6 +163,7 @@
           '<td>' + (item.nombre || '') + '</td>' +
           '<td>' + (item.documento_identidad || '') + '</td>' +
           '<td>' + rolNombreById(item.rol_usuario_id, item.rol_nombre) + '</td>' +
+          '<td>' + (Number(item.control_aseo_estaciones || 0) === 1 ? 'Activo' : 'Inactivo') + '</td>' +
           '<td>' + (confirmado ? 'Confirmado' : 'Pendiente') + '</td>' +
           '<td>' + (item.estado || '') + '</td>' +
           '<td class="actions">' +
@@ -184,6 +194,7 @@
           document.getElementById('nombre').value = item.nombre || '';
           document.getElementById('documento_identidad').value = item.documento_identidad || '';
           document.getElementById('observaciones').value = item.observaciones || '';
+          document.getElementById('control_aseo_estaciones').checked = Number(item.control_aseo_estaciones || 0) === 1;
           fillRolesSelect(item.rol_usuario_id);
 
           document.getElementById('saveBtn').textContent = 'Actualizar';
@@ -281,6 +292,7 @@
         nombre: document.getElementById('nombre').value.trim(),
         documento_identidad: document.getElementById('documento_identidad').value.trim(),
         rol_usuario_id: Number(document.getElementById('rol_usuario_id').value || 0),
+        control_aseo_estaciones: document.getElementById('control_aseo_estaciones').checked ? 1 : 0,
         observaciones: document.getElementById('observaciones').value.trim(),
         mensaje_invitacion: document.getElementById('mensaje_invitacion').value.trim()
       };

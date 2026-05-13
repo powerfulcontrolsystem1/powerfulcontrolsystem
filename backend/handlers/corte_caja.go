@@ -56,6 +56,15 @@ type corteCajaTipoItem struct {
 	Total    float64 `json:"total"`
 }
 
+type corteCajaProductoVendido struct {
+	Fecha       string  `json:"fecha"`
+	Producto    string  `json:"producto"`
+	Cantidad    float64 `json:"cantidad"`
+	Tipo        string  `json:"tipo"`
+	Referencia  string  `json:"referencia"`
+	VentaCodigo string  `json:"venta_codigo"`
+}
+
 type corteCajaSensorAlerta struct {
 	EstacionID     int64  `json:"estacion_id"`
 	EstacionNombre string `json:"estacion_nombre"`
@@ -106,12 +115,26 @@ type corteCajaResponse struct {
 	Anulaciones        []corteCajaVenta                     `json:"anulaciones"`
 	Movimientos        []corteCajaMovimientoGrupo           `json:"movimientos"`
 	ItemsPorTipo       []corteCajaTipoItem                  `json:"items_por_tipo"`
+	ProductosVendidos  []corteCajaProductoVendido           `json:"productos_vendidos"`
 	SensoresSinFactura []corteCajaSensorAlerta              `json:"sensores_sin_factura"`
 	Reportes           []string                             `json:"reportes"`
 	Secciones          map[string]bool                      `json:"secciones"`
+	CajaActual         *corteCajaActualContext              `json:"caja_actual,omitempty"`
 	Configuracion      *dbpkg.EmpresaCorteCajaConfiguracion `json:"configuracion_reporte,omitempty"`
 	GeneradoEn         string                               `json:"generado_en"`
 	Advertencias       []string                             `json:"advertencias,omitempty"`
+}
+
+type corteCajaActualContext struct {
+	ID              int64  `json:"id"`
+	CajaCodigo      string `json:"caja_codigo"`
+	Turno           string `json:"turno"`
+	SucursalID      int64  `json:"sucursal_id"`
+	Usuario         string `json:"usuario"`
+	FechaApertura   string `json:"fecha_apertura"`
+	FechaOperacion  string `json:"fecha_operacion"`
+	EstadoCierre    string `json:"estado_cierre"`
+	SoloUsuarioCaja bool   `json:"solo_usuario_caja"`
 }
 
 type corteCajaCerrarPayload struct {
@@ -191,6 +214,18 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"imprimir_auto": payload.ImprimirAuto,
 				"reportes":      reportes,
 			})
+			return
+		}
+
+		if corteCajaSoloUsuarioCajaActual(r) {
+			resp, err := buildCorteCajaUsuarioCajaActualReport(dbEmp, r, empresaID, desde, hasta, apertura)
+			if err != nil {
+				http.Error(w, "No se pudo generar el corte de caja del usuario actual", http.StatusInternalServerError)
+				return
+			}
+			resp.Configuracion = configuracion
+			applyCorteCajaReportSelection(resp, reportes)
+			writeJSON(w, http.StatusOK, resp)
 			return
 		}
 
@@ -333,6 +368,211 @@ func corteCajaConfigCacheFingerprint(cfg *dbpkg.EmpresaCorteCajaConfiguracion) s
 	b.WriteByte(':')
 	b.WriteString(strings.ToLower(strings.TrimSpace(cfg.FormatoImpresion)))
 	return b.String()
+}
+
+func corteCajaSoloUsuarioCajaActual(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+	if action == "mi_caja_actual" || action == "mis_movimientos_caja" || action == "ultimos_movimientos" {
+		return true
+	}
+	return queryBool(r, "solo_usuario_actual") || queryBool(r, "mi_caja_actual")
+}
+
+func buildCorteCajaUsuarioCajaActualReport(dbEmp *sql.DB, r *http.Request, empresaID int64, desde, hasta string, apertura float64) (*corteCajaResponse, error) {
+	usuarioActual := strings.TrimSpace(adminEmailFromRequest(r))
+	cajaCodigo := strings.TrimSpace(r.URL.Query().Get("caja_codigo"))
+	turno := strings.TrimSpace(r.URL.Query().Get("turno"))
+	sucursalID := parseCorteCajaInt64(r.URL.Query().Get("sucursal_id"))
+	cierreCajaID := parseCorteCajaInt64(r.URL.Query().Get("cierre_caja_id"))
+
+	cierre, err := getCorteCajaAbiertaUsuarioActual(dbEmp, empresaID, usuarioActual, cajaCodigo, turno, sucursalID, cierreCajaID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			resp := emptyCorteCajaUsuarioCajaActualResponse(empresaID, desde, hasta, usuarioActual, cajaCodigo)
+			resp.Advertencias = append(resp.Advertencias, "No hay una caja abierta para el usuario actual con el filtro solicitado.")
+			return resp, nil
+		}
+		return nil, err
+	}
+
+	cajaCodigo = strings.TrimSpace(cierre.CajaCodigo)
+	if strings.TrimSpace(cierre.FechaApertura) != "" {
+		desde = strings.TrimSpace(cierre.FechaApertura)
+	} else if strings.TrimSpace(cierre.FechaOperacion) != "" {
+		desde = strings.TrimSpace(cierre.FechaOperacion) + " 00:00:00"
+	}
+	if strings.TrimSpace(hasta) == "" {
+		hasta = time.Now().Format("2006-01-02 15:04:05")
+	}
+	apertura = cierre.AperturaMonto
+
+	resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuarioActual, apertura, cajaCodigo, cierre.ID)
+	if err != nil {
+		return nil, err
+	}
+	resp.CajaActual = &corteCajaActualContext{
+		ID:              cierre.ID,
+		CajaCodigo:      cajaCodigo,
+		Turno:           strings.TrimSpace(cierre.Turno),
+		SucursalID:      cierre.SucursalID,
+		Usuario:         usuarioActual,
+		FechaApertura:   strings.TrimSpace(cierre.FechaApertura),
+		FechaOperacion:  strings.TrimSpace(cierre.FechaOperacion),
+		EstadoCierre:    strings.TrimSpace(cierre.EstadoCierre),
+		SoloUsuarioCaja: true,
+	}
+	return resp, nil
+}
+
+func emptyCorteCajaUsuarioCajaActualResponse(empresaID int64, desde, hasta, usuario, cajaCodigo string) *corteCajaResponse {
+	return &corteCajaResponse{
+		OK:                true,
+		Ventas:            []corteCajaVenta{},
+		Anulaciones:       []corteCajaVenta{},
+		Movimientos:       []corteCajaMovimientoGrupo{},
+		ItemsPorTipo:      []corteCajaTipoItem{},
+		ProductosVendidos: []corteCajaProductoVendido{},
+		GeneradoEn:        time.Now().Format("2006-01-02 15:04:05"),
+		Resumen: corteCajaResumen{
+			EmpresaID:     empresaID,
+			Desde:         desde,
+			Hasta:         hasta,
+			UsuarioFiltro: usuario,
+			Moneda:        "COP",
+		},
+		CajaActual: &corteCajaActualContext{
+			CajaCodigo:      strings.TrimSpace(cajaCodigo),
+			Usuario:         strings.TrimSpace(usuario),
+			SoloUsuarioCaja: true,
+		},
+	}
+}
+
+func getCorteCajaAbiertaUsuarioActual(dbEmp *sql.DB, empresaID int64, usuario, cajaCodigo, turno string, sucursalID, cierreCajaID int64) (*dbpkg.EmpresaCierreCaja, error) {
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		return nil, err
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	query := `SELECT
+		id,
+		empresa_id,
+		COALESCE(sucursal_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(turno, 'general'),
+		COALESCE(fecha_operacion, ''),
+		COALESCE(fecha_apertura, ''),
+		COALESCE(fecha_cierre, ''),
+		COALESCE(estado_cierre, 'abierto'),
+		COALESCE(apertura_monto, 0),
+		COALESCE(ingresos_efectivo, 0),
+		COALESCE(egresos_efectivo, 0),
+		COALESCE(retiros_efectivo, 0),
+		COALESCE(caja_teorica, 0),
+		COALESCE(caja_fisica, 0),
+		COALESCE(diferencia_caja, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(cerrado_por, ''),
+		COALESCE(aprobado_por, ''),
+		COALESCE(aprobado_en, ''),
+		COALESCE(tiene_incidencia, 0),
+		COALESCE(umbral_incidencia, 0),
+		COALESCE(propinas_movimientos, 0),
+		COALESCE(propinas_total, 0),
+		COALESCE(propinas_ajustes, 0),
+		COALESCE(propinas_impuesto, 0),
+		COALESCE(propinas_neto, 0),
+		COALESCE(propinas_conciliado_en, ''),
+		COALESCE(propinas_conciliado_por, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_cierres_caja
+	WHERE empresa_id = ?
+	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	  AND LOWER(COALESCE(usuario_creador, '')) = LOWER(?)`
+	args := []interface{}{empresaID, usuario}
+	if cierreCajaID > 0 {
+		query += ` AND id = ?`
+		args = append(args, cierreCajaID)
+	} else {
+		cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+		if cajaCodigo != "" {
+			query += ` AND UPPER(COALESCE(caja_codigo, '')) = ?`
+			args = append(args, cajaCodigo)
+		}
+		if strings.TrimSpace(turno) != "" {
+			query += ` AND LOWER(COALESCE(turno, 'general')) = ?`
+			args = append(args, strings.ToLower(strings.TrimSpace(turno)))
+		}
+		if sucursalID > 0 {
+			query += ` AND COALESCE(sucursal_id, 0) = ?`
+			args = append(args, sucursalID)
+		}
+	}
+	query += ` ORDER BY COALESCE(fecha_apertura, fecha_creacion, '') DESC, id DESC LIMIT 1`
+
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return nil, sql.ErrNoRows
+	}
+	var item dbpkg.EmpresaCierreCaja
+	var incidencia int
+	if err := rows.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.SucursalID,
+		&item.CajaCodigo,
+		&item.Turno,
+		&item.FechaOperacion,
+		&item.FechaApertura,
+		&item.FechaCierre,
+		&item.EstadoCierre,
+		&item.AperturaMonto,
+		&item.IngresosEfectivo,
+		&item.EgresosEfectivo,
+		&item.RetirosEfectivo,
+		&item.CajaTeorica,
+		&item.CajaFisica,
+		&item.DiferenciaCaja,
+		&item.Moneda,
+		&item.CerradoPor,
+		&item.AprobadoPor,
+		&item.AprobadoEn,
+		&incidencia,
+		&item.UmbralIncidencia,
+		&item.PropinasMovimientos,
+		&item.PropinasTotal,
+		&item.PropinasAjustes,
+		&item.PropinasImpuesto,
+		&item.PropinasNeto,
+		&item.PropinasConciliadoEn,
+		&item.PropinasConciliadoPor,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	); err != nil {
+		return nil, err
+	}
+	item.TieneIncidencia = incidencia == 1
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &item, nil
 }
 
 func getCorteCajaCache(key string) *corteCajaResponse {
@@ -515,6 +755,13 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 	})
 	ingresosEfectivo := resp.Resumen.EfectivoVentas + resp.Resumen.IngresosEfectivo
 	egresosEfectivo := resp.Resumen.EgresosEfectivo
+	if payload.CierreCajaID > 0 {
+		cajaFisica := payload.CajaFisica
+		if err := dbpkg.SetEmpresaCierreCajaEstado(dbEmp, empresaID, payload.CierreCajaID, "cerrado", &cajaFisica, usuarioOperacion, string(meta)); err != nil {
+			return nil, 0, err
+		}
+		return resp, payload.CierreCajaID, nil
+	}
 	cierreID, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, dbpkg.EmpresaCierreCaja{
 		EmpresaID:        empresaID,
 		CajaCodigo:       cajaCodigo,
@@ -561,6 +808,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 		Anulaciones:        []corteCajaVenta{},
 		Movimientos:        []corteCajaMovimientoGrupo{},
 		ItemsPorTipo:       []corteCajaTipoItem{},
+		ProductosVendidos:  []corteCajaProductoVendido{},
 		SensoresSinFactura: []corteCajaSensorAlerta{},
 		GeneradoEn:         time.Now().Format("2006-01-02 15:04:05"),
 	}
@@ -656,6 +904,12 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 			resp.Resumen.TotalOtrosItems += item.Total
 		}
 	}
+
+	productosVendidos, err := listCorteCajaProductosVendidos(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID, 50)
+	if err != nil {
+		return nil, err
+	}
+	resp.ProductosVendidos = productosVendidos
 
 	movimientos, err := listCorteCajaMovimientos(dbEmp, empresaID, desde, hasta, usuario, cajaCodigo, cierreCajaID)
 	if err != nil {
@@ -853,6 +1107,58 @@ func listCorteCajaItemsPorTipo(dbEmp *sql.DB, empresaID int64, desde, hasta, usu
 	for rows.Next() {
 		var item corteCajaTipoItem
 		if err := rows.Scan(&item.Tipo, &item.Cantidad, &item.Total); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func listCorteCajaProductosVendidos(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, cajaCodigo string, cierreCajaID int64, limit int) ([]corteCajaProductoVendido, error) {
+	startedAt := time.Now()
+	defer func() {
+		dbpkg.PerfLogf("[perf][corte] listCorteCajaProductosVendidos empresa=%d usuario=%q dur=%s", empresaID, usuario, time.Since(startedAt))
+	}()
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	query := `SELECT
+		COALESCE(c.pagado_en, i.fecha_creacion, ''),
+		COALESCE(i.descripcion, ''),
+		COALESCE(i.cantidad, 0),
+		LOWER(COALESCE(i.tipo_item, 'producto')),
+		COALESCE(i.codigo_item, ''),
+		COALESCE(c.codigo, '')
+	FROM carrito_compra_items i
+	JOIN carritos_compras c ON c.id = i.carrito_id AND c.empresa_id = i.empresa_id
+	LEFT JOIN (
+		SELECT carrito_id, MAX(COALESCE(usuario_creador, '')) AS usuario_creador
+		  FROM empresa_ventas_estacion_metricas
+		 WHERE empresa_id = ?
+		   AND LOWER(COALESCE(evento_operacion, '')) = 'venta_pagada'
+		 GROUP BY carrito_id
+	) m ON m.carrito_id = c.id
+	WHERE c.empresa_id = ?
+	  AND COALESCE(c.pagado_en, '') <> ''
+	  AND COALESCE(c.pagado_en, '') >= ?
+	  AND COALESCE(c.pagado_en, '') <= ?
+	  AND LOWER(COALESCE(c.estado_carrito, '')) = 'cerrado'
+	  AND LOWER(COALESCE(i.estado, 'activo')) = 'activo'
+	  AND (? = '' OR LOWER(COALESCE(m.usuario_creador, c.usuario_creador, i.usuario_creador, '')) = LOWER(?))
+	  AND (? = 0 OR COALESCE(c.cierre_caja_id, 0) = ?)
+	  AND (? = '' OR UPPER(COALESCE(c.caja_codigo, '')) = ?)
+	ORDER BY COALESCE(c.pagado_en, i.fecha_creacion, '') DESC, i.id DESC
+	LIMIT ?`
+	cajaCodigo = strings.ToUpper(strings.TrimSpace(cajaCodigo))
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, empresaID, empresaID, desde, hasta, usuario, usuario, cierreCajaID, cierreCajaID, cajaCodigo, cajaCodigo, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []corteCajaProductoVendido{}
+	for rows.Next() {
+		var item corteCajaProductoVendido
+		if err := rows.Scan(&item.Fecha, &item.Producto, &item.Cantidad, &item.Tipo, &item.Referencia, &item.VentaCodigo); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

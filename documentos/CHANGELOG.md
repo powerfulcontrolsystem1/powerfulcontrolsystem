@@ -1,3 +1,45 @@
+## [2026-05-13] Carrito de compras compacto tipo tabla plana
+- [Frontend] `web/estilos.css` compacta el layout bajo `carrito-flat-page` quitando gaps, margenes, radios y sombras de tarjetas/contenedores del carrito.
+- [UX] Las tarjetas quedan pegadas visualmente entre si, con lectura plana similar a la tabla de items.
+- [QA] Validado con Playwright comprobando `gap: 0`, `margin: 0`, `border-radius: 0` y `box-shadow: none` en contenedores clave.
+- [Alcance] Cambio solo visual; no modifica APIs, backend, permisos, tablas ni dependencias.
+
+## [2026-05-13] Carrito de compras sin sombras en tarjetas
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` agrega clase scoped `carrito-flat-page` para controlar el estilo visual de esta pagina.
+- [UX] `web/estilos.css` deja las tarjetas y formularios del carrito sin `box-shadow`, evitando apariencia 3D o relieve.
+- [QA] Validado con parseo JS y prueba visual Playwright comprobando tarjetas del carrito con `box-shadow: none`.
+- [Alcance] Cambio solo visual; no modifica APIs, backend, permisos, tablas ni dependencias.
+
+## [2026-05-13] Carrito de estacion mueve contexto al encabezado
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` deja de mostrar `Items de estacion: <nombre>` dentro de la tarjeta del carrito.
+- [UX] En modo estacion, el encabezado superior mantiene `Carrito de compras` y muestra debajo `Estacion: <nombre>`, dejando la tarjeta interna como `Items del carrito`.
+- [Alcance] Cambio solo visual; no modifica APIs, backend, permisos, tablas ni dependencias.
+
+## [2026-05-13] OnlyOffice abre editor con URL publica del Document Server
+- [Backend] `backend/handlers/onlyoffice.go` corrige la carpeta temporal de documentos para no crear `/data/empresas/empresas/{empresa_id}` cuando `PCS_DATA_ROOT` ya apunta a `/data/empresas`.
+- [Backend] `editor_config` entrega al navegador una URL publica de OnlyOffice cuando la configuracion global apunta a un hostname interno Docker como `onlyoffice-documentserver`; tambien acepta `ONLYOFFICE_PUBLIC_DOCUMENT_SERVER_URL` o `ONLYOFFICE_BROWSER_DOCUMENT_SERVER_URL` como override operativo.
+- [Frontend] `web/administrar_empresa/documentos_onlyoffice.html` valida que `api.js` cargue `DocsAPI.DocEditor` y muestra un mensaje claro dentro del marco si el Document Server no es accesible desde el navegador.
+- [QA] Se agrega `backend/handlers/onlyoffice_test.go`; validado con `go test ./handlers -run OnlyOffice -count=1` y prueba visual Playwright del flujo crear y abrir editor.
+- [Alcance] Sin tablas, permisos ni dependencias nuevas; conserva aislamiento por `empresa_id` y el wrapper de permisos `documentos_onlyoffice`.
+
+## [2026-05-13] Reportes ejecutivos profesionales
+- [Frontend] `web/administrar_empresa/reportes_menu.html` reduce el submenu a entradas de alto nivel: centro ejecutivo, analitica, suite, inventario, finanzas e IA.
+- [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` agrega una portada de mando con accesos agrupados por direccion, ventas, inventario, finanzas, contabilidad/fiscal e IA.
+- [Frontend] `web/administrar_empresa/reportes_finanzas.html` reemplaza botones placeholder por carga real del dataset `contable_movimientos_financieros` y exportacion por formato usando `/api/empresa/reportes`.
+- [Alcance] Sin cambios de backend, base de datos, permisos ni dependencias.
+
+## [2026-05-13] Facturacion electronica separa configuracion y pruebas DIAN
+- [Frontend] `web/administrar_empresa/facturacion_electronica.html` elimina el boton `Abrir modulo DIAN / documental` y queda enfocada en configurar pais, firma, DIAN Colombia y parametros avanzados de la empresa.
+- [Frontend] `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` concentra diagnostico DIAN, set de habilitacion, conexion/cola y emision documental manual.
+- [Navegacion] `web/administrar_empresa/facturacion_electronica_menu.html` agrega `Pruebas DIAN y documentos`.
+- [Alcance] Sin cambios de backend, base de datos, permisos ni dependencias.
+
+## [2026-05-13] Control de aseo por estacion
+- [Backend] Se agrega `users.control_aseo_estaciones`, `empresa_estacion_aseo_eventos` y `/api/empresa/estacion_aseo` para medir el tiempo desde `estacion_estado_sucia=1` hasta el reporte de aseo terminado.
+- [Frontend] `administrar_usuarios.html` permite activar/desactivar el control por usuario; `estaciones.html` permite reportar el aseo con un clic sobre la estacion sucia; `reporte_aseo_estaciones.html` muestra tiempos por habitacion.
+- [Seguridad] La finalizacion se atribuye al usuario autenticado y conserva aislamiento por `empresa_id`; el reporte queda para roles administrativos/supervision.
+- [QA] Validado con pruebas Go dirigidas de `db`/`handlers` y parseo JS inline de las paginas tocadas.
+
 ## [2026-05-13] Factura electronica de venta no queda emitida sin acuse fiscal
 - [Backend] `backend/handlers/carritos_compras.go` mantiene cerrada la venta/comprobante, pero degrada la factura electronica asociada a `pendiente_emision` cuando Colombia produccion requiere acuse fiscal y la integracion DIAN/proveedor no queda `enviado`.
 - [Backend] `backend/handlers/facturacion_electronica.go` bloquea Colombia produccion con proveedor `manual`, `local` o `interno`, para no simular como exitoso un envio que debe pasar por DIAN/proveedor real.
@@ -22,6 +64,18 @@
 - [Frontend] `web/administrar_empresa/proveedores_firma_digital.html` publica la pagina `Proveedores de Firma Digital` dentro del submenu de facturacion electronica.
 - [Proveedor externo] La pagina agrega a Sensiyo como opcion para adquirir certificado digital/firma electronica DIAN y abre la compra en `https://sensiyo.co/certificados-digitales/`.
 - [Alcance] Cambio solo de navegacion/frontend; no modifica endpoints, tablas, permisos ni dependencias.
+
+## [2026-05-13] Corte automatico de turno en Caja
+- [Frontend] `web/administrar_empresa/corte_de_caja.html` agrega el boton `Corte automatico`, que calcula el periodo desde la apertura de la caja abierta del usuario actual hasta la hora del corte.
+- [Operacion] Al entrar desde `Estaciones -> Caja` con `auto_generar=1`, el corte usa `mi_caja_actual` y autocompleta fecha inicial, fecha final, usuario, caja, turno y efectivo de apertura.
+- [Backend] `cerrarCorteCaja` cierra la caja abierta existente cuando recibe `cierre_caja_id`, evitando crear un cierre duplicado para el mismo turno.
+- [QA] Parseo JS inline, `go test ./handlers -count=1`, `go test ./db -run "CierreCaja|Finanzas|Carritos" -count=1`, `git diff --check` y prueba visual Playwright con servidor mock.
+
+## [2026-05-13] Ultimos movimientos de caja por usuario actual
+- [Backend] `backend/handlers/corte_caja.go` agrega el alcance `mi_caja_actual` para resolver solo la caja abierta del usuario autenticado y filtrar ventas/productos/movimientos por `cierre_caja_id`, `caja_codigo` y usuario.
+- [Frontend] `web/administrar_empresa/estaciones.html` envia `solo_usuario_actual=1` desde el boton `Ver ultimos movimientos`; `web/administrar_empresa/ultimos_movimientos_de_caja.html` consume el corte de caja acotado en vez de listados globales.
+- [Seguridad] La URL ya no permite mezclar movimientos de cajas de otros usuarios; se conserva aislamiento por `empresa_id` sin agregar tablas, permisos ni dependencias.
+- [QA] `go test ./handlers -count=1`, `go test ./db -run "CierreCaja|Finanzas|Carritos" -count=1`, parseo JS inline con Node y `git diff --check`.
 
 ## [2026-05-13] Caja recupera tarjeta compacta con boton de movimientos
 - [Frontend] `web/administrar_empresa/estaciones.html` vuelve a mostrar la tarjeta `Caja` como bloque compacto con titulo, totales y boton `Ver ultimos movimientos`, sin el texto descriptivo largo.

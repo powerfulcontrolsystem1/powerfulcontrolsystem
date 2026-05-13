@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Centro ejecutivo de reportes</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .reports-command-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
+    .reports-command-kicker{display:block;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+    .reports-command-title{margin:0;font-size:1.6rem}
+    .reports-command-lead{max-width:820px;margin:8px 0 0;color:var(--muted);line-height:1.55}
+    .reports-command-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+    .reports-command-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:16px}
+    .reports-command-card{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:210px}
+    .reports-command-card header{display:flex;gap:12px;align-items:flex-start}
+    .reports-command-icon{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));font-weight:800;color:var(--accent)}
+    .reports-command-card h2{margin:0;font-size:1.05rem}
+    .reports-command-card p{margin:4px 0 0;color:var(--muted);line-height:1.45}
+    .reports-command-links{display:grid;gap:8px;margin-top:auto}
+    .reports-command-link{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:1px solid var(--border);background:var(--surface-soft);color:var(--text);border-radius:8px;padding:10px 12px;cursor:pointer;font:inherit}
+    .reports-command-link:hover{border-color:color-mix(in srgb,var(--accent) 46%,var(--border));background:color-mix(in srgb,var(--surface-soft) 86%,var(--accent) 14%)}
+    .reports-command-link span{min-width:0;overflow-wrap:anywhere}
+    .reports-command-link small{color:var(--muted);white-space:nowrap}
+    .reports-command-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:16px}
+    .reports-command-mini{border:1px solid var(--border);background:var(--surface-soft);border-radius:8px;padding:12px}
+    .reports-command-mini strong{display:block;font-size:.95rem}
+    .reports-command-mini span{display:block;color:var(--muted);font-size:.86rem;margin-top:4px;line-height:1.4}
+    @media (max-width: 760px){
+      .reports-command-header{grid-template-columns:1fr}
+      .reports-command-actions{justify-content:flex-start}
+    }
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section">
+      <div class="reports-command-header">
+        <div>
+          <span class="reports-command-kicker">Centro de mando</span>
+          <h1 class="reports-command-title">Reportes ejecutivos</h1>
+          <p class="reports-command-lead">Una entrada limpia para gerencia: analitica, suite exportable, ventas, inventario, finanzas, impuestos y apoyo de IA. Los reportes especializados siguen disponibles dentro de la suite, sin llenar el menu principal.</p>
+        </div>
+        <div class="reports-command-actions">
+          <button class="btn" type="button" data-open="/administrar_empresa/graficos_estadisticas.html">Abrir analitica</button>
+          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes.html">Suite completa</button>
+        </div>
+      </div>
+
+      <div class="reports-command-strip" aria-label="Resumen de areas">
+        <div class="reports-command-mini"><strong>Gerencia</strong><span>Salud global, alertas, metas y prioridades.</span></div>
+        <div class="reports-command-mini"><strong>Operacion</strong><span>Ventas, turnos, clientes, productos e inventario.</span></div>
+        <div class="reports-command-mini"><strong>Finanzas</strong><span>Ingresos, egresos, balance, cartera y contabilidad.</span></div>
+        <div class="reports-command-mini"><strong>Cumplimiento</strong><span>Impuestos, facturacion, auditoria y trazabilidad.</span></div>
+      </div>
+    </section>
+
+    <section class="reports-command-grid" aria-label="Accesos principales de reportes">
+      <article class="reports-command-card">
+        <header>
+          <div class="reports-command-icon">01</div>
+          <div>
+            <h2>Direccion</h2>
+            <p>Lectura ejecutiva para saber que requiere atencion primero.</p>
+          </div>
+        </header>
+        <div class="reports-command-links">
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/graficos_estadisticas.html"><span>Analitica ejecutiva avanzada</span><small>Panel</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=empresarial_tablero"><span>Tablero empresarial exportable</span><small>Dataset</small></button>
+        </div>
+      </article>
+
+      <article class="reports-command-card">
+        <header>
+          <div class="reports-command-icon">02</div>
+          <div>
+            <h2>Ventas y margen</h2>
+            <p>Control comercial, POS, productos y rentabilidad.</p>
+          </div>
+        </header>
+        <div class="reports-command-links">
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=ventas_diarias_metodos_pago"><span>Ventas diarias por metodo de pago</span><small>POS</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=ventas_rentabilidad_productos"><span>Rentabilidad por productos</span><small>Margen</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=reporte_de_turno"><span>Reporte de turno y caja</span><small>Caja</small></button>
+        </div>
+      </article>
+
+      <article class="reports-command-card">
+        <header>
+          <div class="reports-command-icon">03</div>
+          <div>
+            <h2>Inventario y compras</h2>
+            <p>Existencias, kardex, compras y abastecimiento.</p>
+          </div>
+        </header>
+        <div class="reports-command-links">
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes_inventario.html"><span>Inventario por bodega</span><small>Vista</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=inventario_kardex_valorizado"><span>Kardex valorizado</span><small>Dataset</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=compras_proveedores_detalle"><span>Compras por proveedor</span><small>Dataset</small></button>
+        </div>
+      </article>
+
+      <article class="reports-command-card">
+        <header>
+          <div class="reports-command-icon">04</div>
+          <div>
+            <h2>Finanzas y cartera</h2>
+            <p>Flujo de caja, movimientos financieros y edades de cartera.</p>
+          </div>
+        </header>
+        <div class="reports-command-links">
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes_finanzas.html"><span>Resumen financiero</span><small>Vista</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=contable_flujo_caja"><span>Flujo de caja diario</span><small>Dataset</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=cartera_edades_cuentas_por_cobrar"><span>Edades de cuentas por cobrar</span><small>CxC</small></button>
+        </div>
+      </article>
+
+      <article class="reports-command-card">
+        <header>
+          <div class="reports-command-icon">05</div>
+          <div>
+            <h2>Contabilidad e impuestos</h2>
+            <p>Reportes contables y fiscales para revision profesional.</p>
+          </div>
+        </header>
+        <div class="reports-command-links">
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=contable_balance_prueba"><span>Balance de prueba</span><small>Contable</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=fiscal_impuestos_retenciones"><span>Impuestos y retenciones</span><small>Fiscal</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=fiscal_informacion_exogena_base"><span>Informacion exogena base</span><small>Fiscal</small></button>
+        </div>
+      </article>
+
+      <article class="reports-command-card">
+        <header>
+          <div class="reports-command-icon">06</div>
+          <div>
+            <h2>IA y exportacion</h2>
+            <p>Consulta con IA y usa la suite completa cuando necesites todos los datasets.</p>
+          </div>
+        </header>
+        <div class="reports-command-links">
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes_ia_chat.html"><span>Asistente IA para reportes</span><small>IA</small></button>
+          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html"><span>Suite completa de datasets</span><small>Exportar</small></button>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      function withEmpresa(url) {
+        if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.withEmpresa === 'function') {
+          return window.__empresaModuleGuard.withEmpresa(url);
+        }
+        return url;
+      }
+
+      function openReport(url) {
+        if (!url) return;
+        window.location.href = withEmpresa(url);
+      }
+
+      document.querySelectorAll('[data-open]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          openReport(btn.getAttribute('data-open') || '');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

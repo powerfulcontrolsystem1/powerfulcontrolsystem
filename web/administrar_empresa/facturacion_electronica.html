@@ -28,7 +28,6 @@
       <p id="feVistaEnte" class="form-help"></p>
       <p id="feVistaResumen" class="form-help"></p>
       <p id="feVistaIndependencia" class="form-help fe-vista-indep"></p>
-      <p id="feVistaDianWrap" class="is-hidden"><a id="feVistaDianLink" class="btn secondary" href="#" rel="noopener">Abrir módulo DIAN / documental (solo Colombia)</a></p>
     </div>
 
     <div id="feFirmaCard" class="card is-hidden">
@@ -99,63 +98,6 @@
         <div id="feDianConfigMsg" class="form-help"></div>
         <pre id="feDianConfigResultado" class="form-help pre-output"></pre>
       </form>
-    </div>
-
-    <div id="feDianPruebasCard" class="card is-hidden">
-      <h2>Pruebas Dian</h2>
-      <p class="form-help">
-        Ejecuta el set de habilitación asignado por DIAN para esta empresa. Antes de enviar valida firma, credenciales, TestSetId, ambiente y transporte configurado.
-      </p>
-      <div class="form-row">
-        <div class="form-col">
-          <div class="form-help"><label><input id="feDianPruebasSimular" type="checkbox"> Simular sin enviar a DIAN</label></div>
-          <div class="form-help">El envío real requiere ambiente de habilitación, firma registrada y endpoint compatible. Ajusta las cantidades según el set que DIAN muestre en el portal.</div>
-        </div>
-        <div class="form-col">
-          <label class="form-label">Facturas electrónicas</label>
-          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="8">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Notas débito</label>
-          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="1">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Notas crédito</label>
-          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="1">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Máximo de envíos en esta ejecución</label>
-          <input id="feDianSetMaxEnvios" class="form-input" type="number" min="1" placeholder="Vacío = todo el set">
-        </div>
-        <div class="form-col">
-          <label class="form-label">URL producción DIAN/proveedor</label>
-          <input id="feDianProduccionURL" class="form-input" placeholder="Configurar antes de activar producción local">
-        </div>
-        <div class="form-col">
-          <div class="form-help" style="margin-top:28px;"><label><input id="feDianConfirmarHabilitado" type="checkbox"> Confirmo que DIAN ya dejó la empresa habilitada</label></div>
-        </div>
-      </div>
-      <div class="form-actions">
-        <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnóstico DIAN</button>
-        <button id="btnDianPruebas" type="button" class="btn">Pruebas Dian</button>
-        <button id="btnDianActivarProduccion" type="button" class="btn secondary">Activar producción local</button>
-      </div>
-      <div id="feDianPruebasMsg" class="form-help"></div>
-      <pre id="feDianPruebasResultado" class="form-help pre-output"></pre>
-    </div>
-
-    <div id="feDianOfflineCard" class="card is-hidden">
-      <h2>Conexion obligatoria DIAN/proveedor</h2>
-      <p class="form-help">
-        La facturacion electronica requiere conexion activa con el servidor y con DIAN/proveedor. Ya no se permite continuar en modo offline ni emitir documentos de contingencia desde la aplicacion.
-      </p>
-      <div class="form-actions">
-        <button id="btnDianCheckConexion" class="btn secondary" type="button">Probar conexión</button>
-        <button id="btnDianProcesarCola" class="btn" type="button">Procesar cola</button>
-      </div>
-      <div id="feDianOfflineMsg" class="form-help"></div>
     </div>
 
     <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
@@ -339,80 +281,6 @@
     <div class="card" >
       <h2 >Configuraciones por país de esta empresa</h2>
       <div id="list">Cargando...</div>
-    </div>
-
-    <div class="card" >
-      <h2 >Emisión documental (punto 8)</h2>
-      <p class="form-help" >
-        Ejecuta ciclo documental de factura electrónica con validación de cumplimiento normativo en emisión legal.
-      </p>
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Código documento</label>
-          <input id="op_documento_codigo" class="form-input" placeholder="FAC-1001">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Tipo documento electronico</label>
-          <select id="op_tipo_documento" class="form-input">
-            <option value="factura_electronica">Factura electronica de venta</option>
-            <option value="nota_credito">Nota credito electronica</option>
-            <option value="nota_debito">Nota debito electronica</option>
-            <option value="documento_soporte">Documento soporte electronico</option>
-            <option value="nomina_electronica">Nomina electronica</option>
-            <option value="documento_equivalente_pos">Documento equivalente POS electronico</option>
-          </select>
-        </div>
-        <div class="form-col">
-          <label class="form-label">Estado actual</label>
-          <select id="op_estado_actual" class="form-input">
-            <option value="borrador">borrador</option>
-            <option value="emitida">emitida</option>
-            <option value="anulada">anulada</option>
-            <option value="ajustada">ajustada</option>
-          </select>
-        </div>
-        <div class="form-col">
-          <label class="form-label">Periodo contable</label>
-          <input id="op_periodo_contable" class="form-input" placeholder="2026-04">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Monto total</label>
-          <input id="op_monto_total" type="number" step="0.01" class="form-input" placeholder="120000">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Moneda</label>
-          <input id="op_moneda" class="form-input" value="COP">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-col">
-          <label class="form-label">Cliente ID</label>
-          <input id="op_cliente_id" type="number" class="form-input" placeholder="ID interno del cliente">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Correo cliente (opcional)</label>
-          <input id="op_cliente_email" type="email" class="form-input" placeholder="cliente@correo.com">
-        </div>
-        <div class="form-col">
-          <label class="form-label">Nombre cliente (opcional)</label>
-          <input id="op_cliente_nombre" class="form-input" placeholder="Nombre del cliente">
-        </div>
-      </div>
-      <div class="form-actions">
-        <button type="button" id="btnEmitirDocumento" class="btn">Emitir documento</button>
-        <button type="button" id="btnAnularDocumento" class="btn secondary">Anular documento</button>
-        <button type="button" id="btnEmitirFactura" class="btn secondary">Emitir factura</button>
-        <button type="button" id="btnAnularFactura" class="btn secondary is-hidden">Anular factura</button>
-        <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota crédito</button>
-        <button type="button" id="btnEmitirND" class="btn secondary">Emitir nota debito</button>
-        <button type="button" id="btnEmitirSoporte" class="btn secondary">Emitir soporte</button>
-        <button type="button" id="btnEmitirNominaElectronica" class="btn secondary">Emitir nomina</button>
-        <button type="button" id="btnEmitirPOSElectronico" class="btn secondary">Emitir POS electronico</button>
-      </div>
-      <div id="op_msg" class="form-help"></div>
-      <pre id="op_resultado" class="form-help pre-output"></pre>
     </div>
 
     <div class="card" id="advancedConfigCard" >
@@ -654,77 +522,6 @@
       el.style.color = isError ? "#ef5350" : "";
     }
 
-    function setOperationMessage(text, isError) {
-      const el = document.getElementById("op_msg");
-      el.textContent = text || "";
-      el.style.color = isError ? "#ef5350" : "";
-    }
-
-    function setDianPruebasMessage(text, isError) {
-      const el = document.getElementById("feDianPruebasMsg");
-      if (!el) return;
-      el.textContent = text || "";
-      el.style.color = isError ? "#ef5350" : "";
-    }
-
-    function setDianOfflineMessage(text, isError) {
-      const el = document.getElementById("feDianOfflineMsg");
-      if (!el) return;
-      el.textContent = text || "";
-      el.style.color = isError ? "#ef5350" : "";
-    }
-
-    function setDianPruebasResult(data) {
-      const box = document.getElementById("feDianPruebasResultado");
-      if (!box) return;
-      if (!data) {
-        box.textContent = "";
-        return;
-      }
-      try {
-        box.textContent = JSON.stringify(data, null, 2);
-      } catch (_) {
-        box.textContent = String(data);
-      }
-    }
-
-    function numberInputValue(id, fallback) {
-      var el = document.getElementById(id);
-      var value = el ? Number(el.value || 0) : 0;
-      if (!Number.isFinite(value) || value < 0) return fallback;
-      return Math.trunc(value);
-    }
-
-    function collectDianSetPayloadBase() {
-      var facturas = numberInputValue("feDianSetFacturas", 8);
-      var notasDebito = numberInputValue("feDianSetNotasDebito", 1);
-      var notasCredito = numberInputValue("feDianSetNotasCredito", 1);
-      var maxEnvios = numberInputValue("feDianSetMaxEnvios", 0);
-      var payload = {
-        empresa_id: Number(state.empresaID),
-        facturas_electronicas: facturas,
-        notas_debito: notasDebito,
-        notas_credito: notasCredito,
-        total_documentos: facturas + notasDebito + notasCredito
-      };
-      if (maxEnvios > 0) payload.max_envios = maxEnvios;
-      return payload;
-    }
-
-    function setOperationResult(data) {
-      const box = document.getElementById("op_resultado");
-      if (!box) return;
-      if (!data) {
-        box.textContent = "";
-        return;
-      }
-      try {
-        box.textContent = JSON.stringify(data, null, 2);
-      } catch (_) {
-        box.textContent = String(data);
-      }
-    }
-
     function safeJSON(raw) {
       const input = txt(raw);
       if (!input) return "{}";
@@ -934,16 +731,6 @@
         if (ente) ente.textContent = vista.ente_fiscal || "";
         if (res) res.textContent = vista.resumen_operativo || "";
         if (indep) indep.textContent = vista.nota_independencia || "";
-        var dwrap = document.getElementById("feVistaDianWrap");
-        var dlink = document.getElementById("feVistaDianLink");
-        if (dwrap && dlink) {
-          if (codeU === "CO" && vista.modulo_dian_ruta) {
-            dlink.href = vista.modulo_dian_ruta + encodeURIComponent(state.empresaID) + "#dianToolsSection";
-            dwrap.classList.remove("is-hidden");
-          } else {
-            dwrap.classList.add("is-hidden");
-          }
-        }
         var firmaCard = document.getElementById("feFirmaCard");
         if (firmaCard) {
           firmaCard.classList.toggle("is-hidden", codeU !== "CO");
@@ -951,14 +738,6 @@
         var dianConfigCard = document.getElementById("feDianConfigCard");
         if (dianConfigCard) {
           dianConfigCard.classList.toggle("is-hidden", codeU !== "CO");
-        }
-        var pruebasCard = document.getElementById("feDianPruebasCard");
-        if (pruebasCard) {
-          pruebasCard.classList.toggle("is-hidden", codeU !== "CO");
-        }
-        var offlineCard = document.getElementById("feDianOfflineCard");
-        if (offlineCard) {
-          offlineCard.classList.toggle("is-hidden", codeU !== "CO");
         }
         if (vista.label_identificador) {
           var li = document.getElementById("labelIdentificador");
@@ -992,7 +771,6 @@
     function defaultMonedaForPais(codeU) {
       var c = (codeU || "").toUpperCase();
       var m = document.getElementById("moneda_codigo");
-      var op = document.getElementById("op_moneda");
       var autoCurrencies = { COP: true, USD: true, PAB: true, CRC: true, ARS: true, VES: true };
       function setAutoCurrency(input, value) {
         if (!input) return;
@@ -1001,22 +779,16 @@
       }
       if (c === "EC") {
         setAutoCurrency(m, "USD");
-        setAutoCurrency(op, "USD");
       } else if (c === "PA") {
         setAutoCurrency(m, "PAB");
-        setAutoCurrency(op, "PAB");
       } else if (c === "CR") {
         setAutoCurrency(m, "CRC");
-        setAutoCurrency(op, "CRC");
       } else if (c === "AR") {
         setAutoCurrency(m, "ARS");
-        setAutoCurrency(op, "ARS");
       } else if (c === "VE") {
         setAutoCurrency(m, "VES");
-        setAutoCurrency(op, "VES");
       } else if (c === "CO") {
         setAutoCurrency(m, "COP");
-        setAutoCurrency(op, "COP");
       }
     }
 
@@ -1322,7 +1094,7 @@
         hint.textContent = "Venezuela: perfil para RIF, serie fiscal, imprenta digital y proveedor homologado SENIAT. La emision final depende del proveedor autorizado.";
         return;
       }
-      hint.textContent = "Colombia: extras para proveedor/integración (ej. tipo_operación). La DIAN detallada está en el módulo del ERP (enlace arriba).";
+      hint.textContent = "Colombia: extras para proveedor/integración (ej. tipo_operación). Las pruebas DIAN y la emisión documental manual están separadas en su propia página del submenú.";
     }
 
     function renderList(items) {
@@ -1386,27 +1158,6 @@
         api_base_url: txt(document.getElementById("api_base_url").value),
         campos_pais_json: txt(document.getElementById("campos_pais_json").value),
         observaciones: txt(document.getElementById("observaciones").value)
-      };
-    }
-
-    function collectOperacionPayload(action) {
-      const rawMonto = Number(document.getElementById("op_monto_total").value || 0);
-      const rawClienteID = Number(document.getElementById("op_cliente_id").value || 0);
-      const clienteID = Number.isFinite(rawClienteID) && rawClienteID > 0 ? Math.trunc(rawClienteID) : 0;
-      return {
-        empresa_id: Number(state.empresaID),
-        entidad_id: clienteID,
-        cliente_id: clienteID,
-        cliente_email: txt(document.getElementById("op_cliente_email").value),
-        cliente_nombre: txt(document.getElementById("op_cliente_nombre").value),
-        pais_codigo: txt(document.getElementById("pais_codigo").value).toUpperCase(),
-        tipo_documento: txt(document.getElementById("op_tipo_documento").value) || "factura_electronica",
-        documento_codigo: txt(document.getElementById("op_documento_codigo").value),
-        estado_actual: txt(document.getElementById("op_estado_actual").value),
-        monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
-        moneda: txt(document.getElementById("op_moneda").value).toUpperCase() || "COP",
-        periodo_contable: txt(document.getElementById("op_periodo_contable").value),
-        observaciones: "operación " + action + " desde módulo facturacion_electronica"
       };
     }
 
@@ -1489,203 +1240,7 @@
       renderList(data.items || []);
     }
 
-    async function checkDianConnection(procesarCola) {
-      if (!state.empresaID) throw new Error("empresa_id es obligatorio");
-      const url = "/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" +
-        encodeURIComponent(state.empresaID) + "&pais_codigo=CO&procesar_reintentos=" + (procesarCola ? "1" : "0");
-      const res = await fetch(url, { credentials: "same-origin" });
-      const data = await readJSONResponse(res);
-      var msg = data.mensaje || "Estado de conexión consultado.";
-      if (data.online) {
-        msg = "Conexión DIAN/proveedor disponible. " + msg;
-        if (data.retry_procesado && typeof data.retry_procesado.enviados !== "undefined") {
-          msg += " Cola procesada: " + data.retry_procesado.enviados + " enviados, " + data.retry_procesado.fallidos + " fallidos.";
-        }
-      } else {
-        msg = "Sin conexión DIAN/proveedor. La facturacion electronica requiere conexion activa.";
-      }
-      setDianOfflineMessage(msg, !data.online);
-      return data;
-    }
-
-    async function preflightDianOfflineForOperation(action, payload) {
-      const code = txt(payload && payload.pais_codigo).toUpperCase();
-      const normalizedAction = txt(action).toLowerCase();
-      const accionesElectronicas = [
-        "emitir",
-        "anular",
-        "nota_credito",
-        "emitir_nota_credito",
-        "nota_debito",
-        "emitir_nota_debito",
-        "documento_soporte",
-        "emitir_documento_soporte",
-        "nomina_electronica",
-        "emitir_nomina_electronica",
-        "documento_equivalente_pos",
-        "emitir_documento_equivalente_pos"
-      ];
-      if (code !== "CO" || accionesElectronicas.indexOf(normalizedAction) === -1) {
-        return {};
-      }
-      const status = await checkDianConnection(false);
-      if (status.online) {
-        return {};
-      }
-      const mensaje = status.mensaje || "No hay internet o no se detecta el servidor DIAN/proveedor.";
-      throw new Error(mensaje + " No se continuará con la facturación electrónica hasta recuperar conexión.");
-    }
-
-    async function ejecutarOperacionFacturacion(action) {
-      const payload = collectOperacionPayload(action);
-      if (!payload.documento_codigo) {
-        setOperationMessage("documento_codigo es obligatorio", true);
-        return;
-      }
-      try {
-        Object.assign(payload, await preflightDianOfflineForOperation(action, payload));
-        const url = "/api/empresa/facturacion_electronica?action=" + encodeURIComponent(action) + "&empresa_id=" + encodeURIComponent(state.empresaID);
-        const res = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        await ensureOk(res);
-        const data = await res.json();
-        setOperationResult(data);
-        if (data && data.estado_nuevo) {
-          document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
-        }
-        let opMessage = "Operación ejecutada correctamente";
-        if (data && data.numero_legal) {
-          opMessage = "Operación ejecutada. Número legal: " + data.numero_legal;
-        }
-        if (data && data.factura_email && action === "emitir") {
-          const envio = data.factura_email;
-          if (envio.enviado && envio.destinatario) {
-            opMessage += " | Correo enviado a: " + envio.destinatario;
-          } else if (envio.automatico_desactivado) {
-            opMessage += " | Envío automático por correo desactivado.";
-          } else if (envio.error) {
-            opMessage += " | Correo no enviado: " + envio.error;
-          }
-        }
-        if (data && data.integracion_fiscal) {
-          const integ = data.integracion_fiscal;
-          if (integ.estado_envio === "contingencia") {
-            opMessage += " | Integracion fiscal en contingencia heredada: revisa la cola y reintenta con conexion activa.";
-          } else if (integ.requiere_confirmacion_offline) {
-            opMessage += " | DIAN/proveedor no disponible: se requiere conexion activa.";
-          } else if (integ.estado_envio === "fallido" && integ.error) {
-            opMessage += " | Integración fiscal: " + integ.error;
-          }
-        }
-        setOperationMessage(opMessage, false);
-      } catch (err) {
-        setOperationResult(null);
-        setOperationMessage(err && err.message ? err.message : "No se pudo ejecutar la operación", true);
-      }
-    }
-
-    async function ejecutarDianDiagnostico() {
-      if (!state.empresaID) {
-        setDianPruebasMessage("empresa_id es obligatorio", true);
-        return;
-      }
-      setDianPruebasMessage("Consultando diagnóstico DIAN...", false);
-      setDianPruebasResult(null);
-      try {
-        const url = "/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=" + encodeURIComponent(state.empresaID);
-        const res = await fetch(url, { credentials: "same-origin" });
-        const data = await readJSONResponse(res);
-        setDianPruebasResult(data);
-        setDianPruebasMessage("Diagnóstico DIAN cargado.", false);
-      } catch (err) {
-        setDianPruebasResult(err && err.data ? err.data : null);
-        setDianPruebasMessage(err && err.message ? err.message : "No se pudo consultar DIAN", true);
-      }
-    }
-
-    async function ejecutarDianPruebas() {
-      if (!state.empresaID) {
-        setDianPruebasMessage("empresa_id es obligatorio", true);
-        return;
-      }
-      const simular = !!document.getElementById("feDianPruebasSimular").checked;
-      const basePayload = collectDianSetPayloadBase();
-      if (basePayload.total_documentos <= 0) {
-        setDianPruebasMessage("Define al menos un documento para el set DIAN.", true);
-        return;
-      }
-      if (!simular && !window.confirm("Esto ejecutará Pruebas Dian reales en ambiente de habilitación. Verifica que el set coincida con lo que DIAN asignó a esta empresa. ¿Continuar?")) {
-        return;
-      }
-      const payload = Object.assign(basePayload, {
-        simular: simular,
-        detener_en_error: true
-      });
-      setDianPruebasMessage(simular ? "Simulando set DIAN..." : "Ejecutando Pruebas Dian...", false);
-      setDianPruebasResult(null);
-      try {
-        const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          credentials: "same-origin"
-        });
-        const data = await readJSONResponse(res);
-        setDianPruebasResult(data);
-        if (data && data.habilitacion_aprobada) {
-          setDianPruebasMessage("Pruebas Dian aprobadas por el set configurado.", false);
-        } else if (data && data.bloqueado) {
-          setDianPruebasMessage(data.motivo || "Pruebas Dian bloqueadas por validación.", true);
-        } else {
-          setDianPruebasMessage("Pruebas Dian ejecutadas. Revisa el resultado y acuses.", !data || data.ok === false);
-        }
-      } catch (err) {
-        setDianPruebasResult(err && err.data ? err.data : null);
-        setDianPruebasMessage(err && err.message ? err.message : "No se pudo ejecutar Pruebas Dian", true);
-      }
-    }
-
-    async function activarProduccionDianLocal() {
-      if (!state.empresaID) {
-        setDianPruebasMessage("empresa_id es obligatorio", true);
-        return;
-      }
-      var confirmado = !!document.getElementById("feDianConfirmarHabilitado").checked;
-      if (!confirmado && !window.confirm("Este paso NO cambia la plataforma DIAN; solo cambia la configuración local a producción. Debes verificar antes que DIAN ya dejó la empresa habilitada. ¿Continuar?")) {
-        return;
-      }
-      var payload = {
-        empresa_id: Number(state.empresaID),
-        confirmar_habilitacion_dian: confirmado,
-        url_dian_produccion: txt(document.getElementById("feDianProduccionURL").value)
-      };
-      setDianPruebasMessage("Activando producción local DIAN...", false);
-      setDianPruebasResult(null);
-      try {
-        const url = "/api/empresa/facturacion_electronica/dian?action=activar_produccion_local&empresa_id=" + encodeURIComponent(state.empresaID);
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          credentials: "same-origin"
-        });
-        const data = await readJSONResponse(res);
-        setDianPruebasResult(data);
-        setDianPruebasMessage(data && data.ok ? "Producción local DIAN activada. Verifica resolución y rangos reales antes de emitir." : "No se pudo activar producción local.", !(data && data.ok));
-        if (data && data.ok) {
-          loadDianConfig().catch(function() {});
-        }
-      } catch (err) {
-        setDianPruebasResult(err && err.data ? err.data : null);
-        setDianPruebasMessage(err && err.message ? err.message : "No se pudo activar producción local DIAN", true);
-      }
-    }
-
-      document.getElementById("pais_codigo").addEventListener("change", function() {
+    document.getElementById("pais_codigo").addEventListener("change", function() {
       const code = txt(document.getElementById("pais_codigo").value).toUpperCase();
       if (code) {
         loadCountryConfig(code).catch(function(err) {
@@ -1723,88 +1278,6 @@
         setMessage(err.message || "No se pudo recargar", true);
       });
     });
-
-    function setTipoDocumentoOperacion(tipo) {
-      var sel = document.getElementById("op_tipo_documento");
-      if (sel) sel.value = tipo;
-    }
-
-    document.getElementById("btnEmitirDocumento").addEventListener("click", function() {
-      ejecutarOperacionFacturacion("emitir");
-    });
-
-    document.getElementById("btnAnularDocumento").addEventListener("click", function() {
-      ejecutarOperacionFacturacion("anular");
-    });
-
-    document.getElementById("btnEmitirFactura").addEventListener("click", function() {
-      setTipoDocumentoOperacion("factura_electronica");
-      ejecutarOperacionFacturacion("emitir");
-    });
-
-    document.getElementById("btnAnularFactura").addEventListener("click", function() {
-      ejecutarOperacionFacturacion("anular");
-    });
-
-    document.getElementById("btnEmitirNC").addEventListener("click", function() {
-      setTipoDocumentoOperacion("nota_credito");
-      ejecutarOperacionFacturacion("nota_credito");
-    });
-
-    document.getElementById("btnEmitirND").addEventListener("click", function() {
-      setTipoDocumentoOperacion("nota_debito");
-      ejecutarOperacionFacturacion("nota_debito");
-    });
-
-    document.getElementById("btnEmitirSoporte").addEventListener("click", function() {
-      setTipoDocumentoOperacion("documento_soporte");
-      ejecutarOperacionFacturacion("documento_soporte");
-    });
-
-    document.getElementById("btnEmitirNominaElectronica").addEventListener("click", function() {
-      setTipoDocumentoOperacion("nomina_electronica");
-      ejecutarOperacionFacturacion("nomina_electronica");
-    });
-
-    document.getElementById("btnEmitirPOSElectronico").addEventListener("click", function() {
-      setTipoDocumentoOperacion("documento_equivalente_pos");
-      ejecutarOperacionFacturacion("documento_equivalente_pos");
-    });
-
-    document.getElementById("btnDianDiagnostico").addEventListener("click", function() {
-      ejecutarDianDiagnostico();
-    });
-
-    document.getElementById("btnDianPruebas").addEventListener("click", function() {
-      ejecutarDianPruebas();
-    });
-
-    var btnDianActivarProduccion = document.getElementById("btnDianActivarProduccion");
-    if (btnDianActivarProduccion) {
-      btnDianActivarProduccion.addEventListener("click", function() {
-        activarProduccionDianLocal();
-      });
-    }
-
-    var btnDianCheckConexion = document.getElementById("btnDianCheckConexion");
-    if (btnDianCheckConexion) {
-      btnDianCheckConexion.addEventListener("click", function() {
-        setDianOfflineMessage("Probando conexión DIAN/proveedor...", false);
-        checkDianConnection(false).catch(function(err) {
-          setDianOfflineMessage(err && err.message ? err.message : "No se pudo probar la conexión DIAN.", true);
-        });
-      });
-    }
-
-    var btnDianProcesarCola = document.getElementById("btnDianProcesarCola");
-    if (btnDianProcesarCola) {
-      btnDianProcesarCola.addEventListener("click", function() {
-        setDianOfflineMessage("Validando conexión y procesando cola...", false);
-        checkDianConnection(true).catch(function(err) {
-          setDianOfflineMessage(err && err.message ? err.message : "No se pudo procesar la cola DIAN.", true);
-        });
-      });
-    }
 
     var dianConfigForm = document.getElementById("feDianConfigForm");
     if (dianConfigForm) {
@@ -1848,14 +1321,6 @@
         });
       });
     }
-
-    window.setInterval(function() {
-      var code = txt(document.getElementById("pais_codigo").value).toUpperCase();
-      var ui = getDianOfflineUISettings();
-      if (code === "CO" && ui.auto && state.empresaID) {
-        checkDianConnection(true).catch(function() {});
-      }
-    }, 60000);
 
     document.getElementById("feForm").addEventListener("submit", async function(ev) {
       ev.preventDefault();

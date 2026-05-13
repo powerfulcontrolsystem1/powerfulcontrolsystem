@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Últimos movimientos de caja</title>
+  <title>Ultimos movimientos de caja</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -11,15 +11,17 @@
   <div class="container">
     <section class="card">
       <div class="header">
-        <h1>Últimos movimientos de caja</h1>
+        <h1>Ultimos movimientos de caja</h1>
         <div>
           <a id="backToStationsLink" class="btn secondary" href="/administrar_empresa/estaciones.html">Regresar a estaciones</a>
           <button id="reloadBtn" class="btn secondary">Actualizar</button>
         </div>
       </div>
 
+      <div id="scopeMessage" class="form-help">Cargando caja actual...</div>
+
       <div id="productosSection">
-        <h2>Últimos productos vendidos</h2>
+        <h2>Ultimos productos vendidos</h2>
         <div id="productosLoading" class="form-help">Cargando...</div>
         <table id="productosTable" class="table table-full is-hidden">
           <thead>
@@ -28,7 +30,7 @@
               <th>Producto</th>
               <th>Cantidad</th>
               <th>Tipo</th>
-              <th>Bodega origen / destino</th>
+              <th>Origen</th>
               <th>Referencia</th>
             </tr>
           </thead>
@@ -36,15 +38,15 @@
         </table>
       </div>
 
-      <div id="facturasSection" >
-        <h2>Últimas facturas</h2>
+      <div id="facturasSection">
+        <h2>Ultimas facturas</h2>
         <div id="facturasLoading" class="form-help">Cargando...</div>
         <table id="facturasTable" class="table table-full is-hidden">
           <thead>
             <tr>
               <th>Fecha</th>
               <th>Tipo</th>
-              <th>Código</th>
+              <th>Codigo</th>
               <th>Cliente</th>
               <th>Total</th>
               <th>Estado</th>
@@ -54,6 +56,23 @@
         </table>
       </div>
 
+      <div id="movimientosSection">
+        <h2>Movimientos financieros</h2>
+        <div id="movimientosLoading" class="form-help">Cargando...</div>
+        <table id="movimientosTable" class="table table-full is-hidden">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Metodo</th>
+              <th>Categoria</th>
+              <th>Usuario</th>
+              <th>Cantidad</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </section>
   </div>
 
@@ -81,7 +100,7 @@
         const fromParent = parsePositiveInt(parentParams.get('empresa_id') || parentParams.get('id'));
         if (fromParent > 0) return fromParent;
       }
-    } catch (_){ }
+    } catch (_) {}
     try {
       const candidates = [
         sessionStorage.getItem('active_empresa_id'),
@@ -98,6 +117,8 @@
   }
 
   const empresaId = resolveEmpresaId();
+  const pageParams = new URLSearchParams(window.location.search || '');
+  let currentReportPromise = null;
 
   function sanitize(v) {
     return String(v == null ? '' : v)
@@ -111,8 +132,7 @@
   async function requestJSON(url, options) {
     const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
     const ct = resp.headers.get('content-type') || '';
-    let data = null;
-    if (ct.includes('application/json')) data = await resp.json(); else data = await resp.text();
+    const data = ct.includes('application/json') ? await resp.json() : await resp.text();
     if (!resp.ok) {
       const msg = typeof data === 'string' ? data : (data && data.error ? data.error : 'error de servidor');
       throw new Error(msg || ('HTTP ' + resp.status));
@@ -133,9 +153,53 @@
     try {
       const n = Number(v || 0);
       return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 2 }).format(n);
-    } catch (e) {
+    } catch (_) {
       return 'COP ' + String(Number(v || 0).toFixed(2));
     }
+  }
+
+  function buildCajaActualReportURL() {
+    const params = new URLSearchParams();
+    params.set('empresa_id', String(empresaId || 0));
+    params.set('action', 'mi_caja_actual');
+    params.set('solo_usuario_actual', '1');
+    params.set('mi_caja_actual', '1');
+    params.set('reportes', 'ventas,items,movimientos');
+    ['caja_codigo', 'cierre_caja_id', 'turno', 'sucursal_id'].forEach(key => {
+      const value = String(pageParams.get(key) || '').trim();
+      if (value) params.set(key, value);
+    });
+    return '/api/empresa/corte_caja?' + params.toString();
+  }
+
+  function refreshCurrentReport() {
+    currentReportPromise = null;
+    return getCurrentReport();
+  }
+
+  async function getCurrentReport() {
+    if (!empresaId) throw new Error('No se encontro la empresa para cargar los movimientos.');
+    if (!currentReportPromise) {
+      currentReportPromise = requestJSON(buildCajaActualReportURL()).then(payload => {
+        renderScopeMessage(payload || {});
+        return payload || {};
+      });
+    }
+    return currentReportPromise;
+  }
+
+  function renderScopeMessage(payload) {
+    const box = document.getElementById('scopeMessage');
+    if (!box) return;
+    const caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    const resumen = payload && payload.resumen ? payload.resumen : {};
+    const warnings = payload && Array.isArray(payload.advertencias) ? payload.advertencias : [];
+    const parts = [];
+    if (caja.caja_codigo) parts.push('Caja: ' + caja.caja_codigo);
+    if (caja.turno) parts.push('Turno: ' + caja.turno);
+    if (caja.usuario || resumen.usuario_filtro) parts.push('Usuario: ' + (caja.usuario || resumen.usuario_filtro));
+    if (caja.fecha_apertura) parts.push('Apertura: ' + formatDateTime(caja.fecha_apertura));
+    box.textContent = warnings.length ? warnings[0] : ('Mostrando solo movimientos del usuario actual en la caja actual. ' + parts.join(' | '));
   }
 
   async function loadProductos() {
@@ -143,47 +207,30 @@
     const table = document.getElementById('productosTable');
     const tbody = table.querySelector('tbody');
     loading.textContent = 'Cargando...';
-      table.classList.add('is-hidden');
+    table.classList.add('is-hidden');
     tbody.innerHTML = '';
-    if (!empresaId) {
-      loading.textContent = 'No se encontró la empresa para cargar los movimientos.';
-      return;
-    }
     try {
-      const limit = 20;
-      const url = '/api/empresa/inventario/movimientos?empresa_id=' + encodeURIComponent(empresaId) + '&limit=' + encodeURIComponent(limit);
-      const rows = await requestJSON(url);
-      if (!Array.isArray(rows) || rows.length === 0) {
-        loading.textContent = 'No hay movimientos recientes.';
+      const report = await getCurrentReport();
+      const rows = Array.isArray(report.productos_vendidos) ? report.productos_vendidos : [];
+      if (!rows.length) {
+        loading.textContent = 'No hay productos vendidos en tu caja actual.';
         return;
       }
-      // Preferir movimientos de salida/venta: filtrar tipos distintos a 'entrada'
-      const filtered = rows.filter(r => {
-        try {
-          const t = String(r.tipo || '').trim().toLowerCase();
-          return t === '' || t !== 'entrada';
-        } catch (e) { return true; }
-      }).slice(0, limit);
-      if (filtered.length === 0) {
-        loading.textContent = 'No se encontraron movimientos de venta recientes.';
-        return;
-      }
-      filtered.forEach(m => {
+      rows.slice(0, 20).forEach(m => {
         const tr = document.createElement('tr');
-        const fecha = m.fecha_movimiento || m.fecha_creacion || '';
-        const bodega = (m.bodega_origen_nombre || '') + (m.bodega_destino_nombre ? (' / ' + m.bodega_destino_nombre) : '');
-        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(fecha)) + '</td>' +
-                       '<td data-label="Producto">' + sanitize(m.producto_nombre || m.producto_nombre || '') + '</td>' +
-                       '<td data-label="Cantidad">' + sanitize(String(m.cantidad || '')) + '</td>' +
-                       '<td data-label="Tipo">' + sanitize(String(m.tipo || '')) + '</td>' +
-                       '<td data-label="Bodega origen / destino">' + sanitize(bodega) + '</td>' +
-                       '<td data-label="Referencia">' + sanitize(m.referencia || '') + '</td>';
+        const referencia = (m.venta_codigo || '') + (m.referencia ? (' / ' + m.referencia) : '');
+        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(m.fecha || '')) + '</td>' +
+                       '<td data-label="Producto">' + sanitize(m.producto || '') + '</td>' +
+                       '<td data-label="Cantidad">' + sanitize(String(Number(m.cantidad || 0).toFixed(2))) + '</td>' +
+                       '<td data-label="Tipo">' + sanitize(m.tipo || '') + '</td>' +
+                       '<td data-label="Origen">' + sanitize('Caja actual') + '</td>' +
+                       '<td data-label="Referencia">' + sanitize(referencia) + '</td>';
         tbody.appendChild(tr);
       });
       loading.textContent = '';
       table.classList.remove('is-hidden');
     } catch (err) {
-      loading.textContent = 'Error al cargar movimientos: ' + (err && err.message ? err.message : String(err));
+      loading.textContent = 'Error al cargar productos: ' + (err && err.message ? err.message : String(err));
     }
   }
 
@@ -194,29 +241,21 @@
     loading.textContent = 'Cargando...';
     table.classList.add('is-hidden');
     tbody.innerHTML = '';
-    if (!empresaId) {
-      loading.textContent = 'No se encontró la empresa para cargar las facturas.';
-      return;
-    }
     try {
-      const limit = 20;
-      const url = '/api/empresa/facturacion_electronica?action=documentos&empresa_id=' + encodeURIComponent(empresaId) + '&limit=' + encodeURIComponent(limit);
-      const payload = await requestJSON(url);
-      const items = payload && payload.items ? payload.items : [];
-      if (!Array.isArray(items) || items.length === 0) {
-        loading.textContent = 'No hay facturas recientes.';
+      const report = await getCurrentReport();
+      const items = Array.isArray(report.ventas) ? report.ventas : [];
+      if (!items.length) {
+        loading.textContent = 'No hay facturas recientes en tu caja actual.';
         return;
       }
-      items.forEach(it => {
+      items.slice().reverse().slice(0, 20).forEach(it => {
         const tr = document.createElement('tr');
-        const fecha = it.fecha_documento || it.fecha_creacion || '';
-        const cliente = (it.cliente_nombre || '') + (it.cliente_documento ? (' · ' + it.cliente_documento) : '');
-        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(fecha)) + '</td>' +
-                       '<td data-label="Tipo">' + sanitize(it.tipo_documento || '') + '</td>' +
-                       '<td data-label="Código">' + sanitize(it.documento_codigo || '') + '</td>' +
-                       '<td data-label="Cliente">' + sanitize(cliente) + '</td>' +
-                       '<td data-label="Total">' + sanitize(formatMoney(it.monto_total || 0)) + '</td>' +
-                       '<td data-label="Estado">' + sanitize(it.estado_documento || '') + '</td>';
+        tr.innerHTML = '<td data-label="Fecha">' + sanitize(formatDateTime(it.fecha_pago || '')) + '</td>' +
+                       '<td data-label="Tipo">' + sanitize('Venta') + '</td>' +
+                       '<td data-label="Codigo">' + sanitize(it.codigo || '') + '</td>' +
+                       '<td data-label="Cliente">' + sanitize(it.nombre || '') + '</td>' +
+                       '<td data-label="Total">' + sanitize(formatMoney(it.total_pagado || it.total || 0)) + '</td>' +
+                       '<td data-label="Estado">' + sanitize('Pagada') + '</td>';
         tbody.appendChild(tr);
       });
       loading.textContent = '';
@@ -226,17 +265,55 @@
     }
   }
 
+  async function loadMovimientos() {
+    const loading = document.getElementById('movimientosLoading');
+    const table = document.getElementById('movimientosTable');
+    const tbody = table.querySelector('tbody');
+    loading.textContent = 'Cargando...';
+    table.classList.add('is-hidden');
+    tbody.innerHTML = '';
+    try {
+      const report = await getCurrentReport();
+      const rows = Array.isArray(report.movimientos) ? report.movimientos : [];
+      if (!rows.length) {
+        loading.textContent = 'No hay ingresos o egresos manuales en tu caja actual.';
+        return;
+      }
+      rows.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td data-label="Tipo">' + sanitize(m.tipo || '') + '</td>' +
+                       '<td data-label="Metodo">' + sanitize(m.metodo || '') + '</td>' +
+                       '<td data-label="Categoria">' + sanitize(m.categoria || '') + '</td>' +
+                       '<td data-label="Usuario">' + sanitize(m.usuario || '') + '</td>' +
+                       '<td data-label="Cantidad">' + sanitize(String(m.cantidad || 0)) + '</td>' +
+                       '<td data-label="Total">' + sanitize(formatMoney(m.total || 0)) + '</td>';
+        tbody.appendChild(tr);
+      });
+      loading.textContent = '';
+      table.classList.remove('is-hidden');
+    } catch (err) {
+      loading.textContent = 'Error al cargar movimientos: ' + (err && err.message ? err.message : String(err));
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const backToStations = document.getElementById('backToStationsLink');
     if (backToStations && empresaId) {
       backToStations.href = '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(empresaId);
     }
     const reload = document.getElementById('reloadBtn');
-    if (reload) reload.addEventListener('click', () => { loadProductos(); loadFacturas(); });
+    if (reload) {
+      reload.addEventListener('click', () => {
+        refreshCurrentReport();
+        loadProductos();
+        loadFacturas();
+        loadMovimientos();
+      });
+    }
     loadProductos();
     loadFacturas();
+    loadMovimientos();
   });
 </script>
 </body>
 </html>
-

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reporte de aseo de estaciones</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <section class="card empresa-section">
+      <div class="empresa-section-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <h1>Reporte de aseo</h1>
+          <p class="form-help">Control de tiempo desde que la estacion queda sucia hasta que se reporta el aseo terminado.</p>
+        </div>
+        <button type="button" id="backBtn" class="btn secondary">Volver a estaciones</button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Desde</label>
+          <input id="desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Hasta</label>
+          <input id="hasta" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estacion</label>
+          <input id="estacion_id" type="number" min="1" class="form-input" placeholder="Todas">
+        </div>
+        <div class="form-col" style="align-self:flex-end;">
+          <button type="button" id="filterBtn" class="btn">Consultar</button>
+        </div>
+      </div>
+
+      <div id="msg" class="form-help">Cargando reporte...</div>
+
+      <div class="portal-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:12px;">
+        <article class="portal-card"><h3>Total aseos</h3><p id="sumTotal" class="form-help">0</p></article>
+        <article class="portal-card"><h3>Promedio</h3><p id="sumAvg" class="form-help">0 s</p></article>
+        <article class="portal-card"><h3>Mas rapido</h3><p id="sumMin" class="form-help">0 s</p></article>
+        <article class="portal-card"><h3>Mas lento</h3><p id="sumMax" class="form-help">0 s</p></article>
+      </div>
+
+      <div style="overflow:auto;margin-top:16px;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Habitacion/estacion</th>
+              <th>Aseadora</th>
+              <th>Sucia desde</th>
+              <th>Termino aseo</th>
+              <th>Demora</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="6">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function parsePositiveInt(raw) {
+      const n = Number(String(raw || '').trim());
+      if (!Number.isFinite(n)) return 0;
+      const v = Math.trunc(n);
+      return v > 0 ? v : 0;
+    }
+
+    function resolveEmpresaId() {
+      const params = new URLSearchParams(window.location.search || '');
+      return parsePositiveInt(params.get('empresa_id') || params.get('id'));
+    }
+
+    const empresaID = resolveEmpresaId();
+
+    function sanitize(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setMessage(text, isError) {
+      const el = document.getElementById('msg');
+      el.textContent = text || '';
+      el.classList.toggle('value-negative', !!isError);
+    }
+
+    async function requestJSON(url, options) {
+      const resp = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+      const contentType = resp.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await resp.json() : await resp.text();
+      if (!resp.ok) {
+        throw new Error(typeof data === 'string' ? data : 'error de servidor');
+      }
+      return data;
+    }
+
+    function formatDuration(seconds) {
+      const total = Math.max(0, Math.trunc(Number(seconds || 0)));
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      if (h > 0) return h + ' h ' + m + ' min';
+      if (m > 0) return m + ' min ' + s + ' s';
+      return s + ' s';
+    }
+
+    function setDefaultDates() {
+      const now = new Date();
+      const week = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      document.getElementById('desde').value = week.toISOString().slice(0, 10);
+      document.getElementById('hasta').value = now.toISOString().slice(0, 10);
+    }
+
+    function updateSummary(summary) {
+      summary = summary || {};
+      document.getElementById('sumTotal').textContent = String(summary.total || 0);
+      document.getElementById('sumAvg').textContent = formatDuration(summary.promedio_segundos || 0);
+      document.getElementById('sumMin').textContent = formatDuration(summary.minimo_segundos || 0);
+      document.getElementById('sumMax').textContent = formatDuration(summary.maximo_segundos || 0);
+    }
+
+    function renderRows(items) {
+      const tbody = document.getElementById('rows');
+      if (!Array.isArray(items) || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay aseos reportados para el filtro seleccionado.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = items.map(function(item) {
+        const estacion = item.estacion_nombre || ('Estacion ' + (item.estacion_id || ''));
+        const usuario = item.usuario_nombre || item.usuario_email || 'N/A';
+        return '<tr>' +
+          '<td>' + sanitize(estacion) + '</td>' +
+          '<td>' + sanitize(usuario) + '</td>' +
+          '<td>' + sanitize(item.sucia_desde || '') + '</td>' +
+          '<td>' + sanitize(item.aseo_fin || '') + '</td>' +
+          '<td>' + sanitize(formatDuration(item.duracion_segundos || 0)) + '</td>' +
+          '<td>' + sanitize(item.estado || '') + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function loadReport() {
+      if (!empresaID) {
+        setMessage('empresa_id requerido en la URL', true);
+        return;
+      }
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaID));
+      params.set('action', 'reporte');
+      params.set('desde', document.getElementById('desde').value || '');
+      params.set('hasta', document.getElementById('hasta').value || '');
+      params.set('limit', '500');
+      const estacionID = parsePositiveInt(document.getElementById('estacion_id').value);
+      if (estacionID > 0) params.set('estacion_id', String(estacionID));
+      setMessage('Cargando reporte...', false);
+      try {
+        const data = await requestJSON('/api/empresa/estacion_aseo?' + params.toString());
+        updateSummary(data.summary || {});
+        renderRows(data.items || []);
+        setMessage('Reporte actualizado.', false);
+      } catch (err) {
+        updateSummary({});
+        renderRows([]);
+        setMessage(err.message || 'No se pudo cargar el reporte de aseo', true);
+      }
+    }
+
+    document.getElementById('filterBtn').addEventListener('click', loadReport);
+    document.getElementById('backBtn').addEventListener('click', function() {
+      window.location.href = '/administrar_empresa/estaciones.html?empresa_id=' + encodeURIComponent(empresaID || 0);
+    });
+
+    setDefaultDates();
+    loadReport();
+  </script>
+</body>
+</html>

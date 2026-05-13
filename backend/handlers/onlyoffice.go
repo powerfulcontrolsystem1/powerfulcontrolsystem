@@ -97,8 +97,11 @@ func onlyOfficeEmpresaDocsDir(empresaID int64) (string, error) {
 	if empresaID <= 0 {
 		return "", fmt.Errorf("empresa_id invalido")
 	}
-	root := onlyOfficeDataRoot()
-	dir := filepath.Join(root, "empresas", fmt.Sprintf("%d", empresaID), "documentos")
+	root := filepath.Clean(onlyOfficeDataRoot())
+	if !strings.EqualFold(filepath.Base(root), "empresas") {
+		root = filepath.Join(root, "empresas")
+	}
+	dir := filepath.Join(root, fmt.Sprintf("%d", empresaID), "documentos")
 	// Normalizamos a formato del FS local.
 	dir = filepath.Clean(dir)
 	if err := os.MkdirAll(dir, 0750); err != nil {
@@ -297,6 +300,69 @@ func onlyOfficeMIMEByExt(name string) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+func onlyOfficeIsInternalDocumentServerHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(strings.Trim(host, "[]")))
+	if host == "" || host == "localhost" || strings.Contains(host, ".") || strings.Contains(host, ":") {
+		return false
+	}
+	return host == "onlyoffice" ||
+		host == "documentserver" ||
+		host == "onlyoffice-documentserver" ||
+		host == "pcs-onlyoffice-documentserver" ||
+		strings.Contains(host, "onlyoffice")
+}
+
+func onlyOfficePublicDocumentServerURLFromBase(baseURL string) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(baseURL))
+	if err != nil || u == nil {
+		return "", false
+	}
+	scheme := strings.ToLower(strings.TrimSpace(u.Scheme))
+	if scheme != "http" && scheme != "https" {
+		return "", false
+	}
+	host := strings.ToLower(strings.TrimSpace(u.Hostname()))
+	if host == "" || host == "localhost" || strings.Contains(host, ":") {
+		return "", false
+	}
+	if strings.HasPrefix(host, "127.") || strings.HasPrefix(host, "10.") || strings.HasPrefix(host, "192.168.") || strings.HasPrefix(host, "172.") {
+		return "", false
+	}
+	host = strings.TrimPrefix(host, "www.")
+	labels := strings.Split(host, ".")
+	if len(labels) < 2 {
+		return "", false
+	}
+	if len(labels) > 2 {
+		switch labels[0] {
+		case "app", "admin", "erp", "panel", "www":
+			host = strings.Join(labels[1:], ".")
+		}
+	}
+	if strings.HasPrefix(host, "onlyoffice.") {
+		return scheme + "://" + host, true
+	}
+	return scheme + "://onlyoffice." + host, true
+}
+
+func onlyOfficeBrowserDocumentServerURL(r *http.Request, dbSuper *sql.DB, configured string) (string, bool) {
+	configured = strings.TrimRight(strings.TrimSpace(configured), "/")
+	for _, key := range []string{"ONLYOFFICE_PUBLIC_DOCUMENT_SERVER_URL", "ONLYOFFICE_BROWSER_DOCUMENT_SERVER_URL"} {
+		if v := strings.TrimRight(strings.TrimSpace(os.Getenv(key)), "/"); v != "" {
+			return v, v != configured
+		}
+	}
+	u, err := url.Parse(configured)
+	if err != nil || u == nil || !onlyOfficeIsInternalDocumentServerHost(u.Hostname()) {
+		return configured, false
+	}
+	publicURL, ok := onlyOfficePublicDocumentServerURLFromBase(resolveBaseURLForConfirmation(r, dbSuper))
+	if !ok {
+		return configured, false
+	}
+	return publicURL, publicURL != configured
 }
 
 func onlyOfficeZipBytes(files map[string]string) ([]byte, error) {
@@ -730,6 +796,7 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				})
 				return
 			}
+			browserDSURL, dsURLRewritten := onlyOfficeBrowserDocumentServerURL(r, dbSuper, dsURL)
 			if strings.TrimSpace(jwtSecret) == "" {
 				writeJSON(w, http.StatusOK, map[string]any{
 					"ok":         false,
@@ -814,10 +881,11 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				ed["token"] = jwt
 			}
 			writeJSON(w, http.StatusOK, map[string]any{
-				"ok":            true,
-				"empresa_id":    empresaID,
-				"ds_url":        dsURL,
-				"onlyofficeCfg": ooCfg,
+				"ok":               true,
+				"empresa_id":       empresaID,
+				"ds_url":           browserDSURL,
+				"ds_url_rewritten": dsURLRewritten,
+				"onlyofficeCfg":    ooCfg,
 			})
 			return
 

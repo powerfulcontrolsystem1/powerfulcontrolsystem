@@ -1158,6 +1158,73 @@ img{max-width:100%;height:auto}
   border-radius:12px;
   box-shadow:0 16px 34px rgba(5,10,20,0.42);
 }
+.carrito-flat-page .card,
+.carrito-flat-page .form,
+.carrito-flat-page .advanced-card,
+.carrito-flat-page .carrito-workspace-card,
+.carrito-flat-page .carrito-summary-card,
+.carrito-flat-page .carrito-item-card,
+.carrito-flat-page .carrito-payment-section-card,
+.carrito-flat-page .carrito-actions-card,
+.carrito-flat-page .carrito-worker-card,
+.carrito-flat-page .carrito-vip-card,
+.carrito-flat-page .carrito-payment-amounts-card{
+  box-shadow:none !important;
+}
+.carrito-flat-page .btn{
+  box-shadow:none !important;
+}
+.carrito-flat-page .form,
+.carrito-flat-page .card,
+.carrito-flat-page .advanced-card{
+  border-radius:0 !important;
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+.carrito-flat-page .container > .form,
+.carrito-flat-page #carritosList,
+.carrito-flat-page .carrito-workspace-card,
+.carrito-flat-page .carrito-grid,
+.carrito-flat-page .carrito-primary-layout,
+.carrito-flat-page .carrito-primary-main,
+.carrito-flat-page .carrito-side-column,
+.carrito-flat-page .carrito-station-split{
+  gap:0 !important;
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+.carrito-flat-page .carrito-primary-layout{
+  column-gap:0 !important;
+  row-gap:0 !important;
+}
+.carrito-flat-page .carrito-side-column{
+  gap:0 !important;
+}
+.carrito-flat-page .card + .card,
+.carrito-flat-page .form + .form,
+.carrito-flat-page .form + .card,
+.carrito-flat-page .card + .form{
+  margin-top:0 !important;
+}
+.carrito-flat-page .card.mt-10,
+.carrito-flat-page .card.mt-12,
+.carrito-flat-page .card.mt-14,
+.carrito-flat-page .form.mt-10,
+.carrito-flat-page .form.mt-12,
+.carrito-flat-page .form.mt-14,
+.carrito-flat-page .carrito-grid.mt-14,
+.carrito-flat-page .carrito-station-split.mt-12{
+  margin-top:0 !important;
+}
+.carrito-flat-page .carrito-items-box,
+.carrito-flat-page .carrito-summary-row,
+.carrito-flat-page .carrito-summary-profile,
+.carrito-flat-page .carrito-payment-section-card,
+.carrito-flat-page .carrito-station-toolbar,
+.carrito-flat-page .carrito-station-toolbar > button,
+.carrito-flat-page .carrito-station-toolbar > label{
+  border-radius:0 !important;
+}
 h1,h2,h3{margin:0 0 12px 0}
 p{color:var(--muted);line-height:1.5}
 .btn{display:inline-block;padding:8px 12px;background:linear-gradient(180deg, var(--btn-primary-top), var(--accent));color:var(--btn-primary-text);border-radius:8px;text-decoration:none;font-weight:700;border:1px solid var(--btn-primary-border);box-shadow:0 8px 18px var(--btn-primary-shadow);font-size:0.95rem;line-height:1;text-align:center;white-space:normal}

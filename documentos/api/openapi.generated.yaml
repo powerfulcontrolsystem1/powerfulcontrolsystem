@@ -839,6 +839,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/estacion_aseo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/estacion_aseo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/estacion_aseo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/estacion_prefs":
     get:
       tags: [empresa]

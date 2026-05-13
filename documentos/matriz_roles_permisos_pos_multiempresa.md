@@ -1,3 +1,18 @@
+2026-05-13: Reportes ejecutivos profesionales
+- `web/administrar_empresa/reportes_ejecutivos.html`, `reportes_menu.html` y `reportes_finanzas.html` permanecen dentro del modulo `reportes`.
+- No agrega permisos ni wrappers nuevos: los datos y exportaciones siguen usando `/api/empresa/reportes` bajo `WithEmpresaReportesPermissions`.
+- La simplificacion es de UX: menos botones en el submenu principal y datasets especializados dentro de la suite, conservando aislamiento por `empresa_id`.
+
+2026-05-13: Facturacion electronica separa pruebas DIAN
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` queda dentro del mismo submenu y alcance del modulo `facturacion_electronica`.
+- No agrega permisos ni wrappers nuevos: la pagina usa los endpoints existentes de facturacion electronica bajo `WithEmpresaFacturacionPermissions`.
+- La separacion es de UX y operacion: configuracion empresarial en la pagina principal; diagnostico, pruebas DIAN y emision documental manual en subpagina dedicada.
+
+2026-05-13: Control de aseo en estaciones
+- `users.control_aseo_estaciones` habilita o deshabilita por usuario operativo la accion de reportar aseo terminado sobre una estacion sucia.
+- `/api/empresa/estacion_aseo?action=finalizar` usa `WithEmpresaSelfServicePermissions` y ademas exige usuario con control de aseo activo o rol administrativo/supervision; el reporte gerencial queda restringido a roles de administracion, supervision, auditoria o reportes.
+- El flujo no cambia permisos de carritos ni de configuracion de estaciones; conserva aislamiento por `empresa_id` y atribuye cada cierre al usuario autenticado.
+
 2026-05-13: Proveedores de firma digital en facturacion electronica
 - `web/administrar_empresa/proveedores_firma_digital.html` queda dentro del submenu empresarial de `Facturacion electronica`.
 - No agrega permisos, roles ni licencias: hereda el acceso vigente al modulo `facturacion_electronica` y solo publica informacion/enlaces externos para adquirir certificados.
@@ -394,6 +409,7 @@
 2026-05-13: Nota operativa para `documentos_onlyoffice`
 - `create_edit_local` y `download&delete=1` siguen bajo `WithEmpresaDocumentosOnlyOfficePermissions`; no habilitan rutas publicas ni permisos nuevos.
 - El editor OnlyOffice necesita una copia temporal por `empresa_id` para la sesion de edicion, pero el flujo oficial descarga el resultado al dispositivo y elimina el temporal al guardar.
+- La correccion de apertura del editor solo ajusta ruta temporal y URL publica del Document Server para el navegador; no cambia roles, permisos, endpoints protegidos ni tokens temporales.
 - La autorizacion efectiva sigue dependiendo del acceso al modulo `documentos_onlyoffice` y del aislamiento por empresa.
 
 2026-05-13: Nota operativa para `mantenimiento programado`

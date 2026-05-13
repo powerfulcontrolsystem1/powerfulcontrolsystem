@@ -166,6 +166,11 @@
         document.getElementById('closeBtn').disabled = !enabled;
       }
 
+      function setEditorError(message){
+        var frame = document.getElementById('editorFrame');
+        frame.innerHTML = '<div class="oo-empty"><div><strong>No se pudo abrir el editor.</strong><br><span>'+esc(message || 'Revisa la configuracion de OnlyOffice Document Server.')+'</span></div></div>';
+      }
+
       function renderHistory(){
         var host = document.getElementById('historyList');
         if(!state.history.length){
@@ -178,7 +183,7 @@
         host.querySelectorAll('[data-idx]').forEach(function(btn){
           btn.addEventListener('click', function(){
             var item = state.history[Number(btn.getAttribute('data-idx'))];
-            if(item) openDoc(item.file,item.type).catch(function(err){ setMsg(err.message||String(err), true); });
+            if(item) openDoc(item.file,item.type).catch(function(err){ setEditorError(err.message||String(err)); setMsg(err.message||String(err), true); });
           });
         });
       }
@@ -186,12 +191,21 @@
       function ensureOnlyOfficeScript(dsUrl){
         return new Promise(function(resolve,reject){
           var id='onlyoffice-api-script';
-          if(document.getElementById(id)) return resolve();
+          if(window.DocsAPI && typeof window.DocsAPI.DocEditor === 'function') return resolve();
+          if(document.getElementById(id)){
+            if(window.DocsAPI && typeof window.DocsAPI.DocEditor === 'function') return resolve();
+            document.getElementById(id).remove();
+          }
+          var cleanUrl = String(dsUrl||'').replace(/\/+$/,'');
+          if(!cleanUrl) return reject(new Error('OnlyOffice Document Server no esta configurado.'));
           var s=document.createElement('script');
           s.id=id;
-          s.src=String(dsUrl||'').replace(/\/+$/,'') + '/web-apps/apps/api/documents/api.js';
-          s.onload=function(){ resolve(); };
-          s.onerror=function(){ reject(new Error('No se pudo cargar OnlyOffice Document Server.')); };
+          s.src=cleanUrl + '/web-apps/apps/api/documents/api.js';
+          s.onload=function(){
+            if(window.DocsAPI && typeof window.DocsAPI.DocEditor === 'function') return resolve();
+            reject(new Error('OnlyOffice respondio, pero no cargo DocsAPI.DocEditor. Revisa la URL publica del Document Server.'));
+          };
+          s.onerror=function(){ reject(new Error('No se pudo cargar OnlyOffice Document Server desde '+s.src+'. Revisa que la URL sea publica para el navegador.')); };
           document.head.appendChild(s);
         });
       }
@@ -222,8 +236,10 @@
         var cfgResp = await apiJSON('/api/empresa/documentos?empresa_id='+encodeURIComponent(empresaId)+'&action=editor_config&mode=edit&file='+encodeURIComponent(file));
         var dsUrl = txt(cfgResp.ds_url);
         var cfg = cfgResp.onlyofficeCfg || null;
+        if(cfgResp && cfgResp.ok === false) throw new Error(cfgResp.error || 'OnlyOffice no esta configurado.');
         if(!dsUrl || !cfg) throw new Error('OnlyOffice no esta configurado.');
         await ensureOnlyOfficeScript(dsUrl);
+        if(!window.DocsAPI || typeof window.DocsAPI.DocEditor !== 'function') throw new Error('No se cargo el editor OnlyOffice en el navegador.');
         var frame = document.getElementById('editorFrame');
         frame.innerHTML = '<div id="onlyoffice-editor" style="width:100%;height:100%;min-height:62vh;"></div>';
         state.file = file;
@@ -233,8 +249,7 @@
         if(state.editor && typeof state.editor.destroyEditor === 'function'){
           try{ state.editor.destroyEditor(); }catch(_){}
         }
-        // eslint-disable-next-line no-undef
-        state.editor = new DocsAPI.DocEditor('onlyoffice-editor', cfg);
+        state.editor = new window.DocsAPI.DocEditor('onlyoffice-editor', cfg);
         setMsg('Editor listo.', false);
       }
 
@@ -277,8 +292,8 @@
       document.querySelectorAll('.oo-type').forEach(function(btn){
         btn.addEventListener('click', function(){ setSelectedType(btn.getAttribute('data-type')); });
       });
-      document.getElementById('createBtn').addEventListener('click', function(){ createAndOpen().catch(function(err){ setMsg(err.message||String(err), true); }); });
-      document.getElementById('newBtnTop').addEventListener('click', function(){ createAndOpen().catch(function(err){ setMsg(err.message||String(err), true); }); });
+      document.getElementById('createBtn').addEventListener('click', function(){ createAndOpen().catch(function(err){ setEditorError(err.message||String(err)); setMsg(err.message||String(err), true); }); });
+      document.getElementById('newBtnTop').addEventListener('click', function(){ createAndOpen().catch(function(err){ setEditorError(err.message||String(err)); setMsg(err.message||String(err), true); }); });
       document.getElementById('downloadBtn').addEventListener('click', function(){ downloadCurrent().catch(function(err){ setMsg(err.message||String(err), true); }); });
       document.getElementById('downloadBtnTop').addEventListener('click', function(){ downloadCurrent().catch(function(err){ setMsg(err.message||String(err), true); }); });
       document.getElementById('closeBtn').addEventListener('click', closeCurrent);

@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pruebas DIAN y documentos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Pruebas DIAN y documentos</h1>
+    </div>
+
+    <div class="card">
+      <h2>Pruebas DIAN</h2>
+      <p class="form-help">
+        Ejecuta diagnostico, set de habilitacion y paso a produccion local para Colombia. Esta pagina no cambia la configuracion fiscal base; usa los datos guardados en Facturacion electronica.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-help"><label><input id="feDianPruebasSimular" type="checkbox"> Simular sin enviar a DIAN</label></div>
+          <div class="form-help">El envio real requiere ambiente de habilitacion, firma registrada, TestSetId y endpoint compatible.</div>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Facturas electronicas</label>
+          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="8">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas debito</label>
+          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="1">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Notas credito</label>
+          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Maximo de envios en esta ejecucion</label>
+          <input id="feDianSetMaxEnvios" class="form-input" type="number" min="1" placeholder="Vacio = todo el set">
+        </div>
+        <div class="form-col">
+          <label class="form-label">URL produccion DIAN/proveedor</label>
+          <input id="feDianProduccionURL" class="form-input" placeholder="Configurar antes de activar produccion local">
+        </div>
+        <div class="form-col">
+          <div class="form-help" style="margin-top:28px;"><label><input id="feDianConfirmarHabilitado" type="checkbox"> Confirmo que DIAN ya dejo la empresa habilitada</label></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnostico DIAN</button>
+        <button id="btnDianPruebas" type="button" class="btn">Pruebas DIAN</button>
+        <button id="btnDianActivarProduccion" type="button" class="btn secondary">Activar produccion local</button>
+      </div>
+      <div id="feDianPruebasMsg" class="form-help"></div>
+      <pre id="feDianPruebasResultado" class="form-help pre-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Conexion DIAN/proveedor</h2>
+      <p class="form-help">
+        La facturacion electronica requiere conexion activa con el servidor y con DIAN/proveedor. Usa estas acciones para revisar disponibilidad y reprocesar cola.
+      </p>
+      <div class="form-actions">
+        <button id="btnDianCheckConexion" class="btn secondary" type="button">Probar conexion</button>
+        <button id="btnDianProcesarCola" class="btn" type="button">Procesar cola</button>
+      </div>
+      <div id="feDianOfflineMsg" class="form-help"></div>
+    </div>
+
+    <div class="card">
+      <h2>Emision documental manual</h2>
+      <p class="form-help">
+        Ejecuta operaciones manuales de documentos electronicos para pruebas controladas, soporte o conciliacion.
+      </p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Codigo documento</label>
+          <input id="op_documento_codigo" class="form-input" placeholder="FAC-1001">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Tipo documento electronico</label>
+          <select id="op_tipo_documento" class="form-input">
+            <option value="factura_electronica">Factura electronica de venta</option>
+            <option value="nota_credito">Nota credito electronica</option>
+            <option value="nota_debito">Nota debito electronica</option>
+            <option value="documento_soporte">Documento soporte electronico</option>
+            <option value="nomina_electronica">Nomina electronica</option>
+            <option value="documento_equivalente_pos">Documento equivalente POS electronico</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Estado actual</label>
+          <select id="op_estado_actual" class="form-input">
+            <option value="borrador">borrador</option>
+            <option value="emitida">emitida</option>
+            <option value="anulada">anulada</option>
+            <option value="ajustada">ajustada</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Periodo contable</label>
+          <input id="op_periodo_contable" class="form-input" placeholder="2026-04">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Monto total</label>
+          <input id="op_monto_total" type="number" step="0.01" class="form-input" placeholder="120000">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <input id="op_moneda" class="form-input" value="COP">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Cliente ID</label>
+          <input id="op_cliente_id" type="number" class="form-input" placeholder="ID interno del cliente">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Correo cliente (opcional)</label>
+          <input id="op_cliente_email" type="email" class="form-input" placeholder="cliente@correo.com">
+        </div>
+        <div class="form-col">
+          <label class="form-label">Nombre cliente (opcional)</label>
+          <input id="op_cliente_nombre" class="form-input" placeholder="Nombre del cliente">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="btnEmitirDocumento" class="btn">Emitir documento</button>
+        <button type="button" id="btnAnularDocumento" class="btn secondary">Anular documento</button>
+        <button type="button" id="btnEmitirFactura" class="btn secondary">Emitir factura</button>
+        <button type="button" id="btnEmitirNC" class="btn secondary">Emitir nota credito</button>
+        <button type="button" id="btnEmitirND" class="btn secondary">Emitir nota debito</button>
+        <button type="button" id="btnEmitirSoporte" class="btn secondary">Emitir soporte</button>
+        <button type="button" id="btnEmitirNominaElectronica" class="btn secondary">Emitir nomina</button>
+        <button type="button" id="btnEmitirPOSElectronico" class="btn secondary">Emitir POS electronico</button>
+      </div>
+      <div id="op_msg" class="form-help"></div>
+      <pre id="op_resultado" class="form-help pre-output"></pre>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: Number(new URLSearchParams(window.location.search).get("empresa_id") || new URLSearchParams(window.location.search).get("id") || 0)
+    };
+
+    function txt(v) {
+      return (v || "").toString().trim();
+    }
+
+    function setText(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || "";
+      el.style.color = isError ? "#ef5350" : "";
+    }
+
+    function setJSON(id, data) {
+      const box = document.getElementById(id);
+      if (!box) return;
+      if (!data) {
+        box.textContent = "";
+        return;
+      }
+      try {
+        box.textContent = JSON.stringify(data, null, 2);
+      } catch (_) {
+        box.textContent = String(data);
+      }
+    }
+
+    async function readJSONResponse(res) {
+      const textBody = await res.text();
+      let data = null;
+      if (textBody) {
+        try {
+          data = JSON.parse(textBody);
+        } catch (_) {
+          data = { error: textBody };
+        }
+      }
+      if (!res.ok) {
+        const msg = data && (data.motivo || data.error || data.message) ? (data.motivo || data.error || data.message) : ("HTTP " + res.status);
+        const err = new Error(msg);
+        err.data = data;
+        throw err;
+      }
+      return data || {};
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return res;
+      const t = await res.text();
+      throw new Error(t || ("HTTP " + res.status));
+    }
+
+    function numberInputValue(id, fallback) {
+      const el = document.getElementById(id);
+      const value = el ? Number(el.value || 0) : 0;
+      if (!Number.isFinite(value) || value < 0) return fallback;
+      return Math.trunc(value);
+    }
+
+    function collectDianSetPayloadBase() {
+      const facturas = numberInputValue("feDianSetFacturas", 8);
+      const notasDebito = numberInputValue("feDianSetNotasDebito", 1);
+      const notasCredito = numberInputValue("feDianSetNotasCredito", 1);
+      const maxEnvios = numberInputValue("feDianSetMaxEnvios", 0);
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        facturas_electronicas: facturas,
+        notas_debito: notasDebito,
+        notas_credito: notasCredito,
+        total_documentos: facturas + notasDebito + notasCredito
+      };
+      if (maxEnvios > 0) payload.max_envios = maxEnvios;
+      return payload;
+    }
+
+    function collectOperacionPayload(action) {
+      const rawMonto = Number(document.getElementById("op_monto_total").value || 0);
+      const rawClienteID = Number(document.getElementById("op_cliente_id").value || 0);
+      const clienteID = Number.isFinite(rawClienteID) && rawClienteID > 0 ? Math.trunc(rawClienteID) : 0;
+      return {
+        empresa_id: Number(state.empresaID),
+        entidad_id: clienteID,
+        cliente_id: clienteID,
+        cliente_email: txt(document.getElementById("op_cliente_email").value),
+        cliente_nombre: txt(document.getElementById("op_cliente_nombre").value),
+        pais_codigo: "CO",
+        tipo_documento: txt(document.getElementById("op_tipo_documento").value) || "factura_electronica",
+        documento_codigo: txt(document.getElementById("op_documento_codigo").value),
+        estado_actual: txt(document.getElementById("op_estado_actual").value),
+        monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
+        moneda: txt(document.getElementById("op_moneda").value).toUpperCase() || "COP",
+        periodo_contable: txt(document.getElementById("op_periodo_contable").value),
+        observaciones: "operacion " + action + " desde pruebas DIAN"
+      };
+    }
+
+    async function ejecutarDianDiagnostico() {
+      setText("feDianPruebasMsg", "Consultando diagnostico DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await readJSONResponse(await fetch(url, { credentials: "same-origin" }));
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", "Diagnostico DIAN cargado.", false);
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo consultar DIAN", true);
+      }
+    }
+
+    async function ejecutarDianPruebas() {
+      const simular = !!document.getElementById("feDianPruebasSimular").checked;
+      const basePayload = collectDianSetPayloadBase();
+      if (basePayload.total_documentos <= 0) {
+        setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
+        return;
+      }
+      if (!simular && !window.confirm("Esto ejecutara pruebas DIAN reales en ambiente de habilitacion. Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
+        return;
+      }
+      const payload = Object.assign(basePayload, { simular: simular, detener_en_error: true });
+      setText("feDianPruebasMsg", simular ? "Simulando set DIAN..." : "Ejecutando pruebas DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await readJSONResponse(await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        }));
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", data && data.habilitacion_aprobada ? "Pruebas DIAN aprobadas." : "Pruebas DIAN ejecutadas. Revisa resultado y acuses.", !data || data.ok === false);
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo ejecutar pruebas DIAN", true);
+      }
+    }
+
+    async function activarProduccionDianLocal() {
+      const confirmado = !!document.getElementById("feDianConfirmarHabilitado").checked;
+      if (!confirmado && !window.confirm("Este paso solo cambia la configuracion local a produccion. Debes verificar antes que DIAN ya dejo la empresa habilitada. Continuar?")) {
+        return;
+      }
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        confirmar_habilitacion_dian: confirmado,
+        url_dian_produccion: txt(document.getElementById("feDianProduccionURL").value)
+      };
+      setText("feDianPruebasMsg", "Activando produccion local DIAN...", false);
+      setJSON("feDianPruebasResultado", null);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=activar_produccion_local&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await readJSONResponse(await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        }));
+        setJSON("feDianPruebasResultado", data);
+        setText("feDianPruebasMsg", data && data.ok ? "Produccion local DIAN activada. Verifica resolucion y rangos reales antes de emitir." : "No se pudo activar produccion local.", !(data && data.ok));
+      } catch (err) {
+        setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
+        setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo activar produccion local DIAN", true);
+      }
+    }
+
+    async function checkDianConnection(procesarCola) {
+      const url = "/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" +
+        encodeURIComponent(state.empresaID) + "&pais_codigo=CO&procesar_reintentos=" + (procesarCola ? "1" : "0");
+      const data = await readJSONResponse(await fetch(url, { credentials: "same-origin" }));
+      let msg = data.mensaje || "Estado de conexion consultado.";
+      if (data.online) {
+        msg = "Conexion DIAN/proveedor disponible. " + msg;
+        if (data.retry_procesado && typeof data.retry_procesado.enviados !== "undefined") {
+          msg += " Cola procesada: " + data.retry_procesado.enviados + " enviados, " + data.retry_procesado.fallidos + " fallidos.";
+        }
+      } else {
+        msg = "Sin conexion DIAN/proveedor. La facturacion electronica requiere conexion activa.";
+      }
+      setText("feDianOfflineMsg", msg, !data.online);
+      return data;
+    }
+
+    async function preflightDianForOperation(action, payload) {
+      const accionesElectronicas = [
+        "emitir", "anular", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito",
+        "documento_soporte", "emitir_documento_soporte", "nomina_electronica", "emitir_nomina_electronica",
+        "documento_equivalente_pos", "emitir_documento_equivalente_pos"
+      ];
+      if (txt(payload && payload.pais_codigo).toUpperCase() !== "CO" || accionesElectronicas.indexOf(txt(action).toLowerCase()) === -1) {
+        return {};
+      }
+      const status = await checkDianConnection(false);
+      if (status.online) return {};
+      throw new Error((status.mensaje || "No hay conexion con DIAN/proveedor.") + " No se continuara con la emision.");
+    }
+
+    async function ejecutarOperacionFacturacion(action) {
+      const payload = collectOperacionPayload(action);
+      if (!payload.documento_codigo) {
+        setText("op_msg", "documento_codigo es obligatorio", true);
+        return;
+      }
+      setText("op_msg", "Ejecutando operacion...", false);
+      setJSON("op_resultado", null);
+      try {
+        Object.assign(payload, await preflightDianForOperation(action, payload));
+        const url = "/api/empresa/facturacion_electronica?action=" + encodeURIComponent(action) + "&empresa_id=" + encodeURIComponent(state.empresaID);
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "same-origin"
+        });
+        await ensureOk(res);
+        const data = await res.json();
+        setJSON("op_resultado", data);
+        if (data && data.estado_nuevo) document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
+        setText("op_msg", data && data.numero_legal ? ("Operacion ejecutada. Numero legal: " + data.numero_legal) : "Operacion ejecutada correctamente", false);
+      } catch (err) {
+        setJSON("op_resultado", err && err.data ? err.data : null);
+        setText("op_msg", err && err.message ? err.message : "No se pudo ejecutar la operacion", true);
+      }
+    }
+
+    function setTipoDocumentoOperacion(tipo) {
+      document.getElementById("op_tipo_documento").value = tipo;
+    }
+
+    document.getElementById("btnDianDiagnostico").addEventListener("click", ejecutarDianDiagnostico);
+    document.getElementById("btnDianPruebas").addEventListener("click", ejecutarDianPruebas);
+    document.getElementById("btnDianActivarProduccion").addEventListener("click", activarProduccionDianLocal);
+    document.getElementById("btnDianCheckConexion").addEventListener("click", function() {
+      setText("feDianOfflineMsg", "Probando conexion DIAN/proveedor...", false);
+      checkDianConnection(false).catch(function(err) {
+        setText("feDianOfflineMsg", err && err.message ? err.message : "No se pudo probar la conexion DIAN.", true);
+      });
+    });
+    document.getElementById("btnDianProcesarCola").addEventListener("click", function() {
+      setText("feDianOfflineMsg", "Validando conexion y procesando cola...", false);
+      checkDianConnection(true).catch(function(err) {
+        setText("feDianOfflineMsg", err && err.message ? err.message : "No se pudo procesar la cola DIAN.", true);
+      });
+    });
+    document.getElementById("btnEmitirDocumento").addEventListener("click", function() { ejecutarOperacionFacturacion("emitir"); });
+    document.getElementById("btnAnularDocumento").addEventListener("click", function() { ejecutarOperacionFacturacion("anular"); });
+    document.getElementById("btnEmitirFactura").addEventListener("click", function() {
+      setTipoDocumentoOperacion("factura_electronica");
+      ejecutarOperacionFacturacion("emitir");
+    });
+    document.getElementById("btnEmitirNC").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nota_credito");
+      ejecutarOperacionFacturacion("nota_credito");
+    });
+    document.getElementById("btnEmitirND").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nota_debito");
+      ejecutarOperacionFacturacion("nota_debito");
+    });
+    document.getElementById("btnEmitirSoporte").addEventListener("click", function() {
+      setTipoDocumentoOperacion("documento_soporte");
+      ejecutarOperacionFacturacion("documento_soporte");
+    });
+    document.getElementById("btnEmitirNominaElectronica").addEventListener("click", function() {
+      setTipoDocumentoOperacion("nomina_electronica");
+      ejecutarOperacionFacturacion("nomina_electronica");
+    });
+    document.getElementById("btnEmitirPOSElectronico").addEventListener("click", function() {
+      setTipoDocumentoOperacion("documento_equivalente_pos");
+      ejecutarOperacionFacturacion("documento_equivalente_pos");
+    });
+
+    if (!state.empresaID) {
+      setText("feDianPruebasMsg", "empresa_id requerido en la URL.", true);
+      setText("feDianOfflineMsg", "empresa_id requerido en la URL.", true);
+      setText("op_msg", "empresa_id requerido en la URL.", true);
+    }
+  </script>
+</body>
+</html>

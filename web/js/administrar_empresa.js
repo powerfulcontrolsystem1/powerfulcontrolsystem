@@ -376,6 +376,7 @@ try {
     linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
 
     linkReportes: { module: permModuleReportes, action: permActionRead },
+    linkReportesEjecutivos: { module: permModuleReportes, action: permActionRead },
     linkReportesMain: { module: permModuleReportes, action: permActionRead },
     linkReportesVentas: { module: permModuleVentas, action: permActionRead },
     linkReportesInventario: { module: permModuleInventario, action: permActionRead },

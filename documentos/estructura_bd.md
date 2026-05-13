@@ -305,12 +305,18 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - schema_migrations:
   - id, scope, version, description, applied_at
 - users:
-  - email, name, role, empresa_id, documento_identidad, rol_usuario_id
+  - email, name, role, empresa_id, documento_identidad, rol_usuario_id, control_aseo_estaciones
   - email_confirmado, email_confirm_token, email_confirm_expira, email_confirmado_en
   - password_hash, password_salt, password_set, password_actualizada_en
   - login_failed_attempts, login_failed_last_at, login_locked_until
   - password_reset_token, password_reset_expira, password_reset_requested_en
   - El login operativo global consulta por `lower(email)` sin `empresa_id` visible y luego resuelve la cuenta concreta con clave o token; las sesiones siguen quedando aisladas por `empresa_id`.
+- empresa_estacion_aseo_eventos:
+  - empresa_id, estacion_id, estacion_nombre
+  - sucia_desde, aseo_fin, duracion_segundos
+  - usuario_id, usuario_email, usuario_nombre, rol_nombre
+  - origen, estado (`pendiente`/`finalizado`), observaciones
+  - mide el tiempo de aseo desde que una estacion queda sucia hasta que un usuario con `control_aseo_estaciones=1` reporta el aseo terminado.
 - empresas:
   - nombre, nit, tipo_id, tipo_nombre
 

@@ -36,6 +36,7 @@ type EmpresaUsuario struct {
 	FechaAceptaContrato      string `json:"fecha_acepta_contrato,omitempty"`
 	RolUsuarioID             int64  `json:"rol_usuario_id"`
 	RolNombre                string `json:"rol_nombre,omitempty"`
+	ControlAseoEstaciones    int    `json:"control_aseo_estaciones,omitempty"`
 	EmailConfirmado          int    `json:"email_confirmado"`
 	EmailConfirmToken        string `json:"-"`
 	EmailConfirmExpira       string `json:"-"`
@@ -68,6 +69,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 			empresa_id BIGINT,
 			documento_identidad TEXT,
 			rol_usuario_id BIGINT,
+			control_aseo_estaciones INTEGER DEFAULT 0,
 			email_confirmado INTEGER DEFAULT 0,
 			email_confirm_token TEXT,
 			email_confirm_expira TEXT,
@@ -108,6 +110,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER,
 			documento_identidad TEXT,
 			rol_usuario_id INTEGER,
+			control_aseo_estaciones INTEGER DEFAULT 0,
 			email_confirmado INTEGER DEFAULT 0,
 			email_confirm_token TEXT,
 			email_confirm_expira TEXT,
@@ -147,6 +150,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 	}{
 		{name: "documento_identidad", def: "TEXT"},
 		{name: "rol_usuario_id", def: "INTEGER"},
+		{name: "control_aseo_estaciones", def: "INTEGER DEFAULT 0"},
 		{name: "email_confirmado", def: "INTEGER DEFAULT 0"},
 		{name: "email_confirm_token", def: "TEXT"},
 		{name: "email_confirm_expira", def: "TEXT"},
@@ -187,6 +191,7 @@ func CreateEmpresaUsuario(
 	empresaID int64,
 	email, nombre, documentoIdentidad string,
 	rolUsuarioID int64,
+	controlAseoEstaciones int,
 	rolNombre, observaciones, usuarioCreador, confirmToken, confirmExpira string,
 ) (int64, error) {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
@@ -199,6 +204,7 @@ func CreateEmpresaUsuario(
 		empresa_id,
 		documento_identidad,
 		rol_usuario_id,
+		control_aseo_estaciones,
 		email_confirmado,
 		email_confirm_token,
 		email_confirm_expira,
@@ -207,13 +213,14 @@ func CreateEmpresaUsuario(
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'inactivo', ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		email,
 		nombre,
 		rolNombre,
 		empresaID,
 		documentoIdentidad,
 		rolUsuarioID,
+		normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
 		confirmToken,
 		confirmExpira,
 		usuarioCreador,
@@ -223,6 +230,13 @@ func CreateEmpresaUsuario(
 		return 0, err
 	}
 	return id, nil
+}
+
+func normalizeEmpresaUsuarioBinaryFlag(value int) int {
+	if value != 0 {
+		return 1
+	}
+	return 0
 }
 
 // GetEmpresaUsuarios lista usuarios por empresa.
@@ -238,6 +252,7 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 		COALESCE(documento_identidad, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(control_aseo_estaciones, 0),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
 		COALESCE(email_confirm_expira, ''),
@@ -276,6 +291,7 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 			&item.DocumentoIdentidad,
 			&item.RolUsuarioID,
 			&item.RolNombre,
+			&item.ControlAseoEstaciones,
 			&item.EmailConfirmado,
 			&item.EmailConfirmToken,
 			&item.EmailConfirmExpira,
@@ -309,6 +325,7 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 		COALESCE(documento_identidad, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(control_aseo_estaciones, 0),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
 		COALESCE(email_confirm_expira, ''),
@@ -334,6 +351,7 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 		&item.DocumentoIdentidad,
 		&item.RolUsuarioID,
 		&item.RolNombre,
+		&item.ControlAseoEstaciones,
 		&item.EmailConfirmado,
 		&item.EmailConfirmToken,
 		&item.EmailConfirmExpira,
@@ -470,6 +488,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		COALESCE(password_reset_requested_en, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(control_aseo_estaciones, 0),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
 		COALESCE(email_confirm_expira, ''),
@@ -512,6 +531,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		&item.PasswordResetRequestedEn,
 		&item.RolUsuarioID,
 		&item.RolNombre,
+		&item.ControlAseoEstaciones,
 		&item.EmailConfirmado,
 		&item.EmailConfirmToken,
 		&item.EmailConfirmExpira,
@@ -899,6 +919,7 @@ func UpdateEmpresaUsuario(
 	id, empresaID int64,
 	email, nombre, documentoIdentidad string,
 	rolUsuarioID int64,
+	controlAseoEstaciones int,
 	rolNombre, observaciones string,
 	resetConfirmacion bool,
 	confirmToken, confirmExpira string,
@@ -912,6 +933,7 @@ func UpdateEmpresaUsuario(
 				name = ?,
 				documento_identidad = ?,
 				rol_usuario_id = ?,
+				control_aseo_estaciones = ?,
 				role = ?,
 				observaciones = ?,
 				email_confirmado = 0,
@@ -925,6 +947,7 @@ func UpdateEmpresaUsuario(
 			nombre,
 			documentoIdentidad,
 			rolUsuarioID,
+			normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
 			rolNombre,
 			observaciones,
 			confirmToken,
@@ -940,6 +963,7 @@ func UpdateEmpresaUsuario(
 			name = ?,
 			documento_identidad = ?,
 			rol_usuario_id = ?,
+			control_aseo_estaciones = ?,
 			role = ?,
 			observaciones = ?,
 			fecha_actualizacion = datetime('now','localtime')
@@ -948,6 +972,7 @@ func UpdateEmpresaUsuario(
 		nombre,
 		documentoIdentidad,
 		rolUsuarioID,
+		normalizeEmpresaUsuarioBinaryFlag(controlAseoEstaciones),
 		rolNombre,
 		observaciones,
 		id,

@@ -1,3 +1,27 @@
+2026-05-13 - OnlyOffice abre editor con URL publica
+- `backend/handlers/onlyoffice.go`:
+	- corrige la ruta temporal de documentos por empresa cuando `PCS_DATA_ROOT` ya termina en `empresas` y devuelve una `ds_url` publica al navegador si la configuracion del Document Server apunta a un hostname interno Docker.
+- `backend/handlers/onlyoffice_test.go`:
+	- nuevo archivo de pruebas enfocadas para la raiz de documentos y la reescritura de URL publica de OnlyOffice.
+- `web/administrar_empresa/documentos_onlyoffice.html`:
+	- valida la carga real de `DocsAPI.DocEditor` y muestra error claro si OnlyOffice no puede abrirse desde el navegador.
+
+2026-05-13 - Reportes ejecutivos profesionales
+- `web/administrar_empresa/reportes_ejecutivos.html`:
+	- nueva portada del modulo de reportes con accesos ejecutivos agrupados por area y navegacion hacia datasets existentes.
+
+2026-05-13 - Facturacion electronica pruebas DIAN separadas
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
+	- nueva subpagina del modulo de facturacion electronica para diagnostico DIAN, pruebas de habilitacion, conexion/procesamiento de cola y emision documental manual.
+
+2026-05-13 - Control de aseo por estacion
+- `backend/db/empresa_estacion_aseo.go`:
+	- nuevo esquema y helpers para eventos de aseo por estacion, calculo de duracion y reporte por empresa.
+- `backend/handlers/empresa_estacion_aseo.go`:
+	- nuevo endpoint empresarial de autoservicio para contexto, finalizacion de aseo y reporte gerencial.
+- `web/administrar_empresa/reporte_aseo_estaciones.html`:
+	- nueva pagina de reporte con filtros por fecha/estacion, resumen de tiempos y detalle por habitacion/aseadora.
+
 2026-05-13 - Logos empresariales Calipso y Bollon
 - `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg`:
 	- nuevo logo vectorial para Motel Calipso, con luna, ola y estrella.

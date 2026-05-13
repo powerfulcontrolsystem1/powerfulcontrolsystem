@@ -7,10 +7,13 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/print_documents.js"></script>
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page form-bg-dark carrito-flat-page">
   <div class="container">
 <div class="page-header">
-      <h1 id="pageTitle">Carrito de compras</h1>
+      <div>
+        <h1 id="pageTitle">Carrito de compras</h1>
+        <p id="stationHeaderTitle" class="form-help my-0-12" hidden></p>
+      </div>
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
 
@@ -4035,17 +4038,33 @@
       const title = document.getElementById('itemsTitle');
       const selected = getSelectedCarrito();
       if (!selected) {
-        title.textContent = state.stationMode ? 'Items de la estación' : 'Items del carrito';
+        title.textContent = 'Items del carrito';
         target.textContent = state.stationMode ? 'Se está preparando el carrito asociado a la estación.' : 'Selecciona un carrito para agregar items.';
+        updateStationHeaderTitle('');
         renderScannerPanel();
         return;
       }
-      title.textContent = (state.stationMode ? 'Items de estación: ' : 'Items del carrito: ') + (normalize(selected.nombre) || 'sin nombre');
+      const selectedName = normalize(selected.nombre) || 'sin nombre';
+      title.textContent = state.stationMode ? 'Items del carrito' : ('Items del carrito: ' + selectedName);
+      updateStationHeaderTitle(selectedName);
 
       target.textContent = '';
       syncBuscarProductosButton();
       renderScannerPanel();
       renderCarritoSummaryPanel();
+    }
+
+    function updateStationHeaderTitle(selectedName) {
+      const header = document.getElementById('stationHeaderTitle');
+      if (!header) return;
+      const stationLabel = normalize(state.stationName || selectedName);
+      if (!state.stationMode || !stationLabel) {
+        header.textContent = '';
+        header.hidden = true;
+        return;
+      }
+      header.textContent = 'Estación: ' + stationLabel;
+      header.hidden = false;
     }
 
     function normalizeBusinessKey(value) {
@@ -5339,7 +5358,8 @@
           if (state.directSaleMode) {
             document.getElementById('pageTitle').textContent = 'Venta directa - ' + empresa.nombre;
           } else if (state.stationMode) {
-            document.getElementById('pageTitle').textContent = 'Carrito de estación - ' + empresa.nombre;
+            document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
+            updateStationHeaderTitle('');
           } else {
             document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
           }
@@ -5983,6 +6003,7 @@
       }
 
       applyStationModeUI();
+      updateStationHeaderTitle('');
 
       const backToStationsHeaderBtn = document.getElementById('backToStationsHeaderBtn');
       if (backToStationsHeaderBtn) {

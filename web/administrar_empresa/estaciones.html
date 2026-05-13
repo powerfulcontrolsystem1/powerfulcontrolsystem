@@ -11,6 +11,7 @@
   <div class="container empresa-module">
 <section class="card empresa-section">
       <div class="empresa-section-header estaciones-toolbar" style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
+        <button type="button" id="btnReporteAseo" class="btn secondary" hidden>Reporte de aseo</button>
         <button type="button" id="btnEstacionesThumbToggle" class="btn secondary estaciones-thumb-toggle" aria-pressed="false">Ver miniaturas</button>
       </div>
       <p id="estacionesStatus" class="form-help empresa-loading-status">Cargando estaciones...</p>
@@ -93,7 +94,9 @@
         marcar_sucia_al_pagar: true,
         abrir_carrito_al_activar: true
       },
-      dirtyByEstacion: {}
+      dirtyByEstacion: {},
+      aseoControlEnabled: false,
+      canViewAseoReport: false
     };
 
     function sanitize(v) {
@@ -730,6 +733,67 @@
       params.set('caja_nombre', String(stationName || 'Caja').trim() || 'Caja');
       window.location.href = '/administrar_empresa/corte_de_caja.html?' + params.toString();
     }
+    function buildUltimosMovimientosCajaURL() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId || 0));
+      params.set('action', 'ultimos_movimientos');
+      params.set('solo_usuario_actual', '1');
+      params.set('mi_caja_actual', '1');
+      return '/administrar_empresa/ultimos_movimientos_de_caja.html?' + params.toString();
+    }
+
+    function buildReporteAseoURL() {
+      const params = new URLSearchParams();
+      params.set('empresa_id', String(empresaId || 0));
+      return '/administrar_empresa/reporte_aseo_estaciones.html?' + params.toString();
+    }
+
+    async function loadAseoContext() {
+      state.aseoControlEnabled = false;
+      state.canViewAseoReport = false;
+      if (!empresaId) return;
+      try {
+        const data = await requestJSON('/api/empresa/estacion_aseo?empresa_id=' + encodeURIComponent(empresaId) + '&action=contexto');
+        state.aseoControlEnabled = !!(data && data.control_aseo_habilitado);
+        state.canViewAseoReport = !!(data && data.puede_ver_reporte);
+      } catch (err) {
+        console.warn('No se pudo cargar contexto de aseo', err);
+      }
+      const reportBtn = document.getElementById('btnReporteAseo');
+      if (reportBtn) {
+        reportBtn.hidden = !state.canViewAseoReport;
+      }
+    }
+
+    function formatAseoDuration(seconds) {
+      const total = Math.max(0, Math.trunc(Number(seconds || 0)));
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      if (h > 0) return h + ' h ' + m + ' min';
+      if (m > 0) return m + ' min ' + s + ' s';
+      return s + ' s';
+    }
+
+    async function reportarAseoEstacion(stationID, stationName) {
+      const payload = {
+        estacion_id: Number(stationID || 0),
+        estacion_nombre: String(stationName || '').trim()
+      };
+      const data = await requestJSON('/api/empresa/estacion_aseo?empresa_id=' + encodeURIComponent(empresaId) + '&action=finalizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!state.dirtyByEstacion) state.dirtyByEstacion = {};
+      delete state.dirtyByEstacion[Number(stationID || 0)];
+      await Promise.all([
+        loadColoresEstadoCarrito(),
+        loadEstadoCarritosEstacion()
+      ]);
+      refreshStationCardSummaries();
+      return data && data.evento ? data.evento : null;
+    }
     function isCarritoOperativoActivo(carrito) {
       if (!carrito) return false;
       const estado = normalizeText(carrito.estado) || 'activo';
@@ -1137,6 +1201,21 @@
         if (ev) {
           ev.preventDefault();
           ev.stopPropagation();
+        }
+        if (state.aseoControlEnabled) {
+          card.setAttribute('aria-busy', 'true');
+          setStatus('Reportando aseo terminado en ' + (stationName || ('estacion ' + stationID)) + '...');
+          try {
+            const evento = await reportarAseoEstacion(stationID, stationName);
+            const demora = evento ? formatAseoDuration(evento.duracion_segundos) : '';
+            setStatus('Aseo reportado' + (demora ? ' en ' + demora : '') + '. La estacion quedo disponible.');
+          } catch (err) {
+            console.warn('No se pudo reportar aseo de estacion', err);
+            setStatus('No se pudo reportar el aseo: ' + buildFriendlyStationActivationError(err && err.message, stationName));
+          } finally {
+            card.removeAttribute('aria-busy');
+          }
+          return;
         }
         card.setAttribute('aria-busy', 'true');
         setStatus('Preparando ' + (stationName || ('estacion ' + stationID)) + '...');
@@ -1846,6 +1925,7 @@
             stationMetaRowHtml('start', 'Inicio', meta.inicio, useMostrarInicio && !!meta.inicio) +
             stationMetaRowHtml('end', 'Fin', meta.fin, useMostrarFinTarifa && !!meta.fin) +
             stationMetaRowHtml('extra', 'Extra', stripStationRowPrefix(meta.horaExtra, 'Hora extra:'), !!meta.horaExtra) +
+            stationMetaRowHtml('aseo', 'Aseo', 'Clic para reportar', isDirty && state.aseoControlEnabled) +
             stationMetaRowHtml('total', 'Total', meta.total, useMostrarTotal && !!meta.total) +
           '</div>';
           return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
@@ -1901,15 +1981,13 @@
               movBtn.addEventListener('click', ev => {
                 ev.stopPropagation();
                 ev.preventDefault();
-                const target = '/administrar_empresa/ultimos_movimientos_de_caja.html?empresa_id=' + encodeURIComponent(empresaId);
-                window.location.href = target;
+                window.location.href = buildUltimosMovimientosCajaURL();
               });
               movBtn.addEventListener('keydown', ev => {
                 if (ev.key === 'Enter' || ev.key === ' ') {
                   ev.stopPropagation();
                   ev.preventDefault();
-                  const target = '/administrar_empresa/ultimos_movimientos_de_caja.html?empresa_id=' + encodeURIComponent(empresaId);
-                  window.location.href = target;
+                  window.location.href = buildUltimosMovimientosCajaURL();
                 }
               });
             }
@@ -2232,7 +2310,8 @@
         await Promise.all([
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),
-          loadSensorStates()
+          loadSensorStates(),
+          loadAseoContext()
         ]);
         renderEstaciones(stationConfig);
         wireEstacionesMobileThumbToggle();
@@ -2290,6 +2369,13 @@
       } catch (err) {
         console.warn('No se pudo cargar estado de sensores:', err);
       }
+    }
+
+    const reporteAseoBtn = document.getElementById('btnReporteAseo');
+    if (reporteAseoBtn) {
+      reporteAseoBtn.addEventListener('click', function() {
+        window.location.href = buildReporteAseoURL();
+      });
     }
 
     bootstrap();

@@ -312,6 +312,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				Nombre             string `json:"nombre"`
 				DocumentoIdentidad string `json:"documento_identidad"`
 				RolUsuarioID       int64  `json:"rol_usuario_id"`
+				ControlAseo        int    `json:"control_aseo_estaciones"`
 				Observaciones      string `json:"observaciones"`
 				MensajeInvitacion  string `json:"mensaje_invitacion"`
 			}
@@ -343,6 +344,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				strings.TrimSpace(payload.Nombre),
 				strings.TrimSpace(payload.DocumentoIdentidad),
 				payload.RolUsuarioID,
+				payload.ControlAseo,
 				rolNombre,
 				strings.TrimSpace(payload.Observaciones),
 				adminEmailFromRequest(r),
@@ -487,6 +489,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				Nombre             string `json:"nombre"`
 				DocumentoIdentidad string `json:"documento_identidad"`
 				RolUsuarioID       int64  `json:"rol_usuario_id"`
+				ControlAseo        int    `json:"control_aseo_estaciones"`
 				Observaciones      string `json:"observaciones"`
 				MensajeInvitacion  string `json:"mensaje_invitacion"`
 			}
@@ -535,6 +538,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				strings.TrimSpace(payload.Nombre),
 				strings.TrimSpace(payload.DocumentoIdentidad),
 				payload.RolUsuarioID,
+				payload.ControlAseo,
 				rolNombre,
 				strings.TrimSpace(payload.Observaciones),
 				resetConfirm,
