@@ -9515,3 +9515,9 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
 - web/administrar_empresa/corte_de_caja.html
+
+2026-05-14 00:17:50 - Mensaje: fix: publicar menu de juegos en Docker; Commit: e43b49e8; PushStatus: OK
+Archivos modificados:
+- .dockerignore
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios

@@ -25218,3 +25218,10 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
 - web/administrar_empresa/corte_de_caja.html
+
+2026-05-14: fix: publicar menu de juegos en Docker
+PushStatus: OK
+Archivos modificados:
+- .dockerignore
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
