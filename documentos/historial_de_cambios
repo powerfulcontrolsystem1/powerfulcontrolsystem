@@ -1,3 +1,9 @@
+2026-05-13: Recibo operativo obligatorio al pagar carrito
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `impresion`.
+- Ajuste: `web/administrar_empresa/carrito_de_compras.html` genera el recibo POS/carta del cierre de carrito por defecto, aun cuando la configuracion historica `imprimir_venta` este apagada. Esto evita que el usuario cierre una estacion y no vea evidencia impresa del pago.
+- Control futuro: se deja una bandera especifica `desactivar_impresion_carrito=true` para desactivar el recibo del carrito sin mezclarlo con la configuracion general de factura/venta.
+- Validacion: parseo JS del carrito paso correctamente. En produccion se comprobo previamente que el pago real ya cerraba la estacion, abria caja automatica y actualizaba totales, pero la configuracion `imprimir_venta=false` impedia la ventana de recibo.
+
 2026-05-13: Pago de carrito abre caja de cobro si no existe
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
 - Causa tecnica real: en produccion no habia cajas abiertas para la empresa; el boton quedaba habilitado para reintentar carga de cajas, pero al no encontrar ninguna repetia el mismo mensaje inferior y para el usuario parecia que no ocurria nada.

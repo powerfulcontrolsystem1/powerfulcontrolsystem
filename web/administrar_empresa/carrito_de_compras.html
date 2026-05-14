@@ -2382,7 +2382,7 @@
         receipt: null,
         factura: null
       };
-      if (Boolean(cfg.imprimir_venta)) {
+      if (shouldPrintCartReceipt(cfg)) {
         const format = normalize(cfg.formato_impresion || cfg.formato_recibo).toLowerCase() === 'carta' ? 'carta' : 'pos';
         targets.receipt = {
           win: openReservedPrintWindow('Recibo de cobro', format === 'pos' ? 'width=340,height=760' : 'width=860,height=940'),
@@ -2397,6 +2397,11 @@
         };
       }
       return targets;
+    }
+
+    function shouldPrintCartReceipt(cfg) {
+      const source = cfg && typeof cfg === 'object' ? cfg : {};
+      return source.desactivar_impresion_carrito !== true && source.imprimir_carrito_al_pagar !== false;
     }
 
     function closeUnusedPaymentPrintTargets(targets) {
@@ -2587,7 +2592,7 @@
 
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
-      if (!Boolean(cfg.imprimir_venta)) return false;
+      if (!shouldPrintCartReceipt(cfg)) return false;
 
       const moneda = (carrito && carrito.moneda) || 'COP';
       const printerResolution = await resolvePrinterForTicketCobro();
