@@ -9566,3 +9566,12 @@ Archivos modificados:
 - web/img/juegos/snake_arcade.png
 - web/img/juegos/space_invaders.png
 - web/img/juegos/tetris_arcade.png
+
+2026-05-14 16:37:29 - Mensaje: reportes: catalogo ejecutivo unificado; Commit: 5a7bcecc; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/reportes_ejecutivos.html
+- web/administrar_empresa/reportes_menu.html
