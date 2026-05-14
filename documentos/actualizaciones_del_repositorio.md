@@ -9543,3 +9543,26 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-05-14 16:07:18 - Mensaje: juegos: lobby uniforme y doon fps; Commit: e991a950; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/Juegos/LICENCIAS_JUEGOS_ABIERTOS.md
+- web/Juegos/doon_fps/index.html
+- web/Juegos/menu_juegos.html
+- web/img/juegos/asteroids_arcade.png
+- web/img/juegos/breakout_arcade.png
+- web/img/juegos/doon_fps.png
+- web/img/juegos/frogger_arcade.png
+- web/img/juegos/memory_arcade.png
+- web/img/juegos/minesweeper_arcade.png
+- web/img/juegos/n64.png
+- web/img/juegos/pacman_arcade.png
+- web/img/juegos/patito_volando.png
+- web/img/juegos/pong_arcade.png
+- web/img/juegos/snake_arcade.png
+- web/img/juegos/space_invaders.png
+- web/img/juegos/tetris_arcade.png
