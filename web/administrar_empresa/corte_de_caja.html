@@ -738,6 +738,9 @@
       });
       lastReport = res && res.reporte ? res.reporte : lastReport;
       renderReport(lastReport);
+      document.getElementById('btnCerrar').disabled = true;
+      document.getElementById('btnCerrar').textContent = 'Turno cerrado';
+      automaticCierreCajaID = 0;
       msg.textContent = 'Cierre guardado correctamente. ID: ' + (res && res.cierre_id ? res.cierre_id : 'registrado');
       if (res && res.imprimir_auto) window.print();
     } catch (err) {

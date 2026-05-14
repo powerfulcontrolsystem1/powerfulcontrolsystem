@@ -2,6 +2,7 @@
 - Modulos afectados: `corte_caja`, `finanzas`, `estaciones`.
 - Cambio funcional: el corte automatico de turno puede recuperar bases empresariales donde el modulo financiero ya existia, pero faltaban columnas de caja necesarias para filtrar movimientos por `cierre_caja_id`, codigo y turno.
 - Backend: la verificacion de esquema de `finanzas` revisa columnas criticas antes de marcar la migracion como lista; si faltan, ejecuta la migracion ligera existente.
+- UX: al guardar un cierre de turno, la pantalla deja el boton de cierre deshabilitado y marcado como `Turno cerrado` para impedir reintentos accidentales.
 - Alcance: no cambia permisos, tablas nuevas ni dependencias; mantiene el cierre por usuario/caja actual y el aislamiento por `empresa_id`.
 
 2026-05-13: Boton pagar y cerrar carrito con reintento visual
