@@ -25226,3 +25226,11 @@ Archivos modificados:
 - .dockerignore
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+
+2026-05-14: fix: permitir records publicos de juegos
+PushStatus: OK
+Archivos modificados:
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
