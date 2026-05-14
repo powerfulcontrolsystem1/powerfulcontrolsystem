@@ -22,6 +22,7 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/api/public/market_symbol",
 		"/api/public/verticales_nuevos/catalogo",
 		"/api/public/verticales_integracion/catalogo",
+		"/api/public/juegos/records",
 		"/api/onlyoffice/file",
 		"/api/onlyoffice/callback",
 		"/descripcion_de_los_sistemas.html",

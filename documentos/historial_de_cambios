@@ -2,6 +2,7 @@
 - Modulos afectados: `juegos`, `portal_publico`, `despliegue`.
 - Causa tecnica: `.dockerignore` excluia `web/Juegos/`, por lo que la pagina `web/Juegos/menu_juegos.html` y sus juegos existian en el repositorio pero no entraban en la imagen Docker del frontend; en produccion podia responder 404.
 - Ajuste: `.dockerignore` deja de excluir `web/Juegos/`, manteniendo excluido el directorio raiz `juegos/` porque el emulador se monta por Compose desde `../juegos` y no debe inflar la imagen con assets pesados.
+- API publica: `backend/utils/utils.go` permite `/api/public/juegos/records` sin sesion para que los juegos carguen rankings globales sin 401 en consola.
 - Validacion local: se verifico que los enlaces `/Juegos/...` declarados en el menu existen dentro de `web/Juegos`.
 
 2026-05-13: Corte de caja repara migracion de columnas de caja
