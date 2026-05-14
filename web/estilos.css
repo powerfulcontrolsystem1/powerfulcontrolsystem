@@ -521,6 +521,134 @@ html[data-theme^="dark"] .pcs-section-submenu{
   }
 }
 
+/* Override final del carrito: pantalla plana tipo tabla, sin relieves ni separaciones.
+   Debe quedar al final para ganar sobre temas, modo tactil y estilos legacy posteriores. */
+body.carrito-flat-page,
+body.carrito-flat-page *{
+  box-shadow:none !important;
+  text-shadow:none !important;
+  filter:none !important;
+}
+
+body.carrito-flat-page .container,
+body.carrito-flat-page .form,
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card,
+body.carrito-flat-page .empresa-section,
+body.carrito-flat-page .carrito-workspace-card,
+body.carrito-flat-page .carrito-primary-layout,
+body.carrito-flat-page .carrito-primary-main,
+body.carrito-flat-page .carrito-side-column,
+body.carrito-flat-page .carrito-grid,
+body.carrito-flat-page .carrito-grid-main,
+body.carrito-flat-page .carrito-station-split,
+body.carrito-flat-page .carrito-station-split-main,
+body.carrito-flat-page .carrito-summary-card,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-payment-section-card,
+body.carrito-flat-page .carrito-actions-card,
+body.carrito-flat-page .carrito-worker-card,
+body.carrito-flat-page .carrito-vip-card,
+body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page #scannerPanel,
+body.carrito-flat-page #stationCheckoutPanel,
+body.carrito-flat-page #stationCartActionsCard,
+body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationWorkerCommissionCard,
+body.carrito-flat-page #stationVipAccessCard,
+body.carrito-flat-page #carritoTotalsPanel,
+body.carrito-flat-page #carritoSearchBlock,
+body.carrito-flat-page #carritosList{
+  border-radius:0 !important;
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+
+body.carrito-flat-page .container{
+  padding:0 !important;
+}
+
+body.carrito-flat-page .page-header{
+  margin-bottom:0 !important;
+}
+
+body.carrito-flat-page .form,
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card,
+body.carrito-flat-page .carrito-workspace-card{
+  max-width:none !important;
+  width:100% !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  box-sizing:border-box !important;
+}
+
+body.carrito-flat-page .form,
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card{
+  background:var(--surface) !important;
+}
+
+body.carrito-flat-page .form::before,
+body.carrito-flat-page .advanced-card::before{
+  display:none !important;
+  content:none !important;
+}
+
+body.carrito-flat-page .container > *,
+body.carrito-flat-page .carrito-primary-layout,
+body.carrito-flat-page .carrito-primary-main,
+body.carrito-flat-page .carrito-side-column,
+body.carrito-flat-page .carrito-grid,
+body.carrito-flat-page .carrito-grid-main,
+body.carrito-flat-page .carrito-station-split,
+body.carrito-flat-page .carrito-station-toolbar,
+body.carrito-flat-page .form-actions{
+  gap:0 !important;
+  row-gap:0 !important;
+  column-gap:0 !important;
+}
+
+body.carrito-flat-page .mt-6,
+body.carrito-flat-page .mt-8,
+body.carrito-flat-page .mt-10,
+body.carrito-flat-page .mt-12,
+body.carrito-flat-page .mt-14,
+body.carrito-flat-page .mt-16,
+body.carrito-flat-page .mt-20,
+body.carrito-flat-page .mb-10,
+body.carrito-flat-page .mb-12,
+body.carrito-flat-page .mb-15,
+body.carrito-flat-page .my-0-10,
+body.carrito-flat-page .my-0-12,
+body.carrito-flat-page .table-wrap-spaced,
+body.carrito-flat-page .section-header-spaced,
+body.carrito-flat-page .section-header-tight,
+body.carrito-flat-page .carrito-actions-card .carrito-station-toolbar,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-catalog-card,
+body.carrito-flat-page .carrito-summary-content,
+body.carrito-flat-page .carrito-summary-pay-actions,
+body.carrito-flat-page .carrito-vip-card .form-actions,
+body.carrito-flat-page .carrito-vip-card .form-help{
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+
+body.carrito-flat-page .carrito-items-box,
+body.carrito-flat-page .carrito-items-box--station-fixed,
+body.carrito-flat-page .carrito-summary-row,
+body.carrito-flat-page .carrito-summary-profile,
+body.carrito-flat-page .carrito-station-toolbar,
+body.carrito-flat-page .carrito-station-toolbar > button,
+body.carrito-flat-page .carrito-station-toolbar > label,
+body.carrito-flat-page .btn,
+body.carrito-flat-page .form-input,
+body.carrito-flat-page .form-textarea,
+body.carrito-flat-page select{
+  border-radius:0 !important;
+}
+
 /* Tema Oscuro Neon (alto contraste con acentos electricos) */
 html[data-theme="dark-neon"] {
   --bg: #050712;
@@ -17862,4 +17990,120 @@ html[data-theme^="dark"] .mc-bulk select {
     white-space: nowrap !important;
     border: 0 !important;
   }
+}
+
+/* Override ABSOLUTO final del carrito de compras.
+   Este bloque queda al cierre del CSS para anular temas, modo tactil y estilos legacy. */
+body.carrito-flat-page,
+body.carrito-flat-page *{
+  box-shadow:none !important;
+  text-shadow:none !important;
+  filter:none !important;
+}
+
+body.carrito-flat-page .container{
+  padding:0 !important;
+}
+
+body.carrito-flat-page .page-header{
+  margin-bottom:0 !important;
+}
+
+body.carrito-flat-page .form,
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card,
+body.carrito-flat-page .empresa-section,
+body.carrito-flat-page .carrito-workspace-card,
+body.carrito-flat-page .carrito-primary-layout,
+body.carrito-flat-page .carrito-primary-main,
+body.carrito-flat-page .carrito-side-column,
+body.carrito-flat-page .carrito-grid,
+body.carrito-flat-page .carrito-grid-main,
+body.carrito-flat-page .carrito-station-split,
+body.carrito-flat-page .carrito-station-split-main,
+body.carrito-flat-page .carrito-summary-card,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-payment-section-card,
+body.carrito-flat-page .carrito-actions-card,
+body.carrito-flat-page .carrito-worker-card,
+body.carrito-flat-page .carrito-vip-card,
+body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page #scannerPanel,
+body.carrito-flat-page #stationCheckoutPanel,
+body.carrito-flat-page #stationCartActionsCard,
+body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationWorkerCommissionCard,
+body.carrito-flat-page #stationVipAccessCard,
+body.carrito-flat-page #carritoTotalsPanel,
+body.carrito-flat-page #carritoSearchBlock,
+body.carrito-flat-page #carritosList{
+  max-width:none !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+  border-radius:0 !important;
+  margin-top:0 !important;
+  margin-right:0 !important;
+  margin-bottom:0 !important;
+  margin-left:0 !important;
+  background:var(--surface) !important;
+}
+
+body.carrito-flat-page .form::before,
+body.carrito-flat-page .advanced-card::before{
+  display:none !important;
+  content:none !important;
+}
+
+body.carrito-flat-page .container > *,
+body.carrito-flat-page .carrito-primary-layout,
+body.carrito-flat-page .carrito-primary-main,
+body.carrito-flat-page .carrito-side-column,
+body.carrito-flat-page .carrito-grid,
+body.carrito-flat-page .carrito-grid-main,
+body.carrito-flat-page .carrito-station-split,
+body.carrito-flat-page .carrito-station-toolbar,
+body.carrito-flat-page .form-actions{
+  gap:0 !important;
+  row-gap:0 !important;
+  column-gap:0 !important;
+}
+
+body.carrito-flat-page .mt-6,
+body.carrito-flat-page .mt-8,
+body.carrito-flat-page .mt-10,
+body.carrito-flat-page .mt-12,
+body.carrito-flat-page .mt-14,
+body.carrito-flat-page .mt-16,
+body.carrito-flat-page .mt-20,
+body.carrito-flat-page .mb-10,
+body.carrito-flat-page .mb-12,
+body.carrito-flat-page .mb-15,
+body.carrito-flat-page .my-0-10,
+body.carrito-flat-page .my-0-12,
+body.carrito-flat-page .table-wrap-spaced,
+body.carrito-flat-page .section-header-spaced,
+body.carrito-flat-page .section-header-tight,
+body.carrito-flat-page .carrito-actions-card .carrito-station-toolbar,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-catalog-card,
+body.carrito-flat-page .carrito-summary-content,
+body.carrito-flat-page .carrito-summary-pay-actions,
+body.carrito-flat-page .carrito-vip-card .form-actions,
+body.carrito-flat-page .carrito-vip-card .form-help{
+  margin-top:0 !important;
+  margin-bottom:0 !important;
+}
+
+body.carrito-flat-page .carrito-items-box,
+body.carrito-flat-page .carrito-items-box--station-fixed,
+body.carrito-flat-page .carrito-summary-row,
+body.carrito-flat-page .carrito-summary-profile,
+body.carrito-flat-page .carrito-station-toolbar,
+body.carrito-flat-page .carrito-station-toolbar > button,
+body.carrito-flat-page .carrito-station-toolbar > label,
+body.carrito-flat-page .btn,
+body.carrito-flat-page .form-input,
+body.carrito-flat-page .form-textarea,
+body.carrito-flat-page select{
+  border-radius:0 !important;
 }

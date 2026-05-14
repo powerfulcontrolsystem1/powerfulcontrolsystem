@@ -673,9 +673,16 @@
       try {
         const params = new URLSearchParams();
         params.set('empresa_id', String(state.empresaID));
-        params.set('estado_cierre', 'abierto');
+        params.set('action', 'cajas_abiertas');
         params.set('limit', '100');
-        const res = await fetchWithTimeout('/api/empresa/finanzas/cierres_caja?' + params.toString(), {
+        if (state.stationMode && state.stationID > 0) {
+          params.set('estacion_id', String(state.stationID));
+        }
+        if (state.directSaleMode) {
+          params.set('modo', 'venta_directa');
+          params.set('perm_page', 'linkVentaDirecta');
+        }
+        const res = await fetchWithTimeout('/api/empresa/carritos_compra?' + params.toString(), {
           credentials: 'same-origin'
         });
         await ensureOk(res);

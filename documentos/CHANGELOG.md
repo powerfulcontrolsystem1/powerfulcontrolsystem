@@ -1,3 +1,21 @@
+## [2026-05-13] Carrito cobra con caja abierta desde permisos de ventas
+- [Backend] `backend/handlers/carritos_compras.go` agrega `GET /api/empresa/carritos_compra?action=cajas_abiertas` para listar cajas abiertas necesarias al cobrar sin exigir acceso al modulo financiero.
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` carga cajas abiertas desde el flujo de carritos/ventas y deja de depender de `/api/empresa/finanzas/cierres_caja`.
+- [QA] Validado con `go test ./handlers ./db` desde `backend` y prueba visual Playwright mock: boton `Pagar y cerrar carrito` habilitado, caja seleccionada y `PUT action=pagar_estacion` con `cierre_caja_id`.
+- [Alcance] Sin tablas, dependencias ni motores nuevos; conserva aislamiento por `empresa_id` y validacion final de caja abierta en backend.
+
+## [2026-05-13] Carrito plano reforzado contra temas posteriores
+- [Frontend] `web/estilos.css` agrega un override absoluto al final del archivo para `carrito-flat-page`.
+- [UX] Ningun tema, modo tactil o estilo legacy posterior puede volver a mostrar sombras, radios o margenes en tarjetas del carrito.
+- [QA] Validado con parseo JS y Playwright revisando 15 tarjetas/formularios con `box-shadow: none`, `border-radius: 0px` y margenes `0px`.
+- [Alcance] Cambio solo visual; no modifica APIs, backend, permisos, tablas ni dependencias.
+
+## [2026-05-13] Panel empresarial prioriza ciudad por IP
+- [Frontend] `web/administrar_empresa/panel.html` detecta primero la ciudad por IP para clima e indicadores cuando no existe ciudad manual guardada.
+- [UX] GPS queda como respaldo si falla la IP o como accion manual desde el boton `Usar GPS`; la ciudad manual guardada conserva prioridad.
+- [QA] Validado con parseo JS y prueba visual Playwright mock: IP devuelve `Medellin`, el panel muestra esa ciudad y no consulta GPS.
+- [Alcance] Cambio solo frontend; no modifica APIs, backend, permisos, tablas ni dependencias.
+
 ## [2026-05-13] Carrito de compras compacto tipo tabla plana
 - [Frontend] `web/estilos.css` compacta el layout bajo `carrito-flat-page` quitando gaps, margenes, radios y sombras de tarjetas/contenedores del carrito.
 - [UX] Las tarjetas quedan pegadas visualmente entre si, con lectura plana similar a la tabla de items.

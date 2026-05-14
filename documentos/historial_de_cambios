@@ -1,3 +1,26 @@
+2026-05-13: Reparacion del pago y cierre de carrito con caja abierta
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
+- Causa tecnica: el carrito obtenia las cajas abiertas desde `/api/empresa/finanzas/cierres_caja`, endpoint protegido por permisos de Finanzas; un usuario operativo con permiso de vender podia quedar sin caja seleccionable y el boton `Pagar y cerrar carrito` permanecia bloqueado.
+- Backend: `backend/handlers/carritos_compras.go` agrega `GET /api/empresa/carritos_compra?action=cajas_abiertas` para listar cajas abiertas activas por `empresa_id`, con filtros opcionales de sucursal/caja y limite controlado. El cierre real sigue pasando por `pagar_estacion`, que valida `cierre_caja_id`, codigo, turno y caja abierta antes de registrar el pago.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` carga el selector `activeCashRegister` desde el endpoint de carritos, bajo permisos de Ventas/Estaciones/Venta directa, y deja de llamar a `/api/empresa/finanzas/cierres_caja` en el flujo de cobro.
+- Seguridad y datos: no agrega tablas ni dependencias; conserva aislamiento por `empresa_id` y no relaja la validacion final de caja abierta.
+- Validacion: `go test ./handlers ./db` desde `backend` paso correctamente. Prueba visual Playwright mock confirmo boton habilitado, caja `CAJA-1` seleccionada, uso del endpoint nuevo, ausencia del endpoint financiero antiguo y `PUT action=pagar_estacion` con `cierre_caja_id=11`, `caja_codigo=CAJA-1`, total pagado 15000.
+
+2026-05-13: carrito plano reforzado al final del CSS
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Problema: en escritorio todavia podian verse sombras o separaciones porque reglas posteriores de tema, modo tactil o estilos legacy ganaban sobre el primer ajuste.
+- Estilos: se agrega un override absoluto al final de `web/estilos.css` para `body.carrito-flat-page`, anulando sombras, radios, margenes laterales/verticales, gaps y pseudo-barras de formularios.
+- Validacion: parseo de scripts inline con Node y prueba visual Playwright revisando 15 tarjetas/formularios del carrito con `box-shadow: none`, `border-radius: 0px`, `margin-top/bottom/left/right: 0px`.
+- Alcance: sin backend, permisos, tablas ni dependencias nuevas.
+
+2026-05-13: panel empresarial prioriza ciudad detectada por IP
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Frontend: `web/administrar_empresa/panel.html` cambia el orden de deteccion automatica para consultar `ipwho.is` antes de GPS guardado o GPS del navegador.
+- Comportamiento: la ciudad manual guardada sigue teniendo prioridad; si IP falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
+- UX: el mensaje del clima informa `Ciudad detectada por IP` y el boton `Usar GPS` queda como correccion manual cuando la IP no coincide.
+- Validacion: parseo de scripts inline con Node y prueba visual Playwright con mock confirmando que `Medellin` por IP se muestra en el clima y no se consulta GPS.
+- Alcance: sin backend, permisos, tablas ni dependencias nuevas.
+
 2026-05-13: carrito de compras compacta tarjetas pegadas sin separaciones
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Estilos: `web/estilos.css` refuerza `carrito-flat-page` para quitar gaps, margenes verticales, radios y sombras en tarjetas/contenedores del carrito.

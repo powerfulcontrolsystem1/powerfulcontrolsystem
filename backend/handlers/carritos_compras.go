@@ -186,6 +186,39 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				})
 				return
 			}
+			if action == "cajas_abiertas" || action == "cajas_abiertas_estacion" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				limit, err := parseOptionalIntCarritoQuery(r, "limit")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if limit <= 0 || limit > 100 {
+					limit = 100
+				}
+				sucursalID, err := parseOptionalInt64CarritoQuery(r, "sucursal_id")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				rows, err := dbpkg.ListEmpresaCierresCaja(dbEmp, empresaID, dbpkg.EmpresaCierreCajaFilter{
+					SucursalID:   sucursalID,
+					CajaCodigo:   strings.TrimSpace(r.URL.Query().Get("caja_codigo")),
+					EstadoCierre: "abierto",
+					Limit:        limit,
+				})
+				if err != nil {
+					log.Printf("[carritos] cajas_abiertas empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron listar las cajas abiertas para cobrar", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, rows)
+				return
+			}
 
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {

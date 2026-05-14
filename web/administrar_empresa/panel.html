@@ -1844,14 +1844,15 @@
       }
 
       function acceptAutomaticLocation(location, profileLocation, sourceName) {
-        if (locationConflictsWithProfile(location, profileLocation)) {
+        var source = text(sourceName || (location && location.source));
+        if (source !== "ip" && locationConflictsWithProfile(location, profileLocation)) {
           return preferRegisteredLocation(
             profileLocation,
             "La ubicacion automatica no coincide con el pais registrado; se uso la ciudad registrada."
           );
         }
         if (location) {
-          location.source = location.source || sourceName || "navegador";
+          location.source = location.source || source || "navegador";
         }
         return location;
       }
@@ -1987,7 +1988,7 @@
             currency: data.currency && (data.currency.code || data.currency),
             latitude: data.latitude,
             longitude: data.longitude,
-            source: "navegador"
+            source: "ip"
           });
         });
       }
@@ -2037,47 +2038,63 @@
         return source === "gps" || source === "manual";
       }
 
+      function isManualWeatherLocation(location) {
+        return text(location && location.source) === "manual";
+      }
+
+      function isGPSWeatherLocation(location) {
+        return text(location && location.source) === "gps";
+      }
+
       function detectLocation(admin, empresa, savedLocation) {
         var profileLocation = registeredLocationProfile(admin, empresa);
-        if (isTrustedCachedLocation(savedLocation)) {
+        if (isManualWeatherLocation(savedLocation)) {
           detectedLocation = savedLocation;
           saveCachedLocation(savedLocation);
-          setWeatherHint(savedLocation.source === "gps"
-            ? "Usando la ubicacion GPS guardada en la base de datos."
-            : "Usando la ciudad guardada en la base de datos.");
+          setWeatherHint("Usando la ciudad guardada manualmente en la base de datos.");
           return Promise.resolve(savedLocation);
         }
         var cached = readCachedLocation();
-        if (isTrustedCachedLocation(cached)) {
+        if (isManualWeatherLocation(cached)) {
           detectedLocation = cached;
-          setWeatherHint(cached.source === "gps"
-            ? "Usando la ubicacion GPS guardada. Puedes actualizarla cuando cambies de ciudad."
-            : "Usando la ciudad guardada manualmente. Puedes cambiarla cuando lo necesites.");
+          setWeatherHint("Usando la ciudad guardada manualmente. Puedes cambiarla cuando lo necesites.");
           return Promise.resolve(cached);
         }
-        return getGeolocationPermissionState()
-          .then(function (state) {
-            if (state === "granted") {
-              return detectLocationByGPS().then(function (location) {
-                setWeatherHint("GPS autorizado por el navegador.");
-                return acceptAutomaticLocation(location, profileLocation, "gps");
-              });
-            }
-            if (state === "denied") {
-              setWeatherHint("GPS bloqueado en el navegador. Activalo para esta pagina o escribe tu ciudad.");
-            } else {
-              setWeatherHint("Activa GPS para mostrar el clima exacto de tu ciudad, o escribe la ciudad manualmente.");
-            }
-            if (hasRegisteredLocation(profileLocation)) {
-              return fallbackLocationFromAdmin(profileLocation);
-            }
-            return detectLocationByBrowser().then(function (location) {
-              return acceptAutomaticLocation(location, profileLocation, "navegador");
-            });
+        return detectLocationByIP()
+          .then(function (location) {
+            setWeatherHint("Ciudad detectada por IP. Puedes usar GPS o escribir otra ciudad si no coincide.");
+            return acceptAutomaticLocation(location, profileLocation, "ip");
           })
           .catch(function () {
-            if (hasRegisteredLocation(profileLocation)) return fallbackLocationFromAdmin(profileLocation);
-            return fallbackLocationFromAdmin(admin);
+            if (isGPSWeatherLocation(savedLocation)) {
+              setWeatherHint("No se pudo detectar la ciudad por IP; usando GPS guardado.");
+              return savedLocation;
+            }
+            if (isGPSWeatherLocation(cached)) {
+              setWeatherHint("No se pudo detectar la ciudad por IP; usando GPS guardado localmente.");
+              return cached;
+            }
+            return getGeolocationPermissionState().then(function (state) {
+              if (state === "granted") {
+                return detectLocationByGPS().then(function (location) {
+                  setWeatherHint("No se pudo detectar la ciudad por IP; usando GPS autorizado.");
+                  return acceptAutomaticLocation(location, profileLocation, "gps");
+                });
+              }
+              if (hasRegisteredLocation(profileLocation)) {
+                setWeatherHint(state === "denied"
+                  ? "No se pudo detectar por IP y el GPS esta bloqueado; se uso la ciudad registrada."
+                  : "No se pudo detectar por IP; se uso la ciudad registrada.");
+                return fallbackLocationFromAdmin(profileLocation);
+              }
+              try {
+                var tzLocation = detectLocationByTimezone();
+                setWeatherHint("No se pudo detectar por IP; usando zona horaria del navegador.");
+                return acceptAutomaticLocation(tzLocation, profileLocation, "navegador");
+              } catch (e) {
+                return fallbackLocationFromAdmin(admin);
+              }
+            });
           })
           .then(function (location) {
             detectedLocation = location || fallbackLocationFromAdmin(profileLocation || admin);

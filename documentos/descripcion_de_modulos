@@ -1,3 +1,22 @@
+2026-05-13: Carrito de compras cobra con caja abierta desde Ventas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
+- Cambio funcional: el boton `Pagar y cerrar carrito` ya puede habilitarse para usuarios operativos que tienen permisos de ventas/estaciones/venta directa aunque no tengan permiso completo de Finanzas.
+- Backend: `backend/handlers/carritos_compras.go` expone `action=cajas_abiertas` para listar cajas abiertas activas por `empresa_id`, reutilizando `empresa_cierres_caja` y manteniendo la validacion final de caja abierta en `pagar_estacion`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` carga el selector de caja desde `/api/empresa/carritos_compra?action=cajas_abiertas` y deja de bloquear el cobro por permisos del endpoint financiero.
+- Alcance: no cambia tablas, dependencias ni motores; mantiene aislamiento por `empresa_id`.
+
+2026-05-13: Carrito plano reforzado contra estilos posteriores
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: se garantiza que el carrito de compras se vea plano en escritorio y movil, sin sombras, radios ni margenes visibles entre tarjetas.
+- Implementacion: `web/estilos.css` agrega un override final para `carrito-flat-page`, despues de temas, modo tactil y reglas legacy.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
+2026-05-13: Panel empresarial detecta ciudad por IP antes que GPS
+- Modulos afectados: `administrar_empresa`, `panel_empresarial`.
+- Cambio UX: el clima y los indicadores del panel toman como primera fuente automatica la ciudad detectada por IP.
+- Flujo: la ciudad manual guardada conserva prioridad; si no existe, se consulta IP; si falla, se usan GPS guardado/GPS autorizado, zona horaria o perfil como respaldo.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
 2026-05-13: Carrito de compras compacto sin separaciones entre tarjetas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Cambio UX: las tarjetas del carrito se pegan entre si y adoptan lectura plana tipo tabla, sin espacios visuales, radios ni sombras.
