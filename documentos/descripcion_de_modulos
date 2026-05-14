@@ -1,3 +1,10 @@
+2026-05-14: Valores por medio de pago editables en carrito
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio funcional: los importes visibles de `Efectivo`, `Debito`, `Credito` y `Otro` en el carrito de estacion dejan de ser solo lectura y pueden editarse para distribuir el cobro.
+- Flujo de pago: si hay mas de un medio con valor, el frontend arma automaticamente `metodo_pago=mixto` y envia los tramos en `pagos_mixtos`; `Otro` se registra como `transferencia_bancaria`.
+- Validacion: la suma de los cuatro valores debe coincidir con el total final a pagar; tarjetas y transferencia conservan referencia obligatoria.
+- Alcance: no cambia tablas, permisos ni endpoints; reutiliza el contrato existente de pago mixto del carrito y mantiene aislamiento por `empresa_id`.
+
 2026-05-14: Carrito de compras con encabezado compacto y acciones destacadas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Cambio UX: `web/administrar_empresa/carrito_de_compras.html` elimina los textos repetidos `Items del carrito`, `Lector de código de barras`, `Valores por medio de pago` y `Acciones del carrito`.

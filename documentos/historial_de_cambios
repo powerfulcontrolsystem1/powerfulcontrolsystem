@@ -1,3 +1,10 @@
+2026-05-14: Carrito permite editar valores por medio de pago
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio funcional: los campos de valores por medio de pago del carrito ahora son editables para repartir el cobro entre efectivo, debito, credito y otro.
+- Implementacion: `web/administrar_empresa/carrito_de_compras.html` traduce multiples valores a `metodo_pago=mixto` y `pagos_mixtos`, reutilizando el backend existente; `Otro` se envia como `transferencia_bancaria`.
+- Validacion: el pago se bloquea si la suma de los medios no coincide con el total final o si faltan referencias requeridas para tarjeta/transferencia.
+- Alcance: no modifica tablas, endpoints ni permisos; conserva caja abierta, `empresa_id` y validacion final del backend.
+
 2026-05-14: Carrito de compras limpia titulos repetidos
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Cambio UX: se ocultan los encabezados repetidos `Items del carrito`, `Lector de codigo de barras`, `Valores por medio de pago` y `Acciones del carrito` en `web/administrar_empresa/carrito_de_compras.html`.

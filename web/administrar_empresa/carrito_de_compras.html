@@ -327,19 +327,19 @@
         <div id="stationPaymentAmountsRow" class="carrito-station-payment-inputs-row">
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayEfectivo">Efectivo</label>
-            <input id="stationPayDisplayEfectivo" type="text" class="form-input" readonly value="" autocomplete="off">
+            <input id="stationPayDisplayEfectivo" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="efectivo">
           </div>
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayDebito">Débito</label>
-            <input id="stationPayDisplayDebito" type="text" class="form-input" readonly value="" autocomplete="off">
+            <input id="stationPayDisplayDebito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_debito">
           </div>
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayCredito">Crédito</label>
-            <input id="stationPayDisplayCredito" type="text" class="form-input" readonly value="" autocomplete="off">
+            <input id="stationPayDisplayCredito" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="tarjeta_credito">
           </div>
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayOtro">Otro</label>
-            <input id="stationPayDisplayOtro" type="text" class="form-input" readonly value="" autocomplete="off">
+            <input id="stationPayDisplayOtro" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_bancaria">
           </div>
         </div>
       </section>
@@ -565,7 +565,14 @@
         ]
       },
       paymentInProgress: false,
-      stationPaymentNotice: null
+      stationPaymentNotice: null,
+      paymentAmountsManual: false,
+      paymentAmounts: {
+        efectivo: 0,
+        tarjeta_debito: 0,
+        tarjeta_credito: 0,
+        transferencia_bancaria: 0
+      }
     };
 
     let itemSearchDebounceTimer = null;
@@ -622,6 +629,26 @@
 
     function normalizeCashCode(v) {
       return normalizedCode(v).replace(/\s+/g, '_').replace(/[^A-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function parseMoneyInputValue(value) {
+      let text = normalize(value);
+      if (!text) return 0;
+      text = text.replace(/[^\d,.\-]/g, '');
+      const lastComma = text.lastIndexOf(',');
+      const lastDot = text.lastIndexOf('.');
+      if (lastComma > -1 && lastDot > -1) {
+        if (lastComma > lastDot) {
+          text = text.replace(/\./g, '').replace(',', '.');
+        } else {
+          text = text.replace(/,/g, '');
+        }
+      } else if (lastComma > -1) {
+        text = text.replace(',', '.');
+      }
+      const n = Number(text);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, roundMoney(n));
     }
 
     function cashRegisterLabel(caja) {
@@ -2117,6 +2144,7 @@
       let mixedTotal = 0;
       let mixedSummary = '';
       let mixedMessage = '';
+      let paymentAmountsMessage = '';
       let paymentLabel = paymentMethod.replace(/_/g, ' ');
 
       if (paymentMethod === 'mixto') {
@@ -2159,6 +2187,18 @@
         operativaMessage = 'El método de pago ' + paymentMethod.replace(/_/g, ' ') + ' no está habilitado para este rol.';
       }
 
+      if (state.paymentAmountsManual) {
+        const manualEntries = getStationPaymentAmountEntries();
+        const manualTotal = manualEntries.reduce(function(acc, item) {
+          return roundMoney(acc + Number(item.monto || 0));
+        }, 0);
+        if (totalPagarFinal > 0 && manualEntries.length === 0) {
+          paymentAmountsMessage = 'Ingresa el valor recibido en al menos un medio de pago.';
+        } else if (Math.abs(manualTotal - totalPagarFinal) > 0.01) {
+          paymentAmountsMessage = 'La suma de Efectivo, Débito, Crédito y Otro debe ser igual al total final a pagar.';
+        }
+      }
+
       return {
         totalBase: roundMoney(totalBase),
         discountLabel: discountLabel,
@@ -2182,8 +2222,67 @@
         mixedTotal: mixedTotal,
         mixedSummary: mixedSummary,
         mixedMessage: mixedMessage,
+        paymentAmountsMessage: paymentAmountsMessage,
         operativaMessage: operativaMessage
       };
+    }
+
+    function getStationPaymentAmountInputDefs() {
+      return [
+        { id: 'stationPayDisplayEfectivo', metodo: 'efectivo' },
+        { id: 'stationPayDisplayDebito', metodo: 'tarjeta_debito' },
+        { id: 'stationPayDisplayCredito', metodo: 'tarjeta_credito' },
+        { id: 'stationPayDisplayOtro', metodo: 'transferencia_bancaria' }
+      ];
+    }
+
+    function getStationPaymentAmountEntries() {
+      const amounts = state.paymentAmounts || {};
+      return getStationPaymentAmountInputDefs().map(function(def) {
+        return {
+          metodo: def.metodo,
+          monto: Math.max(0, roundMoney(Number(amounts[def.metodo] || 0))),
+          referencia: normalize(state.stationDiscount.paymentReference)
+        };
+      }).filter(function(item) {
+        return item.monto > 0;
+      });
+    }
+
+    function applyStationPaymentAmountsToDiscount() {
+      if (!state.paymentAmountsManual) return;
+      const entries = getStationPaymentAmountEntries();
+      if (entries.length === 0) {
+        state.stationDiscount.mixedPayments = [];
+        return;
+      }
+      if (entries.length === 1) {
+        state.stationDiscount.paymentMethod = entries[0].metodo;
+        state.stationDiscount.mixedPayments = [];
+        return;
+      }
+      state.stationDiscount.paymentMethod = 'mixto';
+      state.stationDiscount.mixedPayments = entries;
+    }
+
+    function readStationPaymentAmountInputs(markManual) {
+      if (markManual) state.paymentAmountsManual = true;
+      const next = {};
+      getStationPaymentAmountInputDefs().forEach(function(def) {
+        const el = document.getElementById(def.id);
+        next[def.metodo] = el ? parseMoneyInputValue(el.value) : 0;
+      });
+      state.paymentAmounts = next;
+      applyStationPaymentAmountsToDiscount();
+    }
+
+    function formatStationPaymentAmountInputs(moneda) {
+      getStationPaymentAmountInputDefs().forEach(function(def) {
+        const el = document.getElementById(def.id);
+        if (!el) return;
+        const value = Number((state.paymentAmounts || {})[def.metodo] || 0);
+        el.value = formatAmount(value, moneda || 'COP');
+      });
     }
 
     function syncStationPaymentDisplayInputs(carrito) {
@@ -2193,7 +2292,12 @@
         if (el) el.value = text || '';
       };
       if (!carrito) {
+        state.paymentAmountsManual = false;
+        state.paymentAmounts = { efectivo: 0, tarjeta_debito: 0, tarjeta_credito: 0, transferencia_bancaria: 0 };
         ids.forEach(function(id) { setOne(id, ''); });
+        return;
+      }
+      if (state.paymentAmountsManual) {
         return;
       }
       const pay = getStationPaymentBreakdown(carrito);
@@ -2223,6 +2327,12 @@
       setOne('stationPayDisplayDebito', formatAmount(deb, moneda));
       setOne('stationPayDisplayCredito', formatAmount(cred, moneda));
       setOne('stationPayDisplayOtro', formatAmount(otro, moneda));
+      state.paymentAmounts = {
+        efectivo: roundMoney(ef),
+        tarjeta_debito: roundMoney(deb),
+        tarjeta_credito: roundMoney(cred),
+        transferencia_bancaria: roundMoney(otro)
+      };
     }
 
     function roundMoney(value) {
@@ -2930,6 +3040,7 @@
           referencia: normalize(document.getElementById('mixedReference3').value)
         }
       ];
+      applyStationPaymentAmountsToDiscount();
     }
 
     function renderStationPaymentPanel(carrito) {
@@ -3107,6 +3218,12 @@
         state.stationDiscount.type = 'code';
         discountTypeEl.value = 'code';
       }
+      if (paymentMethodEl && state.stationDiscount.paymentMethod && paymentMethodEl.value !== state.stationDiscount.paymentMethod) {
+        const hasOption = Array.from(paymentMethodEl.options || []).some(function(opt) {
+          return opt.value === state.stationDiscount.paymentMethod;
+        });
+        if (hasOption) paymentMethodEl.value = state.stationDiscount.paymentMethod;
+      }
 
       if (!hasAllowedPaymentMethods) {
         state.stationDiscount.paymentMethod = '';
@@ -3114,18 +3231,24 @@
 
       const pay = getStationPaymentBreakdown(carrito);
       const isMixedMethod = pay.paymentMethod === 'mixto';
+      const showDetailedMixedInputs = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod && !state.paymentAmountsManual;
       const selectedCash = getSelectedCashRegister();
       renderPaymentMethodsCards(carrito);
+      getStationPaymentAmountInputDefs().forEach(function(def) {
+        const el = document.getElementById(def.id);
+        if (!el) return;
+        el.disabled = !selectedActive || !stationUI.mostrar_tarjeta_valores_pago;
+      });
 
-      mixedBlockEl.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
-      mixedBlock2El.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
-      mixedBlock3El.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
-      mixedHintEl.style.display = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod ? '' : 'none';
+      mixedBlockEl.style.display = showDetailedMixedInputs ? '' : 'none';
+      mixedBlock2El.style.display = showDetailedMixedInputs ? '' : 'none';
+      mixedBlock3El.style.display = showDetailedMixedInputs ? '' : 'none';
+      mixedHintEl.style.display = showDetailedMixedInputs ? '' : 'none';
 
       ['mixedMethod1', 'mixedAmount1', 'mixedReference1', 'mixedMethod2', 'mixedAmount2', 'mixedReference2', 'mixedMethod3', 'mixedAmount3', 'mixedReference3'].forEach(function(id) {
         const el = document.getElementById(id);
         if (!el) return;
-        el.disabled = !selectedActive || !isMixedMethod;
+        el.disabled = !selectedActive || !isMixedMethod || state.paymentAmountsManual;
       });
 
       if (isMixedMethod) {
@@ -3149,14 +3272,14 @@
         breakdownEl.textContent += ' | Detalle mixto: ' + pay.mixedSummary;
       }
 
-      const hasBlockingError = !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
+      const hasBlockingError = !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || Boolean(pay.paymentAmountsMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
       const payDisabledReason = !selectedActive
         ? (state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Activalo para iniciar una nueva sesion de estacion.')
         : (!selectedCash
           ? 'Clic para refrescar cajas abiertas y cobrar.'
         : (!hasAllowedPaymentMethods
           ? 'No hay metodos de pago habilitados para este rol.'
-          : (pay.operativaMessage || pay.discountCodeMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : ''))));
+          : (pay.operativaMessage || pay.discountCodeMessage || pay.paymentAmountsMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : ''))));
       setStationPayButtonState({
         disabled: !selectedActive || hasBlockingError || state.paymentInProgress,
         loading: state.paymentInProgress,
@@ -3175,6 +3298,8 @@
         setStationPaymentMessage(pay.discountCodeMessage, true);
       } else if (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0) {
         setStationPaymentMessage('Cuando hay propina aplicada, el pago por código de descuento no cubre el total. Usa efectivo, tarjeta, transferencia o desactiva propina en este cobro.', true);
+      } else if (pay.paymentAmountsMessage) {
+        setStationPaymentMessage(pay.paymentAmountsMessage, true);
       } else if (pay.mixedMessage) {
         setStationPaymentMessage(pay.mixedMessage, true);
       } else       if (!selectedActive) {
@@ -3296,6 +3421,10 @@
       }
       if ((pay.paymentMethod === 'tarjeta_credito' || pay.paymentMethod === 'tarjeta_debito' || pay.paymentMethod === 'transferencia_bancaria') && normalize(pay.paymentReference).length < 4) {
         setStationPaymentMessage('Para pagos con tarjeta o transferencia bancaria debes ingresar una referencia de pago (mínimo 4 caracteres).', true);
+        return;
+      }
+      if (pay.paymentAmountsMessage) {
+        setStationPaymentMessage(pay.paymentAmountsMessage, true);
         return;
       }
       if (pay.paymentMethod === 'mixto' && pay.mixedMessage) {
@@ -6123,6 +6252,9 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', function() {
+        if (id === 'paymentMethod') {
+          state.paymentAmountsManual = false;
+        }
         const selected = getSelectedCarrito();
         if (!selected) return;
         renderStationPaymentPanel(selected);
@@ -6131,8 +6263,29 @@
         if (id === 'activeCashRegister') {
           state.selectedCashRegisterID = Number(el.value || 0);
         }
+        if (id === 'paymentMethod') {
+          state.paymentAmountsManual = false;
+        }
         const selected = getSelectedCarrito();
         if (!selected) return;
+        renderStationPaymentPanel(selected);
+      });
+    });
+
+    getStationPaymentAmountInputDefs().forEach(function(def) {
+      const el = document.getElementById(def.id);
+      if (!el) return;
+      el.addEventListener('input', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        readStationPaymentAmountInputs(true);
+        renderStationPaymentPanel(selected);
+      });
+      el.addEventListener('change', function() {
+        const selected = getSelectedCarrito();
+        if (!selected) return;
+        readStationPaymentAmountInputs(true);
+        formatStationPaymentAmountInputs(selected.moneda);
         renderStationPaymentPanel(selected);
       });
     });

@@ -1,3 +1,9 @@
+## [2026-05-14] Carrito con valores editables por medio de pago
+- [Frontend] Los campos `Efectivo`, `Debito`, `Credito` y `Otro` del carrito ahora aceptan edicion directa.
+- [Pago] Cuando hay varios medios con valor, el carrito envia `metodo_pago=mixto` con `pagos_mixtos`; `Otro` se registra como transferencia bancaria.
+- [Validacion] La suma debe coincidir con el total final y las tarjetas/transferencias mantienen referencia obligatoria.
+- [Alcance] Sin cambios de backend, tablas, permisos ni dependencias.
+
 ## [2026-05-14] Carrito limpia titulos y destaca acciones
 - [Frontend] `web/administrar_empresa/carrito_de_compras.html` oculta los textos repetidos de items, lector, valores de pago y acciones.
 - [UX] `Carrito de compras` y `Estacion: <nombre>` quedan en una misma fila cuando el ancho lo permite.
