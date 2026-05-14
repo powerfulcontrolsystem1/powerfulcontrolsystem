@@ -690,6 +690,31 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		return false, err
 	}
 
+	requiredColumns := map[string][]string{
+		"empresa_finanzas_movimientos": {
+			"cierre_caja_id",
+			"caja_codigo",
+			"caja_turno",
+			"caja_sucursal_id",
+			"total_neto",
+		},
+		"empresa_cierres_caja": {
+			"sucursal_id",
+			"caja_codigo",
+			"turno",
+			"fecha_apertura",
+			"estado_cierre",
+			"apertura_monto",
+		},
+	}
+	for tableName, columns := range requiredColumns {
+		columnsOK, colErr := empresaFinanzasColumnsExist(dbConn, tableName, columns)
+		if colErr != nil || !columnsOK {
+			PerfLogf("[perf][schema] finanzas missing columns table=%s ok=%v err=%v", tableName, columnsOK, colErr)
+			return false, colErr
+		}
+	}
+
 	requiredIndexes := []string{
 		"ix_empresa_finanzas_movimientos_empresa_fecha",
 		"ix_empresa_cierres_caja_empresa_estado",
@@ -701,6 +726,40 @@ func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 		if idxErr != nil || !indexOK {
 			PerfLogf("[perf][schema] finanzas missing index %s ok=%v err=%v", indexName, indexOK, idxErr)
 			return false, idxErr
+		}
+	}
+	return true, nil
+}
+
+func empresaFinanzasColumnsExist(dbConn *sql.DB, tableName string, columns []string) (bool, error) {
+	if len(columns) == 0 {
+		return true, nil
+	}
+	found := make(map[string]bool, len(columns))
+	rows, err := querySQLCompat(dbConn, `
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = ANY (current_schemas(false))
+		  AND table_name = ?
+	`, strings.TrimSpace(tableName))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var columnName string
+		if err := rows.Scan(&columnName); err != nil {
+			return false, err
+		}
+		found[strings.ToLower(strings.TrimSpace(columnName))] = true
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	for _, columnName := range columns {
+		if !found[strings.ToLower(strings.TrimSpace(columnName))] {
+			return false, nil
 		}
 	}
 	return true, nil

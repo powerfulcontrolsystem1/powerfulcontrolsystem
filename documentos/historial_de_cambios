@@ -1,3 +1,10 @@
+2026-05-13: Corte de caja repara migracion de columnas de caja
+- Modulos afectados: `corte_caja`, `finanzas`, `estaciones`.
+- Causa tecnica: en produccion la tabla `empresa_finanzas_movimientos` existia con indices, pero aun no tenia columnas operativas de caja como `cierre_caja_id` y `caja_codigo`; la verificacion rapida del esquema financiero la marcaba como lista y el reporte de turno fallaba con 500 al filtrar la caja actual.
+- Backend: `backend/db/finanzas.go` ahora valida columnas criticas de `empresa_finanzas_movimientos` y `empresa_cierres_caja` antes de cachear el esquema como listo, forzando la migracion ligera cuando una base empresarial esta rezagada.
+- Alcance: no agrega dependencias, tablas nuevas ni cambios de permisos; conserva PostgreSQL, `empresa_id` y el aislamiento por caja/usuario.
+- Validacion: `go test ./db ./handlers` paso desde `backend`; la reproduccion previa en produccion confirmo el 500 en `/api/empresa/corte_caja?action=mi_caja_actual`.
+
 2026-05-13: Recibo operativo obligatorio al pagar carrito
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `impresion`.
 - Ajuste: `web/administrar_empresa/carrito_de_compras.html` genera el recibo POS/carta del cierre de carrito por defecto, aun cuando la configuracion historica `imprimir_venta` este apagada. Esto evita que el usuario cierre una estacion y no vea evidencia impresa del pago.
