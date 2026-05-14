@@ -9503,3 +9503,9 @@ Archivos modificados:
 - CHANGELOG.md
 - documentos/historial_de_cambios
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-05-14 00:04:22 - Mensaje: fix: reparar corte automatico de caja; Commit: dc25e5dd; PushStatus: OK
+Archivos modificados:
+- backend/db/finanzas.go
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
