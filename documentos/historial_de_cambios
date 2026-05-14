@@ -1,3 +1,9 @@
+2026-05-14: Menu publico de juegos disponible en Docker
+- Modulos afectados: `juegos`, `portal_publico`, `despliegue`.
+- Causa tecnica: `.dockerignore` excluia `web/Juegos/`, por lo que la pagina `web/Juegos/menu_juegos.html` y sus juegos existian en el repositorio pero no entraban en la imagen Docker del frontend; en produccion podia responder 404.
+- Ajuste: `.dockerignore` deja de excluir `web/Juegos/`, manteniendo excluido el directorio raiz `juegos/` porque el emulador se monta por Compose desde `../juegos` y no debe inflar la imagen con assets pesados.
+- Validacion local: se verifico que los enlaces `/Juegos/...` declarados en el menu existen dentro de `web/Juegos`.
+
 2026-05-13: Corte de caja repara migracion de columnas de caja
 - Modulos afectados: `corte_caja`, `finanzas`, `estaciones`.
 - Causa tecnica: en produccion la tabla `empresa_finanzas_movimientos` existia con indices, pero aun no tenia columnas operativas de caja como `cierre_caja_id` y `caja_codigo`; la verificacion rapida del esquema financiero la marcaba como lista y el reporte de turno fallaba con 500 al filtrar la caja actual.

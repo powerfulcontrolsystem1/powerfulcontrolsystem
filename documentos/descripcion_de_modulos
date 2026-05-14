@@ -1,3 +1,8 @@
+2026-05-14: Juegos publicos incluidos en imagen frontend
+- Modulos afectados: `juegos`, `portal_publico`.
+- Cambio operativo: `web/Juegos/menu_juegos.html` y los juegos HTML asociados se incluyen en el build Docker del frontend para que `/Juegos/menu_juegos.html` este disponible en produccion.
+- Alcance: no cambia endpoints, permisos, base de datos ni records; conserva `/api/public/juegos/records` como API publica y el emulador raiz montado por Compose.
+
 2026-05-13: Corte de caja valida columnas de finanzas
 - Modulos afectados: `corte_caja`, `finanzas`, `estaciones`.
 - Cambio funcional: el corte automatico de turno puede recuperar bases empresariales donde el modulo financiero ya existia, pero faltaban columnas de caja necesarias para filtrar movimientos por `cierre_caja_id`, codigo y turno.
