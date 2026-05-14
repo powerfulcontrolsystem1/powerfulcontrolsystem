@@ -1,3 +1,9 @@
+## [2026-05-14] Carrito limpia titulos y destaca acciones
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` oculta los textos repetidos de items, lector, valores de pago y acciones.
+- [UX] `Carrito de compras` y `Estacion: <nombre>` quedan en una misma fila cuando el ancho lo permite.
+- [Estilos] `web/estilos.css` conserva tarjetas planas, pero devuelve apariencia de boton al toolbar de acciones.
+- [Alcance] Cambio solo visual; no modifica APIs, backend, permisos, tablas ni dependencias.
+
 ## [2026-05-13] Boton pagar y cerrar carrito con reintento visual
 - [Backend] `pagar_estacion` y `pagar` pasan a permiso operativo `Crear / registrar` en ventas, evitando bloquear cajeros o roles personalizados que venden pero no tienen acciones gerenciales de aprobacion.
 - [Frontend] Si la carga inicial de cajas abiertas falla, el boton `Pagar y cerrar carrito` queda habilitado, informa que puede reintentar y al clic vuelve a cargar cajas antes de enviar el pago.

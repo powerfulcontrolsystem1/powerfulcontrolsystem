@@ -1,3 +1,10 @@
+2026-05-14: Carrito de compras limpia titulos repetidos
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: se ocultan los encabezados repetidos `Items del carrito`, `Lector de codigo de barras`, `Valores por medio de pago` y `Acciones del carrito` en `web/administrar_empresa/carrito_de_compras.html`.
+- Encabezado: el nombre de la estacion queda en la misma linea del titulo principal cuando hay espacio disponible.
+- Estilos: `web/estilos.css` mantiene el carrito plano, pero da relieve visual solo a los botones del toolbar de acciones.
+- Alcance: solo frontend; no cambia endpoints, tablas, permisos ni dependencias.
+
 2026-05-14: Menu publico de juegos disponible en Docker
 - Modulos afectados: `juegos`, `portal_publico`, `despliegue`.
 - Causa tecnica: `.dockerignore` excluia `web/Juegos/`, por lo que la pagina `web/Juegos/menu_juegos.html` y sus juegos existian en el repositorio pero no entraban en la imagen Docker del frontend; en produccion podia responder 404.

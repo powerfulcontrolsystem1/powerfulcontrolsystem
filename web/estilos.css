@@ -18107,3 +18107,43 @@ body.carrito-flat-page .form-textarea,
 body.carrito-flat-page select{
   border-radius:0 !important;
 }
+
+body.carrito-flat-page .carrito-title-line{
+  display:flex !important;
+  align-items:baseline !important;
+  flex-wrap:wrap !important;
+  gap:10px !important;
+  min-width:0 !important;
+}
+
+body.carrito-flat-page .carrito-title-line h1,
+body.carrito-flat-page .carrito-station-inline{
+  margin:0 !important;
+}
+
+body.carrito-flat-page .carrito-station-inline{
+  color:var(--muted) !important;
+  font-weight:700 !important;
+  line-height:1.2 !important;
+  white-space:nowrap !important;
+}
+
+body.carrito-flat-page #carritoActionToolbar{
+  gap:8px !important;
+  padding:8px !important;
+}
+
+body.carrito-flat-page #carritoActionToolbar > .btn{
+  border:1px solid var(--border) !important;
+  border-radius:8px !important;
+  background:linear-gradient(180deg, var(--surface-soft), var(--surface)) !important;
+  box-shadow:0 7px 14px rgba(15,23,42,.18) !important;
+  color:var(--text) !important;
+  min-height:38px !important;
+  padding:8px 12px !important;
+}
+
+body.carrito-flat-page #carritoActionToolbar > .btn:hover{
+  box-shadow:0 9px 18px rgba(15,23,42,.22) !important;
+  transform:translateY(-1px) !important;
+}

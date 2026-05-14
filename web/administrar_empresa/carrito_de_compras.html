@@ -10,9 +10,9 @@
 <body class="super-page form-bg-dark carrito-flat-page">
   <div class="container">
 <div class="page-header">
-      <div>
+      <div class="carrito-title-line">
         <h1 id="pageTitle">Carrito de compras</h1>
-        <p id="stationHeaderTitle" class="form-help my-0-12" hidden></p>
+        <p id="stationHeaderTitle" class="form-help carrito-station-inline" hidden></p>
       </div>
       <button id="addCarritoBtn" class="btn add">Agregar carrito</button>
     </div>
@@ -95,8 +95,8 @@
     <div id="carritosList" class="mt-14">Cargando carritos...</div>
 
     <div class="form carrito-workspace-card">
-      <div class="page-header carrito-workspace-header">
-        <h2 id="itemsTitle" class="section-heading">Items del carrito</h2>
+      <div class="page-header carrito-workspace-header" hidden>
+        <h2 id="itemsTitle" class="section-heading"></h2>
       </div>
       <div id="carritoResumen" class="form-help"></div>
 
@@ -108,8 +108,8 @@
       </div>
 
       <div id="scannerPanel" class="card empresa-section mt-12">
-        <div class="empresa-section-header">
-          <h3 class="section-heading">Lector de código de barras</h3>
+        <div class="empresa-section-header" hidden>
+          <h3 class="section-heading"></h3>
         </div>
         <div id="carritoClienteRow" class="form-row carrito-scanner-stack">
           <div class="form-col carrito-scanner-column">
@@ -129,7 +129,7 @@
 
       <div id="stationCartSplitRow" class="carrito-station-split mt-12" hidden>
         <div class="carrito-station-split-main">
-          <p class="form-help mb-8 mt-0">Items del carrito</p>
+          <p class="form-help mb-8 mt-0" hidden></p>
           <div id="itemsListStation" class="carrito-items-box carrito-items-box--station-fixed">Selecciona un carrito para gestionar sus ítems.</div>
         </div>
         <aside class="card carrito-summary-card carrito-station-totals-aside">
@@ -139,8 +139,8 @@
       </div>
 
       <section id="stationCartActionsCard" class="card empresa-section carrito-actions-card is-hidden mt-12" hidden>
-        <div class="empresa-section-header compact">
-          <h3 class="section-heading">Acciones del carrito</h3>
+        <div class="empresa-section-header compact" hidden>
+          <h3 class="section-heading"></h3>
         </div>
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
@@ -321,8 +321,8 @@
       </div>
 
       <section id="stationPaymentAmountsCard" class="card empresa-section carrito-payment-amounts-card is-hidden mt-12" hidden>
-        <div class="empresa-section-header compact">
-          <h3 class="section-heading">Valores por medio de pago</h3>
+        <div class="empresa-section-header compact" hidden>
+          <h3 class="section-heading"></h3>
         </div>
         <div id="stationPaymentAmountsRow" class="carrito-station-payment-inputs-row">
           <div class="form-col">
@@ -4255,14 +4255,14 @@
       const title = document.getElementById('itemsTitle');
       const selected = getSelectedCarrito();
       if (!selected) {
-        title.textContent = 'Items del carrito';
+        if (title) title.textContent = '';
         target.textContent = state.stationMode ? 'Se está preparando el carrito asociado a la estación.' : 'Selecciona un carrito para agregar items.';
         updateStationHeaderTitle('');
         renderScannerPanel();
         return;
       }
       const selectedName = normalize(selected.nombre) || 'sin nombre';
-      title.textContent = state.stationMode ? 'Items del carrito' : ('Items del carrito: ' + selectedName);
+      if (title) title.textContent = '';
       updateStationHeaderTitle(selectedName);
 
       target.textContent = '';
@@ -5575,10 +5575,10 @@
           if (state.directSaleMode) {
             document.getElementById('pageTitle').textContent = 'Venta directa - ' + empresa.nombre;
           } else if (state.stationMode) {
-            document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
+            document.getElementById('pageTitle').textContent = 'Carrito de compras';
             updateStationHeaderTitle('');
           } else {
-            document.getElementById('pageTitle').textContent = 'Carrito de compras - ' + empresa.nombre;
+            document.getElementById('pageTitle').textContent = 'Carrito de compras';
           }
         }
       } catch (_) {}

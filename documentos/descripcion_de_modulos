@@ -1,3 +1,10 @@
+2026-05-14: Carrito de compras con encabezado compacto y acciones destacadas
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
+- Cambio UX: `web/administrar_empresa/carrito_de_compras.html` elimina los textos repetidos `Items del carrito`, `Lector de código de barras`, `Valores por medio de pago` y `Acciones del carrito`.
+- Encabezado: en modo estacion, `Carrito de compras` y `Estacion: <nombre>` se muestran en una misma fila cuando el ancho lo permite.
+- Acciones: los botones operativos del carrito recuperan apariencia de boton dentro del bloque de acciones, sin devolver sombras o relieve a las tarjetas del carrito.
+- Alcance: solo frontend; no cambia contratos API, tablas, permisos ni dependencias.
+
 2026-05-14: Juegos publicos incluidos en imagen frontend
 - Modulos afectados: `juegos`, `portal_publico`.
 - Cambio operativo: `web/Juegos/menu_juegos.html` y los juegos HTML asociados se incluyen en el build Docker del frontend para que `/Juegos/menu_juegos.html` este disponible en produccion.
