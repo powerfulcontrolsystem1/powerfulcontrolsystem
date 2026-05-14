@@ -704,6 +704,46 @@
       renderActiveCashRegisters();
     }
 
+    function defaultPaymentCashRegisterCode() {
+      const drawer = getCashDrawerConfig();
+      return normalizeCashCode((drawer && drawer.code) || 'CAJA-1') || 'CAJA-1';
+    }
+
+    async function openCashRegisterForPayment(carrito) {
+      if (!state.empresaID) return null;
+      const payload = {
+        caja_codigo: defaultPaymentCashRegisterCode(),
+        turno: 'general',
+        sucursal_id: 0,
+        apertura_efectivo: 0,
+        moneda: normalize((carrito && carrito.moneda) || 'COP') || 'COP'
+      };
+      setStationPaymentMessage('No habia una caja abierta. Abriendo caja automaticamente para registrar este pago...', false);
+      const endpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=abrir_caja_cobro' +
+        (state.stationMode ? '&perm_page=linkEstaciones' : '') +
+        (state.directSaleMode ? '&modo=venta_directa&perm_page=linkVentaDirecta' : '');
+      const res = await fetchWithTimeout(endpoint, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(res);
+      const out = await res.json().catch(function() { return null; });
+      const caja = out && out.caja && typeof out.caja === 'object' ? out.caja : null;
+      await loadActiveCashRegisters();
+      if (caja && Number(caja.id || 0) > 0) {
+        state.selectedCashRegisterID = Number(caja.id || 0);
+        const select = document.getElementById('activeCashRegister');
+        if (select) select.value = String(state.selectedCashRegisterID);
+      }
+      const selected = getSelectedCashRegister();
+      if (selected) {
+        setStationPaymentMessage('Caja ' + normalizeCashCode(selected.caja_codigo) + ' abierta para el cobro. Registrando pago...', false);
+      }
+      return selected;
+    }
+
     function getStationReference() {
       if (!(state.stationID > 0)) return '';
       return 'ESTACION_' + state.stationID;
@@ -3264,10 +3304,20 @@
         await loadActiveCashRegisters();
         cashForPayment = getSelectedCashRegister();
         if (!cashForPayment) {
-          closeUnusedPaymentPrintTargets(printTargets);
-          setStationPaymentMessage('Debes seleccionar una caja abierta antes de registrar el pago.', true);
-          renderStationPaymentPanel(selected);
-          return;
+          try {
+            cashForPayment = await openCashRegisterForPayment(selected);
+          } catch (cashErr) {
+            closeUnusedPaymentPrintTargets(printTargets);
+            setStationPaymentMessage((cashErr && cashErr.message) || 'No se pudo abrir una caja automaticamente para cobrar. Abre una caja desde Corte de caja y vuelve a intentar.', true);
+            renderStationPaymentPanel(selected);
+            return;
+          }
+          if (!cashForPayment) {
+            closeUnusedPaymentPrintTargets(printTargets);
+            setStationPaymentMessage('No se encontro una caja abierta para registrar el pago. Abre una caja desde Corte de caja y vuelve a intentar.', true);
+            renderStationPaymentPanel(selected);
+            return;
+          }
         }
       }
 

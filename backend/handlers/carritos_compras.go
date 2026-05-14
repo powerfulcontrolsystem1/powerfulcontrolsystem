@@ -285,6 +285,38 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "abrir_caja_cobro" || action == "abrir_caja_para_cobro" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				var payload struct {
+					CajaCodigo       string  `json:"caja_codigo"`
+					Turno            string  `json:"turno"`
+					SucursalID       int64   `json:"sucursal_id"`
+					AperturaEfectivo float64 `json:"apertura_efectivo"`
+					Moneda           string  `json:"moneda"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "payload invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				cierre, created, errCaja := openCajaCobroForCarrito(dbEmp, empresaID, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.AperturaEfectivo, payload.Moneda, strings.TrimSpace(adminEmailFromRequest(r)))
+				if errCaja != nil {
+					log.Printf("[carritos] abrir caja cobro empresa_id=%d error: %v", empresaID, errCaja)
+					http.Error(w, "No se pudo abrir una caja para cobrar", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":      true,
+					"created": created,
+					"caja":    cierre,
+				})
+				return
+			}
 			if action == "cambiar_tarifa" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
@@ -1636,6 +1668,74 @@ func validateCarritoPayload(payload dbpkg.CarritoCompra) error {
 		return fmt.Errorf("cliente_id invalido")
 	}
 	return nil
+}
+
+func normalizeCarritoCajaCode(value string) string {
+	code := strings.ToUpper(strings.TrimSpace(value))
+	code = strings.ReplaceAll(code, " ", "_")
+	var b strings.Builder
+	for _, r := range code {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	code = strings.Trim(b.String(), "_-")
+	if code == "" {
+		return "CAJA-1"
+	}
+	return code
+}
+
+func openCajaCobroForCarrito(dbEmp *sql.DB, empresaID int64, cajaCodigo, turno string, sucursalID int64, apertura float64, moneda, usuario string) (*dbpkg.EmpresaCierreCaja, bool, error) {
+	if empresaID <= 0 {
+		return nil, false, fmt.Errorf("empresa_id es obligatorio")
+	}
+	code := normalizeCarritoCajaCode(cajaCodigo)
+	turno = strings.ToLower(strings.TrimSpace(turno))
+	if turno == "" {
+		turno = "general"
+	}
+	if sucursalID < 0 {
+		sucursalID = 0
+	}
+	if apertura < 0 {
+		apertura = 0
+	}
+	moneda = strings.ToUpper(strings.TrimSpace(moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+	if existing, err := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, 0, code, turno, sucursalID); err == nil && existing != nil {
+		return existing, false, nil
+	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, false, err
+	}
+	now := time.Now()
+	cierreID, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, dbpkg.EmpresaCierreCaja{
+		EmpresaID:        empresaID,
+		SucursalID:       sucursalID,
+		CajaCodigo:       code,
+		Turno:            turno,
+		FechaOperacion:   now.Format("2006-01-02"),
+		FechaApertura:    now.Format("2006-01-02 15:04:05"),
+		EstadoCierre:     "abierto",
+		AperturaMonto:    apertura,
+		CajaTeorica:      apertura,
+		CajaFisica:       apertura,
+		Moneda:           moneda,
+		UsuarioCreador:   usuario,
+		Estado:           "activo",
+		Observaciones:    "Caja abierta automaticamente al pagar carrito",
+		UmbralIncidencia: 0,
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	created, err := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, cierreID, "", "", 0)
+	if err != nil {
+		return nil, false, err
+	}
+	return created, true, nil
 }
 
 func attachCarritoStationRuntimeSummaries(dbEmp *sql.DB, rows []dbpkg.CarritoCompra) {

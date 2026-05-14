@@ -1,3 +1,10 @@
+2026-05-13: Pago de carrito abre caja de cobro si no existe
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
+- Causa tecnica real: en produccion no habia cajas abiertas para la empresa; el boton quedaba habilitado para reintentar carga de cajas, pero al no encontrar ninguna repetia el mismo mensaje inferior y para el usuario parecia que no ocurria nada.
+- Backend: `backend/handlers/carritos_compras.go` agrega `PUT /api/empresa/carritos_compra?action=abrir_caja_cobro`, bajo el mismo flujo de permisos de carritos/ventas. El endpoint reutiliza `CAJA-1` abierta si existe o crea una caja abierta activa con apertura cero, usuario creador actual y observacion operativa.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` detecta la ausencia de cajas en el clic de `Pagar y cerrar carrito`, abre caja automaticamente, recarga el selector, selecciona la caja creada y continua con `pagar_estacion`. El backend sigue validando `cierre_caja_id`, codigo, turno, caja abierta y `empresa_id` antes de cerrar la venta.
+- Validacion: `go test ./handlers ./db` paso correctamente. La comprobacion real previa en produccion confirmo el estado que originaba el fallo: `Zona 1` tenia total `COP 15000.00`, el boton estaba visible, pero el selector mostraba `No hay cajas abiertas`.
+
 2026-05-13: Pago de carrito con impresion reservada desde el clic
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `impresion`.
 - Causa tecnica: aunque el cobro podia enviarse, la impresion del recibo/factura se intentaba abrir despues de llamadas asincronas al backend; en navegadores reales eso puede activar el bloqueo de ventanas emergentes y dejar el cierre de venta sin evidencia impresa visible.
