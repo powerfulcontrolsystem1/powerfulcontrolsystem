@@ -377,13 +377,7 @@ try {
 
     linkReportes: { module: permModuleReportes, action: permActionRead },
     linkReportesEjecutivos: { module: permModuleReportes, action: permActionRead },
-    linkReportesMain: { module: permModuleReportes, action: permActionRead },
-    linkReportesVentas: { module: permModuleVentas, action: permActionRead },
-    linkReportesInventario: { module: permModuleInventario, action: permActionRead },
-    linkReportesFinanzas: { module: permModuleFinanzas, action: permActionRead },
-    linkReportesImpuestos: { module: permModuleFacturacion, action: permActionRead },
     linkReportesIAChat: { module: permModuleReportes, action: permActionRead },
-    linkGraficosEstadisticas: { module: permModuleReportes, action: permActionRead },
     linkCalculadora: { module: permModuleFinanzas, action: permActionRead },
 
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },

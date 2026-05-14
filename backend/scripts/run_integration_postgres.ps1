@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Aplica seeds SQL a bases Postgres y ejecuta tests Go.
+  Aplica datos base SQL a bases Postgres y ejecuta tests Go.
 
 .NOTES
   - Requiere `psql` o `docker` para aplicar los archivos SQL.
@@ -61,13 +61,13 @@ if (-not $env:DB_EMPRESAS_DSN -or $env:DB_EMPRESAS_DSN.Trim() -eq '') {
 $superFile = 'scripts/seed_postgres_super.sql'
 $empFile = 'scripts/seed_postgres_empresas.sql'
 
-Write-Host "Aplicando seed en super..."
+Write-Host "Aplicando datos base en super..."
 $rc = Apply-SqlFile $env:DB_SUPERADMIN_DSN $superFile
-if ($rc -ne 0) { Write-Error "Fallo aplicando seed super (code $rc)" ; exit $rc }
+if ($rc -ne 0) { Write-Error "Fallo aplicando datos base super (code $rc)" ; exit $rc }
 
-Write-Host "Aplicando seed en empresas..."
+Write-Host "Aplicando datos base en empresas..."
 $rc = Apply-SqlFile $env:DB_EMPRESAS_DSN $empFile
-if ($rc -ne 0) { Write-Error "Fallo aplicando seed empresas (code $rc)" ; exit $rc }
+if ($rc -ne 0) { Write-Error "Fallo aplicando datos base empresas (code $rc)" ; exit $rc }
 
 if ($RunAll) {
   Write-Host "Ejecutando toda la suite de pruebas: go test ./..."

@@ -386,7 +386,7 @@
         return String(productsText.value || '').split(/\r?\n/).map(function (line, idx) {
           var parts = line.split('|').map(function (part) { return part.trim(); });
           if (!parts.join('')) return null;
-          var sku = parts[0] || ('DEMO-' + String(idx + 1).padStart(3, '0'));
+          var sku = parts[0] || ('BASE-' + String(idx + 1).padStart(3, '0'));
           var nombre = parts[1] || '';
           if (!nombre) return null;
           return {

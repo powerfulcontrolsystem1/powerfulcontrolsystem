@@ -1,8 +1,9 @@
-## [2026-05-14] Reportes con catalogo ejecutivo unificado
-- [Frontend] `web/administrar_empresa/reportes_menu.html` reduce el submenu de reportes a accesos principales.
-- [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` agrega catalogo unificado con busqueda, areas, rango de fechas y exportacion directa.
-- [UX] Inventario, finanzas, cartera, ventas, contabilidad, impuestos y control operativo quedan agrupados como categorias, no como botones sueltos.
-- [Seguridad] Sin permisos, tablas, endpoints ni dependencias nuevas; los datasets siguen bajo `/api/empresa/reportes`.
+## [2026-05-14] Reportes unificados y limpieza preproduccion
+- [Frontend] `web/administrar_empresa/reportes_menu.html` queda con Centro de reportes y Asistente IA.
+- [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` agrega catalogo, vista previa y exportacion directa sin saltar a paginas antiguas.
+- [Limpieza] Se eliminan `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html`, `graficos_estadisticas.html` y `backend/handlers/graficos_estadisticas.go`.
+- [Datos] Se limpian usuarios/clientes/empresa smoke de la base, se normalizan productos `DEMO-*` a `BASE-*`, se retiran evidencias QA locales antiguas y se elimina el runner que generaba finanzas QA en Motel Calipso.
+- [Seguridad] Sin tablas, permisos ni dependencias nuevas; los datasets siguen bajo `/api/empresa/reportes`.
 
 ## [2026-05-14] Lobby de juegos uniforme con Doon FPS
 - [Frontend] `web/Juegos/menu_juegos.html` deja todas las tarjetas del catalogo con tamano uniforme, portada 16:9 y descripcion.

@@ -504,14 +504,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
 
-	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Reportes e informes", Grupo: "Analisis y control"},
-	{PaginaClave: "linkReportesMain", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Reportes generales", Grupo: "Analisis y control"},
-	{PaginaClave: "linkReportesVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Reportes de ventas", Grupo: "Analisis y control"},
-	{PaginaClave: "linkReportesInventario", Modulo: permModuleInventario, Accion: permActionRead, Titulo: "Reportes de inventario", Grupo: "Analisis y control"},
-	{PaginaClave: "linkReportesFinanzas", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Reportes financieros", Grupo: "Analisis y control"},
-	{PaginaClave: "linkReportesImpuestos", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Reportes de impuestos", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro de reportes", Grupo: "Analisis y control"},
 	{PaginaClave: "linkReportesIAChat", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Analisis y control"},
-	{PaginaClave: "linkGraficosEstadisticas", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Analitica ejecutiva avanzada", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Centro financiero y contable"},
 
 	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Personas y activos"},

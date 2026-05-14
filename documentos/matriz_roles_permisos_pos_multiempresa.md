@@ -1,11 +1,11 @@
 2026-05-14: Reportes unificados
-- El submenu principal del modulo `reportes` muestra una entrada compacta de gobierno: Centro ejecutivo, Analitica avanzada, Catalogo y exportacion, y Asistente IA.
-- `linkReportesInventario` y `linkReportesFinanzas` no se eliminan del catalogo de permisos ni de sus rutas protegidas; solo dejan de ocupar accesos principales para evitar duplicidad visual.
-- Las vistas `reportes_inventario.html` y `reportes_finanzas.html` siguen accesibles desde el catalogo ejecutivo y conservan sus permisos actuales (`inventario:R` y `finanzas:R` respectivamente).
+- El submenu principal del modulo `reportes` queda en dos accesos: `Centro de reportes` (`linkReportesEjecutivos`) y `Asistente IA` (`linkReportesIAChat`).
+- Se retiran del catalogo de permisos empresarial las entradas antiguas `linkReportesMain`, `linkReportesVentas`, `linkReportesInventario`, `linkReportesFinanzas`, `linkReportesImpuestos` y `linkGraficosEstadisticas`.
+- Las vistas antiguas `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html` y `graficos_estadisticas.html` dejan de existir; sus consultas quedan consolidadas en el catalogo con vista previa de `reportes_ejecutivos.html`.
 - Los datasets exportables continuan bajo `/api/empresa/reportes` con `WithEmpresaReportesPermissions` y aislamiento por `empresa_id`.
 
 2026-05-13: Reportes ejecutivos profesionales
-- `web/administrar_empresa/reportes_ejecutivos.html`, `reportes_menu.html` y `reportes_finanzas.html` permanecen dentro del modulo `reportes`.
+- `web/administrar_empresa/reportes_ejecutivos.html` y `reportes_menu.html` permanecen dentro del modulo `reportes`; las vistas separadas de inventario/finanzas fueron absorbidas por el centro unico el 2026-05-14.
 - No agrega permisos ni wrappers nuevos: los datos y exportaciones siguen usando `/api/empresa/reportes` bajo `WithEmpresaReportesPermissions`.
 - La simplificacion es de UX: menos botones en el submenu principal y datasets especializados dentro de la suite, conservando aislamiento por `empresa_id`.
 

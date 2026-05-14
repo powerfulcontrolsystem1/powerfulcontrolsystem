@@ -1,5 +1,5 @@
 -- Seed para la base de datos de empresas (Postgres)
--- Crea tablas mínimas y registra datos demo para pruebas de integración.
+-- Crea tablas mínimas y registra datos base para integracion local.
 
 BEGIN;
 
@@ -39,13 +39,13 @@ CREATE TABLE IF NOT EXISTS clientes (
   observaciones TEXT
 );
 
--- Datos demo
+-- Datos base
 INSERT INTO empresas (id, nombre, nit, usuario_creador, estado)
-VALUES (1, 'Empresa Demo', '900100', 'admin@demo.local', 'activo')
+VALUES (1, 'Empresa Base', '900100', 'admin@sistema.local', 'activo')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO clientes (empresa_id, tipo_documento, numero_documento, nombre_razon_social, email, estado)
-VALUES (1, 'NIT', '900100', 'Cliente Demo', 'cliente@demo.local', 'activo')
+VALUES (1, 'NIT', '900100', 'Cliente Base', 'cliente@sistema.local', 'activo')
 ON CONFLICT DO NOTHING;
 
 -- Ajustar secuencias

@@ -1,8 +1,0 @@
-Empresa: Motel Calipso (7)
-API modulos: 20/20
-API pasos: 800/800
-Integraciones globales: 4/4
-Capturas visuales: 140/140
-Fallas: 0
-Reporte JSON: D:\powerfulcontrolsystem\documentos\evidencias_qa\motel_calipso_modulos_2026-05-10\reporte_final_motel_calipso_modulos.json
-Capturas: D:\powerfulcontrolsystem\documentos\evidencias_qa\motel_calipso_modulos_2026-05-10\capturas_submenus_postfix

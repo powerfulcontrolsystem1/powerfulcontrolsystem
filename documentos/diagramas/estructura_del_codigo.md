@@ -1,15 +1,15 @@
-## Actualizacion 2026-05-13 (reportes ejecutivos)
+## Actualizacion 2026-05-14 (centro de reportes unico)
 
 - Frontend:
-  - `web/administrar_empresa/reportes_menu.html` queda como shell de reportes con sidebar reducido y `iframe` central.
-  - `web/administrar_empresa/reportes_ejecutivos.html` es la portada ejecutiva que enlaza vistas y datasets existentes sin crear endpoints.
-  - `web/administrar_empresa/reportes_finanzas.html` consume `/api/empresa/reportes?action=dataset&dataset=contable_movimientos_financieros` y exporta con `action=export`.
+  - `web/administrar_empresa/reportes_menu.html` queda como shell de reportes con solo dos accesos: Centro de reportes y Asistente IA.
+  - `web/administrar_empresa/reportes_ejecutivos.html` es la unica vista operativa de catalogo, vista previa y exportacion de datasets.
+  - Se eliminan las vistas antiguas `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html` y `graficos_estadisticas.html`.
 - Flujo:
   - Menu principal empresarial -> `reportes_menu.html` -> `reportes_ejecutivos.html`.
-  - Accesos gerenciales -> `reportes.html?dataset=...`, `graficos_estadisticas.html`, `reportes_inventario.html`, `reportes_finanzas.html` o `reportes_ia_chat.html`.
+  - Accesos gerenciales -> catalogo/vista previa/exportacion dentro de `reportes_ejecutivos.html` o `reportes_ia_chat.html`.
 - Alcance:
-  - Se reutiliza `WithEmpresaReportesPermissions`, `empresa_id` y el catalogo de datasets existente.
-  - No se agregan tablas, rutas backend ni dependencias.
+  - Se reutiliza `WithEmpresaReportesPermissions`, `empresa_id` y `/api/empresa/reportes`.
+  - Se retira la ruta backend antigua `/api/empresa/graficos_estadisticas`; no se agregan tablas ni dependencias.
 
 ## Actualizacion 2026-05-13 (facturacion electronica: configuracion separada de pruebas)
 

@@ -1,3 +1,17 @@
+2026-05-14 - Reportes unificados y limpieza preproduccion
+- `web/administrar_empresa/reportes_ejecutivos.html`:
+	- concentra catalogo, vista previa y exportacion de datasets desde `/api/empresa/reportes`.
+- `web/administrar_empresa/reportes_menu.html`:
+	- reduce el submenu a Centro de reportes y Asistente IA.
+- `backend/handlers/graficos_estadisticas.go`, `web/administrar_empresa/graficos_estadisticas.html`, `web/administrar_empresa/reportes.html`, `web/administrar_empresa/reportes_inventario.html`, `web/administrar_empresa/reportes_finanzas.html`:
+	- eliminados por consolidacion preproduccion; sus funciones se integran al centro unico de reportes.
+- `backend/db/tipo_empresa_preconfiguracion.go`, `backend/db/nuevos_verticales_bootstrap.go`, `web/super/preconfiguracion_tipos_empresa.html`:
+	- normalizan plantillas iniciales para usar codigos `BASE-*` en vez de `DEMO-*`.
+- `backup/empresas/7` y `documentos/evidencias_qa`:
+	- evidencias y backups locales antiguos retirados antes de produccion.
+- `backend/tools/pruebas_finanzas_motel_calipso/main.go`:
+	- eliminado porque generaba datos operativos QA sobre una empresa real y ya no debe usarse antes de produccion.
+
 2026-05-14 - Lobby de juegos y Doon FPS
 - `web/Juegos/doon_fps/index.html`:
 	- nuevo juego publico Doon FPS, shooter retro original en canvas con raycasting, enemigos, salud, municion, botiquines, salida por sectores y soporte de records.

@@ -1,5 +1,5 @@
 -- Seed para la base de datos de superadministrador (Postgres)
--- Crea tablas mínimas y registra datos demo para pruebas de integración.
+-- Crea tablas mínimas y registra datos base para integracion local.
 
 BEGIN;
 
@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS licencias (
   observaciones TEXT
 );
 
--- Datos demo
+-- Datos base
 INSERT INTO administradores (email, name, role, usuario_creador, estado)
-VALUES ('admin@demo.local', 'Admin Demo', 'super_administrador', 'system', 'activo')
+VALUES ('admin@sistema.local', 'Administrador inicial', 'super_administrador', 'system', 'activo')
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO tipos_de_licencia (nombre)
@@ -56,7 +56,7 @@ VALUES ('Gratis')
 ON CONFLICT (nombre) DO NOTHING;
 
 INSERT INTO licencias (empresa_id, tipo_id, pais_codigo, nombre, descripcion, valor, duracion_dias, activo, usuario_creador)
-VALUES (1, (SELECT id FROM tipos_de_licencia WHERE nombre = 'Gratis' LIMIT 1), 'CO', 'Licencia Demo', 'Licencia demo para integración', 0, 365, 1, 'system')
+VALUES (1, (SELECT id FROM tipos_de_licencia WHERE nombre = 'Gratis' LIMIT 1), 'CO', 'Licencia base', 'Licencia base para integracion local', 0, 365, 1, 'system')
 ON CONFLICT DO NOTHING;
 
 -- Ajustar secuencias al max(id) existente

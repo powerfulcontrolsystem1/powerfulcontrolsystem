@@ -429,9 +429,9 @@ func defaultNuevoVerticalTipoEmpresaPreconfigTemplate(tipoNombre string) (TipoEm
 	categoriaSecundaria := nthString(plantilla.Categorias, 1, "administracion")
 	prefix := strings.ToUpper(strings.ReplaceAll(item.Modulo, "_", "-"))
 	template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate(prefix, item.StationPrefix, item.StationCount, []TipoEmpresaPreconfigProducto{
-		productoPreconfig("DEMO-"+prefix+"-001", plantilla.Titulo+" - "+strings.ReplaceAll(tipoPrincipal, "_", " "), categoriaPrincipal, "Producto o servicio guia para iniciar operacion del vertical.", 0, 85000, 0),
-		productoPreconfig("DEMO-"+prefix+"-002", plantilla.Titulo+" - "+strings.ReplaceAll(tipoSecundario, "_", " "), categoriaSecundaria, "Concepto guia para seguimiento, aprobacion o control documental.", 0, 120000, 0),
-		productoPreconfig("DEMO-"+prefix+"-003", "Paquete operativo "+plantilla.Titulo, "Paquetes", "Paquete demostrativo para venta, agenda, seguimiento y reporte.", 0, 250000, 0),
+		productoPreconfig("BASE-"+prefix+"-001", plantilla.Titulo+" - "+strings.ReplaceAll(tipoPrincipal, "_", " "), categoriaPrincipal, "Producto o servicio guia para iniciar operacion del vertical.", 0, 85000, 0),
+		productoPreconfig("BASE-"+prefix+"-002", plantilla.Titulo+" - "+strings.ReplaceAll(tipoSecundario, "_", " "), categoriaSecundaria, "Concepto guia para seguimiento, aprobacion o control documental.", 0, 120000, 0),
+		productoPreconfig("BASE-"+prefix+"-003", "Paquete operativo "+plantilla.Titulo, "Paquetes", "Paquete operativo para venta, agenda, seguimiento y reporte.", 0, 250000, 0),
 	}, defaultNuevoVerticalUsuarios(item), "Asistente para "+strings.ToLower(plantilla.Titulo)+": configuracion, registros, agenda, SLA, evidencias, aprobaciones, reportes y seguimiento comercial."), operacionPreconfig(item.Modulo, item.StationPrefix, pluralizeTipoEmpresaStationName(item.StationPrefix), item.StationCount > 0, true, true, firstString(item.Roles, "operacion"), "servicio", 15, item.Roles))
 	template.TareasGuia = append(template.TareasGuia,
 		TipoEmpresaPreconfigTareaGuia{Modulo: plantilla.Titulo, Titulo: "Configurar flujo principal", Descripcion: "Revisar tipos, categorias, estados, responsables, SLA, evidencias y aprobaciones del modulo."},

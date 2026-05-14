@@ -621,7 +621,7 @@ func buildPreconfigUsuarioEmail(u dbpkg.TipoEmpresaPreconfigUsuario, empresaID i
 	if local == "" {
 		local = fmt.Sprintf("usuario%d", idx+1)
 	}
-	return fmt.Sprintf("%s.%d.%d@preconfig.local", local, empresaID, idx+1)
+	return fmt.Sprintf("%s.%d.%d@empresa.local", local, empresaID, idx+1)
 }
 
 func tipoEmpresaPreconfigTarifasEmpty(t dbpkg.TipoEmpresaPreconfigTarifas) bool {

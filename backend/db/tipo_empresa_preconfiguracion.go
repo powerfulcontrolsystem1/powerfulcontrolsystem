@@ -840,12 +840,12 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaMotel(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),
-			productoPreconfig("DEMO-MOTEL-002", "Habitacion doble", "Habitaciones", "Servicio doble por turno", 25000, 65000, 0),
-			productoPreconfig("DEMO-MOTEL-003", "Suite jacuzzi", "Habitaciones", "Servicio premium por turno", 42000, 110000, 0),
-			productoPreconfig("DEMO-MOTEL-004", "Hora adicional", "Adicionales", "Tiempo adicional de permanencia", 6000, 15000, 0),
-			productoPreconfig("DEMO-MOTEL-005", "Minibar gaseosa", "Minibar", "Bebida de minibar", 2500, 6000, 8),
-			productoPreconfig("DEMO-MOTEL-006", "Kit aseo personal", "Minibar", "Kit de aseo para huesped", 5000, 12000, 8),
+			productoPreconfig("BASE-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),
+			productoPreconfig("BASE-MOTEL-002", "Habitacion doble", "Habitaciones", "Servicio doble por turno", 25000, 65000, 0),
+			productoPreconfig("BASE-MOTEL-003", "Suite jacuzzi", "Habitaciones", "Servicio premium por turno", 42000, 110000, 0),
+			productoPreconfig("BASE-MOTEL-004", "Hora adicional", "Adicionales", "Tiempo adicional de permanencia", 6000, 15000, 0),
+			productoPreconfig("BASE-MOTEL-005", "Minibar gaseosa", "Minibar", "Bebida de minibar", 2500, 6000, 8),
+			productoPreconfig("BASE-MOTEL-006", "Kit aseo personal", "Minibar", "Kit de aseo para huesped", 5000, 12000, 8),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion principal", "recepcion", "Gestiona ingresos, salidas y disponibilidad."),
 			usuarioPreconfig("Caja turno", "caja", "Registra cobros y cierres de turno."),
@@ -854,11 +854,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaHotel(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Habitacion", 12, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-HOTEL-001", "Noche habitacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
-			productoPreconfig("DEMO-HOTEL-002", "Noche habitacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
-			productoPreconfig("DEMO-HOTEL-003", "Desayuno huesped", "Restaurante", "Desayuno servido a huesped", 8000, 18000, 10),
-			productoPreconfig("DEMO-HOTEL-004", "Lavanderia por kilo", "Servicios", "Servicio de lavanderia", 3500, 9000, 0),
-			productoPreconfig("DEMO-HOTEL-005", "Late checkout", "Adicionales", "Salida extendida", 15000, 35000, 0),
+			productoPreconfig("BASE-HOTEL-001", "Noche habitacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
+			productoPreconfig("BASE-HOTEL-002", "Noche habitacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
+			productoPreconfig("BASE-HOTEL-003", "Desayuno huesped", "Restaurante", "Desayuno servido a huesped", 8000, 18000, 10),
+			productoPreconfig("BASE-HOTEL-004", "Lavanderia por kilo", "Servicios", "Servicio de lavanderia", 3500, 9000, 0),
+			productoPreconfig("BASE-HOTEL-005", "Late checkout", "Adicionales", "Salida extendida", 15000, 35000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion hotel", "recepcion", "Atiende reservas, check-in y check-out."),
 			usuarioPreconfig("Caja hotel", "caja", "Controla pagos, anticipos y facturacion."),
@@ -867,11 +867,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaBar(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("BAR", "Mesa", 10, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-BAR-001", "Cerveza nacional", "Bebidas", "Botella o lata nacional", 3000, 7000, 24),
-			productoPreconfig("DEMO-BAR-002", "Coctel de la casa", "Cocteles", "Preparacion estandar del bar", 9000, 22000, 6),
-			productoPreconfig("DEMO-BAR-003", "Gaseosa personal", "Bebidas", "Bebida sin alcohol", 2200, 5000, 18),
-			productoPreconfig("DEMO-BAR-004", "Picada para compartir", "Comidas", "Picada de mesa", 18000, 42000, 3),
-			productoPreconfig("DEMO-BAR-005", "Cover evento", "Servicios", "Ingreso por evento", 0, 15000, 0),
+			productoPreconfig("BASE-BAR-001", "Cerveza nacional", "Bebidas", "Botella o lata nacional", 3000, 7000, 24),
+			productoPreconfig("BASE-BAR-002", "Coctel de la casa", "Cocteles", "Preparacion estandar del bar", 9000, 22000, 6),
+			productoPreconfig("BASE-BAR-003", "Gaseosa personal", "Bebidas", "Bebida sin alcohol", 2200, 5000, 18),
+			productoPreconfig("BASE-BAR-004", "Picada para compartir", "Comidas", "Picada de mesa", 18000, 42000, 3),
+			productoPreconfig("BASE-BAR-005", "Cover evento", "Servicios", "Ingreso por evento", 0, 15000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Mesero turno", "mesero", "Toma pedidos y atiende mesas."),
 			usuarioPreconfig("Barra principal", "barra", "Prepara bebidas y controla inventario."),
@@ -880,11 +880,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaSalonBelleza(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("BELLEZA", "Silla", 6, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-BELLEZA-001", "Corte dama", "Peluqueria", "Servicio de corte para dama", 12000, 30000, 0),
-			productoPreconfig("DEMO-BELLEZA-002", "Corte caballero", "Peluqueria", "Servicio de corte para caballero", 8000, 22000, 0),
-			productoPreconfig("DEMO-BELLEZA-003", "Manicure tradicional", "Unas", "Servicio de manicure", 9000, 25000, 0),
-			productoPreconfig("DEMO-BELLEZA-004", "Tinte raiz", "Color", "Aplicacion de tinte en raiz", 35000, 85000, 0),
-			productoPreconfig("DEMO-BELLEZA-005", "Tratamiento capilar", "Tratamientos", "Hidratacion o reparacion", 18000, 45000, 0),
+			productoPreconfig("BASE-BELLEZA-001", "Corte dama", "Peluqueria", "Servicio de corte para dama", 12000, 30000, 0),
+			productoPreconfig("BASE-BELLEZA-002", "Corte caballero", "Peluqueria", "Servicio de corte para caballero", 8000, 22000, 0),
+			productoPreconfig("BASE-BELLEZA-003", "Manicure tradicional", "Unas", "Servicio de manicure", 9000, 25000, 0),
+			productoPreconfig("BASE-BELLEZA-004", "Tinte raiz", "Color", "Aplicacion de tinte en raiz", 35000, 85000, 0),
+			productoPreconfig("BASE-BELLEZA-005", "Tratamiento capilar", "Tratamientos", "Hidratacion o reparacion", 18000, 45000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion salon", "recepcion", "Agenda citas y recibe clientes."),
 			usuarioPreconfig("Estilista principal", "estilista", "Atiende servicios de belleza y gana comision por servicio."),
@@ -894,11 +894,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaLavaderoAutos(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("LAVADERO", "Bahia", 6, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-LAV-001", "Lavado basico carro", "Lavado", "Lavado exterior basico", 8000, 22000, 0),
-			productoPreconfig("DEMO-LAV-002", "Lavado premium carro", "Lavado", "Exterior, interior y aspirado", 15000, 38000, 0),
-			productoPreconfig("DEMO-LAV-003", "Lavado camioneta", "Lavado", "Servicio para camioneta", 18000, 45000, 0),
-			productoPreconfig("DEMO-LAV-004", "Lavado de motor", "Servicios", "Lavado tecnico de motor", 12000, 30000, 0),
-			productoPreconfig("DEMO-LAV-005", "Encerado", "Servicios", "Aplicacion de cera", 14000, 35000, 0),
+			productoPreconfig("BASE-LAV-001", "Lavado basico carro", "Lavado", "Lavado exterior basico", 8000, 22000, 0),
+			productoPreconfig("BASE-LAV-002", "Lavado premium carro", "Lavado", "Exterior, interior y aspirado", 15000, 38000, 0),
+			productoPreconfig("BASE-LAV-003", "Lavado camioneta", "Lavado", "Servicio para camioneta", 18000, 45000, 0),
+			productoPreconfig("BASE-LAV-004", "Lavado de motor", "Servicios", "Lavado tecnico de motor", 12000, 30000, 0),
+			productoPreconfig("BASE-LAV-005", "Encerado", "Servicios", "Aplicacion de cera", 14000, 35000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion vehiculos", "recepcion", "Recibe vehiculos y asigna bahias."),
 			usuarioPreconfig("Operario lavado", "operacion", "Actualiza estados de lavado."),
@@ -907,12 +907,12 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaRestaurante(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("REST", "Mesa", 8, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-REST-001", "Hamburguesa clasica", "Comidas", "Producto guia de cocina", 9000, 18000, 5),
-			productoPreconfig("DEMO-REST-002", "Perro caliente", "Comidas", "Producto guia de cocina", 6000, 12000, 5),
-			productoPreconfig("DEMO-REST-003", "Gaseosa personal", "Bebidas", "Bebida personal", 2200, 4000, 12),
-			productoPreconfig("DEMO-REST-004", "Agua botella", "Bebidas", "Agua embotellada", 1800, 3500, 12),
-			productoPreconfig("DEMO-REST-005", "Menu del dia", "Almuerzos", "Menu diario guia", 12000, 22000, 3),
-			productoPreconfig("DEMO-REST-006", "Cafe", "Bebidas calientes", "Cafe preparado", 1200, 3500, 10),
+			productoPreconfig("BASE-REST-001", "Hamburguesa clasica", "Comidas", "Producto guia de cocina", 9000, 18000, 5),
+			productoPreconfig("BASE-REST-002", "Perro caliente", "Comidas", "Producto guia de cocina", 6000, 12000, 5),
+			productoPreconfig("BASE-REST-003", "Gaseosa personal", "Bebidas", "Bebida personal", 2200, 4000, 12),
+			productoPreconfig("BASE-REST-004", "Agua botella", "Bebidas", "Agua embotellada", 1800, 3500, 12),
+			productoPreconfig("BASE-REST-005", "Menu del dia", "Almuerzos", "Menu diario guia", 12000, 22000, 3),
+			productoPreconfig("BASE-REST-006", "Cafe", "Bebidas calientes", "Cafe preparado", 1200, 3500, 10),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Mesero principal", "mesero", "Toma pedidos y atiende mesas."),
 			usuarioPreconfig("Cocina", "operacion", "Gestiona preparacion y despacho."),
@@ -921,10 +921,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaPyme(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("PYME", "Punto de venta", 2, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-PYME-001", "Producto comercial guia", "General", "Producto base para venta directa o mostrador", 7000, 16000, 8),
-			productoPreconfig("DEMO-PYME-002", "Servicio profesional guia", "Servicios", "Servicio configurable para la pyme", 0, 60000, 0),
-			productoPreconfig("DEMO-PYME-003", "Paquete mensual guia", "Paquetes", "Paquete de servicio recurrente", 0, 180000, 0),
-			productoPreconfig("DEMO-PYME-004", "Entrega local", "Servicios", "Cargo guia de entrega o domicilio", 0, 8000, 0),
+			productoPreconfig("BASE-PYME-001", "Producto comercial guia", "General", "Producto base para venta directa o mostrador", 7000, 16000, 8),
+			productoPreconfig("BASE-PYME-002", "Servicio profesional guia", "Servicios", "Servicio configurable para la pyme", 0, 60000, 0),
+			productoPreconfig("BASE-PYME-003", "Paquete mensual guia", "Paquetes", "Paquete de servicio recurrente", 0, 180000, 0),
+			productoPreconfig("BASE-PYME-004", "Entrega local", "Servicios", "Cargo guia de entrega o domicilio", 0, 8000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Administrador pyme", "administrador", "Configura empresa, usuarios, reportes y parametros generales."),
 			usuarioPreconfig("Vendedor pyme", "vendedor", "Registra ventas, clientes y cotizaciones."),
@@ -933,10 +933,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaPuntoVenta(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("PV", "Punto de venta", 1, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-PV-001", "Producto general A", "General", "Producto de inventario inicial", 5000, 10000, 10),
-			productoPreconfig("DEMO-PV-002", "Producto general B", "General", "Producto de inventario inicial", 8000, 16000, 10),
-			productoPreconfig("DEMO-PV-003", "Servicio domicilio", "Servicios", "Cargo por domicilio", 0, 5000, 0),
-			productoPreconfig("DEMO-PV-004", "Bolsa", "Empaque", "Empaque opcional", 100, 300, 50),
+			productoPreconfig("BASE-PV-001", "Producto general A", "General", "Producto de inventario inicial", 5000, 10000, 10),
+			productoPreconfig("BASE-PV-002", "Producto general B", "General", "Producto de inventario inicial", 8000, 16000, 10),
+			productoPreconfig("BASE-PV-003", "Servicio domicilio", "Servicios", "Cargo por domicilio", 0, 5000, 0),
+			productoPreconfig("BASE-PV-004", "Bolsa", "Empaque", "Empaque opcional", 100, 300, 50),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Vendedor mostrador", "vendedor", "Registra ventas y clientes."),
 			usuarioPreconfig("Caja principal", "caja", "Controla pagos y cierre."),
@@ -945,10 +945,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaTaller(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("TALLER", "Bahia", 5, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-TALLER-001", "Revision general", "Diagnostico", "Revision inicial del vehiculo", 12000, 30000, 0),
-			productoPreconfig("DEMO-TALLER-002", "Cambio de aceite", "Mantenimiento", "Mano de obra cambio de aceite", 10000, 25000, 0),
-			productoPreconfig("DEMO-TALLER-003", "Alineacion", "Servicios", "Servicio de alineacion", 22000, 55000, 0),
-			productoPreconfig("DEMO-TALLER-004", "Filtro de aceite", "Repuestos", "Repuesto guia", 12000, 26000, 4),
+			productoPreconfig("BASE-TALLER-001", "Revision general", "Diagnostico", "Revision inicial del vehiculo", 12000, 30000, 0),
+			productoPreconfig("BASE-TALLER-002", "Cambio de aceite", "Mantenimiento", "Mano de obra cambio de aceite", 10000, 25000, 0),
+			productoPreconfig("BASE-TALLER-003", "Alineacion", "Servicios", "Servicio de alineacion", 22000, 55000, 0),
+			productoPreconfig("BASE-TALLER-004", "Filtro de aceite", "Repuestos", "Repuesto guia", 12000, 26000, 4),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion taller", "recepcion", "Recibe vehiculos y ordenes."),
 			usuarioPreconfig("Tecnico taller", "tecnico", "Ejecuta servicios, reporta avances y gana comision por servicio."),
@@ -957,11 +957,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaAlquilerObjetos(tipoNombre) {
 		template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("ALQ", "Mostrador", 2, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-ALQ-001", "Alquiler taladro percutor por dia", "Herramientas", "Servicio guia para alquiler de herramienta con checklist y deposito.", 0, 45000, 0),
-			productoPreconfig("DEMO-ALQ-002", "Alquiler moto 125 por dia", "Motos", "Servicio guia para alquiler de moto con garantia, licencia, kilometraje y GPS.", 0, 95000, 0),
-			productoPreconfig("DEMO-ALQ-003", "Alquiler mezcladora por hora", "Maquinaria", "Servicio guia para obra, entrega, devolucion y mantenimiento.", 0, 38000, 0),
-			productoPreconfig("DEMO-ALQ-004", "Kit sonido evento pequeno", "Objetos y eventos", "Servicio guia para objetos rentables por evento.", 0, 180000, 0),
-			productoPreconfig("DEMO-ALQ-005", "Deposito o garantia de alquiler", "Garantias", "Concepto guia para garantias reembolsables o retenidas.", 0, 150000, 0),
+			productoPreconfig("BASE-ALQ-001", "Alquiler taladro percutor por dia", "Herramientas", "Servicio guia para alquiler de herramienta con checklist y deposito.", 0, 45000, 0),
+			productoPreconfig("BASE-ALQ-002", "Alquiler moto 125 por dia", "Motos", "Servicio guia para alquiler de moto con garantia, licencia, kilometraje y GPS.", 0, 95000, 0),
+			productoPreconfig("BASE-ALQ-003", "Alquiler mezcladora por hora", "Maquinaria", "Servicio guia para obra, entrega, devolucion y mantenimiento.", 0, 38000, 0),
+			productoPreconfig("BASE-ALQ-004", "Kit sonido evento pequeno", "Objetos y eventos", "Servicio guia para objetos rentables por evento.", 0, 180000, 0),
+			productoPreconfig("BASE-ALQ-005", "Deposito o garantia de alquiler", "Garantias", "Concepto guia para garantias reembolsables o retenidas.", 0, 150000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Coordinador alquileres", "coordinador_alquileres", "Aprueba contratos, garantias, entregas, devoluciones, descuentos y activos bloqueados."),
 			usuarioPreconfig("Auxiliar bodega alquiler", "auxiliar_alquileres", "Prepara herramientas, motos u objetos, realiza checklist y registra entregas/devoluciones."),
@@ -979,12 +979,12 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaConstructora(tipoNombre) {
 		template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("OBRA", "Obra", 6, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-OBRA-001", "Presupuesto AIU obra civil", "AIU", "Servicio guia para presupuestar administracion, imprevistos y utilidad.", 0, 1500000, 0),
-			productoPreconfig("DEMO-OBRA-002", "Mano de obra cuadrilla", "Mano de obra", "Jornal o paquete de cuadrilla por actividad.", 180000, 280000, 0),
-			productoPreconfig("DEMO-OBRA-003", "Concreto premezclado m3", "Materiales", "Material guia para control de compras y consumo por obra.", 320000, 390000, 3),
-			productoPreconfig("DEMO-OBRA-004", "Acero de refuerzo kg", "Materiales", "Insumo guia para estructura y presupuesto.", 4200, 6200, 500),
-			productoPreconfig("DEMO-OBRA-005", "Alquiler equipo menor", "Equipos", "Cargo diario por equipo o herramienta.", 25000, 65000, 0),
-			productoPreconfig("DEMO-OBRA-006", "Interventoria y control", "Servicios", "Servicio de seguimiento tecnico y documental.", 0, 450000, 0),
+			productoPreconfig("BASE-OBRA-001", "Presupuesto AIU obra civil", "AIU", "Servicio guia para presupuestar administracion, imprevistos y utilidad.", 0, 1500000, 0),
+			productoPreconfig("BASE-OBRA-002", "Mano de obra cuadrilla", "Mano de obra", "Jornal o paquete de cuadrilla por actividad.", 180000, 280000, 0),
+			productoPreconfig("BASE-OBRA-003", "Concreto premezclado m3", "Materiales", "Material guia para control de compras y consumo por obra.", 320000, 390000, 3),
+			productoPreconfig("BASE-OBRA-004", "Acero de refuerzo kg", "Materiales", "Insumo guia para estructura y presupuesto.", 4200, 6200, 500),
+			productoPreconfig("BASE-OBRA-005", "Alquiler equipo menor", "Equipos", "Cargo diario por equipo o herramienta.", 25000, 65000, 0),
+			productoPreconfig("BASE-OBRA-006", "Interventoria y control", "Servicios", "Servicio de seguimiento tecnico y documental.", 0, 450000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Director de obra", "director_obra", "Aprueba presupuestos, contratos, avances y reportes ejecutivos."),
 			usuarioPreconfig("Residente de obra", "residente_obra", "Registra avance fisico, consumos, novedades y tareas de campo."),
@@ -1003,12 +1003,12 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaDrogueriaFarmacia(tipoNombre) {
 		template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("FARMA", "Caja", 2, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-FARMA-001", "Acetaminofen 500 mg", "Medicamentos OTC", "Producto guia con control de lote, vencimiento y registro sanitario.", 90, 250, 80),
-			productoPreconfig("DEMO-FARMA-002", "Ibuprofeno 400 mg", "Medicamentos OTC", "Producto guia para dispensacion y alertas de vencimiento.", 160, 450, 60),
-			productoPreconfig("DEMO-FARMA-003", "Suero oral sobre", "Hidratacion", "Producto guia de alta rotacion en drogueria.", 900, 2200, 30),
-			productoPreconfig("DEMO-FARMA-004", "Tapabocas quirurgico", "Dispositivos medicos", "Dispositivo medico guia para inventario sanitario.", 250, 800, 100),
-			productoPreconfig("DEMO-FARMA-005", "Alcohol antiseptico 700 ml", "Aseo salud", "Producto guia para trazabilidad de compras y vencimientos.", 4200, 9500, 12),
-			productoPreconfig("DEMO-FARMA-006", "Servicio de inyectologia", "Servicios farmacia", "Servicio guia sujeto a configuracion sanitaria local.", 0, 12000, 0),
+			productoPreconfig("BASE-FARMA-001", "Acetaminofen 500 mg", "Medicamentos OTC", "Producto guia con control de lote, vencimiento y registro sanitario.", 90, 250, 80),
+			productoPreconfig("BASE-FARMA-002", "Ibuprofeno 400 mg", "Medicamentos OTC", "Producto guia para dispensacion y alertas de vencimiento.", 160, 450, 60),
+			productoPreconfig("BASE-FARMA-003", "Suero oral sobre", "Hidratacion", "Producto guia de alta rotacion en drogueria.", 900, 2200, 30),
+			productoPreconfig("BASE-FARMA-004", "Tapabocas quirurgico", "Dispositivos medicos", "Dispositivo medico guia para inventario sanitario.", 250, 800, 100),
+			productoPreconfig("BASE-FARMA-005", "Alcohol antiseptico 700 ml", "Aseo salud", "Producto guia para trazabilidad de compras y vencimientos.", 4200, 9500, 12),
+			productoPreconfig("BASE-FARMA-006", "Servicio de inyectologia", "Servicios farmacia", "Servicio guia sujeto a configuracion sanitaria local.", 0, 12000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Director tecnico", "director_tecnico_farmacia", "Aprueba control sanitario, medicamentos controlados, compras criticas y farmacovigilancia."),
 			usuarioPreconfig("Regente farmacia", "regente_farmacia", "Valida formulas, lotes, vencimientos, devoluciones y dispensacion responsable."),
@@ -1027,11 +1027,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaGimnasio(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GYM", "Zona", 4, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-GYM-001", "Mensualidad general", "Planes", "Plan mensual de acceso general", 0, 95000, 0),
-			productoPreconfig("DEMO-GYM-002", "Clase personalizada", "Entrenamiento", "Sesion individual con entrenador", 0, 45000, 0),
-			productoPreconfig("DEMO-GYM-003", "Dia de entrenamiento", "Planes", "Ingreso por dia", 0, 15000, 0),
-			productoPreconfig("DEMO-GYM-004", "Bebida hidratante", "Tienda", "Bebida de tienda fitness", 2500, 6000, 10),
-			productoPreconfig("DEMO-GYM-005", "Proteina porcion", "Tienda", "Porcion individual de proteina", 4500, 12000, 6),
+			productoPreconfig("BASE-GYM-001", "Mensualidad general", "Planes", "Plan mensual de acceso general", 0, 95000, 0),
+			productoPreconfig("BASE-GYM-002", "Clase personalizada", "Entrenamiento", "Sesion individual con entrenador", 0, 45000, 0),
+			productoPreconfig("BASE-GYM-003", "Dia de entrenamiento", "Planes", "Ingreso por dia", 0, 15000, 0),
+			productoPreconfig("BASE-GYM-004", "Bebida hidratante", "Tienda", "Bebida de tienda fitness", 2500, 6000, 10),
+			productoPreconfig("BASE-GYM-005", "Proteina porcion", "Tienda", "Porcion individual de proteina", 4500, 12000, 6),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion gimnasio", "recepcion", "Gestiona socios, accesos, pagos y renovaciones."),
 			usuarioPreconfig("Entrenador principal", "entrenador", "Programa clases, valoraciones y sesiones personalizadas."),
@@ -1040,11 +1040,11 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaOdontologia(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("ODONTO", "Consultorio", 3, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-ODONTO-001", "Consulta odontologica", "Consulta", "Valoracion inicial del paciente", 0, 60000, 0),
-			productoPreconfig("DEMO-ODONTO-002", "Limpieza dental", "Higiene oral", "Profilaxis y control", 12000, 90000, 0),
-			productoPreconfig("DEMO-ODONTO-003", "Resina simple", "Operatoria", "Restauracion de una superficie", 18000, 120000, 0),
-			productoPreconfig("DEMO-ODONTO-004", "Radiografia periapical", "Imagenologia", "Radiografia de apoyo diagnostico", 8000, 35000, 0),
-			productoPreconfig("DEMO-ODONTO-005", "Kit higiene oral", "Productos", "Cepillo, seda y crema dental", 12000, 28000, 8),
+			productoPreconfig("BASE-ODONTO-001", "Consulta odontologica", "Consulta", "Valoracion inicial del paciente", 0, 60000, 0),
+			productoPreconfig("BASE-ODONTO-002", "Limpieza dental", "Higiene oral", "Profilaxis y control", 12000, 90000, 0),
+			productoPreconfig("BASE-ODONTO-003", "Resina simple", "Operatoria", "Restauracion de una superficie", 18000, 120000, 0),
+			productoPreconfig("BASE-ODONTO-004", "Radiografia periapical", "Imagenologia", "Radiografia de apoyo diagnostico", 8000, 35000, 0),
+			productoPreconfig("BASE-ODONTO-005", "Kit higiene oral", "Productos", "Cepillo, seda y crema dental", 12000, 28000, 8),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion odontologia", "recepcion", "Agenda pacientes, confirma citas y recauda anticipos."),
 			usuarioPreconfig("Odontologo general", "odontologo", "Atiende historias, odontogramas, tratamientos y presupuestos."),
@@ -1054,9 +1054,9 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaTurnos(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("TURNOS", "Puesto", 4, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-TURNOS-001", "Atencion general", "Servicios", "Servicio guia de atencion al cliente", 0, 0, 0),
-			productoPreconfig("DEMO-TURNOS-002", "Tramite prioritario", "Servicios", "Servicio guia para filas preferenciales", 0, 0, 0),
-			productoPreconfig("DEMO-TURNOS-003", "Certificado o documento", "Servicios", "Documento de tramite con cobro opcional", 0, 12000, 0),
+			productoPreconfig("BASE-TURNOS-001", "Atencion general", "Servicios", "Servicio guia de atencion al cliente", 0, 0, 0),
+			productoPreconfig("BASE-TURNOS-002", "Tramite prioritario", "Servicios", "Servicio guia para filas preferenciales", 0, 0, 0),
+			productoPreconfig("BASE-TURNOS-003", "Certificado o documento", "Servicios", "Documento de tramite con cobro opcional", 0, 12000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Coordinador turnos", "supervisor", "Configura servicios, puestos y pantalla publica."),
 			usuarioPreconfig("Asesor modulo", "operacion", "Llama turnos y registra atenciones."),
@@ -1065,10 +1065,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaVehiculos(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("VEH", "Bahia", 4, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-VEH-001", "Revision de ingreso", "Control vehicular", "Inspeccion de ingreso o recepcion", 0, 25000, 0),
-			productoPreconfig("DEMO-VEH-002", "Mantenimiento preventivo", "Mantenimiento", "Servicio preventivo de vehiculo", 18000, 85000, 0),
-			productoPreconfig("DEMO-VEH-003", "Lavado operativo", "Servicios", "Lavado o alistamiento de vehiculo", 12000, 30000, 0),
-			productoPreconfig("DEMO-VEH-004", "Cambio aceite guia", "Mantenimiento", "Cambio de aceite con insumo de ejemplo", 45000, 95000, 4),
+			productoPreconfig("BASE-VEH-001", "Revision de ingreso", "Control vehicular", "Inspeccion de ingreso o recepcion", 0, 25000, 0),
+			productoPreconfig("BASE-VEH-002", "Mantenimiento preventivo", "Mantenimiento", "Servicio preventivo de vehiculo", 18000, 85000, 0),
+			productoPreconfig("BASE-VEH-003", "Lavado operativo", "Servicios", "Lavado o alistamiento de vehiculo", 12000, 30000, 0),
+			productoPreconfig("BASE-VEH-004", "Cambio aceite guia", "Mantenimiento", "Cambio de aceite con insumo de ejemplo", 45000, 95000, 4),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion vehicular", "recepcion", "Registra ingresos, placas, propietarios y permanencia."),
 			usuarioPreconfig("Tecnico flota", "tecnico", "Actualiza hoja de vida, mantenimientos y alertas."),
@@ -1077,9 +1077,9 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaIndependiente(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("IND", "Venta directa", 0, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-IND-001", "Consulta inicial", "Servicios", "Servicio profesional inicial", 0, 50000, 0),
-			productoPreconfig("DEMO-IND-002", "Servicio especializado", "Servicios", "Servicio principal del profesional", 0, 120000, 0),
-			productoPreconfig("DEMO-IND-003", "Paquete mensual", "Paquetes", "Plan mensual de acompanamiento", 0, 350000, 0),
+			productoPreconfig("BASE-IND-001", "Consulta inicial", "Servicios", "Servicio profesional inicial", 0, 50000, 0),
+			productoPreconfig("BASE-IND-002", "Servicio especializado", "Servicios", "Servicio principal del profesional", 0, 120000, 0),
+			productoPreconfig("BASE-IND-003", "Paquete mensual", "Paquetes", "Plan mensual de acompanamiento", 0, 350000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Administrador profesional", "administrador", "Configura agenda, clientes y servicios."),
 			usuarioPreconfig("Asistente administrativo", "operacion", "Ayuda con agenda, cobros y seguimiento."),
@@ -1088,10 +1088,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaRedesSociales(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("SOCIAL", "Cliente", 4, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-SOCIAL-001", "Plan publicaciones basico", "Marketing", "Gestion de publicaciones basicas", 0, 180000, 0),
-			productoPreconfig("DEMO-SOCIAL-002", "Campana pauta", "Publicidad", "Gestion inicial de pauta", 0, 300000, 0),
-			productoPreconfig("DEMO-SOCIAL-003", "Diseno pieza grafica", "Diseno", "Pieza individual para redes", 0, 45000, 0),
-			productoPreconfig("DEMO-SOCIAL-004", "Reporte mensual", "Reportes", "Informe mensual de gestion", 0, 90000, 0),
+			productoPreconfig("BASE-SOCIAL-001", "Plan publicaciones basico", "Marketing", "Gestion de publicaciones basicas", 0, 180000, 0),
+			productoPreconfig("BASE-SOCIAL-002", "Campana pauta", "Publicidad", "Gestion inicial de pauta", 0, 300000, 0),
+			productoPreconfig("BASE-SOCIAL-003", "Diseno pieza grafica", "Diseno", "Pieza individual para redes", 0, 45000, 0),
+			productoPreconfig("BASE-SOCIAL-004", "Reporte mensual", "Reportes", "Informe mensual de gestion", 0, 90000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Community manager", "operacion", "Gestiona canales, tareas y publicaciones."),
 			usuarioPreconfig("Asesor comercial", "vendedor", "Cotiza planes y atiende clientes."),
@@ -1100,10 +1100,10 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 	}
 	if isTipoEmpresaSensores(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("SENSOR", "Acceso", 4, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("DEMO-SENSOR-001", "Instalacion sensor", "Instalacion", "Servicio de instalacion inicial", 25000, 80000, 0),
-			productoPreconfig("DEMO-SENSOR-002", "Mantenimiento sensor", "Mantenimiento", "Revision tecnica programada", 15000, 45000, 0),
-			productoPreconfig("DEMO-SENSOR-003", "Sensor magnetico", "Dispositivos", "Dispositivo guia de inventario", 18000, 42000, 5),
-			productoPreconfig("DEMO-SENSOR-004", "Monitoreo mensual", "Servicios", "Servicio mensual de monitoreo", 0, 65000, 0),
+			productoPreconfig("BASE-SENSOR-001", "Instalacion sensor", "Instalacion", "Servicio de instalacion inicial", 25000, 80000, 0),
+			productoPreconfig("BASE-SENSOR-002", "Mantenimiento sensor", "Mantenimiento", "Revision tecnica programada", 15000, 45000, 0),
+			productoPreconfig("BASE-SENSOR-003", "Sensor magnetico", "Dispositivos", "Dispositivo guia de inventario", 18000, 42000, 5),
+			productoPreconfig("BASE-SENSOR-004", "Monitoreo mensual", "Servicios", "Servicio mensual de monitoreo", 0, 65000, 0),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Tecnico instalador", "tecnico", "Instala y revisa sensores."),
 			usuarioPreconfig("Monitoreo", "operacion", "Revisa eventos y alertas."),
@@ -1114,9 +1114,9 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 		return template
 	}
 	return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("GEN", "Estacion", 4, []TipoEmpresaPreconfigProducto{
-		productoPreconfig("DEMO-GEN-001", "Producto guia", "General", "Producto inicial de ejemplo", 5000, 12000, 5),
-		productoPreconfig("DEMO-GEN-002", "Servicio guia", "Servicios", "Servicio inicial de ejemplo", 0, 25000, 0),
-		productoPreconfig("DEMO-GEN-003", "Paquete guia", "Paquetes", "Paquete inicial de ejemplo", 0, 75000, 0),
+		productoPreconfig("BASE-GEN-001", "Producto guia", "General", "Producto inicial de ejemplo", 5000, 12000, 5),
+		productoPreconfig("BASE-GEN-002", "Servicio guia", "Servicios", "Servicio inicial de ejemplo", 0, 25000, 0),
+		productoPreconfig("BASE-GEN-003", "Paquete guia", "Paquetes", "Paquete inicial de ejemplo", 0, 75000, 0),
 	}, []TipoEmpresaPreconfigUsuario{
 		usuarioPreconfig("Administrador operativo", "administrador", "Configura la empresa y revisa reportes."),
 		usuarioPreconfig("Vendedor operativo", "vendedor", "Atiende clientes y registra ventas."),
@@ -1306,16 +1306,16 @@ func defaultGimnasioPreconfig() *TipoEmpresaPreconfigGimnasio {
 			{Nombre: "Plan personalizado", Descripcion: "Entrenamiento con sesiones personalizadas.", Precio: 260000, DuracionDias: 30, ClasesIncluidas: 8, AccesoIlimitado: true, SesionesPersonalizadas: 4},
 		},
 		Entrenadores: []TipoEmpresaPreconfigGimnasioEntrenador{
-			{NombreCompleto: "Entrenador guia funcional", Especialidad: "Funcional y fuerza", Email: "entrenador.funcional@preconfig.local", Disponibilidad: "Lunes a sabado 06:00-14:00", Certificaciones: "Entrenamiento funcional"},
-			{NombreCompleto: "Entrenadora guia bienestar", Especialidad: "Yoga y movilidad", Email: "entrenadora.bienestar@preconfig.local", Disponibilidad: "Lunes a viernes 16:00-21:00", Certificaciones: "Yoga, movilidad"},
+			{NombreCompleto: "Entrenador guia funcional", Especialidad: "Funcional y fuerza", Email: "entrenador.funcional@empresa.local", Disponibilidad: "Lunes a sabado 06:00-14:00", Certificaciones: "Entrenamiento funcional"},
+			{NombreCompleto: "Entrenadora guia bienestar", Especialidad: "Yoga y movilidad", Email: "entrenadora.bienestar@empresa.local", Disponibilidad: "Lunes a viernes 16:00-21:00", Certificaciones: "Yoga, movilidad"},
 		},
 		Clases: []TipoEmpresaPreconfigGimnasioClase{
 			{Nombre: "Funcional manana", Categoria: "Funcional", EntrenadorIndex: 1, Sede: "principal", Canal: "presencial", Cupos: 20, DuracionMinutos: 60, Precio: 0, Descripcion: "Clase guia incluida en planes."},
 			{Nombre: "Yoga movilidad", Categoria: "Bienestar", EntrenadorIndex: 2, Sede: "principal", Canal: "presencial", Cupos: 15, DuracionMinutos: 50, Precio: 25000, Descripcion: "Clase abierta con cobro individual opcional."},
 		},
 		Socios: []TipoEmpresaPreconfigGimnasioSocio{
-			{Codigo: "GYM-DEMO-001", NombreCompleto: "Socio Demo Activo", Documento: "100000001", Telefono: "3000000001", Email: "socio.activo@preconfig.local", Objetivo: "Bajar grasa y mejorar condicion", PlanIndex: 1, Observaciones: "Socio guia para validar accesos y renovaciones."},
-			{Codigo: "GYM-DEMO-002", NombreCompleto: "Socia Demo Personalizado", Documento: "100000002", Telefono: "3000000002", Email: "socia.personal@preconfig.local", Objetivo: "Ganar fuerza", PlanIndex: 3, Observaciones: "Socio guia con plan personalizado."},
+			{Codigo: "GYM-BASE-001", NombreCompleto: "Socio Base Activo", Documento: "700000001", Telefono: "3000000001", Email: "socio.activo@empresa.local", Objetivo: "Bajar grasa y mejorar condicion", PlanIndex: 1, Observaciones: "Socio guia para validar accesos y renovaciones."},
+			{Codigo: "GYM-BASE-002", NombreCompleto: "Socia Base Personalizado", Documento: "700000002", Telefono: "3000000002", Email: "socia.personal@empresa.local", Objetivo: "Ganar fuerza", PlanIndex: 3, Observaciones: "Socio guia con plan personalizado."},
 		},
 	}
 }
@@ -1323,12 +1323,12 @@ func defaultGimnasioPreconfig() *TipoEmpresaPreconfigGimnasio {
 func defaultOdontologiaPreconfig() *TipoEmpresaPreconfigOdontologia {
 	return &TipoEmpresaPreconfigOdontologia{
 		Pacientes: []TipoEmpresaPreconfigOdontoPaciente{
-			{Codigo: "PAC-DEMO-001", NombreCompleto: "Paciente Demo Control", Documento: "100000101", Telefono: "3000000101", Email: "paciente.control@preconfig.local", Aseguradora: "Particular", Alergias: "Sin alergias reportadas", RiesgoMedico: "Bajo", Observaciones: "Paciente guia para historia clinica y odontograma."},
-			{Codigo: "PAC-DEMO-002", NombreCompleto: "Paciente Demo Tratamiento", Documento: "100000102", Telefono: "3000000102", Email: "paciente.tratamiento@preconfig.local", Aseguradora: "EPS guia", RiesgoMedico: "Medio", Saldo: 180000, Observaciones: "Paciente guia con presupuesto y saldo."},
+			{Codigo: "PAC-BASE-001", NombreCompleto: "Paciente Base Control", Documento: "700000101", Telefono: "3000000101", Email: "paciente.control@empresa.local", Aseguradora: "Particular", Alergias: "Sin alergias reportadas", RiesgoMedico: "Bajo", Observaciones: "Paciente guia para historia clinica y odontograma."},
+			{Codigo: "PAC-BASE-002", NombreCompleto: "Paciente Base Tratamiento", Documento: "700000102", Telefono: "3000000102", Email: "paciente.tratamiento@empresa.local", Aseguradora: "EPS guia", RiesgoMedico: "Medio", Saldo: 180000, Observaciones: "Paciente guia con presupuesto y saldo."},
 		},
 		Profesionales: []TipoEmpresaPreconfigOdontoProfesional{
-			{NombreCompleto: "Odontologo General Demo", Especialidad: "Odontologia general", RegistroProfesional: "OD-DEMO-001", Email: "odontologo.general@preconfig.local", ColorAgenda: "#0ea5e9"},
-			{NombreCompleto: "Ortodoncista Demo", Especialidad: "Ortodoncia", RegistroProfesional: "OD-DEMO-002", Email: "ortodoncia@preconfig.local", ColorAgenda: "#7c3aed"},
+			{NombreCompleto: "Odontologo General Base", Especialidad: "Odontologia general", RegistroProfesional: "OD-BASE-001", Email: "odontologo.general@empresa.local", ColorAgenda: "#0ea5e9"},
+			{NombreCompleto: "Ortodoncista Base", Especialidad: "Ortodoncia", RegistroProfesional: "OD-BASE-002", Email: "ortodoncia@empresa.local", ColorAgenda: "#7c3aed"},
 		},
 		Consultorios: []TipoEmpresaPreconfigOdontoConsultorio{
 			{Nombre: "Consultorio 1", Sede: "principal", Sillon: "Sillon A", Observaciones: "Consultorio guia principal."},
@@ -1353,8 +1353,8 @@ func defaultVehiculosPreconfig(contexto string) *TipoEmpresaPreconfigVehiculos {
 		PaisCodigo:            "CO",
 		EvitarDuplicadoActivo: true,
 		Registros: []TipoEmpresaPreconfigVehiculoRegistro{
-			{Patente: "ABC123", TipoVehiculo: "automovil", Marca: "Renault", Modelo: "Logan", Color: "Blanco", PropietarioNombre: "Cliente Vehiculo Demo", PropietarioDocumento: "900000001", ConductorNombre: "Conductor Demo", MotivoIngreso: motivo, Observaciones: "Registro vehicular guia."},
-			{Patente: "XYZ987", TipoVehiculo: "camioneta", Marca: "Toyota", Modelo: "Hilux", Color: "Gris", PropietarioNombre: "Empresa Flota Demo", PropietarioDocumento: "900000002", ConductorNombre: "Operador Demo", MotivoIngreso: motivo, Observaciones: "Registro guia para permanencia y reportes."},
+			{Patente: "ABC123", TipoVehiculo: "automovil", Marca: "Renault", Modelo: "Logan", Color: "Blanco", PropietarioNombre: "Cliente Vehiculo Base", PropietarioDocumento: "700900001", ConductorNombre: "Conductor Base", MotivoIngreso: motivo, Observaciones: "Registro base."},
+			{Patente: "XYZ987", TipoVehiculo: "camioneta", Marca: "Toyota", Modelo: "Hilux", Color: "Gris", PropietarioNombre: "Empresa Flota Base", PropietarioDocumento: "700900002", ConductorNombre: "Operador Base", MotivoIngreso: motivo, Observaciones: "Registro base para permanencia y reportes."},
 		},
 	}
 }
@@ -1368,7 +1368,7 @@ func defaultHojaVidaVehiculosPreconfig(contexto string) []TipoEmpresaPreconfigHo
 	}
 	return []TipoEmpresaPreconfigHojaVida{
 		{
-			TipoEntidad: "vehiculo", Codigo: "HV-VEH-001", Nombre: "Renault Logan ABC123", ClienteNombre: "Cliente Vehiculo Demo", Identificacion: "ABC123", Marca: "Renault", Modelo: "Logan", Color: "Blanco", EstadoOperativo: "activo",
+			TipoEntidad: "vehiculo", Codigo: "HV-VEH-001", Nombre: "Renault Logan ABC123", ClienteNombre: "Cliente Vehiculo Base", Identificacion: "ABC123", Marca: "Renault", Modelo: "Logan", Color: "Blanco", EstadoOperativo: "activo",
 			Metadata:      map[string]any{"placa": "ABC123", "kilometraje": 45600, "tipo_combustible": "gasolina"},
 			Observaciones: "Hoja de vida vehicular guia para mantenimientos, servicios y alertas.",
 			Eventos: []TipoEmpresaPreconfigHojaVidaEvento{
@@ -1379,7 +1379,7 @@ func defaultHojaVidaVehiculosPreconfig(contexto string) []TipoEmpresaPreconfigHo
 			},
 		},
 		{
-			TipoEntidad: "vehiculo", Codigo: "HV-VEH-002", Nombre: "Toyota Hilux XYZ987", ClienteNombre: "Empresa Flota Demo", Identificacion: "XYZ987", Marca: "Toyota", Modelo: "Hilux", Color: "Gris", EstadoOperativo: "activo",
+			TipoEntidad: "vehiculo", Codigo: "HV-VEH-002", Nombre: "Toyota Hilux XYZ987", ClienteNombre: "Empresa Flota Base", Identificacion: "XYZ987", Marca: "Toyota", Modelo: "Hilux", Color: "Gris", EstadoOperativo: "activo",
 			Metadata:      map[string]any{"placa": "XYZ987", "kilometraje": 78200, "tipo_combustible": "diesel"},
 			Observaciones: "Hoja de vida guia para flota o vehiculo de cliente.",
 			Eventos: []TipoEmpresaPreconfigHojaVidaEvento{
@@ -1814,7 +1814,7 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 		}
 		p.SKU = strings.ToUpper(strings.TrimSpace(p.SKU))
 		if p.SKU == "" {
-			p.SKU = fmt.Sprintf("DEMO-%03d", idx+1)
+			p.SKU = fmt.Sprintf("BASE-%03d", idx+1)
 		}
 		if seenSKU[p.SKU] {
 			continue

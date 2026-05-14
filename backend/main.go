@@ -1129,7 +1129,6 @@ func main() {
 	http.HandleFunc("/api/empresa/soporte_remoto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSoporteRemotoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/reportes", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/reportes_ia_chat", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaReportesIAChatHandler(dbEmpresas, dbSuper)))
-	http.HandleFunc("/api/empresa/graficos_estadisticas", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaGraficosEstadisticasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/auditoria/eventos", handlers.WithEmpresaAuditoriaPermissions(dbEmpresas, dbSuper, handlers.EmpresaAuditoriaEventosHandler(dbEmpresas)))
 	// Endpoint empresa: verificar acceso a la página frecuencia_fe.html (alias legacy frecuencia_fp.html)
 	http.HandleFunc("/api/empresa/frecuencia_fp/permitido", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaFrecuenciaFPAllowedHandler(dbSuper)))

@@ -1,3 +1,13 @@
+2026-05-14: Reportes unificados y limpieza preproduccion
+- Modulos afectados: `reportes`, `administrar_empresa`, `preconfiguracion`, `operacion_vps`.
+- Cambio funcional: `reportes_menu.html` queda con dos accesos (`Centro de reportes` y `Asistente IA`) y `reportes_ejecutivos.html` concentra catalogo, vista previa y exportacion por dataset.
+- Limpieza de rutas: se eliminan `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html`, `graficos_estadisticas.html` y `backend/handlers/graficos_estadisticas.go`; `backend/main.go` deja de registrar `/api/empresa/graficos_estadisticas`.
+- Limpieza de permisos: se retiran los links antiguos de reportes del catalogo empresarial; se conservan `linkReportes`, `linkReportesEjecutivos` y `linkReportesIAChat`.
+- Limpieza de datos: antes de borrar se crearon dumps PostgreSQL en `/root/powerfulcontrolsystem/backups/preprod_cleanup/`; se eliminaron usuarios QA/demo, clientes QA/demo, empresas smoke/demo y datos asociados, y se normalizaron productos `DEMO-*` a `BASE-*`.
+- Limpieza de archivos: se retiraron evidencias antiguas de QA y backups locales de empresa 7 que no deben viajar a produccion.
+- Herramientas: se elimina el runner `backend/tools/pruebas_finanzas_motel_calipso` porque generaba movimientos QA sobre una empresa real.
+- Seguridad: no se agregan dependencias; los datasets siguen bajo `/api/empresa/reportes` con aislamiento por `empresa_id`.
+
 2026-05-14: Reportes empresariales con entrada unificada
 - Modulos afectados: `reportes`, `administrar_empresa`.
 - Cambio UX: el submenu de reportes se simplifica para evitar opciones repetidas; Inventario y Finanzas siguen disponibles como vistas, pero se abren desde el centro ejecutivo o el catalogo.

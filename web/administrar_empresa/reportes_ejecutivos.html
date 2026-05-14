@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Centro ejecutivo de reportes</title>
+  <title>Centro de reportes</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     .reports-command-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:start}
@@ -37,6 +37,13 @@
     .reports-catalog-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
     .reports-catalog-actions .btn{padding:8px 10px}
     .reports-empty{border:1px dashed var(--border);border-radius:8px;padding:16px;color:var(--muted);background:var(--surface-soft);margin-top:12px}
+    .reports-preview-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .reports-preview-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+    .reports-preview-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+    .reports-preview-stat{border:1px solid var(--border);background:var(--surface-soft);border-radius:8px;padding:10px 12px}
+    .reports-preview-stat span{display:block;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+    .reports-preview-stat strong{display:block;margin-top:4px;font-size:1rem}
+    .reports-preview-table th,.reports-preview-table td{vertical-align:top}
     @media (max-width: 760px){
       .reports-command-header{grid-template-columns:1fr}
       .reports-command-actions{justify-content:flex-start}
@@ -51,12 +58,11 @@
       <div class="reports-command-header">
         <div>
           <span class="reports-command-kicker">Centro de mando</span>
-          <h1 class="reports-command-title">Reportes ejecutivos</h1>
-          <p class="reports-command-lead">Una entrada limpia para gerencia: analitica, suite exportable, ventas, inventario, finanzas, impuestos y apoyo de IA. Los reportes especializados siguen disponibles dentro de la suite, sin llenar el menu principal.</p>
+          <h1 class="reports-command-title">Centro de reportes</h1>
+          <p class="reports-command-lead">Una sola entrada para consultar, previsualizar y exportar reportes de ventas, inventario, finanzas, cartera, contabilidad, impuestos y control operativo.</p>
         </div>
         <div class="reports-command-actions">
-          <button class="btn" type="button" data-open="/administrar_empresa/graficos_estadisticas.html">Abrir analitica</button>
-          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes.html">Suite completa</button>
+          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes_ia_chat.html">Asistente IA</button>
         </div>
       </div>
 
@@ -68,106 +74,12 @@
       </div>
     </section>
 
-    <section class="reports-command-grid" aria-label="Accesos principales de reportes">
-      <article class="reports-command-card">
-        <header>
-          <div class="reports-command-icon">01</div>
-          <div>
-            <h2>Direccion</h2>
-            <p>Lectura ejecutiva para saber que requiere atencion primero.</p>
-          </div>
-        </header>
-        <div class="reports-command-links">
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/graficos_estadisticas.html"><span>Analitica ejecutiva avanzada</span><small>Panel</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=empresarial_tablero"><span>Tablero empresarial exportable</span><small>Dataset</small></button>
-        </div>
-      </article>
-
-      <article class="reports-command-card">
-        <header>
-          <div class="reports-command-icon">02</div>
-          <div>
-            <h2>Ventas y margen</h2>
-            <p>Control comercial, POS, productos y rentabilidad.</p>
-          </div>
-        </header>
-        <div class="reports-command-links">
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=ventas_diarias_metodos_pago"><span>Ventas diarias por metodo de pago</span><small>POS</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=ventas_rentabilidad_productos"><span>Rentabilidad por productos</span><small>Margen</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=reporte_de_turno"><span>Reporte de turno y caja</span><small>Caja</small></button>
-        </div>
-      </article>
-
-      <article class="reports-command-card">
-        <header>
-          <div class="reports-command-icon">03</div>
-          <div>
-            <h2>Inventario y compras</h2>
-            <p>Existencias, kardex, compras y abastecimiento.</p>
-          </div>
-        </header>
-        <div class="reports-command-links">
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes_inventario.html"><span>Inventario por bodega</span><small>Vista</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=inventario_kardex_valorizado"><span>Kardex valorizado</span><small>Dataset</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=compras_proveedores_detalle"><span>Compras por proveedor</span><small>Dataset</small></button>
-        </div>
-      </article>
-
-      <article class="reports-command-card">
-        <header>
-          <div class="reports-command-icon">04</div>
-          <div>
-            <h2>Finanzas y cartera</h2>
-            <p>Flujo de caja, movimientos financieros y edades de cartera.</p>
-          </div>
-        </header>
-        <div class="reports-command-links">
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes_finanzas.html"><span>Resumen financiero</span><small>Vista</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=contable_flujo_caja"><span>Flujo de caja diario</span><small>Dataset</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=cartera_edades_cuentas_por_cobrar"><span>Edades de cuentas por cobrar</span><small>CxC</small></button>
-        </div>
-      </article>
-
-      <article class="reports-command-card">
-        <header>
-          <div class="reports-command-icon">05</div>
-          <div>
-            <h2>Contabilidad e impuestos</h2>
-            <p>Reportes contables y fiscales para revision profesional.</p>
-          </div>
-        </header>
-        <div class="reports-command-links">
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=contable_balance_prueba"><span>Balance de prueba</span><small>Contable</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=fiscal_impuestos_retenciones"><span>Impuestos y retenciones</span><small>Fiscal</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html?dataset=fiscal_informacion_exogena_base"><span>Informacion exogena base</span><small>Fiscal</small></button>
-        </div>
-      </article>
-
-      <article class="reports-command-card">
-        <header>
-          <div class="reports-command-icon">06</div>
-          <div>
-            <h2>IA y exportacion</h2>
-            <p>Consulta con IA y usa la suite completa cuando necesites todos los datasets.</p>
-          </div>
-        </header>
-        <div class="reports-command-links">
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes_ia_chat.html"><span>Asistente IA para reportes</span><small>IA</small></button>
-          <button class="reports-command-link" type="button" data-open="/administrar_empresa/reportes.html"><span>Suite completa de datasets</span><small>Exportar</small></button>
-        </div>
-      </article>
-    </section>
-
     <section class="card empresa-section" aria-label="Catalogo unificado de reportes">
       <div class="reports-command-header">
         <div>
           <span class="reports-command-kicker">Catalogo unificado</span>
           <h2 class="reports-command-title">Reportes empresariales</h2>
-          <p class="reports-command-lead">Busca un informe por area y abre la vista o exporta el dataset sin saltar entre submenus. Inventario, finanzas y cartera quedan como categorias del mismo centro.</p>
-        </div>
-        <div class="reports-command-actions">
-          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes_inventario.html">Vista inventario</button>
-          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes_finanzas.html">Vista finanzas</button>
+          <p class="reports-command-lead">Busca un informe por area, revisa una vista previa en esta misma pantalla y exporta en PDF, Excel, CSV, JSON o TXT.</p>
         </div>
       </div>
 
@@ -195,6 +107,30 @@
       <div id="reportsCatalogMsg" class="form-help"></div>
       <div id="reportsCatalogGrid" class="reports-catalog-grid"></div>
     </section>
+
+    <section id="reportsPreviewSection" class="card empresa-section" aria-label="Vista previa del reporte">
+      <div class="reports-preview-header">
+        <div>
+          <span class="reports-command-kicker">Vista previa</span>
+          <h2 id="reportsPreviewTitle" class="reports-command-title">Selecciona un reporte</h2>
+          <p id="reportsPreviewDescription" class="reports-command-lead">Usa el catalogo para cargar el reporte aqui sin salir del centro.</p>
+        </div>
+        <div class="reports-preview-actions">
+          <button id="btnPreviewExport" class="btn" type="button" disabled>Exportar vista previa</button>
+          <button id="btnPreviewOpenSuite" class="btn secondary" type="button" disabled>Recargar vista previa</button>
+        </div>
+      </div>
+      <div id="reportsPreviewMeta" class="reports-preview-meta"></div>
+      <div id="reportsPreviewMsg" class="form-help"></div>
+      <div class="table-wrap">
+        <table id="reportsPreviewTable" class="table reports-preview-table">
+          <thead></thead>
+          <tbody>
+            <tr><td class="muted">Aun no hay reporte seleccionado.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -204,10 +140,10 @@
         { key:'ventas_diarias_metodos_pago', area:'ventas', badge:'POS', title:'Ventas diarias por medio de pago', description:'Ventas, impuestos, ticket promedio y recaudo por efectivo, debito, credito u otros.', kind:'dataset' },
         { key:'ventas_rentabilidad_productos', area:'ventas', badge:'Margen', title:'Rentabilidad por producto', description:'Margen bruto estimado por producto o servicio vendido.', kind:'dataset' },
         { key:'reporte_de_turno', area:'ventas', badge:'Caja', title:'Reporte de turno y caja', description:'Corte por usuario, caja, ventas, gastos y efectivo esperado.', kind:'dataset' },
-        { key:'operativo_inventario_bodega', area:'inventario', badge:'Stock', title:'Inventario por bodega', description:'Existencias, stock minimo, rotacion y valorizacion.', kind:'dataset', view:'/administrar_empresa/reportes_inventario.html' },
+        { key:'operativo_inventario_bodega', area:'inventario', badge:'Stock', title:'Inventario por bodega', description:'Existencias, stock minimo, rotacion y valorizacion.', kind:'dataset' },
         { key:'inventario_kardex_valorizado', area:'inventario', badge:'Kardex', title:'Kardex valorizado', description:'Entradas, salidas, costo, saldo acumulado y valorizacion por producto.', kind:'dataset' },
         { key:'compras_proveedores_detalle', area:'inventario', badge:'Compras', title:'Compras por proveedor', description:'Detalle de documentos de compra, proveedor, estado y costo.', kind:'dataset' },
-        { key:'contable_movimientos_financieros', area:'finanzas', badge:'Finanzas', title:'Movimientos financieros', description:'Ingresos, egresos, metodo de pago, categoria y balance del periodo.', kind:'dataset', view:'/administrar_empresa/reportes_finanzas.html' },
+        { key:'contable_movimientos_financieros', area:'finanzas', badge:'Finanzas', title:'Movimientos financieros', description:'Ingresos, egresos, metodo de pago, categoria y balance del periodo.', kind:'dataset' },
         { key:'contable_flujo_caja', area:'finanzas', badge:'Caja', title:'Flujo de caja diario', description:'Flujo diario de ingresos y egresos con saldo acumulado.', kind:'dataset' },
         { key:'cartera_edades_cuentas_por_cobrar', area:'finanzas', badge:'CxC', title:'Edades de cuentas por cobrar', description:'Cartera vigente y vencida por rangos de edad.', kind:'dataset' },
         { key:'cartera_edades_cuentas_por_pagar', area:'finanzas', badge:'CxP', title:'Edades de cuentas por pagar', description:'Obligaciones a proveedores por rangos de vencimiento.', kind:'dataset' },
@@ -218,10 +154,10 @@
         { key:'fiscal_informacion_exogena_base', area:'contabilidad', badge:'DIAN', title:'Informacion exogena base', description:'Base de terceros, conceptos y valores para preparacion fiscal.', kind:'dataset' },
         { key:'operativo_auditoria_acciones', area:'control', badge:'Auditoria', title:'Auditoria de acciones', description:'Trazabilidad operativa por modulo, usuario y accion.', kind:'dataset' },
         { key:'aseo_estaciones', area:'control', badge:'Aseo', title:'Reporte de aseo de estaciones', description:'Tiempo de aseo por habitacion o estacion y usuario responsable.', kind:'view', view:'/administrar_empresa/reporte_aseo_estaciones.html' },
-        { key:'graficos_estadisticas', area:'direccion', badge:'Analitica', title:'Analitica ejecutiva avanzada', description:'Panel visual con comparativos, metas, presupuesto y alertas.', kind:'view', view:'/administrar_empresa/graficos_estadisticas.html' },
         { key:'reportes_ia_chat', area:'direccion', badge:'IA', title:'Asistente IA para reportes', description:'Consulta y resume datos desde el asistente central.', kind:'view', view:'/administrar_empresa/reportes_ia_chat.html' }
       ];
       var reportsCatalog = fallbackReports.slice();
+      var selectedDatasetKey = '';
 
       function withEmpresa(url) {
         if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.withEmpresa === 'function') {
@@ -244,6 +180,13 @@
 
       function setCatalogMsg(text, isError) {
         var el = document.getElementById('reportsCatalogMsg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = isError ? 'error' : 'form-help';
+      }
+
+      function setPreviewMsg(text, isError) {
+        var el = document.getElementById('reportsPreviewMsg');
         if (!el) return;
         el.textContent = text || '';
         el.className = isError ? 'error' : 'form-help';
@@ -288,7 +231,7 @@
       }
 
       function openDataset(key) {
-        openReport('/administrar_empresa/reportes.html?dataset=' + encodeURIComponent(key));
+        loadDatasetPreview(key);
       }
 
       function exportDataset(key) {
@@ -299,6 +242,22 @@
           return;
         }
         window.open(url, '_blank', 'noopener,noreferrer');
+      }
+
+      function exportSelectedDataset() {
+        if (!selectedDatasetKey) {
+          setPreviewMsg('Selecciona primero un reporte del catalogo.', true);
+          return;
+        }
+        exportDataset(selectedDatasetKey);
+      }
+
+      function openSelectedInSuite() {
+        if (!selectedDatasetKey) {
+          setPreviewMsg('Selecciona primero un reporte del catalogo.', true);
+          return;
+        }
+        loadDatasetPreview(selectedDatasetKey);
       }
 
       function mergeCatalogFromAPI(apiItems) {
@@ -370,7 +329,9 @@
           return;
         }
         grid.innerHTML = rows.map(function(item) {
-          var viewUrl = item.view || ('/administrar_empresa/reportes.html?dataset=' + encodeURIComponent(item.key));
+          var primary = item.kind === 'dataset'
+            ? '<button class="btn" type="button" data-preview-dataset="' + escapeHtml(item.key) + '">Vista previa</button>'
+            : '<button class="btn" type="button" data-open="' + escapeHtml(item.view || '') + '">Abrir</button>';
           var secondary = item.kind === 'dataset'
             ? '<button class="btn secondary" type="button" data-export-dataset="' + escapeHtml(item.key) + '">Exportar</button>'
             : '';
@@ -378,10 +339,105 @@
             '<header><div><h3>' + escapeHtml(item.title || item.key) + '</h3><p>' + escapeHtml(item.description || '') + '</p></div>' +
             '<span class="reports-catalog-badge">' + escapeHtml(item.badge || item.area || 'Reporte') + '</span></header>' +
             '<div class="reports-catalog-actions">' +
-            '<button class="btn" type="button" data-open="' + escapeHtml(viewUrl) + '">Abrir</button>' +
+            primary +
             secondary +
             '</div></article>';
         }).join('');
+      }
+
+      function findCatalogItem(key) {
+        key = String(key || '');
+        for (var i = 0; i < reportsCatalog.length; i += 1) {
+          if (reportsCatalog[i] && reportsCatalog[i].key === key) return reportsCatalog[i];
+        }
+        return { key: key, title: key, description: '' };
+      }
+
+      function formatPreviewValue(value) {
+        if (value == null) return '';
+        if (typeof value === 'number') {
+          if (Math.abs(value) >= 1000) {
+            return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(value);
+          }
+          return String(value);
+        }
+        if (typeof value === 'boolean') return value ? 'Si' : 'No';
+        return String(value);
+      }
+
+      function renderPreviewDataset(dataset) {
+        dataset = dataset || {};
+        var item = findCatalogItem(dataset.key || selectedDatasetKey);
+        var rows = Array.isArray(dataset.rows) ? dataset.rows : [];
+        var columns = Array.isArray(dataset.columns) && dataset.columns.length ? dataset.columns : Object.keys(rows[0] || {});
+        var title = document.getElementById('reportsPreviewTitle');
+        var desc = document.getElementById('reportsPreviewDescription');
+        var meta = document.getElementById('reportsPreviewMeta');
+        var thead = document.querySelector('#reportsPreviewTable thead');
+        var tbody = document.querySelector('#reportsPreviewTable tbody');
+        var btnExport = document.getElementById('btnPreviewExport');
+        var btnSuite = document.getElementById('btnPreviewOpenSuite');
+        if (title) title.textContent = dataset.title || item.title || item.key || 'Reporte';
+        if (desc) desc.textContent = dataset.description || item.description || 'Vista previa del reporte seleccionado.';
+        if (btnExport) btnExport.disabled = !selectedDatasetKey;
+        if (btnSuite) btnSuite.disabled = !selectedDatasetKey;
+        if (meta) {
+          meta.innerHTML = [
+            '<div class="reports-preview-stat"><span>Registros</span><strong>' + escapeHtml(dataset.row_count != null ? dataset.row_count : rows.length) + '</strong></div>',
+            '<div class="reports-preview-stat"><span>Desde</span><strong>' + escapeHtml(dataset.desde || '') + '</strong></div>',
+            '<div class="reports-preview-stat"><span>Hasta</span><strong>' + escapeHtml(dataset.hasta || '') + '</strong></div>',
+            '<div class="reports-preview-stat"><span>Dataset</span><strong>' + escapeHtml(dataset.key || selectedDatasetKey) + '</strong></div>'
+          ].join('');
+        }
+        if (!thead || !tbody) return;
+        if (!columns.length) {
+          thead.innerHTML = '';
+          tbody.innerHTML = '<tr><td class="muted">El reporte no devolvio columnas para mostrar.</td></tr>';
+          return;
+        }
+        thead.innerHTML = '<tr>' + columns.map(function(col) { return '<th>' + escapeHtml(col) + '</th>'; }).join('') + '</tr>';
+        if (!rows.length) {
+          tbody.innerHTML = '<tr><td colspan="' + columns.length + '" class="muted">Sin datos para el rango seleccionado.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = rows.slice(0, 100).map(function(row) {
+          row = row || {};
+          return '<tr>' + columns.map(function(col) {
+            return '<td>' + escapeHtml(formatPreviewValue(row[col])) + '</td>';
+          }).join('') + '</tr>';
+        }).join('');
+      }
+
+      async function loadDatasetPreview(key) {
+        key = String(key || '').trim();
+        if (!key) return;
+        var url = datasetURL(key, 'dataset');
+        selectedDatasetKey = key;
+        if (!url) {
+          setPreviewMsg('Falta empresa activa para cargar la vista previa. Abre reportes desde el panel de una empresa.', true);
+          renderPreviewDataset({ key: key, rows: [], columns: [] });
+          return;
+        }
+        setPreviewMsg('Cargando vista previa...', false);
+        try {
+          var res = await fetch(url, { credentials: 'same-origin' });
+          if (!res.ok) {
+            var body = '';
+            try { body = await res.text(); } catch (_) {}
+            throw new Error(body || ('HTTP ' + res.status));
+          }
+          var data = await res.json();
+          selectedDatasetKey = data && data.key ? data.key : key;
+          renderPreviewDataset(data || { key: key });
+          setPreviewMsg('Vista previa cargada. Si el reporte tiene mas de 100 filas, la tabla muestra las primeras 100.', false);
+          var section = document.getElementById('reportsPreviewSection');
+          if (section && typeof section.scrollIntoView === 'function') {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } catch (error) {
+          renderPreviewDataset({ key: key, rows: [], columns: [] });
+          setPreviewMsg('No se pudo cargar la vista previa: ' + (error.message || error), true);
+        }
       }
 
       document.addEventListener('click', function(event) {
@@ -390,11 +446,20 @@
           openReport(openBtn.getAttribute('data-open') || '');
           return;
         }
+        var previewBtn = event.target && event.target.closest && event.target.closest('[data-preview-dataset]');
+        if (previewBtn) {
+          openDataset(previewBtn.getAttribute('data-preview-dataset') || '');
+          return;
+        }
         var exportBtn = event.target && event.target.closest && event.target.closest('[data-export-dataset]');
         if (exportBtn) {
           exportDataset(exportBtn.getAttribute('data-export-dataset') || '');
         }
       });
+      var previewExport = document.getElementById('btnPreviewExport');
+      if (previewExport) previewExport.addEventListener('click', exportSelectedDataset);
+      var previewSuite = document.getElementById('btnPreviewOpenSuite');
+      if (previewSuite) previewSuite.addEventListener('click', openSelectedInSuite);
       ['reportsCatalogSearch', 'reportsCatalogArea', 'reportsCatalogFormato', 'reportsCatalogDesde', 'reportsCatalogHasta'].forEach(function(id) {
         var el = document.getElementById(id);
         if (!el) return;
