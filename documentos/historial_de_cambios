@@ -1,3 +1,10 @@
+2026-05-14: Nucleo empresarial con menos paginas wrapper
+- Modulos afectados: `administrar_empresa`, `carritos`, `productos`, `crm_unificado`, `documentos_onlyoffice`, `preconfiguracion`.
+- Cambio funcional: los accesos de Venta directa, Productos/Categorias/Proveedores, CRM Forecast y OnlyOffice apuntan directamente a las pantallas canonicas existentes.
+- Limpieza de rutas: se eliminan `venta_directa.html`, `documentos_onlyoffice_menu.html`, `crm_ventas_avanzadas.html`, `categorias.html` y los wrappers bajo `web/administrar_empresa/productos/` porque solo hacian redireccion y el proyecto aun no esta en produccion.
+- Backend: `empresa_preconfiguracion.go` y `configuracion_guiada.go` guardan la URL canonica del carrito para venta directa.
+- Seguridad: no se agregan dependencias, tablas ni permisos; `empresa_id` sigue siendo resuelto por las pantallas canonicas y los wrappers de permisos existentes.
+
 2026-05-14: Reportes unificados y limpieza preproduccion
 - Modulos afectados: `reportes`, `administrar_empresa`, `preconfiguracion`, `operacion_vps`.
 - Cambio funcional: `reportes_menu.html` queda con dos accesos (`Centro de reportes` y `Asistente IA`) y `reportes_ejecutivos.html` concentra catalogo, vista previa y exportacion por dataset.

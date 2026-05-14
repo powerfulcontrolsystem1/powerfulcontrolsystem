@@ -1,3 +1,10 @@
+## [2026-05-14] Nucleo de pantallas empresariales unificado
+- [Frontend] `Venta directa` entra directo al carrito unico con `modo=venta_directa` y permiso `linkVentaDirecta`.
+- [Frontend] `Productos` usa `administrar_productos.html?view=...` para categorias/proveedores/precios/compras sin wrappers intermedios.
+- [Limpieza] Se eliminan los HTML que solo redirigian: `venta_directa.html`, `documentos_onlyoffice_menu.html`, `crm_ventas_avanzadas.html`, `categorias.html` y wrappers bajo `web/administrar_empresa/productos/`.
+- [Backend] La preconfiguracion y configuracion guiada guardan la URL canonica de venta directa.
+- [Alcance] Sin tablas, permisos ni dependencias nuevas; se conserva aislamiento por `empresa_id`.
+
 ## [2026-05-14] Reportes unificados y limpieza preproduccion
 - [Frontend] `web/administrar_empresa/reportes_menu.html` queda con Centro de reportes y Asistente IA.
 - [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` agrega catalogo, vista previa y exportacion directa sin saltar a paginas antiguas.

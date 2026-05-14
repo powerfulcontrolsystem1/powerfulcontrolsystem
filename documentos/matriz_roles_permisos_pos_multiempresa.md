@@ -566,12 +566,12 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (inventario/productos: compras con vista dedicada dentro del submodulo):
 	- `web/administrar_empresa/administrar_productos.html` agrega `view=compras` para aislar compras preventivas, consolidado por proveedor y ciclo de orden del frente de inventario puro.
-	- `web/administrar_empresa/productos/compras.html` queda como wrapper de navegacion que preserva `empresa_id` y entra a la vista `Compras` sin abrir rutas backend nuevas ni duplicar logica UI.
+	- Desde 2026-05-14 `Compras` del nucleo de productos se abre directo con `web/administrar_empresa/administrar_productos.html?view=compras`; se elimina el wrapper de navegacion sin cambiar permisos ni endpoints.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la segmentacion es solo de UX dentro del mismo alcance autenticado del modulo inventario/productos.
 
 - Actualizacion 2026-04-18 (inventario/productos: proveedores y precios con vistas dedicadas):
 	- `web/administrar_empresa/administrar_productos.html` separa el CRUD de proveedores y el historial de cambios de precio de la vista principal de productos usando `view=proveedores` y `view=precios`.
-	- `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` quedan como wrappers de navegacion que preservan `empresa_id` sin crear rutas backend nuevas ni duplicar logica CRUD.
+	- Desde 2026-05-14 proveedores y precios se abren directo con `web/administrar_empresa/administrar_productos.html?view=proveedores|precios`; se eliminan wrappers sin crear rutas backend ni duplicar logica CRUD.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la segmentacion es solo de UX dentro del mismo alcance autenticado del modulo inventario/productos.
 
 - Actualizacion 2026-04-18 (chat IA super/empresa: resiliencia PostgreSQL legacy y timeout operativo de Ambis):
@@ -587,7 +587,7 @@ Alcance: punto 3 del plan maestro (permisos y seguridad)
 
 - Actualizacion 2026-04-18 (inventario/productos: vistas separadas para bodegas y categorias):
 	- `web/administrar_empresa/administrar_productos.html` concentra la experiencia del modulo y expone tres vistas por query string: `productos`, `bodegas` y `categorias`.
-	- `web/administrar_empresa/productos/administrar_productos.html`, `web/administrar_empresa/productos/bodegas.html` y `web/administrar_empresa/productos/categorias.html` quedan como wrappers de navegacion que preservan `empresa_id` sin crear rutas nuevas ni duplicar logica CRUD.
+	- Desde 2026-05-14 productos, bodegas y categorias se consumen desde `web/administrar_empresa/administrar_productos.html?view=productos|bodegas|categorias`; se retiran wrappers sin crear rutas nuevas ni duplicar logica CRUD.
 	- Impacto de matriz: sin cambios en permisos, roles o wrappers; la segmentacion es solo de UX dentro del mismo alcance autenticado del modulo inventario/productos.
 
 - Actualizacion 2026-04-18 (licencias: activacion gratis unica por empresa y checkout con total cero):

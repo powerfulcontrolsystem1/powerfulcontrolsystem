@@ -1,3 +1,13 @@
+2026-05-14 - Nucleo de pantallas empresariales unificado
+- `web/administrar_empresa.html` y `web/administrar_empresa/configuracion_menu.html`:
+	- `Venta directa` apunta directo a `carrito_de_compras.html?modo=venta_directa&perm_page=linkVentaDirecta`, sin pagina puente.
+- `web/administrar_empresa/administrar_productos_menu.html` y `web/administrar_empresa/compras_menu.html`:
+	- `Categorias` y `Proveedores` apuntan directo a `administrar_productos.html?view=...`, conservando la propagacion de `empresa_id` del submenu.
+- `backend/handlers/empresa_preconfiguracion.go` y `backend/handlers/configuracion_guiada.go`:
+	- guardan la URL canonica del carrito para venta directa en preconfiguracion y asistente inicial.
+- `web/administrar_empresa/venta_directa.html`, `web/administrar_empresa/documentos_onlyoffice_menu.html`, `web/administrar_empresa/crm_ventas_avanzadas.html`, `web/administrar_empresa/categorias.html` y wrappers de `web/administrar_empresa/productos/`:
+	- eliminados por unificacion preproduccion; eran redirecciones sin logica propia.
+
 2026-05-14 - Reportes unificados y limpieza preproduccion
 - `web/administrar_empresa/reportes_ejecutivos.html`:
 	- concentra catalogo, vista previa y exportacion de datasets desde `/api/empresa/reportes`.

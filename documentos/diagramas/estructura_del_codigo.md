@@ -417,7 +417,7 @@
   - Desde 2026-05-13 `backend/handlers/onlyoffice.go` normaliza la raiz de almacenamiento para no duplicar `empresas` y reescribe `ds_url` hacia una URL publica cuando la configuracion del Document Server usa un hostname interno Docker.
 - Frontend documentos:
   - `web/administrar_empresa/documentos_onlyoffice.html` usa por defecto `Guardar en este dispositivo`; en ese modo no lista archivos del VPS ni activa upload/editor. El modo colaborativo en servidor queda opt-in.
-  - Desde 2026-05-13 la misma pagina es el flujo unico: elegir tipo, crear, editar embebido y descargar al PC/celular. `documentos_onlyoffice_menu.html` queda como redireccion compatible.
+  - Desde 2026-05-14 la misma pagina es el flujo unico: elegir tipo, crear, editar embebido y descargar al PC/celular. El wrapper `documentos_onlyoffice_menu.html` fue eliminado antes de produccion; los menus abren directo `documentos_onlyoffice.html`.
   - La carga del editor valida `DocsAPI.DocEditor` despues de traer `/web-apps/apps/api/documents/api.js`, para mostrar error operativo claro si OnlyOffice no es accesible desde el navegador.
 - Backend backups:
   - `backend/handlers/backups_empresariales.go` agrega `action=exportar_local` y `action=exportar_configuracion_local`, que construyen el snapshot con `BuildEmpresaBackupPayload`/`BuildEmpresaConfigBackupPayload` y lo devuelven como attachment sin persistir historial ni copia en disco.
@@ -650,7 +650,7 @@ Fecha de actualizacion: 2026-04-18
 
 - Frontend productos:
   - `web/administrar_empresa/administrar_productos.html` agrega la subvista `compras` para mostrar compras preventivas y ciclo de orden por proveedor fuera de la vista principal de inventario.
-  - `web/administrar_empresa/productos/compras.html` redirige hacia esa vista central, preservando `empresa_id` dentro del iframe del panel empresa.
+  - Desde 2026-05-14 no hay wrapper intermedio: los menus abren directo `web/administrar_empresa/administrar_productos.html?view=compras` cuando necesitan la vista de compras del nucleo de productos.
 - Flujo:
   - `administrar_empresa.html` -> `administrar_productos_menu.html` -> `productosContentFrame` -> `administrar_productos.htmlview=compras`.
   - `compras` concentra plan de reposicion por proveedor, consolidado de compra y borrador/ciclo de orden, mientras `productos` conserva inventario y analitica operativa.
@@ -659,7 +659,7 @@ Fecha de actualizacion: 2026-04-18
 
 - Frontend productos:
   - `web/administrar_empresa/administrar_productos.html` sigue siendo la fuente unica del modulo, pero ahora resuelve cinco subvistas: `productos`, `bodegas`, `categorias`, `proveedores` y `precios`.
-  - `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` redirigen hacia esa vista central, preservando `empresa_id` en el iframe del panel empresa.
+  - Desde 2026-05-14 no hay wrappers intermedios: los menus abren directo `web/administrar_empresa/administrar_productos.html?view=proveedores|precios`, preservando `empresa_id` desde el shell/submenu.
   - `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada `Proveedores` y reutiliza `Precios` para mostrar el historial real de cambios de precio en lugar de una página placeholder.
 - Flujo:
   - `administrar_empresa.html` -> `administrar_productos_menu.html` -> `productosContentFrame` -> `administrar_productos.htmlview=productos|bodegas|categorias|proveedores|precios`.

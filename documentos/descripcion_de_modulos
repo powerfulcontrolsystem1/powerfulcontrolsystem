@@ -698,7 +698,7 @@
 - Backend: nueva API `/api/empresa/crm_avanzado` con acciones `dashboard`, `metas`, `scores`, `meta`, `cotizacion_desde_lead` y `seed_demo`.
 - Base de datos: nueva tabla `empresa_crm_metas_comerciales`; se reutilizan `crm_leads`, `crm_interacciones`, `crm_campanas`, `empresa_cotizaciones_venta` y `empresa_pedidos_venta`.
 - Seguridad: se usa la licencia y permiso `crm_unificado`; la pagina `linkCRMComercial` y los endpoints `/api/empresa/crm/*` y `/api/empresa/crm_avanzado` quedan protegidos por `WithEmpresaCRMUnificadoPermissions`.
-- Frontend: `web/administrar_empresa/crm_ventas_avanzadas.html` queda enlazada en el bloque de Ventas, clientes y caja.
+- Frontend: desde 2026-05-14 el CRM avanzado no tiene pagina wrapper; vive dentro de `web/administrar_empresa/crm_comercial.html` y el submenu `CRM unificado` abre las vistas `forecast`/`metas` desde `modulo_menu.html?module=crm_unificado`.
 - Documentacion: se agrega `documentos/crm_ventas_avanzadas.md`.
 
 2026-05-12: CRM empresarial profesional
@@ -1177,13 +1177,13 @@ Actualizacion 2026-04-19 (chat IA super/empresa: Gemini-only sin Ollama ni DeepS
 
 Actualizacion 2026-04-18 (inventario/productos: compras preventivas y de proveedores pasan a la seccion Compras):
 - `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|compras|precios`, separando las compras preventivas y el ciclo de orden por proveedor de la vista principal de inventario.
-- `web/administrar_empresa/productos/compras.html` deja de ser un placeholder y pasa a redirigir al modo `compras` de la vista central, preservando `empresa_id` sin duplicar la lógica de reposición y ordenes.
+- Desde 2026-05-14 se elimina el wrapper `web/administrar_empresa/productos/compras.html`; el nucleo abre directamente `web/administrar_empresa/administrar_productos.html?view=compras`, preservando `empresa_id` desde el menu empresarial.
 - La seccion `Compras` del submodulo ahora concentra plan de reposicion por proveedor, consolidado de compra y borrador/ciclo de orden; la vista `Productos` conserva inventario, existencias, alertas y analitica operativa.
 - Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste reorganiza frontend dentro del mismo modulo autenticado por `empresa_id`.
 
 Actualizacion 2026-04-18 (inventario/productos: proveedores y precios se separan en subpaginas dedicadas):
 - `web/administrar_empresa/administrar_productos.html` amplía la vista central a `view=productos|bodegas|categorias|proveedores|precios`, de modo que el CRUD de proveedores y el historial de cambios de precio ya no queden mezclados con la vista principal de productos.
-- `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html` pasan a operar como wrappers de navegacion que preservan `empresa_id` y redirigen a la vista central sin duplicar formularios ni consultas.
+- Desde 2026-05-14 se eliminan los wrappers `web/administrar_empresa/productos/administrar_proveedores.html` y `web/administrar_empresa/productos/precios.html`; proveedores y precios se abren directo en `administrar_productos.html?view=proveedores|precios`.
 - `web/administrar_empresa/administrar_productos_menu.html` agrega la entrada dedicada `Proveedores`, mientras `Precios` deja de ser un placeholder y ahora muestra el historial real de cambios de precio del modulo.
 - Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de navegacion y organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
 
@@ -1200,7 +1200,7 @@ Actualizacion 2026-04-18 (portal publico: retiro del arcade y permanencia exclus
 
 Actualizacion 2026-04-18 (inventario/productos: subpaginas separadas para bodegas y categorias):
 - `web/administrar_empresa/administrar_productos.html` se mantiene como fuente unica del modulo y ahora admite `view=productos`, `view=bodegas` y `view=categorias` para mostrar solo el bloque operativo correspondiente.
-- `web/administrar_empresa/productos/administrar_productos.html`, `web/administrar_empresa/productos/bodegas.html` y `web/administrar_empresa/productos/categorias.html` pasan a ser wrappers de navegacion que preservan `empresa_id` y redirigen a la vista central sin duplicar formularios ni bindings.
+- Desde 2026-05-14 se retiran los wrappers de `web/administrar_empresa/productos/`; productos, bodegas y categorias se consumen desde la vista canonica `web/administrar_empresa/administrar_productos.html?view=productos|bodegas|categorias`.
 - Impacto de permisos: sin cambios en roles, wrappers backend ni endpoints; el ajuste es de organizacion frontend dentro del mismo modulo autenticado por `empresa_id`.
 
 Actualizacion 2026-04-18 (chat IA super/empresa: interruptor global de servicio):
