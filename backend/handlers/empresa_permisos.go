@@ -1775,7 +1775,9 @@ func normalizePermissionAction(candidate, fallback string) string {
 func resolveVentasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
-	case "cerrar", "reabrir", "pagar_estacion", "activar_estacion", "pagar", "suspender", "suspender_venta", "reactivar", "reabrir_venta", "convertir_pedido", "convertir_documento_final":
+	case "pagar_estacion", "pagar":
+		return permActionCreate
+	case "cerrar", "reabrir", "activar_estacion", "suspender", "suspender_venta", "reactivar", "reabrir_venta", "convertir_pedido", "convertir_documento_final":
 		return permActionApprove
 	case "activar", "desactivar":
 		return permActionUpdate

@@ -1,3 +1,9 @@
+## [2026-05-13] Boton pagar y cerrar carrito con reintento visual
+- [Backend] `pagar_estacion` y `pagar` pasan a permiso operativo `Crear / registrar` en ventas, evitando bloquear cajeros o roles personalizados que venden pero no tienen acciones gerenciales de aprobacion.
+- [Frontend] Si la carga inicial de cajas abiertas falla, el boton `Pagar y cerrar carrito` queda habilitado, informa que puede reintentar y al clic vuelve a cargar cajas antes de enviar el pago.
+- [QA] Validado con `go test ./handlers ./db` y prueba visual Playwright simulando 403 inicial de cajas: el boton queda clickeable, recarga `CAJA-1` y envia `PUT action=pagar_estacion` con `cierre_caja_id=11`.
+- [Alcance] Sin tablas ni dependencias; mantiene validacion final de caja abierta por `empresa_id` en backend.
+
 ## [2026-05-13] Carrito cobra con caja abierta desde permisos de ventas
 - [Backend] `backend/handlers/carritos_compras.go` agrega `GET /api/empresa/carritos_compra?action=cajas_abiertas` para listar cajas abiertas necesarias al cobrar sin exigir acceso al modulo financiero.
 - [Frontend] `web/administrar_empresa/carrito_de_compras.html` carga cajas abiertas desde el flujo de carritos/ventas y deja de depender de `/api/empresa/finanzas/cierres_caja`.

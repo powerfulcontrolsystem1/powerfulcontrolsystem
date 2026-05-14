@@ -1,3 +1,10 @@
+2026-05-13: Boton pagar y cerrar carrito con reintento visual
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `permisos`.
+- Cambio funcional: `pagar_estacion` y `pagar` se clasifican como registro operativo de venta, no como aprobacion gerencial, para que roles de caja personalizados puedan cerrar cobros segun sus permisos de ventas.
+- UX: si no se pudieron cargar cajas abiertas al inicio, el boton queda habilitado con mensaje de reintento; al hacer clic vuelve a cargar cajas y continua el pago si encuentra una caja abierta.
+- Seguridad: el backend sigue validando caja abierta, `cierre_caja_id`, codigo, turno y `empresa_id` antes de cerrar el carrito.
+- Alcance: no cambia tablas ni dependencias.
+
 2026-05-13: Carrito de compras cobra con caja abierta desde Ventas
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
 - Cambio funcional: el boton `Pagar y cerrar carrito` ya puede habilitarse para usuarios operativos que tienen permisos de ventas/estaciones/venta directa aunque no tengan permiso completo de Finanzas.

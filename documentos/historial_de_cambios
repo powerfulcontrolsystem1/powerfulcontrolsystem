@@ -1,3 +1,11 @@
+2026-05-13: Boton pagar y cerrar carrito queda operativo con reintento de caja
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `permisos`.
+- Causa adicional: aunque la carga de cajas ya estaba en el endpoint de carritos, el pago seguia clasificado como accion `Aprobar / auditar` y una configuracion fina de permisos podia dejar al usuario con permiso de vender pero sin permiso efectivo para `pagar_estacion`. Ademas, un fallo temporal al cargar cajas podia dejar el boton en estado inutil.
+- Backend: `backend/handlers/empresa_permisos.go` cambia `pagar_estacion` y `pagar` a permiso `Crear / registrar`, manteniendo acciones gerenciales como cerrar/reabrir/suspender en `Aprobar / auditar`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega contexto `perm_page=linkEstaciones` en carga y pago de estaciones, mantiene el boton habilitado cuando solo falta refrescar caja y al clic vuelve a ejecutar `loadActiveCashRegisters()` antes de enviar el pago.
+- UX: el mensaje del selector ahora diferencia fallo de carga inicial y orienta a presionar `Pagar y cerrar carrito` para reintentar.
+- Validacion: `go test ./handlers ./db` paso. Prueba visual Playwright simulo 403 inicial de cajas abiertas; el boton quedo habilitado, mostro mensaje de reintento, recargo `CAJA-1` al clic y envio `PUT action=pagar_estacion&perm_page=linkEstaciones&estacion_id=1` con `cierre_caja_id=11`, `caja_codigo=CAJA-1` y `total_pagado=15000`.
+
 2026-05-13: Reparacion del pago y cierre de carrito con caja abierta
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `corte_caja`.
 - Causa tecnica: el carrito obtenia las cajas abiertas desde `/api/empresa/finanzas/cierres_caja`, endpoint protegido por permisos de Finanzas; un usuario operativo con permiso de vender podia quedar sin caja seleccionable y el boton `Pagar y cerrar carrito` permanecia bloqueado.

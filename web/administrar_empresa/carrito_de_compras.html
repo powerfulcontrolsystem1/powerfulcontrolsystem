@@ -541,6 +541,7 @@
       },
       usuariosEmpresa: [],
       activeCashRegisters: [],
+      activeCashRegistersLoadError: false,
       selectedCashRegisterID: 0,
       operativaConfig: {
         loaded: false,
@@ -650,7 +651,9 @@
         select.appendChild(new Option('No hay cajas abiertas', ''));
         select.disabled = true;
         if (hint) {
-          hint.textContent = 'Abre una caja desde Finanzas > Corte de caja antes de cobrar. Esto permite operar varias cajas a la vez sin mezclar arqueos.';
+          hint.textContent = state.activeCashRegistersLoadError
+            ? 'No se pudieron cargar las cajas abiertas. Presiona Pagar y cerrar carrito para reintentar la carga antes de cobrar.'
+            : 'Abre una caja desde Finanzas > Corte de caja antes de cobrar. Esto permite operar varias cajas a la vez sin mezclar arqueos.';
           hint.classList.add('value-negative');
         }
         return;
@@ -675,8 +678,11 @@
         params.set('empresa_id', String(state.empresaID));
         params.set('action', 'cajas_abiertas');
         params.set('limit', '100');
-        if (state.stationMode && state.stationID > 0) {
-          params.set('estacion_id', String(state.stationID));
+        if (state.stationMode) {
+          params.set('perm_page', 'linkEstaciones');
+          if (state.stationID > 0) {
+            params.set('estacion_id', String(state.stationID));
+          }
         }
         if (state.directSaleMode) {
           params.set('modo', 'venta_directa');
@@ -688,9 +694,11 @@
         await ensureOk(res);
         const payload = await res.json();
         state.activeCashRegisters = Array.isArray(payload) ? payload : [];
+        state.activeCashRegistersLoadError = false;
       } catch (err) {
         console.warn('No se pudieron cargar cajas abiertas.', err);
         state.activeCashRegisters = [];
+        state.activeCashRegistersLoadError = true;
       }
       renderActiveCashRegisters();
     }
@@ -2964,11 +2972,11 @@
         breakdownEl.textContent += ' | Detalle mixto: ' + pay.mixedSummary;
       }
 
-      const hasBlockingError = !selectedCash || !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
+      const hasBlockingError = !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
       const payDisabledReason = !selectedActive
         ? (state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Activalo para iniciar una nueva sesion de estacion.')
         : (!selectedCash
-          ? 'Abre y selecciona una caja antes de cobrar.'
+          ? 'Clic para refrescar cajas abiertas y cobrar.'
         : (!hasAllowedPaymentMethods
           ? 'No hay metodos de pago habilitados para este rol.'
           : (pay.operativaMessage || pay.discountCodeMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : ''))));
@@ -3113,10 +3121,15 @@
         return;
       }
       const selectedCash = getSelectedCashRegister();
-      if (!selectedCash) {
-        setStationPaymentMessage('Debes seleccionar una caja abierta antes de registrar el pago.', true);
+      let cashForPayment = selectedCash;
+      if (!cashForPayment) {
         await loadActiveCashRegisters();
-        return;
+        cashForPayment = getSelectedCashRegister();
+        if (!cashForPayment) {
+          setStationPaymentMessage('Debes seleccionar una caja abierta antes de registrar el pago.', true);
+          renderStationPaymentPanel(selected);
+          return;
+        }
       }
 
       if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagarFinal, selected.moneda) + '?')) {
@@ -3131,6 +3144,12 @@
         setStationPayButtonState({ loading: true });
         setStationPaymentMessage('Registrando pago y cerrando carrito...', false);
         let payEndpoint = '/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(selected.id) + '&action=pagar_estacion';
+        if (state.stationMode) {
+          payEndpoint += '&perm_page=linkEstaciones';
+          if (state.stationID > 0) {
+            payEndpoint += '&estacion_id=' + encodeURIComponent(state.stationID);
+          }
+        }
         if (state.directSaleMode) {
           payEndpoint += '&modo=venta_directa&perm_page=linkVentaDirecta&carrito_codigo=' + encodeURIComponent(normalize(selected.codigo) || ('VENTA-DIRECTA-' + state.empresaID));
         }
@@ -3151,10 +3170,10 @@
             aplicar_propina: pay.tipApplied,
             usuario_lavador: normalize(document.getElementById('commissionWorker').value),
             usuario_lavador_id: usuarioEmpresaIDPorEntrada(document.getElementById('commissionWorker').value),
-            cierre_caja_id: Number(selectedCash.id || 0),
-            caja_codigo: normalizeCashCode(selectedCash.caja_codigo),
-            caja_turno: normalize(selectedCash.turno) || 'general',
-            caja_sucursal_id: Number(selectedCash.sucursal_id || 0)
+            cierre_caja_id: Number(cashForPayment.id || 0),
+            caja_codigo: normalizeCashCode(cashForPayment.caja_codigo),
+            caja_turno: normalize(cashForPayment.turno) || 'general',
+            caja_sucursal_id: Number(cashForPayment.sucursal_id || 0)
           })
         });
         await ensureOk(res);
