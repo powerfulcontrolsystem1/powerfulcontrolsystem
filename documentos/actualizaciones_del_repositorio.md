@@ -9509,3 +9509,9 @@ Archivos modificados:
 - backend/db/finanzas.go
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+
+2026-05-14 00:10:02 - Mensaje: fix: bloquear cierre de caja tras guardar; Commit: 947b1f4f; PushStatus: OK
+Archivos modificados:
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/corte_de_caja.html
