@@ -1,3 +1,10 @@
+2026-05-13: Pago de carrito con impresion reservada desde el clic
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `impresion`.
+- Causa tecnica: aunque el cobro podia enviarse, la impresion del recibo/factura se intentaba abrir despues de llamadas asincronas al backend; en navegadores reales eso puede activar el bloqueo de ventanas emergentes y dejar el cierre de venta sin evidencia impresa visible.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` reserva las ventanas de recibo y factura en el mismo gesto del usuario antes de enviar `pagar_estacion`; al recibir la respuesta del backend escribe el documento final en esa ventana y ejecuta `window.print()`. Si la ventana no esta disponible, usa un iframe temporal de impresion como respaldo.
+- Flujo operativo: mantiene la validacion de caja abierta y el envio de `cierre_caja_id`, `caja_codigo`, turno, metodo de pago y totales. El cambio no altera endpoints, permisos, tablas ni dependencias.
+- Validacion visual: Playwright en modo estacion hizo clic real en `Pagar y cerrar carrito`, envio `PUT action=pagar_estacion&perm_page=linkEstaciones&estacion_id=1`, regreso a `estaciones.html` y verifico recibo POS impreso con `Dia de entrenamiento` y `COP 15000.00`. Una segunda prueba con `imprimir_factura_electronica=true` abrio e imprimio dos ventanas: recibo y factura electronica `FE-0001`.
+
 2026-05-13: Pago de carrito con clic directo y aviso visible
 - Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `panel_administrar_empresa`.
 - Causa tecnica: el flujo de pago dependia de un `confirm()` nativo antes de enviar `pagar_estacion`; dentro del shell empresarial/iframe ese dialogo podia no ser evidente para el usuario y dar la impresion de que el boton no hacia nada. Ademas, despues del cobro el render del panel podia limpiar de inmediato el mensaje de exito.

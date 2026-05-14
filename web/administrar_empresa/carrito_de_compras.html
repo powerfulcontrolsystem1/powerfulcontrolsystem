@@ -2320,6 +2320,121 @@
       }
     }
 
+    function openReservedPrintWindow(title, features) {
+      let win = null;
+      try {
+        win = window.open('', '_blank', features || 'width=820,height=900');
+      } catch (_) {
+        win = null;
+      }
+      if (!win) return null;
+      try {
+        win.document.open();
+        win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(title || 'Impresion') + '</title><style>body{font-family:Arial,sans-serif;padding:18px;color:#111}p{margin:0;color:#555}</style></head><body><p>Preparando impresion...</p></body></html>');
+        win.document.close();
+      } catch (_) {}
+      return win;
+    }
+
+    function preparePaymentPrintTargets() {
+      const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
+      const targets = {
+        receipt: null,
+        factura: null
+      };
+      if (Boolean(cfg.imprimir_venta)) {
+        const format = normalize(cfg.formato_impresion || cfg.formato_recibo).toLowerCase() === 'carta' ? 'carta' : 'pos';
+        targets.receipt = {
+          win: openReservedPrintWindow('Recibo de cobro', format === 'pos' ? 'width=340,height=760' : 'width=860,height=940'),
+          used: false
+        };
+      }
+      if (Boolean(cfg.imprimir_factura_electronica)) {
+        const format = normalize(cfg.formato_impresion).toLowerCase() === 'pos' ? 'pos' : 'carta';
+        targets.factura = {
+          win: openReservedPrintWindow('Factura electronica', format === 'pos' ? 'width=340,height=760' : 'width=860,height=940'),
+          used: false
+        };
+      }
+      return targets;
+    }
+
+    function closeUnusedPaymentPrintTargets(targets) {
+      if (!targets) return;
+      [targets.receipt, targets.factura].forEach(function(target) {
+        if (!target || target.used || !target.win) return;
+        try {
+          target.win.close();
+        } catch (_) {}
+      });
+    }
+
+    function writeHTMLToPrintWindow(win, html) {
+      if (!win) return false;
+      try {
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+        win.focus();
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function printHTMLInFrame(html) {
+      try {
+        const frame = document.createElement('iframe');
+        frame.setAttribute('title', 'Impresion');
+        frame.style.position = 'fixed';
+        frame.style.right = '0';
+        frame.style.bottom = '0';
+        frame.style.width = '1px';
+        frame.style.height = '1px';
+        frame.style.opacity = '0';
+        frame.style.pointerEvents = 'none';
+        document.body.appendChild(frame);
+        const doc = frame.contentWindow && frame.contentWindow.document;
+        if (!doc) {
+          frame.remove();
+          return false;
+        }
+        doc.open();
+        doc.write(html);
+        doc.close();
+        window.setTimeout(function() {
+          try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+          } catch (_) {}
+          window.setTimeout(function() {
+            try {
+              frame.remove();
+            } catch (_) {}
+          }, 1200);
+        }, 250);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function printHTMLDocument(html, features, target) {
+      if (target && writeHTMLToPrintWindow(target.win, html)) {
+        target.used = true;
+        return true;
+      }
+      const win = openReservedPrintWindow('Impresion', features);
+      if (writeHTMLToPrintWindow(win, html)) return true;
+      return printHTMLInFrame(html);
+    }
+
+    function printPCSPrintDocument(options, target) {
+      if (!window.PCSPrint || typeof window.PCSPrint.buildDocument !== 'function') return false;
+      const html = window.PCSPrint.buildDocument(options);
+      return printHTMLDocument(html, options && options.features, target);
+    }
+
     function getCashDrawerConfig() {
       const cfg = loadEmpresaGeneralConfig();
       const caja = cfg && cfg.caja && typeof cfg.caja === 'object' ? cfg.caja : {};
@@ -2430,9 +2545,9 @@
       return true;
     }
 
-    async function printSaleReceiptIfEnabled(carrito, pay, items) {
+    async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
-      if (!Boolean(cfg.imprimir_venta)) return;
+      if (!Boolean(cfg.imprimir_venta)) return false;
 
       const moneda = (carrito && carrito.moneda) || 'COP';
       const printerResolution = await resolvePrinterForTicketCobro();
@@ -2466,7 +2581,7 @@
             formatAmount(qty * pu, moneda)
           ];
         });
-        const win = window.PCSPrint.openDocument({
+        const printed = printPCSPrintDocument({
           title: 'Recibo de cobro',
           kind: 'recibo',
           format: printFormat,
@@ -2486,9 +2601,9 @@
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
           footer: 'Gracias por su compra.',
           signatures: false
-        });
-        if (!win) setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
-        return;
+        }, printTarget);
+        if (!printed) setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
+        return printed;
       }
 
       const pageStyle = printFormat === 'pos'
@@ -2513,28 +2628,20 @@
         '<p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias: ' + escapeHtml(String(copias)) + '</p>' +
         '</body></html>';
 
-      const printWindow = window.open('', '_blank', printFormat === 'pos' ? 'width=320,height=720' : 'width=820,height=900');
-      if (!printWindow) {
+      const printed = printHTMLDocument(html, printFormat === 'pos' ? 'width=320,height=720' : 'width=820,height=900', printTarget);
+      if (!printed) {
         setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
-        return;
       }
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(function() {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
+      return printed;
     }
 
 
-    async function printFacturaElectronicaIfEnabled(documentoVenta, carrito, pay, items) {
+    async function printFacturaElectronicaIfEnabled(documentoVenta, carrito, pay, items, printTarget) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       const doc = documentoVenta && typeof documentoVenta === 'object' ? documentoVenta : {};
       const tipoDocumento = normalize(doc.tipo_documento || doc.modo).toLowerCase();
-      if (tipoDocumento !== 'factura_electronica') return;
-      if (!Boolean(cfg.imprimir_factura_electronica)) return;
+      if (tipoDocumento !== 'factura_electronica') return false;
+      if (!Boolean(cfg.imprimir_factura_electronica)) return false;
 
       const moneda = normalize(doc.moneda || (carrito && carrito.moneda) || 'COP') || 'COP';
       const formato = normalize(cfg.formato_impresion).toLowerCase() === 'pos' ? 'pos' : 'carta';
@@ -2566,7 +2673,7 @@
             formatAmount(qty * pu, moneda)
           ];
         });
-        const win = window.PCSPrint.openDocument({
+        const printed = printPCSPrintDocument({
           title: 'Factura electronica',
           kind: 'factura',
           format: formato,
@@ -2587,9 +2694,9 @@
           note: [notas, pie].filter(Boolean).join('\n'),
           footer: normalize(doc.codigo_validacion) ? ('Validacion: ' + normalize(doc.codigo_validacion)) : '',
           signatures: false
-        });
-        if (!win) setStationPaymentMessage('La factura se emitio, pero el navegador bloqueo la impresion automatica.', true);
-        return;
+        }, printTarget);
+        if (!printed) setStationPaymentMessage('La factura se emitio, pero el navegador bloqueo la impresion automatica.', true);
+        return printed;
       }
 
       const pageStyle = formato === 'pos'
@@ -2617,19 +2724,11 @@
         (normalize(doc.codigo_validacion) ? ('<p class="muted">Validaci?n: ' + escapeHtml(normalize(doc.codigo_validacion)) + '</p>') : '') +
         '</body></html>';
 
-      const printWindow = window.open('', '_blank', formato === 'pos' ? 'width=320,height=760' : 'width=860,height=940');
-      if (!printWindow) {
+      const printed = printHTMLDocument(html, formato === 'pos' ? 'width=320,height=760' : 'width=860,height=940', printTarget);
+      if (!printed) {
         setStationPaymentMessage('La factura se emiti?, pero el navegador bloque? la impresi?n autom?tica.', true);
-        return;
       }
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(function() {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
+      return printed;
     }
 
     function writeStationPaymentMessage(text, isError) {
@@ -3158,12 +3257,14 @@
         setStationPaymentMessage(pay.mixedMessage, true);
         return;
       }
+      const printTargets = preparePaymentPrintTargets();
       const selectedCash = getSelectedCashRegister();
       let cashForPayment = selectedCash;
       if (!cashForPayment) {
         await loadActiveCashRegisters();
         cashForPayment = getSelectedCashRegister();
         if (!cashForPayment) {
+          closeUnusedPaymentPrintTargets(printTargets);
           setStationPaymentMessage('Debes seleccionar una caja abierta antes de registrar el pago.', true);
           renderStationPaymentPanel(selected);
           return;
@@ -3237,15 +3338,16 @@
         }
         setStationPaymentPersistentMessage(successMsg, false);
         try {
-          await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot);
+          await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot, printTargets && printTargets.receipt);
         } catch (printErr) {
           console.warn(printErr);
         }
         try {
-          await printFacturaElectronicaIfEnabled(facturaElectronica, selected, pay, itemsSnapshot);
+          await printFacturaElectronicaIfEnabled(facturaElectronica, selected, pay, itemsSnapshot, printTargets && printTargets.factura);
         } catch (printFacturaErr) {
           console.warn(printFacturaErr);
         }
+        closeUnusedPaymentPrintTargets(printTargets);
         try {
           await openCashDrawerIfEnabled('pago_carrito', selected, pay);
         } catch (drawerErr) {
@@ -3276,6 +3378,7 @@
         }
         window.location.assign(buildStationsURL());
       } catch (err) {
+        closeUnusedPaymentPrintTargets(printTargets);
         if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
           setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
         }
