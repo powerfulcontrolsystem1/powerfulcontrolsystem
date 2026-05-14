@@ -1,3 +1,9 @@
+2026-05-14: Reportes unificados
+- El submenu principal del modulo `reportes` muestra una entrada compacta de gobierno: Centro ejecutivo, Analitica avanzada, Catalogo y exportacion, y Asistente IA.
+- `linkReportesInventario` y `linkReportesFinanzas` no se eliminan del catalogo de permisos ni de sus rutas protegidas; solo dejan de ocupar accesos principales para evitar duplicidad visual.
+- Las vistas `reportes_inventario.html` y `reportes_finanzas.html` siguen accesibles desde el catalogo ejecutivo y conservan sus permisos actuales (`inventario:R` y `finanzas:R` respectivamente).
+- Los datasets exportables continuan bajo `/api/empresa/reportes` con `WithEmpresaReportesPermissions` y aislamiento por `empresa_id`.
+
 2026-05-13: Reportes ejecutivos profesionales
 - `web/administrar_empresa/reportes_ejecutivos.html`, `reportes_menu.html` y `reportes_finanzas.html` permanecen dentro del modulo `reportes`.
 - No agrega permisos ni wrappers nuevos: los datos y exportaciones siguen usando `/api/empresa/reportes` bajo `WithEmpresaReportesPermissions`.

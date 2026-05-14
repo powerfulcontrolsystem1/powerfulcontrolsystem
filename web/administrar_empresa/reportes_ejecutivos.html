@@ -26,9 +26,21 @@
     .reports-command-mini{border:1px solid var(--border);background:var(--surface-soft);border-radius:8px;padding:12px}
     .reports-command-mini strong{display:block;font-size:.95rem}
     .reports-command-mini span{display:block;color:var(--muted);font-size:.86rem;margin-top:4px;line-height:1.4}
+    .reports-catalog-toolbar{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(160px,.7fr) repeat(3,minmax(120px,.55fr));gap:10px;align-items:end;margin-top:12px}
+    .reports-catalog-toolbar .btn{min-height:42px}
+    .reports-catalog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
+    .reports-catalog-card{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:205px}
+    .reports-catalog-card header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .reports-catalog-card h3{margin:0;font-size:1rem}
+    .reports-catalog-card p{margin:4px 0 0;color:var(--muted);line-height:1.45}
+    .reports-catalog-badge{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:.74rem;color:var(--muted);background:var(--surface-soft);white-space:nowrap}
+    .reports-catalog-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+    .reports-catalog-actions .btn{padding:8px 10px}
+    .reports-empty{border:1px dashed var(--border);border-radius:8px;padding:16px;color:var(--muted);background:var(--surface-soft);margin-top:12px}
     @media (max-width: 760px){
       .reports-command-header{grid-template-columns:1fr}
       .reports-command-actions{justify-content:flex-start}
+      .reports-catalog-toolbar{grid-template-columns:1fr}
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -145,10 +157,72 @@
         </div>
       </article>
     </section>
+
+    <section class="card empresa-section" aria-label="Catalogo unificado de reportes">
+      <div class="reports-command-header">
+        <div>
+          <span class="reports-command-kicker">Catalogo unificado</span>
+          <h2 class="reports-command-title">Reportes empresariales</h2>
+          <p class="reports-command-lead">Busca un informe por area y abre la vista o exporta el dataset sin saltar entre submenus. Inventario, finanzas y cartera quedan como categorias del mismo centro.</p>
+        </div>
+        <div class="reports-command-actions">
+          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes_inventario.html">Vista inventario</button>
+          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes_finanzas.html">Vista finanzas</button>
+        </div>
+      </div>
+
+      <div class="reports-catalog-toolbar">
+        <input id="reportsCatalogSearch" class="form-input" type="search" placeholder="Buscar ventas, cartera, kardex, impuestos...">
+        <select id="reportsCatalogArea" class="form-input" aria-label="Area de reporte">
+          <option value="">Todas las areas</option>
+          <option value="direccion">Direccion</option>
+          <option value="ventas">Ventas y POS</option>
+          <option value="inventario">Inventario y compras</option>
+          <option value="finanzas">Finanzas y cartera</option>
+          <option value="contabilidad">Contabilidad e impuestos</option>
+          <option value="control">Control operativo</option>
+        </select>
+        <input id="reportsCatalogDesde" class="form-input" type="date" aria-label="Desde">
+        <input id="reportsCatalogHasta" class="form-input" type="date" aria-label="Hasta">
+        <select id="reportsCatalogFormato" class="form-input" aria-label="Formato de exportacion">
+          <option value="pdf">PDF</option>
+          <option value="xls">XLS</option>
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+          <option value="txt">TXT</option>
+        </select>
+      </div>
+      <div id="reportsCatalogMsg" class="form-help"></div>
+      <div id="reportsCatalogGrid" class="reports-catalog-grid"></div>
+    </section>
   </div>
 
   <script>
     (function(){
+      var fallbackReports = [
+        { key:'empresarial_tablero', area:'direccion', badge:'Gerencia', title:'Tablero empresarial', description:'KPIs consolidados de operacion, finanzas, inventario y contabilidad.', kind:'dataset' },
+        { key:'ventas_diarias_metodos_pago', area:'ventas', badge:'POS', title:'Ventas diarias por medio de pago', description:'Ventas, impuestos, ticket promedio y recaudo por efectivo, debito, credito u otros.', kind:'dataset' },
+        { key:'ventas_rentabilidad_productos', area:'ventas', badge:'Margen', title:'Rentabilidad por producto', description:'Margen bruto estimado por producto o servicio vendido.', kind:'dataset' },
+        { key:'reporte_de_turno', area:'ventas', badge:'Caja', title:'Reporte de turno y caja', description:'Corte por usuario, caja, ventas, gastos y efectivo esperado.', kind:'dataset' },
+        { key:'operativo_inventario_bodega', area:'inventario', badge:'Stock', title:'Inventario por bodega', description:'Existencias, stock minimo, rotacion y valorizacion.', kind:'dataset', view:'/administrar_empresa/reportes_inventario.html' },
+        { key:'inventario_kardex_valorizado', area:'inventario', badge:'Kardex', title:'Kardex valorizado', description:'Entradas, salidas, costo, saldo acumulado y valorizacion por producto.', kind:'dataset' },
+        { key:'compras_proveedores_detalle', area:'inventario', badge:'Compras', title:'Compras por proveedor', description:'Detalle de documentos de compra, proveedor, estado y costo.', kind:'dataset' },
+        { key:'contable_movimientos_financieros', area:'finanzas', badge:'Finanzas', title:'Movimientos financieros', description:'Ingresos, egresos, metodo de pago, categoria y balance del periodo.', kind:'dataset', view:'/administrar_empresa/reportes_finanzas.html' },
+        { key:'contable_flujo_caja', area:'finanzas', badge:'Caja', title:'Flujo de caja diario', description:'Flujo diario de ingresos y egresos con saldo acumulado.', kind:'dataset' },
+        { key:'cartera_edades_cuentas_por_cobrar', area:'finanzas', badge:'CxC', title:'Edades de cuentas por cobrar', description:'Cartera vigente y vencida por rangos de edad.', kind:'dataset' },
+        { key:'cartera_edades_cuentas_por_pagar', area:'finanzas', badge:'CxP', title:'Edades de cuentas por pagar', description:'Obligaciones a proveedores por rangos de vencimiento.', kind:'dataset' },
+        { key:'contable_balance_prueba', area:'contabilidad', badge:'Contable', title:'Balance de prueba', description:'Saldos debito, credito y neto por cuenta contable.', kind:'dataset' },
+        { key:'contable_libro_auxiliar', area:'contabilidad', badge:'Libro', title:'Libro auxiliar', description:'Movimiento auxiliar por cuenta, tercero y documento.', kind:'dataset' },
+        { key:'contable_libro_mayor', area:'contabilidad', badge:'Libro', title:'Libro mayor', description:'Resumen mayor por cuenta para revision contable.', kind:'dataset' },
+        { key:'fiscal_impuestos_retenciones', area:'contabilidad', badge:'Fiscal', title:'Impuestos y retenciones', description:'Base, impuesto, retenciones y conceptos fiscales.', kind:'dataset' },
+        { key:'fiscal_informacion_exogena_base', area:'contabilidad', badge:'DIAN', title:'Informacion exogena base', description:'Base de terceros, conceptos y valores para preparacion fiscal.', kind:'dataset' },
+        { key:'operativo_auditoria_acciones', area:'control', badge:'Auditoria', title:'Auditoria de acciones', description:'Trazabilidad operativa por modulo, usuario y accion.', kind:'dataset' },
+        { key:'aseo_estaciones', area:'control', badge:'Aseo', title:'Reporte de aseo de estaciones', description:'Tiempo de aseo por habitacion o estacion y usuario responsable.', kind:'view', view:'/administrar_empresa/reporte_aseo_estaciones.html' },
+        { key:'graficos_estadisticas', area:'direccion', badge:'Analitica', title:'Analitica ejecutiva avanzada', description:'Panel visual con comparativos, metas, presupuesto y alertas.', kind:'view', view:'/administrar_empresa/graficos_estadisticas.html' },
+        { key:'reportes_ia_chat', area:'direccion', badge:'IA', title:'Asistente IA para reportes', description:'Consulta y resume datos desde el asistente central.', kind:'view', view:'/administrar_empresa/reportes_ia_chat.html' }
+      ];
+      var reportsCatalog = fallbackReports.slice();
+
       function withEmpresa(url) {
         if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.withEmpresa === 'function') {
           return window.__empresaModuleGuard.withEmpresa(url);
@@ -156,16 +230,179 @@
         return url;
       }
 
+      function empresaId() {
+        if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === 'function') {
+          return Number(window.__empresaModuleGuard.resolveEmpresaId() || 0);
+        }
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          return Number(params.get('empresa_id') || params.get('id') || 0);
+        } catch (_) {
+          return 0;
+        }
+      }
+
+      function setCatalogMsg(text, isError) {
+        var el = document.getElementById('reportsCatalogMsg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.className = isError ? 'error' : 'form-help';
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       function openReport(url) {
         if (!url) return;
         window.location.href = withEmpresa(url);
       }
 
-      document.querySelectorAll('[data-open]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          openReport(btn.getAttribute('data-open') || '');
+      function defaultDates() {
+        var hasta = document.getElementById('reportsCatalogHasta');
+        var desde = document.getElementById('reportsCatalogDesde');
+        var now = new Date();
+        var first = new Date(now.getFullYear(), now.getMonth(), 1);
+        if (desde && !desde.value) desde.value = first.toISOString().slice(0, 10);
+        if (hasta && !hasta.value) hasta.value = now.toISOString().slice(0, 10);
+      }
+
+      function datasetURL(key, action, format) {
+        var id = empresaId();
+        if (!id) return '';
+        var params = new URLSearchParams();
+        params.set('action', action || 'dataset');
+        params.set('empresa_id', String(id));
+        params.set('dataset', key);
+        var desde = document.getElementById('reportsCatalogDesde');
+        var hasta = document.getElementById('reportsCatalogHasta');
+        if (desde && desde.value) params.set('desde', desde.value);
+        if (hasta && hasta.value) params.set('hasta', hasta.value);
+        if (format) params.set('format', format);
+        return '/api/empresa/reportes?' + params.toString();
+      }
+
+      function openDataset(key) {
+        openReport('/administrar_empresa/reportes.html?dataset=' + encodeURIComponent(key));
+      }
+
+      function exportDataset(key) {
+        var format = (document.getElementById('reportsCatalogFormato') || {}).value || 'pdf';
+        var url = datasetURL(key, 'export', format);
+        if (!url) {
+          setCatalogMsg('Falta empresa activa para exportar. Abre reportes desde el panel de una empresa.', true);
+          return;
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+
+      function mergeCatalogFromAPI(apiItems) {
+        if (!Array.isArray(apiItems) || !apiItems.length) return;
+        var byKey = {};
+        fallbackReports.forEach(function(item) { byKey[item.key] = Object.assign({}, item); });
+        apiItems.forEach(function(item) {
+          if (!item || !item.key) return;
+          var current = byKey[item.key] || { key: item.key, area: areaForDataset(item.key, item.level), badge: item.level || 'Reporte', kind: 'dataset' };
+          current.title = item.title || current.title || item.key;
+          current.description = item.description || current.description || '';
+          current.badge = current.badge || item.level || 'Reporte';
+          current.kind = 'dataset';
+          byKey[item.key] = current;
         });
+        reportsCatalog = Object.keys(byKey).map(function(key) { return byKey[key]; });
+      }
+
+      function areaForDataset(key, level) {
+        var text = String(key || '') + ' ' + String(level || '');
+        if (/venta|turno|cliente/.test(text)) return 'ventas';
+        if (/inventario|kardex|compra|proveedor/.test(text)) return 'inventario';
+        if (/financ|flujo|cartera|cobrar|pagar|conciliacion/.test(text)) return 'finanzas';
+        if (/contable|fiscal|impuesto|libro|balance|exogena/.test(text)) return 'contabilidad';
+        if (/auditoria|asistencia|vehiculo|propina|comision/.test(text)) return 'control';
+        return 'direccion';
+      }
+
+      async function loadCatalog() {
+        var id = empresaId();
+        if (!id) {
+          renderCatalog();
+          setCatalogMsg('Catalogo listo. Para exportar necesitas abrir reportes desde una empresa activa.', true);
+          return;
+        }
+        try {
+          var res = await fetch('/api/empresa/reportes?action=catalogo&empresa_id=' + encodeURIComponent(String(id)), { credentials: 'same-origin' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          var data = await res.json();
+          mergeCatalogFromAPI(data && data.datasets);
+          renderCatalog();
+          setCatalogMsg('Catalogo actualizado con los datasets disponibles para esta empresa.', false);
+        } catch (error) {
+          renderCatalog();
+          setCatalogMsg('Se muestra el catalogo base. No se pudo consultar el catalogo dinamico: ' + (error.message || error), true);
+        }
+      }
+
+      function filteredCatalog() {
+        var search = String((document.getElementById('reportsCatalogSearch') || {}).value || '').trim().toLowerCase();
+        var area = String((document.getElementById('reportsCatalogArea') || {}).value || '').trim();
+        return reportsCatalog.filter(function(item) {
+          if (area && item.area !== area) return false;
+          if (!search) return true;
+          return [item.title, item.description, item.badge, item.key].join(' ').toLowerCase().indexOf(search) !== -1;
+        }).sort(function(a, b) {
+          var areaCmp = String(a.area || '').localeCompare(String(b.area || ''));
+          if (areaCmp !== 0) return areaCmp;
+          return String(a.title || '').localeCompare(String(b.title || ''));
+        });
+      }
+
+      function renderCatalog() {
+        var grid = document.getElementById('reportsCatalogGrid');
+        if (!grid) return;
+        var rows = filteredCatalog();
+        if (!rows.length) {
+          grid.innerHTML = '<div class="reports-empty">No hay reportes que coincidan con la busqueda.</div>';
+          return;
+        }
+        grid.innerHTML = rows.map(function(item) {
+          var viewUrl = item.view || ('/administrar_empresa/reportes.html?dataset=' + encodeURIComponent(item.key));
+          var secondary = item.kind === 'dataset'
+            ? '<button class="btn secondary" type="button" data-export-dataset="' + escapeHtml(item.key) + '">Exportar</button>'
+            : '';
+          return '<article class="reports-catalog-card">' +
+            '<header><div><h3>' + escapeHtml(item.title || item.key) + '</h3><p>' + escapeHtml(item.description || '') + '</p></div>' +
+            '<span class="reports-catalog-badge">' + escapeHtml(item.badge || item.area || 'Reporte') + '</span></header>' +
+            '<div class="reports-catalog-actions">' +
+            '<button class="btn" type="button" data-open="' + escapeHtml(viewUrl) + '">Abrir</button>' +
+            secondary +
+            '</div></article>';
+        }).join('');
+      }
+
+      document.addEventListener('click', function(event) {
+        var openBtn = event.target && event.target.closest && event.target.closest('[data-open]');
+        if (openBtn) {
+          openReport(openBtn.getAttribute('data-open') || '');
+          return;
+        }
+        var exportBtn = event.target && event.target.closest && event.target.closest('[data-export-dataset]');
+        if (exportBtn) {
+          exportDataset(exportBtn.getAttribute('data-export-dataset') || '');
+        }
       });
+      ['reportsCatalogSearch', 'reportsCatalogArea', 'reportsCatalogFormato', 'reportsCatalogDesde', 'reportsCatalogHasta'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener(id === 'reportsCatalogSearch' ? 'input' : 'change', renderCatalog);
+      });
+      defaultDates();
+      renderCatalog();
+      loadCatalog();
     })();
   </script>
 </body>

@@ -1,3 +1,9 @@
+## [2026-05-14] Reportes con catalogo ejecutivo unificado
+- [Frontend] `web/administrar_empresa/reportes_menu.html` reduce el submenu de reportes a accesos principales.
+- [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` agrega catalogo unificado con busqueda, areas, rango de fechas y exportacion directa.
+- [UX] Inventario, finanzas, cartera, ventas, contabilidad, impuestos y control operativo quedan agrupados como categorias, no como botones sueltos.
+- [Seguridad] Sin permisos, tablas, endpoints ni dependencias nuevas; los datasets siguen bajo `/api/empresa/reportes`.
+
 ## [2026-05-14] Lobby de juegos uniforme con Doon FPS
 - [Frontend] `web/Juegos/menu_juegos.html` deja todas las tarjetas del catalogo con tamano uniforme, portada 16:9 y descripcion.
 - [Juegos] Se retiran del lobby los juegos 3D y el emulador generico; queda visible solo `N64` como emulador.

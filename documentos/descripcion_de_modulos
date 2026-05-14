@@ -1,3 +1,10 @@
+2026-05-14: Reportes con catalogo ejecutivo unificado
+- Modulos afectados: `reportes`, `administrar_empresa`.
+- Cambio UX: `web/administrar_empresa/reportes_menu.html` reduce el submenu principal a Centro ejecutivo, Analitica avanzada, Catalogo y exportacion, y Asistente IA.
+- Unificacion: `web/administrar_empresa/reportes_ejecutivos.html` agrega un catalogo unificado con busqueda, categorias, rango de fechas y exportacion directa de datasets.
+- Categorias: Direccion, Ventas/POS, Inventario/compras, Finanzas/cartera, Contabilidad/impuestos y Control operativo, incluyendo acceso al reporte de aseo de estaciones.
+- Alcance: no cambia base de datos, endpoints, permisos ni dependencias; reutiliza `/api/empresa/reportes` y mantiene rutas especializadas de inventario/finanzas como vistas internas.
+
 2026-05-14: Lobby de juegos con tarjetas uniformes y Doon FPS
 - Modulos afectados: `juegos`, `portal_publico`.
 - Cambio UX: `web/Juegos/menu_juegos.html` muestra todas las tarjetas del catalogo con el mismo formato visual, portada 16:9, descripcion y acceso claro.

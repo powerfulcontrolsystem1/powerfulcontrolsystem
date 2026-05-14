@@ -1,3 +1,11 @@
+2026-05-14: Reportes empresariales con entrada unificada
+- Modulos afectados: `reportes`, `administrar_empresa`.
+- Cambio UX: el submenu de reportes se simplifica para evitar opciones repetidas; Inventario y Finanzas siguen disponibles como vistas, pero se abren desde el centro ejecutivo o el catalogo.
+- Unificacion: `reportes_ejecutivos.html` agrega catalogo de reportes con buscador, filtro por area, rango de fechas, formato de exportacion y tarjetas con accion `Abrir`/`Exportar`.
+- Cobertura profesional: el catalogo agrupa ventas/POS, inventario/compras, finanzas/cartera, contabilidad/impuestos, direccion y control operativo, alineado con patrones usados por suites contables colombianas.
+- Seguridad: no se agregan permisos, tablas ni dependencias; todo dataset exportable sigue usando `/api/empresa/reportes` con aislamiento por `empresa_id`.
+- QA: parseo de scripts de paginas de reportes, prueba visual local con API simulada y `go test ./handlers -run TestReportes -count=1` desde `backend`.
+
 2026-05-14: Lobby de juegos profesional con Doon FPS
 - Modulos afectados: `juegos`, `portal_publico`.
 - Cambio UX: `web/Juegos/menu_juegos.html` unifica el tamano de las tarjetas, agrega portadas raster dentro de cada tarjeta y mantiene descripcion visible por juego.
