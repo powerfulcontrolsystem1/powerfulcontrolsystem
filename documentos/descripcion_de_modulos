@@ -1,3 +1,11 @@
+2026-05-14: Lobby de juegos con tarjetas uniformes y Doon FPS
+- Modulos afectados: `juegos`, `portal_publico`.
+- Cambio UX: `web/Juegos/menu_juegos.html` muestra todas las tarjetas del catalogo con el mismo formato visual, portada 16:9, descripcion y acceso claro.
+- Limpieza: se retiran del lobby las tarjetas 3D y el acceso generico a `/emulador/`; queda visible solo el emulador N64 como ultimo emulador integrado.
+- Nuevo juego: `web/Juegos/doon_fps/index.html` agrega un shooter retro original con raycasting en canvas, enemigos, salud, municion, botiquines, dos sectores y records.
+- Assets: se regeneran portadas raster originales en `web/img/juegos`, incluyendo `doon_fps.png`, sin usar capturas comerciales ni ROMs.
+- Alcance: no cambia base de datos, endpoints, permisos ni dependencias; conserva `/api/public/juegos/records`.
+
 2026-05-14: Valores por medio de pago editables en carrito
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Cambio funcional: los importes visibles de `Efectivo`, `Debito`, `Credito` y `Otro` en el carrito de estacion dejan de ser solo lectura y pueden editarse para distribuir el cobro.

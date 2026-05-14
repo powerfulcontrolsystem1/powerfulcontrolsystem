@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Doon FPS</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    html,
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      overflow: hidden;
+      background: #080b12;
+      color: #f8fafc;
+      font-family: Arial, sans-serif;
+    }
+
+    .doon-shell {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      padding-top: 52px;
+      box-sizing: border-box;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(248,113,113,.22), transparent 32rem),
+        linear-gradient(180deg, #111827, #080b12);
+    }
+
+    .doon-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(248,250,252,.16);
+      background: rgba(15,23,42,.88);
+    }
+
+    .doon-header h1 {
+      margin: 0;
+      font-size: clamp(1.1rem, 4vw, 1.6rem);
+      letter-spacing: 0;
+    }
+
+    .doon-header p {
+      margin: 3px 0 0;
+      color: rgba(226,232,240,.8);
+      font-size: .86rem;
+    }
+
+    .doon-stage {
+      position: relative;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    #game {
+      width: min(100%, 1180px);
+      height: min(70dvh, 690px);
+      border: 1px solid rgba(248,250,252,.18);
+      border-radius: 8px;
+      background: #000;
+      box-shadow: 0 24px 60px rgba(0,0,0,.42);
+      image-rendering: pixelated;
+      outline: none;
+    }
+
+    .doon-hud {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+      text-shadow: 0 2px 8px rgba(0,0,0,.85);
+    }
+
+    .doon-hud span {
+      display: inline-flex;
+      min-height: 32px;
+      align-items: center;
+      padding: 0 10px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 8px;
+      background: rgba(15,23,42,.66);
+      font-weight: 900;
+      font-size: .9rem;
+      color: #fff;
+      backdrop-filter: blur(8px);
+    }
+
+    .doon-overlay {
+      position: absolute;
+      inset: 10px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(2,6,23,.58), rgba(2,6,23,.82));
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .doon-overlay[hidden] {
+      display: none;
+    }
+
+    .doon-card {
+      width: min(100%, 560px);
+      border: 1px solid rgba(248,250,252,.22);
+      border-radius: 8px;
+      padding: 22px;
+      background: rgba(15,23,42,.88);
+      box-shadow: 0 24px 56px rgba(0,0,0,.35);
+    }
+
+    .doon-card h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 8vw, 3.4rem);
+      line-height: .96;
+      letter-spacing: 0;
+    }
+
+    .doon-card p {
+      margin: 12px 0 18px;
+      color: rgba(226,232,240,.84);
+      line-height: 1.45;
+    }
+
+    .doon-controls {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 10px;
+      padding: 10px;
+      border-top: 1px solid rgba(248,250,252,.14);
+      background: rgba(15,23,42,.9);
+    }
+
+    .doon-pad,
+    .doon-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .doon-key {
+      min-width: 48px;
+      min-height: 42px;
+      border: 1px solid rgba(248,250,252,.24);
+      border-radius: 8px;
+      background: rgba(30,41,59,.92);
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .doon-key.fire {
+      min-width: 104px;
+      background: linear-gradient(180deg, #f97316, #b91c1c);
+      border-color: rgba(254,215,170,.48);
+    }
+
+    @media (max-width: 720px) {
+      .doon-shell {
+        padding-top: 44px;
+      }
+
+      .doon-header {
+        padding: 6px 8px;
+      }
+
+      .doon-header p {
+        display: none;
+      }
+
+      #game {
+        height: 62dvh;
+      }
+
+      .doon-controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="doon-shell">
+    <header class="doon-header">
+      <div>
+        <h1>Doon FPS</h1>
+        <p>Shooter retro original con raycasting, enemigos, municion, salud y salida por sector.</p>
+      </div>
+      <a class="btn secondary" href="/Juegos/menu_juegos.html">Volver</a>
+    </header>
+
+    <section class="doon-stage" aria-label="Doon FPS">
+      <canvas id="game" width="960" height="540" tabindex="0"></canvas>
+      <div class="doon-hud" aria-live="polite">
+        <span id="hudHealth">SALUD 100</span>
+        <span id="hudAmmo">MUNICION 24</span>
+        <span id="hudScore">PUNTOS 0</span>
+        <span id="hudLevel">SECTOR 1</span>
+      </div>
+      <div id="overlay" class="doon-overlay">
+        <div class="doon-card">
+          <h2>Doon FPS</h2>
+          <p>Escapa de dos sectores infernales. Mueve con WASD o flechas, dispara con espacio/clic, recoge municion y botiquines, y abre la salida cuando limpies el sector.</p>
+          <button id="startBtn" class="btn" type="button">Iniciar mision</button>
+        </div>
+      </div>
+    </section>
+
+    <nav class="doon-controls" aria-label="Controles tactiles">
+      <div class="doon-pad">
+        <button class="doon-key" data-hold="turnLeft" type="button">↶</button>
+        <button class="doon-key" data-hold="forward" type="button">↑</button>
+        <button class="doon-key" data-hold="turnRight" type="button">↷</button>
+        <button class="doon-key" data-hold="left" type="button">←</button>
+        <button class="doon-key" data-hold="back" type="button">↓</button>
+        <button class="doon-key" data-hold="right" type="button">→</button>
+      </div>
+      <div class="doon-actions">
+        <button class="doon-key fire" data-tap="fire" type="button">Disparar</button>
+        <button class="doon-key" data-tap="restart" type="button">R</button>
+      </div>
+      <div class="doon-pad">
+        <button class="doon-key" data-tap="pause" type="button">Pausa</button>
+      </div>
+    </nav>
+  </main>
+
+  <script src="/Juegos/juegos_records.js"></script>
+  <script>
+    (function(){
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const overlay = document.getElementById('overlay');
+      const startBtn = document.getElementById('startBtn');
+      const hud = {
+        health: document.getElementById('hudHealth'),
+        ammo: document.getElementById('hudAmmo'),
+        score: document.getElementById('hudScore'),
+        level: document.getElementById('hudLevel')
+      };
+
+      const maps = [
+        [
+          '################',
+          '#..A.....#....E#',
+          '#..##....#..####',
+          '#........#.....#',
+          '#.####.........#',
+          '#....#..###....#',
+          '#....#....#....#',
+          '#..M......#....#',
+          '#......####..#.#',
+          '#..##.........#',
+          '#......#......#',
+          '#..#...#..M...#',
+          '#..#..........#',
+          '#.....A..###..#',
+          '#P............#',
+          '################'
+        ],
+        [
+          '################',
+          '#P.....#.......#',
+          '#.###..#..###..#',
+          '#...#.....#....#',
+          '#...#######.##.#',
+          '#A..........#..#',
+          '###.######.....#',
+          '#...#....#..M..#',
+          '#.#.#.##.#.#####',
+          '#.#...#..#.....#',
+          '#.#####..###.#.#',
+          '#.....#......#E#',
+          '#..M..#.######.#',
+          '#.....#........#',
+          '#..A...........#',
+          '################'
+        ]
+      ];
+
+      const enemyStarts = [
+        [{x:7.5,y:3.5},{x:12.5,y:6.5},{x:5.5,y:12.5}],
+        [{x:6.5,y:5.5},{x:11.5,y:9.5},{x:3.5,y:13.5},{x:13.2,y:3.5}]
+      ];
+
+      const state = {
+        running: false,
+        paused: false,
+        level: 0,
+        map: [],
+        player: {x:1.5,y:1.5,a:0},
+        enemies: [],
+        items: [],
+        health: 100,
+        ammo: 24,
+        score: 0,
+        flash: 0,
+        lastShot: 0,
+        lastHit: 0,
+        keys: Object.create(null)
+      };
+
+      let lastTime = performance.now();
+      let wallDepth = new Float32Array(canvas.width);
+      const FOV = Math.PI / 3;
+
+      function parseLevel(index) {
+        state.map = maps[index].map(row => row.padEnd(16, '#').split(''));
+        state.items = [];
+        state.enemies = enemyStarts[index].map((p, i) => ({
+          x: p.x,
+          y: p.y,
+          hp: 45 + index * 18,
+          alive: true,
+          cool: i * .5
+        }));
+        for (let y = 0; y < state.map.length; y++) {
+          for (let x = 0; x < state.map[y].length; x++) {
+            const cell = state.map[y][x];
+            if (cell === 'P') {
+              state.player.x = x + .5;
+              state.player.y = y + .5;
+              state.player.a = index ? 0 : -Math.PI / 2;
+              state.map[y][x] = '.';
+            }
+            if (cell === 'A' || cell === 'M') {
+              state.items.push({x:x+.5,y:y+.5,type:cell,live:true});
+              state.map[y][x] = '.';
+            }
+          }
+        }
+      }
+
+      function resetGame() {
+        state.running = true;
+        state.paused = false;
+        state.level = 0;
+        state.health = 100;
+        state.ammo = 24;
+        state.score = 0;
+        state.flash = 0;
+        parseLevel(0);
+        overlay.hidden = true;
+        canvas.focus();
+      }
+
+      function showOverlay(title, text, button) {
+        overlay.hidden = false;
+        overlay.querySelector('h2').textContent = title;
+        overlay.querySelector('p').textContent = text;
+        startBtn.textContent = button || 'Reiniciar';
+      }
+
+      function cellAt(x, y) {
+        const mx = Math.floor(x);
+        const my = Math.floor(y);
+        if (my < 0 || my >= state.map.length || mx < 0 || mx >= state.map[my].length) return '#';
+        return state.map[my][mx];
+      }
+
+      function isWall(x, y) {
+        const c = cellAt(x, y);
+        return c === '#';
+      }
+
+      function move(dx, dy) {
+        const p = state.player;
+        const nx = p.x + dx;
+        const ny = p.y + dy;
+        if (!isWall(nx, p.y)) p.x = nx;
+        if (!isWall(p.x, ny)) p.y = ny;
+      }
+
+      function shoot() {
+        if (!state.running || state.paused) return;
+        const now = performance.now();
+        if (now - state.lastShot < 210 || state.ammo <= 0) return;
+        state.lastShot = now;
+        state.ammo -= 1;
+        state.flash = .14;
+        let target = null;
+        let targetDist = Infinity;
+        for (const enemy of state.enemies) {
+          if (!enemy.alive) continue;
+          const dx = enemy.x - state.player.x;
+          const dy = enemy.y - state.player.y;
+          const dist = Math.hypot(dx, dy);
+          const angle = Math.atan2(dy, dx);
+          let diff = angle - state.player.a;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          if (Math.abs(diff) < .12 && dist < targetDist && dist < 8) {
+            target = enemy;
+            targetDist = dist;
+          }
+        }
+        if (target) {
+          target.hp -= 34;
+          state.score += 25;
+          if (target.hp <= 0) {
+            target.alive = false;
+            state.score += 175;
+          }
+        }
+        window.PCSGameScore = state.score;
+      }
+
+      function update(dt) {
+        if (!state.running || state.paused) return;
+        const p = state.player;
+        const speed = 2.6 * dt;
+        const strafe = 2.25 * dt;
+        const rot = 2.55 * dt;
+        if (state.keys.turnLeft || state.keys.ArrowLeft) p.a -= rot;
+        if (state.keys.turnRight || state.keys.ArrowRight) p.a += rot;
+        if (state.keys.forward || state.keys.KeyW || state.keys.ArrowUp) move(Math.cos(p.a) * speed, Math.sin(p.a) * speed);
+        if (state.keys.back || state.keys.KeyS || state.keys.ArrowDown) move(-Math.cos(p.a) * speed, -Math.sin(p.a) * speed);
+        if (state.keys.left || state.keys.KeyA) move(Math.cos(p.a - Math.PI/2) * strafe, Math.sin(p.a - Math.PI/2) * strafe);
+        if (state.keys.right || state.keys.KeyD) move(Math.cos(p.a + Math.PI/2) * strafe, Math.sin(p.a + Math.PI/2) * strafe);
+        state.flash = Math.max(0, state.flash - dt);
+
+        for (const item of state.items) {
+          if (!item.live) continue;
+          if (Math.hypot(item.x - p.x, item.y - p.y) < .55) {
+            item.live = false;
+            if (item.type === 'A') {
+              state.ammo += 10;
+              state.score += 35;
+            } else {
+              state.health = Math.min(100, state.health + 28);
+              state.score += 30;
+            }
+          }
+        }
+
+        for (const enemy of state.enemies) {
+          if (!enemy.alive) continue;
+          const dx = p.x - enemy.x;
+          const dy = p.y - enemy.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > .65 && dist < 8) {
+            const step = (1.05 + state.level * .22) * dt;
+            const nx = enemy.x + (dx / dist) * step;
+            const ny = enemy.y + (dy / dist) * step;
+            if (!isWall(nx, enemy.y)) enemy.x = nx;
+            if (!isWall(enemy.x, ny)) enemy.y = ny;
+          }
+          enemy.cool -= dt;
+          if (dist < 1.15 && enemy.cool <= 0) {
+            enemy.cool = .8;
+            state.health -= 9 + state.level * 2;
+            state.lastHit = .22;
+            if (state.health <= 0) {
+              state.health = 0;
+              state.running = false;
+              submitFinalScore();
+              showOverlay('Mision fallida', 'Te alcanzaron en el sector ' + (state.level + 1) + '. Puntaje final: ' + state.score + '.', 'Intentar otra vez');
+            }
+          }
+        }
+        state.lastHit = Math.max(0, state.lastHit - dt);
+
+        const exitReady = state.enemies.every(e => !e.alive);
+        if (cellAt(p.x, p.y) === 'E' && exitReady) {
+          state.score += 500;
+          if (state.level + 1 < maps.length) {
+            state.level += 1;
+            state.ammo += 12;
+            state.health = Math.min(100, state.health + 20);
+            parseLevel(state.level);
+          } else {
+            state.running = false;
+            submitFinalScore();
+            showOverlay('Sector despejado', 'Completaste Doon FPS. Puntaje final: ' + state.score + '.', 'Jugar de nuevo');
+          }
+        }
+      }
+
+      function castRay(angle) {
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+        let dist = 0;
+        while (dist < 18) {
+          dist += .035;
+          const x = state.player.x + cos * dist;
+          const y = state.player.y + sin * dist;
+          const cell = cellAt(x, y);
+          if (cell === '#') return {dist, cell};
+          if (cell === 'E') return {dist, cell};
+        }
+        return {dist: 18, cell: '#'};
+      }
+
+      function render() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, w, h / 2);
+        const sky = ctx.createLinearGradient(0, 0, 0, h / 2);
+        sky.addColorStop(0, '#1f2937');
+        sky.addColorStop(1, '#450a0a');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, w, h / 2);
+        const floor = ctx.createLinearGradient(0, h / 2, 0, h);
+        floor.addColorStop(0, '#24120e');
+        floor.addColorStop(1, '#09090b');
+        ctx.fillStyle = floor;
+        ctx.fillRect(0, h / 2, w, h / 2);
+
+        for (let x = 0; x < w; x++) {
+          const camX = x / w - .5;
+          const rayAngle = state.player.a + camX * FOV;
+          const hit = castRay(rayAngle);
+          const corrected = hit.dist * Math.cos(rayAngle - state.player.a);
+          wallDepth[x] = corrected;
+          const wallH = Math.min(h * 1.4, h / Math.max(.12, corrected));
+          const y = (h - wallH) / 2;
+          const shade = Math.max(0, 1 - corrected / 14);
+          if (hit.cell === 'E') {
+            ctx.fillStyle = `rgb(${Math.round(220*shade)},${Math.round(160*shade)},${Math.round(45*shade)})`;
+          } else {
+            ctx.fillStyle = `rgb(${Math.round(150*shade)},${Math.round(52*shade)},${Math.round(38*shade)})`;
+          }
+          ctx.fillRect(x, y, 1, wallH);
+          if (x % 8 === 0) {
+            ctx.fillStyle = `rgba(255,255,255,${.06 * shade})`;
+            ctx.fillRect(x, y, 1, wallH);
+          }
+        }
+
+        const sprites = []
+          .concat(state.items.filter(i => i.live).map(i => ({...i, kind:'item'})))
+          .concat(state.enemies.filter(e => e.alive).map(e => ({...e, kind:'enemy'})))
+          .sort((a,b) => Math.hypot(b.x-state.player.x,b.y-state.player.y) - Math.hypot(a.x-state.player.x,a.y-state.player.y));
+        for (const sprite of sprites) {
+          const dx = sprite.x - state.player.x;
+          const dy = sprite.y - state.player.y;
+          const dist = Math.hypot(dx, dy);
+          let angle = Math.atan2(dy, dx) - state.player.a;
+          while (angle < -Math.PI) angle += Math.PI * 2;
+          while (angle > Math.PI) angle -= Math.PI * 2;
+          if (Math.abs(angle) > FOV * .72 || dist < .2) continue;
+          const sx = (w / 2) + Math.tan(angle) * (w / FOV);
+          const size = Math.min(h, h / dist * (sprite.kind === 'enemy' ? .9 : .35));
+          if (sx < -size || sx > w + size) continue;
+          if (wallDepth[Math.max(0, Math.min(w - 1, Math.floor(sx)))] < dist - .2) continue;
+          const sy = h / 2 - size * .45;
+          if (sprite.kind === 'enemy') {
+            ctx.fillStyle = '#7f1d1d';
+            ctx.beginPath();
+            ctx.ellipse(sx, sy + size * .52, size * .28, size * .48, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(sx, sy + size * .22, size * .18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(sx - size * .08, sy + size * .18, size * .05, size * .035);
+            ctx.fillRect(sx + size * .03, sy + size * .18, size * .05, size * .035);
+          } else {
+            ctx.fillStyle = sprite.type === 'A' ? '#facc15' : '#22c55e';
+            ctx.fillRect(sx - size / 2, sy, size, size);
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(sx - size * .2, sy + size * .38, size * .4, size * .18);
+          }
+        }
+
+        ctx.strokeStyle = 'rgba(255,255,255,.85)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(w/2 - 12, h/2);
+        ctx.lineTo(w/2 + 12, h/2);
+        ctx.moveTo(w/2, h/2 - 12);
+        ctx.lineTo(w/2, h/2 + 12);
+        ctx.stroke();
+
+        ctx.fillStyle = '#1f2937';
+        ctx.fillRect(w/2 - 105, h - 92, 210, 82);
+        ctx.fillStyle = state.flash > 0 ? '#fde68a' : '#475569';
+        ctx.fillRect(w/2 - 32, h - 118, 64, 98);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(w/2 - 15, h - 98, 30, 78);
+
+        if (state.lastHit > 0) {
+          ctx.fillStyle = `rgba(239,68,68,${state.lastHit * 2.8})`;
+          ctx.fillRect(0, 0, w, h);
+        }
+
+        drawMiniMap();
+        updateHud();
+      }
+
+      function drawMiniMap() {
+        const scale = 7;
+        const ox = 18, oy = canvas.height - 130;
+        ctx.fillStyle = 'rgba(2,6,23,.62)';
+        ctx.fillRect(ox - 8, oy - 8, 16 * scale + 16, 16 * scale + 16);
+        for (let y = 0; y < state.map.length; y++) {
+          for (let x = 0; x < state.map[y].length; x++) {
+            const c = state.map[y][x];
+            if (c === '#') ctx.fillStyle = '#7f1d1d';
+            else if (c === 'E') ctx.fillStyle = '#facc15';
+            else ctx.fillStyle = 'rgba(148,163,184,.18)';
+            ctx.fillRect(ox + x * scale, oy + y * scale, scale - 1, scale - 1);
+          }
+        }
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(ox + state.player.x * scale - 2, oy + state.player.y * scale - 2, 4, 4);
+        ctx.fillStyle = '#f97316';
+        for (const e of state.enemies) {
+          if (e.alive) ctx.fillRect(ox + e.x * scale - 2, oy + e.y * scale - 2, 4, 4);
+        }
+      }
+
+      function updateHud() {
+        hud.health.textContent = 'SALUD ' + Math.max(0, Math.round(state.health));
+        hud.ammo.textContent = 'MUNICION ' + state.ammo;
+        hud.score.textContent = 'PUNTOS ' + state.score;
+        hud.level.textContent = 'SECTOR ' + (state.level + 1);
+        window.PCSGameScore = state.score;
+      }
+
+      function submitFinalScore() {
+        try {
+          if (window.PCSJuegos && window.PCSJuegos.submitRecord) {
+            window.PCSJuegos.submitRecord({ juego: 'doon_fps', puntaje: state.score, nivel: state.level + 1 }, { force: true });
+          }
+        } catch (error) {}
+      }
+
+      function loop(now) {
+        const dt = Math.min(.05, (now - lastTime) / 1000);
+        lastTime = now;
+        update(dt);
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      startBtn.addEventListener('click', resetGame);
+      canvas.addEventListener('click', shoot);
+      window.addEventListener('keydown', function(e) {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          shoot();
+          return;
+        }
+        if (e.code === 'KeyP') {
+          state.paused = !state.paused;
+          return;
+        }
+        if (e.code === 'KeyR') {
+          resetGame();
+          return;
+        }
+        state.keys[e.code] = true;
+      });
+      window.addEventListener('keyup', function(e) {
+        state.keys[e.code] = false;
+      });
+      document.querySelectorAll('[data-hold]').forEach(function(btn) {
+        const key = btn.getAttribute('data-hold');
+        function down(e){ e.preventDefault(); state.keys[key] = true; canvas.focus(); }
+        function up(){ state.keys[key] = false; }
+        btn.addEventListener('pointerdown', down);
+        btn.addEventListener('pointerup', up);
+        btn.addEventListener('pointercancel', up);
+        btn.addEventListener('pointerleave', up);
+      });
+      document.querySelectorAll('[data-tap]').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const action = btn.getAttribute('data-tap');
+          if (action === 'fire') shoot();
+          if (action === 'restart') resetGame();
+          if (action === 'pause') state.paused = !state.paused;
+        });
+      });
+
+      parseLevel(0);
+      updateHud();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>

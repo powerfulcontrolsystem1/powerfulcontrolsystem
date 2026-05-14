@@ -1,3 +1,9 @@
+2026-05-14 - Lobby de juegos y Doon FPS
+- `web/Juegos/doon_fps/index.html`:
+	- nuevo juego publico Doon FPS, shooter retro original en canvas con raycasting, enemigos, salud, municion, botiquines, salida por sectores y soporte de records.
+- `web/img/juegos/doon_fps.png`:
+	- nueva portada raster original para la tarjeta de Doon FPS en el lobby de juegos.
+
 2026-05-13 - OnlyOffice abre editor con URL publica
 - `backend/handlers/onlyoffice.go`:
 	- corrige la ruta temporal de documentos por empresa cuando `PCS_DATA_ROOT` ya termina en `empresas` y devuelve una `ds_url` publica al navegador si la configuracion del Document Server apunta a un hostname interno Docker.

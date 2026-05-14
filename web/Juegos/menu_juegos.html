@@ -23,16 +23,21 @@
   <style>
     html {
       width: 100%;
+      height: auto !important;
+      min-height: 100%;
       min-width: 0 !important;
       overflow-x: hidden;
+      overflow-y: auto;
     }
 
     body {
       margin: 0;
       width: 100%;
+      height: auto !important;
       min-width: 0 !important;
       min-height: 100vh;
       overflow-x: hidden;
+      overflow-y: auto;
       background:
         linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28rem),
         linear-gradient(180deg, var(--bg-alt), var(--bg));
@@ -312,9 +317,10 @@
 
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 14px;
       align-items: stretch;
+      grid-auto-rows: 1fr;
       min-width: 0;
     }
 
@@ -323,7 +329,7 @@
       flex-direction: column;
       min-width: 0;
       height: 100%;
-      min-height: 322px;
+      min-height: 430px;
       border: 1px solid var(--border);
       border-radius: 8px;
       overflow: hidden;
@@ -352,6 +358,7 @@
       color: var(--muted);
       font-size: .9rem;
       line-height: 1.42;
+      min-height: 76px;
     }
 
     .game-card-footer {
@@ -383,7 +390,8 @@
       position: relative;
       display: block;
       width: 100%;
-      aspect-ratio: 1.08 / 1;
+      aspect-ratio: 16 / 9;
+      flex: 0 0 auto;
       overflow: hidden;
       background: #06111f;
       border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
@@ -599,7 +607,7 @@
       }
 
       .games-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       }
     }
 
@@ -705,11 +713,11 @@
       }
 
       .game-card {
-        min-height: 0;
+        min-height: 390px;
       }
 
       .cover-art {
-        aspect-ratio: 1.18 / 1;
+        aspect-ratio: 16 / 9;
       }
     }
   </style>
@@ -720,53 +728,23 @@
       <div class="games-title-block">
         <p class="games-kicker">Centro de entretenimiento</p>
         <h1>Sala de juegos</h1>
-        <p>Catalogo integrado del sistema con juegos arcade, experiencias 3D y emuladores preparados para escritorio y celular.</p>
+        <p>Catalogo integrado del sistema con juegos arcade, portadas visuales, descripciones claras y un unico emulador disponible para escritorio y celular.</p>
       </div>
       <div class="games-summary" aria-label="Resumen de juegos">
         <div class="games-summary-item">
-          <strong>15</strong>
+          <strong>13</strong>
           <span>Juegos listos</span>
         </div>
         <div class="games-summary-item">
-          <strong>2</strong>
-          <span>Experiencias 3D</span>
+          <strong>12</strong>
+          <span>Arcade HTML5</span>
         </div>
         <div class="games-summary-item">
-          <strong>2</strong>
-          <span>Emuladores</span>
+          <strong>1</strong>
+          <span>Emulador activo</span>
         </div>
       </div>
     </header>
-
-    <section class="games-featured" aria-label="Juegos destacados">
-      <article class="games-stage">
-        <div class="games-stage-content">
-          <span class="games-stage-label">Destacado arcade</span>
-          <h2>Pacman Arcade</h2>
-          <p>Laberinto clasico, niveles, fantasmas, powerpills, puntaje, sonido local, teclado y controles tactiles.</p>
-          <a class="btn" href="/Juegos/pacman_arcade/index.html">Jugar Pacman Arcade</a>
-        </div>
-      </article>
-
-      <div class="games-quick" aria-label="Accesos rapidos">
-        <a class="games-quick-card" href="/emulador/">
-          <span class="cover-art cover-emulator" aria-hidden="true"><img src="/img/juegos/emulator.png" alt="" loading="lazy"></span>
-          <span>
-            <span class="games-chip">Emulador web</span>
-            <h3>EmulatorJS</h3>
-            <p>ROMs por empresa, pantalla completa y soporte para gamepad.</p>
-          </span>
-        </a>
-        <a class="games-quick-card" href="/Juegos/cube_runner_3d/index.html">
-          <span class="cover-art cover-cube" aria-hidden="true"><img src="/img/juegos/cube_runner_3d.png" alt="" loading="lazy"></span>
-          <span>
-            <span class="games-chip">3D</span>
-            <h3>Cube Runner 3D</h3>
-            <p>Carriles, salto, obstaculos progresivos y controles tactiles.</p>
-          </span>
-        </a>
-      </div>
-    </section>
 
     <section aria-label="Catalogo completo">
       <div class="games-section-head">
@@ -777,18 +755,27 @@
         <div class="games-pills" aria-label="Categorias disponibles">
           <span class="games-pill">Arcade</span>
           <span class="games-pill">Logica</span>
-          <span class="games-pill">3D</span>
+          <span class="games-pill">FPS</span>
           <span class="games-pill">Emulador</span>
         </div>
       </div>
 
       <div class="games-grid">
-        <a class="game-card" href="/Juegos/space_dock_3d/index.html">
-          <span class="cover-art cover-dock" aria-hidden="true"><img src="/img/juegos/space_dock_3d.png" alt="" loading="lazy"></span>
+        <a class="game-card" href="/Juegos/doon_fps/index.html">
+          <span class="cover-art" aria-hidden="true"><img src="/img/juegos/doon_fps.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
-            <h2>Space Dock 3D</h2>
-            <p>Nave espacial con objetos 3D, energia, asteroides y movimiento en dos ejes.</p>
-            <span class="game-card-footer">3D espacial</span>
+            <h2>Doon FPS</h2>
+            <p>Shooter retro original con laberinto raycasting, enemigos, municion, botiquines, dos sectores y salida final.</p>
+            <span class="game-card-footer">FPS</span>
+          </span>
+        </a>
+
+        <a class="game-card" href="/Juegos/pacman_arcade/index.html">
+          <span class="cover-art cover-pacman" aria-hidden="true"><img src="/img/juegos/pacman_arcade.png" alt="" loading="lazy"></span>
+          <span class="game-card-body">
+            <h2>Pacman Arcade</h2>
+            <p>Laberinto clasico con fantasmas, puntos de energia, sonido local, teclado y controles tactiles.</p>
+            <span class="game-card-footer">Laberinto</span>
           </span>
         </a>
 
@@ -886,7 +873,7 @@
           <span class="cover-art cover-n64" aria-hidden="true"><img src="/img/juegos/n64.png" alt="" loading="lazy"></span>
           <span class="game-card-body">
             <h2>N64</h2>
-            <p>Entrada dedicada para el emulador N64 integrado dentro del sistema.</p>
+            <p>Unico emulador visible del lobby, con entrada dedicada al emulador N64 integrado dentro del sistema.</p>
             <span class="game-card-footer">Emulador</span>
           </span>
         </a>
@@ -897,40 +884,10 @@
   </main>
   <script>
     (function(){
-      var gameLinks = document.querySelectorAll('.games-featured a[href^="/Juegos/"], .games-quick-card[href^="/Juegos/"], .game-card[href^="/Juegos/"], .games-quick-card[href="/emulador/"]');
+      var gameLinks = document.querySelectorAll('.game-card[href^="/Juegos/"]');
       for (var i = 0; i < gameLinks.length; i += 1) {
         gameLinks[i].setAttribute('target', '_blank');
         gameLinks[i].setAttribute('rel', 'noopener');
-      }
-    })();
-
-    (function(){
-      function parsePositiveInt(value) {
-        var parsed = parseInt(String(value || '').trim(), 10);
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-      }
-      function resolveEmpresaId() {
-        var keys = ['active_empresa_id', 'empresa_id', 'admin_empresa_id'];
-        var stores = [window.sessionStorage, window.localStorage];
-        for (var i = 0; i < stores.length; i += 1) {
-          for (var j = 0; j < keys.length; j += 1) {
-            try {
-              var value = parsePositiveInt(stores[i].getItem(keys[j]));
-              if (value) return value;
-            } catch (error) {}
-          }
-        }
-        return 0;
-      }
-      var empresaId = resolveEmpresaId();
-      if (!empresaId) return;
-      var links = document.querySelectorAll('a[href="/emulador/"]');
-      for (var i = 0; i < links.length; i += 1) {
-        try {
-          var url = new URL(links[i].getAttribute('href'), window.location.origin);
-          url.searchParams.set('empresa_id', String(empresaId));
-          links[i].setAttribute('href', url.pathname + url.search);
-        } catch (error) {}
       }
     })();
   </script>

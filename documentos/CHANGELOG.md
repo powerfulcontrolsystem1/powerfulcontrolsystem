@@ -1,3 +1,9 @@
+## [2026-05-14] Lobby de juegos uniforme con Doon FPS
+- [Frontend] `web/Juegos/menu_juegos.html` deja todas las tarjetas del catalogo con tamano uniforme, portada 16:9 y descripcion.
+- [Juegos] Se retiran del lobby los juegos 3D y el emulador generico; queda visible solo `N64` como emulador.
+- [Nuevo] `web/Juegos/doon_fps/index.html` agrega un shooter retro original en canvas/raycasting con dos sectores y records.
+- [Assets] Portadas raster originales en `web/img/juegos`, sin capturas comerciales ni ROMs.
+
 ## [2026-05-14] Carrito con valores editables por medio de pago
 - [Frontend] Los campos `Efectivo`, `Debito`, `Credito` y `Otro` del carrito ahora aceptan edicion directa.
 - [Pago] Cuando hay varios medios con valor, el carrito envia `metodo_pago=mixto` con `pagos_mixtos`; `Otro` se registra como transferencia bancaria.

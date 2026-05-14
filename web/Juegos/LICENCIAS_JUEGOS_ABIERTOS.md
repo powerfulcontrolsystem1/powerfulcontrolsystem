@@ -7,6 +7,7 @@ Los siguientes juegos fueron creados como implementaciones originales para el pr
 - `minesweeper_arcade`: Buscaminas Arcade.
 - `memory_arcade`: Memoria Arcade.
 - `frogger_arcade`: Frogger Calle.
+- `doon_fps`: Shooter retro original con raycasting en canvas, sin assets ni ROMs comerciales.
 - `cube_runner_3d`: Cube Runner 3D, WebGL sin dependencias externas.
 - `space_dock_3d`: Space Dock 3D, WebGL sin dependencias externas.
 
