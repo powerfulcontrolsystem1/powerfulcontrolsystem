@@ -1,3 +1,11 @@
+2026-05-13: Pago de carrito con clic directo y aviso visible
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `panel_administrar_empresa`.
+- Causa tecnica: el flujo de pago dependia de un `confirm()` nativo antes de enviar `pagar_estacion`; dentro del shell empresarial/iframe ese dialogo podia no ser evidente para el usuario y dar la impresion de que el boton no hacia nada. Ademas, despues del cobro el render del panel podia limpiar de inmediato el mensaje de exito.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` elimina el `confirm()` previo al pago, mantiene el estado `Registrando pago...`, envia el cobro en el clic y conserva un aviso persistente de pago registrado/venta/caja despues de refrescar la venta directa o estacion.
+- Panel: `web/administrar_empresa/panel.html` deja de usar `https://ipwho.is/` para deteccion por IP y usa proveedores alternos con fallback para evitar el 403 observado en consola al abrir Administrar empresa.
+- Seguridad y datos: no modifica endpoints, tablas, permisos ni dependencias; el backend sigue validando caja abierta, `empresa_id`, `cierre_caja_id`, codigo de caja, turno y total antes de cerrar el carrito.
+- Validacion: parseo de scripts inline paso para `carrito_de_compras.html` y `panel.html`. Prueba visual Playwright mock hizo clic real en `Pagar y cerrar carrito`, confirmo ausencia de dialogo nativo, envio `PUT action=pagar_estacion` con `cierre_caja_id=11`, `caja_codigo=CAJA-1`, `total_pagado=15000` y dejo visible el mensaje `Pago registrado... Venta registrada... Caja: CAJA-1`.
+
 2026-05-13: Boton pagar y cerrar carrito queda operativo con reintento de caja
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `permisos`.
 - Causa adicional: aunque la carga de cajas ya estaba en el endpoint de carritos, el pago seguia clasificado como accion `Aprobar / auditar` y una configuracion fina de permisos podia dejar al usuario con permiso de vender pero sin permiso efectivo para `pagar_estacion`. Ademas, un fallo temporal al cargar cajas podia dejar el boton en estado inutil.

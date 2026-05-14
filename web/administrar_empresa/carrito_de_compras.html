@@ -564,7 +564,8 @@
           { metodo: 'tarjeta_credito', monto: 0, referencia: '' }
         ]
       },
-      paymentInProgress: false
+      paymentInProgress: false,
+      stationPaymentNotice: null
     };
 
     let itemSearchDebounceTimer = null;
@@ -2631,8 +2632,40 @@
       }, 250);
     }
 
-    function setStationPaymentMessage(text, isError) {
+    function writeStationPaymentMessage(text, isError) {
       setMessage('stationPaymentMsg', text, isError);
+    }
+
+    function setStationPaymentMessage(text, isError) {
+      if (normalize(text)) {
+        state.stationPaymentNotice = null;
+      }
+      writeStationPaymentMessage(text, isError);
+    }
+
+    function setStationPaymentPersistentMessage(text, isError) {
+      const message = normalize(text);
+      state.stationPaymentNotice = message ? {
+        text: message,
+        isError: !!isError,
+        carritoID: Number(state.selectedCarritoID || 0),
+        createdAt: Date.now()
+      } : null;
+      writeStationPaymentMessage(message, isError);
+    }
+
+    function getStationPaymentPersistentNotice(carrito) {
+      const notice = state.stationPaymentNotice;
+      if (!notice || !normalize(notice.text)) return null;
+      if (Number(notice.carritoID || 0) && carrito && Number(notice.carritoID || 0) !== Number(carrito.id || 0)) {
+        state.stationPaymentNotice = null;
+        return null;
+      }
+      if (Date.now() - Number(notice.createdAt || 0) > 45000) {
+        state.stationPaymentNotice = null;
+        return null;
+      }
+      return notice;
     }
 
     function setStationPayButtonState(options) {
@@ -3003,7 +3036,12 @@
       } else       if (!selectedActive) {
         setStationPaymentMessage(state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Actívalo para iniciar una nueva sesión de estación.', false);
       } else {
-        setStationPaymentMessage('', false);
+        const persistentNotice = getStationPaymentPersistentNotice(carrito);
+        if (persistentNotice) {
+          writeStationPaymentMessage(persistentNotice.text, persistentNotice.isError);
+        } else {
+          setStationPaymentMessage('', false);
+        }
       }
 
       syncStationPaymentDisplayInputs(carrito);
@@ -3132,11 +3170,6 @@
         }
       }
 
-      if (!confirm('Confirmar pago y cierre del carrito por ' + formatAmount(pay.totalPagarFinal, selected.moneda) + '?')) {
-        setStationPaymentMessage('Pago cancelado. El carrito sigue abierto.', false);
-        return;
-      }
-
       const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
 
       try {
@@ -3202,7 +3235,7 @@
         if (facturaElectronica && normalize(facturaElectronica.documento_codigo)) {
           successMsg += ' Factura electrónica: ' + normalize(facturaElectronica.documento_codigo) + '.';
         }
-        setStationPaymentMessage(successMsg, false);
+        setStationPaymentPersistentMessage(successMsg, false);
         try {
           await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot);
         } catch (printErr) {
@@ -3238,7 +3271,7 @@
           if (paid) {
             await activateStationSession(true, 'activar_estacion');
           }
-          setStationPaymentMessage(successMsg + ' Venta directa lista para el siguiente cliente.', false);
+          setStationPaymentPersistentMessage(successMsg + ' Venta directa lista para el siguiente cliente.', false);
           return;
         }
         window.location.assign(buildStationsURL());

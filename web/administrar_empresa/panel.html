@@ -1978,19 +1978,49 @@
       }
 
       function detectLocationByIP() {
-        return fetchJSON("https://ipwho.is/").then(function (data) {
-          if (!data || data.success === false) throw new Error("ip location unavailable");
-          return buildLocation({
-            city: data.city,
-            region: data.region,
-            country: data.country,
-            countryCode: data.country_code,
-            currency: data.currency && (data.currency.code || data.currency),
-            latitude: data.latitude,
-            longitude: data.longitude,
-            source: "ip"
+        var providers = [
+          {
+            url: "https://ipapi.co/json/",
+            map: function (data) {
+              if (!data || data.error) throw new Error("ipapi location unavailable");
+              return {
+                city: data.city,
+                region: data.region,
+                country: data.country_name,
+                countryCode: data.country_code,
+                currency: data.currency,
+                latitude: data.latitude,
+                longitude: data.longitude
+              };
+            }
+          },
+          {
+            url: "https://ipinfo.io/json",
+            map: function (data) {
+              if (!data || (!data.city && !data.loc)) throw new Error("ipinfo location unavailable");
+              var coords = text(data.loc).split(",");
+              return {
+                city: data.city,
+                region: data.region,
+                countryCode: data.country,
+                latitude: Number(coords[0] || 0),
+                longitude: Number(coords[1] || 0)
+              };
+            }
+          }
+        ];
+        var attempt = function (index) {
+          if (index >= providers.length) return Promise.reject(new Error("ip location unavailable"));
+          var provider = providers[index];
+          return fetchJSON(provider.url).then(function (data) {
+            var mapped = provider.map(data);
+            mapped.source = "ip";
+            return buildLocation(mapped);
+          }).catch(function () {
+            return attempt(index + 1);
           });
-        });
+        };
+        return attempt(0);
       }
 
       function detectLocationByTimezone() {
