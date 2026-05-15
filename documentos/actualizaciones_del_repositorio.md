@@ -9988,3 +9988,28 @@ Archivos modificados:
 - web/administrar_empresa/productos/compras.html
 - web/administrar_empresa/productos/precios.html
 - web/administrar_empresa/venta_directa.html
+
+2026-05-15 18:08:57 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ec0e0927; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/db.go
+- backend/db/empresa_admin_compartida.go
+- backend/db/licencias_gratis.go
+- backend/handlers/empresa_compartida_handlers.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/editar_empresa.html
+- web/estilos.css
+- web/js/editar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/pagar_licencia.html
+- web/super/licencias.html
