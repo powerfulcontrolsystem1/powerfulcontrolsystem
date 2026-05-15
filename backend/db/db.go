@@ -1498,6 +1498,8 @@ type Empresa struct {
 	Observaciones      string `json:"observaciones,omitempty"`
 	AccessSource       string `json:"access_source,omitempty"`
 	CompartidaPor      string `json:"compartida_por,omitempty"`
+	SharedNivelAcceso  string `json:"shared_nivel_acceso,omitempty"`
+	SharedModulos      string `json:"shared_modulos_permitidos,omitempty"`
 }
 
 // CreateEmpresa inserta una nueva empresa en la base PostgreSQL operativa.
@@ -2243,6 +2245,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 	var descripcion sql.NullString
 	var valor sql.NullFloat64
 	var duracionDias sql.NullInt64
+	var maxDocumentosMensuales sql.NullInt64
+	var maxCajasSimultaneas sql.NullInt64
 	var modulosHabilitados sql.NullString
 	var superRol sql.NullInt64
 	var usuarioCreador sql.NullString
@@ -2255,6 +2259,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		COALESCE(descripcion, ''),
 		COALESCE(valor, 0),
 		COALESCE(duracion_dias, 0),
+		COALESCE(max_documentos_mensuales, 0),
+		COALESCE(max_cajas_simultaneas, 0),
 		COALESCE(modulos_habilitados, ''),
 		COALESCE(super_rol_habilitado, 0),
 		COALESCE(usuario_creador, ''),
@@ -2269,6 +2275,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		&descripcion,
 		&valor,
 		&duracionDias,
+		&maxDocumentosMensuales,
+		&maxCajasSimultaneas,
 		&modulosHabilitados,
 		&superRol,
 		&usuarioCreador,
@@ -2334,6 +2342,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		descripcion,
 		valor,
 		duracion_dias,
+		max_documentos_mensuales,
+		max_cajas_simultaneas,
 		modulos_habilitados,
 		super_rol_habilitado,
 		fecha_inicio,
@@ -2344,7 +2354,7 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
 		empresaID,
 		tipoID.Int64,
 		strings.TrimSpace(paisCodigo.String),
@@ -2352,6 +2362,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		descripcion.String,
 		valor.Float64,
 		int(duracionDias.Int64),
+		int(maxDocumentosMensuales.Int64),
+		int(maxCajasSimultaneas.Int64),
 		modulosHabilitados.String,
 		int(superRol.Int64),
 		fechaInicio,

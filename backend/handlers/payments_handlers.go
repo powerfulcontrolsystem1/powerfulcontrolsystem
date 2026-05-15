@@ -94,6 +94,18 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			// Accion especial: crear y activar licencia de prueba 15 días (valor 0) para una empresa.
 			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "crear_prueba_15_dias") {
 				q := r.URL.Query()
+				var trialPayload struct {
+					AsesorID string `json:"asesor_id,omitempty"`
+				}
+				if r.Body != nil {
+					bodyBytes, _ := io.ReadAll(r.Body)
+					if strings.TrimSpace(string(bodyBytes)) != "" {
+						if err := json.Unmarshal(bodyBytes, &trialPayload); err != nil {
+							http.Error(w, "payload invalido", http.StatusBadRequest)
+							return
+						}
+					}
+				}
 				empresaID, err := parseInt64Query(r, "empresa_id")
 				if err != nil || empresaID <= 0 {
 					http.Error(w, "empresa_id required", http.StatusBadRequest)
@@ -116,6 +128,11 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if pais == "" {
 					pais = "CO"
 				}
+				asesorID, err := validateLicenciaAsesorCode(dbSuper, firstNonEmptyString(q.Get("asesor_id"), q.Get("codigo_asesor"), trialPayload.AsesorID))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 
 				yaUsoPrueba, err := dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaID)
 				if err != nil {
@@ -134,7 +151,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				modulos := "" // vacío = sin restricciones de módulos
 				superRol := 0
 
-				licID, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, 0, "", superRol, 500)
+				licID, err := dbpkg.CreateLicenciaAdvancedWithLimits(dbSuper, tipoID, pais, nombre, descripcion, valor, duracion, modulos, 0, "", superRol, 250)
 				if err != nil {
 					http.Error(w, "failed to create licencia: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -143,7 +160,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				now := time.Now()
 				fechaInicio := now.Format("2006-01-02")
 				fechaFin := now.Add(15 * 24 * time.Hour).Format("2006-01-02")
-				if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, licID, empresaID, fechaInicio, fechaFin, "trial15", "licencia_prueba_15_dias_valor_0"); err != nil {
+				if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, licID, empresaID, fechaInicio, fechaFin, "trial15", "licencia_prueba_15_dias_valor_0", asesorID); err != nil {
 					if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
 						http.Error(w, "esta empresa ya uso una licencia de prueba o gratuita", http.StatusConflict)
 						return
@@ -175,12 +192,13 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"provider":       "trial",
 					"customer_email": toEmail,
 					"discount_code":  "trial15",
+					"asesor_id":      asesorID,
 					"original_value": 0,
 					"discount_value": 0,
 					"total_value":    0,
 				}
 				rawBytes, _ := json.Marshal(rawMap)
-				if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, licID, empresaID, ref, ref, "APPROVED", string(rawBytes), "trial15", ""); recErr == nil {
+				if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, licID, empresaID, ref, ref, "APPROVED", string(rawBytes), "trial15", asesorID); recErr == nil {
 					if lic, lerr := dbpkg.GetLicenciaByID(dbSuper, licID); lerr == nil && lic != nil {
 						if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
 							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "trial", ref); mailErr != nil {
@@ -188,6 +206,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 							}
 						}
 					}
+					recordAsesorComercialComision(dbSuper, "epayco", ref, ref, licID, empresaID)
 				}
 
 				writeJSON(w, http.StatusCreated, map[string]interface{}{
@@ -196,6 +215,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					"empresa_id":   empresaID,
 					"fecha_inicio": fechaInicio,
 					"fecha_fin":    fechaFin,
+					"asesor_id":    asesorID,
 				})
 				return
 			}
@@ -1323,6 +1343,21 @@ func roundLicenciaCheckoutAmount(value float64) float64 {
 
 func normalizeLicenciaDiscountCode(code string) string {
 	return strings.ToUpper(strings.TrimSpace(code))
+}
+
+func validateLicenciaAsesorCode(dbSuper *sql.DB, asesorID string) (string, error) {
+	asesorID = strings.ToUpper(strings.TrimSpace(asesorID))
+	if asesorID == "" {
+		return "", nil
+	}
+	advisor, err := dbpkg.GetAsesorComercialByCode(dbSuper, asesorID)
+	if err != nil {
+		return "", err
+	}
+	if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
+		return "", fmt.Errorf("codigo de asesor invalido o no aceptado: %s", asesorID)
+	}
+	return asesorID, nil
 }
 
 func parseLicenciaDiscountSpec(spec string, originalValue float64) (float64, string, bool) {
@@ -3625,6 +3660,12 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		payload.AsesorID, err = validateLicenciaAsesorCode(dbSuper, payload.AsesorID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
 		if err != nil || lic == nil {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
@@ -3639,19 +3680,6 @@ func WompiCreateCheckoutHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if payload.EmpresaID <= 0 {
 			http.Error(w, "empresa_id requerido para crear el checkout", http.StatusBadRequest)
 			return
-		}
-
-		payload.AsesorID = strings.ToUpper(strings.TrimSpace(payload.AsesorID))
-		if payload.AsesorID != "" {
-			advisor, aerr := dbpkg.GetAsesorComercialByCode(dbSuper, payload.AsesorID)
-			if aerr != nil {
-				http.Error(w, "no se pudo validar el codigo de asesor", http.StatusInternalServerError)
-				return
-			}
-			if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
-				http.Error(w, "codigo de asesor invalido o no aceptado: "+payload.AsesorID, http.StatusBadRequest)
-				return
-			}
 		}
 
 		summary, bundle, err := resolveLicenciaCheckoutSummaryWithMode(dbSuper, lic, payload.EmpresaID, payload.DiscountCode, payload.AsesorID, payload.CheckoutMode, payload.AddonLicenciaIDs)
@@ -5599,6 +5627,13 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			return
 		}
 
+		var err error
+		payload.AsesorID, err = validateLicenciaAsesorCode(dbSuper, payload.AsesorID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		lic, err := dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
 		if err != nil || lic == nil {
 			http.Error(w, "licencia not found", http.StatusBadRequest)
@@ -5630,7 +5665,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 				lic.DuracionDias = 30
 			}
 			fechaFin = now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-			if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo); err != nil {
+			if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo, payload.AsesorID); err != nil {
 				if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
 					http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
 					return

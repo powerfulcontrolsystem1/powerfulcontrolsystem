@@ -104,6 +104,7 @@ type empresaPermissionSnapshot struct {
 	AllowedVerticalModules map[string]bool
 	RoleModuleActions      map[string]bool
 	AllowedPages           map[string]bool
+	ShareAccess            *empresaCompartidaScopeCtx
 	LoadedAt               time.Time
 }
 
@@ -595,8 +596,17 @@ type empresaPermisosContextResponse struct {
 	Licencia         *empresaPermisosLicenciaCtx `json:"licencia,omitempty"`
 	VerticalScope    *empresaVerticalScopeCtx    `json:"vertical_scope,omitempty"`
 	EmpresaPolicy    *empresaPermisosFinosCtx    `json:"empresa_policy,omitempty"`
+	ShareAccess      *empresaCompartidaScopeCtx  `json:"share_access,omitempty"`
 	IncluyeMatriz    bool                        `json:"incluye_matriz"`
 	MatrizRoles      []empresaPermisosRolMatriz  `json:"matriz_roles,omitempty"`
+}
+
+type empresaCompartidaScopeCtx struct {
+	Compartida        bool     `json:"compartida"`
+	NivelAcceso       string   `json:"nivel_acceso,omitempty"`
+	ModulosPermitidos []string `json:"modulos_permitidos,omitempty"`
+	CompartidoPor     string   `json:"compartido_por,omitempty"`
+	Etiqueta          string   `json:"etiqueta,omitempty"`
 }
 
 type empresaPermisosLicenciaCtx struct {
@@ -684,6 +694,14 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		modulos = applyEmpresaVerticalScopeToModuleRows(modulos, verticalScope)
 		empresaModuleOverrides, empresaPageOverrides, empresaPolicyCtx := loadEmpresaPermissionOverrides(dbSuper, empresaID)
 		modulos = applyEmpresaRestriccionesToModuleRows(modulos, empresaModuleOverrides)
+		sharedAccess, sharedAccessErr := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
+		if sharedAccessErr != nil {
+			log.Printf("[authz] permisos_contexto acceso_compartido empresa=%d email=%s error: %v", empresaID, adminEmail, sharedAccessErr)
+		}
+		if sharedAccessErr == nil {
+			modulos = applyAdminEmpresaCompartidaScopeToModuleRows(modulos, sharedAccess)
+		}
+		shareCtx := adminEmpresaCompartidaScopeContext(sharedAccess)
 		paginas := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, modulos)
 		paginas = applyEmpresaPageRestrictionsToMap(paginas, empresaPageOverrides)
 
@@ -710,6 +728,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			Licencia:         licenciaCtx,
 			VerticalScope:    verticalScope.toContext(),
 			EmpresaPolicy:    empresaPolicyCtx,
+			ShareAccess:      shareCtx,
 			IncluyeMatriz:    false,
 		}
 
@@ -3019,6 +3038,77 @@ func applyEmpresaRestriccionesToModuleRows(rows []permissionModuleMatrixRow, ove
 	return out
 }
 
+func parseAdminEmpresaCompartidaModulosPermitidosCSV(value string) (map[string]bool, []string) {
+	allowed := map[string]bool{}
+	list := []string{}
+	for _, part := range strings.Split(value, ",") {
+		modulo := strings.ToLower(strings.TrimSpace(part))
+		if modulo == "" || allowed[modulo] || !isPermissionModuleKnown(modulo) {
+			continue
+		}
+		allowed[modulo] = true
+		list = append(list, modulo)
+	}
+	return allowed, list
+}
+
+func copyPermissionModuleRow(row permissionModuleMatrixRow) permissionModuleMatrixRow {
+	next := row
+	next.Acciones = map[string]bool{}
+	for _, action := range permissionActionsCatalogOrdered {
+		next.Acciones[action] = row.Acciones[action]
+	}
+	return next
+}
+
+func disablePermissionModuleRow(row *permissionModuleMatrixRow) {
+	for _, action := range permissionActionsCatalogOrdered {
+		setPermissionActionOnModuleRow(row, action, false)
+	}
+}
+
+func applyAdminEmpresaCompartidaScopeToModuleRows(rows []permissionModuleMatrixRow, access *dbpkg.AdminEmpresaCompartidaAcceso) []permissionModuleMatrixRow {
+	if access == nil {
+		return rows
+	}
+	nivel := normalizeAdminEmpresaCompartidaNivel(access.NivelAcceso)
+	if nivel == "acceso_total" {
+		return rows
+	}
+	allowedModules, _ := parseAdminEmpresaCompartidaModulosPermitidosCSV(access.ModulosPermitidos)
+	out := make([]permissionModuleMatrixRow, 0, len(rows))
+	for _, row := range rows {
+		next := copyPermissionModuleRow(row)
+		switch nivel {
+		case "solo_ver":
+			for _, action := range []string{permActionCreate, permActionUpdate, permActionDelete, permActionApprove} {
+				setPermissionActionOnModuleRow(&next, action, false)
+			}
+		case "modulos":
+			if !allowedModules[strings.ToLower(strings.TrimSpace(row.Modulo))] {
+				disablePermissionModuleRow(&next)
+			}
+		}
+		out = append(out, next)
+	}
+	return out
+}
+
+func adminEmpresaCompartidaScopeContext(access *dbpkg.AdminEmpresaCompartidaAcceso) *empresaCompartidaScopeCtx {
+	if access == nil {
+		return nil
+	}
+	_, list := parseAdminEmpresaCompartidaModulosPermitidosCSV(access.ModulosPermitidos)
+	nivel := normalizeAdminEmpresaCompartidaNivel(access.NivelAcceso)
+	return &empresaCompartidaScopeCtx{
+		Compartida:        true,
+		NivelAcceso:       nivel,
+		ModulosPermitidos: list,
+		CompartidoPor:     strings.TrimSpace(access.CompartidoPorEmail),
+		Etiqueta:          adminEmpresaCompartidaScopeLabel(nivel, access.ModulosPermitidos),
+	}
+}
+
 func applyEmpresaPageRestrictionsToMap(paginas map[string]bool, overrides map[string]bool) map[string]bool {
 	if len(overrides) == 0 {
 		return paginas
@@ -3249,10 +3339,12 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		moduleRows             []permissionModuleMatrixRow
 		empresaModuleOverrides map[string]bool
 		empresaPageOverrides   map[string]bool
+		sharedAccess           *dbpkg.AdminEmpresaCompartidaAcceso
+		sharedAccessErr        error
 	)
 
 	var snapshotWG sync.WaitGroup
-	snapshotWG.Add(4)
+	snapshotWG.Add(5)
 
 	go func() {
 		defer snapshotWG.Done()
@@ -3282,6 +3374,13 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=empresa_overrides dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
 	}()
 
+	go func() {
+		defer snapshotWG.Done()
+		step := time.Now()
+		sharedAccess, sharedAccessErr = dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
+		dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=shared_scope dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(step))
+	}()
+
 	snapshotWG.Wait()
 	if canAccessErr != nil {
 		snapshotErr = canAccessErr
@@ -3290,6 +3389,10 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	if licenciaErr != nil {
 		snapshotErr = licenciaErr
 		return empresaPermissionSnapshot{}, licenciaErr
+	}
+	if sharedAccessErr != nil {
+		snapshotErr = sharedAccessErr
+		return empresaPermissionSnapshot{}, sharedAccessErr
 	}
 
 	allowedModules, _ := parseLicenciaModulosCSV("")
@@ -3306,6 +3409,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	moduleRows = applyLicenciaRestriccionesToModuleRows(moduleRows, allowedModules)
 	moduleRows = applyEmpresaVerticalScopeToModuleRows(moduleRows, verticalScope)
 	moduleRows = applyEmpresaRestriccionesToModuleRows(moduleRows, empresaModuleOverrides)
+	moduleRows = applyAdminEmpresaCompartidaScopeToModuleRows(moduleRows, sharedAccess)
 	stepStarted = time.Now()
 	allowedPages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, moduleRows)
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
@@ -3326,6 +3430,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 		AllowedVerticalModules: verticalScope.Allowed,
 		RoleModuleActions:      roleModuleActions,
 		AllowedPages:           allowedPages,
+		ShareAccess:            adminEmpresaCompartidaScopeContext(sharedAccess),
 		LoadedAt:               time.Now(),
 	}
 

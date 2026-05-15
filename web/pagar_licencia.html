@@ -420,6 +420,7 @@
         let empresaId = params.get('empresa_id');
         const checkoutMode = String(params.get('checkout_mode') || '').trim();
         const addonLicenciaIDs = String(params.get('addon_licencia_ids') || '').trim();
+        const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim();
         if (!licenciaId && pendingSeed && pendingSeed.licenciaId) licenciaId = String(pendingSeed.licenciaId);
         if (!empresaId && pendingSeed && pendingSeed.empresaId) empresaId = String(pendingSeed.empresaId);
 
@@ -459,6 +460,7 @@
           if (empresaId) summaryParams.set('empresa_id', String(empresaId));
           if (checkoutMode) summaryParams.set('checkout_mode', checkoutMode);
           if (addonLicenciaIDs) summaryParams.set('addon_licencia_ids', addonLicenciaIDs);
+          if (initialAsesorID) summaryParams.set('asesor_id', initialAsesorID);
 
           function resolveCountryFromBrowser(){
             try {
@@ -637,7 +639,8 @@
                     '</div>'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="asesorId">Código de asesor comercial</label>'+
-                      '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC">'+
+                      '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC" value="' + escapeHtml(initialAsesorID) + '">'+
+                      '<div class="form-help">También aplica para activar licencias de prueba de 15 días y dejar asociado el asesor.</div>'+
                     '</div>'+
                   '</div>'+
                   '<div class="checkout-mini-pills">'+

@@ -18,6 +18,17 @@ var (
 	canAdminAccessEmpresaIACacheTTL = 60 * time.Second
 )
 
+func InvalidateCanAdminAccessEmpresaIACache(empresaID int64, adminEmail string) {
+	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
+	if empresaID <= 0 || adminEmail == "" {
+		return
+	}
+	cacheKey := fmt.Sprintf("%d|%s", empresaID, adminEmail)
+	canAdminAccessEmpresaIACacheMu.Lock()
+	delete(canAdminAccessEmpresaIACache, cacheKey)
+	canAdminAccessEmpresaIACacheMu.Unlock()
+}
+
 type cachedAdminEmpresaAccessIA struct {
 	Allowed  bool
 	LoadedAt time.Time

@@ -1,3 +1,16 @@
+2026-05-15: Empresas compartidas con alcance por rol y modulos
+- Al compartir empresa, el propietario define alcance `Solo ver`, `Acceso total` o `Solo ciertos modulos`; el alcance no sustituye rol/licencia, solo lo restringe.
+- `Solo ver` conserva lectura y desactiva crear, actualizar, eliminar y aprobar para el administrador invitado.
+- `Solo ciertos modulos` apaga acciones y paginas de modulos no seleccionados; los modulos seleccionados siguen sujetos a licencia, vertical, rol efectivo y politicas finas de empresa.
+- `Acceso total` mantiene el comportamiento anterior dentro de los permisos efectivos, sin convertir al invitado en propietario ni habilitar eliminacion estructural de la empresa.
+- La revocacion o "dejar de compartir" invalida cache de acceso/permisos para que el retiro sea inmediato.
+
+2026-05-15: Licencia de prueba unica por empresa
+- La prueba de 15 dias y las activaciones gratis/sin pago quedan limitadas a una sola activacion activa por `empresa_id`; no depende del rol del usuario sino de trazabilidad en `licencias_activaciones_gratis`.
+- El codigo de asesor puede enviarse como `asesor_id` o `codigo_asesor` en la prueba de 15 dias y en activaciones sin pago; debe existir, estar aceptado y no estar inactivo.
+- Registrar un asesor en la licencia de prueba no concede permisos, roles ni acceso a empresas ajenas; solo deja trazabilidad comercial y posible asociacion de comision.
+- El checkout y los endpoints conservan el aislamiento por `empresa_id` y no agregan permisos empresariales nuevos.
+
 2026-05-14: Reportes unificados
 - El submenu principal del modulo `reportes` queda en dos accesos: `Centro de reportes` (`linkReportesEjecutivos`) y `Asistente IA` (`linkReportesIAChat`).
 - Se retiran del catalogo de permisos empresarial las entradas antiguas `linkReportesMain`, `linkReportesVentas`, `linkReportesInventario`, `linkReportesFinanzas`, `linkReportesImpuestos` y `linkGraficosEstadisticas`.

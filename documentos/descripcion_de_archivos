@@ -1,3 +1,31 @@
+2026-05-15 - Empresas compartidas con alcance profesional
+- `backend/db/empresa_admin_compartida.go`:
+	- agrega persistencia de `nivel_acceso` y `modulos_permitidos` en invitaciones y accesos compartidos, con invalidacion de cache al aceptar/revocar.
+- `backend/db/chat_inteligencia_artificial.go`:
+	- expone invalidacion del cache de acceso efectivo a empresa para retiros inmediatos.
+- `backend/db/db.go`:
+	- publica en la respuesta de empresa el alcance recibido cuando el acceso viene de una invitacion compartida.
+- `backend/handlers/empresa_compartida_handlers.go`:
+	- valida roles de compartir, normaliza modulos, devuelve catalogo de modulos, conserva alcance al reenviar/aceptar y registra revocaciones.
+- `backend/handlers/empresa_permisos.go`:
+	- aplica el alcance compartido al contexto efectivo de permisos y paginas protegidas.
+- `backend/handlers/empresa_permisos_licencias_test.go`:
+	- agrega pruebas de acceso compartido `solo_ver` y por modulos seleccionados.
+- `web/editar_empresa.html`, `web/js/editar_empresa.js`, `web/js/seleccionar_empresa.js`, `web/estilos.css`:
+	- agregan selector de rol, checklist de modulos, etiquetas de alcance y accion visible para dejar de compartir empresa.
+
+2026-05-15 - Licencia de prueba unica por empresa
+- `backend/db/licencias_gratis.go`:
+	- agrega `asesor_id` a `licencias_activaciones_gratis`, normaliza duplicados activos historicos y crea el indice unico activo por `empresa_id`.
+- `backend/db/db.go`:
+	- conserva `max_documentos_mensuales` y `max_cajas_simultaneas` al copiar una licencia catalogo hacia la licencia asignada a empresa.
+- `backend/handlers/payments_handlers.go`:
+	- valida codigo de asesor en prueba de 15 dias y activacion sin pago, y registra trazabilidad comercial.
+- `web/pagar_licencia.html`:
+	- permite precargar `asesor_id`/`codigo_asesor` desde URL y lo envia en el resumen/activacion.
+- `web/super/licencias.html`:
+	- aclara que la prueba usa 250 documentos/ventas mensuales y solo se activa una vez por empresa.
+
 2026-05-14 - Nucleo de pantallas empresariales unificado
 - `web/administrar_empresa.html` y `web/administrar_empresa/configuracion_menu.html`:
 	- `Venta directa` apunta directo a `carrito_de_compras.html?modo=venta_directa&perm_page=linkVentaDirecta`, sin pagina puente.

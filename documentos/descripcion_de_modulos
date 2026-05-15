@@ -1,3 +1,20 @@
+2026-05-15: Empresas compartidas con alcance profesional
+- Modulos afectados: `empresas compartidas`, `administrar empresa`, `seleccionar empresa`, `permisos`.
+- Cambio funcional: al compartir una empresa, el propietario puede elegir `Solo ver`, `Acceso total` o `Solo ciertos modulos`; el alcance viaja en la invitacion y se aplica al aceptar.
+- Seguridad: el alcance compartido se integra al contexto efectivo de permisos, por lo que APIs y paginas protegidas quedan limitadas por lectura o por modulos seleccionados, siempre despues de licencia, vertical y reglas finas de empresa.
+- UX: el editor de empresa muestra selector de rol, checklist de modulos, alcance en accesos/invitaciones y accion clara para dejar de compartir; el selector de empresas ofrece el mismo rol desde la tarjeta rapida.
+- Persistencia: `admin_empresa_compartida` y `admin_empresa_compartida_invitaciones` agregan `nivel_acceso` y `modulos_permitidos`.
+- Alcance: sin dependencias nuevas; conserva PostgreSQL, sesiones existentes, auditoria y aislamiento por `empresa_id`.
+
+2026-05-15: Licencias con prueba unica por empresa y codigo de asesor
+- Modulos afectados: `licencias`, `pagos`, `asesor_comercial`, `super_administrador`.
+- Cambio funcional: la licencia de prueba de 15 dias y cualquier activacion gratis/sin pago quedan limitadas a una sola activacion activa por empresa.
+- Persistencia: `licencias_activaciones_gratis` registra `asesor_id` y un indice unico activo por `empresa_id`; duplicados activos existentes se marcan como `historico_duplicado` al asegurar esquema.
+- Checkout: `crear_prueba_15_dias` acepta `asesor_id` o `codigo_asesor`, valida que el asesor exista, tenga invitacion aceptada y no este inactivo, y guarda la referencia en pagos/comisiones.
+- Activacion sin pago: `POST /licencias/activar_sin_pago` aplica la misma validacion de asesor y usa la marca unica por empresa antes de activar.
+- Limites: la prueba automatica de 15 dias se crea con 250 documentos/ventas mensuales.
+- Impacto de permisos: no cambia roles ni permisos; el flujo conserva checkout publico/control super existente y aislamiento por `empresa_id`.
+
 2026-05-14: Reportes con centro unico y limpieza preproduccion
 - Modulos afectados: `reportes`, `administrar_empresa`.
 - Cambio UX: `web/administrar_empresa/reportes_menu.html` reduce el submenu principal a Centro de reportes y Asistente IA.

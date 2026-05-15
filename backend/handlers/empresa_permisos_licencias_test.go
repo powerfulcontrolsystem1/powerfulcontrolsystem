@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	dbpkg "github.com/you/pos-backend/db"
 )
 
 func TestLicenciaModulosCSVControlsModuleAccess(t *testing.T) {
@@ -88,6 +90,53 @@ func TestApplyLicenciaRestriccionesDisablesActionsForInactiveModules(t *testing.
 	for _, action := range permissionActionsCatalogOrdered {
 		if filtered[1].Acciones[action] {
 			t.Fatalf("expected finanzas action %s to be disabled by licencia", action)
+		}
+	}
+}
+
+func TestApplyAdminEmpresaCompartidaScopeSoloVerDisablesWriteActions(t *testing.T) {
+	rows := []permissionModuleMatrixRow{
+		{
+			Modulo: permModuleVentas,
+			Acciones: map[string]bool{
+				permActionRead:    true,
+				permActionCreate:  true,
+				permActionUpdate:  true,
+				permActionDelete:  true,
+				permActionApprove: true,
+			},
+		},
+	}
+
+	filtered := applyAdminEmpresaCompartidaScopeToModuleRows(rows, &dbpkg.AdminEmpresaCompartidaAcceso{NivelAcceso: "solo_ver"})
+
+	if !filtered[0].Acciones[permActionRead] {
+		t.Fatal("expected read action to remain enabled for solo_ver shared access")
+	}
+	for _, action := range []string{permActionCreate, permActionUpdate, permActionDelete, permActionApprove} {
+		if filtered[0].Acciones[action] {
+			t.Fatalf("expected action %s to be disabled for solo_ver shared access", action)
+		}
+	}
+}
+
+func TestApplyAdminEmpresaCompartidaScopeSelectedModules(t *testing.T) {
+	rows := []permissionModuleMatrixRow{
+		{Modulo: permModuleVentas, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+		{Modulo: permModuleFinanzas, Acciones: map[string]bool{permActionRead: true, permActionCreate: true}},
+	}
+
+	filtered := applyAdminEmpresaCompartidaScopeToModuleRows(rows, &dbpkg.AdminEmpresaCompartidaAcceso{
+		NivelAcceso:       "modulos",
+		ModulosPermitidos: permModuleVentas,
+	})
+
+	if !filtered[0].Acciones[permActionRead] || !filtered[0].Acciones[permActionCreate] {
+		t.Fatal("expected selected shared module to keep existing actions")
+	}
+	for _, action := range permissionActionsCatalogOrdered {
+		if filtered[1].Acciones[action] {
+			t.Fatalf("expected non-selected shared module action %s to be disabled", action)
 		}
 	}
 }

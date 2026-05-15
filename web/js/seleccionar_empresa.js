@@ -15,6 +15,17 @@
     var module = String(item && item.module ? item.module : "").trim().toLowerCase();
     if (module) nuevosVerticalesByModule[module] = item;
   });
+  var empresaShareModuleCatalog = [
+    ["ventas", "Ventas"],
+    ["inventario", "Inventario"],
+    ["finanzas", "Finanzas, caja y reportes"],
+    ["facturacion", "Facturacion electronica"],
+    ["clientes", "Clientes"],
+    ["crm_unificado", "CRM"],
+    ["compras", "Compras"],
+    ["reportes", "Reportes"],
+    ["documentos_onlyoffice", "Documentos"]
+  ];
   var deleteModalState = {
     empresa: null,
     impacto: null,
@@ -786,9 +797,45 @@
       '<input id="share-email-' + escapeHtml(String(empresa.id || '')) + '" class="form-input empresa-card-share-input" data-share-email type="email" placeholder="correo@ejemplo.com" required>' +
       '<button type="submit" class="btn empresa-card-share-submit">Enviar</button>' +
       '</div>' +
+      '<label class="empresa-card-share-label" for="share-level-' + escapeHtml(String(empresa.id || '')) + '">Rol de acceso</label>' +
+      '<select id="share-level-' + escapeHtml(String(empresa.id || '')) + '" class="form-input empresa-card-share-level" data-share-level>' +
+      '<option value="solo_ver">Solo ver</option>' +
+      '<option value="acceso_total">Acceso total</option>' +
+      '<option value="modulos">Solo ciertos modulos</option>' +
+      '</select>' +
+      '<div class="empresa-card-share-modules" data-share-modules hidden>' + buildEmpresaCardShareModules() + '</div>' +
       '<div class="empresa-card-share-feedback" data-share-feedback role="status"></div>' +
       '</form>' +
       '</div>';
+  }
+
+  function buildEmpresaCardShareModules() {
+    return empresaShareModuleCatalog.map(function (item) {
+      return '<label class="empresa-card-share-module">'
+        + '<input type="checkbox" value="' + escapeHtml(item[0]) + '" data-share-module>'
+        + '<span>' + escapeHtml(item[1]) + '</span>'
+        + '</label>';
+    }).join('');
+  }
+
+  function normalizeEmpresaShareNivel(value) {
+    value = String(value || '').trim().toLowerCase();
+    if (value === 'modulos') return 'modulos';
+    if (value === 'acceso_total') return 'acceso_total';
+    return 'solo_ver';
+  }
+
+  function updateEmpresaCardShareScope(panel) {
+    if (!panel) return;
+    var level = normalizeEmpresaShareNivel(panel.querySelector('[data-share-level]') && panel.querySelector('[data-share-level]').value);
+    var modules = panel.querySelector('[data-share-modules]');
+    if (modules) modules.hidden = level !== 'modulos';
+  }
+
+  function getEmpresaCardSelectedShareModules(form) {
+    return Array.prototype.map.call(form.querySelectorAll('[data-share-module]:checked'), function (input) {
+      return String(input.value || '').trim();
+    }).filter(Boolean);
   }
 
   function findEmpresaSharePanel(empresaId) {
@@ -858,6 +905,7 @@
     var willOpen = panel.hidden;
     closeAllEmpresaSharePanels(willOpen ? empresaId : 0);
     if (willOpen) {
+      updateEmpresaCardShareScope(panel);
       var emailInput = panel.querySelector('[data-share-email]');
       if (emailInput) {
         window.setTimeout(function () {
@@ -875,9 +923,16 @@
       return;
     }
     var emailInput = form.querySelector('[data-share-email]');
+    var levelInput = form.querySelector('[data-share-level]');
     var email = String(emailInput && emailInput.value ? emailInput.value : '').trim();
+    var nivelAcceso = normalizeEmpresaShareNivel(levelInput && levelInput.value);
+    var modulosPermitidos = nivelAcceso === 'modulos' ? getEmpresaCardSelectedShareModules(form) : [];
     if (!email) {
       setEmpresaShareFeedback(empresaId, 'Debes escribir el correo del otro administrador.', true);
+      return;
+    }
+    if (nivelAcceso === 'modulos' && !modulosPermitidos.length) {
+      setEmpresaShareFeedback(empresaId, 'Elige al menos un modulo para compartir solo ciertos modulos.', true);
       return;
     }
     setEmpresaShareFeedback(empresaId, 'Enviando invitación...', false);
@@ -885,7 +940,13 @@
       var data = await fetchJSON('/super/api/empresas/compartidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empresa_id: empresaId, email: email, mensaje: '' })
+        body: JSON.stringify({
+          empresa_id: empresaId,
+          email: email,
+          mensaje: '',
+          nivel_acceso: nivelAcceso,
+          modulos_permitidos: modulosPermitidos
+        })
       });
       var message = data && data.message ? data.message : 'Invitación enviada correctamente.';
       setEmpresaShareFeedback(empresaId, message, false);
@@ -893,6 +954,11 @@
       if (emailInput) {
         emailInput.value = '';
       }
+      if (levelInput) levelInput.value = 'solo_ver';
+      Array.prototype.forEach.call(form.querySelectorAll('[data-share-module]'), function (input) {
+        input.checked = false;
+      });
+      updateEmpresaCardShareScope(form.closest('.empresa-card-share-panel'));
     } catch (err) {
       var payload = err && err.payload ? err.payload : null;
       if (payload && String(payload.code || '') === 'invitation_pending' && payload.invitation_id) {
@@ -1790,6 +1856,12 @@
     ev.preventDefault();
     ev.stopPropagation();
     submitEmpresaShareInvitation(shareForm);
+  });
+
+  document.addEventListener('change', function (ev) {
+    var levelInput = ev.target && ev.target.closest ? ev.target.closest('[data-share-level]') : null;
+    if (!levelInput) return;
+    updateEmpresaCardShareScope(levelInput.closest('.empresa-card-share-panel'));
   });
 
   document.addEventListener('click', function(ev){

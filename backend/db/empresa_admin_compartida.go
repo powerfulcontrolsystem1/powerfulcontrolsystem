@@ -27,6 +27,8 @@ type AdminEmpresaCompartidaAcceso struct {
 	CompartidoPorEmail string `json:"compartido_por_email,omitempty"`
 	CompartidoPorName  string `json:"compartido_por_name,omitempty"`
 	InvitacionID       int64  `json:"invitacion_id,omitempty"`
+	NivelAcceso        string `json:"nivel_acceso,omitempty"`
+	ModulosPermitidos  string `json:"modulos_permitidos,omitempty"`
 	FechaAceptada      string `json:"fecha_aceptada,omitempty"`
 	FechaRevocada      string `json:"fecha_revocada,omitempty"`
 	FechaCreacion      string `json:"fecha_creacion,omitempty"`
@@ -44,6 +46,8 @@ type AdminEmpresaCompartidaInvitacion struct {
 	InvitadoPorEmail   string `json:"invitado_por_email,omitempty"`
 	InvitadoPorName    string `json:"invitado_por_name,omitempty"`
 	TokenHash          string `json:"-"`
+	NivelAcceso        string `json:"nivel_acceso,omitempty"`
+	ModulosPermitidos  string `json:"modulos_permitidos,omitempty"`
 	Mensaje            string `json:"mensaje,omitempty"`
 	ExpiraEn           string `json:"expira_en,omitempty"`
 	AceptadaEn         string `json:"aceptada_en,omitempty"`
@@ -60,6 +64,20 @@ func normalizeAdminEmpresaCompartidaEmail(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
 }
 
+func adminEmpresaCompartidaAccessCacheKey(empresaID int64, adminEmail string) string {
+	return fmt.Sprintf("%d|%s", empresaID, normalizeAdminEmpresaCompartidaEmail(adminEmail))
+}
+
+func InvalidateAdminEmpresaCompartidaAccessCache(empresaID int64, adminEmail string) {
+	adminEmail = normalizeAdminEmpresaCompartidaEmail(adminEmail)
+	if empresaID <= 0 || adminEmail == "" {
+		return
+	}
+	adminEmpresaCompartidaAccessCacheMu.Lock()
+	delete(adminEmpresaCompartidaAccessCache, adminEmpresaCompartidaAccessCacheKey(empresaID, adminEmail))
+	adminEmpresaCompartidaAccessCacheMu.Unlock()
+}
+
 func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return nil
@@ -73,6 +91,8 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 				admin_email TEXT NOT NULL,
 				compartido_por_email TEXT,
 				invitacion_id BIGINT,
+				nivel_acceso TEXT DEFAULT 'acceso_total',
+				modulos_permitidos TEXT,
 				fecha_aceptada TEXT,
 				fecha_revocada TEXT,
 				fecha_creacion TEXT DEFAULT CAST(CURRENT_TIMESTAMP AS TEXT),
@@ -89,6 +109,8 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 				admin_email TEXT NOT NULL,
 				invitado_por_email TEXT,
 				token_hash TEXT NOT NULL,
+				nivel_acceso TEXT DEFAULT 'acceso_total',
+				modulos_permitidos TEXT,
 				mensaje TEXT,
 				expira_en TEXT,
 				aceptada_en TEXT,
@@ -108,6 +130,20 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 				return fmt.Errorf("ensure admin empresa compartida postgres schema: %w; stmt=%s", err, stmt)
 			}
 		}
+		for _, col := range []struct {
+			table string
+			name  string
+			def   string
+		}{
+			{"admin_empresa_compartida", "nivel_acceso", "TEXT DEFAULT 'acceso_total'"},
+			{"admin_empresa_compartida", "modulos_permitidos", "TEXT"},
+			{"admin_empresa_compartida_invitaciones", "nivel_acceso", "TEXT DEFAULT 'acceso_total'"},
+			{"admin_empresa_compartida_invitaciones", "modulos_permitidos", "TEXT"},
+		} {
+			if err := ensureColumnIfMissing(dbConn, col.table, col.name, col.def); err != nil {
+				return fmt.Errorf("ensure admin empresa compartida column %s.%s: %w", col.table, col.name, err)
+			}
+		}
 		return nil
 	}
 
@@ -118,6 +154,8 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 			admin_email TEXT NOT NULL,
 			compartido_por_email TEXT,
 			invitacion_id INTEGER,
+			nivel_acceso TEXT DEFAULT 'acceso_total',
+			modulos_permitidos TEXT,
 			fecha_aceptada TEXT,
 			fecha_revocada TEXT,
 			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -134,6 +172,8 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 			admin_email TEXT NOT NULL,
 			invitado_por_email TEXT,
 			token_hash TEXT NOT NULL,
+			nivel_acceso TEXT DEFAULT 'acceso_total',
+			modulos_permitidos TEXT,
 			mensaje TEXT,
 			expira_en TEXT,
 			aceptada_en TEXT,
@@ -153,6 +193,20 @@ func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 			return fmt.Errorf("ensure admin empresa compartida schema: %w; stmt=%s", err, stmt)
 		}
 	}
+	for _, col := range []struct {
+		table string
+		name  string
+		def   string
+	}{
+		{"admin_empresa_compartida", "nivel_acceso", "TEXT DEFAULT 'acceso_total'"},
+		{"admin_empresa_compartida", "modulos_permitidos", "TEXT"},
+		{"admin_empresa_compartida_invitaciones", "nivel_acceso", "TEXT DEFAULT 'acceso_total'"},
+		{"admin_empresa_compartida_invitaciones", "modulos_permitidos", "TEXT"},
+	} {
+		if err := ensureColumnIfMissing(dbConn, col.table, col.name, col.def); err != nil {
+			return fmt.Errorf("ensure admin empresa compartida column %s.%s: %w", col.table, col.name, err)
+		}
+	}
 	return nil
 }
 
@@ -167,6 +221,8 @@ func scanAdminEmpresaCompartidaAcceso(rows *sql.Rows) (AdminEmpresaCompartidaAcc
 		&item.CompartidoPorEmail,
 		&item.CompartidoPorName,
 		&invitacionID,
+		&item.NivelAcceso,
+		&item.ModulosPermitidos,
 		&item.FechaAceptada,
 		&item.FechaRevocada,
 		&item.FechaCreacion,
@@ -193,6 +249,8 @@ func scanAdminEmpresaCompartidaInvitacion(rows *sql.Rows) (AdminEmpresaCompartid
 		&item.InvitadoPorEmail,
 		&item.InvitadoPorName,
 		&item.TokenHash,
+		&item.NivelAcceso,
+		&item.ModulosPermitidos,
 		&item.Mensaje,
 		&item.ExpiraEn,
 		&item.AceptadaEn,
@@ -223,7 +281,9 @@ func ListAdminEmpresaCompartidaAccesosByEmpresa(dbConn *sql.DB, empresaID int64)
 		COALESCE(adm.name, ''),
 		COALESCE(a.compartido_por_email, ''),
 		COALESCE(inv.name, ''),
-		a.invitacion_id,
+		COALESCE(a.invitacion_id, 0),
+		COALESCE(a.nivel_acceso, 'acceso_total'),
+		COALESCE(a.modulos_permitidos, ''),
 		COALESCE(a.fecha_aceptada, ''),
 		COALESCE(a.fecha_revocada, ''),
 		COALESCE(a.fecha_creacion, ''),
@@ -266,6 +326,8 @@ func ListAdminEmpresaCompartidaInvitacionesByEmpresa(dbConn *sql.DB, empresaID i
 		COALESCE(i.invitado_por_email, ''),
 		COALESCE(inv.name, ''),
 		COALESCE(i.token_hash, ''),
+		COALESCE(i.nivel_acceso, 'acceso_total'),
+		COALESCE(i.modulos_permitidos, ''),
 		COALESCE(i.mensaje, ''),
 		COALESCE(i.expira_en, ''),
 		COALESCE(i.aceptada_en, ''),
@@ -311,7 +373,9 @@ func ListActiveAdminEmpresaCompartidaAccesosByAdmin(dbConn *sql.DB, adminEmail s
 		COALESCE(adm.name, ''),
 		COALESCE(a.compartido_por_email, ''),
 		COALESCE(inv.name, ''),
-		a.invitacion_id,
+		COALESCE(a.invitacion_id, 0),
+		COALESCE(a.nivel_acceso, 'acceso_total'),
+		COALESCE(a.modulos_permitidos, ''),
 		COALESCE(a.fecha_aceptada, ''),
 		COALESCE(a.fecha_revocada, ''),
 		COALESCE(a.fecha_creacion, ''),
@@ -357,6 +421,8 @@ func ListPendingAdminEmpresaCompartidaInvitacionesByAdmin(dbConn *sql.DB, adminE
 		COALESCE(i.invitado_por_email, ''),
 		COALESCE(inv.name, ''),
 		COALESCE(i.token_hash, ''),
+		COALESCE(i.nivel_acceso, 'acceso_total'),
+		COALESCE(i.modulos_permitidos, ''),
 		COALESCE(i.mensaje, ''),
 		COALESCE(i.expira_en, ''),
 		COALESCE(i.aceptada_en, ''),
@@ -396,7 +462,7 @@ func GetActiveAdminEmpresaCompartidaAcceso(dbConn *sql.DB, empresaID int64, admi
 	if dbConn == nil || empresaID <= 0 || adminEmail == "" {
 		return nil, nil
 	}
-	cacheKey := fmt.Sprintf("%d|%s", empresaID, adminEmail)
+	cacheKey := adminEmpresaCompartidaAccessCacheKey(empresaID, adminEmail)
 	adminEmpresaCompartidaAccessCacheMu.Lock()
 	if cached, ok := adminEmpresaCompartidaAccessCache[cacheKey]; ok && time.Since(cached.LoadedAt) < adminEmpresaCompartidaAccessCacheTTL {
 		adminEmpresaCompartidaAccessCacheMu.Unlock()
@@ -417,7 +483,9 @@ func GetActiveAdminEmpresaCompartidaAcceso(dbConn *sql.DB, empresaID int64, admi
 		COALESCE(adm.name, ''),
 		COALESCE(a.compartido_por_email, ''),
 		COALESCE(inv.name, ''),
-		a.invitacion_id,
+		COALESCE(a.invitacion_id, 0),
+		COALESCE(a.nivel_acceso, 'acceso_total'),
+		COALESCE(a.modulos_permitidos, ''),
 		COALESCE(a.fecha_aceptada, ''),
 		COALESCE(a.fecha_revocada, ''),
 		COALESCE(a.fecha_creacion, ''),
@@ -470,6 +538,8 @@ func GetPendingAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, empresaID int64,
 		COALESCE(i.invitado_por_email, ''),
 		COALESCE(inv.name, ''),
 		COALESCE(i.token_hash, ''),
+		COALESCE(i.nivel_acceso, 'acceso_total'),
+		COALESCE(i.modulos_permitidos, ''),
 		COALESCE(i.mensaje, ''),
 		COALESCE(i.expira_en, ''),
 		COALESCE(i.aceptada_en, ''),
@@ -519,6 +589,8 @@ func GetAdminEmpresaCompartidaInvitacionByID(dbConn *sql.DB, id int64) (*AdminEm
 		COALESCE(i.invitado_por_email, ''),
 		COALESCE(inv.name, ''),
 		COALESCE(i.token_hash, ''),
+		COALESCE(i.nivel_acceso, 'acceso_total'),
+		COALESCE(i.modulos_permitidos, ''),
 		COALESCE(i.mensaje, ''),
 		COALESCE(i.expira_en, ''),
 		COALESCE(i.aceptada_en, ''),
@@ -564,6 +636,8 @@ func GetAdminEmpresaCompartidaInvitacionByTokenHash(dbConn *sql.DB, tokenHash st
 		COALESCE(i.invitado_por_email, ''),
 		COALESCE(inv.name, ''),
 		COALESCE(i.token_hash, ''),
+		COALESCE(i.nivel_acceso, 'acceso_total'),
+		COALESCE(i.modulos_permitidos, ''),
 		COALESCE(i.mensaje, ''),
 		COALESCE(i.expira_en, ''),
 		COALESCE(i.aceptada_en, ''),
@@ -603,10 +677,15 @@ func CreateAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, payload AdminEmpresa
 	payload.AdminEmail = normalizeAdminEmpresaCompartidaEmail(payload.AdminEmail)
 	payload.InvitadoPorEmail = normalizeAdminEmpresaCompartidaEmail(payload.InvitadoPorEmail)
 	payload.TokenHash = strings.TrimSpace(payload.TokenHash)
+	payload.NivelAcceso = strings.ToLower(strings.TrimSpace(payload.NivelAcceso))
+	payload.ModulosPermitidos = strings.TrimSpace(payload.ModulosPermitidos)
 	payload.Mensaje = strings.TrimSpace(payload.Mensaje)
 	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
 	payload.Estado = strings.TrimSpace(payload.Estado)
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
+	if payload.NivelAcceso == "" {
+		payload.NivelAcceso = "acceso_total"
+	}
 	if payload.Estado == "" {
 		payload.Estado = "pendiente"
 	}
@@ -618,6 +697,8 @@ func CreateAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, payload AdminEmpresa
 		admin_email,
 		invitado_por_email,
 		token_hash,
+		nivel_acceso,
+		modulos_permitidos,
 		mensaje,
 		expira_en,
 		usuario_creador,
@@ -625,11 +706,13 @@ func CreateAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, payload AdminEmpresa
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+sqlNowExpr()+`, `+sqlNowExpr()+`)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+sqlNowExpr()+`, `+sqlNowExpr()+`)`,
 		payload.EmpresaID,
 		payload.AdminEmail,
 		payload.InvitadoPorEmail,
 		payload.TokenHash,
+		payload.NivelAcceso,
+		payload.ModulosPermitidos,
 		payload.Mensaje,
 		payload.ExpiraEn,
 		payload.UsuarioCreador,
@@ -642,12 +725,18 @@ func CreateAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, payload AdminEmpresa
 	return id, nil
 }
 
-func RefreshAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, id int64, tokenHash, mensaje, expiraEn, usuario string) error {
+func RefreshAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, id int64, tokenHash, mensaje, expiraEn, usuario, nivelAcceso, modulosPermitidos string) error {
 	if dbConn == nil || id <= 0 {
 		return fmt.Errorf("id invalido")
 	}
+	nivelAcceso = strings.ToLower(strings.TrimSpace(nivelAcceso))
+	if nivelAcceso == "" {
+		nivelAcceso = "acceso_total"
+	}
 	_, err := execSQLCompat(dbConn, `UPDATE admin_empresa_compartida_invitaciones
 	SET token_hash = ?,
+	    nivel_acceso = ?,
+	    modulos_permitidos = ?,
 	    mensaje = ?,
 	    expira_en = ?,
 	    fecha_actualizacion = `+sqlNowExpr()+`,
@@ -656,7 +745,7 @@ func RefreshAdminEmpresaCompartidaInvitacion(dbConn *sql.DB, id int64, tokenHash
 	    rechazada_en = '',
 	    revocada_en = '',
 	    estado = 'pendiente'
-	WHERE id = ?`, strings.TrimSpace(tokenHash), strings.TrimSpace(mensaje), strings.TrimSpace(expiraEn), strings.TrimSpace(usuario), id)
+	WHERE id = ?`, strings.TrimSpace(tokenHash), nivelAcceso, strings.TrimSpace(modulosPermitidos), strings.TrimSpace(mensaje), strings.TrimSpace(expiraEn), strings.TrimSpace(usuario), id)
 	return err
 }
 
@@ -709,9 +798,14 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 	}
 	payload.AdminEmail = normalizeAdminEmpresaCompartidaEmail(payload.AdminEmail)
 	payload.CompartidoPorEmail = normalizeAdminEmpresaCompartidaEmail(payload.CompartidoPorEmail)
+	payload.NivelAcceso = strings.ToLower(strings.TrimSpace(payload.NivelAcceso))
+	payload.ModulosPermitidos = strings.TrimSpace(payload.ModulosPermitidos)
 	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
 	payload.Estado = strings.TrimSpace(payload.Estado)
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
+	if payload.NivelAcceso == "" {
+		payload.NivelAcceso = "acceso_total"
+	}
 	if payload.Estado == "" {
 		payload.Estado = "activo"
 	}
@@ -726,16 +820,20 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 		_, err = execSQLCompat(dbConn, `UPDATE admin_empresa_compartida
 		SET compartido_por_email = ?,
 		    invitacion_id = ?,
+		    nivel_acceso = ?,
+		    modulos_permitidos = ?,
 		    fecha_aceptada = ?,
 		    fecha_revocada = '',
 		    fecha_actualizacion = `+sqlNowExpr()+`,
 		    usuario_creador = ?,
 		    estado = 'activo',
 		    observaciones = ?
-		WHERE id = ?`, payload.CompartidoPorEmail, nullableInt64Arg(payload.InvitacionID), strings.TrimSpace(payload.FechaAceptada), payload.UsuarioCreador, payload.Observaciones, existing.ID)
+		WHERE id = ?`, payload.CompartidoPorEmail, nullableInt64Arg(payload.InvitacionID), payload.NivelAcceso, payload.ModulosPermitidos, strings.TrimSpace(payload.FechaAceptada), payload.UsuarioCreador, payload.Observaciones, existing.ID)
 		if err != nil {
 			return 0, err
 		}
+		InvalidateAdminEmpresaCompartidaAccessCache(payload.EmpresaID, payload.AdminEmail)
+		InvalidateCanAdminAccessEmpresaIACache(payload.EmpresaID, payload.AdminEmail)
 		return existing.ID, nil
 	}
 	id, err := insertSQLCompat(dbConn, `INSERT INTO admin_empresa_compartida (
@@ -743,6 +841,8 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 		admin_email,
 		compartido_por_email,
 		invitacion_id,
+		nivel_acceso,
+		modulos_permitidos,
 		fecha_aceptada,
 		usuario_creador,
 		estado,
@@ -754,6 +854,8 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 		payload.AdminEmail,
 		payload.CompartidoPorEmail,
 		nullableInt64Arg(payload.InvitacionID),
+		payload.NivelAcceso,
+		payload.ModulosPermitidos,
 		strings.TrimSpace(payload.FechaAceptada),
 		payload.UsuarioCreador,
 		payload.Estado,
@@ -762,6 +864,8 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 	if err != nil {
 		return 0, err
 	}
+	InvalidateAdminEmpresaCompartidaAccessCache(payload.EmpresaID, payload.AdminEmail)
+	InvalidateCanAdminAccessEmpresaIACache(payload.EmpresaID, payload.AdminEmail)
 	return id, nil
 }
 
@@ -779,7 +883,9 @@ func GetAdminEmpresaCompartidaAccesoByID(dbConn *sql.DB, id int64) (*AdminEmpres
 		COALESCE(adm.name, ''),
 		COALESCE(a.compartido_por_email, ''),
 		COALESCE(inv.name, ''),
-		a.invitacion_id,
+		COALESCE(a.invitacion_id, 0),
+		COALESCE(a.nivel_acceso, 'acceso_total'),
+		COALESCE(a.modulos_permitidos, ''),
 		COALESCE(a.fecha_aceptada, ''),
 		COALESCE(a.fecha_revocada, ''),
 		COALESCE(a.fecha_creacion, ''),
@@ -810,12 +916,17 @@ func RevokeAdminEmpresaCompartidaAcceso(dbConn *sql.DB, id int64, usuario string
 	if dbConn == nil || id <= 0 {
 		return fmt.Errorf("id invalido")
 	}
+	existing, _ := GetAdminEmpresaCompartidaAccesoByID(dbConn, id)
 	_, err := execSQLCompat(dbConn, `UPDATE admin_empresa_compartida
 	SET estado = 'revocada',
 	    fecha_revocada = ?,
 	    fecha_actualizacion = `+sqlNowExpr()+`,
 	    usuario_creador = ?
 	WHERE id = ?`, sqlNowValue(), strings.TrimSpace(usuario), id)
+	if err == nil && existing != nil {
+		InvalidateAdminEmpresaCompartidaAccessCache(existing.EmpresaID, existing.AdminEmail)
+		InvalidateCanAdminAccessEmpresaIACache(existing.EmpresaID, existing.AdminEmail)
+	}
 	return err
 }
 

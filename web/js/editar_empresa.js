@@ -5,6 +5,7 @@
     licencias: null,
     accesos: [],
     invitaciones: [],
+    shareScopeCatalog: [],
     shareMeta: {
       is_owner: false,
       requester_email: "",
@@ -178,6 +179,79 @@
     return String(name || email || "Administrador").trim();
   }
 
+  function normalizeShareNivel(value) {
+    value = String(value || "").trim().toLowerCase();
+    if (value === "solo_ver" || value === "solo_lectura") return "solo_ver";
+    if (value === "modulos" || value === "solo_modulos") return "modulos";
+    return "acceso_total";
+  }
+
+  function shareNivelLabel(value) {
+    switch (normalizeShareNivel(value)) {
+      case "solo_ver": return "Solo ver";
+      case "modulos": return "Solo ciertos modulos";
+      default: return "Acceso total";
+    }
+  }
+
+  function parseShareModules(value) {
+    if (Array.isArray(value)) {
+      return value.map(function (item) { return String(item || "").trim(); }).filter(Boolean);
+    }
+    return String(value || "").split(",").map(function (item) { return item.trim(); }).filter(Boolean);
+  }
+
+  function shareModuleLabel(modulo) {
+    modulo = String(modulo || "").trim();
+    var found = state.shareScopeCatalog.find(function (item) {
+      return String(item && item.modulo || "") === modulo;
+    });
+    return found && found.label ? found.label : modulo;
+  }
+
+  function shareScopeText(item) {
+    var nivel = normalizeShareNivel(item && item.nivel_acceso);
+    if (item && item.scope_label) return String(item.scope_label);
+    if (nivel !== "modulos") return shareNivelLabel(nivel);
+    var modules = parseShareModules(item && item.modulos_permitidos);
+    if (!modules.length) return "Solo ciertos modulos";
+    return "Solo modulos: " + modules.map(shareModuleLabel).join(", ");
+  }
+
+  function renderShareModuleSelector() {
+    var box = $("empresaShareModules");
+    if (!box) return;
+    var catalog = state.shareScopeCatalog.length ? state.shareScopeCatalog : [
+      { modulo: "ventas", label: "Ventas" },
+      { modulo: "inventario", label: "Inventario" },
+      { modulo: "finanzas", label: "Finanzas, caja y reportes" },
+      { modulo: "facturacion", label: "Facturacion electronica" },
+      { modulo: "reportes", label: "Reportes" },
+      { modulo: "documentos_onlyoffice", label: "Documentos" }
+    ];
+    box.innerHTML = catalog.map(function (item) {
+      var modulo = String(item && item.modulo || "").trim();
+      if (!modulo) return "";
+      return '<label class="empresa-share-module-option">'
+        + '<input type="checkbox" value="' + escapeHtml(modulo) + '" data-share-module>'
+        + '<span>' + escapeHtml(item.label || modulo) + '</span>'
+        + '</label>';
+    }).join("");
+  }
+
+  function updateShareScopeVisibility() {
+    var select = $("empresaShareNivel");
+    var wrap = $("empresaShareModulesWrap");
+    if (!select || !wrap) return;
+    wrap.hidden = normalizeShareNivel(select.value) !== "modulos";
+  }
+
+  function getSelectedShareModules() {
+    return Array.prototype.map.call(document.querySelectorAll("#empresaShareModules [data-share-module]:checked"), function (input) {
+      return String(input.value || "").trim();
+    }).filter(Boolean);
+  }
+
   function clearMessageActions() {
     var node = $("empresaShareMessageBox");
     if (!node) return;
@@ -316,11 +390,12 @@
           var accepted = String(item.fecha_aceptada || item.fecha_creacion || '').trim();
           var status = String(item.estado || 'activo').trim().toLowerCase();
           var action = canRevokeAccess(item)
-            ? buildShareActionButton(isSharedEmpresa() && normalizeEmail(item.admin_email) === normalizeEmail(state.shareMeta.requester_email) ? 'Eliminar mi acceso' : 'Revocar', 'revoke', item.id, 'access')
+            ? buildShareActionButton(isSharedEmpresa() && normalizeEmail(item.admin_email) === normalizeEmail(state.shareMeta.requester_email) ? 'Eliminar mi acceso' : 'Dejar de compartir', 'revoke', item.id, 'access')
             : '';
           return '<article class="empresa-share-item">'
             + '<div><strong>' + escapeHtml(sharedTo) + '</strong><div class="muted">' + escapeHtml(item.admin_email || '') + '</div>'
-            + '<div class="muted">Compartido por: ' + escapeHtml(sharedBy) + (accepted ? ' - Desde: ' + escapeHtml(accepted) : '') + '</div></div>'
+            + '<div class="muted">Compartido por: ' + escapeHtml(sharedBy) + (accepted ? ' - Desde: ' + escapeHtml(accepted) : '') + '</div>'
+            + '<div class="muted">Alcance: ' + escapeHtml(shareScopeText(item)) + '</div></div>'
             + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-' + escapeHtml(status || 'activo') + '">' + escapeHtml(status || 'activo') + '</span>'
             + action
             + '</div></article>';
@@ -341,11 +416,12 @@
             actions += buildShareActionButton('Reenviar', 'resend', item.id, 'invitation');
           }
           if (canRevokeInvitation(item)) {
-            actions += buildShareActionButton('Revocar', 'revoke', item.id, 'invitation');
+            actions += buildShareActionButton('Dejar de compartir', 'revoke', item.id, 'invitation');
           }
           return '<article class="empresa-share-item">'
             + '<div><strong>' + escapeHtml(invitedTo) + '</strong><div class="muted">' + escapeHtml(item.admin_email || '') + '</div>'
-            + '<div class="muted">Invitado por: ' + escapeHtml(invitedBy) + (expira ? ' - Expira: ' + escapeHtml(expira) : '') + '</div></div>'
+            + '<div class="muted">Invitado por: ' + escapeHtml(invitedBy) + (expira ? ' - Expira: ' + escapeHtml(expira) : '') + '</div>'
+            + '<div class="muted">Alcance: ' + escapeHtml(shareScopeText(item)) + '</div></div>'
             + '<div class="empresa-share-item-actions"><span class="empresa-share-state is-' + escapeHtml(status) + '">' + escapeHtml(status) + '</span>'
             + actions
             + '</div></article>';
@@ -360,11 +436,14 @@
     var data = await fetchJSON('/super/api/empresas/compartidos?empresa_id=' + encodeURIComponent(state.empresa.id), { credentials: 'same-origin' });
     state.accesos = Array.isArray(data && data.accesos) ? data.accesos : [];
     state.invitaciones = Array.isArray(data && data.invitaciones) ? data.invitaciones : [];
+    state.shareScopeCatalog = Array.isArray(data && data.scope_catalog) ? data.scope_catalog : state.shareScopeCatalog;
     state.shareMeta = {
       is_owner: !!(data && data.is_owner),
       requester_email: String(data && data.requester_email ? data.requester_email : '').trim(),
       principal_email: String(data && data.principal_email ? data.principal_email : '').trim(),
     };
+    renderShareModuleSelector();
+    updateShareScopeVisibility();
     renderShares();
   }
 
@@ -518,6 +597,11 @@
       setMessage("empresaLicenciasMessage", err.message || "No se pudo cargar el estado de licencias de la empresa.", true);
     }
     try {
+      if ($("empresaShareNivel")) $("empresaShareNivel").value = "solo_ver";
+      Array.prototype.forEach.call(document.querySelectorAll("#empresaShareModules [data-share-module]"), function (input) {
+        input.checked = false;
+      });
+      updateShareScopeVisibility();
       await loadShares();
     } catch (err) {
       setMessage("empresaShareMessageBox", err.message || "No se pudo cargar el estado de empresas compartidas.", true);
@@ -630,8 +714,14 @@
 
     var email = $("empresaShareEmail").value.trim();
     var mensaje = $("empresaShareMessage").value.trim();
+    var nivelAcceso = normalizeShareNivel($("empresaShareNivel") ? $("empresaShareNivel").value : "solo_ver");
+    var modulosPermitidos = nivelAcceso === "modulos" ? getSelectedShareModules() : [];
     if (!email) {
       setMessage("empresaShareMessageBox", "Debes indicar el correo del administrador.", true);
+      return;
+    }
+    if (nivelAcceso === "modulos" && !modulosPermitidos.length) {
+      setMessage("empresaShareMessageBox", "Elige al menos un modulo para compartir solo ciertos modulos.", true);
       return;
     }
 
@@ -641,7 +731,13 @@
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empresa_id: state.empresa.id, email: email, mensaje: mensaje })
+        body: JSON.stringify({
+          empresa_id: state.empresa.id,
+          email: email,
+          mensaje: mensaje,
+          nivel_acceso: nivelAcceso,
+          modulos_permitidos: modulosPermitidos
+        })
       });
       setMessage("empresaShareMessageBox", data && data.message ? data.message : 'Invitación creada correctamente.', false);
       $("empresaShareEmail").value = '';
@@ -708,6 +804,12 @@
     var shareForm = $("empresaShareForm");
     if (shareForm) {
       shareForm.addEventListener("submit", inviteAdmin);
+    }
+    renderShareModuleSelector();
+    updateShareScopeVisibility();
+    var shareNivel = $("empresaShareNivel");
+    if (shareNivel) {
+      shareNivel.addEventListener("change", updateShareScopeVisibility);
     }
     document.addEventListener("click", function (ev) {
       var renewBtn = ev.target && ev.target.closest ? ev.target.closest(".empresa-addon-toggle-renew") : null;

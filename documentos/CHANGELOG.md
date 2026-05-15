@@ -1,3 +1,17 @@
+## [2026-05-15] Empresas compartidas con alcance por rol y modulos
+- [Backend] `admin_empresa_compartida` y `admin_empresa_compartida_invitaciones` agregan `nivel_acceso` y `modulos_permitidos`.
+- [Permisos] El alcance compartido se aplica sobre modulos, acciones y paginas efectivas despues de licencia, vertical, rol y politicas finas de empresa.
+- [UI] `editar_empresa` y el selector de empresas permiten elegir `Solo ver`, `Acceso total` o `Solo ciertos modulos`, muestran el alcance y ofrecen `Dejar de compartir`.
+- [Seguridad] Revocar acceso invalida caches de empresa/permisos para retirar el acceso inmediatamente.
+- [Alcance] Sin dependencias nuevas; PostgreSQL y aislamiento por `empresa_id`.
+
+## [2026-05-15] Licencia de prueba unica por empresa y asesor comercial
+- [Backend] `licencias_activaciones_gratis` agrega `asesor_id` y un indice unico activo por `empresa_id` para impedir mas de una prueba/gratis por empresa.
+- [Migracion] El arranque normaliza duplicados activos historicos como `historico_duplicado` antes de crear el indice unico.
+- [Checkout] La prueba de 15 dias y la activacion sin pago aceptan `asesor_id`/`codigo_asesor`, validan que el asesor exista, este aceptado y no este inactivo, y dejan trazabilidad en pagos/comisiones.
+- [Comercial] La prueba de 15 dias queda con 250 documentos/ventas mensuales y la UI avisa que solo se puede activar una vez por empresa.
+- [Alcance] Sin dependencias nuevas; se mantiene PostgreSQL y aislamiento por `empresa_id`.
+
 ## [2026-05-14] Nucleo de pantallas empresariales unificado
 - [Frontend] `Venta directa` entra directo al carrito unico con `modo=venta_directa` y permiso `linkVentaDirecta`.
 - [Frontend] `Productos` usa `administrar_productos.html?view=...` para categorias/proveedores/precios/compras sin wrappers intermedios.

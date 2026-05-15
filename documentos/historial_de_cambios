@@ -1,3 +1,22 @@
+2026-05-15: Empresas compartidas con alcance profesional
+- Modulos afectados: `empresas_compartidas`, `administrar_empresa`, `seleccionar_empresa`, `permisos`.
+- Backend: `backend/db/empresa_admin_compartida.go` agrega `nivel_acceso` y `modulos_permitidos` en invitaciones/accesos, y limpia cache al aceptar o revocar.
+- Permisos: `backend/handlers/empresa_permisos.go` aplica el alcance compartido al calculo efectivo de acciones y paginas protegidas.
+- Flujo: `backend/handlers/empresa_compartida_handlers.go` permite compartir como `Solo ver`, `Acceso total` o `Solo ciertos modulos`, valida modulos conocidos y conserva el alcance en reenvios/aceptaciones.
+- UI: `web/editar_empresa.html`, `web/js/editar_empresa.js`, `web/js/seleccionar_empresa.js` y `web/estilos.css` agregan selector de rol, checklist de modulos, etiquetas de alcance y accion visible para dejar de compartir.
+- Validacion: `go test ./handlers -count=1`, `go test ./db -count=1`, `node --check web/js/editar_empresa.js` y `node --check web/js/seleccionar_empresa.js`.
+- Alcance: sin dependencias nuevas; mantiene PostgreSQL y aislamiento por `empresa_id`.
+
+2026-05-15: Licencia de prueba unica por empresa y asesor comercial
+- Modulos afectados: `licencias`, `pagos`, `asesor_comercial`, `super_administrador`.
+- Cambio funcional: cada empresa solo puede usar una activacion gratis/prueba activa una vez, incluyendo la licencia de prueba de 15 dias.
+- Backend: `backend/db/licencias_gratis.go` agrega `asesor_id`, normaliza duplicados activos historicos y crea el indice unico activo por `empresa_id`.
+- Backend: `backend/handlers/payments_handlers.go` acepta `asesor_id` o `codigo_asesor` en la prueba de 15 dias y en activaciones sin pago, valida asesores aceptados/no inactivos y conserva trazabilidad de pago/comision.
+- Licencia: la prueba automatica de 15 dias queda con 250 documentos/ventas mensuales.
+- UI: `web/pagar_licencia.html` permite precargar el codigo del asesor desde URL y `web/super/licencias.html` documenta la regla de uso unico.
+- Validacion: `go test ./db ./handlers -count=1`, `go test ./... -count=1` y parseo de scripts inline HTML.
+- Alcance: no agrega dependencias ni motores; mantiene PostgreSQL y aislamiento por `empresa_id`.
+
 2026-05-14: Nucleo empresarial con menos paginas wrapper
 - Modulos afectados: `administrar_empresa`, `carritos`, `productos`, `crm_unificado`, `documentos_onlyoffice`, `preconfiguracion`.
 - Cambio funcional: los accesos de Venta directa, Productos/Categorias/Proveedores, CRM Forecast y OnlyOffice apuntan directamente a las pantallas canonicas existentes.

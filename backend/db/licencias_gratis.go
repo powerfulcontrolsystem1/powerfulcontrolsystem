@@ -18,6 +18,7 @@ func EnsureLicenciasGratisActivacionesSchema(dbConn *sql.DB) error {
 			licencia_id BIGINT NOT NULL,
 			empresa_id BIGINT NOT NULL,
 			discount_code TEXT,
+			asesor_id TEXT,
 			motivo TEXT,
 			fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
 			fecha_actualizacion TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -25,9 +26,22 @@ func EnsureLicenciasGratisActivacionesSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		)`,
+		`ALTER TABLE licencias_activaciones_gratis ADD COLUMN IF NOT EXISTS asesor_id TEXT`,
+		`UPDATE licencias_activaciones_gratis
+			SET estado = 'historico_duplicado',
+				observaciones = TRIM(COALESCE(observaciones, '') || ' normalizado_por_prueba_unica_empresa')
+			WHERE COALESCE(estado, 'activo') = 'activo'
+				AND id NOT IN (
+					SELECT MIN(id)
+					FROM licencias_activaciones_gratis
+					WHERE COALESCE(estado, 'activo') = 'activo'
+					GROUP BY empresa_id
+				)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_licencias_gratis_licencia_empresa ON licencias_activaciones_gratis(licencia_id, empresa_id)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_licencias_gratis_empresa_unica ON licencias_activaciones_gratis(empresa_id) WHERE COALESCE(estado, 'activo') = 'activo'`,
 		`CREATE INDEX IF NOT EXISTS ix_licencias_gratis_empresa_fecha ON licencias_activaciones_gratis(empresa_id, fecha_creacion DESC)`,
 		`CREATE INDEX IF NOT EXISTS ix_licencias_gratis_empresa_estado ON licencias_activaciones_gratis(empresa_id, estado)`,
+		`CREATE INDEX IF NOT EXISTS ix_licencias_gratis_asesor ON licencias_activaciones_gratis(upper(trim(COALESCE(asesor_id, ''))))`,
 	}
 	for _, stmt := range statements {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
@@ -172,7 +186,7 @@ func isApprovedLicenciaPaymentStatus(status string) bool {
 	}
 }
 
-func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin, discountCode, motivo string) error {
+func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin, discountCode, motivo, asesorID string) error {
 	if licenciaID <= 0 || empresaID <= 0 {
 		return errors.New("licencia_id y empresa_id son obligatorios")
 	}
@@ -232,19 +246,20 @@ func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int6
 	}
 
 	nowExpr := sqlNowExpr()
+	asesorID = strings.ToUpper(strings.TrimSpace(asesorID))
 	assignedLicenciaID, err := activateLicenciaForEmpresaTx(tx, licenciaID, empresaID, fechaInicio, fechaFin)
 	if err != nil {
 		return err
 	}
 
-	if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", licenciaID, empresaID, strings.TrimSpace(discountCode), strings.TrimSpace(motivo)); err != nil {
+	if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, asesor_id, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", licenciaID, empresaID, strings.TrimSpace(discountCode), asesorID, strings.TrimSpace(motivo)); err != nil {
 		if isLicenciaGratisUniqueConstraintErr(err) {
 			return ErrLicenciaGratisYaUsada
 		}
 		return err
 	}
 	if assignedLicenciaID != licenciaID {
-		if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", assignedLicenciaID, empresaID, strings.TrimSpace(discountCode), strings.TrimSpace(motivo)); err != nil && !isLicenciaGratisUniqueConstraintErr(err) {
+		if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, asesor_id, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", assignedLicenciaID, empresaID, strings.TrimSpace(discountCode), asesorID, strings.TrimSpace(motivo)); err != nil && !isLicenciaGratisUniqueConstraintErr(err) {
 			return err
 		}
 	}

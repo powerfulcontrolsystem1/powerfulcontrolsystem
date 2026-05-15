@@ -1,7 +1,7 @@
 # Estructura del Base de Datos
 
-Version: 2026-05-12.1.0
-Ultima actualizacion: 2026-05-12
+Version: 2026-05-15.1.0
+Ultima actualizacion: 2026-05-15
 
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
@@ -21,6 +21,17 @@ Todas las tablas operativas usan como base los campos estandar:
 - usuario_creador TEXT
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
+
+Actualizacion 2026-05-15 (empresas compartidas con alcance)
+- `pcs_superadministrador.admin_empresa_compartida` agrega `nivel_acceso` (`solo_ver`, `acceso_total`, `modulos`) y `modulos_permitidos` para guardar el alcance efectivo del acceso aceptado.
+- `pcs_superadministrador.admin_empresa_compartida_invitaciones` agrega las mismas columnas para que el alcance elegido por el propietario viaje con la invitacion y se materialice al aceptarla.
+- El backend asegura ambas columnas en arranque y mantiene el aislamiento por `empresa_id`; no se agregan motores ni dependencias.
+
+Actualizacion 2026-05-15 (licencia de prueba unica por empresa)
+- `pcs_superadministrador.licencias_activaciones_gratis` agrega `asesor_id` para trazabilidad comercial de pruebas/activaciones sin pago.
+- Se crea `ux_licencias_gratis_empresa_unica` como indice unico parcial sobre `empresa_id` cuando `estado` esta activo, impidiendo que una misma empresa use mas de una prueba/gratis activa.
+- Al asegurar esquema, duplicados activos historicos se marcan como `historico_duplicado` antes de crear el indice unico.
+- La prueba automatica de 15 dias se registra con 250 documentos/ventas mensuales y conserva aislamiento por `empresa_id`.
 
 Actualizacion 2026-05-12 (tickets de ayuda empresariales profesionalizados)
 - `pcs_superadministrador.super_tickets_ayuda` agrega `contacto_telefono`, `contacto_preferido` y `contexto_json` para soporte profesional. El contexto se limita a claves tecnicas seguras de pantalla/modulo/navegador y no guarda cookies, localStorage, claves ni secretos.
@@ -1171,6 +1182,12 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - modulos_habilitados, super_rol_habilitado
   - fecha_inicio, fecha_fin, activo
   - fecha_actualizacion, usuario_creador, estado, observaciones
+- licencias_activaciones_gratis:
+  - licencia_id, empresa_id, discount_code, asesor_id, motivo
+  - fecha_creacion, fecha_actualizacion, estado, observaciones
+  - indice unico: `(licencia_id, empresa_id)`
+  - indice unico parcial: `empresa_id` cuando `estado` activo, para garantizar una sola prueba/gratis por empresa
+  - Descripcion: marca operativa para impedir reutilizar pruebas/licencias sin pago por empresa y conservar trazabilidad de descuento/cortesia/asesor.
 - tipo_empresa_preconfiguraciones:
   - tipo_empresa_id, enabled, nombre, descripcion, config_json
   - usuario_creador, fecha_creacion, fecha_actualizacion, estado

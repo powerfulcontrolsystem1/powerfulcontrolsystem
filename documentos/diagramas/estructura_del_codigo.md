@@ -1,3 +1,17 @@
+## Actualizacion 2026-05-15 (empresas compartidas con alcance)
+
+- Backend:
+  - `backend/db/empresa_admin_compartida.go` conserva invitaciones y accesos, ahora con `nivel_acceso` y `modulos_permitidos`.
+  - `backend/handlers/empresa_compartida_handlers.go` valida propietario, usuario invitado, nivel de acceso y modulos conocidos antes de crear, reenviar, aceptar o revocar.
+  - `backend/handlers/empresa_permisos.go` aplica el alcance compartido dentro del contexto efectivo que consumen paginas y wrappers API.
+- Frontend:
+  - `web/editar_empresa.html` y `web/js/editar_empresa.js` muestran selector de alcance, checklist de modulos y accion para dejar de compartir.
+  - `web/js/seleccionar_empresa.js` incorpora el mismo alcance en el panel rapido de compartir desde la tarjeta.
+- Flujo:
+  - Propietario comparte empresa -> invitacion guarda alcance -> invitado acepta -> acceso compartido materializa alcance -> permisos_contexto y wrappers limitan acciones/paginas.
+- Alcance:
+  - No se agregan rutas ni dependencias; se extiende el contrato JSON existente de `/super/api/empresas/compartidos` y `/api/empresa/permisos_contexto`.
+
 ## Actualizacion 2026-05-14 (centro de reportes unico)
 
 - Frontend:

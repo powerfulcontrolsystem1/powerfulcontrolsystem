@@ -73,6 +73,22 @@
             </div>
           </div>
           <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empresaShareNivel">Rol de acceso compartido</label>
+              <select id="empresaShareNivel" class="form-input">
+                <option value="solo_ver">Solo ver</option>
+                <option value="acceso_total">Acceso total</option>
+                <option value="modulos">Solo ciertos modulos</option>
+              </select>
+            </div>
+          </div>
+          <div id="empresaShareModulesWrap" class="form-row" hidden>
+            <div class="form-col form-col-full">
+              <label class="form-label">Modulos permitidos</label>
+              <div id="empresaShareModules" class="empresa-share-modules"></div>
+            </div>
+          </div>
+          <div class="form-row">
             <div class="form-col form-col-full">
               <label class="form-label" for="empresaShareMessage">Mensaje opcional</label>
               <textarea id="empresaShareMessage" class="form-input empresa-edit-textarea" rows="4" maxlength="800" placeholder="Mensaje breve que aparecerá en el correo de invitación"></textarea>
