@@ -781,6 +781,16 @@
       return 'EST-' + state.empresaID + '-' + state.stationID;
     }
 
+    function getDefaultDirectSaleCarritoCode() {
+      if (!state.directSaleMode || !(state.empresaID > 0)) return '';
+      return 'VENTA-DIRECTA-' + state.empresaID + '-0';
+    }
+
+    function getLegacyDirectSaleCarritoCode() {
+      if (!state.directSaleMode || !(state.empresaID > 0)) return '';
+      return 'VENTA-DIRECTA-' + state.empresaID;
+    }
+
     function findExistingCarritoByCode(code) {
       const targetCode = normalizedCode(code);
       if (!targetCode || !Array.isArray(state.carritos) || !state.carritos.length) return null;
@@ -816,6 +826,27 @@
       }
 
       return null;
+    }
+
+    function findExistingDirectSaleCarrito() {
+      if (!state.directSaleMode || !Array.isArray(state.carritos) || !state.carritos.length) return null;
+
+      const preferredCode = normalizedCode(state.selectedCarritoCode || getDefaultDirectSaleCarritoCode());
+      const legacyCode = normalizedCode(getLegacyDirectSaleCarritoCode());
+      const directReference = 'CAJA_DIRECTA';
+
+      if (preferredCode) {
+        const byPreferredCode = findExistingCarritoByCode(preferredCode);
+        if (byPreferredCode) return byPreferredCode;
+      }
+      if (legacyCode && legacyCode !== preferredCode) {
+        const byLegacyCode = findExistingCarritoByCode(legacyCode);
+        if (byLegacyCode) return byLegacyCode;
+      }
+
+      return state.carritos.find(function(item) {
+        return normalizedCode(item && item.referencia_externa) === directReference;
+      }) || null;
     }
 
     function escapeHtml(v) {
@@ -5785,7 +5816,9 @@
       }
       const backToStationsHeaderBtn = document.getElementById('backToStationsHeaderBtn');
       if (backToStationsHeaderBtn) {
-        backToStationsHeaderBtn.hidden = !state.empresaID || state.directSaleMode;
+        const showBackToStations = Boolean(state.empresaID && state.stationMode && !state.directSaleMode);
+        backToStationsHeaderBtn.hidden = !showBackToStations;
+        backToStationsHeaderBtn.style.display = showBackToStations ? '' : 'none';
       }
       const moduleHelp = document.getElementById('moduleHelp');
       if (moduleHelp) {
@@ -5901,9 +5934,12 @@
     }
 
     async function ensureDirectSaleCarritoLifecycle() {
-      if (!state.directSaleMode || !state.selectedCarritoCode) return;
+      if (!state.directSaleMode) return;
+      if (!state.selectedCarritoCode) {
+        state.selectedCarritoCode = getDefaultDirectSaleCarritoCode();
+      }
 
-      let selected = getSelectedCarrito() || findExistingCarritoByCode(state.selectedCarritoCode);
+      let selected = getSelectedCarrito() || findExistingDirectSaleCarrito();
       if (selected) {
         state.selectedCarritoID = Number(selected.id || 0);
         state.selectedCarritoCode = '';
@@ -5918,11 +5954,11 @@
       const createPayload = {
         empresa_id: Number(state.empresaID),
         codigo: state.selectedCarritoCode,
-        nombre: state.stationName || 'Caja',
+        nombre: state.stationName || 'Venta directa',
         canal_venta: 'mostrador',
         moneda: 'COP',
         referencia_externa: 'CAJA_DIRECTA',
-        observaciones: 'Carrito automatico de venta directa'
+        observaciones: 'Carrito 0 automatico de venta directa'
       };
       const createRes = await fetch('/api/empresa/carritos_compra?modo=venta_directa&perm_page=linkVentaDirecta&carrito_codigo=' + encodeURIComponent(state.selectedCarritoCode), {
         method: 'POST',
@@ -6369,7 +6405,11 @@
           state.stationName = 'Estación ' + state.stationID;
         }
       } else if (state.directSaleMode && !state.stationName) {
-        state.stationName = 'Caja';
+        state.stationName = 'Venta directa';
+      }
+
+      if (state.directSaleMode && !state.selectedCarritoCode && !state.selectedCarritoID) {
+        state.selectedCarritoCode = getDefaultDirectSaleCarritoCode();
       }
 
       applyStationModeUI();

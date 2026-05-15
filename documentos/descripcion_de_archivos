@@ -1,3 +1,9 @@
+2026-05-15 - Venta directa con carrito 0 automatico
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- asigna por defecto `VENTA-DIRECTA-{empresa_id}-0` al modo `venta_directa`, reutiliza carrito legacy `VENTA-DIRECTA-{empresa_id}` o `CAJA_DIRECTA` si ya existe, y oculta el retorno a estaciones en esta vista.
+- Evidencia:
+	- `test_runs/venta_directa_carrito_0.png` registra verificacion visual local con carrito creado y vista operativa sin mensaje de carrito faltante.
+
 2026-05-15 - Empresas compartidas con alcance profesional
 - `backend/db/empresa_admin_compartida.go`:
 	- agrega persistencia de `nivel_acceso` y `modulos_permitidos` en invitaciones y accesos compartidos, con invalidacion de cache al aceptar/revocar.

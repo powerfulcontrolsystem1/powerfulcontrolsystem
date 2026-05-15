@@ -1,3 +1,10 @@
+2026-05-15: Venta directa con carrito 0 automatico
+- Modulos afectados: `carritos`, `ventas_simple`, `administrar_empresa`.
+- Cambio funcional: `web/administrar_empresa/carrito_de_compras.html?modo=venta_directa` crea o reutiliza automaticamente el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` cuando la URL no trae `carrito_codigo`.
+- Compatibilidad: si ya existe el carrito legacy `VENTA-DIRECTA-{empresa_id}` o un carrito con `referencia_externa=CAJA_DIRECTA`, la pantalla lo reutiliza antes de crear uno nuevo.
+- UX: venta directa deja de mostrar error de carrito faltante y oculta el boton `Regresar a estaciones`; estaciones mantienen su asignacion `EST-{empresa_id}-{estacion_id}`.
+- Alcance: cambio frontend; no agrega tablas, endpoints ni dependencias y conserva aislamiento por `empresa_id`.
+
 2026-05-15: Empresas compartidas con alcance profesional
 - Modulos afectados: `empresas compartidas`, `administrar empresa`, `seleccionar empresa`, `permisos`.
 - Cambio funcional: al compartir una empresa, el propietario puede elegir `Solo ver`, `Acceso total` o `Solo ciertos modulos`; el alcance viaja en la invitacion y se aplica al aceptar.

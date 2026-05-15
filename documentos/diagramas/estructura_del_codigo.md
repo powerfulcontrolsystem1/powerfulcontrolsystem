@@ -1,3 +1,13 @@
+## Actualizacion 2026-05-15 (venta directa: carrito 0)
+
+- Frontend:
+  - `web/administrar_empresa/carrito_de_compras.html` inicializa el modo `venta_directa` con el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` cuando la URL no trae `carrito_codigo`.
+  - La misma vista reutiliza carritos anteriores por codigo legacy `VENTA-DIRECTA-{empresa_id}` o `referencia_externa=CAJA_DIRECTA`.
+- Flujo:
+  - Menu empresarial -> `carrito_de_compras.html?modo=venta_directa&perm_page=linkVentaDirecta` -> crear/reutilizar carrito 0 -> cargar items/cobro en el nucleo unico de carrito.
+- Alcance:
+  - No se agregan endpoints ni tablas; el backend existente sigue recibiendo `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`.
+
 ## Actualizacion 2026-05-15 (empresas compartidas con alcance)
 
 - Backend:

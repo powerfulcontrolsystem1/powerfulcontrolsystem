@@ -1,3 +1,9 @@
+## [2026-05-15] Venta directa con carrito 0 automatico
+- [Frontend] `carrito_de_compras.html?modo=venta_directa` crea o reutiliza `VENTA-DIRECTA-{empresa_id}-0` si no llega `carrito_codigo`.
+- [Compatibilidad] Se reutilizan carritos antiguos `VENTA-DIRECTA-{empresa_id}` o `CAJA_DIRECTA` antes de crear uno nuevo.
+- [UX] Venta directa deja de mostrarse como estacion y oculta el boton `Regresar a estaciones`.
+- [Alcance] Sin tablas, endpoints ni dependencias nuevas.
+
 ## [2026-05-15] Empresas compartidas con alcance por rol y modulos
 - [Backend] `admin_empresa_compartida` y `admin_empresa_compartida_invitaciones` agregan `nivel_acceso` y `modulos_permitidos`.
 - [Permisos] El alcance compartido se aplica sobre modulos, acciones y paginas efectivas despues de licencia, vertical, rol y politicas finas de empresa.

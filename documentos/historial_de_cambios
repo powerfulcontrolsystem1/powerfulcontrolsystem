@@ -1,3 +1,11 @@
+2026-05-15: Venta directa con carrito 0 automatico
+- Modulos afectados: `carritos`, `ventas_simple`, `administrar_empresa`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` ahora inicializa venta directa con `VENTA-DIRECTA-{empresa_id}-0` cuando no hay `carrito_codigo` en la URL.
+- Compatibilidad: se busca primero el carrito canonico, luego el legacy `VENTA-DIRECTA-{empresa_id}` y finalmente `referencia_externa=CAJA_DIRECTA`.
+- UX: la vista ya no queda sin carrito en venta directa y oculta `Regresar a estaciones`, manteniendo estaciones con sus carritos `EST-{empresa_id}-{estacion_id}`.
+- Validacion: parseo del script inline y prueba visual Playwright con API mock confirmando creacion de `VENTA-DIRECTA-32-0`, items vacios visibles, caja abierta seleccionable y ausencia de mensaje de carrito faltante.
+- Alcance: sin cambios de BD, endpoints ni dependencias.
+
 2026-05-15: Empresas compartidas con alcance profesional
 - Modulos afectados: `empresas_compartidas`, `administrar_empresa`, `seleccionar_empresa`, `permisos`.
 - Backend: `backend/db/empresa_admin_compartida.go` agrega `nivel_acceso` y `modulos_permitidos` en invitaciones/accesos, y limpia cache al aceptar o revocar.
