@@ -5,6 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Control de asistencia</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .asistencia-table th,
+    .asistencia-table td {
+      vertical-align: top;
+    }
+    .asistencia-row-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(92px, 1fr));
+      gap: 6px;
+      min-width: 196px;
+      max-width: 230px;
+    }
+    .asistencia-row-actions .btn {
+      width: 100%;
+      min-height: 34px;
+      padding: 7px 8px;
+      white-space: normal;
+      line-height: 1.15;
+    }
+    @media (max-width: 760px) {
+      .asistencia-row-actions {
+        grid-template-columns: 1fr;
+        min-width: 150px;
+      }
+    }
+  </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -456,6 +482,33 @@
       setMessage('', false);
     }
 
+    function focusRegistro() {
+      selectSubmenuSection('registro');
+      const form = document.getElementById('form');
+      setTimeout(function() {
+        if (form && typeof form.scrollIntoView === 'function') {
+          form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        const first = document.getElementById('usuario_empresa_id') || document.getElementById('empleado_nombre');
+        if (first && typeof first.focus === 'function') {
+          first.focus();
+        }
+      }, 80);
+    }
+
+    function selectSubmenuSection(key) {
+      const target = normalize(key);
+      if (!target) return;
+      const button = document.querySelector('[data-pcs-submenu-target="' + target + '"]');
+      if (button && typeof button.click === 'function') {
+        button.click();
+        return;
+      }
+      try {
+        window.location.hash = 'tab-' + target;
+      } catch (_) {}
+    }
+
     function renderUsersSelect() {
       const select = document.getElementById('usuario_empresa_id');
       if (!select) return;
@@ -724,17 +777,17 @@
           '<td>' + formatHours(item.horas_trabajadas) + '<br><small>' + esc(String(Number(item.minutos_tarde || 0))) + ' min tarde</small></td>' +
           '<td><span class="asistencia-state-chip ' + estadoClass + '">' + esc(item.estado_asistencia || 'pendiente') + '</span>' + (isOpen ? '<br><small>Turno abierto</small>' : '') + '</td>' +
           '<td>' + esc(estadoRegistro) + '</td>' +
-          '<td>' +
+          '<td><div class="asistencia-row-actions">' +
             '<button class="btn secondary" type="button" data-action="edit" data-item="' + rowData + '">Editar</button> ' +
-            '<button class="btn secondary" type="button" data-action="entrada" data-id="' + id + '">Entrada</button> ' +
-            '<button class="btn secondary" type="button" data-action="salida" data-id="' + id + '">Salida</button> ' +
+            '<button class="btn secondary" type="button" data-action="entrada" data-id="' + id + '">Entrada ahora</button> ' +
+            '<button class="btn secondary" type="button" data-action="salida" data-id="' + id + '">Salida ahora</button> ' +
             '<button class="btn secondary" type="button" data-action="toggle" data-id="' + id + '" data-next="' + nextAction + '">' + nextLabel + '</button> ' +
             '<button class="btn danger" type="button" data-action="delete" data-id="' + id + '">Eliminar</button>' +
-          '</td>' +
+          '</div></td>' +
         '</tr>';
       }).join('');
 
-      root.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr>' +
+      root.innerHTML = '<div class="table-wrap"><table class="table asistencia-table"><thead><tr>' +
         '<th>Fecha</th>' +
         '<th>Codigo</th>' +
         '<th>Empleado</th>' +
@@ -799,22 +852,17 @@
       document.getElementById('novedad').value = normalize(item.novedad);
       document.getElementById('observaciones').value = normalize(item.observaciones);
       computeTardanzaPreview();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      focusRegistro();
     }
 
     async function markEntrada(id) {
-      const timeInput = prompt('Hora de entrada (HH:MM o HH:MM:SS):', '08:00:00');
-      if (timeInput === null) return;
-      const tardanzaInput = prompt('Minutos de tardanza:', '0');
-      if (tardanzaInput === null) return;
-      const novedadInput = prompt('Novedad (opcional):', '');
-
       const payload = {
         empresa_id: state.empresaID,
         id: Number(id),
-        hora_entrada: normalize(timeInput),
-        minutos_tarde: Number(tardanzaInput || 0),
-        novedad: normalize(novedadInput)
+        hora_entrada: currentTimeString(),
+        minutos_tarde: 0,
+        estado_asistencia: '',
+        novedad: ''
       };
 
       const resp = await fetch('/api/empresa/asistencia_empleados?action=marcar_entrada', {
@@ -825,19 +873,15 @@
       });
       await ensureOk(resp);
       await loadItems();
-      setMessage('Entrada registrada correctamente.', false);
+      setMessage('Entrada registrada con la hora actual.', false);
     }
 
     async function markSalida(id) {
-      const timeInput = prompt('Hora de salida (HH:MM o HH:MM:SS):', '17:00:00');
-      if (timeInput === null) return;
-      const novedadInput = prompt('Novedad (opcional):', '');
-
       const payload = {
         empresa_id: state.empresaID,
         id: Number(id),
-        hora_salida: normalize(timeInput),
-        novedad: normalize(novedadInput)
+        hora_salida: currentTimeString(),
+        novedad: ''
       };
 
       const resp = await fetch('/api/empresa/asistencia_empleados?action=marcar_salida', {
@@ -848,7 +892,14 @@
       });
       await ensureOk(resp);
       await loadItems();
-      setMessage('Salida registrada correctamente.', false);
+      setMessage('Salida registrada con la hora actual.', false);
+    }
+
+    function currentTimeString() {
+      const now = new Date();
+      return String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0');
     }
 
     async function toggleEstado(id, action) {
@@ -891,7 +942,7 @@
       document.getElementById('cancelBtn').addEventListener('click', resetForm);
       document.getElementById('addBtn').addEventListener('click', function() {
         resetForm();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        focusRegistro();
       });
       document.getElementById('saveConfigBtn').addEventListener('click', async function() {
         try {

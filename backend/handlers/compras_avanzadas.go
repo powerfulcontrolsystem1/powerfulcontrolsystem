@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -134,6 +135,10 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 			case "cotizacion":
 				payload.Cotizacion.EmpresaID = payload.EmpresaID
+				if err := completarProveedorCompraAvanzada(dbEmp, payload.EmpresaID, payload.Cotizacion.ProveedorID, &payload.Cotizacion.ProveedorNombre); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 				if payload.Cotizacion.UsuarioCreador == "" {
 					payload.Cotizacion.UsuarioCreador = usuario
 				}
@@ -156,6 +161,10 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 			case "recepcion":
 				payload.Recepcion.EmpresaID = payload.EmpresaID
+				if err := completarProveedorCompraAvanzada(dbEmp, payload.EmpresaID, payload.Recepcion.ProveedorID, &payload.Recepcion.ProveedorNombre); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
 				if payload.Recepcion.UsuarioCreador == "" {
 					payload.Recepcion.UsuarioCreador = usuario
 				}
@@ -175,4 +184,21 @@ func EmpresaComprasAvanzadasHandler(dbEmp *sql.DB) http.HandlerFunc {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 		}
 	}
+}
+
+func completarProveedorCompraAvanzada(dbEmp *sql.DB, empresaID, proveedorID int64, proveedorNombre *string) error {
+	if proveedorID <= 0 {
+		return errors.New("proveedor_id es obligatorio y debe corresponder a un proveedor creado")
+	}
+	proveedores, err := dbpkg.GetProveedoresByEmpresa(dbEmp, empresaID, false)
+	if err != nil {
+		return err
+	}
+	for _, proveedor := range proveedores {
+		if proveedor.ID == proveedorID {
+			*proveedorNombre = strings.TrimSpace(proveedor.Nombre)
+			return nil
+		}
+	}
+	return errors.New("proveedor no encontrado o inactivo para esta empresa")
 }

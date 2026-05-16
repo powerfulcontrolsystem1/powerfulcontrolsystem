@@ -15817,9 +15817,38 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   .login-page .btn,
   .login-page .google-btn {
     max-width: 100%;
+    min-height: 44px;
     min-width: 0;
     box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    line-height: 1.2;
     white-space: normal;
+  }
+
+  .login-page .login-inline-links a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in srgb, var(--border) 76%, var(--accent) 24%);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface) 92%, var(--accent) 8%);
+    line-height: 1.25;
+  }
+
+  .login-page .password-visibility-field .password-visibility-input {
+    padding-right: 60px;
+  }
+
+  .login-page .password-visibility-toggle {
+    width: 44px;
+    height: 44px;
+    right: 6px;
   }
 
   .login-page .form-input,
@@ -15827,8 +15856,40 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   .login-page textarea,
   .login-page select {
     max-width: 100%;
+    min-height: 44px;
     min-width: 0;
     box-sizing: border-box;
+  }
+
+  .login-page .remember-label {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .login-page .remember-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  body.register-admin-body .ai-chat-toggle-button:not(.is-robot-avatar) {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  body.register-admin-body .ai-chat-toggle-button:not(.is-robot-avatar) .ai-chat-toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   img.icon,

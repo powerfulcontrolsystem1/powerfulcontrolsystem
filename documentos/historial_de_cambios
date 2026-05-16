@@ -1,3 +1,73 @@
+2026-05-15: Asistencia de empleados reparada y profesionalizada
+- Modulos afectados: `asistencia_empleados`, `personas_activos`, `nomina`.
+- Causa tecnica: el runtime de asistencia aun usaba `dbConn.QueryRow/Query/Exec` con placeholders `?` y `datetime('now','localtime')`, lo que puede fallar en PostgreSQL al guardar configuracion, crear asistencia, marcar entrada/salida, activar/desactivar o eliminar.
+- Backend: `backend/db/asistencia_empleados.go` migra las operaciones runtime a `queryRowSQLCompat`, `querySQLCompat`, `execSQLCompat`, `insertSQLCompat` y `sqlNowExpr()`. Tambien corrige `marcar_entrada` para clasificar automaticamente como `presente` o `tarde` cuando no llega estado explicito.
+- Frontend: `web/administrar_empresa/asistencia_empleados.html` hace que `Agregar registro` y `Editar` cambien a la seccion `Registro`; reemplaza prompts nativos por botones `Entrada ahora` y `Salida ahora`; compacta la celda de acciones para que los botones se vean completos.
+- Resguardo: `backend/db/asistencia_empleados_postgres_test.go` protege el runtime de asistencia contra regresiones SQLite en PostgreSQL.
+- Validacion: `go test ./db -run "TestEmpresaAsistenciaRuntimeUsesPostgresCompatibleSQL|TestCreateEmpresaCreditoUsesPostgresCompatibleWrites|TestCreditoGenerateCuotasTxUsesPostgresCompatibleWrites" -count=1`, `go test ./db ./handlers -count=1`, `git diff --check` y prueba visual Playwright de todos los botones principales.
+- Evidencia visual: `test_runs/asistencia_inicio.png`, `test_runs/asistencia_registro_creado.png`, `test_runs/asistencia_botones_validos.png`.
+- Alcance tecnico: no cambia tablas, permisos, rutas ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-15: Centro de reportes sin pagina IA dedicada
+- Modulos afectados: `reportes`, `administrar_empresa`, `permisos`.
+- Cambio UX: el submenu de `web/administrar_empresa/reportes_menu.html` queda solo con `Centro de reportes`; se retira el boton `Asistente IA`.
+- Limpieza frontend: `web/administrar_empresa/reportes_ejecutivos.html` elimina el boton superior y la tarjeta del catalogo que abrian `/administrar_empresa/reportes_ia_chat.html`; se elimina la pagina `web/administrar_empresa/reportes_ia_chat.html`.
+- Permisos: se retira `linkReportesIAChat` del catalogo de paginas y del mapa frontend; las APIs `/api/empresa/reportes*` quedan asociadas a `linkReportes`.
+- Alcance tecnico: no cambia tablas ni dependencias. El endpoint `/api/empresa/reportes_ia_chat` se conserva como soporte del asistente global en modo reportes, sin pagina dedicada en el centro.
+- Validacion: busqueda estatica sin referencias frontend a `reportes_ia_chat.html` ni `linkReportesIAChat`; `go test ./handlers -run "Test.*EmpresaPermisos|Test.*Reportes" -count=1` y `git diff --check`.
+
+2026-05-15: Submenu de facturacion electronica sin regreso a empresas
+- Modulos afectados: `facturacion_electronica`, `administrar_empresa`.
+- Cambio UX: se retira el boton/enlace `Volver a empresas` del submenu `web/administrar_empresa/facturacion_electronica_menu.html`.
+- Validacion: busqueda estatica confirma que el submenu ya no contiene el enlace a `/seleccionar_empresa.html`.
+- Alcance tecnico: frontend solamente; no cambia backend, tablas, permisos, rutas API ni dependencias.
+
+2026-05-15: Nuevo credito compatible con PostgreSQL
+- Modulos afectados: `creditos`, `cartera`, `finanzas`.
+- Causa tecnica: el alta de credito usaba SQL transaccional con `tx.Exec` directo, placeholders `?` y `datetime('now','localtime')`; en PostgreSQL esto podia fallar con 500 al presionar `Nuevo credito`, especialmente al generar cuotas.
+- Backend: `backend/db/creditos.go` cambia el insert de `empresa_creditos`, la actualizacion de codigo automatico y el insert de `empresa_creditos_cuotas` para usar `insertTxSQLCompat`/`execTxSQLCompat` y `sqlNowExpr()`.
+- Resguardo: `backend/db/creditos_postgres_test.go` protege el flujo de creacion y generacion de cuotas contra regresiones SQLite en runtime PostgreSQL.
+- Validacion: `go test ./db -run "TestCreateEmpresaCreditoUsesPostgresCompatibleWrites|TestCreditoGenerateCuotasTxUsesPostgresCompatibleWrites|TestCreateBodegaUsaTimestampPostgres|TestShouldRefreshEmpresaCarritosSchemaForMissingObjects" -count=1`, `go test ./db ./handlers -count=1` y `git diff --check`.
+- Alcance tecnico: no cambia tablas, permisos, rutas ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-15: Productos avisa cuando falta bodega
+- Modulos afectados: `inventario`, `productos`, `bodegas`.
+- Cambio UX: `Nuevo producto` valida que exista al menos una bodega activa antes de abrir el formulario de producto.
+- Comportamiento: si no hay bodega activa, se muestra el aviso `Para agregar un producto primero debes crear una bodega activa` y un boton explicito `Crear bodega`.
+- Resguardo: `saveProducto` tambien bloquea creaciones nuevas sin bodega activa.
+- Validacion: parseo del script inline y prueba visual Playwright con API mock en empresa sin bodegas y con una bodega activa.
+- Alcance tecnico: frontend solamente; no cambia backend, tablas, permisos ni dependencias.
+
+2026-05-15: Compras elige proveedores previamente creados
+- Modulos afectados: `compras`, `compras_avanzadas`, `proveedores`, `inventario`.
+- Cambio funcional: Compras avanzadas deja de capturar proveedores como texto libre y usa selectores poblados desde el catalogo de proveedores de la empresa.
+- Backend: cotizaciones y recepciones avanzadas validan `proveedor_id` activo por `empresa_id`; recepciones avanzadas conservan `proveedor_id` en base de datos.
+- UX: Compras basicas agrega acceso directo a gestionar proveedores y autocompleta el documento del proveedor elegido.
+- Validacion: `node --check web/js/compras_avanzadas.js`, `go test ./db ./handlers` desde `backend`, `git diff --check` y prueba visual Playwright con API mock confirmando requisicion, cotizacion y recepcion con `Proveedor Demo SAS`.
+- Alcance tecnico: sin dependencias nuevas; conserva PostgreSQL y aislamiento por `empresa_id`.
+
+2026-05-15: Menu empresarial con Venta directa primero
+- Modulos afectados: `administrar_empresa`, `ventas`, `carritos`, `configuracion`.
+- Cambio UX: en el sidebar principal, `Venta directa` queda como primera opcion de `Operacion y ventas`.
+- Navegacion: `Carritos` sale del grupo operativo principal y se mantiene en `Configuracion > Ventas y cobro`, junto a la configuracion del carrito unificado.
+- Validacion: Playwright confirma que el grupo `Operacion y ventas` inicia con `linkVentaDirecta`, no contiene `linkCarritoCompras`, y que `linkCarritoCompras` sigue en `configuracion_menu.html`.
+- Alcance tecnico: solo HTML de navegacion; no modifica permisos, endpoints, rutas destino, tablas ni dependencias.
+
+2026-05-15: Alta de bodegas compatible con PostgreSQL
+- Modulos afectados: `inventario`, `bodegas`, `productos`.
+- Causa tecnica: el alta de bodega usaba `datetime('now','localtime')` dentro del `INSERT`; en PostgreSQL esa funcion no existe y podia romper `POST /api/empresa/bodegas`.
+- Backend: `backend/db/productos.go` cambia `CreateBodega` para usar `sqlNowExpr()` en `fecha_creacion` y `fecha_actualizacion`.
+- Pruebas: `go test ./db -run "TestCreateBodegaUsaTimestampPostgres|TestShouldRefreshEmpresaCarritosSchemaForMissingObjects" -count=1` y `go test ./handlers -run "Test.*Bodega|Test.*Inventario|TestEmpresaPermisos" -count=1`.
+- Validacion visual: Playwright escritorio y movil con API mock confirma `Nueva`, llenado, `Guardar bodega`, mensaje `Bodega creada correctamente.`, KPI en 1 y fila visible, sin errores de consola ni desborde horizontal.
+- Alcance tecnico: no cambia tablas, permisos, rutas ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-15: Login y registro movil con controles tactiles
+- Modulos afectados: `autenticacion`, `login_usuario`, `registro_administrador`.
+- Cambio UX: las pantallas publicas de login administrador, login operativo y registro administrador tienen botones, enlaces, inputs y control de mostrar contrasena con areas tactiles comodas en celular.
+- Registro administrador: el chat flotante se muestra compacto en movil para no invadir el formulario de registro.
+- Validacion: prueba visual Playwright movil en login administrador, login operativo, recuperacion de invitacion, registro por invitacion y registro administrador; sin desbordes horizontales ni objetivos tactiles pequenos.
+- Alcance tecnico: solo frontend; no modifica endpoints, sesiones, permisos, tablas, credenciales ni dependencias.
+
 2026-05-15: Venta directa con carrito 0 automatico
 - Modulos afectados: `carritos`, `ventas_simple`, `administrar_empresa`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` ahora inicializa venta directa con `VENTA-DIRECTA-{empresa_id}-0` cuando no hay `carrito_codigo` en la URL.

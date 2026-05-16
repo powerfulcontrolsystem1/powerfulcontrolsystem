@@ -1,3 +1,48 @@
+2026-05-15 - Asistencia de empleados reparada y profesionalizada
+- `backend/db/asistencia_empleados.go`:
+	- cambia el runtime de asistencia a helpers compatibles con PostgreSQL y fechas `sqlNowExpr()` para configuracion, cierres, CRUD y marcaciones.
+	- ajusta `MarkEmpresaAsistenciaEntrada` para resolver automaticamente `presente`/`tarde` cuando la marcacion no envia estado.
+- `backend/db/asistencia_empleados_postgres_test.go`:
+	- nuevo test estatico que impide reintroducir `dbConn.QueryRow/Query/Exec` directo o `datetime()` en el runtime de asistencia.
+- `web/administrar_empresa/asistencia_empleados.html`:
+	- `Agregar registro` y `Editar` abren el tab `Registro`; `Entrada ahora`/`Salida ahora` registran la hora actual sin prompts; las acciones de tabla se compactan para verse completas.
+- Evidencia:
+	- `test_runs/asistencia_inicio.png`, `test_runs/asistencia_registro_creado.png` y `test_runs/asistencia_botones_validos.png`.
+
+2026-05-15 - Centro de reportes sin pagina IA dedicada
+- `web/administrar_empresa/reportes_menu.html`:
+	- retira el enlace `Asistente IA` del submenu.
+- `web/administrar_empresa/reportes_ejecutivos.html`:
+	- elimina el boton superior y la tarjeta del catalogo que abrian la pagina IA de reportes.
+- `web/administrar_empresa/reportes_ia_chat.html`:
+	- eliminado; el centro de reportes queda como pantalla unica de consulta, vista previa y exportacion.
+- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js`:
+	- retiran el permiso de pagina `linkReportesIAChat`; las rutas de reportes usan el permiso general `linkReportes`.
+
+2026-05-15 - Submenu facturacion electronica sin volver a empresas
+- `web/administrar_empresa/facturacion_electronica_menu.html`:
+	- retira el enlace `Volver a empresas` para mantener el submenu dedicado a las pantallas de facturacion electronica.
+
+2026-05-15 - Nuevo credito compatible con PostgreSQL
+- `backend/db/creditos.go`:
+	- corrige el alta de credito y generacion de cuotas para usar helpers SQL compatibles con PostgreSQL y `sqlNowExpr()` en fechas runtime.
+- `backend/db/creditos_postgres_test.go`:
+	- nuevo test estatico enfocado que evita reintroducir `tx.Exec` directo o `datetime()` en `CreateEmpresaCredito` y `creditoGenerateCuotasTxWithStart`.
+
+2026-05-15 - Menu empresarial con Venta directa primero
+- `web/administrar_empresa.html`:
+	- reordena `Operacion y ventas` para mostrar `Venta directa` primero y retira `Carritos` del grupo operativo principal.
+- Evidencia:
+	- `test_runs/menu_operacion_ventas_abierto.png` y `test_runs/menu_configuracion_ventas_cobro.png` registran la verificacion del orden y la permanencia de `Carritos` en configuracion.
+
+2026-05-15 - Alta de bodegas compatible con PostgreSQL
+- `backend/db/productos.go`:
+	- `CreateBodega` usa `sqlNowExpr()` para `fecha_creacion` y `fecha_actualizacion`, evitando funciones SQLite en el alta runtime de `/api/empresa/bodegas`.
+- `backend/db/productos_bodegas_test.go`:
+	- nuevo test enfocado que protege `CreateBodega` contra el regreso de `datetime()` y exige el uso del helper PostgreSQL.
+- Evidencia:
+	- `test_runs/bodega_agregar_desktop_after.png` y `test_runs/bodega_agregar_mobile_after.png` registran la verificacion visual del alta de bodega.
+
 2026-05-15 - Venta directa con carrito 0 automatico
 - `web/administrar_empresa/carrito_de_compras.html`:
 	- asigna por defecto `VENTA-DIRECTA-{empresa_id}-0` al modo `venta_directa`, reutiliza carrito legacy `VENTA-DIRECTA-{empresa_id}` o `CAJA_DIRECTA` si ya existe, y oculta el retorno a estaciones en esta vista.

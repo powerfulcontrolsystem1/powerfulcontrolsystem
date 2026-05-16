@@ -506,7 +506,6 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
 
 	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro de reportes", Grupo: "Analisis y control"},
-	{PaginaClave: "linkReportesIAChat", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Chat IA de reportes", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Centro financiero y contable"},
 
 	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Personas y activos"},
@@ -3281,9 +3280,6 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	case path == "/api/empresa/documentos":
 		return "linkDocumentosOnlyOffice"
 	case strings.HasPrefix(path, "/api/empresa/reportes"):
-		if strings.Contains(path, "/ia") {
-			return "linkReportesIAChat"
-		}
 		return "linkReportes"
 	}
 	return ""

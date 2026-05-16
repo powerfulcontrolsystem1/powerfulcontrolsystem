@@ -61,9 +61,6 @@
           <h1 class="reports-command-title">Centro de reportes</h1>
           <p class="reports-command-lead">Una sola entrada para consultar, previsualizar y exportar reportes de ventas, inventario, finanzas, cartera, contabilidad, impuestos y control operativo.</p>
         </div>
-        <div class="reports-command-actions">
-          <button class="btn secondary" type="button" data-open="/administrar_empresa/reportes_ia_chat.html">Asistente IA</button>
-        </div>
       </div>
 
       <div class="reports-command-strip" aria-label="Resumen de areas">
@@ -153,8 +150,7 @@
         { key:'fiscal_impuestos_retenciones', area:'contabilidad', badge:'Fiscal', title:'Impuestos y retenciones', description:'Base, impuesto, retenciones y conceptos fiscales.', kind:'dataset' },
         { key:'fiscal_informacion_exogena_base', area:'contabilidad', badge:'DIAN', title:'Informacion exogena base', description:'Base de terceros, conceptos y valores para preparacion fiscal.', kind:'dataset' },
         { key:'operativo_auditoria_acciones', area:'control', badge:'Auditoria', title:'Auditoria de acciones', description:'Trazabilidad operativa por modulo, usuario y accion.', kind:'dataset' },
-        { key:'aseo_estaciones', area:'control', badge:'Aseo', title:'Reporte de aseo de estaciones', description:'Tiempo de aseo por habitacion o estacion y usuario responsable.', kind:'view', view:'/administrar_empresa/reporte_aseo_estaciones.html' },
-        { key:'reportes_ia_chat', area:'direccion', badge:'IA', title:'Asistente IA para reportes', description:'Consulta y resume datos desde el asistente central.', kind:'view', view:'/administrar_empresa/reportes_ia_chat.html' }
+        { key:'aseo_estaciones', area:'control', badge:'Aseo', title:'Reporte de aseo de estaciones', description:'Tiempo de aseo por habitacion o estacion y usuario responsable.', kind:'view', view:'/administrar_empresa/reporte_aseo_estaciones.html' }
       ];
       var reportsCatalog = fallbackReports.slice();
       var selectedDatasetKey = '';

@@ -47,6 +47,7 @@
     <section class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Registrar documento de compra</h2>
+        <a id="btnGestionarProveedores" class="btn secondary" href="/administrar_empresa/administrar_productos.html?view=proveedores">Gestionar proveedores</a>
       </div>
 
       <form id="docForm" class="form">
@@ -265,6 +266,15 @@
         }
       }
       return "Proveedor #" + id;
+    }
+
+    function proveedorByID(id) {
+      for (var i = 0; i < state.proveedores.length; i += 1) {
+        if (Number(state.proveedores[i].id) === Number(id)) {
+          return state.proveedores[i];
+        }
+      }
+      return null;
     }
 
     function estadoBadge(estadoDocumento) {
@@ -576,6 +586,10 @@
 
       empresaInfo.textContent = 'Empresa ID: ' + String(empresaID);
       periodoContableInput.value = toPeriodoActual();
+      var proveedoresLink = document.getElementById('btnGestionarProveedores');
+      if (proveedoresLink) {
+        proveedoresLink.href = '/administrar_empresa/administrar_productos.html?view=proveedores&empresa_id=' + encodeURIComponent(String(empresaID));
+      }
 
       try {
         await loadProveedores();
@@ -606,6 +620,14 @@
       compraComprobanteUploadInput.value = '';
       state.pendingUploadDocumento = null;
       showMessage('Formulario limpio.');
+    });
+
+    proveedorSelect.addEventListener('change', function () {
+      var proveedor = proveedorByID(proveedorSelect.value);
+      var proveedorDocRef = document.getElementById('proveedorDocRef');
+      if (proveedor && proveedorDocRef && !String(proveedorDocRef.value || '').trim()) {
+        proveedorDocRef.value = proveedor.documento || '';
+      }
     });
 
     document.getElementById('btnFiltrar').addEventListener('click', function () {

@@ -1,3 +1,60 @@
+2026-05-15: Asistencia de empleados reparada y profesionalizada.
+- Modulo: `asistencia_empleados`, `personas_activos`, `nomina`.
+- Backend: `backend/db/asistencia_empleados.go` usa helpers SQL compatibles con PostgreSQL y `sqlNowExpr()` en configuracion, cierres, listados, CRUD y marcacion de entrada/salida.
+- Frontend: `web/administrar_empresa/asistencia_empleados.html` cambia automaticamente al tab Registro al crear/editar, quita prompts de Entrada/Salida y compacta acciones de tabla.
+- QA: se agrega `backend/db/asistencia_empleados_postgres_test.go` y se valida visualmente crear, marcar entrada, marcar salida, editar, configurar, filtrar, cerrar periodo y descargar reporte.
+- Alcance: no modifica tablas, permisos ni dependencias; conserva `empresa_id` en todas las operaciones.
+
+2026-05-15: Centro de reportes retira IA dedicada.
+- Modulo: `reportes`, `administrar_empresa`, `permisos`.
+- Frontend: `web/administrar_empresa/reportes_menu.html` queda solo con `Centro de reportes`; `reportes_ejecutivos.html` elimina boton/tarjeta `Asistente IA`; se elimina `web/administrar_empresa/reportes_ia_chat.html`.
+- Permisos: `linkReportesIAChat` deja de ser pagina administrable; las rutas de reportes usan `linkReportes`.
+- Alcance: el endpoint tecnico del asistente global de reportes se conserva, sin pagina dedicada dentro del centro.
+
+2026-05-15: Facturacion electronica retira regreso a empresas del submenu.
+- Modulo: `facturacion_electronica`, `administrar_empresa`.
+- Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` elimina el enlace `Volver a empresas`.
+- Alcance: cambio visual/navegacion; no modifica APIs, permisos, tablas ni dependencias.
+
+2026-05-15: Creditos crea nuevos creditos en PostgreSQL sin SQL SQLite en la transaccion.
+- Modulo: `creditos`, `cartera`, `finanzas`.
+- Backend: `backend/db/creditos.go` usa `insertTxSQLCompat`, `execTxSQLCompat` y `sqlNowExpr()` al crear el credito, asignar codigo automatico y generar cuotas.
+- Operacion: corrige el 500 observado al presionar `Nuevo credito` cuando el flujo generaba cuotas.
+- QA: se agrega prueba enfocada en `backend/db/creditos_postgres_test.go` y se valida con `go test ./db ./handlers`.
+
+2026-05-15: Productos avisa cuando falta bodega
+- Modulos afectados: `inventario`, `productos`, `bodegas`.
+- Cambio UX: al intentar crear un producto sin bodegas activas, `web/administrar_empresa/administrar_productos.html` ya no abre el formulario de producto ni desplaza al usuario sin contexto; muestra un aviso indicando que primero debe crear una bodega.
+- Accion guiada: el aviso incluye el boton `Crear bodega`, que abre explicitamente el formulario de bodega para que el usuario complete el requisito.
+- Validacion: el guardado de producto tambien bloquea creaciones nuevas sin bodega activa para evitar errores tardios.
+- Alcance: solo frontend; no cambia tablas, endpoints, permisos ni dependencias.
+
+2026-05-15: Compras elige proveedores previamente creados
+- Modulos afectados: `compras`, `compras_avanzadas`, `proveedores`, `inventario`.
+- Cambio funcional: `web/administrar_empresa/compras_avanzadas.html` reemplaza los proveedores escritos a mano por selectores cargados desde `/api/empresa/proveedores` para requisiciones, cotizaciones y recepciones.
+- Backend: `backend/handlers/compras_avanzadas.go` valida que `proveedor_id` pertenezca a un proveedor activo de la misma empresa antes de guardar cotizaciones o recepciones.
+- Persistencia: `empresa_compras_recepciones_avanzadas` agrega `proveedor_id` para trazar la recepcion contra el proveedor creado; cotizaciones ya conservaban `proveedor_id`.
+- UX: `compras.html` agrega acceso directo a gestionar proveedores y autocompleta el documento del proveedor seleccionado.
+- Alcance: sin dependencias nuevas; mantiene PostgreSQL y aislamiento por `empresa_id`.
+
+2026-05-15: Menu empresarial con Venta directa primero
+- Modulos afectados: `administrar_empresa`, `ventas`, `carritos`, `configuracion`.
+- Cambio UX: el menu principal prioriza la venta inmediata dejando `Venta directa` como primer acceso de `Operacion y ventas`.
+- Reubicacion: el acceso general `Carritos` deja de aparecer en `Operacion y ventas` y queda disponible desde el submenu de configuracion, en el grupo `Ventas y cobro`.
+- Alcance: no cambia permisos ni wrappers; `linkVentaDirecta` y `linkCarritoCompras` conservan sus rutas y controles existentes.
+
+2026-05-15: Alta de bodegas compatible con PostgreSQL
+- Modulos afectados: `inventario`, `bodegas`, `productos`.
+- Cambio funcional: `POST /api/empresa/bodegas` conserva el contrato existente, pero el guardado de fechas en `CreateBodega` usa la expresion PostgreSQL central (`sqlNowExpr`) para que crear una bodega funcione en runtime real.
+- UX validada: desde `web/administrar_empresa/bodega.html`, la accion `Nueva` abre el formulario, `Guardar bodega` crea el registro, oculta el formulario, actualiza el KPI y lista la fila creada.
+- Alcance: no agrega tablas, endpoints, permisos ni dependencias; se conserva aislamiento por `empresa_id`.
+
+2026-05-15: Login y registro movil con areas tactiles
+- Modulos afectados: `autenticacion`, `login_usuario`, `registro_administrador`.
+- Cambio UX: `login.html`, `login_usuario.html` y `registrar_nuevo_usuario_administrador.html` comparten reglas moviles para botones, enlaces de recuperacion/registro, inputs y control de mostrar contrasena con areas tactiles de al menos 44 px.
+- Registro administrador: el chat flotante queda compacto en celular mediante `register-admin-body`, reduciendo interferencias sobre el formulario publico de alta administrativa.
+- Alcance: frontend solamente; no cambia contratos de login, recuperacion, registro, permisos, sesiones, tablas ni dependencias.
+
 2026-05-15: Venta directa con carrito 0 automatico
 - Modulos afectados: `carritos`, `ventas_simple`, `administrar_empresa`.
 - Cambio funcional: `web/administrar_empresa/carrito_de_compras.html?modo=venta_directa` crea o reutiliza automaticamente el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` cuando la URL no trae `carrito_codigo`.

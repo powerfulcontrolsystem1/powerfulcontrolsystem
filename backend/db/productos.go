@@ -1159,8 +1159,9 @@ func ensureColumnIfMissing(dbConn *sql.DB, table, column, columnDef string) erro
 
 // CreateBodega inserta una nueva bodega para una empresa.
 func CreateBodega(dbConn *sql.DB, b Bodega) (int64, error) {
+	nowExpr := sqlNowExpr()
 	id, err := insertSQLCompat(dbConn, `INSERT INTO bodegas (empresa_id, codigo, nombre, ubicacion, responsable, usuario_creador, estado, observaciones, fecha_creacion, fecha_actualizacion)
-		VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime'))`,
+		VALUES (?, NULLIF(?, ''), ?, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, `+nowExpr+`, `+nowExpr+`)`,
 		b.EmpresaID, strings.TrimSpace(b.Codigo), strings.TrimSpace(b.Nombre), strings.TrimSpace(b.Ubicacion), strings.TrimSpace(b.Responsable), strings.TrimSpace(b.UsuarioCreador), strings.TrimSpace(b.Estado), strings.TrimSpace(b.Observaciones))
 	if err != nil {
 		return 0, err

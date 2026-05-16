@@ -794,6 +794,26 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - validacion_documental_estado, proveedor_documento_ref, factura_documento_ref, entrada_documento_ref
   - UNIQUE(empresa_id, tipo_documento, documento_codigo)
 
+### Tablas de compras avanzadas
+- empresa_compras_requisiciones:
+  - empresa_id, codigo, solicitante, area, centro_costo, prioridad
+  - fecha_solicitud, fecha_necesidad, estado_flujo, total_estimado, justificacion
+  - UNIQUE(empresa_id, codigo)
+- empresa_compras_requisicion_items:
+  - empresa_id, requisicion_id, producto_id, producto_nombre, cantidad_solicitada
+  - cantidad_recibida, unidad, costo_estimado, proveedor_sugerido, especificacion, estado
+- empresa_compras_cotizaciones:
+  - empresa_id, requisicion_id, proveedor_id, proveedor_nombre, numero
+  - fecha_cotizacion, validez_hasta, tiempo_entrega_dias, subtotal, impuestos, total
+  - condiciones_pago, observaciones, estado
+  - UNIQUE(empresa_id, requisicion_id, numero)
+- empresa_compras_recepciones_avanzadas:
+  - empresa_id, requisicion_id, cotizacion_id, proveedor_id, proveedor_nombre
+  - documento, fecha_recepcion, estado_recepcion, responsable, observaciones
+- empresa_compras_recepcion_items_avanzadas:
+  - empresa_id, recepcion_id, requisicion_item_id, producto_nombre
+  - cantidad_ordenada, cantidad_recibida, cantidad_pendiente, costo_unitario, lote, estado_calidad
+
 ### Tablas de IA empresarial
 - empresa_ai_consultas:
   - empresa_id, provider, model_id

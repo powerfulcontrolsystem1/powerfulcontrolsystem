@@ -944,6 +944,7 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		}
 	}()
 
+	nowExpr := sqlNowExpr()
 	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_creditos (
 		empresa_id,
 		codigo,
@@ -971,7 +972,7 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)`,
 		payload.EmpresaID,
 		payload.Codigo,
 		payload.ClienteID,
@@ -1002,7 +1003,7 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 	}
 	if payload.Codigo == "" {
 		codigo := creditoDefaultCodigo(payload.EmpresaID, id)
-		if _, err = tx.Exec(`UPDATE empresa_creditos SET codigo = ?, fecha_actualizacion = datetime('now','localtime') WHERE empresa_id = ? AND id = ?`, codigo, payload.EmpresaID, id); err != nil {
+		if _, err = execTxSQLCompat(tx, `UPDATE empresa_creditos SET codigo = ?, fecha_actualizacion = `+nowExpr+` WHERE empresa_id = ? AND id = ?`, codigo, payload.EmpresaID, id); err != nil {
 			return 0, err
 		}
 	}
@@ -1048,6 +1049,7 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 	interesTotal := creditoRound(payload.MontoAprobado * (payload.TasaInteres / 100.0))
 	interesCuota := creditoRound(interesTotal / float64(nCuotas))
 	valorCuotaBase := creditoRound(capitalCuota + interesCuota)
+	nowExpr := sqlNowExpr()
 
 	for i := 1; i <= nCuotas; i++ {
 		numeroCuota := startNumero + i - 1
@@ -1071,7 +1073,7 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 			valorCuota = creditoRound(capital + interes)
 		}
 
-		if _, err := tx.Exec(`INSERT INTO empresa_creditos_cuotas (
+		if _, err := execTxSQLCompat(tx, `INSERT INTO empresa_creditos_cuotas (
 			empresa_id,
 			credito_id,
 			numero_cuota,
@@ -1088,7 +1090,7 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 			usuario_creador,
 			estado,
 			observaciones
-		) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'pendiente', datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'pendiente', `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
 			empresaID,
 			creditoID,
 			numeroCuota,

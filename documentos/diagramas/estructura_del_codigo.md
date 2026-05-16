@@ -30,7 +30,7 @@
   - Se eliminan las vistas antiguas `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html` y `graficos_estadisticas.html`.
 - Flujo:
   - Menu principal empresarial -> `reportes_menu.html` -> `reportes_ejecutivos.html`.
-  - Accesos gerenciales -> catalogo/vista previa/exportacion dentro de `reportes_ejecutivos.html` o `reportes_ia_chat.html`.
+  - Accesos gerenciales -> catalogo/vista previa/exportacion dentro de `reportes_ejecutivos.html`.
 - Alcance:
   - Se reutiliza `WithEmpresaReportesPermissions`, `empresa_id` y `/api/empresa/reportes`.
   - Se retira la ruta backend antigua `/api/empresa/graficos_estadisticas`; no se agregan tablas ni dependencias.

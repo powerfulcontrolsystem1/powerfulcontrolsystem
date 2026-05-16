@@ -4,12 +4,18 @@
   var qs = new URLSearchParams(window.location.search);
   var empresaId = qs.get("empresa_id") || localStorage.getItem("empresa_id") || "";
   var api = "/api/empresa/compras_avanzadas";
+  var proveedores = [];
 
   function el(id){ return document.getElementById(id); }
   function val(id){ var node = el(id); return node ? node.value.trim() : ""; }
   function num(id){ var n = Number(val(id)); return Number.isFinite(n) ? n : 0; }
   function money(v){ return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v)||0); }
   function today(){ return new Date().toISOString().slice(0,10); }
+  function escapeHtml(text){
+    var div = document.createElement("div");
+    div.textContent = text == null ? "" : String(text);
+    return div.innerHTML;
+  }
   function setMsg(text, cls){
     var node = el("msg");
     if (!node) return;
@@ -34,6 +40,68 @@
       if(!r.ok){ return r.text().then(function(t){ throw new Error(t || "Error"); }); }
       return r.json();
     });
+  }
+  function providerLabel(p){
+    var extra = p.codigo || p.documento || ("ID-" + p.id);
+    return (p.nombre || "Proveedor") + " (" + extra + ")";
+  }
+  function providerById(id){
+    var n = Number(id || 0);
+    for (var i = 0; i < proveedores.length; i += 1) {
+      if (Number(proveedores[i].id) === n) return proveedores[i];
+    }
+    return null;
+  }
+  function providerNameFromSelect(id){
+    var provider = providerById(val(id));
+    return provider ? String(provider.nombre || "").trim() : "";
+  }
+  function setProviderSelectByNameOrID(selectID, providerID, providerName){
+    var node = el(selectID);
+    if (!node) return;
+    var id = Number(providerID || 0);
+    if (id > 0 && providerById(id)) {
+      node.value = String(id);
+      return;
+    }
+    var normalized = String(providerName || "").trim().toLowerCase();
+    if (!normalized) return;
+    for (var i = 0; i < proveedores.length; i += 1) {
+      if (String(proveedores[i].nombre || "").trim().toLowerCase() === normalized) {
+        node.value = String(proveedores[i].id);
+        return;
+      }
+    }
+  }
+  function renderProveedorSelects(){
+    var options = ['<option value="">Seleccione proveedor creado</option>'];
+    proveedores.forEach(function(p){
+      if (String(p.estado || "activo").toLowerCase() !== "activo") return;
+      options.push('<option value="' + escapeHtml(p.id) + '">' + escapeHtml(providerLabel(p)) + '</option>');
+    });
+    document.querySelectorAll(".proveedor-select").forEach(function(node){
+      var current = node.value;
+      node.innerHTML = options.join("");
+      if (current && providerById(current)) node.value = current;
+      if (options.length === 1) {
+        node.innerHTML = '<option value="">Primero cree un proveedor</option>';
+      }
+    });
+  }
+  function loadProveedores(){
+    if (!empresaId) {
+      renderProveedorSelects();
+      return Promise.resolve();
+    }
+    return fetch("/api/empresa/proveedores?empresa_id=" + encodeURIComponent(empresaId) + "&include_inactive=1", {credentials:"same-origin"})
+      .then(function(r){
+        if(!r.ok){ return r.text().then(function(t){ throw new Error(t || "No se pudieron cargar proveedores"); }); }
+        return r.json();
+      })
+      .then(function(rows){
+        proveedores = Array.isArray(rows) ? rows : [];
+        renderProveedorSelects();
+      });
   }
 
   function loadDashboard(){
@@ -99,7 +167,7 @@
       if (x.estado === "seleccionada") {
         el("aprCotID").value = x.id;
         el("recCotID").value = x.id;
-        el("recProveedor").value = x.proveedor_nombre || "";
+        setProviderSelectByNameOrID("recProveedor", x.proveedor_id, x.proveedor_nombre);
       }
     });
     (d.aprobaciones || []).forEach(function(x){
@@ -123,7 +191,7 @@
       var idx = s[0];
       var name = val("itemNombre" + idx);
       if (name) {
-        items.push({producto_nombre:name,cantidad_solicitada:num("itemCant"+idx),costo_estimado:num("itemCosto"+idx),unidad:"und",proveedor_sugerido:val("itemProv"+idx)});
+        items.push({producto_nombre:name,cantidad_solicitada:num("itemCant"+idx),costo_estimado:num("itemCosto"+idx),unidad:"und",proveedor_sugerido:providerNameFromSelect("itemProv"+idx)});
       }
     });
     return post("requisicion", {requisicion:{
@@ -147,9 +215,16 @@
   }
 
   function saveCotizacion(){
+    var proveedorID = num("cotProveedor");
+    var proveedorNombre = providerNameFromSelect("cotProveedor");
+    if (!proveedorID || !proveedorNombre) {
+      setMsg("Selecciona un proveedor creado para guardar la cotizacion.", "error");
+      return Promise.resolve();
+    }
     return post("cotizacion", {cotizacion:{
       requisicion_id:num("cotReqID"),
-      proveedor_nombre:val("cotProveedor"),
+      proveedor_id:proveedorID,
+      proveedor_nombre:proveedorNombre,
       numero:val("cotNumero"),
       fecha_cotizacion:val("cotFecha") || today(),
       validez_hasta:val("cotValidez"),
@@ -180,10 +255,17 @@
   }
 
   function saveRecepcion(){
+    var proveedorID = num("recProveedor");
+    var proveedorNombre = providerNameFromSelect("recProveedor");
+    if (!proveedorID || !proveedorNombre) {
+      setMsg("Selecciona un proveedor creado para guardar la recepcion.", "error");
+      return Promise.resolve();
+    }
     return post("recepcion", {recepcion:{
       requisicion_id:num("recReqID"),
       cotizacion_id:num("recCotID"),
-      proveedor_nombre:val("recProveedor"),
+      proveedor_id:proveedorID,
+      proveedor_nombre:proveedorNombre,
       documento:val("recDocumento"),
       fecha_recepcion:val("recFecha") || today(),
       estado_recepcion:val("recEstado"),
@@ -226,5 +308,12 @@
   el("reqCodigo").value = "REQ-" + Date.now().toString().slice(-6);
   el("cotNumero").value = "COT-" + Date.now().toString().slice(-6);
   el("recDocumento").value = "REC-" + Date.now().toString().slice(-6);
-  loadDashboard();
+  var proveedoresLink = el("btnProveedores");
+  if (proveedoresLink && empresaId) {
+    proveedoresLink.href = "/administrar_empresa/administrar_productos.html?view=proveedores&empresa_id=" + encodeURIComponent(empresaId);
+  }
+  loadProveedores().then(loadDashboard).catch(function(err){
+    setMsg(err.message || "No se pudieron cargar proveedores", "error");
+    return loadDashboard();
+  });
 })();

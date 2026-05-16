@@ -83,6 +83,7 @@ type EmpresaCompraRecepcion struct {
 	EmpresaID       int64                        `json:"empresa_id"`
 	RequisicionID   int64                        `json:"requisicion_id"`
 	CotizacionID    int64                        `json:"cotizacion_id,omitempty"`
+	ProveedorID     int64                        `json:"proveedor_id,omitempty"`
 	ProveedorNombre string                       `json:"proveedor_nombre"`
 	Documento       string                       `json:"documento"`
 	FechaRecepcion  string                       `json:"fecha_recepcion"`
@@ -193,6 +194,7 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER NOT NULL,
 			requisicion_id INTEGER NOT NULL,
 			cotizacion_id INTEGER DEFAULT 0,
+			proveedor_id INTEGER DEFAULT 0,
 			proveedor_nombre TEXT DEFAULT '',
 			documento TEXT NOT NULL,
 			fecha_recepcion TEXT NOT NULL,
@@ -222,6 +224,9 @@ func EnsureEmpresaComprasAvanzadasSchema(dbConn *sql.DB) error {
 		if _, err := ExecCompat(dbConn, stmt); err != nil {
 			return err
 		}
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_compras_recepciones_avanzadas", "proveedor_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
 	}
 	return nil
 }
@@ -348,9 +353,9 @@ func CreateEmpresaCompraRecepcion(dbConn *sql.DB, rec EmpresaCompraRecepcion) (i
 	}
 	defer tx.Rollback()
 	id, err := insertTxSQLCompat(tx, `INSERT INTO empresa_compras_recepciones_avanzadas
-		(empresa_id,requisicion_id,cotizacion_id,proveedor_nombre,documento,fecha_recepcion,estado_recepcion,responsable,observaciones,usuario_creador)
-		VALUES (?,?,?,?,?,?,?,?,?,?)`,
-		rec.EmpresaID, rec.RequisicionID, rec.CotizacionID, rec.ProveedorNombre, rec.Documento, rec.FechaRecepcion, rec.EstadoRecepcion, rec.Responsable, rec.Observaciones, rec.UsuarioCreador)
+		(empresa_id,requisicion_id,cotizacion_id,proveedor_id,proveedor_nombre,documento,fecha_recepcion,estado_recepcion,responsable,observaciones,usuario_creador)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+		rec.EmpresaID, rec.RequisicionID, rec.CotizacionID, rec.ProveedorID, rec.ProveedorNombre, rec.Documento, rec.FechaRecepcion, rec.EstadoRecepcion, rec.Responsable, rec.Observaciones, rec.UsuarioCreador)
 	if err != nil {
 		return 0, err
 	}
@@ -475,7 +480,7 @@ func ListEmpresaCompraAprobaciones(dbConn *sql.DB, empresaID, requisicionID int6
 }
 
 func ListEmpresaCompraRecepciones(dbConn *sql.DB, empresaID, requisicionID int64) ([]EmpresaCompraRecepcion, error) {
-	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,requisicion_id,COALESCE(cotizacion_id,0),COALESCE(proveedor_nombre,''),documento,COALESCE(fecha_recepcion,''),COALESCE(estado_recepcion,'parcial'),COALESCE(responsable,''),COALESCE(observaciones,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_compras_recepciones_avanzadas WHERE empresa_id=? AND requisicion_id=? ORDER BY id DESC`, empresaID, requisicionID)
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,requisicion_id,COALESCE(cotizacion_id,0),COALESCE(proveedor_id,0),COALESCE(proveedor_nombre,''),documento,COALESCE(fecha_recepcion,''),COALESCE(estado_recepcion,'parcial'),COALESCE(responsable,''),COALESCE(observaciones,''),COALESCE(usuario_creador,''),COALESCE(fecha_creacion,'') FROM empresa_compras_recepciones_avanzadas WHERE empresa_id=? AND requisicion_id=? ORDER BY id DESC`, empresaID, requisicionID)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +488,7 @@ func ListEmpresaCompraRecepciones(dbConn *sql.DB, empresaID, requisicionID int64
 	out := []EmpresaCompraRecepcion{}
 	for rows.Next() {
 		var x EmpresaCompraRecepcion
-		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RequisicionID, &x.CotizacionID, &x.ProveedorNombre, &x.Documento, &x.FechaRecepcion, &x.EstadoRecepcion, &x.Responsable, &x.Observaciones, &x.UsuarioCreador, &x.FechaCreacion); err != nil {
+		if err := rows.Scan(&x.ID, &x.EmpresaID, &x.RequisicionID, &x.CotizacionID, &x.ProveedorID, &x.ProveedorNombre, &x.Documento, &x.FechaRecepcion, &x.EstadoRecepcion, &x.Responsable, &x.Observaciones, &x.UsuarioCreador, &x.FechaCreacion); err != nil {
 			return nil, err
 		}
 		x.Items, _ = ListEmpresaCompraRecepcionItems(dbConn, empresaID, x.ID)

@@ -326,7 +326,7 @@ func GetEmpresaAsistenciaConfiguracion(dbConn *sql.DB, empresaID int64) (*Empres
 	}
 
 	cfg := defaultEmpresaAsistenciaConfiguracion(empresaID)
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(tolerancia_entrada_minutos, 10),
@@ -388,13 +388,14 @@ func UpsertEmpresaAsistenciaConfiguracion(dbConn *sql.DB, payload EmpresaAsisten
 	}
 
 	var existingID int64
-	err = dbConn.QueryRow(`SELECT id FROM empresa_asistencia_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
+	err = queryRowSQLCompat(dbConn, `SELECT id FROM empresa_asistencia_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
+	nowExpr := sqlNowExpr()
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_asistencia_configuracion
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_asistencia_configuracion
 		SET
 			tolerancia_entrada_minutos = ?,
 			tolerancia_salida_minutos = ?,
@@ -406,7 +407,7 @@ func UpsertEmpresaAsistenciaConfiguracion(dbConn *sql.DB, payload EmpresaAsisten
 			usuario_creador = ?,
 			estado = ?,
 			observaciones = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 			cfg.ToleranciaEntradaMin,
 			cfg.ToleranciaSalidaMin,
@@ -440,7 +441,7 @@ func UpsertEmpresaAsistenciaConfiguracion(dbConn *sql.DB, payload EmpresaAsisten
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`)`,
 		cfg.EmpresaID,
 		cfg.ToleranciaEntradaMin,
 		cfg.ToleranciaSalidaMin,
@@ -513,7 +514,7 @@ func ListEmpresaAsistenciaPeriodosCerrados(dbConn *sql.DB, empresaID int64, incl
 	query += ` ORDER BY periodo_desde DESC, periodo_hasta DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -562,7 +563,7 @@ func CreateEmpresaAsistenciaPeriodoCierre(dbConn *sql.DB, payload EmpresaAsisten
 	}
 
 	var overlap EmpresaAsistenciaPeriodoCierre
-	err = dbConn.QueryRow(`SELECT
+	err = queryRowSQLCompat(dbConn, `SELECT
 		id,
 		COALESCE(periodo_desde, ''),
 		COALESCE(periodo_hasta, ''),
@@ -588,6 +589,7 @@ func CreateEmpresaAsistenciaPeriodoCierre(dbConn *sql.DB, payload EmpresaAsisten
 		return 0, fmt.Errorf("%w: [%s a %s]", ErrAsistenciaPeriodoSolapado, overlap.PeriodoDesde, overlap.PeriodoHasta)
 	}
 
+	nowExpr := sqlNowExpr()
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_asistencia_periodos_cerrados (
 		empresa_id,
 		periodo_desde,
@@ -601,7 +603,7 @@ func CreateEmpresaAsistenciaPeriodoCierre(dbConn *sql.DB, payload EmpresaAsisten
 		fecha_creacion,
 		fecha_actualizacion
 	) VALUES (
-		?, ?, ?, datetime('now','localtime'), ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, datetime('now','localtime'), datetime('now','localtime')
+		?, ?, ?, `+nowExpr+`, ?, ?, ?, COALESCE(NULLIF(?, ''), 'activo'), ?, `+nowExpr+`, `+nowExpr+`
 	)`,
 		payload.EmpresaID,
 		desde,
@@ -620,7 +622,7 @@ func CreateEmpresaAsistenciaPeriodoCierre(dbConn *sql.DB, payload EmpresaAsisten
 
 func getAsistenciaCierreByFecha(dbConn *sql.DB, empresaID int64, fechaAsistencia string) (*EmpresaAsistenciaPeriodoCierre, error) {
 	item := &EmpresaAsistenciaPeriodoCierre{}
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(periodo_desde, ''),
@@ -672,7 +674,7 @@ func getAsistenciaRegistroContext(dbConn *sql.DB, empresaID, id int64) (string, 
 	var turno string
 	var horaEntrada string
 	var horaSalida string
-	err := dbConn.QueryRow(`SELECT
+	err := queryRowSQLCompat(dbConn, `SELECT
 		COALESCE(fecha_asistencia, ''),
 		COALESCE(turno, 'general'),
 		COALESCE(hora_entrada, ''),
@@ -840,6 +842,7 @@ func CreateEmpresaAsistenciaEmpleado(dbConn *sql.DB, item EmpresaAsistenciaEmple
 		}
 	}
 
+	nowExpr := sqlNowExpr()
 	id, err := insertSQLCompat(dbConn, `INSERT INTO empresa_asistencia_empleados (
 		empresa_id, empleado_id, empleado_codigo, empleado_nombre, empleado_documento,
 		cargo, turno, fecha_asistencia, hora_entrada, hora_salida,
@@ -851,7 +854,7 @@ func CreateEmpresaAsistenciaEmpleado(dbConn *sql.DB, item EmpresaAsistenciaEmple
 		?, ?, ?, ?, ?,
 		?, ?, ?, ?,
 		?, COALESCE(NULLIF(?, ''), 'activo'), ?,
-		datetime('now','localtime'), datetime('now','localtime')
+		`+nowExpr+`, `+nowExpr+`
 	)`,
 		item.EmpresaID,
 		item.EmpleadoID,
@@ -933,7 +936,7 @@ func ListEmpresaAsistenciaEmpleados(dbConn *sql.DB, empresaID int64, includeInac
 	query += ` ORDER BY fecha_asistencia DESC, hora_entrada DESC, id DESC LIMIT ?`
 	args = append(args, limit)
 
-	rows, err := dbConn.Query(query, args...)
+	rows, err := querySQLCompat(dbConn, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -1037,7 +1040,8 @@ func UpdateEmpresaAsistenciaEmpleado(dbConn *sql.DB, item EmpresaAsistenciaEmple
 		}
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_asistencia_empleados
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_asistencia_empleados
 	SET
 		empleado_id = ?,
 		empleado_codigo = ?,
@@ -1053,7 +1057,7 @@ func UpdateEmpresaAsistenciaEmpleado(dbConn *sql.DB, item EmpresaAsistenciaEmple
 		estado_asistencia = ?,
 		novedad = ?,
 		observaciones = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+nowExpr+`
 	WHERE empresa_id = ? AND id = ?`,
 		item.EmpleadoID,
 		strings.TrimSpace(item.EmpleadoCodigo),
@@ -1097,8 +1101,9 @@ func SetEmpresaAsistenciaEmpleadoEstado(dbConn *sql.DB, empresaID, id int64, est
 		return err
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_asistencia_empleados
-	SET estado = ?, fecha_actualizacion = datetime('now','localtime')
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_asistencia_empleados
+	SET estado = ?, fecha_actualizacion = `+nowExpr+`
 	WHERE empresa_id = ? AND id = ?`, estado, empresaID, id)
 	if err != nil {
 		return err
@@ -1140,8 +1145,9 @@ func MarkEmpresaAsistenciaEntrada(dbConn *sql.DB, empresaID, id int64, horaEntra
 		minutosTarde = 0
 	}
 	minutosTarde = tardanzaMinutosConfigurada(cfg, turno, parsedTime, minutosTarde)
-	estadoAsistencia = normalizeEstadoAsistencia(strings.TrimSpace(estadoAsistencia))
-	if strings.TrimSpace(estadoAsistencia) == "" {
+	estadoRaw := strings.TrimSpace(estadoAsistencia)
+	estadoAsistencia = normalizeEstadoAsistencia(estadoRaw)
+	if estadoRaw == "" || estadoAsistencia == "pendiente" {
 		if minutosTarde > 0 {
 			estadoAsistencia = "tarde"
 		} else {
@@ -1149,13 +1155,14 @@ func MarkEmpresaAsistenciaEntrada(dbConn *sql.DB, empresaID, id int64, horaEntra
 		}
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_asistencia_empleados
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_asistencia_empleados
 	SET
 		hora_entrada = ?,
 		minutos_tarde = ?,
 		estado_asistencia = ?,
 		novedad = CASE WHEN ? <> '' THEN ? ELSE novedad END,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+nowExpr+`
 	WHERE empresa_id = ? AND id = ?`,
 		parsedTime,
 		minutosTarde,
@@ -1189,7 +1196,7 @@ func MarkEmpresaAsistenciaSalida(dbConn *sql.DB, empresaID, id int64, horaSalida
 	var turno string
 	var horaEntrada string
 	var estadoActual string
-	err = dbConn.QueryRow(`SELECT
+	err = queryRowSQLCompat(dbConn, `SELECT
 		COALESCE(fecha_asistencia, ''),
 		COALESCE(turno, 'general'),
 		COALESCE(hora_entrada, ''),
@@ -1224,13 +1231,14 @@ func MarkEmpresaAsistenciaSalida(dbConn *sql.DB, empresaID, id int64, horaSalida
 		estadoAsistencia = "presente"
 	}
 
-	res, err := dbConn.Exec(`UPDATE empresa_asistencia_empleados
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_asistencia_empleados
 	SET
 		hora_salida = ?,
 		horas_trabajadas = ?,
 		estado_asistencia = ?,
 		novedad = CASE WHEN ? <> '' THEN ? ELSE novedad END,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+nowExpr+`
 	WHERE empresa_id = ? AND id = ?`,
 		parsedTime,
 		horasTrabajadas,
@@ -1260,7 +1268,7 @@ func DeleteEmpresaAsistenciaEmpleado(dbConn *sql.DB, empresaID, id int64) error 
 		return err
 	}
 
-	res, err := dbConn.Exec(`DELETE FROM empresa_asistencia_empleados WHERE empresa_id = ? AND id = ?`, empresaID, id)
+	res, err := execSQLCompat(dbConn, `DELETE FROM empresa_asistencia_empleados WHERE empresa_id = ? AND id = ?`, empresaID, id)
 	if err != nil {
 		return err
 	}

@@ -357,6 +357,11 @@
         </div>
       </div>
 
+      <div id="productoBodegaRequiredNotice" class="form-help is-hidden">
+        Para agregar productos primero debes crear una bodega activa. La bodega permite guardar el stock, movimientos e inventario del producto.
+        <button id="btnCrearBodegaDesdeProductos" class="btn secondary" type="button">Crear bodega</button>
+      </div>
+
       <form id="productoForm" class="form producto-inline-form is-hidden">
         <div class="producto-inline-form-header">
           <div>
@@ -1225,6 +1230,29 @@
       return rows.filter(r => (r.estado || 'activo') === 'activo');
     }
 
+    function hasBodegasActivas() {
+      return getActivos(state.bodegas || []).length > 0;
+    }
+
+    function setProductBodegaNoticeVisible(visible) {
+      const notice = document.getElementById('productoBodegaRequiredNotice');
+      if (!notice) return;
+      notice.classList.toggle('is-hidden', !visible);
+      notice.hidden = !visible;
+      notice.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      notice.style.display = visible ? 'block' : 'none';
+    }
+
+    function showProductRequiresBodegaMessage() {
+      setProductBodegaNoticeVisible(true);
+      setCRUDFormVisible('productoForm', false);
+      showMessage('Para agregar un producto primero debes crear una bodega activa. Entra a Bodegas y crea una bodega principal; luego vuelve a Nuevo producto.', 'error');
+      const createButton = document.getElementById('btnCrearBodegaDesdeProductos');
+      if (createButton && typeof createButton.focus === 'function') {
+        window.setTimeout(function(){ createButton.focus(); }, 80);
+      }
+    }
+
     function getProductoPrinterAssignment(productoID) {
       return (state.impresorasProductos || []).find(item => Number(item.producto_id || 0) === Number(productoID || 0)) || null;
     }
@@ -1423,6 +1451,11 @@
       }
       lastNuevoProductoOpenAt = now;
       try {
+        if (!hasBodegasActivas()) {
+          showProductRequiresBodegaMessage();
+          return consumeOpenEvent(ev);
+        }
+        setProductBodegaNoticeVisible(false);
         fillProductoForm(null);
       } catch (err) {
         reportOpenFormError('No se pudo limpiar el formulario de producto', err);
@@ -1486,6 +1519,7 @@
       document.getElementById('kpiBodegas').textContent = String(state.bodegas.length);
       renderBodegas();
       refreshBodegaSelectors();
+      setProductBodegaNoticeVisible(viewMode === 'productos' && !hasBodegasActivas());
     }
 
     function renderBodegas() {
@@ -2098,6 +2132,10 @@
         return;
       }
       const id = Number(document.getElementById('productoId').value || 0);
+      if (!id && !hasBodegasActivas()) {
+        showProductRequiresBodegaMessage();
+        return;
+      }
       const categoriaID = Number(document.getElementById('productoCategoria').value || 0);
       const categoria = state.categoriasProductos.find(c => Number(c.id) === categoriaID);
       const payload = {
@@ -2140,7 +2178,8 @@
         return;
       }
       if (!id && payload.stock_inicial > 0 && payload.bodega_principal_id <= 0) {
-        showMessage('Para registrar stock inicial debes seleccionar una bodega principal. Si no tienes bodegas, crea una primero en Inventario > Bodegas.', 'error');
+        showMessage('Para registrar stock inicial debes seleccionar una bodega principal. Si no tienes bodegas, crea una primero en Bodegas.', 'error');
+        setProductBodegaNoticeVisible(true);
         document.getElementById('productoBodegaPrincipal').focus();
         return;
       }
@@ -3334,7 +3373,17 @@
           window.PCSInventarioNuevoProducto(ev);
           return;
         }
+        if (!hasBodegasActivas()) {
+          showProductRequiresBodegaMessage();
+          return;
+        }
         openCRUDForm('productoForm', 'productoNombre');
+      });
+      document.getElementById('btnCrearBodegaDesdeProductos').addEventListener('click', ev => {
+        ev.preventDefault();
+        fillBodegaForm(null);
+        openCRUDForm('bodegaForm', 'bodegaNombre');
+        showMessage('Crea una bodega activa y luego vuelve a Nuevo producto.', 'error');
       });
       document.getElementById('btnCerrarProductoForm').addEventListener('click', ev => {
         ev.preventDefault();

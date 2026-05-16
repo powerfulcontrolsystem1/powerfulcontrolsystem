@@ -377,7 +377,6 @@ try {
 
     linkReportes: { module: permModuleReportes, action: permActionRead },
     linkReportesEjecutivos: { module: permModuleReportes, action: permActionRead },
-    linkReportesIAChat: { module: permModuleReportes, action: permActionRead },
     linkCalculadora: { module: permModuleFinanzas, action: permActionRead },
 
     linkUsuarios: { module: permModuleSeguridad, action: permActionUpdate },

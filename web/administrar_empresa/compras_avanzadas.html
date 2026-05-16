@@ -44,6 +44,7 @@
         <div class="cav-actions" style="margin-top:12px">
           <button id="btnRefresh" class="btn secondary" type="button">Actualizar</button>
           <button id="btnSeed" class="btn secondary" type="button">Cargar demo</button>
+          <a id="btnProveedores" class="btn secondary" href="/administrar_empresa/administrar_productos.html?view=proveedores">Proveedores</a>
         </div>
       </div>
       <div class="cav-kpis">
@@ -83,20 +84,21 @@
             <div><label class="form-label" for="itemNombre1">Producto 1</label><input id="itemNombre1" class="form-input"></div>
             <div><label class="form-label" for="itemCant1">Cantidad</label><input id="itemCant1" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemCosto1">Costo unitario</label><input id="itemCosto1" class="form-input" type="number" step=".01"></div>
-            <div><label class="form-label" for="itemProv1">Proveedor sugerido</label><input id="itemProv1" class="form-input"></div>
+            <div><label class="form-label" for="itemProv1">Proveedor sugerido</label><select id="itemProv1" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
           </div>
           <div class="cav-row">
             <div><label class="form-label" for="itemNombre2">Producto 2</label><input id="itemNombre2" class="form-input"></div>
             <div><label class="form-label" for="itemCant2">Cantidad</label><input id="itemCant2" class="form-input" type="number" step=".01"></div>
             <div><label class="form-label" for="itemCosto2">Costo unitario</label><input id="itemCosto2" class="form-input" type="number" step=".01"></div>
-            <div><button id="btnSaveReq" class="btn" type="button" style="margin-top:24px">Guardar requisicion</button></div>
+            <div><label class="form-label" for="itemProv2">Proveedor sugerido</label><select id="itemProv2" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
           </div>
+          <div class="cav-actions"><button id="btnSaveReq" class="btn" type="button">Guardar requisicion</button></div>
         </div>
 
         <div id="panelCot" class="cav-panel">
           <div class="cav-row">
             <div><label class="form-label" for="cotReqID">Requisicion ID</label><input id="cotReqID" class="form-input" type="number"></div>
-            <div><label class="form-label" for="cotProveedor">Proveedor</label><input id="cotProveedor" class="form-input"></div>
+            <div><label class="form-label" for="cotProveedor">Proveedor</label><select id="cotProveedor" class="form-input proveedor-select" required><option value="">Cargando proveedores...</option></select></div>
             <div><label class="form-label" for="cotNumero">Numero</label><input id="cotNumero" class="form-input"></div>
             <div><label class="form-label" for="cotFecha">Fecha</label><input id="cotFecha" class="form-input" type="date"></div>
           </div>
@@ -129,7 +131,7 @@
             <div><label class="form-label" for="recEstado">Tipo</label><select id="recEstado" class="form-input"><option>parcial</option><option>total</option></select></div>
           </div>
           <div class="cav-row">
-            <div><label class="form-label" for="recProveedor">Proveedor</label><input id="recProveedor" class="form-input"></div>
+            <div><label class="form-label" for="recProveedor">Proveedor</label><select id="recProveedor" class="form-input proveedor-select"><option value="">Cargando proveedores...</option></select></div>
             <div><label class="form-label" for="recFecha">Fecha</label><input id="recFecha" class="form-input" type="date"></div>
             <div><label class="form-label" for="recProducto">Producto</label><input id="recProducto" class="form-input"></div>
             <div><label class="form-label" for="recItemID">Item req. ID</label><input id="recItemID" class="form-input" type="number"></div>

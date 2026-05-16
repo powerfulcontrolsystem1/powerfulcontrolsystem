@@ -1,3 +1,63 @@
+## [2026-05-15] Asistencia de empleados reparada y profesionalizada
+- [Backend] `backend/db/asistencia_empleados.go` deja de usar SQL runtime incompatible con PostgreSQL en configuracion, cierres, listados, CRUD y marcacion de entrada/salida.
+- [Backend] Las operaciones usan `queryRowSQLCompat`, `querySQLCompat`, `execSQLCompat`, `insertSQLCompat` y `sqlNowExpr()`.
+- [UX] `Agregar registro` y `Editar` cambian automaticamente a la seccion `Registro`, aunque el submenu interno este en Resumen, Consulta u otra pestaña.
+- [UX] Los botones de tabla quedan como acciones compactas visibles; `Entrada ahora` y `Salida ahora` registran la hora actual sin prompts nativos.
+- [QA] Validado con `go test ./db ./handlers -count=1` y prueba visual Playwright con API mock: crear, entrada, salida, editar, guardar configuracion, filtrar, limpiar, cerrar periodo y descargar reporte.
+- [Alcance] Sin tablas, permisos ni dependencias nuevas; mantiene aislamiento por `empresa_id`.
+
+## [2026-05-15] Centro de reportes sin pagina IA dedicada
+- [Frontend] `web/administrar_empresa/reportes_menu.html` retira el boton `Asistente IA`.
+- [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` elimina el boton superior y la tarjeta `Asistente IA para reportes`.
+- [Limpieza] Se elimina `web/administrar_empresa/reportes_ia_chat.html` y el permiso de pagina `linkReportesIAChat`.
+- [Backend] `/api/empresa/reportes_ia_chat` se conserva como soporte tecnico del asistente global en modo reportes, autorizado por el permiso general `linkReportes`.
+- [Alcance] Sin tablas ni dependencias nuevas; el centro de reportes queda como pantalla unica de consulta/exportacion.
+
+## [2026-05-15] Submenu de facturacion electronica sin regreso a empresas
+- [Frontend] `web/administrar_empresa/facturacion_electronica_menu.html` retira el enlace `Volver a empresas`.
+- [UX] El submenu queda enfocado en configuracion, pruebas DIAN, proveedores de firma, facturas electronicas y AIU construccion.
+- [Alcance] Sin permisos, endpoints, tablas ni dependencias nuevas.
+
+## [2026-05-15] Nuevo credito compatible con PostgreSQL
+- [Backend] `CreateEmpresaCredito` usa expresiones de fecha PostgreSQL via `sqlNowExpr()` en el insert runtime.
+- [Backend] La asignacion automatica de codigo y la generacion de cuotas usan `execTxSQLCompat`, evitando `tx.Exec` directo con placeholders SQLite.
+- [Causa] El boton `Nuevo credito` podia responder 500 al crear creditos con cuotas porque la transaccion mezclaba `?` y `datetime('now','localtime')`.
+- [QA] Validado con prueba Go enfocada y `go test ./db ./handlers -count=1`.
+- [Alcance] Sin tablas, permisos, endpoints ni dependencias nuevas; mantiene aislamiento por `empresa_id`.
+
+## [2026-05-15] Productos avisa cuando falta bodega
+- [Frontend] `Nuevo producto` valida bodegas activas antes de abrir el formulario.
+- [UX] Si no existe bodega activa, se muestra un aviso claro y un boton `Crear bodega`.
+- [Resguardo] El guardado de productos nuevos tambien bloquea el caso sin bodega activa.
+- [QA] Validado con parseo del script inline y prueba visual Playwright en empresa sin bodegas y con una bodega activa.
+- [Alcance] Sin backend, tablas, permisos ni dependencias nuevas.
+
+## [2026-05-15] Compras con proveedores creados previamente
+- [Frontend] `compras_avanzadas.html` usa selectores de proveedores activos para proveedor sugerido, cotizacion y recepcion.
+- [Frontend] `compras.html` agrega acceso a gestionar proveedores y autocompleta el documento del proveedor elegido.
+- [Backend] `compras_avanzadas` valida que `proveedor_id` exista activo en la misma empresa antes de guardar cotizaciones o recepciones.
+- [BD] `empresa_compras_recepciones_avanzadas` agrega `proveedor_id` para trazabilidad por proveedor.
+- [QA] Validado con `node --check`, `go test ./db ./handlers`, `git diff --check` y prueba visual Playwright con API mock.
+- [Alcance] Sin dependencias nuevas; se mantiene PostgreSQL y aislamiento por `empresa_id`.
+
+## [2026-05-15] Menu empresarial con Venta directa primero
+- [Frontend] `web/administrar_empresa.html` mueve `Venta directa` al primer lugar de `Operacion y ventas`.
+- [Frontend] `Carritos` se retira del grupo operativo principal y queda disponible en `Configuracion > Ventas y cobro`.
+- [QA] Validado con Playwright revisando el orden del menu principal y la permanencia de `Carritos` en el submenu de configuracion.
+- [Alcance] Sin permisos, rutas, endpoints, tablas ni dependencias nuevas.
+
+## [2026-05-15] Alta de bodegas compatible con PostgreSQL
+- [Backend] `backend/db/productos.go` usa `sqlNowExpr()` en `CreateBodega` para `fecha_creacion` y `fecha_actualizacion`, eliminando `datetime('now','localtime')` del insert runtime.
+- [QA] `backend/db/productos_bodegas_test.go` blinda que el alta de bodega no vuelva a usar funciones SQLite.
+- [Visual] Validado con Playwright en escritorio y movil: abrir `bodega.html`, crear bodega, ver mensaje de exito, KPI actualizado y fila en tabla.
+- [Alcance] Sin tablas, permisos, rutas ni dependencias nuevas.
+
+## [2026-05-15] Login y registro movil con controles tactiles
+- [Frontend] `web/estilos.css` aumenta a minimo 44 px las areas tactiles de botones, enlaces, inputs y mostrar contrasena dentro de `login-page`.
+- [UX] `registrar_nuevo_usuario_administrador.html` marca el body de registro para compactar el chat flotante en celular y evitar que tape el formulario.
+- [QA] Validado con Playwright movil en login administrador, login operativo, recuperacion de invitacion, registro operativo por invitacion y registro administrador con mock de endpoints.
+- [Alcance] Sin backend, tablas, permisos ni dependencias nuevas.
+
 ## [2026-05-15] Venta directa con carrito 0 automatico
 - [Frontend] `carrito_de_compras.html?modo=venta_directa` crea o reutiliza `VENTA-DIRECTA-{empresa_id}-0` si no llega `carrito_codigo`.
 - [Compatibilidad] Se reutilizan carritos antiguos `VENTA-DIRECTA-{empresa_id}` o `CAJA_DIRECTA` antes de crear uno nuevo.

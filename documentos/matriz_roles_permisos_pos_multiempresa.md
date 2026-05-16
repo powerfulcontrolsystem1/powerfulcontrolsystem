@@ -1,3 +1,8 @@
+2026-05-15: Nota de navegacion para menu empresarial
+- `web/administrar_empresa.html` mueve `Venta directa` al primer lugar de `Operacion y ventas` y retira `Carritos` de ese grupo principal.
+- `Carritos` permanece disponible en `web/administrar_empresa/configuracion_menu.html` dentro de `Ventas y cobro`.
+- Impacto de matriz: no cambia wrappers, roles, acciones ni endpoints; `linkVentaDirecta` y `linkCarritoCompras` conservan los permisos vigentes.
+
 2026-05-15: Empresas compartidas con alcance por rol y modulos
 - Al compartir empresa, el propietario define alcance `Solo ver`, `Acceso total` o `Solo ciertos modulos`; el alcance no sustituye rol/licencia, solo lo restringe.
 - `Solo ver` conserva lectura y desactiva crear, actualizar, eliminar y aprobar para el administrador invitado.
@@ -11,8 +16,8 @@
 - Registrar un asesor en la licencia de prueba no concede permisos, roles ni acceso a empresas ajenas; solo deja trazabilidad comercial y posible asociacion de comision.
 - El checkout y los endpoints conservan el aislamiento por `empresa_id` y no agregan permisos empresariales nuevos.
 
-2026-05-14: Reportes unificados
-- El submenu principal del modulo `reportes` queda en dos accesos: `Centro de reportes` (`linkReportesEjecutivos`) y `Asistente IA` (`linkReportesIAChat`).
+2026-05-15: Reportes unificados
+- El submenu principal del modulo `reportes` queda en un acceso: `Centro de reportes` (`linkReportesEjecutivos`). La pagina dedicada `reportes_ia_chat.html` y el permiso de pagina `linkReportesIAChat` se retiran.
 - Se retiran del catalogo de permisos empresarial las entradas antiguas `linkReportesMain`, `linkReportesVentas`, `linkReportesInventario`, `linkReportesFinanzas`, `linkReportesImpuestos` y `linkGraficosEstadisticas`.
 - Las vistas antiguas `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html` y `graficos_estadisticas.html` dejan de existir; sus consultas quedan consolidadas en el catalogo con vista previa de `reportes_ejecutivos.html`.
 - Los datasets exportables continuan bajo `/api/empresa/reportes` con `WithEmpresaReportesPermissions` y aislamiento por `empresa_id`.
@@ -387,8 +392,7 @@
 - Las nuevas opciones de integracion contable en finanzas son valores de configuracion, no conexiones externas automaticas; no agregan permisos ni secretos.
 
 2026-04-26: Nota operativa para `reportes`, `finanzas` y `chat IA`
-- `linkReportesIAChat` queda bajo modulo `finanzas` con accion `R`; permite consultar y generar enlaces de exportacion de reportes existentes, no modifica datos transaccionales.
-- `POST /api/empresa/reportes_ia_chat` reutiliza permisos de finanzas/reportes y limita el consumo por empresa: 10 preguntas texto con GPT-5.4 mini y 2 reportes/exportes con GPT-5.5 al dia.
+- `POST /api/empresa/reportes_ia_chat` queda como soporte tecnico del asistente global en modo reportes; usa el permiso general `linkReportes` y limita el consumo por empresa: 10 preguntas texto con GPT-5.4 mini y 2 reportes/exportes con GPT-5.5 al dia.
 - La exportacion generada sigue pasando por `/api/empresa/reportesaction=export`, por lo que conserva los filtros, formatos y controles existentes del modulo de reportes.
 
 2026-04-26: Nota operativa para `finanzas` ERP MVP
