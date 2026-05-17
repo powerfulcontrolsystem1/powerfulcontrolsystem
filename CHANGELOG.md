@@ -1,3 +1,11 @@
+- 2026-05-17: `rs` y `sync_to_vps` eliminan el tope corto del healthcheck remoto y pasan a esperar 900 segundos por defecto en reinicio y Docker.
+
+- 2026-05-17: `Administrar empresa` cambia el icono de `Venta directa` por un simbolo `$` de texto que hereda el color de la apariencia activa.
+
+- 2026-05-17: `Administrar empresa` elimina la pestaña lateral `Inicio` y deja `Panel` como primer boton directo del submenu empresarial; `linkInicio` sale del catalogo de permisos.
+
+- 2026-05-17: `Carrito de compras` deja el preset simplificado como default para tipos de empresa y lo aplica tambien a empresas antiguas al arrancar: búsqueda, lector, items, totales, acciones, valores por medio de pago y pagar activos; cobro avanzado, descuentos, propina, comisión, desglose y lavador apagados por defecto.
+
 - 2026-05-17: `Carrito de compras` mueve `Buscar Productos` junto al boton `Agregar` y la pagina por botones deja la barra `Buscar producto` para filtrar por nombre.
 
 - 2026-05-17: `Carrito de compras` oculta el encabezado `Carrito de compras` y el texto descriptivo de venta directa en modo operativo, dejando la pantalla iniciar directamente con el carrito.

@@ -50,9 +50,9 @@ param(
   [string]$RemoteBinaryPath = "backend/bin/server_linux_amd64",
   [string]$RemoteStdoutLogPath = "backend/server.log",
   [string]$RemoteStderrLogPath = "backend/server.err",
-  [int]$RestartHealthTimeoutSeconds = 45,
+  [int]$RestartHealthTimeoutSeconds = 900,
   [bool]$RedeployDockerStack = $true,
-  [int]$DockerHealthTimeoutSeconds = 180,
+  [int]$DockerHealthTimeoutSeconds = 900,
   [bool]$ExcludeEvidenceFromPackage = $true,
   [bool]$OpenPublicUrlAfterDeploy = $true,
   [bool]$CleanupRemoteUnusedFiles = $true,
@@ -716,7 +716,7 @@ function Get-RemoteRestartCommand {
   $stderrRelLit = Convert-ToBashLiteral (($StderrLogRelativePath -replace "\\", "/").TrimStart('/'))
   $safePort = if ([string]::IsNullOrWhiteSpace($ServerPort)) { "8080" } else { $ServerPort }
   $portLit = Convert-ToBashLiteral $safePort
-  $safeTimeout = if ($HealthTimeoutSeconds -lt 5) { 5 } elseif ($HealthTimeoutSeconds -gt 300) { 300 } else { $HealthTimeoutSeconds }
+  $safeTimeout = if ($HealthTimeoutSeconds -lt 5) { 5 } else { $HealthTimeoutSeconds }
 
   $template = @'
 set -e;

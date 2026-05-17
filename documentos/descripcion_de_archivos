@@ -1,3 +1,36 @@
+2026-05-17 - rs sin limite corto de pausa
+- `rs.ps1` y `scripts/rs.ps1`:
+	- agregan parametros `RestartHealthTimeoutSeconds` y `DockerHealthTimeoutSeconds`, ambos con 900 segundos por defecto.
+- `scripts/sync_to_vps.ps1`:
+	- aumenta los defaults de healthcheck remoto y elimina el tope superior interno de espera.
+
+2026-05-17 - Venta directa con icono monetario adaptable
+- `web/administrar_empresa.html`:
+	- reemplaza la imagen del boton `Venta directa` por un `span` con simbolo `$`.
+- `web/estilos.css`:
+	- agrega estilos para `.menu-symbol-icon`, heredando `currentColor` para cambiar segun la apariencia.
+
+2026-05-17 - Administrar empresa con Panel primero
+- `web/administrar_empresa.html`:
+	- elimina el grupo `Inicio` y ubica `Panel` como primer boton directo del menu lateral.
+- `backend/handlers/empresa_permisos.go`:
+	- retira `linkInicio` del catalogo de paginas de permisos.
+
+2026-05-17 - Carrito simplificado como default por tipo de empresa
+- `backend/handlers/empresa_preconfiguracion.go`:
+	- cambia `defaultEmpresaPreconfigCarritoUI()` para que las empresas nuevas hereden el preset simplificado.
+	- agrega `ApplyDefaultCarritoUIToExistingEmpresaPrefs()` para aplicar el mismo preset a empresas existentes y crear una configuracion base cuando falte `estaciones_config`.
+- `backend/main.go`:
+	- ejecuta la normalizacion del carrito despues de asegurar el esquema de carritos en el arranque.
+- `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
+	- nuevo test que protege los valores activos/inactivos del preset por defecto y la normalizacion de empresas antiguas.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
+	- alinea los defaults frontend de configuracion del carrito.
+- `web/administrar_empresa/configuracion_de_estaciones.html`:
+	- alinea los defaults globales/por estacion.
+- `web/administrar_empresa/carrito_de_compras.html` y `web/administrar_empresa/estaciones.html`:
+	- consumen los mismos defaults cuando no hay JSON guardado.
+
 2026-05-17 - Carrito mueve Buscar Productos junto a Agregar
 - `web/administrar_empresa/carrito_de_compras.html`:
 	- mueve el acceso a productos por botones junto al boton `Agregar`.

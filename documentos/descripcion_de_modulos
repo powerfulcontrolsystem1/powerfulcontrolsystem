@@ -1,3 +1,19 @@
+2026-05-17: Venta directa usa icono `$` adaptable.
+- El boton `Venta directa` del menu empresarial ya no usa imagen fija.
+- El simbolo `$` hereda el color de la apariencia activa y del estado del enlace.
+- Alcance: cambio visual; no cambia rutas, endpoints, tablas ni permisos.
+
+2026-05-17: Administrar empresa deja Panel como primer boton.
+- El menu lateral ya no usa la pestaña `Inicio`.
+- `Panel` queda como primer boton directo y mantiene `linkPanelEmpresa` como acceso general.
+- Alcance: no cambia rutas, endpoints, tablas ni permisos operativos.
+
+2026-05-17: Carrito simplificado como default por tipo de empresa.
+- Las empresas nuevas, tipos de empresa y empresas antiguas heredan el preset limpio del carrito.
+- Quedan activos por defecto: buscar productos, catalogo, lector, items, totales, acciones, valores por medio de pago, pago mixto y boton pagar.
+- Quedan apagados por defecto: `Cobro y estados del carrito`, descuentos, propina, comision, desglose de cobro y `Lavador / comision`.
+- Alcance: no cambia endpoints, tablas ni permisos; el arranque actualiza o crea el JSON `estaciones_config` para dejar todas las empresas activas alineadas antes de produccion.
+
 2026-05-17: Carrito acerca busqueda de productos al alta rapida.
 - El boton `Buscar Productos` queda al lado de `Agregar` en el bloque operativo del carrito.
 - La pagina `buscar_producto_botones.html` muestra una barra `Buscar producto` para filtrar escribiendo el nombre.

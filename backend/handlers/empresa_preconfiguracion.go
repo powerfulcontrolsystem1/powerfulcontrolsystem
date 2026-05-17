@@ -563,33 +563,190 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 
 func defaultEmpresaPreconfigCarritoUI() map[string]any {
 	return map[string]any{
-		"mostrar_boton_buscar_productos":   true,
-		"mostrar_busqueda_catalogo":        true,
-		"mostrar_codigo_manual_item":       true,
-		"mostrar_observaciones_item":       true,
-		"mostrar_selector_cliente":         true,
-		"mostrar_impuestos_item":           true,
-		"mostrar_lector_codigo_barras":     true,
-		"mostrar_descuentos":               true,
-		"mostrar_propina":                  true,
-		"mostrar_comision":                 true,
-		"permitir_pago_mixto":              true,
-		"mostrar_resumen_totales_carrito":  true,
-		"mostrar_desglose_cobro":           true,
-		"mostrar_resumen_productos":        true,
-		"mostrar_boton_pagar":              true,
-		"mostrar_tarjetas_pago":            true,
-		"mostrar_tarjeta_lector_codigo":    true,
-		"mostrar_tarjeta_items_carrito":    true,
-		"mostrar_tarjeta_totales_detalles": true,
-		"mostrar_tarjeta_cobro_estados":    true,
-		"mostrar_tarjeta_acciones_carrito": true,
-		"mostrar_tarjeta_valores_pago":     true,
-		"mostrar_tarjeta_comision":         true,
-		"mostrar_tarjeta_vip_cliente":      true,
-		"mostrar_imagen":                   true,
-		"mostrar_precio":                   true,
+		"modo_pantalla_tactil":              false,
+		"mostrar_boton_buscar_productos":    true,
+		"mostrar_busqueda_catalogo":         true,
+		"mostrar_codigo_manual_item":        true,
+		"mostrar_observaciones_item":        true,
+		"mostrar_selector_cliente":          true,
+		"mostrar_impuestos_item":            true,
+		"mostrar_lector_codigo_barras":      true,
+		"mostrar_descuentos":                false,
+		"mostrar_propina":                   false,
+		"mostrar_comision":                  false,
+		"permitir_pago_mixto":               true,
+		"mostrar_resumen_totales_carrito":   true,
+		"mostrar_desglose_cobro":            false,
+		"mostrar_resumen_productos":         true,
+		"mostrar_boton_pagar":               true,
+		"mostrar_tarjetas_pago":             true,
+		"mostrar_tarjeta_lector_codigo":     true,
+		"mostrar_tarjeta_items_carrito":     true,
+		"mostrar_tarjeta_totales_detalles":  true,
+		"mostrar_tarjeta_cobro_estados":     false,
+		"mostrar_tarjeta_acciones_carrito":  true,
+		"mostrar_control_electrico_carrito": true,
+		"mostrar_tarjeta_valores_pago":      true,
+		"mostrar_tarjeta_comision":          false,
+		"mostrar_tarjeta_vip_cliente":       true,
+		"mostrar_imagen":                    true,
+		"mostrar_precio":                    true,
 	}
+}
+
+// ApplyDefaultCarritoUIToExistingEmpresaPrefs normaliza las configuraciones antiguas
+// para que las empresas existentes usen el mismo carrito simplificado por defecto.
+func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
+	if dbEmp == nil {
+		return nil
+	}
+	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
+		return err
+	}
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, `
+		SELECT id, empresa_id, COALESCE(valor, '')
+		FROM empresa_estacion_prefs
+		WHERE estacion_id = 0
+		  AND clave = 'estaciones_config'
+		  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	updated := 0
+	created := 0
+	skippedInvalid := 0
+	seenEmpresas := make(map[int64]bool)
+	for rows.Next() {
+		var id, empresaID int64
+		var raw string
+		if err := rows.Scan(&id, &empresaID, &raw); err != nil {
+			return err
+		}
+		seenEmpresas[empresaID] = true
+		nextRaw, changed, err := applyDefaultCarritoUIPresetToConfig(raw, defaultEmpresaPreconfigCarritoUI())
+		if err != nil {
+			skippedInvalid++
+			log.Printf("[empresa_preconfiguracion] carrito_ui empresa_id=%d pref_id=%d json invalido: %v", empresaID, id, err)
+			continue
+		}
+		if !changed {
+			continue
+		}
+		if _, err := dbpkg.ExecCompat(dbEmp, `
+			UPDATE empresa_estacion_prefs
+			SET valor = ?, fecha_actualizacion = CURRENT_TIMESTAMP, observaciones = ?
+			WHERE id = ?
+		`, nextRaw, "[migracion_carrito_default_2026-05-17] carrito simplificado aplicado a empresa existente", id); err != nil {
+			return err
+		}
+		updated++
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	empresas, err := dbpkg.GetEmpresas(dbEmp)
+	if err != nil {
+		return err
+	}
+	for _, empresa := range empresas {
+		empresaID := empresa.EmpresaID
+		if empresaID <= 0 {
+			empresaID = empresa.ID
+		}
+		if empresaID <= 0 || seenEmpresas[empresaID] {
+			continue
+		}
+		estado := strings.ToLower(strings.TrimSpace(empresa.Estado))
+		if estado == "inactivo" || estado == "eliminado" {
+			continue
+		}
+		rawConfig, _ := buildEmpresaEstacionesPreconfig(dbpkg.TipoEmpresaPreconfigEstaciones{
+			Cantidad:    1,
+			Prefijo:     "Estacion",
+			CardSize:    "medium",
+			CajaEnabled: false,
+		}, dbpkg.TipoEmpresaPreconfigAdaptacionNucleo{})
+		if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+			EmpresaID:      empresaID,
+			EstacionID:     0,
+			Clave:          "estaciones_config",
+			Valor:          rawConfig,
+			UsuarioCreador: "sistema",
+			Estado:         "activo",
+			Observaciones:  "[migracion_carrito_default_2026-05-17] carrito simplificado creado para empresa existente",
+		}); err != nil {
+			return err
+		}
+		created++
+	}
+	if updated > 0 || created > 0 || skippedInvalid > 0 {
+		log.Printf("[empresa_preconfiguracion] carrito_ui defaults empresas existentes actualizadas=%d creadas=%d omitidas_json_invalido=%d", updated, created, skippedInvalid)
+	}
+	return nil
+}
+
+func applyDefaultCarritoUIPresetToConfig(raw string, preset map[string]any) (string, bool, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", false, nil
+	}
+	var cfg map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &cfg); err != nil {
+		return "", false, err
+	}
+	before, err := json.Marshal(cfg)
+	if err != nil {
+		return "", false, err
+	}
+
+	cfg["carrito_ui_global"] = copyAnyMap(preset)
+	if items, ok := cfg["estaciones"].([]any); ok {
+		for _, item := range items {
+			station, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			carrito := copyAnyMap(asAnyMap(station["carrito"]))
+			if len(carrito) == 0 {
+				carrito = copyAnyMap(asAnyMap(station["carrito_ui"]))
+			}
+			if len(carrito) == 0 {
+				carrito = make(map[string]any)
+			}
+			carrito["usar_configuracion_global"] = true
+			carrito["configuracion"] = copyAnyMap(preset)
+			station["carrito"] = carrito
+		}
+	}
+
+	after, err := json.Marshal(cfg)
+	if err != nil {
+		return "", false, err
+	}
+	return string(after), string(before) != string(after), nil
+}
+
+func asAnyMap(v any) map[string]any {
+	if m, ok := v.(map[string]any); ok {
+		return m
+	}
+	return nil
+}
+
+func copyAnyMap(in map[string]any) map[string]any {
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		if nested, ok := v.(map[string]any); ok {
+			out[k] = copyAnyMap(nested)
+			continue
+		}
+		out[k] = v
+	}
+	return out
 }
 
 func buildPreconfigUsuarioEmail(u dbpkg.TipoEmpresaPreconfigUsuario, empresaID int64, idx int) string {

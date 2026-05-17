@@ -752,6 +752,10 @@ func main() {
 		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_carritos_schema")
+	if err := handlers.ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmpresas); err != nil {
+		log.Fatalf("failed to apply default cart UI to existing empresas: %v", err)
+	}
+	startupTrace("after_empresa_carrito_ui_defaults")
 	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
 	}

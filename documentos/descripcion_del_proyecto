@@ -2,6 +2,10 @@
 
 Actualizacion: 2026-05-13
 
+Revision menu administrar empresa 2026-05-17: el shell empresarial deja de usar la pestaña lateral `Inicio`; `Panel` queda como primer boton directo del menu y conserva `linkPanelEmpresa` como pagina inicial siempre visible. No cambia rutas, endpoints, tablas ni permisos efectivos.
+
+Revision default carrito por tipo de empresa 2026-05-17: las empresas nuevas, tipos de empresa y empresas antiguas activas heredan el carrito simplificado actual: busqueda, lector, items, totales, acciones, valores por medio de pago, pago mixto y boton pagar activos; cobro avanzado, descuentos, propina, comision, desglose y lavador apagados por defecto. El arranque actualiza o crea `estaciones_config` para alinear el entorno antes de produccion; no cambia tablas, endpoints ni permisos.
+
 Revision busqueda de productos carrito 2026-05-17: el boton `Buscar Productos` queda junto a `Agregar` dentro del bloque operativo del carrito, y `buscar_producto_botones.html` expone una barra `Buscar producto` para filtrar el catalogo escribiendo el nombre.
 
 Revision encabezado carrito 2026-05-17: en venta directa o estacion, `carrito_de_compras.html` oculta el encabezado superior y elimina el texto descriptivo de venta directa para iniciar directamente con los controles operativos.

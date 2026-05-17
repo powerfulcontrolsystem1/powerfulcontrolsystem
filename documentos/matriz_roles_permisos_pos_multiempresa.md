@@ -1,3 +1,13 @@
+2026-05-17: Nota de Panel primero en Administrar empresa
+- Se retira `linkInicio` del catalogo de paginas porque el grupo lateral `Inicio` ya no se usa.
+- `linkPanelEmpresa` queda como pagina siempre visible y primer boton directo del menu empresarial.
+- No se agregan acciones, wrappers, rutas, endpoints ni permisos efectivos.
+
+2026-05-17: Nota de default de carrito por tipo de empresa
+- El preset simplificado del carrito no crea permisos nuevos ni cambia wrappers.
+- Solo los roles con acceso vigente a configuracion del carrito/estaciones pueden modificar `estaciones_config.carrito_ui_global`.
+- Las tarjetas avanzadas apagadas por defecto (`Cobro y estados`, descuentos, propina, comision, desglose y lavador) pueden reactivarse por empresa si el rol/licencia ya permite administrar esa configuracion.
+
 2026-05-17: Nota de inicio de Administrar empresa
 - El shell `web/administrar_empresa.html` carga `linkPanelEmpresa` como pagina inicial del iframe al entrar.
 - Este comportamiento no concede permisos nuevos: `linkPanelEmpresa` sigue siendo una pagina siempre visible del contexto empresarial y las demas paginas mantienen sus controles por rol/licencia/modulo.

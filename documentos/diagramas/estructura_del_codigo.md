@@ -1,3 +1,14 @@
+## Actualizacion 2026-05-17 (carrito default en empresas antiguas)
+
+- Backend:
+  - `backend/handlers/empresa_preconfiguracion.go` mantiene el preset unico del carrito simplificado y agrega la normalizacion de `estaciones_config` ya existentes.
+  - `backend/main.go` ejecuta esa normalizacion despues de asegurar el esquema de carritos.
+- Flujo:
+  - Arranque del servidor -> `EnsureEmpresaCarritosSchema` -> `ApplyDefaultCarritoUIToExistingEmpresaPrefs` -> filas activas de `empresa_estacion_prefs` con `clave='estaciones_config'` reciben `carrito_ui_global` simplificado.
+  - Empresas activas sin `estaciones_config` reciben una preferencia base con `Estacion 1` para quedar alineadas antes de produccion.
+- Alcance:
+  - No se agregan rutas, tablas ni dependencias; se actualiza o crea solo el JSON de preferencias empresariales.
+
 ## Actualizacion 2026-05-17 (estaciones: primer clic solo activa)
 
 - Frontend:

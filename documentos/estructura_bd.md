@@ -28,6 +28,11 @@ Actualizacion 2026-05-17 (estaciones: primer clic solo activa)
 - El JSON `estaciones_config.station_card_ui` puede incluir `solo_activar_primer_clic`; cuando vale `true`, el primer clic sobre una estacion disponible solo activa su carrito base y el segundo clic abre el carrito.
 - Compatibilidad: `abrir_carrito_al_activar=false` se conserva como alias historico de `solo_activar_primer_clic=true`.
 
+Actualizacion 2026-05-17 (default carrito simplificado por tipo de empresa)
+- No se agregan tablas ni columnas fisicas.
+- El JSON `estaciones_config.carrito_ui_global` conserva la misma estructura, pero el default para empresas nuevas deja activas las tarjetas operativas basicas y apaga por defecto las tarjetas avanzadas de cobro/descuentos/propina/comision/lavador.
+- En arranque, `ApplyDefaultCarritoUIToExistingEmpresaPrefs` normaliza las filas activas antiguas de `empresa_estacion_prefs` (`estacion_id=0`, `clave='estaciones_config'`) para aplicar el mismo preset y fuerza `usar_configuracion_global=true` por estacion. Las empresas activas sin esa preferencia reciben una configuracion base con `Estacion 1`.
+
 Actualizacion 2026-05-15 (empresas compartidas con alcance)
 - `pcs_superadministrador.admin_empresa_compartida` agrega `nivel_acceso` (`solo_ver`, `acceso_total`, `modulos`) y `modulos_permitidos` para guardar el alcance efectivo del acceso aceptado.
 - `pcs_superadministrador.admin_empresa_compartida_invitaciones` agrega las mismas columnas para que el alcance elegido por el propietario viaje con la invitacion y se materialice al aceptarla.

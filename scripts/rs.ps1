@@ -19,6 +19,8 @@ param(
   [switch]$PreviewOnly,
   [switch]$SkipPreflight,
   [switch]$FullPreflight,
+  [int]$RestartHealthTimeoutSeconds = 900,
+  [int]$DockerHealthTimeoutSeconds = 900,
   [bool]$CleanupRemoteUnusedFiles = $true,
   [int]$RemoteCleanupTempMinAgeMinutes = 60,
   [int]$RemoteCleanupDockerBuilderCacheMaxAgeHours = 0
@@ -71,6 +73,8 @@ if ($ForcePush) { $updateArgs.ForcePush = $true }
 $syncArgs = @{}
 if ($DryRun) { $syncArgs.DryRun = $true }
 if ($PreviewOnly) { $syncArgs.PreviewOnly = $true }
+$syncArgs.RestartHealthTimeoutSeconds = $RestartHealthTimeoutSeconds
+$syncArgs.DockerHealthTimeoutSeconds = $DockerHealthTimeoutSeconds
 $syncArgs.CleanupRemoteUnusedFiles = $CleanupRemoteUnusedFiles
 $syncArgs.RemoteCleanupTempMinAgeMinutes = $RemoteCleanupTempMinAgeMinutes
 $syncArgs.RemoteCleanupDockerBuilderCacheMaxAgeHours = $RemoteCleanupDockerBuilderCacheMaxAgeHours

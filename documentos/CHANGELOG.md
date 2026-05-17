@@ -1,3 +1,17 @@
+## [2026-05-17] Panel primero en administrar empresa
+- [Frontend] `web/administrar_empresa.html` elimina el grupo `Inicio` y deja `Panel` como primer boton directo del menu lateral.
+- [Backend] `backend/handlers/empresa_permisos.go` retira `linkInicio` del catalogo de paginas; `linkPanelEmpresa` queda como acceso general.
+- [Alcance] No cambia rutas, endpoints, tablas ni dependencias.
+
+## [2026-05-17] Carrito simplificado como default por tipo de empresa
+- [Backend] `defaultEmpresaPreconfigCarritoUI()` usa el preset operativo limpio para empresas nuevas.
+- [Backend] `ApplyDefaultCarritoUIToExistingEmpresaPrefs` aplica el mismo preset a empresas antiguas al arrancar; tambien crea una configuracion base para empresas sin `estaciones_config`.
+- [Frontend] Los defaults de `configuracion_carrito_de_compra_empresa.html`, `configuracion_de_estaciones.html`, `carrito_de_compras.html` y `estaciones.html` quedan alineados.
+- [UX] Activos por defecto: buscar productos, catalogo, lector, items, totales, acciones, valores por medio de pago, pago mixto y pagar.
+- [UX] Apagados por defecto: cobro avanzado, descuentos, propina, comision, desglose de cobro y lavador/comision.
+- [QA] Se agregan pruebas enfocadas del preset y de la migracion de empresas antiguas.
+- [Alcance] Sin cambios de APIs, tablas, permisos ni dependencias.
+
 ## [2026-05-17] Carrito mueve Buscar Productos junto a Agregar
 - [Frontend] `web/administrar_empresa/carrito_de_compras.html` reubica el boton de productos por botones junto al boton `Agregar` y lo rotula `Buscar Productos`.
 - [Frontend] `web/administrar_empresa/buscar_producto_botones.html` deja la barra `Buscar producto` con placeholder para escribir el nombre.

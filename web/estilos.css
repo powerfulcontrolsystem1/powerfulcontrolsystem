@@ -1617,6 +1617,9 @@ p{color:var(--muted);line-height:1.5}
 @media (max-width:760px){.verticales-integration-shell{padding:14px}.verticales-integration-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.verticales-integration-table{min-width:860px}}
 .admin-sidebar .nav a:hover img.icon{transform:translateY(-1px)}
 .admin-sidebar .nav a.active img.icon{background:var(--menu-icon-active-bg,#fff);border-color:rgba(255,255,255,.55);box-shadow:0 8px 18px rgba(15,23,42,.18)}
+.admin-sidebar .nav a .menu-symbol-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 28px;vertical-align:middle;margin-right:8px;transition:transform .15s ease;background:color-mix(in srgb,currentColor 10%,transparent);border:1px solid color-mix(in srgb,currentColor 32%,transparent);border-radius:8px;padding:5px;box-sizing:border-box;color:currentColor;font-size:1rem;font-weight:950;line-height:1;box-shadow:0 8px 16px rgba(15,23,42,.12)}
+.admin-sidebar .nav a:hover .menu-symbol-icon{transform:translateY(-1px)}
+.admin-sidebar .nav a.active .menu-symbol-icon{background:color-mix(in srgb,currentColor 18%,transparent);border-color:color-mix(in srgb,currentColor 54%,transparent);box-shadow:0 8px 18px rgba(15,23,42,.18)}
 .admin-sidebar .nav a[id*="Panel"]{--menu-icon-bg:#dbeafe;--menu-icon-border:#60a5fa}
 .admin-sidebar .nav a[href*="chat"],.admin-sidebar .nav a[href*="tareas"],.admin-sidebar .nav a[id*="Chat"]{--menu-icon-bg:#d1fae5;--menu-icon-border:#34d399}
 .admin-sidebar .nav a[href*="estaciones"],.admin-sidebar .nav a[id*="Estaciones"]{--menu-icon-bg:#fee2e2;--menu-icon-border:#f87171}
@@ -12514,6 +12517,29 @@ html.theme-light .ai-gemini-inline-alert{
   padding:5px !important;
   box-sizing:border-box !important;
   filter:none !important;
+}
+.admin-sidebar .nav a .menu-symbol-icon{
+  width:28px !important;
+  height:28px !important;
+  max-width:28px !important;
+  max-height:28px !important;
+  flex:0 0 28px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:currentColor !important;
+  background:color-mix(in srgb,currentColor 10%,transparent) !important;
+  border:1px solid color-mix(in srgb,currentColor 32%,transparent) !important;
+  border-radius:8px !important;
+  padding:5px !important;
+  box-sizing:border-box !important;
+  font-weight:950 !important;
+  line-height:1 !important;
+}
+.admin-sidebar .nav a.active .menu-symbol-icon{
+  color:currentColor !important;
+  background:color-mix(in srgb,currentColor 18%,transparent) !important;
+  border-color:color-mix(in srgb,currentColor 54%,transparent) !important;
 }
 
 .ai-chat-drawer .ai-chat-form{gap:8px;padding:12px}

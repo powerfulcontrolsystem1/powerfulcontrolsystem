@@ -412,7 +412,6 @@ type permissionPageRule struct {
 }
 
 var permissionPagesCatalogOrdered = []permissionPageRule{
-	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Permisos base de ventas"},
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa sin estacion", Grupo: "Operacion diaria y ventas"},

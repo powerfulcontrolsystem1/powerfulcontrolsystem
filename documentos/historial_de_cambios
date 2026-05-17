@@ -1,3 +1,30 @@
+2026-05-17: rs sin limite corto de pausa en despliegue
+- Modulos afectados: `scripts`, `deploy`.
+- Cambio operativo: `rs.ps1` y `scripts/rs.ps1` exponen `RestartHealthTimeoutSeconds` y `DockerHealthTimeoutSeconds`, con 900 segundos por defecto.
+- Cambio operativo: `scripts/sync_to_vps.ps1` quita el tope superior interno del healthcheck remoto; solo conserva minimo de 5 segundos para evitar valores invalidos.
+- Alcance tecnico: no cambia backend, frontend, tablas, rutas ni dependencias; solo el tiempo de espera del despliegue/sincronizacion VPS.
+
+2026-05-17: Venta directa usa simbolo monetario adaptable
+- Modulos afectados: `administrar_empresa`, `ventas_simple`.
+- Cambio UX: el boton `Venta directa` del menu empresarial reemplaza la imagen fija por un icono de texto `$`.
+- Tema: el simbolo usa `currentColor`, por lo que cambia con la apariencia activa y con el estado normal/activo del enlace.
+- Alcance tecnico: cambio frontend/CSS; no modifica rutas, endpoints, permisos, tablas ni dependencias.
+
+2026-05-17: Administrar empresa deja Panel como primer boton
+- Modulos afectados: `administrar_empresa`, `permisos`.
+- Cambio UX: `web/administrar_empresa.html` elimina el grupo lateral `Inicio` y deja `Panel` como primer boton directo del submenu empresarial.
+- Backend: el catalogo de paginas de permisos retira `linkInicio`; `linkPanelEmpresa` queda como acceso general siempre visible.
+- Alcance tecnico: no cambia rutas, endpoints, tablas ni dependencias; el iframe sigue cargando `panel.html` por defecto.
+
+2026-05-17: Carrito simplificado como default para tipos de empresa
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `tipo_empresa_preconfiguracion`.
+- Backend: `defaultEmpresaPreconfigCarritoUI()` deja como preset para empresas nuevas una vista operativa limpia: buscar productos, catalogo, lector, items, totales, acciones, valores por medio de pago, pago mixto y boton pagar activos.
+- Backend: las opciones avanzadas `Cobro y estados del carrito`, descuentos, propina, comision, desglose de cobro y `Lavador / comision` quedan apagadas por defecto.
+- Backend: `ApplyDefaultCarritoUIToExistingEmpresaPrefs` se ejecuta al arrancar y aplica el mismo preset a las empresas antiguas; si una empresa no tenia `estaciones_config`, se crea una configuracion base con `Estacion 1` y el carrito simplificado.
+- Frontend: `configuracion_carrito_de_compra_empresa.html`, `configuracion_de_estaciones.html`, `carrito_de_compras.html` y `estaciones.html` usan el mismo default cuando no existe JSON guardado.
+- Resguardo: `backend/handlers/empresa_preconfiguracion_carrito_test.go` protege que el preset simplificado no vuelva a activar tarjetas avanzadas por defecto y que la migracion de empresas antiguas fuerce el carrito global unificado.
+- Alcance tecnico: no modifica tablas fisicas, rutas, endpoints, permisos ni dependencias; solo cambia valores por defecto del JSON `estaciones_config.carrito_ui_global`.
+
 2026-05-17: Carrito mueve Buscar Productos junto a Agregar
 - Modulos afectados: `carritos`, `ventas_simple`, `productos`.
 - Cambio UX: el boton `Buscar (botones)` se reubica junto al boton `Agregar` del lector/manual del carrito y queda rotulado como `Buscar Productos`.
