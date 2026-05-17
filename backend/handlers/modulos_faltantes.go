@@ -7351,9 +7351,9 @@ func dianNowLocal() string {
 }
 
 const (
-	dianOfficialSetFacturas     = 8
-	dianOfficialSetNotasDebito  = 1
-	dianOfficialSetNotasCredito = 1
+	dianOfficialSetFacturas     = 60
+	dianOfficialSetNotasDebito  = 20
+	dianOfficialSetNotasCredito = 20
 	dianOfficialSetTotal        = dianOfficialSetFacturas + dianOfficialSetNotasDebito + dianOfficialSetNotasCredito
 )
 
@@ -7365,7 +7365,7 @@ func dianDefaultSetRequirement() map[string]interface{} {
 		"notas_credito":          dianOfficialSetNotasCredito,
 		"total_documentos":       dianOfficialSetTotal,
 		"estado_requerido_final": "Aceptado",
-		"nota":                   "Verifique siempre el objetivo que muestra la plataforma DIAN para el modo de operacion de esta empresa.",
+		"nota":                   "Base DIAN para software propio o proveedor tecnologico; verifique siempre el objetivo exacto que muestra la plataforma DIAN para el modo de operacion de esta empresa.",
 	}
 }
 

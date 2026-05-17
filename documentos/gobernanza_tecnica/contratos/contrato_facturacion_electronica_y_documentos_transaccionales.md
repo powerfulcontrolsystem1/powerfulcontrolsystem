@@ -181,6 +181,7 @@ Restriccion clave:
 17. Las referencias sensibles DIAN (`token_emisor_ref`, `certificado_clave_ref`, software compartido) deben resolverse por `env:`, `file:` o `base64:`; no deben quedar como secretos en codigo fuente.
 18. El set de pruebas DIAN respeta consecutivos y rango configurado; si el rango no alcanza, la operacion debe fallar con conflicto.
 19. La documentacion debe distinguir explicitamente entre `firma base` y `firma oficial`, y entre `envio real base` y `transporte oficial DIAN`.
+20. Para Colombia, el objetivo base del set DIAN en software propio o proveedor tecnologico es 60 facturas, 20 notas debito y 20 notas credito; la UI permite cambiarlo cuando el portal DIAN asigne un objetivo diferente.
 
 ## Salidas y estados funcionales
 
@@ -292,10 +293,10 @@ Orden de prioridad:
 
 ### Limites explicitamente vigentes
 
-- el cliente SOAP/WSDL oficial DIAN aun no esta integrado en el flujo normal de facturacion
-- `SendBillAsync`, `SendBillSync`, `SendTestSetAsync`, `GetStatusZip` y `GetNumberingRange` permanecen como objetivo declarado, no como garantia ya cerrada del flujo principal
-- el empaquetado ZIP oficial, `TrackId` y la firma XMLDSig/XAdES certificable final siguen pendientes
-- el XML UBL generado hoy es base interna y debe tratarse como preparacion tecnica, no como cumplimiento final certificable por si solo
+- el cliente SOAP/WSDL base ya construye sobres para `SendBillAsync`, `SendBillSync`, `SendTestSetAsync` y `GetStatusZip`, pero el cierre certificable depende de ejecutar acuses reales con credenciales/firma de la empresa.
+- `GetNumberingRange` permanece como objetivo declarado para automatizar consulta de rangos; los rangos de produccion deben estar configurados y asociados en DIAN antes de emitir.
+- la firma XMLDSig/XAdES base existe para validacion tecnica, pero la aceptacion fiscal final depende del acuse DIAN/proveedor y de las politicas vigentes de DIAN para la empresa.
+- el correo automatico de factura envia resumen fiscal en texto; adjuntar XML/PDF fiscal definitivo queda pendiente hasta persistir artefactos certificados por documento.
 
 ## Errores de contrato esperados
 

@@ -1443,9 +1443,9 @@ try {
   }
 
   function preferredStartupFrameSrc(empresaId) {
-    var ventaDirectaLink = document.getElementById("linkVentaDirecta");
-    var href = ventaDirectaLink
-      ? withEmpresaParam(ventaDirectaLink.getAttribute("href"), empresaId)
+    var panelLink = document.getElementById("linkPanelEmpresa");
+    var href = panelLink
+      ? withEmpresaParam(panelLink.getAttribute("href"), empresaId)
       : "";
     if (href && isAllowedFrameHref(href) && isVisibleMenuHref(href)) {
       return href;

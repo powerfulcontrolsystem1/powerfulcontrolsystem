@@ -1,3 +1,14 @@
+2026-05-17: Nota de inicio de Administrar empresa
+- El shell `web/administrar_empresa.html` carga `linkPanelEmpresa` como pagina inicial del iframe al entrar.
+- Este comportamiento no concede permisos nuevos: `linkPanelEmpresa` sigue siendo una pagina siempre visible del contexto empresarial y las demas paginas mantienen sus controles por rol/licencia/modulo.
+
+2026-05-17: Nota de navegacion para Operacion y ventas
+- El grupo `Operacion y ventas` de `web/administrar_empresa.html` queda reservado a los accesos de operacion diaria directa: `linkVentaDirecta` y `linkEstaciones`.
+- `linkVentas` se conserva como permiso base del TPV bajo `Permisos base de ventas`, no como boton operativo principal.
+- `linkVentaPublica`, `linkRedSocialComercial`, `linkCodigosDescuento` y `linkChatTareas` se agrupan administrativamente como `Canales digitales y colaboracion`.
+- `linkReservasHotel` se agrupa como `Verticales de negocio` y se muestra en `Soluciones por negocio`.
+- Impacto de matriz: no cambian acciones, wrappers, rutas, endpoints ni permisos efectivos; solo cambia la ubicacion visual y el grupo de catalogo.
+
 2026-05-15: Nota de navegacion para menu empresarial
 - `web/administrar_empresa.html` mueve el grupo `Operacion y ventas` al inicio del menu para que `Venta directa` sea el primer acceso real de Administrar Empresa y `Estaciones` el segundo.
 - `Carritos` no aparece en el menu principal operativo y permanece disponible en `web/administrar_empresa/configuracion_menu.html` dentro de `Ventas y cobro`.

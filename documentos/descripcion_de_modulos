@@ -1,3 +1,43 @@
+2026-05-17: Carrito acerca busqueda de productos al alta rapida.
+- El boton `Buscar Productos` queda al lado de `Agregar` en el bloque operativo del carrito.
+- La pagina `buscar_producto_botones.html` muestra una barra `Buscar producto` para filtrar escribiendo el nombre.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Carrito sin encabezado descriptivo en modo operativo.
+- En venta directa o estacion, el carrito oculta el encabezado superior y el texto de ayuda de venta directa.
+- La pantalla inicia directamente con los controles operativos del carrito.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Carrito calcula vuelto de efectivo.
+- En la seccion de valores por medio de pago se agrega `Efectivo recibido`.
+- El carrito muestra `Cambio a devolver` o `Falta recibir` segun el efectivo esperado en la cuenta.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Carrito con secciones avanzadas opcionales.
+- `Cobro y estados del carrito` se activa con el check `Mostrar opciones de cobro`.
+- `Lavador` se activa con el check `Mostrar lavador`.
+- Por defecto ambas secciones quedan ocultas para reducir ruido operativo; el pago principal y los valores por medio de pago siguen disponibles.
+- Alcance: no cambia backend, endpoints, tablas ni permisos.
+
+2026-05-17: Administrar empresa abre el Panel por defecto.
+- Al entrar al shell empresarial, `web/js/administrar_empresa.js` carga `linkPanelEmpresa` como pagina inicial del iframe.
+- El menu puede seguir mostrando `Operacion y ventas` arriba, pero la primera vista es el tablero de administracion de la empresa.
+- Alcance: no cambia permisos, endpoints, tablas ni dependencias.
+
+2026-05-17: Menu principal de Administrar empresa enfocado en operacion diaria.
+- `Operacion y ventas` queda limitado a `Venta directa` y `Estaciones`.
+- `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` se agrupan en `Canales digitales y colaboracion`.
+- `Reservas` se ubica en `Soluciones por negocio`.
+- `Punto de venta / TPV` queda como permiso base de ventas, fuera del grupo operativo visible.
+- El catalogo de permisos refleja esos grupos sin cambiar acciones, rutas, endpoints, tablas ni dependencias.
+
+2026-05-17: Revision de facturacion electronica por pais y DIAN Colombia.
+- La configuracion principal de facturacion electronica conserva perfiles separados por `empresa_id + pais_codigo` para Colombia, Ecuador, Panama, Costa Rica, Argentina y Venezuela.
+- Colombia muestra configuracion DIAN propia dentro de la pagina principal y envia las pruebas, diagnostico, cola y emision documental manual a `facturacion_electronica_pruebas_dian.html`.
+- El set base DIAN para software propio/proveedor tecnologico queda en 60 facturas, 20 notas debito y 20 notas credito, editable segun el objetivo que DIAN asigne en habilitacion.
+- Los documentos electronicos soportados por el flujo operativo son `factura_electronica`, `nota_credito`, `nota_debito`, `documento_soporte`, `nomina_electronica` y `documento_equivalente_pos`.
+- El correo automatico actual informa los datos fiscales principales del documento; queda como brecha de producto adjuntar XML/PDF certificado cuando la integracion DIAN/proveedor produzca artefactos finales.
+
 2026-05-17: Estaciones con primer clic solo activa.
 - Modulo: `estaciones`, `carritos`, `configuracion`.
 - UX: la configuracion de estaciones agrega el check `Primer clic solo activa`.

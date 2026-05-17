@@ -114,6 +114,16 @@ func TestBuildDIANGetStatusZipEnvelope(t *testing.T) {
 	}
 }
 
+func TestDIANDefaultSetRequirementUsesSoftwarePropioProveedorTarget(t *testing.T) {
+	got := dianDefaultSetRequirement()
+	if got["facturas_electronicas"] != 60 || got["notas_debito"] != 20 || got["notas_credito"] != 20 || got["total_documentos"] != 100 {
+		t.Fatalf("unexpected default DIAN set requirement: %#v", got)
+	}
+	if !strings.Contains(genericStringValue(got["nota"]), "software propio") {
+		t.Fatalf("expected default note to explain software mode, got %#v", got)
+	}
+}
+
 func TestCalculateColombianNITDV(t *testing.T) {
 	dv, ok := calculateColombianNITDV("900373913")
 	if !ok {

@@ -1,3 +1,17 @@
+- 2026-05-17: `Carrito de compras` mueve `Buscar Productos` junto al boton `Agregar` y la pagina por botones deja la barra `Buscar producto` para filtrar por nombre.
+
+- 2026-05-17: `Carrito de compras` oculta el encabezado `Carrito de compras` y el texto descriptivo de venta directa en modo operativo, dejando la pantalla iniciar directamente con el carrito.
+
+- 2026-05-17: `Carrito de compras` agrega `Efectivo recibido` en los valores por medio de pago y calcula `Cambio a devolver` o `Falta recibir` sin cambiar el payload de pago.
+
+- 2026-05-17: `Carrito de compras` oculta por defecto las secciones `Cobro y estados del carrito` y `Lavador`; ahora se muestran solo con los checks `Mostrar opciones de cobro` y `Mostrar lavador`. El pago principal queda disponible y se limpian valores avanzados invisibles.
+
+- 2026-05-17: `Administrar empresa` vuelve a abrir `Panel` como pagina inicial del iframe al entrar al shell empresarial. El orden del menu se mantiene; no cambian permisos, rutas ni endpoints.
+
+- 2026-05-17: `Administrar empresa` deja `Operacion y ventas` solo con `Venta directa` y `Estaciones`. `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` pasan a `Canales digitales y colaboracion`; `Reservas` queda en `Soluciones por negocio` y `Punto de venta / TPV` queda como permiso base. El catalogo de permisos queda alineado sin cambiar rutas, endpoints ni tablas.
+
+- 2026-05-17: `Facturacion electronica` revisa el flujo por pais y DIAN Colombia. El perfil de Colombia deja de apuntar al modulo ERP/documental antiguo, las pruebas DIAN usan como base 60 facturas, 20 notas debito y 20 notas credito para software propio/proveedor tecnologico, y la documentacion separa configuracion por pais, pruebas DIAN, correo automatico y la brecha de adjuntos XML/PDF certificados.
+
 - 2026-05-17: `Estaciones` agrega el check `Primer clic solo activa` en Configuracion de estaciones. Cuando esta activo, el primer clic sobre una estacion disponible solo activa su carrito base y actualiza la tarjeta a ocupada; el segundo clic entra al carrito. Se conserva compatibilidad con `abrir_carrito_al_activar=false`.
 
 - 2026-05-17: `Reportes` agrega filtros operativos al `Reporte de turno y caja`. El centro de reportes ahora envia `usuario`, `caja_codigo`, `turno` y `cierre_id` a `/api/empresa/reportes`, se protege que `reporte_de_turno` permanezca en el catalogo y se verifica visualmente el corte automatico, cierre/impresion de turno y ultimos movimientos de caja actual.

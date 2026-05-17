@@ -1,3 +1,42 @@
+## [2026-05-17] Carrito mueve Buscar Productos junto a Agregar
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` reubica el boton de productos por botones junto al boton `Agregar` y lo rotula `Buscar Productos`.
+- [Frontend] `web/administrar_empresa/buscar_producto_botones.html` deja la barra `Buscar producto` con placeholder para escribir el nombre.
+- [Alcance] Sin cambios de backend, APIs, tablas, permisos ni dependencias.
+
+## [2026-05-17] Carrito sin encabezado descriptivo operativo
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` oculta el encabezado superior en venta directa o estacion.
+- [UX] Se elimina el texto `Venta directa usa una sola caja abierta...` para que la pantalla empiece directamente desde los controles del carrito.
+- [Alcance] Sin cambios de backend, APIs, tablas, permisos ni dependencias.
+
+## [2026-05-17] Carrito calcula cambio por efectivo recibido
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` agrega el campo `Efectivo recibido` en la seccion de valores por medio de pago.
+- [UX] El carrito calcula `Cambio a devolver` cuando el recibido cubre el efectivo esperado, o `Falta recibir` cuando no alcanza.
+- [Alcance] Sin cambios de backend, APIs, tablas, permisos ni dependencias.
+
+## [2026-05-17] Carrito oculta secciones avanzadas por check
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` agrega los checks `Mostrar opciones de cobro` y `Mostrar lavador`.
+- [UX] `Cobro y estados del carrito` y `Lavador` quedan apagados por defecto y se abren solo cuando el usuario los necesita.
+- [Operativo] Al ocultar opciones de cobro se limpian descuento, devolucion, referencia y propina para no aplicar valores invisibles.
+- [Alcance] Sin cambios de backend, APIs, tablas, permisos ni dependencias.
+
+## [2026-05-17] Administrar empresa abre Panel por defecto
+- [Frontend] `web/js/administrar_empresa.js` usa `linkPanelEmpresa` como pagina preferida de arranque del iframe.
+- [UX] El usuario entra primero al tablero de administracion, aunque el grupo `Operacion y ventas` siga arriba en el menu.
+- [Alcance] Sin cambios de permisos, APIs, tablas ni dependencias.
+
+## [2026-05-17] Administrar empresa simplifica Operacion y ventas
+- [Frontend] `web/administrar_empresa.html` deja el grupo `Operacion y ventas` solo con `Venta directa` y `Estaciones`.
+- [Frontend] `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` pasan al grupo `Canales digitales y colaboracion`.
+- [Frontend] `Reservas` se mueve a `Soluciones por negocio`.
+- [Permisos] `backend/handlers/empresa_permisos.go` actualiza los grupos administrativos de esas paginas y mueve `Punto de venta / TPV` a `Permisos base de ventas`, sin cambiar acciones, rutas ni endpoints.
+- [Alcance] Sin tablas ni dependencias nuevas; mantiene aislamiento por `empresa_id`.
+
+## [2026-05-17] Facturacion electronica DIAN revisada
+- [Backend] `FacturacionPaisVistaFor("CO")` deja de referenciar el modulo ERP/documental viejo y apunta a la subpagina canonica de pruebas DIAN.
+- [DIAN] El set base para software propio/proveedor tecnologico queda en 60 facturas, 20 notas debito y 20 notas credito, editable segun el objetivo del portal DIAN.
+- [Frontend] `facturacion_electronica_pruebas_dian.html` muestra esos valores base y advierte que deben ajustarse si DIAN asigna otro objetivo.
+- [Documentacion] Se registra que la configuracion esta separada por empresa/pais, que Colombia conserva pruebas DIAN aparte y que el correo automatico actual no adjunta XML/PDF fiscal certificado.
+
 ## [2026-05-17] Estaciones con primer clic solo activa
 - [Frontend] `configuracion_de_estaciones.html` agrega el check `Primer clic solo activa`.
 - [Frontend] `estaciones.html` usa `solo_activar_primer_clic` para que el primer clic active la estacion sin abrir carrito y el segundo clic abra el carrito ya activo.

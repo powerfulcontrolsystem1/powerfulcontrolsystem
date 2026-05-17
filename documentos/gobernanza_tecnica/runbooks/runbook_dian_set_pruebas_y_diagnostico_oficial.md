@@ -35,6 +35,7 @@ No cubre una integracion SOAP/WSDL oficial completa con DIAN. El propio backend 
 4. Confirmar que los secretos DIAN no esten incrustados en texto plano y que las referencias `env:`, `file:` o `base64:` resuelvan valores no vacios.
 5. Verificar que el software configurado sea `compartido` o `empresa` segun el escenario esperado, sin asumir que uno reemplaza el token o la firma por empresa.
 6. Validar el rango y consecutivos antes de correr `enviar_set_pruebas`.
+7. Para software propio o proveedor tecnologico, usar como base 60 facturas, 20 notas debito y 20 notas credito; si el portal DIAN de habilitacion muestra otro objetivo, ajustar la UI antes de ejecutar.
 
 ## Causas probables
 
@@ -67,8 +68,9 @@ No cubre una integracion SOAP/WSDL oficial completa con DIAN. El propio backend 
 ## Limites vigentes del modulo
 
 1. El backend ofrece una base operativa util para onboarding, validacion, diagnostico, firma base, pruebas y simulaciones.
-2. El backend no debe documentarse como integracion SOAP/WSDL oficial completa mientras esa capa no exista realmente.
-3. Cualquier incidencia debe clasificarse explicitamente en una de estas dos categorias:
+2. El backend tiene sobres SOAP/WSDL base para envio y consulta, pero no debe prometer aceptacion fiscal sin acuse real DIAN/proveedor de la empresa.
+3. El correo automatico actual envia resumen fiscal; el adjunto XML/PDF certificado por documento queda como brecha hasta persistir artefactos fiscales definitivos.
+4. Cualquier incidencia debe clasificarse explicitamente en una de estas dos categorias:
    - error de configuracion o datos de la empresa
    - brecha de implementacion del transporte oficial
 

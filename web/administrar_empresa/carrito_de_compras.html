@@ -104,7 +104,6 @@
         <div class="carrito-primary-main">
       <div id="buscarProductosActions" class="form-actions mt-10">
         <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
-        <button type="button" id="carritoBtnBuscarBotones" class="btn secondary">Buscar (botones)</button>
       </div>
 
       <div id="scannerPanel" class="card empresa-section mt-12">
@@ -122,6 +121,9 @@
           </div>
           <div class="form-col maxw-180 flex-end">
             <button type="button" id="scannerAgregarBtn" class="btn secondary w-full">Agregar</button>
+          </div>
+          <div class="form-col maxw-220 flex-end">
+            <button type="button" id="carritoBtnBuscarBotones" class="btn secondary w-full">Buscar Productos</button>
           </div>
         </div>
         <div id="scannerMsg" class="form-help"></div>
@@ -190,7 +192,20 @@
         </div>
       </section>
 
-      <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12">
+      <section id="stationOptionalSectionsControls" class="empresa-section carrito-optional-controls is-hidden mt-12" hidden>
+        <div class="form-actions actions-wrap-gap-10">
+          <label class="form-help inline-check">
+            <input type="checkbox" id="toggleStationCheckoutAdvanced">
+            Mostrar opciones de cobro
+          </label>
+          <label class="form-help inline-check">
+            <input type="checkbox" id="toggleStationWorkerCommission">
+            Mostrar lavador
+          </label>
+        </div>
+      </section>
+
+      <div id="stationCheckoutPanel" class="card empresa-section is-hidden mt-12" hidden>
         <div class="empresa-section-header">
           <h3 class="section-heading">Cobro y estados del carrito</h3>
         </div>
@@ -340,6 +355,11 @@
           <div class="form-col">
             <label class="form-label" for="stationPayDisplayOtro">Otro</label>
             <input id="stationPayDisplayOtro" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" data-payment-amount-method="transferencia_bancaria">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="stationCashReceivedDisplay">Efectivo recibido</label>
+            <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" placeholder="COP 0.00">
+            <div id="stationCashChangeHint" class="form-help mt-6">Cambio a devolver: COP 0.00</div>
           </div>
         </div>
       </section>
@@ -551,6 +571,10 @@
       stationTip: {
         aplicar: true
       },
+      optionalSections: {
+        showCheckoutAdvanced: false,
+        showWorkerCommission: false
+      },
       stationDiscount: {
         type: 'none',
         code: '',
@@ -567,6 +591,7 @@
       paymentInProgress: false,
       stationPaymentNotice: null,
       paymentAmountsManual: false,
+      cashReceivedAmount: 0,
       paymentAmounts: {
         efectivo: 0,
         tarjeta_debito: 0,
@@ -975,6 +1000,12 @@
           stationPaymentAmountsCard.hidden = true;
           stationPaymentAmountsCard.classList.add('is-hidden');
         }
+        const stationOptionalSectionsControls = document.getElementById('stationOptionalSectionsControls');
+        if (stationOptionalSectionsControls) {
+          stationOptionalSectionsControls.style.display = 'none';
+          stationOptionalSectionsControls.hidden = true;
+          stationOptionalSectionsControls.classList.add('is-hidden');
+        }
         const itemsList = document.getElementById('itemsList');
         if (itemsList) {
           itemsList.textContent = '';
@@ -1361,6 +1392,59 @@
       setFieldColumnVisibility('paymentReference', showPaymentMeans);
     }
 
+    function resetHiddenCheckoutOptions() {
+      state.stationDiscount.type = 'none';
+      state.stationDiscount.code = '';
+      state.stationDiscount.value = 0;
+      state.stationDiscount.devolucion = 0;
+      state.stationDiscount.paymentReference = '';
+      if (!state.paymentAmountsManual) {
+        state.stationDiscount.paymentMethod = 'efectivo';
+        state.stationDiscount.mixedPayments = [];
+      }
+      state.stationTip.aplicar = false;
+
+      const discountTypeEl = document.getElementById('discountType');
+      const discountValueEl = document.getElementById('discountValue');
+      const discountCodeEl = document.getElementById('discountCode');
+      const devolucionEl = document.getElementById('devolucionMonto');
+      const paymentReferenceEl = document.getElementById('paymentReference');
+      const paymentMethodEl = document.getElementById('paymentMethod');
+      const applyTipEl = document.getElementById('applyTipCheckbox');
+      if (discountTypeEl) discountTypeEl.value = 'none';
+      if (discountValueEl) discountValueEl.value = '0';
+      if (discountCodeEl) discountCodeEl.value = '';
+      if (devolucionEl) devolucionEl.value = '0';
+      if (paymentReferenceEl) paymentReferenceEl.value = '';
+      if (paymentMethodEl && !state.paymentAmountsManual) paymentMethodEl.value = 'efectivo';
+      if (applyTipEl) applyTipEl.checked = false;
+    }
+
+    function setOptionalSectionsControlsVisibility(ui, carrito) {
+      const controls = document.getElementById('stationOptionalSectionsControls');
+      const checkoutToggle = document.getElementById('toggleStationCheckoutAdvanced');
+      const workerToggle = document.getElementById('toggleStationWorkerCommission');
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const showControls = focusedSaleMode && Boolean(carrito);
+      if (controls) {
+        controls.classList.toggle('is-hidden', !showControls);
+        controls.hidden = !showControls;
+        controls.style.display = showControls ? '' : 'none';
+      }
+      if (checkoutToggle) {
+        const canShowCheckout = Boolean(ui && ui.mostrar_tarjeta_cobro_estados);
+        checkoutToggle.checked = canShowCheckout && Boolean(state.optionalSections.showCheckoutAdvanced);
+        checkoutToggle.disabled = !canShowCheckout;
+        if (!canShowCheckout) state.optionalSections.showCheckoutAdvanced = false;
+      }
+      if (workerToggle) {
+        const canShowWorker = Boolean(ui && ui.mostrar_comision && ui.mostrar_tarjeta_comision);
+        workerToggle.checked = canShowWorker && Boolean(state.optionalSections.showWorkerCommission);
+        workerToggle.disabled = !canShowWorker;
+        if (!canShowWorker) state.optionalSections.showWorkerCommission = false;
+      }
+    }
+
     function applyStationCartUIConfig() {
       const ui = getCurrentStationCartUIConfig();
       state.stationCartUI = ui;
@@ -1369,7 +1453,9 @@
 
       const searchActions = document.getElementById('buscarProductosActions');
       if (searchActions) {
-        searchActions.style.display = '';
+        const backToStationsBtn = document.getElementById('backToStationsHeaderBtn');
+        const showSearchActions = Boolean(backToStationsBtn && !backToStationsBtn.hidden && backToStationsBtn.style.display !== 'none');
+        searchActions.style.display = showSearchActions ? '' : 'none';
       }
 
       const btnBuscarToolbar = document.getElementById('carritoBtnBuscarBotones');
@@ -1445,7 +1531,8 @@
         setCardVisibility('carritoGrid', Boolean(ui.mostrar_tarjeta_items_carrito));
       }
       setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
-      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && focusedSaleMode && Boolean(getSelectedCarrito()));
+      setOptionalSectionsControlsVisibility(ui, getSelectedCarrito());
+      setCardVisibility('stationCheckoutPanel', Boolean(ui.mostrar_tarjeta_cobro_estados) && Boolean(state.optionalSections.showCheckoutAdvanced) && focusedSaleMode && Boolean(getSelectedCarrito()));
 
       const productsSummaryCard = document.getElementById('productsSummaryCard');
       if (productsSummaryCard) {
@@ -1913,7 +2000,7 @@
 
     function getCommissionEstimateFromItems() {
       const operativa = getOperativaPermisos();
-      const enabled = operativa.habilitar_comisiones && state.commissionConfig.loaded && Boolean(state.commissionConfig.habilitarComisiones) && Boolean(state.commissionConfig.aplicarAutomaticamente);
+      const enabled = Boolean(state.optionalSections.showWorkerCommission) && operativa.habilitar_comisiones && state.commissionConfig.loaded && Boolean(state.commissionConfig.habilitarComisiones) && Boolean(state.commissionConfig.aplicarAutomaticamente);
       const pct = enabled ? Math.max(0, Math.min(100, Number(state.commissionConfig.porcentajeComision || 0))) : 0;
       const filtro = normalize(state.commissionConfig.filtroServicio).toLowerCase();
 
@@ -2316,6 +2403,43 @@
       });
     }
 
+    function getCashAmountForChange() {
+      const amounts = state.paymentAmounts || {};
+      return Math.max(0, roundMoney(Number(amounts.efectivo || 0)));
+    }
+
+    function renderCashReceivedChange(carrito) {
+      const input = document.getElementById('stationCashReceivedDisplay');
+      const hint = document.getElementById('stationCashChangeHint');
+      if (!input && !hint) return;
+
+      const moneda = (carrito && carrito.moneda) || 'COP';
+      const efectivoCuenta = getCashAmountForChange();
+      const recibido = Math.max(0, roundMoney(Number(state.cashReceivedAmount || 0)));
+      const cambio = Math.max(0, roundMoney(recibido - efectivoCuenta));
+      const faltante = Math.max(0, roundMoney(efectivoCuenta - recibido));
+
+      if (hint) {
+        if (recibido <= 0) {
+          hint.textContent = 'Cambio a devolver: ' + formatAmount(0, moneda);
+          hint.classList.remove('value-negative');
+        } else if (faltante > 0) {
+          hint.textContent = 'Falta recibir: ' + formatAmount(faltante, moneda);
+          hint.classList.add('value-negative');
+        } else {
+          hint.textContent = 'Cambio a devolver: ' + formatAmount(cambio, moneda);
+          hint.classList.remove('value-negative');
+        }
+      }
+    }
+
+    function formatCashReceivedInput(moneda) {
+      const input = document.getElementById('stationCashReceivedDisplay');
+      if (!input) return;
+      const value = Math.max(0, roundMoney(Number(state.cashReceivedAmount || 0)));
+      input.value = value > 0 ? formatAmount(value, moneda || 'COP') : '';
+    }
+
     function syncStationPaymentDisplayInputs(carrito) {
       const ids = ['stationPayDisplayEfectivo', 'stationPayDisplayDebito', 'stationPayDisplayCredito', 'stationPayDisplayOtro'];
       const setOne = function(id, text) {
@@ -2324,11 +2448,15 @@
       };
       if (!carrito) {
         state.paymentAmountsManual = false;
+        state.cashReceivedAmount = 0;
         state.paymentAmounts = { efectivo: 0, tarjeta_debito: 0, tarjeta_credito: 0, transferencia_bancaria: 0 };
         ids.forEach(function(id) { setOne(id, ''); });
+        formatCashReceivedInput('COP');
+        renderCashReceivedChange(null);
         return;
       }
       if (state.paymentAmountsManual) {
+        renderCashReceivedChange(carrito);
         return;
       }
       const pay = getStationPaymentBreakdown(carrito);
@@ -2364,6 +2492,7 @@
         tarjeta_credito: roundMoney(cred),
         transferencia_bancaria: roundMoney(otro)
       };
+      renderCashReceivedChange(carrito);
     }
 
     function roundMoney(value) {
@@ -3081,6 +3210,7 @@
       const vipCard = document.getElementById('stationVipAccessCard');
       const commissionCard = document.getElementById('stationWorkerCommissionCard');
       const paymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
+      const optionalControls = document.getElementById('stationOptionalSectionsControls');
       const stationItemsPanel = document.getElementById('stationCartSplitRow');
       const focusedSaleMode = state.stationMode || state.directSaleMode;
       if (!focusedSaleMode || !carrito) {
@@ -3115,6 +3245,11 @@
           paymentAmountsCard.hidden = true;
           paymentAmountsCard.classList.add('is-hidden');
         }
+        if (optionalControls) {
+          optionalControls.style.display = 'none';
+          optionalControls.hidden = true;
+          optionalControls.classList.add('is-hidden');
+        }
         if (stationItemsPanel) {
           stationItemsPanel.style.display = 'none';
           stationItemsPanel.hidden = true;
@@ -3125,7 +3260,11 @@
       }
 
       const stationUI = getCurrentStationCartUIConfig();
-      const showCheckoutPanel = Boolean(stationUI.mostrar_tarjeta_cobro_estados);
+      setOptionalSectionsControlsVisibility(stationUI, carrito);
+      const showCheckoutPanel = Boolean(stationUI.mostrar_tarjeta_cobro_estados) && Boolean(state.optionalSections.showCheckoutAdvanced);
+      if (!showCheckoutPanel) {
+        resetHiddenCheckoutOptions();
+      }
       panel.classList.toggle('is-hidden', !showCheckoutPanel);
       panel.hidden = !showCheckoutPanel;
       panel.style.display = showCheckoutPanel ? '' : 'none';
@@ -3200,7 +3339,7 @@
         state.stationTip.aplicar = false;
         if (applyTipEl) applyTipEl.checked = false;
       }
-      if (!stationUI.mostrar_comision && commissionWorkerEl) {
+      if ((!stationUI.mostrar_comision || !state.optionalSections.showWorkerCommission) && commissionWorkerEl) {
         commissionWorkerEl.value = '';
       }
 
@@ -3208,12 +3347,12 @@
       setFieldColumnVisibility('discountValue', stationUI.mostrar_descuentos);
       setFieldColumnVisibility('discountCode', stationUI.mostrar_descuentos);
       setFieldColumnVisibility('applyTipCheckbox', stationUI.mostrar_propina);
-      setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision);
+      setFieldColumnVisibility('commissionWorker', stationUI.mostrar_comision && state.optionalSections.showWorkerCommission);
       setFieldColumnVisibility('paymentMethod', stationUI.mostrar_tarjetas_pago);
       setFieldColumnVisibility('activeCashRegister', true);
       setFieldColumnVisibility('paymentReference', stationUI.mostrar_tarjetas_pago);
       if (commissionCard) {
-        const showCommissionCard = stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision;
+        const showCommissionCard = stationUI.mostrar_comision && stationUI.mostrar_tarjeta_comision && state.optionalSections.showWorkerCommission;
         commissionCard.classList.toggle('is-hidden', !showCommissionCard);
         commissionCard.hidden = !showCommissionCard;
         commissionCard.style.display = showCommissionCard ? '' : 'none';
@@ -3229,7 +3368,7 @@
       paymentReferenceEl.disabled = !selectedActive || !stationUI.mostrar_tarjetas_pago;
       devolucionEl.disabled = !selectedActive;
       if (commissionWorkerEl) {
-        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones || !stationUI.mostrar_comision;
+        commissionWorkerEl.disabled = !selectedActive || !operativa.habilitar_comisiones || !stationUI.mostrar_comision || !state.optionalSections.showWorkerCommission;
       }
 
       renderTipConfigHint();
@@ -3270,6 +3409,10 @@
         if (!el) return;
         el.disabled = !selectedActive || !stationUI.mostrar_tarjeta_valores_pago;
       });
+      const cashReceivedEl = document.getElementById('stationCashReceivedDisplay');
+      if (cashReceivedEl) {
+        cashReceivedEl.disabled = !selectedActive || !stationUI.mostrar_tarjeta_valores_pago || getCashAmountForChange() <= 0;
+      }
 
       mixedBlockEl.style.display = showDetailedMixedInputs ? '' : 'none';
       mixedBlock2El.style.display = showDetailedMixedInputs ? '' : 'none';
@@ -3517,8 +3660,8 @@
             devolucion_total: pay.devolucion,
             total_pagado: pay.totalPagarFinal,
             aplicar_propina: pay.tipApplied,
-            usuario_lavador: normalize(document.getElementById('commissionWorker').value),
-            usuario_lavador_id: usuarioEmpresaIDPorEntrada(document.getElementById('commissionWorker').value),
+            usuario_lavador: state.optionalSections.showWorkerCommission ? normalize(document.getElementById('commissionWorker').value) : '',
+            usuario_lavador_id: state.optionalSections.showWorkerCommission ? usuarioEmpresaIDPorEntrada(document.getElementById('commissionWorker').value) : 0,
             cierre_caja_id: Number(cashForPayment.id || 0),
             caja_codigo: normalizeCashCode(cashForPayment.caja_codigo),
             caja_turno: normalize(cashForPayment.turno) || 'general',
@@ -5837,6 +5980,10 @@
     function applyStationModeUI() {
       const stationMode = state.stationMode;
       const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const pageHeader = document.querySelector('.page-header');
+      if (pageHeader) {
+        pageHeader.style.display = focusedSaleMode ? 'none' : '';
+      }
       document.getElementById('addCarritoBtn').style.display = focusedSaleMode ? 'none' : '';
       document.getElementById('carritoForm').style.display = focusedSaleMode ? 'none' : document.getElementById('carritoForm').style.display;
       document.getElementById('carritoSearchBlock').style.display = focusedSaleMode ? 'none' : '';
@@ -5854,13 +6001,9 @@
       }
       const moduleHelp = document.getElementById('moduleHelp');
       if (moduleHelp) {
-        if (state.directSaleMode) {
-          moduleHelp.textContent = 'Venta directa usa una sola caja abierta para agregar productos, cobrar y facturar sin pasar por estaciones.';
-          moduleHelp.hidden = false;
-        } else {
-          moduleHelp.textContent = '';
-          moduleHelp.hidden = true;
-        }
+        moduleHelp.textContent = '';
+        moduleHelp.hidden = true;
+        moduleHelp.style.display = 'none';
       }
       applyStationCartUIConfig();
     }
@@ -6240,9 +6383,16 @@
     }
 
     document.getElementById('carritoBtnDescuentos').addEventListener('click', function() {
-      const discountTypeEl = document.getElementById('discountType');
-      if (discountTypeEl) {
-        discountTypeEl.focus();
+      state.optionalSections.showCheckoutAdvanced = true;
+      const toggle = document.getElementById('toggleStationCheckoutAdvanced');
+      if (toggle) toggle.checked = true;
+      const selected = getSelectedCarrito();
+      if (selected) renderStationPaymentPanel(selected);
+      window.setTimeout(function() {
+        const discountTypeEl = document.getElementById('discountType');
+        if (discountTypeEl) discountTypeEl.focus();
+      }, 0);
+      if (selected) {
         setStationPaymentMessage('Selecciona el tipo de descuento y ajusta el valor o código.', false);
       }
     });
@@ -6368,6 +6518,46 @@
         renderStationPaymentPanel(selected);
       });
     });
+
+    const stationCashReceivedDisplay = document.getElementById('stationCashReceivedDisplay');
+    if (stationCashReceivedDisplay) {
+      stationCashReceivedDisplay.addEventListener('input', function() {
+        const selected = getSelectedCarrito();
+        state.cashReceivedAmount = parseMoneyInputValue(stationCashReceivedDisplay.value);
+        renderCashReceivedChange(selected);
+      });
+      stationCashReceivedDisplay.addEventListener('change', function() {
+        const selected = getSelectedCarrito();
+        state.cashReceivedAmount = parseMoneyInputValue(stationCashReceivedDisplay.value);
+        formatCashReceivedInput(selected && selected.moneda);
+        renderCashReceivedChange(selected);
+      });
+    }
+
+    const toggleStationCheckoutAdvanced = document.getElementById('toggleStationCheckoutAdvanced');
+    if (toggleStationCheckoutAdvanced) {
+      toggleStationCheckoutAdvanced.addEventListener('change', function() {
+        state.optionalSections.showCheckoutAdvanced = Boolean(toggleStationCheckoutAdvanced.checked);
+        if (!state.optionalSections.showCheckoutAdvanced) {
+          resetHiddenCheckoutOptions();
+        }
+        const selected = getSelectedCarrito();
+        if (selected) renderStationPaymentPanel(selected);
+      });
+    }
+
+    const toggleStationWorkerCommission = document.getElementById('toggleStationWorkerCommission');
+    if (toggleStationWorkerCommission) {
+      toggleStationWorkerCommission.addEventListener('change', function() {
+        state.optionalSections.showWorkerCommission = Boolean(toggleStationWorkerCommission.checked);
+        if (!state.optionalSections.showWorkerCommission) {
+          const commissionWorkerEl = document.getElementById('commissionWorker');
+          if (commissionWorkerEl) commissionWorkerEl.value = '';
+        }
+        const selected = getSelectedCarrito();
+        if (selected) renderStationPaymentPanel(selected);
+      });
+    }
 
     ['mixedMethod1', 'mixedAmount1', 'mixedReference1', 'mixedMethod2', 'mixedAmount2', 'mixedReference2', 'mixedMethod3', 'mixedAmount3', 'mixedReference3'].forEach(function(id) {
       const el = document.getElementById(id);

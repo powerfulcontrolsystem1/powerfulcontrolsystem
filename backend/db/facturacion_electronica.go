@@ -116,13 +116,13 @@ func FacturacionPaisVistaFor(codigo string) FacturacionPaisVista {
 	default: // CO
 		return FacturacionPaisVista{
 			EnteFiscal:         "Colombia (DIAN UBL 2.1): resolución de numeración, set de pruebas y transmisión en ambientes de habilitación o producción.",
-			NotaIndependencia:  "La operación consecutiva, firma, Software ID/PIN, CUFE y el set de pruebas DIAN se configuran en el módulo DIAN/Documental (ERP) de su empresa; el perfil por país genérico aquí no aplica a Ecuador ni Panamá.",
+			NotaIndependencia:  "La operación consecutiva, firma, Software ID/PIN, CUFE y el set de pruebas DIAN se configuran en esta sección de facturación electrónica y en la subpágina Pruebas DIAN y documentos; este perfil no se mezcla con Ecuador, Panamá u otros países.",
 			ResumenOperativo:   "Moneda: COP. Vincule proveedor o API; en producción use credenciales homologadas con la DIAN.",
 			LabelResolucion:    "Número de resolución de facturación / autorización DIAN",
 			LabelIdentificador: "NIT (con dígito de verificación)",
 			LabelPrefijo:       "Prefijo homologado (p. ej. SEFC)",
 			PlaceholderRazon:   "Razón social inscrita ante la DIAN",
-			ModuloDianRuta:     "/administrar_empresa/modulos_erp_dominio.html?empresa_id=",
+			ModuloDianRuta:     "/administrar_empresa/facturacion_electronica_pruebas_dian.html?empresa_id=",
 		}
 	}
 }

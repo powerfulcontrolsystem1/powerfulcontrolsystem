@@ -1,3 +1,38 @@
+2026-05-17 - Carrito mueve Buscar Productos junto a Agregar
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- mueve el acceso a productos por botones junto al boton `Agregar`.
+	- cambia el texto del boton a `Buscar Productos`.
+- `web/administrar_empresa/buscar_producto_botones.html`:
+	- ajusta la barra superior a `Buscar producto` para filtrar escribiendo el nombre.
+
+2026-05-17 - Carrito sin encabezado descriptivo operativo
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- oculta el encabezado superior en venta directa o estacion.
+	- elimina el texto de ayuda `Venta directa usa una sola caja abierta...`.
+
+2026-05-17 - Carrito calcula cambio por efectivo recibido
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega `Efectivo recibido` en la seccion de valores por medio de pago.
+	- calcula `Cambio a devolver` o `Falta recibir` contra el efectivo esperado.
+
+2026-05-17 - Carrito oculta secciones avanzadas por check
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega checks para mostrar u ocultar `Cobro y estados del carrito` y `Lavador`.
+	- deja ambas secciones apagadas por defecto y conserva disponible el pago principal.
+	- limpia valores avanzados invisibles cuando `Cobro y estados del carrito` esta oculto.
+
+2026-05-17 - Administrar empresa abre Panel por defecto
+- `web/js/administrar_empresa.js`:
+	- cambia la pagina preferida de arranque del iframe de `Venta directa` a `Panel`.
+
+2026-05-17 - Administrar empresa simplifica Operacion y ventas
+- `web/administrar_empresa.html`:
+	- deja `Operacion y ventas` solo con `Venta directa` y `Estaciones`.
+	- mueve `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` a `Canales digitales y colaboracion`.
+	- mueve `Reservas` a `Soluciones por negocio`.
+- `backend/handlers/empresa_permisos.go`:
+	- alinea los grupos del catalogo de paginas administrables con la nueva ubicacion visual, dejando `Punto de venta / TPV` como permiso base, sin cambiar acciones ni rutas.
+
 2026-05-15 - Venta directa abre Buscar por botones
 - `web/administrar_empresa/carrito_de_compras.html`:
 	- el boton `Buscar (botones)` prepara o recupera el carrito de venta directa/estacion antes de navegar al catalogo por botones.

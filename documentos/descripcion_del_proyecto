@@ -2,6 +2,20 @@
 
 Actualizacion: 2026-05-13
 
+Revision busqueda de productos carrito 2026-05-17: el boton `Buscar Productos` queda junto a `Agregar` dentro del bloque operativo del carrito, y `buscar_producto_botones.html` expone una barra `Buscar producto` para filtrar el catalogo escribiendo el nombre.
+
+Revision encabezado carrito 2026-05-17: en venta directa o estacion, `carrito_de_compras.html` oculta el encabezado superior y elimina el texto descriptivo de venta directa para iniciar directamente con los controles operativos.
+
+Revision cambio en efectivo 2026-05-17: la seccion de valores por medio de pago del carrito agrega `Efectivo recibido` y calcula el vuelto o el faltante contra el valor efectivo esperado, sin cambiar el registro de pago ni el backend.
+
+Revision carrito de compras 2026-05-17: las secciones avanzadas `Cobro y estados del carrito` y `Lavador` quedan ocultas por defecto y se muestran solo con checks dentro del carrito. El pago principal y los valores por medio de pago permanecen disponibles; al ocultar opciones avanzadas se limpian descuento, devolucion, referencia y propina para evitar cobros invisibles.
+
+Revision inicio Administrar empresa 2026-05-17: al entrar al shell empresarial, el iframe inicial carga `Panel` (`linkPanelEmpresa`) por defecto para mostrar el tablero administrativo antes de entrar a operaciones. El cambio es solo de navegacion inicial; no altera permisos, APIs, tablas ni aislamiento por `empresa_id`.
+
+Revision menu Administrar empresa 2026-05-17: `Operacion y ventas` queda enfocado solo en `Venta directa` y `Estaciones`. Los accesos de `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` pasan al grupo `Canales digitales y colaboracion`, mientras `Reservas` se ubica en `Soluciones por negocio` y `Punto de venta / TPV` queda como permiso base de ventas. El cambio es de navegacion y catalogo de permisos; no altera APIs, tablas ni aislamiento por `empresa_id`.
+
+Revision facturacion electronica DIAN 2026-05-17: el modulo conserva configuracion por empresa y pais, con Colombia/DIAN separada de otros paises. El set base de habilitacion para software propio/proveedor tecnologico queda en 60 facturas, 20 notas debito y 20 notas credito, editable segun el objetivo asignado por DIAN. La pagina principal configura la empresa, pais, firma y datos DIAN; `facturacion_electronica_pruebas_dian.html` concentra diagnostico, set de pruebas, cola y emision documental manual. El correo automatico actual envia resumen fiscal; adjuntar XML/PDF certificado queda identificado como brecha hasta tener artefactos fiscales definitivos por documento.
+
 Revision OnlyOffice editor 2026-05-13: el flujo `Crear y abrir editor` corrige la URL que recibe el navegador para cargar OnlyOffice. Si la configuracion tecnica apunta a un servicio interno Docker (`onlyoffice`, `onlyoffice-documentserver`), el backend deriva la URL publica `onlyoffice.<dominio>` o permite override por `ONLYOFFICE_PUBLIC_DOCUMENT_SERVER_URL`; ademas corrige la carpeta temporal para evitar duplicar `/empresas/empresas`. La pantalla muestra errores claros cuando el Document Server no expone `DocsAPI.DocEditor`.
 
 Revision reportes y limpieza preproduccion 2026-05-14: el modulo empresarial de reportes queda unificado en `reportes_ejecutivos.html` con catalogo, vista previa y exportacion desde `/api/empresa/reportes`. Se retiran las paginas antiguas `reportes.html`, `reportes_inventario.html`, `reportes_finanzas.html`, `graficos_estadisticas.html` y la ruta `/api/empresa/graficos_estadisticas`; ademas se limpian usuarios, clientes, empresa smoke y evidencias viejas de QA antes de produccion.

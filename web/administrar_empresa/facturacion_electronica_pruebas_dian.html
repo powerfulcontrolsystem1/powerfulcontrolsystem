@@ -25,17 +25,18 @@
         </div>
         <div class="form-col">
           <label class="form-label">Facturas electronicas</label>
-          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="8">
+          <input id="feDianSetFacturas" class="form-input" type="number" min="0" value="60">
         </div>
         <div class="form-col">
           <label class="form-label">Notas debito</label>
-          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="1">
+          <input id="feDianSetNotasDebito" class="form-input" type="number" min="0" value="20">
         </div>
         <div class="form-col">
           <label class="form-label">Notas credito</label>
-          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="1">
+          <input id="feDianSetNotasCredito" class="form-input" type="number" min="0" value="20">
         </div>
       </div>
+      <p class="form-help">Valores base para software propio o proveedor tecnologico. Si DIAN asigna otro objetivo en el portal de habilitacion, ajusta las cantidades antes de ejecutar.</p>
       <div class="form-row">
         <div class="form-col">
           <label class="form-label">Maximo de envios en esta ejecucion</label>
@@ -207,9 +208,9 @@
     }
 
     function collectDianSetPayloadBase() {
-      const facturas = numberInputValue("feDianSetFacturas", 8);
-      const notasDebito = numberInputValue("feDianSetNotasDebito", 1);
-      const notasCredito = numberInputValue("feDianSetNotasCredito", 1);
+      const facturas = numberInputValue("feDianSetFacturas", 60);
+      const notasDebito = numberInputValue("feDianSetNotasDebito", 20);
+      const notasCredito = numberInputValue("feDianSetNotasCredito", 20);
       const maxEnvios = numberInputValue("feDianSetMaxEnvios", 0);
       const payload = {
         empresa_id: Number(state.empresaID),

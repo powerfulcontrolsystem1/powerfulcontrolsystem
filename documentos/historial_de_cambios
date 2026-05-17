@@ -1,3 +1,49 @@
+2026-05-17: Carrito mueve Buscar Productos junto a Agregar
+- Modulos afectados: `carritos`, `ventas_simple`, `productos`.
+- Cambio UX: el boton `Buscar (botones)` se reubica junto al boton `Agregar` del lector/manual del carrito y queda rotulado como `Buscar Productos`.
+- Cambio UX: `buscar_producto_botones.html` deja la barra de busqueda visible como `Buscar producto`, enfocada en escribir el nombre del producto.
+- Alcance tecnico: cambio frontend; no modifica rutas, endpoints, payloads, tablas, permisos ni dependencias.
+
+2026-05-17: Carrito sin encabezado descriptivo en venta directa
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`.
+- Cambio UX: en venta directa o estacion, `carrito_de_compras.html` oculta el encabezado superior `Carrito de compras` y elimina el texto descriptivo de venta directa para que la operacion empiece desde arriba.
+- Alcance tecnico: cambio frontend; no modifica rutas, endpoints, payload de pago, tablas, permisos ni dependencias.
+
+2026-05-17: Carrito calcula cambio por efectivo recibido
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`.
+- Cambio UX: la seccion de valores por medio de pago agrega `Efectivo recibido` junto a Efectivo, Debito, Credito y Otro.
+- Operacion: el sistema calcula `Cambio a devolver` contra el valor efectivo de la cuenta; si el efectivo recibido es menor, muestra `Falta recibir`.
+- Alcance tecnico: cambio frontend; no modifica rutas, endpoints, payload de pago, tablas, permisos ni dependencias.
+
+2026-05-17: Carrito oculta secciones avanzadas por check
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`.
+- Cambio UX: `Cobro y estados del carrito` ya no aparece abierto por defecto; se muestra solo al activar el check `Mostrar opciones de cobro`.
+- Cambio UX: la seccion `Lavador` ya no aparece abierta por defecto; se muestra solo al activar el check `Mostrar lavador`.
+- Seguridad operativa: al ocultar las opciones avanzadas se limpian descuento, devolucion, referencia y propina para evitar cobros invisibles; los medios de pago editables y el boton `Pagar y cerrar carrito` permanecen disponibles.
+- Alcance tecnico: cambio frontend; no modifica rutas, endpoints, tablas, permisos ni dependencias.
+
+2026-05-17: Administrar empresa abre el Panel por defecto
+- Modulos afectados: `administrar_empresa`, `panel`.
+- Cambio UX: al entrar a `administrar_empresa.html`, el iframe inicial vuelve a cargar `Panel` (`linkPanelEmpresa`) por defecto.
+- Alcance: el orden del menu operativo se conserva y no cambian rutas, permisos, endpoints, tablas ni dependencias.
+
+2026-05-17: Administrar empresa simplifica Operacion y ventas
+- Modulos afectados: `administrar_empresa`, `ventas`, `estaciones`, `venta_publica`, `crm_unificado`, `permisos`.
+- Cambio UX: el grupo principal `Operacion y ventas` queda solo con `Venta directa` y `Estaciones`, para que la operacion diaria no mezcle canales, colaboracion ni verticales.
+- Reubicacion: `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` pasan al nuevo grupo `Canales digitales y colaboracion`.
+- Reubicacion: `Reservas` pasa a `Soluciones por negocio`, junto a las verticales operativas.
+- Permisos base: `Punto de venta / TPV` queda en `Permisos base de ventas`, sin aparecer como acceso operativo principal.
+- Permisos: el catalogo de paginas administrables usa los mismos grupos nuevos sin cambiar rutas, acciones, endpoints ni aislamiento por `empresa_id`.
+- Alcance tecnico: no modifica tablas, dependencias, contratos de API ni permisos efectivos; solo cambia ubicacion visual y clasificacion administrativa.
+
+2026-05-17: Revision profesional de facturacion electronica DIAN y paises
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `documentos_electronicos`, `correo`.
+- Backend: el perfil de Colombia deja de apuntar al modulo ERP/documental viejo y referencia la subpagina canonica `Pruebas DIAN y documentos`.
+- DIAN: el set base por defecto para software propio/proveedor tecnologico queda alineado con la guia DIAN vigente: 60 facturas, 20 notas debito y 20 notas credito; sigue siendo editable para respetar el objetivo exacto asignado en el portal de habilitacion.
+- UX: la pagina de pruebas DIAN muestra esos valores base y avisa que deben ajustarse si DIAN asigna otro objetivo.
+- Revision: se confirma que la configuracion FE se separa por `empresa_id + pais_codigo`, que Colombia tiene bloque DIAN propio, que otros paises no usan DIAN y que el correo automatico actual envia resumen fiscal sin adjuntar XML/PDF certificado.
+- Alcance pendiente identificado: persistir/adjuntar representacion grafica y XML fiscal definitivo por documento cuando el acuse DIAN/proveedor real entregue artefactos certificables.
+
 2026-05-17: Estaciones con primer clic solo activa
 - Modulos afectados: `estaciones`, `carritos`, `configuracion`.
 - Cambio UX: `web/administrar_empresa/configuracion_de_estaciones.html` agrega el check `Primer clic solo activa` dentro de la visualizacion de tarjetas de estaciones.
