@@ -241,6 +241,25 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			id, err := parseOptionalInt64CarritoQuery(r, "id")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if id > 0 {
+				carrito, err := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "Carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get empresa_id=%d id=%d error: %v", empresaID, id, err)
+					http.Error(w, "No se pudo consultar el carrito", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, carrito)
+				return
+			}
 
 			rows, err := dbpkg.GetCarritosCompraByEmpresa(dbEmp, empresaID, includeInactive, q)
 			if err != nil {

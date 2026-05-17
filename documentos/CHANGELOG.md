@@ -1,3 +1,29 @@
+## [2026-05-17] Estaciones con primer clic solo activa
+- [Frontend] `configuracion_de_estaciones.html` agrega el check `Primer clic solo activa`.
+- [Frontend] `estaciones.html` usa `solo_activar_primer_clic` para que el primer clic active la estacion sin abrir carrito y el segundo clic abra el carrito ya activo.
+- [Compatibilidad] `abrir_carrito_al_activar=false` sigue funcionando como alias historico.
+- [QA] Validado con parseo JS, pruebas Go enfocadas y capturas visuales del check, primer clic y segundo clic.
+- [Alcance] Sin tablas, endpoints ni dependencias nuevas.
+
+## [2026-05-17] Reporte de turno y caja verificado
+- [Frontend] `web/administrar_empresa/reportes_ejecutivos.html` agrega filtros de usuario/cajero, caja, turno y cierre ID para consultar/exportar `reporte_de_turno`.
+- [Backend] `backend/handlers/reportes_catalogo_test.go` protege que `reporte_de_turno` siga en el catalogo profesional de reportes.
+- [QA] Se valido visualmente `Corte automatico` -> `Turno cerrado` -> impresion, el reporte automatico de ultimos movimientos por caja/usuario actual y la vista previa filtrada del reporte de turno.
+- [Alcance] Sin tablas, endpoints ni dependencias nuevas; mantiene aislamiento por `empresa_id`.
+
+## [2026-05-15] Venta directa abre Buscar por botones
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` prepara o recupera el carrito enfocado antes de abrir `Buscar (botones)`, especialmente en `modo=venta_directa`.
+- [Frontend] `web/administrar_empresa/buscar_producto_botones.html` conserva `modo=venta_directa` en el retorno, lo envia en las APIs de carrito/items y acepta respuesta puntual o lista filtrada al resolver el carrito.
+- [Backend] `GET /api/empresa/carritos_compra?empresa_id=...&id=...` devuelve el carrito solicitado en vez de ignorar `id` y responder siempre el listado completo.
+- [Permisos] Las subrutas `/api/empresa/carritos_compra/*` tambien se resuelven contra `linkVentaDirecta` cuando traen contexto de venta directa.
+- [Alcance] Sin tablas ni dependencias nuevas; conserva permisos e aislamiento por `empresa_id`.
+
+## [2026-05-15] Administrar empresa prioriza Venta directa
+- [Frontend] `web/administrar_empresa.html` mueve `Operacion y ventas` al inicio del menu; `Venta directa` queda como primer acceso y `Estaciones` como segundo.
+- [Frontend] `web/js/administrar_empresa.js` prioriza `linkVentaDirecta` en el orden de enlaces y en el iframe inicial cuando el permiso esta visible.
+- [Permisos] `linkCarritoCompras` queda agrupado como `Configuracion - Ventas y cobro`; no cambia ruta, accion ni aislamiento por `empresa_id`.
+- [Alcance] Sin tablas ni dependencias nuevas.
+
 ## [2026-05-15] Asistencia de empleados reparada y profesionalizada
 - [Backend] `backend/db/asistencia_empleados.go` deja de usar SQL runtime incompatible con PostgreSQL en configuracion, cierres, listados, CRUD y marcacion de entrada/salida.
 - [Backend] Las operaciones usan `queryRowSQLCompat`, `querySQLCompat`, `execSQLCompat`, `insertSQLCompat` y `sqlNowExpr()`.

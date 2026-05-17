@@ -1,3 +1,19 @@
+2026-05-17: Estaciones con primer clic solo activa.
+- Modulo: `estaciones`, `carritos`, `configuracion`.
+- UX: la configuracion de estaciones agrega el check `Primer clic solo activa`.
+- Operacion: si el check esta activo, el primer clic sobre una estacion disponible solo activa el carrito base de esa estacion y actualiza la tarjeta; el segundo clic entra al carrito.
+- Persistencia: se guarda en `estaciones_config.station_card_ui.solo_activar_primer_clic`; la bandera legacy `abrir_carrito_al_activar=false` conserva el mismo comportamiento.
+- QA: validado con parseo JS, pruebas Go enfocadas y capturas visuales en `test_runs/estacion_primer_clic_2026-05-17/`.
+- Alcance: sin tablas, endpoints ni dependencias nuevas; conserva `empresa_id`.
+
+2026-05-17: Reporte de turno y corte de caja validados.
+- Modulo: `reportes`, `corte_caja`, `carritos`.
+- Centro de reportes: `web/administrar_empresa/reportes_ejecutivos.html` muestra filtros de usuario/cajero, caja, turno y cierre ID para consultar/exportar `reporte_de_turno` con el mismo contrato backend de `/api/empresa/reportes`.
+- Corte de caja: el flujo visual de `Corte automatico`, `Cerrar turno` e impresion queda validado con datos controlados de caja abierta, ventas, movimientos, items y sensores.
+- Reporte automatico de movimientos: `ultimos_movimientos_de_caja.html` se valida visualmente mostrando solo caja, turno y usuario actual.
+- QA: pruebas Go enfocadas de reportes/corte/configuracion, parseo de scripts inline y capturas visuales en `test_runs/caja_turno_reportes_2026-05-17/`.
+- Alcance: sin tablas ni dependencias nuevas; conserva aislamiento por `empresa_id`.
+
 2026-05-15: Asistencia de empleados reparada y profesionalizada.
 - Modulo: `asistencia_empleados`, `personas_activos`, `nomina`.
 - Backend: `backend/db/asistencia_empleados.go` usa helpers SQL compatibles con PostgreSQL y `sqlNowExpr()` en configuracion, cierres, listados, CRUD y marcacion de entrada/salida.
@@ -37,11 +53,19 @@
 - UX: `compras.html` agrega acceso directo a gestionar proveedores y autocompleta el documento del proveedor seleccionado.
 - Alcance: sin dependencias nuevas; mantiene PostgreSQL y aislamiento por `empresa_id`.
 
+2026-05-15: Venta directa abre Buscar por botones
+- Modulos afectados: `carritos`, `ventas_simple`, `venta_directa`, `administrar_empresa`.
+- Cambio funcional: el boton `Buscar (botones)` prepara o recupera automaticamente el carrito enfocado antes de abrir el catalogo de productos, por lo que en `modo=venta_directa` ya no queda inactivo cuando el carrito 0 aun se esta resolviendo.
+- Backend: `/api/empresa/carritos_compra` ahora atiende `id` en GET y devuelve el carrito puntual de la misma empresa.
+- UX: `buscar_producto_botones.html` conserva el retorno a `modo=venta_directa`, envia el contexto de venta directa en las APIs de carrito/items y tolera respuestas antiguas tipo lista al resolver contexto.
+- Permisos: las subrutas de carritos heredan la resolucion de `linkVentaDirecta` cuando llega `modo=venta_directa`, `perm_page=linkVentaDirecta` o un codigo `VENTA-DIRECTA`.
+- Alcance: no cambia tablas, permisos ni dependencias; mantiene aislamiento por `empresa_id`.
+
 2026-05-15: Menu empresarial con Venta directa primero
 - Modulos afectados: `administrar_empresa`, `ventas`, `carritos`, `configuracion`.
-- Cambio UX: el menu principal prioriza la venta inmediata dejando `Venta directa` como primer acceso de `Operacion y ventas`.
+- Cambio UX: el menu principal prioriza la venta inmediata moviendo `Operacion y ventas` al inicio; `Venta directa` queda como primer acceso real de Administrar Empresa y `Estaciones` como segundo.
 - Reubicacion: el acceso general `Carritos` deja de aparecer en `Operacion y ventas` y queda disponible desde el submenu de configuracion, en el grupo `Ventas y cobro`.
-- Alcance: no cambia permisos ni wrappers; `linkVentaDirecta` y `linkCarritoCompras` conservan sus rutas y controles existentes.
+- Permisos: `linkCarritoCompras` se cataloga bajo `Configuracion - Ventas y cobro`; no cambian wrappers, rutas ni controles existentes.
 
 2026-05-15: Alta de bodegas compatible con PostgreSQL
 - Modulos afectados: `inventario`, `bodegas`, `productos`.

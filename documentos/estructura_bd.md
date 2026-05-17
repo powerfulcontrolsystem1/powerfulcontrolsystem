@@ -22,6 +22,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-17 (estaciones: primer clic solo activa)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.
+- El JSON `estaciones_config.station_card_ui` puede incluir `solo_activar_primer_clic`; cuando vale `true`, el primer clic sobre una estacion disponible solo activa su carrito base y el segundo clic abre el carrito.
+- Compatibilidad: `abrir_carrito_al_activar=false` se conserva como alias historico de `solo_activar_primer_clic=true`.
+
 Actualizacion 2026-05-15 (empresas compartidas con alcance)
 - `pcs_superadministrador.admin_empresa_compartida` agrega `nivel_acceso` (`solo_ver`, `acceso_total`, `modulos`) y `modulos_permitidos` para guardar el alcance efectivo del acceso aceptado.
 - `pcs_superadministrador.admin_empresa_compartida_invitaciones` agrega las mismas columnas para que el alcance elegido por el propietario viaje con la invitacion y se materialice al aceptarla.

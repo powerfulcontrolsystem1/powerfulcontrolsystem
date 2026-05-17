@@ -1,3 +1,37 @@
+2026-05-17: Estaciones con primer clic solo activa
+- Modulos afectados: `estaciones`, `carritos`, `configuracion`.
+- Cambio UX: `web/administrar_empresa/configuracion_de_estaciones.html` agrega el check `Primer clic solo activa` dentro de la visualizacion de tarjetas de estaciones.
+- Comportamiento: cuando `solo_activar_primer_clic` esta activo en `estaciones_config.station_card_ui`, el primer clic sobre una estacion disponible ejecuta `activar_estacion`, actualiza la tarjeta a ocupada y no navega al carrito; el segundo clic, ya con el carrito activo, entra al carrito.
+- Compatibilidad: configuraciones antiguas con `abrir_carrito_al_activar=false` se interpretan como `solo_activar_primer_clic=true`.
+- Validacion: parseo de scripts inline de `configuracion_de_estaciones.html` y `estaciones.html`, `go test ./handlers -run "Test.*Estacion|Test.*Carritos|Test.*EmpresaPermisos" -count=1`, `go test ./db -run "Test.*Estacion|Test.*Carritos" -count=1` y prueba visual con capturas `test_runs/estacion_primer_clic_2026-05-17/configuracion_check_primer_clic.png`, `primer_clic_solo_activa.png`, `segundo_clic_abre_carrito.png`.
+- Alcance tecnico: no agrega tablas, rutas ni dependencias; mantiene aislamiento por `empresa_id` y reutiliza `/api/empresa/estacion_prefs` y `/api/empresa/carritos_compra?action=activar_estacion`.
+
+2026-05-17: Reporte de turno y corte de caja verificados visualmente
+- Modulos afectados: `reportes`, `corte_caja`, `carritos`, `administrar_empresa`.
+- Revision funcional: `corte_de_caja.html` conserva el flujo de `Corte automatico`, cierre de turno e impresion; el reporte automatico de ultimos movimientos sigue usando `/api/empresa/corte_caja?action=mi_caja_actual&solo_usuario_actual=1` para limitarse a caja y usuario actual.
+- Mejora UX: `web/administrar_empresa/reportes_ejecutivos.html` agrega filtros operativos `Usuario / cajero`, `Caja`, `Turno` y `Cierre ID`, y los envia a `/api/empresa/reportes` para que `reporte_de_turno` aproveche los filtros backend ya existentes.
+- Resguardo: `backend/handlers/reportes_catalogo_test.go` ahora exige que `reporte_de_turno` permanezca en el catalogo profesional de reportes.
+- Validacion: `go test ./handlers -run "TestReportesCatalogoIncluyeReportesColombianosAvanzados|TestReportesHelpersFiscalesYEdades|Test.*CorteCaja|Test.*ReporteTurno|Test.*Reportes" -count=1`, `go test ./db -run "TestEmpresaCorteCajaReportesDesdeConfiguracion|TestNormalizeEmpresaCorteCajaConfiguracionFormat|Test.*CierreCaja|Test.*Finanzas" -count=1`, parseo de scripts inline de `corte_de_caja.html`, `ultimos_movimientos_de_caja.html` y `reportes_ejecutivos.html`.
+- Evidencia visual: `test_runs/caja_turno_reportes_2026-05-17/corte_automatico_cierre_impresion.png`, `test_runs/caja_turno_reportes_2026-05-17/reporte_automatico_movimientos.png` y `test_runs/caja_turno_reportes_2026-05-17/reporte_turno_filtrado_cdp.png`.
+- Alcance tecnico: no cambia tablas, endpoints ni dependencias; mantiene aislamiento por `empresa_id`.
+
+2026-05-15: Venta directa abre Buscar por botones
+- Modulos afectados: `carritos`, `ventas_simple`, `venta_directa`, `administrar_empresa`.
+- Causa tecnica: el boton `Buscar (botones)` dependia de que `getSelectedCarrito()` ya tuviera un carrito cargado; en venta directa, si el carrito 0 aun se estaba creando/recuperando, el boton podia quedar deshabilitado o no navegar. Ademas el buscador consultaba `/api/empresa/carritos_compra?id=...`, pero el handler ignoraba `id` y respondia el listado.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega resolucion asincrona antes de abrir el catalogo, preparando venta directa o estacion cuando haga falta.
+- Frontend: `web/administrar_empresa/buscar_producto_botones.html` conserva `modo=venta_directa` en la URL de retorno, envia ese contexto en las APIs de carrito/items y tolera respuesta puntual o listado al resolver el carrito.
+- Permisos: `backend/handlers/empresa_permisos.go` aplica la resolucion de `linkVentaDirecta` tambien a subrutas de carritos como `/api/empresa/carritos_compra/items`.
+- Backend: `backend/handlers/carritos_compras.go` devuelve un carrito puntual al recibir `id` en GET, con validacion por `empresa_id`.
+- Validacion: `go test ./handlers -run "Test.*EmpresaPermisos|Test.*Carritos|Test.*Permisos" -count=1`, validacion sintactica de los scripts inline de carrito/busqueda y `git diff --check`.
+- Alcance tecnico: no cambia tablas, dependencias ni permisos; mantiene aislamiento por `empresa_id`.
+
+2026-05-15: Administrar empresa prioriza Venta directa
+- Modulos afectados: `administrar_empresa`, `ventas`, `estaciones`, `carritos`, `configuracion`, `permisos`.
+- Cambio UX: `web/administrar_empresa.html` mueve `Operacion y ventas` al primer grupo del menu; `Venta directa` queda como primer acceso real y `Estaciones` como segundo.
+- Frontend: `web/js/administrar_empresa.js` prioriza `linkVentaDirecta` en el orden de enlaces y en la carga inicial del iframe cuando el permiso esta visible.
+- Permisos: `backend/handlers/empresa_permisos.go` mantiene accion y ruta de `linkCarritoCompras`, pero lo cataloga bajo `Configuracion - Ventas y cobro`.
+- Alcance tecnico: no cambia tablas, endpoints, dependencias ni aislamiento por `empresa_id`; `Carritos` permanece disponible desde `web/administrar_empresa/configuracion_menu.html`.
+
 2026-05-15: Asistencia de empleados reparada y profesionalizada
 - Modulos afectados: `asistencia_empleados`, `personas_activos`, `nomina`.
 - Causa tecnica: el runtime de asistencia aun usaba `dbConn.QueryRow/Query/Exec` con placeholders `?` y `datetime('now','localtime')`, lo que puede fallar en PostgreSQL al guardar configuracion, crear asistencia, marcar entrada/salida, activar/desactivar o eliminar.

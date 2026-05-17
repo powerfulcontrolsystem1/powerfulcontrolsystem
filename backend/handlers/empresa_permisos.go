@@ -413,9 +413,9 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkInicio", AlwaysVisible: true, Titulo: "Inicio (tablero)", Grupo: "Acceso general"},
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Operacion diaria y ventas"},
-	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operacion diaria y ventas"},
-	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos", Grupo: "Operacion diaria y ventas"},
 	{PaginaClave: "linkVentaDirecta", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Venta directa sin estacion", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkEstaciones", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Estaciones y terminales", Grupo: "Operacion diaria y ventas"},
+	{PaginaClave: "linkCarritoCompras", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Carritos", Grupo: "Configuracion - Ventas y cobro"},
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Codigos de descuento", Grupo: "Operacion diaria y ventas"},
 	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Operacion diaria y ventas"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Operacion diaria y ventas"},
@@ -3204,7 +3204,7 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 			return "linkCartaProductosPublica"
 		}
 		return "linkVentaPublica"
-	case path == "/api/empresa/carritos_compra":
+	case strings.HasPrefix(path, "/api/empresa/carritos_compra"):
 		modo := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("modo")))
 		carritoCodigo := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("carrito_codigo")))
 		permPage := strings.TrimSpace(r.URL.Query().Get("perm_page"))

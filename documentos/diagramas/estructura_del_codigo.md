@@ -1,3 +1,17 @@
+## Actualizacion 2026-05-17 (estaciones: primer clic solo activa)
+
+- Frontend:
+  - `web/administrar_empresa/configuracion_de_estaciones.html` agrega el check `Primer clic solo activa` en las opciones de visualizacion de tarjetas.
+  - `web/administrar_empresa/estaciones.html` lee `station_card_ui.solo_activar_primer_clic` desde `estaciones_config`.
+- Flujo:
+  - Configuracion activa `solo_activar_primer_clic=true`.
+  - Primer clic sobre estacion disponible -> `PUT /api/empresa/carritos_compra?action=activar_estacion` -> tarjeta queda ocupada sin navegar.
+  - Segundo clic sobre estacion ya activa -> `carrito_de_compras.html` con `carrito_codigo` de la estacion.
+- Compatibilidad:
+  - `station_card_ui.abrir_carrito_al_activar=false` se interpreta como primer clic solo activa para conservar instalaciones anteriores.
+- Alcance:
+  - No se agregan endpoints, tablas ni dependencias; se reutilizan `empresa_estacion_prefs` y el carrito base por estacion.
+
 ## Actualizacion 2026-05-15 (venta directa: carrito 0)
 
 - Frontend:

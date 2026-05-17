@@ -299,7 +299,8 @@
       addingProductos: new Set(),
       touchedItems: new Map(),
       touchSeq: 0,
-      touchMode: false
+      touchMode: false,
+      directSaleMode: false
     };
 
     function getQueryParam(name) {
@@ -367,10 +368,24 @@
 
       const estacionID = Number(getQueryParam('estacion_id') || 0);
       const estacionNombre = normalize(getQueryParam('estacion_nombre') || '');
+      if (state.directSaleMode) params.set('modo', 'venta_directa');
       if (estacionID > 0) params.set('estacion_id', String(estacionID));
       if (estacionNombre) params.set('estacion_nombre', estacionNombre);
 
       return '/administrar_empresa/carrito_de_compras.html?' + params.toString();
+    }
+
+    function buildCarritoAPIURL(path, extraParams) {
+      const params = new URLSearchParams(extraParams || {});
+      params.set('empresa_id', String(state.empresaID));
+      if (state.directSaleMode) {
+        params.set('modo', 'venta_directa');
+        params.set('perm_page', 'linkVentaDirecta');
+      }
+      if (state.carritoCodigo) {
+        params.set('carrito_codigo', state.carritoCodigo);
+      }
+      return path + '?' + params.toString();
     }
 
     function getSelectedRows() {
@@ -528,9 +543,15 @@
 
     async function resolveCarrito() {
       if (state.carritoID > 0) {
-        const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(state.carritoID), { credentials: 'same-origin' });
+        const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra', { id: String(state.carritoID) }), { credentials: 'same-origin' });
         await ensureOk(res);
-        state.carrito = await res.json();
+        const payload = await res.json();
+        state.carrito = Array.isArray(payload)
+          ? (payload.find(function(c) { return Number(c.id || 0) === Number(state.carritoID); }) || null)
+          : payload;
+        if (!state.carrito || Number(state.carrito.id || 0) !== Number(state.carritoID)) {
+          throw new Error('No se encontró el carrito solicitado.');
+        }
         if (state.carrito && state.carrito.codigo) {
           state.carritoCodigo = normalize(state.carrito.codigo).toUpperCase();
         }
@@ -541,7 +562,7 @@
         throw new Error('carrito_id o carrito_codigo es obligatorio para buscar productos.');
       }
 
-      const res = await fetch('/api/empresa/carritos_compra?empresa_id=' + encodeURIComponent(state.empresaID) + '&include_inactive=1', { credentials: 'same-origin' });
+      const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra', { include_inactive: '1' }), { credentials: 'same-origin' });
       await ensureOk(res);
       const rows = await res.json();
       const match = Array.isArray(rows) ? rows.find(function(c) {
@@ -568,7 +589,10 @@
     }
 
     async function getCurrentCarritoItems() {
-      const res = await fetch('/api/empresa/carritos_compra/items?empresa_id=' + encodeURIComponent(state.empresaID) + '&carrito_id=' + encodeURIComponent(state.carritoID) + '&include_inactive=1', { credentials: 'same-origin' });
+      const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra/items', {
+        carrito_id: String(state.carritoID),
+        include_inactive: '1'
+      }), { credentials: 'same-origin' });
       await ensureOk(res);
       const rows = await res.json();
       return Array.isArray(rows) ? rows : [];
@@ -611,7 +635,7 @@
 
       const payload = buildProductoPayload(producto, cantidad, currentItem);
       const method = currentItem ? 'PUT' : 'POST';
-      const res = await fetch('/api/empresa/carritos_compra/items', {
+      const res = await fetch(buildCarritoAPIURL('/api/empresa/carritos_compra/items'), {
         method: method,
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -763,6 +787,7 @@
       state.empresaID = empresaID;
       state.carritoID = carritoID;
       state.carritoCodigo = carritoCode;
+      state.directSaleMode = normalize(getQueryParam('modo') || '').toLowerCase() === 'venta_directa';
       state.returnURL = returnURL || buildDefaultReturnURL();
       state.touchMode = getQueryParam('touch') === '1' || String(getQueryParam('touch') || '').toLowerCase() === 'true';
       document.body.classList.toggle('product-touch-mode', state.touchMode);

@@ -3804,11 +3804,13 @@
     }
 
     function openBuscarProductosForCarrito(carrito) {
-      if (!carrito || !Number(carrito.id)) {
+      const carritoID = Number(carrito && carrito.id || 0);
+      const carritoCode = getCarritoCodeFromItem(carrito) || state.selectedCarritoCode || getDefaultDirectSaleCarritoCode() || getDefaultStationCarritoCode();
+      if (!carritoID && !carritoCode) {
         setMessage('itemMsg', 'Selecciona un carrito para buscar productos.', true);
         return;
       }
-      const url = buildBuscarProductosURL(Number(carrito.id), getCarritoCodeFromItem(carrito));
+      const url = buildBuscarProductosURL(carritoID, carritoCode);
       window.location.href = url;
     }
 
@@ -3816,8 +3818,38 @@
       const selected = getSelectedCarrito();
       const toolbarBtn = document.getElementById('carritoBtnBuscarBotones');
       if (toolbarBtn) {
-        toolbarBtn.disabled = !selected;
+        const canPrepareFocusedCart = Boolean((state.directSaleMode || state.stationMode) && state.empresaID);
+        toolbarBtn.disabled = !selected && !canPrepareFocusedCart;
       }
+    }
+
+    async function resolveCarritoForBuscarProductos() {
+      let selected = getSelectedCarrito();
+      if (selected) return selected;
+
+      if (state.directSaleMode) {
+        setMessage('itemMsg', 'Preparando la venta directa para abrir productos...', false);
+        await ensureDirectSaleCarritoLifecycle();
+        await loadCarritos();
+        selected = getSelectedCarrito() || findExistingDirectSaleCarrito();
+        if (selected) {
+          state.selectedCarritoID = Number(selected.id || 0);
+          return selected;
+        }
+      }
+
+      if (state.stationMode) {
+        setMessage('itemMsg', 'Preparando el carrito de la estación para abrir productos...', false);
+        await ensureStationCarritoLifecycle();
+        await loadCarritos();
+        selected = getSelectedCarrito() || findExistingStationCarrito();
+        if (selected) {
+          state.selectedCarritoID = Number(selected.id || 0);
+          return selected;
+        }
+      }
+
+      return null;
     }
 
     function findExactProductoByCode(rows, code) {
@@ -6186,13 +6218,24 @@
 
     const carritoBtnBuscarBotones = document.getElementById('carritoBtnBuscarBotones');
     if (carritoBtnBuscarBotones) {
-      carritoBtnBuscarBotones.addEventListener('click', function() {
-        const selected = getSelectedCarrito();
-        if (!selected) {
-          setMessage('itemMsg', 'Selecciona un carrito para buscar productos.', true);
-          return;
+      carritoBtnBuscarBotones.addEventListener('click', async function() {
+        const prevText = carritoBtnBuscarBotones.textContent;
+        carritoBtnBuscarBotones.disabled = true;
+        carritoBtnBuscarBotones.textContent = 'Abriendo...';
+        try {
+          const selected = await resolveCarritoForBuscarProductos();
+          if (!selected) {
+            setMessage('itemMsg', 'No se pudo preparar el carrito para buscar productos. Intenta recargar la venta directa.', true);
+            return;
+          }
+          openBuscarProductosForCarrito(selected);
+        } catch (err) {
+          setMessage('itemMsg', err.message || 'No se pudo abrir el buscador de productos.', true);
+        } finally {
+          carritoBtnBuscarBotones.disabled = false;
+          carritoBtnBuscarBotones.textContent = prevText;
+          syncBuscarProductosButton();
         }
-        openBuscarProductosForCarrito(selected);
       });
     }
 

@@ -215,6 +215,8 @@ func TestResolvePermissionPageKeyForDirectSaleCart(t *testing.T) {
 		"/api/empresa/carritos_compra?empresa_id=7&modo=venta_directa",
 		"/api/empresa/carritos_compra?empresa_id=7&carrito_codigo=VENTA-DIRECTA-7",
 		"/api/empresa/carritos_compra?empresa_id=7&perm_page=linkVentaDirecta",
+		"/api/empresa/carritos_compra/items?empresa_id=7&modo=venta_directa&carrito_id=3",
+		"/api/empresa/carritos_compra/items?empresa_id=7&carrito_codigo=VENTA-DIRECTA-7-0&carrito_id=3",
 	}
 	for _, rawURL := range cases {
 		r := httptest.NewRequest(http.MethodGet, rawURL, nil)

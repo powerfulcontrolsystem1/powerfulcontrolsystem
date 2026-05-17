@@ -28,6 +28,8 @@
     .reports-command-mini span{display:block;color:var(--muted);font-size:.86rem;margin-top:4px;line-height:1.4}
     .reports-catalog-toolbar{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(160px,.7fr) repeat(3,minmax(120px,.55fr));gap:10px;align-items:end;margin-top:12px}
     .reports-catalog-toolbar .btn{min-height:42px}
+    .reports-turno-filters{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;align-items:end;margin-top:10px}
+    .reports-turno-filters .btn{min-height:42px}
     .reports-catalog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px}
     .reports-catalog-card{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:205px}
     .reports-catalog-card header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -48,6 +50,7 @@
       .reports-command-header{grid-template-columns:1fr}
       .reports-command-actions{justify-content:flex-start}
       .reports-catalog-toolbar{grid-template-columns:1fr}
+      .reports-turno-filters{grid-template-columns:1fr}
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -100,6 +103,13 @@
           <option value="json">JSON</option>
           <option value="txt">TXT</option>
         </select>
+      </div>
+      <div class="reports-turno-filters" aria-label="Filtros de turno y caja">
+        <input id="reportsCatalogUsuario" class="form-input" type="search" placeholder="Usuario / cajero" aria-label="Usuario o cajero">
+        <input id="reportsCatalogCaja" class="form-input" type="search" placeholder="Caja" aria-label="Codigo de caja">
+        <input id="reportsCatalogTurno" class="form-input" type="search" placeholder="Turno" aria-label="Turno">
+        <input id="reportsCatalogCierreId" class="form-input" type="number" min="1" step="1" placeholder="Cierre ID" aria-label="Cierre ID">
+        <button id="btnReportsClearTurnoFilters" class="btn secondary" type="button">Limpiar filtros</button>
       </div>
       <div id="reportsCatalogMsg" class="form-help"></div>
       <div id="reportsCatalogGrid" class="reports-catalog-grid"></div>
@@ -222,8 +232,29 @@
         var hasta = document.getElementById('reportsCatalogHasta');
         if (desde && desde.value) params.set('desde', desde.value);
         if (hasta && hasta.value) params.set('hasta', hasta.value);
+        appendTurnoFilters(params);
         if (format) params.set('format', format);
         return '/api/empresa/reportes?' + params.toString();
+      }
+
+      function appendTurnoFilters(params) {
+        if (!params) return;
+        var usuario = String((document.getElementById('reportsCatalogUsuario') || {}).value || '').trim();
+        var caja = String((document.getElementById('reportsCatalogCaja') || {}).value || '').trim();
+        var turno = String((document.getElementById('reportsCatalogTurno') || {}).value || '').trim();
+        var cierre = String((document.getElementById('reportsCatalogCierreId') || {}).value || '').trim();
+        if (usuario) params.set('usuario', usuario);
+        if (caja) params.set('caja_codigo', caja);
+        if (turno) params.set('turno', turno);
+        if (/^[1-9][0-9]*$/.test(cierre)) params.set('cierre_id', cierre);
+      }
+
+      function clearTurnoFilters() {
+        ['reportsCatalogUsuario', 'reportsCatalogCaja', 'reportsCatalogTurno', 'reportsCatalogCierreId'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        if (selectedDatasetKey) loadDatasetPreview(selectedDatasetKey);
       }
 
       function openDataset(key) {
@@ -456,11 +487,13 @@
       if (previewExport) previewExport.addEventListener('click', exportSelectedDataset);
       var previewSuite = document.getElementById('btnPreviewOpenSuite');
       if (previewSuite) previewSuite.addEventListener('click', openSelectedInSuite);
-      ['reportsCatalogSearch', 'reportsCatalogArea', 'reportsCatalogFormato', 'reportsCatalogDesde', 'reportsCatalogHasta'].forEach(function(id) {
+      ['reportsCatalogSearch', 'reportsCatalogArea', 'reportsCatalogFormato', 'reportsCatalogDesde', 'reportsCatalogHasta', 'reportsCatalogUsuario', 'reportsCatalogCaja', 'reportsCatalogTurno', 'reportsCatalogCierreId'].forEach(function(id) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener(id === 'reportsCatalogSearch' ? 'input' : 'change', renderCatalog);
+        el.addEventListener(id === 'reportsCatalogSearch' || id.indexOf('reportsCatalogUsuario') === 0 || id.indexOf('reportsCatalogCaja') === 0 || id.indexOf('reportsCatalogTurno') === 0 || id.indexOf('reportsCatalogCierreId') === 0 ? 'input' : 'change', renderCatalog);
       });
+      var clearTurnoBtn = document.getElementById('btnReportsClearTurnoFilters');
+      if (clearTurnoBtn) clearTurnoBtn.addEventListener('click', clearTurnoFilters);
       defaultDates();
       renderCatalog();
       loadCatalog();

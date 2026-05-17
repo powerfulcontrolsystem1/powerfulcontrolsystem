@@ -6,6 +6,7 @@ func TestReportesCatalogoIncluyeReportesColombianosAvanzados(t *testing.T) {
 	required := []string{
 		reporteDatasetVentasDiariasMetodoPago,
 		reporteDatasetVentasRentabilidadProducto,
+		reporteDatasetOperativoTurno,
 		reporteDatasetInventarioKardexValorizado,
 		reporteDatasetComprasProveedorDetalle,
 		reporteDatasetContableBalancePrueba,

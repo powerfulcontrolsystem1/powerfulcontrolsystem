@@ -1,3 +1,21 @@
+2026-05-15 - Venta directa abre Buscar por botones
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- el boton `Buscar (botones)` prepara o recupera el carrito de venta directa/estacion antes de navegar al catalogo por botones.
+- `web/administrar_empresa/buscar_producto_botones.html`:
+	- resuelve el carrito de forma compatible con respuesta puntual o listado y conserva `modo=venta_directa` en el retorno y en llamadas a carritos/items.
+- `backend/handlers/carritos_compras.go`:
+	- `GET /api/empresa/carritos_compra` atiende `id` y devuelve el carrito puntual de la empresa.
+- `backend/handlers/empresa_permisos.go`:
+	- las subrutas de carritos usan la misma resolucion de permisos por `modo`, `perm_page` o `carrito_codigo` que el endpoint principal.
+
+2026-05-15 - Administrar empresa prioriza Venta directa
+- `web/administrar_empresa.html`:
+	- mueve `Operacion y ventas` al inicio del menu principal para que `Venta directa` sea el primer acceso y `Estaciones` el segundo.
+- `web/js/administrar_empresa.js`:
+	- ordena `linkVentaDirecta` antes de los demas accesos operativos y lo usa como iframe inicial cuando esta permitido.
+- `backend/handlers/empresa_permisos.go`:
+	- clasifica `linkCarritoCompras` en `Configuracion - Ventas y cobro` dentro del catalogo de paginas administrables.
+
 2026-05-15 - Asistencia de empleados reparada y profesionalizada
 - `backend/db/asistencia_empleados.go`:
 	- cambia el runtime de asistencia a helpers compatibles con PostgreSQL y fechas `sqlNowExpr()` para configuracion, cierres, CRUD y marcaciones.

@@ -119,9 +119,9 @@ try {
     storage = null;
   }
   var links = [
-    document.getElementById("linkPanelEmpresa"),
-    document.getElementById("linkEstaciones"),
     document.getElementById("linkVentaDirecta"),
+    document.getElementById("linkEstaciones"),
+    document.getElementById("linkPanelEmpresa"),
     document.getElementById("linkProductos"),
     document.getElementById("linkInventarioAvanzado"),
     document.getElementById("linkCompras"),
@@ -1443,10 +1443,10 @@ try {
   }
 
   function preferredStartupFrameSrc(empresaId) {
-    var panelLink = document.getElementById("linkPanelEmpresa");
-    var href = panelLink
-      ? withEmpresaParam(panelLink.getAttribute("href"), empresaId)
-      : withEmpresaParam("/administrar_empresa/panel.html", empresaId);
+    var ventaDirectaLink = document.getElementById("linkVentaDirecta");
+    var href = ventaDirectaLink
+      ? withEmpresaParam(ventaDirectaLink.getAttribute("href"), empresaId)
+      : "";
     if (href && isAllowedFrameHref(href) && isVisibleMenuHref(href)) {
       return href;
     }

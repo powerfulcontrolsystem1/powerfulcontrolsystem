@@ -1,7 +1,7 @@
 2026-05-15: Nota de navegacion para menu empresarial
-- `web/administrar_empresa.html` mueve `Venta directa` al primer lugar de `Operacion y ventas` y retira `Carritos` de ese grupo principal.
-- `Carritos` permanece disponible en `web/administrar_empresa/configuracion_menu.html` dentro de `Ventas y cobro`.
-- Impacto de matriz: no cambia wrappers, roles, acciones ni endpoints; `linkVentaDirecta` y `linkCarritoCompras` conservan los permisos vigentes.
+- `web/administrar_empresa.html` mueve el grupo `Operacion y ventas` al inicio del menu para que `Venta directa` sea el primer acceso real de Administrar Empresa y `Estaciones` el segundo.
+- `Carritos` no aparece en el menu principal operativo y permanece disponible en `web/administrar_empresa/configuracion_menu.html` dentro de `Ventas y cobro`.
+- Impacto de matriz: no cambia wrappers, acciones ni endpoints; `linkCarritoCompras` se agrupa administrativamente como `Configuracion - Ventas y cobro` en el catalogo de permisos.
 
 2026-05-15: Empresas compartidas con alcance por rol y modulos
 - Al compartir empresa, el propietario define alcance `Solo ver`, `Acceso total` o `Solo ciertos modulos`; el alcance no sustituye rol/licencia, solo lo restringe.
