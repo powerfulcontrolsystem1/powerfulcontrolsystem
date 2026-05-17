@@ -38,9 +38,24 @@
     "/super/seguridad.html": true,
     "/super/tickets_ayuda.html": true,
     "/super/correos_masivos.html": true,
+    "/super/mantenimiento_sistema.html": true,
     "/super/explorador_archivos.html": true,
     "/super/administrar_base_de_datos.html": true,
-    "/super/configuracion_avanzada.html": true
+    "/super/configuracion_avanzada.html": true,
+    "/super/configuracion/consumos.html": true,
+    "/super/configuracion/rustdesk_vps.html": true,
+    "/super/configuracion/limitaciones.html": true,
+    "/super/configuracion/onlyoffice.html": true,
+    "/super/configuracion/voz_ia.html": true,
+    "/super/configuracion/epayco.html": true,
+    "/super/configuracion/wompi_nequi.html": true,
+    "/super/configuracion/gmail_smtp.html": true,
+    "/super/configuracion/alertas_licencia.html": true,
+    "/super/configuracion/whatsapp_portal.html": true,
+    "/super/configuracion/recaptcha.html": true,
+    "/super/configuracion/login_2fa.html": true,
+    "/super/configuracion/ia_global.html": true,
+    "/super/configuracion/respaldo.html": true
   };
 
   function isAllowedSuperHref(href) {

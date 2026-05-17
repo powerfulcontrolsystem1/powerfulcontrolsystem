@@ -1,3 +1,28 @@
+## Actualizacion 2026-05-17 (configuracion super por paginas)
+
+- Frontend:
+  - `web/super_administrador.html` agrega el grupo `Configuracion` con paginas independientes por seccion.
+  - `web/super/configuracion/*.html` contiene las paginas por seccion.
+  - `web/super/configuracion_avanzada.html` conserva los formularios y soporta modo aislado con `?single=1&section=...`.
+- Flujo:
+  - Super Administrador -> Configuracion -> pagina de seccion -> tarjeta aislada -> endpoint super existente.
+- Alcance:
+  - No se agregan endpoints, tablas ni dependencias.
+
+## Actualizacion 2026-05-17 (avisos de mantenimiento super)
+
+- Backend:
+  - `backend/handlers/super_mantenimiento_handlers.go` mantiene `/super/api/config/mantenimiento` y agrega gestion de avisos individuales dentro de `mantenimiento_programado.avisos_json`.
+  - `GET` devuelve `avisos_programados`; `PUT` crea/actualiza el aviso cargado; `POST action=desactivar|eliminar` cambia el estado de un aviso.
+- Frontend:
+  - `web/super/mantenimiento_sistema.html` muestra tabla de avisos con acciones `Cargar`, `Desactivar` y `Eliminar`.
+  - `web/super_administrador.html` expone el acceso `Mantenimiento` en el submenu principal super.
+  - `web/super/configuracion_avanzada.html` deja de contener la tarjeta para evitar duplicidad operativa.
+- Flujo:
+  - Super programa aviso -> lista JSON -> se sincroniza el primer aviso activo a las claves legacy -> empresas leen `/api/empresa/mantenimiento_programado`.
+- Alcance:
+  - No se agregan rutas publicas, tablas ni dependencias; `mantenimiento_activo` permanece separado del aviso programado.
+
 ## Actualizacion 2026-05-17 (carrito default en empresas antiguas)
 
 - Backend:

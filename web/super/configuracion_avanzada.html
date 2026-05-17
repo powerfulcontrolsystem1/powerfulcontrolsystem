@@ -50,6 +50,14 @@
     .advanced-category-heading { margin:28px 0 12px; padding:12px 14px; border-left:4px solid var(--accent); background:var(--content-soft-bg); border-radius:8px; }
     .advanced-category-heading h2 { margin:0; font-size:1.05rem; }
     .advanced-category-heading p { margin:4px 0 0; color:var(--muted); }
+    body.advanced-single-section .container { max-width:1180px; padding:16px; }
+    body.advanced-single-section .page-header,
+    body.advanced-single-section .advanced-section-finder,
+    body.advanced-single-section .advanced-category-heading { display:none!important; }
+    body.advanced-single-section .advanced-config-layout { display:block; }
+    body.advanced-single-section .advanced-config-main { display:block; }
+    body.advanced-single-section .advanced-card { display:none; margin:0; }
+    body.advanced-single-section .advanced-card.is-single-visible { display:block; }
     .consumos-config-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px; }
     .consumos-config-form .form-col { min-width:0; }
     .consumos-config-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
@@ -123,7 +131,6 @@
         <li class="admin-nav-group">
           <div class="admin-nav-group-title">Operacion</div>
           <ul class="admin-nav-sublist">
-            <li><button type="button" data-target="mantenimientoConfigCard" data-search="mantenimiento modo mantenimiento bloqueo sistema" aria-label="Mantenimiento Sistema"><img class="icon" src="/img/settings-color.svg" alt=""><strong>Mantenimiento</strong><span>Sistema</span></button></li>
             <li><button type="button" data-target="backupConfigCard" data-search="respaldo backup restaurar continuidad configuracion" aria-label="Respaldo Backup"><img class="icon" src="/img/backup.svg" alt=""><strong>Respaldo</strong><span>Backup</span></button></li>
           </ul>
         </li>
@@ -793,8 +800,8 @@
     </section>
 
     <div id="categoriaSeguridad" class="advanced-category-heading">
-      <h2>Seguridad, continuidad y respaldo</h2>
-      <p>Protecciones publicas, mantenimiento global y respaldo de configuracion critica.</p>
+      <h2>Seguridad y continuidad</h2>
+      <p>Protecciones publicas y acceso seguro para administradores.</p>
     </div>
 
     <section class="card form advanced-card" data-brand="system" id="recaptchaConfigCard">
@@ -946,61 +953,8 @@
 
     <div class="advanced-category-heading">
       <h2>Operación global y respaldos</h2>
-      <p>Modo mantenimiento y respaldo/restauracion de configuracion sensible.</p>
+      <p>Respaldo y restauracion de configuracion sensible.</p>
     </div>
-
-      <section class="card form advanced-card" data-brand="system" id="mantenimientoConfigCard">
-        <h2>
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4m0 4h.01"></path></svg>
-          Mantenimiento del sistema
-        </h2>
-        <p class="form-help">Programa un aviso visible para empresas antes de una ventana de mantenimiento. El bloqueo real del sistema queda separado para evitar activarlo por accidente.</p>
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label">Aviso programado</label>
-            <label class="form-help" style="display:flex;align-items:center;gap:8px">
-              <input id="mantenimientoAvisoToggle" type="checkbox" role="switch" aria-label="Mostrar aviso de mantenimiento programado">
-              Mostrar aviso en el panel de administrar empresa
-            </label>
-          </div>
-          <div class="form-col">
-            <label class="form-label">Modo mantenimiento real</label>
-            <label class="form-help" style="display:flex;align-items:center;gap:8px">
-              <input id="mantenimientoToggle" type="checkbox" role="switch" aria-label="Activar modo mantenimiento">
-              Bloquear temporalmente el trafico a empresas
-            </label>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-col">
-            <label class="form-label" for="mantenimientoFecha">Fecha</label>
-            <input id="mantenimientoFecha" class="form-input" type="date">
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="mantenimientoHoraInicio">Hora inicio</label>
-            <input id="mantenimientoHoraInicio" class="form-input" type="time">
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="mantenimientoHoraFin">Hora fin</label>
-            <input id="mantenimientoHoraFin" class="form-input" type="time">
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="mantenimientoZonaHoraria">Zona horaria</label>
-            <input id="mantenimientoZonaHoraria" class="form-input" placeholder="America/Bogota">
-          </div>
-        </div>
-        <div class="form-group mb-12">
-          <label class="form-label" for="mantenimientoMensaje">Mensaje publico opcional</label>
-          <textarea id="mantenimientoMensaje" class="form-textarea" rows="3" maxlength="260" placeholder="Ej: Mantenimiento programado para el 25 de junio de 2026, de 3 am a 4 am."></textarea>
-          <div class="form-help">Si lo dejas vacio, el sistema genera el mensaje automaticamente con la fecha y las horas.</div>
-        </div>
-        <div class="form-group" style="display:flex; gap:8px;">
-          <button id="saveMantenimientoBtn" class="btn" style="display:none;">Guardar Mantenimiento</button>
-          <button id="editMantenimientoBtn" type="button" class="btn secondary">Editar</button>
-          <button id="cancelMantenimientoBtn" type="button" class="btn secondary" style="display:none;">Cancelar</button>
-        </div>
-        <div id="mantenimientoMsg" class="form-help"></div>
-      </section>
 
     <section class="card form advanced-card" data-brand="system" id="backupConfigCard">
       <h2>
@@ -1551,117 +1505,6 @@
         }
       }
 
-      async function loadMantenimientoConfig(){
-        const toggleEl = document.getElementById('mantenimientoToggle');
-        const avisoEl = document.getElementById('mantenimientoAvisoToggle');
-        const fechaEl = document.getElementById('mantenimientoFecha');
-        const horaInicioEl = document.getElementById('mantenimientoHoraInicio');
-        const horaFinEl = document.getElementById('mantenimientoHoraFin');
-        const zonaEl = document.getElementById('mantenimientoZonaHoraria');
-        const mensajeEl = document.getElementById('mantenimientoMensaje');
-        const msgEl = document.getElementById('mantenimientoMsg');
-        const saveBtn = document.getElementById('saveMantenimientoBtn');
-        const editBtn = document.getElementById('editMantenimientoBtn');
-        const cancelBtn = document.getElementById('cancelMantenimientoBtn');
-        if (!toggleEl || !avisoEl || !fechaEl || !horaInicioEl || !horaFinEl || !zonaEl || !mensajeEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
-        try {
-          const res = await fetch('/super/api/config/mantenimiento', { credentials: 'same-origin' });
-          if (!res.ok) {
-            msgEl.innerText = res.status === 401
-              ? 'Sesión expirada para leer mantenimiento. Inicia sesión nuevamente.'
-              : 'No se pudo cargar modo mantenimiento.';
-            return;
-          }
-          const data = await res.json();
-          toggleEl.checked = !!data.mantenimiento_activo;
-          avisoEl.checked = !!data.aviso_activo;
-          fechaEl.value = data.fecha || '';
-          horaInicioEl.value = data.hora_inicio || '';
-          horaFinEl.value = data.hora_fin || '';
-          zonaEl.value = data.zona_horaria || 'America/Bogota';
-          mensajeEl.value = data.mensaje_publico || '';
-          setMantenimientoEditMode(false);
-          saveBtn.style.display = 'none';
-          cancelBtn.style.display = 'none';
-          editBtn.style.display = '';
-          msgEl.innerText = avisoEl.checked
-            ? 'Aviso programado activo para empresas.'
-            : (toggleEl.checked ? 'Modo mantenimiento real activo.' : 'Sin aviso programado visible.');
-        } catch (err) {
-          msgEl.innerText = 'Error cargando mantenimiento: ' + (err.message || err);
-        }
-      }
-
-      function setMantenimientoEditMode(isEditing){
-        ['mantenimientoToggle','mantenimientoAvisoToggle','mantenimientoFecha','mantenimientoHoraInicio','mantenimientoHoraFin','mantenimientoZonaHoraria','mantenimientoMensaje'].forEach(function(id){
-          const el = document.getElementById(id);
-          if (el) el.disabled = !isEditing;
-        });
-      }
-
-      function enableEditMantenimiento(){
-        const toggleEl = document.getElementById('mantenimientoToggle');
-        const msgEl = document.getElementById('mantenimientoMsg');
-        const saveBtn = document.getElementById('saveMantenimientoBtn');
-        const editBtn = document.getElementById('editMantenimientoBtn');
-        const cancelBtn = document.getElementById('cancelMantenimientoBtn');
-        if (!toggleEl || !msgEl || !saveBtn || !editBtn || !cancelBtn) return;
-        setMantenimientoEditMode(true);
-        saveBtn.style.display = '';
-        cancelBtn.style.display = '';
-        editBtn.style.display = 'none';
-        msgEl.innerText = 'Modo edición activo para mantenimiento.';
-      }
-
-      function cancelEditMantenimiento(){
-        loadMantenimientoConfig();
-      }
-
-      async function saveMantenimientoConfig(){
-        const toggleEl = document.getElementById('mantenimientoToggle');
-        const avisoEl = document.getElementById('mantenimientoAvisoToggle');
-        const fechaEl = document.getElementById('mantenimientoFecha');
-        const horaInicioEl = document.getElementById('mantenimientoHoraInicio');
-        const horaFinEl = document.getElementById('mantenimientoHoraFin');
-        const zonaEl = document.getElementById('mantenimientoZonaHoraria');
-        const mensajeEl = document.getElementById('mantenimientoMensaje');
-        const msgEl = document.getElementById('mantenimientoMsg');
-        const saveBtn = document.getElementById('saveMantenimientoBtn');
-        if (!toggleEl || !avisoEl || !fechaEl || !horaInicioEl || !horaFinEl || !zonaEl || !mensajeEl || !msgEl || !saveBtn) return;
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'Guardando...';
-        try {
-          const res = await fetch('/super/api/config/mantenimiento', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-              mantenimiento_activo: !!toggleEl.checked,
-              aviso_activo: !!avisoEl.checked,
-              fecha: fechaEl.value || '',
-              hora_inicio: horaInicioEl.value || '',
-              hora_fin: horaFinEl.value || '',
-              zona_horaria: zonaEl.value || 'America/Bogota',
-              mensaje_publico: mensajeEl.value || ''
-            })
-          });
-          const raw = await res.text();
-          if (!res.ok) {
-            msgEl.innerText = res.status === 401
-              ? 'Sesión expirada para guardar mantenimiento. Inicia sesión nuevamente.'
-              : ('Error guardando mantenimiento: ' + (raw || res.status));
-            return;
-          }
-          msgEl.innerText = 'Modo mantenimiento guardado correctamente.';
-          await loadMantenimientoConfig();
-        } catch (err) {
-          msgEl.innerText = 'Error guardando mantenimiento: ' + (err.message || err);
-        } finally {
-          saveBtn.disabled = false;
-          saveBtn.innerText = 'Guardar Mantenimiento';
-        }
-      }
-
       async function loadOnlyOfficeConfig(){
         const msgEl = document.getElementById('onlyofficeMsg');
         const toggleEl = document.getElementById('onlyofficeEnabledToggle');
@@ -1832,6 +1675,34 @@
         }
       }
 
+      function getAdvancedSingleSectionTarget(){
+        try {
+          const params = new URLSearchParams(window.location.search || '');
+          const single = params.get('single') || params.get('solo') || '';
+          if (single !== '1' && single.toLowerCase() !== 'true') return '';
+          return (params.get('section') || params.get('seccion') || window.location.hash.replace('#', '') || '').trim();
+        } catch (err) {
+          return '';
+        }
+      }
+
+      function applyAdvancedSingleSectionMode(){
+        const targetId = getAdvancedSingleSectionTarget();
+        if (!targetId) return '';
+        const target = document.getElementById(targetId);
+        document.body.classList.add('advanced-single-section');
+        document.querySelectorAll('section.advanced-card[id]').forEach(function(card){
+          card.classList.toggle('is-single-visible', card.id === targetId);
+        });
+        if (target) {
+          const titleEl = target.querySelector('h2');
+          const title = titleEl ? titleEl.textContent.trim().replace(/\s+/g, ' ') : 'Configuracion';
+          document.title = title + ' - Configuracion super';
+          target.classList.add('is-single-visible');
+        }
+        return targetId;
+      }
+
       function initAdvancedSectionFinder(){
         const searchEl = document.getElementById('advancedSectionSearch');
         const clearBtn = document.getElementById('advancedSectionClear');
@@ -1994,11 +1865,11 @@
       }
 
       async function load(){
-        initAdvancedSectionFinder();
+        const singleSectionTarget = applyAdvancedSingleSectionMode();
+        if (!singleSectionTarget) initAdvancedSectionFinder();
         await loadRustDeskSshConfig();
         await loadRustDeskCard();
         await loadEmpresaLimitacionesConfig();
-        await loadMantenimientoConfig();
         await loadOnlyOfficeConfig();
         await loadVoiceStreamQuickStatus();
         // cargar estado Wompi
@@ -2350,6 +2221,7 @@
           document.getElementById('gmailRestartAlertEnabled').disabled = !encryptionAvailable;
 
           saveBtn.disabled = !encryptionAvailable;
+          saveBtn.style.display = encryptionAvailable ? '' : 'none';
           editBtn.style.display = 'none';
           cancelBtn.style.display = 'none';
         } catch (err) {
@@ -2931,6 +2803,7 @@
         document.getElementById('gmailRestartAlertTo').disabled = false;
         document.getElementById('gmailRestartAlertEnabled').disabled = false;
         document.getElementById('saveGmailBtn').disabled = false;
+        document.getElementById('saveGmailBtn').style.display = '';
         document.getElementById('editGmailBtn').style.display = 'none';
         document.getElementById('cancelGmailBtn').style.display = '';
         document.getElementById('gmailMsg').innerText = 'Modo edición activo para Gmail SMTP.';
@@ -3449,9 +3322,6 @@
       document.getElementById('testBackupBtn').addEventListener('click', testBackup);
       document.getElementById('downloadConfigBackupBtn').addEventListener('click', downloadConfigBackup);
       document.getElementById('restoreConfigBtn').addEventListener('click', restoreConfigBackup);
-      document.getElementById('saveMantenimientoBtn').addEventListener('click', saveMantenimientoConfig);
-      document.getElementById('editMantenimientoBtn').addEventListener('click', enableEditMantenimiento);
-      document.getElementById('cancelMantenimientoBtn').addEventListener('click', cancelEditMantenimiento);
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
     })();
   </script>

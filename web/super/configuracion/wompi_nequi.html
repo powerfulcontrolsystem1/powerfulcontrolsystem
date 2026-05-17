@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wompi / Nequi - Configuracion super</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text)}
+    .super-config-section-page{height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr)}
+    .super-config-section-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .super-config-section-header h1{margin:0;color:var(--text);font-size:1.35rem}
+    .super-config-section-header p{margin:3px 0 0;color:var(--muted);font-size:.82rem;line-height:1.35}
+    .super-config-section-frame{width:100%;height:100%;border:0;background:transparent}
+    .super-config-section-actions{display:flex;gap:8px;flex-wrap:wrap}
+    @media(max-width:760px){.super-config-section-actions .btn{flex:1 1 auto}.super-config-section-header{padding:12px}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="super-config-section-page">
+    <header class="super-config-section-header">
+      <div>
+        <h1>Wompi / Nequi</h1>
+        <p>Pagos Bancolombia</p>
+      </div>
+      <div class="super-config-section-actions">
+        <a class="btn secondary" href="/super/configuracion_avanzada.html">Ver todas</a>
+      </div>
+    </header>
+    <iframe class="super-config-section-frame" src="/super/configuracion_avanzada.html?single=1&section=wompiConfig" title="Wompi / Nequi"></iframe>
+  </main>
+</body>
+</html>

@@ -1,5 +1,9 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision configuracion super 2026-05-17: la configuracion avanzada del Super Administrador se separa en paginas independientes por seccion bajo `web/super/configuracion/`. El menu principal super muestra un grupo `Configuracion` con accesos directos a consumos, infraestructura, pagos, comunicaciones, seguridad, IA y respaldo. `web/super/configuracion_avanzada.html` queda como nucleo compatible con modo aislado por `section`, conservando los mismos formularios, botones y endpoints de guardado.
+
+Revision avisos de mantenimiento super 2026-05-17: `web/super/mantenimiento_sistema.html` queda como pagina propia del submenu principal de Super Administrador para programar avisos de mantenimiento; el super administrador puede cargar, desactivar o eliminar avisos sin tocar el bloqueo real `mantenimiento_activo`. `web/super/configuracion_avanzada.html` ya no contiene esa tarjeta. El endpoint existente `/super/api/config/mantenimiento` persiste la lista en `mantenimiento_programado.avisos_json` y mantiene `/api/empresa/mantenimiento_programado` como fuente del aviso visible para empresas.
+
 Actualizacion: 2026-05-13
 
 Revision menu administrar empresa 2026-05-17: el shell empresarial deja de usar la pestaña lateral `Inicio`; `Panel` queda como primer boton directo del menu y conserva `linkPanelEmpresa` como pagina inicial siempre visible. No cambia rutas, endpoints, tablas ni permisos efectivos.
@@ -42,7 +46,7 @@ Revision comunicaciones 2026-05-13: el super administrador puede enviar correos 
 
 Revision acceso visual 2026-05-13: `login.html` incorpora una ilustracion profesional local de un ejecutivo revisando estadisticas del sistema, visible como decoracion de escritorio. `login_usuario.html` conserva la ilustracion de usuario operativo y el flujo global por email y clave para usuarios de todas las empresas.
 
-Revision mantenimiento programado 2026-05-13: el super administrador configura una ventana de mantenimiento programado desde `web/super/configuracion_avanzada.html`, con check independiente para mostrar aviso a empresas, fecha, hora inicio/fin, zona horaria y mensaje publico. El panel `web/administrar_empresa/panel.html` consulta `/api/empresa/mantenimiento_programado` y muestra el aviso activo sin activar por accidente el modo de bloqueo global `mantenimiento_activo`.
+Revision mantenimiento programado 2026-05-13: el super administrador configura una ventana de mantenimiento programado desde la pagina super de mantenimiento, con check independiente para mostrar aviso a empresas, fecha, hora inicio/fin, zona horaria y mensaje publico. El panel `web/administrar_empresa/panel.html` consulta `/api/empresa/mantenimiento_programado` y muestra el aviso activo sin activar por accidente el modo de bloqueo global `mantenimiento_activo`.
 
 Revision conexion obligatoria 2026-05-13: se retira la opcion de operacion o facturacion offline para clientes. Las ventas, cobros y facturacion electronica requieren conexion activa con el backend; para Colombia, si DIAN/proveedor no esta disponible, la emision queda bloqueada y solo se permite procesar reintentos cuando vuelva la conexion.
 

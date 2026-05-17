@@ -1,3 +1,15 @@
+## [2026-05-17] Configuracion super por paginas
+- [Frontend] `web/super_administrador.html` agrega el grupo `Configuracion` con paginas independientes para consumos, RustDesk, limitaciones, OnlyOffice, Voz IA, Epayco, Wompi/Nequi, Gmail, alertas de licencia, WhatsApp, reCAPTCHA, 2FA, IA global y respaldo.
+- [Frontend] `web/super/configuracion/*.html` son paginas contenedoras por seccion y `web/super/configuracion_avanzada.html` soporta modo aislado `?single=1&section=...` para cargar solo la tarjeta correspondiente.
+- [Compatibilidad] Los formularios, endpoints y botones de guardar existentes se conservan; no cambia base de datos ni backend.
+
+## [2026-05-17] Mantenimiento del sistema como pagina super
+- [Backend] `/super/api/config/mantenimiento` agrega gestion de avisos individuales con `action=desactivar|eliminar`, persistidos en `mantenimiento_programado.avisos_json`.
+- [Frontend] `web/super/mantenimiento_sistema.html` queda como pagina independiente en el submenu principal de Super Administrador y muestra tabla de avisos programados con acciones para cargar, desactivar o eliminar.
+- [Navegacion] `web/super_administrador.html` agrega el acceso `Mantenimiento`; `web/super/configuracion_avanzada.html` deja de contener esa tarjeta.
+- [Seguridad] Desactivar/eliminar avisos no cambia el bloqueo real `mantenimiento_activo`.
+- [QA] Se agregan pruebas enfocadas en `backend/handlers/super_mantenimiento_handlers_test.go`.
+
 ## [2026-05-17] Panel primero en administrar empresa
 - [Frontend] `web/administrar_empresa.html` elimina el grupo `Inicio` y deja `Panel` como primer boton directo del menu lateral.
 - [Backend] `backend/handlers/empresa_permisos.go` retira `linkInicio` del catalogo de paginas; `linkPanelEmpresa` queda como acceso general.

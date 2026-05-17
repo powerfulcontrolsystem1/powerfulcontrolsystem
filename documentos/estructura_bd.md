@@ -22,6 +22,18 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-17 (configuracion super por paginas)
+- No se agregan tablas ni columnas fisicas.
+- Las paginas `web/super/configuracion/*.html` solo separan visualmente las secciones de configuracion super.
+- Los formularios siguen guardando mediante las claves y endpoints existentes de configuracion global.
+
+Actualizacion 2026-05-17 (avisos de mantenimiento programados)
+- No se agregan tablas ni columnas fisicas.
+- El super administrador guarda la lista de avisos en configuracion global con la clave `mantenimiento_programado.avisos_json`.
+- La administracion visual de la lista vive en `web/super/mantenimiento_sistema.html`; no modifica el esquema fisico.
+- Las claves legacy `mantenimiento_programado.aviso_activo`, `fecha`, `hora_inicio`, `hora_fin`, `zona_horaria` y `mensaje_publico` se sincronizan desde el primer aviso activo para conservar el contrato de `/api/empresa/mantenimiento_programado`.
+- El bloqueo real sigue separado en `mantenimiento_activo`.
+
 Actualizacion 2026-05-17 (estaciones: primer clic solo activa)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.

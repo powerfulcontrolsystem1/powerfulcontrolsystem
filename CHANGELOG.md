@@ -1,3 +1,7 @@
+- 2026-05-17: `Configuracion` de Super Administrador se separa en paginas independientes por seccion bajo `/super/configuracion/`; cada pagina carga solo su tarjeta operativa y conserva el proceso de guardado existente.
+
+- 2026-05-17: Super Administrador mueve `Mantenimiento del sistema` a `/super/mantenimiento_sistema.html`; mantiene tabla de avisos programados con acciones para cargar, desactivar o eliminar sin tocar el bloqueo real del sistema.
+
 - 2026-05-17: `rs` y `sync_to_vps` eliminan el tope corto del healthcheck remoto y pasan a esperar 900 segundos por defecto en reinicio y Docker.
 
 - 2026-05-17: `Administrar empresa` cambia el icono de `Venta directa` por un simbolo `$` de texto que hereda el color de la apariencia activa.

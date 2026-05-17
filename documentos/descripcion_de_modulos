@@ -1,3 +1,15 @@
+2026-05-17: Configuracion super por paginas independientes.
+- El submenu principal de Super Administrador agrega el grupo `Configuracion`.
+- Cada seccion avanzada tiene pagina propia bajo `/super/configuracion/`, cargando solo la tarjeta operativa correspondiente.
+- El guardado sigue usando los endpoints existentes de configuracion super, sin duplicar backend ni cambiar tablas.
+
+2026-05-17: Super administra avisos de mantenimiento programados.
+- El submenu principal de Super Administrador agrega `Mantenimiento`, que abre `/super/mantenimiento_sistema.html`.
+- La pagina muestra una tabla de avisos programados y la tarjeta de configuracion ya no vive dentro de `Configuracion avanzada`.
+- Cada aviso se puede cargar al formulario, desactivar o eliminar.
+- El bloqueo real `mantenimiento_activo` sigue separado y no cambia al eliminar/desactivar avisos.
+- Alcance: no cambia rutas empresariales, tablas ni permisos; se reutiliza `/super/api/config/mantenimiento`.
+
 2026-05-17: Venta directa usa icono `$` adaptable.
 - El boton `Venta directa` del menu empresarial ya no usa imagen fija.
 - El simbolo `$` hereda el color de la apariencia activa y del estado del enlace.

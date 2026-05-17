@@ -1,3 +1,19 @@
+2026-05-17: Configuracion super separada por paginas
+- Modulos afectados: `super_administrador`, `configuracion_avanzada`.
+- Frontend: `web/super_administrador.html` agrega un grupo `Configuracion` con paginas independientes por seccion.
+- Frontend: se crean paginas en `web/super/configuracion/` para consumos, RustDesk, limitaciones, OnlyOffice, Voz IA, Epayco, Wompi/Nequi, Gmail SMTP, alertas de licencia, WhatsApp portal, reCAPTCHA, 2FA login, IA global y respaldo.
+- Compatibilidad: `web/super/configuracion_avanzada.html` queda como nucleo compatible con modo aislado `?single=1&section=...`; se reutilizan los mismos formularios y endpoints de guardado.
+- Alcance tecnico: no agrega dependencias, tablas ni endpoints; solo cambia navegacion y aislamiento visual de secciones.
+
+2026-05-17: Super administra pagina propia de mantenimiento
+- Modulos afectados: `super_administrador`, `mantenimiento_programado`, `configuracion_avanzada`.
+- Backend: `/super/api/config/mantenimiento` conserva GET/PUT y agrega POST `action=desactivar|eliminar` para gestionar avisos individuales guardados en `mantenimiento_programado.avisos_json`.
+- Frontend: `web/super/mantenimiento_sistema.html` queda como pagina independiente en el submenu principal de Super Administrador, con tabla de avisos programados y acciones `Cargar`, `Desactivar`, `Eliminar`.
+- Navegacion: `web/super_administrador.html` agrega el boton `Mantenimiento` en `Plataforma`; `web/super/configuracion_avanzada.html` retira la tarjeta para no duplicar la operacion.
+- Operacion: desactivar o eliminar un aviso actualiza el aviso visible para empresas sin activar ni apagar por accidente el bloqueo real `mantenimiento_activo`.
+- QA: `backend/handlers/super_mantenimiento_handlers_test.go` valida seleccion de aviso activo, upsert/desactivacion e identificadores limpios; tambien se verifico parseo JS de `mantenimiento_sistema.html` y `configuracion_avanzada.html`.
+- Alcance tecnico: no agrega tablas, rutas nuevas ni dependencias; usa configuracion super existente y mantiene `/api/empresa/mantenimiento_programado`.
+
 2026-05-17: rs sin limite corto de pausa en despliegue
 - Modulos afectados: `scripts`, `deploy`.
 - Cambio operativo: `rs.ps1` y `scripts/rs.ps1` exponen `RestartHealthTimeoutSeconds` y `DockerHealthTimeoutSeconds`, con 900 segundos por defecto.

@@ -1,3 +1,13 @@
+2026-05-17: Nota de configuracion super por paginas
+- Las paginas bajo `web/super/configuracion/` pertenecen solo al shell de Super Administrador.
+- No agregan permisos empresariales ni wrappers nuevos; reutilizan los endpoints super existentes y la validacion de sesion/rol del panel super.
+- El rol `control_super_administrador` mantiene su lista reducida; estas paginas no se agregan a ese alcance limitado.
+
+2026-05-17: Nota de avisos de mantenimiento super
+- La tabla de avisos programados vive en `web/super/mantenimiento_sistema.html`, accesible desde el submenu principal super, y solo se opera desde el panel super.
+- `/super/api/config/mantenimiento?action=desactivar|eliminar` no concede permisos empresariales nuevos y no cambia `mantenimiento_activo` salvo que el super edite explicitamente el switch de bloqueo real.
+- `/api/empresa/mantenimiento_programado` sigue siendo de lectura para empresas autenticadas y solo expone el aviso activo visible.
+
 2026-05-17: Nota de Panel primero en Administrar empresa
 - Se retira `linkInicio` del catalogo de paginas porque el grupo lateral `Inicio` ya no se usa.
 - `linkPanelEmpresa` queda como pagina siempre visible y primer boton directo del menu empresarial.

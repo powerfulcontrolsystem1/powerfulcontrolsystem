@@ -1,3 +1,25 @@
+2026-05-17 - Configuracion super por paginas independientes
+- `web/super/configuracion/*.html`:
+	- nuevas paginas contenedoras por seccion de configuracion super; cada una carga su tarjeta aislada mediante `configuracion_avanzada.html?single=1&section=...`.
+- `web/super/configuracion_avanzada.html`:
+	- agrega modo aislado por query `single=1&section=<id>` para mostrar solo una tarjeta y mantener el mismo flujo de carga/guardado.
+- `web/super_administrador.html`:
+	- agrega el grupo principal `Configuracion` con accesos a cada seccion independiente.
+- `web/js/super_administrador.js`:
+	- permite persistir/restaurar las nuevas paginas independientes del submenu super.
+
+2026-05-17 - Pagina super de mantenimiento del sistema
+- `backend/handlers/super_mantenimiento_handlers.go`:
+	- agrega lista JSON de avisos programados, seleccion del aviso activo y acciones para desactivar/eliminar.
+- `backend/handlers/super_mantenimiento_handlers_test.go`:
+	- prueba seleccion, upsert/desactivacion e identificadores de avisos de mantenimiento.
+- `web/super/mantenimiento_sistema.html`:
+	- nueva pagina independiente para programar avisos, activar/desactivar/eliminar registros y conservar separado el bloqueo real.
+- `web/super_administrador.html` y `web/js/super_administrador.js`:
+	- agregan `Mantenimiento` al submenu principal super y a la lista de paginas permitidas.
+- `web/super/configuracion_avanzada.html`:
+	- retira la tarjeta de mantenimiento para que el control viva solo en la pagina principal.
+
 2026-05-17 - rs sin limite corto de pausa
 - `rs.ps1` y `scripts/rs.ps1`:
 	- agregan parametros `RestartHealthTimeoutSeconds` y `DockerHealthTimeoutSeconds`, ambos con 900 segundos por defecto.
@@ -302,7 +324,7 @@
 - Actualizacion 2026-05-13: Aviso de mantenimiento programado
 	- `backend/handlers/super_mantenimiento_handlers.go` : amplia la configuracion de mantenimiento con aviso programado, fecha, horas, zona horaria, mensaje publico y endpoint empresarial de consulta.
 	- `backend/main.go` : registra `/api/empresa/mantenimiento_programado` bajo `WithEmpresaSelfServicePermissions`.
-	- `web/super/configuracion_avanzada.html` : agrega campos para publicar el aviso de mantenimiento programado desde super administrador.
+	- `web/super/mantenimiento_sistema.html` : pagina vigente para publicar el aviso de mantenimiento programado desde super administrador.
 	- `web/administrar_empresa/panel.html` : muestra el aviso activo en una franja visible del panel empresarial.
 
 - Actualizacion 2026-05-13: OnlyOffice local editable en pantalla unica
