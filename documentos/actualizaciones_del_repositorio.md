@@ -10099,3 +10099,28 @@ Archivos modificados:
 - web/administrar_empresa/carrito_de_compras.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/js/administrar_empresa.js
+
+2026-05-17 17:10:07 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 15d5e4cf; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/empresa_preconfiguracion_carrito_test.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- rs.ps1
+- scripts/rs.ps1
+- scripts/sync_to_vps.ps1
+- web/administrar_empresa.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
