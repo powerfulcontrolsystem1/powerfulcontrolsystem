@@ -93,8 +93,18 @@ func SuperMantenimientoConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-			if action != "desactivar" && action != "eliminar" {
+			if action != "desactivar" && action != "eliminar" && action != "limpiar_viejos" {
 				http.Error(w, "accion no soportada", http.StatusBadRequest)
+				return
+			}
+			if action == "limpiar_viejos" {
+				removed, err := limpiarMantenimientoAvisosViejos(dbSuper, time.Now())
+				if err != nil {
+					log.Printf("[mantenimiento] failed to limpiar avisos viejos: %v", err)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "eliminados": removed, "config": loadMantenimientoConfig(dbSuper)})
 				return
 			}
 			var payload struct {
@@ -298,6 +308,52 @@ func updateMantenimientoAvisoState(dbSuper *sql.DB, rawID, action string) error 
 		return fmt.Errorf("aviso no encontrado")
 	}
 	return saveMantenimientoState(dbSuper, cfg.Activo, next)
+}
+
+func limpiarMantenimientoAvisosViejos(dbSuper *sql.DB, now time.Time) (int, error) {
+	cfg := loadMantenimientoConfig(dbSuper)
+	next, removed := filtrarMantenimientoAvisosVigentes(cfg.Avisos, now)
+	if removed == 0 {
+		return 0, nil
+	}
+	if err := saveMantenimientoState(dbSuper, cfg.Activo, next); err != nil {
+		return 0, err
+	}
+	return removed, nil
+}
+
+func filtrarMantenimientoAvisosVigentes(avisos []mantenimientoAviso, now time.Time) ([]mantenimientoAviso, int) {
+	avisos = normalizeMantenimientoAvisos(avisos)
+	today := mantenimientoToday(now)
+	next := make([]mantenimientoAviso, 0, len(avisos))
+	removed := 0
+	for _, aviso := range avisos {
+		if !aviso.AvisoActivo || mantenimientoAvisoEsViejo(aviso, today) {
+			removed++
+			continue
+		}
+		next = append(next, aviso)
+	}
+	return next, removed
+}
+
+func mantenimientoToday(now time.Time) string {
+	loc, err := time.LoadLocation(defaultMantenimientoTimezone)
+	if err != nil {
+		loc = time.FixedZone("America/Bogota", -5*60*60)
+	}
+	if now.IsZero() {
+		now = time.Now()
+	}
+	return now.In(loc).Format("2006-01-02")
+}
+
+func mantenimientoAvisoEsViejo(aviso mantenimientoAviso, today string) bool {
+	fecha, err := normalizeMantenimientoDate(aviso.Fecha)
+	if err != nil || fecha == "" {
+		return false
+	}
+	return fecha < today
 }
 
 func normalizeMantenimientoAvisos(in []mantenimientoAviso) []mantenimientoAviso {

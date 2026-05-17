@@ -1,3 +1,7 @@
+- 2026-05-17: Super Administrador agrupa mensajes y configuraciones de comunicacion en un solo modulo `Comunicaciones`: mantenimiento, mensajes masivos, alertas sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
+
+- 2026-05-17: `Mantenimiento del sistema` queda como grupo propio del menu principal de Super Administrador y agrega accion CRUD para eliminar alertas viejas desactivadas o vencidas.
+
 - 2026-05-17: `Configuracion` de Super Administrador se separa en paginas independientes por seccion bajo `/super/configuracion/`; cada pagina carga solo su tarjeta operativa y conserva el proceso de guardado existente.
 
 - 2026-05-17: Super Administrador mueve `Mantenimiento del sistema` a `/super/mantenimiento_sistema.html`; mantiene tabla de avisos programados con acciones para cargar, desactivar o eliminar sin tocar el bloqueo real del sistema.

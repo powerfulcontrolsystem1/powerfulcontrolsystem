@@ -1,3 +1,13 @@
+2026-05-17: Comunicaciones super unificadas.
+- El Super Administrador concentra mensajes y configuraciones de comunicacion en el modulo `Comunicaciones`.
+- El grupo incluye mantenimiento, mensajes masivos por email, alertas del sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
+- No cambia backend ni permisos; solo se unifica la navegacion.
+
+2026-05-17: Mantenimiento super como modulo principal.
+- `Mantenimiento sistema` queda como grupo propio en el menu principal de Super Administrador.
+- El modulo permite crear, cargar/editar, desactivar, eliminar avisos puntuales y limpiar alertas viejas.
+- La limpieza de alertas viejas elimina avisos desactivados o vencidos sin cambiar el bloqueo real `mantenimiento_activo`.
+
 2026-05-17: Configuracion super por paginas independientes.
 - El submenu principal de Super Administrador agrega el grupo `Configuracion`.
 - Cada seccion avanzada tiene pagina propia bajo `/super/configuracion/`, cargando solo la tarjeta operativa correspondiente.

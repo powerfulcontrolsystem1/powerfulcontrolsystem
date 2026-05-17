@@ -1,3 +1,22 @@
+## Actualizacion 2026-05-17 (comunicaciones super unificadas)
+
+- Frontend:
+  - `web/super_administrador.html` agrupa mensajes y configuraciones de comunicacion en el modulo `Comunicaciones`.
+  - El grupo enlaza mantenimiento, correos masivos, alertas sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
+- Alcance:
+  - No cambia handlers, endpoints, permisos ni tablas.
+
+## Actualizacion 2026-05-17 (mantenimiento super principal)
+
+- Backend:
+  - `backend/handlers/super_mantenimiento_handlers.go` agrega `action=limpiar_viejos` sobre `/super/api/config/mantenimiento`.
+  - La limpieza borra avisos desactivados o con fecha anterior al dia actual en `America/Bogota`.
+- Frontend:
+  - `web/super_administrador.html` muestra `Mantenimiento` como grupo propio.
+  - `web/super/mantenimiento_sistema.html` expone el CRUD y el boton `Eliminar alertas viejas`.
+- Flujo:
+  - Super Administrador -> Mantenimiento -> Mantenimiento sistema -> administrar avisos -> limpiar viejos -> sincronizar aviso visible empresarial.
+
 ## Actualizacion 2026-05-17 (configuracion super por paginas)
 
 - Frontend:

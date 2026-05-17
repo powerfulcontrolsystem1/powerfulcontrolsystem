@@ -2,6 +2,10 @@
 
 Revision configuracion super 2026-05-17: la configuracion avanzada del Super Administrador se separa en paginas independientes por seccion bajo `web/super/configuracion/`. El menu principal super muestra un grupo `Configuracion` con accesos directos a consumos, infraestructura, pagos, comunicaciones, seguridad, IA y respaldo. `web/super/configuracion_avanzada.html` queda como nucleo compatible con modo aislado por `section`, conservando los mismos formularios, botones y endpoints de guardado.
 
+Revision comunicaciones super 2026-05-17: `web/super_administrador.html` agrupa en un solo modulo `Comunicaciones` los mensajes de mantenimiento, mensajes masivos por email, alertas del sistema y configuraciones de mensajeria como Gmail SMTP, alertas de licencia y WhatsApp portal. La unificacion es de navegacion; los endpoints y formularios existentes permanecen iguales.
+
+Revision mantenimiento principal super 2026-05-17: `Mantenimiento sistema` queda como grupo propio del menu principal de Super Administrador. El modulo CRUD permite crear/editar avisos, cargar registros existentes, desactivar, eliminar uno por uno y limpiar alertas viejas desactivadas o vencidas mediante `/super/api/config/mantenimiento?action=limpiar_viejos`, sin tocar el bloqueo real `mantenimiento_activo`.
+
 Revision avisos de mantenimiento super 2026-05-17: `web/super/mantenimiento_sistema.html` queda como pagina propia del submenu principal de Super Administrador para programar avisos de mantenimiento; el super administrador puede cargar, desactivar o eliminar avisos sin tocar el bloqueo real `mantenimiento_activo`. `web/super/configuracion_avanzada.html` ya no contiene esa tarjeta. El endpoint existente `/super/api/config/mantenimiento` persiste la lista en `mantenimiento_programado.avisos_json` y mantiene `/api/empresa/mantenimiento_programado` como fuente del aviso visible para empresas.
 
 Actualizacion: 2026-05-13

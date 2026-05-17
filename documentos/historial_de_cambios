@@ -1,3 +1,16 @@
+2026-05-17: Comunicaciones super unificadas
+- Modulos afectados: `super_administrador`, `comunicaciones`, `mantenimiento_programado`.
+- Navegacion: `web/super_administrador.html` crea el modulo principal `Comunicaciones`.
+- Reagrupacion: `Mantenimiento`, `Mensajes masivos`, `Alertas sistema`, `Gmail SMTP`, `Alertas licencia` y `WhatsApp portal` quedan en el mismo grupo.
+- Alcance tecnico: no cambia endpoints, handlers, tablas, permisos ni formularios; solo unifica la ubicacion visual del menu super.
+
+2026-05-17: Mantenimiento super como modulo principal
+- Modulos afectados: `super_administrador`, `mantenimiento_programado`.
+- Navegacion: `web/super_administrador.html` saca `Mantenimiento sistema` de `Plataforma` y lo deja en un grupo propio del menu principal super.
+- CRUD: `web/super/mantenimiento_sistema.html` conserva crear/editar/cargar/desactivar/eliminar y agrega `Eliminar alertas viejas`.
+- Backend: `/super/api/config/mantenimiento?action=limpiar_viejos` elimina avisos desactivados o con fecha anterior al dia actual en zona `America/Bogota`, y vuelve a sincronizar las claves legacy usadas por empresas.
+- QA: `TestFiltrarMantenimientoAvisosVigentesEliminaViejosEInactivos` valida que se eliminen avisos viejos/inactivos sin borrar avisos futuros activos.
+
 2026-05-17: Configuracion super separada por paginas
 - Modulos afectados: `super_administrador`, `configuracion_avanzada`.
 - Frontend: `web/super_administrador.html` agrega un grupo `Configuracion` con paginas independientes por seccion.

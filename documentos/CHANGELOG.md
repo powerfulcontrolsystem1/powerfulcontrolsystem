@@ -1,3 +1,14 @@
+## [2026-05-17] Comunicaciones super unificadas
+- [Frontend] `web/super_administrador.html` crea el modulo principal `Comunicaciones`.
+- [Navegacion] El modulo agrupa mantenimiento, mensajes masivos, alertas sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
+- [Compatibilidad] No cambia endpoints, permisos ni formularios; solo consolida la ubicacion visual del submenu super.
+
+## [2026-05-17] Mantenimiento super como modulo principal
+- [Frontend] `web/super_administrador.html` mueve `Mantenimiento sistema` a un grupo propio del menu principal super.
+- [Frontend] `web/super/mantenimiento_sistema.html` agrega `Eliminar alertas viejas` para limpiar avisos desactivados o con fecha anterior a hoy.
+- [Backend] `/super/api/config/mantenimiento?action=limpiar_viejos` elimina alertas viejas y resincroniza el aviso visible para empresas sin tocar el bloqueo real.
+- [QA] Se agrega prueba de filtrado de avisos viejos e inactivos.
+
 ## [2026-05-17] Configuracion super por paginas
 - [Frontend] `web/super_administrador.html` agrega el grupo `Configuracion` con paginas independientes para consumos, RustDesk, limitaciones, OnlyOffice, Voz IA, Epayco, Wompi/Nequi, Gmail, alertas de licencia, WhatsApp, reCAPTCHA, 2FA, IA global y respaldo.
 - [Frontend] `web/super/configuracion/*.html` son paginas contenedoras por seccion y `web/super/configuracion_avanzada.html` soporta modo aislado `?single=1&section=...` para cargar solo la tarjeta correspondiente.

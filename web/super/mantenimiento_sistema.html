@@ -34,6 +34,7 @@
       </div>
       <div class="maintenance-actions">
         <button id="reloadMantenimientoBtn" type="button" class="btn secondary">Actualizar</button>
+        <button id="cleanOldMantenimientoBtn" type="button" class="btn danger">Eliminar alertas viejas</button>
       </div>
     </header>
 
@@ -241,6 +242,18 @@
         }
       }
 
+      async function postMantenimientoAction(action, payload){
+        const res = await fetch('/super/api/config/mantenimiento?action=' + encodeURIComponent(action), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload || {})
+        });
+        const raw = await res.text();
+        if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+        return raw ? JSON.parse(raw) : {};
+      }
+
       async function handleMantenimientoAvisoAction(ev){
         const btn = ev.currentTarget;
         const action = btn.getAttribute('data-maintenance-action');
@@ -255,18 +268,31 @@
         const previous = btn.innerText;
         btn.innerText = action === 'eliminar' ? 'Eliminando...' : 'Desactivando...';
         try {
-          const res = await fetch('/super/api/config/mantenimiento?action=' + encodeURIComponent(action), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ id: id })
-          });
-          const raw = await res.text();
-          if (!res.ok) throw new Error(raw || ('HTTP ' + res.status));
+          await postMantenimientoAction(action, { id: id });
           setStatus(action === 'eliminar' ? 'Aviso eliminado correctamente.' : 'Aviso desactivado correctamente.', 'ok');
           await loadMantenimientoConfig();
         } catch (err) {
           setStatus('Error actualizando aviso: ' + (err.message || err), 'error');
+        } finally {
+          btn.disabled = false;
+          btn.innerText = previous;
+        }
+      }
+
+      async function cleanOldMantenimientoAvisos(){
+        const btn = $('cleanOldMantenimientoBtn');
+        if (!btn) return;
+        if (!window.confirm('Eliminar alertas viejas de mantenimiento? Se borraran avisos desactivados o con fecha anterior a hoy.')) return;
+        const previous = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = 'Eliminando...';
+        try {
+          const data = await postMantenimientoAction('limpiar_viejos', {});
+          const removed = Number(data && data.eliminados || 0);
+          await loadMantenimientoConfig();
+          setStatus(removed > 0 ? ('Alertas viejas eliminadas: ' + removed + '.') : 'No habia alertas viejas para eliminar.', 'ok');
+        } catch (err) {
+          setStatus('Error eliminando alertas viejas: ' + (err.message || err), 'error');
         } finally {
           btn.disabled = false;
           btn.innerText = previous;
@@ -323,6 +349,7 @@
 
       function boot(){
         $('reloadMantenimientoBtn').addEventListener('click', loadMantenimientoConfig);
+        $('cleanOldMantenimientoBtn').addEventListener('click', cleanOldMantenimientoAvisos);
         $('saveMantenimientoBtn').addEventListener('click', saveMantenimientoConfig);
         $('editMantenimientoBtn').addEventListener('click', enableEditMantenimiento);
         $('cancelMantenimientoBtn').addEventListener('click', cancelEditMantenimiento);

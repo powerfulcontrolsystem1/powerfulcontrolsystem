@@ -1,3 +1,19 @@
+2026-05-17 - Comunicaciones super unificadas
+- `web/super_administrador.html`:
+	- crea el modulo principal `Comunicaciones`.
+	- agrupa `Mantenimiento`, `Mensajes masivos`, `Alertas sistema`, `Gmail SMTP`, `Alertas licencia` y `WhatsApp portal`.
+	- retira esos accesos de `Plataforma` y `Configuracion` para evitar duplicidad visual.
+
+2026-05-17 - Mantenimiento super como modulo principal
+- `web/super_administrador.html`:
+	- mueve `Mantenimiento sistema` a un grupo propio del menu principal super.
+- `web/super/mantenimiento_sistema.html`:
+	- agrega el boton `Eliminar alertas viejas` dentro del CRUD de avisos de mantenimiento.
+- `backend/handlers/super_mantenimiento_handlers.go`:
+	- agrega `POST /super/api/config/mantenimiento?action=limpiar_viejos` para borrar avisos desactivados o vencidos.
+- `backend/handlers/super_mantenimiento_handlers_test.go`:
+	- valida el filtrado de avisos viejos/inactivos.
+
 2026-05-17 - Configuracion super por paginas independientes
 - `web/super/configuracion/*.html`:
 	- nuevas paginas contenedoras por seccion de configuracion super; cada una carga su tarjeta aislada mediante `configuracion_avanzada.html?single=1&section=...`.

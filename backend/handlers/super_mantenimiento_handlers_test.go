@@ -1,6 +1,9 @@
 package handlers
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestMantenimientoAvisosSeleccionaPrimerActivo(t *testing.T) {
 	avisos := normalizeMantenimientoAvisos([]mantenimientoAviso{
@@ -47,5 +50,20 @@ func TestCleanMantenimientoID(t *testing.T) {
 	got := cleanMantenimientoID(" Aviso Junio 01!! ")
 	if got != "avisojunio01" {
 		t.Fatalf("cleanMantenimientoID = %q, want avisojunio01", got)
+	}
+}
+
+func TestFiltrarMantenimientoAvisosVigentesEliminaViejosEInactivos(t *testing.T) {
+	now := time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	next, removed := filtrarMantenimientoAvisosVigentes([]mantenimientoAviso{
+		{ID: "pasado-activo", AvisoActivo: true, Fecha: "2026-06-01", HoraInicio: "02:00", HoraFin: "03:00", ZonaHoraria: "America/Bogota", Mensaje: "Viejo"},
+		{ID: "futuro-inactivo", AvisoActivo: false, Fecha: "2026-06-20", HoraInicio: "02:00", HoraFin: "03:00", ZonaHoraria: "America/Bogota", Mensaje: "Inactivo"},
+		{ID: "futuro-activo", AvisoActivo: true, Fecha: "2026-06-20", HoraInicio: "02:00", HoraFin: "03:00", ZonaHoraria: "America/Bogota", Mensaje: "Vigente"},
+	}, now)
+	if removed != 2 {
+		t.Fatalf("removed = %d, want 2", removed)
+	}
+	if len(next) != 1 || next[0].ID != "futuro-activo" {
+		t.Fatalf("avisos vigentes = %#v, want solo futuro-activo", next)
 	}
 }

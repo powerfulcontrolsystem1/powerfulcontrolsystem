@@ -1,3 +1,13 @@
+2026-05-17: Nota de comunicaciones super unificadas
+- El modulo `Comunicaciones` del Super Administrador agrupa mantenimiento, correos masivos, alertas y configuraciones de mensajeria.
+- La agrupacion no agrega permisos ni wrappers nuevos; conserva las mismas paginas y endpoints super ya permitidos.
+- Las empresas no reciben permisos nuevos por este cambio de navegacion.
+
+2026-05-17: Nota de mantenimiento super principal
+- `Mantenimiento sistema` queda como modulo del menu principal super, no como configuracion empresarial.
+- `action=limpiar_viejos` solo opera sobre configuracion global super de avisos y no concede permisos empresariales nuevos.
+- La limpieza borra avisos desactivados o vencidos y mantiene separado `mantenimiento_activo`.
+
 2026-05-17: Nota de configuracion super por paginas
 - Las paginas bajo `web/super/configuracion/` pertenecen solo al shell de Super Administrador.
 - No agregan permisos empresariales ni wrappers nuevos; reutilizan los endpoints super existentes y la validacion de sesion/rol del panel super.

@@ -27,6 +27,11 @@ Actualizacion 2026-05-17 (configuracion super por paginas)
 - Las paginas `web/super/configuracion/*.html` solo separan visualmente las secciones de configuracion super.
 - Los formularios siguen guardando mediante las claves y endpoints existentes de configuracion global.
 
+Actualizacion 2026-05-17 (mantenimiento super principal)
+- No se agregan tablas ni columnas fisicas.
+- La accion `limpiar_viejos` elimina entradas del JSON `mantenimiento_programado.avisos_json` cuando estan desactivadas o vencidas.
+- La limpieza resincroniza las claves legacy del aviso visible sin cambiar `mantenimiento_activo`.
+
 Actualizacion 2026-05-17 (avisos de mantenimiento programados)
 - No se agregan tablas ni columnas fisicas.
 - El super administrador guarda la lista de avisos en configuracion global con la clave `mantenimiento_programado.avisos_json`.
