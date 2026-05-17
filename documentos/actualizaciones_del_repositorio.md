@@ -10078,3 +10078,24 @@ Archivos modificados:
 - web/administrar_empresa/estaciones.html
 - web/administrar_empresa/reportes_ejecutivos.html
 - web/js/administrar_empresa.js
+
+2026-05-17 16:28:25 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: fa2cf00b; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/gobernanza_tecnica/contratos/contrato_facturacion_electronica_y_documentos_transaccionales.md
+- documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/administrar_empresa/buscar_producto_botones.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+- web/js/administrar_empresa.js
