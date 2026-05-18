@@ -1,3 +1,36 @@
+2026-05-17: Menu flotante sin compartir por WhatsApp
+- Modulos afectados: `menu_flotante`, `frontend_compartido`.
+- Frontend: `web/menu.js` elimina la opcion `Compartir por WhatsApp` del submenu `Utilidades`.
+- UX: `Ayuda administrador` queda antes de `Cambiar apariencia`; `Cambiar apariencia` queda penultimo y `Cerrar sesion`/`Iniciar sesion` ultimo.
+- Alcance tecnico: no cambia backend, endpoints, permisos, tablas ni configuracion del WhatsApp publico del portal.
+- QA: validado parseo JS y orden por indices del panel flotante.
+
+2026-05-17: Inventario y compras debajo de operacion y ventas
+- Modulos afectados: `administrar_empresa`, `inventario`, `compras`.
+- Frontend: `web/administrar_empresa.html` reordena el submenu para ubicar `Inventario y compras` inmediatamente despues de `Operacion y ventas`.
+- Alcance tecnico: no cambia rutas, endpoints, permisos, tablas ni dependencias; solo orden visual de navegacion.
+- QA: verificado por parseo DOM del HTML y parseo de scripts inline.
+
+2026-05-17: Abonos operativos en carrito de estacion
+- Modulos afectados: `carritos`, `estaciones`, `caja`, `ventas_simple`.
+- Backend: `backend/db/carritos_compras.go` crea `carrito_compra_abonos` y helpers para registrar, listar y sumar abonos por `empresa_id` y `carrito_id`.
+- Backend: `backend/handlers/carritos_compras.go` agrega `GET action=abonos`, `POST action=abono` y descuenta abonos activos dentro de `PUT action=pagar_estacion`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` cambia el boton `Abonos` para abrir una tarjeta operativa, registrar dinero recibido y mostrarlo en resumen/desglose.
+- Caja: los abonos en efectivo suman al cierre de caja abierto al momento del abono; el pago final solo cobra el saldo restante.
+- QA: `go test ./db -run "TestBuildCarritosCompraByEmpresaQuery|TestDefaultCarrito|TestTipoEmpresa" -count=1`, `go test ./handlers -run "TestEmpresaPermisos.*VentaDirecta|Test.*Carritos" -count=1`, parseo JS y prueba visual Playwright mock.
+
+2026-05-17: Venta directa usa la misma vista de carrito de estaciones
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` trata `modo=venta_directa` como flujo enfocado junto a estaciones para mostrar `stationCartSplitRow`.
+- UX: la venta directa deja de usar el grid general de carritos y carga items, totales, lector y controles de pago igual que las estaciones.
+- Alcance tecnico: no cambia endpoints, tablas ni permisos; conserva el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` y el aislamiento por `empresa_id`.
+
+2026-05-17: Favoritos del panel empresarial como botones
+- Modulos afectados: `administrar_empresa`, `panel`.
+- Frontend: `web/administrar_empresa/panel.html` mantiene los favoritos existentes, pero cambia su presentacion para parecer botones operativos.
+- UX: cada favorito muestra borde de accion, fondo destacado, cursor, foco visible y estado presionado.
+- Alcance tecnico: no cambia endpoints, tablas, permisos ni el almacenamiento local de favoritos.
+
 2026-05-17: Comunicaciones super unificadas
 - Modulos afectados: `super_administrador`, `comunicaciones`, `mantenimiento_programado`.
 - Navegacion: `web/super_administrador.html` crea el modulo principal `Comunicaciones`.

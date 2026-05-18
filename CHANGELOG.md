@@ -1,3 +1,13 @@
+- 2026-05-17: `Menu flotante` retira `Compartir por WhatsApp` de Utilidades y deja `Cambiar apariencia` penultimo, con `Cerrar sesion` como ultimo acceso.
+
+- 2026-05-17: `Administrar empresa` mueve el grupo `Inventario y compras` para quedar inmediatamente debajo de `Operación y ventas` en el submenu principal.
+
+- 2026-05-17: `Carrito de compras` agrega abonos operativos por estacion: el boton `Abonos` registra dinero recibido, lo lista en la cuenta y `Pagar y cerrar carrito` descuenta esos abonos del saldo final sin mezclarlos con devoluciones.
+
+- 2026-05-17: `Venta directa` usa la misma vista operativa del carrito de estaciones para items, totales, lector y controles de pago, conservando su carrito canonico `VENTA-DIRECTA-{empresa_id}-0`.
+
+- 2026-05-17: `Panel` de Administrar empresa mejora los favoritos de `Accesos rapidos` para que se vean como botones de accion, con borde, fondo, cursor y estados hover/focus claros.
+
 - 2026-05-17: Super Administrador agrupa mensajes y configuraciones de comunicacion en un solo modulo `Comunicaciones`: mantenimiento, mensajes masivos, alertas sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
 
 - 2026-05-17: `Mantenimiento del sistema` queda como grupo propio del menu principal de Super Administrador y agrega accion CRUD para eliminar alertas viejas desactivadas o vencidas.

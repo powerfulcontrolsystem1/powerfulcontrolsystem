@@ -1,5 +1,15 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision menu flotante 2026-05-17: `web/menu.js` retira la opcion `Compartir por WhatsApp` del submenu `Utilidades`; se mantiene `Compartir por correo`. En el panel principal, `Cambiar apariencia` queda penultimo y el enlace de sesion queda ultimo, mostrando `Cerrar sesion` cuando hay sesion activa. El cambio es frontend compartido y no altera endpoints, permisos, tablas ni configuracion del WhatsApp publico del portal.
+
+Revision menu inventario compras 2026-05-17: en `web/administrar_empresa.html`, el grupo `Inventario y compras` queda inmediatamente debajo de `Operacion y ventas` para acercar productos, compras, importaciones, produccion y WMS al flujo operativo principal. El cambio es solo de navegacion visual; no altera rutas, endpoints, permisos, tablas ni aislamiento por `empresa_id`.
+
+Revision abonos carrito estacion 2026-05-17: el carrito de estacion permite registrar abonos parciales a la cuenta activa desde el boton `Abonos`. Los abonos quedan trazados por `empresa_id`, `carrito_id`, metodo de pago y caja abierta en `carrito_compra_abonos`; el pago final descuenta esos valores del saldo a cobrar y conserva el total completo para documento/venta, sin mezclar abonos con devoluciones.
+
+Revision venta directa carrito unificado 2026-05-17: `carrito_de_compras.html?modo=venta_directa` carga la misma vista enfocada de las estaciones para items, totales, lector y pago, pero conserva el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`. El cambio es frontend; no altera endpoints, tablas, permisos ni aislamiento por `empresa_id`.
+
+Revision favoritos panel empresarial 2026-05-17: `web/administrar_empresa/panel.html` muestra los favoritos de `Accesos rapidos` como botones de accion con borde, fondo destacado, cursor y foco visible. El cambio es solo visual; conserva rutas, permisos y almacenamiento local.
+
 Revision configuracion super 2026-05-17: la configuracion avanzada del Super Administrador se separa en paginas independientes por seccion bajo `web/super/configuracion/`. El menu principal super muestra un grupo `Configuracion` con accesos directos a consumos, infraestructura, pagos, comunicaciones, seguridad, IA y respaldo. `web/super/configuracion_avanzada.html` queda como nucleo compatible con modo aislado por `section`, conservando los mismos formularios, botones y endpoints de guardado.
 
 Revision comunicaciones super 2026-05-17: `web/super_administrador.html` agrupa en un solo modulo `Comunicaciones` los mensajes de mantenimiento, mensajes masivos por email, alertas del sistema y configuraciones de mensajeria como Gmail SMTP, alertas de licencia y WhatsApp portal. La unificacion es de navegacion; los endpoints y formularios existentes permanecen iguales.

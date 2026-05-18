@@ -104,6 +104,26 @@ type CarritoCompra struct {
 	TarifaPorDia       *CarritoTarifaPorDiaCalculo     `json:"tarifa_por_dia,omitempty"`
 }
 
+// CarritoCompraAbono registra dinero recibido antes del cierre final de un carrito.
+type CarritoCompraAbono struct {
+	ID                 int64   `json:"id"`
+	EmpresaID          int64   `json:"empresa_id"`
+	CarritoID          int64   `json:"carrito_id"`
+	Monto              float64 `json:"monto"`
+	MetodoPago         string  `json:"metodo_pago,omitempty"`
+	ReferenciaPago     string  `json:"referencia_pago,omitempty"`
+	CierreCajaID       int64   `json:"cierre_caja_id,omitempty"`
+	CajaCodigo         string  `json:"caja_codigo,omitempty"`
+	CajaTurno          string  `json:"caja_turno,omitempty"`
+	CajaSucursalID     int64   `json:"caja_sucursal_id,omitempty"`
+	FechaAbono         string  `json:"fecha_abono,omitempty"`
+	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
+	Estado             string  `json:"estado,omitempty"`
+	Observaciones      string  `json:"observaciones,omitempty"`
+}
+
 // CarritoCompraItem representa un item dentro de un carrito de compra.
 type CarritoCompraItem struct {
 	ID                  int64   `json:"id"`
@@ -253,6 +273,24 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 			valor_impuesto REAL DEFAULT 0,
 			subtotal_linea REAL DEFAULT 0,
 			total_linea REAL DEFAULT 0,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE TABLE IF NOT EXISTS carrito_compra_abonos (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			carrito_id INTEGER NOT NULL,
+			monto REAL NOT NULL DEFAULT 0,
+			metodo_pago TEXT DEFAULT 'efectivo',
+			referencia_pago TEXT,
+			cierre_caja_id INTEGER DEFAULT 0,
+			caja_codigo TEXT,
+			caja_turno TEXT,
+			caja_sucursal_id INTEGER DEFAULT 0,
+			fecha_abono TEXT DEFAULT (datetime('now','localtime')),
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -452,6 +490,52 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "empresa_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "carrito_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "monto", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "metodo_pago", "TEXT DEFAULT 'efectivo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "referencia_pago", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "cierre_caja_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "caja_codigo", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "caja_turno", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "caja_sucursal_id", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "fecha_abono", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "carrito_compra_abonos", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
 	if err := ensureColumnIfMissing(dbConn, "empresa_ventas_estacion_metricas", "empresa_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
@@ -547,6 +631,8 @@ func EnsureEmpresaCarritosSchema(dbConn *sql.DB) error {
 		{name: "ix_carritos_empresa_caja_codigo", query: `CREATE INDEX IF NOT EXISTS ix_carritos_empresa_caja_codigo ON carritos_compras(empresa_id, caja_codigo, caja_turno, pagado_en DESC);`},
 		{name: "ix_carrito_items_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_carrito ON carrito_compra_items(empresa_id, carrito_id);`},
 		{name: "ix_carrito_items_empresa_referencia", query: `CREATE INDEX IF NOT EXISTS ix_carrito_items_empresa_referencia ON carrito_compra_items(empresa_id, referencia_id);`},
+		{name: "ix_carrito_abonos_empresa_carrito", query: `CREATE INDEX IF NOT EXISTS ix_carrito_abonos_empresa_carrito ON carrito_compra_abonos(empresa_id, carrito_id, fecha_abono DESC);`},
+		{name: "ix_carrito_abonos_empresa_caja", query: `CREATE INDEX IF NOT EXISTS ix_carrito_abonos_empresa_caja ON carrito_compra_abonos(empresa_id, cierre_caja_id, fecha_abono DESC);`},
 		{name: "ix_ventas_estacion_metricas_empresa_estacion_fecha", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_estacion_fecha ON empresa_ventas_estacion_metricas(empresa_id, estacion_id, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_empresa_evento", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_empresa_evento ON empresa_ventas_estacion_metricas(empresa_id, evento_operacion, fecha_evento DESC);`},
 		{name: "ix_ventas_estacion_metricas_carrito", query: `CREATE INDEX IF NOT EXISTS ix_ventas_estacion_metricas_carrito ON empresa_ventas_estacion_metricas(empresa_id, carrito_id, fecha_evento DESC);`},
@@ -605,6 +691,7 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	requiredTables := []string{
 		"carritos_compras",
 		"carrito_compra_items",
+		"carrito_compra_abonos",
 		"empresa_ventas_estacion_metricas",
 	}
 	for _, tableName := range requiredTables {
@@ -620,6 +707,7 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 	requiredIndexes := []string{
 		"ux_carritos_empresa_codigo",
 		"ix_carrito_items_empresa_carrito",
+		"ix_carrito_abonos_empresa_carrito",
 		"ix_ventas_estacion_metricas_carrito",
 	}
 	for _, indexName := range requiredIndexes {
@@ -646,6 +734,11 @@ func empresaCarritosSchemaLooksReady(dbConn *sql.DB) (bool, error) {
 			"descripcion", "unidad_medida", "cantidad", "precio_unitario",
 			"descuento_porcentaje", "impuesto_porcentaje", "impuesto_codigo", "base_gravable",
 			"valor_descuento", "valor_impuesto", "subtotal_linea", "total_linea",
+			"fecha_creacion", "fecha_actualizacion", "usuario_creador", "estado", "observaciones",
+		},
+		"carrito_compra_abonos": {
+			"id", "empresa_id", "carrito_id", "monto", "metodo_pago", "referencia_pago",
+			"cierre_caja_id", "caja_codigo", "caja_turno", "caja_sucursal_id", "fecha_abono",
 			"fecha_creacion", "fecha_actualizacion", "usuario_creador", "estado", "observaciones",
 		},
 		"empresa_ventas_estacion_metricas": {
@@ -855,7 +948,7 @@ func normalizeCarritoStationMetricEvent(v string) string {
 	switch event {
 	case "", "venta_pagada":
 		return "venta_pagada"
-	case "cierre_parcial_anulado", "sesion_recuperada", "venta_anulada":
+	case "abono", "cierre_parcial_anulado", "sesion_recuperada", "venta_anulada":
 		return event
 	default:
 		return "operacion"
@@ -1961,6 +2054,146 @@ func CancelCarritoSale(dbConn *sql.DB, empresaID, carritoID int64, motivo, usuar
 		return nil, totalPagadoAnterior, devolucionTotalNueva, err
 	}
 	return carrito, totalPagadoAnterior, devolucionTotalNueva, nil
+}
+
+// CreateCarritoCompraAbono registra un abono monetario asociado a un carrito abierto.
+func CreateCarritoCompraAbono(dbConn *sql.DB, input CarritoCompraAbono) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("conexion de base de datos no disponible")
+	}
+	if input.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id invalido")
+	}
+	if input.CarritoID <= 0 {
+		return 0, fmt.Errorf("carrito_id invalido")
+	}
+	monto := round2(input.Monto)
+	if monto <= 0 {
+		return 0, fmt.Errorf("monto de abono invalido")
+	}
+	metodoPago := NormalizeMetodoPagoCarrito(input.MetodoPago)
+	if metodoPago == "" || metodoPago == "codigo_descuento" || metodoPago == "mixto" {
+		return 0, fmt.Errorf("metodo_pago invalido para abono")
+	}
+	usuario := strings.TrimSpace(input.UsuarioCreador)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	carrito, err := GetCarritoCompraByID(dbConn, input.EmpresaID, input.CarritoID)
+	if err != nil {
+		return 0, err
+	}
+	if strings.TrimSpace(carrito.PagadoEn) != "" || strings.TrimSpace(strings.ToLower(carrito.EstadoCarrito)) == "cerrado" {
+		return 0, fmt.Errorf("no se pueden registrar abonos en un carrito cerrado o pagado")
+	}
+	if strings.TrimSpace(strings.ToLower(carrito.EstadoCarrito)) == "anulado" {
+		return 0, fmt.Errorf("no se pueden registrar abonos en un carrito anulado")
+	}
+	if input.CierreCajaID < 0 {
+		input.CierreCajaID = 0
+	}
+	if input.CajaSucursalID < 0 {
+		input.CajaSucursalID = 0
+	}
+
+	return insertSQLCompat(dbConn, `INSERT INTO carrito_compra_abonos (
+		empresa_id, carrito_id, monto, metodo_pago, referencia_pago,
+		cierre_caja_id, caja_codigo, caja_turno, caja_sucursal_id,
+		fecha_abono, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+		input.EmpresaID,
+		input.CarritoID,
+		monto,
+		metodoPago,
+		strings.TrimSpace(input.ReferenciaPago),
+		input.CierreCajaID,
+		sanitizeCajaCodigo(input.CajaCodigo),
+		strings.ToLower(strings.TrimSpace(input.CajaTurno)),
+		input.CajaSucursalID,
+		usuario,
+		strings.TrimSpace(input.Observaciones),
+	)
+}
+
+// ListCarritoCompraAbonos devuelve los abonos registrados para un carrito de una empresa.
+func ListCarritoCompraAbonos(dbConn *sql.DB, empresaID, carritoID int64, includeInactive bool) ([]CarritoCompraAbono, error) {
+	if dbConn == nil {
+		return nil, fmt.Errorf("conexion de base de datos no disponible")
+	}
+	if empresaID <= 0 {
+		return nil, fmt.Errorf("empresa_id invalido")
+	}
+	if carritoID <= 0 {
+		return nil, fmt.Errorf("carrito_id invalido")
+	}
+	query := `SELECT
+		id, empresa_id, carrito_id, COALESCE(monto,0), COALESCE(metodo_pago,'efectivo'),
+		COALESCE(referencia_pago,''), COALESCE(cierre_caja_id,0), COALESCE(caja_codigo,''),
+		COALESCE(caja_turno,''), COALESCE(caja_sucursal_id,0), COALESCE(fecha_abono,''),
+		COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''),
+		COALESCE(estado,'activo'), COALESCE(observaciones,'')
+	FROM carrito_compra_abonos
+	WHERE empresa_id = ? AND carrito_id = ?`
+	args := []interface{}{empresaID, carritoID}
+	if !includeInactive {
+		query += ` AND COALESCE(estado,'activo') = 'activo'`
+	}
+	query += ` ORDER BY datetime(COALESCE(fecha_abono, fecha_creacion, datetime('now','localtime'))) DESC, id DESC`
+	rows, err := querySQLCompat(dbConn, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]CarritoCompraAbono, 0)
+	for rows.Next() {
+		var item CarritoCompraAbono
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.CarritoID,
+			&item.Monto,
+			&item.MetodoPago,
+			&item.ReferenciaPago,
+			&item.CierreCajaID,
+			&item.CajaCodigo,
+			&item.CajaTurno,
+			&item.CajaSucursalID,
+			&item.FechaAbono,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		item.Monto = round2(item.Monto)
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TotalCarritoCompraAbonos suma los abonos activos de un carrito.
+func TotalCarritoCompraAbonos(dbConn *sql.DB, empresaID, carritoID int64) (float64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("conexion de base de datos no disponible")
+	}
+	if empresaID <= 0 || carritoID <= 0 {
+		return 0, fmt.Errorf("empresa_id o carrito_id invalido")
+	}
+	var total float64
+	err := queryRowSQLCompat(dbConn, `SELECT COALESCE(SUM(COALESCE(monto,0)),0)
+		FROM carrito_compra_abonos
+		WHERE empresa_id = ? AND carrito_id = ? AND COALESCE(estado,'activo') = 'activo'`,
+		empresaID, carritoID).Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+	return round2(total), nil
 }
 
 // PayCarritoStationSession marca un carrito como pagado/inactivo y guarda resumen de cobro.

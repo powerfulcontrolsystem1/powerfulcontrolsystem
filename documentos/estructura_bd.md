@@ -27,6 +27,17 @@ Actualizacion 2026-05-17 (configuracion super por paginas)
 - Las paginas `web/super/configuracion/*.html` solo separan visualmente las secciones de configuracion super.
 - Los formularios siguen guardando mediante las claves y endpoints existentes de configuracion global.
 
+Actualizacion 2026-05-17 (abonos de carrito por estacion)
+- Nueva tabla `carrito_compra_abonos` para registrar abonos activos por `empresa_id` y `carrito_id`.
+- Campos principales: `monto`, `metodo_pago`, `referencia_pago`, `cierre_caja_id`, `caja_codigo`, `caja_turno`, `caja_sucursal_id`, `fecha_abono`, `usuario_creador`, `estado`, `observaciones`.
+- Indices: `ix_carrito_abonos_empresa_carrito` para consulta por cuenta/estacion y `ix_carrito_abonos_empresa_caja` para trazabilidad de caja.
+- `pagar_estacion` descuenta la suma activa de abonos del saldo a cobrar; los abonos no modifican `devolucion_total`.
+
+Actualizacion 2026-05-17 (venta directa con vista de carrito de estaciones)
+- No se agregan tablas ni columnas fisicas.
+- La venta directa sigue usando `carritos_compras` con codigo canonico `VENTA-DIRECTA-{empresa_id}-0` y referencia `CAJA_DIRECTA`.
+- El cambio solo alinea la vista frontend con el mismo panel operativo que usan las estaciones.
+
 Actualizacion 2026-05-17 (mantenimiento super principal)
 - No se agregan tablas ni columnas fisicas.
 - La accion `limpiar_viejos` elimina entradas del JSON `mantenimiento_programado.avisos_json` cuando estan desactivadas o vencidas.

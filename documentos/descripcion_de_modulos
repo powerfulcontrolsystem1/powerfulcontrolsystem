@@ -1,3 +1,27 @@
+2026-05-17: Menu flotante compartido.
+- Se retira `Compartir por WhatsApp` del submenu `Utilidades` del menu flotante.
+- `Cambiar apariencia` queda penultimo y el enlace de sesion queda ultimo, mostrando `Cerrar sesion` cuando hay sesion activa o `Iniciar sesion` cuando no la hay.
+- Se conserva `Compartir por correo`, calculadora, juegos, emulador, tickets y ayuda.
+
+2026-05-17: Orden del menu empresarial.
+- En `Administrar empresa`, el grupo `Inventario y compras` queda inmediatamente debajo de `Operacion y ventas`.
+- El cambio facilita entrar desde venta/estaciones hacia productos, compras, importaciones, produccion y WMS sin cambiar permisos ni rutas.
+
+2026-05-17: Abonos operativos en carrito de estacion.
+- El boton `Abonos` del carrito de estacion ya no redirige a creditos; abre una tarjeta propia para registrar dinero recibido en la cuenta activa.
+- Cada abono queda asociado a `empresa_id`, `carrito_id`, metodo de pago y caja abierta, y se muestra en la cuenta antes del pago final.
+- Al cerrar con `Pagar y cerrar carrito`, el sistema descuenta los abonos activos del saldo a cobrar, sin tratarlos como devoluciones.
+- Alcance: agrega persistencia propia `carrito_compra_abonos` y endpoints dentro de `/api/empresa/carritos_compra`; no agrega dependencias externas.
+
+2026-05-17: Venta directa y estaciones comparten vista de carrito.
+- `carrito_de_compras.html?modo=venta_directa` usa la misma vista enfocada que las estaciones para mostrar items, totales, lector y pago.
+- La diferencia sigue siendo solo de contexto: venta directa usa el carrito `VENTA-DIRECTA-{empresa_id}-0`, mientras estaciones usan `EST-{empresa_id}-{estacion_id}`.
+- No se agregan rutas, tablas, dependencias ni permisos.
+
+2026-05-17: Favoritos del panel empresarial.
+- El panel de `Administrar empresa` muestra los favoritos de `Accesos rapidos` como botones de accion.
+- El cambio es visual y conserva la lista guardada en `localStorage`, las rutas internas y los permisos efectivos.
+
 2026-05-17: Comunicaciones super unificadas.
 - El Super Administrador concentra mensajes y configuraciones de comunicacion en el modulo `Comunicaciones`.
 - El grupo incluye mantenimiento, mensajes masivos por email, alertas del sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.

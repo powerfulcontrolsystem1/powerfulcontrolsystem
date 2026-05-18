@@ -111,6 +111,37 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				})
 				return
 			}
+			if action == "abonos" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				carritoID, err := parseInt64Query(r, "carrito_id")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				includeInactive := strings.TrimSpace(r.URL.Query().Get("include_inactive")) == "1"
+				rows, err := dbpkg.ListCarritoCompraAbonos(dbEmp, empresaID, carritoID, includeInactive)
+				if err != nil {
+					log.Printf("[carritos] listar abonos empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, err)
+					http.Error(w, "No se pudieron consultar los abonos del carrito", http.StatusInternalServerError)
+					return
+				}
+				total := 0.0
+				for _, row := range rows {
+					if strings.TrimSpace(strings.ToLower(row.Estado)) == "activo" || strings.TrimSpace(row.Estado) == "" {
+						total = roundMoneyCarritoHandler(total + row.Monto)
+					}
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":     true,
+					"abonos": rows,
+					"total":  total,
+				})
+				return
+			}
 			if action == "metricas_estacion" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -282,6 +313,148 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "abono" || action == "registrar_abono" {
+				empresaID, errEmp := parseEmpresaIDQuery(r)
+				if errEmp != nil {
+					http.Error(w, errEmp.Error(), http.StatusBadRequest)
+					return
+				}
+				carritoID, errID := parseInt64Query(r, "carrito_id")
+				if errID != nil {
+					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+				var payload struct {
+					Monto          float64 `json:"monto"`
+					MetodoPago     string  `json:"metodo_pago"`
+					ReferenciaPago string  `json:"referencia_pago"`
+					CierreCajaID   int64   `json:"cierre_caja_id"`
+					CajaCodigo     string  `json:"caja_codigo"`
+					CajaTurno      string  `json:"caja_turno"`
+					CajaSucursalID int64   `json:"caja_sucursal_id"`
+					Observaciones  string  `json:"observaciones"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				monto := roundMoneyCarritoHandler(payload.Monto)
+				if monto <= 0 {
+					http.Error(w, "monto de abono invalido", http.StatusBadRequest)
+					return
+				}
+				metodoPago := dbpkg.NormalizeMetodoPagoCarrito(payload.MetodoPago)
+				if metodoPago == "" || metodoPago == "codigo_descuento" || metodoPago == "mixto" {
+					http.Error(w, "metodo_pago invalido para abono. Use efectivo, tarjeta debito, tarjeta credito o transferencia bancaria", http.StatusBadRequest)
+					return
+				}
+				if (metodoPago == "tarjeta_credito" || metodoPago == "tarjeta_debito" || metodoPago == "transferencia_bancaria") && len(strings.TrimSpace(payload.ReferenciaPago)) < 4 {
+					http.Error(w, "referencia_pago es obligatoria para abonos con tarjeta o transferencia bancaria (minimo 4 caracteres)", http.StatusBadRequest)
+					return
+				}
+				carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, carritoID)
+				if errCarrito != nil {
+					if errors.Is(errCarrito, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					log.Printf("[carritos] get for abono empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errCarrito)
+					http.Error(w, "No se pudo validar el carrito para abono", http.StatusInternalServerError)
+					return
+				}
+				if !isCarritoOperativoActivo(carrito) {
+					http.Error(w, "solo se pueden registrar abonos en una cuenta activa de estacion", http.StatusConflict)
+					return
+				}
+				rolOperacion := strings.TrimSpace(adminRoleFromRequest(r))
+				cfgOperativa, errCfgOperativa := dbpkg.GetEmpresaConfiguracionOperativa(dbEmp, empresaID)
+				if errCfgOperativa != nil {
+					log.Printf("[carritos] get configuracion_operativa abono empresa_id=%d error: %v", empresaID, errCfgOperativa)
+					cfgOperativa = nil
+				}
+				permisosOperativos := dbpkg.ResolveEmpresaConfiguracionOperativaParaRol(cfgOperativa, rolOperacion)
+				if !permisosOperativos.IsMetodoPagoHabilitado(metodoPago) {
+					http.Error(w, "metodo_pago no habilitado para la empresa/rol actual", http.StatusForbidden)
+					return
+				}
+				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID)
+				if errCierreCaja != nil {
+					if errors.Is(errCierreCaja, sql.ErrNoRows) {
+						http.Error(w, "debes seleccionar una caja abierta y activa antes de registrar un abono", http.StatusConflict)
+						return
+					}
+					log.Printf("[carritos] resolver caja abierta abono empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errCierreCaja)
+					http.Error(w, "No se pudo validar la caja abierta para este abono", http.StatusInternalServerError)
+					return
+				}
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+				abonoID, errAbono := dbpkg.CreateCarritoCompraAbono(dbEmp, dbpkg.CarritoCompraAbono{
+					EmpresaID:      empresaID,
+					CarritoID:      carritoID,
+					Monto:          monto,
+					MetodoPago:     metodoPago,
+					ReferenciaPago: strings.TrimSpace(payload.ReferenciaPago),
+					CierreCajaID:   cierreCaja.ID,
+					CajaCodigo:     cierreCaja.CajaCodigo,
+					CajaTurno:      cierreCaja.Turno,
+					CajaSucursalID: cierreCaja.SucursalID,
+					UsuarioCreador: usuarioOperacion,
+					Observaciones:  strings.TrimSpace(payload.Observaciones),
+				})
+				if errAbono != nil {
+					log.Printf("[carritos] crear abono empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errAbono)
+					http.Error(w, errAbono.Error(), http.StatusBadRequest)
+					return
+				}
+				if metodoPago == "efectivo" {
+					if errCaja := dbpkg.RegistrarIngresoEfectivoCierreCaja(dbEmp, empresaID, cierreCaja.ID, monto); errCaja != nil {
+						log.Printf("[carritos] sumar efectivo abono empresa_id=%d cierre_id=%d carrito_id=%d error: %v", empresaID, cierreCaja.ID, carritoID, errCaja)
+					}
+				}
+				estacionID, estacionCodigo, estacionNombre := dbpkg.ResolveCarritoStationIdentity(carrito)
+				if _, errMetric := dbpkg.RecordCarritoStationMetric(dbEmp, dbpkg.CarritoStationMetricInput{
+					EmpresaID:           empresaID,
+					CarritoID:           carritoID,
+					EstacionID:          estacionID,
+					EstacionCodigo:      estacionCodigo,
+					EstacionNombre:      estacionNombre,
+					EventoOperacion:     "abono",
+					MetodoPago:          metodoPago,
+					Moneda:              carrito.Moneda,
+					MontoTotal:          carrito.Total,
+					MontoPagado:         monto,
+					ActivadoEn:          carrito.ActivadoEn,
+					ReferenciaOperacion: strings.TrimSpace(payload.ReferenciaPago),
+					CierreCajaID:        cierreCaja.ID,
+					CajaCodigo:          cierreCaja.CajaCodigo,
+					CajaTurno:           cierreCaja.Turno,
+					CajaSucursalID:      cierreCaja.SucursalID,
+					UsuarioCreador:      usuarioOperacion,
+					Observaciones:       "abono registrado a cuenta de estacion",
+				}); errMetric != nil {
+					log.Printf("[carritos] metrica abono empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errMetric)
+				}
+				rows, errRows := dbpkg.ListCarritoCompraAbonos(dbEmp, empresaID, carritoID, false)
+				if errRows != nil {
+					log.Printf("[carritos] listar abonos after create empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errRows)
+				}
+				totalAbonos, errTotal := dbpkg.TotalCarritoCompraAbonos(dbEmp, empresaID, carritoID)
+				if errTotal != nil {
+					log.Printf("[carritos] total abonos after create empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errTotal)
+				}
+				writeJSON(w, http.StatusCreated, map[string]interface{}{
+					"ok":      true,
+					"id":      abonoID,
+					"abonos":  rows,
+					"total":   totalAbonos,
+					"metodo":  metodoPago,
+					"caja_id": cierreCaja.ID,
+				})
+				return
+			}
 			var payload dbpkg.CarritoCompra
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -571,6 +744,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					CodigoDescuento string                    `json:"codigo_descuento"`
 					DescuentoValor  float64                   `json:"descuento_valor"`
 					DevolucionTotal float64                   `json:"devolucion_total"`
+					AbonosTotal     float64                   `json:"abonos_total"`
 					TotalPagado     float64                   `json:"total_pagado"`
 					AplicarPropina  *bool                     `json:"aplicar_propina"`
 					UsuarioLavador  string                    `json:"usuario_lavador"`
@@ -686,6 +860,27 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if totalEsperado < 0 {
 					totalEsperado = 0
 				}
+				abonosRegistrados, errAbonos := dbpkg.TotalCarritoCompraAbonos(dbEmp, empresaID, id)
+				if errAbonos != nil {
+					log.Printf("[carritos] total abonos empresa_id=%d carrito_id=%d error: %v", empresaID, id, errAbonos)
+					http.Error(w, "No se pudieron validar los abonos del carrito", http.StatusInternalServerError)
+					return
+				}
+				abonosAplicados := roundMoneyCarritoHandler(abonosRegistrados)
+				if abonosAplicados < 0 {
+					abonosAplicados = 0
+				}
+				if abonosAplicados > totalEsperado {
+					abonosAplicados = totalEsperado
+				}
+				if payload.AbonosTotal > 0 && math.Abs(roundMoneyCarritoHandler(payload.AbonosTotal)-abonosAplicados) > 0.01 {
+					http.Error(w, "los abonos del carrito cambiaron; actualiza el carrito antes de pagar", http.StatusConflict)
+					return
+				}
+				saldoEsperado := roundMoneyCarritoHandler(totalEsperado - abonosAplicados)
+				if saldoEsperado < 0 {
+					saldoEsperado = 0
+				}
 
 				propinaCfg, errCfgPropina := dbpkg.GetEmpresaPropinasConfiguracion(dbEmp, empresaID)
 				if errCfgPropina != nil {
@@ -723,7 +918,8 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						montoPropina = 0
 					}
 				}
-				totalEsperadoConPropina := roundMoneyCarritoHandler(totalEsperado + montoPropina)
+				totalDocumentoConPropina := roundMoneyCarritoHandler(totalEsperado + montoPropina)
+				totalEsperadoConPropina := roundMoneyCarritoHandler(saldoEsperado + montoPropina)
 
 				totalPagado := payload.TotalPagado
 				if metodoPago == "mixto" {
@@ -786,6 +982,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
+				totalPagadoCarrito := roundMoneyCarritoHandler(totalPagado + abonosAplicados)
 				if err := dbpkg.PayCarritoStationSession(
 					dbEmp,
 					empresaID,
@@ -796,7 +993,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					descuentoCodigo,
 					descuentoValor,
 					devolucionTotal,
-					totalPagado,
+					totalPagadoCarrito,
 					codigoDescuentoID,
 					cierreCaja.ID,
 					cierreCaja.CajaCodigo,
@@ -821,9 +1018,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				} else if desactivadas > 0 {
 					log.Printf("[licencias] empresa_id=%d licencia desactivada por limite mensual despues de pago carrito=%d", empresaID, id)
 				}
-				montoEvento := totalPagado
+				montoEvento := totalPagadoCarrito
 				if montoEvento <= 0 {
-					montoEvento = totalEsperadoConPropina
+					montoEvento = totalDocumentoConPropina
 				}
 
 				propinaRegistroID := int64(0)
@@ -901,9 +1098,13 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					"descuento_valor":       descuentoValor,
 					"codigo_descuento_id":   codigoDescuentoID,
 					"devolucion_total":      devolucionTotal,
+					"abonos_total":          abonosAplicados,
+					"saldo_esperado":        saldoEsperado,
 					"total_pagado":          totalPagado,
+					"total_pagado_carrito":  totalPagadoCarrito,
 					"total_esperado":        totalEsperado,
 					"total_esperado_final":  totalEsperadoConPropina,
+					"total_documento_final": totalDocumentoConPropina,
 					"cierre_caja_id":        cierreCaja.ID,
 					"caja_codigo":           cierreCaja.CajaCodigo,
 					"caja_turno":            cierreCaja.Turno,
@@ -967,21 +1168,24 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalEsperadoConPropina, usuarioOperacion)
+				documentoVenta, errDocumentoVenta := registrarDocumentoVentaDesdeCarritoPagado(dbEmp, dbSuper, carritoPagado, totalDocumentoConPropina, usuarioOperacion)
 				if errDocumentoVenta != nil {
 					log.Printf("[carritos] documento_venta empresa_id=%d carrito_id=%d error: %v", empresaID, id, errDocumentoVenta)
 				}
 				dispatchControlElectricoEstacionAsync(dbEmp, carritoPagado, false, usuarioOperacion, "pagar_estacion")
 
 				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":                         true,
-					"estado":                     "inactivo",
-					"estado_carrito":             "cerrado",
-					"estado_venta":               "venta_pagada",
-					"tarifa_por_dia":             tarifasTiempo.TarifaPorDia,
-					"tarifa_por_minutos":         tarifasTiempo.TarifaPorMinutos,
-					"total_esperado":             totalEsperado,
-					"total_esperado_con_propina": totalEsperadoConPropina,
+					"ok":                          true,
+					"estado":                      "inactivo",
+					"estado_carrito":              "cerrado",
+					"estado_venta":                "venta_pagada",
+					"tarifa_por_dia":              tarifasTiempo.TarifaPorDia,
+					"tarifa_por_minutos":          tarifasTiempo.TarifaPorMinutos,
+					"total_esperado":              totalEsperado,
+					"abonos_total":                abonosAplicados,
+					"saldo_esperado":              saldoEsperado,
+					"total_esperado_con_propina":  totalEsperadoConPropina,
+					"total_documento_con_propina": totalDocumentoConPropina,
 					"propina": map[string]interface{}{
 						"aplicada":          propinaAplicada,
 						"habilitada":        propinaHabilitada,
@@ -1816,6 +2020,15 @@ func isCarritoVentaPagada(carrito *dbpkg.CarritoCompra) bool {
 		return false
 	}
 	return strings.TrimSpace(carrito.PagadoEn) != ""
+}
+
+func isCarritoOperativoActivo(carrito *dbpkg.CarritoCompra) bool {
+	if carrito == nil || isCarritoVentaPagada(carrito) {
+		return false
+	}
+	estadoRegistro := normalizeCarritoRegistroEstado(carrito.Estado)
+	estadoOperativo := normalizeCarritoOperativoEstado(carrito.EstadoCarrito)
+	return estadoRegistro == "activo" && estadoOperativo == "abierto"
 }
 
 func validateCarritoTransitionForAction(carrito *dbpkg.CarritoCompra, action string) error {

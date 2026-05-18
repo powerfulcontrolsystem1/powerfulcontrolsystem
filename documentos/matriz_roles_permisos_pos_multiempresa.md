@@ -3,6 +3,11 @@
 - La agrupacion no agrega permisos ni wrappers nuevos; conserva las mismas paginas y endpoints super ya permitidos.
 - Las empresas no reciben permisos nuevos por este cambio de navegacion.
 
+2026-05-17: Nota de venta directa con carrito de estaciones
+- `linkVentaDirecta` mantiene el mismo permiso base de ventas (`crear`) y el mismo wrapper de carritos.
+- El cambio solo hace que `modo=venta_directa` use la vista enfocada del carrito de estaciones; no concede acceso a estaciones ni a configuracion.
+- El carrito canonico `VENTA-DIRECTA-{empresa_id}-0` conserva aislamiento por `empresa_id`.
+
 2026-05-17: Nota de mantenimiento super principal
 - `Mantenimiento sistema` queda como modulo del menu principal super, no como configuracion empresarial.
 - `action=limpiar_viejos` solo opera sobre configuracion global super de avisos y no concede permisos empresariales nuevos.
@@ -31,6 +36,10 @@
 2026-05-17: Nota de inicio de Administrar empresa
 - El shell `web/administrar_empresa.html` carga `linkPanelEmpresa` como pagina inicial del iframe al entrar.
 - Este comportamiento no concede permisos nuevos: `linkPanelEmpresa` sigue siendo una pagina siempre visible del contexto empresarial y las demas paginas mantienen sus controles por rol/licencia/modulo.
+
+2026-05-17: Nota de navegacion para Inventario y compras
+- `web/administrar_empresa.html` ubica el grupo `Inventario y compras` inmediatamente debajo de `Operacion y ventas`.
+- No cambian claves de permisos, modulos, acciones ni rutas; solo el orden visual del submenu empresarial.
 
 2026-05-17: Nota de navegacion para Operacion y ventas
 - El grupo `Operacion y ventas` de `web/administrar_empresa.html` queda reservado a los accesos de operacion diaria directa: `linkVentaDirecta` y `linkEstaciones`.

@@ -180,6 +180,38 @@
           </div>
           <div id="carritoTarifaMsg" class="form-help mt-6"></div>
         </div>
+        <div id="carritoAbonosPanel" class="empresa-section mt-10 is-hidden" hidden>
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Abonos a la cuenta</h3>
+              <p class="form-help mt-0">Registra dinero recibido antes del pago final de la estación.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col maxw-180">
+              <label class="form-label" for="carritoAbonoMonto">Valor abonado</label>
+              <input id="carritoAbonoMonto" type="number" step="0.01" min="0" class="form-input" value="0">
+            </div>
+            <div class="form-col maxw-220">
+              <label class="form-label" for="carritoAbonoMetodo">Medio de pago</label>
+              <select id="carritoAbonoMetodo" class="form-input">
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta_debito">Débito</option>
+                <option value="tarjeta_credito">Crédito</option>
+                <option value="transferencia_bancaria">Otro</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="carritoAbonoReferencia">Referencia</label>
+              <input id="carritoAbonoReferencia" type="text" class="form-input" placeholder="Recibo / autorización">
+            </div>
+            <div class="form-col maxw-220 flex-col-end">
+              <button type="button" id="carritoAbonoRegistrarBtn" class="btn primary">Registrar abono</button>
+            </div>
+          </div>
+          <div id="carritoAbonosList" class="form-help mt-8">Sin abonos registrados.</div>
+          <div id="carritoAbonosMsg" class="form-help mt-6"></div>
+        </div>
         <div id="carritoControlElectricoPanel" class="empresa-section mt-10 is-hidden" hidden>
           <div class="empresa-section-header compact">
             <div>
@@ -542,6 +574,8 @@
       selectedCarritoID: 0,
       selectedCarritoCode: '',
       items: [],
+      cartAbonos: [],
+      cartAbonosLoading: false,
       itemCatalogResults: [],
       itemCatalogQueryToken: 0,
       discountCodes: [],
@@ -1526,9 +1560,11 @@
 
       setCardVisibility('scannerPanel', Boolean(ui.mostrar_tarjeta_lector_codigo) && Boolean(ui.mostrar_lector_codigo_barras));
       const focusedSaleMode = state.stationMode || state.directSaleMode;
-      setCardVisibility('stationCartSplitRow', Boolean(ui.mostrar_tarjeta_items_carrito) && state.stationMode && Boolean(getSelectedCarrito()));
-      if (!state.stationMode) {
+      setCardVisibility('stationCartSplitRow', Boolean(ui.mostrar_tarjeta_items_carrito) && focusedSaleMode && Boolean(getSelectedCarrito()));
+      if (!focusedSaleMode) {
         setCardVisibility('carritoGrid', Boolean(ui.mostrar_tarjeta_items_carrito));
+      } else {
+        setCardVisibility('carritoGrid', false);
       }
       setCardVisibility('carritoTotalsPanel', Boolean(ui.mostrar_tarjeta_totales_detalles));
       setOptionalSectionsControlsVisibility(ui, getSelectedCarrito());
@@ -2188,6 +2224,168 @@
       return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
     }
 
+    function getCartAbonosTotal() {
+      return (Array.isArray(state.cartAbonos) ? state.cartAbonos : []).reduce(function(acc, item) {
+        const estado = normalize(item && item.estado).toLowerCase() || 'activo';
+        if (estado !== 'activo') return acc;
+        return roundMoney(acc + Math.max(0, Number((item && item.monto) || 0)));
+      }, 0);
+    }
+
+    function setCarritoAbonosMessage(message, isError) {
+      const box = document.getElementById('carritoAbonosMsg');
+      if (!box) return;
+      box.textContent = message || '';
+      box.className = 'form-help mt-6' + (isError ? ' error' : '');
+    }
+
+    function renderCarritoAbonosPanel() {
+      const panel = document.getElementById('carritoAbonosPanel');
+      const list = document.getElementById('carritoAbonosList');
+      const btn = document.getElementById('carritoAbonoRegistrarBtn');
+      const selected = getSelectedCarrito();
+      if (!panel || !list) return;
+      if (!selected) {
+        list.textContent = 'Selecciona una estación para registrar abonos.';
+        if (btn) btn.disabled = true;
+        return;
+      }
+      const moneda = selected.moneda || 'COP';
+      const rows = Array.isArray(state.cartAbonos) ? state.cartAbonos.filter(function(item) {
+        return (normalize(item && item.estado).toLowerCase() || 'activo') === 'activo';
+      }) : [];
+      const total = getCartAbonosTotal();
+      if (!rows.length) {
+        list.innerHTML = '<strong>Total abonado: ' + escapeHtml(formatAmount(0, moneda)) + '</strong><br>Sin abonos registrados.';
+      } else {
+        const detail = rows.map(function(item) {
+          const fecha = normalize(item.fecha_abono || item.fecha_creacion) || '-';
+          const metodo = normalize(item.metodo_pago).replace(/_/g, ' ') || 'efectivo';
+          const ref = normalize(item.referencia_pago);
+          return '<div class="carrito-summary-row"><span>' + escapeHtml(fecha + ' · ' + metodo + (ref ? ' · ' + ref : '')) + '</span><strong>' + escapeHtml(formatAmount(Number(item.monto || 0), moneda)) + '</strong></div>';
+        }).join('');
+        list.innerHTML = '<div class="carrito-summary-row"><span>Total abonado</span><strong>' + escapeHtml(formatAmount(total, moneda)) + '</strong></div>' + detail;
+      }
+      if (btn) {
+        btn.disabled = state.cartAbonosLoading || !isCarritoOperativoActivo(selected);
+      }
+    }
+
+    function toggleCarritoAbonosPanel(forceOpen) {
+      const panel = document.getElementById('carritoAbonosPanel');
+      if (!panel) return;
+      const open = typeof forceOpen === 'boolean' ? forceOpen : panel.hidden;
+      panel.hidden = !open;
+      panel.classList.toggle('is-hidden', !open);
+      panel.style.display = open ? '' : 'none';
+      if (open) {
+        loadCarritoAbonos(true).catch(function(err) {
+          setCarritoAbonosMessage((err && err.message) || 'No se pudieron cargar los abonos.', true);
+        });
+      }
+    }
+
+    async function loadCarritoAbonos(renderAfterLoad) {
+      const selected = getSelectedCarrito();
+      if (!selected || !state.empresaID) {
+        state.cartAbonos = [];
+        if (renderAfterLoad) renderCarritoAbonosPanel();
+        return [];
+      }
+      state.cartAbonosLoading = true;
+      if (renderAfterLoad) renderCarritoAbonosPanel();
+      try {
+        const url = new URL('/api/empresa/carritos_compra', window.location.origin);
+        url.searchParams.set('action', 'abonos');
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        url.searchParams.set('carrito_id', String(selected.id));
+        const res = await fetchWithTimeout(url.pathname + url.search, { credentials: 'same-origin' });
+        await ensureOk(res);
+        const payload = await res.json();
+        state.cartAbonos = Array.isArray(payload) ? payload : (Array.isArray(payload && payload.abonos) ? payload.abonos : []);
+        return state.cartAbonos;
+      } finally {
+        state.cartAbonosLoading = false;
+        if (renderAfterLoad) renderCarritoAbonosPanel();
+      }
+    }
+
+    async function registerCarritoAbono() {
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        setCarritoAbonosMessage('Selecciona una estación antes de registrar abonos.', true);
+        return;
+      }
+      if (!isCarritoOperativoActivo(selected)) {
+        setCarritoAbonosMessage('Solo puedes registrar abonos en una cuenta activa.', true);
+        return;
+      }
+      const amountEl = document.getElementById('carritoAbonoMonto');
+      const methodEl = document.getElementById('carritoAbonoMetodo');
+      const referenceEl = document.getElementById('carritoAbonoReferencia');
+      const monto = roundMoney(toNumber(amountEl && amountEl.value, 0));
+      const metodo = normalize(methodEl && methodEl.value) || 'efectivo';
+      const referencia = normalize(referenceEl && referenceEl.value);
+      if (monto <= 0) {
+        setCarritoAbonosMessage('Ingresa un valor de abono mayor a cero.', true);
+        return;
+      }
+      if ((metodo === 'tarjeta_credito' || metodo === 'tarjeta_debito' || metodo === 'transferencia_bancaria') && referencia.length < 4) {
+        setCarritoAbonosMessage('Los abonos con tarjeta o transferencia requieren una referencia mínima de 4 caracteres.', true);
+        return;
+      }
+      let cashForPayment = getSelectedCashRegister();
+      if (!cashForPayment) {
+        await loadActiveCashRegisters();
+        cashForPayment = getSelectedCashRegister();
+      }
+      if (!cashForPayment) {
+        setCarritoAbonosMessage('Abre o selecciona una caja antes de registrar el abono.', true);
+        renderStationPaymentPanel(selected);
+        return;
+      }
+      const btn = document.getElementById('carritoAbonoRegistrarBtn');
+      try {
+        if (btn) btn.disabled = true;
+        setCarritoAbonosMessage('Registrando abono...', false);
+        const url = new URL('/api/empresa/carritos_compra', window.location.origin);
+        url.searchParams.set('action', 'abono');
+        url.searchParams.set('empresa_id', String(state.empresaID));
+        url.searchParams.set('carrito_id', String(selected.id));
+        if (state.stationMode && state.stationID > 0) {
+          url.searchParams.set('estacion_id', String(state.stationID));
+          url.searchParams.set('perm_page', 'linkEstaciones');
+        }
+        const res = await fetchWithTimeout(url.pathname + url.search, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            monto: monto,
+            metodo_pago: metodo,
+            referencia_pago: referencia,
+            cierre_caja_id: Number(cashForPayment.id || 0),
+            caja_codigo: normalizeCashCode(cashForPayment.caja_codigo),
+            caja_turno: normalize(cashForPayment.turno) || 'general',
+            caja_sucursal_id: Number(cashForPayment.sucursal_id || 0)
+          })
+        });
+        await ensureOk(res);
+        const payload = await res.json().catch(function() { return null; });
+        state.cartAbonos = Array.isArray(payload && payload.abonos) ? payload.abonos : state.cartAbonos;
+        if (amountEl) amountEl.value = '0';
+        if (referenceEl) referenceEl.value = '';
+        setCarritoAbonosMessage('Abono registrado. Se descontará del saldo al pagar.', false);
+        await loadCarritoAbonos(true);
+        renderCarritoSummaryPanel();
+        renderStationPaymentPanel(selected);
+      } catch (err) {
+        setCarritoAbonosMessage((err && err.message) || 'No se pudo registrar el abono.', true);
+      } finally {
+        renderCarritoAbonosPanel();
+      }
+    }
+
     function getStationPaymentBreakdown(carrito) {
       const totalBase = Number((carrito && carrito.total) || 0);
       const caps = getDiscountCapabilities();
@@ -2249,12 +2447,15 @@
 
       const maxReturn = Math.max(0, totalBase - discountValue);
       const devolucion = Math.max(0, Math.min(maxReturn, roundMoney(toNumber(state.stationDiscount.devolucion, 0))));
-      const totalPagar = Math.max(0, roundMoney(totalBase - discountValue - devolucion));
+      const totalCuentaSinPropina = Math.max(0, roundMoney(totalBase - discountValue - devolucion));
+      const abonosRegistrados = getCartAbonosTotal();
+      const abonosAplicados = Math.max(0, Math.min(totalCuentaSinPropina, roundMoney(abonosRegistrados)));
+      const totalPagar = Math.max(0, roundMoney(totalCuentaSinPropina - abonosAplicados));
 
       const tipConfigEnabled = operativa.habilitar_propinas && state.tipConfig.loaded && Boolean(state.tipConfig.habilitarPropina);
       const tipPercent = tipConfigEnabled ? Math.max(0, Math.min(100, Number(state.tipConfig.porcentajePropina || 0))) : 0;
       const tipApplied = tipConfigEnabled && Boolean(state.stationTip.aplicar) && tipPercent > 0;
-      const tipAmount = tipApplied ? roundMoney(totalPagar * (tipPercent / 100)) : 0;
+      const tipAmount = tipApplied ? roundMoney(totalCuentaSinPropina * (tipPercent / 100)) : 0;
       const totalPagarFinal = roundMoney(totalPagar + tipAmount);
       const commissionEstimate = getCommissionEstimateFromItems();
 
@@ -2322,6 +2523,9 @@
         discountLabel: discountLabel,
         discountValue: roundMoney(discountValue),
         devolucion: roundMoney(devolucion),
+        abonosTotal: roundMoney(abonosAplicados),
+        abonosRegistrados: roundMoney(abonosRegistrados),
+        totalCuentaSinPropina: totalCuentaSinPropina,
         totalPagar: totalPagar,
         totalPagarFinal: totalPagarFinal,
         discountType: discountType,
@@ -3215,6 +3419,7 @@
       const focusedSaleMode = state.stationMode || state.directSaleMode;
       if (!focusedSaleMode || !carrito) {
         const btnPay = document.getElementById('btnPagarCarrito');
+        const abonosPanel = document.getElementById('carritoAbonosPanel');
         if (btnPay) {
           btnPay.style.display = 'none';
         }
@@ -3229,6 +3434,11 @@
           actionsCard.style.display = 'none';
           actionsCard.hidden = true;
           actionsCard.classList.add('is-hidden');
+        }
+        if (abonosPanel) {
+          abonosPanel.style.display = 'none';
+          abonosPanel.hidden = true;
+          abonosPanel.classList.add('is-hidden');
         }
         if (vipCard) {
           vipCard.style.display = 'none';
@@ -3283,6 +3493,7 @@
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';
       }
+      renderCarritoAbonosPanel();
       if (vipCard) {
         const showVipCard = state.stationMode && !state.directSaleMode && stationUI.mostrar_tarjeta_vip_cliente;
         vipCard.classList.toggle('is-hidden', !showVipCard);
@@ -3433,7 +3644,9 @@
         'Subtotal carrito: ' + formatAmount(pay.totalBase, carrito.moneda) +
         ' | ' + pay.discountLabel + ': -' + formatAmount(pay.discountValue, carrito.moneda) +
         ' | Devolución: -' + formatAmount(pay.devolucion, carrito.moneda) +
-        ' | Total sin propina: ' + formatAmount(pay.totalPagar, carrito.moneda) +
+        ' | Cuenta sin propina: ' + formatAmount(pay.totalCuentaSinPropina, carrito.moneda) +
+        ' | Abonos: -' + formatAmount(pay.abonosTotal, carrito.moneda) +
+        ' | Saldo sin propina: ' + formatAmount(pay.totalPagar, carrito.moneda) +
         ' | Propina (' + pay.tipPercent.toFixed(2) + '%): +' + formatAmount(pay.tipAmount, carrito.moneda) +
         ' | Total final a pagar: ' + formatAmount(pay.totalPagarFinal, carrito.moneda) +
         ' | Método de pago: ' + pay.paymentMethod.replace(/_/g, ' ');
@@ -3658,6 +3871,7 @@
             codigo_descuento: pay.discountCodeApplied,
             descuento_valor: pay.discountValue,
             devolucion_total: pay.devolucion,
+            abonos_total: pay.abonosTotal,
             total_pagado: pay.totalPagarFinal,
             aplicar_propina: pay.tipApplied,
             usuario_lavador: state.optionalSections.showWorkerCommission ? normalize(document.getElementById('commissionWorker').value) : '',
@@ -4056,10 +4270,11 @@
       const caps = getBarcodeCapabilities();
       const stationUI = getCurrentStationCartUIConfig();
       const selected = getSelectedCarrito();
-      const canUseByStation = !state.stationMode || isCarritoOperativoActivo(selected);
-      const canUse = !!selected && canUseByStation;
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const canUseByFocusedSale = !focusedSaleMode || isCarritoOperativoActivo(selected);
+      const canUse = !!selected && canUseByFocusedSale;
 
-      if (state.stationMode && (!stationUI.mostrar_tarjeta_lector_codigo || !stationUI.mostrar_lector_codigo_barras)) {
+      if (focusedSaleMode && (!stationUI.mostrar_tarjeta_lector_codigo || !stationUI.mostrar_lector_codigo_barras)) {
         panel.style.display = 'none';
         panel.hidden = true;
         panel.classList.add('is-hidden');
@@ -4087,7 +4302,7 @@
         setScannerMessage('Selecciona un carrito para usar el lector de código de barras.', false);
         return;
       }
-      if (!canUseByStation) {
+      if (!canUseByFocusedSale) {
         setScannerMessage('El carrito está inactivo. Actívalo para agregar productos por escaneo.', true);
         return;
       }
@@ -4113,8 +4328,8 @@
         setScannerMessage('Selecciona un carrito antes de escanear.', true);
         return;
       }
-      if (state.stationMode && !isCarritoOperativoActivo(selected)) {
-        setScannerMessage('El carrito de estación está inactivo. Actívalo para continuar.', true);
+      if ((state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(selected)) {
+        setScannerMessage(state.directSaleMode ? 'El carrito de venta directa está inactivo. Reábrelo para continuar.' : 'El carrito de estación está inactivo. Actívalo para continuar.', true);
         return;
       }
 
@@ -5106,7 +5321,7 @@
       const discountTotal = Number(selected.descuento_total || 0);
       const taxTotal = Number(selected.impuesto_total || 0);
       const total = Number(selected.total || 0);
-      const paid = Number(selected.total_pagado || 0);
+      const paid = isCarritoOperativoActivo(selected) ? getCartAbonosTotal() : Number(selected.total_pagado || 0);
       const balance = total - paid;
       const countItems = state.items.length;
       const productsCount = state.items.filter(function(item) { return ['producto', 'combo'].includes(normalize(item.tipo_item)); }).length;
@@ -5687,11 +5902,13 @@
       if (!box) return;
       const selected = getSelectedCarrito();
       if (!selected) {
-        box.textContent = state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus ítems.';
+        box.textContent = state.directSaleMode
+          ? 'Se está preparando el carrito de venta directa.'
+          : (state.stationMode ? 'Se está preparando el carrito de la estación.' : 'Selecciona un carrito para gestionar sus ítems.');
         return;
       }
 
-      const readOnlyMode = state.stationMode && !isCarritoOperativoActivo(selected);
+      const readOnlyMode = (state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(selected);
 
       if (!state.items.length) {
         renderAutomaticChargeRows(box, selected, readOnlyMode);
@@ -5762,7 +5979,7 @@
       setMessage('itemMsg', 'Devolucion preparada por ' + formatAmount(amount, selected.moneda) + '.', false);
 
       const panel = document.getElementById('stationCheckoutPanel');
-      if (panel && state.stationMode) {
+      if (panel && (state.stationMode || state.directSaleMode)) {
         panel.classList.remove('is-hidden');
         panel.style.display = '';
       }
@@ -5864,7 +6081,7 @@
       const mainBox = document.getElementById('itemsList');
       const stationBox = document.getElementById('itemsListStation');
       renderItemsInto(mainBox);
-      if (state.stationMode && stationBox) {
+      if ((state.stationMode || state.directSaleMode) && stationBox) {
         renderItemsInto(stationBox);
       }
 
@@ -5881,7 +6098,7 @@
         return;
       }
 
-      const readOnlyMode = state.stationMode && !isCarritoOperativoActivo(selected);
+      const readOnlyMode = (state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(selected);
       renderProductosCarritoTable();
 
       if (readOnlyMode) {
@@ -5964,6 +6181,7 @@
         if (!found) {
           state.selectedCarritoID = 0;
           state.items = [];
+          state.cartAbonos = [];
         }
       }
 
@@ -5990,8 +6208,8 @@
       const carritoGrid = document.getElementById('carritoGrid');
       if (carritoGrid) {
         const ui = getCurrentStationCartUIConfig();
-        carritoGrid.style.display = stationMode || !ui.mostrar_tarjeta_items_carrito ? 'none' : '';
-        carritoGrid.hidden = stationMode || !ui.mostrar_tarjeta_items_carrito;
+        carritoGrid.style.display = focusedSaleMode || !ui.mostrar_tarjeta_items_carrito ? 'none' : '';
+        carritoGrid.hidden = focusedSaleMode || !ui.mostrar_tarjeta_items_carrito;
       }
       const backToStationsHeaderBtn = document.getElementById('backToStationsHeaderBtn');
       if (backToStationsHeaderBtn) {
@@ -6155,6 +6373,7 @@
       const selected = getSelectedCarrito();
       if (!selected) {
         state.items = [];
+        state.cartAbonos = [];
         renderResumen();
         renderItems();
         return;
@@ -6169,6 +6388,7 @@
       });
       await ensureOk(res);
       state.items = await res.json();
+      await loadCarritoAbonos(false);
       renderResumen();
       renderItems();
     }
@@ -6230,8 +6450,8 @@
       }
 
       const currentCarrito = getSelectedCarrito();
-      if (state.stationMode && !isCarritoOperativoActivo(currentCarrito)) {
-        setMessage('itemMsg', 'El carrito de esta estación está inactivo. Actívalo para continuar.', true);
+      if ((state.stationMode || state.directSaleMode) && !isCarritoOperativoActivo(currentCarrito)) {
+        setMessage('itemMsg', state.directSaleMode ? 'El carrito de venta directa está inactivo. Reábrelo para continuar.' : 'El carrito de esta estación está inactivo. Actívalo para continuar.', true);
         return;
       }
 
@@ -6448,8 +6668,14 @@
       window.location.href = '/administrar_empresa/administrar_clientes.html';
     });
     document.getElementById('carritoBtnAbonos').addEventListener('click', function() {
-      window.location.href = '/administrar_empresa/creditos.html';
+      toggleCarritoAbonosPanel();
     });
+    const carritoAbonoRegistrarBtn = document.getElementById('carritoAbonoRegistrarBtn');
+    if (carritoAbonoRegistrarBtn) {
+      carritoAbonoRegistrarBtn.addEventListener('click', function() {
+        registerCarritoAbono();
+      });
+    }
     document.getElementById('carritoBtnVehiculo').addEventListener('click', function() {
       window.location.href = '/administrar_empresa/vehiculos_registro.html';
     });

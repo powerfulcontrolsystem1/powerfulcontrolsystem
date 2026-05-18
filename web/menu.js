@@ -419,13 +419,13 @@
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
             '<a class="fm-item fm-subitem" href="/calculadora.html?compact=1" data-open-calculator="1">Calculadora</a>' +
-            '<button class="fm-item fm-subitem fm-action-item" type="button" data-share-current="whatsapp">Compartir por WhatsApp</button>' +
             '<button class="fm-item fm-subitem fm-action-item" type="button" data-share-current="email">Compartir por correo</button>' +
             '<a class="fm-item fm-subitem" href="/Juegos/menu_juegos.html" target="_blank" rel="noopener">Juegos</a>' +
             '<a class="fm-item fm-subitem" href="/emulador/" target="_blank" rel="noopener">Emulador</a>' +
           '</div>' +
         '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
+        '<a id="adminHelpLink" class="fm-item" href="/ayuda/ayuda.html" hidden>Ayuda administrador</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
           '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Cambiar apariencia \u25BC</button>' +
@@ -443,7 +443,6 @@
           '</div>' +
         '</div>' +
         '<a id="sessionLink" class="fm-item" href="/login.html">Iniciar sesión</a>' +
-        '<a id="adminHelpLink" class="fm-item" href="/ayuda/ayuda.html" hidden>Ayuda administrador</a>' +
       '</div>';
 
     if (document.body && document.body.firstChild) document.body.insertBefore(wrapper, document.body.firstChild);

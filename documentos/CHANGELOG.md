@@ -1,3 +1,27 @@
+## [2026-05-17] Menu flotante sin compartir WhatsApp
+- [Frontend] `web/menu.js` retira `Compartir por WhatsApp` del submenu `Utilidades`.
+- [UX] `Cambiar apariencia` queda como penultimo elemento del panel flotante y `Cerrar sesion`/`Iniciar sesion` queda de ultimo.
+- [Alcance] No cambia backend, permisos, endpoints ni configuracion de WhatsApp del portal publico.
+
+## [2026-05-17] Inventario debajo de operacion y ventas
+- [Frontend] `web/administrar_empresa.html` mueve el grupo `Inventario y compras` justo debajo de `Operacion y ventas`.
+- [Alcance] Solo cambia el orden visual del submenu empresarial; no altera rutas, permisos, endpoints ni tablas.
+
+## [2026-05-17] Abonos operativos en carrito de estacion
+- [Backend] Se agrega `carrito_compra_abonos` con aislamiento por `empresa_id` y endpoints `action=abonos|abono` en `/api/empresa/carritos_compra`.
+- [Pago] `pagar_estacion` valida abonos registrados, descuenta el saldo final a cobrar y conserva el total de la cuenta para documento/venta.
+- [Frontend] El boton `Abonos` del carrito de estacion abre una tarjeta para registrar/listar abonos y el desglose muestra cuenta, abonos y saldo final.
+- [QA] Validado con pruebas Go enfocadas, parseo JS y prueba visual Playwright mock: abono COP 30000 sobre cuenta COP 100000 deja `total_pagado=70000`.
+
+## [2026-05-17] Venta directa con carrito igual a estaciones
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` usa la misma vista enfocada de estaciones para venta directa.
+- [UX] Items, totales, lector y controles de pago cargan en el panel operativo compartido, evitando que venta directa caiga al grid general antiguo.
+- [Compatibilidad] Se conserva el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`; no cambian endpoints, tablas ni permisos.
+
+## [2026-05-17] Favoritos del panel como botones
+- [Frontend] `web/administrar_empresa/panel.html` ajusta los favoritos de `Accesos rapidos` para verse y comportarse como botones de accion.
+- [UX] Se agregan borde destacado, fondo accionable, cursor, estado activo y foco visible sin cambiar rutas, permisos ni almacenamiento local.
+
 ## [2026-05-17] Comunicaciones super unificadas
 - [Frontend] `web/super_administrador.html` crea el modulo principal `Comunicaciones`.
 - [Navegacion] El modulo agrupa mantenimiento, mensajes masivos, alertas sistema, Gmail SMTP, alertas de licencia y WhatsApp portal.
