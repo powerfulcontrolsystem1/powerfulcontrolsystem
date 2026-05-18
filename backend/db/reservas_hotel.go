@@ -26,7 +26,7 @@ const (
 	reservaHotelPoliciesCooldown     = 15 * time.Second
 )
 
-// ReservaHotel representa una reserva de habitacion/estacion por empresa.
+// ReservaHotel representa una reserva de estacion por empresa.
 type ReservaHotel struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
@@ -71,7 +71,7 @@ type ReservaHotelFilter struct {
 	Offset        int
 }
 
-// ReservaHotelEstacion representa una estacion/habitacion y su disponibilidad para un rango.
+// ReservaHotelEstacion representa una estacion y su disponibilidad para un rango.
 type ReservaHotelEstacion struct {
 	CarritoID       int64  `json:"carrito_id"`
 	EstacionID      int64  `json:"estacion_id"`
@@ -526,7 +526,7 @@ func ApplyReservasHotelOperationalPolicies(dbConn *sql.DB, empresaID int64) (int
 	return expiradas, noShow, nil
 }
 
-// CreateReservaHotel crea una reserva para una estacion/habitacion.
+// CreateReservaHotel crea una reserva para una estacion.
 func CreateReservaHotel(dbConn *sql.DB, payload ReservaHotel) (int64, error) {
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id es obligatorio")

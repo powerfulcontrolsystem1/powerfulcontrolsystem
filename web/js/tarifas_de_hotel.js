@@ -156,7 +156,7 @@
   function fillStationSelect(id, includeEmpty) {
     var select = $(id);
     if (!select) return;
-    var html = includeEmpty ? '<option value="">Selecciona una habitacion</option>' : "";
+    var html = includeEmpty ? '<option value="">Selecciona una estacion</option>' : "";
     state.stations.forEach(function (station) {
       html += '<option value="' + station.id + '">' + esc(station.name + " (#" + station.id + ")") + '</option>';
     });
@@ -173,7 +173,7 @@
     var prefix = kind === "night" ? "night" : (kind === "motel" ? "motel" : "dayUse");
     $(prefix + "StationId").value = String(stationID);
     $(prefix + "StationCode").value = station && station.code ? station.code : defaultStationCode(state.empresaID, stationID);
-    $(prefix + "StationName").value = station && station.name ? station.name : "Habitacion " + stationID;
+    $(prefix + "StationName").value = station && station.name ? station.name : "Estacion " + stationID;
   }
 
   async function loadStations() {
@@ -186,7 +186,7 @@
         rows.forEach(function (item, index) {
           var id = number(item && item.id ? item.id : index + 1);
           if (id <= 0) return;
-          byID.set(id, { id: id, code: defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Habitacion " + id });
+          byID.set(id, { id: id, code: defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Estacion " + id });
         });
       }
     } catch (e) {
@@ -204,7 +204,7 @@
           var code = text(item && item.codigo).toUpperCase();
           var id = parseStationIDFromCode(code, state.empresaID);
           if (id <= 0) return;
-          byID.set(id, { id: id, code: code || defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Habitacion " + id });
+          byID.set(id, { id: id, code: code || defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Estacion " + id });
         });
       }
     } catch (e) {
@@ -266,7 +266,7 @@
   function renderNightRates() {
     var root = $("nightList");
     if (!state.nightRates.length) {
-      root.innerHTML = '<div class="hotel-empty">Todavia no hay tarifas por noche. Crea una tarifa para cada habitacion o aplica una tarifa base a todas.</div>';
+      root.innerHTML = '<div class="hotel-empty">Todavia no hay tarifas por noche. Crea una tarifa para cada estacion o aplica una tarifa base a todas.</div>';
       updateKpis();
       return;
     }
@@ -274,7 +274,7 @@
       var status = text(item.estado || "activo").toLowerCase();
       var toggle = status === "activo" ? "desactivar" : "activar";
       return "<tr>" +
-        "<td><strong>" + esc(item.estacion_nombre || ("Habitacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
+        "<td><strong>" + esc(item.estacion_nombre || ("Estacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
         "<td>" + money(item.valor_dia, item.moneda) + "<br><small>" + esc(item.nombre_tarifa || item.servicio_nombre || "hospedaje") + "</small></td>" +
         "<td>" + esc(peopleRange(item.personas_desde, item.personas_hasta)) + "</td>" +
         "<td>" + esc(item.hora_check_in || "15:00") + " / " + esc(item.hora_check_out || "12:00") + "</td>" +
@@ -285,7 +285,7 @@
         "<button class=\"btn danger\" type=\"button\" data-delete-night=\"" + esc(item.id) + "\">Eliminar</button></td>" +
       "</tr>";
     }).join("");
-    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Habitacion</th><th>Valor</th><th>Ocupacion</th><th>Horario</th><th>Estado</th><th>Aplicacion</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Estacion</th><th>Valor</th><th>Ocupacion</th><th>Horario</th><th>Estado</th><th>Aplicacion</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
     bindTableActions(root);
     updateKpis();
   }
@@ -301,7 +301,7 @@
       var status = text(item.estado || "activo").toLowerCase();
       var toggle = status === "activo" ? "desactivar" : "activar";
       return "<tr>" +
-        "<td><strong>" + esc(item.estacion_nombre || ("Habitacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
+        "<td><strong>" + esc(item.estacion_nombre || ("Estacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
         "<td>" + esc(dayRange(item.dia_semana_desde, item.dia_semana_hasta)) + "</td>" +
         "<td>" + esc(item.minutos_base || 0) + " min / " + money(item.valor_base, item.moneda) + "</td>" +
         "<td>" + esc(item.minutos_extra || 0) + " min / " + money(item.valor_extra, item.moneda) + "<br><small>" + (item.cobrar_por_fraccion ? "Por fraccion" : "Bloque completo") + "</small></td>" +
@@ -311,7 +311,7 @@
         "<button class=\"btn danger\" type=\"button\" data-delete-dayuse=\"" + esc(item.id) + "\">Eliminar</button></td>" +
       "</tr>";
     }).join("");
-    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Habitacion</th><th>Dias</th><th>Base</th><th>Extra</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Estacion</th><th>Dias</th><th>Base</th><th>Extra</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
     bindTableActions(root);
     updateKpis();
   }
@@ -338,7 +338,7 @@
     });
     var html = '<option value="">Selecciona un plan motel</option>';
     active.forEach(function (item) {
-      html += '<option value="' + esc(item.id) + '">' + esc((item.nombre_plan || "Plan motel") + " - " + (item.estacion_nombre || ("Habitacion " + item.estacion_id))) + '</option>';
+      html += '<option value="' + esc(item.id) + '">' + esc((item.nombre_plan || "Plan motel") + " - " + (item.estacion_nombre || ("Estacion " + item.estacion_id))) + '</option>';
     });
     select.innerHTML = html;
   }
@@ -347,7 +347,7 @@
     var root = $("motelList");
     if (!root) return;
     if (!state.motelRates.length) {
-      root.innerHTML = '<div class="hotel-empty">Todavia no hay planes motel. Usa los presets express o amanecida para iniciar una matriz profesional por habitacion.</div>';
+      root.innerHTML = '<div class="hotel-empty">Todavia no hay planes motel. Usa los presets express o amanecida para iniciar una matriz profesional por estacion.</div>';
       fillMotelPlanSelect();
       updateKpis();
       return;
@@ -357,7 +357,7 @@
       var toggle = status === "activo" ? "desactivar" : "activar";
       return "<tr>" +
         "<td><strong>" + esc(item.nombre_plan || "Plan motel") + "</strong><br><small>" + esc(motelTypeLabel(item.tipo_plan)) + " | " + esc(item.categoria_habitacion || "General") + "</small></td>" +
-        "<td><strong>" + esc(item.estacion_nombre || ("Habitacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
+        "<td><strong>" + esc(item.estacion_nombre || ("Estacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
         "<td>" + esc(dayRange(item.dia_semana_desde, item.dia_semana_hasta)) + "<br><small>" + esc((item.hora_inicio || "00:00") + " - " + (item.hora_fin || "23:59")) + "</small></td>" +
         "<td>" + esc(item.minutos_incluidos || 0) + " min / " + money(item.valor_base, item.moneda) + "<br><small>Tolerancia " + esc(item.tolerancia_minutos || 0) + " min</small></td>" +
         "<td>" + esc(item.minutos_extra || 0) + " min / " + money(item.valor_extra, item.moneda) + "<br><small>" + (item.cobrar_por_fraccion ? "Fraccion parcial" : "Solo bloque completo") + "</small></td>" +
@@ -367,7 +367,7 @@
         "<button class=\"btn danger\" type=\"button\" data-delete-motel=\"" + esc(item.id) + "\">Eliminar</button></td>" +
       "</tr>";
     }).join("");
-    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Plan</th><th>Habitacion</th><th>Vigencia</th><th>Base</th><th>Extra</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    root.innerHTML = '<table class="hotel-table"><thead><tr><th>Plan</th><th>Estacion</th><th>Vigencia</th><th>Base</th><th>Extra</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + rows + '</tbody></table>';
     bindTableActions(root);
     fillMotelPlanSelect();
     updateKpis();
@@ -452,7 +452,7 @@
       nombre_tarifa: text($("nightName").value) || "tarifa_hotel_cama_doble",
       estacion_id: stationID,
       estacion_codigo: text($("nightStationCode").value) || defaultStationCode(state.empresaID, stationID),
-      estacion_nombre: text($("nightStationName").value) || "Habitacion " + stationID,
+      estacion_nombre: text($("nightStationName").value) || "Estacion " + stationID,
       servicio_nombre: text($("nightService").value) || "hospedaje",
       valor_dia: number($("nightValue").value),
       personas_desde: number($("nightPeopleFrom").value, 1),
@@ -474,7 +474,7 @@
       empresa_id: state.empresaID,
       estacion_id: stationID,
       estacion_codigo: text($("dayUseStationCode").value) || defaultStationCode(state.empresaID, stationID),
-      estacion_nombre: text($("dayUseStationName").value) || "Habitacion " + stationID,
+      estacion_nombre: text($("dayUseStationName").value) || "Estacion " + stationID,
       dia_semana_desde: number($("dayUseDayFrom").value, 1),
       dia_semana_hasta: number($("dayUseDayTo").value, 7),
       minutos_base: number($("dayUseBaseMinutes").value, 180),
@@ -495,7 +495,7 @@
       return false;
     }
     if (payload.estacion_id <= 0) {
-      setMessage(msgID, "Selecciona una habitacion o escribe el ID de estacion.", true);
+      setMessage(msgID, "Selecciona una estacion o escribe el ID de estacion.", true);
       return false;
     }
     return true;
@@ -670,7 +670,7 @@
       empresa_id: state.empresaID,
       estacion_id: stationID,
       estacion_codigo: text($("motelStationCode").value) || defaultStationCode(state.empresaID, stationID),
-      estacion_nombre: text($("motelStationName").value) || "Habitacion " + stationID,
+      estacion_nombre: text($("motelStationName").value) || "Estacion " + stationID,
       nombre_plan: text($("motelPlanName").value) || "Plan express",
       tipo_plan: text($("motelPlanType").value) || "express",
       categoria_habitacion: text($("motelCategory").value),
@@ -826,7 +826,7 @@
     var start = text($("simNightStart").value);
     var end = text($("simNightEnd").value);
     if (stationID <= 0 || !start || !end) {
-      $("nightSimResult").textContent = "Selecciona habitacion y fechas validas.";
+      $("nightSimResult").textContent = "Selecciona estacion y fechas validas.";
       return;
     }
     try {
@@ -845,7 +845,7 @@
     var day = number($("simDayUseDay").value, 1);
     var minutes = number($("simDayUseMinutes").value);
     if (stationID <= 0 || minutes <= 0) {
-      $("dayUseSimResult").textContent = "Selecciona habitacion y minutos validos.";
+      $("dayUseSimResult").textContent = "Selecciona estacion y minutos validos.";
       return;
     }
     try {

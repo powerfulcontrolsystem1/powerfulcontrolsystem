@@ -797,7 +797,7 @@ func SeedEmpresaProduccionMRPDemo(dbConn *sql.DB, empresaID int64, user string) 
 		return err
 	}
 	recID, err := UpsertEmpresaProduccionReceta(dbConn, EmpresaProduccionReceta{
-		EmpresaID: empresaID, Codigo: "BOM-KIT-ASEO", Nombre: "Kit de aseo hotelero", ProductoTerminadoNombre: "Kit de aseo habitacion", Version: "1.0", Unidad: "kit", CantidadBase: 1, CostoEstandar: 4200, MermaPorcentaje: 2, TiempoEstimadoMin: 12, Estado: "activo", UsuarioCreador: user,
+		EmpresaID: empresaID, Codigo: "BOM-KIT-ASEO", Nombre: "Kit de aseo hotelero", ProductoTerminadoNombre: "Kit de aseo estacion", Version: "1.0", Unidad: "kit", CantidadBase: 1, CostoEstandar: 4200, MermaPorcentaje: 2, TiempoEstimadoMin: 12, Estado: "activo", UsuarioCreador: user,
 		Componentes: []EmpresaProduccionComponente{
 			{ProductoNombre: "Shampoo sachet", Unidad: "und", Cantidad: 1, CostoUnitario: 900, Etapa: "alistamiento", Obligatoria: true},
 			{ProductoNombre: "Jabon hotelero", Unidad: "und", Cantidad: 1, CostoUnitario: 1100, Etapa: "alistamiento", Obligatoria: true},
@@ -807,7 +807,7 @@ func SeedEmpresaProduccionMRPDemo(dbConn *sql.DB, empresaID int64, user string) 
 	if err != nil {
 		return err
 	}
-	orden, err := CreateEmpresaProduccionOrden(dbConn, EmpresaProduccionOrden{EmpresaID: empresaID, RecetaID: recID, ProductoTerminadoNombre: "Kit de aseo habitacion", CantidadPlanificada: 50, Estado: "programada", Prioridad: "normal", Responsable: "Operaciones", Observaciones: "Demo inicial para produccion hotelera/motelera", UsuarioCreador: user})
+	orden, err := CreateEmpresaProduccionOrden(dbConn, EmpresaProduccionOrden{EmpresaID: empresaID, RecetaID: recID, ProductoTerminadoNombre: "Kit de aseo estacion", CantidadPlanificada: 50, Estado: "programada", Prioridad: "normal", Responsable: "Operaciones", Observaciones: "Demo inicial para produccion hotelera/motelera", UsuarioCreador: user})
 	if err != nil {
 		return err
 	}

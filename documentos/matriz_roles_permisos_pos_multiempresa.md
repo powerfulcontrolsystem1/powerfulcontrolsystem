@@ -1,6 +1,6 @@
-2026-05-18: Nota de boton Caja en Operacion y ventas
-- `web/administrar_empresa.html` agrega el enlace `linkCorteCaja` bajo `Operacion y ventas`.
-- No se crea permiso nuevo: el enlace conserva la regla existente de `finanzas`/crear para corte de caja y el backend sigue protegido por `WithEmpresaFinanzasPermissions`.
+2026-05-18: Nota de boton Corte de Caja en Operacion y ventas
+- `web/administrar_empresa.html` muestra el enlace `linkCorteCaja` bajo `Operacion y ventas`, inmediatamente despues de `linkEstaciones`, con texto `Corte de Caja`.
+- No se crea ruta ni endpoint nuevo: `web/js/administrar_empresa.js` lo conserva visible como acceso operativo directo y el backend sigue aplicando las validaciones de sesion/empresa del flujo de corte.
 - La ruta abierta es la misma pantalla de caja usada desde estaciones.
 
 2026-05-18: Nota de reporte de turno en Caja
@@ -190,7 +190,7 @@
 2026-05-12: Nota operativa para nucleo configurable por plantilla
 - Los roles como `cajero`, `profesor`, `entrenador`, `paciente`, `odontologo`, `tecnico`, `estilista` o `asesor` se declaran en la plantilla, pero se crean/gobiernan desde usuarios y roles del nucleo.
 - Los productos y servicios cobrables de cada vertical se declaran como datos guia y se administran desde el nucleo de productos/servicios, no desde tablas paralelas del vertical.
-- Las estaciones son recursos configurables del negocio. La plantilla decide su nombre visible: habitaciones, apartamentos, puestos, carros/vehiculos, bahias, aulas, consultorios, oficinas, canchas, salas o similares.
+- Las estaciones son recursos configurables del negocio. La plantilla decide su nombre visible entre estaciones, apartamentos, puestos, carros/vehiculos, bahias, aulas, consultorios, oficinas, canchas, salas o similares.
 - `adaptacion_nucleo` es metadata de configuracion y no concede permisos por si sola; la operacion sigue dependiendo de licencia, rol, permisos de pagina/modulo y `empresa_id`.
 
 2026-05-12: Nota operativa para Probar Gratis del portal

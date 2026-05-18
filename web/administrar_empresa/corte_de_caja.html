@@ -9,20 +9,9 @@
     .cash-close-hero { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr); gap:18px; align-items:stretch; }
     .cash-close-panel { border:1px solid var(--border); border-radius:8px; padding:18px; background:linear-gradient(135deg,var(--card),color-mix(in srgb, var(--surface-soft) 88%, var(--card))); box-shadow:0 18px 50px color-mix(in srgb, #020617 14%, transparent); color:var(--text); }
     .cash-close-panel.dark { background:linear-gradient(135deg,color-mix(in srgb, var(--surface) 76%, #020617),var(--surface-soft)); color:var(--text); }
-    .cash-close-report-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-top:10px; }
-    .cash-report-check { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:8px; padding:10px; background:color-mix(in srgb, var(--card) 86%, var(--surface-soft)); color:var(--text); }
-    .cash-report-check input { margin-top:3px; }
-    .cash-report-check strong { display:block; font-size:.92rem; }
-    .cash-report-check span { display:block; font-size:.78rem; color:var(--muted); }
-    .cash-config-toolbar { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; margin:16px 0 8px; }
-    .cash-config-toolbar h3 { margin:0; }
-    .cash-config-actions { display:flex; flex-wrap:wrap; gap:8px; }
-    .cash-config-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; }
-    .cash-config-check { display:flex; gap:10px; align-items:flex-start; border:1px solid var(--border); border-radius:8px; padding:10px; background:var(--card); min-height:58px; color:var(--text); }
-    .cash-config-check input { margin-top:3px; }
-    .cash-config-check strong { display:block; font-size:.9rem; color:var(--text); }
-    .cash-config-check span span { display:block; margin-top:2px; font-size:.76rem; color:var(--muted); }
     .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .cash-close-actions.is-compact { display:flex; flex-direction:column; align-items:stretch; gap:8px; margin:12px 0; }
+    .cash-close-actions.is-compact .btn { width:100%; justify-content:center; }
     .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
     .cash-kpi { border-radius:8px; padding:13px; background:color-mix(in srgb, var(--accent) 28%, var(--surface)); color:var(--text); min-height:92px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
     .cash-kpi:nth-child(2) { background:color-mix(in srgb, var(--success) 26%, var(--surface)); border-color:color-mix(in srgb, var(--success) 30%, var(--border)); }
@@ -34,6 +23,39 @@
     .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
     .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; }
     .cash-close-stamp { border:1px dashed color-mix(in srgb, var(--border) 80%, var(--muted)); border-radius:8px; padding:10px 12px; font-size:.85rem; color:var(--muted); background:color-mix(in srgb, var(--surface-soft) 80%, var(--card)); }
+    .corte-caja-page.print-preview-active { background:#eef2f7; }
+    .corte-caja-page.print-preview-active .corte-caja-report {
+      width:min(100%, 8.5in);
+      max-width:8.5in;
+      min-height:11in;
+      margin:18px auto 34px;
+      padding:24px;
+      background:#fff !important;
+      color:#111827 !important;
+      border:1px solid #cbd5e1 !important;
+      box-shadow:none !important;
+    }
+    .corte-caja-page.print-preview-active .corte-caja-report .form-help,
+    .corte-caja-page.print-preview-active .corte-caja-report small {
+      color:#475569 !important;
+    }
+    .corte-caja-page.print-preview-active .corte-caja-report .table-wrap,
+    .corte-caja-page.print-preview-active .corte-caja-report .table th,
+    .corte-caja-page.print-preview-active .corte-caja-report .table td {
+      background:#fff !important;
+      color:#111827 !important;
+      border-color:#cbd5e1 !important;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-caja-report {
+      width:80mm;
+      max-width:80mm;
+      min-height:auto;
+      padding:4mm;
+    }
+    .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="items"],
+    .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="sensores"] {
+      display:none !important;
+    }
     @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-kpis { grid-template-columns:1fr; } }
     @media print {
       .no-print { display:none !important; }
@@ -54,11 +76,6 @@
         </div>
         <div class="cash-close-actions">
           <a id="btnVolverEstaciones" class="btn secondary" href="/administrar_empresa/estaciones.html" hidden>Regresar a estaciones</a>
-          <button id="btnGenerar" class="btn" type="button">Generar corte</button>
-          <button id="btnReporteMiTurno" class="btn secondary" type="button">Ver reporte de mi turno</button>
-          <button id="btnCorteAutomatico" class="btn secondary" type="button">Corte automatico</button>
-          <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
-          <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
         </div>
       </div>
 
@@ -123,49 +140,19 @@
             </div>
           </div>
 
-          <div id="configuracionReporteCorte" class="cash-config-module">
-            <div class="cash-config-toolbar">
-              <h3 class="section-heading">Configuracion del reporte de corte</h3>
-              <div class="cash-config-actions">
-                <button id="btnGuardarConfigReporte" class="btn secondary" type="button">Guardar configuracion</button>
-                <button id="btnRestaurarConfigReporte" class="btn secondary" type="button">Restaurar profesional</button>
-              </div>
-            </div>
-            <p class="form-help">Define que indicadores y bloques salen por defecto en pantalla, cierre e impresion.</p>
-            <div id="metricSelector" class="cash-config-grid">
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_numero_facturas" checked><span><strong>Numero de facturas</strong><span>Cantidad de comprobantes pagados.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_total_ventas" checked><span><strong>Total de ventas</strong><span>Suma general del turno.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_efectivo" checked><span><strong>Suma efectivo</strong><span>Ventas y caja esperada en efectivo.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_debito" checked><span><strong>Suma debito</strong><span>Pagos con tarjeta debito.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_credito" checked><span><strong>Suma credito</strong><span>Pagos con tarjeta credito.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_transferencias" checked><span><strong>Transferencias</strong><span>Pagos bancarios y digitales.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_ingresos" checked><span><strong>Ingresos</strong><span>Entradas adicionales registradas.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_egresos" checked><span><strong>Egresos</strong><span>Salidas de caja y gastos.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas del periodo.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_devoluciones" checked><span><strong>Devoluciones</strong><span>Valor devuelto a clientes.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_caja_esperada" checked><span><strong>Caja esperada</strong><span>Efectivo teorico al cierre.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_diferencia_caja" checked><span><strong>Diferencia de caja</strong><span>Comparacion fisica contra teorica.</span></span></label>
-              <label class="cash-config-check"><input type="checkbox" data-config-key="mostrar_otros_medios" checked><span><strong>Otros medios</strong><span>Pagos no clasificados.</span></span></label>
-            </div>
-            <div id="configReporteMsg" class="form-help" style="margin-top:8px"></div>
-          </div>
-
-          <h3 class="section-heading">Reportes a imprimir al cerrar</h3>
-          <div id="reportSelector" class="cash-close-report-grid">
-            <label class="cash-report-check"><input type="checkbox" value="resumen" data-config-key="mostrar_resumen" checked><span><strong>Resumen ejecutivo</strong><span>Totales, caja esperada y diferencias.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="ventas" data-config-key="mostrar_ventas_detalle" checked><span><strong>Ventas del turno</strong><span>Comprobantes, metodo y cajero.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="anulaciones" data-config-key="mostrar_anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas y devoluciones.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="movimientos" data-config-key="mostrar_movimientos" checked><span><strong>Movimientos</strong><span>Ingresos, egresos y metodo de pago.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="items" data-config-key="mostrar_items" checked><span><strong>Productos y servicios</strong><span>Consolidado por tipo vendido.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="sensores" data-config-key="mostrar_sensores_puertas" checked><span><strong>Control motel</strong><span>Habitaciones ocupadas sin factura.</span></span></label>
-            <label class="cash-report-check"><input type="checkbox" value="auditoria" data-config-key="mostrar_auditoria" checked><span><strong>Auditoria</strong><span>Firma, observaciones y sello.</span></span></label>
-          </div>
           <div id="msg" class="form-help" style="margin-top:12px"></div>
         </div>
 
         <aside class="cash-close-panel dark">
           <h2 class="empresa-section-title">Lectura rapida</h2>
           <p class="form-help">Cuando generes el corte, estos indicadores se actualizan para validar caja antes de guardar.</p>
+          <div class="cash-close-actions is-compact">
+            <button id="btnGenerar" class="btn" type="button">Generar corte</button>
+            <button id="btnReporteMiTurno" class="btn secondary" type="button">Ver reporte de mi turno</button>
+            <button id="btnCorteAutomatico" class="btn secondary" type="button">Corte automatico</button>
+            <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
+            <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
+          </div>
           <div id="quickKpis" class="cash-close-kpis">
             <div class="cash-kpi"><span>Ventas</span><strong>COP 0</strong><small>0 operaciones</small></div>
             <div class="cash-kpi"><span>Efectivo esperado</span><strong>COP 0</strong><small>Incluye apertura</small></div>
@@ -208,7 +195,7 @@
       </div>
 
       <div class="corte-report-section" data-section="sensores">
-        <h3 class="section-heading">Habitaciones ocupadas sin factura</h3>
+        <h3 class="section-heading">Estaciones ocupadas sin factura</h3>
         <div id="sensoresBox" class="table-wrap form-help">Solo se evalua para empresas tipo motel con sensores configurados.</div>
       </div>
 
@@ -332,8 +319,15 @@
   }
 
   function selectedReports() {
-    var boxes = document.querySelectorAll('#reportSelector input[type="checkbox"]:checked');
-    var out = Array.prototype.map.call(boxes, function(box) { return box.value; });
+    var cfg = reporteConfig || {};
+    var out = [];
+    if (cfg.mostrar_resumen) out.push('resumen');
+    if (cfg.mostrar_ventas_detalle) out.push('ventas');
+    if (cfg.mostrar_anulaciones) out.push('anulaciones');
+    if (cfg.mostrar_movimientos) out.push('movimientos');
+    if (cfg.mostrar_items) out.push('items');
+    if (cfg.mostrar_sensores_puertas) out.push('sensores');
+    if (cfg.mostrar_auditoria) out.push('auditoria');
     return out.length ? out : ['resumen'];
   }
 
@@ -368,40 +362,6 @@
     } catch (_) {}
   }
 
-  async function guardarConfigReporte() {
-    var msg = document.getElementById('configReporteMsg');
-    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
-    try {
-      msg.textContent = 'Guardando configuracion del reporte...';
-      var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId), {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body:JSON.stringify(collectReporteConfig())
-      });
-      if (res && res.configuracion) applyReporteConfig(res.configuracion);
-      msg.textContent = 'Configuracion guardada. Los proximos cortes usaran estos checks.';
-    } catch (err) {
-      msg.textContent = err && err.message ? err.message : 'No se pudo guardar la configuracion.';
-    }
-  }
-
-  async function restaurarConfigReporte() {
-    var msg = document.getElementById('configReporteMsg');
-    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
-    try {
-      msg.textContent = 'Restaurando configuracion profesional...';
-      var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId) + '&action=restaurar', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body:'{}'
-      });
-      if (res && res.configuracion) applyReporteConfig(res.configuracion);
-      msg.textContent = 'Configuracion profesional restaurada.';
-    } catch (err) {
-      msg.textContent = err && err.message ? err.message : 'No se pudo restaurar la configuracion.';
-    }
-  }
-
   function normalizePrintFormat(value) {
     var v = String(value || '').trim().toLowerCase();
     if (v === 'pos' || v === 'ticket') return 'pos';
@@ -422,6 +382,17 @@
       style.textContent = '@media print{@page{size:letter;margin:10mm}.corte-caja-page .corte-report-section[data-section="items"],.corte-caja-page .corte-report-section[data-section="sensores"]{display:none!important}}';
     } else {
       style.textContent = '@media print{@page{size:letter;margin:12mm}.corte-caja-page .corte-caja-report{width:auto}}';
+    }
+  }
+
+  function setReportPrintPreview(active) {
+    document.body.classList.toggle('print-preview-active', !!active);
+  }
+
+  function scrollReportIntoView() {
+    var report = document.getElementById('report');
+    if (report && typeof report.scrollIntoView === 'function') {
+      report.scrollIntoView({ behavior:'smooth', block:'start' });
     }
   }
 
@@ -612,8 +583,8 @@
     ], payload.items_por_tipo || [], 'No hay items vendidos en este rango.');
 
     renderTable('sensoresBox', [
-      { label:'Habitacion', value:function(r){ return r.estacion_nombre || ('Habitacion ' + r.estacion_id); } }, { label:'Sensor', key:'device_id' }, { label:'Estado', key:'estado_sensor' }, { label:'Ultima lectura', value:function(r){ return formatDateTime(r.ultima_lectura); } }, { label:'Observacion', key:'motivo' }
-    ], payload.sensores_sin_factura || [], 'No hay habitaciones ocupadas por sensor sin factura en este corte.');
+      { label:'Estacion', value:function(r){ return r.estacion_nombre || ('Estacion ' + r.estacion_id); } }, { label:'Sensor', key:'device_id' }, { label:'Estado', key:'estado_sensor' }, { label:'Ultima lectura', value:function(r){ return formatDateTime(r.ultima_lectura); } }, { label:'Observacion', key:'motivo' }
+    ], payload.sensores_sin_factura || [], 'No hay estaciones ocupadas por sensor sin factura en este corte.');
 
     document.getElementById('auditCaja').textContent = document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL';
     document.getElementById('auditTurno').textContent = document.getElementById('turno').value || 'general';
@@ -670,6 +641,7 @@
       reporteConfig = collectReporteConfig();
       automaticCierreCajaID = 0;
       automaticCajaSucursalID = 0;
+      setReportPrintPreview(false);
       msg.textContent = 'Generando corte...';
       lastReport = await requestJSON('/api/empresa/corte_caja?' + buildParams().toString());
       lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
@@ -691,11 +663,15 @@
     try {
       applyPrintFormat(document.getElementById('modoVista').value);
       reporteConfig = collectReporteConfig();
+      automaticCierreCajaID = 0;
+      automaticCajaSucursalID = 0;
       msg.textContent = 'Cargando reporte del turno del usuario actual...';
       lastReport = await requestJSON('/api/empresa/corte_caja?' + buildAutomaticParams('reporte_mi_turno').toString());
       lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
       applyAutomaticCajaContext(lastReport);
       renderReport(lastReport);
+      setReportPrintPreview(true);
+      scrollReportIntoView();
       document.getElementById('btnImprimir').disabled = false;
       document.getElementById('btnCerrar').disabled = true;
       var caja = lastReport && lastReport.caja_actual ? lastReport.caja_actual : {};
@@ -716,6 +692,7 @@
     try {
       applyPrintFormat(document.getElementById('modoVista').value);
       reporteConfig = collectReporteConfig();
+      setReportPrintPreview(false);
       msg.textContent = 'Analizando caja abierta del usuario actual...';
       lastReport = await requestJSON('/api/empresa/corte_caja?' + buildAutomaticParams().toString());
       lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
@@ -797,11 +774,9 @@
     document.getElementById('btnCorteAutomatico').addEventListener('click', generarCorteAutomatico);
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
-    document.getElementById('btnGuardarConfigReporte').addEventListener('click', guardarConfigReporte);
-    document.getElementById('btnRestaurarConfigReporte').addEventListener('click', restaurarConfigReporte);
     document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); reporteConfig.formato_impresion = normalizePrintFormat(this.value); if (lastReport) renderReport(lastReport); });
     document.getElementById('cajaFisica').addEventListener('input', function() { if (lastReport) updateQuickKpis(lastReport.resumen || {}); });
-    document.querySelectorAll('[data-config-key], #reportSelector input[type="checkbox"]').forEach(function(box) {
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
       box.addEventListener('change', function() {
         reporteConfig = collectReporteConfig();
         if (lastReport) {

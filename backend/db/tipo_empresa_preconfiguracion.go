@@ -759,8 +759,8 @@ func EnsureCanonicalTiposEmpresaPreconfigurables(dbConn *sql.DB) error {
 		matches       func(string) bool
 	}{
 		{"Restaurante", "Mesas, cocina, pedidos y venta directa.", isTipoEmpresaRestaurante},
-		{"Motel", "Habitaciones por turnos, minibar, tarifas y recepcion.", isTipoEmpresaMotel},
-		{"Hotel", "Habitaciones por noche, reservas, consumos y recepcion.", isTipoEmpresaHotel},
+		{"Motel", "Estaciones por turnos, minibar, tarifas y recepcion.", isTipoEmpresaMotel},
+		{"Hotel", "Estaciones por noche, reservas, consumos y recepcion.", isTipoEmpresaHotel},
 		{"Bar", "Mesas, barra, bebidas, eventos y caja.", isTipoEmpresaBar},
 		{"Salon de belleza", "Sillas, estilistas, agenda, servicios y comisiones.", isTipoEmpresaSalonBelleza},
 		{"Lavadero de autos", "Bahias, lavado, vehiculos, tiempos y comisiones.", isTipoEmpresaLavaderoAutos},
@@ -839,23 +839,23 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 		}
 	}
 	if isTipoEmpresaMotel(tipoNombre) {
-		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("BASE-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),
-			productoPreconfig("BASE-MOTEL-002", "Habitacion doble", "Habitaciones", "Servicio doble por turno", 25000, 65000, 0),
-			productoPreconfig("BASE-MOTEL-003", "Suite jacuzzi", "Habitaciones", "Servicio premium por turno", 42000, 110000, 0),
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Estacion", 10, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("BASE-MOTEL-001", "Estacion sencilla", "Estaciones", "Servicio base por turno", 18000, 45000, 0),
+			productoPreconfig("BASE-MOTEL-002", "Estacion doble", "Estaciones", "Servicio doble por turno", 25000, 65000, 0),
+			productoPreconfig("BASE-MOTEL-003", "Suite jacuzzi", "Estaciones", "Servicio premium por turno", 42000, 110000, 0),
 			productoPreconfig("BASE-MOTEL-004", "Hora adicional", "Adicionales", "Tiempo adicional de permanencia", 6000, 15000, 0),
 			productoPreconfig("BASE-MOTEL-005", "Minibar gaseosa", "Minibar", "Bebida de minibar", 2500, 6000, 8),
 			productoPreconfig("BASE-MOTEL-006", "Kit aseo personal", "Minibar", "Kit de aseo para huesped", 5000, 12000, 8),
 		}, []TipoEmpresaPreconfigUsuario{
 			usuarioPreconfig("Recepcion principal", "recepcion", "Gestiona ingresos, salidas y disponibilidad."),
 			usuarioPreconfig("Caja turno", "caja", "Registra cobros y cierres de turno."),
-			usuarioPreconfig("Limpieza habitaciones", "operacion", "Actualiza estados de limpieza y alistamiento."),
-		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion."), operacionPreconfig("motel", "Habitacion", "Habitaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
+			usuarioPreconfig("Limpieza estaciones", "operacion", "Actualiza estados de limpieza y alistamiento."),
+		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion."), operacionPreconfig("motel", "Estacion", "Estaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
 	}
 	if isTipoEmpresaHotel(tipoNombre) {
-		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Habitacion", 12, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("BASE-HOTEL-001", "Noche habitacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
-			productoPreconfig("BASE-HOTEL-002", "Noche habitacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Estacion", 12, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("BASE-HOTEL-001", "Noche estacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
+			productoPreconfig("BASE-HOTEL-002", "Noche estacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
 			productoPreconfig("BASE-HOTEL-003", "Desayuno huesped", "Restaurante", "Desayuno servido a huesped", 8000, 18000, 10),
 			productoPreconfig("BASE-HOTEL-004", "Lavanderia por kilo", "Servicios", "Servicio de lavanderia", 3500, 9000, 0),
 			productoPreconfig("BASE-HOTEL-005", "Late checkout", "Adicionales", "Salida extendida", 15000, 35000, 0),
@@ -863,7 +863,7 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Recepcion hotel", "recepcion", "Atiende reservas, check-in y check-out."),
 			usuarioPreconfig("Caja hotel", "caja", "Controla pagos, anticipos y facturacion."),
 			usuarioPreconfig("Ama de llaves", "operacion", "Coordina limpieza y disponibilidad."),
-		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario."), operacionPreconfig("hotel", "Habitacion", "Habitaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
+		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario."), operacionPreconfig("hotel", "Estacion", "Estaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
 	}
 	if isTipoEmpresaBar(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("BAR", "Mesa", 10, []TipoEmpresaPreconfigProducto{
@@ -1234,8 +1234,8 @@ func defaultMotelTarifasPreconfig() []TipoEmpresaPreconfigTarifaMotel {
 
 func defaultHotelTarifasPorDiaPreconfig() []TipoEmpresaPreconfigTarifaPorDia {
 	return []TipoEmpresaPreconfigTarifaPorDia{
-		{EstacionNumero: 1, NombreTarifa: "Sencilla noche", ServicioNombre: "hospedaje", ValorDia: 95000, PersonasDesde: 1, PersonasHasta: 1, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 1, AplicarAutomaticamente: true, Observaciones: "Tarifa guia habitacion sencilla."},
-		{EstacionNumero: 2, NombreTarifa: "Doble noche", ServicioNombre: "hospedaje", ValorDia: 145000, PersonasDesde: 1, PersonasHasta: 2, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 2, AplicarAutomaticamente: true, Observaciones: "Tarifa guia habitacion doble."},
+		{EstacionNumero: 1, NombreTarifa: "Sencilla noche", ServicioNombre: "hospedaje", ValorDia: 95000, PersonasDesde: 1, PersonasHasta: 1, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 1, AplicarAutomaticamente: true, Observaciones: "Tarifa guia estacion sencilla."},
+		{EstacionNumero: 2, NombreTarifa: "Doble noche", ServicioNombre: "hospedaje", ValorDia: 145000, PersonasDesde: 1, PersonasHasta: 2, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 2, AplicarAutomaticamente: true, Observaciones: "Tarifa guia estacion doble."},
 		{EstacionNumero: 3, NombreTarifa: "Familiar noche", ServicioNombre: "hospedaje", ValorDia: 220000, PersonasDesde: 3, PersonasHasta: 5, HoraCheckIn: "15:00", HoraCheckOut: "12:00", Moneda: "COP", Prioridad: 3, AplicarAutomaticamente: true, Observaciones: "Tarifa guia familiar."},
 	}
 }
@@ -1255,17 +1255,17 @@ func defaultControlElectricoPreconfig(contexto string) *TipoEmpresaPreconfigCont
 	}
 	if contexto == "hotel" {
 		cfg.Reles = []TipoEmpresaPreconfigControlElectricoRele{
-			{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "luces", TipoCarga: "luces", GPIOPin: 2, RelayName: "Luces habitacion 1", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para encendido de luces por ocupacion."},
-			{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 3, RelayName: "Aire habitacion 1", ActiveHigh: true, Modo: "manual", ProgramacionHabilitada: true, HoraEncendido: "15:00", HoraApagado: "12:00", ProgramacionDias: "todos", ProgramacionTimezone: "America/Bogota", Observaciones: "Aparato guia para aire acondicionado con horario hotelero."},
-			{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "tomacorrientes", TipoCarga: "energia", GPIOPin: 4, RelayName: "Energia habitacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para energia de habitacion."},
+			{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "luces", TipoCarga: "luces", GPIOPin: 2, RelayName: "Luces estacion 1", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para encendido de luces por ocupacion."},
+			{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 3, RelayName: "Aire estacion 1", ActiveHigh: true, Modo: "manual", ProgramacionHabilitada: true, HoraEncendido: "15:00", HoraApagado: "12:00", ProgramacionDias: "todos", ProgramacionTimezone: "America/Bogota", Observaciones: "Aparato guia para aire acondicionado con horario hotelero."},
+			{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "tomacorrientes", TipoCarga: "energia", GPIOPin: 4, RelayName: "Energia estacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para energia de estacion."},
 		}
 		return cfg
 	}
 	cfg.Reles = []TipoEmpresaPreconfigControlElectricoRele{
-		{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "luces", TipoCarga: "luces", GPIOPin: 2, RelayName: "Luces habitacion 1", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para luces por ingreso y salida."},
-		{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "jacuzzi", TipoCarga: "jacuzzi", GPIOPin: 3, RelayName: "Jacuzzi habitacion 1", ActiveHigh: true, Modo: "manual", PulsoMS: 0, Observaciones: "Aparato guia para jacuzzi o hidromasaje."},
-		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "ambiente", TipoCarga: "luces_ambiente", GPIOPin: 4, RelayName: "Luces ambiente habitacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para luces decorativas."},
-		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 5, RelayName: "Aire habitacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para aire acondicionado."},
+		{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "luces", TipoCarga: "luces", GPIOPin: 2, RelayName: "Luces estacion 1", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para luces por ingreso y salida."},
+		{RaspberryCodigo: "principal", EstacionNumero: 1, SalidaCodigo: "jacuzzi", TipoCarga: "jacuzzi", GPIOPin: 3, RelayName: "Jacuzzi estacion 1", ActiveHigh: true, Modo: "manual", PulsoMS: 0, Observaciones: "Aparato guia para jacuzzi o hidromasaje."},
+		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "ambiente", TipoCarga: "luces_ambiente", GPIOPin: 4, RelayName: "Luces ambiente estacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para luces decorativas."},
+		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 5, RelayName: "Aire estacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para aire acondicionado."},
 	}
 	return cfg
 }
@@ -1957,7 +1957,7 @@ func buildTipoEmpresaPreconfigAdaptacionNucleo(template TipoEmpresaPreconfigTemp
 	adaptacion.Reglas = uniqueTrimmedStrings(append(adaptacion.Reglas,
 		"Los usuarios operativos se crean en el nucleo de usuarios y roles de la empresa.",
 		"Los productos y servicios cobrables se administran en el nucleo de productos/servicios.",
-		"Las estaciones son recursos configurables del negocio: habitaciones, apartamentos, puestos, bahias, vehiculos, aulas, consultorios u oficinas segun la plantilla.",
+		"Las estaciones son recursos configurables del negocio: estaciones, apartamentos, puestos, bahias, vehiculos, aulas, consultorios u oficinas segun la plantilla.",
 		"El vertical solo conserva su especialidad operativa; ventas, pagos, clientes, facturacion, finanzas y reportes permanecen centralizados.",
 	), false)
 	return adaptacion
@@ -2417,9 +2417,9 @@ func isTipoEmpresaSensores(tipoNombre string) bool {
 func defaultTipoEmpresaPreconfigNombre(tipoNombre string) string {
 	switch {
 	case isTipoEmpresaMotel(tipoNombre):
-		return "Motel con habitaciones guia"
+		return "Motel con estaciones guia"
 	case isTipoEmpresaHotel(tipoNombre):
-		return "Hotel con habitaciones guia"
+		return "Hotel con estaciones guia"
 	case isTipoEmpresaBar(tipoNombre):
 		return "Bar con mesas guia"
 	case isTipoEmpresaSalonBelleza(tipoNombre):

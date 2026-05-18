@@ -1,12 +1,23 @@
+## [2026-05-18] Corte de caja: acciones y texto de estaciones
+- [Frontend] `corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` dentro de `Lectura rapida` como botones verticales.
+- [UX] `Ver reporte de mi turno` centra el reporte como hoja imprimible en pantalla y respeta el formato `Carta`, `Ejecutivo` o `POS`.
+- [Frontend/Backend] Los textos visibles del control por sensores usan `Estaciones ocupadas sin factura`; se actualizan etiquetas visibles de reportes, tarifas y preconfiguraciones.
+- [Fix] `Ver reporte de mi turno` limpia el cierre/caja automaticos previos antes de consultar el reporte del usuario actual.
+
 ## [2026-05-18] Panel sin tarjeta de mercado
 - [Frontend] `web/administrar_empresa/panel.html` elimina la tarjeta `Mercado en contexto`.
 - [Operacion] El panel ya no consulta indicadores externos de divisas, criptoactivos ni ETFs al cargar.
 - [Alcance] No cambia backend, permisos, tablas ni endpoints.
 
-## [2026-05-18] Caja en operacion y ventas
-- [Frontend] `web/administrar_empresa.html` agrega el boton `Caja` debajo de `Estaciones`.
+## [2026-05-18] Configuracion del reporte de corte en Configuracion
+- [Frontend] `corte_de_caja.html` ya no muestra las tarjetas de configuracion del reporte ni de reportes a imprimir.
+- [Frontend] `configuracion.html` agrega la seccion `Reporte de corte` con formato, reportes a imprimir, metricas y botones de guardar/restaurar.
+- [Alcance] Reutiliza `/api/empresa/corte_caja/configuracion`; no cambia tablas ni endpoints.
+
+## [2026-05-18] Corte de Caja en operacion y ventas
+- [Frontend] `web/administrar_empresa.html` muestra el boton `Corte de Caja` debajo de `Estaciones`.
 - [Navegacion] El acceso abre `corte_de_caja.html` con el mismo contexto usado al hacer clic en la tarjeta Caja de estaciones.
-- [Permisos] Reutiliza `linkCorteCaja`, por lo que no crea permiso nuevo ni endpoint nuevo.
+- [Permisos] `linkCorteCaja` queda visible como acceso operativo del menu principal; no crea endpoint ni ruta nueva.
 
 ## [2026-05-18] Reporte de mi turno desde estacion Caja
 - [Frontend] `web/administrar_empresa/corte_de_caja.html` agrega el boton `Ver reporte de mi turno`.
@@ -318,7 +329,7 @@
 
 ## [2026-05-13] Control de aseo por estacion
 - [Backend] Se agrega `users.control_aseo_estaciones`, `empresa_estacion_aseo_eventos` y `/api/empresa/estacion_aseo` para medir el tiempo desde `estacion_estado_sucia=1` hasta el reporte de aseo terminado.
-- [Frontend] `administrar_usuarios.html` permite activar/desactivar el control por usuario; `estaciones.html` permite reportar el aseo con un clic sobre la estacion sucia; `reporte_aseo_estaciones.html` muestra tiempos por habitacion.
+- [Frontend] `administrar_usuarios.html` permite activar/desactivar el control por usuario; `estaciones.html` permite reportar el aseo con un clic sobre la estacion sucia; `reporte_aseo_estaciones.html` muestra tiempos por estacion.
 - [Seguridad] La finalizacion se atribuye al usuario autenticado y conserva aislamiento por `empresa_id`; el reporte queda para roles administrativos/supervision.
 - [QA] Validado con pruebas Go dirigidas de `db`/`handlers` y parseo JS inline de las paginas tocadas.
 
@@ -1183,7 +1194,7 @@
 ## [2026-05-04] Control electrico Raspberry Pi por estacion
 - [Control electrico] Nuevo modulo en Administrar empresa para configurar Raspberry Pi, IP/puerto/ruta API, token opcional, timeout y sincronizacion automatica.
 - [Estaciones] Cada estacion puede mapearse a multiples relés GPIO con salida/carga (luces, jacuzzi, aire, puerta u otro), nombre, pin, logica activo alto, pulso opcional y prueba manual ON/OFF.
-- [Carrito] El carrito de estacion incorpora boton `Control electrico` para abrir un panel operativo y controlar manualmente salidas de la habitacion sin salir de la venta.
+- [Carrito] El carrito de estacion incorpora boton `Control electrico` para abrir un panel operativo y controlar manualmente salidas de la estacion sin salir de la venta.
 - [Automatizacion] Al activar/recuperar/reabrir una estacion se envia `on`; al pagar/cerrar/desactivar se envia `off`. Tambien se engancha con autoactivacion por sensor de puertas.
 - [Auditoria] Se agrega bitacora electrica por empresa con comando, estado objetivo, GPIO, HTTP status, respuesta/error, actor, origen y fecha.
 - [Backend] Se registran tablas `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos`, mas endpoint protegido `/api/empresa/control_electrico`.

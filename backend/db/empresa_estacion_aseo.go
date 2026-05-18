@@ -10,7 +10,7 @@ import (
 
 const empresaEstacionEstadoSuciaClave = "estacion_estado_sucia"
 
-// EmpresaEstacionAseoEvento registra el ciclo de aseo de una estacion/habitacion.
+// EmpresaEstacionAseoEvento registra el ciclo de aseo de una estacion.
 type EmpresaEstacionAseoEvento struct {
 	ID                 int64  `json:"id"`
 	EmpresaID          int64  `json:"empresa_id"`

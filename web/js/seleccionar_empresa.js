@@ -512,8 +512,8 @@
         icon: "/img/hotel-logo.svg",
         alt: "Logo de hotel",
         eyebrow: "Operacion hotelera",
-        activeCopy: "Gestion preparada para reservas, recepcion, habitaciones, tarifas por dia y seguimiento operativo.",
-        pendingCopy: "Activa la licencia para gestionar hospedaje, recepcion y trazabilidad por habitacion."
+        activeCopy: "Gestion preparada para reservas, recepcion, estaciones, tarifas por dia y seguimiento operativo.",
+        pendingCopy: "Activa la licencia para gestionar hospedaje, recepcion y trazabilidad por estacion."
       },
       {
         pattern: /(\bbar\b|\bpub\b|licoreria|discoteca|coctel|bebida|barra)/,
@@ -629,7 +629,7 @@
         icon: "/img/motel.png",
         alt: "Icono de hotel o motel",
         eyebrow: "Operación de hospedaje",
-        activeCopy: "Gestion preparada para reservas, recepcion, habitaciones y seguimiento operativo por estancia.",
+        activeCopy: "Gestion preparada para reservas, recepcion, estaciones y seguimiento operativo por estancia.",
         pendingCopy: "Activa la licencia para gestionar hospedaje, recepción y trazabilidad comercial por habitación."
       },
       {

@@ -1,12 +1,22 @@
+2026-05-18: Corte de Caja con acciones en Lectura rapida.
+- La pagina `web/administrar_empresa/corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` a la tarjeta `Lectura rapida`, apilados uno debajo del otro.
+- `Ver reporte de mi turno` reinicia el contexto automatico antes de consultar el turno del usuario autenticado, para evitar arrastrar un `cierre_caja_id` previo, y presenta el reporte como vista previa de impresion en pantalla.
+- Los textos visibles de control por sensores se normalizan a `Estaciones ocupadas sin factura`.
+
 2026-05-18: Panel empresarial sin mercado externo.
 - El panel de `Administrar empresa` ya no muestra la tarjeta `Mercado en contexto`.
 - Se eliminan del panel las consultas a divisas, criptoactivos y simbolos de mercado para mantener el tablero enfocado en operacion interna.
 - No se cambian permisos, rutas ni endpoints.
 
-2026-05-18: Caja directa en Operacion y ventas.
-- El menu de `Administrar empresa` muestra `Caja` debajo de `Estaciones`.
+2026-05-18: Configuracion de reporte de corte en Configuracion de empresa.
+- Las tarjetas `Configuracion del reporte de corte` y `Reportes a imprimir al cerrar` salen de la pantalla operativa `Corte de Caja`.
+- `Configuracion de empresa` agrega la seccion `Reporte de corte` con formato por defecto, reportes a imprimir, checks de metricas y botones para guardar/restaurar.
+- El flujo usa el endpoint existente `/api/empresa/corte_caja/configuracion`, sin tablas ni rutas nuevas.
+
+2026-05-18: Corte de Caja directo en Operacion y ventas.
+- El menu de `Administrar empresa` muestra `Corte de Caja` debajo de `Estaciones`.
 - El boton abre la misma pagina de corte de caja que se usa al hacer clic en la estacion Caja, con autogeneracion del corte y regreso a estaciones.
-- El acceso reutiliza `linkCorteCaja`, sin crear permiso ni ruta nueva.
+- El acceso `linkCorteCaja` queda visible como accion operativa directa del menu principal, sin crear ruta ni endpoint nuevo.
 
 2026-05-18: Reporte de mi turno en corte de caja.
 - La pagina `corte_de_caja.html`, abierta desde la estacion Caja, incluye el boton `Ver reporte de mi turno`.
@@ -338,7 +348,7 @@
 - Modulos afectados: `estaciones`, `usuarios_empresa`, `reportes`, `carritos`.
 - Cambio funcional: los usuarios creados pueden activar/desactivar la opcion `Control de aseo`; si esta activa, al hacer clic sobre una estacion sucia se reporta el aseo terminado en vez de abrir el carrito.
 - Backend: `/api/empresa/estacion_aseo` usa autoservicio autenticado para contexto y finalizacion, crea eventos en `empresa_estacion_aseo_eventos` y calcula `duracion_segundos` desde que el pago marco la estacion como sucia.
-- Reporte: `web/administrar_empresa/reporte_aseo_estaciones.html` lista habitacion/estacion, aseadora, hora sucia, hora de fin y demora, con resumen promedio/minimo/maximo.
+- Reporte: `web/administrar_empresa/reporte_aseo_estaciones.html` lista estacion, aseadora, hora sucia, hora de fin y demora, con resumen promedio/minimo/maximo.
 - Seguridad: mantiene `empresa_id`, atribuye el cierre al usuario autenticado y deja el reporte gerencial para roles administrativos/supervision.
 
 2026-05-13: Corte automatico de turno de caja
@@ -596,7 +606,7 @@
 - Modulos afectados: `preconfiguracion_tipos_empresa`, `configuracion_guiada`, `estaciones`, `usuarios`, `productos/servicios`, `roles/licencias`.
 - Cambio funcional: el JSON de plantilla incorpora `adaptacion_nucleo` para declarar que usuarios operativos, productos/servicios cobrables y estaciones/recurso viven en el nucleo comun.
 - Backend: al aplicar una plantilla se guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` en preferencias de empresa y `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`.
-- Configuracion: una estacion puede representar habitacion, apartamento, puesto de belleza, bahia, vehiculo/carro, aula, consultorio, oficina o cualquier recurso definido por la plantilla.
+- Configuracion: una estacion puede representar estacion, apartamento, puesto de belleza, bahia, vehiculo/carro, aula, consultorio, oficina o cualquier recurso definido por la plantilla.
 - Frontend super: `web/super/preconfiguracion_tipos_empresa.html` muestra una vista `Nucleo configurable` y envia `adaptacion_nucleo` al guardar.
 - Gobernanza: no se duplican usuarios, clientes, productos, servicios, ventas ni pagos por vertical; solo se cambia la configuracion y nomenclatura del nucleo universal.
 
@@ -1080,8 +1090,8 @@
 - Verificacion: `go test ./utils`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion productiva HTTP 200 de venta publica, carta publica y red social de Motel Calipso.
 
 2026-05-04: Control electrico - Raspberry Pi GPIO por estacion
-- Modulos afectados: `estaciones`, `carritos`, `seguridad`, `raspberry pi`, `habitaciones`
-- Cambio funcional: se agrega `Control electrico` en Administrar empresa para configurar la IP/puerto/ruta API de una Raspberry Pi, activar el modulo, definir timeout, token opcional y mapear cada estacion/habitacion contra un pin GPIO.
+- Modulos afectados: `estaciones`, `carritos`, `seguridad`, `raspberry pi`
+- Cambio funcional: se agrega `Control electrico` en Administrar empresa para configurar la IP/puerto/ruta API de una Raspberry Pi, activar el modulo, definir timeout, token opcional y mapear cada estacion contra un pin GPIO.
 - Operacion automatica: cuando una estacion se activa, recupera o reabre, el backend envia `on` al rele configurado; cuando se paga, cierra o desactiva, envia `off`. El envio ocurre en segundo plano para no bloquear la venta si la Raspberry no responde.
 - Control manual: la pantalla permite guardar relés por estacion, seleccionar GPIO, nombre del rele, logica `activo alto`, pulso opcional y probar encendido/apagado manual.
 - Control desde carrito: en el carrito de estación se agrega el botón `Control eléctrico`, con panel manual para encender/apagar salidas de la habitación como luces, jacuzzi, aire, puerta u otros circuitos configurados.
@@ -2366,7 +2376,7 @@ Criterio de esta guia:
 6) Registro de vehiculos
 - Ingreso/salida por placa, control de permanencia y trazabilidad operativa.
 
-7) Reservas por estacion/habitacion
+7) Reservas por estacion
 - Disponibilidad, creacion, confirmacion/cancelacion y control anti-overbooking.
 
 8) Tarifas por minutos

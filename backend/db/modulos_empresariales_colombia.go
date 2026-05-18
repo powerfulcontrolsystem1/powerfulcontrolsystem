@@ -2315,7 +2315,7 @@ func demoEmpresaModuloColombiaRows(empresaID int64, modulo, usuario string) []Em
 		}
 	case "calidad_procesos":
 		return []EmpresaModuloColombiaRegistro{
-			mergeModuloDemo(base, "NC-001", "No conformidad en alistamiento de habitacion", "no_conformidad", "Operacion", "Calidad", "servicio", "CHK-HAB-001", 0, map[string]interface{}{"accion_correctiva": "reforzar checklist", "responsable_cierre": "Supervisor"}),
+			mergeModuloDemo(base, "NC-001", "No conformidad en alistamiento de estacion", "no_conformidad", "Operacion", "Calidad", "servicio", "CHK-HAB-001", 0, map[string]interface{}{"accion_correctiva": "reforzar checklist", "responsable_cierre": "Supervisor"}),
 			mergeModuloDemo(base, "AUD-001", "Auditoria interna proceso de caja", "auditoria", "Caja", "Auditor", "finanzas", "PROC-CAJA", 0, map[string]interface{}{"hallazgos": 2, "checklist": "cierre diario"}),
 		}
 	case "drogueria_farmacia":

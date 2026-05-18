@@ -35,6 +35,51 @@
       color: var(--muted);
       font-weight: 700;
     }
+    .corte-config-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .corte-config-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .corte-config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .corte-config-check {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--card);
+      min-height: 62px;
+      color: var(--text);
+    }
+    .corte-config-check input {
+      margin-top: 3px;
+    }
+    .corte-config-check strong,
+    .corte-config-check span {
+      display: block;
+    }
+    .corte-config-check strong {
+      font-size: .9rem;
+      color: var(--text);
+    }
+    .corte-config-check span span {
+      margin-top: 2px;
+      font-size: .76rem;
+      color: var(--muted);
+    }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -57,7 +102,7 @@
           <span class="empresa-config-map-title">Cobro y comisiones</span>
           <span>M?todos de pago, propinas y reglas por rol.</span>
         </a>
-        <a href="/administrar_empresa/corte_de_caja.html#configuracionReporteCorte" class="empresa-config-map-item">
+        <a href="#configuracionReporteCorte" class="empresa-config-map-item">
           <span class="empresa-config-map-title">Reporte de corte</span>
           <span>Checks de ingresos, egresos, facturas, efectivo, debito, credito y sensores.</span>
         </a>
@@ -485,6 +530,60 @@
       </div>
     </section>
 
+    <section id="configuracionReporteCorte" class="card empresa-section">
+      <div class="corte-config-toolbar">
+        <div>
+          <h2>Configuracion del reporte de corte</h2>
+          <p class="form-help">Define que indicadores y bloques salen por defecto en pantalla, cierre e impresion del corte de caja.</p>
+        </div>
+        <div class="corte-config-actions">
+          <button id="btnGuardarConfigReporte" class="btn" type="button">Guardar configuracion</button>
+          <button id="btnRestaurarConfigReporte" class="btn secondary" type="button">Restaurar profesional</button>
+        </div>
+      </div>
+
+      <div class="form" style="margin-bottom:12px">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="corteFormatoImpresion">Formato por defecto del reporte</label>
+            <select id="corteFormatoImpresion" class="form-input">
+              <option value="carta">Carta completo</option>
+              <option value="ejecutivo">Ejecutivo compacto</option>
+              <option value="pos">Ticket POS 80mm</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-heading">Reportes a imprimir al cerrar</h3>
+      <div id="corteReportSelector" class="corte-config-grid">
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_resumen" checked><span><strong>Resumen ejecutivo</strong><span>Totales, caja esperada y diferencias.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_ventas_detalle" checked><span><strong>Ventas del turno</strong><span>Comprobantes, metodo y cajero.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_anulaciones" checked><span><strong>Anulaciones</strong><span>Ventas reversadas del periodo.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_movimientos" checked><span><strong>Movimientos</strong><span>Ingresos, egresos y metodo de pago.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_items" checked><span><strong>Productos y servicios</strong><span>Consolidado por tipo vendido.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_sensores_puertas" checked><span><strong>Control motel</strong><span>Estaciones ocupadas sin factura.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_auditoria" checked><span><strong>Auditoria</strong><span>Firma, observaciones y sello.</span></span></label>
+      </div>
+
+      <h3 class="section-heading" style="margin-top:18px">Metricas del resumen</h3>
+      <div id="metricSelector" class="corte-config-grid">
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_numero_facturas" checked><span><strong>Numero de facturas</strong><span>Cantidad de comprobantes pagados.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_total_ventas" checked><span><strong>Total de ventas</strong><span>Suma general del turno.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_efectivo" checked><span><strong>Suma efectivo</strong><span>Ventas y caja esperada en efectivo.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_debito" checked><span><strong>Suma debito</strong><span>Pagos con tarjeta debito.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_credito" checked><span><strong>Suma credito</strong><span>Pagos con tarjeta credito.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_transferencias" checked><span><strong>Transferencias</strong><span>Pagos bancarios y digitales.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_otros_medios" checked><span><strong>Otros medios</strong><span>Pagos no clasificados.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_ingresos" checked><span><strong>Ingresos</strong><span>Entradas adicionales registradas.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_egresos" checked><span><strong>Egresos</strong><span>Salidas de caja y gastos.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_devoluciones" checked><span><strong>Devoluciones</strong><span>Valor devuelto a clientes.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_caja_esperada" checked><span><strong>Caja esperada</strong><span>Efectivo teorico al cierre.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_diferencia_caja" checked><span><strong>Diferencia de caja</strong><span>Comparacion fisica contra teorica.</span></span></label>
+      </div>
+      <div id="configReporteMsg" class="form-help" style="margin-top:10px"></div>
+    </section>
+
     <section id="configuracionCaja" class="card empresa-section">
       <div class="empresa-section-header">
         <h2>Caja y cajon monedero</h2>
@@ -761,7 +860,7 @@
                 <option value="cocina">Comanda cocina</option>
                 <option value="barra">Comanda barra</option>
                 <option value="recepcion">Recepcion</option>
-                <option value="estacion_habitacion">Estacion / habitacion</option>
+                <option value="estacion_habitacion">Estacion</option>
               </select>
             </div>
             <div class="form-col">
@@ -987,6 +1086,30 @@
     let empresaId = resolveEmpresaId();
     let operativaConfigCache = null;
     let ventaPublicaConfigCache = null;
+    const corteReporteDefaultConfig = {
+      mostrar_resumen: true,
+      mostrar_numero_facturas: true,
+      mostrar_total_ventas: true,
+      mostrar_efectivo: true,
+      mostrar_debito: true,
+      mostrar_credito: true,
+      mostrar_transferencias: true,
+      mostrar_otros_medios: true,
+      mostrar_ingresos: true,
+      mostrar_egresos: true,
+      mostrar_anulaciones: true,
+      mostrar_devoluciones: true,
+      mostrar_caja_esperada: true,
+      mostrar_diferencia_caja: true,
+      mostrar_ventas_detalle: true,
+      mostrar_movimientos: true,
+      mostrar_items: true,
+      mostrar_sensores_puertas: true,
+      mostrar_auditoria: true,
+      formato_impresion: 'carta',
+      estado: 'activo'
+    };
+    let corteReporteConfigCache = Object.assign({}, corteReporteDefaultConfig);
     let impresorasState = {
       impresoras: [],
       funcionalidades: [],
@@ -1076,6 +1199,135 @@
       const box = document.getElementById('backupMsg');
       box.textContent = text || '';
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function setCorteReporteMessage(text, type) {
+      const box = document.getElementById('configReporteMsg');
+      if (!box) return;
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function normalizeCorteReporteFormato(value) {
+      const raw = String(value || '').trim().toLowerCase();
+      if (raw === 'pos' || raw === 'ticket') return 'pos';
+      if (raw === 'ejecutivo' || raw === 'compacto') return 'ejecutivo';
+      return 'carta';
+    }
+
+    function normalizeCorteReporteConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const out = Object.assign({}, corteReporteDefaultConfig);
+      Object.keys(corteReporteDefaultConfig).forEach(function(key) {
+        if (key === 'formato_impresion') {
+          out[key] = normalizeCorteReporteFormato(src[key] || out[key]);
+          return;
+        }
+        if (key === 'estado') {
+          out[key] = String(src[key] || out[key]).trim().toLowerCase() === 'inactivo' ? 'inactivo' : 'activo';
+          return;
+        }
+        if (Object.prototype.hasOwnProperty.call(src, key)) {
+          out[key] = Boolean(src[key]);
+        }
+      });
+      if (src.id) out.id = Number(src.id || 0);
+      if (src.empresa_id || empresaId) out.empresa_id = Number(src.empresa_id || empresaId || 0);
+      return out;
+    }
+
+    function setCorteReporteFormData(cfg) {
+      const normalized = normalizeCorteReporteConfig(cfg);
+      corteReporteConfigCache = normalized;
+      document.querySelectorAll('[data-corte-config-key]').forEach(function(input) {
+        const key = input.getAttribute('data-corte-config-key');
+        if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+          input.checked = Boolean(normalized[key]);
+        }
+      });
+      const formato = document.getElementById('corteFormatoImpresion');
+      if (formato) formato.value = normalizeCorteReporteFormato(normalized.formato_impresion);
+    }
+
+    function getCorteReporteFormData() {
+      const cfg = normalizeCorteReporteConfig(corteReporteConfigCache);
+      document.querySelectorAll('[data-corte-config-key]').forEach(function(input) {
+        cfg[input.getAttribute('data-corte-config-key')] = Boolean(input.checked);
+      });
+      cfg.formato_impresion = normalizeCorteReporteFormato(document.getElementById('corteFormatoImpresion').value);
+      cfg.estado = 'activo';
+      cfg.empresa_id = Number(empresaId || 0);
+      return cfg;
+    }
+
+    async function loadCorteReporteConfig() {
+      if (!empresaId) return;
+      setCorteReporteMessage('Cargando configuracion del reporte de corte...', '');
+      try {
+        const resp = await fetch('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId), {
+          credentials: 'same-origin'
+        });
+        const text = await resp.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        setCorteReporteFormData(data && data.configuracion ? data.configuracion : {});
+        setCorteReporteMessage('Configuracion del reporte cargada.', 'success');
+      } catch (err) {
+        setCorteReporteFormData(corteReporteDefaultConfig);
+        setCorteReporteMessage('No se pudo cargar la configuracion del reporte: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function saveCorteReporteConfig() {
+      if (!empresaId) {
+        setCorteReporteMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      setCorteReporteMessage('Guardando configuracion del reporte...', '');
+      try {
+        const resp = await fetch('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId), {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(getCorteReporteFormData())
+        });
+        const text = await resp.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        setCorteReporteFormData(data && data.configuracion ? data.configuracion : getCorteReporteFormData());
+        setCorteReporteMessage('Configuracion del reporte guardada correctamente.', 'success');
+      } catch (err) {
+        setCorteReporteMessage('No se pudo guardar la configuracion del reporte: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function restoreCorteReporteConfig() {
+      if (!empresaId) {
+        setCorteReporteMessage('No se puede restaurar sin empresa seleccionada.', 'error');
+        return;
+      }
+      setCorteReporteMessage('Restaurando configuracion profesional...', '');
+      try {
+        const resp = await fetch('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId) + '&action=restaurar', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        const text = await resp.text();
+        const data = text ? JSON.parse(text) : {};
+        if (!resp.ok) {
+          throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + resp.status));
+        }
+        setCorteReporteFormData(data && data.configuracion ? data.configuracion : corteReporteDefaultConfig);
+        setCorteReporteMessage('Configuracion profesional restaurada.', 'success');
+      } catch (err) {
+        setCorteReporteMessage('No se pudo restaurar la configuracion del reporte: ' + (err && err.message ? err.message : err), 'error');
+      }
     }
 
     function setFacturaMessage(text, type) {
@@ -2710,6 +2962,7 @@
         setImpresorasMessage('No se detectó empresa_id para cargar impresoras.', 'error');
         setFacturaMessage('No se detectó empresa_id para cargar facturación.', 'error');
         setFormatoNumericoMessage('No se detectó empresa_id para cargar formato numérico.', 'error');
+        setCorteReporteMessage('No se detecto empresa_id para cargar el reporte de corte.', 'error');
         return;
       }
 
@@ -2725,6 +2978,7 @@
       setOperativaSimOutput({ ok: true, mensaje: 'Listo para simular reglas por contexto.' });
       loadFacturaConfig();
       loadOperativaConfig();
+      loadCorteReporteConfig();
       loadPasarelasConfig();
       loadImpresorasConfig(false);
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
@@ -2743,6 +2997,8 @@
       document.getElementById('opPoliticaSucursalId').addEventListener('change', syncOperativaPoliticaFormFromCache);
       document.getElementById('opPoliticaTurno').addEventListener('blur', syncOperativaPoliticaFormFromCache);
       document.getElementById('btnGuardarFacturaConfig').addEventListener('click', guardarFacturaConfig);
+      document.getElementById('btnGuardarConfigReporte').addEventListener('click', saveCorteReporteConfig);
+      document.getElementById('btnRestaurarConfigReporte').addEventListener('click', restoreCorteReporteConfig);
       document.getElementById('btnGuardarLogoEmpresa').addEventListener('click', guardarIdentidadVisualConfig);
       document.getElementById('btnSubirLogoEmpresa').addEventListener('click', subirLogoEmpresa);
       document.getElementById('empresaLogoURL').addEventListener('input', function() {

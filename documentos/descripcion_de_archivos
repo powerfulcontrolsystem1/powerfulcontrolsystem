@@ -1,3 +1,25 @@
+2026-05-18 - Corte de Caja con acciones en Lectura rapida
+- `web/administrar_empresa/corte_de_caja.html`:
+	- mueve los botones operativos de corte a la tarjeta `Lectura rapida`, repara el reporte del turno actual, lo muestra como vista previa imprimible y usa `Estaciones ocupadas sin factura`.
+- `backend/handlers/corte_caja.go`:
+	- ajusta mensajes visibles de sensores sin factura a estacion.
+- `web/administrar_empresa/configuracion.html`:
+	- conserva la configuracion del reporte de corte con texto `Estaciones ocupadas sin factura`.
+
+2026-05-18 - Configuracion del reporte de corte en Configuracion de empresa
+- `web/administrar_empresa/corte_de_caja.html`:
+	- retira las tarjetas `Configuracion del reporte de corte` y `Reportes a imprimir al cerrar`; usa la configuracion guardada para decidir secciones del reporte.
+- `web/administrar_empresa/configuracion.html`:
+	- agrega la seccion `Reporte de corte` con formato de impresion, reportes a imprimir al cerrar, checks de metricas y acciones para guardar/restaurar la configuracion profesional.
+
+2026-05-18 - Corte de Caja visible en menu empresarial
+- `web/administrar_empresa.html`:
+	- renombra el acceso operativo de `Caja` a `Corte de Caja` y lo mantiene debajo de `Estaciones`.
+- `web/js/administrar_empresa.js`:
+	- deja `linkCorteCaja` visible como boton operativo principal aunque el contexto de paginas lo oculte por el catalogo financiero.
+- `backend/handlers/empresa_permisos.go`:
+	- alinea el titulo administrable a `Corte de Caja` y su grupo a `Operacion y ventas`.
+
 2026-05-18 - Reporte de mi turno en corte de caja
 - `backend/handlers/corte_caja_test.go`:
 	- agrega regresion para confirmar que `action=reporte_mi_turno` usa el flujo de caja abierta del usuario autenticado y que una consulta normal de corte no queda forzada a ese filtro.
@@ -257,7 +279,7 @@
 - `backend/handlers/empresa_estacion_aseo.go`:
 	- nuevo endpoint empresarial de autoservicio para contexto, finalizacion de aseo y reporte gerencial.
 - `web/administrar_empresa/reporte_aseo_estaciones.html`:
-	- nueva pagina de reporte con filtros por fecha/estacion, resumen de tiempos y detalle por habitacion/aseadora.
+	- nueva pagina de reporte con filtros por fecha/estacion, resumen de tiempos y detalle por estacion/aseadora.
 
 2026-05-13 - Logos empresariales Calipso y Bollon
 - `web/uploads/empresa_logos/empresa_7/motel-calipso-logo.svg`:
@@ -765,7 +787,7 @@
 	- `backend/handlers/carritos_compras.go` : integra el despacho automatico al activar, recuperar, reabrir, cerrar, desactivar o pagar estaciones.
 	- `backend/handlers/sensor_puertas.go` : cuando un sensor autoactiva una estacion, tambien sincroniza el rele configurado.
 	- `web/administrar_empresa/control_electrico.html` : consola profesional para conexion Raspberry, mapeo estacion/GPIO por luces, jacuzzi, aire, puerta u otro circuito, pruebas y bitacora.
-	- `web/administrar_empresa/carrito_de_compras.html` : boton y panel `Control electrico` dentro del carrito de estacion para encender/apagar salidas de la habitacion.
+	- `web/administrar_empresa/carrito_de_compras.html` : boton y panel `Control electrico` dentro del carrito de estacion para encender/apagar salidas de la estacion.
 	- `web/administrar_empresa.html` y `web/js/administrar_empresa.js` : agregan el modulo al menu y a la matriz de visibilidad por permisos.
 
 - Actualizacion 2026-04-30: pagos, chat IA, empresas compartidas y documentos dinamicos
@@ -5099,7 +5121,7 @@ Actualizacion 2026-04-06: Cierre modulo 8 (Tarifas por minutos)
 	- Agrega accion UI para aplicar una tarifa a todas las estaciones.
 	- Amplia simulador para mostrar detalle del calculo y referencia contable (`documento_codigo`).
 
-Actualizacion 2026-04-06: Cierre modulo 7 (Reservas por estacion/habitacion)
+Actualizacion 2026-04-06: Cierre modulo 7 (Reservas por estacion)
 
 - `backend/db/reservas_hotel.go`:
 	- Refuerza control anti-overbooking por `estacion_id` en ventanas solapadas.
@@ -5507,7 +5529,7 @@ Actualizacion 2026-04-06: Cierre modulo reservas en reportes (ocupacion y cumpli
 	- Agrega `TestEmpresaReportesHandlerDatasetOperativoReservasOcupacion` para validar conteos, cumplimiento e ingresos del nuevo dataset.
 
 - `documentos/modulos del proyecto.md`:
-	- Actualiza matriz de reportes marcando `Reservas por estacion/habitacion` como activo con dataset `operativo_reservas_ocupacion`.
+	- Actualiza matriz de reportes marcando `Reservas por estacion` como activo con dataset `operativo_reservas_ocupacion`.
 
 - `Pendiente Notas`:
 	- Agrega plan secuencial de cierre de modulos incompletos y marca reservas como primer bloque completado.
@@ -6159,7 +6181,7 @@ Actualizacion 2026-04-05: Modulo de comisiones por servicio por empresa
 - `backend/handlers/auth_users_carritos_test.go`:
 	- Agrega integracion de pago con registro de comision por servicio y validacion de `usuario_lavador`.
 
-Actualizacion 2026-04-05: Modulo de reservas por estacion/habitacion
+Actualizacion 2026-04-05: Modulo de reservas por estacion
 
 - `backend/db/reservas_hotel.go` (nuevo):
 	- Define la entidad `ReservaHotel` y la tabla `reservas_hotel` por empresa.

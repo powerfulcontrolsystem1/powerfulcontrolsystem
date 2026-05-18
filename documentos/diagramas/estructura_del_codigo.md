@@ -125,7 +125,7 @@
 - Frontend:
   - `web/administrar_empresa/administrar_usuarios.html` agrega la opcion `Control de aseo`.
   - `web/administrar_empresa/estaciones.html` cambia el clic sobre una estacion sucia para usuarios habilitados: registra el aseo y deja la estacion disponible.
-  - `web/administrar_empresa/reporte_aseo_estaciones.html` muestra tiempos por habitacion/aseadora.
+  - `web/administrar_empresa/reporte_aseo_estaciones.html` muestra tiempos por estacion/aseadora.
 - Flujo:
   - `carrito_de_compras.html` paga estacion -> `PUT /api/empresa/estacion_prefs` con `estacion_estado_sucia=1` -> `empresa_estacion_aseo_eventos` queda pendiente -> aseadora habilitada hace clic en la estacion sucia -> `POST /api/empresa/estacion_aseo?action=finalizar` -> se guarda duracion y se limpia el estado sucio.
 

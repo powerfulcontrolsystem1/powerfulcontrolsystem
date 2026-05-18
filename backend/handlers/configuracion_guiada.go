@@ -600,7 +600,7 @@ func inferGuidedStationCountFromState(state *empresaConfiguracionGuiadaState) in
 func defaultGuidedStationSingular(tipo string) string {
 	switch {
 	case guidedTypeContains(tipo, "hotel", "hostal", "hospedaje", "motel"):
-		return "Habitacion"
+		return "Estacion"
 	case guidedTypeContains(tipo, "restaurante", "restaurant", "bar", "cafeteria", "cafetería"):
 		return "Mesa"
 	case guidedTypeContains(tipo, "salon", "salón", "belleza", "spa", "barberia", "barbería"):

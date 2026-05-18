@@ -56,9 +56,9 @@ func TestSendControlElectricoRelayCommand(t *testing.T) {
 		RaspberryID:    3,
 		EstacionID:     4,
 		EstacionCodigo: "EST-77-4",
-		EstacionNombre: "Habitacion 4",
+		EstacionNombre: "Estacion 4",
 		GPIOPin:        17,
-		RelayName:      "Luz habitacion 4",
+		RelayName:      "Luz estacion 4",
 		ActiveHigh:     true,
 		PulsoMS:        0,
 	}

@@ -420,7 +420,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Codigos de descuento", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Canales digitales y colaboracion"},
-	{PaginaClave: "linkReservasHotel", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Reservas (hotel / habitaciones)", Grupo: "Verticales de negocio"},
+	{PaginaClave: "linkReservasHotel", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Reservas (hotel / estaciones)", Grupo: "Verticales de negocio"},
 	{PaginaClave: "linkChatTareas", Modulo: permModuleChatTareas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atencion y fila", Grupo: "Verticales de negocio"},
 
@@ -473,7 +473,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkEgresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Ingresos", Grupo: "Centro financiero y contable"},
-	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de caja", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkCorteCaja", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Corte de Caja", Grupo: "Operacion y ventas"},
 	{PaginaClave: "linkCreditos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkCreditosMenu", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Creditos y cartera", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkPropinas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Propinas", Grupo: "Centro financiero y contable"},
@@ -538,7 +538,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkConfiguracionAvanzada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Documento y formato", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobacion: configuracion de estaciones", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Administracion y configuracion"},
-	{PaginaClave: "linkControlElectrico", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Control electrico por habitacion", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkControlElectrico", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Control electrico por estacion", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkRadioOnline", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Radio online", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkERPExtendido", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Integraciones / ERP extendido", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkERPExtendidoMenu", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "ERP extendido", Grupo: "Administracion y configuracion"},
@@ -547,7 +547,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkTarifasPorDia", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas por dia", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkTarifasHotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de hotel", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkTarifasMotel", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Tarifas de motel", Grupo: "Administracion y configuracion"},
-	{PaginaClave: "linkHotelTarjetasAcceso", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Tarjetas habitacion", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkHotelTarjetasAcceso", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Tarjetas estacion", Grupo: "Administracion y configuracion"},
 }
 
 type permissionModuleMatrixRow struct {

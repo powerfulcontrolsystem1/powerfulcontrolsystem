@@ -159,7 +159,7 @@
       var catalog = [
         {
           match: ['carrito', 'control electrico', 'gpio', 'raspberry'],
-          purpose: 'Permite operar aparatos electricos vinculados a una estacion o habitacion, como luces, jacuzzi, ventilacion o puertas, usando los reles configurados en Raspberry Pi.',
+          purpose: 'Permite operar aparatos electricos vinculados a una estacion, como luces, jacuzzi, ventilacion o puertas, usando los reles configurados en Raspberry Pi.',
           before: ['La empresa debe tener Control electrico habilitado.', 'La estacion debe tener aparatos/reles activos.', 'La Raspberry Pi debe estar encendida, con IP correcta y API disponible.'],
           steps: ['Abre la tarjeta del aparato que quieres controlar.', 'Verifica el estado actual, GPIO y Raspberry asignada.', 'Usa Encender o Apagar y espera el mensaje de confirmacion.'],
           troubleshooting: ['Si el comando se omite, revisa que el modulo este habilitado.', 'Si hay error de conexion, valida IP, puerto, token y red de la Raspberry.', 'Si el boton no aparece en carrito, activa el check Control electrico en la configuracion del carrito.']
@@ -172,9 +172,9 @@
           troubleshooting: ['Si no aparece en venta, valida estado activo y stock.', 'Si imprime mal, revisa la impresora asignada al producto o combo.', 'Si el vencimiento alerta, revisa lote y fecha registrada.']
         },
         {
-          match: ['tarifa', 'motel', 'hotel', 'minutos', 'habitacion'],
+          match: ['tarifa', 'motel', 'hotel', 'minutos', 'estacion'],
           purpose: 'Configura tarifas por tiempo, dia, personas o estacion para calcular cobros de hotel/motel de forma consistente.',
-          before: ['Confirma estacion/habitacion asociada.', 'Define valores, personas incluidas y vigencia.', 'Revisa tolerancias para horas extra o minutos adicionales.'],
+          before: ['Confirma estacion asociada.', 'Define valores, personas incluidas y vigencia.', 'Revisa tolerancias para horas extra o minutos adicionales.'],
           steps: ['Selecciona o crea la tarifa.', 'Configura tipo, valor y condiciones.', 'Prueba cambiar tarifa desde el carrito de una estacion activa.'],
           troubleshooting: ['Si no calcula, revisa que la tarifa este activa.', 'Si el valor no coincide, valida personas, minutos base y tolerancia.', 'Si no aparece para la estacion, confirma la asignacion de tarifa.']
         },

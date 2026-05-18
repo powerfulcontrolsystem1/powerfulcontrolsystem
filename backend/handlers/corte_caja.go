@@ -105,7 +105,7 @@ type corteCajaResumen struct {
 	TotalProductos         float64 `json:"total_productos"`
 	TotalServicios         float64 `json:"total_servicios"`
 	TotalOtrosItems        float64 `json:"total_otros_items"`
-	HabitacionesSinFactura int64   `json:"habitaciones_sin_factura"`
+	EstacionesSinFactura  int64   `json:"estaciones_sin_factura"`
 }
 
 type corteCajaResponse struct {
@@ -629,7 +629,7 @@ func normalizeCorteCajaReportes(items []string) []string {
 		"productos":     "items",
 		"servicios":     "items",
 		"sensores":      "sensores",
-		"habitaciones":  "sensores",
+		"estaciones":    "sensores",
 		"auditoria":     "auditoria",
 		"observaciones": "auditoria",
 	}
@@ -750,7 +750,7 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 		"ventas_total":           resp.Resumen.VentasTotal,
 		"anulaciones_cantidad":   resp.Resumen.VentasAnuladasCantidad,
 		"anulaciones_total":      resp.Resumen.VentasAnuladasTotal,
-		"habitaciones_alertadas": resp.Resumen.HabitacionesSinFactura,
+		"estaciones_alertadas": resp.Resumen.EstacionesSinFactura,
 		"observaciones":          strings.TrimSpace(payload.Observaciones),
 	})
 	ingresosEfectivo := resp.Resumen.EfectivoVentas + resp.Resumen.IngresosEfectivo
@@ -945,7 +945,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 			resp.Advertencias = append(resp.Advertencias, "No se pudieron evaluar sensores de puerta.")
 		} else {
 			resp.SensoresSinFactura = alertas
-			resp.Resumen.HabitacionesSinFactura = int64(len(alertas))
+			resp.Resumen.EstacionesSinFactura = int64(len(alertas))
 		}
 		dbpkg.PerfLogf("[perf][corte] step sensores empresa=%d dur=%s", empresaID, time.Since(startedAt))
 	}
@@ -1241,7 +1241,7 @@ func listCorteCajaSensoresSinFactura(dbEmp *sql.DB, empresaID int64, soldStation
 		}
 		name := strings.TrimSpace(stationNames[estacionID])
 		if name == "" {
-			name = "Habitacion " + strconv.FormatInt(estacionID, 10)
+			name = "Estacion " + strconv.FormatInt(estacionID, 10)
 		}
 		out = append(out, corteCajaSensorAlerta{
 			EstacionID:     estacionID,
@@ -1249,7 +1249,7 @@ func listCorteCajaSensoresSinFactura(dbEmp *sql.DB, empresaID int64, soldStation
 			DeviceID:       deviceID,
 			EstadoSensor:   state,
 			UltimaLectura:  seen,
-			Motivo:         "El sensor figura ocupado, pero no hay venta facturada para esta habitacion en el rango del corte.",
+			Motivo:         "El sensor figura ocupado, pero no hay venta facturada para esta estacion en el rango del corte.",
 		})
 	}
 	dbpkg.PerfLogf("[perf][corte] sensores scan empresa=%d scanned=%d out=%d dur=%s", empresaID, scanned, len(out), time.Since(scanStarted))

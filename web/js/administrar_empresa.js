@@ -342,7 +342,7 @@ try {
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkEgresos: { module: permModuleFinanzas, action: permActionCreate },
     linkIngresos: { module: permModuleFinanzas, action: permActionCreate },
-    linkCorteCaja: { module: permModuleFinanzas, action: permActionCreate },
+    linkCorteCaja: { alwaysVisible: true },
     linkCreditos: { module: permModuleFinanzas, action: permActionCreate },
     linkCreditosMenu: { module: permModuleFinanzas, action: permActionCreate },
     linkPropinas: { module: permModuleFinanzas, action: permActionCreate },
@@ -1183,14 +1183,14 @@ try {
 
   function canPermissionContextAccessLink(permissionContext, link) {
     if (!link) return false;
+    var rule = menuPermissionCatalog[link.id || ""];
+    if (!rule || rule.alwaysVisible) {
+      return true;
+    }
     var pageKey = link.id || "";
     var pages = permissionContext && permissionContext.paginas;
     if (pageKey && pages && typeof pages === "object" && Object.prototype.hasOwnProperty.call(pages, pageKey)) {
       return !!pages[pageKey];
-    }
-    var rule = menuPermissionCatalog[link.id || ""];
-    if (!rule || rule.alwaysVisible) {
-      return true;
     }
     if (Array.isArray(rule.anyModules) && rule.anyModules.length) {
       return rule.anyModules.some(function (module) {

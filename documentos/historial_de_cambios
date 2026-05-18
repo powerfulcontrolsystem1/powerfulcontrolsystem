@@ -1,14 +1,26 @@
+2026-05-18: Corte de Caja con botones en Lectura rapida y texto de estaciones.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` coloca `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` dentro de la tarjeta `Lectura rapida`, en columna.
+- Fix: `Ver reporte de mi turno` limpia `automaticCierreCajaID` y `automaticCajaSucursalID` antes de pedir `/api/empresa/corte_caja?action=reporte_mi_turno`, evitando que un corte automatico anterior contamine el reporte.
+- UX: al generar el reporte del turno actual se activa una previsualizacion de impresion en pantalla, con hoja carta o ticket POS segun `Modo de visualizacion`, y se desplaza automaticamente al reporte.
+- Texto visible: corte, configuracion, reportes, tarifas, portal y preconfiguraciones usan `Estacion/Estaciones` en los textos operativos; los identificadores internos de compatibilidad no se renombran.
+
 2026-05-18: Panel sin tarjeta de mercado
 - Modulos afectados: `administrar_empresa`, `panel`.
 - Frontend: `web/administrar_empresa/panel.html` elimina la seccion `Mercado en contexto` con indicadores economicos.
 - Operacion: se retiran las consultas a indicadores externos de moneda, criptoactivos y mercado desde el panel empresarial.
 - Alcance tecnico: no cambia backend, endpoints, permisos, tablas ni dependencias.
 
-2026-05-18: Caja en Operacion y ventas
+2026-05-18: Reporte de corte se configura desde Configuracion de empresa
+- Modulos afectados: `administrar_empresa`, `configuracion`, `corte_de_caja`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` retira las tarjetas `Configuracion del reporte de corte` y `Reportes a imprimir al cerrar` para dejar la pagina enfocada en generar, cerrar e imprimir turno.
+- Frontend: `web/administrar_empresa/configuracion.html` agrega la seccion `Reporte de corte` con reportes a imprimir, checks de metricas, formato por defecto y acciones de guardar/restaurar.
+- Alcance tecnico: reutiliza `/api/empresa/corte_caja/configuracion`; no cambia backend, endpoints, tablas ni dependencias.
+
+2026-05-18: Corte de Caja en Operacion y ventas
 - Modulos afectados: `administrar_empresa`, `estaciones`, `caja`, `corte_de_caja`.
-- Frontend: `web/administrar_empresa.html` agrega `Caja` debajo de `Estaciones` en el grupo `Operacion y ventas`.
+- Frontend: `web/administrar_empresa.html` muestra `Corte de Caja` debajo de `Estaciones` en el grupo `Operacion y ventas`.
 - Navegacion: el enlace abre `/administrar_empresa/corte_de_caja.html?source=estaciones&return_to=estaciones&auto_generar=1&caja_nombre=Caja`, igual que la tarjeta Caja del tablero de estaciones.
-- Permisos: se reutiliza `linkCorteCaja`; no cambia backend, endpoints, tablas ni dependencias.
+- Permisos: `web/js/administrar_empresa.js` deja `linkCorteCaja` como acceso visible del menu operativo principal; el backend mantiene sus validaciones de empresa/sesion. No cambian endpoints, tablas ni dependencias.
 
 2026-05-18: Reporte de mi turno desde estacion Caja
 - Modulos afectados: `estaciones`, `caja`, `corte_de_caja`.
@@ -456,7 +468,7 @@
 2026-05-13: control de aseo por usuario en estaciones
 - Modulos afectados: `estaciones`, `usuarios_empresa`, `reportes`, `carritos`.
 - Backend: se agrega `users.control_aseo_estaciones`, la tabla `empresa_estacion_aseo_eventos`, el endpoint `/api/empresa/estacion_aseo` y el arranque de evento cuando `estacion_estado_sucia=1`.
-- Frontend: `administrar_usuarios.html` permite activar/desactivar el control de aseo; `estaciones.html` permite que una aseadora habilitada reporte el aseo al hacer clic en la estacion sucia; `reporte_aseo_estaciones.html` muestra tiempos por habitacion.
+- Frontend: `administrar_usuarios.html` permite activar/desactivar el control de aseo; `estaciones.html` permite que una aseadora habilitada reporte el aseo al hacer clic en la estacion sucia; `reporte_aseo_estaciones.html` muestra tiempos por estacion.
 - Validacion: `go test ./db -run "EmpresaEstacion|EmpresaUsuario|Carritos" -count=1`, `go test ./handlers -count=1` y parseo JS inline de las paginas tocadas.
 
 2026-05-13: corte automatico de turno desde la caja actual
@@ -884,7 +896,7 @@ Archivos modificados:
 - Modulos afectados: preconfiguracion_tipos_empresa, configuracion_guiada, estaciones, usuarios, productos/servicios, roles/licencias.
 - Cambio funcional: las plantillas declaran `adaptacion_nucleo` para que usuarios operativos, productos/servicios y estaciones se configuren desde el nucleo universal.
 - Backend: `TipoEmpresaPreconfigAdaptacionNucleo` se normaliza al parsear/guardar plantillas; la aplicacion de plantilla guarda `preconfiguracion_tipo_empresa_adaptacion_nucleo` en preferencias de empresa.
-- Estaciones: `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`, permitiendo que una estacion represente habitacion, apartamento, puesto, bahia, carro/vehiculo, aula, consultorio u oficina segun plantilla.
+- Estaciones: `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`, permitiendo que una estacion represente estacion, apartamento, puesto, bahia, carro/vehiculo, aula, consultorio u oficina segun plantilla.
 - Frontend super: la pantalla de preconfiguraciones muestra la seccion `Nucleo configurable` y envia la metadata al guardar.
 - Base de datos: no hay tablas ni columnas nuevas; se reutiliza JSON en `tipo_empresa_preconfiguraciones.config_json` y `empresa_estacion_prefs`.
 - Validacion: `go test ./db -run "TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes|TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog|TestNuevosVerticalesProduccionMasivaSeleccionaVeinte|TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1" -count=1`, `go test ./handlers -run "TestEmpresaVerticalesIntegracionCatalogoContrato|TestPublicVerticalesIntegracionCatalogoHandler|TestLicenciaVisibleParaClientes" -count=1`, parser inline de `web/super/preconfiguracion_tipos_empresa.html`.
@@ -8159,7 +8171,7 @@ Archivos modificados:
         - `documentos/historial_de_cambios`
         - `CHANGELOG.md`
 
-- 2026-04-06: Cierre modulo 7 (Reservas por estacion/habitacion) con anti-overbooking reforzado, politica no_show/expiracion avanzada y reconversion a carrito
+- 2026-04-06: Cierre modulo 7 (Reservas por estacion) con anti-overbooking reforzado, politica no_show/expiracion avanzada y reconversion a carrito
     - Se refuerza validacion de concurrencia por estacion en rangos solapados:
         - control de conflicto por `estacion_id` y `carrito_id` asociado,
         - bloqueo activo para estados `pendiente_pago`, `confirmada` y `en_curso`.
@@ -8574,7 +8586,7 @@ Archivos modificados:
         - `CHANGELOG.md`
 
 - 2026-04-06: Plan secuencial de cierre de modulos incompletos - bloque 1 (reservas)
-    - Se implementa el primer cierre del plan en reportes para `Reservas por estacion/habitacion`.
+    - Se implementa el primer cierre del plan en reportes para `Reservas por estacion`.
     - Se actualiza `backend/handlers/reportes.go`:
         - nuevo dataset `operativo_reservas_ocupacion` en catalogo/switch,
         - consolidado por estacion con metricas de ocupacion, cumplimiento e ingresos.
@@ -8582,7 +8594,7 @@ Archivos modificados:
         - bootstrap de pruebas incluye `EnsureEmpresaReservasHotelSchema`,
         - nueva prueba `TestEmpresaReportesHandlerDatasetOperativoReservasOcupacion`.
     - Se actualiza matriz de estado en `documentos/modulos del proyecto.md`:
-        - `Reservas por estacion/habitacion` pasa de `Pendiente` a `Activo`.
+        - `Reservas por estacion` pasa de `Pendiente` a `Activo`.
     - Se agrega plan de ejecucion secuencial en `Pendiente Notas` para continuar modulo por modulo.
     - Validacion ejecutada:
         - `go test ./handlers -run "TestEmpresaReportesHandler" -count=1` (ok).
@@ -9280,7 +9292,7 @@ Archivos modificados:
         - `go test ./handlers -count=1` (ok).
         - `go test ./db -count=1` (ok).
 
-- 2026-04-05: Finalizacion del modulo de reservas por estacion/habitacion
+- 2026-04-05: Finalizacion del modulo de reservas por estacion
     - Se crea `backend/db/reservas_hotel.go` con:
         - tabla `reservas_hotel` por `empresa_id`,
         - validacion de conflicto por solapamiento de fechas,
@@ -13890,7 +13902,7 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 
 2026-04-05: Ajuste de reglas en agente_go para semantica de estaciones y concurrencia operativa
-- Se actualiza `.github/agents/agente_go.agent.md` para dejar explicito que una estacion puede representar mesa de restaurante, habitacion de hotel, habitacion de motel, punto de caja u otro punto operativo equivalente.
+- Se actualiza `.github/agents/agente_go.agent.md` para dejar explicito que una estacion puede representar mesa de restaurante, estacion hotelera, estacion de motel, punto de caja u otro punto operativo equivalente.
 - Se incorpora regla funcional para soportar multiples carritos/sesiones y multiples clientes en simultaneo, manteniendo aislamiento por `empresa_id` y trazabilidad por carrito/cliente.
 Archivos modificados:
 - .github/agents/agente_go.agent.md
@@ -19490,10 +19502,10 @@ Archivos modificados:
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
 
-- Se crea el modulo `Control electrico` para mapear estaciones/habitaciones con relés GPIO controlados por Raspberry Pi.
+- Se crea el modulo `Control electrico` para mapear estaciones con reles GPIO controlados por Raspberry Pi.
 - Se registra configuracion por empresa: modulo activo, IP/host, puerto, ruta API, token opcional, timeout, sincronizacion automatica y fail-safe.
 - Se crean multiples salidas por estacion con `salida_codigo`, tipo de carga, GPIO, nombre, logica activo alto, pulso opcional, estado runtime y bitacora de eventos.
-- Se agrega al carrito de estacion el boton `Control electrico` para encender/apagar manualmente luces, jacuzzi, aire, puerta u otros circuitos configurados de la habitacion.
+- Se agrega al carrito de estacion el boton `Control electrico` para encender/apagar manualmente luces, jacuzzi, aire, puerta u otros circuitos configurados de la estacion.
 - Se integra el envio automatico en activacion, recuperacion, reapertura, cierre, desactivacion y pago de estaciones; tambien en autoactivacion por sensor de puertas.
 - Validacion tecnica: `go test ./...` en backend OK; `go test ./handlers` OK despues de formatear prueba dedicada. Validacion JS con Node no ejecutada porque `node.exe` del entorno devolvio Acceso denegado.
 

@@ -1421,7 +1421,7 @@ func ensureMotelCalipsoPublicShowcase(dbEmp *sql.DB, empresaID int64, cfg *dbpkg
 	for i := range items {
 		name := strings.ToLower(strings.TrimSpace(items[i].Nombre))
 		code := strings.ToUpper(strings.TrimSpace(items[i].CodigoPublico))
-		if code == "CALIPSO-DECORACION-HABITACION" || name == "decoracion de la habitacion" {
+		if code == "CALIPSO-DECORACION-HABITACION" || name == "decoracion de la estacion" {
 			existing = &items[i]
 			break
 		}
@@ -1430,8 +1430,8 @@ func ensureMotelCalipsoPublicShowcase(dbEmp *sql.DB, empresaID int64, cfg *dbpkg
 	if existing != nil {
 		existing.PaginaID = pageID
 		existing.CodigoPublico = "CALIPSO-DECORACION-HABITACION"
-		existing.Nombre = "Decoracion de la habitacion"
-		existing.Descripcion = "Ambientacion especial de la habitacion con arreglo romantico y detalle visual para una experiencia privada."
+		existing.Nombre = "Decoracion de la estacion"
+		existing.Descripcion = "Ambientacion especial de la estacion con arreglo romantico y detalle visual para una experiencia privada."
 		existing.Precio = 120000
 		existing.Moneda = "COP"
 		existing.ImagenURL = "/img/motel_calipso_decoracion_habitacion.jpg"
@@ -1449,8 +1449,8 @@ func ensureMotelCalipsoPublicShowcase(dbEmp *sql.DB, empresaID int64, cfg *dbpkg
 		EmpresaID:      empresaID,
 		PaginaID:       pageID,
 		CodigoPublico:  "CALIPSO-DECORACION-HABITACION",
-		Nombre:         "Decoracion de la habitacion",
-		Descripcion:    "Ambientacion especial de la habitacion con arreglo romantico y detalle visual para una experiencia privada.",
+		Nombre:         "Decoracion de la estacion",
+		Descripcion:    "Ambientacion especial de la estacion con arreglo romantico y detalle visual para una experiencia privada.",
 		Precio:         120000,
 		Moneda:         "COP",
 		ImagenURL:      "/img/motel_calipso_decoracion_habitacion.jpg",

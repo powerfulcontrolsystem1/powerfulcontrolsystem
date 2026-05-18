@@ -327,7 +327,7 @@
       <div class="hotel-hero-main">
         <span class="hotel-eyebrow">Revenue hotelero y motel</span>
         <h1>Tarifas de hotel y motel</h1>
-        <p>Configura precios por noche, day-use, planes express de motel, fracciones, tolerancias, topes y reglas de cobro por habitacion o estacion. Esta pantalla centraliza la operacion tarifaria para recepcion, caja y reservas.</p>
+        <p>Configura precios por noche, day-use, planes express de motel, fracciones, tolerancias, topes y reglas de cobro por estacion. Esta pantalla centraliza la operacion tarifaria para recepcion, caja y reservas.</p>
         <div class="hotel-actions">
           <button class="btn" type="button" data-scroll-target="nightSection">Nueva tarifa por noche</button>
           <button class="btn secondary" type="button" data-scroll-target="motelSection">Plan motel</button>
@@ -336,7 +336,7 @@
         </div>
       </div>
       <div class="hotel-hero-main hotel-hero-side">
-        <strong>Control profesional por habitacion</strong>
+        <strong>Control profesional por estacion</strong>
         <span>Prioridades, estados, horarios, tolerancia, aplicacion automatica, simulacion de cobro y reglas contables reutilizando los motores existentes del sistema.</span>
       </div>
     </section>
@@ -361,14 +361,14 @@
       <form id="nightForm" class="hotel-card">
         <input type="hidden" id="nightId">
         <h2>Tarifa por noche</h2>
-        <p>Define el valor base por habitacion, ocupacion, horarios de check-in/check-out, prioridad y si se aplica automaticamente al carrito de la estacion.</p>
+        <p>Define el valor base por estacion, ocupacion, horarios de check-in/check-out, prioridad y si se aplica automaticamente al carrito de la estacion.</p>
         <div class="hotel-form-grid">
           <div class="span-2">
             <label class="form-label" for="nightName">Nombre tarifa</label>
             <input id="nightName" class="form-input" placeholder="tarifa_hotel_cama_doble" value="tarifa_hotel_cama_doble">
           </div>
           <div class="span-2">
-            <label class="form-label" for="nightStationSelect">Habitacion / estacion</label>
+            <label class="form-label" for="nightStationSelect">Estacion</label>
             <select id="nightStationSelect" class="form-input"></select>
           </div>
           <div>
@@ -381,7 +381,7 @@
           </div>
           <div>
             <label class="form-label" for="nightStationName">Nombre visible</label>
-            <input id="nightStationName" class="form-input" placeholder="Habitacion 10">
+            <input id="nightStationName" class="form-input" placeholder="Estacion 10">
           </div>
           <div>
             <label class="form-label" for="nightService">Servicio</label>
@@ -447,7 +447,7 @@
         <p>Configura permanencias por minutos, bloques extra, dias aplicables y cobro por fraccion para planes cortos o salida tardia.</p>
         <div class="hotel-form-grid">
           <div class="span-2">
-            <label class="form-label" for="dayUseStationSelect">Habitacion / estacion</label>
+            <label class="form-label" for="dayUseStationSelect">Estacion</label>
             <select id="dayUseStationSelect" class="form-input"></select>
           </div>
           <div>
@@ -460,7 +460,7 @@
           </div>
           <div>
             <label class="form-label" for="dayUseStationName">Nombre visible</label>
-            <input id="dayUseStationName" class="form-input" placeholder="Habitacion 10">
+            <input id="dayUseStationName" class="form-input" placeholder="Estacion 10">
           </div>
           <div>
             <label class="form-label" for="dayUseCurrency">Moneda</label>
@@ -523,7 +523,7 @@
       <form id="motelForm" class="hotel-card">
         <input type="hidden" id="motelId">
         <h2>Planes motel profesionales</h2>
-        <p>Administra planes express, nocturnos, amanecida, VIP o promocionales con horario de validez, tolerancia, minutos incluidos y bloques extra por habitacion.</p>
+        <p>Administra planes express, nocturnos, amanecida, VIP o promocionales con horario de validez, tolerancia, minutos incluidos y bloques extra por estacion.</p>
         <div class="hotel-form-grid">
           <div>
             <label class="form-label" for="motelPlanName">Nombre del plan</label>
@@ -542,7 +542,7 @@
             </select>
           </div>
           <div class="span-2">
-            <label class="form-label" for="motelStationSelect">Habitacion / estacion</label>
+            <label class="form-label" for="motelStationSelect">Estacion</label>
             <select id="motelStationSelect" class="form-input"></select>
           </div>
           <div>
@@ -555,7 +555,7 @@
           </div>
           <div>
             <label class="form-label" for="motelStationName">Nombre visible</label>
-            <input id="motelStationName" class="form-input" placeholder="Habitacion Jacuzzi 10">
+            <input id="motelStationName" class="form-input" placeholder="Estacion Jacuzzi 10">
           </div>
           <div>
             <label class="form-label" for="motelCategory">Categoria</label>
@@ -627,7 +627,7 @@
 
       <div class="hotel-panel">
         <h2>Planes motel configurados</h2>
-        <p>Controla multiples planes por habitacion sin limitarte a una sola regla por rango de dias.</p>
+        <p>Controla multiples planes por estacion sin limitarte a una sola regla por rango de dias.</p>
         <div id="motelList" class="hotel-table-wrap"><div class="hotel-empty">Cargando planes motel...</div></div>
       </div>
     </section>
@@ -680,27 +680,27 @@
       <div class="hotel-sim-grid">
         <form id="nightSimForm" class="hotel-card">
           <h2>Simulador por noche</h2>
-          <p>Calcula el valor esperado segun check-in, check-out, personas y la tarifa activa de la habitacion.</p>
+          <p>Calcula el valor esperado segun check-in, check-out, personas y la tarifa activa de la estacion.</p>
           <div class="hotel-form-grid">
-            <div class="span-2"><label class="form-label" for="simNightStation">Habitacion</label><select id="simNightStation" class="form-input"></select></div>
+            <div class="span-2"><label class="form-label" for="simNightStation">Estacion</label><select id="simNightStation" class="form-input"></select></div>
             <div><label class="form-label" for="simNightPeople">Personas</label><input id="simNightPeople" class="form-input" type="number" min="1" max="999" value="2"></div>
             <div><label class="form-label" for="simNightStart">Activado en</label><input id="simNightStart" class="form-input" type="datetime-local"></div>
             <div><label class="form-label" for="simNightEnd">Fecha corte</label><input id="simNightEnd" class="form-input" type="datetime-local"></div>
           </div>
           <div class="form-actions"><button class="btn secondary" type="submit">Calcular noche</button></div>
-          <div id="nightSimResult" class="hotel-result">Selecciona una habitacion para simular.</div>
+          <div id="nightSimResult" class="hotel-result">Selecciona una estacion para simular.</div>
         </form>
 
         <form id="dayUseSimForm" class="hotel-card">
           <h2>Simulador day-use</h2>
           <p>Calcula cobro por permanencia, bloques extra, tolerancia, topes y redondeo.</p>
           <div class="hotel-form-grid">
-            <div class="span-2"><label class="form-label" for="simDayUseStation">Habitacion</label><select id="simDayUseStation" class="form-input"></select></div>
+            <div class="span-2"><label class="form-label" for="simDayUseStation">Estacion</label><select id="simDayUseStation" class="form-input"></select></div>
             <div><label class="form-label" for="simDayUseDay">Dia</label><select id="simDayUseDay" class="form-input"></select></div>
             <div><label class="form-label" for="simDayUseMinutes">Minutos consumidos</label><input id="simDayUseMinutes" class="form-input" type="number" min="0.01" step="0.01" value="180"></div>
           </div>
           <div class="form-actions"><button class="btn secondary" type="submit">Calcular day-use</button></div>
-          <div id="dayUseSimResult" class="hotel-result">Selecciona una habitacion para simular.</div>
+          <div id="dayUseSimResult" class="hotel-result">Selecciona una estacion para simular.</div>
         </form>
 
         <form id="motelSimForm" class="hotel-card">

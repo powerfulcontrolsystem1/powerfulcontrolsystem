@@ -2791,7 +2791,7 @@ func planCuentasTemplatesByTipo() map[string][]planCuentaTemplateItem {
 		},
 		"motel": {
 			{Codigo: "413545", Nombre: "Ingresos hospedaje corta estancia", TipoCuenta: "ingreso", Naturaleza: "credito", Nivel: 2, CuentaPadre: "4135", AdmiteMovimiento: true, AplicaImpuesto: true, CuentaClave: "ingresos_motel", Requerida: true, Orden: 190},
-			{Codigo: "510545", Nombre: "Kits y aseo habitacion", TipoCuenta: "gasto", Naturaleza: "debito", Nivel: 2, CuentaPadre: "5105", AdmiteMovimiento: true, CuentaClave: "kits_aseo", Requerida: false, Orden: 200},
+			{Codigo: "510545", Nombre: "Kits y aseo estacion", TipoCuenta: "gasto", Naturaleza: "debito", Nivel: 2, CuentaPadre: "5105", AdmiteMovimiento: true, CuentaClave: "kits_aseo", Requerida: false, Orden: 200},
 		},
 		"servicios": {
 			{Codigo: "413560", Nombre: "Ingresos por servicios", TipoCuenta: "ingreso", Naturaleza: "credito", Nivel: 2, CuentaPadre: "4135", AdmiteMovimiento: true, AplicaImpuesto: true, CuentaClave: "ingresos_servicios", Requerida: true, Orden: 210},

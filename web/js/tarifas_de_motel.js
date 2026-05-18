@@ -166,7 +166,7 @@
   function fillStationSelect(id, includeAll) {
     var select = $(id);
     if (!select) return;
-    var html = includeAll ? '<option value="">Todas</option>' : '<option value="">Selecciona una habitacion</option>';
+    var html = includeAll ? '<option value="">Todas</option>' : '<option value="">Selecciona una estacion</option>';
     state.stations.forEach(function (station) {
       html += '<option value="' + station.id + '">' + esc(station.name + " (#" + station.id + ")") + '</option>';
     });
@@ -182,7 +182,7 @@
     var station = findStation(stationID);
     $("stationId").value = String(stationID);
     $("stationCode").value = station && station.code ? station.code : defaultStationCode(state.empresaID, stationID);
-    $("stationName").value = station && station.name ? station.name : "Habitacion " + stationID;
+    $("stationName").value = station && station.name ? station.name : "Estacion " + stationID;
   }
 
   async function loadStations() {
@@ -195,7 +195,7 @@
         rows.forEach(function (item, index) {
           var id = number(item && item.id ? item.id : index + 1);
           if (id <= 0) return;
-          byID.set(id, { id: id, code: defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Habitacion " + id });
+          byID.set(id, { id: id, code: defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Estacion " + id });
         });
       }
     } catch (e) {
@@ -213,7 +213,7 @@
           var code = text(item && item.codigo).toUpperCase();
           var id = parseStationIDFromCode(code, state.empresaID);
           if (id <= 0) return;
-          byID.set(id, { id: id, code: code || defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Habitacion " + id });
+          byID.set(id, { id: id, code: code || defaultStationCode(state.empresaID, id), name: text(item && item.nombre) || "Estacion " + id });
         });
       }
     } catch (e) {
@@ -232,7 +232,7 @@
       empresa_id: state.empresaID,
       estacion_id: stationID,
       estacion_codigo: stationOverride ? (stationOverride.code || defaultStationCode(state.empresaID, stationID)) : (text($("stationCode").value) || defaultStationCode(state.empresaID, stationID)),
-      estacion_nombre: stationOverride ? (stationOverride.name || ("Habitacion " + stationID)) : (text($("stationName").value) || "Habitacion " + stationID),
+      estacion_nombre: stationOverride ? (stationOverride.name || ("Estacion " + stationID)) : (text($("stationName").value) || "Estacion " + stationID),
       nombre_plan: text($("planName").value) || "Express 3 horas",
       tipo_plan: text($("planType").value) || "express",
       categoria_habitacion: text($("roomCategory").value),
@@ -256,7 +256,7 @@
 
   function validatePayload(payload) {
     if (state.empresaID <= 0) return "No se encontro empresa_id para guardar.";
-    if (payload.estacion_id <= 0) return "Selecciona una habitacion o escribe el ID de estacion.";
+    if (payload.estacion_id <= 0) return "Selecciona una estacion o escribe el ID de estacion.";
     if (payload.valor_base < 0 || payload.valor_extra < 0) return "Los valores no pueden ser negativos.";
     if (payload.minutos_incluidos <= 0 || payload.minutos_extra <= 0) return "Los minutos incluidos y extra deben ser mayores a cero.";
     return "";
@@ -306,11 +306,11 @@
     }
     var template = buildPayload();
     var error = validatePayload(Object.assign({}, template, { estacion_id: state.stations[0].id }));
-    if (error && error.indexOf("habitacion") < 0) {
+    if (error && error.indexOf("estacion") < 0) {
       setMessage("formMsg", error, true);
       return;
     }
-    setMessage("formMsg", "Aplicando plan a " + state.stations.length + " habitaciones...", false);
+    setMessage("formMsg", "Aplicando plan a " + state.stations.length + " estaciones...", false);
     var saved = 0;
     try {
       for (var i = 0; i < state.stations.length; i += 1) {
@@ -320,10 +320,10 @@
         await savePayload(payload);
         saved += 1;
       }
-      setMessage("formMsg", "Plan aplicado a " + saved + " habitaciones.", false);
+      setMessage("formMsg", "Plan aplicado a " + saved + " estaciones.", false);
       await loadRates();
     } catch (e) {
-      setMessage("formMsg", e.message || "No se pudo aplicar a todas las habitaciones.", true);
+      setMessage("formMsg", e.message || "No se pudo aplicar a todas las estaciones.", true);
     }
   }
 
@@ -374,7 +374,7 @@
       vip: {
         name: "VIP 4 horas", type: "vip", category: "VIP", from: "1", to: "7",
         start: "00:00", end: "23:59", included: "240", base: "95000", extraMinutes: "60",
-        extraValue: "25000", tolerance: "10", notes: "Plan VIP con tarifa premium por habitacion."
+        extraValue: "25000", tolerance: "10", notes: "Plan VIP con tarifa premium por estacion."
       },
       promo: {
         name: "Promo lunes a jueves", type: "promocion", category: "Estandar", from: "1", to: "4",
@@ -442,7 +442,7 @@
     var active = state.rates.filter(function (item) { return text(item.estado || "activo").toLowerCase() === "activo"; });
     var html = '<option value="">Selecciona un plan</option>';
     active.forEach(function (item) {
-      html += '<option value="' + esc(item.id) + '">' + esc((item.nombre_plan || "Plan motel") + " - " + (item.estacion_nombre || ("Habitacion " + item.estacion_id))) + '</option>';
+      html += '<option value="' + esc(item.id) + '">' + esc((item.nombre_plan || "Plan motel") + " - " + (item.estacion_nombre || ("Estacion " + item.estacion_id))) + '</option>';
     });
     select.innerHTML = html;
   }
@@ -456,14 +456,14 @@
       root.innerHTML = '<div class="motel-empty">No hay tarifas de motel para los filtros actuales.</div>';
       return;
     }
-    root.innerHTML = '<table class="motel-table"><thead><tr><th>Plan</th><th>Habitacion</th><th>Vigencia</th><th>Base</th><th>Extra</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' +
+    root.innerHTML = '<table class="motel-table"><thead><tr><th>Plan</th><th>Estacion</th><th>Vigencia</th><th>Base</th><th>Extra</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' +
       rows.map(function (item) {
         var status = text(item.estado || "activo").toLowerCase();
         var toggle = status === "activo" ? "desactivar" : "activar";
         var badgeClass = status === "activo" ? "motel-badge" : "motel-badge off";
         return "<tr>" +
           "<td><strong>" + esc(item.nombre_plan || "Plan motel") + "</strong><br><small>" + esc(typeLabel(item.tipo_plan)) + " | " + esc(item.categoria_habitacion || "General") + "</small></td>" +
-          "<td><strong>" + esc(item.estacion_nombre || ("Habitacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
+          "<td><strong>" + esc(item.estacion_nombre || ("Estacion " + item.estacion_id)) + "</strong><br><small>" + esc(item.estacion_codigo || defaultStationCode(state.empresaID, item.estacion_id)) + "</small></td>" +
           "<td>" + esc(dayRange(item.dia_semana_desde, item.dia_semana_hasta)) + "<br><small>" + esc((item.hora_inicio || "00:00") + " - " + (item.hora_fin || "23:59")) + "</small></td>" +
           "<td>" + esc(item.minutos_incluidos || 0) + " min<br><strong>" + esc(money(item.valor_base, item.moneda)) + "</strong><br><small>Tolerancia " + esc(item.tolerancia_minutos || 0) + " min</small></td>" +
           "<td>" + esc(item.minutos_extra || 0) + " min<br><strong>" + esc(money(item.valor_extra, item.moneda)) + "</strong><br><small>" + (item.cobrar_por_fraccion ? "Fraccion parcial" : "Bloque completo") + "</small></td>" +

@@ -59,13 +59,13 @@
           imagen_url: '/img/motel.png',
           enlace: '/administrar_empresa.html?module=motel',
           detalle_etiqueta: 'Operacion por estancias',
-          detalle_titular: 'Controla habitaciones, tiempos de ocupacion y consumos sin perder detalle.',
-          detalle_parrafo_uno: 'El sistema para Motel esta orientado a negocios donde el cobro depende del tiempo de uso, la disponibilidad de habitaciones y los consumos agregados durante la estancia. Permite conocer que habitaciones estan libres, ocupadas, reservadas o listas para limpieza, facilitando la operacion en tiempo real.',
-          detalle_parrafo_dos: 'La plataforma combina tarifas por minutos, tarifas por bloques, cargos adicionales, consumos de minibar o servicios y seguimiento de pagos por habitacion. Esto mejora la rotacion, reduce errores de cobro y entrega una trazabilidad clara para auditoria interna y control administrativo.',
+          detalle_titular: 'Controla estaciones, tiempos de ocupacion y consumos sin perder detalle.',
+          detalle_parrafo_uno: 'El sistema para Motel esta orientado a negocios donde el cobro depende del tiempo de uso, la disponibilidad de estaciones y los consumos agregados durante la estancia. Permite conocer que estaciones estan libres, ocupadas, reservadas o listas para limpieza, facilitando la operacion en tiempo real.',
+          detalle_parrafo_dos: 'La plataforma combina tarifas por minutos, tarifas por bloques, cargos adicionales, consumos de minibar o servicios y seguimiento de pagos por estacion. Esto mejora la rotacion, reduce errores de cobro y entrega una trazabilidad clara para auditoria interna y control administrativo.',
           detalle_puntos: [
             'Tarifas por tiempo, reglas por bloques y calculo automatico del valor a cobrar.',
-            'Control de habitaciones con estados operativos y consumos asociados a la estancia.',
-            'Carritos simultaneos por estacion o habitacion con aislamiento por empresa.',
+            'Control de estaciones con estados operativos y consumos asociados a la estancia.',
+            'Carritos simultaneos por estacion con aislamiento por empresa.',
             'Reportes de ocupacion, ingresos por turno y seguimiento detallado de servicios.'
           ]
         },
@@ -103,15 +103,15 @@
         },
         {
           titulo: 'Hotel',
-          descripcion: 'Administracion de empresas, reservas y operacion hotelera con control por habitacion.',
+          descripcion: 'Administracion de empresas, reservas y operacion hotelera con control por estacion.',
           imagen_url: '/img/settings-color.svg',
           enlace: '/administrar_empresa.html?module=configuracion',
           detalle_etiqueta: 'Reservas y hospedaje',
           detalle_titular: 'Gestiona reservas, check-in, check-out y facturacion hotelera en un mismo flujo.',
-          detalle_parrafo_uno: 'La solucion para Hotel permite administrar habitaciones, reservas futuras, ocupacion actual y cargos adicionales dentro de una operacion unificada. De esta forma, recepcion y administracion pueden trabajar con informacion consistente sobre disponibilidad, tiempos de entrada y salida y consumos por huesped.',
-          detalle_parrafo_dos: 'El sistema ayuda a estructurar el ciclo completo del hospedaje: reserva, confirmacion, asignacion de habitacion, facturacion, cargos por servicios y control posterior. Esto lo convierte en una herramienta util tanto para pequenos hoteles como para operaciones que necesitan mayor orden en caja, reportes y servicio al cliente.',
+          detalle_parrafo_uno: 'La solucion para Hotel permite administrar estaciones, reservas futuras, ocupacion actual y cargos adicionales dentro de una operacion unificada. De esta forma, recepcion y administracion pueden trabajar con informacion consistente sobre disponibilidad, tiempos de entrada y salida y consumos por huesped.',
+          detalle_parrafo_dos: 'El sistema ayuda a estructurar el ciclo completo del hospedaje: reserva, confirmacion, asignacion de estacion, facturacion, cargos por servicios y control posterior. Esto lo convierte en una herramienta util tanto para pequenos hoteles como para operaciones que necesitan mayor orden en caja, reportes y servicio al cliente.',
           detalle_puntos: [
-            'Control de reservas por rango de fechas y disponibilidad real de habitaciones.',
+            'Control de reservas por rango de fechas y disponibilidad real de estaciones.',
             'Check-in y check-out con cargos diarios, servicios adicionales y seguimiento por huesped.',
             'Facturacion, reportes de ocupacion y trazabilidad por empresa y periodo.',
             'Soporte para operaciones multiusuario con historial claro de movimientos y cobros.'

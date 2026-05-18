@@ -534,9 +534,9 @@ func SeedEmpresaComprasAvanzadasDemo(dbConn *sql.DB, empresaID int64, usuario st
 	reqID, err := CreateEmpresaCompraRequisicion(dbConn, EmpresaCompraRequisicion{
 		EmpresaID: empresaID, Codigo: code, Solicitante: "Coordinacion de compras", Area: "Operaciones", CentroCosto: "Motel Calipso",
 		Prioridad: "alta", FechaSolicitud: time.Now().Format("2006-01-02"), FechaNecesidad: time.Now().AddDate(0, 0, 5).Format("2006-01-02"),
-		EstadoFlujo: "solicitada", Justificacion: "Reposicion operativa para habitaciones y mantenimiento", UsuarioCreador: usuario,
+		EstadoFlujo: "solicitada", Justificacion: "Reposicion operativa para estaciones y mantenimiento", UsuarioCreador: usuario,
 		Items: []EmpresaCompraRequisicionItem{
-			{ProductoNombre: "Kit amenidades habitacion", CantidadSolicitada: 80, Unidad: "und", CostoEstimado: 3200, ProveedorSugerido: "Proveedor hotelero"},
+			{ProductoNombre: "Kit amenidades estacion", CantidadSolicitada: 80, Unidad: "und", CostoEstimado: 3200, ProveedorSugerido: "Proveedor hotelero"},
 			{ProductoNombre: "Control remoto universal", CantidadSolicitada: 12, Unidad: "und", CostoEstimado: 42000, ProveedorSugerido: "Proveedor electronico"},
 		},
 	})

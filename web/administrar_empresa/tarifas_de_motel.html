@@ -300,7 +300,7 @@
       <div>
         <p class="motel-kicker">Revenue operativo de motel</p>
         <h1>Tarifas de motel</h1>
-        <p>Administra planes express, amanecidas, VIP y promociones por habitacion, con horarios de validez, tolerancia, minutos incluidos, bloque extra, aplicacion automatica y simulacion de cobro para recepcion.</p>
+        <p>Administra planes express, amanecidas, VIP y promociones por estacion, con horarios de validez, tolerancia, minutos incluidos, bloque extra, aplicacion automatica y simulacion de cobro para recepcion.</p>
       </div>
       <div class="motel-header-actions">
         <button id="reloadRates" class="btn secondary" type="button">Actualizar</button>
@@ -311,7 +311,7 @@
 
     <section class="motel-kpis" aria-label="Indicadores de tarifas de motel">
       <div class="motel-kpi"><small>Planes activos</small><strong id="kpiActive">0</strong></div>
-      <div class="motel-kpi"><small>Habitaciones cubiertas</small><strong id="kpiRooms">0</strong></div>
+      <div class="motel-kpi"><small>Estaciones cubiertas</small><strong id="kpiRooms">0</strong></div>
       <div class="motel-kpi"><small>Valor promedio base</small><strong id="kpiAverage">$0</strong></div>
       <div class="motel-kpi"><small>Plan mas alto</small><strong id="kpiMax">$0</strong></div>
       <div class="motel-kpi"><small>Tipos configurados</small><strong id="kpiTypes">0</strong></div>
@@ -321,7 +321,7 @@
       <form id="rateForm" class="motel-panel">
         <input type="hidden" id="rateId">
         <h2>Plan tarifario</h2>
-        <p>Define un plan por habitacion o crea una plantilla y aplicala a todas las estaciones disponibles.</p>
+        <p>Define un plan por estacion o crea una plantilla y aplicala a todas las estaciones disponibles.</p>
         <div class="motel-form-grid">
           <div>
             <label class="form-label" for="planName">Nombre del plan</label>
@@ -340,7 +340,7 @@
             </select>
           </div>
           <div class="span-2">
-            <label class="form-label" for="stationSelect">Habitacion / estacion</label>
+            <label class="form-label" for="stationSelect">Estacion</label>
             <select id="stationSelect" class="form-input"></select>
           </div>
           <div>
@@ -353,7 +353,7 @@
           </div>
           <div>
             <label class="form-label" for="stationName">Nombre visible</label>
-            <input id="stationName" class="form-input" placeholder="Habitacion 10">
+            <input id="stationName" class="form-input" placeholder="Estacion 10">
           </div>
           <div>
             <label class="form-label" for="roomCategory">Categoria</label>
@@ -426,7 +426,7 @@
         <div class="motel-toolbar">
           <div>
             <h2>Matriz tarifaria</h2>
-            <p>Filtra, edita, activa o desactiva planes por habitacion sin salir de recepcion.</p>
+            <p>Filtra, edita, activa o desactiva planes por estacion sin salir de recepcion.</p>
           </div>
           <div class="motel-actions">
             <button id="clearFilters" class="btn secondary" type="button">Limpiar filtros</button>
@@ -435,7 +435,7 @@
         <div class="motel-filters">
           <div>
             <label class="form-label" for="filterText">Buscar</label>
-            <input id="filterText" class="form-input" placeholder="Plan, habitacion, categoria">
+            <input id="filterText" class="form-input" placeholder="Plan, estacion, categoria">
           </div>
           <div>
             <label class="form-label" for="filterType">Tipo</label>
@@ -455,7 +455,7 @@
             <select id="filterStatus" class="form-input"><option value="">Todos</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
           </div>
           <div>
-            <label class="form-label" for="filterStation">Habitacion</label>
+            <label class="form-label" for="filterStation">Estacion</label>
             <select id="filterStation" class="form-input"></select>
           </div>
         </div>
@@ -485,7 +485,7 @@
 
       <section class="motel-panel">
         <h2>Presets operativos</h2>
-        <p>Usa una base y luego ajusta valor, habitacion, horario o prioridad antes de guardar.</p>
+        <p>Usa una base y luego ajusta valor, estacion, horario o prioridad antes de guardar.</p>
         <div class="motel-actions" style="justify-content:flex-start">
           <button class="btn secondary" type="button" data-preset="express">Express 3h</button>
           <button class="btn secondary" type="button" data-preset="day_use">Day-use 6h</button>

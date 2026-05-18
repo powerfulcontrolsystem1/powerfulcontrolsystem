@@ -4925,13 +4925,13 @@
         });
       };
 
-      if (containsAny(['motel', 'hotel', 'reservas_hotel', 'apartamentos_turisticos', 'hospedaje', 'habitacion'])) {
+      if (containsAny(['motel', 'hotel', 'reservas_hotel', 'apartamentos_turisticos', 'hospedaje'])) {
         return mergeCartSummaryProfile({
           key: 'estadia',
           title: 'Cuenta de estadia',
           badge: 'Estadia',
           cartLabel: 'Reserva',
-          stationLabel: 'Habitacion',
+          stationLabel: 'Estacion',
           entryLabel: 'Check-in',
           exitLabel: 'Check-out',
           itemsLabel: 'Cargos',

@@ -100,7 +100,7 @@ Actualizacion 2026-05-12 (adaptacion del nucleo por plantilla)
 - No se agregan tablas ni columnas fisicas.
 - El JSON `tipo_empresa_preconfiguraciones.config_json` puede incluir `adaptacion_nucleo` con `fuente_unica`, `usuarios_desde_nucleo`, `productos_servicios_desde_nucleo`, `estaciones_como_recursos_configurados`, nombres de entidad de estacion, roles, productos/servicios guia, estaciones guia y reglas.
 - Al aplicar una plantilla se guarda la preferencia `preconfiguracion_tipo_empresa_adaptacion_nucleo` en `empresa_estacion_prefs`.
-- `estaciones_config` agrega metadata JSON de recurso (`tipo_recurso`, `tipo_recurso_plural`, `representa_recurso_negocio`) para que la misma tabla de estaciones represente habitaciones, apartamentos, puestos, vehiculos, bahias, aulas, consultorios u otros recursos.
+- `estaciones_config` agrega metadata JSON de recurso (`tipo_recurso`, `tipo_recurso_plural`, `representa_recurso_negocio`) para que la misma tabla de estaciones represente estaciones, apartamentos, puestos, vehiculos, bahias, aulas, consultorios u otros recursos.
 
 Actualizacion 2026-05-12 (matriz profesional de 30 verticales)
 - No se agregan tablas ni columnas fisicas.
@@ -310,7 +310,7 @@ Actualizacion 2026-04-21 (compras y finanzas: comprobantes adjuntos por empresa)
 Actualizacion 2026-04-26 (finanzas/inventario/asistencia: integracion operativa)
 - empresa_finanzas_configuracion:
   - `integracion_contable_destino` acepta valores operativos `generico`, `siigo`, `world_office`, `alegra`, `helisa`, `loggro`, `contapyme`.
-  - Las categorias/cuentas por defecto se amplian para operación Colombia (ventas, habitaciones, restaurante, bar, lavanderia, propinas, compras, nomina, servicios publicos, arriendo, mantenimiento, impuestos, bancos).
+  - Las categorias/cuentas por defecto se amplian para operacion Colombia (ventas, estaciones, restaurante, bar, lavanderia, propinas, compras, nomina, servicios publicos, arriendo, mantenimiento, impuestos, bancos).
 - productos:
   - `codigo_barras` se usa como destino persistente del generador de etiquetas Code 128 por empresa y como fuente prioritaria del lector en carritos.
 - empresa_asistencia_empleados:
@@ -522,7 +522,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - activado_en, pagado_en, referencia_operacion
   - fecha_evento
 
-### Tabla de reservas por estacion/habitacion
+### Tabla de reservas por estacion
 - reservas_hotel:
   - empresa_id, carrito_id, estacion_id, codigo_reserva
   - cliente_nombre, cliente_documento, cliente_email, cliente_telefono
@@ -1421,7 +1421,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.
 - 2026-05-13: se agrega `licencia_vencimiento_notificaciones` en `pcs_superadministrador` para registrar avisos de vencimiento enviados/capturados por licencia base o adicional, empresa, correo administrador, fecha de vencimiento y umbral de dias. La configuracion global vive en `configuraciones` con claves `licencias.vencimiento_alertas.*`.
-- 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar relés GPIO en Raspberry Pi por estacion/habitacion. La configuracion guarda conexion HTTP por empresa; los relés asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
+- 2026-05-04: se agregan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos` para controlar reles GPIO en Raspberry Pi por estacion. La configuracion guarda conexion HTTP por empresa; los reles asignan estacion + `salida_codigo` + `tipo_carga` a GPIO y estado runtime; los eventos auditan comandos `on/off`, respuesta de la Raspberry, actor y origen.
 - 2026-04-08: se agrega `super_servidor_eventos` en `pcs_superadministrador` para auditoria de inicio/reinicio del servidor (incluye estado previo, motivo, resultado de envio de correo y metadata operativa); ademas se incorpora clave de configuracion `gmail.restart_alert_to` para correo destino de alertas.
 - 2026-04-08: se amplía `licencias` en `pcs_superadministrador` con `modulos_habilitados` y `super_rol_habilitado` para gobernar permisos efectivos por empresa desde la licencia activa, junto con columnas de trazabilidad (`fecha_actualizacion`, `usuario_creador`, `estado`, `observaciones`).
 - 2026-04-08: se agregan `super_venta_digital_configuracion`, `super_venta_digital_items` y `super_venta_digital_ordenes` en `pcs_superadministrador` para venta de licencias/software administrada por super, con pago Wompi y entrega por correo posterior a aprobacion.
@@ -1446,7 +1446,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
 - 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
 - 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.
-- 2026-04-05: se agrega `reservas_hotel` para gestionar reservas por estacion/habitacion con control de disponibilidad por rango, expiracion de pendientes y confirmacion de pago.
+- 2026-04-05: se agrega `reservas_hotel` para gestionar reservas por estacion con control de disponibilidad por rango, expiracion de pendientes y confirmacion de pago.
 - 2026-04-05: se agrega `empresa_vehiculos_registro` para controlar ingreso y salida de vehiculos por empresa con patente, conductor, propietario y motivo operativo.
 - 2026-04-05: se agrega `codigos_de_descuento` por empresa para promociones con vigencia, usos y validacion de pago en carrito.
 - 2026-04-05: se amplía `carritos_compras` con `metodo_pago` y `referencia_pago` para trazabilidad del cierre de venta por estacion.
