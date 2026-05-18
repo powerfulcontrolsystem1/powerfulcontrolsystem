@@ -1,3 +1,13 @@
+2026-05-18: Nota de boton Caja en Operacion y ventas
+- `web/administrar_empresa.html` agrega el enlace `linkCorteCaja` bajo `Operacion y ventas`.
+- No se crea permiso nuevo: el enlace conserva la regla existente de `finanzas`/crear para corte de caja y el backend sigue protegido por `WithEmpresaFinanzasPermissions`.
+- La ruta abierta es la misma pantalla de caja usada desde estaciones.
+
+2026-05-18: Nota de reporte de turno en Caja
+- El boton `Ver reporte de mi turno` vive dentro de `web/administrar_empresa/corte_de_caja.html`, bajo los permisos existentes de finanzas/corte de caja.
+- No crea pagina, permiso ni accion nueva de matriz; el endpoint reutiliza `/api/empresa/corte_caja` y filtra por `empresa_id` y usuario autenticado.
+- La accion solo consulta/imprime; no guarda ni cierra turno.
+
 2026-05-17: Nota de comunicaciones super unificadas
 - El modulo `Comunicaciones` del Super Administrador agrupa mantenimiento, correos masivos, alertas y configuraciones de mensajeria.
 - La agrupacion no agrega permisos ni wrappers nuevos; conserva las mismas paginas y endpoints super ya permitidos.

@@ -1,3 +1,23 @@
+## [2026-05-18] Panel sin tarjeta de mercado
+- [Frontend] `web/administrar_empresa/panel.html` elimina la tarjeta `Mercado en contexto`.
+- [Operacion] El panel ya no consulta indicadores externos de divisas, criptoactivos ni ETFs al cargar.
+- [Alcance] No cambia backend, permisos, tablas ni endpoints.
+
+## [2026-05-18] Caja en operacion y ventas
+- [Frontend] `web/administrar_empresa.html` agrega el boton `Caja` debajo de `Estaciones`.
+- [Navegacion] El acceso abre `corte_de_caja.html` con el mismo contexto usado al hacer clic en la tarjeta Caja de estaciones.
+- [Permisos] Reutiliza `linkCorteCaja`, por lo que no crea permiso nuevo ni endpoint nuevo.
+
+## [2026-05-18] Reporte de mi turno desde estacion Caja
+- [Frontend] `web/administrar_empresa/corte_de_caja.html` agrega el boton `Ver reporte de mi turno`.
+- [Backend] `/api/empresa/corte_caja?action=reporte_mi_turno` reutiliza el filtro seguro de caja abierta del usuario autenticado.
+- [UX] El boton muestra e imprime el reporte del turno actual sin habilitar el guardado/cierre accidental del turno.
+
+## [2026-05-17] Venta directa con acciones del carrito de estaciones
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` trata venta directa y estaciones como la misma vista enfocada tambien para la tarjeta de acciones.
+- [UX] Los botones operativos del carrito, incluido `Abonos`, cargan en venta directa con la misma configuracion global del carrito.
+- [Compatibilidad] No cambia endpoints, tablas, permisos ni el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`.
+
 ## [2026-05-17] Menu flotante sin compartir WhatsApp
 - [Frontend] `web/menu.js` retira `Compartir por WhatsApp` del submenu `Utilidades`.
 - [UX] `Cambiar apariencia` queda como penultimo elemento del panel flotante y `Cerrar sesion`/`Iniciar sesion` queda de ultimo.

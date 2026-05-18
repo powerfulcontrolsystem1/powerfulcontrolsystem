@@ -1,3 +1,28 @@
+2026-05-18: Panel sin tarjeta de mercado
+- Modulos afectados: `administrar_empresa`, `panel`.
+- Frontend: `web/administrar_empresa/panel.html` elimina la seccion `Mercado en contexto` con indicadores economicos.
+- Operacion: se retiran las consultas a indicadores externos de moneda, criptoactivos y mercado desde el panel empresarial.
+- Alcance tecnico: no cambia backend, endpoints, permisos, tablas ni dependencias.
+
+2026-05-18: Caja en Operacion y ventas
+- Modulos afectados: `administrar_empresa`, `estaciones`, `caja`, `corte_de_caja`.
+- Frontend: `web/administrar_empresa.html` agrega `Caja` debajo de `Estaciones` en el grupo `Operacion y ventas`.
+- Navegacion: el enlace abre `/administrar_empresa/corte_de_caja.html?source=estaciones&return_to=estaciones&auto_generar=1&caja_nombre=Caja`, igual que la tarjeta Caja del tablero de estaciones.
+- Permisos: se reutiliza `linkCorteCaja`; no cambia backend, endpoints, tablas ni dependencias.
+
+2026-05-18: Reporte de mi turno desde estacion Caja
+- Modulos afectados: `estaciones`, `caja`, `corte_de_caja`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` agrega `Ver reporte de mi turno` junto a las opciones de corte.
+- Backend: `backend/handlers/corte_caja.go` reconoce `action=reporte_mi_turno` y mantiene el filtro por usuario autenticado, `empresa_id` y caja abierta.
+- UX: el reporte se puede imprimir sin activar el boton de guardar cierre; `Corte automatico` conserva el flujo para cerrar turno.
+- Alcance tecnico: no cambia tablas, permisos ni dependencias.
+
+2026-05-17: Venta directa con mismas acciones de carrito de estaciones
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` usa el modo enfocado compartido para resolver configuracion del carrito y mostrar la tarjeta `stationCartActionsCard`.
+- UX: venta directa muestra las acciones operativas del carrito, incluidos abonos, igual que los carritos de estaciones cuando la configuracion global lo permite.
+- Alcance tecnico: no cambia backend, endpoints, permisos, tablas ni dependencias; conserva aislamiento por `empresa_id` y carrito canonico `VENTA-DIRECTA-{empresa_id}-0`.
+
 2026-05-17: Menu flotante sin compartir por WhatsApp
 - Modulos afectados: `menu_flotante`, `frontend_compartido`.
 - Frontend: `web/menu.js` elimina la opcion `Compartir por WhatsApp` del submenu `Utilidades`.

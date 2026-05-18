@@ -1,3 +1,7 @@
+2026-05-18 - Reporte de mi turno en corte de caja
+- `backend/handlers/corte_caja_test.go`:
+	- agrega regresion para confirmar que `action=reporte_mi_turno` usa el flujo de caja abierta del usuario autenticado y que una consulta normal de corte no queda forzada a ese filtro.
+
 2026-05-17 - Comunicaciones super unificadas
 - `web/super_administrador.html`:
 	- crea el modulo principal `Comunicaciones`.

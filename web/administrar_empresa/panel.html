@@ -465,208 +465,6 @@
       overflow-wrap: anywhere;
     }
 
-    .empresa-market-panel {
-      margin-top: 18px;
-      padding: 18px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      box-shadow: 0 14px 30px var(--panel-card-shadow);
-    }
-
-    .empresa-market-head {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 14px;
-    }
-
-    .empresa-market-kicker {
-      margin: 0 0 5px;
-      color: var(--muted);
-      font-size: .76rem;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .empresa-market-title {
-      margin: 0;
-      color: var(--text);
-      font-size: 1.18rem;
-      line-height: 1.25;
-    }
-
-    .empresa-market-scope {
-      color: var(--muted);
-      font-size: .86rem;
-      text-align: right;
-    }
-
-    .empresa-market-grid {
-      display: block;
-    }
-
-    .empresa-market-table-wrap {
-      display: none;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%);
-    }
-
-    .empresa-market-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-    }
-
-    .empresa-market-table th,
-    .empresa-market-table td {
-      padding: 6px 8px;
-      border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-      color: var(--text);
-      font-size: .76rem;
-      line-height: 1.12;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    .empresa-market-table th {
-      color: var(--muted);
-      font-size: .64rem;
-      font-weight: 900;
-      letter-spacing: 0;
-      text-transform: uppercase;
-      background: color-mix(in srgb, var(--surface) 72%, var(--accent) 28%);
-    }
-
-    .empresa-market-table tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .empresa-market-table .num {
-      text-align: right;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .empresa-market-table .meta {
-      color: var(--muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .empresa-market-table .empty {
-      color: var(--muted);
-    }
-
-    .empresa-market-table .empresa-market-change {
-      margin-top: 0;
-      padding: 2px 6px;
-      font-size: .68rem;
-      line-height: 1;
-      white-space: nowrap;
-    }
-
-    .empresa-market-cards {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .empresa-market-card {
-      min-height: 118px;
-      padding: 13px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: color-mix(in srgb, var(--surface) 84%, var(--accent) 16%);
-      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 5%, transparent);
-      box-sizing: border-box;
-    }
-
-    .empresa-market-card.local {
-      background: color-mix(in srgb, var(--surface) 84%, var(--accent-2, #14b8a6) 16%);
-    }
-
-    .empresa-market-name {
-      margin: 0;
-      color: var(--muted);
-      font-size: .95rem;
-      font-weight: 900;
-      text-transform: uppercase;
-      line-height: 1.15;
-    }
-
-    .empresa-market-value {
-      margin: 7px 0 0;
-      color: var(--text);
-      font-size: 1.72rem;
-      font-weight: 900;
-      line-height: 1.08;
-    }
-
-    .empresa-market-meta {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: .98rem;
-      line-height: 1.22;
-    }
-
-    .empresa-market-change {
-      display: inline-flex;
-      align-items: center;
-      margin-top: 7px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: color-mix(in srgb, var(--muted) 18%, transparent);
-      color: var(--muted);
-      font-size: .95rem;
-      font-weight: 900;
-    }
-
-    .empresa-market-change.up {
-      background: color-mix(in srgb, var(--success) 18%, transparent);
-      color: color-mix(in srgb, var(--success) 78%, var(--text) 22%);
-    }
-
-    .empresa-market-change.down {
-      background: color-mix(in srgb, var(--danger) 18%, transparent);
-      color: color-mix(in srgb, var(--danger) 82%, var(--text) 18%);
-    }
-
-    @media (min-width: 900px) {
-      .empresa-market-table-wrap {
-        display: block;
-      }
-
-      .empresa-market-cards {
-        display: none;
-      }
-
-      .empresa-market-table th:nth-child(1),
-      .empresa-market-table th:nth-child(4),
-      .empresa-market-table td:nth-child(1),
-      .empresa-market-table td:nth-child(4) {
-        width: 16%;
-      }
-
-      .empresa-market-table th:nth-child(2),
-      .empresa-market-table th:nth-child(5),
-      .empresa-market-table td:nth-child(2),
-      .empresa-market-table td:nth-child(5) {
-        width: 15%;
-      }
-
-      .empresa-market-table th:nth-child(3),
-      .empresa-market-table th:nth-child(6),
-      .empresa-market-table td:nth-child(3),
-      .empresa-market-table td:nth-child(6) {
-        width: 19%;
-      }
-    }
-
     .empresa-favorites-panel {
       margin-top: 18px;
       padding: 18px;
@@ -1032,88 +830,6 @@
         text-overflow: ellipsis;
       }
 
-      .empresa-market-panel {
-        margin-top: 0;
-        padding: 10px;
-        border-radius: 7px;
-        box-shadow: 0 8px 18px var(--panel-card-shadow);
-        overflow: visible;
-      }
-
-      .empresa-market-head {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 5px;
-        margin-bottom: 9px;
-      }
-
-      .empresa-market-kicker {
-        display: none;
-      }
-
-      .empresa-market-title {
-        font-size: 1.16rem;
-        line-height: 1.18;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-      }
-
-      .empresa-market-scope {
-        max-width: none;
-        text-align: left;
-        font-size: .82rem;
-        line-height: 1.22;
-        display: block;
-        overflow: visible;
-      }
-
-      .empresa-market-cards {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
-      }
-
-      .empresa-market-card {
-        min-height: 0;
-        padding: 10px;
-        border-radius: 6px;
-      }
-
-      .empresa-market-name {
-        font-size: .82rem;
-        line-height: 1.18;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-        overflow-wrap: anywhere;
-      }
-
-      .empresa-market-value {
-        margin-top: 5px;
-        font-size: 1.12rem;
-        line-height: 1.14;
-        white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
-        overflow-wrap: anywhere;
-      }
-
-      .empresa-market-meta {
-        display: block;
-        margin-top: 5px;
-        font-size: .76rem;
-        line-height: 1.24;
-        overflow-wrap: anywhere;
-      }
-
-      .empresa-market-change {
-        margin-top: 5px;
-        padding: 3px 7px;
-        font-size: .76rem;
-        line-height: 1.08;
-        white-space: normal;
-      }
-
       .empresa-favorites-panel {
         margin-top: 0;
         padding: 7px;
@@ -1227,7 +943,6 @@
 
       .empresa-home-hero-inner,
       .empresa-weather-panel,
-      .empresa-market-panel,
       .empresa-favorites-panel {
         padding: 5px;
       }
@@ -1264,24 +979,6 @@
 
       .empresa-weather-stat strong {
         font-size: .72rem;
-      }
-
-      .empresa-market-cards {
-        grid-template-columns: 1fr;
-        gap: 8px;
-      }
-
-      .empresa-market-name {
-        font-size: .84rem;
-      }
-
-      .empresa-market-value {
-        font-size: 1.16rem;
-      }
-
-      .empresa-market-meta,
-      .empresa-market-change {
-        font-size: .78rem;
       }
 
       .empresa-home-action {
@@ -1355,31 +1052,6 @@
         <p id="maintenanceNoticeMeta" class="empresa-maintenance-meta"></p>
       </div>
     </section>
-    <section class="empresa-market-panel" aria-label="Indicadores economicos">
-      <div class="empresa-market-head">
-        <div>
-          <p class="empresa-market-kicker">Mercado en contexto</p>
-          <h2 class="empresa-market-title">Indicadores económicos importantes</h2>
-        </div>
-        <div id="marketScope" class="empresa-market-scope">Detectando país y moneda...</div>
-      </div>
-      <div id="marketGrid" class="empresa-market-grid">
-        <div class="empresa-market-table-wrap">
-          <table class="empresa-market-table">
-            <thead><tr><th>Indicador</th><th>Valor</th><th>Referencia</th><th>Indicador</th><th>Valor</th><th>Referencia</th></tr></thead>
-            <tbody><tr><td>Moneda local</td><td class="num">--</td><td class="meta">Consultando indicadores del mercado.</td><td class="empty">--</td><td class="empty">--</td><td></td></tr></tbody>
-          </table>
-        </div>
-        <div class="empresa-market-cards">
-          <article class="empresa-market-card local">
-            <p class="empresa-market-name">Moneda local</p>
-            <p class="empresa-market-value">--</p>
-            <p class="empresa-market-meta">Consultando indicadores del mercado.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
     <section class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
       <div class="empresa-favorites-head">
         <div>
@@ -1403,8 +1075,6 @@
     (function () {
       var hero = document.getElementById("homeHero");
       var statusEl = document.getElementById("homeStatus");
-      var marketScopeEl = document.getElementById("marketScope");
-      var marketGridEl = document.getElementById("marketGrid");
       var maintenanceNoticeEl = document.getElementById("maintenanceNotice");
       var maintenanceNoticeMessageEl = document.getElementById("maintenanceNoticeMessage");
       var maintenanceNoticeMetaEl = document.getElementById("maintenanceNoticeMeta");
@@ -2236,233 +1906,6 @@
           });
       }
 
-      function formatNumber(value, decimals) {
-        var n = Number(value);
-        if (!Number.isFinite(n)) return "--";
-        try {
-          return new Intl.NumberFormat("es-CO", {
-            maximumFractionDigits: typeof decimals === "number" ? decimals : 2,
-            minimumFractionDigits: typeof decimals === "number" ? decimals : 0
-          }).format(n);
-        } catch (e) {
-          return String(Math.round(n * 100) / 100);
-        }
-      }
-
-      function formatUSD(value) {
-        var n = Number(value);
-        if (!Number.isFinite(n)) return "--";
-        try {
-          return new Intl.NumberFormat("es-CO", {
-            style: "currency",
-            currency: "USD",
-            maximumFractionDigits: n >= 1000 ? 0 : 2
-          }).format(n);
-        } catch (e) {
-          return "$" + formatNumber(n, 2);
-        }
-      }
-
-      function setMarketStatus(location) {
-        if (!marketScopeEl) return;
-        var loc = location || detectedLocation || {};
-        var country = text(loc.country) || "pais detectado";
-        var currency = normalizeCurrency(loc.currency) || "USD";
-        marketScopeEl.textContent = country + " | moneda " + currency + " | datos de mercado internacionales";
-      }
-
-      function marketChange(value) {
-        var n = Number(value);
-        if (!Number.isFinite(n)) return "";
-        var sign = n > 0 ? "+" : "";
-        return sign + formatNumber(n, 2) + "%";
-      }
-
-      function renderMarketCards(cards) {
-        if (!marketGridEl) return;
-        marketGridEl.innerHTML = "";
-        var tableWrap = document.createElement("div");
-        tableWrap.className = "empresa-market-table-wrap";
-        var table = document.createElement("table");
-        table.className = "empresa-market-table";
-        table.innerHTML = "<thead><tr><th>Indicador</th><th>Valor</th><th>Referencia</th><th>Indicador</th><th>Valor</th><th>Referencia</th></tr></thead><tbody></tbody>";
-        var tbody = table.querySelector("tbody");
-        var cardsWrap = document.createElement("div");
-        cardsWrap.className = "empresa-market-cards";
-        function changeInfo(card) {
-          var change = text(card.change);
-          var changeClass = "";
-          var changeNumber = Number(String(change).replace("%", ""));
-          if (Number.isFinite(changeNumber)) {
-            changeClass = changeNumber > 0 ? " up" : (changeNumber < 0 ? " down" : "");
-          }
-          return { text: change, className: changeClass };
-        }
-        function fillTableCard(row, offset, card) {
-          if (!card) {
-            row.children[offset].className = "empty";
-            row.children[offset].textContent = "--";
-            row.children[offset + 1].className = "empty";
-            row.children[offset + 1].textContent = "--";
-            row.children[offset + 2].className = "empty";
-            row.children[offset + 2].textContent = "";
-            return;
-          }
-          var info = changeInfo(card);
-          row.children[offset].textContent = card.name || "Indicador";
-          row.children[offset + 1].className = "num";
-          row.children[offset + 1].textContent = card.value || "--";
-          row.children[offset + 2].className = "meta";
-          row.children[offset + 2].textContent = card.meta || "";
-          if (info.text) {
-            var chip = document.createElement("span");
-            chip.className = "empresa-market-change" + info.className;
-            chip.textContent = info.text;
-            row.children[offset + 2].appendChild(document.createTextNode(" "));
-            row.children[offset + 2].appendChild(chip);
-          }
-        }
-        for (var i = 0; i < cards.length; i += 2) {
-          var row = document.createElement("tr");
-          row.innerHTML =
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>';
-          fillTableCard(row, 0, cards[i]);
-          fillTableCard(row, 3, cards[i + 1]);
-          tbody.appendChild(row);
-        }
-
-        cards.forEach(function (card) {
-          var info = changeInfo(card);
-
-          var item = document.createElement("article");
-          item.className = "empresa-market-card" + (card.local ? " local" : "");
-          item.innerHTML =
-            '<p class="empresa-market-name"></p>' +
-            '<p class="empresa-market-value"></p>' +
-            '<p class="empresa-market-meta"></p>' +
-            (info.text ? '<span class="empresa-market-change' + info.className + '"></span>' : "");
-          item.querySelector(".empresa-market-name").textContent = card.name || "Indicador";
-          item.querySelector(".empresa-market-value").textContent = card.value || "--";
-          item.querySelector(".empresa-market-meta").textContent = card.meta || "";
-          var changeEl = item.querySelector(".empresa-market-change");
-          if (changeEl) changeEl.textContent = info.text;
-          cardsWrap.appendChild(item);
-        });
-        tableWrap.appendChild(table);
-        marketGridEl.appendChild(tableWrap);
-        marketGridEl.appendChild(cardsWrap);
-      }
-
-      function fetchMarketSymbol(symbol, label) {
-        var url = "/api/public/market_symbol?s=" + encodeURIComponent(symbol);
-        return fetchJSON(url).then(function (data) {
-          var row = data && Array.isArray(data.symbols) ? data.symbols[0] : null;
-          if (!row || row.close == null) throw new Error("market symbol unavailable");
-          return {
-            name: label,
-            value: formatUSD(row.close),
-            meta: text(row.name) || symbol.toUpperCase()
-          };
-        });
-      }
-
-      function loadMarketIndicators(location) {
-        var loc = location || detectedLocation || fallbackLocationFromAdmin({});
-        var currency = normalizeCurrency(loc.currency) || currencyForCountry(loc.countryCode);
-        setMarketStatus(loc);
-        renderMarketCards([
-          { name: "Moneda local", value: currency, meta: "Preparando indicadores para " + (loc.country || "tu pais"), local: true }
-        ]);
-
-        var cards = [];
-        return fetchJSON("https://open.er-api.com/v6/latest/USD")
-          .then(function (fx) {
-            var rates = fx && fx.rates ? fx.rates : {};
-            var localRate = Number(rates[currency]);
-            var copRate = Number(rates.COP);
-            var eurRate = Number(rates.EUR);
-            if (Number.isFinite(copRate)) {
-              cards.push({
-                name: "USD / COP",
-                value: "1 USD = " + formatNumber(copRate, 2),
-                meta: "Tipo de cambio para Colombia",
-                local: true
-              });
-            }
-            if (currency !== "USD" && Number.isFinite(localRate)) {
-              if (currency !== "COP") {
-                cards.push({
-                  name: "USD / " + currency,
-                  value: "1 USD = " + formatNumber(localRate, 2),
-                  meta: "Tipo de cambio para " + (loc.country || "pais detectado"),
-                  local: true
-                });
-              }
-            }
-            if (Number.isFinite(localRate) && Number.isFinite(eurRate) && eurRate > 0) {
-              cards.push({
-                name: "EUR / " + currency,
-                value: "1 EUR = " + formatNumber(localRate / eurRate, 2),
-                meta: "Referencia internacional",
-                local: true
-              });
-            } else if (currency === "USD" && Number.isFinite(eurRate) && eurRate > 0) {
-              cards.push({
-                name: "EUR / USD",
-                value: formatNumber(1 / eurRate, 4),
-                meta: "Referencia internacional",
-                local: true
-              });
-            }
-            return fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true");
-          })
-          .then(function (crypto) {
-            if (crypto && crypto.bitcoin) {
-              cards.push({
-                name: "Bitcoin",
-                value: formatUSD(crypto.bitcoin.usd),
-                meta: "Criptoactivo global",
-                change: marketChange(crypto.bitcoin.usd_24h_change)
-              });
-            }
-            if (crypto && crypto.ethereum) {
-              cards.push({
-                name: "Ethereum",
-                value: formatUSD(crypto.ethereum.usd),
-                meta: "Criptoactivo global",
-                change: marketChange(crypto.ethereum.usd_24h_change)
-              });
-            }
-          })
-          .catch(function () {})
-          .then(function () {
-            return Promise.allSettled([
-              fetchMarketSymbol("spy.us", "S&P 500"),
-              fetchMarketSymbol("qqq.us", "Nasdaq 100"),
-              fetchMarketSymbol("gc.f", "Oro"),
-              fetchMarketSymbol("cl.f", "Petroleo WTI")
-            ]);
-          })
-          .then(function (results) {
-            results.forEach(function (result) {
-              if (result.status === "fulfilled") cards.push(result.value);
-            });
-            if (!cards.length) {
-              cards.push({
-                name: "Mercado",
-                value: "No disponible",
-                meta: "No se pudieron consultar indicadores en este momento."
-              });
-            }
-            renderMarketCards(cards.slice(0, 8));
-          });
-      }
-
       function renderWelcome(admin, empresa) {
         var adminName = firstName(admin && (admin.name || admin.Name), admin && (admin.email || admin.Email));
         var empresaName = text(empresa && (empresa.nombre || empresa.Nombre)) || "tu empresa";
@@ -2502,7 +1945,6 @@
       function refreshWeatherLocation(location) {
         detectedLocation = location;
         persistTrustedWeatherLocation(location);
-        loadMarketIndicators(location);
         return loadWeather(location);
       }
 
@@ -2586,7 +2028,6 @@
           renderWelcome(admin, empresa);
           applyEmpresaLogo(identidad);
           return detectLocation(admin, empresa, savedLocation).then(function (location) {
-            loadMarketIndicators(location);
             return loadWeather(location);
           });
         });

@@ -1,3 +1,11 @@
+- 2026-05-18: `Panel` de Administrar empresa retira la tarjeta `Mercado en contexto` y deja de consultar indicadores externos de mercado/cripto desde el tablero.
+
+- 2026-05-18: `Administrar empresa` agrega el acceso `Caja` debajo de `Estaciones` en `Operacion y ventas`, abriendo el mismo corte de caja que la tarjeta Caja de estaciones.
+
+- 2026-05-18: `Corte de caja` agrega `Ver reporte de mi turno` en la pantalla abierta desde la estacion Caja; consulta la caja abierta del usuario autenticado y permite imprimir sin cerrar turno.
+
+- 2026-05-17: `Venta directa` termina de compartir el mismo carrito operativo de estaciones: la tarjeta de acciones y abonos ya no queda oculta por depender solo de `stationMode`.
+
 - 2026-05-17: `Menu flotante` retira `Compartir por WhatsApp` de Utilidades y deja `Cambiar apariencia` penultimo, con `Cerrar sesion` como ultimo acceso.
 
 - 2026-05-17: `Administrar empresa` mueve el grupo `Inventario y compras` para quedar inmediatamente debajo de `Operación y ventas` en el submenu principal.

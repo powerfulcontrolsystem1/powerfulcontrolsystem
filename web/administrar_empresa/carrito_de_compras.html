@@ -1332,18 +1332,21 @@
 
     function getCurrentStationCartUIConfig() {
       const globalCfg = normalizeUnifiedCartUIConfig(state.stationConfig && state.stationConfig.carrito_ui_global);
-      if (!state.stationMode) {
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      if (!focusedSaleMode) {
         return globalCfg;
       }
-      const station = getStationConfigRecord(state.empresaID, state.stationID);
       let cfg = globalCfg;
-      if (station && station.carrito && station.carrito.usar_configuracion_global === false) {
-        cfg = Object.assign({}, globalCfg, normalizeUnifiedCartUIConfig(station.carrito.configuracion));
+      if (state.stationMode) {
+        const station = getStationConfigRecord(state.empresaID, state.stationID);
+        if (station && station.carrito && station.carrito.usar_configuracion_global === false) {
+          cfg = Object.assign({}, globalCfg, normalizeUnifiedCartUIConfig(station.carrito.configuracion));
+        }
       }
 
-      // La vista de estación no puede quedar sin operación básica por una preferencia antigua o incompleta.
-      const stationCoreHidden = !cfg.mostrar_tarjeta_items_carrito && !cfg.mostrar_tarjeta_cobro_estados && !cfg.mostrar_tarjeta_acciones_carrito;
-      if (stationCoreHidden) {
+      // La vista enfocada no puede quedar sin operación básica por una preferencia antigua o incompleta.
+      const focusedCoreHidden = !cfg.mostrar_tarjeta_items_carrito && !cfg.mostrar_tarjeta_cobro_estados && !cfg.mostrar_tarjeta_acciones_carrito;
+      if (focusedCoreHidden) {
         cfg.mostrar_tarjeta_items_carrito = true;
         cfg.mostrar_tarjeta_cobro_estados = true;
         cfg.mostrar_tarjeta_acciones_carrito = true;
@@ -1577,7 +1580,7 @@
 
       const actionsCard = document.getElementById('stationCartActionsCard');
       if (actionsCard) {
-        const showActionsCard = Boolean(ui.mostrar_tarjeta_acciones_carrito) && state.stationMode && Boolean(getSelectedCarrito());
+        const showActionsCard = Boolean(ui.mostrar_tarjeta_acciones_carrito) && focusedSaleMode && Boolean(getSelectedCarrito());
         actionsCard.classList.toggle('is-hidden', !showActionsCard);
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';
@@ -3488,7 +3491,7 @@
       const selectedActive = isCarritoOperativoActivo(carrito);
       setPaymentCheckoutVisibility(stationUI);
       if (actionsCard) {
-        const showActionsCard = state.stationMode && !state.directSaleMode && stationUI.mostrar_tarjeta_acciones_carrito;
+        const showActionsCard = focusedSaleMode && stationUI.mostrar_tarjeta_acciones_carrito;
         actionsCard.classList.toggle('is-hidden', !showActionsCard);
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';

@@ -1,5 +1,13 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision panel sin mercado 2026-05-18: `web/administrar_empresa/panel.html` retira la tarjeta `Mercado en contexto` y sus consultas de divisas, criptoactivos y simbolos de mercado. El panel queda enfocado en bienvenida, clima, mantenimiento y favoritos; no cambia backend, permisos ni tablas.
+
+Revision acceso Caja menu empresarial 2026-05-18: `web/administrar_empresa.html` agrega `Caja` debajo de `Estaciones` en `Operacion y ventas`. El boton abre `corte_de_caja.html` con el mismo contexto de la tarjeta Caja de estaciones (`source=estaciones`, `return_to=estaciones`, `auto_generar=1`, `caja_nombre=Caja`) y reutiliza `linkCorteCaja`; no cambia permisos, endpoints ni tablas.
+
+Revision reporte mi turno caja 2026-05-18: la pagina `web/administrar_empresa/corte_de_caja.html`, usada al hacer clic en la estacion Caja, agrega `Ver reporte de mi turno`. El boton consulta `/api/empresa/corte_caja?action=reporte_mi_turno`, filtra por el usuario autenticado y la caja abierta, y permite imprimir el reporte sin cerrar el turno. No cambia tablas ni permisos.
+
+Revision venta directa acciones carrito 2026-05-17: `carrito_de_compras.html?modo=venta_directa` comparte tambien la tarjeta de acciones del carrito con las estaciones, incluyendo botones como `Abonos` cuando la configuracion global los permite. Se mantiene el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`; no cambia backend, endpoints, tablas ni permisos.
+
 Revision menu flotante 2026-05-17: `web/menu.js` retira la opcion `Compartir por WhatsApp` del submenu `Utilidades`; se mantiene `Compartir por correo`. En el panel principal, `Cambiar apariencia` queda penultimo y el enlace de sesion queda ultimo, mostrando `Cerrar sesion` cuando hay sesion activa. El cambio es frontend compartido y no altera endpoints, permisos, tablas ni configuracion del WhatsApp publico del portal.
 
 Revision menu inventario compras 2026-05-17: en `web/administrar_empresa.html`, el grupo `Inventario y compras` queda inmediatamente debajo de `Operacion y ventas` para acercar productos, compras, importaciones, produccion y WMS al flujo operativo principal. El cambio es solo de navegacion visual; no altera rutas, endpoints, permisos, tablas ni aislamiento por `empresa_id`.

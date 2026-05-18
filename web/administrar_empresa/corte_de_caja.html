@@ -55,6 +55,7 @@
         <div class="cash-close-actions">
           <a id="btnVolverEstaciones" class="btn secondary" href="/administrar_empresa/estaciones.html" hidden>Regresar a estaciones</a>
           <button id="btnGenerar" class="btn" type="button">Generar corte</button>
+          <button id="btnReporteMiTurno" class="btn secondary" type="button">Ver reporte de mi turno</button>
           <button id="btnCorteAutomatico" class="btn secondary" type="button">Corte automatico</button>
           <button id="btnCerrar" class="btn success" type="button" disabled>Guardar cierre</button>
           <button id="btnImprimir" class="btn secondary" type="button" disabled>Imprimir seleccion</button>
@@ -634,10 +635,10 @@
     return params;
   }
 
-  function buildAutomaticParams() {
+  function buildAutomaticParams(actionName) {
     var params = new URLSearchParams();
     params.set('empresa_id', String(empresaId));
-    params.set('action', 'mi_caja_actual');
+    params.set('action', actionName || 'mi_caja_actual');
     params.set('solo_usuario_actual', '1');
     params.set('mi_caja_actual', '1');
     params.set('reportes', selectedReports().join(','));
@@ -678,6 +679,31 @@
       msg.textContent = 'Corte generado correctamente. Revisa caja fisica antes de guardar cierre.';
     } catch (err) {
       msg.textContent = err && err.message ? err.message : 'No se pudo generar el corte.';
+      document.getElementById('btnImprimir').disabled = true;
+      document.getElementById('btnCerrar').disabled = true;
+    }
+  }
+
+  async function generarReporteMiTurno() {
+    var msg = document.getElementById('msg');
+    msg.textContent = '';
+    if (!empresaId) { msg.textContent = 'No se encontro la empresa activa.'; return; }
+    try {
+      applyPrintFormat(document.getElementById('modoVista').value);
+      reporteConfig = collectReporteConfig();
+      msg.textContent = 'Cargando reporte del turno del usuario actual...';
+      lastReport = await requestJSON('/api/empresa/corte_caja?' + buildAutomaticParams('reporte_mi_turno').toString());
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, reporteConfig);
+      applyAutomaticCajaContext(lastReport);
+      renderReport(lastReport);
+      document.getElementById('btnImprimir').disabled = false;
+      document.getElementById('btnCerrar').disabled = true;
+      var caja = lastReport && lastReport.caja_actual ? lastReport.caja_actual : {};
+      msg.textContent = automaticCierreCajaID > 0
+        ? 'Reporte de mi turno listo para ' + (caja.caja_codigo || 'la caja') + '. Puedes imprimirlo sin cerrar el turno.'
+        : 'No se encontro una caja abierta para el usuario actual. Abre caja o revisa el filtro antes de imprimir.';
+    } catch (err) {
+      msg.textContent = err && err.message ? err.message : 'No se pudo cargar el reporte de mi turno.';
       document.getElementById('btnImprimir').disabled = true;
       document.getElementById('btnCerrar').disabled = true;
     }
@@ -767,6 +793,7 @@
       }
     });
     document.getElementById('btnGenerar').addEventListener('click', generar);
+    document.getElementById('btnReporteMiTurno').addEventListener('click', generarReporteMiTurno);
     document.getElementById('btnCorteAutomatico').addEventListener('click', generarCorteAutomatico);
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });

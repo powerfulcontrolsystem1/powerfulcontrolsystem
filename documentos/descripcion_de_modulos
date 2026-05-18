@@ -1,3 +1,23 @@
+2026-05-18: Panel empresarial sin mercado externo.
+- El panel de `Administrar empresa` ya no muestra la tarjeta `Mercado en contexto`.
+- Se eliminan del panel las consultas a divisas, criptoactivos y simbolos de mercado para mantener el tablero enfocado en operacion interna.
+- No se cambian permisos, rutas ni endpoints.
+
+2026-05-18: Caja directa en Operacion y ventas.
+- El menu de `Administrar empresa` muestra `Caja` debajo de `Estaciones`.
+- El boton abre la misma pagina de corte de caja que se usa al hacer clic en la estacion Caja, con autogeneracion del corte y regreso a estaciones.
+- El acceso reutiliza `linkCorteCaja`, sin crear permiso ni ruta nueva.
+
+2026-05-18: Reporte de mi turno en corte de caja.
+- La pagina `corte_de_caja.html`, abierta desde la estacion Caja, incluye el boton `Ver reporte de mi turno`.
+- El reporte usa la caja abierta del usuario autenticado y permite revisar/imprimir el turno sin cerrar caja.
+- `Corte automatico` sigue siendo la accion para preparar el cierre y guardar turno.
+
+2026-05-17: Venta directa y estaciones comparten acciones del carrito.
+- La vista `modo=venta_directa` usa la misma resolucion de configuracion operativa que estaciones para items, pago y acciones.
+- La tarjeta de acciones del carrito ya no depende exclusivamente de `stationMode`, por lo que venta directa tambien muestra botones como `Abonos` cuando la configuracion lo permite.
+- No cambia el contrato de API ni la identificacion del carrito directo `VENTA-DIRECTA-{empresa_id}-0`.
+
 2026-05-17: Menu flotante compartido.
 - Se retira `Compartir por WhatsApp` del submenu `Utilidades` del menu flotante.
 - `Cambiar apariencia` queda penultimo y el enlace de sesion queda ultimo, mostrando `Cerrar sesion` cuando hay sesion activa o `Iniciar sesion` cuando no la hay.

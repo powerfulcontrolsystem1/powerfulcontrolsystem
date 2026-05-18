@@ -375,7 +375,7 @@ func corteCajaSoloUsuarioCajaActual(r *http.Request) bool {
 		return false
 	}
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-	if action == "mi_caja_actual" || action == "mis_movimientos_caja" || action == "ultimos_movimientos" {
+	if action == "mi_caja_actual" || action == "reporte_mi_turno" || action == "mis_movimientos_caja" || action == "ultimos_movimientos" {
 		return true
 	}
 	return queryBool(r, "solo_usuario_actual") || queryBool(r, "mi_caja_actual")
