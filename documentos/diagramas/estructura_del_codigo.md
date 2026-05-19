@@ -1,3 +1,60 @@
+## Actualizacion 2026-05-18 (reporte de turno: papel grande y POS)
+
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` aplica clases `report-print-carta`/`report-print-pos` y estilos de impresion para carta o 80mm.
+  - `web/administrar_empresa/reportes_turnos.html` aplica `turno-paper-grande`/`turno-paper-pos` y selector visual para cambiar la previsualizacion historica.
+- Flujo:
+  - Usuario selecciona papel grande o POS -> la vista imprimible reacomoda tabla, encabezado y resumen -> imprimir usa `@page` carta o 80mm.
+- Alcance:
+  - Cambio visual; no modifica endpoints, tablas, permisos ni exportacion/email.
+
+## Actualizacion 2026-05-18 (reportes de turnos historicos)
+
+- Backend:
+  - `/api/empresa/corte_caja?action=turnos` lista cierres historicos de `empresa_cierres_caja` por `empresa_id`.
+  - `action=turno_reporte` reconstruye el reporte usando `cierre_caja_id`.
+  - `action=turno_export` genera dataset exportable en `json/csv/txt/xls/pdf`.
+  - `POST action=turno_email` envia el reporte como adjunto con la configuracion SMTP existente.
+- Frontend:
+  - `web/administrar_empresa/reportes_turnos.html` muestra filtros, tabla historica, vista imprimible, acciones de compartir/exportar/email.
+  - `web/administrar_empresa/reportes_menu.html` agrega el acceso `Reportes de turnos`.
+- Permisos:
+  - `linkReportesTurnos` pertenece al modulo `reportes` con accion lectura; el cierre operativo sigue bajo `linkCorteCaja`.
+
+## Actualizacion 2026-05-18 (reporte de turno configurable)
+
+- Backend:
+  - `backend/handlers/corte_caja.go` arma el reporte de turno con datos de empresa, usuario/caja, ventas ordenadas por fecha de pago, movimientos, items y efectivo esperado.
+  - `backend/db/corte_caja_configuracion.go` persiste por `empresa_id` los checks que deciden encabezado, columnas de detalle y metricas visibles.
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` renderiza una vista imprimible con encabezado, detalle de ventas y resumenes.
+  - `web/administrar_empresa/configuracion.html` expone la configuracion `Reporte de corte` para activar/desactivar cada bloque.
+- Flujo:
+  - Configuracion empresarial -> Reporte de corte -> guardar checks -> Corte de Caja -> Generar/Ver reporte de mi turno -> imprimir vista activa.
+- Alcance:
+  - No se agregan rutas nuevas; se conserva `/api/empresa/corte_caja` y `/api/empresa/corte_caja/configuracion`.
+
+## Actualizacion 2026-05-18 (panel ejecutivo super)
+
+- Frontend:
+  - `web/super/licencias_resumen.html` queda como tablero inicial compacto del Super Administrador.
+  - La pantalla consume las mismas fuentes super de metricas, PostgreSQL, alertas, errores, servidores, licencias y empresas.
+- Flujo:
+  - Super Administrador -> Panel ejecutivo -> KPIs unicos -> prioridades / accesos clave / incidentes recientes.
+- Alcance:
+  - No se agregan rutas, endpoints, tablas ni dependencias; los modulos detallados siguen disponibles desde sus accesos propios.
+
+## Actualizacion 2026-05-18 (configuracion empresarial por paginas)
+
+- Frontend:
+  - `web/administrar_empresa/configuracion_menu.html` organiza el submenu de configuracion por botones y paginas enfocadas.
+  - `web/administrar_empresa/configuracion/*.html` contiene entradas independientes para productos/pedidos, identidad visual, formato monetario, cobro operativo, corte de caja, respaldo y pasarelas.
+  - `web/administrar_empresa/configuracion.html` conserva los formularios originales y agrega modo aislado `?single=1&section=...`.
+- Flujo:
+  - Administrar empresa -> Configuracion -> boton de seccion -> pagina enfocada -> tarjeta unica -> endpoint empresarial existente.
+- Alcance:
+  - No se agregan tablas, dependencias ni endpoints nuevos; la separacion se apoya en permisos de pagina existentes/ampliados del modulo seguridad.
+
 ## Actualizacion 2026-05-17 (comunicaciones super unificadas)
 
 - Frontend:

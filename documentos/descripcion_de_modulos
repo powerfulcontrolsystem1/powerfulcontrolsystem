@@ -1,3 +1,50 @@
+2026-05-18: Reporte de turno en papel grande y POS.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `corte_de_caja.html` mejora el modo `Ticket POS 80mm` para imprimir el detalle como bloques verticales con etiquetas y sin scroll horizontal.
+- `reportes_turnos.html` agrega selector `Papel grande / Papel POS 80mm` para la vista imprimible historica.
+- Papel grande mantiene tabla y resumen de ancho carta; POS reduce tipografia, encabezado, tarjetas y detalle para rollo de 80mm.
+
+2026-05-18: Reportes de turnos historicos.
+- Modulos afectados: `reportes`, `corte_de_caja`, `finanzas`, `frontend_ux`.
+- `web/administrar_empresa/reportes_turnos.html` lista turnos/cortes antiguos desde `empresa_cierres_caja` con filtros por rango, caja, estado y busqueda.
+- Cada turno permite ver vista imprimible, imprimir, compartir enlace, exportar en `json/csv/txt/xls/pdf` y enviar por email con adjunto.
+- Backend reutiliza `/api/empresa/corte_caja` con acciones `turnos`, `turno_reporte`, `turno_export` y `turno_email`, reconstruyendo el reporte con `cierre_caja_id`.
+- Permisos: nueva pagina `linkReportesTurnos` bajo modulo `reportes` y accion lectura; las acciones historicas del endpoint se mapean a ese permiso sin cambiar el flujo operativo de cerrar caja.
+
+2026-05-18: Reporte de turno configurable.
+- Modulos afectados: `corte_de_caja`, `configuracion_empresarial`, `finanzas`, `frontend_ux`.
+- El reporte de turno muestra primero datos de empresa, fecha/hora, usuario y consecutivo; luego lista cada venta ordenada por fecha/hora y despues presenta resumenes operativos.
+- La configuracion del reporte permite activar/desactivar encabezado, datos de empresa, fecha/hora, usuario, consecutivo, detalle de ventas, columnas del detalle y metricas como ingresos, egresos, productos, servicios, efectivo, tarjetas, otros medios y caja esperada.
+- El efectivo esperado conserva la formula operativa de caja abierta: apertura + efectivo vendido + ingresos en efectivo - egresos en efectivo.
+- Backend agrega los campos de entrada/salida de venta y NIT de empresa al payload de `/api/empresa/corte_caja`; no cambia rutas ni permisos.
+
+2026-05-18: Panel ejecutivo de Super Administrador.
+- Modulos afectados: `super_administrador`, `frontend_ux`, `operacion_sistema`.
+- Frontend: `web/super/licencias_resumen.html` reduce el panel inicial a una vista ejecutiva con 6 KPIs unicos, prioridades, accesos clave e incidentes recientes.
+- UX: se retiran bloques duplicados como `Negocio SaaS`, `Servicios y componentes` y `Costos` del tablero inicial para dejar la informacion profesional y accionable.
+- Alcance tecnico: reutiliza endpoints existentes de metricas, PostgreSQL, alertas, errores, servidores, licencias y empresas; no cambia permisos, tablas, backend ni dependencias.
+
+2026-05-18: Login administrador con titulo en imagen.
+- `web/login.html` muestra `Powerful Control System` encima del formulario de acceso.
+- El titulo `Acceso de administradores` se presenta sobre la imagen lateral derecha y el boton `Ir al inicio` queda debajo del login.
+- Cambio visual sin impacto en autenticacion, reCAPTCHA, permisos ni endpoints.
+
+2026-05-18: Configuracion de empresa por paginas independientes.
+- El submenu `Configuracion empresarial` deja de concentrar todas las tarjetas en una sola vista general y ahora ofrece botones propios para Productos y pedidos, Identidad visual, Formato monetario, Cobro operativo, Reporte de corte, Respaldo y Pasarelas de pago.
+- `web/administrar_empresa/configuracion.html` reutiliza los formularios existentes en modo aislado por `section`, conservando cada boton de guardado y los endpoints actuales.
+- Se agregan paginas ligeras en `web/administrar_empresa/configuracion/` para abrir cada seccion como pantalla independiente y se incorporan sus claves al catalogo de permisos de configuracion.
+- No se agregan tablas, dependencias externas ni contratos nuevos de API.
+
+2026-05-18: Guardado de formato monetario y numerico.
+- El endpoint `/api/empresa/configuracion_avanzada` vuelve a guardar correctamente `moneda_codigo`, `sistema_numerico`, `usar_decimales` y `cantidad_decimales` por empresa.
+- Backend regulariza columnas legacy de tipo boolean en `empresa_configuracion_avanzada` a enteros `0/1` antes del `UPSERT`, manteniendo compatibilidad con instalaciones previas de PostgreSQL.
+- El guardado deja de usar `datetime('now','localtime')` en runtime y usa `sqlNowExpr()` para fechas compatibles con PostgreSQL.
+- El catalogo de permisos mantiene etiquetas universales en grupos de ventas/configuracion sin cambiar permisos efectivos.
+
+2026-05-18: Historial de configuracion operativa en PostgreSQL.
+- Los guardados de configuracion operativa de cobro, reglas por rol, politicas e historial devuelven el `id` con `RETURNING id`.
+- Esto repara la trazabilidad de snapshots usada por historial y rollback en `Cobro operativo`, manteniendo aislamiento por `empresa_id` y sin agregar tablas ni dependencias.
+
 2026-05-18: Corte de Caja con acciones en Lectura rapida.
 - La pagina `web/administrar_empresa/corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` a la tarjeta `Lectura rapida`, apilados uno debajo del otro.
 - `Ver reporte de mi turno` reinicia el contexto automatico antes de consultar el turno del usuario autenticado, para evitar arrastrar un `cierre_caja_id` previo, y presenta el reporte como vista previa de impresion en pantalla.

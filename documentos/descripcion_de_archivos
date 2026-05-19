@@ -1,3 +1,58 @@
+2026-05-18 - Reporte de turno en papel grande y POS
+- `web/administrar_empresa/corte_de_caja.html`:
+	- refuerza el modo de impresion POS 80mm con tabla transformada a bloques verticales y estilos de ticket.
+- `web/administrar_empresa/reportes_turnos.html`:
+	- agrega selector de papel para alternar vista imprimible entre papel grande y POS 80mm.
+	- aplica clases y `@page` dinamico para impresion carta o rollo.
+
+2026-05-18 - Reportes de turnos historicos
+- `web/administrar_empresa/reportes_turnos.html`:
+	- nueva pagina para listar turnos/cortes antiguos, previsualizar, imprimir, compartir, exportar y enviar por email.
+- `web/administrar_empresa/reportes_menu.html`:
+	- agrega el boton `Reportes de turnos` dentro del submenu de reportes.
+- `web/js/administrar_empresa.js`:
+	- registra `linkReportesTurnos` en el control de visibilidad por permisos.
+- `backend/handlers/corte_caja.go`:
+	- agrega acciones historicas `turnos`, `turno_reporte`, `turno_export` y `turno_email` sobre `/api/empresa/corte_caja`.
+- `backend/handlers/empresa_permisos.go`:
+	- agrega la pagina `linkReportesTurnos` al catalogo empresarial y mapea las acciones historicas del endpoint a lectura de reportes.
+- `backend/main.go`:
+	- pasa la conexion super al handler de corte para envio de reportes por email con la configuracion SMTP existente.
+
+2026-05-18 - Reporte de turno configurable
+- `backend/db/corte_caja_configuracion.go`:
+	- amplia la configuracion persistida del reporte de corte con checks para encabezado, datos de empresa, fecha/hora, usuario, consecutivo, columnas del detalle de ventas y resumen de productos/servicios.
+- `backend/db/corte_caja_configuracion_test.go`:
+	- valida que el default profesional active los campos principales del reporte de turno.
+- `backend/handlers/corte_caja.go`:
+	- agrega NIT de empresa y fechas de entrada/salida de cada venta al payload de corte; mantiene el detalle ordenado por `pagado_en ASC`.
+- `web/administrar_empresa/corte_de_caja.html`:
+	- renderiza el reporte de turno con encabezado imprimible, detalle de ventas configurable y resumenes en el orden operativo solicitado.
+- `web/administrar_empresa/configuracion.html`:
+	- agrega checks para activar/desactivar encabezado, columnas del detalle y nuevas metricas del reporte.
+
+2026-05-18 - Panel ejecutivo super administrador
+- `web/super/licencias_resumen.html`:
+	- simplifica el panel inicial del Super Administrador, elimina bloques repetidos y conserva indicadores clave de infraestructura, PostgreSQL, alertas, empresas, licencias, continuidad, prioridades e incidentes.
+
+2026-05-18 - Login administrador: titulo en imagen
+- `web/login.html`:
+	- mueve el texto `Acceso de administradores` a la imagen lateral del login, cambia el titulo superior a `Powerful Control System` y baja el enlace `Ir al inicio` debajo de la tarjeta de acceso.
+- `web/estilos.css`:
+	- agrega el estilo del titulo superpuesto sobre la imagen y el bloque inferior de acciones del login.
+
+2026-05-18 - Fix configuracion monetaria empresarial
+- `backend/db/empresa_configuracion_avanzada.go`:
+	- regulariza flags legacy booleanos de `empresa_configuracion_avanzada` a enteros `0/1` y usa `sqlNowExpr()` en el guardado de configuracion avanzada.
+- `backend/db/empresa_configuracion_avanzada_postgres_test.go`:
+	- nuevo archivo de regresion para asegurar SQL runtime compatible con PostgreSQL y migracion ligera de flags legacy.
+- `backend/db/configuracion_operativa.go`:
+	- cambia los guardados de configuracion operativa, roles, politicas e historial para retornar `id` con `RETURNING id` en PostgreSQL, sin depender de `LastInsertId()`.
+- `backend/db/configuracion_operativa_postgres_test.go`:
+	- nuevo archivo de regresion para impedir que los guardados de cobro operativo vuelvan a depender de `LastInsertId()` y para exigir `QueryRowCompat`, `sqlNowExpr()` y `RETURNING id`.
+- `backend/handlers/empresa_permisos.go`:
+	- alinea etiquetas de grupos del catalogo de permisos a nombres universales.
+
 2026-05-18 - Corte de Caja con acciones en Lectura rapida
 - `web/administrar_empresa/corte_de_caja.html`:
 	- mueve los botones operativos de corte a la tarjeta `Lectura rapida`, repara el reporte del turno actual, lo muestra como vista previa imprimible y usa `Estaciones ocupadas sin factura`.
@@ -9487,6 +9542,18 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- `web/super/preconfiguracion_tipos_empresa.html` : consola super para activar y editar estaciones/productos por tipo de empresa.
 	- `web/js/seleccionar_empresa.js` : pregunta al crear empresa si se conserva o elimina la preconfiguracion aplicada.
 	- `web/pagar_licencia.html` y `web/estilos.css` : tarjetas de checkout mas comerciales y campo de asesor comercial ubicado debajo del codigo de descuento.
+
+## Actualizacion 2026-05-18 - Configuracion empresarial por secciones
+
+- `web/administrar_empresa/configuracion/productos_pedidos.html`: pagina independiente del submenu de configuracion para reglas de productos, pedidos y descuentos.
+- `web/administrar_empresa/configuracion/identidad_visual.html`: pagina independiente para logo e identidad visual de la empresa.
+- `web/administrar_empresa/configuracion/formato_monetario.html`: pagina independiente para moneda, sistema numerico y decimales.
+- `web/administrar_empresa/configuracion/cobro_operativo.html`: pagina independiente para metodos de pago, propinas, comisiones y politicas operativas.
+- `web/administrar_empresa/configuracion/corte_de_caja.html`: pagina independiente para la configuracion del reporte de corte y reportes a imprimir.
+- `web/administrar_empresa/configuracion/respaldo.html`: pagina independiente para exportar/restaurar respaldo de configuracion.
+- `web/administrar_empresa/configuracion/pasarelas_pago.html`: pagina independiente para credenciales y activacion de pasarelas de pago.
+- `web/administrar_empresa/configuracion.html`: agrega modo aislado `single=1&section=...` para reutilizar las tarjetas existentes como paginas enfocadas.
+- `web/administrar_empresa/configuracion_menu.html`: reordena el submenu y abre cada seccion desde su boton propio.
 
 ## Actualizacion 2026-05-03 - Archivos documentales y ayuda
 

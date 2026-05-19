@@ -1,3 +1,19 @@
+2026-05-18: Nota de Reportes de turnos
+- Se agrega `linkReportesTurnos` al catalogo de paginas empresariales bajo modulo `reportes` y accion lectura.
+- La pagina `web/administrar_empresa/reportes_turnos.html` permite consultar, imprimir, compartir, exportar y enviar por email reportes historicos de turnos ya cerrados.
+- `/api/empresa/corte_caja?action=turnos|turno_reporte|turno_export|turno_email` se mapea a `linkReportesTurnos`; el cierre operativo, corte automatico y guardado del turno siguen bajo `linkCorteCaja`.
+- El aislamiento por `empresa_id` se conserva y la reconstruccion del reporte usa `cierre_caja_id` de la misma empresa.
+
+2026-05-18: Nota de configuracion empresarial por paginas
+- Las nuevas claves `linkConfiguracionIdentidadVisual`, `linkConfiguracionCobroOperativo`, `linkConfiguracionReporteCorte`, `linkConfiguracionBackupsPasarelas` y `linkConfiguracionPasarelasPago` quedan en el catalogo de paginas empresariales bajo modulo `seguridad` y accion `actualizar`.
+- `linkConfiguracionMain` representa Productos y pedidos; `linkConfiguracionAvanzada` representa Formato monetario.
+- La separacion es de navegacion y UX: los formularios siguen usando los mismos endpoints protegidos por `WithEmpresaSeguridadPermissions` y mantienen aislamiento por `empresa_id`.
+
+2026-05-18: Nota de guardado de formato monetario
+- `/api/empresa/configuracion_avanzada` mantiene el wrapper `WithEmpresaSeguridadPermissions` y no cambia permisos efectivos.
+- La correccion solo normaliza persistencia de `empresa_configuracion_avanzada` y etiquetas universales del catalogo de permisos.
+- El aislamiento por `empresa_id` se conserva en lectura y guardado de moneda, sistema numerico, decimales y cantidad de decimales.
+
 2026-05-18: Nota de boton Corte de Caja en Operacion y ventas
 - `web/administrar_empresa.html` muestra el enlace `linkCorteCaja` bajo `Operacion y ventas`, inmediatamente despues de `linkEstaciones`, con texto `Corte de Caja`.
 - No se crea ruta ni endpoint nuevo: `web/js/administrar_empresa.js` lo conserva visible como acceso operativo directo y el backend sigue aplicando las validaciones de sesion/empresa del flujo de corte.

@@ -16,7 +16,9 @@
         <li class="admin-nav-group">
           <div class="admin-nav-group-title">Base empresarial</div>
           <ul class="admin-nav-sublist">
-            <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">General</a></li>
+            <li><a id="linkConfiguracionMain" href="/administrar_empresa/configuracion/productos_pedidos.html" target="configuracionContentFrame"><img class="icon" src="/img/settings-color.svg" alt="">Productos y pedidos</a></li>
+            <li><a id="linkConfiguracionIdentidadVisual" href="/administrar_empresa/configuracion/identidad_visual.html" target="configuracionContentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">Identidad visual</a></li>
+            <li><a id="linkConfiguracionAvanzada" href="/administrar_empresa/configuracion/formato_monetario.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Formato monetario</a></li>
             <li><a id="linkConfiguracionImpresora" href="/administrar_empresa/configuracion_impresora.html" target="configuracionContentFrame"><img class="icon" src="/img/print-color.svg" alt="">Impresora</a></li>
             <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Permisos</a></li>
             <li><a id="linkVerticalesIntegracion" href="/administrar_empresa/verticales_integracion.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Adaptacion por tipo</a></li>
@@ -40,6 +42,7 @@
         <li class="admin-nav-group">
           <div class="admin-nav-group-title">Ventas y cobro</div>
           <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionCobroOperativo" href="/administrar_empresa/configuracion/cobro_operativo.html" target="configuracionContentFrame"><img class="icon" src="/img/money.svg" alt="">Cobro operativo</a></li>
             <li><a id="linkConfiguracionCarritoEmpresa" href="/administrar_empresa/configuracion_carrito_de_compra_empresa.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carrito unificado</a></li>
             <li><a id="linkCarritoCompras" href="/administrar_empresa/carrito_de_compras.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Carritos</a></li>
             <li><a id="linkVentaDirecta" href="/administrar_empresa/carrito_de_compras.html?modo=venta_directa&amp;perm_page=linkVentaDirecta" target="configuracionContentFrame"><img class="icon" src="/img/money.svg" alt="">Venta directa</a></li>
@@ -78,15 +81,17 @@
         <li class="admin-nav-group">
           <div class="admin-nav-group-title">Fiscal y automatización</div>
           <ul class="admin-nav-sublist">
+            <li><a id="linkConfiguracionReporteCorte" href="/administrar_empresa/configuracion/corte_de_caja.html" target="configuracionContentFrame"><img class="icon" src="/img/report.svg" alt="">Reporte de corte</a></li>
             <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Impuestos</a></li>
             <li id="menuFrecuenciaFE" hidden><a id="linkFrecuenciaFE" href="/administrar_empresa/frecuencia_fe.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Frecuencia FE</a></li>
           </ul>
         </li>
 
         <li class="admin-nav-group">
-          <div class="admin-nav-group-title">Avanzado</div>
+          <div class="admin-nav-group-title">Continuidad y pagos</div>
           <ul class="admin-nav-sublist">
-            <li><a id="linkConfiguracionAvanzada" href="/administrar_empresa/configuracion.html#configuracionDocumentoVenta" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Documento y formato</a></li>
+            <li><a id="linkConfiguracionBackupsPasarelas" href="/administrar_empresa/configuracion/respaldo.html" target="configuracionContentFrame"><img class="icon" src="/img/backup.svg" alt="">Respaldo</a></li>
+            <li><a id="linkConfiguracionPasarelasPago" href="/administrar_empresa/configuracion/pasarelas_pago.html" target="configuracionContentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Pasarelas de pago</a></li>
           </ul>
         </li>
         <li class="admin-menu-visibility-item">
@@ -99,7 +104,7 @@
     </aside>
 
     <main class="admin-content">
-      <iframe name="configuracionContentFrame" id="configuracionContentFrame" src="/administrar_empresa/configuracion.html" title="Contenido de configuración" class="admin-empresa-frame"></iframe>
+      <iframe name="configuracionContentFrame" id="configuracionContentFrame" src="/administrar_empresa/configuracion/productos_pedidos.html" title="Contenido de configuración" class="admin-empresa-frame"></iframe>
     </main>
   </div>
   <script src="/js/administrar_empresa.js"></script>
@@ -118,9 +123,32 @@
       }
 
       var requested = getRequestedSection();
-      if (requested === 'chat_flotante' || requested === 'chat-flotante' || requested === 'chat_robot' || requested === 'chat-robot') {
-        frame.src = '/administrar_empresa/configuracion_chat_flotante.html';
-        var link = document.getElementById('linkConfiguracionChatFlotante');
+      var sectionRoutes = {
+        general: ['linkConfiguracionMain', '/administrar_empresa/configuracion/productos_pedidos.html'],
+        productos: ['linkConfiguracionMain', '/administrar_empresa/configuracion/productos_pedidos.html'],
+        productos_pedidos: ['linkConfiguracionMain', '/administrar_empresa/configuracion/productos_pedidos.html'],
+        identidad: ['linkConfiguracionIdentidadVisual', '/administrar_empresa/configuracion/identidad_visual.html'],
+        identidad_visual: ['linkConfiguracionIdentidadVisual', '/administrar_empresa/configuracion/identidad_visual.html'],
+        cobro: ['linkConfiguracionCobroOperativo', '/administrar_empresa/configuracion/cobro_operativo.html'],
+        cobro_operativo: ['linkConfiguracionCobroOperativo', '/administrar_empresa/configuracion/cobro_operativo.html'],
+        corte: ['linkConfiguracionReporteCorte', '/administrar_empresa/configuracion/corte_de_caja.html'],
+        corte_caja: ['linkConfiguracionReporteCorte', '/administrar_empresa/configuracion/corte_de_caja.html'],
+        reporte_corte: ['linkConfiguracionReporteCorte', '/administrar_empresa/configuracion/corte_de_caja.html'],
+        formato: ['linkConfiguracionAvanzada', '/administrar_empresa/configuracion/formato_monetario.html'],
+        formato_monetario: ['linkConfiguracionAvanzada', '/administrar_empresa/configuracion/formato_monetario.html'],
+        respaldo: ['linkConfiguracionBackupsPasarelas', '/administrar_empresa/configuracion/respaldo.html'],
+        backup: ['linkConfiguracionBackupsPasarelas', '/administrar_empresa/configuracion/respaldo.html'],
+        pasarelas: ['linkConfiguracionPasarelasPago', '/administrar_empresa/configuracion/pasarelas_pago.html'],
+        pasarelas_pago: ['linkConfiguracionPasarelasPago', '/administrar_empresa/configuracion/pasarelas_pago.html'],
+        chat_flotante: ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        'chat-flotante': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        chat_robot: ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        'chat-robot': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html']
+      };
+      var route = sectionRoutes[requested];
+      if (route) {
+        frame.src = route[1];
+        var link = document.getElementById(route[0]);
         if (link) {
           link.classList.add('active');
         }

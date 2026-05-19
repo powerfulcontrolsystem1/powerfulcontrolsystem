@@ -1,3 +1,36 @@
+## [2026-05-18] Reporte de turno en papel grande y POS
+- [Frontend] `corte_de_caja.html` compacta el modo POS 80mm para imprimir detalle de ventas como bloques verticales con etiquetas.
+- [Frontend] `reportes_turnos.html` agrega selector de papel grande/POS para la vista imprimible historica.
+- [QA] Se valida que papel grande conserve ancho carta y que POS no genere desborde horizontal.
+
+## [2026-05-18] Reportes de turnos historicos
+- [Frontend] Nueva pagina `Reportes de turnos` en el submenu de reportes, con listado de turnos antiguos, filtros, vista imprimible, imprimir, compartir, exportar y enviar por email.
+- [Backend] `/api/empresa/corte_caja` agrega acciones historicas para listar cierres, reconstruir un reporte por `cierre_caja_id`, exportarlo en `json/csv/txt/xls/pdf` y enviarlo como adjunto.
+- [Permisos] Se agrega `linkReportesTurnos` bajo modulo `reportes` con accion lectura, separando consulta historica del cierre operativo de caja.
+
+## [2026-05-18] Reporte de turno configurable
+- [Backend] `/api/empresa/corte_caja` incluye NIT de empresa y fechas de entrada/salida por venta para el detalle del turno.
+- [Base de datos] `empresa_corte_caja_configuracion` agrega checks de encabezado, datos de empresa, usuario, consecutivo, columnas del detalle y totales de productos/servicios por `empresa_id`.
+- [Frontend] `corte_de_caja.html` renderiza el reporte de turno con encabezado, detalle ordenado por fecha/hora de venta y resumenes de caja; `configuracion.html` permite activar/desactivar los bloques.
+- [QA] Se agregan pruebas de default profesional y se validan scripts inline de las pantallas afectadas.
+
+## [2026-05-18] Panel ejecutivo super administrador
+- [Frontend] `web/super/licencias_resumen.html` reemplaza el centro de mando saturado por un tablero ejecutivo compacto.
+- [UX] Se dejan 6 KPIs unicos, prioridades, accesos clave e incidentes recientes, retirando bloques repetidos de negocio, servicios y costos.
+- [Alcance] No cambia backend, endpoints, permisos, tablas ni dependencias.
+
+## [2026-05-18] Login administrador
+- [UX] `web/login.html` cambia el titulo superior a `Powerful Control System`.
+- [UX] `Acceso de administradores` queda superpuesto sobre la imagen lateral y `Ir al inicio` queda debajo de la tarjeta del login.
+- [Alcance] No cambia autenticacion, reCAPTCHA, permisos, tablas ni endpoints.
+
+## [2026-05-18] Fix formato monetario por empresa
+- [Backend] `empresa_configuracion_avanzada` normaliza columnas legacy booleanas a enteros `0/1` antes de guardar configuracion avanzada.
+- [Backend] El `UPSERT` de configuracion avanzada usa `sqlNowExpr()` para fechas runtime PostgreSQL.
+- [Backend] `configuracion_operativa` guarda configuracion, roles, politicas e historial con `RETURNING id`, reparando snapshots y rollback en PostgreSQL.
+- [QA] Se agrega regresion para el guardado de configuracion monetaria/numerica y la migracion ligera de flags.
+- [QA] Se agrega regresion para impedir `LastInsertId()` en los guardados operativos de configuracion.
+
 ## [2026-05-18] Corte de caja: acciones y texto de estaciones
 - [Frontend] `corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` dentro de `Lectura rapida` como botones verticales.
 - [UX] `Ver reporte de mi turno` centra el reporte como hoja imprimible en pantalla y respeta el formato `Carta`, `Ejecutivo` o `POS`.
@@ -1162,6 +1195,11 @@
 - [Docs/QA] Se crea `documentos/contabilidad_colombia_avanzada.md`; pruebas Go y auditoria de rutas/permisos actualizadas.
 
 ## [2026-05-05] Portal publico, carta QR y Motel Calipso publicado
+## [2026-05-18] Configuracion empresarial por paginas
+- [Frontend] El submenu `Configuracion empresarial` se divide en paginas enfocadas para Productos y pedidos, Identidad visual, Formato monetario, Cobro operativo, Reporte de corte, Respaldo y Pasarelas de pago.
+- [Permisos] Se registran claves de pagina para las nuevas secciones bajo el modulo `seguridad` con accion de actualizacion, conservando los endpoints empresariales existentes.
+- [QA] Verificacion visual desktop y movil con emulacion CDP de 390 px sin desborde horizontal; pruebas Go enfocadas de catalogo de permisos.
+
 - [Permisos] Se audita el enlace por empresa de todos los modulos visibles en Administrar empresa: menu frontend, catalogo de paginas backend y licencias quedan alineados, sin claves duplicadas ni rutas `/api/empresa` duplicadas.
 - [Carnets] Se agrega modulo empresarial profesional `/api/empresa/carnets` y `web/administrar_empresa/carnets.html` para emitir carnets modernos de empleados/usuarios con plantillas, QR, foto, exportacion PNG/SVG, impresion y bitacora.
 - [Licencias] Se agrega modulo `carnets`, pagina `linkCarnets` y soporte en `licencias.modulos_habilitados` para activarlo/desactivarlo por empresa.

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -29,6 +30,8 @@ type corteCajaVenta struct {
 	ID             int64   `json:"id"`
 	Codigo         string  `json:"codigo"`
 	Nombre         string  `json:"nombre"`
+	FechaEntrada   string  `json:"fecha_entrada"`
+	FechaSalida    string  `json:"fecha_salida"`
 	FechaPago      string  `json:"fecha_pago"`
 	MetodoPago     string  `json:"metodo_pago"`
 	Moneda         string  `json:"moneda"`
@@ -77,6 +80,7 @@ type corteCajaSensorAlerta struct {
 type corteCajaResumen struct {
 	EmpresaID              int64   `json:"empresa_id"`
 	EmpresaNombre          string  `json:"empresa_nombre"`
+	EmpresaNit             string  `json:"empresa_nit"`
 	EmpresaTipo            string  `json:"empresa_tipo"`
 	Desde                  string  `json:"desde"`
 	Hasta                  string  `json:"hasta"`
@@ -105,7 +109,7 @@ type corteCajaResumen struct {
 	TotalProductos         float64 `json:"total_productos"`
 	TotalServicios         float64 `json:"total_servicios"`
 	TotalOtrosItems        float64 `json:"total_otros_items"`
-	EstacionesSinFactura  int64   `json:"estaciones_sin_factura"`
+	EstacionesSinFactura   int64   `json:"estaciones_sin_factura"`
 }
 
 type corteCajaResponse struct {
@@ -154,7 +158,7 @@ type corteCajaCerrarPayload struct {
 	FechaOperacion   string   `json:"fecha_operacion"`
 }
 
-func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaCorteCajaHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
@@ -171,6 +175,7 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		hasta := normalizeCorteCajaDateTime(r.URL.Query().Get("hasta"), now)
 		usuario := strings.TrimSpace(r.URL.Query().Get("usuario"))
 		apertura := parseCorteCajaFloat(r.URL.Query().Get("apertura_efectivo"))
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		configuracion, configErr := dbpkg.GetEmpresaCorteCajaConfiguracion(dbEmp, empresaID)
 		if configErr != nil {
 			http.Error(w, "No se pudo cargar la configuracion del corte de caja", http.StatusInternalServerError)
@@ -179,6 +184,10 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 		reportes := parseCorteCajaReportesWithConfig(r.URL.Query().Get("reportes"), configuracion)
 
 		if r.Method == http.MethodPost {
+			if action == "turno_email" || action == "enviar_turno_email" || action == "email_turno" {
+				corteCajaTurnoEmailHandler(w, r, dbEmp, corteCajaResolveDBSuper(dbEmp, dbSuper), empresaID)
+				return
+			}
 			var payload corteCajaCerrarPayload
 			if r.Body != nil {
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
@@ -214,6 +223,18 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				"imprimir_auto": payload.ImprimirAuto,
 				"reportes":      reportes,
 			})
+			return
+		}
+
+		switch action {
+		case "turnos", "reportes_turnos", "turnos_historial":
+			corteCajaTurnosHistoricosHandler(w, r, dbEmp, empresaID)
+			return
+		case "turno_reporte", "reporte_turno":
+			corteCajaTurnoReporteHandler(w, dbEmp, empresaID, configuracion, reportes, parseCorteCajaInt64(r.URL.Query().Get("id")))
+			return
+		case "turno_export", "export_turno", "exportar_turno":
+			corteCajaTurnoExportHandler(w, r, dbEmp, empresaID, parseCorteCajaInt64(r.URL.Query().Get("id")))
 			return
 		}
 
@@ -351,11 +372,14 @@ func corteCajaConfigCacheFingerprint(cfg *dbpkg.EmpresaCorteCajaConfiguracion) s
 		return "default"
 	}
 	values := []bool{
+		cfg.MostrarEncabezado, cfg.MostrarEmpresaDatos, cfg.MostrarFechaHora, cfg.MostrarUsuarioReporte, cfg.MostrarConsecutivo,
 		cfg.MostrarResumen, cfg.MostrarNumeroFacturas, cfg.MostrarTotalVentas,
 		cfg.MostrarEfectivo, cfg.MostrarDebito, cfg.MostrarCredito, cfg.MostrarTransferencias, cfg.MostrarOtrosMedios,
 		cfg.MostrarIngresos, cfg.MostrarEgresos, cfg.MostrarAnulaciones, cfg.MostrarDevoluciones,
 		cfg.MostrarCajaEsperada, cfg.MostrarDiferenciaCaja, cfg.MostrarVentasDetalle, cfg.MostrarMovimientos,
-		cfg.MostrarItems, cfg.MostrarSensoresPuertas, cfg.MostrarAuditoria,
+		cfg.MostrarDetalleEntrada, cfg.MostrarDetalleSalida, cfg.MostrarDetalleNumero, cfg.MostrarDetalleEstacion,
+		cfg.MostrarDetalleCajero, cfg.MostrarDetalleMetodo, cfg.MostrarDetalleTotal,
+		cfg.MostrarItems, cfg.MostrarTotalProductos, cfg.MostrarTotalServicios, cfg.MostrarSensoresPuertas, cfg.MostrarAuditoria,
 	}
 	var b strings.Builder
 	for _, value := range values {
@@ -703,6 +727,119 @@ func parseCorteCajaInt64(raw string) int64 {
 	return v
 }
 
+func corteCajaResolveDBSuper(dbEmp *sql.DB, dbSuper []*sql.DB) *sql.DB {
+	if len(dbSuper) > 0 && dbSuper[0] != nil {
+		return dbSuper[0]
+	}
+	return dbEmp
+}
+
+func corteCajaTurnosHistoricosHandler(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID int64) {
+	turnos, err := listCorteCajaTurnosHistoricos(dbEmp, empresaID, r)
+	if err != nil {
+		http.Error(w, "No se pudieron cargar los reportes de turnos", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":          true,
+		"empresa_id":  empresaID,
+		"turnos":      turnos,
+		"total":       len(turnos),
+		"generado_en": time.Now().Format("2006-01-02 15:04:05"),
+	})
+}
+
+func corteCajaTurnoReporteHandler(w http.ResponseWriter, dbEmp *sql.DB, empresaID int64, cfg *dbpkg.EmpresaCorteCajaConfiguracion, reportes []string, cierreID int64) {
+	if cierreID <= 0 {
+		http.Error(w, "id de turno requerido", http.StatusBadRequest)
+		return
+	}
+	resp, _, err := buildCorteCajaReportForTurno(dbEmp, empresaID, cierreID)
+	if err != nil {
+		http.Error(w, "No se pudo cargar el reporte del turno", http.StatusInternalServerError)
+		return
+	}
+	resp.Configuracion = cfg
+	applyCorteCajaReportSelection(resp, reportes)
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func corteCajaTurnoExportHandler(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, empresaID, cierreID int64) {
+	if cierreID <= 0 {
+		http.Error(w, "id de turno requerido", http.StatusBadRequest)
+		return
+	}
+	format := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("format")))
+	if format == "" {
+		format = "pdf"
+	}
+	ds, err := buildCorteCajaTurnoDataset(dbEmp, empresaID, cierreID)
+	if err != nil {
+		http.Error(w, "No se pudo preparar la exportacion del turno", http.StatusInternalServerError)
+		return
+	}
+	if err := writeReportesDatasetExport(w, ds, format); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
+func corteCajaTurnoEmailHandler(w http.ResponseWriter, r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) {
+	var payload struct {
+		ID      int64  `json:"id"`
+		ToEmail string `json:"to_email"`
+		Format  string `json:"format"`
+		Subject string `json:"subject,omitempty"`
+		Message string `json:"message,omitempty"`
+	}
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil && err != io.EOF {
+			http.Error(w, "JSON invalido", http.StatusBadRequest)
+			return
+		}
+	}
+	if payload.ID <= 0 {
+		payload.ID = parseCorteCajaInt64(r.URL.Query().Get("id"))
+	}
+	if payload.ID <= 0 {
+		http.Error(w, "id de turno requerido", http.StatusBadRequest)
+		return
+	}
+	format := strings.ToLower(strings.TrimSpace(payload.Format))
+	if format == "" {
+		format = "pdf"
+	}
+	ds, err := buildCorteCajaTurnoDataset(dbEmp, empresaID, payload.ID)
+	if err != nil {
+		http.Error(w, "No se pudo preparar el reporte del turno", http.StatusInternalServerError)
+		return
+	}
+	fileName, contentType, content, err := reportesBuildExportBytes(ds, format)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	subject := strings.TrimSpace(payload.Subject)
+	if subject == "" {
+		subject = reportesDefaultEmailSubject("Reporte de turno", strings.TrimSpace(ds.Title), fmt.Sprintf("Empresa #%d", empresaID))
+	}
+	body := strings.TrimSpace(payload.Message)
+	if body == "" {
+		body = "Adjunto encontraras el reporte historico del turno solicitado."
+	}
+	metaJSON := fmt.Sprintf(`{"scope":"empresa_reportes_turnos","empresa_id":%d,"cierre_caja_id":%d,"format":%q}`, empresaID, payload.ID, format)
+	if err := sendReportesEmailWithAttachment(r, dbSuper, empresaID, payload.ToEmail, subject, body, fileName, contentType, content, metaJSON); err != nil {
+		http.Error(w, "no se pudo enviar el correo: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":       true,
+		"to_email": strings.TrimSpace(payload.ToEmail),
+		"filename": fileName,
+		"format":   format,
+	})
+}
+
 func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64, payload corteCajaCerrarPayload, reportes []string, r *http.Request) (*corteCajaResponse, int64, error) {
 	if dbEmp == nil {
 		return nil, 0, sql.ErrConnDone
@@ -744,14 +881,14 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 	}
 
 	meta, _ := json.Marshal(map[string]interface{}{
-		"origen":                 "corte_de_caja",
-		"reportes":               reportes,
-		"ventas_cantidad":        resp.Resumen.VentasCantidad,
-		"ventas_total":           resp.Resumen.VentasTotal,
-		"anulaciones_cantidad":   resp.Resumen.VentasAnuladasCantidad,
-		"anulaciones_total":      resp.Resumen.VentasAnuladasTotal,
+		"origen":               "corte_de_caja",
+		"reportes":             reportes,
+		"ventas_cantidad":      resp.Resumen.VentasCantidad,
+		"ventas_total":         resp.Resumen.VentasTotal,
+		"anulaciones_cantidad": resp.Resumen.VentasAnuladasCantidad,
+		"anulaciones_total":    resp.Resumen.VentasAnuladasTotal,
 		"estaciones_alertadas": resp.Resumen.EstacionesSinFactura,
-		"observaciones":          strings.TrimSpace(payload.Observaciones),
+		"observaciones":        strings.TrimSpace(payload.Observaciones),
 	})
 	ingresosEfectivo := resp.Resumen.EfectivoVentas + resp.Resumen.IngresosEfectivo
 	egresosEfectivo := resp.Resumen.EgresosEfectivo
@@ -788,6 +925,299 @@ func cerrarCorteCaja(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario strin
 	return resp, cierreID, nil
 }
 
+type corteCajaCierreScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanCorteCajaCierre(scanner corteCajaCierreScanner) (dbpkg.EmpresaCierreCaja, error) {
+	var item dbpkg.EmpresaCierreCaja
+	var incidencia int
+	err := scanner.Scan(
+		&item.ID,
+		&item.EmpresaID,
+		&item.SucursalID,
+		&item.CajaCodigo,
+		&item.Turno,
+		&item.FechaOperacion,
+		&item.FechaApertura,
+		&item.FechaCierre,
+		&item.EstadoCierre,
+		&item.AperturaMonto,
+		&item.IngresosEfectivo,
+		&item.EgresosEfectivo,
+		&item.RetirosEfectivo,
+		&item.CajaTeorica,
+		&item.CajaFisica,
+		&item.DiferenciaCaja,
+		&item.Moneda,
+		&item.CerradoPor,
+		&item.AprobadoPor,
+		&item.AprobadoEn,
+		&incidencia,
+		&item.UmbralIncidencia,
+		&item.PropinasMovimientos,
+		&item.PropinasTotal,
+		&item.PropinasAjustes,
+		&item.PropinasImpuesto,
+		&item.PropinasNeto,
+		&item.PropinasConciliadoEn,
+		&item.PropinasConciliadoPor,
+		&item.FechaCreacion,
+		&item.FechaActualizacion,
+		&item.UsuarioCreador,
+		&item.Estado,
+		&item.Observaciones,
+	)
+	item.TieneIncidencia = incidencia == 1
+	return item, err
+}
+
+func corteCajaCierresSelectSQL() string {
+	return `SELECT
+		id,
+		empresa_id,
+		COALESCE(sucursal_id, 0),
+		COALESCE(caja_codigo, ''),
+		COALESCE(turno, 'general'),
+		COALESCE(fecha_operacion, ''),
+		COALESCE(fecha_apertura, ''),
+		COALESCE(fecha_cierre, ''),
+		COALESCE(estado_cierre, 'abierto'),
+		COALESCE(apertura_monto, 0),
+		COALESCE(ingresos_efectivo, 0),
+		COALESCE(egresos_efectivo, 0),
+		COALESCE(retiros_efectivo, 0),
+		COALESCE(caja_teorica, 0),
+		COALESCE(caja_fisica, 0),
+		COALESCE(diferencia_caja, 0),
+		COALESCE(moneda, 'COP'),
+		COALESCE(cerrado_por, ''),
+		COALESCE(aprobado_por, ''),
+		COALESCE(aprobado_en, ''),
+		COALESCE(tiene_incidencia, 0),
+		COALESCE(umbral_incidencia, 0),
+		COALESCE(propinas_movimientos, 0),
+		COALESCE(propinas_total, 0),
+		COALESCE(propinas_ajustes, 0),
+		COALESCE(propinas_impuesto, 0),
+		COALESCE(propinas_neto, 0),
+		COALESCE(propinas_conciliado_en, ''),
+		COALESCE(propinas_conciliado_por, ''),
+		COALESCE(fecha_creacion, ''),
+		COALESCE(fecha_actualizacion, ''),
+		COALESCE(usuario_creador, ''),
+		COALESCE(estado, 'activo'),
+		COALESCE(observaciones, '')
+	FROM empresa_cierres_caja`
+}
+
+func listCorteCajaTurnosHistoricos(dbEmp *sql.DB, empresaID int64, r *http.Request) ([]dbpkg.EmpresaCierreCaja, error) {
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		return nil, err
+	}
+	query := corteCajaCierresSelectSQL() + `
+	WHERE empresa_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	  AND LOWER(COALESCE(estado_cierre, 'abierto')) <> 'abierto'`
+	args := []interface{}{empresaID}
+	estado := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("estado")))
+	if estado != "" && estado != "todos" {
+		query += ` AND LOWER(COALESCE(estado_cierre, 'abierto')) = ?`
+		args = append(args, estado)
+	}
+	if caja := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("caja_codigo"))); caja != "" {
+		query += ` AND UPPER(COALESCE(caja_codigo, '')) = ?`
+		args = append(args, caja)
+	}
+	if desde := strings.TrimSpace(r.URL.Query().Get("desde")); desde != "" {
+		if len(desde) > 10 {
+			desde = desde[:10]
+		}
+		query += ` AND COALESCE(fecha_operacion, '') >= ?`
+		args = append(args, desde)
+	}
+	if hasta := strings.TrimSpace(r.URL.Query().Get("hasta")); hasta != "" {
+		if len(hasta) > 10 {
+			hasta = hasta[:10]
+		}
+		query += ` AND COALESCE(fecha_operacion, '') <= ?`
+		args = append(args, hasta)
+	}
+	if q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q"))); q != "" {
+		query += ` AND (
+			LOWER(COALESCE(caja_codigo, '')) LIKE ?
+			OR LOWER(COALESCE(turno, '')) LIKE ?
+			OR LOWER(COALESCE(usuario_creador, '')) LIKE ?
+			OR LOWER(COALESCE(cerrado_por, '')) LIKE ?
+			OR CAST(id AS TEXT) LIKE ?
+		)`
+		like := "%" + q + "%"
+		args = append(args, like, like, like, like, like)
+	}
+	limit := int(parseCorteCajaInt64(r.URL.Query().Get("limit")))
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	query += ` ORDER BY COALESCE(fecha_cierre, fecha_apertura, fecha_creacion, '') DESC, id DESC LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]dbpkg.EmpresaCierreCaja, 0)
+	for rows.Next() {
+		item, err := scanCorteCajaCierre(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func getCorteCajaTurnoHistorico(dbEmp *sql.DB, empresaID, cierreID int64) (*dbpkg.EmpresaCierreCaja, error) {
+	if cierreID <= 0 {
+		return nil, sql.ErrNoRows
+	}
+	if err := dbpkg.EnsureEmpresaFinanzasSchema(dbEmp); err != nil {
+		return nil, err
+	}
+	rows, err := dbpkg.ExecQueryCompat(dbEmp, corteCajaCierresSelectSQL()+`
+	WHERE empresa_id = ?
+	  AND id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'
+	LIMIT 1`, empresaID, cierreID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return nil, sql.ErrNoRows
+	}
+	item, err := scanCorteCajaCierre(rows)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func buildCorteCajaReportForTurno(dbEmp *sql.DB, empresaID, cierreID int64) (*corteCajaResponse, *dbpkg.EmpresaCierreCaja, error) {
+	cierre, err := getCorteCajaTurnoHistorico(dbEmp, empresaID, cierreID)
+	if err != nil {
+		return nil, nil, err
+	}
+	desde := strings.TrimSpace(cierre.FechaApertura)
+	if desde == "" {
+		desde = strings.TrimSpace(cierre.FechaOperacion)
+		if len(desde) == 10 {
+			desde += " 00:00:00"
+		}
+	}
+	hasta := strings.TrimSpace(cierre.FechaCierre)
+	if hasta == "" {
+		hasta = strings.TrimSpace(cierre.FechaActualizacion)
+	}
+	if hasta == "" {
+		hasta = time.Now().Format("2006-01-02 15:04:05")
+	}
+	usuario := strings.TrimSpace(cierre.UsuarioCreador)
+	if usuario == "" {
+		usuario = strings.TrimSpace(cierre.CerradoPor)
+	}
+	resp, err := buildCorteCajaReport(dbEmp, empresaID, desde, hasta, usuario, cierre.AperturaMonto, cierre.CajaCodigo, cierre.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	resp.CajaActual = &corteCajaActualContext{
+		ID:             cierre.ID,
+		CajaCodigo:     cierre.CajaCodigo,
+		Turno:          cierre.Turno,
+		SucursalID:     cierre.SucursalID,
+		Usuario:        usuario,
+		FechaApertura:  cierre.FechaApertura,
+		FechaOperacion: cierre.FechaOperacion,
+		EstadoCierre:   cierre.EstadoCierre,
+	}
+	return resp, cierre, nil
+}
+
+func buildCorteCajaTurnoDataset(dbEmp *sql.DB, empresaID, cierreID int64) (empresaReporteDataset, error) {
+	resp, cierre, err := buildCorteCajaReportForTurno(dbEmp, empresaID, cierreID)
+	if err != nil {
+		return empresaReporteDataset{}, err
+	}
+	resumen := resp.Resumen
+	cur := resumen.Moneda
+	if cur == "" {
+		cur = cierre.Moneda
+	}
+	ds := empresaReporteDataset{
+		Key:         fmt.Sprintf("reporte_turno_%d", cierreID),
+		Title:       fmt.Sprintf("Reporte de turno #%d", cierreID),
+		Level:       "operativo",
+		Description: "Detalle historico de turno/corte de caja con ventas, movimientos y resumen de efectivo.",
+		EmpresaID:   empresaID,
+		Desde:       resumen.Desde,
+		Hasta:       resumen.Hasta,
+		GeneratedAt: time.Now().Format("2006-01-02 15:04:05"),
+		Columns:     []string{"seccion", "fecha", "numero", "estacion", "usuario", "metodo", "concepto", "valor"},
+		Rows:        []map[string]interface{}{},
+		Summary: map[string]interface{}{
+			"cierre_caja_id":        cierre.ID,
+			"empresa":               resumen.EmpresaNombre,
+			"nit":                   resumen.EmpresaNit,
+			"caja":                  cierre.CajaCodigo,
+			"turno":                 cierre.Turno,
+			"usuario":               strings.TrimSpace(cierre.UsuarioCreador),
+			"moneda":                cur,
+			"ventas":                resumen.VentasCantidad,
+			"total_ventas":          reportesRound(resumen.VentasTotal),
+			"efectivo_esperado":     reportesRound(resumen.EfectivoEsperadoCaja),
+			"ingresos":              reportesRound(resumen.IngresosFinancieros),
+			"egresos":               reportesRound(resumen.EgresosFinancieros),
+			"total_productos":       reportesRound(resumen.TotalProductos),
+			"total_servicios":       reportesRound(resumen.TotalServicios),
+			"estado_cierre":         cierre.EstadoCierre,
+			"fecha_operacion":       cierre.FechaOperacion,
+			"fecha_apertura":        cierre.FechaApertura,
+			"fecha_cierre":          cierre.FechaCierre,
+			"formato_profesional":   "json,csv,txt,xls,pdf",
+			"fuente_cierre_caja_id": cierre.ID,
+		},
+	}
+	addRow := func(seccion, fecha, numero, estacion, usuario, metodo, concepto string, valor float64) {
+		ds.Rows = append(ds.Rows, map[string]interface{}{
+			"seccion":  seccion,
+			"fecha":    fecha,
+			"numero":   numero,
+			"estacion": estacion,
+			"usuario":  usuario,
+			"metodo":   metodo,
+			"concepto": concepto,
+			"valor":    reportesRound(valor),
+		})
+	}
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Ingresos", resumen.IngresosFinancieros)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Egresos", resumen.EgresosFinancieros)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total productos", resumen.TotalProductos)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total servicios", resumen.TotalServicios)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Total efectivo", resumen.EfectivoVentas)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "tarjeta_credito", "Total tarjeta credito", resumen.CreditoVentas)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "tarjeta_debito", "Total tarjeta debito", resumen.DebitoVentas)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "otros", "Total otros", resumen.OtrosMediosVentas)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Debe haber en caja", resumen.EfectivoEsperadoCaja)
+	for _, venta := range resp.Ventas {
+		addRow("venta", venta.FechaPago, venta.Codigo, venta.EstacionNombre, venta.Cajero, venta.MetodoPago, "Venta", venta.TotalPagado)
+	}
+	for _, mov := range resp.Movimientos {
+		addRow("movimiento", resumen.Hasta, "", cierre.CajaCodigo, mov.Usuario, mov.Metodo, mov.Tipo+" "+mov.Categoria, mov.Total)
+	}
+	ds.RowCount = len(ds.Rows)
+	return ds, nil
+}
+
 func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario string, apertura float64, cajaCodigo string, cierreCajaID int64) (*corteCajaResponse, error) {
 	startedAt := time.Now()
 	defer func() {
@@ -816,6 +1246,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	empresa, err := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
 	if err == nil && empresa != nil {
 		resp.Resumen.EmpresaNombre = strings.TrimSpace(empresa.Nombre)
+		resp.Resumen.EmpresaNit = strings.TrimSpace(empresa.Nit)
 		resp.Resumen.EmpresaTipo = strings.TrimSpace(empresa.TipoNombre)
 	}
 	dbpkg.PerfLogf("[perf][corte] step empresa empresa=%d dur=%s", empresaID, time.Since(startedAt))
@@ -962,6 +1393,8 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, 
 		c.id,
 		COALESCE(c.codigo, ''),
 		COALESCE(c.nombre, ''),
+		COALESCE(c.activado_en, c.fecha_creacion, ''),
+		COALESCE(c.pagado_en, c.fecha_actualizacion, ''),
 		COALESCE(c.pagado_en, ''),
 		COALESCE(c.metodo_pago, 'efectivo'),
 		COALESCE(c.moneda, 'COP'),
@@ -1002,7 +1435,7 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, 
 	out := []corteCajaVenta{}
 	for rows.Next() {
 		var item corteCajaVenta
-		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
+		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -1019,6 +1452,8 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 		c.id,
 		COALESCE(c.codigo, ''),
 		COALESCE(c.nombre, ''),
+		COALESCE(c.activado_en, c.fecha_creacion, ''),
+		COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, ''),
 		COALESCE(m.fecha_evento, c.fecha_actualizacion, c.pagado_en, ''),
 		COALESCE(c.metodo_pago, 'efectivo'),
 		COALESCE(c.moneda, 'COP'),
@@ -1060,7 +1495,7 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 	out := []corteCajaVenta{}
 	for rows.Next() {
 		var item corteCajaVenta
-		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
+		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

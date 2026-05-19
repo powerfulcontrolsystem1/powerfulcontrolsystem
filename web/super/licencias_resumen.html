@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Centro de mando</title>
+  <title>Panel super administrador</title>
   <script>
     (function(){
       var valid = {dark:1,"dark-violet":1,"dark-emerald":1,"dark-neon":1,light:1,"light-rose":1,"light-gold":1,"light-wood":1};
@@ -20,77 +20,64 @@
   </script>
   <link rel="stylesheet" href="/estilos.css">
   <style>
-    :root{color-scheme:light dark;--cmd-bg:var(--bg,#f3f6fb);--cmd-panel:var(--surface,#ffffff);--cmd-panel-2:var(--surface-soft,#f4f7fc);--cmd-line:var(--border,rgba(15,35,64,.16));--cmd-text:var(--text,#10243f);--cmd-muted:var(--muted,#52627a);--cmd-blue:var(--accent,#0f6fcb);--cmd-green:#15803d;--cmd-amber:#b45309;--cmd-red:#b91c1c;--cmd-cyan:var(--accent-2,#0c8c8b);--cmd-ink:var(--text,#10243f);--cmd-meter-bg:color-mix(in srgb,var(--cmd-muted) 18%,transparent);--cmd-panel-shadow:0 1px 2px rgba(15,23,42,.05);--cmd-danger-bg:color-mix(in srgb,var(--cmd-red) 8%,var(--cmd-panel));--cmd-danger-line:color-mix(in srgb,var(--cmd-red) 28%,var(--cmd-line));--cmd-danger-text:color-mix(in srgb,var(--cmd-red) 84%,var(--cmd-text));--cmd-ok-bg:color-mix(in srgb,var(--cmd-green) 12%,var(--cmd-panel));--cmd-ok-line:color-mix(in srgb,var(--cmd-green) 32%,var(--cmd-line));--cmd-ok-text:color-mix(in srgb,var(--cmd-green) 82%,var(--cmd-text));--cmd-warn-bg:color-mix(in srgb,var(--cmd-amber) 12%,var(--cmd-panel));--cmd-warn-line:color-mix(in srgb,var(--cmd-amber) 34%,var(--cmd-line));--cmd-warn-text:color-mix(in srgb,var(--cmd-amber) 84%,var(--cmd-text));--cmd-crit-bg:color-mix(in srgb,var(--cmd-red) 11%,var(--cmd-panel));--cmd-crit-line:color-mix(in srgb,var(--cmd-red) 34%,var(--cmd-line));--cmd-crit-text:color-mix(in srgb,var(--cmd-red) 84%,var(--cmd-text));--cmd-info-bg:color-mix(in srgb,var(--cmd-blue) 10%,var(--cmd-panel));--cmd-info-line:color-mix(in srgb,var(--cmd-blue) 30%,var(--cmd-line));--cmd-info-text:color-mix(in srgb,var(--cmd-blue) 82%,var(--cmd-text))}
-    html.theme-dark,html[data-theme^="dark"]{color-scheme:dark;--cmd-bg:var(--bg,#0c1420);--cmd-panel:color-mix(in srgb,var(--surface,#16253a) 94%,#000 6%);--cmd-panel-2:color-mix(in srgb,var(--surface-soft,#1d2f48) 88%,#000 12%);--cmd-line:color-mix(in srgb,var(--border,rgba(152,176,206,.26)) 74%,var(--text,#e8f0fb) 8%);--cmd-green:#4ade80;--cmd-amber:#fbbf24;--cmd-red:#f87171;--cmd-meter-bg:color-mix(in srgb,var(--cmd-text) 13%,transparent);--cmd-panel-shadow:0 14px 30px rgba(0,0,0,.22);--cmd-ok-text:#bbf7d0;--cmd-warn-text:#fde68a;--cmd-crit-text:#fecaca;--cmd-info-text:#bfdbfe}
-    html.theme-light,html[data-theme^="light"]{color-scheme:light}
-    body.super-page{margin:0;background:linear-gradient(180deg,var(--cmd-bg),color-mix(in srgb,var(--cmd-bg) 92%,var(--cmd-panel) 8%));color:var(--cmd-text);font-family:Inter,Segoe UI,Arial,sans-serif}
-    .cmd-shell{width:min(1480px,calc(100vw - 28px));margin:0 auto;padding:14px 0 22px}
-    .cmd-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:12px;padding:12px 14px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
-    .cmd-kicker{margin:0 0 4px;color:var(--cmd-muted);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-    .cmd-title{margin:0;color:var(--cmd-ink);font-size:1.42rem;line-height:1.1}
+    :root{color-scheme:light dark;--cmd-bg:var(--bg,#f4f7fb);--cmd-panel:var(--surface,#fff);--cmd-soft:var(--surface-soft,#f7f9fc);--cmd-line:var(--border,rgba(15,35,64,.16));--cmd-text:var(--text,#10243f);--cmd-muted:var(--muted,#52627a);--cmd-blue:var(--accent,#0f6fcb);--cmd-green:#15803d;--cmd-amber:#b45309;--cmd-red:#b91c1c;--cmd-ok-bg:color-mix(in srgb,var(--cmd-green) 10%,var(--cmd-panel));--cmd-warn-bg:color-mix(in srgb,var(--cmd-amber) 12%,var(--cmd-panel));--cmd-crit-bg:color-mix(in srgb,var(--cmd-red) 10%,var(--cmd-panel));--cmd-info-bg:color-mix(in srgb,var(--cmd-blue) 9%,var(--cmd-panel))}
+    html.theme-dark,html[data-theme^="dark"]{color-scheme:dark;--cmd-bg:var(--bg,#0c1420);--cmd-panel:color-mix(in srgb,var(--surface,#16253a) 94%,#000 6%);--cmd-soft:color-mix(in srgb,var(--surface-soft,#1d2f48) 86%,#000 14%);--cmd-line:color-mix(in srgb,var(--border,rgba(152,176,206,.26)) 78%,var(--text,#e8f0fb) 8%);--cmd-green:#4ade80;--cmd-amber:#fbbf24;--cmd-red:#f87171}
+    body.super-page{margin:0;background:var(--cmd-bg);color:var(--cmd-text);font-family:Inter,Segoe UI,Arial,sans-serif}
+    .cmd-shell{width:min(1320px,calc(100vw - 28px));margin:0 auto;padding:14px 0 22px}
+    .cmd-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:12px;padding:13px 14px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-kicker{margin:0 0 4px;color:var(--cmd-muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .cmd-title{margin:0;color:var(--cmd-text);font-size:1.36rem;line-height:1.1}
     .cmd-subtitle{margin:5px 0 0;color:var(--cmd-muted);font-size:.82rem;line-height:1.35}
     .cmd-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
-    .cmd-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 11px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);font-weight:800;font-size:.8rem;text-decoration:none;cursor:pointer}
+    .cmd-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 11px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);font-weight:850;font-size:.8rem;text-decoration:none;cursor:pointer}
     .cmd-btn.primary{background:var(--cmd-blue);border-color:var(--cmd-blue);color:#fff}
-    .cmd-btn.danger{background:var(--cmd-danger-bg);border-color:var(--cmd-danger-line);color:var(--cmd-danger-text)}
+    .cmd-btn.danger{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 36%,var(--cmd-line));color:var(--cmd-red)}
     .cmd-btn:hover{filter:brightness(.98)}
-    .cmd-grid-main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(360px,.75fr);gap:12px;align-items:start}
-    .cmd-panel{border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);box-shadow:var(--cmd-panel-shadow)}
+    .cmd-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(330px,.65fr);gap:12px;align-items:start}
+    .cmd-panel{border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-panel+.cmd-panel{margin-top:12px}
     .cmd-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 13px;border-bottom:1px solid var(--cmd-line)}
-    .cmd-panel-head h2{margin:0;color:var(--cmd-ink);font-size:1rem;line-height:1.15}
+    .cmd-panel-head h2{margin:0;color:var(--cmd-text);font-size:.98rem;line-height:1.15}
     .cmd-panel-head p{margin:4px 0 0;color:var(--cmd-muted);font-size:.76rem;line-height:1.25}
-    .cmd-health{display:grid;grid-template-columns:220px minmax(0,1fr);gap:12px;padding:13px}
-    .cmd-score{display:grid;align-content:center;justify-items:center;min-height:210px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel-2)}
-    .cmd-score-ring{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--cmd-green) 0deg,var(--cmd-green) var(--score-deg,0deg),var(--cmd-meter-bg) var(--score-deg,0deg),var(--cmd-meter-bg) 360deg)}
-    .cmd-score-ring>div{width:112px;height:112px;border-radius:50%;display:grid;place-items:center;background:var(--cmd-panel)}
-    .cmd-score strong{font-size:2rem;color:var(--cmd-ink);line-height:1}
-    .cmd-score span{display:block;margin-top:7px;color:var(--cmd-muted);font-size:.72rem;font-weight:800;text-transform:uppercase}
-    .cmd-score-label{margin-top:10px;font-size:.84rem;font-weight:900}
-    .cmd-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    .cmd-kpi{min-height:112px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel-2)}
+    .cmd-pill{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:5px 8px;border-radius:999px;font-size:.68rem;font-weight:900;text-transform:uppercase;border:1px solid var(--cmd-line);background:var(--cmd-soft);color:var(--cmd-muted);white-space:nowrap}
+    .cmd-pill.ok{background:var(--cmd-ok-bg);border-color:color-mix(in srgb,var(--cmd-green) 32%,var(--cmd-line));color:var(--cmd-green)}
+    .cmd-pill.warn{background:var(--cmd-warn-bg);border-color:color-mix(in srgb,var(--cmd-amber) 34%,var(--cmd-line));color:var(--cmd-amber)}
+    .cmd-pill.crit{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 34%,var(--cmd-line));color:var(--cmd-red)}
+    .cmd-pill.info{background:var(--cmd-info-bg);border-color:color-mix(in srgb,var(--cmd-blue) 28%,var(--cmd-line));color:var(--cmd-blue)}
+    .cmd-summary{display:grid;grid-template-columns:190px minmax(0,1fr);gap:12px;padding:12px}
+    .cmd-score{display:grid;place-items:center;align-content:center;min-height:190px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-score-ring{width:138px;height:138px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--cmd-green) 0deg,var(--cmd-green) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) 360deg)}
+    .cmd-score-ring>div{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;background:var(--cmd-panel)}
+    .cmd-score strong{font-size:2rem;line-height:1;color:var(--cmd-text)}
+    .cmd-score-label{margin-top:9px;font-size:.84rem;font-weight:900}
+    .cmd-score small{display:block;margin-top:4px;color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase}
+    .cmd-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .cmd-kpi{min-height:104px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
     .cmd-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-    .cmd-dot{width:10px;height:10px;border-radius:50%;background:var(--cmd-muted)}
-    .ok .cmd-dot,.cmd-dot.ok{background:var(--cmd-green)} .warn .cmd-dot,.cmd-dot.warn{background:var(--cmd-amber)} .crit .cmd-dot,.cmd-dot.crit{background:var(--cmd-red)} .info .cmd-dot,.cmd-dot.info{background:var(--cmd-blue)}
-    .cmd-kpi-value{margin-top:10px;color:var(--cmd-ink);font-size:1.1rem;font-weight:900;line-height:1.1;overflow-wrap:anywhere}
+    .cmd-dot{width:10px;height:10px;border-radius:50%;background:var(--cmd-blue);flex:0 0 auto}
+    .ok .cmd-dot,.cmd-dot.ok{background:var(--cmd-green)}.warn .cmd-dot,.cmd-dot.warn{background:var(--cmd-amber)}.crit .cmd-dot,.cmd-dot.crit{background:var(--cmd-red)}.info .cmd-dot,.cmd-dot.info{background:var(--cmd-blue)}
+    .cmd-kpi-value{margin-top:10px;color:var(--cmd-text);font-size:1.04rem;font-weight:900;line-height:1.14;overflow-wrap:anywhere}
     .cmd-kpi-sub{margin-top:5px;color:var(--cmd-muted);font-size:.73rem;line-height:1.2}
-    .cmd-meter{height:7px;margin-top:10px;border-radius:999px;background:var(--cmd-meter-bg);overflow:hidden}
-    .cmd-meter span{display:block;height:100%;width:0;background:var(--cmd-blue);transition:width .2s ease}
-    .ok .cmd-meter span{background:var(--cmd-green)} .warn .cmd-meter span{background:var(--cmd-amber)} .crit .cmd-meter span{background:var(--cmd-red)}
-    .cmd-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
-    .cmd-list{display:grid;gap:7px;padding:12px}
-    .cmd-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel-2)}
-    .cmd-row-title{font-weight:900;color:var(--cmd-ink);font-size:.82rem;overflow-wrap:anywhere}
-    .cmd-row-sub{margin-top:2px;color:var(--cmd-muted);font-size:.72rem;line-height:1.2;overflow-wrap:anywhere}
-    .cmd-pill{display:inline-flex;align-items:center;justify-content:center;min-width:58px;padding:5px 8px;border-radius:999px;font-size:.7rem;font-weight:900;text-transform:uppercase;border:1px solid var(--cmd-line);background:var(--cmd-panel);color:var(--cmd-muted)}
-    .cmd-pill.ok{border-color:var(--cmd-ok-line);background:var(--cmd-ok-bg);color:var(--cmd-ok-text)}.cmd-pill.warn{border-color:var(--cmd-warn-line);background:var(--cmd-warn-bg);color:var(--cmd-warn-text)}.cmd-pill.crit{border-color:var(--cmd-crit-line);background:var(--cmd-crit-bg);color:var(--cmd-crit-text)}.cmd-pill.info{border-color:var(--cmd-info-line);background:var(--cmd-info-bg);color:var(--cmd-info-text)}
-    .cmd-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:12px}
-    .cmd-metric{padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel-2)}
-    .cmd-metric span{display:block;color:var(--cmd-muted);font-size:.68rem;font-weight:900;text-transform:uppercase}
-    .cmd-metric strong{display:block;margin-top:5px;color:var(--cmd-ink);font-size:1rem;overflow-wrap:anywhere}
-    .cmd-metric small{display:block;margin-top:3px;color:var(--cmd-muted);font-size:.68rem;line-height:1.15}
-    .cmd-wide{margin-top:12px}
+    .cmd-spark{height:74px;padding:0 12px 12px}
+    .cmd-spark svg{display:block;width:100%;height:100%}
+    .cmd-list{display:grid;gap:8px;padding:12px}
+    .cmd-alert{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:flex-start;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-alert strong{display:block;color:var(--cmd-text);font-size:.82rem;line-height:1.2}
+    .cmd-alert span{display:block;margin-top:3px;color:var(--cmd-muted);font-size:.72rem;line-height:1.25;overflow-wrap:anywhere}
+    .cmd-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px}
+    .cmd-control{display:grid;gap:8px;align-content:space-between;min-height:105px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-control strong{font-size:.84rem;color:var(--cmd-text)}
+    .cmd-control span{font-size:.72rem;line-height:1.25;color:var(--cmd-muted)}
+    .cmd-control .cmd-btn{width:100%;min-height:32px}
     .cmd-table-wrap{overflow:auto;padding:0 12px 12px}
-    .cmd-table{width:100%;min-width:840px;border-collapse:separate;border-spacing:0}
+    .cmd-table{width:100%;min-width:540px;border-collapse:separate;border-spacing:0}
     .cmd-table th,.cmd-table td{padding:9px 10px;border-bottom:1px solid var(--cmd-line);text-align:left;vertical-align:top;font-size:.78rem}
     .cmd-table th{color:var(--cmd-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
-    .cmd-table td{color:var(--cmd-text)}
-    .cmd-section-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px}
-    .cmd-control{display:grid;gap:8px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel-2);min-height:110px}
-    .cmd-control strong{color:var(--cmd-ink);font-size:.84rem}
-    .cmd-control span{color:var(--cmd-muted);font-size:.72rem;line-height:1.25}
-    .cmd-control .cmd-btn{width:100%;min-height:32px}
-    .cmd-alert-feed{max-height:424px;overflow:auto}
-    .cmd-alert{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;padding:10px;border-bottom:1px solid var(--cmd-line)}
-    .cmd-alert:last-child{border-bottom:0}
-    .cmd-alert strong{font-size:.82rem;color:var(--cmd-ink)}
-    .cmd-alert span{display:block;margin-top:3px;color:var(--cmd-muted);font-size:.72rem;line-height:1.25}
-    .cmd-spark{width:100%;height:86px;padding:8px 12px 12px}
-    .cmd-spark svg{width:100%;height:100%;display:block}
-    .cmd-toast{position:fixed;right:14px;bottom:14px;z-index:20;display:none;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-ink);color:#fff;font-size:.82rem;box-shadow:0 16px 40px rgba(15,23,42,.22)}
+    .cmd-toast{position:fixed;right:14px;bottom:14px;z-index:20;display:none;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-text);color:var(--cmd-panel);font-size:.82rem}
     .cmd-toast.show{display:block}
-    @media(max-width:1180px){.cmd-grid-main{grid-template-columns:1fr}.cmd-section-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:880px){.cmd-topbar{grid-template-columns:1fr}.cmd-actions{justify-content:flex-start}.cmd-health{grid-template-columns:1fr}.cmd-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-two{grid-template-columns:1fr}}
-    @media(max-width:620px){.cmd-shell{width:min(100vw - 16px,1480px);padding-top:8px}.cmd-kpi-grid,.cmd-split,.cmd-section-grid{grid-template-columns:1fr}.cmd-actions .cmd-btn{flex:1 1 calc(50% - 8px)}}
+    @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}.cmd-quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:860px){.cmd-topbar{grid-template-columns:1fr}.cmd-actions{justify-content:flex-start}.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-quick-grid{grid-template-columns:1fr}.cmd-actions .cmd-btn{flex:1 1 calc(50% - 8px)}}
   </style>
 </head>
 <body class="super-page">
@@ -98,133 +85,82 @@
     <header class="cmd-topbar">
       <div>
         <p class="cmd-kicker">Super administrador</p>
-        <h1 class="cmd-title">Centro de mando</h1>
-        <p class="cmd-subtitle">Estado ejecutivo de plataforma, infraestructura, base de datos, seguridad, licencias, costos y continuidad.</p>
+        <h1 class="cmd-title">Panel ejecutivo</h1>
+        <p class="cmd-subtitle">Vista limpia de salud, licencias, empresas, alertas y continuidad operativa.</p>
       </div>
       <nav class="cmd-actions" aria-label="Controles principales">
         <button id="cmdRefresh" class="cmd-btn primary" type="button">Actualizar</button>
         <button id="cmdRunAlerts" class="cmd-btn danger" type="button">Evaluar alertas</button>
+        <a class="cmd-btn" href="/super/licencias.html">Licencias</a>
         <a class="cmd-btn" href="/super/alertas_sistema.html">Alertas</a>
-        <a class="cmd-btn" href="/super/administrar_base_de_datos.html">PostgreSQL</a>
-        <a class="cmd-btn" href="/super/seguridad.html">Seguridad VPS</a>
       </nav>
     </header>
 
-    <section class="cmd-grid-main">
+    <section class="cmd-layout">
       <div>
-        <section class="cmd-panel" aria-label="Salud general">
+        <section class="cmd-panel" aria-label="Resumen principal">
           <div class="cmd-panel-head">
             <div>
-              <h2>Salud corporativa</h2>
+              <h2>Estado general</h2>
               <p id="cmdLastUpdate">Sin lectura reciente</p>
             </div>
             <span id="cmdMode" class="cmd-pill info">Normal</span>
           </div>
-          <div class="cmd-health">
+          <div class="cmd-summary">
             <div class="cmd-score">
               <div id="cmdScoreRing" class="cmd-score-ring">
                 <div><strong id="cmdScore">--</strong></div>
               </div>
               <div id="cmdScoreLabel" class="cmd-score-label">Calculando</div>
-              <span>Score operacional</span>
+              <small>Score operativo</small>
             </div>
-            <div class="cmd-kpi-grid">
+            <div class="cmd-kpis">
               <article id="kpiPlatform" class="cmd-kpi info">
-                <div class="cmd-kpi-top"><span>Plataforma</span><i class="cmd-dot"></i></div>
+                <div class="cmd-kpi-top"><span>Infraestructura</span><i class="cmd-dot"></i></div>
                 <div id="kpiPlatformValue" class="cmd-kpi-value">--</div>
-                <div id="kpiPlatformSub" class="cmd-kpi-sub">VPS y proceso principal</div>
-                <div class="cmd-meter"><span id="kpiPlatformMeter"></span></div>
+                <div id="kpiPlatformSub" class="cmd-kpi-sub">CPU, memoria y disco</div>
               </article>
               <article id="kpiDatabase" class="cmd-kpi info">
-                <div class="cmd-kpi-top"><span>Base de datos</span><i class="cmd-dot"></i></div>
+                <div class="cmd-kpi-top"><span>PostgreSQL</span><i class="cmd-dot"></i></div>
                 <div id="kpiDatabaseValue" class="cmd-kpi-value">--</div>
-                <div id="kpiDatabaseSub" class="cmd-kpi-sub">PostgreSQL</div>
-                <div class="cmd-meter"><span id="kpiDatabaseMeter"></span></div>
+                <div id="kpiDatabaseSub" class="cmd-kpi-sub">Motor principal</div>
               </article>
               <article id="kpiSecurity" class="cmd-kpi info">
-                <div class="cmd-kpi-top"><span>Seguridad</span><i class="cmd-dot"></i></div>
+                <div class="cmd-kpi-top"><span>Alertas</span><i class="cmd-dot"></i></div>
                 <div id="kpiSecurityValue" class="cmd-kpi-value">--</div>
-                <div id="kpiSecuritySub" class="cmd-kpi-sub">Alertas y errores</div>
-                <div class="cmd-meter"><span id="kpiSecurityMeter"></span></div>
+                <div id="kpiSecuritySub" class="cmd-kpi-sub">Seguridad y errores</div>
               </article>
-              <article id="kpiBusiness" class="cmd-kpi info">
-                <div class="cmd-kpi-top"><span>Negocio</span><i class="cmd-dot"></i></div>
-                <div id="kpiBusinessValue" class="cmd-kpi-value">--</div>
-                <div id="kpiBusinessSub" class="cmd-kpi-sub">Empresas y licencias</div>
-                <div class="cmd-meter"><span id="kpiBusinessMeter"></span></div>
+              <article id="kpiCompanies" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Empresas</span><i class="cmd-dot"></i></div>
+                <div id="kpiCompaniesValue" class="cmd-kpi-value">--</div>
+                <div id="kpiCompaniesSub" class="cmd-kpi-sub">Clientes registrados</div>
               </article>
-              <article id="kpiCost" class="cmd-kpi info">
-                <div class="cmd-kpi-top"><span>Costos</span><i class="cmd-dot"></i></div>
-                <div id="kpiCostValue" class="cmd-kpi-value">--</div>
-                <div id="kpiCostSub" class="cmd-kpi-sub">IA y proveedores</div>
-                <div class="cmd-meter"><span id="kpiCostMeter"></span></div>
+              <article id="kpiLicenses" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Licencias</span><i class="cmd-dot"></i></div>
+                <div id="kpiLicensesValue" class="cmd-kpi-value">--</div>
+                <div id="kpiLicensesSub" class="cmd-kpi-sub">Planes activos</div>
               </article>
-              <article id="kpiSlo" class="cmd-kpi info">
-                <div class="cmd-kpi-top"><span>SLO</span><i class="cmd-dot"></i></div>
-                <div id="kpiSloValue" class="cmd-kpi-value">--</div>
-                <div id="kpiSloSub" class="cmd-kpi-sub">Continuidad operativa</div>
-                <div class="cmd-meter"><span id="kpiSloMeter"></span></div>
+              <article id="kpiContinuity" class="cmd-kpi info">
+                <div class="cmd-kpi-top"><span>Continuidad</span><i class="cmd-dot"></i></div>
+                <div id="kpiContinuityValue" class="cmd-kpi-value">--</div>
+                <div id="kpiContinuitySub" class="cmd-kpi-sub">Servicios criticos</div>
               </article>
             </div>
           </div>
           <div class="cmd-spark" aria-label="Tendencia de carga">
-            <svg id="cmdSparkSvg" viewBox="0 0 600 86" preserveAspectRatio="none" role="img"></svg>
+            <svg id="cmdSparkSvg" viewBox="0 0 600 74" preserveAspectRatio="none" role="img"></svg>
           </div>
         </section>
 
-        <section class="cmd-two">
-          <article class="cmd-panel">
-            <div class="cmd-panel-head">
-              <div><h2>Infraestructura crítica</h2><p>CPU, memoria, disco, tráfico y procesos.</p></div>
-              <span id="infraBadge" class="cmd-pill info">--</span>
-            </div>
-            <div class="cmd-split">
-              <div class="cmd-metric"><span>CPU</span><strong id="mCpu">--</strong><small id="mCpuSub">Actual</small></div>
-              <div class="cmd-metric"><span>Memoria</span><strong id="mMem">--</strong><small id="mMemSub">Uso real</small></div>
-              <div class="cmd-metric"><span>Disco</span><strong id="mDisk">--</strong><small id="mDiskSub">Capacidad VPS</small></div>
-              <div class="cmd-metric"><span>Tráfico</span><strong id="mNet">--</strong><small id="mNetSub">Recibido + enviado</small></div>
-            </div>
-          </article>
-
-          <article class="cmd-panel">
-            <div class="cmd-panel-head">
-              <div><h2>PostgreSQL</h2><p>Salud de motor y señales de rendimiento.</p></div>
-              <span id="dbBadge" class="cmd-pill info">--</span>
-            </div>
-            <div class="cmd-split">
-              <div class="cmd-metric"><span>Estado</span><strong id="pgHealth">--</strong><small id="pgVersion">Versión</small></div>
-              <div class="cmd-metric"><span>Conexiones</span><strong id="pgConnections">--</strong><small>Activas / máximas</small></div>
-              <div class="cmd-metric"><span>Cache</span><strong id="pgCache">--</strong><small>Hit ratio</small></div>
-              <div class="cmd-metric"><span>Recomendaciones</span><strong id="pgRecs">--</strong><small>Acciones pendientes</small></div>
-            </div>
-          </article>
-        </section>
-
-        <section class="cmd-panel cmd-wide">
+        <section class="cmd-panel">
           <div class="cmd-panel-head">
-            <div><h2>Controles ejecutivos</h2><p>Accesos operativos del gobierno diario.</p></div>
-          </div>
-          <div class="cmd-section-grid">
-            <div class="cmd-control"><strong>Licencias</strong><span>Planes, renovaciones, pagos y activaciones.</span><a class="cmd-btn" href="/super/licencias.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Empresas</strong><span>Alta, edición, impacto y acceso a operación.</span><a class="cmd-btn" href="/seleccionar_empresa.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Tipos de empresa</strong><span>Plantillas, verticales y preconfiguración.</span><a class="cmd-btn" href="/super/tipos_empresas.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Roles</strong><span>Permisos, seguridad y alcance de acceso.</span><a class="cmd-btn" href="/super/roles_de_usuario.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Verticales 20</strong><span>Producción masiva y readiness comercial.</span><a class="cmd-btn" href="/super/verticales_produccion_masiva.html">Abrir</a></div>
-            <div class="cmd-control"><strong>IA</strong><span>Integración, contexto y reglas del asistente.</span><a class="cmd-btn" href="/super/integracion_ia.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Configuración</strong><span>Parámetros globales, 2FA y llaves.</span><a class="cmd-btn" href="/super/configuracion_avanzada.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Reportes</strong><span>Visión global y trazabilidad ejecutiva.</span><a class="cmd-btn" href="/super/reportes_globales.html">Abrir</a></div>
-          </div>
-        </section>
-
-        <section class="cmd-panel cmd-wide">
-          <div class="cmd-panel-head">
-            <div><h2>Servicios y componentes</h2><p>Estado operativo de dependencias de plataforma.</p></div>
-            <span id="servicesBadge" class="cmd-pill info">--</span>
+            <div><h2>Incidentes recientes</h2><p>Ultimos eventos que requieren trazabilidad.</p></div>
+            <a class="cmd-btn" href="/super/alertas_sistema.html">Gestionar</a>
           </div>
           <div class="cmd-table-wrap">
             <table class="cmd-table">
-              <thead><tr><th>Servicio</th><th>Estado</th><th>Detalle</th><th>Componentes</th></tr></thead>
-              <tbody id="servicesRows"><tr><td colspan="4">Cargando servicios...</td></tr></tbody>
+              <thead><tr><th>Nivel</th><th>Evento</th><th>Fecha</th></tr></thead>
+              <tbody id="errorRows"><tr><td colspan="3">Cargando errores...</td></tr></tbody>
             </table>
           </div>
         </section>
@@ -233,36 +169,25 @@
       <aside>
         <section class="cmd-panel">
           <div class="cmd-panel-head">
-            <div><h2>Riesgos activos</h2><p>Prioridad operativa inmediata.</p></div>
+            <div><h2>Prioridades</h2><p>Lo que debe revisarse primero.</p></div>
             <span id="riskBadge" class="cmd-pill info">--</span>
           </div>
-          <div id="riskList" class="cmd-alert-feed">
-            <div class="cmd-alert"><i class="cmd-dot info"></i><div><strong>Cargando señales</strong><span>Espere la lectura inicial.</span></div></div>
+          <div id="riskList" class="cmd-list">
+            <div class="cmd-alert"><i class="cmd-dot info"></i><div><strong>Cargando senales</strong><span>Espere la lectura inicial.</span></div></div>
           </div>
         </section>
 
-        <section class="cmd-panel cmd-wide">
+        <section class="cmd-panel">
           <div class="cmd-panel-head">
-            <div><h2>Negocio SaaS</h2><p>Licencias, empresas y consumo.</p></div>
+            <div><h2>Accesos clave</h2><p>Modulo principal para administrar la plataforma.</p></div>
           </div>
-          <div class="cmd-split">
-            <div class="cmd-metric"><span>Licencias activas</span><strong id="bizLicenses">--</strong><small id="bizLicensesSub">Base activa</small></div>
-            <div class="cmd-metric"><span>Empresas</span><strong id="bizCompanies">--</strong><small>Registradas</small></div>
-            <div class="cmd-metric"><span>OpenAI hoy</span><strong id="bizOpenAI">--</strong><small id="bizOpenAISub">Tokens y consultas</small></div>
-            <div class="cmd-metric"><span>Hostinger</span><strong id="bizHostinger">--</strong><small id="bizHostingerSub">Costo / tráfico</small></div>
-          </div>
-        </section>
-
-        <section class="cmd-panel cmd-wide">
-          <div class="cmd-panel-head">
-            <div><h2>Incidentes recientes</h2><p>Monitor de errores del sistema.</p></div>
-            <a class="cmd-btn" href="/super/alertas_sistema.html">Gestionar</a>
-          </div>
-          <div class="cmd-table-wrap">
-            <table class="cmd-table" style="min-width:520px">
-              <thead><tr><th>Nivel</th><th>Evento</th><th>Fecha</th></tr></thead>
-              <tbody id="errorRows"><tr><td colspan="3">Cargando errores...</td></tr></tbody>
-            </table>
+          <div class="cmd-quick-grid">
+            <div class="cmd-control"><strong>Licencias</strong><span>Planes, renovaciones, pagos y activaciones.</span><a class="cmd-btn" href="/super/licencias.html">Abrir</a></div>
+            <div class="cmd-control"><strong>Empresas</strong><span>Alta, edicion e ingreso operativo.</span><a class="cmd-btn" href="/seleccionar_empresa.html">Abrir</a></div>
+            <div class="cmd-control"><strong>Alertas</strong><span>Reglas, historial y notificaciones del sistema.</span><a class="cmd-btn" href="/super/alertas_sistema.html">Abrir</a></div>
+            <div class="cmd-control"><strong>PostgreSQL</strong><span>Rendimiento y salud de base de datos.</span><a class="cmd-btn" href="/super/administrar_base_de_datos.html">Abrir</a></div>
+            <div class="cmd-control"><strong>Roles</strong><span>Permisos y gobierno de acceso.</span><a class="cmd-btn" href="/super/roles_de_usuario.html">Abrir</a></div>
+            <div class="cmd-control"><strong>Comunicaciones</strong><span>Mantenimiento, emails y mensajes globales.</span><a class="cmd-btn" href="/super/mantenimiento_sistema.html">Abrir</a></div>
           </div>
         </section>
       </aside>
@@ -273,21 +198,35 @@
   <script>
     (function(){
       "use strict";
-      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[], consumos:null, processes:[] };
+      var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[] };
       var $ = function(id){ return document.getElementById(id); };
       function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
       function pct(v){ return Math.max(0, Math.min(100, num(v))); }
       function text(id, value){ var el = $(id); if(el) el.textContent = value; }
-      function cls(id, status){ var el = $(id); if(!el) return; el.classList.remove("ok","warn","crit","info"); el.classList.add(status || "info"); }
-      function fmtPct(v){ return pct(v).toFixed(pct(v) >= 10 ? 0 : 1) + "%"; }
-      function fmtBytes(bytes){
-        var b = num(bytes), units = ["B","KB","MB","GB","TB"], i = 0;
-        while(b >= 1024 && i < units.length - 1){ b /= 1024; i += 1; }
-        return (i === 0 ? b.toFixed(0) : b.toFixed(b >= 10 ? 1 : 2)) + " " + units[i];
-      }
-      function fmtMoney(v){ var n = num(v); return n ? ("US$ " + n.toFixed(2)) : "No configurado"; }
       function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
-      function toast(msg){ var el = $("cmdToast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove("show"); }, 3200); }
+      function toast(msg){ var el = $("cmdToast"); if(!el) return; el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove("show"); }, 3200); }
+      function fmtPct(v){ return pct(v).toFixed(pct(v) >= 10 ? 0 : 1) + "%"; }
+      function statusByPercent(v, warn, crit){ v = pct(v); return v >= crit ? "crit" : (v >= warn ? "warn" : "ok"); }
+      function serviceStatus(raw){
+        var s = String(raw || "").toLowerCase();
+        if(["active","ok","running","healthy"].indexOf(s) >= 0) return "ok";
+        if(["degraded","warning","warn","unavailable","unknown"].indexOf(s) >= 0) return "warn";
+        if(["error","failed","inactive"].indexOf(s) >= 0) return "crit";
+        return "info";
+      }
+      function severityStatus(raw){
+        var s = String(raw || "").toLowerCase();
+        if(["critical","critico","crit","error","danger"].indexOf(s) >= 0) return "crit";
+        if(["warning","warn","alto","media","medium"].indexOf(s) >= 0) return "warn";
+        if(["ok","healthy","stable","operativa","operativo"].indexOf(s) >= 0) return "ok";
+        return "info";
+      }
+      function setCard(id, status, value, sub){
+        var el = $(id);
+        if(el){ el.classList.remove("ok","warn","crit","info"); el.classList.add(status || "info"); }
+        text(id + "Value", value);
+        text(id + "Sub", sub);
+      }
       async function getJSON(url, fallback){
         try {
           var res = await fetch(url, { credentials:"same-origin" });
@@ -302,138 +241,75 @@
         if(!res.ok) throw new Error(await res.text() || ("HTTP " + res.status));
         return res.json().catch(function(){ return {}; });
       }
-      function statusByPercent(v, warn, crit){ v = pct(v); return v >= crit ? "crit" : (v >= warn ? "warn" : "ok"); }
-      function setKpi(id, status, value, sub, meter){
-        cls(id, status);
-        text(id+"Value", value);
-        text(id+"Sub", sub);
-        var m = $(id+"Meter"); if(m) m.style.width = pct(meter) + "%";
-      }
-      function serviceStatus(raw){
-        var s = String(raw || "").toLowerCase();
-        if(["active","ok","running","healthy"].indexOf(s) >= 0) return "ok";
-        if(["degraded","warning","warn","unavailable","unknown"].indexOf(s) >= 0) return "warn";
-        if(["error","failed","inactive"].indexOf(s) >= 0) return "crit";
-        return "info";
-      }
-      function severityStatus(raw){
-        var s = String(raw || "").toLowerCase();
-        if(["critical","critico","crit","error","danger"].indexOf(s) >= 0) return "crit";
-        if(["warning","warn","alto","media","medium"].indexOf(s) >= 0) return "warn";
-        if(["ok","healthy","stable","operativa","operativo"].indexOf(s) >= 0) return "ok";
-        if(["info","bajo","low"].indexOf(s) >= 0) return "info";
-        return "info";
+      function alertCandidates(){
+        var a = state.alerts || {};
+        return (a.evaluation && Array.isArray(a.evaluation.candidates)) ? a.evaluation.candidates : [];
       }
       function computeScore(){
         var penalties = 0, m = state.metric || {};
         penalties += pct(m.cpu_percent) > 90 ? 18 : (pct(m.cpu_percent) > 75 ? 9 : 0);
         penalties += pct(m.mem_percent) > 90 ? 18 : (pct(m.mem_percent) > 78 ? 9 : 0);
         penalties += pct(m.disk_percent) > 90 ? 22 : (pct(m.disk_percent) > 80 ? 11 : 0);
-        var triggered = alertCandidates().filter(function(a){ return a.triggered; });
-        penalties += triggered.length * 10;
+        penalties += alertCandidates().filter(function(a){ return a.triggered; }).length * 10;
         var errSummary = (state.errors && state.errors.summary) || {};
         penalties += num(errSummary.critical) * 14 + Math.min(20, num(errSummary.last_24h) * 4);
-        var badServices = state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).length;
-        penalties += badServices * 10;
+        penalties += state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).length * 10;
         var pgHealth = String((state.postgres && state.postgres.health) || "").toLowerCase();
         if(pgHealth === "critical" || pgHealth === "critico") penalties += 18;
         else if(pgHealth === "warning" || pgHealth === "degraded") penalties += 9;
         return Math.max(0, Math.min(100, 100 - penalties));
       }
-      function alertCandidates(){
-        var a = state.alerts || {};
-        return (a.evaluation && Array.isArray(a.evaluation.candidates)) ? a.evaluation.candidates : [];
-      }
+      function scoreStatus(score){ return score < 60 ? "crit" : (score < 82 ? "warn" : "ok"); }
       function renderSpark(){
         var svg = $("cmdSparkSvg"), rows = state.history || [];
         if(!svg) return;
-        if(!rows.length){ svg.innerHTML = '<text x="12" y="48" style="fill:var(--cmd-muted)" font-size="13">Sin historico de metricas</text>'; return; }
-        var data = rows.slice(-80).reverse();
-        var max = Math.max(100, ...data.map(function(x){ return Math.max(num(x.cpu_percent), num(x.mem_percent), num(x.disk_percent)); }));
+        if(!rows.length){ svg.innerHTML = '<text x="12" y="42" style="fill:var(--cmd-muted)" font-size="13">Sin historico de metricas</text>'; return; }
+        var data = rows.slice(-70).reverse();
         function path(key){
           return data.map(function(x,i){
             var px = data.length === 1 ? 0 : (i/(data.length-1))*590+5;
-            var py = 76 - (num(x[key])/max)*66;
+            var py = 64 - (pct(x[key])/100)*54;
             return (i ? "L" : "M") + px.toFixed(1) + " " + py.toFixed(1);
           }).join(" ");
         }
-        svg.innerHTML = '<path d="M5 76H595" style="stroke:var(--cmd-meter-bg)"/><path d="'+path("cpu_percent")+'" fill="none" style="stroke:var(--cmd-blue)" stroke-width="2.5"/><path d="'+path("mem_percent")+'" fill="none" style="stroke:var(--cmd-green)" stroke-width="2.5"/><path d="'+path("disk_percent")+'" fill="none" style="stroke:var(--cmd-amber)" stroke-width="2.5"/>';
+        svg.innerHTML = '<path d="M5 64H595" style="stroke:var(--cmd-line)"/><path d="'+path("cpu_percent")+'" fill="none" style="stroke:var(--cmd-blue)" stroke-width="2.4"/><path d="'+path("mem_percent")+'" fill="none" style="stroke:var(--cmd-green)" stroke-width="2.4"/><path d="'+path("disk_percent")+'" fill="none" style="stroke:var(--cmd-amber)" stroke-width="2.4"/>';
       }
       function renderTop(){
-        var score = computeScore();
-        var status = score < 60 ? "crit" : (score < 82 ? "warn" : "ok");
+        var score = computeScore(), status = scoreStatus(score);
+        var label = status === "ok" ? "Estable" : (status === "warn" ? "Atencion" : "Critico");
         text("cmdScore", String(score));
-        text("cmdScoreLabel", status === "ok" ? "Estable" : (status === "warn" ? "Atencion" : "Critico"));
-        $("cmdScoreRing").style.setProperty("--score-deg", (score*3.6).toFixed(0)+"deg");
-        var scoreColor = status === "crit" ? "var(--cmd-red)" : status === "warn" ? "var(--cmd-amber)" : "var(--cmd-green)";
-        var trackColor = "var(--cmd-meter-bg)";
-        $("cmdScoreRing").style.background = "conic-gradient(" + scoreColor + " 0deg," + scoreColor + " " + (score*3.6).toFixed(0) + "deg," + trackColor + " " + (score*3.6).toFixed(0) + "deg," + trackColor + " 360deg)";
+        text("cmdScoreLabel", label);
         text("cmdMode", status === "ok" ? "Operativo" : (status === "warn" ? "Vigilancia" : "Incidente"));
         $("cmdMode").className = "cmd-pill " + status;
         text("cmdLastUpdate", "Ultima lectura: " + new Date().toLocaleString("es-CO"));
+        var ring = $("cmdScoreRing");
+        var color = status === "crit" ? "var(--cmd-red)" : status === "warn" ? "var(--cmd-amber)" : "var(--cmd-green)";
+        var deg = (score * 3.6).toFixed(0) + "deg";
+        ring.style.setProperty("--score-deg", deg);
+        ring.style.background = "conic-gradient(" + color + " 0deg," + color + " " + deg + ",color-mix(in srgb,var(--cmd-muted) 22%,transparent) " + deg + ",color-mix(in srgb,var(--cmd-muted) 22%,transparent) 360deg)";
       }
-      function renderKpis(){
+      function renderCards(){
         var m = state.metric || {};
-        var platformStatus = [statusByPercent(m.cpu_percent,75,90), statusByPercent(m.mem_percent,78,90), statusByPercent(m.disk_percent,80,90)].includes("crit") ? "crit" : ([statusByPercent(m.cpu_percent,75,90), statusByPercent(m.mem_percent,78,90), statusByPercent(m.disk_percent,80,90)].includes("warn") ? "warn" : "ok");
-        setKpi("kpiPlatform", platformStatus, "CPU " + fmtPct(m.cpu_percent) + " | RAM " + fmtPct(m.mem_percent), "Disco " + fmtPct(m.disk_percent) + " | " + fmtBytes(num(m.net_recv)+num(m.net_sent)), Math.max(num(m.cpu_percent),num(m.mem_percent),num(m.disk_percent)));
-        var pg = state.postgres || {}, pgStatus = severityStatus(pg.health || (pg.ok === false ? "critical" : "ok"));
-        var pgCache = pg.cluster ? num(pg.cluster.cache_hit_ratio_pct) : num(((pg.databases||[])[0]||{}).cache_hit_ratio_pct);
-        setKpi("kpiDatabase", pgStatus, pg.health || (pg.ok === false ? "Sin lectura" : "Operativa"), ((pg.cluster && pg.cluster.active_connections) || 0) + " conexiones | " + (pgCache ? pgCache.toFixed(1) : "-") + "% cache", pgStatus === "ok" ? 35 : pgStatus === "warn" ? 70 : 100);
-        var errSummary = (state.errors && state.errors.summary) || {}, critical = num(errSummary.critical), last24 = num(errSummary.last_24h);
-        var triggered = alertCandidates().filter(function(a){ return a.triggered; });
-        setKpi("kpiSecurity", critical ? "crit" : (last24 || triggered.length ? "warn" : "ok"), critical + " criticos | " + triggered.length + " alertas", last24 + " errores en 24h", Math.min(100, critical*25 + last24*8 + triggered.length*20));
-        setKpi("kpiBusiness", "ok", state.licenses.length + " licencias | " + state.companies.length + " empresas", "Catalogo y empresas registradas", Math.min(100, state.licenses.length + state.companies.length));
-        var oa = (state.consumos && state.consumos.openai) || {}, sup = oa.super || {}, emp = oa.empresas || {};
-        var totalTokens = num(sup.tokens) + num(emp.tokens), totalCost = num(sup.cost_usd_est) + num(emp.cost_usd_est);
-        setKpi("kpiCost", "ok", totalTokens.toLocaleString("es-CO") + " tokens", totalCost ? ("US$ " + totalCost.toFixed(2) + " estimado") : "Costo no configurado", Math.min(100, totalCost*10));
-        var serviceCrit = state.services.filter(function(s){ return serviceStatus(s.estado)==="crit"; }).length;
-        var sloStatus = scoreStatus(computeScore());
-        setKpi("kpiSlo", serviceCrit ? "crit" : sloStatus, serviceCrit ? serviceCrit + " servicio(s) critico(s)" : "SLO controlado", "Score " + computeScore() + "/100", computeScore());
-      }
-      function scoreStatus(score){ return score < 60 ? "crit" : (score < 82 ? "warn" : "ok"); }
-      function renderInfra(){
-        var m = state.metric || {};
-        text("mCpu", fmtPct(m.cpu_percent)); text("mCpuSub", "Muestra #" + (m.id || "-"));
-        text("mMem", fmtPct(m.mem_percent)); text("mMemSub", fmtBytes(m.mem_used) + " / " + fmtBytes(m.mem_total));
-        text("mDisk", fmtPct(m.disk_percent)); text("mDiskSub", fmtBytes(m.disk_used) + " / " + fmtBytes(m.disk_total));
-        text("mNet", fmtBytes(num(m.net_recv)+num(m.net_sent))); text("mNetSub", "RX " + fmtBytes(m.net_recv) + " | TX " + fmtBytes(m.net_sent));
-        var st = [statusByPercent(m.cpu_percent,75,90),statusByPercent(m.mem_percent,78,90),statusByPercent(m.disk_percent,80,90)].includes("crit") ? "crit" : "ok";
-        $("infraBadge").className = "cmd-pill " + st; text("infraBadge", st === "ok" ? "OK" : "Atencion");
-      }
-      function renderPostgres(){
+        var infra = [statusByPercent(m.cpu_percent,75,90), statusByPercent(m.mem_percent,78,90), statusByPercent(m.disk_percent,80,90)];
+        var infraStatus = infra.indexOf("crit") >= 0 ? "crit" : (infra.indexOf("warn") >= 0 ? "warn" : "ok");
+        setCard("kpiPlatform", infraStatus, "CPU " + fmtPct(m.cpu_percent) + " / RAM " + fmtPct(m.mem_percent), "Disco " + fmtPct(m.disk_percent));
+
         var pg = state.postgres || {};
-        var st = severityStatus(pg.health || (pg.ok === false ? "critical" : "ok"));
-        $("dbBadge").className = "cmd-pill " + st; text("dbBadge", pg.health || (pg.ok === false ? "Error" : "OK"));
-        text("pgHealth", pg.health || (pg.ok === false ? "Sin lectura" : "Operativa"));
-        text("pgVersion", (pg.cluster && (pg.cluster.version_label || pg.cluster.postgres_version)) || "PostgreSQL");
+        var pgStatus = severityStatus(pg.health || (pg.ok === false ? "critical" : "ok"));
         var c = (pg.cluster && (pg.cluster.active_connections || pg.cluster.connections)) || 0;
         var max = (pg.cluster && pg.cluster.max_connections) || "-";
-        text("pgConnections", c + " / " + max);
-        var dbs = pg.databases || [], ratio = num(pg.cluster && pg.cluster.cache_hit_ratio_pct);
-        if(!ratio && dbs.length){ ratio = dbs.map(function(d){ return num(d.cache_hit_ratio_pct); }).reduce(function(a,b){ return a+b; },0)/dbs.length; }
-        text("pgCache", ratio ? ratio.toFixed(1) + "%" : "--");
-        text("pgRecs", ((pg.recommendations || pg.recomendaciones || []).length || 0).toString());
-      }
-      function renderServices(){
-        var rows = state.services || [], critical = rows.filter(function(s){ return serviceStatus(s.estado)==="crit"; }).length;
-        $("servicesBadge").className = "cmd-pill " + (critical ? "crit" : "ok");
-        text("servicesBadge", critical ? critical + " falla(s)" : "OK");
-        $("servicesRows").innerHTML = rows.length ? rows.map(function(s){
-          var st = serviceStatus(s.estado);
-          var comps = s.componentes ? Object.keys(s.componentes).map(function(k){ return k + ": " + s.componentes[k]; }).join(" | ") : "-";
-          return '<tr><td><strong>'+esc(s.nombre || s.id)+'</strong></td><td><span class="cmd-pill '+st+'">'+esc(s.estado || "-")+'</span></td><td>'+esc(s.detalle || "")+'</td><td>'+esc(comps)+'</td></tr>';
-        }).join("") : '<tr><td colspan="4">Sin servicios reportados.</td></tr>';
-      }
-      function renderBusiness(){
-        text("bizLicenses", state.licenses.length.toLocaleString("es-CO"));
-        text("bizLicensesSub", "Licencias activas con empresa");
-        text("bizCompanies", state.companies.length.toLocaleString("es-CO"));
-        var oa = (state.consumos && state.consumos.openai) || {}, sup = oa.super || {}, emp = oa.empresas || {};
-        text("bizOpenAI", (num(sup.tokens)+num(emp.tokens)).toLocaleString("es-CO"));
-        text("bizOpenAISub", (num(sup.consultas)+num(emp.consultas)).toLocaleString("es-CO") + " consultas");
-        var h = (state.consumos && state.consumos.hostinger) || {};
-        text("bizHostinger", fmtMoney(h.cost_usd_month));
-        text("bizHostingerSub", num(h.bandwidth_limit_gb) ? (num(h.bandwidth_used_gb) + " / " + num(h.bandwidth_limit_gb) + " GB") : "Trafico no configurado");
+        setCard("kpiDatabase", pgStatus, pg.health || (pg.ok === false ? "Sin lectura" : "Operativa"), c + " / " + max + " conexiones");
+
+        var errSummary = (state.errors && state.errors.summary) || {};
+        var critical = num(errSummary.critical), last24 = num(errSummary.last_24h);
+        var triggered = alertCandidates().filter(function(a){ return a.triggered; }).length;
+        setCard("kpiSecurity", critical ? "crit" : (last24 || triggered ? "warn" : "ok"), triggered + " alertas activas", last24 + " errores en 24h | " + critical + " criticos");
+
+        setCard("kpiCompanies", "ok", state.companies.length.toLocaleString("es-CO"), "Empresas registradas");
+        setCard("kpiLicenses", "ok", state.licenses.length.toLocaleString("es-CO"), "Licencias activas con empresa");
+
+        var serviceCrit = state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).length;
+        setCard("kpiContinuity", serviceCrit ? "crit" : scoreStatus(computeScore()), serviceCrit ? serviceCrit + " servicio(s)" : "Controlada", "Score " + computeScore() + "/100");
       }
       function renderRisks(){
         var risks = [], m = state.metric || {};
@@ -446,38 +322,34 @@
         var errSummary = (state.errors && state.errors.summary) || {};
         if(num(errSummary.critical)) add("crit","Errores criticos registrados", num(errSummary.critical) + " eventos criticos en el monitor.");
         else if(num(errSummary.last_24h)) add("warn","Errores recientes", num(errSummary.last_24h) + " eventos en 24h.");
-        state.services.filter(function(s){ return serviceStatus(s.estado)==="crit"; }).forEach(function(s){ add("crit", s.nombre || s.id, s.detalle || "Servicio critico."); });
+        state.services.filter(function(s){ return serviceStatus(s.estado) === "crit"; }).forEach(function(s){ add("crit", s.nombre || s.id, s.detalle || "Servicio critico."); });
         if(!risks.length) add("ok","Operacion estable","No hay riesgos criticos con las senales disponibles.");
         $("riskBadge").className = "cmd-pill " + (risks.some(function(r){return r.st==="crit";}) ? "crit" : risks.some(function(r){return r.st==="warn";}) ? "warn" : "ok");
-        text("riskBadge", risks.length + " señal(es)");
-        $("riskList").innerHTML = risks.slice(0,12).map(function(r){ return '<div class="cmd-alert"><i class="cmd-dot '+r.st+'"></i><div><strong>'+esc(r.title)+'</strong><span>'+esc(r.detail)+'</span></div></div>'; }).join("");
+        text("riskBadge", risks.length + " senal(es)");
+        $("riskList").innerHTML = risks.slice(0,6).map(function(r){ return '<div class="cmd-alert"><i class="cmd-dot '+r.st+'"></i><div><strong>'+esc(r.title)+'</strong><span>'+esc(r.detail)+'</span></div></div>'; }).join("");
       }
       function renderErrors(){
         var items = (state.errors && (state.errors.items || state.errors.errores || state.errors.rows)) || [];
-        $("errorRows").innerHTML = items.length ? items.slice(0,8).map(function(e){
+        $("errorRows").innerHTML = items.length ? items.slice(0,6).map(function(e){
           var st = severityStatus(e.nivel || e.level || e.severidad);
           var msg = e.mensaje || e.message || e.error || e.detalle || "Evento";
           var date = e.fecha_creacion || e.created_at || e.fecha || "";
           return '<tr><td><span class="cmd-pill '+st+'">'+esc(e.nivel || e.level || e.severidad || "info")+'</span></td><td>'+esc(msg)+'</td><td>'+esc(date)+'</td></tr>';
         }).join("") : '<tr><td colspan="3">Sin errores recientes.</td></tr>';
       }
-      function renderAll(){
-        renderTop(); renderKpis(); renderInfra(); renderPostgres(); renderServices(); renderBusiness(); renderRisks(); renderErrors(); renderSpark();
-      }
+      function renderAll(){ renderTop(); renderCards(); renderRisks(); renderErrors(); renderSpark(); }
       async function loadAll(){
         $("cmdRefresh").disabled = true;
         text("cmdLastUpdate","Actualizando...");
         var results = await Promise.all([
           getJSON("/super/api/metrics/current", null),
-          getJSON("/super/api/metrics/history?limit=240", []),
+          getJSON("/super/api/metrics/history?limit=180", []),
           getJSON("/super/api/postgres/performance", null),
           getJSON("/super/api/alertas_sistema", null),
-          getJSON("/super/api/errores?limit=8&offset=0", null),
+          getJSON("/super/api/errores?limit=6&offset=0", null),
           getJSON("/super/api/servidores", null),
           getJSON("/super/api/licencias?activo=1&con_empresa=1", []),
-          getJSON("/super/api/empresas", []),
-          getJSON("/super/api/consumos", null),
-          getJSON("/super/api/vps/procesos?limit=30", null)
+          getJSON("/super/api/empresas", [])
         ]);
         state.metric = results[0] || {};
         state.history = Array.isArray(results[1]) ? results[1] : [];
@@ -487,12 +359,10 @@
         state.services = (results[5] && Array.isArray(results[5].servicios)) ? results[5].servicios : [];
         state.licenses = Array.isArray(results[6]) ? results[6] : (results[6] && (results[6].licencias || results[6].items)) || [];
         state.companies = Array.isArray(results[7]) ? results[7] : (results[7] && (results[7].empresas || results[7].items)) || [];
-        state.consumos = results[8] || {};
-        state.processes = (results[9] && (results[9].procesos || results[9].items)) || [];
         renderAll();
         $("cmdRefresh").disabled = false;
       }
-      $("cmdRefresh").addEventListener("click", function(){ loadAll().then(function(){ toast("Centro de mando actualizado."); }); });
+      $("cmdRefresh").addEventListener("click", function(){ loadAll().then(function(){ toast("Panel actualizado."); }); });
       $("cmdRunAlerts").addEventListener("click", async function(){
         try {
           $("cmdRunAlerts").disabled = true;

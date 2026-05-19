@@ -196,10 +196,11 @@ func sanitizeLegacyPermissionVisibleText(value string) string {
 var permissionUniversalGroupLabels = map[string]string{
 	"Operaci\u00f3n diaria y ventas":                "Operaci\u00f3n universal y ventas",
 	"Operaci\u00f3n y venta":                        "Operaci\u00f3n universal y ventas",
+	"Operacion y ventas":                            "Operacion universal y ventas",
 	"Operacion diaria y ventas":                     "Operaci\u00f3n universal y ventas",
 	"Operacion y venta":                             "Operaci\u00f3n universal y ventas",
-	"Permisos base de ventas":                       "Permisos base de ventas",
-	"Canales digitales y colaboracion":              "Canales digitales y colaboraci\u00f3n",
+	"Permisos base de ventas":                       "Permisos universales base de ventas",
+	"Canales digitales y colaboracion":              "Canales digitales universales y colaboraci\u00f3n",
 	"Verticales de negocio":                         "Soluciones universales por negocio",
 	"Inventario y compras":                          "Inventario y compras universales",
 	"Inventario y cat\u00e1logo":                    "Inventario y compras universales",
@@ -211,6 +212,7 @@ var permissionUniversalGroupLabels = map[string]string{
 	"Administraci\u00f3n y configuraci\u00f3n":      "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Seguridad e integraci\u00f3n":                  "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Configuraci\u00f3n":                            "Administraci\u00f3n universal y configuraci\u00f3n",
+	"Configuracion - Ventas y cobro":                "Configuracion universal - Ventas y cobro",
 	"Administracion y configuracion":                "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Seguridad e integracion":                       "Administraci\u00f3n universal y configuraci\u00f3n",
 	"Configuracion":                                 "Administraci\u00f3n universal y configuraci\u00f3n",
@@ -507,6 +509,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
 
 	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro de reportes", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesTurnos", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Reportes de turnos", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Centro financiero y contable"},
 
 	{PaginaClave: "linkUsuarios", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Usuarios y accesos", Grupo: "Personas y activos"},
@@ -529,13 +532,18 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
 
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de empresa", Grupo: "Administracion y configuracion"},
-	{PaginaClave: "linkConfiguracionMain", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion general", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionMain", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Productos y pedidos", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionIdentidadVisual", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Identidad visual", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionCobroOperativo", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Cobro operativo", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionReporteCorte", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Reporte de corte", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionBackupsPasarelas", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Respaldo de configuracion", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionPasarelasPago", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Pasarelas de pago", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionImpresora", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de impresora", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionPermisos", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Permisos y roles", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionGuiada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion guiada con IA", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionChatFlotante", Modulo: permModuleChatTareas, Accion: permActionUpdate, Titulo: "Configurar chat y robot", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionCarritoEmpresa", Modulo: permModuleVentaPublica, Accion: permActionApprove, Titulo: "Carrito unificado", Grupo: "Administracion y configuracion"},
-	{PaginaClave: "linkConfiguracionAvanzada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Documento y formato", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkConfiguracionAvanzada", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Formato monetario", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfigEstaciones", Modulo: permModuleVentas, Accion: permActionApprove, Titulo: "Aprobacion: configuracion de estaciones", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionSensoresRaspberry", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Raspberry Pi y sensores", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkControlElectrico", Modulo: permModuleControlElectrico, Accion: permActionUpdate, Titulo: "Control electrico por estacion", Grupo: "Administracion y configuracion"},
@@ -3157,6 +3165,10 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	case path == "/api/empresa/aiu_construccion":
 		return "linkAIUConstruccion"
 	case path == "/api/empresa/corte_caja":
+		switch action {
+		case "turnos", "reportes_turnos", "turnos_historial", "turno_reporte", "reporte_turno", "turno_export", "export_turno", "exportar_turno", "turno_email", "enviar_turno_email", "email_turno":
+			return "linkReportesTurnos"
+		}
 		return "linkCorteCaja"
 	case strings.HasPrefix(path, "/api/empresa/finanzas/"):
 		return "linkFinanzas"

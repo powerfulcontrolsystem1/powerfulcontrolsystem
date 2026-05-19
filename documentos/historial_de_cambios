@@ -1,3 +1,46 @@
+2026-05-18: Reporte de turno adaptado a papel grande y POS.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` adapta el modo `Ticket POS 80mm` para encabezado compacto, resumen de una columna y detalle de ventas en bloques con etiquetas.
+- `web/administrar_empresa/reportes_turnos.html` agrega selector `Papel grande / Papel POS 80mm` y cambia la vista imprimible sin afectar exportacion ni email.
+- QA: parseo JS, pruebas Go enfocadas y verificacion visual local de ancho grande/POS sin overflow horizontal.
+
+2026-05-18: Reportes de turnos historicos.
+- Modulos afectados: `reportes`, `corte_de_caja`, `finanzas`, `frontend_ux`, `permisos`.
+- Backend: `/api/empresa/corte_caja` agrega acciones `turnos`, `turno_reporte`, `turno_export` y `turno_email` para consultar cierres antiguos, reconstruir el reporte por `cierre_caja_id`, exportar y enviar email.
+- Frontend: `web/administrar_empresa/reportes_turnos.html` lista turnos antiguos con filtros y acciones por fila; `reportes_menu.html` agrega el acceso en el submenu de reportes.
+- Permisos: se agrega `linkReportesTurnos` como pagina de lectura del modulo `reportes`; las acciones historicas del endpoint se mapean a esa clave y el cierre operativo de caja conserva `linkCorteCaja`.
+- QA: pruebas Go enfocadas de corte/permisos y parseo de scripts inline de la nueva pagina y menu.
+
+2026-05-18: Reporte de turno configurable.
+- Modulos afectados: `corte_de_caja`, `configuracion_empresarial`, `finanzas`, `frontend_ux`.
+- Backend: `backend/handlers/corte_caja.go` expone `empresa_nit`, `fecha_entrada` y `fecha_salida` en el reporte de corte, conservando aislamiento por `empresa_id` y orden del detalle por fecha/hora de venta.
+- Base de datos: `backend/db/corte_caja_configuracion.go` agrega banderas por empresa para encabezado, datos de empresa, fecha/hora, usuario, consecutivo, columnas del detalle y totales de productos/servicios.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` muestra el reporte de turno como hoja imprimible con empresa arriba, datos del turno, detalle de ventas y resumenes de ingresos, egresos, productos, servicios, medios de pago y efectivo esperado.
+- Configuracion: `web/administrar_empresa/configuracion.html` permite activar/desactivar los bloques y campos desde la seccion `Reporte de corte`.
+- QA: pruebas Go enfocadas para corte/configuracion, parseo de scripts inline, `git diff --check` y verificacion visual local con datos mock.
+
+2026-05-18: Panel ejecutivo de Super Administrador
+- Modulos afectados: `super_administrador`, `frontend_ux`, `operacion_sistema`.
+- Frontend: `web/super/licencias_resumen.html` queda como tablero ejecutivo compacto con indicadores de infraestructura, PostgreSQL, alertas, empresas, licencias y continuidad.
+- UX: se eliminan tarjetas repetidas de negocio, servicios y costos del panel inicial; los detalles especializados quedan en sus modulos propios.
+- QA: verificacion visual local en escritorio y movil confirma 4 paneles principales, 6 KPIs unicos, ausencia de textos duplicados y sin errores JavaScript.
+- Alcance tecnico: no cambia backend, endpoints, permisos, tablas ni dependencias.
+
+2026-05-18: Login administrador con titulo en imagen.
+- Modulos afectados: `login`, `autenticacion`, `frontend_ux`.
+- Frontend: `web/login.html` muestra `Powerful Control System` como titulo superior del formulario.
+- UX: el texto `Acceso de administradores` pasa a la foto lateral derecha como titulo superpuesto, y `Ir al inicio` queda debajo de la tarjeta de login.
+- Alcance tecnico: no cambia autenticacion, endpoints, permisos, tablas ni dependencias.
+
+2026-05-18: Fix guardado formato monetario y numerico
+- Modulos afectados: `configuracion_empresa`, `facturacion_configuracion`, `configuracion_operativa`, `permisos`.
+- Backend: `backend/db/empresa_configuracion_avanzada.go` agrega normalizacion de columnas booleanas legacy a enteros `0/1` para `empresa_configuracion_avanzada` antes de leer/guardar configuracion.
+- Backend: `UpsertEmpresaConfiguracionAvanzada` usa `sqlNowExpr()` para `fecha_creacion` y `fecha_actualizacion`, evitando SQL runtime con `datetime('now','localtime')` en PostgreSQL.
+- Backend: `backend/db/configuracion_operativa.go` deja de usar `LastInsertId()` al guardar configuracion operativa, reglas por rol, politicas e historial; ahora cada escritura usa `RETURNING id` con `QueryRowCompat`.
+- QA: `backend/db/empresa_configuracion_avanzada_postgres_test.go` cubre la regresion del SQL runtime y la migracion ligera de flags legacy.
+- QA: `backend/db/configuracion_operativa_postgres_test.go` cubre la regresion del historial/rollback operativo en PostgreSQL.
+- Permisos: `backend/handlers/empresa_permisos.go` normaliza etiquetas de grupos de ventas/configuracion para cumplir el catalogo universal, sin cambiar modulos ni acciones.
+
 2026-05-18: Corte de Caja con botones en Lectura rapida y texto de estaciones.
 - Frontend: `web/administrar_empresa/corte_de_caja.html` coloca `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` dentro de la tarjeta `Lectura rapida`, en columna.
 - Fix: `Ver reporte de mi turno` limpia `automaticCierreCajaID` y `automaticCajaSucursalID` antes de pedir `/api/empresa/corte_caja?action=reporte_mi_turno`, evitando que un corte automatico anterior contamine el reporte.
@@ -26121,6 +26164,34 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/js/compras_avanzadas.js
 - web/registrar_nuevo_usuario_administrador.html
+
+2026-05-18: Configuracion empresarial por paginas independientes
+Archivos modificados:
+- backend/handlers/empresa_permisos.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion_menu.html
+- web/administrar_empresa/configuracion/productos_pedidos.html
+- web/administrar_empresa/configuracion/identidad_visual.html
+- web/administrar_empresa/configuracion/formato_monetario.html
+- web/administrar_empresa/configuracion/cobro_operativo.html
+- web/administrar_empresa/configuracion/corte_de_caja.html
+- web/administrar_empresa/configuracion/respaldo.html
+- web/administrar_empresa/configuracion/pasarelas_pago.html
+- web/js/administrar_empresa.js
+Resumen:
+- El submenu de configuracion de empresa abre cada seccion como pagina enfocada con su propio boton de guardado.
+- El nucleo `configuracion.html` reutiliza formularios y endpoints existentes en modo aislado por `section`.
+- Se agregan claves de permisos para las nuevas paginas sin crear tablas ni dependencias.
+Validacion:
+- `go test ./handlers -run 'TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups|TestPermissionModuleDisplayNamesExposeUniversalCoreLabels' -count=1`
+- Capturas visuales desktop y movil por DevTools/CDP sobre las paginas de configuracion y reporte de corte.
 
 2026-05-17: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

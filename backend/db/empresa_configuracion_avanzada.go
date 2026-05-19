@@ -317,6 +317,67 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureEmpresaConfiguracionAvanzadaFlagColumns(dbConn); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ensureEmpresaConfiguracionAvanzadaFlagColumns(dbConn *sql.DB) error {
+	if dbConn == nil || !isPostgresDialect() {
+		return nil
+	}
+
+	flagDefaults := map[string]int{
+		"enviar_email_venta":                       0,
+		"enviar_factura_electronica_venta":         0,
+		"facturacion_frecuencia_automatica_activa": 0,
+		"imprimir_venta":                           0,
+		"imprimir_factura_electronica":             0,
+		"imprimir_copia_factura":                   0,
+		"mostrar_logo":                             1,
+		"mostrar_logo_empresa":                     1,
+		"mostrar_logo_sistema":                     0,
+		"usar_decimales":                           1,
+	}
+	for column, defaultValue := range flagDefaults {
+		var dataType string
+		err := QueryRowCompat(dbConn, `SELECT data_type
+			FROM information_schema.columns
+			WHERE table_schema = current_schema()
+			  AND table_name = 'empresa_configuracion_avanzada'
+			  AND column_name = ?
+			LIMIT 1`, column).Scan(&dataType)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				continue
+			}
+			return err
+		}
+		if strings.ToLower(strings.TrimSpace(dataType)) != "boolean" {
+			continue
+		}
+
+		quotedColumn := quotePostgresIdentifier(column)
+		stmt := fmt.Sprintf(`ALTER TABLE empresa_configuracion_avanzada
+			ALTER COLUMN %s DROP DEFAULT,
+			ALTER COLUMN %s TYPE INTEGER USING CASE
+				WHEN %s IS NULL THEN NULL
+				WHEN lower(trim(%s::text)) IN ('1', 't', 'true', 'yes', 'y', 'on') THEN 1
+				ELSE 0
+			END,
+			ALTER COLUMN %s SET DEFAULT %d`,
+			quotedColumn,
+			quotedColumn,
+			quotedColumn,
+			quotedColumn,
+			quotedColumn,
+			defaultValue,
+		)
+		if _, err := ExecCompat(dbConn, stmt); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -745,6 +806,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		frecuenciaAutomaticaActivaInt = 1
 	}
 
+	nowExpr := sqlNowExpr()
 	_, err := ExecCompat(dbConn, `INSERT INTO empresa_configuracion_avanzada (
 		empresa_id,
 		modo_documento_venta,
@@ -799,7 +861,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		modo_documento_venta = excluded.modo_documento_venta,
 		enviar_email_venta = excluded.enviar_email_venta,
@@ -848,7 +910,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		sistema_numerico = excluded.sistema_numerico,
 		usar_decimales = excluded.usar_decimales,
 		cantidad_decimales = excluded.cantidad_decimales,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = `+nowExpr+`,
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
 			ELSE empresa_configuracion_avanzada.usuario_creador
@@ -914,7 +976,7 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		SET mostrar_logo_empresa = ?,
 			mostrar_logo_sistema = ?,
 			mostrar_logo = ?,
-			fecha_actualizacion = datetime('now','localtime')
+			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 		mostrarLogoEmpresaInt,
 		mostrarLogoSistemaInt,

@@ -1095,7 +1095,7 @@ func main() {
 	http.HandleFunc("/api/empresa/hoja_vida_operativa", handlers.WithEmpresaHojaVidaOperativaPermissions(dbEmpresas, dbSuper, handlers.EmpresaHojaVidaOperativaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientosHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/movimientos/comprobante", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasMovimientoComprobanteUploadHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/corte_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/corte_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/corte_caja/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))

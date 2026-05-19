@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reportes de turnos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .turnos-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+    .turnos-kicker{display:block;color:var(--muted);font-size:.78rem;text-transform:uppercase;margin-bottom:6px;font-weight:800}
+    .turnos-title{margin:0;font-size:1.55rem}
+    .turnos-lead{margin:8px 0 0;color:var(--muted);max-width:850px;line-height:1.5}
+    .turnos-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end;margin-top:14px}
+    .turnos-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+    .turnos-table-actions{display:flex;flex-wrap:wrap;gap:6px}
+    .turnos-preview{background:#fff;color:#111827;border:1px solid var(--border);border-radius:8px;padding:22px;margin:14px auto 0;max-width:8.5in;min-height:11in}
+    .turnos-preview-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:1px solid #d7dee9;padding-bottom:12px;margin-bottom:12px}
+    .turnos-preview-head h2{margin:0;font-size:1.35rem;color:#111827}
+    .turnos-preview-head p{margin:5px 0 0;color:#52627a}
+    .turnos-preview-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0}
+    .turnos-preview-meta div,.turnos-summary-card{border:1px solid #d7dee9;border-radius:8px;padding:9px 10px;background:#f8fafc}
+    .turnos-preview-meta span,.turnos-summary-card span{display:block;color:#52627a;font-size:.72rem;text-transform:uppercase;font-weight:800}
+    .turnos-preview-meta strong,.turnos-summary-card strong{display:block;margin-top:3px;color:#111827}
+    .turnos-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0}
+    .turnos-preview .table-wrap{overflow-x:visible}
+    .turnos-preview table{width:100%;min-width:0;table-layout:fixed}
+    .turnos-preview th,.turnos-preview td{white-space:normal;overflow-wrap:anywhere;font-size:.78rem;padding:8px}
+    .turnos-preview.is-pos{max-width:80mm;min-height:auto;padding:4mm;font-size:11px}
+    .turnos-preview.is-pos .turnos-preview-head{display:block;margin-bottom:8px;padding-bottom:8px}
+    .turnos-preview.is-pos .turnos-preview-head h2{font-size:15px}
+    .turnos-preview.is-pos .turnos-preview-head p,
+    .turnos-preview.is-pos .turnos-preview-meta strong,
+    .turnos-preview.is-pos .turnos-summary-card strong{font-size:10px}
+    .turnos-preview.is-pos .turnos-preview-meta,
+    .turnos-preview.is-pos .turnos-summary-grid{display:block}
+    .turnos-preview.is-pos .turnos-preview-meta div,
+    .turnos-preview.is-pos .turnos-summary-card{margin-bottom:6px;padding:6px}
+    .turnos-preview.is-pos table thead{display:none}
+    .turnos-preview.is-pos table,
+    .turnos-preview.is-pos tbody,
+    .turnos-preview.is-pos tr,
+    .turnos-preview.is-pos td{display:block;width:100%}
+    .turnos-preview.is-pos tr{border:1px solid #d7dee9;margin-bottom:6px;padding:4px;break-inside:avoid}
+    .turnos-preview.is-pos td{border:0!important;padding:2px 0!important;font-size:10px!important}
+    .turnos-preview.is-pos td::before{content:attr(data-label) ": ";font-weight:800;color:#52627a}
+    .turnos-email-box{display:none;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;margin-top:12px}
+    .turnos-email-box.is-open{display:block}
+    .turnos-email-grid{display:grid;grid-template-columns:minmax(220px,1fr) 130px auto;gap:10px;align-items:end}
+    @media (max-width: 900px){
+      .turnos-header,.turnos-filters,.turnos-email-grid{grid-template-columns:1fr}
+      .turnos-actions{justify-content:flex-start}
+    }
+    @media print{
+      @page{size:letter;margin:12mm}
+      body *{visibility:hidden !important}
+      #turnoPreview,#turnoPreview *{visibility:visible !important}
+      #turnoPreview{position:absolute;inset:0;margin:0;border:0;border-radius:0;padding:18px}
+      body.turno-paper-pos{width:80mm}
+      body.turno-paper-pos #turnoPreview{width:72mm;max-width:72mm;padding:0;font-size:10px}
+    }
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-subpage">
+  <div class="container">
+    <section class="card empresa-section no-print">
+      <div class="turnos-header">
+        <div>
+          <span class="turnos-kicker">Historial de caja</span>
+          <h1 class="turnos-title">Reportes de turnos</h1>
+          <p class="turnos-lead">Consulta turnos cerrados, revisa su detalle, imprime el reporte historico, exportalo o envialo por correo.</p>
+        </div>
+        <div class="turnos-actions">
+          <button id="btnReload" class="btn" type="button">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="turnos-filters">
+        <input id="q" class="form-input" type="search" placeholder="Buscar caja, usuario, turno o ID">
+        <input id="desde" class="form-input" type="date" aria-label="Desde">
+        <input id="hasta" class="form-input" type="date" aria-label="Hasta">
+        <input id="caja" class="form-input" type="search" placeholder="Caja">
+        <select id="estado" class="form-input" aria-label="Estado">
+          <option value="">Cerrados y aprobados</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="aprobado">Aprobado</option>
+          <option value="todos">Todos menos abiertos</option>
+        </select>
+        <select id="format" class="form-input" aria-label="Formato">
+          <option value="pdf">PDF</option>
+          <option value="xls">XLS</option>
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+          <option value="txt">TXT</option>
+        </select>
+        <select id="paperMode" class="form-input" aria-label="Papel de impresion">
+          <option value="grande">Papel grande</option>
+          <option value="pos">Papel POS 80mm</option>
+        </select>
+      </div>
+      <p id="msg" class="form-help"></p>
+    </section>
+
+    <section class="card empresa-section no-print">
+      <div class="table-wrap">
+        <table class="table table-full">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Caja</th>
+              <th>Turno</th>
+              <th>Usuario</th>
+              <th>Ventas / caja esperada</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="turnosBody">
+            <tr><td colspan="8" class="muted">Cargando turnos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card empresa-section no-print">
+      <div class="turnos-header">
+        <div>
+          <span class="turnos-kicker">Envio por email</span>
+          <h2 class="turnos-title">Enviar reporte seleccionado</h2>
+          <p id="emailHint" class="turnos-lead">Selecciona un turno para habilitar el envio.</p>
+        </div>
+      </div>
+      <div id="emailBox" class="turnos-email-box">
+        <div class="turnos-email-grid">
+          <input id="emailTo" class="form-input" type="email" placeholder="correo@empresa.com" aria-label="Correo destino">
+          <select id="emailFormat" class="form-input" aria-label="Formato de correo">
+            <option value="pdf">PDF</option>
+            <option value="xls">XLS</option>
+            <option value="csv">CSV</option>
+            <option value="json">JSON</option>
+            <option value="txt">TXT</option>
+          </select>
+          <button id="btnSendEmail" class="btn" type="button">Enviar por email</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="turnoPreview" class="turnos-preview" aria-label="Vista imprimible del turno">
+      <div class="turnos-preview-head">
+        <div>
+          <h2>Reporte de turno</h2>
+          <p>Selecciona un turno para ver la vista de impresion.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      var empresaId = window.__resolveEmpresaIdContext ? Number(window.__resolveEmpresaIdContext()) : 0;
+      var selectedTurnoId = 0;
+      var turnos = [];
+
+      function escapeHtml(v) {
+        return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+      function money(v, cur) {
+        var n = Number(v || 0);
+        try { return new Intl.NumberFormat('es-CO', { style:'currency', currency:cur || 'COP' }).format(n); }
+        catch (_) { return (cur || 'COP') + ' ' + n.toFixed(2); }
+      }
+      function fmtDate(raw) {
+        raw = String(raw || '').trim();
+        if (!raw) return '';
+        var d = new Date(raw.replace(' ', 'T'));
+        if (Number.isNaN(d.getTime())) return raw;
+        return d.toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' });
+      }
+      async function requestJSON(url, opts) {
+        var res = await fetch(url, Object.assign({ credentials:'include' }, opts || {}));
+        var text = await res.text();
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (_) {}
+        if (!res.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
+        return data;
+      }
+      function buildParams(action) {
+        var p = new URLSearchParams();
+        p.set('empresa_id', String(empresaId));
+        p.set('action', action);
+        ['q','desde','hasta'].forEach(function(id){
+          var v = String(document.getElementById(id).value || '').trim();
+          if (v) p.set(id, v);
+        });
+        var caja = String(document.getElementById('caja').value || '').trim();
+        if (caja) p.set('caja_codigo', caja);
+        var estado = String(document.getElementById('estado').value || '').trim();
+        if (estado) p.set('estado', estado);
+        return p;
+      }
+      function currentPaperMode() {
+        return String((document.getElementById('paperMode') || {}).value || 'grande') === 'pos' ? 'pos' : 'grande';
+      }
+      function applyPaperMode() {
+        var mode = currentPaperMode();
+        document.body.classList.toggle('turno-paper-pos', mode === 'pos');
+        document.body.classList.toggle('turno-paper-grande', mode !== 'pos');
+        var preview = document.getElementById('turnoPreview');
+        if (preview) preview.classList.toggle('is-pos', mode === 'pos');
+        var style = document.getElementById('turnoDynamicPageSize');
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'turnoDynamicPageSize';
+          document.head.appendChild(style);
+        }
+        style.textContent = mode === 'pos'
+          ? '@media print{@page{size:80mm auto;margin:4mm}}'
+          : '@media print{@page{size:letter;margin:12mm}}';
+      }
+      function renderRows() {
+        var body = document.getElementById('turnosBody');
+        if (!turnos.length) {
+          body.innerHTML = '<tr><td colspan="8" class="muted">No hay turnos cerrados para los filtros seleccionados.</td></tr>';
+          return;
+        }
+        body.innerHTML = turnos.map(function(t){
+          var usuario = t.usuario_creador || t.cerrado_por || '';
+          var ventas = money(t.caja_teorica || 0, t.moneda || 'COP');
+          return '<tr>' +
+            '<td data-label="ID">' + escapeHtml(t.id) + '</td>' +
+            '<td data-label="Fecha">' + escapeHtml(fmtDate(t.fecha_cierre || t.fecha_operacion)) + '</td>' +
+            '<td data-label="Caja">' + escapeHtml(t.caja_codigo || 'CAJA') + '</td>' +
+            '<td data-label="Turno">' + escapeHtml(t.turno || 'general') + '</td>' +
+            '<td data-label="Usuario">' + escapeHtml(usuario) + '</td>' +
+            '<td data-label="Caja esperada">' + escapeHtml(ventas) + '</td>' +
+            '<td data-label="Estado">' + escapeHtml(t.estado_cierre || '') + '</td>' +
+            '<td data-label="Acciones"><div class="turnos-table-actions">' +
+              '<button class="btn small" type="button" data-action="ver" data-id="' + escapeHtml(t.id) + '">Ver</button>' +
+              '<button class="btn secondary small" type="button" data-action="imprimir" data-id="' + escapeHtml(t.id) + '">Imprimir</button>' +
+              '<button class="btn secondary small" type="button" data-action="exportar" data-id="' + escapeHtml(t.id) + '">Exportar</button>' +
+              '<button class="btn secondary small" type="button" data-action="compartir" data-id="' + escapeHtml(t.id) + '">Compartir</button>' +
+              '<button class="btn secondary small" type="button" data-action="email" data-id="' + escapeHtml(t.id) + '">Email</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+      }
+      async function loadTurnos() {
+        var msg = document.getElementById('msg');
+        if (!empresaId) { msg.textContent = 'No se encontro empresa activa.'; return; }
+        msg.textContent = 'Cargando turnos...';
+        try {
+          var data = await requestJSON('/api/empresa/corte_caja?' + buildParams('turnos').toString());
+          turnos = Array.isArray(data.turnos) ? data.turnos : [];
+          renderRows();
+          msg.textContent = turnos.length + ' turno(s) encontrados.';
+        } catch (err) {
+          msg.textContent = err.message || 'No se pudieron cargar los turnos.';
+        }
+      }
+      function summaryCard(label, value) {
+        return '<article class="turnos-summary-card"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></article>';
+      }
+      function renderPreview(payload) {
+        applyPaperMode();
+        var r = payload.resumen || {};
+        var caja = payload.caja_actual || {};
+        var cur = r.moneda || 'COP';
+        var ventas = Array.isArray(payload.ventas) ? payload.ventas : [];
+        document.getElementById('turnoPreview').innerHTML = [
+          '<div class="turnos-preview-head"><div><h2>Reporte de turno - ' + escapeHtml(r.empresa_nombre || 'Empresa') + '</h2><p>' + escapeHtml(r.empresa_nit ? ('NIT: ' + r.empresa_nit) : '') + '</p></div><strong>Turno #' + escapeHtml(caja.id || selectedTurnoId) + '</strong></div>',
+          '<div class="turnos-preview-meta">',
+          '<div><span>Fecha y hora</span><strong>' + escapeHtml(fmtDate(payload.generado_en || r.hasta)) + '</strong></div>',
+          '<div><span>Usuario</span><strong>' + escapeHtml(r.usuario_filtro || caja.usuario || '') + '</strong></div>',
+          '<div><span>Caja</span><strong>' + escapeHtml(caja.caja_codigo || '') + '</strong></div>',
+          '<div><span>Consecutivo</span><strong>TURN-' + escapeHtml(String(caja.id || selectedTurnoId).padStart(6, '0')) + '</strong></div>',
+          '</div>',
+          '<h3>Detalle de ventas</h3>',
+          '<div class="table-wrap"><table class="table table-full"><thead><tr><th>Entrada</th><th>Salida</th><th>Numero venta</th><th>Estacion</th><th>Cajero</th><th>Medio</th><th>Total</th></tr></thead><tbody>',
+          ventas.length ? ventas.map(function(v){
+            return '<tr><td data-label="Entrada">' + escapeHtml(fmtDate(v.fecha_entrada || v.fecha_pago)) + '</td><td data-label="Salida">' + escapeHtml(fmtDate(v.fecha_salida || v.fecha_pago)) + '</td><td data-label="Numero venta">' + escapeHtml(v.codigo || '') + '</td><td data-label="Estacion">' + escapeHtml(v.estacion_nombre || v.nombre || '') + '</td><td data-label="Cajero">' + escapeHtml(v.cajero || '') + '</td><td data-label="Medio">' + escapeHtml(v.metodo_pago || '') + '</td><td data-label="Total">' + escapeHtml(money(v.total_pagado || v.total || 0, v.moneda || cur)) + '</td></tr>';
+          }).join('') : '<tr><td colspan="7">Sin ventas registradas en este turno.</td></tr>',
+          '</tbody></table></div>',
+          '<div class="turnos-summary-grid">',
+          summaryCard('Ingresos', money(r.ingresos_financieros || 0, cur)),
+          summaryCard('Egresos', money(r.egresos_financieros || 0, cur)),
+          summaryCard('Total productos', money(r.total_productos || 0, cur)),
+          summaryCard('Total servicios', money(r.total_servicios || 0, cur)),
+          summaryCard('Total efectivo', money(r.efectivo_ventas || 0, cur)),
+          summaryCard('Total tarjeta credito', money(r.credito_ventas || 0, cur)),
+          summaryCard('Total tarjeta debito', money(r.debito_ventas || 0, cur)),
+          summaryCard('Total otros', money(r.otros_medios_ventas || 0, cur)),
+          summaryCard('Debe haber en caja', money(r.efectivo_esperado_caja || 0, cur)),
+          '</div>'
+        ].join('');
+      }
+      async function loadPreview(id) {
+        selectedTurnoId = Number(id || 0);
+        var p = new URLSearchParams({ empresa_id:String(empresaId), action:'turno_reporte', id:String(selectedTurnoId) });
+        var data = await requestJSON('/api/empresa/corte_caja?' + p.toString());
+        renderPreview(data);
+        applyPaperMode();
+        document.getElementById('emailBox').classList.add('is-open');
+        document.getElementById('emailHint').textContent = 'Turno seleccionado: #' + selectedTurnoId;
+      }
+      function exportTurno(id) {
+        var fmt = document.getElementById('format').value || 'pdf';
+        var p = new URLSearchParams({ empresa_id:String(empresaId), action:'turno_export', id:String(id), format:fmt });
+        window.open('/api/empresa/corte_caja?' + p.toString(), '_blank', 'noopener');
+      }
+      async function shareTurno(id) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('turno_id', String(id));
+        var text = 'Reporte de turno #' + id + ' - Powerful Control System';
+        if (navigator.share) {
+          try { await navigator.share({ title:'Reporte de turno', text:text, url:url.toString() }); return; } catch (_) {}
+        }
+        await navigator.clipboard.writeText(url.toString());
+        document.getElementById('msg').textContent = 'Enlace del reporte copiado al portapapeles.';
+      }
+      async function sendEmail() {
+        if (!selectedTurnoId) { document.getElementById('msg').textContent = 'Selecciona un turno primero.'; return; }
+        var payload = {
+          id: selectedTurnoId,
+          to_email: document.getElementById('emailTo').value,
+          format: document.getElementById('emailFormat').value || 'pdf'
+        };
+        document.getElementById('msg').textContent = 'Enviando reporte por email...';
+        try {
+          await requestJSON('/api/empresa/corte_caja?empresa_id=' + encodeURIComponent(empresaId) + '&action=turno_email', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify(payload)
+          });
+          document.getElementById('msg').textContent = 'Reporte enviado correctamente.';
+        } catch (err) {
+          document.getElementById('msg').textContent = err.message || 'No se pudo enviar el email.';
+        }
+      }
+      document.getElementById('turnosBody').addEventListener('click', async function(ev){
+        var btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+        var id = Number(btn.getAttribute('data-id') || 0);
+        var action = btn.getAttribute('data-action');
+        try {
+          if (action === 'ver') await loadPreview(id);
+          if (action === 'imprimir') { await loadPreview(id); window.print(); }
+          if (action === 'exportar') exportTurno(id);
+          if (action === 'compartir') await shareTurno(id);
+          if (action === 'email') await loadPreview(id);
+        } catch (err) {
+          document.getElementById('msg').textContent = err.message || 'No se pudo completar la accion.';
+        }
+      });
+      document.getElementById('btnReload').addEventListener('click', loadTurnos);
+      document.getElementById('btnSendEmail').addEventListener('click', sendEmail);
+      document.getElementById('paperMode').addEventListener('change', applyPaperMode);
+      ['q','desde','hasta','caja','estado'].forEach(function(id){
+        var el = document.getElementById(id);
+        el.addEventListener(id === 'q' || id === 'caja' ? 'input' : 'change', function(){
+          clearTimeout(el._t);
+          el._t = setTimeout(loadTurnos, 250);
+        });
+      });
+      applyPaperMode();
+      loadTurnos().then(function(){
+        var direct = Number(new URLSearchParams(window.location.search).get('turno_id') || 0);
+        if (direct > 0) loadPreview(direct).catch(function(){});
+      });
+    })();
+  </script>
+  <script src="/menu.js"></script>
+</body>
+</html>

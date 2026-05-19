@@ -21,6 +21,17 @@
     .cash-kpi strong { display:block; font-size:1.2rem; margin-top:8px; }
     .cash-kpi small { display:block; opacity:.75; margin-top:4px; }
     .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
+    .turno-report-company { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:14px; border:1px solid var(--border); border-radius:8px; background:var(--surface-soft); margin-bottom:14px; }
+    .turno-report-company h3 { margin:0; color:var(--text); font-size:1.1rem; }
+    .turno-report-company p { margin:4px 0 0; color:var(--muted); font-size:.86rem; }
+    .turno-report-meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
+    .turno-report-meta div { border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--card); }
+    .turno-report-meta span { display:block; color:var(--muted); font-size:.68rem; font-weight:800; text-transform:uppercase; }
+    .turno-report-meta strong { display:block; margin-top:3px; color:var(--text); font-size:.86rem; overflow-wrap:anywhere; }
+    .corte-caja-report .table-wrap { overflow-x:visible; }
+    .corte-caja-report .table { width:100%; min-width:0; table-layout:fixed; }
+    .corte-caja-report .table th,
+    .corte-caja-report .table td { padding:8px 9px; font-size:.78rem; white-space:normal; overflow-wrap:anywhere; }
     .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; }
     .cash-close-stamp { border:1px dashed color-mix(in srgb, var(--border) 80%, var(--muted)); border-radius:8px; padding:10px 12px; font-size:.85rem; color:var(--muted); background:color-mix(in srgb, var(--surface-soft) 80%, var(--card)); }
     .corte-caja-page.print-preview-active { background:#eef2f7; }
@@ -51,17 +62,69 @@
       max-width:80mm;
       min-height:auto;
       padding:4mm;
+      font-size:11px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-report-header {
+      display:block;
+      margin-bottom:8px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-report-header h2 {
+      font-size:15px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos #reportMeta,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company p,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta strong,
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-card small {
+      font-size:10px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta,
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-grid {
+      display:block;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta div,
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-card {
+      margin-bottom:6px;
+      padding:6px;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .table thead {
+      display:none;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .table,
+    .corte-caja-page.print-preview-active.report-print-pos .table tbody,
+    .corte-caja-page.print-preview-active.report-print-pos .table tr,
+    .corte-caja-page.print-preview-active.report-print-pos .table td {
+      display:block;
+      width:100%;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .table tr {
+      border:1px solid #cbd5e1;
+      margin-bottom:6px;
+      padding:4px;
+      break-inside:avoid;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .table td {
+      border:0 !important;
+      padding:2px 0 !important;
+      font-size:10px !important;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .table td::before {
+      content:attr(data-label) ": ";
+      font-weight:800;
+      color:#475569;
     }
     .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="items"],
     .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="sensores"] {
       display:none !important;
     }
-    @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-kpis { grid-template-columns:1fr; } }
+    @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-kpis, .turno-report-meta { grid-template-columns:1fr; } .turno-report-company { grid-template-columns:1fr; } }
     @media print {
       .no-print { display:none !important; }
       body.corte-caja-page { background:white !important; }
       .corte-caja-report { box-shadow:none !important; border:0 !important; }
       .cash-close-stamp { break-inside:avoid; }
+      .corte-caja-page.report-print-pos .corte-caja-report { width:72mm !important; max-width:72mm !important; padding:0 !important; }
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -166,10 +229,17 @@
     <section id="report" class="card empresa-section corte-caja-report">
       <div class="corte-report-header">
         <div>
-          <h2 id="reportTitle" class="empresa-section-title">Reporte de corte</h2>
+          <h2 id="reportTitle" class="empresa-section-title">Reporte de turno</h2>
           <p id="reportMeta" class="form-help">Genera un corte para ver los datos del turno.</p>
         </div>
-        <div class="corte-report-badge">Corte de caja</div>
+        <div class="corte-report-badge">Reporte de turno</div>
+      </div>
+
+      <div id="turnoHeaderBox"></div>
+
+      <div class="corte-report-section" data-section="ventas">
+        <h3 class="section-heading">Detalle de ventas</h3>
+        <div id="ventasBox" class="table-wrap form-help">Sin datos generados.</div>
       </div>
 
       <div id="summaryGrid" class="corte-summary-grid"></div>
@@ -177,11 +247,6 @@
       <div class="corte-report-section" data-section="movimientos">
         <h3 class="section-heading">Movimientos agrupados</h3>
         <div id="movimientosBox" class="table-wrap form-help">Sin datos generados.</div>
-      </div>
-
-      <div class="corte-report-section" data-section="ventas">
-        <h3 class="section-heading">Ventas del turno</h3>
-        <div id="ventasBox" class="table-wrap form-help">Sin datos generados.</div>
       </div>
 
       <div class="corte-report-section" data-section="anulaciones">
@@ -254,6 +319,11 @@
   var printFormat = 'carta';
   var pageContext = resolvePageContext();
   var reporteConfig = {
+    mostrar_encabezado: true,
+    mostrar_empresa_datos: true,
+    mostrar_fecha_hora: true,
+    mostrar_usuario_reporte: true,
+    mostrar_consecutivo: true,
     mostrar_resumen: true,
     mostrar_numero_facturas: true,
     mostrar_total_ventas: true,
@@ -269,8 +339,17 @@
     mostrar_caja_esperada: true,
     mostrar_diferencia_caja: true,
     mostrar_ventas_detalle: true,
+    mostrar_detalle_fecha_entrada: true,
+    mostrar_detalle_fecha_salida: true,
+    mostrar_detalle_numero_venta: true,
+    mostrar_detalle_estacion: true,
+    mostrar_detalle_cajero: true,
+    mostrar_detalle_medio_pago: true,
+    mostrar_detalle_total: true,
     mostrar_movimientos: true,
     mostrar_items: true,
+    mostrar_total_productos: true,
+    mostrar_total_servicios: true,
     mostrar_sensores_puertas: true,
     mostrar_auditoria: true,
     formato_impresion: 'carta'
@@ -377,7 +456,7 @@
     var style = document.getElementById('dynamicPrintPageSize');
     if (!style) { style = document.createElement('style'); style.id = 'dynamicPrintPageSize'; document.head.appendChild(style); }
     if (printFormat === 'pos') {
-      style.textContent = '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .table{font-size:10px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}.corte-caja-page .corte-report-badge{display:none}}';
+      style.textContent = '@media print{@page{size:80mm auto;margin:4mm}.corte-caja-page .corte-caja-report{width:72mm}.corte-caja-page .corte-summary-grid{grid-template-columns:1fr}.corte-caja-page .table{font-size:10px}.corte-caja-page .table th,.corte-caja-page .table td{padding:3px 2px}.corte-caja-page .corte-report-badge{display:none}.corte-caja-page .table thead{display:none}.corte-caja-page .table,.corte-caja-page .table tbody,.corte-caja-page .table tr,.corte-caja-page .table td{display:block;width:100%}.corte-caja-page .table tr{border:1px solid #cbd5e1;margin-bottom:6px;padding:4px;break-inside:avoid}.corte-caja-page .table td{border:0!important;padding:2px 0!important}.corte-caja-page .table td::before{content:attr(data-label) \": \";font-weight:800}}';
     } else if (printFormat === 'ejecutivo') {
       style.textContent = '@media print{@page{size:letter;margin:10mm}.corte-caja-page .corte-report-section[data-section="items"],.corte-caja-page .corte-report-section[data-section="sensores"]{display:none!important}}';
     } else {
@@ -489,29 +568,65 @@
     }).join('');
   }
 
+  function reportConsecutivo(payload) {
+    var caja = payload && payload.caja_actual ? payload.caja_actual : {};
+    if (Number(caja.id || 0) > 0) return 'TURN-' + String(caja.id).padStart(6, '0');
+    var resumen = payload && payload.resumen ? payload.resumen : {};
+    var base = String((payload && payload.generado_en) || resumen.hasta || '').replace(/[^0-9]/g, '').slice(0, 12);
+    return 'TURN-' + String(resumen.empresa_id || empresaId || 0) + (base ? '-' + base : '');
+  }
+
+  function renderTurnoHeader(payload) {
+    var box = document.getElementById('turnoHeaderBox');
+    var resumen = payload && payload.resumen ? payload.resumen : {};
+    var cfg = Object.assign({}, reporteConfig, (payload && payload.configuracion_reporte) || {});
+    if (!cfg.mostrar_encabezado) {
+      box.innerHTML = '';
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    var empresaNombre = resumen.empresa_nombre || 'Empresa';
+    var nit = resumen.empresa_nit ? ('NIT: ' + resumen.empresa_nit) : ('Empresa ID: ' + (resumen.empresa_id || empresaId || ''));
+    var tipo = resumen.empresa_tipo ? ('Tipo: ' + resumen.empresa_tipo) : '';
+    var companyHtml = cfg.mostrar_empresa_datos
+      ? '<section class="turno-report-company"><div><h3>' + escapeHtml(empresaNombre) + '</h3><p>' + escapeHtml([nit, tipo].filter(Boolean).join(' | ')) + '</p></div><strong>Reporte de turno</strong></section>'
+      : '';
+    var meta = [];
+    if (cfg.mostrar_fecha_hora) meta.push(['Fecha y hora', formatDateTime(payload.generado_en || resumen.hasta)]);
+    if (cfg.mostrar_usuario_reporte) meta.push(['Usuario', resumen.usuario_filtro || (payload.caja_actual && payload.caja_actual.usuario) || 'Todos']);
+    if (cfg.mostrar_consecutivo) meta.push(['Consecutivo', reportConsecutivo(payload)]);
+    var metaHtml = meta.length ? '<section class="turno-report-meta">' + meta.map(function(row) {
+      return '<div><span>' + escapeHtml(row[0]) + '</span><strong>' + escapeHtml(row[1]) + '</strong></div>';
+    }).join('') + '</section>' : '';
+    box.innerHTML = companyHtml + metaHtml;
+  }
+
   function renderSummary(resumen) {
     var cur = resumen.moneda || 'COP';
     var cfg = Object.assign({}, reporteConfig, (lastReport && lastReport.configuracion_reporte) || {});
     var fisica = Number(document.getElementById('cajaFisica').value || 0);
     var diferencia = Number(resumen.efectivo_esperado_caja || 0) - fisica;
+    var otrosMedios = Number(resumen.otros_medios_ventas || 0);
     var cards = [];
     function add(enabled, title, value, note) {
       if (enabled) cards.push([title, value, note]);
     }
-    add(cfg.mostrar_numero_facturas, 'Facturas', String(resumen.numero_facturas || resumen.ventas_cantidad || 0), 'Comprobantes pagados');
-    add(cfg.mostrar_total_ventas, 'Ventas', money(resumen.ventas_total || 0, cur), 'Total del turno');
-    add(cfg.mostrar_efectivo, 'Efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo');
-    add(cfg.mostrar_debito, 'Debito', money(resumen.debito_ventas || 0, cur), 'Tarjeta debito');
-    add(cfg.mostrar_credito, 'Credito', money(resumen.credito_ventas || 0, cur), 'Tarjeta credito');
-    add(cfg.mostrar_transferencias, 'Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios');
-    add(cfg.mostrar_otros_medios, 'Otros medios', money(resumen.otros_medios_ventas || 0, cur), 'Pagos sin clasificar');
     add(cfg.mostrar_ingresos, 'Ingresos', money(resumen.ingresos_financieros || 0, cur), String(resumen.ingresos_cantidad || 0) + ' movimientos');
     add(cfg.mostrar_egresos, 'Egresos', money(resumen.egresos_financieros || 0, cur), String(resumen.egresos_cantidad || 0) + ' movimientos');
+    add(cfg.mostrar_total_productos !== false, 'Total productos', money(resumen.total_productos || 0, cur), 'Productos vendidos');
+    add(cfg.mostrar_total_servicios !== false, 'Total servicios', money(resumen.total_servicios || 0, cur), 'Servicios vendidos');
+    add(cfg.mostrar_efectivo, 'Total efectivo', money(resumen.efectivo_ventas || 0, cur), 'Ventas en efectivo');
+    add(cfg.mostrar_credito, 'Total tarjeta credito', money(resumen.credito_ventas || 0, cur), 'Pagos credito');
+    add(cfg.mostrar_debito, 'Total tarjeta debito', money(resumen.debito_ventas || 0, cur), 'Pagos debito');
+    add(cfg.mostrar_otros_medios, 'Total otros', money(otrosMedios, cur), 'Otros medios de pago');
+    add(cfg.mostrar_numero_facturas, 'Facturas', String(resumen.numero_facturas || resumen.ventas_cantidad || 0), 'Comprobantes pagados');
+    add(cfg.mostrar_total_ventas, 'Ventas', money(resumen.ventas_total || 0, cur), 'Total del turno');
+    add(cfg.mostrar_transferencias, 'Transferencias', money(resumen.transferencias_ventas || 0, cur), 'Pagos bancarios');
     add(cfg.mostrar_anulaciones, 'Anulaciones', money(resumen.ventas_anuladas_total || 0, cur), String(resumen.ventas_anuladas_cantidad || 0) + ' reversos');
     add(cfg.mostrar_devoluciones, 'Devoluciones', money(resumen.devoluciones_total || 0, cur), 'Valor devuelto');
     add(cfg.mostrar_caja_esperada, 'Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado');
     add(cfg.mostrar_diferencia_caja, 'Diferencia caja', money(diferencia, cur), 'Teorica menos fisica');
-    add(cfg.mostrar_items, 'Productos', money(resumen.total_productos || 0, cur), 'Total vendido');
     if (!cards.length) cards.push(['Resumen', 'Sin metricas activas', 'Activa checks en configuracion']);
     document.getElementById('summaryGrid').innerHTML = cards.map(function(card) {
       return '<article class="corte-summary-card"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></article>';
@@ -551,6 +666,7 @@
     if (!cfg.mostrar_items) enabled.items = false;
     if (!cfg.mostrar_sensores_puertas) enabled.sensores = false;
     if (!cfg.mostrar_auditoria) enabled.auditoria = false;
+    document.getElementById('turnoHeaderBox').hidden = !cfg.mostrar_encabezado;
     document.getElementById('summaryGrid').hidden = enabled.resumen === false;
     document.querySelectorAll('.corte-report-section[data-section]').forEach(function(section) {
       var key = section.getAttribute('data-section');
@@ -562,17 +678,26 @@
     var resumen = payload.resumen || {};
     var cur = resumen.moneda || 'COP';
     if (payload.configuracion_reporte) reporteConfig = Object.assign({}, reporteConfig, payload.configuracion_reporte);
-    document.getElementById('reportTitle').textContent = 'Corte de caja - ' + (resumen.empresa_nombre || 'Empresa');
-    document.getElementById('reportMeta').textContent = 'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) + ' | Usuario: ' + (resumen.usuario_filtro || 'Todos') + ' | Generado: ' + formatDateTime(payload.generado_en) + ' | Vista: ' + printFormat;
+    document.getElementById('reportTitle').textContent = 'Reporte de turno - ' + (resumen.empresa_nombre || 'Empresa');
+    document.getElementById('reportMeta').textContent = 'Periodo: ' + formatDateTime(resumen.desde) + ' a ' + formatDateTime(resumen.hasta) + ' | Vista: ' + printFormat;
+    renderTurnoHeader(payload);
     renderSummary(resumen);
 
     renderTable('movimientosBox', [
       { label:'Tipo', key:'tipo' }, { label:'Metodo', key:'metodo' }, { label:'Categoria', key:'categoria' }, { label:'Usuario', key:'usuario' }, { label:'Cantidad', key:'cantidad' }, { label:'Total', value:function(r){ return money(r.total || 0, cur); } }
     ], payload.movimientos || [], 'No hay movimientos financieros agrupados en este rango.');
 
-    renderTable('ventasBox', [
-      { label:'Fecha', value:function(r){ return formatDateTime(r.fecha_pago); } }, { label:'Codigo', key:'codigo' }, { label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } }, { label:'Cajero', key:'cajero' }, { label:'Metodo', key:'metodo_pago' }, { label:'Total', value:function(r){ return money((r.total_pagado || r.total || 0), r.moneda || cur); } }
-    ], payload.ventas || [], 'No hay ventas facturadas en este rango.');
+    var cfg = Object.assign({}, reporteConfig, payload.configuracion_reporte || {});
+    var ventaCols = [];
+    if (cfg.mostrar_detalle_fecha_entrada !== false) ventaCols.push({ label:'Entrada', value:function(r){ return formatDateTime(r.fecha_entrada || r.fecha_pago); } });
+    if (cfg.mostrar_detalle_fecha_salida !== false) ventaCols.push({ label:'Salida', value:function(r){ return formatDateTime(r.fecha_salida || r.fecha_pago); } });
+    if (cfg.mostrar_detalle_numero_venta !== false) ventaCols.push({ label:'Numero venta', key:'codigo' });
+    if (cfg.mostrar_detalle_estacion !== false) ventaCols.push({ label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } });
+    if (cfg.mostrar_detalle_cajero !== false) ventaCols.push({ label:'Cajero', key:'cajero' });
+    if (cfg.mostrar_detalle_medio_pago !== false) ventaCols.push({ label:'Medio', key:'metodo_pago' });
+    if (cfg.mostrar_detalle_total !== false) ventaCols.push({ label:'Total', value:function(r){ return money((r.total_pagado || r.total || 0), r.moneda || cur); } });
+    if (!ventaCols.length) ventaCols.push({ label:'Venta', value:function(r){ return r.codigo || r.id || ''; } });
+    renderTable('ventasBox', ventaCols, payload.ventas || [], 'No hay ventas facturadas en este rango.');
 
     renderTable('anulacionesBox', [
       { label:'Fecha', value:function(r){ return formatDateTime(r.fecha_pago); } }, { label:'Codigo', key:'codigo' }, { label:'Estacion', value:function(r){ return r.estacion_nombre || r.nombre || ''; } }, { label:'Responsable', key:'cajero' }, { label:'Metodo', key:'metodo_pago' }, { label:'Anulado', value:function(r){ return money((r.devolucion || r.total_pagado || r.total || 0), r.moneda || cur); } }

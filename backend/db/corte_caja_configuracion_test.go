@@ -27,6 +27,31 @@ func TestEmpresaCorteCajaReportesDesdeConfiguracionMapsChecksToSections(t *testi
 	}
 }
 
+func TestDefaultEmpresaCorteCajaConfiguracionEnablesTurnoReportFields(t *testing.T) {
+	cfg := DefaultEmpresaCorteCajaConfiguracion(7)
+	checks := map[string]bool{
+		"encabezado":              cfg.MostrarEncabezado,
+		"datos_empresa":           cfg.MostrarEmpresaDatos,
+		"fecha_hora":              cfg.MostrarFechaHora,
+		"usuario":                 cfg.MostrarUsuarioReporte,
+		"consecutivo":             cfg.MostrarConsecutivo,
+		"detalle_fecha_entrada":   cfg.MostrarDetalleEntrada,
+		"detalle_fecha_salida":    cfg.MostrarDetalleSalida,
+		"detalle_numero_venta":    cfg.MostrarDetalleNumero,
+		"detalle_estacion":        cfg.MostrarDetalleEstacion,
+		"detalle_cajero":          cfg.MostrarDetalleCajero,
+		"detalle_medio_pago":      cfg.MostrarDetalleMetodo,
+		"detalle_total":           cfg.MostrarDetalleTotal,
+		"resumen_total_productos": cfg.MostrarTotalProductos,
+		"resumen_total_servicios": cfg.MostrarTotalServicios,
+	}
+	for name, enabled := range checks {
+		if !enabled {
+			t.Fatalf("campo de reporte de turno apagado por defecto: %s", name)
+		}
+	}
+}
+
 func TestEmpresaCorteCajaReportesDesdeConfiguracionFallsBackToResumen(t *testing.T) {
 	cfg := EmpresaCorteCajaConfiguracion{EmpresaID: 9}
 	got := EmpresaCorteCajaReportesDesdeConfiguracion(&cfg)

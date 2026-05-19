@@ -22,6 +22,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-18 (configuracion operativa en PostgreSQL)
+- No se agregan tablas ni columnas fisicas.
+- Los guardados de `empresa_configuracion_operativa`, `empresa_configuracion_operativa_roles`, `empresa_configuracion_operativa_politicas` y `empresa_configuracion_operativa_historial` retornan el `id` con `RETURNING id`.
+- Se elimina la dependencia runtime de `LastInsertId()` para snapshots de historial y rollback operativo.
+
 Actualizacion 2026-05-17 (configuracion super por paginas)
 - No se agregan tablas ni columnas fisicas.
 - Las paginas `web/super/configuracion/*.html` solo separan visualmente las secciones de configuracion super.
@@ -736,6 +741,18 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - propinas_conciliado_en, propinas_conciliado_por
   - cerrado_por, aprobado_por, aprobado_en
   - UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
+- empresa_corte_caja_configuracion:
+  - empresa_id (UNIQUE)
+  - mostrar_encabezado, mostrar_empresa_datos, mostrar_fecha_hora, mostrar_usuario_reporte, mostrar_consecutivo
+  - mostrar_resumen, mostrar_numero_facturas, mostrar_total_ventas
+  - mostrar_efectivo, mostrar_debito, mostrar_credito, mostrar_transferencias, mostrar_otros_medios
+  - mostrar_ingresos, mostrar_egresos, mostrar_anulaciones, mostrar_devoluciones
+  - mostrar_caja_esperada, mostrar_diferencia_caja, mostrar_ventas_detalle
+  - mostrar_detalle_fecha_entrada, mostrar_detalle_fecha_salida, mostrar_detalle_numero_venta
+  - mostrar_detalle_estacion, mostrar_detalle_cajero, mostrar_detalle_medio_pago, mostrar_detalle_total
+  - mostrar_movimientos, mostrar_items, mostrar_total_productos, mostrar_total_servicios
+  - mostrar_sensores_puertas, mostrar_auditoria
+  - formato_impresion, estado, observaciones
 - empresa_finanzas_configuracion:
   - empresa_id (UNIQUE)
   - habilitar_ingresos, habilitar_egresos, moneda
@@ -884,6 +901,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
   - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
+  - Las banderas historicas que pudieran existir como BOOLEAN en PostgreSQL se regularizan a INTEGER `0/1` durante `EnsureEmpresaConfiguracionAvanzadaSchema` para mantener un unico contrato de guardado.
 
 ### Tabla de facturacion electronica por pais
 - facturacion_electronica_pais:
@@ -1417,6 +1435,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.

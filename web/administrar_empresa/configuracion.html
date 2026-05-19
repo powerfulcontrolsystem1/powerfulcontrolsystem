@@ -80,10 +80,130 @@
       font-size: .76rem;
       color: var(--muted);
     }
+    html.empresa-config-single-section-root,
+    html.empresa-config-single-section-root body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    body.empresa-config-single-section .container {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    body.empresa-config-single-section {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    body.empresa-config-single-section .card,
+    body.empresa-config-single-section .empresa-module,
+    body.empresa-config-single-section .empresa-section,
+    body.empresa-config-single-section .empresa-config-grid,
+    body.empresa-config-single-section .corte-config-grid,
+    body.empresa-config-single-section .form,
+    body.empresa-config-single-section .form-col,
+    body.empresa-config-single-section .form-row,
+    body.empresa-config-single-section input,
+    body.empresa-config-single-section select,
+    body.empresa-config-single-section textarea {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    body.empresa-config-single-section .form-help,
+    body.empresa-config-single-section .empresa-config-check,
+    body.empresa-config-single-section .corte-config-check,
+    body.empresa-config-single-section .corte-config-check span,
+    body.empresa-config-single-section .section-heading {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: normal;
+    }
+    body.empresa-config-single-section .empresa-section {
+      display: none;
+      margin: 0;
+    }
+    body.empresa-config-single-section .empresa-section.is-single-visible {
+      display: block;
+    }
+    body.empresa-config-single-section #configuracionDocumentoVenta {
+      display: none;
+    }
+    body.empresa-config-single-section #configuracionDocumentoVenta.is-single-visible {
+      display: block;
+    }
+    body.empresa-config-single-section .empresa-section-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    body.empresa-config-single-section .empresa-section-header .btn {
+      max-width: 100%;
+      white-space: normal;
+    }
+    @media (max-width: 760px) {
+      body.empresa-config-single-section .container {
+        padding: 10px;
+      }
+      body.empresa-config-single-section .card {
+        padding: 12px;
+      }
+      body.empresa-config-single-section .empresa-section-header {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      body.empresa-config-single-section .empresa-section-header .btn {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+      }
+      body.empresa-config-single-section .empresa-config-grid,
+      body.empresa-config-single-section .corte-config-grid {
+        grid-template-columns: 1fr;
+      }
+      body.empresa-config-single-section .form-row {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
 <body class="empresa-subpage">
+  <script>
+    (function applySingleConfigSection() {
+      var params;
+      try {
+        params = new URLSearchParams(window.location.search || '');
+      } catch (e) {
+        params = null;
+      }
+      var single = params && params.get('single') === '1';
+      var target = params ? String(params.get('section') || '').trim() : '';
+      if (!single || !target) return;
+      document.documentElement.classList.add('empresa-config-single-section-root');
+      document.body.classList.add('empresa-config-single-section');
+      function showOnlyRequestedSection() {
+        var found = false;
+        Array.prototype.slice.call(document.querySelectorAll('.empresa-section')).forEach(function(section) {
+          var visible = section && section.id === target;
+          if (visible) found = true;
+          if (section) section.classList.toggle('is-single-visible', visible);
+        });
+        if (!found) {
+          document.body.classList.remove('empresa-config-single-section');
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showOnlyRequestedSection);
+      } else {
+        showOnlyRequestedSection();
+      }
+    })();
+  </script>
   <div class="container empresa-module">
     <section id="configuracionDocumentoVenta" class="card empresa-section">
       <h1>Centro de configuraci?n empresarial</h1>
@@ -555,6 +675,15 @@
         </div>
       </div>
 
+      <h3 class="section-heading">Encabezado del reporte</h3>
+      <div class="corte-config-grid">
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_encabezado" checked><span><strong>Mostrar encabezado</strong><span>Activa la cabecera completa del reporte.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_empresa_datos" checked><span><strong>Datos de la empresa</strong><span>Nombre, NIT o identificador y tipo de empresa.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_fecha_hora" checked><span><strong>Fecha y hora</strong><span>Momento de generacion del reporte.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_usuario_reporte" checked><span><strong>Nombre de usuario</strong><span>Usuario/cajero del turno.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_consecutivo" checked><span><strong>Consecutivo</strong><span>Identificador del turno o corte.</span></span></label>
+      </div>
+
       <h3 class="section-heading">Reportes a imprimir al cerrar</h3>
       <div id="corteReportSelector" class="corte-config-grid">
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_resumen" checked><span><strong>Resumen ejecutivo</strong><span>Totales, caja esperada y diferencias.</span></span></label>
@@ -564,6 +693,17 @@
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_items" checked><span><strong>Productos y servicios</strong><span>Consolidado por tipo vendido.</span></span></label>
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_sensores_puertas" checked><span><strong>Control motel</strong><span>Estaciones ocupadas sin factura.</span></span></label>
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_auditoria" checked><span><strong>Auditoria</strong><span>Firma, observaciones y sello.</span></span></label>
+      </div>
+
+      <h3 class="section-heading" style="margin-top:18px">Columnas del detalle de ventas</h3>
+      <div id="corteDetalleSelector" class="corte-config-grid">
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_fecha_entrada" checked><span><strong>Fecha y hora de entrada</strong><span>Hora en que se activo la venta o estacion.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_fecha_salida" checked><span><strong>Fecha y hora de salida</strong><span>Hora de pago o salida.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_numero_venta" checked><span><strong>Numero de venta</strong><span>Codigo o consecutivo del comprobante.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_estacion" checked><span><strong>Estacion</strong><span>Estacion asociada a la venta.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_cajero" checked><span><strong>Cajero</strong><span>Usuario que registro la venta.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_medio_pago" checked><span><strong>Medio de pago</strong><span>Efectivo, credito, debito u otro.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_detalle_total" checked><span><strong>Total</strong><span>Total pagado por venta.</span></span></label>
       </div>
 
       <h3 class="section-heading" style="margin-top:18px">Metricas del resumen</h3>
@@ -580,6 +720,8 @@
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_devoluciones" checked><span><strong>Devoluciones</strong><span>Valor devuelto a clientes.</span></span></label>
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_caja_esperada" checked><span><strong>Caja esperada</strong><span>Efectivo teorico al cierre.</span></span></label>
         <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_diferencia_caja" checked><span><strong>Diferencia de caja</strong><span>Comparacion fisica contra teorica.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_total_productos" checked><span><strong>Total productos</strong><span>Suma de productos vendidos.</span></span></label>
+        <label class="corte-config-check"><input type="checkbox" data-corte-config-key="mostrar_total_servicios" checked><span><strong>Total servicios</strong><span>Suma de servicios vendidos.</span></span></label>
       </div>
       <div id="configReporteMsg" class="form-help" style="margin-top:10px"></div>
     </section>
@@ -1087,6 +1229,11 @@
     let operativaConfigCache = null;
     let ventaPublicaConfigCache = null;
     const corteReporteDefaultConfig = {
+      mostrar_encabezado: true,
+      mostrar_empresa_datos: true,
+      mostrar_fecha_hora: true,
+      mostrar_usuario_reporte: true,
+      mostrar_consecutivo: true,
       mostrar_resumen: true,
       mostrar_numero_facturas: true,
       mostrar_total_ventas: true,
@@ -1102,8 +1249,17 @@
       mostrar_caja_esperada: true,
       mostrar_diferencia_caja: true,
       mostrar_ventas_detalle: true,
+      mostrar_detalle_fecha_entrada: true,
+      mostrar_detalle_fecha_salida: true,
+      mostrar_detalle_numero_venta: true,
+      mostrar_detalle_estacion: true,
+      mostrar_detalle_cajero: true,
+      mostrar_detalle_medio_pago: true,
+      mostrar_detalle_total: true,
       mostrar_movimientos: true,
       mostrar_items: true,
+      mostrar_total_productos: true,
+      mostrar_total_servicios: true,
       mostrar_sensores_puertas: true,
       mostrar_auditoria: true,
       formato_impresion: 'carta',

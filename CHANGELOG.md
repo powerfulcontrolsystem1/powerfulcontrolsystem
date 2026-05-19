@@ -1,3 +1,15 @@
+- 2026-05-18: `Reporte de turno` se adapta a papel grande y ticket POS 80mm. En grande conserva tabla completa; en POS compacta encabezado, resumen y detalle de ventas como bloques verticales con etiquetas para evitar desbordes al imprimir en rollo.
+
+- 2026-05-18: `Reportes de turnos` agrega una pagina historica en el submenu de reportes para listar turnos/cortes antiguos, previsualizar el reporte imprimible, imprimir, compartir, exportar en `json/csv/txt/xls/pdf` y enviarlo por email. El backend reutiliza `/api/empresa/corte_caja` con acciones historicas por `cierre_caja_id` y agrega el permiso de pagina `linkReportesTurnos` bajo el modulo `reportes`.
+
+- 2026-05-18: `Reporte de turno` queda configurable para corte de caja. El reporte imprime primero datos de empresa, fecha/hora, usuario y consecutivo; luego muestra ventas ordenadas por fecha/hora con columnas activables de entrada, salida, numero de venta, estacion, cajero, medio y total; finalmente presenta ingresos, egresos, productos, servicios, efectivo, tarjetas, otros medios y efectivo esperado restando egresos. La configuracion vive por `empresa_id` en `empresa_corte_caja_configuracion` y se administra desde `Configuracion de empresa > Reporte de corte`.
+
+- 2026-05-18: `Super Administrador` simplifica el panel inicial como tablero ejecutivo: conserva KPIs de infraestructura, PostgreSQL, alertas, empresas, licencias y continuidad, y retira bloques repetidos de negocio, servicios y costos.
+
+- 2026-05-18: `Login` de administradores muestra `Powerful Control System` como titulo superior, mueve `Acceso de administradores` sobre la imagen lateral y coloca `Ir al inicio` debajo de la tarjeta de acceso.
+
+- 2026-05-18: `Configuracion de empresa` corrige el guardado de formato monetario y numerico en `/api/empresa/configuracion_avanzada`; el backend regulariza flags legacy booleanos de `empresa_configuracion_avanzada` a enteros `0/1`, usa fechas runtime compatibles con PostgreSQL y repara el historial de configuracion operativa con `RETURNING id`.
+
 - 2026-05-18: `Panel` de Administrar empresa retira la tarjeta `Mercado en contexto` y deja de consultar indicadores externos de mercado/cripto desde el tablero.
 
 - 2026-05-18: `Administrar empresa` agrega el acceso `Caja` debajo de `Estaciones` en `Operacion y ventas`, abriendo el mismo corte de caja que la tarjeta Caja de estaciones.
@@ -4272,6 +4284,11 @@
 - Se agrega exportación del libro financiero filtrado por fechas a:
 	- Excel (CSV compatible con Excel).
 	- PDF (vista de impresión).
+## 2026-05-18
+- Se separa `Configuracion empresarial` en paginas independientes por seccion: Productos y pedidos, Identidad visual, Formato monetario, Cobro operativo, Reporte de corte, Respaldo y Pasarelas de pago.
+- `web/administrar_empresa/configuracion.html` queda como nucleo unico con modo aislado por `section`, manteniendo los mismos botones de guardar y endpoints.
+- Se agregan claves de permisos para las nuevas paginas del submenu y se verifica visualmente en escritorio y movil.
+
 	- JSON contable para integraci?n externa (incluye resumen, detalle y asientos recomendados).
 - Se ampl?a la configuraci?n financiera por empresa para contabilidad externa con parametrizaci?n de:
 	- destino de integraci?n (`generico`, `siigo`, `world_office`, `alegra`),

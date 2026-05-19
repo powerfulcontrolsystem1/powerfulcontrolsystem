@@ -637,7 +637,9 @@ func UpsertEmpresaConfiguracionOperativa(dbConn *sql.DB, payload EmpresaConfigur
 		return 0, fmt.Errorf("empresa_id es obligatorio")
 	}
 	payload.Estado = normalizeConfiguracionOperativaEstado(payload.Estado)
-	res, err := dbConn.Exec(`INSERT INTO empresa_configuracion_operativa (
+	nowExpr := sqlNowExpr()
+	var id int64
+	err := QueryRowCompat(dbConn, `INSERT INTO empresa_configuracion_operativa (
 		empresa_id,
 		metodo_pago_efectivo,
 		metodo_pago_tarjeta_credito,
@@ -652,7 +654,7 @@ func UpsertEmpresaConfiguracionOperativa(dbConn *sql.DB, payload EmpresaConfigur
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		metodo_pago_efectivo = excluded.metodo_pago_efectivo,
 		metodo_pago_tarjeta_credito = excluded.metodo_pago_tarjeta_credito,
@@ -662,13 +664,14 @@ func UpsertEmpresaConfiguracionOperativa(dbConn *sql.DB, payload EmpresaConfigur
 		metodo_pago_codigo_descuento = excluded.metodo_pago_codigo_descuento,
 		habilitar_propinas = excluded.habilitar_propinas,
 		habilitar_comisiones = excluded.habilitar_comisiones,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = `+nowExpr+`,
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
 			ELSE empresa_configuracion_operativa.usuario_creador
 		END,
 		estado = excluded.estado,
-		observaciones = excluded.observaciones`,
+		observaciones = excluded.observaciones
+	RETURNING id`,
 		payload.EmpresaID,
 		boolToInt(payload.MetodoPagoEfectivo),
 		boolToInt(payload.MetodoPagoTarjetaCredito),
@@ -681,15 +684,8 @@ func UpsertEmpresaConfiguracionOperativa(dbConn *sql.DB, payload EmpresaConfigur
 		strings.TrimSpace(payload.UsuarioCreador),
 		payload.Estado,
 		strings.TrimSpace(payload.Observaciones),
-	)
+	).Scan(&id)
 	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err == nil && id > 0 {
-		return id, nil
-	}
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_configuracion_operativa WHERE empresa_id = ? LIMIT 1`, payload.EmpresaID).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -706,7 +702,9 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 	}
 	payload.Estado = normalizeConfiguracionOperativaEstado(payload.Estado)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_configuracion_operativa_roles (
+	nowExpr := sqlNowExpr()
+	var id int64
+	err := QueryRowCompat(dbConn, `INSERT INTO empresa_configuracion_operativa_roles (
 		empresa_id,
 		rol,
 		metodo_pago_efectivo,
@@ -722,7 +720,7 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
 	ON CONFLICT(empresa_id, rol) DO UPDATE SET
 		metodo_pago_efectivo = excluded.metodo_pago_efectivo,
 		metodo_pago_tarjeta_credito = excluded.metodo_pago_tarjeta_credito,
@@ -732,13 +730,14 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 		metodo_pago_codigo_descuento = excluded.metodo_pago_codigo_descuento,
 		habilitar_propinas = excluded.habilitar_propinas,
 		habilitar_comisiones = excluded.habilitar_comisiones,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = `+nowExpr+`,
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
 			ELSE empresa_configuracion_operativa_roles.usuario_creador
 		END,
 		estado = excluded.estado,
-		observaciones = excluded.observaciones`,
+		observaciones = excluded.observaciones
+	RETURNING id`,
 		payload.EmpresaID,
 		payload.Rol,
 		boolToInt(payload.MetodoPagoEfectivo),
@@ -752,15 +751,8 @@ func UpsertEmpresaConfiguracionOperativaRol(dbConn *sql.DB, payload EmpresaConfi
 		strings.TrimSpace(payload.UsuarioCreador),
 		payload.Estado,
 		strings.TrimSpace(payload.Observaciones),
-	)
+	).Scan(&id)
 	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err == nil && id > 0 {
-		return id, nil
-	}
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_configuracion_operativa_roles WHERE empresa_id = ? AND rol = ? LIMIT 1`, payload.EmpresaID, payload.Rol).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -883,7 +875,9 @@ func UpsertEmpresaConfiguracionOperativaPolitica(dbConn *sql.DB, payload Empresa
 	}
 	payload.Estado = normalizeConfiguracionOperativaEstado(payload.Estado)
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_configuracion_operativa_politicas (
+	nowExpr := sqlNowExpr()
+	var id int64
+	err := QueryRowCompat(dbConn, `INSERT INTO empresa_configuracion_operativa_politicas (
 		empresa_id,
 		canal_venta,
 		sucursal_id,
@@ -902,7 +896,7 @@ func UpsertEmpresaConfiguracionOperativaPolitica(dbConn *sql.DB, payload Empresa
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
 	ON CONFLICT(empresa_id, canal_venta, sucursal_id, turno) DO UPDATE SET
 		prioridad = excluded.prioridad,
 		metodo_pago_efectivo = excluded.metodo_pago_efectivo,
@@ -913,13 +907,14 @@ func UpsertEmpresaConfiguracionOperativaPolitica(dbConn *sql.DB, payload Empresa
 		metodo_pago_codigo_descuento = excluded.metodo_pago_codigo_descuento,
 		habilitar_propinas = excluded.habilitar_propinas,
 		habilitar_comisiones = excluded.habilitar_comisiones,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = `+nowExpr+`,
 		usuario_creador = CASE
 			WHEN trim(excluded.usuario_creador) <> '' THEN excluded.usuario_creador
 			ELSE empresa_configuracion_operativa_politicas.usuario_creador
 		END,
 		estado = excluded.estado,
-		observaciones = excluded.observaciones`,
+		observaciones = excluded.observaciones
+	RETURNING id`,
 		payload.EmpresaID,
 		payload.CanalVenta,
 		payload.SucursalID,
@@ -936,15 +931,8 @@ func UpsertEmpresaConfiguracionOperativaPolitica(dbConn *sql.DB, payload Empresa
 		strings.TrimSpace(payload.UsuarioCreador),
 		payload.Estado,
 		strings.TrimSpace(payload.Observaciones),
-	)
+	).Scan(&id)
 	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err == nil && id > 0 {
-		return id, nil
-	}
-	if err := dbConn.QueryRow(`SELECT id FROM empresa_configuracion_operativa_politicas WHERE empresa_id = ? AND canal_venta = ? AND sucursal_id = ? AND turno = ? LIMIT 1`, payload.EmpresaID, payload.CanalVenta, payload.SucursalID, payload.Turno).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
@@ -1131,7 +1119,9 @@ func CreateEmpresaConfiguracionOperativaHistorialSnapshot(dbConn *sql.DB, payloa
 		snapshotJSON = string(raw)
 	}
 
-	res, err := dbConn.Exec(`INSERT INTO empresa_configuracion_operativa_historial (
+	nowExpr := sqlNowExpr()
+	var id int64
+	err := QueryRowCompat(dbConn, `INSERT INTO empresa_configuracion_operativa_historial (
 		empresa_id,
 		evento,
 		rollback_de_historial_id,
@@ -1142,7 +1132,8 @@ func CreateEmpresaConfiguracionOperativaHistorialSnapshot(dbConn *sql.DB, payloa
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)
+	RETURNING id`,
 		payload.EmpresaID,
 		payload.Evento,
 		payload.RollbackDeHistorial,
@@ -1151,11 +1142,7 @@ func CreateEmpresaConfiguracionOperativaHistorialSnapshot(dbConn *sql.DB, payloa
 		strings.TrimSpace(payload.UsuarioCreador),
 		payload.Estado,
 		strings.TrimSpace(payload.Observaciones),
-	)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
+	).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
