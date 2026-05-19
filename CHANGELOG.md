@@ -1,3 +1,5 @@
+- 2026-05-19: `Caja y turno` quedan independientes por usuario dentro de la misma empresa: apertura manual/automatica, listado de cajas del carrito, pagos, abonos y movimientos validan `usuario_creador`; `empresa_cierres_caja` actualiza su unicidad a empresa/sucursal/caja/fecha/turno/usuario y elimina indices legacy sin usuario. Flujo documentado: el usuario abre/reutiliza caja desde `Corte de Caja`, o el sistema abre una automaticamente al primer cobro si no tiene caja abierta; al finalizar genera/revisa reporte, imprime si aplica y cierra turno/caja. El tablero de estaciones sigue compartido por empresa y refresca cada 3 segundos para varias cajas.
+
 - 2026-05-19: `Documentos imprimibles` deja facturas, ventas, notas, documentos y reportes imprimibles en blanco y negro, independientes del tema claro/oscuro; ventas y facturas esperan la configuracion avanzada para respetar desde la primera vista previa los logos de empresa/sistema en escala de grises.
 
 - 2026-05-19: `Reporte de turno POS` evita que los importes monetarios del resumen financiero se partan en varias lineas en vista previa e impresion POS 80mm.

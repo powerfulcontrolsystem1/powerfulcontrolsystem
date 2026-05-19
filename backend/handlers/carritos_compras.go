@@ -237,10 +237,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				rows, err := dbpkg.ListEmpresaCierresCaja(dbEmp, empresaID, dbpkg.EmpresaCierreCajaFilter{
-					SucursalID:   sucursalID,
-					CajaCodigo:   strings.TrimSpace(r.URL.Query().Get("caja_codigo")),
-					EstadoCierre: "abierto",
-					Limit:        limit,
+					SucursalID:     sucursalID,
+					CajaCodigo:     strings.TrimSpace(r.URL.Query().Get("caja_codigo")),
+					UsuarioCreador: strings.TrimSpace(adminEmailFromRequest(r)),
+					EstadoCierre:   "abierto",
+					Limit:          limit,
 				})
 				if err != nil {
 					log.Printf("[carritos] cajas_abiertas empresa_id=%d error: %v", empresaID, err)
@@ -380,7 +381,8 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "metodo_pago no habilitado para la empresa/rol actual", http.StatusForbidden)
 					return
 				}
-				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID)
+				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
+				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 				if errCierreCaja != nil {
 					if errors.Is(errCierreCaja, sql.ErrNoRows) {
 						http.Error(w, "debes seleccionar una caja abierta y activa antes de registrar un abono", http.StatusConflict)
@@ -390,7 +392,6 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar la caja abierta para este abono", http.StatusInternalServerError)
 					return
 				}
-				usuarioOperacion := strings.TrimSpace(adminEmailFromRequest(r))
 				abonoID, errAbono := dbpkg.CreateCarritoCompraAbono(dbEmp, dbpkg.CarritoCompraAbono{
 					EmpresaID:      empresaID,
 					CarritoID:      carritoID,
@@ -961,7 +962,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if usuarioOperacionItem, errUsuario := dbpkg.ResolveEmpresaUsuarioByReference(dbEmp, empresaID, usuarioOperacion); errUsuario == nil && usuarioOperacionItem != nil {
 					usuarioOperacionID = usuarioOperacionItem.ID
 				}
-				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID)
+				cierreCaja, errCierreCaja := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, payload.CierreCajaID, payload.CajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuarioOperacion)
 				if errCierreCaja != nil {
 					if errors.Is(errCierreCaja, sql.ErrNoRows) {
 						http.Error(w, "debes seleccionar una caja abierta y activa antes de pagar", http.StatusConflict)
@@ -1928,7 +1929,11 @@ func openCajaCobroForCarrito(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, ca
 	if moneda == "" {
 		moneda = "COP"
 	}
-	if existing, err := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, 0, code, turno, sucursalID); err == nil && existing != nil {
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	if existing, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, 0, code, turno, sucursalID, usuario); err == nil && existing != nil {
 		return existing, false, nil
 	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, false, err
@@ -1957,7 +1962,7 @@ func openCajaCobroForCarrito(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, ca
 	if err != nil {
 		return nil, false, err
 	}
-	created, err := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, cierreID, "", "", 0)
+	created, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, empresaID, cierreID, "", "", 0, usuario)
 	if err != nil {
 		return nil, false, err
 	}

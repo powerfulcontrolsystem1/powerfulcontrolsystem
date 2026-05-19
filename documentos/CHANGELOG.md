@@ -1,3 +1,11 @@
+## [2026-05-19] Caja y turno por usuario
+- [Backend] Cierres de caja, aperturas automaticas, pagos, abonos e ingresos/egresos se resuelven por usuario autenticado dentro de la empresa.
+- [Base de datos] `empresa_cierres_caja` usa unicidad por `empresa_id`, sucursal, caja, fecha, turno y `usuario_creador`; se eliminan indices legacy sin usuario y se agrega indice para localizar cajas abiertas por usuario.
+- [Operacion] Dos usuarios de la misma empresa pueden trabajar al mismo tiempo sin mezclar caja, turno ni reporte; el mismo usuario reutiliza su caja abierta si intenta abrirla de nuevo.
+- [Flujo] El cajero puede abrir/reutilizar caja desde `Corte de Caja`; si cobra desde carrito sin caja abierta, el sistema intenta abrir una automaticamente para ese usuario. El cierre se hace al generar/revisar el reporte de turno, imprimir si aplica y cerrar caja/turno.
+- [Estaciones] El estado de estaciones queda comun por empresa y el tablero se refresca cada 3 segundos para que varias cajas vean cambios de ocupacion/disponibilidad.
+- [Alcance] No cambia permisos, rutas ni dependencias.
+
 ## [2026-05-19] Documentos imprimibles blanco y negro
 - [UX] Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte ya no heredan la apariencia clara u oscura del panel.
 - [Impresion] Las vistas previas y ventanas de impresion usan hoja blanca, texto negro/gris, bordes simples y sin sombras para verse como saldran en papel o POS.

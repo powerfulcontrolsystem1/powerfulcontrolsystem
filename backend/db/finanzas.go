@@ -128,6 +128,7 @@ type EmpresaCierreCaja struct {
 type EmpresaCierreCajaFilter struct {
 	SucursalID      int64
 	CajaCodigo      string
+	UsuarioCreador  string
 	EstadoCierre    string
 	Desde           string
 	Hasta           string
@@ -182,6 +183,9 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	}
 	ready, err := empresaFinanzasSchemaLooksReady(dbConn)
 	if err == nil && ready {
+		if err := ensureEmpresaCierresCajaUsuarioIndependiente(dbConn); err != nil {
+			return err
+		}
 		empresaFinanzasSchemaReady = true
 		return nil
 	}
@@ -304,7 +308,7 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
-			UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
+			UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador)
 		);`,
 		`CREATE TABLE IF NOT EXISTS empresa_finanzas_bancos_movimientos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -578,6 +582,9 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_cierres_caja", "observaciones", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureEmpresaCierresCajaUsuarioIndependiente(dbConn); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_finanzas_bancos_movimientos", "periodo_contable", "TEXT"); err != nil {
 		return err
 	}
@@ -661,6 +668,99 @@ func EnsureEmpresaFinanzasSchema(dbConn *sql.DB) error {
 
 	empresaFinanzasSchemaReady = true
 	return nil
+}
+
+func ensureEmpresaCierresCajaUsuarioIndependiente(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	if _, err := dbConn.Exec(`UPDATE empresa_cierres_caja SET usuario_creador = 'sistema' WHERE usuario_creador IS NULL OR TRIM(usuario_creador) = ''`); err != nil {
+		return err
+	}
+	if shouldUsePostgresCompat(dbConn) {
+		if err := dropLegacyEmpresaCierresCajaUniqueConstraint(dbConn); err != nil {
+			return err
+		}
+		if err := dropLegacyEmpresaCierresCajaUniqueIndexes(dbConn); err != nil {
+			return err
+		}
+	}
+	if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_cierres_caja_usuario_turno
+		ON empresa_cierres_caja(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador)`); err != nil {
+		return err
+	}
+	_, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_empresa_cierres_caja_usuario_abierta
+		ON empresa_cierres_caja(empresa_id, usuario_creador, estado_cierre, estado, caja_codigo, turno, sucursal_id, fecha_apertura DESC)`)
+	return err
+}
+
+func dropLegacyEmpresaCierresCajaUniqueConstraint(dbConn *sql.DB) error {
+	rows, err := dbConn.Query(`
+		SELECT tc.constraint_name
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+		  ON kcu.constraint_schema = tc.constraint_schema
+		 AND kcu.constraint_name = tc.constraint_name
+		 AND kcu.table_schema = tc.table_schema
+		 AND kcu.table_name = tc.table_name
+		WHERE tc.table_schema = current_schema()
+		  AND tc.table_name = 'empresa_cierres_caja'
+		  AND tc.constraint_type = 'UNIQUE'
+		GROUP BY tc.constraint_name
+		HAVING array_agg(kcu.column_name ORDER BY kcu.ordinal_position) = ARRAY['empresa_id','sucursal_id','caja_codigo','fecha_operacion','turno']::text[]`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
+		stmt := fmt.Sprintf(`ALTER TABLE empresa_cierres_caja DROP CONSTRAINT IF EXISTS %s`, quotePostgresIdentifier(name))
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func dropLegacyEmpresaCierresCajaUniqueIndexes(dbConn *sql.DB) error {
+	rows, err := dbConn.Query(`
+		SELECT idx.relname
+		FROM pg_index ix
+		JOIN pg_class tbl ON tbl.oid = ix.indrelid
+		JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+		JOIN pg_class idx ON idx.oid = ix.indexrelid
+		JOIN LATERAL unnest(ix.indkey) WITH ORDINALITY AS keys(attnum, ord) ON true
+		JOIN pg_attribute att ON att.attrelid = tbl.oid AND att.attnum = keys.attnum
+		WHERE ns.nspname = current_schema()
+		  AND tbl.relname = 'empresa_cierres_caja'
+		  AND ix.indisunique
+		  AND NOT ix.indisprimary
+		GROUP BY idx.relname
+		HAVING array_agg(att.attname::text ORDER BY keys.ord) = ARRAY['empresa_id','sucursal_id','caja_codigo','fecha_operacion','turno']::text[]`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
+		stmt := fmt.Sprintf(`DROP INDEX IF EXISTS %s`, quotePostgresIdentifier(name))
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
 }
 
 func empresaFinanzasSchemaLooksReady(dbConn *sql.DB) (bool, error) {
@@ -1591,6 +1691,10 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 		query += ` AND UPPER(COALESCE(caja_codigo, '')) = ?`
 		args = append(args, caja)
 	}
+	if usuario := strings.TrimSpace(f.UsuarioCreador); usuario != "" {
+		query += ` AND LOWER(COALESCE(usuario_creador, '')) = LOWER(?)`
+		args = append(args, usuario)
+	}
 	if estadoCierre := normalizeEstadoCierre(f.EstadoCierre); estadoCierre != "" {
 		query += ` AND LOWER(COALESCE(estado_cierre, 'abierto')) = ?`
 		args = append(args, estadoCierre)
@@ -1671,9 +1775,16 @@ func ListEmpresaCierresCaja(dbConn *sql.DB, empresaID int64, f EmpresaCierreCaja
 
 // GetEmpresaCierreCajaAbierta resuelve una caja abierta activa para registrar operaciones simultaneas.
 func GetEmpresaCierreCajaAbierta(dbConn *sql.DB, empresaID, cierreCajaID int64, cajaCodigo, turno string, sucursalID int64) (*EmpresaCierreCaja, error) {
+	return GetEmpresaCierreCajaAbiertaUsuario(dbConn, empresaID, cierreCajaID, cajaCodigo, turno, sucursalID, "")
+}
+
+// GetEmpresaCierreCajaAbiertaUsuario resuelve una caja abierta activa del usuario indicado.
+// Si usuario esta vacio conserva el comportamiento administrativo historico.
+func GetEmpresaCierreCajaAbiertaUsuario(dbConn *sql.DB, empresaID, cierreCajaID int64, cajaCodigo, turno string, sucursalID int64, usuario string) (*EmpresaCierreCaja, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id es obligatorio")
 	}
+	usuario = strings.TrimSpace(usuario)
 	query := `SELECT
 		id,
 		empresa_id,
@@ -1714,6 +1825,10 @@ func GetEmpresaCierreCajaAbierta(dbConn *sql.DB, empresaID, cierreCajaID int64, 
 	  AND LOWER(COALESCE(estado_cierre, 'abierto')) = 'abierto'
 	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
 	args := []interface{}{empresaID}
+	if usuario != "" {
+		query += ` AND LOWER(COALESCE(usuario_creador, '')) = LOWER(?)`
+		args = append(args, usuario)
+	}
 	if cierreCajaID > 0 {
 		query += ` AND id = ?`
 		args = append(args, cierreCajaID)

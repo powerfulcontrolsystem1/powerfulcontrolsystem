@@ -1,3 +1,12 @@
+2026-05-19: Caja y turno independientes por usuario en la misma empresa.
+- Modulos afectados: `finanzas`, `corte_de_caja`, `carritos`, `estaciones`, `ventas_simple`.
+- `backend/db/finanzas.go` agrega filtro `UsuarioCreador` en cierres de caja, normaliza cierres sin usuario a `sistema`, elimina en PostgreSQL constraints e indices legacy por caja/turno sin usuario aun cuando el esquema ya estaba marcado como listo, y crea `ux_empresa_cierres_caja_usuario_turno`.
+- `backend/handlers/finanzas.go` resuelve movimientos de caja y aperturas contra la caja abierta del usuario autenticado; si el mismo usuario intenta abrir otra vez la misma caja/turno, se devuelve la caja existente.
+- `backend/handlers/carritos_compras.go` limita `cajas_abiertas`, pagos y abonos a la caja abierta del usuario actual.
+- `web/administrar_empresa/estaciones.html` mantiene los estados de estacion compartidos por empresa y reduce el refresco de tablero a 3 segundos para que otra caja vea rapidamente estaciones activadas por otro usuario.
+- Resultado operativo: usuarios creados por un administrador dentro de la misma empresa pueden operar cajas simultaneas independientes, con pagos, abonos, ingresos, egresos y reportes por `cierre_caja_id`/usuario sin mezclarse.
+- Sin permisos nuevos, rutas nuevas ni dependencias externas.
+
 2026-05-19: Documentos imprimibles blanco y negro.
 - Modulos afectados: `facturacion`, `ventas`, `documentos`, `corte_de_caja`, `reportes`, `frontend_ux`.
 - Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte dejan de heredar el modo claro u oscuro del panel.
@@ -26662,3 +26671,7 @@ Archivos modificados:
 - web/administrar_empresa/ventas.html
 - web/estilos.css
 - web/js/print_documents.js
+2026-05-19: Documentacion del flujo operativo de caja por usuario
+- Se actualiza `documentos/descripcion_del_proyecto` con el flujo completo de caja: inicio de sesion, apertura manual o automatica al cobrar, movimientos durante el turno, cierre, impresion de reporte y separacion entre caja privada por usuario y estaciones compartidas por empresa.
+- Se actualiza `documentos/descripcion_de_modulos`, `documentos/CHANGELOG.md` y `CHANGELOG.md` para dejar explicito que la caja se reutiliza por usuario mientras este abierta y que despues del cierre no debe recibir nuevos cobros.
+- Alcance: documentacion solamente; sin cambios de backend, frontend, tablas, permisos ni dependencias.

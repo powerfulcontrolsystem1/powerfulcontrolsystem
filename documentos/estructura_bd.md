@@ -750,7 +750,9 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - propinas_impuesto, propinas_neto
   - propinas_conciliado_en, propinas_conciliado_por
   - cerrado_por, aprobado_por, aprobado_en
-  - UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno)
+  - usuario_creador identifica el usuario operativo que abrio/maneja el turno.
+  - UNIQUE(empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador)
+  - Indice operativo: ix_empresa_cierres_caja_usuario_abierta(empresa_id, usuario_creador, estado_cierre, estado, caja_codigo, turno, sucursal_id, fecha_apertura DESC)
 - empresa_corte_caja_configuracion:
   - empresa_id (UNIQUE)
   - mostrar_encabezado, mostrar_empresa_datos, mostrar_fecha_hora, mostrar_usuario_reporte, mostrar_consecutivo
@@ -1447,6 +1449,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ## 4) Historial resumido
 - 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, cantidad de ventas, total de descuentos, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
 - 2026-05-18: `empresa_corte_caja_configuracion.formato_impresion` usa `pos` como default operativo para reporte de turno en impresora POS 80mm; `empresa_impresoras` conserva `formato_impresion` `pos`/`carta` y la predeterminada por empresa.
+- 2026-05-19: `empresa_cierres_caja` cambia su unicidad operativa a `empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador`; en PostgreSQL se eliminan constraints e indices legacy sin usuario y se agrega `ux_empresa_cierres_caja_usuario_turno`, permitiendo que varios usuarios de la misma empresa manejen cajas/turnos independientes sin mezclar pagos, abonos, ingresos, egresos ni reportes.
 - 2026-05-19: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para activar/desactivar varias cajas abiertas por empresa y limitar su cupo interno sin superar `licencias.max_cajas_simultaneas`. Los reportes de turno continuan aislados por `empresa_cierres_caja.id`/`cierre_caja_id`.
 - 2026-05-19: `empresa_impresoras` usa `POS_80MM` como codigo operativo predeterminado por empresa activa; `empresa_impresoras_funcionalidades` lo asigna a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` manteniendo indices unicos por `empresa_id`.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.

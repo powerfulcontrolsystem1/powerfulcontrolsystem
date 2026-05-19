@@ -1,3 +1,12 @@
+2026-05-19: Caja y turno independientes por usuario.
+- Modulos afectados: `finanzas`, `corte_de_caja`, `carritos`, `estaciones`, `ventas_simple`.
+- Backend: `empresa_cierres_caja` queda identificado tambien por `usuario_creador`; al iniciar o reutilizar una caja abierta se busca primero la caja del usuario autenticado.
+- Carritos: `action=cajas_abiertas`, abonos y pagos solo aceptan cajas abiertas del usuario actual, evitando que un cajero cobre o abone sobre el turno de otro usuario de la misma empresa.
+- Finanzas: ingresos/egresos asociados a caja validan la caja abierta del usuario que registra el movimiento, y la apertura repetida del mismo usuario devuelve la caja existente.
+- Estaciones: el estado ocupada/disponible/sucia sigue compartido por `empresa_id`; la pantalla refresca cada 3 segundos para que varios usuarios/cajas vean cambios de estaciones realizados por otros usuarios.
+- Flujo operativo: el usuario inicia sesion, abre o reutiliza su caja desde `Corte de Caja`, o el sistema abre una caja automaticamente al primer cobro si no existe una caja abierta para ese usuario. Durante el turno, ventas, abonos, ingresos, egresos y pagos mixtos quedan asociados a su `cierre_caja_id`. Al finalizar, el usuario genera/revisa el reporte de turno, imprime cuando aplique y cierra caja; despues del cierre no se deben registrar nuevos cobros en ese turno.
+- Alcance: sin permisos nuevos, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
+
 2026-05-19: Documentos imprimibles blanco y negro.
 - Modulos afectados: `facturacion`, `ventas`, `documentos`, `corte_de_caja`, `reportes`, `frontend_ux`.
 - Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte quedan visualmente independientes del modo claro u oscuro del panel.

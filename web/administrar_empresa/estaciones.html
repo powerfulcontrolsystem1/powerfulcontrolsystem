@@ -2328,7 +2328,7 @@
           } catch (err) {
             console.warn('No se pudo refrescar el estado de estaciones en segundo plano:', err);
           }
-        }, 10000);
+        }, 3000);
         setStatus('');
       } catch (err) {
         console.error('Error cargando estaciones', err);

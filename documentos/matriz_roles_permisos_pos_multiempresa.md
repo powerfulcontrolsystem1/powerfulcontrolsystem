@@ -1,3 +1,9 @@
+2026-05-19: Nota de caja/turno independiente por usuario
+- La independencia de cajas simultaneas se resuelve por datos (`empresa_id`, `usuario_creador`, `cierre_caja_id`) y no requiere nuevos permisos.
+- Los usuarios creados por un administrador de empresa mantienen los mismos permisos de `finanzas`, `corte_caja`, `carritos` y `ventas`, pero sus cajas abiertas, abonos, pagos y movimientos se validan contra el usuario autenticado.
+- Los roles administrativos conservan sus permisos de supervision y reportes historicos; la operacion diaria del carrito lista solo cajas abiertas del usuario actual.
+- El estado de estaciones no se separa por usuario: sigue siendo comun por empresa para que varias cajas vean la misma ocupacion/disponibilidad.
+
 2026-05-18: Nota de Reportes de turnos
 - Se agrega `linkReportesTurnos` al catalogo de paginas empresariales bajo modulo `reportes` y accion lectura.
 - La pagina `web/administrar_empresa/reportes_turnos.html` permite consultar, imprimir, compartir, exportar y enviar por email reportes historicos de turnos ya cerrados.

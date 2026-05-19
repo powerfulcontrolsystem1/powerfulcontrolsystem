@@ -326,7 +326,7 @@ func buildTableroResumenCSVContent(resumen *dbpkg.EmpresaReportesTableroResumen)
 	return builder.String(), nil
 }
 
-func normalizarCajaMovimientoFinanzas(dbEmp *sql.DB, payload *dbpkg.EmpresaFinanzasMovimiento) error {
+func normalizarCajaMovimientoFinanzas(dbEmp *sql.DB, payload *dbpkg.EmpresaFinanzasMovimiento, usuario string) error {
 	if payload == nil || payload.EmpresaID <= 0 {
 		return nil
 	}
@@ -335,7 +335,7 @@ func normalizarCajaMovimientoFinanzas(dbEmp *sql.DB, payload *dbpkg.EmpresaFinan
 	if cierreID <= 0 && cajaCodigo == "" {
 		return nil
 	}
-	cierre, err := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, payload.EmpresaID, cierreID, cajaCodigo, payload.CajaTurno, payload.CajaSucursalID)
+	cierre, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, payload.EmpresaID, cierreID, cajaCodigo, payload.CajaTurno, payload.CajaSucursalID, usuario)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("la caja seleccionada no esta abierta o activa")
@@ -653,7 +653,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				}
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
-			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload); err != nil {
+			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload, payload.UsuarioCreador); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -801,7 +801,7 @@ func EmpresaFinanzasMovimientosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if payload.UsuarioCreador == "" {
 				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			}
-			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload); err != nil {
+			if err := normalizarCajaMovimientoFinanzas(dbEmp, &payload, payload.UsuarioCreador); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -1147,13 +1147,25 @@ func EmpresaFinanzasCierresCajaHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.Hand
 					payload.EmpresaID = empresaID
 				}
 			}
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			if payload.UsuarioCreador == "" {
+				payload.UsuarioCreador = "sistema"
+			}
 			if strings.TrimSpace(payload.EstadoCierre) == "" || strings.EqualFold(strings.TrimSpace(payload.EstadoCierre), "abierto") {
+				if strings.TrimSpace(payload.CajaCodigo) != "" {
+					if existing, err := dbpkg.GetEmpresaCierreCajaAbiertaUsuario(dbEmp, payload.EmpresaID, 0, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.UsuarioCreador); err == nil && existing != nil {
+						writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": existing.ID, "existente": true})
+						return
+					} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "No se pudo validar la caja abierta del usuario", http.StatusInternalServerError)
+						return
+					}
+				}
 				if _, _, err := validarCupoCajasLicencia(dbEmp, dbSuper, payload.EmpresaID, 0); err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
 			}
-			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			id, err := dbpkg.CreateEmpresaCierreCaja(dbEmp, payload)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
