@@ -2,6 +2,7 @@
 - Modulos afectados: `login`, `frontend_ux`, `operacion_sistema`.
 - El login de administradores agrega el boton `Instalar app`, que usa el prompt nativo del navegador cuando esta disponible.
 - Se agrega soporte PWA con manifest, service worker e iconos para escritorio y celular; el service worker evita interceptar `/api`, `/super/api` y `/auth`.
+- Nginx sirve `.webmanifest` con `application/manifest+json` para mejorar compatibilidad de instalacion.
 - En iPhone/iPad o navegadores sin prompt disponible, el boton muestra la ruta de instalacion desde el menu del navegador.
 - Sin cambios de autenticacion, permisos ni backend.
 

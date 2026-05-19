@@ -3,6 +3,7 @@
 - `web/login.html` agrega el boton `Instalar app` junto a `Ir al inicio`, enlaza `manifest.webmanifest` y registra metadatos moviles para instalacion en escritorio y celular.
 - `web/js/pwa_install.js` captura `beforeinstallprompt`, abre la instalacion del navegador cuando esta disponible, muestra fallback para iOS/menu del navegador y registra el service worker.
 - `web/manifest.webmanifest`, `web/sw.js`, `web/img/pwa-icon-192.png` y `web/img/pwa-icon-512.png` habilitan el modo app instalada sin cachear rutas API, auth ni endpoints privados.
+- `deploy/nginx/pcs.conf` sirve `.webmanifest` como `application/manifest+json` para que la instalacion PWA sea reconocida por navegadores.
 - No cambia autenticacion, permisos, backend ni tablas.
 
 2026-05-19: Titulo del login mas visible.

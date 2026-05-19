@@ -1,6 +1,6 @@
 ## Descripcion del proyecto (version compacta)
 
-Revision instalacion PWA login 2026-05-19: `web/login.html` agrega el boton `Instalar app` para crear acceso instalado en escritorio o celular mediante el prompt nativo del navegador. Se incorporan `web/manifest.webmanifest`, `web/sw.js`, `web/js/pwa_install.js` e iconos PWA; el service worker no intercepta rutas `/api`, `/super/api` ni `/auth`, preservando autenticacion y endpoints.
+Revision instalacion PWA login 2026-05-19: `web/login.html` agrega el boton `Instalar app` para crear acceso instalado en escritorio o celular mediante el prompt nativo del navegador. Se incorporan `web/manifest.webmanifest`, `web/sw.js`, `web/js/pwa_install.js` e iconos PWA; el service worker no intercepta rutas `/api`, `/super/api` ni `/auth`, preservando autenticacion y endpoints. `deploy/nginx/pcs.conf` sirve `.webmanifest` con `application/manifest+json`.
 
 Revision titulo login 2026-05-19: el encabezado `Powerful Control System` de `web/login.html` usa una regla visual propia en `web/estilos.css`, mas grande y responsive, y deja de heredar el tamano compacto de titulos administrativos. No cambia autenticacion, permisos, endpoints ni tablas.
 

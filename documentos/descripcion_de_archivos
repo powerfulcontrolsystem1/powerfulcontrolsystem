@@ -9,6 +9,8 @@
 	- service worker conservador para habilitar instalacion y cachear recursos estaticos sin interceptar API, autenticacion ni endpoints super.
 - `web/img/pwa-icon-192.png` y `web/img/pwa-icon-512.png`:
 	- iconos PNG para instalacion en escritorio y celular.
+- `deploy/nginx/pcs.conf`:
+	- agrega tipo MIME `application/manifest+json` para `.webmanifest`.
 
 2026-05-19 - Impresora POS default global
 - `backend/db/empresa_impresoras.go`:
