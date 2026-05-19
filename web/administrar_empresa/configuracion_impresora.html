@@ -417,11 +417,20 @@
             <span>Caja activa para ventas</span>
           </label>
 
+          <label class="empresa-config-check" for="cajasSimultaneasHabilitadas">
+            <input id="cajasSimultaneasHabilitadas" type="checkbox" checked>
+            <span>Permitir varias cajas abiertas al mismo tiempo</span>
+          </label>
+
           <label for="cajaNombre">Nombre de la caja</label>
           <input id="cajaNombre" type="text" maxlength="120" placeholder="Caja principal">
 
           <label for="cajaCodigo">Código interno</label>
           <input id="cajaCodigo" type="text" maxlength="80" placeholder="CAJA-01">
+
+          <label for="maxCajasSimultaneasEmpresa">Limite propio de cajas simultaneas</label>
+          <input id="maxCajasSimultaneasEmpresa" type="number" min="0" max="99" step="1" value="0">
+          <p class="form-help">Usa 0 para heredar el limite de la licencia. Si desactivas varias cajas, el sistema permite solo una caja abierta.</p>
 
           <label for="cajaObservaciones">Observaciones</label>
           <textarea id="cajaObservaciones" rows="4" maxlength="800" placeholder="Notas internas de operación, responsable o ubicación física."></textarea>
@@ -938,6 +947,8 @@
           caja_nombre: String(caja.caja_nombre || '').trim().slice(0, 120),
           caja_codigo: String(caja.caja_codigo || '').trim().slice(0, 80),
           caja_activa: caja.caja_activa === undefined ? true : Boolean(caja.caja_activa),
+          cajas_simultaneas_habilitadas: caja.cajas_simultaneas_habilitadas === undefined ? true : Boolean(caja.cajas_simultaneas_habilitadas),
+          max_cajas_simultaneas_empresa: Math.max(0, Math.min(99, parseInt(caja.max_cajas_simultaneas_empresa || 0, 10) || 0)),
           cajon_monedero_habilitado: Boolean(caja.cajon_monedero_habilitado),
           abrir_cajon_al_pagar_carrito: Boolean(caja.abrir_cajon_al_pagar_carrito),
           abrir_cajon_al_cerrar_transaccion: Boolean(caja.abrir_cajon_al_cerrar_transaccion),
@@ -2335,8 +2346,10 @@
     function setCajaFormData(cajaRaw) {
       const caja = normalizeConfig({ caja: cajaRaw }).caja;
       document.getElementById('cajaActiva').checked = Boolean(caja.caja_activa);
+      document.getElementById('cajasSimultaneasHabilitadas').checked = Boolean(caja.cajas_simultaneas_habilitadas);
       document.getElementById('cajaNombre').value = caja.caja_nombre || '';
       document.getElementById('cajaCodigo').value = caja.caja_codigo || '';
+      document.getElementById('maxCajasSimultaneasEmpresa').value = String(Number(caja.max_cajas_simultaneas_empresa || 0));
       document.getElementById('cajonMonederoHabilitado').checked = Boolean(caja.cajon_monedero_habilitado);
       document.getElementById('abrirCajonAlPagarCarrito').checked = Boolean(caja.abrir_cajon_al_pagar_carrito);
       document.getElementById('abrirCajonAlCerrarTransaccion').checked = Boolean(caja.abrir_cajon_al_cerrar_transaccion);
@@ -2350,8 +2363,10 @@
       return normalizeConfig({
         caja: {
           caja_activa: document.getElementById('cajaActiva').checked,
+          cajas_simultaneas_habilitadas: document.getElementById('cajasSimultaneasHabilitadas').checked,
           caja_nombre: document.getElementById('cajaNombre').value,
           caja_codigo: document.getElementById('cajaCodigo').value,
+          max_cajas_simultaneas_empresa: Number(document.getElementById('maxCajasSimultaneasEmpresa').value || 0),
           cajon_monedero_habilitado: document.getElementById('cajonMonederoHabilitado').checked,
           abrir_cajon_al_pagar_carrito: document.getElementById('abrirCajonAlPagarCarrito').checked,
           abrir_cajon_al_cerrar_transaccion: document.getElementById('abrirCajonAlCerrarTransaccion').checked,

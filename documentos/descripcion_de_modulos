@@ -1,3 +1,11 @@
+2026-05-19: Cajas multiples configurables por empresa.
+- Modulos afectados: `configuracion_empresarial`, `finanzas`, `corte_de_caja`, `carritos`.
+- `Configuracion de empresa > Caja y cajon monedero` permite activar/desactivar varias cajas abiertas al mismo tiempo y definir un limite interno opcional por empresa.
+- El limite efectivo de apertura toma el menor valor entre licencia y configuracion empresarial; si el check de cajas simultaneas esta apagado, la empresa opera con una sola caja abierta.
+- La apertura automatica desde carrito y la apertura/reapertura desde finanzas validan caja activa, cupo interno, cupo de licencia y cajas abiertas existentes.
+- `corte_de_caja.html` conserva caja, turno, sucursal y `cierre_caja_id` al consultar `Ver reporte de mi turno` o `Corte automatico`, dejando cada caja con reporte independiente.
+- Sin dependencias nuevas ni cambios de permisos.
+
 2026-05-19: Impresora POS por defecto global.
 - Modulos afectados: `impresoras`, `configuracion_empresarial`, `corte_de_caja`, `reportes`.
 - Todas las empresas activas pueden recibir `POS_80MM` como impresora activa y predeterminada, con formato `pos` y area operativa `caja`.

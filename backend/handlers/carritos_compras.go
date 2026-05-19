@@ -496,10 +496,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						return
 					}
 				}
-				cierre, created, errCaja := openCajaCobroForCarrito(dbEmp, empresaID, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.AperturaEfectivo, payload.Moneda, strings.TrimSpace(adminEmailFromRequest(r)))
+				cierre, created, errCaja := openCajaCobroForCarrito(dbEmp, dbSuper, empresaID, payload.CajaCodigo, payload.Turno, payload.SucursalID, payload.AperturaEfectivo, payload.Moneda, strings.TrimSpace(adminEmailFromRequest(r)))
 				if errCaja != nil {
 					log.Printf("[carritos] abrir caja cobro empresa_id=%d error: %v", empresaID, errCaja)
-					http.Error(w, "No se pudo abrir una caja para cobrar", http.StatusInternalServerError)
+					http.Error(w, errCaja.Error(), http.StatusBadRequest)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -1909,7 +1909,7 @@ func normalizeCarritoCajaCode(value string) string {
 	return code
 }
 
-func openCajaCobroForCarrito(dbEmp *sql.DB, empresaID int64, cajaCodigo, turno string, sucursalID int64, apertura float64, moneda, usuario string) (*dbpkg.EmpresaCierreCaja, bool, error) {
+func openCajaCobroForCarrito(dbEmp *sql.DB, dbSuper *sql.DB, empresaID int64, cajaCodigo, turno string, sucursalID int64, apertura float64, moneda, usuario string) (*dbpkg.EmpresaCierreCaja, bool, error) {
 	if empresaID <= 0 {
 		return nil, false, fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -1931,6 +1931,9 @@ func openCajaCobroForCarrito(dbEmp *sql.DB, empresaID int64, cajaCodigo, turno s
 	if existing, err := dbpkg.GetEmpresaCierreCajaAbierta(dbEmp, empresaID, 0, code, turno, sucursalID); err == nil && existing != nil {
 		return existing, false, nil
 	} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, false, err
+	}
+	if _, _, err := validarCupoCajasLicencia(dbEmp, dbSuper, empresaID, 0); err != nil {
 		return nil, false, err
 	}
 	now := time.Now()

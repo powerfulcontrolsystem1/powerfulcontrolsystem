@@ -30,6 +30,8 @@ type empresaConfiguracionGeneralCajaPayload struct {
 	CajaNombre                          string `json:"caja_nombre"`
 	CajaCodigo                          string `json:"caja_codigo"`
 	CajaActiva                          bool   `json:"caja_activa"`
+	CajasSimultaneasHabilitadas         bool   `json:"cajas_simultaneas_habilitadas"`
+	MaxCajasSimultaneasEmpresa          int64  `json:"max_cajas_simultaneas_empresa"`
 	CajonMonederoHabilitado             bool   `json:"cajon_monedero_habilitado"`
 	AbrirCajonAlPagarCarrito            bool   `json:"abrir_cajon_al_pagar_carrito"`
 	AbrirCajonAlCerrarTransaccion       bool   `json:"abrir_cajon_al_cerrar_transaccion"`
@@ -132,6 +134,8 @@ func EmpresaConfiguracionGeneralHandler(dbEmp *sql.DB) http.HandlerFunc {
 				cfg.CajaNombre = payload.Caja.CajaNombre
 				cfg.CajaCodigo = payload.Caja.CajaCodigo
 				cfg.CajaActiva = payload.Caja.CajaActiva
+				cfg.CajasSimultaneasHabilitadas = payload.Caja.CajasSimultaneasHabilitadas
+				cfg.MaxCajasSimultaneasEmpresa = payload.Caja.MaxCajasSimultaneasEmpresa
 				cfg.CajonMonederoHabilitado = payload.Caja.CajonMonederoHabilitado
 				cfg.AbrirCajonAlPagarCarrito = payload.Caja.AbrirCajonAlPagarCarrito
 				cfg.AbrirCajonAlCerrarTransaccion = payload.Caja.AbrirCajonAlCerrarTransaccion
@@ -209,6 +213,8 @@ func empresaConfiguracionGeneralResponse(cfg *dbpkg.EmpresaConfiguracionGeneral)
 			"caja_nombre":                            cfg.CajaNombre,
 			"caja_codigo":                            cfg.CajaCodigo,
 			"caja_activa":                            cfg.CajaActiva,
+			"cajas_simultaneas_habilitadas":          cfg.CajasSimultaneasHabilitadas,
+			"max_cajas_simultaneas_empresa":          cfg.MaxCajasSimultaneasEmpresa,
 			"cajon_monedero_habilitado":              cfg.CajonMonederoHabilitado,
 			"abrir_cajon_al_pagar_carrito":           cfg.AbrirCajonAlPagarCarrito,
 			"abrir_cajon_al_cerrar_transaccion":      cfg.AbrirCajonAlCerrarTransaccion,

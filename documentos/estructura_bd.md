@@ -445,6 +445,11 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - descuentos_habilitados, permitir_descuento_porcentaje, permitir_descuento_codigo, permitir_descuento_valor
   - codigos_descuento
   - lector_codigo_barras_habilitado, lector_codigo_barras_autofoco, lector_codigo_barras_acumular
+  - caja_nombre, caja_codigo, caja_activa
+  - cajas_simultaneas_habilitadas, max_cajas_simultaneas_empresa
+  - cajon_monedero_habilitado, abrir_cajon_al_pagar_carrito, abrir_cajon_al_cerrar_transaccion
+  - cajon_monedero_metodo, cajon_monedero_impresora_funcionalidad, cajon_monedero_comando
+  - caja_observaciones
 
 ### Preferencias empresariales por clave
 - empresa_estacion_prefs:
@@ -1437,6 +1442,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 ## 4) Historial resumido
 - 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, cantidad de ventas, total de descuentos, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
 - 2026-05-18: `empresa_corte_caja_configuracion.formato_impresion` usa `pos` como default operativo para reporte de turno en impresora POS 80mm; `empresa_impresoras` conserva `formato_impresion` `pos`/`carta` y la predeterminada por empresa.
+- 2026-05-19: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para activar/desactivar varias cajas abiertas por empresa y limitar su cupo interno sin superar `licencias.max_cajas_simultaneas`. Los reportes de turno continuan aislados por `empresa_cierres_caja.id`/`cierre_caja_id`.
 - 2026-05-19: `empresa_impresoras` usa `POS_80MM` como codigo operativo predeterminado por empresa activa; `empresa_impresoras_funcionalidades` lo asigna a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` manteniendo indices unicos por `empresa_id`.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.

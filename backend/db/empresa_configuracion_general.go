@@ -24,6 +24,8 @@ type EmpresaConfiguracionGeneral struct {
 	CajaNombre                          string  `json:"caja_nombre,omitempty"`
 	CajaCodigo                          string  `json:"caja_codigo,omitempty"`
 	CajaActiva                          bool    `json:"caja_activa"`
+	CajasSimultaneasHabilitadas         bool    `json:"cajas_simultaneas_habilitadas"`
+	MaxCajasSimultaneasEmpresa          int64   `json:"max_cajas_simultaneas_empresa,omitempty"`
 	CajonMonederoHabilitado             bool    `json:"cajon_monedero_habilitado"`
 	AbrirCajonAlPagarCarrito            bool    `json:"abrir_cajon_al_pagar_carrito"`
 	AbrirCajonAlCerrarTransaccion       bool    `json:"abrir_cajon_al_cerrar_transaccion"`
@@ -71,6 +73,8 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 			caja_nombre TEXT,
 			caja_codigo TEXT,
 			caja_activa INTEGER DEFAULT 1,
+			cajas_simultaneas_habilitadas INTEGER DEFAULT 1,
+			max_cajas_simultaneas_empresa INTEGER DEFAULT 0,
 			cajon_monedero_habilitado INTEGER DEFAULT 0,
 			abrir_cajon_al_pagar_carrito INTEGER DEFAULT 0,
 			abrir_cajon_al_cerrar_transaccion INTEGER DEFAULT 0,
@@ -145,6 +149,12 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "caja_activa", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "cajas_simultaneas_habilitadas", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "max_cajas_simultaneas_empresa", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "cajon_monedero_habilitado", "INTEGER DEFAULT 0"); err != nil {
@@ -240,6 +250,8 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		COALESCE(caja_nombre, ''),
 		COALESCE(caja_codigo, ''),
 		COALESCE(caja_activa, 1),
+		COALESCE(cajas_simultaneas_habilitadas, 1),
+		COALESCE(max_cajas_simultaneas_empresa, 0),
 		COALESCE(cajon_monedero_habilitado, 0),
 		COALESCE(abrir_cajon_al_pagar_carrito, 0),
 		COALESCE(abrir_cajon_al_cerrar_transaccion, 0),
@@ -275,6 +287,7 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 	var lectorCodigoBarrasAutofoco int
 	var lectorCodigoBarrasAcumular int
 	var cajaActiva int
+	var cajasSimultaneasHabilitadas int
 	var cajonMonederoHabilitado int
 	var abrirCajonAlPagarCarrito int
 	var abrirCajonAlCerrarTransaccion int
@@ -296,6 +309,8 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		&out.CajaNombre,
 		&out.CajaCodigo,
 		&cajaActiva,
+		&cajasSimultaneasHabilitadas,
+		&out.MaxCajasSimultaneasEmpresa,
 		&cajonMonederoHabilitado,
 		&abrirCajonAlPagarCarrito,
 		&abrirCajonAlCerrarTransaccion,
@@ -340,6 +355,7 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 	out.LectorCodigoBarrasAutofoco = lectorCodigoBarrasAutofoco > 0
 	out.LectorCodigoBarrasAcumular = lectorCodigoBarrasAcumular > 0
 	out.CajaActiva = cajaActiva > 0
+	out.CajasSimultaneasHabilitadas = cajasSimultaneasHabilitadas > 0
 	out.CajonMonederoHabilitado = cajonMonederoHabilitado > 0
 	out.AbrirCajonAlPagarCarrito = abrirCajonAlPagarCarrito > 0
 	out.AbrirCajonAlCerrarTransaccion = abrirCajonAlCerrarTransaccion > 0
@@ -385,6 +401,8 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			caja_nombre,
 			caja_codigo,
 			caja_activa,
+			cajas_simultaneas_habilitadas,
+			max_cajas_simultaneas_empresa,
 			cajon_monedero_habilitado,
 			abrir_cajon_al_pagar_carrito,
 			abrir_cajon_al_cerrar_transaccion,
@@ -408,7 +426,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			observaciones
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?, ?, ?, ?,
 			datetime('now','localtime'),
 			datetime('now','localtime'),
@@ -430,6 +448,8 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			cfg.CajaNombre,
 			cfg.CajaCodigo,
 			configGeneralBoolToInt(cfg.CajaActiva),
+			configGeneralBoolToInt(cfg.CajasSimultaneasHabilitadas),
+			cfg.MaxCajasSimultaneasEmpresa,
 			configGeneralBoolToInt(cfg.CajonMonederoHabilitado),
 			configGeneralBoolToInt(cfg.AbrirCajonAlPagarCarrito),
 			configGeneralBoolToInt(cfg.AbrirCajonAlCerrarTransaccion),
@@ -472,6 +492,8 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		caja_nombre = ?,
 		caja_codigo = ?,
 		caja_activa = ?,
+		cajas_simultaneas_habilitadas = ?,
+		max_cajas_simultaneas_empresa = ?,
 		cajon_monedero_habilitado = ?,
 		abrir_cajon_al_pagar_carrito = ?,
 		abrir_cajon_al_cerrar_transaccion = ?,
@@ -508,6 +530,8 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		cfg.CajaNombre,
 		cfg.CajaCodigo,
 		configGeneralBoolToInt(cfg.CajaActiva),
+		configGeneralBoolToInt(cfg.CajasSimultaneasHabilitadas),
+		cfg.MaxCajasSimultaneasEmpresa,
 		configGeneralBoolToInt(cfg.CajonMonederoHabilitado),
 		configGeneralBoolToInt(cfg.AbrirCajonAlPagarCarrito),
 		configGeneralBoolToInt(cfg.AbrirCajonAlCerrarTransaccion),
@@ -548,6 +572,7 @@ func defaultEmpresaConfiguracionGeneral(empresaID int64) EmpresaConfiguracionGen
 		LectorCodigoBarrasAutofoco:          true,
 		LectorCodigoBarrasAcumular:          true,
 		CajaActiva:                          true,
+		CajasSimultaneasHabilitadas:         true,
 		CajonMonederoMetodo:                 "impresion_pos",
 		CajonMonederoImpresoraFuncionalidad: "cajon_monedero",
 		CajonMonederoComando:                "escpos_pulse",
@@ -578,6 +603,12 @@ func normalizeEmpresaConfiguracionGeneral(cfg EmpresaConfiguracionGeneral) Empre
 	cfg.CajaCodigo = strings.TrimSpace(cfg.CajaCodigo)
 	if len(cfg.CajaCodigo) > 80 {
 		cfg.CajaCodigo = cfg.CajaCodigo[:80]
+	}
+	if cfg.MaxCajasSimultaneasEmpresa < 0 {
+		cfg.MaxCajasSimultaneasEmpresa = 0
+	}
+	if cfg.MaxCajasSimultaneasEmpresa > 99 {
+		cfg.MaxCajasSimultaneasEmpresa = 99
 	}
 	cfg.CajonMonederoMetodo = strings.TrimSpace(strings.ToLower(cfg.CajonMonederoMetodo))
 	switch cfg.CajonMonederoMetodo {

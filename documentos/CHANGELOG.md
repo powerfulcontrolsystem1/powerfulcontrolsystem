@@ -1,3 +1,8 @@
+## [2026-05-19] Cajas multiples por empresa
+- [Configuracion] `empresa_configuracion_general` permite activar/desactivar cajas simultaneas y definir un limite interno por empresa.
+- [Backend] Abrir, reabrir y abrir caja automatica para cobro validan caja activa, cupo por empresa, cupo de licencia y cajas abiertas.
+- [Reportes] `Ver reporte de mi turno` mantiene caja, turno, sucursal y `cierre_caja_id` para no mezclar reportes entre cajas.
+
 ## [2026-05-19] Impresora POS default global
 - [Backend] `empresa_impresoras` centraliza helpers para asegurar `POS_80MM` como impresora activa y predeterminada por empresa.
 - [Operacion] `set_pos80_config -all` aplica el default a todas las empresas activas, asignando `general`, `corte_caja`, `turno_reporte` y `cajon_monedero`.

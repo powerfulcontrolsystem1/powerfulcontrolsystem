@@ -1,3 +1,5 @@
+- 2026-05-19: `Configuracion de empresa` agrega control para activar/desactivar cajas simultaneas y limite interno por empresa; la apertura manual/automatica respeta configuracion y licencia, y `Ver reporte de mi turno` conserva caja/turno/cierre para reportes independientes por caja.
+
 - 2026-05-19: `Impresoras` deja `POS_80MM` como impresora predeterminada global por empresa activa, asignada a caja, reporte de turno, corte de caja, general y cajon monedero; las empresas nuevas intentan crear este default al registrarse.
 
 - 2026-05-18: `Reporte de turno` prioriza `Ticket POS 80mm` como formato predeterminado, bloquea carta/grande cuando la empresa esta configurada en POS, hace que reportes historicos lean la configuracion guardada antes de imprimir y agrega la utilidad `backend/tools/set_pos80_config` para activar impresora POS por empresa.

@@ -1657,7 +1657,7 @@ Ejecucion de validacion actual (2026-04-05):
 3. Toda accion critica debe dejar auditoria con request_id, empresa_id, usuario, accion y timestamp.
 4. Operaciones de cierre/aprobacion deben requerir rol con permiso A.
 5. Eliminaciones funcionales deben implementarse como anulacion/inactivacion cuando aplique trazabilidad legal.
-6. La apertura o reapertura de cajas debe respetar el limite `max_cajas_simultaneas` de la licencia activa de la empresa; si no hay licencia vigente se aplica el default conservador de 2 cajas.
+6. La apertura o reapertura de cajas debe respetar el limite `max_cajas_simultaneas` de la licencia activa de la empresa; si no hay licencia vigente se aplica el default conservador de 2 cajas. La configuracion empresarial puede desactivar cajas simultaneas o fijar un limite interno menor, pero nunca ampliar el cupo de la licencia.
 
 ## Acciones tecnicas siguientes (cierre operativo punto 3)
 

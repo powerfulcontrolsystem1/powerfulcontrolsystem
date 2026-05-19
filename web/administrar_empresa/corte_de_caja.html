@@ -421,6 +421,8 @@
       autoGenerar: String(params.get('auto_generar') || '').trim() === '1',
       cajaNombre: String(params.get('caja_nombre') || '').trim(),
       cajaCodigo: String(params.get('caja_codigo') || '').trim(),
+      cierreCajaID: Number(params.get('cierre_caja_id') || 0),
+      sucursalID: Number(params.get('sucursal_id') || 0),
       usuario: String(params.get('usuario') || '').trim(),
       turno: String(params.get('turno') || '').trim().toLowerCase(),
       desde: String(params.get('desde') || '').trim(),
@@ -602,6 +604,12 @@
     }
     if (pageContext.cajaCodigo) {
       document.getElementById('cajaCodigo').value = pageContext.cajaCodigo;
+    }
+    if (pageContext.cierreCajaID > 0) {
+      automaticCierreCajaID = pageContext.cierreCajaID;
+    }
+    if (pageContext.sucursalID > 0) {
+      automaticCajaSucursalID = pageContext.sucursalID;
     }
     if (pageContext.desde) {
       var desdeValue = toInputDateTimeValue(pageContext.desde);
@@ -825,6 +833,11 @@
     params.set('mi_caja_actual', '1');
     params.set('reportes', selectedReports().join(','));
     if (automaticCierreCajaID > 0) params.set('cierre_caja_id', String(automaticCierreCajaID));
+    var cajaCodigo = String(document.getElementById('cajaCodigo').value || '').trim();
+    var turno = String(document.getElementById('turno').value || '').trim();
+    if (cajaCodigo) params.set('caja_codigo', cajaCodigo);
+    if (turno) params.set('turno', turno);
+    if (automaticCajaSucursalID > 0) params.set('sucursal_id', String(automaticCajaSucursalID));
     return params;
   }
 

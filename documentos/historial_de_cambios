@@ -1,3 +1,11 @@
+2026-05-19: Cajas multiples configurables por empresa.
+- Modulos afectados: `configuracion_empresarial`, `finanzas`, `corte_de_caja`, `carritos`.
+- Base de datos: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para que cada empresa active/desactive cajas multiples y defina un limite interno opcional sin superar el cupo de licencia.
+- Backend: la apertura manual, reapertura y apertura automatica de caja para cobro validan caja activa, configuracion de cajas simultaneas, limite interno y licencia activa antes de crear un nuevo `empresa_cierres_caja`.
+- Reportes: `Ver reporte de mi turno` y `Corte automatico` envian el contexto de caja/turno/sucursal/cierre cuando existe, de modo que cada caja conserve su reporte de turno independiente por `cierre_caja_id`.
+- Frontend: `Configuracion de empresa > Caja y cajon monedero` muestra checks y limite de cajas simultaneas en las paginas de configuracion vigentes.
+- QA: `go test ./db ./handlers` desde `backend` y parseo JS de configuracion/corte de caja.
+
 2026-05-19: Impresora POS 80mm por defecto para todas las empresas.
 - Modulos afectados: `impresoras`, `configuracion_empresarial`, `corte_de_caja`, `reportes`.
 - `backend/db/empresa_impresoras.go` agrega `EnsureEmpresaPOS80Defaults` y `EnsureAllEmpresasPOS80Defaults` para crear/actualizar `POS_80MM` como impresora activa y predeterminada por `empresa_id`.
