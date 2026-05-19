@@ -234,7 +234,13 @@
           var data = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId));
           var formato = String(((data || {}).configuracion || {}).formato_impresion || '').toLowerCase();
           var paperMode = document.getElementById('paperMode');
-          if (paperMode) paperMode.value = formato === 'pos' || formato === 'ticket' ? 'pos' : 'grande';
+          var lockedToPOS = formato === 'pos' || formato === 'ticket';
+          if (paperMode) {
+            paperMode.value = lockedToPOS ? 'pos' : 'grande';
+            Array.prototype.forEach.call(paperMode.options || [], function(option) {
+              option.disabled = lockedToPOS && option.value !== 'pos';
+            });
+          }
           applyPaperMode();
         } catch (_) {
           applyPaperMode();

@@ -1,7 +1,7 @@
 2026-05-18: POS 80mm como formato de prueba del reporte de turno.
 - Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `impresoras`.
 - El reporte de turno/corte toma `Ticket POS 80mm` como formato predeterminado si la empresa no tenia configuracion previa o se restaura la configuracion profesional.
-- `reportes_turnos.html` consulta la configuracion de corte por `empresa_id` antes de imprimir historicos, para respetar POS 80mm sin elegir papel grande.
+- `reportes_turnos.html` consulta la configuracion de corte por `empresa_id` antes de imprimir historicos y bloquea papel grande cuando la empresa esta configurada en POS 80mm.
 - La utilidad operativa `backend/tools/set_pos80_config` permite activar la impresora POS predeterminada y las funcionalidades de caja para una empresa puntual.
 
 2026-05-18: Contraste del efectivo esperado en caja.

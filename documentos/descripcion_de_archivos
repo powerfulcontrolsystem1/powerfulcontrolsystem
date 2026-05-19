@@ -4,7 +4,7 @@
 - `backend/db/corte_caja_configuracion.go`:
 	- cambia el formato predeterminado del reporte de corte de `carta` a `pos` para empresas sin configuracion previa.
 - `web/administrar_empresa/configuracion.html`, `web/administrar_empresa/corte_de_caja.html`, `web/administrar_empresa/reportes_turnos.html`:
-	- priorizan `Ticket POS 80mm` y aplican la configuracion guardada antes de imprimir reportes historicos.
+	- priorizan `Ticket POS 80mm`, aplican la configuracion guardada antes de imprimir reportes historicos y bloquean carta/grande cuando la empresa esta en POS.
 
 2026-05-18 - Contraste efectivo esperado en caja
 - `web/administrar_empresa/corte_de_caja.html`:

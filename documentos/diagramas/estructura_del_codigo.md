@@ -4,7 +4,7 @@
   - `backend/db/corte_caja_configuracion.go` define `pos` como default de `formato_impresion`.
   - `backend/tools/set_pos80_config/main.go` permite aplicar la configuracion POS por `empresa_id` en operacion.
 - Frontend:
-  - `web/administrar_empresa/corte_de_caja.html`, `configuracion.html` y `reportes_turnos.html` priorizan POS 80mm y leen la configuracion de corte para reportes historicos.
+  - `web/administrar_empresa/corte_de_caja.html`, `configuracion.html` y `reportes_turnos.html` priorizan POS 80mm, leen la configuracion de corte para reportes historicos y bloquean carta/grande cuando la empresa esta en POS.
 - Alcance:
   - No cambia permisos ni rutas; reutiliza `/api/empresa/corte_caja/configuracion` y tablas existentes de corte/impresoras.
 

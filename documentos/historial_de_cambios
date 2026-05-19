@@ -1,7 +1,7 @@
 2026-05-18: Configuracion POS 80mm para reporte de turno.
 - Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `impresoras`.
 - `empresa_corte_caja_configuracion` queda con `pos` como formato predeterminado para nuevas configuraciones o restauraciones.
-- `corte_de_caja.html`, `configuracion.html` y `reportes_turnos.html` priorizan `Ticket POS 80mm`; reportes historicos consultan la configuracion guardada antes de imprimir.
+- `corte_de_caja.html`, `configuracion.html` y `reportes_turnos.html` priorizan `Ticket POS 80mm`; cuando la empresa esta configurada en POS se bloquean las opciones carta/grande en las pantallas de reporte.
 - Se agrega `backend/tools/set_pos80_config` para activar una impresora POS 80mm predeterminada por `empresa_id` y asignarla a corte de caja, reporte de turno, general y cajon monedero.
 
 2026-05-18: Contraste de efectivo esperado en caja.

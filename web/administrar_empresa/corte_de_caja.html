@@ -488,7 +488,21 @@
       document.getElementById('modoVista').value = normalizePrintFormat(reporteConfig.formato_impresion);
       applyPrintFormat(reporteConfig.formato_impresion);
     }
+    setPrintFormatLockedFromConfig();
     if (lastReport) renderReport(lastReport);
+  }
+
+  function setPrintFormatLockedFromConfig() {
+    var select = document.getElementById('modoVista');
+    if (!select) return;
+    var lockedToPOS = normalizePrintFormat(reporteConfig.formato_impresion) === 'pos';
+    Array.prototype.forEach.call(select.options || [], function(option) {
+      option.disabled = lockedToPOS && option.value !== 'pos';
+    });
+    if (lockedToPOS) {
+      select.value = 'pos';
+      applyPrintFormat('pos');
+    }
   }
 
   async function cargarConfigReporte() {
