@@ -1,3 +1,7 @@
+- 2026-05-18: `Reporte de turno` prioriza `Ticket POS 80mm` como formato predeterminado, hace que reportes historicos lean la configuracion guardada antes de imprimir y agrega la utilidad `backend/tools/set_pos80_config` para activar impresora POS por empresa.
+
+- 2026-05-18: `Corte de caja` corrige contraste del bloque `Efectivo esperado en caja` en modo oscuro para evitar fondo blanco con texto blanco.
+
 - 2026-05-18: `Reporte de turno` corrige contraste en modo oscuro para que titulos, valores, etiquetas y tablas sean legibles en reportes actuales e historicos.
 
 - 2026-05-18: `Corte de caja` agrega `Cerrar turno e imprimir reporte`, que guarda el cierre, imprime el reporte y cierra la sesion del usuario al finalizar la impresion.

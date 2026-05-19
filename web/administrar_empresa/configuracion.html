@@ -667,9 +667,9 @@
           <div class="form-col">
             <label class="form-label" for="corteFormatoImpresion">Formato por defecto del reporte</label>
             <select id="corteFormatoImpresion" class="form-input">
+              <option value="pos">Ticket POS 80mm</option>
               <option value="carta">Carta completo</option>
               <option value="ejecutivo">Ejecutivo compacto</option>
-              <option value="pos">Ticket POS 80mm</option>
             </select>
           </div>
         </div>
@@ -1266,7 +1266,7 @@
       mostrar_total_servicios: true,
       mostrar_sensores_puertas: true,
       mostrar_auditoria: true,
-      formato_impresion: 'carta',
+      formato_impresion: 'pos',
       estado: 'activo'
     };
     let corteReporteConfigCache = Object.assign({}, corteReporteDefaultConfig);
@@ -1372,7 +1372,7 @@
       const raw = String(value || '').trim().toLowerCase();
       if (raw === 'pos' || raw === 'ticket') return 'pos';
       if (raw === 'ejecutivo' || raw === 'compacto') return 'ejecutivo';
-      return 'carta';
+      return 'pos';
     }
 
     function normalizeCorteReporteConfig(raw) {

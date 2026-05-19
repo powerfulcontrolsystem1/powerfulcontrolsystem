@@ -1,3 +1,20 @@
+## Actualizacion 2026-05-18 (POS 80mm reporte turno)
+
+- Backend/configuracion:
+  - `backend/db/corte_caja_configuracion.go` define `pos` como default de `formato_impresion`.
+  - `backend/tools/set_pos80_config/main.go` permite aplicar la configuracion POS por `empresa_id` en operacion.
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html`, `configuracion.html` y `reportes_turnos.html` priorizan POS 80mm y leen la configuracion de corte para reportes historicos.
+- Alcance:
+  - No cambia permisos ni rutas; reutiliza `/api/empresa/corte_caja/configuracion` y tablas existentes de corte/impresoras.
+
+## Actualizacion 2026-05-18 (contraste efectivo esperado)
+
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` ajusta `.corte-final-note` y sus textos para usar `var(--text)`, `var(--surface-soft)`, `var(--accent)` y `var(--border)`.
+- Alcance:
+  - Cambio visual; no modifica endpoints, tablas ni permisos.
+
 ## Actualizacion 2026-05-18 (contraste reporte de turno oscuro)
 
 - Frontend:

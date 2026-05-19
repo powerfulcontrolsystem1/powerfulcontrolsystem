@@ -1,5 +1,9 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision POS 80mm reporte turno 2026-05-18: el reporte de corte/turno usa `Ticket POS 80mm` como formato predeterminado cuando no hay configuracion previa, los reportes historicos leen `empresa_corte_caja_configuracion.formato_impresion` antes de imprimir, y se agrega la utilidad operativa `backend/tools/set_pos80_config` para dejar una empresa con impresora POS predeterminada y reporte de turno en POS por `empresa_id`.
+
+Revision contraste efectivo esperado reporte turno 2026-05-18: el bloque final `Efectivo esperado en caja` de `web/administrar_empresa/corte_de_caja.html` usa fondo, borde y texto basados en variables del tema para evitar combinaciones blanco sobre blanco en modo oscuro.
+
 Revision contraste reporte turno oscuro 2026-05-18: las vistas de reporte de turno en `corte_de_caja.html` y `reportes_turnos.html` usan variables de tema para titulos, valores, etiquetas, tarjetas y tablas en pantalla. En modo oscuro el texto queda claro y legible; la impresion conserva papel blanco con texto oscuro.
 
 Revision cierre turno imprimir logout 2026-05-18: `web/administrar_empresa/corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte` en Lectura rapida. La accion guarda el cierre del turno con el endpoint existente, imprime el reporte seleccionado y al finalizar la impresion cierra la sesion del usuario mediante `/auth/logout`.

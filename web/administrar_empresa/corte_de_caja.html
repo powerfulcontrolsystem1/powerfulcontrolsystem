@@ -32,7 +32,10 @@
     .corte-caja-report .table { width:100%; min-width:0; table-layout:fixed; }
     .corte-caja-report .table th,
     .corte-caja-report .table td { padding:8px 9px; font-size:.78rem; white-space:normal; overflow-wrap:anywhere; }
-    .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; }
+    .corte-caja-page .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; color:var(--text); background:color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%); border:2px solid color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius:8px; padding:12px; }
+    .corte-caja-page .corte-final-note strong,
+    .corte-caja-page .corte-final-note span { color:var(--text); }
+    .corte-caja-page .corte-final-note span { font-weight:900; }
     .cash-close-stamp { border:1px dashed color-mix(in srgb, var(--border) 80%, var(--muted)); border-radius:8px; padding:10px 12px; font-size:.85rem; color:var(--muted); background:color-mix(in srgb, var(--surface-soft) 80%, var(--card)); }
     .corte-caja-page.print-preview-active { background:var(--bg); color:var(--text); }
     .corte-caja-page.print-preview-active .corte-caja-report {
@@ -73,6 +76,15 @@
     .corte-caja-page.print-preview-active .corte-summary-card strong,
     .corte-caja-page.print-preview-active .turno-report-meta strong,
     .corte-caja-page.print-preview-active .turno-report-company h3 {
+      color:var(--text) !important;
+    }
+    .corte-caja-page.print-preview-active .corte-final-note {
+      background:color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%) !important;
+      color:var(--text) !important;
+      border-color:color-mix(in srgb, var(--accent) 55%, var(--border)) !important;
+    }
+    .corte-caja-page.print-preview-active .corte-final-note strong,
+    .corte-caja-page.print-preview-active .corte-final-note span {
       color:var(--text) !important;
     }
     .corte-caja-page.print-preview-active .corte-caja-report .table-wrap,
@@ -171,7 +183,7 @@
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
-<body class="empresa-subpage corte-caja-page report-print-carta">
+<body class="empresa-subpage corte-caja-page report-print-pos">
   <div class="container">
     <section class="card empresa-section no-print">
       <div class="empresa-section-header">
@@ -229,9 +241,9 @@
               <div class="form-col">
                 <label class="form-label" for="modoVista">Modo de visualizacion</label>
                 <select id="modoVista" class="form-input">
+                  <option value="pos">Ticket POS 80mm</option>
                   <option value="carta">Carta completo</option>
                   <option value="ejecutivo">Ejecutivo compacto</option>
-                  <option value="pos">Ticket POS 80mm</option>
                 </select>
               </div>
               <div class="form-col">
@@ -359,7 +371,7 @@
   var lastReport = null;
   var automaticCierreCajaID = 0;
   var automaticCajaSucursalID = 0;
-  var printFormat = 'carta';
+  var printFormat = 'pos';
   var logoutAfterPrintPending = false;
   var pageContext = resolvePageContext();
   var reporteConfig = {
@@ -398,7 +410,7 @@
     mostrar_total_servicios: true,
     mostrar_sensores_puertas: true,
     mostrar_auditoria: true,
-    formato_impresion: 'carta'
+    formato_impresion: 'pos'
   };
 
   function resolvePageContext() {
@@ -491,7 +503,7 @@
     var v = String(value || '').trim().toLowerCase();
     if (v === 'pos' || v === 'ticket') return 'pos';
     if (v === 'ejecutivo' || v === 'compacto') return 'ejecutivo';
-    return 'carta';
+    return 'pos';
   }
 
   function applyPrintFormat(format) {

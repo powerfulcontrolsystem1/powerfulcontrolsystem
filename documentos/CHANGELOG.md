@@ -1,3 +1,12 @@
+## [2026-05-18] POS 80mm para reporte de turno
+- [Configuracion] El formato predeterminado del reporte de corte pasa a `pos` para empresas sin configuracion previa o restauradas.
+- [Frontend] Corte de caja, configuracion y reportes historicos priorizan `Ticket POS 80mm`; historicos consultan la configuracion por `empresa_id`.
+- [Operacion] Se agrega `backend/tools/set_pos80_config` para activar una impresora POS 80mm predeterminada y asignarla a funcionalidades de caja por empresa.
+
+## [2026-05-18] Contraste de efectivo esperado en caja
+- [UX] `corte_de_caja.html` corrige el bloque final `Efectivo esperado en caja` para evitar fondo blanco con texto blanco en modo oscuro.
+- [Alcance] No cambia backend, permisos ni tablas.
+
 ## [2026-05-18] Contraste del reporte de turno en modo oscuro
 - [UX] `corte_de_caja.html` y `reportes_turnos.html` corrigen textos oscuros del reporte cuando el panel esta en modo oscuro.
 - [Impresion] La salida impresa conserva fondo blanco y texto oscuro.

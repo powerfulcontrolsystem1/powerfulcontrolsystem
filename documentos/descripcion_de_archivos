@@ -1,3 +1,15 @@
+2026-05-18 - Configuracion POS 80mm para turno
+- `backend/tools/set_pos80_config/main.go`:
+	- utilidad operativa para conectar a `DB_EMPRESAS_DSN`, fijar `empresa_corte_caja_configuracion.formato_impresion='pos'`, crear/activar la impresora `POS_80MM` y asignarla a funcionalidades de caja por `empresa_id`.
+- `backend/db/corte_caja_configuracion.go`:
+	- cambia el formato predeterminado del reporte de corte de `carta` a `pos` para empresas sin configuracion previa.
+- `web/administrar_empresa/configuracion.html`, `web/administrar_empresa/corte_de_caja.html`, `web/administrar_empresa/reportes_turnos.html`:
+	- priorizan `Ticket POS 80mm` y aplican la configuracion guardada antes de imprimir reportes historicos.
+
+2026-05-18 - Contraste efectivo esperado en caja
+- `web/administrar_empresa/corte_de_caja.html`:
+	- corrige el bloque `Efectivo esperado en caja` para que no combine fondo blanco con texto blanco en modo oscuro.
+
 2026-05-18 - Contraste reporte de turno en modo oscuro
 - `web/administrar_empresa/corte_de_caja.html`:
 	- ajusta encabezados, tarjetas de resumen, metadatos y tablas del reporte para que usen colores del tema activo en pantalla.

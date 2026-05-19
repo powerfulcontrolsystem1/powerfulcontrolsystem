@@ -1,3 +1,14 @@
+2026-05-18: Configuracion POS 80mm para reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `impresoras`.
+- `empresa_corte_caja_configuracion` queda con `pos` como formato predeterminado para nuevas configuraciones o restauraciones.
+- `corte_de_caja.html`, `configuracion.html` y `reportes_turnos.html` priorizan `Ticket POS 80mm`; reportes historicos consultan la configuracion guardada antes de imprimir.
+- Se agrega `backend/tools/set_pos80_config` para activar una impresora POS 80mm predeterminada por `empresa_id` y asignarla a corte de caja, reporte de turno, general y cajon monedero.
+
+2026-05-18: Contraste de efectivo esperado en caja.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` ajusta `.corte-final-note` para usar colores de tema en fondo, borde y texto.
+- QA: parseo JS y verificacion visual local en modo oscuro con `Efectivo esperado en caja` visible y legible.
+
 2026-05-18: Contraste del reporte de turno en modo oscuro.
 - Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
 - Frontend: `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` dejan de mostrar textos oscuros sobre fondos oscuros en la vista del reporte.

@@ -92,7 +92,7 @@ func DefaultEmpresaCorteCajaConfiguracion(empresaID int64) EmpresaCorteCajaConfi
 		MostrarTotalServicios:  true,
 		MostrarSensoresPuertas: true,
 		MostrarAuditoria:       true,
-		FormatoImpresion:       "carta",
+		FormatoImpresion:       "pos",
 		Estado:                 "activo",
 	})
 }
@@ -140,7 +140,7 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 			mostrar_total_servicios INTEGER DEFAULT 1,
 			mostrar_sensores_puertas INTEGER DEFAULT 1,
 			mostrar_auditoria INTEGER DEFAULT 1,
-			formato_impresion TEXT DEFAULT 'carta',
+			formato_impresion TEXT DEFAULT 'pos',
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -193,7 +193,7 @@ func EnsureEmpresaCorteCajaConfiguracionSchema(dbConn *sql.DB) error {
 		{"mostrar_total_servicios", "INTEGER DEFAULT 1"},
 		{"mostrar_sensores_puertas", "INTEGER DEFAULT 1"},
 		{"mostrar_auditoria", "INTEGER DEFAULT 1"},
-		{"formato_impresion", "TEXT DEFAULT 'carta'"},
+		{"formato_impresion", "TEXT DEFAULT 'pos'"},
 		{"fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"},
 		{"usuario_creador", "TEXT"},
 		{"estado", "TEXT DEFAULT 'activo'"},
@@ -254,7 +254,7 @@ func GetEmpresaCorteCajaConfiguracion(dbConn *sql.DB, empresaID int64) (*Empresa
 		COALESCE(mostrar_total_servicios, 1),
 		COALESCE(mostrar_sensores_puertas, 1),
 		COALESCE(mostrar_auditoria, 1),
-		COALESCE(formato_impresion, 'carta'),
+		COALESCE(formato_impresion, 'pos'),
 		COALESCE(fecha_creacion, ''),
 		COALESCE(fecha_actualizacion, ''),
 		COALESCE(usuario_creador, ''),
@@ -499,7 +499,7 @@ func normalizeEmpresaCorteCajaConfiguracion(cfg EmpresaCorteCajaConfiguracion) E
 			cfg.FormatoImpresion = "ejecutivo"
 		}
 	default:
-		cfg.FormatoImpresion = "carta"
+		cfg.FormatoImpresion = "pos"
 	}
 	cfg.Estado = strings.TrimSpace(strings.ToLower(cfg.Estado))
 	if cfg.Estado == "" {

@@ -104,8 +104,8 @@
           <option value="txt">TXT</option>
         </select>
         <select id="paperMode" class="form-input" aria-label="Papel de impresion">
-          <option value="grande">Papel grande</option>
           <option value="pos">Papel POS 80mm</option>
+          <option value="grande">Papel grande</option>
         </select>
       </div>
       <p id="msg" class="form-help"></p>
@@ -210,7 +210,7 @@
         return p;
       }
       function currentPaperMode() {
-        return String((document.getElementById('paperMode') || {}).value || 'grande') === 'pos' ? 'pos' : 'grande';
+        return String((document.getElementById('paperMode') || {}).value || 'pos') === 'grande' ? 'grande' : 'pos';
       }
       function applyPaperMode() {
         var mode = currentPaperMode();
@@ -227,6 +227,18 @@
         style.textContent = mode === 'pos'
           ? '@media print{@page{size:80mm auto;margin:4mm}}'
           : '@media print{@page{size:letter;margin:12mm}}';
+      }
+      async function loadPaperModeFromConfig() {
+        if (!empresaId) return;
+        try {
+          var data = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId));
+          var formato = String(((data || {}).configuracion || {}).formato_impresion || '').toLowerCase();
+          var paperMode = document.getElementById('paperMode');
+          if (paperMode) paperMode.value = formato === 'pos' || formato === 'ticket' ? 'pos' : 'grande';
+          applyPaperMode();
+        } catch (_) {
+          applyPaperMode();
+        }
       }
       function renderRows() {
         var body = document.getElementById('turnosBody');
@@ -375,7 +387,9 @@
         });
       });
       applyPaperMode();
-      loadTurnos().then(function(){
+      loadPaperModeFromConfig().finally(function(){
+        return loadTurnos();
+      }).then(function(){
         var direct = Number(new URLSearchParams(window.location.search).get('turno_id') || 0);
         if (direct > 0) loadPreview(direct).catch(function(){});
       });
