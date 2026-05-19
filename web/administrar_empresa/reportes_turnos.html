@@ -13,36 +13,35 @@
     .turnos-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end;margin-top:14px}
     .turnos-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
     .turnos-table-actions{display:flex;flex-wrap:wrap;gap:6px}
-    .turnos-preview{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:22px;margin:14px auto 0;max-width:8.5in;min-height:11in}
-    .turnos-preview-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
-    .turnos-preview-head h2{margin:0;font-size:1.35rem;color:var(--text)}
+    .turnos-preview{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:18px;margin:14px auto 0;max-width:8.5in;min-height:11in;box-shadow:none}
+    .turnos-preview-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:2px solid var(--border);padding-bottom:12px;margin-bottom:12px;background:var(--surface-soft);margin:-18px -18px 12px;padding:16px 18px 12px}
+    .turnos-preview-head h2{margin:0 0 6px;font-size:1.35rem;color:var(--text)}
     .turnos-preview-head p{margin:5px 0 0;color:var(--muted)}
-    .turnos-preview-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0}
-    .turnos-preview-meta div,.turnos-summary-card{border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-soft);color:var(--text)}
-    .turnos-preview-meta span,.turnos-summary-card span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:800}
-    .turnos-preview-meta strong,.turnos-summary-card strong{display:block;margin-top:3px;color:var(--text)}
-    .turnos-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0}
-    .turnos-preview .table-wrap{overflow-x:visible}
-    .turnos-preview table{width:100%;min-width:0;table-layout:fixed}
-    .turnos-preview th,.turnos-preview td{white-space:normal;overflow-wrap:anywhere;font-size:.78rem;padding:8px}
+    .turnos-preview-meta,.turnos-summary-grid,.turnos-detail-list{display:flex;flex-direction:column;gap:0;margin:12px 0;border-top:1px solid var(--border)}
+    .turnos-preview-meta div,.turnos-summary-row,.turnos-detail-row{display:grid;grid-template-columns:minmax(112px,.42fr) minmax(0,1fr);gap:10px;align-items:start;padding:7px 0;border-bottom:1px solid var(--border);background:transparent;color:var(--text)}
+    .turnos-summary-row{grid-template-columns:minmax(142px,.48fr) minmax(0,1fr)}
+    .turnos-preview-meta span,.turnos-summary-row span,.turnos-detail-row span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:800}
+    .turnos-preview-meta strong,.turnos-summary-row strong,.turnos-detail-row strong{display:block;color:var(--text);overflow-wrap:anywhere}
+    .turnos-detail-list{border-top:0;gap:8px}
+    .turnos-detail-item{break-inside:avoid;border-top:1px solid var(--border)}
+    .turnos-detail-item:first-child{border-top:0}
+    .turnos-detail-empty{padding:9px 0;color:var(--muted)}
+    .turnos-preview .turnos-report-panel{margin:12px 0 0;border:1px solid var(--border);border-radius:8px;background:var(--card);padding:12px}
+    .turnos-preview .turnos-report-panel h3{margin:0 0 8px;color:var(--text);font-size:1rem}
+    .turnos-preview .turnos-detail-line{display:block;color:var(--text);font-weight:600;line-height:1.45;text-align:left}
+    .turnos-preview .turnos-detail-line strong{color:var(--muted);font-weight:800}
     .turnos-preview.is-pos{max-width:80mm;min-height:auto;padding:4mm;font-size:11px}
     .turnos-preview.is-pos .turnos-preview-head{display:block;margin-bottom:8px;padding-bottom:8px}
     .turnos-preview.is-pos .turnos-preview-head h2{font-size:15px}
     .turnos-preview.is-pos .turnos-preview-head p,
     .turnos-preview.is-pos .turnos-preview-meta strong,
-    .turnos-preview.is-pos .turnos-summary-card strong{font-size:10px}
-    .turnos-preview.is-pos .turnos-preview-meta,
-    .turnos-preview.is-pos .turnos-summary-grid{display:block}
+    .turnos-preview.is-pos .turnos-summary-row strong,
+    .turnos-preview.is-pos .turnos-detail-row strong{font-size:10px}
     .turnos-preview.is-pos .turnos-preview-meta div,
-    .turnos-preview.is-pos .turnos-summary-card{margin-bottom:6px;padding:6px}
-    .turnos-preview.is-pos table thead{display:none}
-    .turnos-preview.is-pos table,
-    .turnos-preview.is-pos tbody,
-    .turnos-preview.is-pos tr,
-    .turnos-preview.is-pos td{display:block;width:100%}
-    .turnos-preview.is-pos tr{border:1px solid var(--border);margin-bottom:6px;padding:4px;break-inside:avoid}
-    .turnos-preview.is-pos td{border:0!important;padding:2px 0!important;font-size:10px!important}
-    .turnos-preview.is-pos td::before{content:attr(data-label) ": ";font-weight:800;color:var(--muted)}
+    .turnos-preview.is-pos .turnos-summary-row,
+    .turnos-preview.is-pos .turnos-detail-row{grid-template-columns:minmax(96px,.44fr) minmax(0,1fr);gap:6px;padding:4px 0}
+    .turnos-preview.is-pos .turnos-preview-head{margin:0 0 8px;padding:0 0 8px;background:#fff}
+    .turnos-preview.is-pos .turnos-report-panel{margin:8px 0 0;padding:8px 0;border-left:0;border-right:0;border-radius:0;background:#fff}
     .turnos-email-box{display:none;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;margin-top:12px}
     .turnos-email-box.is-open{display:block}
     .turnos-email-grid{display:grid;grid-template-columns:minmax(220px,1fr) 130px auto;gap:10px;align-items:end}
@@ -58,13 +57,11 @@
       #turnoPreview *{color:#111827 !important;box-shadow:none !important;text-shadow:none !important}
       #turnoPreview .turnos-preview-head p,
       #turnoPreview .turnos-preview-meta span,
-      #turnoPreview .turnos-summary-card span{color:#475569 !important}
+      #turnoPreview .turnos-summary-row span,
+      #turnoPreview .turnos-detail-row span{color:#475569 !important}
       #turnoPreview .turnos-preview-meta div,
-      #turnoPreview .turnos-summary-card,
-      #turnoPreview .table-wrap,
-      #turnoPreview th,
-      #turnoPreview td{background:#fff !important;border-color:#cbd5e1 !important}
-      #turnoPreview thead th{background:#f8fafc !important}
+      #turnoPreview .turnos-summary-row,
+      #turnoPreview .turnos-detail-row{background:#fff !important;border-color:#cbd5e1 !important}
       body.turno-paper-pos{width:80mm}
       body.turno-paper-pos #turnoPreview{width:72mm;max-width:72mm;padding:0;font-size:10px}
     }
@@ -287,7 +284,16 @@
         }
       }
       function summaryCard(label, value) {
-        return '<article class="turnos-summary-card"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></article>';
+        return '<div class="turnos-summary-row"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+      }
+      function detailRows(columns, rows, emptyText) {
+        if (!Array.isArray(rows) || !rows.length) return '<div class="turnos-detail-empty">' + escapeHtml(emptyText) + '</div>';
+        return '<section class="turnos-report-panel turnos-detail-list">' + rows.map(function(row){
+          return '<article class="turnos-detail-item">' + columns.map(function(col){
+            var value = typeof col.value === 'function' ? col.value(row) : row[col.key];
+            return '<span class="turnos-detail-line"><strong>' + escapeHtml(col.label) + ':</strong> ' + escapeHtml(value) + '</span>';
+          }).join('') + '</article>';
+        }).join('') + '</section>';
       }
       function renderPreview(payload) {
         applyPaperMode();
@@ -296,20 +302,24 @@
         var cur = r.moneda || 'COP';
         var ventas = Array.isArray(payload.ventas) ? payload.ventas : [];
         document.getElementById('turnoPreview').innerHTML = [
-          '<div class="turnos-preview-head"><div><h2>Reporte de turno - ' + escapeHtml(r.empresa_nombre || 'Empresa') + '</h2><p>' + escapeHtml(r.empresa_nit ? ('NIT: ' + r.empresa_nit) : '') + '</p></div><strong>Turno #' + escapeHtml(caja.id || selectedTurnoId) + '</strong></div>',
-          '<div class="turnos-preview-meta">',
+          '<header class="turnos-preview-head"><div><h2>Reporte de turno</h2><p>' + escapeHtml(r.empresa_nombre || 'Empresa') + ' | ' + escapeHtml(r.empresa_nit ? ('NIT: ' + r.empresa_nit) : ('Empresa ID ' + String(empresaId || ''))) + '</p></div><strong>Turno #' + escapeHtml(caja.id || selectedTurnoId) + '</strong></header>',
+          '<section class="turnos-report-panel"><h3>Datos del turno</h3><div class="turnos-preview-meta">',
           '<div><span>Fecha y hora</span><strong>' + escapeHtml(fmtDate(payload.generado_en || r.hasta)) + '</strong></div>',
           '<div><span>Usuario</span><strong>' + escapeHtml(r.usuario_filtro || caja.usuario || '') + '</strong></div>',
           '<div><span>Caja</span><strong>' + escapeHtml(caja.caja_codigo || '') + '</strong></div>',
           '<div><span>Consecutivo</span><strong>TURN-' + escapeHtml(String(caja.id || selectedTurnoId).padStart(6, '0')) + '</strong></div>',
-          '</div>',
+          '</div></section>',
           '<h3>Detalle de ventas</h3>',
-          '<div class="table-wrap"><table class="table table-full"><thead><tr><th>Entrada</th><th>Salida</th><th>Numero venta</th><th>Estacion</th><th>Cajero</th><th>Medio</th><th>Total</th></tr></thead><tbody>',
-          ventas.length ? ventas.map(function(v){
-            return '<tr><td data-label="Entrada">' + escapeHtml(fmtDate(v.fecha_entrada || v.fecha_pago)) + '</td><td data-label="Salida">' + escapeHtml(fmtDate(v.fecha_salida || v.fecha_pago)) + '</td><td data-label="Numero venta">' + escapeHtml(v.codigo || '') + '</td><td data-label="Estacion">' + escapeHtml(v.estacion_nombre || v.nombre || '') + '</td><td data-label="Cajero">' + escapeHtml(v.cajero || '') + '</td><td data-label="Medio">' + escapeHtml(v.metodo_pago || '') + '</td><td data-label="Total">' + escapeHtml(money(v.total_pagado || v.total || 0, v.moneda || cur)) + '</td></tr>';
-          }).join('') : '<tr><td colspan="7">Sin ventas registradas en este turno.</td></tr>',
-          '</tbody></table></div>',
-          '<div class="turnos-summary-grid">',
+          detailRows([
+            { label:'Entrada', value:function(v){ return fmtDate(v.fecha_entrada || v.fecha_pago); } },
+            { label:'Salida', value:function(v){ return fmtDate(v.fecha_salida || v.fecha_pago); } },
+            { label:'Numero venta', key:'codigo' },
+            { label:'Estacion', value:function(v){ return v.estacion_nombre || v.nombre || ''; } },
+            { label:'Cajero', key:'cajero' },
+            { label:'Medio', key:'metodo_pago' },
+            { label:'Total', value:function(v){ return money(v.total_pagado || v.total || 0, v.moneda || cur); } }
+          ], ventas, 'Sin ventas registradas en este turno.'),
+          '<section class="turnos-report-panel"><h3>Resumen financiero</h3><div class="turnos-summary-grid">',
           summaryCard('Ingresos', money(r.ingresos_financieros || 0, cur)),
           summaryCard('Egresos', money(r.egresos_financieros || 0, cur)),
           summaryCard('Cantidad de ventas', String(r.ventas_cantidad || 0)),
@@ -321,7 +331,7 @@
           summaryCard('Total tarjeta debito', money(r.debito_ventas || 0, cur)),
           summaryCard('Total otros', money(r.otros_medios_ventas || 0, cur)),
           summaryCard('Debe haber en caja', money(r.efectivo_esperado_caja || 0, cur)),
-          '</div>'
+          '</div></section>'
         ].join('');
       }
       async function loadPreview(id) {

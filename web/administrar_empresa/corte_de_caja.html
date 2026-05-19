@@ -38,17 +38,30 @@
     .cash-kpi strong { display:block; font-size:1.2rem; margin-top:8px; }
     .cash-kpi small { display:block; opacity:.75; margin-top:4px; }
     .corte-report-section[hidden], .corte-summary-grid[hidden] { display:none !important; }
-    .turno-report-company { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:14px; border:1px solid var(--border); border-radius:8px; background:var(--surface-soft); margin-bottom:14px; }
+    .corte-caja-report.turno-operativo-sheet { margin-top:18px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); box-shadow:none; overflow:hidden; }
+    .corte-caja-report .corte-report-header { padding:16px 18px 12px; border-bottom:2px solid var(--border); margin-bottom:0; background:var(--surface-soft); }
+    .corte-caja-report .corte-report-header h2 { margin:0 0 6px; color:var(--text); font-size:1.22rem; }
+    .corte-caja-report .corte-report-header .form-help { color:var(--muted); margin:0; }
+    .corte-caja-report .corte-report-badge { align-self:flex-start; border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:8px; padding:8px 10px; font-size:.82rem; }
+    .turno-report-company { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:12px 18px; border-bottom:1px solid var(--border); background:var(--card); margin:0; }
     .turno-report-company h3 { margin:0; color:var(--text); font-size:1.1rem; }
     .turno-report-company p { margin:4px 0 0; color:var(--muted); font-size:.86rem; }
-    .turno-report-meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
-    .turno-report-meta div { border:1px solid var(--border); border-radius:8px; padding:9px 10px; background:var(--card); }
-    .turno-report-meta span { display:block; color:var(--muted); font-size:.68rem; font-weight:800; text-transform:uppercase; }
-    .turno-report-meta strong { display:block; margin-top:3px; color:var(--text); font-size:.86rem; overflow-wrap:anywhere; }
-    .corte-caja-report .table-wrap { overflow-x:visible; }
-    .corte-caja-report .table { width:100%; min-width:0; table-layout:fixed; }
-    .corte-caja-report .table th,
-    .corte-caja-report .table td { padding:8px 9px; font-size:.78rem; white-space:normal; overflow-wrap:anywhere; }
+    .turno-report-meta,.corte-summary-grid,.turno-detail-list { display:flex; flex-direction:column; gap:0; margin:0; border-top:0; }
+    .turno-report-meta div,.corte-summary-row,.turno-detail-row { display:grid; grid-template-columns:minmax(108px,.42fr) minmax(0,1fr); gap:10px; align-items:start; padding:7px 0; border-bottom:1px solid var(--border); background:transparent; }
+    .corte-summary-row { grid-template-columns:minmax(128px,.45fr) minmax(0,1fr) minmax(100px,.55fr); }
+    .corte-caja-report .turno-report-panel { margin:12px 18px 0; border:1px solid var(--border); border-radius:8px; background:var(--card); padding:12px; }
+    .corte-caja-report .turno-report-panel h3 { margin:0 0 8px; color:var(--text); font-size:1rem; }
+    .corte-caja-report .turno-report-panel:last-child { margin-bottom:18px; }
+    .corte-caja-report .corte-report-section .section-heading { margin:14px 18px 0; color:var(--text); font-size:1rem; }
+    .corte-caja-report .turno-detail-line { display:block; color:var(--text); font-weight:600; line-height:1.42; text-align:left; }
+    .corte-caja-report .turno-detail-line strong { color:var(--muted); font-weight:800; }
+    .turno-report-meta span,.corte-summary-row span,.turno-detail-row span { display:block; color:var(--muted); font-size:.72rem; font-weight:800; text-transform:uppercase; }
+    .turno-report-meta strong,.corte-summary-row strong,.turno-detail-row strong { display:block; color:var(--text); font-size:.9rem; overflow-wrap:anywhere; }
+    .corte-summary-row small { color:var(--muted); font-size:.78rem; line-height:1.35; }
+    .turno-detail-list { border-top:0; gap:8px; }
+    .turno-detail-item { break-inside:avoid; border-top:1px solid var(--border); }
+    .turno-detail-item:first-child { border-top:0; }
+    .turno-detail-empty { padding:9px 0; color:var(--muted); }
     .corte-caja-page .corte-final-note { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:center; color:var(--text); background:color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%); border:2px solid color-mix(in srgb, var(--accent) 55%, var(--border)); border-radius:8px; padding:12px; }
     .corte-caja-page .corte-final-note strong,
     .corte-caja-page .corte-final-note span { color:var(--text); }
@@ -79,18 +92,21 @@
     .corte-caja-page.print-preview-active .corte-report-badge,
     .corte-caja-page.print-preview-active .turno-report-company,
     .corte-caja-page.print-preview-active .turno-report-meta div,
-    .corte-caja-page.print-preview-active .corte-summary-card {
-      background:var(--surface-soft) !important;
+    .corte-caja-page.print-preview-active .corte-summary-row,
+    .corte-caja-page.print-preview-active .turno-detail-row {
+      background:transparent !important;
       color:var(--text) !important;
       border-color:var(--border) !important;
     }
-    .corte-caja-page.print-preview-active .corte-summary-card span,
-    .corte-caja-page.print-preview-active .corte-summary-card small,
+    .corte-caja-page.print-preview-active .corte-summary-row span,
+    .corte-caja-page.print-preview-active .corte-summary-row small,
+    .corte-caja-page.print-preview-active .turno-detail-row span,
     .corte-caja-page.print-preview-active .turno-report-meta span,
     .corte-caja-page.print-preview-active .turno-report-company p {
       color:var(--muted) !important;
     }
-    .corte-caja-page.print-preview-active .corte-summary-card strong,
+    .corte-caja-page.print-preview-active .corte-summary-row strong,
+    .corte-caja-page.print-preview-active .turno-detail-row strong,
     .corte-caja-page.print-preview-active .turno-report-meta strong,
     .corte-caja-page.print-preview-active .turno-report-company h3 {
       color:var(--text) !important;
@@ -104,17 +120,6 @@
     .corte-caja-page.print-preview-active .corte-final-note span {
       color:var(--text) !important;
     }
-    .corte-caja-page.print-preview-active .corte-caja-report .table-wrap,
-    .corte-caja-page.print-preview-active .corte-caja-report .table td {
-      background:var(--surface) !important;
-      color:var(--text) !important;
-      border-color:var(--border) !important;
-    }
-    .corte-caja-page.print-preview-active .corte-caja-report .table th {
-      background:var(--surface-soft) !important;
-      color:var(--muted) !important;
-      border-color:var(--border) !important;
-    }
     .corte-caja-page.print-preview-active.report-print-pos .corte-caja-report {
       width:80mm;
       max-width:80mm;
@@ -125,6 +130,8 @@
     .corte-caja-page.print-preview-active.report-print-pos .corte-report-header {
       display:block;
       margin-bottom:8px;
+      padding:0 0 8px;
+      background:#fff;
     }
     .corte-caja-page.print-preview-active.report-print-pos .corte-report-header h2 {
       font-size:15px;
@@ -132,51 +139,34 @@
     .corte-caja-page.print-preview-active.report-print-pos #reportMeta,
     .corte-caja-page.print-preview-active.report-print-pos .turno-report-company p,
     .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta strong,
-    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-card small {
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row small,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-row strong {
       font-size:10px;
     }
-    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
-    .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta,
-    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-grid {
-      display:block;
-    }
-    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
     .corte-caja-page.print-preview-active.report-print-pos .turno-report-meta div,
-    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-card {
-      margin-bottom:6px;
-      padding:6px;
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-detail-row {
+      grid-template-columns:minmax(96px,.44fr) minmax(0,1fr);
+      gap:6px;
+      padding:4px 0;
     }
-    .corte-caja-page.print-preview-active.report-print-pos .table thead {
-      display:none;
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row small {
+      grid-column:1 / -1;
     }
-    .corte-caja-page.print-preview-active.report-print-pos .table,
-    .corte-caja-page.print-preview-active.report-print-pos .table tbody,
-    .corte-caja-page.print-preview-active.report-print-pos .table tr,
-    .corte-caja-page.print-preview-active.report-print-pos .table td {
-      display:block;
-      width:100%;
-    }
-    .corte-caja-page.print-preview-active.report-print-pos .table tr {
-      border:1px solid #cbd5e1;
-      margin-bottom:6px;
-      padding:4px;
-      break-inside:avoid;
-    }
-    .corte-caja-page.print-preview-active.report-print-pos .table td {
-      border:0 !important;
-      padding:2px 0 !important;
-      font-size:10px !important;
-    }
-    .corte-caja-page.print-preview-active.report-print-pos .table td::before {
-      content:attr(data-label) ": ";
-      font-weight:800;
-      color:var(--muted);
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
+    .corte-caja-page.print-preview-active.report-print-pos .turno-report-panel {
+      margin:8px 0 0;
+      padding:8px 0;
+      border-left:0;
+      border-right:0;
+      border-radius:0;
+      background:#fff;
     }
     .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="items"],
     .corte-caja-page.print-preview-active.report-print-ejecutivo .corte-report-section[data-section="sensores"] {
       display:none !important;
     }
-    @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .cash-close-kpis, .turno-report-meta { grid-template-columns:1fr; } .turno-report-company { grid-template-columns:1fr; } }
+    @media (max-width: 860px) { .cash-close-hero { grid-template-columns:1fr; } .turno-report-company { grid-template-columns:1fr; } .corte-summary-row { grid-template-columns:minmax(108px,.45fr) minmax(0,1fr); } .corte-summary-row small { grid-column:1 / -1; } }
     @media print {
       .no-print { display:none !important; }
       body.corte-caja-page { background:white !important; color:#111827 !important; }
@@ -189,11 +179,8 @@
       .corte-caja-report .turno-report-meta span { color:#475569 !important; }
       .corte-caja-report .turno-report-company,
       .corte-caja-report .turno-report-meta div,
-      .corte-caja-report .corte-summary-card,
-      .corte-caja-report .table-wrap,
-      .corte-caja-report .table th,
-      .corte-caja-report .table td { background:#fff !important; border-color:#cbd5e1 !important; }
-      .corte-caja-report .table thead th { background:#f8fafc !important; }
+      .corte-caja-report .corte-summary-row,
+      .corte-caja-report .turno-detail-row { background:#fff !important; border-color:#cbd5e1 !important; }
       .cash-close-stamp { break-inside:avoid; }
       .corte-caja-page.report-print-pos .corte-caja-report { width:72mm !important; max-width:72mm !important; padding:0 !important; }
     }
@@ -298,13 +285,13 @@
       </div>
     </section>
 
-    <section id="report" class="card empresa-section corte-caja-report">
+    <section id="report" class="empresa-section corte-caja-report turno-operativo-sheet">
       <div class="corte-report-header">
         <div>
           <h2 id="reportTitle" class="empresa-section-title">Reporte de turno</h2>
           <p id="reportMeta" class="form-help">Genera un corte para ver los datos del turno.</p>
         </div>
-        <div class="corte-report-badge">Reporte de turno</div>
+        <div class="corte-report-badge"><strong>Reporte de turno</strong></div>
       </div>
 
       <div id="turnoHeaderBox"></div>
@@ -697,17 +684,19 @@
     box.hidden = false;
     var empresaNombre = resumen.empresa_nombre || 'Empresa';
     var nit = resumen.empresa_nit ? ('NIT: ' + resumen.empresa_nit) : ('Empresa ID: ' + (resumen.empresa_id || empresaId || ''));
-    var tipo = resumen.empresa_tipo ? ('Tipo: ' + resumen.empresa_tipo) : '';
+    var tipo = resumen.empresa_tipo ? resumen.empresa_tipo : 'No definido';
+    var caja = payload && payload.caja_actual ? payload.caja_actual : {};
     var companyHtml = cfg.mostrar_empresa_datos
-      ? '<section class="turno-report-company"><div><h3>' + escapeHtml(empresaNombre) + '</h3><p>' + escapeHtml([nit, tipo].filter(Boolean).join(' | ')) + '</p></div><strong>Reporte de turno</strong></section>'
+      ? '<section class="turno-report-company"><div><h3>' + escapeHtml(empresaNombre) + '</h3><p>' + escapeHtml([nit, 'Tipo: ' + tipo].filter(Boolean).join(' | ')) + '</p></div><strong>Reporte operativo</strong></section>'
       : '';
     var meta = [];
     if (cfg.mostrar_fecha_hora) meta.push(['Fecha y hora', formatDateTime(payload.generado_en || resumen.hasta)]);
     if (cfg.mostrar_usuario_reporte) meta.push(['Usuario', resumen.usuario_filtro || (payload.caja_actual && payload.caja_actual.usuario) || 'Todos']);
+    meta.push(['Caja', (caja.caja_codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL')]);
     if (cfg.mostrar_consecutivo) meta.push(['Consecutivo', reportConsecutivo(payload)]);
-    var metaHtml = meta.length ? '<section class="turno-report-meta">' + meta.map(function(row) {
+    var metaHtml = meta.length ? '<section class="turno-report-panel"><h3>Datos del turno</h3><div class="turno-report-meta">' + meta.map(function(row) {
       return '<div><span>' + escapeHtml(row[0]) + '</span><strong>' + escapeHtml(row[1]) + '</strong></div>';
-    }).join('') + '</section>' : '';
+    }).join('') + '</div></section>' : '';
     box.innerHTML = companyHtml + metaHtml;
   }
 
@@ -739,9 +728,9 @@
     add(cfg.mostrar_caja_esperada, 'Debe haber en caja', money(resumen.efectivo_esperado_caja || 0, cur), 'Efectivo esperado');
     add(cfg.mostrar_diferencia_caja, 'Diferencia caja', money(diferencia, cur), 'Teorica menos fisica');
     if (!cards.length) cards.push(['Resumen', 'Sin metricas activas', 'Activa checks en configuracion']);
-    document.getElementById('summaryGrid').innerHTML = cards.map(function(card) {
-      return '<article class="corte-summary-card"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></article>';
-    }).join('');
+    document.getElementById('summaryGrid').innerHTML = '<section class="turno-report-panel"><h3>Resumen financiero</h3>' + cards.map(function(card) {
+      return '<div class="corte-summary-row"><span>' + escapeHtml(card[0]) + '</span><strong>' + escapeHtml(card[1]) + '</strong><small>' + escapeHtml(card[2]) + '</small></div>';
+    }).join('') + '</section>';
     document.getElementById('efectivoFinal').textContent = money(resumen.efectivo_esperado_caja || 0, cur);
     updateQuickKpis(resumen);
   }
@@ -749,19 +738,17 @@
   function renderTable(boxId, columns, rows, emptyText) {
     var box = document.getElementById(boxId);
     if (!Array.isArray(rows) || !rows.length) {
-      box.className = 'table-wrap form-help';
+      box.className = 'turno-detail-empty form-help';
       box.textContent = emptyText;
       return;
     }
-    box.className = 'table-wrap';
-    var html = '<table class="table table-full"><thead><tr>' + columns.map(function(c) { return '<th>' + escapeHtml(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>';
-    rows.forEach(function(row) {
-      html += '<tr>' + columns.map(function(c) {
+    box.className = 'turno-report-panel turno-detail-list';
+    var html = rows.map(function(row) {
+      return '<article class="turno-detail-item">' + columns.map(function(c) {
         var value = typeof c.value === 'function' ? c.value(row) : row[c.key];
-        return '<td data-label="' + escapeHtml(c.label) + '">' + escapeHtml(value) + '</td>';
-      }).join('') + '</tr>';
-    });
-    html += '</tbody></table>';
+        return '<span class="turno-detail-line"><strong>' + escapeHtml(c.label) + ':</strong> ' + escapeHtml(value) + '</span>';
+      }).join('') + '</article>';
+    }).join('');
     box.innerHTML = html;
   }
 

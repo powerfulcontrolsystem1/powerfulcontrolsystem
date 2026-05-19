@@ -1,3 +1,13 @@
+## [2026-05-19] Reporte de turno profesional compacto
+- [UX] El reporte de turno actual e historico queda como informe operativo profesional: compacto, completo, con datos ordenados fila a fila y sin cuadriculas.
+- [Impresion] Se mantiene compatibilidad con POS 80mm y papel grande.
+- [Ventas] Las ventas y facturas electronicas conservan el estilo visual de factura electronica en POS y carta.
+- [Alcance] No cambia backend, permisos ni endpoints.
+
+## [2026-05-19] Titulo compacto del login
+- [UX] `Powerful Control System` queda mas compacto, en una sola fila y con fuente mas cuadrada.
+- [Alcance] No cambia autenticacion, permisos ni backend.
+
 ## [2026-05-19] Instalar app desde login
 - [UX] El login agrega el boton `Instalar app` junto al acceso de inicio.
 - [PWA] Se agregan manifest, service worker e iconos para que Chrome/Edge/Android puedan instalar la app y crear acceso.

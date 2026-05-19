@@ -1,3 +1,15 @@
+2026-05-19: Reporte de turno profesional compacto.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- El reporte de turno actual e historico queda como informe operativo profesional, compacto y completo, con encabezado, datos del turno, resumen y detalle fila a fila sin cuadriculas.
+- Las ventas y facturas electronicas conservan el estilo de representacion grafica de factura electronica en POS y carta.
+- Se conservan los mismos datos, checks de configuracion, endpoints y formatos POS/carta del reporte.
+- Sin cambios de backend, permisos ni tablas.
+
+2026-05-19: Titulo compacto del login.
+- Modulos afectados: `login`, `frontend_ux`.
+- El titulo `Powerful Control System` del login de administradores queda mas pequeno, en una sola fila y con una familia visual mas cuadrada.
+- Sin cambios de autenticacion, permisos ni endpoints.
+
 2026-05-19: Instalacion de app desde login.
 - Modulos afectados: `login`, `frontend_ux`, `operacion_sistema`.
 - El login de administradores agrega el boton `Instalar app`, que usa el prompt nativo del navegador cuando esta disponible.

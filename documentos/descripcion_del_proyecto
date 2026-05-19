@@ -1,5 +1,9 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision reporte turno profesional compacto 2026-05-19: `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` dejan el cierre de turno como reporte operativo profesional, compacto y completo, con encabezado, datos del turno, resumen y detalle ordenados fila a fila sin apariencia de factura electronica fiscal. Las vistas de venta y factura electronica mantienen el formato `factura-print-sheet` para POS y carta. No cambia backend, permisos, endpoints ni tablas.
+
+Revision titulo login compacto 2026-05-19: el encabezado `Powerful Control System` de `web/login.html` se reduce, queda forzado en una sola fila y cambia a una familia tipografica mas cuadrada desde `web/estilos.css`. Es un ajuste visual sin cambios de autenticacion, permisos, endpoints ni tablas.
+
 Revision instalacion PWA login 2026-05-19: `web/login.html` agrega el boton `Instalar app` para crear acceso instalado en escritorio o celular mediante el prompt nativo del navegador. Se incorporan `web/manifest.webmanifest`, `web/sw.js`, `web/js/pwa_install.js` e iconos PWA; el service worker no intercepta rutas `/api`, `/super/api` ni `/auth`, preservando autenticacion y endpoints. `deploy/nginx/pcs.conf` sirve `.webmanifest` con `application/manifest+json`.
 
 Revision titulo login 2026-05-19: el encabezado `Powerful Control System` de `web/login.html` usa una regla visual propia en `web/estilos.css`, mas grande y responsive, y deja de heredar el tamano compacto de titulos administrativos. No cambia autenticacion, permisos, endpoints ni tablas.

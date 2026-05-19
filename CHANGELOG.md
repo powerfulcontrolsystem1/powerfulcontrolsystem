@@ -1,3 +1,7 @@
+- 2026-05-19: `Reporte de turno` queda como informe operativo profesional, compacto y completo; ventas y facturas electronicas conservan el estilo visual de factura electronica en POS y carta.
+
+- 2026-05-19: `Login` ajusta el titulo `Powerful Control System` para verse mas compacto, cuadrado y siempre en una sola fila.
+
 - 2026-05-19: `Login` agrega boton `Instalar app` con soporte PWA, manifest, service worker e iconos para escritorio y celular.
 
 - 2026-05-19: `Login` aumenta el tamaño del titulo `Powerful Control System` y le deja una regla responsive propia.

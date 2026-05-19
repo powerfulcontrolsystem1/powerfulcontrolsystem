@@ -1,3 +1,15 @@
+2026-05-19: Reporte de turno profesional y compacto.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` deja el reporte de turno como informe operativo: encabezado compacto, datos del turno, resumen financiero y detalle fila a fila sin cuadriculas ni apariencia fiscal.
+- `web/administrar_empresa/reportes_turnos.html` aplica el mismo formato a la vista historica imprimible, manteniendo impresion POS 80mm y papel grande.
+- Se confirma que ventas y facturas electronicas siguen usando el estilo `factura-print-sheet` para POS y carta.
+- No cambia backend, endpoints, permisos ni tablas.
+
+2026-05-19: Titulo del login compacto y en una fila.
+- Modulos afectados: `login`, `frontend_ux`.
+- `web/estilos.css` reduce el tamano del titulo `Powerful Control System`, lo fuerza a permanecer en una sola fila y cambia su fuente a una familia mas cuadrada/sistema.
+- No cambia autenticacion, endpoints, permisos ni tablas.
+
 2026-05-19: Instalacion PWA desde login.
 - Modulos afectados: `login`, `frontend_ux`, `operacion_sistema`.
 - `web/login.html` agrega el boton `Instalar app` junto a `Ir al inicio`, enlaza `manifest.webmanifest` y registra metadatos moviles para instalacion en escritorio y celular.
