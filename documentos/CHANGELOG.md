@@ -1,3 +1,17 @@
+## [2026-05-19] Instalar app desde login
+- [UX] El login agrega el boton `Instalar app` junto al acceso de inicio.
+- [PWA] Se agregan manifest, service worker e iconos para que Chrome/Edge/Android puedan instalar la app y crear acceso.
+- [Compatibilidad] En iOS o navegadores sin prompt, el boton muestra la indicacion para usar el menu del navegador.
+- [Alcance] No cambia autenticacion, permisos ni backend.
+
+## [2026-05-19] Titulo del login
+- [UX] `Powerful Control System` queda mas grande en el login de administradores, con ajuste responsive para movil.
+- [Alcance] No cambia autenticacion, permisos ni endpoints.
+
+## [2026-05-19] Botones de corte de caja
+- [UX] Los botones de `Lectura rapida` en `corte_de_caja.html` quedan con color uniforme y mas claro que el panel.
+- [Alcance] No cambia backend, permisos, endpoints ni tablas.
+
 ## [2026-05-19] Cajas multiples por empresa
 - [Configuracion] `empresa_configuracion_general` permite activar/desactivar cajas simultaneas y definir un limite interno por empresa.
 - [Backend] Abrir, reabrir y abrir caja automatica para cobro validan caja activa, cupo por empresa, cupo de licencia y cajas abiertas.

@@ -12,6 +12,23 @@
     .cash-close-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
     .cash-close-actions.is-compact { display:flex; flex-direction:column; align-items:stretch; gap:8px; margin:12px 0; }
     .cash-close-actions.is-compact .btn { width:100%; justify-content:center; }
+    .cash-close-panel.dark .cash-close-actions.is-compact .btn,
+    .cash-close-panel.dark .cash-close-actions.is-compact .btn.secondary,
+    .cash-close-panel.dark .cash-close-actions.is-compact .btn.success {
+      background:color-mix(in srgb, var(--surface-soft) 76%, white 24%);
+      color:var(--text);
+      border:1px solid color-mix(in srgb, var(--border) 58%, white 42%);
+      box-shadow:none;
+      font-weight:900;
+    }
+    .cash-close-panel.dark .cash-close-actions.is-compact .btn:hover:not(:disabled) {
+      background:color-mix(in srgb, var(--surface-soft) 66%, white 34%);
+      filter:none;
+    }
+    .cash-close-panel.dark .cash-close-actions.is-compact .btn:disabled {
+      opacity:.58;
+      cursor:not-allowed;
+    }
     .cash-close-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:12px; }
     .cash-kpi { border-radius:8px; padding:13px; background:color-mix(in srgb, var(--accent) 28%, var(--surface)); color:var(--text); min-height:92px; border:1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
     .cash-kpi:nth-child(2) { background:color-mix(in srgb, var(--success) 26%, var(--surface)); border-color:color-mix(in srgb, var(--success) 30%, var(--border)); }

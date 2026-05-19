@@ -3,7 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f233f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="PCS">
   <title>Login - Powerful Control System - Sistema POS Multiempresa</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/img/pwa-icon-192.png">
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
@@ -119,13 +125,16 @@
         <p class="footer login-card-note">Si tienes problemas con el acceso, revisa la ayuda o contacta al soporte.</p>
       </div>
       <div class="login-bottom-actions">
+        <button id="installPwaBtn" class="btn secondary pwa-install-btn" type="button">Instalar app</button>
         <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
       </div>
+      <div id="installPwaMessage" class="form-help pwa-install-message" aria-live="polite"></div>
     </div>
   </div>
 
   <script src="/config.js?v=20260511-admin-2fa"></script>
   <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
   <script src="/js/login.js?v=20260511-admin-2fa"></script>
+  <script src="/js/pwa_install.js?v=20260519-login-install"></script>
 </body>
 </html>

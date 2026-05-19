@@ -1,3 +1,20 @@
+2026-05-19: Instalacion PWA desde login.
+- Modulos afectados: `login`, `frontend_ux`, `operacion_sistema`.
+- `web/login.html` agrega el boton `Instalar app` junto a `Ir al inicio`, enlaza `manifest.webmanifest` y registra metadatos moviles para instalacion en escritorio y celular.
+- `web/js/pwa_install.js` captura `beforeinstallprompt`, abre la instalacion del navegador cuando esta disponible, muestra fallback para iOS/menu del navegador y registra el service worker.
+- `web/manifest.webmanifest`, `web/sw.js`, `web/img/pwa-icon-192.png` y `web/img/pwa-icon-512.png` habilitan el modo app instalada sin cachear rutas API, auth ni endpoints privados.
+- No cambia autenticacion, permisos, backend ni tablas.
+
+2026-05-19: Titulo del login mas visible.
+- Modulos afectados: `login`, `frontend_ux`.
+- `web/estilos.css` aumenta el tamano del titulo `Powerful Control System` en `login.html` y evita que la regla global de titulos administrativos lo reduzca.
+- No cambia autenticacion, endpoints, permisos ni tablas.
+
+2026-05-19: Botones uniformes en corte de caja.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` unifica el color de los botones de `Lectura rapida` para que se vean mas claros que la tarjeta, con hover y estado deshabilitado consistentes.
+- No cambia backend, endpoints, permisos ni tablas.
+
 2026-05-19: Cajas multiples configurables por empresa.
 - Modulos afectados: `configuracion_empresarial`, `finanzas`, `corte_de_caja`, `carritos`.
 - Base de datos: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para que cada empresa active/desactive cajas multiples y defina un limite interno opcional sin superar el cupo de licencia.

@@ -1,3 +1,21 @@
+2026-05-19: Instalacion de app desde login.
+- Modulos afectados: `login`, `frontend_ux`, `operacion_sistema`.
+- El login de administradores agrega el boton `Instalar app`, que usa el prompt nativo del navegador cuando esta disponible.
+- Se agrega soporte PWA con manifest, service worker e iconos para escritorio y celular; el service worker evita interceptar `/api`, `/super/api` y `/auth`.
+- En iPhone/iPad o navegadores sin prompt disponible, el boton muestra la ruta de instalacion desde el menu del navegador.
+- Sin cambios de autenticacion, permisos ni backend.
+
+2026-05-19: Titulo principal del login.
+- Modulos afectados: `login`, `frontend_ux`.
+- El titulo `Powerful Control System` del login de administradores queda mas grande y con regla responsive propia para escritorio y movil.
+- Sin cambios de autenticacion, permisos ni endpoints.
+
+2026-05-19: Botones de Lectura rapida en corte de caja.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- Los botones de la tarjeta `Lectura rapida` ahora usan el mismo color, ligeramente mas claro que el panel, para mejorar lectura y consistencia visual.
+- Se conserva el estado deshabilitado para las acciones que dependen de generar un reporte o encontrar una caja abierta.
+- Sin cambios de backend, permisos ni tablas.
+
 2026-05-19: Cajas multiples configurables por empresa.
 - Modulos afectados: `configuracion_empresarial`, `finanzas`, `corte_de_caja`, `carritos`.
 - `Configuracion de empresa > Caja y cajon monedero` permite activar/desactivar varias cajas abiertas al mismo tiempo y definir un limite interno opcional por empresa.

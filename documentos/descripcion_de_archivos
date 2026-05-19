@@ -1,3 +1,15 @@
+2026-05-19 - Instalacion PWA desde login
+- `web/login.html`:
+	- agrega metadatos PWA, enlace al manifest y boton `Instalar app`.
+- `web/js/pwa_install.js`:
+	- maneja el evento nativo `beforeinstallprompt`, registra el service worker y muestra mensajes de instalacion/fallback.
+- `web/manifest.webmanifest`:
+	- define nombre, alcance, `start_url`, modo standalone, colores, iconos y shortcut de login para la app instalable.
+- `web/sw.js`:
+	- service worker conservador para habilitar instalacion y cachear recursos estaticos sin interceptar API, autenticacion ni endpoints super.
+- `web/img/pwa-icon-192.png` y `web/img/pwa-icon-512.png`:
+	- iconos PNG para instalacion en escritorio y celular.
+
 2026-05-19 - Impresora POS default global
 - `backend/db/empresa_impresoras.go`:
 	- agrega helpers para asegurar `POS_80MM` activa, predeterminada y asignada a funcionalidades de caja por empresa o para todas las empresas activas.

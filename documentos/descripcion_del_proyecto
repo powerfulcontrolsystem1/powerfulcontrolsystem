@@ -1,5 +1,11 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision instalacion PWA login 2026-05-19: `web/login.html` agrega el boton `Instalar app` para crear acceso instalado en escritorio o celular mediante el prompt nativo del navegador. Se incorporan `web/manifest.webmanifest`, `web/sw.js`, `web/js/pwa_install.js` e iconos PWA; el service worker no intercepta rutas `/api`, `/super/api` ni `/auth`, preservando autenticacion y endpoints.
+
+Revision titulo login 2026-05-19: el encabezado `Powerful Control System` de `web/login.html` usa una regla visual propia en `web/estilos.css`, mas grande y responsive, y deja de heredar el tamano compacto de titulos administrativos. No cambia autenticacion, permisos, endpoints ni tablas.
+
+Revision botones corte de caja 2026-05-19: la tarjeta `Lectura rapida` de `web/administrar_empresa/corte_de_caja.html` muestra todos sus botones con el mismo color, ligeramente mas claro que el panel, manteniendo hover y estado deshabilitado consistentes. Es un ajuste visual sin cambios de backend, permisos, endpoints ni tablas.
+
 Revision cajas multiples por empresa 2026-05-19: la configuracion general de empresa incorpora `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para permitir o bloquear varias cajas abiertas al mismo tiempo sin superar el cupo de licencia. La apertura manual, reapertura y apertura automatica desde carrito validan caja activa, limite empresarial y licencia. `corte_de_caja.html` conserva `caja_codigo`, `turno`, `sucursal_id` y `cierre_caja_id` al consultar `Ver reporte de mi turno` o `Corte automatico`, dejando cada caja con reporte independiente.
 
 Revision impresora POS default global 2026-05-19: todas las empresas activas pueden quedar con `POS_80MM` como impresora predeterminada, asignada a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero`, y las empresas nuevas intentan crear esta impresora al registrarse. La utilidad `backend/tools/set_pos80_config` agrega modo `-all` para aplicar el default masivo sin mezclar `empresa_id`.
