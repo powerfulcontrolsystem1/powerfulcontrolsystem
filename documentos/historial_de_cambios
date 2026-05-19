@@ -1,3 +1,29 @@
+2026-05-18: Cerrar turno, imprimir reporte y cerrar sesion.
+- Modulos afectados: `corte_de_caja`, `autenticacion`, `frontend_ux`, `operacion_sistema`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` agrega `Cerrar turno e imprimir reporte` en Lectura rapida y comparte estado con `Guardar cierre`.
+- Flujo: guarda el cierre con `/api/empresa/corte_caja`, renderiza el reporte, invoca impresion y despues llama `/auth/logout` para cerrar sesion.
+- QA: parseo JS y verificacion visual local con cierre, impresion y logout mock.
+
+2026-05-18: Descuentos en reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `finanzas`.
+- Base de datos: `empresa_corte_caja_configuracion` agrega `mostrar_total_descuentos` con default activo y migracion ligera por columna faltante.
+- Backend: el resumen de corte acumula `descuentos_total` y `descuentos_cantidad` desde ventas cerradas; las exportaciones historicas agregan fila `Total descuentos`.
+- Frontend: el reporte actual, el historico y la configuracion empresarial muestran la nueva metrica configurable.
+- QA: pruebas Go enfocadas de configuracion/corte, parseo JS y verificacion visual local con venta mock con descuento.
+
+2026-05-18: Cantidad de ventas en reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `finanzas`.
+- Base de datos: `empresa_corte_caja_configuracion` agrega `mostrar_cantidad_ventas` con default activo y migracion ligera por columna faltante.
+- Backend: las exportaciones historicas de turno agregan fila de resumen `Cantidad de ventas`, basada en `resumen.ventas_cantidad`.
+- Frontend: el reporte actual, el historico y la configuracion empresarial muestran la nueva metrica configurable.
+- QA: pruebas Go enfocadas de configuracion de corte y parseo JS de las pantallas afectadas.
+
+2026-05-18: Tema del reporte de mi turno en corte de caja.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` reemplaza los colores fijos de la vista previa de `Ver reporte de mi turno` por variables del tema activo.
+- UX: en pantalla el reporte ya no mezcla fondo claro con panel oscuro; al imprimir se conserva papel blanco, texto oscuro y bordes legibles.
+- QA: parseo JS, `git diff --check` y verificacion visual local en modo oscuro/claro con reporte mock.
+
 2026-05-18: Reporte de turno adaptado a papel grande y POS.
 - Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
 - `web/administrar_empresa/corte_de_caja.html` adapta el modo `Ticket POS 80mm` para encabezado compacto, resumen de una columna y detalle de ventas en bloques con etiquetas.

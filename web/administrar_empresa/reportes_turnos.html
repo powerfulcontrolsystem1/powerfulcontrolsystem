@@ -284,6 +284,8 @@
           '<div class="turnos-summary-grid">',
           summaryCard('Ingresos', money(r.ingresos_financieros || 0, cur)),
           summaryCard('Egresos', money(r.egresos_financieros || 0, cur)),
+          summaryCard('Cantidad de ventas', String(r.ventas_cantidad || 0)),
+          summaryCard('Total descuentos', money(r.descuentos_total || 0, cur)),
           summaryCard('Total productos', money(r.total_productos || 0, cur)),
           summaryCard('Total servicios', money(r.total_servicios || 0, cur)),
           summaryCard('Total efectivo', money(r.efectivo_ventas || 0, cur)),

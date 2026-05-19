@@ -1,3 +1,11 @@
+- 2026-05-18: `Corte de caja` agrega `Cerrar turno e imprimir reporte`, que guarda el cierre, imprime el reporte y cierra la sesion del usuario al finalizar la impresion.
+
+- 2026-05-18: `Reporte de turno` agrega la metrica configurable `Total descuentos`, calculada desde ventas cerradas con descuento y visible en reporte actual, historicos y exportaciones.
+
+- 2026-05-18: `Reporte de turno` agrega la metrica configurable `Cantidad de ventas`, visible en el reporte actual, reportes historicos y exportaciones del turno.
+
+- 2026-05-18: `Corte de caja` corrige la vista previa de `Ver reporte de mi turno` para respetar el tema claro u oscuro activo en pantalla, manteniendo impresion blanca y legible en carta, ejecutivo y POS. Es un cambio visual sin impacto en backend, permisos, endpoints ni tablas.
+
 - 2026-05-18: `Reporte de turno` se adapta a papel grande y ticket POS 80mm. En grande conserva tabla completa; en POS compacta encabezado, resumen y detalle de ventas como bloques verticales con etiquetas para evitar desbordes al imprimir en rollo.
 
 - 2026-05-18: `Reportes de turnos` agrega una pagina historica en el submenu de reportes para listar turnos/cortes antiguos, previsualizar el reporte imprimible, imprimir, compartir, exportar en `json/csv/txt/xls/pdf` y enviarlo por email. El backend reutiliza `/api/empresa/corte_caja` con acciones historicas por `cierre_caja_id` y agrega el permiso de pagina `linkReportesTurnos` bajo el modulo `reportes`.

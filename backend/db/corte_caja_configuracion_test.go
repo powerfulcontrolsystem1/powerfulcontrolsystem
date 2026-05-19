@@ -35,6 +35,8 @@ func TestDefaultEmpresaCorteCajaConfiguracionEnablesTurnoReportFields(t *testing
 		"fecha_hora":              cfg.MostrarFechaHora,
 		"usuario":                 cfg.MostrarUsuarioReporte,
 		"consecutivo":             cfg.MostrarConsecutivo,
+		"cantidad_ventas":         cfg.MostrarCantidadVentas,
+		"total_descuentos":        cfg.MostrarTotalDescuentos,
 		"detalle_fecha_entrada":   cfg.MostrarDetalleEntrada,
 		"detalle_fecha_salida":    cfg.MostrarDetalleSalida,
 		"detalle_numero_venta":    cfg.MostrarDetalleNumero,

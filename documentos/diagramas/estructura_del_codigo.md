@@ -1,3 +1,43 @@
+## Actualizacion 2026-05-18 (cerrar turno, imprimir y logout)
+
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` agrega `btnCerrarImprimirSesion` dentro de Lectura rapida.
+  - El boton reutiliza `cerrarCorte({ logoutAfterPrint:true })`, imprime con `window.print()` y espera `afterprint` para cerrar sesion.
+- Autenticacion:
+  - Se usa la ruta existente `/auth/logout`; no se crean endpoints nuevos.
+- Alcance:
+  - No cambia tablas, permisos ni contratos del cierre de caja.
+
+## Actualizacion 2026-05-18 (descuentos en reporte de turno)
+
+- Backend:
+  - `backend/handlers/corte_caja.go` lee `carritos_compras.descuento_total`, acumula `descuentos_total` y `descuentos_cantidad`, y agrega `Total descuentos` al dataset exportable.
+  - `backend/db/corte_caja_configuracion.go` agrega `mostrar_total_descuentos` a la configuracion por `empresa_id`.
+- Frontend:
+  - `web/administrar_empresa/configuracion.html` agrega el check de la metrica.
+  - `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` muestran el total descontado.
+- Alcance:
+  - No cambia rutas; extiende la configuracion del reporte con migracion ligera de columna faltante.
+
+## Actualizacion 2026-05-18 (cantidad de ventas en reporte de turno)
+
+- Backend:
+  - `backend/db/corte_caja_configuracion.go` agrega `mostrar_cantidad_ventas` a la configuracion por `empresa_id`.
+  - `backend/handlers/corte_caja.go` incluye una fila exportable `Cantidad de ventas` usando `resumen.ventas_cantidad`.
+- Frontend:
+  - `web/administrar_empresa/configuracion.html` agrega el check de la metrica.
+  - `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` la muestran en el resumen.
+- Alcance:
+  - No cambia rutas; extiende la tabla de configuracion con migracion ligera de columna faltante.
+
+## Actualizacion 2026-05-18 (tema reporte de mi turno)
+
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` mantiene la vista previa del reporte dentro de la misma pagina del boton `Ver reporte de mi turno`.
+  - La vista en pantalla hereda el tema activo del shell empresarial; `@media print` conserva papel blanco y texto oscuro.
+- Alcance:
+  - Cambio visual; no modifica endpoints, tablas, permisos ni flujo de cierre.
+
 ## Actualizacion 2026-05-18 (reporte de turno: papel grande y POS)
 
 - Frontend:

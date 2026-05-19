@@ -1,3 +1,23 @@
+## [2026-05-18] Cerrar turno, imprimir y cerrar sesion
+- [Frontend] `corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte`.
+- [Operacion] La accion guarda el cierre, imprime el reporte y cierra sesion con `/auth/logout` al finalizar la impresion.
+- [Alcance] No cambia backend, permisos ni tablas.
+
+## [2026-05-18] Descuentos en reporte de turno
+- [Backend] El resumen de corte acumula `descuentos_total` y `descuentos_cantidad` desde ventas cerradas.
+- [Configuracion] `empresa_corte_caja_configuracion` agrega `mostrar_total_descuentos` activo por defecto.
+- [Frontend] El reporte actual y los historicos muestran `Total descuentos`; las exportaciones incluyen la fila de resumen.
+
+## [2026-05-18] Cantidad de ventas en reporte de turno
+- [Backend] `empresa_corte_caja_configuracion` agrega `mostrar_cantidad_ventas` activo por defecto.
+- [Frontend] El reporte de turno actual y los reportes historicos muestran `Cantidad de ventas` en el resumen.
+- [Reportes] Las exportaciones historicas incluyen una fila de resumen con el conteo de ventas del turno.
+
+## [2026-05-18] Tema del reporte de mi turno
+- [UX] `corte_de_caja.html` corrige la vista previa de `Ver reporte de mi turno` para respetar el modo claro/oscuro del panel.
+- [Impresion] La salida impresa conserva fondo blanco, texto oscuro y bordes legibles para carta, ejecutivo y POS.
+- [Alcance] No cambia backend, endpoints, permisos ni tablas.
+
 ## [2026-05-18] Reporte de turno en papel grande y POS
 - [Frontend] `corte_de_caja.html` compacta el modo POS 80mm para imprimir detalle de ventas como bloques verticales con etiquetas.
 - [Frontend] `reportes_turnos.html` agrega selector de papel grande/POS para la vista imprimible historica.

@@ -1,3 +1,43 @@
+2026-05-18 - Cerrar turno, imprimir y cerrar sesion
+- `web/administrar_empresa/corte_de_caja.html`:
+	- agrega el boton `Cerrar turno e imprimir reporte` en Lectura rapida.
+	- reutiliza el cierre de caja existente, imprime el reporte y al terminar llama `/auth/logout`.
+	- sincroniza habilitado/deshabilitado con `Guardar cierre` para evitar cerrar sin corte valido.
+
+2026-05-18 - Descuentos en reporte de turno
+- `backend/handlers/corte_caja.go`:
+	- acumula descuentos por ventas cerradas usando `carritos_compras.descuento_total`.
+	- expone `descuentos_total` y `descuentos_cantidad` en el resumen, y agrega fila exportable `Total descuentos`.
+- `backend/db/corte_caja_configuracion.go`:
+	- agrega `mostrar_total_descuentos` como bandera configurable del resumen.
+- `backend/db/corte_caja_configuracion_test.go`:
+	- valida que la metrica quede activa por defecto.
+- `web/administrar_empresa/configuracion.html`:
+	- agrega el check `Total descuentos` en metricas del resumen.
+- `web/administrar_empresa/corte_de_caja.html`:
+	- muestra la tarjeta `Total descuentos` con la cantidad de ventas que tuvieron descuento.
+- `web/administrar_empresa/reportes_turnos.html`:
+	- muestra la misma metrica en la vista historica imprimible.
+
+2026-05-18 - Cantidad de ventas en reporte de turno
+- `backend/db/corte_caja_configuracion.go`:
+	- agrega `mostrar_cantidad_ventas` como bandera configurable del resumen de corte.
+- `backend/handlers/corte_caja.go`:
+	- agrega la fila exportable `Cantidad de ventas` al dataset historico de turno.
+- `backend/db/corte_caja_configuracion_test.go`:
+	- valida que la nueva metrica quede activa por defecto.
+- `web/administrar_empresa/configuracion.html`:
+	- agrega el check `Cantidad de ventas` en metricas del resumen.
+- `web/administrar_empresa/corte_de_caja.html`:
+	- muestra la tarjeta `Cantidad de ventas` en el reporte del turno.
+- `web/administrar_empresa/reportes_turnos.html`:
+	- muestra la misma metrica en la vista historica imprimible.
+
+2026-05-18 - Tema reporte de mi turno
+- `web/administrar_empresa/corte_de_caja.html`:
+	- corrige la vista previa abierta por `Ver reporte de mi turno` para que no mezcle modo oscuro con fondo claro en pantalla.
+	- mantiene estilos de impresion en blanco/negro para carta, ejecutivo y POS.
+
 2026-05-18 - Reporte de turno en papel grande y POS
 - `web/administrar_empresa/corte_de_caja.html`:
 	- refuerza el modo de impresion POS 80mm con tabla transformada a bloques verticales y estilos de ticket.

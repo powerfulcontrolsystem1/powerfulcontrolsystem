@@ -1,3 +1,28 @@
+2026-05-18: Cerrar turno, imprimir y cerrar sesion.
+- Modulos afectados: `corte_de_caja`, `autenticacion`, `frontend_ux`, `operacion_sistema`.
+- `web/administrar_empresa/corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte` junto a las acciones de Lectura rapida.
+- La accion reutiliza el cierre canonico de caja, imprime el reporte y despues llama `/auth/logout` para cerrar la sesion del usuario.
+- No se agregan rutas, tablas ni permisos nuevos.
+
+2026-05-18: Descuentos en reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `finanzas`.
+- `empresa_corte_caja_configuracion` incorpora `mostrar_total_descuentos` para activar o apagar la metrica por empresa.
+- `backend/handlers/corte_caja.go` acumula `descuentos_total` y `descuentos_cantidad` desde `carritos_compras.descuento_total` de ventas cerradas.
+- `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` muestran `Total descuentos` dentro del resumen.
+- Las exportaciones historicas agregan una fila de resumen con el total descontado del turno.
+
+2026-05-18: Cantidad de ventas en reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `finanzas`.
+- `empresa_corte_caja_configuracion` incorpora `mostrar_cantidad_ventas` para activar o apagar la metrica por empresa.
+- `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` muestran `Cantidad de ventas` dentro del resumen.
+- Las exportaciones historicas agregan una fila de resumen con el conteo de ventas del turno.
+
+2026-05-18: Tema visual del reporte de mi turno.
+- Modulos afectados: `corte_de_caja`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` deja de forzar fondo claro en la vista previa en pantalla de `Ver reporte de mi turno`.
+- La previsualizacion usa `var(--bg)`, `var(--card)`, `var(--text)` y `var(--muted)` para verse coherente en modo claro u oscuro.
+- La salida de impresion sigue forzando papel blanco con texto oscuro para carta, ejecutivo y POS.
+
 2026-05-18: Reporte de turno en papel grande y POS.
 - Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
 - `corte_de_caja.html` mejora el modo `Ticket POS 80mm` para imprimir el detalle como bloques verticales con etiquetas y sin scroll horizontal.

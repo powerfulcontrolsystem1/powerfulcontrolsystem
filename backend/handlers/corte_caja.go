@@ -38,6 +38,7 @@ type corteCajaVenta struct {
 	Total          float64 `json:"total"`
 	TotalPagado    float64 `json:"total_pagado"`
 	Devolucion     float64 `json:"devolucion"`
+	DescuentoTotal float64 `json:"descuento_total"`
 	Cajero         string  `json:"cajero"`
 	EstacionID     int64   `json:"estacion_id"`
 	EstacionCodigo string  `json:"estacion_codigo"`
@@ -90,6 +91,8 @@ type corteCajaResumen struct {
 	VentasCantidad         int64   `json:"ventas_cantidad"`
 	NumeroFacturas         int64   `json:"numero_facturas"`
 	VentasTotal            float64 `json:"ventas_total"`
+	DescuentosCantidad     int64   `json:"descuentos_cantidad"`
+	DescuentosTotal        float64 `json:"descuentos_total"`
 	VentasAnuladasCantidad int64   `json:"ventas_anuladas_cantidad"`
 	VentasAnuladasTotal    float64 `json:"ventas_anuladas_total"`
 	DevolucionesTotal      float64 `json:"devoluciones_total"`
@@ -373,7 +376,7 @@ func corteCajaConfigCacheFingerprint(cfg *dbpkg.EmpresaCorteCajaConfiguracion) s
 	}
 	values := []bool{
 		cfg.MostrarEncabezado, cfg.MostrarEmpresaDatos, cfg.MostrarFechaHora, cfg.MostrarUsuarioReporte, cfg.MostrarConsecutivo,
-		cfg.MostrarResumen, cfg.MostrarNumeroFacturas, cfg.MostrarTotalVentas,
+		cfg.MostrarResumen, cfg.MostrarNumeroFacturas, cfg.MostrarCantidadVentas, cfg.MostrarTotalDescuentos, cfg.MostrarTotalVentas,
 		cfg.MostrarEfectivo, cfg.MostrarDebito, cfg.MostrarCredito, cfg.MostrarTransferencias, cfg.MostrarOtrosMedios,
 		cfg.MostrarIngresos, cfg.MostrarEgresos, cfg.MostrarAnulaciones, cfg.MostrarDevoluciones,
 		cfg.MostrarCajaEsperada, cfg.MostrarDiferenciaCaja, cfg.MostrarVentasDetalle, cfg.MostrarMovimientos,
@@ -1173,7 +1176,10 @@ func buildCorteCajaTurnoDataset(dbEmp *sql.DB, empresaID, cierreID int64) (empre
 			"usuario":               strings.TrimSpace(cierre.UsuarioCreador),
 			"moneda":                cur,
 			"ventas":                resumen.VentasCantidad,
+			"cantidad_ventas":       resumen.VentasCantidad,
 			"total_ventas":          reportesRound(resumen.VentasTotal),
+			"descuentos_cantidad":   resumen.DescuentosCantidad,
+			"descuentos_total":      reportesRound(resumen.DescuentosTotal),
 			"efectivo_esperado":     reportesRound(resumen.EfectivoEsperadoCaja),
 			"ingresos":              reportesRound(resumen.IngresosFinancieros),
 			"egresos":               reportesRound(resumen.EgresosFinancieros),
@@ -1201,6 +1207,8 @@ func buildCorteCajaTurnoDataset(dbEmp *sql.DB, empresaID, cierreID int64) (empre
 	}
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Ingresos", resumen.IngresosFinancieros)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Egresos", resumen.EgresosFinancieros)
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Cantidad de ventas", float64(resumen.VentasCantidad))
+	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total descuentos", resumen.DescuentosTotal)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total productos", resumen.TotalProductos)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "", "Total servicios", resumen.TotalServicios)
 	addRow("resumen", resumen.Hasta, "", cierre.CajaCodigo, cierre.UsuarioCreador, "efectivo", "Total efectivo", resumen.EfectivoVentas)
@@ -1273,6 +1281,10 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 			resp.Resumen.VentasTotal += venta.Total
 		}
 		resp.Resumen.DevolucionesTotal += venta.Devolucion
+		if venta.DescuentoTotal > 0 {
+			resp.Resumen.DescuentosCantidad++
+			resp.Resumen.DescuentosTotal += venta.DescuentoTotal
+		}
 		if strings.TrimSpace(venta.Moneda) != "" {
 			resp.Resumen.Moneda = venta.Moneda
 		}
@@ -1401,6 +1413,7 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, 
 		COALESCE(c.total, 0),
 		COALESCE(c.total_pagado, 0),
 		COALESCE(c.devolucion_total, 0),
+		COALESCE(c.descuento_total, 0),
 		COALESCE(m.usuario_creador, c.usuario_creador, ''),
 		COALESCE(m.estacion_id, 0),
 		COALESCE(m.estacion_codigo, ''),
@@ -1435,7 +1448,7 @@ func listCorteCajaVentas(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario, 
 	out := []corteCajaVenta{}
 	for rows.Next() {
 		var item corteCajaVenta
-		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
+		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.DescuentoTotal, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -1460,6 +1473,7 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 		COALESCE(c.total, 0),
 		COALESCE(m.monto_anulado, c.total_pagado, 0),
 		COALESCE(c.devolucion_total, 0),
+		COALESCE(c.descuento_total, 0),
 		COALESCE(m.usuario_creador, c.usuario_creador, ''),
 		COALESCE(m.estacion_id, 0),
 		COALESCE(m.estacion_codigo, ''),
@@ -1495,7 +1509,7 @@ func listCorteCajaVentasAnuladas(dbEmp *sql.DB, empresaID int64, desde, hasta, u
 	out := []corteCajaVenta{}
 	for rows.Next() {
 		var item corteCajaVenta
-		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
+		if err := rows.Scan(&item.ID, &item.Codigo, &item.Nombre, &item.FechaEntrada, &item.FechaSalida, &item.FechaPago, &item.MetodoPago, &item.Moneda, &item.Total, &item.TotalPagado, &item.Devolucion, &item.DescuentoTotal, &item.Cajero, &item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre); err != nil {
 			return nil, err
 		}
 		out = append(out, item)

@@ -1,5 +1,13 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision cierre turno imprimir logout 2026-05-18: `web/administrar_empresa/corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte` en Lectura rapida. La accion guarda el cierre del turno con el endpoint existente, imprime el reporte seleccionado y al finalizar la impresion cierra la sesion del usuario mediante `/auth/logout`.
+
+Revision descuentos reporte turno 2026-05-18: el reporte de turno/corte de caja suma `descuentos_total` desde las ventas cerradas del turno y muestra `Total descuentos` con la cantidad de ventas que tuvieron descuento. La metrica se puede activar o desactivar desde `Configuracion de empresa > Reporte de corte`, aparece en reportes historicos y queda incluida en exportaciones.
+
+Revision cantidad ventas reporte turno 2026-05-18: el reporte de turno/corte de caja muestra la metrica `Cantidad de ventas` con el numero de ventas realizadas en el turno. La metrica se puede activar o desactivar desde `Configuracion de empresa > Reporte de corte`, se refleja en reportes historicos y se conserva en exportaciones.
+
+Revision tema reporte mi turno 2026-05-18: la vista previa que abre `Ver reporte de mi turno` en `web/administrar_empresa/corte_de_caja.html` respeta el tema claro u oscuro activo del panel usando variables visuales del sistema. La impresion conserva salida blanca y legible en papel carta o POS; no cambia backend, permisos, endpoints ni tablas.
+
 Revision papel grande/POS en reporte de turno 2026-05-18: el reporte de turno se adapta visualmente a papel grande y a ticket POS 80mm. En papel grande conserva tabla completa y grilla de resumen; en POS compacta encabezado, convierte el detalle de ventas a bloques verticales con etiquetas por campo y evita desbordes horizontales para impresion en rollo.
 
 Revision reportes de turnos 2026-05-18: se agrega `web/administrar_empresa/reportes_turnos.html` dentro del submenu de reportes para listar turnos/cortes de caja antiguos, filtrarlos por fecha, caja, estado o texto, abrir vista imprimible, compartir enlace, exportar en `json/csv/txt/xls/pdf` y enviarlos por email. La API reutiliza `/api/empresa/corte_caja` con acciones historicas sobre `empresa_cierres_caja`, preservando `empresa_id` y el calculo canonico del reporte de turno.

@@ -744,7 +744,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_corte_caja_configuracion:
   - empresa_id (UNIQUE)
   - mostrar_encabezado, mostrar_empresa_datos, mostrar_fecha_hora, mostrar_usuario_reporte, mostrar_consecutivo
-  - mostrar_resumen, mostrar_numero_facturas, mostrar_total_ventas
+  - mostrar_resumen, mostrar_numero_facturas, mostrar_cantidad_ventas, mostrar_total_descuentos, mostrar_total_ventas
   - mostrar_efectivo, mostrar_debito, mostrar_credito, mostrar_transferencias, mostrar_otros_medios
   - mostrar_ingresos, mostrar_egresos, mostrar_anulaciones, mostrar_devoluciones
   - mostrar_caja_esperada, mostrar_diferencia_caja, mostrar_ventas_detalle
@@ -1435,7 +1435,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
-- 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
+- 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, cantidad de ventas, total de descuentos, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.
