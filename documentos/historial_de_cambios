@@ -1,3 +1,10 @@
+2026-05-19: Impresora POS 80mm por defecto para todas las empresas.
+- Modulos afectados: `impresoras`, `configuracion_empresarial`, `corte_de_caja`, `reportes`.
+- `backend/db/empresa_impresoras.go` agrega `EnsureEmpresaPOS80Defaults` y `EnsureAllEmpresasPOS80Defaults` para crear/actualizar `POS_80MM` como impresora activa y predeterminada por `empresa_id`.
+- `backend/db/db.go` intenta aplicar el default POS 80mm al crear una empresa nueva, sin bloquear el alta si la configuracion auxiliar falla.
+- `backend/tools/set_pos80_config` incorpora `-all` para aplicar el default masivo a todas las empresas activas.
+- La configuracion masiva conserva aislamiento por `empresa_id` y asigna `general`, `corte_caja`, `turno_reporte` y `cajon_monedero`.
+
 2026-05-18: Configuracion POS 80mm para reporte de turno.
 - Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `impresoras`.
 - `empresa_corte_caja_configuracion` queda con `pos` como formato predeterminado para nuevas configuraciones o restauraciones.

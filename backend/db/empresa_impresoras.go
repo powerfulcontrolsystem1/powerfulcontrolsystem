@@ -9,7 +9,10 @@ import (
 const (
 	defaultEmpresaImpresoraFormato      = "pos"
 	defaultEmpresaImpresoraTipoConexion = "red"
+	DefaultEmpresaPOS80PrinterCode      = "POS_80MM"
 )
+
+var DefaultEmpresaPOS80Funcionalidades = []string{"general", "corte_caja", "turno_reporte", "cajon_monedero"}
 
 // EmpresaImpresora representa una impresora registrada por empresa.
 type EmpresaImpresora struct {
@@ -425,6 +428,122 @@ func normalizeEmpresaImpresoraPrioridad(raw int64) int64 {
 		return 99999
 	}
 	return raw
+}
+
+// EnsureEmpresaPOS80Defaults deja la empresa preparada para imprimir reportes y
+// operaciones de caja en ticket POS 80mm por defecto.
+func EnsureEmpresaPOS80Defaults(dbConn *sql.DB, empresaID int64, usuario string) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id requerido")
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema-pos80"
+	}
+	if err := EnsureEmpresaImpresorasSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if err := EnsureEmpresaCorteCajaConfiguracionSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if _, err := execSQLCompat(dbConn, `INSERT INTO empresa_corte_caja_configuracion (
+		empresa_id, formato_impresion, usuario_creador, estado, observaciones
+	) VALUES (
+		?, 'pos', ?, 'activo', 'Reporte de turno configurado para impresora POS 80mm por defecto'
+	)
+	ON CONFLICT(empresa_id) DO UPDATE SET
+		formato_impresion = 'pos',
+		fecha_actualizacion = datetime('now','localtime'),
+		usuario_creador = excluded.usuario_creador,
+		estado = 'activo',
+		observaciones = excluded.observaciones`, empresaID, usuario); err != nil {
+		return 0, err
+	}
+
+	var existingID int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras WHERE empresa_id = ? AND codigo = ? LIMIT 1`, empresaID, DefaultEmpresaPOS80PrinterCode).Scan(&existingID)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+	if err == sql.ErrNoRows {
+		existingID = 0
+	}
+
+	printerID, err := UpsertEmpresaImpresora(dbConn, EmpresaImpresora{
+		ID:               existingID,
+		EmpresaID:        empresaID,
+		Codigo:           DefaultEmpresaPOS80PrinterCode,
+		Nombre:           "Impresora POS 80mm",
+		TipoConexion:     "windows",
+		Direccion:        "POS 80mm",
+		AreaOperativa:    "caja",
+		FormatoImpresion: "pos",
+		EsPredeterminada: true,
+		UsuarioCreador:   usuario,
+		Estado:           "activo",
+		Observaciones:    "Impresora POS 80mm activa por defecto para caja, reportes y turno",
+	})
+	if err != nil {
+		return 0, err
+	}
+	for _, funcionalidad := range DefaultEmpresaPOS80Funcionalidades {
+		if _, err := UpsertEmpresaImpresoraFuncionalidad(dbConn, EmpresaImpresoraFuncionalidad{
+			EmpresaID:      empresaID,
+			Funcionalidad:  funcionalidad,
+			ImpresoraID:    printerID,
+			Prioridad:      10,
+			UsuarioCreador: usuario,
+			Estado:         "activo",
+			Observaciones:  "Asignado a impresora POS 80mm por defecto",
+		}); err != nil {
+			return 0, err
+		}
+	}
+	return printerID, nil
+}
+
+// EnsureAllEmpresasPOS80Defaults aplica la configuracion POS 80mm a todas las
+// empresas activas registradas.
+func EnsureAllEmpresasPOS80Defaults(dbConn *sql.DB, usuario string) (int, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db connection is nil")
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT COALESCE(empresa_id, id)
+		FROM empresas
+		WHERE LOWER(COALESCE(estado, 'activo')) <> 'inactivo'
+		ORDER BY COALESCE(empresa_id, id) ASC`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	ids := make([]int64, 0)
+	seen := map[int64]bool{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return 0, err
+		}
+		if id > 0 && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, id := range ids {
+		if _, err := EnsureEmpresaPOS80Defaults(dbConn, id, usuario); err != nil {
+			return count, fmt.Errorf("empresa_id %d: %w", id, err)
+		}
+		count++
+	}
+	return count, nil
 }
 
 // ListEmpresaImpresorasByEmpresa lista impresoras por empresa.

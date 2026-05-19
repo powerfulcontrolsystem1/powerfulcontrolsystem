@@ -1,3 +1,8 @@
+## [2026-05-19] Impresora POS default global
+- [Backend] `empresa_impresoras` centraliza helpers para asegurar `POS_80MM` como impresora activa y predeterminada por empresa.
+- [Operacion] `set_pos80_config -all` aplica el default a todas las empresas activas, asignando `general`, `corte_caja`, `turno_reporte` y `cajon_monedero`.
+- [Alta de empresas] Las empresas nuevas intentan quedar preparadas con POS 80mm al crearse.
+
 ## [2026-05-18] POS 80mm para reporte de turno
 - [Configuracion] El formato predeterminado del reporte de corte pasa a `pos` para empresas sin configuracion previa o restauradas.
 - [Frontend] Corte de caja, configuracion y reportes historicos priorizan `Ticket POS 80mm`; historicos consultan la configuracion por `empresa_id` y bloquean carta/grande cuando la empresa esta en POS.

@@ -83,16 +83,14 @@ func main() {
 	ensureEnvFromLocalFile()
 
 	var empresaID int64
+	var allEmpresas bool
 	var actor string
-	var printerCode string
-	var printerName string
 	flag.Int64Var(&empresaID, "empresa", 33, "empresa_id a configurar")
+	flag.BoolVar(&allEmpresas, "all", false, "configura todas las empresas activas")
 	flag.StringVar(&actor, "actor", "codex-pos80-config", "usuario_creador/actor operativo")
-	flag.StringVar(&printerCode, "printer-code", "POS_80MM", "codigo de impresora POS")
-	flag.StringVar(&printerName, "printer-name", "Impresora POS 80mm", "nombre visible de impresora POS")
 	flag.Parse()
 
-	if empresaID <= 0 {
+	if !allEmpresas && empresaID <= 0 {
 		log.Fatal("empresa debe ser mayor que cero")
 	}
 	dsn := rewriteRuntimePostgresDSNForTunnel(os.Getenv("DB_EMPRESAS_DSN"))
@@ -119,84 +117,18 @@ func main() {
 		log.Fatalf("schema impresoras: %v", err)
 	}
 
-	printerCode = strings.ToUpper(strings.TrimSpace(printerCode))
-	if printerCode == "" {
-		printerCode = "POS_80MM"
-	}
-	printerName = strings.TrimSpace(printerName)
-	if printerName == "" {
-		printerName = "Impresora POS 80mm"
-	}
-
-	if _, err := dbConn.Exec(`
-		INSERT INTO empresa_corte_caja_configuracion (
-			empresa_id, formato_impresion, usuario_creador, estado, observaciones
-		) VALUES (
-			?, 'pos', ?, 'activo', 'Reporte de turno configurado para impresora POS 80mm'
-		)
-		ON CONFLICT (empresa_id) DO UPDATE SET
-			formato_impresion = 'pos',
-			fecha_actualizacion = datetime('now','localtime'),
-			usuario_creador = EXCLUDED.usuario_creador,
-			estado = 'activo',
-			observaciones = EXCLUDED.observaciones
-	`, empresaID, actor); err != nil {
-		log.Fatalf("guardar formato reporte POS: %v", err)
-	}
-
-	if _, err := dbConn.Exec(`
-		UPDATE empresa_impresoras
-		SET es_predeterminada = 0, fecha_actualizacion = datetime('now','localtime')
-		WHERE empresa_id = ? AND codigo <> ?
-	`, empresaID, printerCode); err != nil {
-		log.Fatalf("limpiar impresoras predeterminadas: %v", err)
-	}
-
-	if _, err := dbConn.Exec(`
-		INSERT INTO empresa_impresoras (
-			empresa_id, codigo, nombre, tipo_conexion, direccion, area_operativa,
-			formato_impresion, es_predeterminada, usuario_creador, estado, observaciones
-		) VALUES (
-			?, ?, ?, 'windows', 'POS 80mm', 'caja',
-			'pos', 1, ?, 'activo', 'Impresora POS 80mm activa para pruebas de reporte de turno'
-		)
-		ON CONFLICT (empresa_id, codigo) DO UPDATE SET
-			nombre = EXCLUDED.nombre,
-			tipo_conexion = EXCLUDED.tipo_conexion,
-			direccion = EXCLUDED.direccion,
-			area_operativa = EXCLUDED.area_operativa,
-			formato_impresion = 'pos',
-			es_predeterminada = 1,
-			fecha_actualizacion = datetime('now','localtime'),
-			usuario_creador = EXCLUDED.usuario_creador,
-			estado = 'activo',
-			observaciones = EXCLUDED.observaciones
-	`, empresaID, printerCode, printerName, actor); err != nil {
-		log.Fatalf("guardar impresora POS: %v", err)
-	}
-
-	funcionalidades := []string{"general", "corte_caja", "turno_reporte", "cajon_monedero"}
-	for _, funcionalidad := range funcionalidades {
-		if _, err := dbConn.Exec(`
-			INSERT INTO empresa_impresoras_funcionalidades (
-				empresa_id, funcionalidad, impresora_id, prioridad, usuario_creador, estado, observaciones
-			)
-			SELECT ?, ?, id, 10, ?, 'activo', 'Asignado a POS 80mm para pruebas de turno'
-			FROM empresa_impresoras
-			WHERE empresa_id = ? AND codigo = ?
-			LIMIT 1
-			ON CONFLICT (empresa_id, funcionalidad) DO UPDATE SET
-				impresora_id = EXCLUDED.impresora_id,
-				prioridad = EXCLUDED.prioridad,
-				fecha_actualizacion = datetime('now','localtime'),
-				usuario_creador = EXCLUDED.usuario_creador,
-				estado = 'activo',
-				observaciones = EXCLUDED.observaciones
-		`, empresaID, funcionalidad, actor, empresaID, printerCode); err != nil {
-			log.Fatalf("asignar funcionalidad %s: %v", funcionalidad, err)
+	if allEmpresas {
+		count, err := dbpkg.EnsureAllEmpresasPOS80Defaults(dbConn, actor)
+		if err != nil {
+			log.Fatalf("configurar empresas POS 80mm: %v", err)
 		}
+		fmt.Printf("empresas_configuradas=%d reporte_formato=pos impresora_predeterminada=%s funcionalidades=%d\n", count, dbpkg.DefaultEmpresaPOS80PrinterCode, len(dbpkg.DefaultEmpresaPOS80Funcionalidades))
+		return
 	}
 
+	if _, err := dbpkg.EnsureEmpresaPOS80Defaults(dbConn, empresaID, actor); err != nil {
+		log.Fatalf("configurar empresa POS 80mm: %v", err)
+	}
 	var formato string
 	var impresora string
 	err = dbConn.QueryRow(`
@@ -204,10 +136,10 @@ func main() {
 		FROM empresa_corte_caja_configuracion c
 		LEFT JOIN empresa_impresoras i ON i.empresa_id = c.empresa_id AND i.codigo = ?
 		WHERE c.empresa_id = ?
-	`, printerCode, empresaID).Scan(&formato, &impresora)
+	`, dbpkg.DefaultEmpresaPOS80PrinterCode, empresaID).Scan(&formato, &impresora)
 	if err != nil {
 		log.Fatalf("verificar configuracion: %v", err)
 	}
 
-	fmt.Printf("empresa_id=%d reporte_formato=%s impresora_predeterminada=%s funcionalidades=%d\n", empresaID, formato, impresora, len(funcionalidades))
+	fmt.Printf("empresa_id=%d reporte_formato=%s impresora_predeterminada=%s funcionalidades=%d\n", empresaID, formato, impresora, len(dbpkg.DefaultEmpresaPOS80Funcionalidades))
 }

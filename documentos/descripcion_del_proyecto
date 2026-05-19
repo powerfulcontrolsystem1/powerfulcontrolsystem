@@ -1,5 +1,7 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision impresora POS default global 2026-05-19: todas las empresas activas pueden quedar con `POS_80MM` como impresora predeterminada, asignada a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero`, y las empresas nuevas intentan crear esta impresora al registrarse. La utilidad `backend/tools/set_pos80_config` agrega modo `-all` para aplicar el default masivo sin mezclar `empresa_id`.
+
 Revision POS 80mm reporte turno 2026-05-18: el reporte de corte/turno usa `Ticket POS 80mm` como formato predeterminado cuando no hay configuracion previa, los reportes historicos leen `empresa_corte_caja_configuracion.formato_impresion` antes de imprimir, bloquean carta/grande cuando la empresa esta en POS y se agrega la utilidad operativa `backend/tools/set_pos80_config` para dejar una empresa con impresora POS predeterminada y reporte de turno en POS por `empresa_id`.
 
 Revision contraste efectivo esperado reporte turno 2026-05-18: el bloque final `Efectivo esperado en caja` de `web/administrar_empresa/corte_de_caja.html` usa fondo, borde y texto basados en variables del tema para evitar combinaciones blanco sobre blanco en modo oscuro.

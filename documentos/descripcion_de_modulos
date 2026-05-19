@@ -1,3 +1,9 @@
+2026-05-19: Impresora POS por defecto global.
+- Modulos afectados: `impresoras`, `configuracion_empresarial`, `corte_de_caja`, `reportes`.
+- Todas las empresas activas pueden recibir `POS_80MM` como impresora activa y predeterminada, con formato `pos` y area operativa `caja`.
+- La asignacion funcional por empresa cubre `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` para que reportes y operaciones usen POS 80mm sin configuracion manual.
+- Las empresas nuevas intentan crear esta configuracion al registrarse, conservando el aislamiento por `empresa_id`.
+
 2026-05-18: POS 80mm como formato de prueba del reporte de turno.
 - Modulos afectados: `corte_de_caja`, `reportes`, `configuracion_empresarial`, `impresoras`.
 - El reporte de turno/corte toma `Ticket POS 80mm` como formato predeterminado si la empresa no tenia configuracion previa o se restaura la configuracion profesional.

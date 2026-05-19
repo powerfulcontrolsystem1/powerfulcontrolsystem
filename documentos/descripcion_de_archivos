@@ -1,3 +1,11 @@
+2026-05-19 - Impresora POS default global
+- `backend/db/empresa_impresoras.go`:
+	- agrega helpers para asegurar `POS_80MM` activa, predeterminada y asignada a funcionalidades de caja por empresa o para todas las empresas activas.
+- `backend/db/db.go`:
+	- al crear una empresa nueva intenta dejar lista la impresora POS 80mm por defecto.
+- `backend/tools/set_pos80_config/main.go`:
+	- agrega bandera `-all` para aplicar la configuracion POS 80mm a todas las empresas activas desde operacion.
+
 2026-05-18 - Configuracion POS 80mm para turno
 - `backend/tools/set_pos80_config/main.go`:
 	- utilidad operativa para conectar a `DB_EMPRESAS_DSN`, fijar `empresa_corte_caja_configuracion.formato_impresion='pos'`, crear/activar la impresora `POS_80MM` y asignarla a funcionalidades de caja por `empresa_id`.

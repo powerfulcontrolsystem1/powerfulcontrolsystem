@@ -1521,6 +1521,7 @@ func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observ
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
+	_, _ = EnsureEmpresaPOS80Defaults(dbConn, id, usuarioCreador)
 	return id, nil
 }
 

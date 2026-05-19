@@ -1,3 +1,12 @@
+## Actualizacion 2026-05-19 (impresora POS default global)
+
+- Backend:
+  - `backend/db/empresa_impresoras.go` centraliza el default `POS_80MM` por empresa y por todas las empresas activas.
+  - `backend/db/db.go` aplica el default como preparacion auxiliar al crear empresas nuevas.
+  - `backend/tools/set_pos80_config/main.go` permite ejecutar el default con `-all`.
+- Datos:
+  - Las asignaciones se guardan por `empresa_id` en `empresa_impresoras` y `empresa_impresoras_funcionalidades`.
+
 ## Actualizacion 2026-05-18 (POS 80mm reporte turno)
 
 - Backend/configuracion:
