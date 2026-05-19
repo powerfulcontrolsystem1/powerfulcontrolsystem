@@ -10377,3 +10377,21 @@ Archivos modificados:
 - web/administrar_empresa/corte_de_caja.html
 - web/administrar_empresa/reportes_turnos.html
 - web/estilos.css
+
+2026-05-19 05:12:38 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 67a7e3cd; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/carritos_compras.go
+- backend/db/codigos_descuento.go
+- backend/db/empresa_admin_compartida.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/facturas_electronicas.html
+- web/administrar_empresa/reportes_turnos.html
+- web/administrar_empresa/ventas.html
+- web/estilos.css
+- web/js/print_documents.js
