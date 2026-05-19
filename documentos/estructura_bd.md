@@ -22,6 +22,35 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-19 (codigos de descuento y asesor de venta de un solo uso)
+- No se agregan tablas ni columnas fisicas.
+- `codigos_de_descuento.usos_maximos` se normaliza a `1` y `usos_actuales` queda consumido cuando existe cualquier redencion historica, incluso si el carrito fue anulado o reabierto.
+- `codigos_descuento_redenciones` conserva los estados `aplicada`, `revertida` y `anulada` como auditoria, pero cualquiera de ellos bloquea reutilizar el mismo codigo en la empresa.
+- La promocion por codigo de asesor en checkout de licencias usa `pagos_wompi`, `pagos_epayco`, `licencias_activaciones_gratis` y `asesor_comercial_comisiones` para detectar si la empresa ya uso un asesor; si ya existe uso aprobado/activo, el asesor puede seguir asociado para comision, pero no vuelve a aplicar descuento.
+
+Actualizacion 2026-05-19 (Docker VPS portable desde Super Administrador)
+- No se agregan tablas ni columnas fisicas.
+- `/super/api/docker_portabilidad` solo lee el filesystem del proyecto limpio y genera un paquete `.tar.gz` para migracion Docker.
+- La descarga no incluye datos de `pcs_empresas`, `pcs_superadministrador`, volumenes Docker, backups, uploads, logs ni secretos. Esos datos se migran por snapshots PostgreSQL y tarballs de volumenes documentados en el runbook Docker.
+
+Actualizacion 2026-05-19 (facturacion electronica Ecuador)
+- No se agregan tablas ni columnas fisicas.
+- El perfil Ecuador usa la tabla existente `facturacion_electronica_pais` con `pais_codigo='EC'` y `UNIQUE(empresa_id, pais_codigo)`.
+- `campos_pais_json` almacena los campos propios SRI: `ruc`, `integracion`, `ambiente_sri`, `establecimiento`, `punto_emision`, `tipo_emision`, `certificado_firma_ref`, `certificado_firma_confirmado`, `autorizacion_produccion_sri`, `clave_acceso`, `numero_autorizacion`, `ride`, `obligado_contabilidad` y `documentos_soportados`.
+- La cola `facturacion_electronica_reintentos` conserva `pais_codigo='EC'` para trazabilidad de integracion SRI/proveedor por documento cuando se configure `api_base_url`.
+
+Actualizacion 2026-05-19 (cliente obligatorio en carrito)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.
+- El JSON `estaciones_config.carrito_ui_global` puede incluir `cliente_obligatorio_pago`; cuando vale `true`, `pagar_estacion` exige que `carritos_compras.cliente_id` tenga un cliente registrado de la empresa antes de cerrar el pago.
+- El registro rapido desde carrito crea filas en la tabla existente `clientes` mediante `/api/empresa/clientes` y luego actualiza `carritos_compras.cliente_id`.
+
+Actualizacion 2026-05-19 (facturacion electronica Panama)
+- No se agregan tablas ni columnas fisicas.
+- El perfil Panama usa la tabla existente `facturacion_electronica_pais` con `pais_codigo='PA'` y `UNIQUE(empresa_id, pais_codigo)`.
+- `campos_pais_json` almacena los campos propios SFEP/DGI: `ruc`, `dv`, `modalidad`, `registro_sfep`, `declaracion_jurada_sfep`, `certificado_firma_ref`, `certificado_firma_confirmado`, `pac_nombre`, `pac_id`, `ambiente_sfep`, `sucursal`, `punto_expedicion`, `cafe`, `cufe`, `qr_url` y `documentos_soportados`.
+- La cola `facturacion_electronica_reintentos` conserva `pais_codigo='PA'` para trazabilidad de integracion PAC/DGI por documento cuando se configure `api_base_url`.
+
 Actualizacion 2026-05-19 (pago/anulacion carritos PostgreSQL)
 - No se agregan tablas ni columnas fisicas.
 - Las transacciones de pago/anulacion de `carritos_compras`, restauracion de inventario y codigos de descuento usan helpers SQL compatibles con PostgreSQL.
@@ -576,6 +605,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - codigo: formato moderno `PREFIJO-XXXX-XXXX` (ej. DSCT-AB12-CD34). Unicidad garantizada por el índice `ux_codigos_descuento_empresa_codigo` (empresa_id, codigo).
   - monto_minimo_compra, fecha_vencimiento
   - usos_maximos, usos_actuales
+  - regla vigente: cada codigo se consume una sola vez por empresa; `usos_maximos` se fuerza a 1 y una redencion historica mantiene `usos_actuales=1`.
   - segmento_cliente, canal_venta
   - horario_desde, horario_hasta, dias_semana
   - max_usos_por_cliente, ventana_horas_fraude
@@ -585,6 +615,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - monto_base, valor_descuento
   - estado_redencion (`aplicada`, `revertida`, `anulada`)
   - motivo, referencia_operacion, fecha_redencion
+  - auditoria: los estados anulada/revertida no liberan el codigo; solo documentan que la venta cambio despues del consumo.
 
 ### Tablas de propinas por empresa
 - empresa_propinas_configuracion:
@@ -1300,6 +1331,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
 ### Tablas de pagos y metricas
 - pagos_wompi:
+  - regla comercial: un pago aprobado con `asesor_id` marca que la empresa ya uso la promocion de asesor y bloquea nuevos descuentos por asesor.
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
   - discount_code (TEXT) : código de descuento aplicado por cliente (opcional)
   - asesor_id (TEXT) : codigo de asesor comercial que originó la venta (opcional)
@@ -1307,6 +1339,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 
   - Descripción: tabla canonica para registrar pagos/operaciones de Wompi/Nequi y activaciones manuales. Se registran metadatos de descuento y referencia de asesor para habilitar cálculo y trazabilidad de comisiones.
 - pagos_epayco:
+  - regla comercial: un pago aprobado con `asesor_id` marca que la empresa ya uso la promocion de asesor y bloquea nuevos descuentos por asesor.
   - licencia_id, empresa_id, transaction_id, reference, status, raw_payload
   - discount_code (TEXT) : codigo de descuento aplicado por cliente (opcional)
   - asesor_id (TEXT) : codigo de asesor comercial que genero la venta (opcional)
@@ -1339,6 +1372,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - Descripción: administradores invitados por super para operar como asesores comerciales. Al aceptar la invitación reciben un codigo comercial que puede incluirse en el checkout publico de licencias.
 
 - asesor_comercial_comisiones:
+  - regla comercial: la existencia de una asociacion de asesor para la empresa impide aplicar nuevamente el descuento promocional de asesor, aunque las comisiones puedan seguir vigentes segun `asociado_hasta`.
   - id, asesor_id, asesor_codigo, asesor_email
   - empresa_id, empresa_nombre, licencia_id
   - pago_provider, pago_id, transaction_id, referencia

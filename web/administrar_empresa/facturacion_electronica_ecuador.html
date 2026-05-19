@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facturacion electronica Ecuador - SRI</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Facturacion electronica Ecuador / SRI</h1>
+      <p class="form-help">Perfil independiente para comprobantes electronicos SRI. No usa ni modifica DIAN Colombia ni DGI Panama.</p>
+    </div>
+
+    <div class="card">
+      <h2>Ruta SRI Ecuador</h2>
+      <p class="form-help">Configura RUC, establecimiento, punto de emision, firma electronica, ambiente SRI y proveedor o sistema propio para generar, firmar, enviar y notificar comprobantes.</p>
+      <div class="form-actions">
+        <a class="btn secondary" href="https://www.sri.gob.ec/facturacion-electronica" target="_blank" rel="noopener">Abrir SRI Facturacion Electronica</a>
+        <a class="btn secondary" href="https://www.sri.gob.ec/comprobantes-electronicos" target="_blank" rel="noopener">Abrir comprobantes electronicos</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Checklist Ecuador</h2>
+      <div id="checklistResumen" class="form-help">Cargando...</div>
+      <div id="checklistItems"></div>
+    </div>
+
+    <form id="ecForm" class="form card">
+      <h2>Configuracion fiscal Ecuador</h2>
+      <input type="hidden" id="empresa_id">
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">RUC</label><input id="identificador_fiscal" class="form-input" required></div>
+        <div class="form-col"><label class="form-label">Razon social</label><input id="razon_social" class="form-input" required></div>
+        <div class="form-col"><label class="form-label">Email de facturacion</label><input id="email_facturacion" class="form-input" type="email"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Ambiente</label>
+          <select id="ambiente" class="form-input">
+            <option value="sandbox">Pruebas</option>
+            <option value="produccion">Produccion</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Ambiente SRI</label>
+          <select id="ambiente_sri" class="form-input">
+            <option value="1">1 - Pruebas</option>
+            <option value="2">2 - Produccion</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <select id="moneda_codigo" class="form-input">
+            <option value="USD">USD</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Proveedor / integracion</label><input id="proveedor" class="form-input" placeholder="sri_ecuador"></div>
+        <div class="form-col">
+          <label class="form-label">Tipo de integracion</label>
+          <select id="integracion" class="form-input">
+            <option value="sri_xml_firmado">Sistema propio / XML firmado</option>
+            <option value="proveedor_autorizado">Proveedor tecnologico</option>
+            <option value="facturador_sri">Facturador SRI</option>
+          </select>
+        </div>
+        <div class="form-col"><label class="form-label">API base URL</label><input id="api_base_url" class="form-input" placeholder="https://api.proveedor.com"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Establecimiento</label><input id="establecimiento" class="form-input" placeholder="001" maxlength="3"></div>
+        <div class="form-col"><label class="form-label">Punto de emision</label><input id="punto_emision" class="form-input" placeholder="001" maxlength="3"></div>
+        <div class="form-col"><label class="form-label">Referencia autorizacion SRI</label><input id="resolucion_numero" class="form-input"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Certificado firma / referencia segura</label><input id="certificado_firma_ref" class="form-input" placeholder="file:/secure/empresa/ec.p12 o vault ref"></div>
+        <div class="form-col"><label class="form-label">Clave de acceso</label><input id="clave_acceso" class="form-input" placeholder="Se completa al emitir"></div>
+        <div class="form-col"><label class="form-label">Numero de autorizacion</label><input id="numero_autorizacion" class="form-input" placeholder="Se completa al autorizar"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-help"><label><input id="certificado_firma_confirmado" type="checkbox"> Firma electronica confirmada</label></div>
+          <div class="form-help"><label><input id="autorizacion_produccion_sri" type="checkbox"> Autorizacion SRI en produccion confirmada</label></div>
+          <div class="form-help"><label><input id="ride" type="checkbox"> Generar RIDE</label></div>
+          <div class="form-help"><label><input id="obligado_contabilidad" type="checkbox"> Obligado a llevar contabilidad</label></div>
+          <div class="form-help"><label><input id="enviar_factura_email_cliente_auto" type="checkbox"> Enviar comprobante automaticamente al correo del cliente</label></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Observaciones</label><textarea id="observaciones" class="form-textarea"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="submit">Guardar Ecuador</button>
+        <button class="btn secondary" type="button" id="validarBtn">Validar checklist</button>
+        <button class="btn secondary" type="button" id="recargarBtn">Recargar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      var state = { empresaID: 0, cfg: null };
+      function byId(id) { return document.getElementById(id); }
+      function txt(v) { return String(v == null ? "" : v).trim(); }
+      function params() { return new URLSearchParams(window.location.search); }
+      function setMsg(text, err) { var el = byId("msg"); if (el) { el.textContent = text || ""; el.className = err ? "form-help error" : "form-help"; } }
+      function bool(id) { var el = byId(id); return !!(el && el.checked); }
+      function setBool(id, value) { var el = byId(id); if (el) el.checked = value === true || value === 1 || String(value).toLowerCase() === "true"; }
+      function esc(v) { return txt(v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
+      async function readJSON(res) { var data = await res.json().catch(function () { return null; }); if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status)); return data; }
+      function extraFromForm() {
+        return {
+          integracion: txt(byId("integracion").value) || "sri_xml_firmado",
+          ruc: txt(byId("identificador_fiscal").value),
+          ambiente_sri: txt(byId("ambiente_sri").value) || "1",
+          establecimiento: txt(byId("establecimiento").value) || "001",
+          punto_emision: txt(byId("punto_emision").value) || "001",
+          tipo_emision: "normal",
+          certificado_firma_ref: txt(byId("certificado_firma_ref").value),
+          certificado_firma_confirmado: bool("certificado_firma_confirmado"),
+          autorizacion_produccion_sri: bool("autorizacion_produccion_sri"),
+          clave_acceso: txt(byId("clave_acceso").value),
+          numero_autorizacion: txt(byId("numero_autorizacion").value),
+          ride: bool("ride"),
+          obligado_contabilidad: bool("obligado_contabilidad"),
+          documentos_soportados: ["factura", "nota_credito", "nota_debito", "retencion", "guia_remision"]
+        };
+      }
+      function fillForm(cfg) {
+        cfg = cfg || {};
+        var extra = {};
+        try { extra = JSON.parse(cfg.campos_pais_json || "{}") || {}; } catch (_) { extra = {}; }
+        state.cfg = cfg;
+        byId("empresa_id").value = state.empresaID;
+        byId("identificador_fiscal").value = txt(cfg.identificador_fiscal || extra.ruc);
+        byId("razon_social").value = txt(cfg.razon_social);
+        byId("email_facturacion").value = txt(cfg.email_facturacion);
+        byId("ambiente").value = txt(cfg.ambiente) || "sandbox";
+        byId("ambiente_sri").value = txt(extra.ambiente_sri) || (txt(cfg.ambiente) === "produccion" ? "2" : "1");
+        byId("moneda_codigo").value = txt(cfg.moneda_codigo) || "USD";
+        byId("proveedor").value = txt(cfg.proveedor) || "sri_ecuador";
+        byId("integracion").value = txt(extra.integracion) || "sri_xml_firmado";
+        byId("api_base_url").value = txt(cfg.api_base_url);
+        byId("establecimiento").value = txt(extra.establecimiento) || "001";
+        byId("punto_emision").value = txt(extra.punto_emision) || "001";
+        byId("resolucion_numero").value = txt(cfg.resolucion_numero);
+        byId("certificado_firma_ref").value = txt(extra.certificado_firma_ref);
+        byId("clave_acceso").value = txt(extra.clave_acceso);
+        byId("numero_autorizacion").value = txt(extra.numero_autorizacion);
+        byId("observaciones").value = txt(cfg.observaciones);
+        setBool("certificado_firma_confirmado", extra.certificado_firma_confirmado || !!extra.certificado_firma_ref);
+        setBool("autorizacion_produccion_sri", extra.autorizacion_produccion_sri);
+        setBool("ride", extra.ride !== false);
+        setBool("obligado_contabilidad", extra.obligado_contabilidad);
+        setBool("enviar_factura_email_cliente_auto", cfg.enviar_factura_email_cliente_auto);
+      }
+      function renderChecklist(checklist) {
+        var resumen = byId("checklistResumen");
+        var items = byId("checklistItems");
+        checklist = checklist || {};
+        if (resumen) resumen.textContent = checklist.ok ? "Perfil Ecuador listo para pruebas operativas." : "Faltan datos: " + ((checklist.faltantes || []).join(", ") || "sin detalle");
+        if (!items) return;
+        var rows = (checklist.items || []).map(function (it) {
+          return '<tr><td>' + esc(it.estado === "ok" ? "OK" : "Pendiente") + '</td><td><strong>' + esc(it.titulo) + '</strong><br><span class="form-help">' + esc(it.detalle) + '</span></td></tr>';
+        });
+        if (checklist.advertencias && checklist.advertencias.length) {
+          rows.push('<tr><td>Alerta</td><td>' + esc(checklist.advertencias.join(" ")) + '</td></tr>');
+        }
+        items.innerHTML = '<div class="table-responsive"><table><tbody>' + rows.join("") + '</tbody></table></div>';
+      }
+      function payload() {
+        return {
+          empresa_id: state.empresaID,
+          pais_codigo: "EC",
+          pais_nombre: "Ecuador",
+          moneda_codigo: "USD",
+          proveedor: txt(byId("proveedor").value) || "sri_ecuador",
+          ambiente: txt(byId("ambiente").value) || "sandbox",
+          tipo_documento_emisor: "RUC",
+          identificador_fiscal: txt(byId("identificador_fiscal").value),
+          razon_social: txt(byId("razon_social").value),
+          email_facturacion: txt(byId("email_facturacion").value),
+          enviar_factura_email_cliente_auto: bool("enviar_factura_email_cliente_auto"),
+          prefijo_factura: txt(byId("establecimiento").value) + "-" + txt(byId("punto_emision").value),
+          resolucion_numero: txt(byId("resolucion_numero").value),
+          api_base_url: txt(byId("api_base_url").value),
+          campos_pais_json: JSON.stringify(extraFromForm()),
+          observaciones: txt(byId("observaciones").value),
+          estado: "activo"
+        };
+      }
+      async function load() {
+        if (!state.empresaID) throw new Error("empresa_id es obligatorio");
+        var data = await fetch("/api/empresa/facturacion_electronica/ecuador?empresa_id=" + encodeURIComponent(state.empresaID), { credentials: "same-origin" }).then(readJSON);
+        fillForm(data.configuracion || {});
+        renderChecklist(data.checklist || {});
+      }
+      async function save() {
+        var data = await fetch("/api/empresa/facturacion_electronica/ecuador?empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload())
+        }).then(readJSON);
+        fillForm(data.configuracion || {});
+        renderChecklist(data.checklist || {});
+        setMsg("Configuracion Ecuador guardada.", false);
+      }
+      state.empresaID = Number(params().get("empresa_id") || localStorage.getItem("empresa_id") || 0);
+      byId("ecForm").addEventListener("submit", function (ev) { ev.preventDefault(); save().catch(function (err) { setMsg(err.message || "No se pudo guardar Ecuador", true); }); });
+      byId("validarBtn").addEventListener("click", function () { fetch("/api/empresa/facturacion_electronica/ecuador?action=checklist&empresa_id=" + encodeURIComponent(state.empresaID), { credentials: "same-origin" }).then(readJSON).then(function (data) { renderChecklist(data.checklist); setMsg("Checklist Ecuador actualizado.", false); }).catch(function (err) { setMsg(err.message || "No se pudo validar Ecuador", true); }); });
+      byId("recargarBtn").addEventListener("click", function () { load().then(function () { setMsg("Configuracion recargada.", false); }).catch(function (err) { setMsg(err.message || "No se pudo recargar Ecuador", true); }); });
+      load().catch(function (err) { setMsg(err.message || "No se pudo cargar Ecuador", true); });
+    })();
+  </script>
+</body>
+</html>

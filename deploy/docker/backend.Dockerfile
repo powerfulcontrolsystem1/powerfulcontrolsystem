@@ -18,6 +18,14 @@ COPY --from=build /out/pcs-backend /app/backend/pcs-backend
 COPY web /app/web
 COPY documentos /app/documentos
 COPY descargas /app/descargas
+COPY backend /app/project_export/backend
+COPY web /app/project_export/web
+COPY deploy /app/project_export/deploy
+COPY scripts /app/project_export/scripts
+COPY documentos /app/project_export/documentos
+COPY .dockerignore AGENTS.md CHANGELOG.md /app/project_export/
+
+ENV PCS_PROJECT_EXPORT_ROOT=/app/project_export
 
 RUN mkdir -p /app/backend/logs /app/web/uploads /app/backup /app/descargas
 

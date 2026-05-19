@@ -29,6 +29,36 @@ func TestLicenciaModulosCSVControlsModuleAccess(t *testing.T) {
 	}
 }
 
+func TestLicenciaFacturacionPanamaIsIndependent(t *testing.T) {
+	allowedGeneral, _ := parseLicenciaModulosCSV(permModuleFacturacion)
+	if isModuloPermitidoByLicencia(permModuleFacturacionPanama, allowedGeneral) {
+		t.Fatal("expected facturacion_panama to require its own licencia module")
+	}
+
+	allowedPanama, _ := parseLicenciaModulosCSV(permModuleFacturacionPanama)
+	if !isModuloPermitidoByLicencia(permModuleFacturacionPanama, allowedPanama) {
+		t.Fatal("expected facturacion_panama to be enabled when listed in licencia")
+	}
+	if isModuloPermitidoByLicencia(permModuleFacturacion, allowedPanama) {
+		t.Fatal("expected facturacion_panama not to unlock the general DIAN module")
+	}
+}
+
+func TestLicenciaFacturacionEcuadorIsIndependent(t *testing.T) {
+	allowedGeneral, _ := parseLicenciaModulosCSV(permModuleFacturacion)
+	if isModuloPermitidoByLicencia(permModuleFacturacionEcuador, allowedGeneral) {
+		t.Fatal("expected facturacion_ecuador to require its own licencia module")
+	}
+
+	allowedEcuador, _ := parseLicenciaModulosCSV(permModuleFacturacionEcuador)
+	if !isModuloPermitidoByLicencia(permModuleFacturacionEcuador, allowedEcuador) {
+		t.Fatal("expected facturacion_ecuador to be enabled when listed in licencia")
+	}
+	if isModuloPermitidoByLicencia(permModuleFacturacion, allowedEcuador) {
+		t.Fatal("expected facturacion_ecuador not to unlock the general DIAN module")
+	}
+}
+
 func TestLicenciaModulosLegacyFallbacksKeepSplitModulesEnabled(t *testing.T) {
 	allowed, _ := parseLicenciaModulosCSV(strings.Join([]string{
 		permModuleVentas,
@@ -230,6 +260,27 @@ func TestResolvePermissionPageKeyForRegularCart(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=7", nil)
 	if got := resolvePermissionPageKeyForRequest(r); got != "linkCarritoCompras" {
 		t.Fatalf("resolvePermissionPageKeyForRequest regular cart=%q, want linkCarritoCompras", got)
+	}
+}
+
+func TestResolvePermissionPageKeyForFacturacionPanama(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/api/empresa/facturacion_electronica/panama?empresa_id=7", nil)
+	if got := resolvePermissionPageKeyForRequest(r); got != "linkFacturacionPanama" {
+		t.Fatalf("resolvePermissionPageKeyForRequest panama=%q, want linkFacturacionPanama", got)
+	}
+}
+
+func TestResolvePermissionPageKeyForFacturacionEcuador(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/api/empresa/facturacion_electronica/ecuador?empresa_id=7", nil)
+	if got := resolvePermissionPageKeyForRequest(r); got != "linkFacturacionEcuador" {
+		t.Fatalf("resolvePermissionPageKeyForRequest ecuador=%q, want linkFacturacionEcuador", got)
+	}
+}
+
+func TestResolvePermissionPageKeyForFacturacionPaisDetectado(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/api/empresa/facturacion_electronica/pais_detectado?empresa_id=7", nil)
+	if got := resolvePermissionPageKeyForRequest(r); got != "" {
+		t.Fatalf("resolvePermissionPageKeyForRequest pais_detectado=%q, want empty page key", got)
 	}
 }
 

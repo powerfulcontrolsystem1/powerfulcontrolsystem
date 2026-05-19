@@ -88,3 +88,54 @@ func TestDefaultFacturacionConfigPaisAplicaProveedorYCampos(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildFacturacionPanamaChecklistIndependiente(t *testing.T) {
+	cfg := defaultFacturacionConfig(7, "PA")
+	cfg.IdentificadorFiscal = "155555-1-555555"
+	cfg.RazonSocial = "Empresa Panama SA"
+	cfg.CamposPaisJSON = `{
+		"ruc":"155555-1-555555",
+		"dv":"12",
+		"modalidad":"pac",
+		"registro_sfep":true,
+		"declaracion_jurada_sfep":true,
+		"certificado_firma_ref":"vault:empresa7-pa",
+		"pac_nombre":"PAC demo"
+	}`
+	checklist := BuildFacturacionPanamaChecklist(&cfg)
+	if !checklist.Ok {
+		t.Fatalf("expected Panama checklist ok, got %#v", checklist)
+	}
+	if checklist.PaisCodigo != "PA" || checklist.Modalidad != "pac" {
+		t.Fatalf("unexpected Panama checklist identity: %#v", checklist)
+	}
+	if len(checklist.DocumentosSoportados) == 0 {
+		t.Fatalf("expected Panama supported documents")
+	}
+}
+
+func TestBuildFacturacionEcuadorChecklistIndependiente(t *testing.T) {
+	cfg := defaultFacturacionConfig(8, "EC")
+	cfg.IdentificadorFiscal = "1790012345001"
+	cfg.RazonSocial = "Empresa Ecuador SA"
+	cfg.Proveedor = "sri_ecuador"
+	cfg.CamposPaisJSON = `{
+		"ruc":"1790012345001",
+		"integracion":"sri_xml_firmado",
+		"ambiente_sri":"1",
+		"establecimiento":"001",
+		"punto_emision":"001",
+		"certificado_firma_ref":"vault:empresa8-ec",
+		"certificado_firma_confirmado":true
+	}`
+	checklist := BuildFacturacionEcuadorChecklist(&cfg)
+	if !checklist.Ok {
+		t.Fatalf("expected Ecuador checklist ok, got %#v", checklist)
+	}
+	if checklist.PaisCodigo != "EC" || checklist.Integracion != "sri_xml_firmado" {
+		t.Fatalf("unexpected Ecuador checklist identity: %#v", checklist)
+	}
+	if len(checklist.DocumentosSoportados) == 0 {
+		t.Fatalf("expected Ecuador supported documents")
+	}
+}

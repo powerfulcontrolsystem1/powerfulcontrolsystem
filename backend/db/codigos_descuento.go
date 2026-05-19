@@ -270,6 +270,30 @@ func EnsureEmpresaCodigosDescuentoSchema(dbConn *sql.DB) error {
 		return err
 	}
 
+	// Regla comercial vigente: cada codigo de descuento se consume una sola vez
+	// por empresa. Se normalizan registros heredados para que no conserven cupos
+	// mayores ni queden redenciones historicas con contador disponible.
+	if _, err := execSQLCompat(dbConn, `UPDATE codigos_de_descuento
+		SET usos_maximos = 1,
+			usos_actuales = CASE WHEN COALESCE(usos_actuales, 0) > 1 THEN 1 ELSE COALESCE(usos_actuales, 0) END,
+			fecha_actualizacion = `+sqlNowExpr()+`
+		WHERE COALESCE(usos_maximos, 1) <> 1
+			OR COALESCE(usos_actuales, 0) > 1`); err != nil {
+		return err
+	}
+	if _, err := execSQLCompat(dbConn, `UPDATE codigos_de_descuento
+		SET usos_actuales = 1,
+			fecha_actualizacion = `+sqlNowExpr()+`
+		WHERE COALESCE(usos_actuales, 0) < 1
+			AND EXISTS (
+				SELECT 1
+				FROM codigos_descuento_redenciones r
+				WHERE r.empresa_id = codigos_de_descuento.empresa_id
+					AND r.codigo_descuento_id = codigos_de_descuento.id
+			)`); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1076,8 +1100,7 @@ func validateCodigoDescuentoAntiFraudeContexto(dbConn *sql.DB, item *CodigoDescu
 			FROM codigos_descuento_redenciones
 			WHERE empresa_id = ?
 				AND codigo_descuento_id = ?
-				AND carrito_id = ?
-				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+				AND carrito_id = ?`,
 			item.EmpresaID,
 			item.ID,
 			ctx.CarritoID,
@@ -1094,8 +1117,7 @@ func validateCodigoDescuentoAntiFraudeContexto(dbConn *sql.DB, item *CodigoDescu
 	err := dbConn.QueryRow(`SELECT COUNT(1)
 		FROM codigos_descuento_redenciones
 		WHERE empresa_id = ?
-			AND codigo_descuento_id = ?
-			AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+			AND codigo_descuento_id = ?`,
 		item.EmpresaID,
 		item.ID,
 	).Scan(&usosEmpresa)
@@ -1121,7 +1143,6 @@ func validateCodigoDescuentoAntiFraudeContexto(dbConn *sql.DB, item *CodigoDescu
 			WHERE empresa_id = ?
 				AND codigo_descuento_id = ?
 				AND cliente_id = ?
-				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'
 				AND COALESCE(fecha_redencion, fecha_creacion, '') >= ?`,
 			item.EmpresaID,
 			item.ID,
@@ -1248,8 +1269,7 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 			FROM codigos_descuento_redenciones
 			WHERE empresa_id = ?
 				AND codigo_descuento_id = ?
-				AND carrito_id = ?
-				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+				AND carrito_id = ?`,
 			item.EmpresaID,
 			item.ID,
 			carritoID,
@@ -1266,8 +1286,7 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 	err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 		FROM codigos_descuento_redenciones
 		WHERE empresa_id = ?
-			AND codigo_descuento_id = ?
-			AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'`,
+			AND codigo_descuento_id = ?`,
 		item.EmpresaID,
 		item.ID,
 	).Scan(&usosEmpresa)
@@ -1293,7 +1312,6 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 			WHERE empresa_id = ?
 				AND codigo_descuento_id = ?
 				AND cliente_id = ?
-				AND COALESCE(estado_redencion, 'aplicada') = 'aplicada'
 				AND COALESCE(fecha_redencion, fecha_creacion, '') >= ?`,
 			item.EmpresaID,
 			item.ID,
@@ -1500,12 +1518,6 @@ func revertCodigoDescuentoUsoPorCarritoTx(tx *sql.Tx, empresaID, carritoID int64
 	}
 
 	for _, redencion := range redenciones {
-		if _, err := execTxSQLCompat(tx, `UPDATE codigos_de_descuento
-		SET usos_actuales = CASE WHEN usos_actuales > 0 THEN usos_actuales - 1 ELSE 0 END,
-			fecha_actualizacion = `+sqlNowExpr()+`
-		WHERE empresa_id = ? AND id = ?`, empresaID, redencion.codigoID); err != nil {
-			return err
-		}
 		if _, err := execTxSQLCompat(tx, `UPDATE codigos_descuento_redenciones
 		SET estado_redencion = ?,
 			motivo = CASE

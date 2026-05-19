@@ -878,6 +878,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/facturacion_electronica/ecuador":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/ecuador
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/ecuador
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/facturacion_electronica/pais_detectado":
     get:
       tags: [empresa]
@@ -901,6 +914,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/facturacion_electronica/paises_disponibles
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/facturacion_electronica/panama":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/panama
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/facturacion_electronica/panama
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -2994,6 +3020,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/correos_masivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/docker_portabilidad":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/docker_portabilidad
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/docker_portabilidad
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

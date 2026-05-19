@@ -1,3 +1,39 @@
+2026-05-19: Codigos de descuento y promocion de asesor de un solo uso.
+- Modulos afectados: `carritos`, `pagos`, `licencias`, `asesor_comercial`.
+- `backend/db/codigos_descuento.go` normaliza `usos_maximos=1`, marca como consumidos los codigos con redenciones historicas, valida cualquier redencion como uso previo y deja de decrementar `usos_actuales` al anular/reabrir carritos.
+- `backend/db/licencias_gratis.go` agrega `HasLicenciaAdvisorCodeUsedByEmpresa`, revisando pagos aprobados Wompi/Epayco, activaciones gratis y comisiones de asesor para saber si una empresa ya uso la promocion de asesor.
+- `backend/handlers/payments_handlers.go` recalcula en backend la promocion de asesor: solo descuenta si esta habilitada y con porcentaje configurado; si ya fue usada, conserva el asesor para trazabilidad/comision sin volver a descontar.
+- Documentacion actualizada en `documentos/estructura_bd.md`, `documentos/descripcion_de_modulos`, `CHANGELOG.md` y `documentos/CHANGELOG.md`.
+- Pruebas: `go test ./db` y `go test ./handlers` desde `backend`.
+- Alcance: sin tablas nuevas, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
+
+2026-05-19: Facturacion electronica Ecuador independiente.
+- Se revisa documentacion publica de SRI Ecuador sobre facturacion electronica, comprobantes electronicos, Facturador SRI, Facturador Electronico Gratuito, firma electronica, autorizacion, RIDE y documentos soportados. Fuentes: `https://www.sri.gob.ec/facturacion-electronica`, `https://www.sri.gob.ec/comprobantes-electronicos`, `https://www.sri.gob.ec/en/facturador-sri`.
+- `backend/db/facturacion_electronica.go` agrega defaults y checklist EC sobre `facturacion_electronica_pais.campos_pais_json`, con RUC, establecimiento, punto de emision, ambiente SRI 1/2, firma, autorizacion de produccion, clave de acceso, numero de autorizacion, RIDE y documentos factura/nota credito/nota debito/retencion/guia remision.
+- `backend/handlers/facturacion_electronica.go` agrega `/api/empresa/facturacion_electronica/ecuador` para leer, guardar, validar checklist y entregar guia de onboarding Ecuador por `empresa_id`.
+- `backend/handlers/empresa_permisos.go` agrega `facturacion_ecuador`, `linkFacturacionEcuador` y `WithEmpresaFacturacionEcuadorPermissions` para que la licencia active Ecuador sin habilitar DIAN Colombia ni Panama.
+- `backend/main.go` registra la ruta empresarial bajo el wrapper independiente; `backend/main_empresa_routes_security_test.go` reconoce el nuevo wrapper.
+- `web/administrar_empresa/facturacion_electronica_ecuador.html` crea la pagina independiente Ecuador/SRI y `web/administrar_empresa/facturacion_electronica_menu.html` muestra el acceso `Ecuador / SRI` solo cuando el pais detectado es EC y la licencia/rol lo permiten.
+- Pruebas: `go test ./handlers ./db -run "Facturacion|Panama|Ecuador|Paises|Licencia|Permisos" -count=1`, `go test . -count=1`, `node --check web/js/administrar_empresa.js` y validacion de scripts inline del submenu, Ecuador y Panama.
+- Alcance: sin tablas nuevas, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
+
+2026-05-19: Facturacion electronica por pais detectado y licencia.
+- Modulos afectados: `facturacion_electronica`, `permisos`, `licencias`, `frontend_ux`.
+- `backend/handlers/empresa_permisos.go` agrega el modulo independiente `facturacion_panama`, la pagina `linkFacturacionPanama`, el wrapper `WithEmpresaFacturacionPanamaPermissions` y el mapeo exacto del endpoint Panama para que la licencia lo controle sin habilitar DIAN Colombia.
+- `/api/empresa/facturacion_electronica/pais_detectado` queda disponible para usuarios autenticados con acceso a la empresa, sin conceder configuracion ni emision, para que el frontend pueda decidir las paginas del submenu por pais.
+- `web/administrar_empresa/facturacion_electronica_menu.html` mantiene el submenu de facturacion como contenedor y muestra paginas internas por pais detectado: CO para DIAN/pruebas/proveedores y PA para Panama/DGI si `facturacion_panama` esta habilitado por licencia y rol.
+- `web/js/administrar_empresa.js` permite que el boton principal de facturacion electronica se vea cuando la licencia tenga `facturacion` o `facturacion_panama`, y registra las paginas internas para permisos.
+- Pruebas: `go test ./handlers ./db -run "Facturacion|Panama|Paises|Licencia|Permisos" -count=1`, `go test . -count=1`, `node --check web/js/administrar_empresa.js`, validacion de scripts inline del submenu y `git diff --check`.
+
+2026-05-19: Facturacion electronica Panama independiente
+- Se revisa documentacion publica de DGI Panama/SFEP para separar Panama de Colombia/DIAN: Facturador Gratuito, PAC, declaracion jurada de adopcion desde e-Tax2.0, certificado/firma electronica y documentos electronicos autorizados. Fuentes: `https://dgi.mef.gob.pa/_7FacturaElectronica/felectronica`, `https://dgi.mef.gob.pa/_7FacturaElectronica/R-Emisorfe.php`, `https://dgi.mef.gob.pa/_7FacturaElectronica/f-Gratuito`.
+- `backend/db/facturacion_electronica.go` agrega defaults y checklist PA sobre `facturacion_electronica_pais.campos_pais_json`, con RUC, DV, modalidad, registro SFEP, declaracion jurada, firma, PAC, CAFE, CUFE, QR y documentos soportados.
+- `backend/handlers/facturacion_electronica.go` agrega `/api/empresa/facturacion_electronica/panama` para leer, guardar, validar checklist y entregar guia de onboarding Panama por `empresa_id`.
+- `backend/main.go` registra la ruta empresarial bajo los permisos existentes de facturacion.
+- `web/administrar_empresa/facturacion_electronica_panama.html` crea la pagina independiente Panama/DGI y `web/administrar_empresa/facturacion_electronica_menu.html` agrega el acceso `Panama / DGI`.
+- Pruebas: `go test ./db ./handlers -run "Facturacion|Panama|Paises" -count=1` y `node --check web/js/administrar_empresa.js`.
+- Alcance: sin tablas nuevas, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
+
 2026-05-19: Caja y turno independientes por usuario en la misma empresa.
 - Modulos afectados: `finanzas`, `corte_de_caja`, `carritos`, `estaciones`, `ventas_simple`.
 - `backend/db/finanzas.go` agrega filtro `UsuarioCreador` en cierres de caja, normaliza cierres sin usuario a `sistema`, elimina en PostgreSQL constraints e indices legacy por caja/turno sin usuario aun cuando el esquema ya estaba marcado como listo, y crea `ux_empresa_cierres_caja_usuario_turno`.
@@ -140,6 +176,21 @@
 - Frontend: `web/administrar_empresa/corte_de_caja.html` muestra el reporte de turno como hoja imprimible con empresa arriba, datos del turno, detalle de ventas y resumenes de ingresos, egresos, productos, servicios, medios de pago y efectivo esperado.
 - Configuracion: `web/administrar_empresa/configuracion.html` permite activar/desactivar los bloques y campos desde la seccion `Reporte de corte`.
 - QA: pruebas Go enfocadas para corte/configuracion, parseo de scripts inline, `git diff --check` y verificacion visual local con datos mock.
+
+2026-05-19: Compactacion POS del reporte de turno
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- Ajuste visual: en POS 80mm los datos del turno, resumen financiero y detalle de ventas pasan a grillas de dos columnas para aprovechar mejor el ancho del ticket.
+- Archivos: `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html`.
+- QA: sintaxis JS inline valida y comprobacion visual local con mock POS usando el CSS real; las columnas calculadas quedaron en dos tracks equivalentes dentro del ticket. No cambia backend, endpoints, permisos ni tablas.
+
+2026-05-19: Docker VPS portable desde Super Administrador
+- Modulos afectados: `super_administrador`, `deploy`, `docker`, `operacion_vps`.
+- Causa tecnica: el stack Docker ya era portable por Compose y volumenes, pero el panel super no tenia una consola dedicada para descargar un paquete base limpio ni el backend en contenedor tenia siempre el arbol `deploy` completo disponible para exportar.
+- Backend: `backend/handlers/super_docker_portabilidad.go` agrega `/super/api/docker_portabilidad?action=status|download`, protegido por rol super, con empaquetado `.tar.gz` en Go puro.
+- Seguridad: la exportacion excluye `.env`, `deploy/.env.platform`, `backend/.env*`, uploads, descargas, backups, logs, caches, llaves y datos runtime. El paquete no contiene dumps PostgreSQL ni volumenes productivos.
+- Docker: `deploy/docker/backend.Dockerfile` incorpora `/app/project_export` con backend, web, deploy, scripts y documentos limpios para que la descarga funcione desde el contenedor.
+- Frontend: `web/super/docker_portabilidad.html`, `web/super_administrador.html` y `web/js/super_administrador.js` agregan la pagina `Docker VPS` en Plataforma.
+- QA: `go test ./handlers -run "DockerPortable|FileExplorer" -count=1`, `go test ./... -run "DockerPortable|Static|AuthMiddleware" -count=1`, sintaxis JS inline y revision visual local. `docker compose config` no pudo ejecutarse localmente porque Docker no esta instalado en esta estacion.
 
 2026-05-18: Panel ejecutivo de Super Administrador
 - Modulos afectados: `super_administrador`, `frontend_ux`, `operacion_sistema`.
@@ -26690,3 +26741,19 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/administrar_empresa/estaciones.html
+
+2026-05-19: Reparacion responsive del panel Administrar empresa en movil
+- Se ajusta `web/administrar_empresa.html` para cargar un actualizador de service worker/cache al entrar al panel empresarial.
+- Se actualiza `web/sw.js` a `pcs-shell-v3`, sin precache de `estilos.css`, y con estrategia network-first para CSS, JS y manifest, evitando que celulares o PWA instaladas muestren una version visual vieja.
+- Se agrega `web/js/service_worker_update.js` para borrar caches `pcs-shell-*` obsoletos y recargar una sola vez cuando habia recursos antiguos activos.
+- Se mejora `web/js/administrar_empresa.js` con autoaltura del iframe en movil y observacion de cambios de contenido para reducir scroll doble y paginas encajonadas.
+- Se ajusta `web/administrar_empresa/panel.html` para que el titulo, ciudad detectada, clima, favoritos y pie no queden cortados en pantallas pequenas.
+- Se agrega una guarda responsive final en `web/estilos.css` para que el menu, submenus, botones e iframe ocupen el ancho real del celular sin desbordes horizontales.
+- Validacion: sintaxis JS/service worker, `git diff --check` y revision visual en viewport movil 390x844 del shell y del panel empresarial.
+
+2026-05-19: Clientes desde carrito y cliente obligatorio al pagar
+- `web/administrar_empresa/carrito_de_compras.html` agrega un panel `Cliente del carrito` que se abre desde el boton `Clientes`; permite seleccionar un cliente existente o registrar uno nuevo sin salir del carrito y lo asigna al carrito actual.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/administrar_empresa/configuracion_de_estaciones.html` agregan el check `Exigir cliente registrado para pagar`.
+- El JSON `estaciones_config.carrito_ui_global` incorpora `cliente_obligatorio_pago`; cuando esta activo el frontend bloquea `Pagar y cerrar carrito` si no hay `cliente_id`.
+- `backend/handlers/carritos_compras.go` valida tambien en `action=pagar_estacion` que el carrito tenga cliente cuando la configuracion exige cliente, evitando saltarse la regla desde consola.
+- El preset global de carrito mantiene `cliente_obligatorio_pago=false` por defecto para no romper empresas existentes.

@@ -38,6 +38,8 @@ const (
 	permModuleCRMUnificado         = "crm_unificado"
 	permModuleCompras              = "compras"
 	permModuleFacturacion          = "facturacion"
+	permModuleFacturacionEcuador   = "facturacion_ecuador"
+	permModuleFacturacionPanama    = "facturacion_panama"
 	permModuleSeguridad            = "seguridad"
 	permModuleVentaPublica         = "venta_publica"
 	permModuleReservasHotel        = "reservas_hotel"
@@ -230,13 +232,15 @@ var permissionUniversalGroupLabels = map[string]string{
 }
 
 var permissionUniversalModuleLabels = map[string]string{
-	"Ventas y servicio al cliente":             "Ventas universales y servicio al cliente",
-	"Inventario y almac\u00e9n":                "Inventario universal y almac\u00e9n",
-	"Finanzas, caja y reportes":                "Finanzas universales, caja y reportes",
-	"Clientes y cartera comercial":             "CRM universal, clientes y cartera comercial",
-	"Compras y proveedores":                    "Compras universales y proveedores",
-	"Facturaci\u00f3n electr\u00f3nica (DIAN)": "Facturaci\u00f3n electr\u00f3nica universal (DIAN)",
-	"Seguridad, usuarios e integraci\u00f3n":   "Administraci\u00f3n universal, usuarios e integraci\u00f3n",
+	"Ventas y servicio al cliente":                        "Ventas universales y servicio al cliente",
+	"Inventario y almac\u00e9n":                           "Inventario universal y almac\u00e9n",
+	"Finanzas, caja y reportes":                           "Finanzas universales, caja y reportes",
+	"Clientes y cartera comercial":                        "CRM universal, clientes y cartera comercial",
+	"Compras y proveedores":                               "Compras universales y proveedores",
+	"Facturaci\u00f3n electr\u00f3nica (DIAN)":            "Facturaci\u00f3n electr\u00f3nica universal (DIAN)",
+	"Facturaci\u00f3n electr\u00f3nica Ecuador (SRI)":     "Facturaci\u00f3n electr\u00f3nica universal Ecuador (SRI)",
+	"Facturaci\u00f3n electr\u00f3nica Panam\u00e1 (DGI)": "Facturaci\u00f3n electr\u00f3nica universal Panam\u00e1 (DGI)",
+	"Seguridad, usuarios e integraci\u00f3n":              "Administraci\u00f3n universal, usuarios e integraci\u00f3n",
 }
 
 func universalPermissionGroupLabel(value string) string {
@@ -275,6 +279,8 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleCRMUnificado,
 	permModuleCompras,
 	permModuleFacturacion,
+	permModuleFacturacionEcuador,
+	permModuleFacturacionPanama,
 	permModuleSeguridad,
 	permModuleVentaPublica,
 	permModuleReservasHotel,
@@ -349,6 +355,8 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleCRMUnificado:         "CRM unificado comercial",
 	permModuleCompras:              "Compras y proveedores",
 	permModuleFacturacion:          "Facturación electrónica (DIAN)",
+	permModuleFacturacionEcuador:   "Facturación electrónica Ecuador (SRI)",
+	permModuleFacturacionPanama:    "Facturación electrónica Panamá (DGI)",
 	permModuleSeguridad:            "Seguridad, usuarios e integración",
 	permModuleVentaPublica:         "Venta publica y carta de productos",
 	permModuleReservasHotel:        "Reservas hoteleras",
@@ -504,6 +512,10 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 
 	{PaginaClave: "linkFacturacionElectronica", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturacion electronica (emitir)", Grupo: "Facturacion electronica"},
 	{PaginaClave: "linkFacturacionMain", Modulo: permModuleFacturacion, Accion: permActionCreate, Titulo: "Facturacion electronica", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkFacturacionEcuador", Modulo: permModuleFacturacionEcuador, Accion: permActionCreate, Titulo: "Facturacion electronica Ecuador / SRI", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkFacturacionPanama", Modulo: permModuleFacturacionPanama, Accion: permActionCreate, Titulo: "Facturacion electronica Panama / DGI", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkPruebasDian", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Pruebas DIAN y documentos", Grupo: "Facturacion electronica"},
+	{PaginaClave: "linkProveedoresFirmaDigital", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Proveedores de firma digital", Grupo: "Facturacion electronica"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturacion electronica"},
 	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
@@ -929,6 +941,16 @@ func WithEmpresaFacturacionPermissions(dbEmp, dbSuper *sql.DB, next http.Handler
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFacturacion, resolveFacturacionPermissionAction, next)
 }
 
+// WithEmpresaFacturacionEcuadorPermissions aplica permisos independientes para facturacion electronica Ecuador / SRI.
+func WithEmpresaFacturacionEcuadorPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFacturacionEcuador, resolveFacturacionPermissionAction, next)
+}
+
+// WithEmpresaFacturacionPanamaPermissions aplica permisos independientes para facturacion electronica Panama / DGI.
+func WithEmpresaFacturacionPanamaPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleFacturacionPanama, resolveFacturacionPermissionAction, next)
+}
+
 // WithEmpresaAIUConstruccionPermissions aplica permisos independientes para contratos de obra y AIU.
 func WithEmpresaAIUConstruccionPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleAIUConstruccion, resolveAIUConstruccionPermissionAction, next)
@@ -1340,7 +1362,8 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 		}
 
 		role := snapshot.AdminRole
-		skipLicenciaModuloCheck := module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")
+		isFacturacionPaisDetectado := module == permModuleFacturacion && strings.EqualFold(strings.TrimSpace(r.URL.Path), "/api/empresa/facturacion_electronica/pais_detectado")
+		skipLicenciaModuloCheck := (module == permModuleSeguridad && strings.HasPrefix(strings.TrimSpace(r.URL.Path), "/api/empresa/permisos_contexto")) || isFacturacionPaisDetectado
 		if !skipLicenciaModuloCheck && !isModuloPermitidoByLicencia(module, snapshot.AllowedModules) {
 			http.Error(w, "forbidden: modulo no habilitado por licencia activa", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
@@ -1354,7 +1377,7 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 
 		requestPath := strings.TrimSpace(r.URL.Path)
 		effectiveRole := snapshot.EffectiveRole
-		skipRoleModuloCheck := module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")
+		skipRoleModuloCheck := (module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")) || isFacturacionPaisDetectado
 		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
@@ -2218,7 +2241,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return false
 		}
 
-	case permModuleFacturacion:
+	case permModuleFacturacion, permModuleFacturacionEcuador, permModuleFacturacionPanama:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -3157,6 +3180,12 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkChatIA"
 	case path == "/api/empresa/impuestos":
 		return "linkImpuestos"
+	case path == "/api/empresa/facturacion_electronica/pais_detectado":
+		return ""
+	case path == "/api/empresa/facturacion_electronica/ecuador":
+		return "linkFacturacionEcuador"
+	case path == "/api/empresa/facturacion_electronica/panama":
+		return "linkFacturacionPanama"
 	case strings.HasPrefix(path, "/api/empresa/facturacion_electronica"):
 		if action == "emitir" || !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet) {
 			return "linkFacturacionElectronica"

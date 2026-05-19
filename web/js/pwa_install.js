@@ -36,7 +36,11 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(function () {});
+      navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (registration) {
+        if (registration && typeof registration.update === "function") {
+          registration.update().catch(function () {});
+        }
+      }).catch(function () {});
     });
   }
 

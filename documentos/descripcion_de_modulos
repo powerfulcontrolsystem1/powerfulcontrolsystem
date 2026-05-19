@@ -1,3 +1,36 @@
+2026-05-19: Compactacion POS del reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` compacta la vista actual del reporte de turno en POS 80mm: datos del turno, resumen financiero y detalle de ventas usan dos columnas cuando hay espacio.
+- `web/administrar_empresa/reportes_turnos.html` aplica la misma compactacion al reporte historico imprimible.
+- Alcance: cambio visual de vista previa/impresion; no cambia backend, endpoints, permisos ni tablas.
+
+2026-05-19: Docker VPS portable desde Super Administrador.
+- Modulos afectados: `super_administrador`, `deploy`, `docker`, `operacion_vps`.
+- Backend: se agrega `/super/api/docker_portabilidad` con acciones `status` y `download`, protegido por `paginaPrincipalRequireSuperAdmin`.
+- Exportacion: el handler genera un `.tar.gz` con el proyecto base Docker, un `LEEME_MIGRACION_DOCKER.md` y los artefactos necesarios para reconstruir en otra VPS.
+- Seguridad: se excluyen secretos reales, `.env`, llaves, uploads, descargas, backups, logs, caches, evidencias QA, binarios y datos runtime. La descarga no reemplaza los backups de PostgreSQL ni los volumenes Docker.
+- Docker: `deploy/docker/backend.Dockerfile` copia un snapshot limpio a `/app/project_export` y define `PCS_PROJECT_EXPORT_ROOT` para que el endpoint funcione dentro del contenedor.
+- Frontend: `web/super/docker_portabilidad.html` muestra estado, perfiles Docker, politica de exclusion y boton `Descargar proyecto Docker`. `web/super_administrador.html` agrega el acceso `Docker VPS` en Plataforma.
+- Sin tablas nuevas ni dependencias externas.
+
+2026-05-19: Facturacion electronica Ecuador independiente.
+- Modulos afectados: `facturacion_electronica`, `frontend_ux`, `permisos`, `licencias`.
+- Backend: se agrega `/api/empresa/facturacion_electronica/ecuador`, separado de DIAN Colombia y DGI Panama, reutilizando `facturacion_electronica_pais` con `pais_codigo=EC` para conservar aislamiento por `empresa_id` y por pais.
+- Permisos/licencia: Ecuador queda bajo el modulo independiente `facturacion_ecuador`; el endpoint EC usa `WithEmpresaFacturacionEcuadorPermissions` y no se habilita por tener DIAN Colombia o Panama.
+- Ecuador/SRI: el perfil EC incorpora defaults SRI: RUC, establecimiento, punto de emision, ambiente SRI `1` pruebas o `2` produccion, firma electronica, autorizacion de produccion, clave de acceso, numero de autorizacion, RIDE y documentos soportados `factura`, `nota_credito`, `nota_debito`, `retencion` y `guia_remision`.
+- Frontend: nueva pagina `web/administrar_empresa/facturacion_electronica_ecuador.html` en el submenu de facturacion electronica, con formulario propio, checklist, enlaces oficiales SRI y guardado independiente. El submenu muestra `Ecuador / SRI` solo cuando el pais detectado es EC y la licencia/rol lo permiten.
+- Alcance normativo: se basa en documentacion publica SRI Ecuador sobre facturacion electronica, comprobantes de venta/retencion/documentos complementarios, firma electronica, Facturador SRI, Facturador Electronico Gratuito, RIDE y autorizacion de comprobantes. No implementa aun transporte real SRI; deja preparado el endpoint de proveedor por `api_base_url`.
+- Sin dependencias externas ni tablas nuevas.
+
+2026-05-19: Facturacion electronica Panama independiente.
+- Modulos afectados: `facturacion_electronica`, `frontend_ux`, `permisos`.
+- Backend: se agrega `/api/empresa/facturacion_electronica/panama`, separado del endpoint DIAN, reutilizando `facturacion_electronica_pais` con `pais_codigo=PA` para conservar aislamiento por `empresa_id` y por pais.
+- Permisos/licencia: Panama queda bajo el modulo independiente `facturacion_panama`; el endpoint PA usa `WithEmpresaFacturacionPanamaPermissions` y no se habilita solo por tener DIAN Colombia. La deteccion de pais sigue disponible para usuarios autenticados de la empresa para decidir que paginas mostrar.
+- Panama/DGI: el perfil PA incorpora defaults SFEP: RUC, DV, modalidad `pac` o `facturador_gratuito`, registro SFEP, declaracion jurada, certificado de firma, PAC, CAFE, CUFE, QR y documentos soportados `factura_electronica`, `nota_credito` y `nota_debito`.
+- Frontend: nueva pagina `web/administrar_empresa/facturacion_electronica_panama.html` en el submenu de facturacion electronica, con formulario propio, checklist, enlaces oficiales DGI/e-Tax2.0 en ventana nueva y guardado independiente. El submenu de facturacion permanece visible como contenedor y muestra paginas internas segun pais detectado: CO para DIAN/pruebas/proveedores y PA para DGI/SFEP.
+- Alcance normativo: se basa en la documentacion publica de DGI Panama sobre SFEP, Facturador Gratuito, PAC, declaracion jurada de adopcion desde e-Tax2.0 y certificado/firma electronica. No implementa aun transporte real PAC/DGI; deja preparado el endpoint de proveedor por `api_base_url`.
+- Sin dependencias externas ni tablas nuevas.
+
 2026-05-19: Caja y turno independientes por usuario.
 - Modulos afectados: `finanzas`, `corte_de_caja`, `carritos`, `estaciones`, `ventas_simple`.
 - Backend: `empresa_cierres_caja` queda identificado tambien por `usuario_creador`; al iniciar o reutilizar una caja abierta se busca primero la caja del usuario autenticado.
@@ -384,6 +417,13 @@
 - Compatibilidad: si ya existe el carrito legacy `VENTA-DIRECTA-{empresa_id}` o un carrito con `referencia_externa=CAJA_DIRECTA`, la pantalla lo reutiliza antes de crear uno nuevo.
 - UX: venta directa deja de mostrar error de carrito faltante y oculta el boton `Regresar a estaciones`; estaciones mantienen su asignacion `EST-{empresa_id}-{estacion_id}`.
 - Alcance: cambio frontend; no agrega tablas, endpoints ni dependencias y conserva aislamiento por `empresa_id`.
+
+2026-05-19: Codigos de descuento y promocion de asesor de un solo uso
+- Modulos afectados: `carritos`, `pagos`, `licencias`, `asesor_comercial`.
+- Cambio funcional: los codigos de descuento del carrito quedan consumidos una sola vez por empresa; anular, reabrir o revertir el carrito conserva la redencion como auditoria y no devuelve el cupo.
+- Checkout de licencias: el descuento por codigo de asesor solo se aplica cuando la promocion global esta activa y tiene porcentaje configurado; si la empresa ya uso un asesor en pagos, activaciones gratis o comisiones, el asesor puede seguir asociado para comision pero no se vuelve a descontar.
+- Persistencia: no agrega tablas ni dependencias; reutiliza `codigos_de_descuento`, `codigos_descuento_redenciones`, `pagos_wompi`, `pagos_epayco`, `licencias_activaciones_gratis` y `asesor_comercial_comisiones`.
+- Seguridad: mantiene aislamiento por `empresa_id` y recalcula descuentos en backend antes de activar o abrir pasarela.
 
 2026-05-15: Empresas compartidas con alcance profesional
 - Modulos afectados: `empresas compartidas`, `administrar empresa`, `seleccionar empresa`, `permisos`.
@@ -2733,3 +2773,17 @@ Captura inteligente de compras y gastos
 - Modulos afectados: `documentacion`, `ayuda`, `super_administrador`, `administrar_empresa`, `licencias`, `soporte`, `operacion`.
 - Se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa consolidado de reglas vigentes, rutas canonicas, operacion conectada, licencias/cajas, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
 - `web/ayuda/ayuda.html` incorpora secciones de acceso global de usuarios, operacion conectada obligatoria, cajas simultaneas por licencia, soporte por tickets, correos masivos, mantenimiento programado, documentos locales y backups.
+
+2026-05-19: Administrar empresa responsive en movil
+- Modulos afectados: `administrar_empresa`, `PWA/cache`, `frontend_ux`.
+- El shell empresarial ahora fuerza actualizacion de CSS/JS/manifest con cache network-first, limpia caches PWA obsoletas y evita que celulares instalados conserven una version visual vieja.
+- En celular, el menu empresarial, submenus, botones e iframe se acomodan en columna, sin scroll horizontal, y el iframe se ajusta al alto real de la subpagina cargada.
+- La pagina inicial del panel empresarial deja de cortar textos principales en movil: titulo, ciudad del clima, resumen de clima, favoritos y pie pueden envolver lineas.
+- No cambia endpoints, permisos, tablas ni dependencias externas.
+
+2026-05-19: Clientes desde carrito y cliente obligatorio
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `configuracion_empresarial`.
+- El boton `Clientes` del carrito abre un panel interno para registrar un cliente nuevo o asignar uno existente al carrito activo, sin abandonar venta directa ni estaciones.
+- La configuracion del carrito incorpora `Exigir cliente registrado para pagar`; cuando esta activa, el sistema bloquea el pago hasta que el carrito tenga `cliente_id`.
+- El backend valida la misma regla en `pagar_estacion`, manteniendo aislamiento por `empresa_id` y reutilizando el modulo central de clientes.
+- No se agregan tablas ni dependencias externas; la regla se guarda en `estaciones_config.carrito_ui_global`.

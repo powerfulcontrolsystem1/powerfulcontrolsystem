@@ -7,6 +7,7 @@ Levantar Powerful Control System en un VPS nuevo usando imagenes Docker, volumen
 ## Insumos obligatorios
 
 - Repositorio actualizado.
+- Paquete `.tar.gz` descargado desde `Super Administrador > Plataforma > Docker VPS`, si no se va a clonar el repositorio directamente.
 - `deploy/.env.platform` privado.
 - Ultimo snapshot de `/root/powerfulcontrolsystem/backups/vps-snapshots`.
 - Imagenes Docker publicadas o capacidad de construirlas desde el repo.
@@ -22,7 +23,7 @@ systemctl enable --now docker
 
 ## Restauracion
 
-1. Copiar el proyecto a `/root/powerfulcontrolsystem`.
+1. Copiar el proyecto a `/root/powerfulcontrolsystem` desde repositorio o desde el paquete portable Docker descargado en el panel super.
 2. Copiar `deploy/.env.platform` con permisos `600`.
 3. Restaurar volumenes Docker desde los tarballs del snapshot.
 4. Levantar PostgreSQL y restaurar `postgres_all.sql.gz`.

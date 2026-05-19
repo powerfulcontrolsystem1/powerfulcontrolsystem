@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-19 (Docker VPS portable desde Super Administrador)
+
+- `web/super_administrador.html` agrega el acceso `Docker VPS` dentro de Plataforma y `web/js/super_administrador.js` permite restaurar esa pagina en el iframe super.
+- `web/super/docker_portabilidad.html` consume `/super/api/docker_portabilidad?action=status` para mostrar disponibilidad, perfiles Docker, archivos incluidos/excluidos y pasos de traslado.
+- `backend/handlers/super_docker_portabilidad.go` expone `status` y `download`, protegido por `paginaPrincipalRequireSuperAdmin`, empaquetando con `archive/tar` + `compress/gzip` de la libreria estandar.
+- `deploy/docker/backend.Dockerfile` copia un snapshot limpio a `/app/project_export` y define `PCS_PROJECT_EXPORT_ROOT`, de modo que el backend en contenedor pueda exportar el proyecto base sin depender del filesystem del host.
+- Flujo: Super Administrador -> Plataforma -> Docker VPS -> descargar `.tar.gz` -> nueva VPS -> copiar `deploy/.env.platform` privado -> restaurar volumenes/backups -> `docker compose up -d --build` -> opcional `vps-docker-edge-up.sh`.
+
 ## Actualizacion 2026-05-19 (impresora POS default global)
 
 - Backend:

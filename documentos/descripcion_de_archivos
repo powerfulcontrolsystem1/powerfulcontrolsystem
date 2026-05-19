@@ -1,3 +1,53 @@
+2026-05-19 - Compactacion POS del reporte de turno
+- `web/administrar_empresa/corte_de_caja.html`:
+	- compacta datos del turno, resumen financiero y detalle de ventas en dos columnas para ticket POS 80mm.
+- `web/administrar_empresa/reportes_turnos.html`:
+	- aplica la misma compactacion en la vista historica imprimible de turnos.
+
+2026-05-19 - Docker VPS portable desde Super Administrador
+- `backend/handlers/super_docker_portabilidad.go`:
+	- endpoint super para revisar estado Docker portable y descargar un paquete `.tar.gz` del proyecto base Docker sin secretos ni datos runtime.
+- `backend/handlers/super_docker_portabilidad_test.go`:
+	- prueba de regresion para raiz portable y exclusiones de `.env`, uploads y datos privados.
+- `web/super/docker_portabilidad.html`:
+	- pagina del panel super con estado del stack Docker, perfiles, politica de exclusion, pasos de migracion y boton de descarga.
+- `deploy/docker/backend.Dockerfile`:
+	- incorpora el snapshot limpio `/app/project_export` usado por el exportador dentro del contenedor backend.
+
+2026-05-19 - Facturacion electronica Ecuador
+- `backend/db/facturacion_electronica.go`:
+	- agrega defaults y checklist EC para RUC, establecimiento, punto de emision, ambiente SRI, firma electronica, autorizacion de produccion, RIDE y documentos soportados.
+- `backend/handlers/facturacion_electronica.go`:
+	- agrega `/api/empresa/facturacion_electronica/ecuador` para leer, guardar, validar checklist y entregar guia de onboarding SRI.
+- `backend/handlers/empresa_permisos.go`:
+	- registra `facturacion_ecuador`, `linkFacturacionEcuador` y `WithEmpresaFacturacionEcuadorPermissions`.
+- `backend/main.go`:
+	- registra la ruta Ecuador con wrapper de permisos independiente.
+- `backend/main_empresa_routes_security_test.go`:
+	- reconoce el wrapper empresarial Ecuador.
+- `backend/db/facturacion_electronica_paises_test.go`:
+	- valida el checklist Ecuador independiente.
+- `backend/handlers/empresa_permisos_licencias_test.go`:
+	- valida que `facturacion_ecuador` no se habilite por DIAN y que resuelva pagina propia.
+- `web/administrar_empresa/facturacion_electronica_ecuador.html`:
+	- pagina de configuracion Ecuador/SRI con checklist, enlaces oficiales y guardado.
+- `web/administrar_empresa/facturacion_electronica_menu.html` y `web/js/administrar_empresa.js`:
+	- muestran `Ecuador / SRI` por pais detectado EC y por licencia/rol.
+
+2026-05-19 - Facturacion electronica por pais y licencia
+- `backend/handlers/empresa_permisos.go`:
+	- registra `facturacion_panama`, `linkFacturacionPanama`, paginas internas DIAN y wrapper independiente para controlar Panama por licencia.
+- `backend/main.go`:
+	- protege `/api/empresa/facturacion_electronica/panama` con `WithEmpresaFacturacionPanamaPermissions`.
+- `backend/main_empresa_routes_security_test.go`:
+	- reconoce el nuevo wrapper empresarial de permisos.
+- `backend/handlers/empresa_permisos_licencias_test.go`:
+	- valida que `facturacion_panama` no se habilite por el modulo DIAN y que resuelva su pagina propia.
+- `web/js/administrar_empresa.js`:
+	- permite mostrar el modulo contenedor de facturacion si la licencia trae DIAN o Panama y registra paginas internas del submenu.
+- `web/administrar_empresa/facturacion_electronica_menu.html`:
+	- muestra paginas internas por pais detectado: CO para DIAN/pruebas/proveedores y PA para Panama/DGI.
+
 2026-05-19 - Instalacion PWA desde login
 - `web/login.html`:
 	- agrega metadatos PWA, enlace al manifest y boton `Instalar app`.
@@ -9658,6 +9708,14 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- `web/administrar_empresa/verticales_integracion.html` : muestra KPIs de nucleo comun y plantillas, con flujo de venta y reportes por vertical.
 	- `web/js/verticales_integracion_catalogo.js` : alinea los 10 verticales clasicos con el mismo lenguaje de plantilla universal usado por los 20 nuevos.
 	- Dashboards clasicos (`gimnasio`, `odontologia`, `parqueadero`, `taxi_system`, `domicilios`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `aiu_construccion`) : retiran acciones visibles de migracion manual.
+2026-05-19 - Facturacion electronica Panama
+- `web/administrar_empresa/facturacion_electronica_panama.html`:
+	- pagina independiente para configurar el perfil Panama/DGI/SFEP por empresa, con checklist, modalidad PAC o Facturador Gratuito, datos RUC/DV, firma electronica, CAFE/CUFE/QR y enlaces oficiales DGI/e-Tax2.0.
+- `backend/handlers/facturacion_electronica.go`:
+	- agrega el handler empresarial `/api/empresa/facturacion_electronica/panama` para leer, guardar, validar checklist y mostrar guia de onboarding Panama sin usar el endpoint DIAN.
+- `backend/db/facturacion_electronica.go`:
+	- agrega defaults y checklist Panama sobre `facturacion_electronica_pais.campos_pais_json`.
+
 2026-05-12 - Documentos y backups locales por dispositivo
 - `backend/handlers/onlyoffice.go`:
 	- agrega `action=create_local` para crear documentos OOXML y devolverlos como descarga local sin persistirlos bajo `/data/empresas`.
@@ -9715,3 +9773,32 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- asset SVG transparente para el login de administradores con ejecutivo revisando estadisticas del sistema.
 - `web/login.html`, `web/estilos.css`:
 	- integran la ilustracion como fondo decorativo visible solo en escritorio, sin afectar el formulario ni la vista movil.
+
+2026-05-19 - Panel Administrar empresa responsive en movil
+- `web/administrar_empresa.html`:
+	- carga `service_worker_update.js` para forzar revision de cache en celulares/PWA antes de mostrar el shell empresarial.
+- `web/js/service_worker_update.js`:
+	- limpia caches `pcs-shell-*` antiguas, solicita actualizacion del service worker y recarga una sola vez si habia recursos visuales obsoletos.
+- `web/sw.js`:
+	- sube la version de cache a `pcs-shell-v3`, deja `estilos.css` fuera del precache y usa network-first para CSS, JS y manifest.
+- `web/js/administrar_empresa.js`:
+	- agrega autoajuste de alto del iframe en vistas moviles y observacion de cambios del contenido cargado.
+- `web/administrar_empresa/panel.html`:
+	- ajusta la vista inicial de empresa en celular para que titulo, ciudad, clima, favoritos y pie envuelvan texto sin cortes innecesarios.
+- `web/estilos.css`:
+	- agrega reglas finales para que el shell de Administrar empresa, su menu y subpaginas se adapten al ancho del celular sin scroll horizontal.
+
+2026-05-19 - Clientes desde el carrito
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- el boton `Clientes` abre un panel interno para seleccionar o registrar cliente, crea el cliente mediante `/api/empresa/clientes` y lo asigna al carrito activo.
+	- bloquea el pago cuando `cliente_obligatorio_pago` esta activo y el carrito no tiene cliente.
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`:
+	- agrega el check global `Exigir cliente registrado para pagar`.
+- `web/administrar_empresa/configuracion_de_estaciones.html`:
+	- agrega el mismo check en la configuracion de carrito por empresa/estacion.
+- `backend/handlers/carritos_compras.go`:
+	- valida en backend la regla de cliente obligatorio durante `pagar_estacion`.
+- `backend/handlers/empresa_preconfiguracion.go`:
+	- define `cliente_obligatorio_pago=false` dentro del preset de carrito para empresas nuevas y antiguas.
+- `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
+	- cubre que la nueva bandera quede apagada por defecto.

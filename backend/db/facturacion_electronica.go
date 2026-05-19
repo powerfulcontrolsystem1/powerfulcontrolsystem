@@ -11,6 +11,58 @@ import (
 	"time"
 )
 
+// FacturacionPanamaChecklist resume los requisitos operativos propios del SFEP/DGI.
+type FacturacionPanamaChecklist struct {
+	PaisCodigo           string                             `json:"pais_codigo"`
+	Ok                   bool                               `json:"ok"`
+	Estado               string                             `json:"estado"`
+	Modalidad            string                             `json:"modalidad"`
+	Ambiente             string                             `json:"ambiente"`
+	Faltantes            []string                           `json:"faltantes"`
+	Advertencias         []string                           `json:"advertencias"`
+	DocumentosSoportados []string                           `json:"documentos_soportados"`
+	Items                []FacturacionPanamaChecklistItem   `json:"items"`
+	Fuentes              []FacturacionPanamaFuenteNormativa `json:"fuentes"`
+}
+
+type FacturacionPanamaChecklistItem struct {
+	Clave   string `json:"clave"`
+	Titulo  string `json:"titulo"`
+	Estado  string `json:"estado"`
+	Detalle string `json:"detalle"`
+}
+
+type FacturacionPanamaFuenteNormativa struct {
+	Titulo string `json:"titulo"`
+	URL    string `json:"url"`
+}
+
+// FacturacionEcuadorChecklist resume los requisitos operativos propios del SRI Ecuador.
+type FacturacionEcuadorChecklist struct {
+	PaisCodigo           string                              `json:"pais_codigo"`
+	Ok                   bool                                `json:"ok"`
+	Estado               string                              `json:"estado"`
+	Ambiente             string                              `json:"ambiente"`
+	Integracion          string                              `json:"integracion"`
+	Faltantes            []string                            `json:"faltantes"`
+	Advertencias         []string                            `json:"advertencias"`
+	DocumentosSoportados []string                            `json:"documentos_soportados"`
+	Items                []FacturacionEcuadorChecklistItem   `json:"items"`
+	Fuentes              []FacturacionEcuadorFuenteNormativa `json:"fuentes"`
+}
+
+type FacturacionEcuadorChecklistItem struct {
+	Clave   string `json:"clave"`
+	Titulo  string `json:"titulo"`
+	Estado  string `json:"estado"`
+	Detalle string `json:"detalle"`
+}
+
+type FacturacionEcuadorFuenteNormativa struct {
+	Titulo string `json:"titulo"`
+	URL    string `json:"url"`
+}
+
 // FacturacionElectronicaPaisConfig define configuración FE por empresa y país.
 type FacturacionElectronicaPaisConfig struct {
 	ID                            int64  `json:"id"`
@@ -470,14 +522,39 @@ func defaultCamposPaisJSON(paisCodigo string) string {
 	switch normalizePaisCodigo(paisCodigo) {
 	case "EC":
 		fields["integracion"] = "sri_xml_firmado"
+		fields["ruc"] = ""
 		fields["ambiente_sri"] = "1"
 		fields["establecimiento"] = "001"
 		fields["punto_emision"] = "001"
+		fields["tipo_emision"] = "normal"
+		fields["certificado_firma_ref"] = ""
+		fields["certificado_firma_confirmado"] = false
+		fields["autorizacion_produccion_sri"] = false
+		fields["clave_acceso"] = ""
+		fields["numero_autorizacion"] = ""
+		fields["ride"] = true
+		fields["obligado_contabilidad"] = false
 		fields["documentos_soportados"] = []string{"factura", "nota_credito", "nota_debito", "retencion", "guia_remision"}
+		fields["fuente_normativa"] = "SRI Ecuador comprobantes electronicos"
 	case "PA":
 		fields["integracion"] = "dgi_pac_o_facturador"
+		fields["ruc"] = ""
 		fields["dv"] = ""
 		fields["modalidad"] = "pac_o_facturador_gratuito"
+		fields["registro_sfep"] = false
+		fields["declaracion_jurada_sfep"] = false
+		fields["certificado_firma_ref"] = ""
+		fields["certificado_firma_confirmado"] = false
+		fields["pac_nombre"] = ""
+		fields["pac_id"] = ""
+		fields["ambiente_sfep"] = "pruebas"
+		fields["sucursal"] = "001"
+		fields["punto_expedicion"] = "001"
+		fields["cafe"] = ""
+		fields["cufe"] = ""
+		fields["qr_url"] = ""
+		fields["documentos_soportados"] = []string{"factura_electronica", "nota_credito", "nota_debito"}
+		fields["fuente_normativa"] = "DGI Panama SFEP"
 	case "CR":
 		fields["integracion"] = "hacienda_api_xml"
 		fields["version_xml"] = "4.4"
@@ -1665,4 +1742,328 @@ func ListFacturacionElectronicaRetriesByEmpresa(dbConn *sql.DB, empresaID int64,
 	}
 
 	return items, nil
+}
+
+func facturacionPanamaJSONMap(raw string) map[string]interface{} {
+	out := map[string]interface{}{}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return out
+	}
+	_ = json.Unmarshal([]byte(raw), &out)
+	return out
+}
+
+func facturacionPanamaString(extra map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := extra[key]; ok {
+			text := strings.TrimSpace(fmt.Sprintf("%v", value))
+			if text != "" && text != "<nil>" {
+				return text
+			}
+		}
+	}
+	return ""
+}
+
+func facturacionPanamaBool(extra map[string]interface{}, key string) bool {
+	value, ok := extra[key]
+	if !ok {
+		return false
+	}
+	switch v := value.(type) {
+	case bool:
+		return v
+	case float64:
+		return v != 0
+	case int:
+		return v != 0
+	case string:
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "1", "true", "si", "sÃ­", "yes", "activo", "ok", "validado":
+			return true
+		}
+	}
+	return false
+}
+
+func facturacionPanamaDocumentos(extra map[string]interface{}) []string {
+	if raw, ok := extra["documentos_soportados"]; ok {
+		switch list := raw.(type) {
+		case []interface{}:
+			out := make([]string, 0, len(list))
+			for _, value := range list {
+				if text := strings.TrimSpace(fmt.Sprintf("%v", value)); text != "" && text != "<nil>" {
+					out = append(out, text)
+				}
+			}
+			if len(out) > 0 {
+				return out
+			}
+		case []string:
+			if len(list) > 0 {
+				return list
+			}
+		case string:
+			parts := strings.Split(list, ",")
+			out := make([]string, 0, len(parts))
+			for _, part := range parts {
+				if text := strings.TrimSpace(part); text != "" {
+					out = append(out, text)
+				}
+			}
+			if len(out) > 0 {
+				return out
+			}
+		}
+	}
+	return []string{"factura_electronica", "nota_credito", "nota_debito"}
+}
+
+func facturacionPanamaItem(ok bool, clave, titulo, detalle string) FacturacionPanamaChecklistItem {
+	estado := "pendiente"
+	if ok {
+		estado = "ok"
+	}
+	return FacturacionPanamaChecklistItem{Clave: clave, Titulo: titulo, Estado: estado, Detalle: detalle}
+}
+
+// BuildFacturacionPanamaChecklist valida el perfil PA sin mezclarlo con DIAN Colombia.
+func BuildFacturacionPanamaChecklist(cfg *FacturacionElectronicaPaisConfig) FacturacionPanamaChecklist {
+	extra := map[string]interface{}{}
+	if cfg != nil {
+		extra = facturacionPanamaJSONMap(cfg.CamposPaisJSON)
+	}
+	modalidad := strings.ToLower(strings.TrimSpace(facturacionPanamaString(extra, "modalidad")))
+	if modalidad == "" {
+		modalidad = "pac_o_facturador_gratuito"
+	}
+	ambiente := "sandbox"
+	if cfg != nil && strings.TrimSpace(cfg.Ambiente) != "" {
+		ambiente = strings.ToLower(strings.TrimSpace(cfg.Ambiente))
+	}
+	if ambiente != "produccion" {
+		ambiente = "sandbox"
+	}
+
+	identificador := ""
+	razonSocial := ""
+	proveedor := ""
+	apiBaseURL := ""
+	if cfg != nil {
+		identificador = strings.TrimSpace(cfg.IdentificadorFiscal)
+		razonSocial = strings.TrimSpace(cfg.RazonSocial)
+		proveedor = strings.TrimSpace(cfg.Proveedor)
+		apiBaseURL = strings.TrimSpace(cfg.APIBaseURL)
+	}
+	if identificador == "" {
+		identificador = facturacionPanamaString(extra, "ruc")
+	}
+	dv := facturacionPanamaString(extra, "dv", "digito_verificador")
+	registroSFEP := facturacionPanamaBool(extra, "registro_sfep")
+	declaracionJurada := facturacionPanamaBool(extra, "declaracion_jurada_sfep")
+	firmaRef := facturacionPanamaString(extra, "certificado_firma_ref", "firma_ref", "certificado_url")
+	firmaConfirmada := facturacionPanamaBool(extra, "certificado_firma_confirmado") || firmaRef != ""
+	pacNombre := facturacionPanamaString(extra, "pac_nombre", "pac_id")
+	usaPAC := strings.Contains(modalidad, "pac") || strings.TrimSpace(proveedor) != "" && !strings.Contains(modalidad, "gratuito")
+	pacOK := !usaPAC || pacNombre != "" || apiBaseURL != "" || strings.TrimSpace(proveedor) != ""
+
+	items := []FacturacionPanamaChecklistItem{
+		facturacionPanamaItem(identificador != "", "ruc", "RUC del emisor", "Identificador fiscal inscrito en DGI/e-Tax2.0."),
+		facturacionPanamaItem(dv != "", "dv", "Digito verificador", "DV del RUC del contribuyente."),
+		facturacionPanamaItem(razonSocial != "", "razon_social", "Razon social", "Nombre fiscal del emisor registrado ante DGI."),
+		facturacionPanamaItem(registroSFEP, "registro_sfep", "Registro en SFEP", "Contribuyente registrado en el Sistema de Factura Electronica de Panama."),
+		facturacionPanamaItem(declaracionJurada, "declaracion_jurada_sfep", "Declaracion jurada SFEP", "Declaracion jurada/solicitud del sistema completada desde e-Tax2.0."),
+		facturacionPanamaItem(firmaConfirmada, "certificado_firma", "Firma electronica", "Certificado o referencia de firma electronica configurado para firmar documentos."),
+		facturacionPanamaItem(pacOK, "modalidad", "Modalidad PAC o Facturador Gratuito", "Modalidad operativa seleccionada; si usa PAC debe existir proveedor/API o referencia PAC."),
+	}
+
+	faltantes := make([]string, 0)
+	for _, item := range items {
+		if item.Estado != "ok" {
+			faltantes = append(faltantes, item.Clave)
+		}
+	}
+	advertencias := make([]string, 0)
+	if ambiente == "produccion" && apiBaseURL == "" && !strings.Contains(modalidad, "gratuito") {
+		advertencias = append(advertencias, "En produccion con PAC debe configurar API base URL o referencia de integracion del proveedor.")
+	}
+	if moneda := ""; cfg != nil {
+		moneda = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))
+		if moneda != "" && moneda != "PAB" && moneda != "USD" {
+			advertencias = append(advertencias, "Panama opera normalmente en PAB o USD; revise la moneda configurada.")
+		}
+	}
+
+	estado := "listo"
+	if len(faltantes) > 0 {
+		estado = "pendiente"
+	}
+	return FacturacionPanamaChecklist{
+		PaisCodigo:           "PA",
+		Ok:                   len(faltantes) == 0,
+		Estado:               estado,
+		Modalidad:            modalidad,
+		Ambiente:             ambiente,
+		Faltantes:            faltantes,
+		Advertencias:         advertencias,
+		DocumentosSoportados: facturacionPanamaDocumentos(extra),
+		Items:                items,
+		Fuentes: []FacturacionPanamaFuenteNormativa{
+			{Titulo: "DGI Panama - Factura Electronica", URL: "https://dgi.mef.gob.pa/_7facturaelectronica/felectronica"},
+			{Titulo: "DGI Panama - e-Tax2.0", URL: "https://etax2.mef.gob.pa/etax2web/Login.aspx"},
+		},
+	}
+}
+
+func facturacionEcuadorJSONMap(raw string) map[string]interface{} {
+	return facturacionPanamaJSONMap(raw)
+}
+
+func facturacionEcuadorString(extra map[string]interface{}, keys ...string) string {
+	return facturacionPanamaString(extra, keys...)
+}
+
+func facturacionEcuadorBool(extra map[string]interface{}, key string) bool {
+	return facturacionPanamaBool(extra, key)
+}
+
+func facturacionEcuadorDocumentos(extra map[string]interface{}) []string {
+	if raw, ok := extra["documentos_soportados"]; ok {
+		switch list := raw.(type) {
+		case []interface{}:
+			out := make([]string, 0, len(list))
+			for _, value := range list {
+				if text := strings.TrimSpace(fmt.Sprintf("%v", value)); text != "" && text != "<nil>" {
+					out = append(out, text)
+				}
+			}
+			if len(out) > 0 {
+				return out
+			}
+		case []string:
+			if len(list) > 0 {
+				return list
+			}
+		case string:
+			parts := strings.Split(list, ",")
+			out := make([]string, 0, len(parts))
+			for _, part := range parts {
+				if text := strings.TrimSpace(part); text != "" {
+					out = append(out, text)
+				}
+			}
+			if len(out) > 0 {
+				return out
+			}
+		}
+	}
+	return []string{"factura", "nota_credito", "nota_debito", "retencion", "guia_remision"}
+}
+
+func facturacionEcuadorItem(ok bool, clave, titulo, detalle string) FacturacionEcuadorChecklistItem {
+	estado := "pendiente"
+	if ok {
+		estado = "ok"
+	}
+	return FacturacionEcuadorChecklistItem{Clave: clave, Titulo: titulo, Estado: estado, Detalle: detalle}
+}
+
+// BuildFacturacionEcuadorChecklist valida el perfil EC sin mezclarlo con DIAN Colombia ni DGI Panama.
+func BuildFacturacionEcuadorChecklist(cfg *FacturacionElectronicaPaisConfig) FacturacionEcuadorChecklist {
+	extra := map[string]interface{}{}
+	if cfg != nil {
+		extra = facturacionEcuadorJSONMap(cfg.CamposPaisJSON)
+	}
+	ambiente := "sandbox"
+	if cfg != nil && strings.TrimSpace(cfg.Ambiente) != "" {
+		ambiente = strings.ToLower(strings.TrimSpace(cfg.Ambiente))
+	}
+	if ambiente != "produccion" {
+		ambiente = "sandbox"
+	}
+	ambienteSRI := facturacionEcuadorString(extra, "ambiente_sri")
+	if ambienteSRI == "" {
+		if ambiente == "produccion" {
+			ambienteSRI = "2"
+		} else {
+			ambienteSRI = "1"
+		}
+	}
+	integracion := facturacionEcuadorString(extra, "integracion")
+	if integracion == "" {
+		integracion = "sri_xml_firmado"
+	}
+
+	identificador := ""
+	razonSocial := ""
+	proveedor := ""
+	apiBaseURL := ""
+	if cfg != nil {
+		identificador = strings.TrimSpace(cfg.IdentificadorFiscal)
+		razonSocial = strings.TrimSpace(cfg.RazonSocial)
+		proveedor = strings.TrimSpace(cfg.Proveedor)
+		apiBaseURL = strings.TrimSpace(cfg.APIBaseURL)
+	}
+	if identificador == "" {
+		identificador = facturacionEcuadorString(extra, "ruc")
+	}
+	establecimiento := facturacionEcuadorString(extra, "establecimiento", "estab")
+	puntoEmision := facturacionEcuadorString(extra, "punto_emision", "pto_emi")
+	firmaRef := facturacionEcuadorString(extra, "certificado_firma_ref", "firma_ref", "certificado_url")
+	firmaConfirmada := facturacionEcuadorBool(extra, "certificado_firma_confirmado") || firmaRef != ""
+	produccionAutorizada := facturacionEcuadorBool(extra, "autorizacion_produccion_sri")
+	tieneProveedor := strings.TrimSpace(proveedor) != "" || strings.TrimSpace(apiBaseURL) != "" || strings.Contains(integracion, "facturador_sri")
+
+	items := []FacturacionEcuadorChecklistItem{
+		facturacionEcuadorItem(identificador != "", "ruc", "RUC del emisor", "Identificador fiscal registrado ante el SRI."),
+		facturacionEcuadorItem(razonSocial != "", "razon_social", "Razon social", "Nombre fiscal del emisor registrado ante el SRI."),
+		facturacionEcuadorItem(establecimiento != "", "establecimiento", "Establecimiento", "Codigo de establecimiento para la secuencia del comprobante."),
+		facturacionEcuadorItem(puntoEmision != "", "punto_emision", "Punto de emision", "Punto de emision usado en la secuencia del comprobante electronico."),
+		facturacionEcuadorItem(firmaConfirmada, "certificado_firma", "Firma electronica", "Certificado de firma electronica vigente para firmar XML."),
+		facturacionEcuadorItem(tieneProveedor, "integracion", "Facturador SRI, proveedor o API", "Sistema propio/proveedor configurado para generar, firmar, enviar al SRI y notificar documentos."),
+	}
+	if ambiente == "produccion" {
+		items = append(items, facturacionEcuadorItem(produccionAutorizada, "autorizacion_produccion_sri", "Autorizacion en produccion", "Emisor autorizado para ambiente de produccion en SRI en Linea."))
+	}
+
+	faltantes := make([]string, 0)
+	for _, item := range items {
+		if item.Estado != "ok" {
+			faltantes = append(faltantes, item.Clave)
+		}
+	}
+	advertencias := make([]string, 0)
+	if ambiente == "produccion" && ambienteSRI != "2" {
+		advertencias = append(advertencias, "Para produccion en SRI el ambiente_sri debe ser 2.")
+	}
+	if ambiente == "sandbox" && ambienteSRI != "1" {
+		advertencias = append(advertencias, "Para pruebas en SRI el ambiente_sri debe ser 1.")
+	}
+	if moneda := ""; cfg != nil {
+		moneda = strings.ToUpper(strings.TrimSpace(cfg.MonedaCodigo))
+		if moneda != "" && moneda != "USD" {
+			advertencias = append(advertencias, "Ecuador usa USD como moneda operativa habitual; revise la moneda configurada.")
+		}
+	}
+
+	estado := "listo"
+	if len(faltantes) > 0 {
+		estado = "pendiente"
+	}
+	return FacturacionEcuadorChecklist{
+		PaisCodigo:           "EC",
+		Ok:                   len(faltantes) == 0,
+		Estado:               estado,
+		Ambiente:             ambiente,
+		Integracion:          integracion,
+		Faltantes:            faltantes,
+		Advertencias:         advertencias,
+		DocumentosSoportados: facturacionEcuadorDocumentos(extra),
+		Items:                items,
+		Fuentes: []FacturacionEcuadorFuenteNormativa{
+			{Titulo: "SRI Ecuador - Facturacion Electronica", URL: "https://www.sri.gob.ec/facturacion-electronica"},
+			{Titulo: "SRI Ecuador - Comprobantes Electronicos", URL: "https://www.sri.gob.ec/comprobantes-electronicos"},
+		},
+	}
 }

@@ -1450,30 +1450,40 @@ func readLicenciaAdvisorPromoConfig(dbSuper *sql.DB) (licenciaAdvisorPromoConfig
 	return cfg, nil
 }
 
-func resolveLicenciaAdvisorDiscountAmount(dbSuper *sql.DB, asesorID string, subtotal float64) (float64, float64, string, bool, error) {
+func resolveLicenciaAdvisorDiscountAmount(dbSuper *sql.DB, empresaID int64, asesorID string, subtotal float64) (float64, float64, string, bool, string, error) {
 	asesorID = strings.ToUpper(strings.TrimSpace(asesorID))
 	if asesorID == "" || subtotal <= 0 {
-		return 0, 0, "", false, nil
+		return 0, 0, "", false, "", nil
 	}
 	cfg, err := readLicenciaAdvisorPromoConfig(dbSuper)
 	if err != nil {
-		return 0, 0, "", false, err
+		return 0, 0, "", false, "", err
 	}
 	if !cfg.Enabled || cfg.Percent <= 0 {
-		return 0, cfg.Percent, "", false, nil
+		return 0, cfg.Percent, "", false, "", nil
 	}
 	advisor, err := dbpkg.GetAsesorComercialByCode(dbSuper, asesorID)
 	if err != nil {
-		return 0, cfg.Percent, "", false, err
+		return 0, cfg.Percent, "", false, "", err
 	}
 	if advisor == nil || !strings.EqualFold(strings.TrimSpace(advisor.EstadoInvitacion), "aceptada") || strings.EqualFold(strings.TrimSpace(advisor.Estado), "inactivo") {
-		return 0, cfg.Percent, "", false, fmt.Errorf("codigo de asesor invalido o no aceptado: %s", asesorID)
+		return 0, cfg.Percent, "", false, "", fmt.Errorf("codigo de asesor invalido o no aceptado: %s", asesorID)
+	}
+	if empresaID <= 0 {
+		return 0, cfg.Percent, "", false, "Selecciona una empresa para validar la promocion del asesor.", nil
+	}
+	used, err := dbpkg.HasLicenciaAdvisorCodeUsedByEmpresa(dbSuper, empresaID)
+	if err != nil {
+		return 0, cfg.Percent, "", false, "", err
+	}
+	if used {
+		return 0, cfg.Percent, "", false, "La promocion por codigo de asesor ya fue usada por esta empresa.", nil
 	}
 	amount := roundLicenciaCheckoutAmount(subtotal * (cfg.Percent / 100))
 	if amount > subtotal {
 		amount = subtotal
 	}
-	return amount, cfg.Percent, fmt.Sprintf("Promocion asesor %s %.2f%%", asesorID, cfg.Percent), amount > 0, nil
+	return amount, cfg.Percent, fmt.Sprintf("Promocion asesor %s %.2f%%", asesorID, cfg.Percent), amount > 0, "", nil
 }
 
 func isLicenciaGratisActivationBlocked(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode string) (bool, error) {
@@ -1515,7 +1525,7 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 		discountValue = originalValue
 	}
 	subtotalAfterDiscount := roundLicenciaCheckoutAmount(originalValue - discountValue)
-	advisorDiscount, advisorPct, advisorLabel, advisorApplied, err := resolveLicenciaAdvisorDiscountAmount(dbSuper, asesorID, subtotalAfterDiscount)
+	advisorDiscount, advisorPct, advisorLabel, advisorApplied, advisorMessage, err := resolveLicenciaAdvisorDiscountAmount(dbSuper, empresaID, asesorID, subtotalAfterDiscount)
 	if err != nil {
 		return summary, err
 	}
@@ -1554,6 +1564,8 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 		summary.Message = "El total quedó en cero. Puedes activar la licencia sin pasar por la pasarela."
 	} else if summary.DiscountApplied || summary.AdvisorDiscountApplied {
 		summary.Message = "Se aplicó el descuento y el total ya está actualizado para el checkout."
+	} else if advisorMessage != "" {
+		summary.Message = advisorMessage
 	}
 	return summary, nil
 }
@@ -1621,7 +1633,7 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 		}
 	}
 	subtotalAfterDiscount := roundLicenciaCheckoutAmount(originalValue - discountValue)
-	advisorDiscount, advisorPct, advisorLabel, advisorApplied, err := resolveLicenciaAdvisorDiscountAmount(dbSuper, asesorID, subtotalAfterDiscount)
+	advisorDiscount, advisorPct, advisorLabel, advisorApplied, advisorMessage, err := resolveLicenciaAdvisorDiscountAmount(dbSuper, empresaID, asesorID, subtotalAfterDiscount)
 	if err != nil {
 		return licenciaCheckoutSummary{}, nil, err
 	}
@@ -1653,6 +1665,8 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 	}
 	if summary.AdvisorDiscountApplied {
 		summary.Message += " Se aplico la promocion por codigo de asesor."
+	} else if advisorMessage != "" {
+		summary.Message += " " + advisorMessage
 	}
 	return summary, bundle, nil
 }

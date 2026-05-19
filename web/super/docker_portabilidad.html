@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Docker y portabilidad VPS</title>
+  <script>
+    (function () {
+      var valid = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-neon": 1, light: 1, "light-rose": 1, "light-gold": 1, "light-wood": 1 };
+      function cookie(name) {
+        var match = String(document.cookie || "").match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+        return match ? decodeURIComponent(match.pop()) : "";
+      }
+      var theme = "";
+      try { theme = window.localStorage.getItem("theme") || ""; } catch (error) {}
+      theme = String(theme || cookie("pcs_theme") || "dark").trim().toLowerCase();
+      if (theme === "dark-protect") theme = "dark";
+      if (!valid[theme]) theme = "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.classList.toggle("theme-light", theme.indexOf("light") === 0);
+      document.documentElement.classList.toggle("theme-dark", theme.indexOf("light") !== 0);
+    })();
+  </script>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --docker-bg: var(--bg, #f6f8fb);
+      --docker-panel: var(--surface, #ffffff);
+      --docker-soft: var(--surface-soft, #f8fafc);
+      --docker-line: var(--border, #d9e2ef);
+      --docker-text: var(--text, #172033);
+      --docker-muted: var(--muted, #64748b);
+      --docker-accent: var(--accent, #2563eb);
+      --docker-good: #15803d;
+      --docker-warn: #b45309;
+      --docker-danger: #b91c1c;
+    }
+
+    html[data-theme^="dark"],
+    html.theme-dark {
+      color-scheme: dark;
+      --docker-panel: color-mix(in srgb, var(--surface, #16253a) 94%, #000 6%);
+      --docker-soft: color-mix(in srgb, var(--surface-soft, #1d2f48) 86%, #000 14%);
+      --docker-line: color-mix(in srgb, var(--border, rgba(152,176,206,.28)) 82%, var(--text, #e8f0fb) 8%);
+      --docker-good: #4ade80;
+      --docker-warn: #fbbf24;
+      --docker-danger: #f87171;
+    }
+
+    body.super-page {
+      margin: 0;
+      background: var(--docker-bg);
+      color: var(--docker-text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .docker-page {
+      min-height: 100vh;
+      padding: 22px;
+      box-sizing: border-box;
+    }
+
+    .docker-shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .docker-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .docker-header h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 850;
+      letter-spacing: 0;
+      color: var(--docker-text);
+    }
+
+    .docker-header p {
+      margin: 5px 0 0;
+      color: var(--docker-muted);
+      font-size: 13px;
+      max-width: 760px;
+    }
+
+    .docker-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .docker-btn {
+      min-height: 38px;
+      border: 1px solid var(--docker-line);
+      border-radius: 8px;
+      background: var(--docker-soft);
+      color: var(--docker-text);
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .docker-btn.primary {
+      border-color: color-mix(in srgb, var(--docker-accent) 70%, var(--docker-line));
+      background: color-mix(in srgb, var(--docker-accent) 18%, var(--docker-panel));
+      color: var(--docker-text);
+    }
+
+    .docker-btn:hover {
+      border-color: color-mix(in srgb, var(--docker-accent) 55%, var(--docker-line));
+      color: color-mix(in srgb, var(--docker-accent) 82%, var(--docker-text));
+    }
+
+    .docker-btn[aria-disabled="true"] {
+      opacity: .55;
+      pointer-events: none;
+    }
+
+    .docker-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .docker-card {
+      border: 1px solid var(--docker-line);
+      border-radius: 8px;
+      background: var(--docker-panel);
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .docker-card h2,
+    .docker-card h3 {
+      margin: 0;
+      color: var(--docker-text);
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .docker-card h2 {
+      font-size: 18px;
+    }
+
+    .docker-card h3 {
+      font-size: 14px;
+    }
+
+    .docker-card p {
+      margin: 7px 0 0;
+      color: var(--docker-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .docker-kpi {
+      display: grid;
+      gap: 4px;
+    }
+
+    .docker-kpi span {
+      color: var(--docker-muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .docker-kpi strong {
+      color: var(--docker-text);
+      font-size: 20px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .docker-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 850;
+      color: var(--docker-good);
+    }
+
+    .docker-status.warn {
+      color: var(--docker-warn);
+    }
+
+    .docker-main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+      gap: 12px;
+    }
+
+    .docker-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .docker-row {
+      display: grid;
+      grid-template-columns: minmax(150px, .34fr) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      border-top: 1px solid var(--docker-line);
+      padding-top: 9px;
+      color: var(--docker-text);
+      font-size: 13px;
+    }
+
+    .docker-row:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .docker-row span {
+      color: var(--docker-muted);
+      font-weight: 800;
+    }
+
+    .docker-code {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .docker-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .docker-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--docker-line);
+      border-radius: 999px;
+      padding: 0 10px;
+      background: var(--docker-soft);
+      color: var(--docker-text);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .docker-steps {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      color: var(--docker-text);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .docker-steps li + li {
+      margin-top: 6px;
+    }
+
+    .docker-alert {
+      border: 1px solid color-mix(in srgb, var(--docker-warn) 45%, var(--docker-line));
+      background: color-mix(in srgb, var(--docker-warn) 10%, var(--docker-panel));
+      color: var(--docker-text);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .docker-alert strong {
+      color: var(--docker-text);
+    }
+
+    @media (max-width: 980px) {
+      .docker-header {
+        display: grid;
+      }
+      .docker-actions {
+        justify-content: flex-start;
+      }
+      .docker-grid,
+      .docker-main-grid {
+        grid-template-columns: 1fr;
+      }
+      .docker-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="super-page">
+  <main class="docker-page">
+    <section class="docker-shell">
+      <header class="docker-header">
+        <div>
+          <h1>Docker y portabilidad VPS</h1>
+          <p>Centro operativo para revisar el paquete Docker oficial y descargar una copia portable del proyecto sin secretos ni datos privados.</p>
+        </div>
+        <div class="docker-actions">
+          <button id="refreshBtn" class="docker-btn" type="button">Actualizar</button>
+          <a id="downloadBtn" class="docker-btn primary" href="/super/api/docker_portabilidad?action=download">Descargar proyecto Docker</a>
+        </div>
+      </header>
+
+      <section class="docker-grid" aria-label="Estado Docker">
+        <article class="docker-card docker-kpi">
+          <span>Estado</span>
+          <strong id="readyLabel">Cargando...</strong>
+        </article>
+        <article class="docker-card docker-kpi">
+          <span>Archivos incluidos</span>
+          <strong id="filesLabel">-</strong>
+        </article>
+        <article class="docker-card docker-kpi">
+          <span>Tamaño estimado</span>
+          <strong id="sizeLabel">-</strong>
+        </article>
+        <article class="docker-card docker-kpi">
+          <span>Perfiles Docker</span>
+          <strong id="profilesLabel">-</strong>
+        </article>
+      </section>
+
+      <section class="docker-main-grid">
+        <article class="docker-card">
+          <h2>Paquete portable</h2>
+          <p>La descarga contiene el codigo y la configuracion Docker necesaria para levantar la plataforma en otra VPS. Los datos reales deben migrarse con snapshots de PostgreSQL y volumenes Docker.</p>
+          <div class="docker-list">
+            <div class="docker-row"><span>Raiz detectada</span><div id="rootPath" class="docker-code">-</div></div>
+            <div class="docker-row"><span>Compose principal</span><div id="composePath" class="docker-code">-</div></div>
+            <div class="docker-row"><span>Plantilla de entorno</span><div id="envPath" class="docker-code">-</div></div>
+            <div class="docker-row"><span>Nombre de descarga</span><div id="archiveName" class="docker-code">-</div></div>
+          </div>
+          <div id="warningsBox" class="docker-alert" hidden></div>
+        </article>
+
+        <article class="docker-card">
+          <h2>Servicios del stack</h2>
+          <p>El modo profesional actual se apoya en servicios y volumenes nombrados para que el traslado sea restaurar volumenes, entorno y levantar Compose.</p>
+          <div class="docker-pills" id="profilePills"></div>
+          <div class="docker-list">
+            <div class="docker-row"><span>Nucleo</span><div>PostgreSQL, backend Go, frontend Nginx interno.</div></div>
+            <div class="docker-row"><span>Publicacion</span><div>Perfil edge con Nginx 80/443 y Certbot en Docker.</div></div>
+            <div class="docker-row"><span>Opcionales</span><div>OnlyOffice, voz IA y RustDesk por perfiles aislados.</div></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="docker-main-grid">
+        <article class="docker-card">
+          <h2>Traslado a otro VPS</h2>
+          <ol class="docker-steps">
+            <li>Instalar Docker Engine y Docker Compose v2 en la nueva VPS.</li>
+            <li>Descomprimir este paquete en <span class="docker-code">/root/powerfulcontrolsystem</span>.</li>
+            <li>Crear <span class="docker-code">deploy/.env.platform</span> desde la plantilla y cargar secretos reales fuera del paquete.</li>
+            <li>Restaurar snapshots de PostgreSQL y volumenes persistentes si se migra produccion.</li>
+            <li>Ejecutar <span class="docker-code">bash deploy/scripts/vps-docker-preflight.sh</span>.</li>
+            <li>Levantar con <span class="docker-code">docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml up -d --build</span>.</li>
+            <li>Para publicar TLS desde Docker, ejecutar <span class="docker-code">CONFIRM_DOCKER_EDGE=YES bash deploy/scripts/vps-docker-edge-up.sh</span> despues de apuntar DNS.</li>
+          </ol>
+        </article>
+
+        <article class="docker-card">
+          <h2>Politica de seguridad</h2>
+          <p>La descarga esta pensada para soporte y migracion tecnica. No reemplaza el backup de datos.</p>
+          <div class="docker-list" id="excludedPolicy"></div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var state = { loading: false };
+
+      function $(id) { return document.getElementById(id); }
+      function text(id, value) {
+        var el = $(id);
+        if (el) el.textContent = value == null || value === "" ? "-" : String(value);
+      }
+      function setDownloadEnabled(enabled) {
+        var btn = $("downloadBtn");
+        if (!btn) return;
+        btn.setAttribute("aria-disabled", enabled ? "false" : "true");
+      }
+      function renderList(id, items) {
+        var box = $(id);
+        if (!box) return;
+        box.innerHTML = "";
+        (items || []).forEach(function (item) {
+          var row = document.createElement("div");
+          row.className = "docker-row";
+          var span = document.createElement("span");
+          span.textContent = "Excluye";
+          var div = document.createElement("div");
+          div.textContent = item;
+          row.appendChild(span);
+          row.appendChild(div);
+          box.appendChild(row);
+        });
+      }
+      function renderPills(items) {
+        var box = $("profilePills");
+        if (!box) return;
+        box.innerHTML = "";
+        (items || []).forEach(function (item) {
+          var pill = document.createElement("span");
+          pill.className = "docker-pill";
+          pill.textContent = item;
+          box.appendChild(pill);
+        });
+      }
+      function renderWarnings(warnings) {
+        var box = $("warningsBox");
+        if (!box) return;
+        if (!warnings || !warnings.length) {
+          box.hidden = true;
+          box.textContent = "";
+          return;
+        }
+        box.hidden = false;
+        box.innerHTML = "<strong>Revision requerida:</strong> " + warnings.map(function (w) {
+          return String(w || "").replace(/[<>&]/g, function (ch) {
+            return ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[ch];
+          });
+        }).join(" | ");
+      }
+      async function loadStatus() {
+        if (state.loading) return;
+        state.loading = true;
+        text("readyLabel", "Cargando...");
+        try {
+          var res = await fetch("/super/api/docker_portabilidad?action=status", { credentials: "same-origin" });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok) throw new Error(data.error || "No se pudo consultar Docker");
+          var ready = !!data.ready;
+          var readyLabel = $("readyLabel");
+          if (readyLabel) {
+            readyLabel.innerHTML = '<span class="docker-status' + (ready ? "" : " warn") + '">' + (ready ? "Listo para descargar" : "Revisar archivos") + "</span>";
+          }
+          text("filesLabel", data.estimated_files || 0);
+          text("sizeLabel", data.estimated_size_human || "-");
+          text("profilesLabel", (data.profiles || []).length);
+          text("rootPath", data.project_root);
+          text("composePath", data.compose_file);
+          text("envPath", data.env_example);
+          text("archiveName", data.archive_name);
+          renderPills(data.profiles || []);
+          renderList("excludedPolicy", data.excluded_policy || []);
+          renderWarnings(data.warnings || []);
+          setDownloadEnabled(ready);
+        } catch (error) {
+          text("readyLabel", "No disponible");
+          renderWarnings([error && error.message ? error.message : "Error consultando estado"]);
+          setDownloadEnabled(false);
+        } finally {
+          state.loading = false;
+        }
+      }
+
+      var refresh = $("refreshBtn");
+      if (refresh) refresh.addEventListener("click", loadStatus);
+      loadStatus();
+    })();
+  </script>
+</body>
+</html>

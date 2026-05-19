@@ -108,6 +108,74 @@ func HasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn *sql.DB, empresaID
 	return hasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn, empresaID, discountCode, provider, transactionID, reference)
 }
 
+func HasLicenciaAdvisorCodeUsedByEmpresa(dbConn *sql.DB, empresaID int64) (bool, error) {
+	if empresaID <= 0 {
+		return false, nil
+	}
+	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
+		return false, err
+	}
+
+	for _, tableName := range []string{"pagos_epayco", "pagos_wompi"} {
+		rows, err := querySQLCompat(dbConn, "SELECT COALESCE(status, '') FROM "+tableName+" WHERE empresa_id = ? AND trim(COALESCE(asesor_id, '')) <> ''", empresaID)
+		if err != nil {
+			if isMissingTableError(err) || isMissingColumnError(err) {
+				continue
+			}
+			return false, err
+		}
+		for rows.Next() {
+			var status string
+			if err := rows.Scan(&status); err != nil {
+				_ = rows.Close()
+				return false, err
+			}
+			if isApprovedLicenciaPaymentStatus(status) {
+				_ = rows.Close()
+				return true, nil
+			}
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return false, err
+		}
+		_ = rows.Close()
+	}
+
+	if err := EnsureLicenciasGratisActivacionesSchema(dbConn); err != nil {
+		return false, err
+	}
+	var count int
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
+		FROM licencias_activaciones_gratis
+		WHERE empresa_id = ?
+			AND trim(COALESCE(asesor_id, '')) <> ''
+			AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&count); err != nil {
+		if isMissingTableError(err) || isMissingColumnError(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	if count > 0 {
+		return true, nil
+	}
+
+	if err := EnsureAsesorComercialSchema(dbConn); err != nil {
+		return false, err
+	}
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
+		FROM asesor_comercial_comisiones
+		WHERE empresa_id = ?
+			AND trim(COALESCE(asesor_codigo, '')) <> ''
+			AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&count); err != nil {
+		if isMissingTableError(err) || isMissingColumnError(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func hasLicenciaDiscountCodeUsedByEmpresaExceptPayment(dbConn *sql.DB, empresaID int64, discountCode, provider, transactionID, reference string) (bool, error) {
 	code := strings.ToUpper(strings.TrimSpace(discountCode))
 	if empresaID <= 0 || code == "" {

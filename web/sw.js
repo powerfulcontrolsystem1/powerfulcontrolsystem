@@ -1,11 +1,26 @@
-const PCS_CACHE = "pcs-shell-v1";
+const PCS_CACHE = "pcs-shell-v3";
 const PCS_SHELL = [
   "/login.html",
-  "/estilos.css",
   "/img/logo.png",
   "/img/pwa-icon-192.png",
   "/img/pwa-icon-512.png"
 ];
+
+function isRuntimeStatic(url) {
+  return /\.(?:css|js|webmanifest)$/i.test(url.pathname);
+}
+
+function networkFirst(request) {
+  return fetch(request).then(function (response) {
+    if (response && response.ok) {
+      var copy = response.clone();
+      caches.open(PCS_CACHE).then(function (cache) { cache.put(request, copy); }).catch(function () {});
+    }
+    return response;
+  }).catch(function () {
+    return caches.match(request);
+  });
+}
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
@@ -45,13 +60,18 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
+  if (isRuntimeStatic(url)) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then(function (cached) {
       if (cached) {
         return cached;
       }
       return fetch(request).then(function (response) {
-        var cacheable = response && response.ok && /\.(?:css|js|png|jpg|jpeg|svg|webp|ico|webmanifest)$/i.test(url.pathname);
+        var cacheable = response && response.ok && /\.(?:png|jpg|jpeg|svg|webp|ico)$/i.test(url.pathname);
         if (cacheable) {
           var copy = response.clone();
           caches.open(PCS_CACHE).then(function (cache) { cache.put(request, copy); }).catch(function () {});

@@ -1,3 +1,25 @@
+2026-05-19: Nota de Docker VPS portable
+- `web/super/docker_portabilidad.html` queda disponible solo para `super_administrador` dentro del grupo Plataforma del panel super.
+- `/super/api/docker_portabilidad` exige sesion y rol `super_administrador` mediante `paginaPrincipalRequireSuperAdmin`; no se agrega permiso empresarial ni acceso para `control_super_administrador`.
+- La descarga es operativa y tecnica: no concede acceso a datos empresariales, no expone secretos y no sustituye los permisos de backups ni de PostgreSQL.
+
+2026-05-19: Nota de Facturacion electronica Ecuador
+- La pagina `web/administrar_empresa/facturacion_electronica_ecuador.html` y el endpoint `/api/empresa/facturacion_electronica/ecuador` quedan bajo el modulo independiente `facturacion_ecuador`.
+- La licencia puede habilitar o deshabilitar Ecuador/SRI sin activar DIAN Colombia ni Panama/DGI; el permiso de pagina es `linkFacturacionEcuador` con accion crear/configurar.
+- El submenu `Facturacion electronica` sigue como contenedor. Sus paginas internas se muestran por pais detectado automaticamente: Ecuador habilita `Ecuador / SRI` si el rol y la licencia lo permiten.
+- El endpoint de deteccion de pais no concede emision ni configuracion: solo permite a usuarios autenticados de la empresa decidir que paginas del submenu deben aparecer.
+
+2026-05-19: Nota de clientes desde carrito
+- El boton `Clientes` del carrito no agrega permisos nuevos: registra clientes usando el endpoint existente `/api/empresa/clientes` y asigna el resultado al carrito activo.
+- La regla `cliente_obligatorio_pago` es configuracion de carrito, no permiso nuevo. Solo restringe el cierre de pago cuando el carrito no tiene `cliente_id`.
+- La validacion conserva aislamiento por `empresa_id`; un usuario solo puede crear/asignar clientes dentro de la empresa efectiva y bajo los permisos existentes de carrito/clientes.
+
+2026-05-19: Nota de Facturacion electronica Panama
+- La pagina `web/administrar_empresa/facturacion_electronica_panama.html` y el endpoint `/api/empresa/facturacion_electronica/panama` quedan bajo el modulo independiente `facturacion_panama`.
+- La licencia puede habilitar o deshabilitar Panama/DGI sin activar DIAN Colombia; el permiso de pagina es `linkFacturacionPanama` con accion crear/configurar.
+- El submenu `Facturacion electronica` sigue como contenedor. Sus paginas internas se muestran por pais detectado automaticamente: Colombia habilita DIAN, pruebas DIAN y proveedores de firma; Panama habilita DGI/SFEP si la licencia y el rol lo permiten.
+- El endpoint de deteccion de pais no concede emision ni configuracion: solo permite a usuarios autenticados de la empresa decidir que paginas del submenu deben aparecer.
+
 2026-05-19: Nota de caja/turno independiente por usuario
 - La independencia de cajas simultaneas se resuelve por datos (`empresa_id`, `usuario_creador`, `cierre_caja_id`) y no requiere nuevos permisos.
 - Los usuarios creados por un administrador de empresa mantienen los mismos permisos de `finanzas`, `corte_caja`, `carritos` y `ventas`, pero sus cajas abiertas, abonos, pagos y movimientos se validan contra el usuario autenticado.

@@ -97,6 +97,7 @@ try {
   var empresaNameMenu = document.getElementById("empresaNameMenu");
   var title = titleMenu || document.getElementById("empresaTitle");
   var frame = document.getElementById("contentFrame") || document.querySelector("iframe.admin-empresa-frame");
+  var frameResizeObserver = null;
   var favoriteBtn = document.getElementById("adminFavoriteBtn");
   var frameTargetName = frame ? String(frame.getAttribute("name") || frame.name || frame.id || "").trim() : "";
   var initialFrameSrc = frame ? normalizeHref(frame.getAttribute("src") || frame.src || "") : "";
@@ -152,6 +153,12 @@ try {
     document.getElementById("linkConfiguracionCarritoEmpresa"),
     document.getElementById("linkCarritoCompras"),
     document.getElementById("linkFacturacionElectronica"),
+    document.getElementById("linkFacturacionMain"),
+    document.getElementById("linkFacturacionEcuador"),
+    document.getElementById("linkFacturacionPanama"),
+    document.getElementById("linkPruebasDian"),
+    document.getElementById("linkProveedoresFirmaDigital"),
+    document.getElementById("linkFacturasElectronicas"),
     document.getElementById("linkAIUConstruccion"),
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
@@ -255,6 +262,8 @@ try {
   var permModuleClientes = "clientes";
   var permModuleCRMUnificado = "crm_unificado";
   var permModuleFacturacion = "facturacion";
+  var permModuleFacturacionEcuador = "facturacion_ecuador";
+  var permModuleFacturacionPanama = "facturacion_panama";
   var permModuleSeguridad = "seguridad";
   var permModuleVentaPublica = "venta_publica";
   var permModuleReservasHotel = "reservas_hotel";
@@ -375,8 +384,12 @@ try {
     linkNominaSueldos: { module: permModuleNominaSueldos, action: permActionCreate },
     linkNominaMenu: { module: permModuleNominaSueldos, action: permActionCreate },
 
-    linkFacturacionElectronica: { module: permModuleFacturacion, action: permActionCreate },
+    linkFacturacionElectronica: { anyModules: [permModuleFacturacion, permModuleFacturacionEcuador, permModuleFacturacionPanama], action: permActionCreate },
     linkFacturacionMain: { module: permModuleFacturacion, action: permActionCreate },
+    linkFacturacionEcuador: { module: permModuleFacturacionEcuador, action: permActionCreate },
+    linkFacturacionPanama: { module: permModuleFacturacionPanama, action: permActionCreate },
+    linkPruebasDian: { module: permModuleFacturacion, action: permActionApprove },
+    linkProveedoresFirmaDigital: { module: permModuleFacturacion, action: permActionRead },
     linkFacturasElectronicas: { module: permModuleFacturacion, action: permActionRead },
     linkImpuestos: { module: permModuleFacturacion, action: permActionUpdate },
     linkFrecuenciaFE: { module: permModuleFacturacion, action: permActionApprove },
@@ -1032,6 +1045,8 @@ try {
         break;
 
       case permModuleFacturacion:
+      case permModuleFacturacionEcuador:
+      case permModuleFacturacionPanama:
         if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "cajero"]);
@@ -1202,7 +1217,8 @@ try {
     var pageKey = link.id || "";
     var pages = permissionContext && permissionContext.paginas;
     if (pageKey && pages && typeof pages === "object" && Object.prototype.hasOwnProperty.call(pages, pageKey)) {
-      return !!pages[pageKey];
+      if (pages[pageKey]) return true;
+      if (!Array.isArray(rule.anyModules) || !rule.anyModules.length) return false;
     }
     if (Array.isArray(rule.anyModules) && rule.anyModules.length) {
       return rule.anyModules.some(function (module) {
@@ -1611,6 +1627,82 @@ try {
     try { window.localStorage.removeItem(key); } catch (e) {}
   }
 
+  function isMobileAdminViewport() {
+    try {
+      return window.matchMedia && window.matchMedia("(max-width: 900px)").matches;
+    } catch (e) {
+      return window.innerWidth <= 900;
+    }
+  }
+
+  function disconnectFrameResizeObserver() {
+    if (frameResizeObserver && typeof frameResizeObserver.disconnect === "function") {
+      try { frameResizeObserver.disconnect(); } catch (e) {}
+    }
+    frameResizeObserver = null;
+  }
+
+  function readFrameContentHeight() {
+    if (!frame || !frame.contentDocument) return 0;
+    var doc = frame.contentDocument;
+    var body = doc.body;
+    var root = doc.documentElement;
+    if (!body || !root) return 0;
+    return Math.max(
+      body.scrollHeight || 0,
+      body.offsetHeight || 0,
+      root.scrollHeight || 0,
+      root.offsetHeight || 0
+    );
+  }
+
+  function resizeAdminFrameForMobile() {
+    if (!frame) return;
+    if (!isMobileAdminViewport()) {
+      frame.style.height = "";
+      frame.removeAttribute("data-mobile-auto-height");
+      disconnectFrameResizeObserver();
+      return;
+    }
+    try {
+      var height = readFrameContentHeight();
+      var minimum = Math.max(Math.round(window.innerHeight * 0.72), 520);
+      if (height > 0) {
+        frame.style.height = String(Math.max(height + 18, minimum)) + "px";
+        frame.setAttribute("data-mobile-auto-height", "1");
+      }
+    } catch (e) {
+      frame.style.height = "72vh";
+      frame.setAttribute("data-mobile-auto-height", "1");
+    }
+  }
+
+  function watchFrameContentForMobileResize() {
+    disconnectFrameResizeObserver();
+    if (!frame || !isMobileAdminViewport()) return;
+    try {
+      var doc = frame.contentDocument;
+      if (!doc || !doc.body || typeof MutationObserver === "undefined") return;
+      frameResizeObserver = new MutationObserver(function () {
+        window.requestAnimationFrame(resizeAdminFrameForMobile);
+      });
+      frameResizeObserver.observe(doc.body, { childList: true, subtree: true, attributes: true });
+    } catch (e) {
+      frameResizeObserver = null;
+    }
+  }
+
+  function scheduleMobileFrameResize() {
+    resizeAdminFrameForMobile();
+    watchFrameContentForMobileResize();
+    [80, 260, 700, 1400].forEach(function (delay) {
+      window.setTimeout(function () {
+        resizeAdminFrameForMobile();
+        watchFrameContentForMobileResize();
+      }, delay);
+    });
+  }
+
   if (frame) {
     frame.addEventListener("load", function () {
       var currentHref = "";
@@ -1643,6 +1735,7 @@ try {
       persistFrameSrc(currentHref, id);
       setActiveByHref(currentHref);
       updateFavoriteButton(currentHref);
+      scheduleMobileFrameResize();
     });
     // Interceptar F5 / Ctrl+R para recargar solo el iframe y mantener la subpágina activa.
     // Si el foco está en un campo editable (input/textarea/contentEditable) se respeta el comportamiento por defecto.
@@ -1682,6 +1775,10 @@ try {
       }
     });
   }
+
+  window.addEventListener("resize", function () {
+    scheduleMobileFrameResize();
+  });
 
   setupAdminNavGroups();
 

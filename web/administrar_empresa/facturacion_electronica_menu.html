@@ -12,9 +12,11 @@
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Facturación electrónica</h2>
       <ul class="nav" id="facturacionSidebarNav">
-        <li><a id="linkFacturacionMain" href="/administrar_empresa/facturacion_electronica.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturación electrónica</a></li>
-        <li><a id="linkPruebasDian" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Pruebas DIAN y documentos</a></li>
-        <li><a id="linkProveedoresFirmaDigital" href="/administrar_empresa/proveedores_firma_digital.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Proveedores de Firma Digital</a></li>
+        <li hidden data-country-gated="CO"><a id="linkFacturacionMain" href="/administrar_empresa/facturacion_electronica.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturación electrónica</a></li>
+        <li hidden data-country-gated="EC"><a id="linkFacturacionEcuador" href="/administrar_empresa/facturacion_electronica_ecuador.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Ecuador / SRI</a></li>
+        <li hidden data-country-gated="PA"><a id="linkFacturacionPanama" href="/administrar_empresa/facturacion_electronica_panama.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Panama / DGI</a></li>
+        <li hidden data-country-gated="CO"><a id="linkPruebasDian" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Pruebas DIAN y documentos</a></li>
+        <li hidden data-country-gated="CO"><a id="linkProveedoresFirmaDigital" href="/administrar_empresa/proveedores_firma_digital.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Proveedores de Firma Digital</a></li>
         <li><a id="linkFacturasElectronicas" href="/administrar_empresa/facturas_electronicas.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturas electrónicas</a></li>
         <li><a id="linkAIUConstruccion" href="/administrar_empresa/aiu_construccion.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">AIU construcción</a></li>
         <li class="admin-menu-visibility-item">
@@ -31,6 +33,164 @@
     </main>
   </div>
   <script src="/js/administrar_empresa.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      var countryLinks = Array.prototype.slice.call(document.querySelectorAll('[data-country-gated] a[id]'));
+      var frame = document.getElementById('facturacionContentFrame');
+      if (!countryLinks.length) return;
+
+      function setCountryLinkVisible(link, visible) {
+        if (!link) return;
+        var item = typeof link.closest === 'function' ? link.closest('li') : link.parentElement;
+        if (!item) return;
+        visible = !!visible;
+        item.hidden = !visible;
+        item.style.display = visible ? '' : 'none';
+        link.setAttribute('data-country-visible', visible ? '1' : '0');
+        if (!visible) link.classList.remove('active');
+      }
+
+      function resolveEmpresaId() {
+        try {
+          if (window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === 'function') {
+            var guarded = Number(window.__empresaModuleGuard.resolveEmpresaId());
+            if (guarded > 0) return Math.trunc(guarded);
+          }
+        } catch (_) {}
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var own = Number(params.get('empresa_id') || params.get('id') || 0);
+          if (own > 0) return Math.trunc(own);
+        } catch (_) {}
+        try {
+          var stored = Number(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id') || 0);
+          if (stored > 0) return Math.trunc(stored);
+        } catch (_) {}
+        return 0;
+      }
+
+      function fetchJSON(url) {
+        return fetch(url, { credentials: 'same-origin' }).then(function(resp) {
+          if (!resp.ok) return null;
+          return resp.json();
+        }).catch(function() {
+          return null;
+        });
+      }
+
+      function actionAllowedFromRow(row, action) {
+        if (!row || typeof row !== 'object') return false;
+        action = String(action || 'C').toUpperCase();
+        if (action === 'R' && (row.read === true || row.leer === true)) return true;
+        if (action === 'C' && (row.create === true || row.crear === true)) return true;
+        if (action === 'A' && (row.approve === true || row.aprobar === true)) return true;
+        var acciones = row.acciones;
+        if (acciones && typeof acciones === 'object') {
+          if (action === 'R') return acciones.R === true || acciones.leer === true || acciones.read === true;
+          if (action === 'C') return acciones.C === true || acciones.crear === true || acciones.create === true;
+          if (action === 'A') return acciones.A === true || acciones.aprobar === true || acciones.approve === true;
+        }
+        return false;
+      }
+
+      function linkAllowedByLicenseAndRole(ctx, link) {
+        if (!link || !ctx || typeof ctx !== 'object') return false;
+        var pageKey = link.id || '';
+        if (!ctx || typeof ctx !== 'object') return false;
+        if (pageKey && ctx.paginas && Object.prototype.hasOwnProperty.call(ctx.paginas, pageKey)) {
+          return ctx.paginas[pageKey] === true;
+        }
+        var ruleByLink = {
+          linkFacturacionMain: { module: 'facturacion', action: 'C' },
+          linkPruebasDian: { module: 'facturacion', action: 'A' },
+          linkProveedoresFirmaDigital: { module: 'facturacion', action: 'R' },
+          linkFacturacionEcuador: { module: 'facturacion_ecuador', action: 'C' },
+          linkFacturacionPanama: { module: 'facturacion_panama', action: 'C' }
+        };
+        var rule = ruleByLink[pageKey] || {};
+        var expectedModule = rule.module || '';
+        if (!expectedModule) return false;
+        var modules = Array.isArray(ctx.modulos) ? ctx.modulos : [];
+        for (var i = 0; i < modules.length; i += 1) {
+          var row = modules[i] || {};
+          var key = String(row.modulo || row.module || '').trim().toLowerCase();
+          if (key === expectedModule) {
+            return actionAllowedFromRow(row, rule.action);
+          }
+        }
+        return false;
+      }
+
+      function countryMatches(link, country) {
+        var item = typeof link.closest === 'function' ? link.closest('li') : link.parentElement;
+        var allowedCountries = String(item && item.getAttribute('data-country-gated') || '').toUpperCase().split(',');
+        return allowedCountries.some(function(raw) {
+          return raw.trim() === country;
+        });
+      }
+
+      function withEmpresaContext(rawHref, empresaId) {
+        try {
+          var url = new URL(rawHref, window.location.origin);
+          if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+          return url.pathname + url.search + url.hash;
+        } catch (_) {
+          return rawHref;
+        }
+      }
+
+      function chooseDefaultCountryPage(country, empresaId) {
+        if (!frame || frame.getAttribute('data-country-default-applied') === '1') return;
+        var firstVisible = null;
+        for (var i = 0; i < countryLinks.length; i += 1) {
+          var link = countryLinks[i];
+          var visible = link.getAttribute('data-country-visible') === '1';
+          if (visible && countryMatches(link, country)) {
+            firstVisible = link;
+            break;
+          }
+        }
+        if (!firstVisible) return;
+        frame.setAttribute('data-country-default-applied', '1');
+        frame.setAttribute('src', withEmpresaContext(firstVisible.getAttribute('href') || '', empresaId));
+      }
+
+      function syncCountryMenu() {
+        countryLinks.forEach(function(link) {
+          setCountryLinkVisible(link, false);
+        });
+        var empresaId = resolveEmpresaId();
+        if (!empresaId) return;
+        var tz = '';
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
+        var lang = '';
+        try { lang = navigator.language || ''; } catch (_) {}
+        var detectedURL = '/api/empresa/facturacion_electronica/pais_detectado?empresa_id=' + encodeURIComponent(empresaId) + '&tz=' + encodeURIComponent(tz) + '&lang=' + encodeURIComponent(lang);
+        var permsURL = '/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(empresaId);
+        Promise.all([fetchJSON(detectedURL), fetchJSON(permsURL)]).then(function(results) {
+          var detected = results[0] || {};
+          var permissions = results[1] || {};
+          var country = String(detected.pais_codigo || '').trim().toUpperCase();
+          countryLinks.forEach(function(link) {
+            setCountryLinkVisible(link, countryMatches(link, country) && linkAllowedByLicenseAndRole(permissions, link));
+          });
+          chooseDefaultCountryPage(country, empresaId);
+        }).catch(function() {
+          countryLinks.forEach(function(link) {
+            setCountryLinkVisible(link, false);
+          });
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncCountryMenu);
+      } else {
+        syncCountryMenu();
+      }
+    })();
+  </script>
   <script src="/menu.js"></script>
 </body>
 </html>

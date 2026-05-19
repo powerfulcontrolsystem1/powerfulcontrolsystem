@@ -129,6 +129,64 @@
         <div id="scannerMsg" class="form-help"></div>
       </div>
 
+      <section id="stationCustomerCard" class="card empresa-section carrito-customer-card is-hidden mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <div>
+            <h3 class="section-heading">Cliente del carrito</h3>
+            <p id="stationCustomerRequiredHint" class="form-help mt-0">Selecciona un cliente existente o registra uno nuevo sin salir del carrito.</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="stationCarritoClienteID">Cliente registrado</label>
+            <select id="stationCarritoClienteID" class="form-input"></select>
+          </div>
+          <div class="form-col maxw-220 flex-col-end">
+            <button type="button" id="stationAssignClienteBtn" class="btn secondary w-full">Asignar cliente</button>
+          </div>
+          <div class="form-col maxw-220 flex-col-end">
+            <button type="button" id="stationNewClienteToggleBtn" class="btn secondary w-full">Nuevo cliente</button>
+          </div>
+        </div>
+        <div id="stationClienteActual" class="form-help mt-6">Cliente actual: consumidor final.</div>
+        <div id="stationClienteQuickForm" class="empresa-section mt-10 is-hidden" hidden>
+          <div class="form-row">
+            <div class="form-col maxw-180">
+              <label class="form-label" for="quickClienteTipoDoc">Tipo doc.</label>
+              <select id="quickClienteTipoDoc" class="form-input">
+                <option value="CC">CC</option>
+                <option value="NIT">NIT</option>
+                <option value="CE">CE</option>
+                <option value="PAS">PAS</option>
+                <option value="TI">TI</option>
+              </select>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteDocumento">Documento</label>
+              <input id="quickClienteDocumento" class="form-input" autocomplete="off" placeholder="Numero de documento">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteNombre">Nombre / razon social</label>
+              <input id="quickClienteNombre" class="form-input" autocomplete="off" placeholder="Nombre del cliente">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="quickClienteTelefono">Telefono</label>
+              <input id="quickClienteTelefono" class="form-input" autocomplete="off" placeholder="Opcional">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="quickClienteEmail">Email</label>
+              <input id="quickClienteEmail" type="email" class="form-input" autocomplete="off" placeholder="Opcional">
+            </div>
+            <div class="form-col maxw-220 flex-col-end">
+              <button type="button" id="quickClienteGuardarBtn" class="btn primary w-full">Guardar cliente</button>
+            </div>
+          </div>
+        </div>
+        <div id="stationClienteMsg" class="form-help mt-6"></div>
+      </section>
+
       <div id="stationCartSplitRow" class="carrito-station-split mt-12" hidden>
         <div class="carrito-station-split-main">
           <p class="form-help mb-8 mt-0" hidden></p>
@@ -573,6 +631,7 @@
       clientes: [],
       selectedCarritoID: 0,
       selectedCarritoCode: '',
+      customerPanelOpen: false,
       items: [],
       cartAbonos: [],
       cartAbonosLoading: false,
@@ -1114,6 +1173,7 @@
         mostrar_codigo_manual_item: true,
         mostrar_observaciones_item: true,
         mostrar_selector_cliente: true,
+        cliente_obligatorio_pago: false,
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
         mostrar_descuentos: false,
@@ -1147,6 +1207,7 @@
         mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : Boolean(src.mostrar_codigo_manual_item),
         mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : Boolean(src.mostrar_observaciones_item),
         mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : Boolean(src.mostrar_selector_cliente),
+        cliente_obligatorio_pago: src.cliente_obligatorio_pago === undefined ? base.cliente_obligatorio_pago : Boolean(src.cliente_obligatorio_pago),
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : Boolean(src.mostrar_impuestos_item),
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : Boolean(src.mostrar_lector_codigo_barras),
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : Boolean(src.mostrar_descuentos),
@@ -1539,10 +1600,7 @@
         itemObservacionesRow.style.display = ui.mostrar_observaciones_item ? '' : 'none';
       }
 
-      const carritoClienteRow = document.getElementById('carritoClienteRow');
-      if (carritoClienteRow) {
-        carritoClienteRow.style.display = ui.mostrar_selector_cliente ? '' : 'none';
-      }
+      renderStationCustomerPanel(getSelectedCarrito());
 
       const itemTaxRow = document.getElementById('itemTaxRow');
       if (itemTaxRow) {
@@ -3781,6 +3839,18 @@
         return;
       }
 
+      if (customerRequiredForCurrentCart() && Number(selected.cliente_id || 0) <= 0) {
+        applyStationCartUIConfig();
+        toggleQuickClienteForm(true);
+        setStationClienteMessage('Registra o selecciona un cliente para poder pagar este carrito.', true);
+        setStationPaymentMessage('Cliente obligatorio: debes registrar o seleccionar un cliente antes de pagar y cerrar el carrito.', true);
+        const clienteNombre = document.getElementById('quickClienteNombre');
+        if (clienteNombre && typeof clienteNombre.focus === 'function') {
+          clienteNombre.focus();
+        }
+        return;
+      }
+
       const pay = getStationPaymentBreakdown(selected);
 
       if (Number(pay.totalBase || 0) <= 0) {
@@ -4435,6 +4505,172 @@
         sel.appendChild(opt);
       });
       if (selected) sel.value = String(selected);
+    }
+
+    function fillStationClientesSelect(selected) {
+      const sel = document.getElementById('stationCarritoClienteID');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">-- Consumidor final / sin cliente --</option>';
+      state.clientes.forEach(function(c) {
+        if (normalize(c.estado) && normalize(c.estado) !== 'activo') return;
+        const opt = document.createElement('option');
+        opt.value = String(c.id);
+        const doc = [normalize(c.tipo_documento), normalize(c.numero_documento)].filter(Boolean).join(' ');
+        opt.textContent = (normalize(c.nombre_razon_social) || 'Cliente') + (doc ? (' - ' + doc) : '');
+        sel.appendChild(opt);
+      });
+      if (selected) sel.value = String(selected);
+    }
+
+    function getClienteByID(clienteID) {
+      const id = Number(clienteID || 0);
+      if (!id) return null;
+      return state.clientes.find(function(c) {
+        return Number(c && c.id) === id;
+      }) || null;
+    }
+
+    function customerRequiredForCurrentCart() {
+      const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
+      return Boolean(ui.cliente_obligatorio_pago);
+    }
+
+    function setStationClienteMessage(text, isError) {
+      const box = document.getElementById('stationClienteMsg');
+      if (!box) return;
+      box.textContent = text || '';
+      box.style.color = isError ? '#ef5350' : '';
+    }
+
+    function toggleQuickClienteForm(show) {
+      const form = document.getElementById('stationClienteQuickForm');
+      if (!form) return;
+      const visible = show === undefined ? form.hidden : Boolean(show);
+      form.hidden = !visible;
+      form.classList.toggle('is-hidden', !visible);
+      form.style.display = visible ? '' : 'none';
+      if (visible) {
+        const name = document.getElementById('quickClienteNombre');
+        if (name && typeof name.focus === 'function') name.focus();
+      }
+    }
+
+    function renderStationCustomerPanel(carrito) {
+      const card = document.getElementById('stationCustomerCard');
+      if (!card) return;
+      const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const show = focusedSaleMode && Boolean(carrito) && (ui.mostrar_selector_cliente || ui.cliente_obligatorio_pago || state.customerPanelOpen);
+      card.hidden = !show;
+      card.classList.toggle('is-hidden', !show);
+      card.style.display = show ? '' : 'none';
+      if (!show) return;
+
+      const selectedID = Number(carrito && carrito.cliente_id || 0);
+      fillStationClientesSelect(selectedID);
+      const cliente = getClienteByID(selectedID);
+      const actual = document.getElementById('stationClienteActual');
+      if (actual) {
+        actual.textContent = cliente
+          ? 'Cliente actual: ' + (normalize(cliente.nombre_razon_social) || ('Cliente #' + selectedID))
+          : 'Cliente actual: consumidor final.';
+      }
+      const hint = document.getElementById('stationCustomerRequiredHint');
+      if (hint) {
+        hint.textContent = ui.cliente_obligatorio_pago
+          ? 'Cliente obligatorio para pagar: selecciona uno existente o registra uno nuevo desde este panel.'
+          : 'Selecciona un cliente existente o registra uno nuevo sin salir del carrito.';
+        hint.style.color = ui.cliente_obligatorio_pago && !selectedID ? '#ef5350' : '';
+      }
+    }
+
+    function updateSelectedCarritoClienteLocal(clienteID) {
+      const id = Number(clienteID || 0);
+      const cliente = getClienteByID(id);
+      state.carritos = state.carritos.map(function(c) {
+        if (Number(c && c.id) !== Number(state.selectedCarritoID)) return c;
+        const next = Object.assign({}, c);
+        next.cliente_id = id;
+        next.cliente_nombre = cliente ? (normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial)) : '';
+        return next;
+      });
+    }
+
+    async function assignClienteToSelectedCarrito(clienteID) {
+      const selected = getSelectedCarrito();
+      if (!selected || !Number(selected.id || 0)) {
+        setStationClienteMessage('Selecciona o espera a que cargue el carrito antes de asignar cliente.', true);
+        return;
+      }
+      const id = Number(clienteID || 0);
+      const payload = {
+        id: Number(selected.id || 0),
+        empresa_id: Number(state.empresaID),
+        nombre: normalize(selected.nombre) || (state.directSaleMode ? 'Venta directa' : (state.stationName || 'Carrito')),
+        codigo: normalize(selected.codigo),
+        canal_venta: normalize(selected.canal_venta) || 'mostrador',
+        cliente_id: id,
+        estado_carrito: normalize(selected.estado_carrito) || 'abierto',
+        moneda: normalize(selected.moneda) || 'COP',
+        referencia_externa: normalize(selected.referencia_externa),
+        observaciones: normalize(selected.observaciones)
+      };
+      const res = await fetch('/api/empresa/carritos_compra', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      await ensureOk(res);
+      updateSelectedCarritoClienteLocal(id);
+      renderStationCustomerPanel(getSelectedCarrito());
+      renderResumen();
+      setStationClienteMessage(id > 0 ? 'Cliente asignado al carrito.' : 'El carrito quedo como consumidor final.', false);
+    }
+
+    async function createClienteFromCartButton() {
+      const nombre = normalize(document.getElementById('quickClienteNombre').value);
+      const documento = normalize(document.getElementById('quickClienteDocumento').value);
+      const tipoDoc = normalize(document.getElementById('quickClienteTipoDoc').value) || 'CC';
+      if (!nombre || !documento) {
+        setStationClienteMessage('Nombre y documento del cliente son obligatorios.', true);
+        return;
+      }
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        tipo_documento: tipoDoc,
+        numero_documento: documento,
+        tipo_persona: tipoDoc === 'NIT' ? 'juridica' : 'natural',
+        nombre_razon_social: nombre,
+        nombre_comercial: nombre,
+        email: normalize(document.getElementById('quickClienteEmail').value),
+        telefono: normalize(document.getElementById('quickClienteTelefono').value),
+        pais: 'CO',
+        observaciones: 'Creado desde el boton Clientes del carrito'
+      };
+      try {
+        const res = await fetch('/api/empresa/clientes', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        const body = await res.json().catch(function() { return {}; });
+        const newID = Number(body && body.id || 0);
+        await loadClientes();
+        if (newID > 0) {
+          await assignClienteToSelectedCarrito(newID);
+        }
+        ['quickClienteDocumento', 'quickClienteNombre', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        toggleQuickClienteForm(false);
+        setStationClienteMessage('Cliente creado y asignado al carrito.', false);
+      } catch (err) {
+        setStationClienteMessage(err.message || 'No se pudo crear el cliente desde el carrito.', true);
+      }
     }
 
     function resetCarritoForm(hide) {
@@ -6147,13 +6383,16 @@
         if (!res.ok) {
           state.clientes = [];
           fillClientesSelect('');
+          renderStationCustomerPanel(getSelectedCarrito());
           return;
         }
         state.clientes = await res.json();
         fillClientesSelect('');
+        renderStationCustomerPanel(getSelectedCarrito());
       } catch (_) {
         state.clientes = [];
         fillClientesSelect('');
+        renderStationCustomerPanel(getSelectedCarrito());
       }
     }
 
@@ -6668,7 +6907,41 @@
       window.location.href = '/administrar_empresa/vehiculos_registro.html';
     });
     document.getElementById('carritoBtnClientes').addEventListener('click', function() {
-      window.location.href = '/administrar_empresa/administrar_clientes.html';
+      state.customerPanelOpen = true;
+      renderStationCustomerPanel(getSelectedCarrito());
+      toggleQuickClienteForm(true);
+      setStationClienteMessage('Registra el cliente desde este panel y quedara asociado al carrito actual.', false);
+    });
+    const stationAssignClienteBtn = document.getElementById('stationAssignClienteBtn');
+    if (stationAssignClienteBtn) {
+      stationAssignClienteBtn.addEventListener('click', async function() {
+        try {
+          await assignClienteToSelectedCarrito(Number(document.getElementById('stationCarritoClienteID').value || 0));
+        } catch (err) {
+          setStationClienteMessage(err.message || 'No se pudo asignar el cliente al carrito.', true);
+        }
+      });
+    }
+    const stationNewClienteToggleBtn = document.getElementById('stationNewClienteToggleBtn');
+    if (stationNewClienteToggleBtn) {
+      stationNewClienteToggleBtn.addEventListener('click', function() {
+        toggleQuickClienteForm();
+      });
+    }
+    const quickClienteGuardarBtn = document.getElementById('quickClienteGuardarBtn');
+    if (quickClienteGuardarBtn) {
+      quickClienteGuardarBtn.addEventListener('click', function() {
+        createClienteFromCartButton();
+      });
+    }
+    ['quickClienteDocumento', 'quickClienteNombre', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        createClienteFromCartButton();
+      });
     });
     document.getElementById('carritoBtnAbonos').addEventListener('click', function() {
       toggleCarritoAbonosPanel();

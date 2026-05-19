@@ -67,6 +67,13 @@
           </div>
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgClienteObligatorio" type="checkbox">
+              Exigir cliente registrado para pagar
+            </label>
+            <div class="form-help">Si está activo, el carrito no permite pagar hasta seleccionar o crear un cliente de la empresa.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgImpuestos" type="checkbox" checked>
               Mostrar descuento e impuestos del item
             </label>
@@ -264,6 +271,7 @@
         mostrar_codigo_manual_item: true,
         mostrar_observaciones_item: true,
         mostrar_selector_cliente: true,
+        cliente_obligatorio_pago: false,
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
         mostrar_descuentos: false,
@@ -297,6 +305,7 @@
         mostrar_codigo_manual_item: src.mostrar_codigo_manual_item === undefined ? base.mostrar_codigo_manual_item : !!src.mostrar_codigo_manual_item,
         mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : !!src.mostrar_observaciones_item,
         mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : !!src.mostrar_selector_cliente,
+        cliente_obligatorio_pago: src.cliente_obligatorio_pago === undefined ? base.cliente_obligatorio_pago : !!src.cliente_obligatorio_pago,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : !!src.mostrar_impuestos_item,
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : !!src.mostrar_lector_codigo_barras,
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : !!src.mostrar_descuentos,
@@ -433,6 +442,7 @@
       document.getElementById('carritoCfgCodigoManual').checked = !!normalized.mostrar_codigo_manual_item;
       document.getElementById('carritoCfgObservaciones').checked = !!normalized.mostrar_observaciones_item;
       document.getElementById('carritoCfgCliente').checked = !!normalized.mostrar_selector_cliente;
+      document.getElementById('carritoCfgClienteObligatorio').checked = !!normalized.cliente_obligatorio_pago;
       document.getElementById('carritoCfgImpuestos').checked = !!normalized.mostrar_impuestos_item;
       document.getElementById('carritoCfgLector').checked = !!normalized.mostrar_lector_codigo_barras;
       document.getElementById('carritoCfgResumenProductos').checked = !!normalized.mostrar_resumen_productos;
@@ -468,6 +478,7 @@
           'carritoCfgCodigoManual',
           'carritoCfgObservaciones',
           'carritoCfgCliente',
+          'carritoCfgClienteObligatorio',
           'carritoCfgImpuestos',
           'carritoCfgLector',
           'carritoCfgResumenProductos',
@@ -511,7 +522,8 @@
           mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
           mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,
           mostrar_observaciones_item: document.getElementById('carritoCfgObservaciones').checked,
-          mostrar_selector_cliente: document.getElementById('carritoCfgCliente').checked,
+          mostrar_selector_cliente: document.getElementById('carritoCfgCliente').checked || document.getElementById('carritoCfgClienteObligatorio').checked,
+          cliente_obligatorio_pago: document.getElementById('carritoCfgClienteObligatorio').checked,
           mostrar_impuestos_item: document.getElementById('carritoCfgImpuestos').checked,
           mostrar_lector_codigo_barras: document.getElementById('carritoCfgLector').checked,
           mostrar_resumen_productos: document.getElementById('carritoCfgResumenProductos').checked,

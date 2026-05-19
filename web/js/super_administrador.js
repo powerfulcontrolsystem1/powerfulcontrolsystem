@@ -36,6 +36,7 @@
     "/super/contexto_ia_logica_negocio.html": true,
     "/super/alertas_sistema.html": true,
     "/super/seguridad.html": true,
+    "/super/docker_portabilidad.html": true,
     "/super/tickets_ayuda.html": true,
     "/super/correos_masivos.html": true,
     "/super/mantenimiento_sistema.html": true,

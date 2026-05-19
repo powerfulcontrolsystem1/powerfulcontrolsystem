@@ -1,3 +1,15 @@
+- 2026-05-19: `Codigos de descuento y asesor` deja los cupones del carrito como consumo unico por empresa, sin liberar cupo al anular/reabrir ventas, y hace que la promocion por codigo de asesor en checkout de licencias solo aplique una vez por empresa cuando la promocion global tenga porcentaje activo.
+
+- 2026-05-19: `Reporte de turno POS` compacta el ticket 80mm usando dos columnas en datos del turno, resumen financiero y detalle de ventas, reduciendo longitud del comprobante sin cambiar datos ni endpoints.
+
+- 2026-05-19: `Docker VPS` agrega pagina en Super Administrador > Plataforma para revisar el paquete portable y descargar un `.tar.gz` del proyecto base Docker. El endpoint `/super/api/docker_portabilidad?action=status|download` queda exclusivo de `super_administrador`, la imagen backend guarda `/app/project_export` y la descarga excluye secretos, `.env`, llaves, uploads, descargas, backups, logs, caches y datos runtime.
+
+- 2026-05-19: `Facturacion electronica Ecuador` agrega pagina independiente `Ecuador / SRI` y endpoint `/api/empresa/facturacion_electronica/ecuador`; el perfil EC usa SRI con RUC, establecimiento, punto de emision, ambiente SRI 1/2, firma electronica, autorizacion de produccion, RIDE y documentos factura/nota credito/nota debito/retencion/guia remision, bajo licencia independiente `facturacion_ecuador`.
+
+- 2026-05-19: `Facturacion electronica por pais` mantiene el submenu de facturacion como contenedor y muestra paginas internas segun pais detectado: Colombia/DIAN, Ecuador/SRI o Panama/DGI. Ecuador y Panama quedan bajo licencias independientes `facturacion_ecuador` y `facturacion_panama`.
+
+- 2026-05-19: `Facturacion electronica Panama` agrega pagina independiente `Panama / DGI` y endpoint `/api/empresa/facturacion_electronica/panama`; el perfil PA usa SFEP/DGI con modalidad PAC o Facturador Gratuito, declaracion jurada e-Tax2.0, firma electronica, RUC/DV, CAFE/CUFE/QR y documentos factura/nota credito/nota debito, sin mezclar DIAN Colombia ni agregar tablas/dependencias.
+
 - 2026-05-19: `Caja y turno` quedan independientes por usuario dentro de la misma empresa: apertura manual/automatica, listado de cajas del carrito, pagos, abonos y movimientos validan `usuario_creador`; `empresa_cierres_caja` actualiza su unicidad a empresa/sucursal/caja/fecha/turno/usuario y elimina indices legacy sin usuario. Flujo documentado: el usuario abre/reutiliza caja desde `Corte de Caja`, o el sistema abre una automaticamente al primer cobro si no tiene caja abierta; al finalizar genera/revisa reporte, imprime si aplica y cierra turno/caja. El tablero de estaciones sigue compartido por empresa y refresca cada 3 segundos para varias cajas.
 
 - 2026-05-19: `Documentos imprimibles` deja facturas, ventas, notas, documentos y reportes imprimibles en blanco y negro, independientes del tema claro/oscuro; ventas y facturas esperan la configuracion avanzada para respetar desde la primera vista previa los logos de empresa/sistema en escala de grises.
@@ -4407,3 +4419,13 @@
 - 2026-05-12: identidad visual empresarial. `web/administrar_empresa/configuracion.html` agrega una seccion visible para subir o pegar el logo de la empresa, `web/administrar_empresa/panel.html` lo muestra encima del titulo sin alterar la tarjeta de clima, y `/api/empresa/configuracion_avanzada/logo` guarda el archivo en `/uploads/empresa_logos/empresa_<id>/`. Se reutilizan `empresa_configuracion_avanzada.logo_url` y `mostrar_logo`, los mismos campos usados por factura y documentos.
 - 2026-05-13: correos masivos globales. Super administrador agrega `web/super/correos_masivos.html` y `/super/api/correos_masivos` para previsualizar destinatarios, enviar comunicados por SMTP a administradores/usuarios y auditar campanas en `super_correos_masivos`.
 - 2026-05-13: conexion obligatoria para operacion. Se retira la opcion de modo offline/contingencia DIAN en facturacion electronica y el backend bloquea emisiones cuando DIAN/proveedor no esta disponible; ventas, cobros y facturacion requieren conexion activa con el servidor.
+
+## [2026-05-19] Administrar empresa movil
+- [Frontend/PWA] El panel `Administrar empresa` actualiza service worker a `pcs-shell-v3`, limpia caches antiguas y usa network-first para CSS/JS/manifest para que celulares y PWA instaladas no muestren estilos viejos.
+- [Responsive] Menu, submenus, botones e iframe del shell empresarial se ajustan al ancho movil sin desborde horizontal ni doble scroll innecesario; el panel inicial deja de cortar titulo, ciudad, clima y pie en pantallas pequenas.
+- [QA] Validacion visual en viewport movil 390x844 y validacion de sintaxis de scripts/service worker.
+
+## [2026-05-19] Clientes desde carrito
+- [Carritos] El boton `Clientes` abre un panel interno para crear/asignar cliente al carrito activo sin salir de venta directa o estaciones.
+- [Configuracion] Nuevo check `Exigir cliente registrado para pagar` dentro de la configuracion del carrito.
+- [Backend] `pagar_estacion` bloquea el cierre cuando `cliente_obligatorio_pago` esta activo y el carrito no tiene cliente.

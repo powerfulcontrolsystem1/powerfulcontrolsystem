@@ -1,3 +1,39 @@
+## [2026-05-19] Codigos de descuento y asesor de un solo uso
+- [Carritos] Los codigos de descuento quedan consumidos una sola vez por empresa; anular, reabrir o revertir un carrito conserva la auditoria y no devuelve el cupo.
+- [Licencias] La promocion por codigo de asesor solo descuenta si esta activa y con porcentaje configurado; si la empresa ya uso asesor en pagos/activaciones/comisiones, no vuelve a aplicar descuento.
+- [Backend] El resumen de checkout y las pasarelas recalculan la regla en servidor antes de cobrar o activar sin pago.
+- [Alcance] No agrega tablas, dependencias ni permisos; mantiene aislamiento por `empresa_id`.
+
+## [2026-05-19] Compactacion POS del reporte de turno
+- [UX] El reporte de turno en POS 80mm usa dos columnas para datos del turno, resumen financiero y detalle de ventas.
+- [Impresion] La vista actual de corte y los reportes historicos imprimibles aprovechan mejor el ancho del ticket y reducen el largo del papel.
+- [Alcance] No cambia backend, endpoints, permisos ni tablas.
+
+## [2026-05-19] Docker VPS portable desde Super Administrador
+- [Super] Se agrega `Docker VPS` en Plataforma para revisar estado del paquete Docker y descargar un `.tar.gz` portable.
+- [Backend] Nuevo endpoint `/super/api/docker_portabilidad?action=status|download`, exclusivo de `super_administrador`.
+- [Seguridad] La descarga excluye `.env`, secretos, llaves, uploads, descargas, backups, logs, caches, evidencias y datos runtime.
+- [Deploy] La imagen backend contiene `/app/project_export` como snapshot limpio para exportar desde el contenedor.
+
+## [2026-05-19] Facturacion electronica Ecuador
+- [Backend] Nuevo endpoint independiente `/api/empresa/facturacion_electronica/ecuador` para configurar y validar checklist Ecuador/SRI sin usar DIAN Colombia ni DGI Panama.
+- [Permisos] Ecuador/SRI usa modulo independiente `facturacion_ecuador`, pagina `linkFacturacionEcuador` y wrapper `WithEmpresaFacturacionEcuadorPermissions`.
+- [Frontend] Nueva pagina `facturacion_electronica_ecuador.html` enlazada como `Ecuador / SRI` en el submenu de facturacion electronica cuando el pais detectado es EC y la licencia lo permite.
+- [Normativa] El perfil EC queda basado en SRI: comprobantes de venta, retencion y documentos complementarios, firma electronica, Facturador SRI o proveedor/sistema propio, RIDE, factura, nota credito, nota debito, retencion y guia de remision.
+- [Alcance] No agrega tablas ni dependencias; el transporte real SRI/proveedor se parametriza por proveedor y `api_base_url`.
+
+## [2026-05-19] Facturacion electronica por pais y licencia
+- [Permisos] Ecuador/SRI y Panama/DGI usan modulos independientes `facturacion_ecuador` y `facturacion_panama`, paginas `linkFacturacionEcuador` y `linkFacturacionPanama`, y wrappers propios.
+- [Licencias] La licencia puede activar Ecuador o Panama sin activar DIAN Colombia, y DIAN Colombia no habilita esos paises automaticamente.
+- [Frontend] El submenu `Facturacion electronica` permanece como contenedor; sus paginas internas se muestran segun pais detectado automaticamente y permisos efectivos.
+- [Operacion] Colombia muestra configuracion DIAN, pruebas DIAN y proveedores de firma; Panama muestra `Panama / DGI` cuando el pais detectado es PA y la licencia lo permite.
+
+## [2026-05-19] Facturacion electronica Panama
+- [Backend] Nuevo endpoint independiente `/api/empresa/facturacion_electronica/panama` para configurar y validar checklist Panama/DGI sin usar DIAN Colombia.
+- [Frontend] Nueva pagina `facturacion_electronica_panama.html` enlazada como `Panama / DGI` en el submenu de facturacion electronica.
+- [Normativa] El perfil PA queda basado en SFEP/DGI: Facturador Gratuito o PAC, declaracion jurada en e-Tax2.0, firma electronica, RUC/DV, CAFE/CUFE/QR y documentos factura/nota credito/nota debito.
+- [Alcance] No agrega tablas ni dependencias; el transporte real PAC/DGI se parametriza por proveedor y `api_base_url`.
+
 ## [2026-05-19] Caja y turno por usuario
 - [Backend] Cierres de caja, aperturas automaticas, pagos, abonos e ingresos/egresos se resuelven por usuario autenticado dentro de la empresa.
 - [Base de datos] `empresa_cierres_caja` usa unicidad por `empresa_id`, sucursal, caja, fecha, turno y `usuario_creador`; se eliminan indices legacy sin usuario y se agrega indice para localizar cajas abiertas por usuario.
@@ -799,6 +835,16 @@
 - [Frontend] `web/administrar_empresa/panel.html` presenta los indicadores de mercado en una tabla compacta de dos indicadores por fila en escritorio.
 - [Responsive] En movil conserva las tarjetas reducidas existentes para evitar desbordes horizontales.
 - [Alcance] Sin cambios de API, permisos, base de datos ni dependencias.
+
+## [2026-05-19] Administrar empresa movil
+- [Frontend/PWA] El panel `Administrar empresa` actualiza service worker a `pcs-shell-v3`, limpia caches antiguas y usa network-first para CSS/JS/manifest para que celulares y PWA instaladas no muestren estilos viejos.
+- [Responsive] Menu, submenus, botones e iframe del shell empresarial se ajustan al ancho movil sin desborde horizontal ni doble scroll innecesario; el panel inicial deja de cortar titulo, ciudad, clima y pie en pantallas pequenas.
+- [QA] Validacion visual en viewport movil 390x844 y validacion de sintaxis de scripts/service worker.
+
+## [2026-05-19] Clientes desde carrito
+- [Carritos] El boton `Clientes` abre un panel interno para crear/asignar cliente al carrito activo sin salir de venta directa o estaciones.
+- [Configuracion] Nuevo check `Exigir cliente registrado para pagar` dentro de la configuracion del carrito.
+- [Backend] `pagar_estacion` bloquea el cierre cuando `cliente_obligatorio_pago` esta activo y el carrito no tiene cliente.
 
 ## [2026-05-12] Enlace Probar Gratis del index
 - [Frontend] `web/index.html` cambia el destino de ficha comercial a `/descripcion_de_los_sistemas.html` conservando `accion=probar_gratis`, `tipo_empresa`, modulo, secciones y ancla de la tarjeta elegida.

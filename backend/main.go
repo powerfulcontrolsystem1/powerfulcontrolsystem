@@ -1079,6 +1079,8 @@ func main() {
 	http.HandleFunc("/api/empresa/estacion_prefs", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionPrefsHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/estacion_aseo", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaEstacionAseoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/facturacion_electronica/ecuador", handlers.WithEmpresaFacturacionEcuadorPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaEcuadorHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/facturacion_electronica/panama", handlers.WithEmpresaFacturacionPanamaPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPanamaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler()))
 	http.HandleFunc("/api/empresa/impuestos", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpuestosHandler(dbEmpresas, dbSuper)))
@@ -1248,6 +1250,7 @@ func main() {
 	http.HandleFunc("/super/api/reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/postgres/performance", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/super/api/explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper))
+	http.HandleFunc("/super/api/docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
 	// Endpoint de seguridad: listado de procesos en memoria RAM

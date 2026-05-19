@@ -772,6 +772,198 @@ func facturaEmailAutoDisabledResultado(payload facturacionOperacionPayload) fact
 	}
 }
 
+// EmpresaFacturacionElectronicaPanamaHandler gestiona el perfil independiente Panama/DGI.
+func EmpresaFacturacionElectronicaPanamaHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "PA")
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "No se pudo cargar facturacion electronica Panama", http.StatusInternalServerError)
+				return
+			}
+			if cfg == nil {
+				tmp := dbpkg.FacturacionElectronicaPaisConfig{EmpresaID: empresaID, PaisCodigo: "PA"}
+				_, _ = dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, tmp)
+				cfg, _ = dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "PA")
+			}
+			checklist := dbpkg.BuildFacturacionPanamaChecklist(cfg)
+			if action == "checklist" || action == "validar" {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":            checklist.Ok,
+					"empresa_id":    empresaID,
+					"pais_codigo":   "PA",
+					"checklist":     checklist,
+					"configuracion": cfg,
+				})
+				return
+			}
+			if action == "guia_onboarding" {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":          true,
+					"empresa_id":  empresaID,
+					"pais_codigo": "PA",
+					"pasos": []map[string]string{
+						{"clave": "registro_sfep", "titulo": "Registrarse en SFEP/e-Tax2.0", "detalle": "Completar la solicitud de factura electronica ante DGI Panama."},
+						{"clave": "modalidad", "titulo": "Elegir modalidad", "detalle": "Seleccionar Facturador Gratuito o Proveedor Autorizado Calificado (PAC)."},
+						{"clave": "firma", "titulo": "Configurar firma electronica", "detalle": "Registrar certificado o referencia segura para firmar documentos electronicos."},
+						{"clave": "pruebas", "titulo": "Validar ambiente de pruebas", "detalle": "Probar emision, CAFE/CUFE/QR y respuesta del PAC o facturador antes de produccion."},
+					},
+					"fuentes": checklist.Fuentes,
+				})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"empresa_id":    empresaID,
+				"pais_codigo":   "PA",
+				"configuracion": cfg,
+				"checklist":     checklist,
+				"vista":         dbpkg.FacturacionPaisVistaFor("PA"),
+			})
+			return
+		case http.MethodPost, http.MethodPut:
+			var payload dbpkg.FacturacionElectronicaPaisConfig
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			payload.EmpresaID = empresaID
+			payload.PaisCodigo = "PA"
+			payload.PaisNombre = "Panama"
+			payload.BanderaPais = "PA"
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			if strings.TrimSpace(payload.MonedaCodigo) == "" {
+				payload.MonedaCodigo = "PAB"
+			}
+			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
+			if err != nil {
+				http.Error(w, "No se pudo guardar facturacion electronica Panama", http.StatusBadRequest)
+				return
+			}
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "PA")
+			if err != nil {
+				http.Error(w, "No se pudo recuperar facturacion electronica Panama", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"id":            id,
+				"empresa_id":    empresaID,
+				"pais_codigo":   "PA",
+				"configuracion": cfg,
+				"checklist":     dbpkg.BuildFacturacionPanamaChecklist(cfg),
+			})
+			return
+		default:
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// EmpresaFacturacionElectronicaEcuadorHandler gestiona el perfil independiente Ecuador/SRI.
+func EmpresaFacturacionElectronicaEcuadorHandler(dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		empresaID, err := parseEmpresaIDQuery(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		switch r.Method {
+		case http.MethodGet:
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "EC")
+			if err != nil && !errors.Is(err, sql.ErrNoRows) {
+				http.Error(w, "No se pudo cargar facturacion electronica Ecuador", http.StatusInternalServerError)
+				return
+			}
+			if cfg == nil {
+				tmp := dbpkg.FacturacionElectronicaPaisConfig{EmpresaID: empresaID, PaisCodigo: "EC"}
+				_, _ = dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, tmp)
+				cfg, _ = dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "EC")
+			}
+			checklist := dbpkg.BuildFacturacionEcuadorChecklist(cfg)
+			if action == "checklist" || action == "validar" {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":            checklist.Ok,
+					"empresa_id":    empresaID,
+					"pais_codigo":   "EC",
+					"checklist":     checklist,
+					"configuracion": cfg,
+				})
+				return
+			}
+			if action == "guia_onboarding" {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":          true,
+					"empresa_id":  empresaID,
+					"pais_codigo": "EC",
+					"pasos": []map[string]string{
+						{"clave": "firma", "titulo": "Adquirir firma electronica", "detalle": "Mantener vigente un certificado de firma electronica tipo archivo para firmar XML."},
+						{"clave": "ambiente_pruebas", "titulo": "Preparar ambiente de pruebas", "detalle": "Configurar ambiente SRI 1 para validar XML, firma y secuencias antes de produccion."},
+						{"clave": "autorizacion", "titulo": "Confirmar autorizacion SRI", "detalle": "Verificar autorizacion de emision de comprobantes electronicos en SRI en Linea para produccion."},
+						{"clave": "ride", "titulo": "Generar RIDE y notificar", "detalle": "Emitir XML autorizado, generar representacion impresa RIDE y notificar por correo al destinatario."},
+					},
+					"fuentes": checklist.Fuentes,
+				})
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"empresa_id":    empresaID,
+				"pais_codigo":   "EC",
+				"configuracion": cfg,
+				"checklist":     checklist,
+				"vista":         dbpkg.FacturacionPaisVistaFor("EC"),
+			})
+			return
+		case http.MethodPost, http.MethodPut:
+			var payload dbpkg.FacturacionElectronicaPaisConfig
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "JSON invalido", http.StatusBadRequest)
+				return
+			}
+			payload.EmpresaID = empresaID
+			payload.PaisCodigo = "EC"
+			payload.PaisNombre = "Ecuador"
+			payload.BanderaPais = "EC"
+			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+			if strings.TrimSpace(payload.MonedaCodigo) == "" {
+				payload.MonedaCodigo = "USD"
+			}
+			id, err := dbpkg.UpsertFacturacionElectronicaPaisConfig(dbEmp, payload)
+			if err != nil {
+				http.Error(w, "No se pudo guardar facturacion electronica Ecuador", http.StatusBadRequest)
+				return
+			}
+			cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "EC")
+			if err != nil {
+				http.Error(w, "No se pudo recuperar facturacion electronica Ecuador", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":            true,
+				"id":            id,
+				"empresa_id":    empresaID,
+				"pais_codigo":   "EC",
+				"configuracion": cfg,
+				"checklist":     dbpkg.BuildFacturacionEcuadorChecklist(cfg),
+			})
+			return
+		default:
+			http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
 func facturacionAutoEmailClienteEnabled(dbEmp *sql.DB, empresaID int64, paisCodigo string) bool {
 	if dbEmp == nil || empresaID <= 0 {
 		return false

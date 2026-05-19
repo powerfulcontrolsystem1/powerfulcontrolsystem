@@ -985,6 +985,80 @@
         min-height: 42px;
       }
     }
+
+    @media (max-width: 560px) {
+      .empresa-home {
+        width: 100%;
+        padding: 6px;
+      }
+
+      .empresa-home-hero {
+        overflow: visible;
+      }
+
+      .empresa-home-title,
+      .empresa-home-subtitle {
+        display: block;
+        overflow: visible;
+        -webkit-line-clamp: unset;
+        -webkit-box-orient: unset;
+        text-overflow: clip;
+      }
+
+      .empresa-home-title {
+        font-size: clamp(1.28rem, 7vw, 1.72rem);
+        overflow-wrap: anywhere;
+      }
+
+      .empresa-home-subtitle {
+        font-size: .86rem;
+        line-height: 1.28;
+      }
+
+      .empresa-weather-panel {
+        grid-template-columns: minmax(0, 1fr);
+        overflow: visible;
+      }
+
+      .empresa-weather-head {
+        align-items: flex-start;
+      }
+
+      .empresa-weather-place,
+      .empresa-weather-temp,
+      .empresa-weather-desc,
+      .empresa-weather-stat strong {
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+
+      .empresa-weather-temp,
+      .empresa-weather-desc {
+        text-align: left;
+      }
+
+      .empresa-weather-grid {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .empresa-favorites-panel {
+        overflow: visible;
+      }
+
+      .empresa-home-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .empresa-home-footer > * {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+    }
   </style>
 </head>
 <body class="empresa-home-page">

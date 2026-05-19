@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facturacion electronica Panama - DGI</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header">
+      <h1>Facturacion electronica Panama / DGI</h1>
+      <p class="form-help">Perfil independiente para SFEP Panama. No usa ni modifica DIAN Colombia.</p>
+    </div>
+
+    <div class="card">
+      <h2>Ruta DGI Panama</h2>
+      <p class="form-help">Configura RUC, DV, modalidad SFEP, firma electronica y PAC o Facturador Gratuito. Usa esta pagina para preparar pruebas y produccion por empresa.</p>
+      <div class="form-actions">
+        <a class="btn secondary" href="https://dgi.mef.gob.pa/_7facturaelectronica/felectronica" target="_blank" rel="noopener">Abrir DGI Factura Electronica</a>
+        <a class="btn secondary" href="https://etax2.mef.gob.pa/etax2web/Login.aspx" target="_blank" rel="noopener">Abrir e-Tax2.0</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Checklist Panama</h2>
+      <div id="checklistResumen" class="form-help">Cargando...</div>
+      <div id="checklistItems"></div>
+    </div>
+
+    <form id="paForm" class="form card">
+      <h2>Configuracion fiscal Panama</h2>
+      <input type="hidden" id="empresa_id">
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">RUC</label><input id="identificador_fiscal" class="form-input" required></div>
+        <div class="form-col"><label class="form-label">DV</label><input id="dv" class="form-input" required></div>
+        <div class="form-col"><label class="form-label">Razon social</label><input id="razon_social" class="form-input" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">Modalidad SFEP</label>
+          <select id="modalidad" class="form-input">
+            <option value="pac">Proveedor Autorizado Calificado (PAC)</option>
+            <option value="facturador_gratuito">Facturador Gratuito DGI</option>
+            <option value="pac_o_facturador_gratuito">Pendiente de definir</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Ambiente</label>
+          <select id="ambiente" class="form-input">
+            <option value="sandbox">Pruebas</option>
+            <option value="produccion">Produccion</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label">Moneda</label>
+          <select id="moneda_codigo" class="form-input">
+            <option value="PAB">PAB</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Proveedor / PAC</label><input id="proveedor" class="form-input" placeholder="dgi_panama_pac"></div>
+        <div class="form-col"><label class="form-label">Nombre PAC</label><input id="pac_nombre" class="form-input" placeholder="Proveedor autorizado"></div>
+        <div class="form-col"><label class="form-label">API base URL</label><input id="api_base_url" class="form-input" placeholder="https://api.pac.com"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Sucursal</label><input id="sucursal" class="form-input" placeholder="001"></div>
+        <div class="form-col"><label class="form-label">Punto de expedicion</label><input id="punto_expedicion" class="form-input" placeholder="001"></div>
+        <div class="form-col"><label class="form-label">Autorizacion SFEP / referencia PAC</label><input id="resolucion_numero" class="form-input"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Certificado firma / referencia segura</label><input id="certificado_firma_ref" class="form-input" placeholder="file:/secure/empresa/pa.p12 o vault ref"></div>
+        <div class="form-col"><label class="form-label">CAFE</label><input id="cafe" class="form-input" placeholder="Se completa al emitir/validar"></div>
+        <div class="form-col"><label class="form-label">CUFE</label><input id="cufe" class="form-input" placeholder="Se completa al emitir/validar"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">QR URL</label><input id="qr_url" class="form-input" placeholder="URL de consulta/QR del documento"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <div class="form-help"><label><input id="registro_sfep" type="checkbox"> Registro SFEP completado</label></div>
+          <div class="form-help"><label><input id="declaracion_jurada_sfep" type="checkbox"> Declaracion jurada SFEP completada</label></div>
+          <div class="form-help"><label><input id="certificado_firma_confirmado" type="checkbox"> Firma electronica confirmada</label></div>
+          <div class="form-help"><label><input id="enviar_factura_email_cliente_auto" type="checkbox"> Enviar factura automaticamente al correo del cliente</label></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col"><label class="form-label">Observaciones</label><textarea id="observaciones" class="form-textarea"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="submit">Guardar Panama</button>
+        <button class="btn secondary" type="button" id="validarBtn">Validar checklist</button>
+        <button class="btn secondary" type="button" id="recargarBtn">Recargar</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      var state = { empresaID: 0, cfg: null };
+      function byId(id) { return document.getElementById(id); }
+      function txt(v) { return String(v == null ? "" : v).trim(); }
+      function params() { return new URLSearchParams(window.location.search); }
+      function setMsg(text, err) { var el = byId("msg"); if (el) { el.textContent = text || ""; el.className = err ? "form-help error" : "form-help"; } }
+      function bool(id) { var el = byId(id); return !!(el && el.checked); }
+      function setBool(id, value) { var el = byId(id); if (el) el.checked = value === true || value === 1 || String(value).toLowerCase() === "true"; }
+      function esc(v) { return txt(v).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); }
+      async function readJSON(res) { var data = await res.json().catch(function () { return null; }); if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status)); return data; }
+      function extraFromForm() {
+        return {
+          integracion: "dgi_pac_o_facturador",
+          ruc: txt(byId("identificador_fiscal").value),
+          dv: txt(byId("dv").value),
+          modalidad: txt(byId("modalidad").value) || "pac",
+          registro_sfep: bool("registro_sfep"),
+          declaracion_jurada_sfep: bool("declaracion_jurada_sfep"),
+          certificado_firma_ref: txt(byId("certificado_firma_ref").value),
+          certificado_firma_confirmado: bool("certificado_firma_confirmado"),
+          pac_nombre: txt(byId("pac_nombre").value),
+          sucursal: txt(byId("sucursal").value) || "001",
+          punto_expedicion: txt(byId("punto_expedicion").value) || "001",
+          cafe: txt(byId("cafe").value),
+          cufe: txt(byId("cufe").value),
+          qr_url: txt(byId("qr_url").value),
+          documentos_soportados: ["factura_electronica", "nota_credito", "nota_debito"]
+        };
+      }
+      function fillForm(cfg) {
+        cfg = cfg || {};
+        var extra = {};
+        try { extra = JSON.parse(cfg.campos_pais_json || "{}") || {}; } catch (_) { extra = {}; }
+        state.cfg = cfg;
+        byId("empresa_id").value = state.empresaID;
+        byId("identificador_fiscal").value = txt(cfg.identificador_fiscal || extra.ruc);
+        byId("dv").value = txt(extra.dv);
+        byId("razon_social").value = txt(cfg.razon_social);
+        byId("modalidad").value = txt(extra.modalidad) || "pac_o_facturador_gratuito";
+        byId("ambiente").value = txt(cfg.ambiente) || "sandbox";
+        byId("moneda_codigo").value = txt(cfg.moneda_codigo) || "PAB";
+        byId("proveedor").value = txt(cfg.proveedor) || "dgi_panama_pac";
+        byId("pac_nombre").value = txt(extra.pac_nombre);
+        byId("api_base_url").value = txt(cfg.api_base_url);
+        byId("sucursal").value = txt(extra.sucursal) || "001";
+        byId("punto_expedicion").value = txt(extra.punto_expedicion) || "001";
+        byId("resolucion_numero").value = txt(cfg.resolucion_numero);
+        byId("certificado_firma_ref").value = txt(extra.certificado_firma_ref);
+        byId("cafe").value = txt(extra.cafe);
+        byId("cufe").value = txt(extra.cufe);
+        byId("qr_url").value = txt(extra.qr_url);
+        byId("observaciones").value = txt(cfg.observaciones);
+        setBool("registro_sfep", extra.registro_sfep);
+        setBool("declaracion_jurada_sfep", extra.declaracion_jurada_sfep);
+        setBool("certificado_firma_confirmado", extra.certificado_firma_confirmado || !!extra.certificado_firma_ref);
+        setBool("enviar_factura_email_cliente_auto", cfg.enviar_factura_email_cliente_auto);
+      }
+      function renderChecklist(checklist) {
+        var resumen = byId("checklistResumen");
+        var items = byId("checklistItems");
+        checklist = checklist || {};
+        if (resumen) resumen.textContent = checklist.ok ? "Perfil Panama listo para pruebas operativas." : "Faltan datos: " + ((checklist.faltantes || []).join(", ") || "sin detalle");
+        if (!items) return;
+        var rows = (checklist.items || []).map(function (it) {
+          return '<tr><td>' + esc(it.estado === "ok" ? "OK" : "Pendiente") + '</td><td><strong>' + esc(it.titulo) + '</strong><br><span class="form-help">' + esc(it.detalle) + '</span></td></tr>';
+        });
+        if (checklist.advertencias && checklist.advertencias.length) {
+          rows.push('<tr><td>Alerta</td><td>' + esc(checklist.advertencias.join(" ")) + '</td></tr>');
+        }
+        items.innerHTML = '<div class="table-responsive"><table><tbody>' + rows.join("") + '</tbody></table></div>';
+      }
+      function payload() {
+        return {
+          empresa_id: state.empresaID,
+          pais_codigo: "PA",
+          pais_nombre: "Panama",
+          moneda_codigo: txt(byId("moneda_codigo").value) || "PAB",
+          proveedor: txt(byId("proveedor").value) || "dgi_panama_pac",
+          ambiente: txt(byId("ambiente").value) || "sandbox",
+          tipo_documento_emisor: "RUC",
+          identificador_fiscal: txt(byId("identificador_fiscal").value),
+          razon_social: txt(byId("razon_social").value),
+          enviar_factura_email_cliente_auto: bool("enviar_factura_email_cliente_auto"),
+          prefijo_factura: txt(byId("sucursal").value) + "-" + txt(byId("punto_expedicion").value),
+          resolucion_numero: txt(byId("resolucion_numero").value),
+          api_base_url: txt(byId("api_base_url").value),
+          campos_pais_json: JSON.stringify(extraFromForm()),
+          observaciones: txt(byId("observaciones").value),
+          estado: "activo"
+        };
+      }
+      async function load() {
+        if (!state.empresaID) throw new Error("empresa_id es obligatorio");
+        var data = await fetch("/api/empresa/facturacion_electronica/panama?empresa_id=" + encodeURIComponent(state.empresaID), { credentials: "same-origin" }).then(readJSON);
+        fillForm(data.configuracion || {});
+        renderChecklist(data.checklist || {});
+      }
+      async function save() {
+        var data = await fetch("/api/empresa/facturacion_electronica/panama?empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload())
+        }).then(readJSON);
+        fillForm(data.configuracion || {});
+        renderChecklist(data.checklist || {});
+        setMsg("Configuracion Panama guardada.", false);
+      }
+      state.empresaID = Number(params().get("empresa_id") || localStorage.getItem("empresa_id") || 0);
+      byId("paForm").addEventListener("submit", function (ev) { ev.preventDefault(); save().catch(function (err) { setMsg(err.message || "No se pudo guardar Panama", true); }); });
+      byId("validarBtn").addEventListener("click", function () { fetch("/api/empresa/facturacion_electronica/panama?action=checklist&empresa_id=" + encodeURIComponent(state.empresaID), { credentials: "same-origin" }).then(readJSON).then(function (data) { renderChecklist(data.checklist); setMsg("Checklist Panama actualizado.", false); }).catch(function (err) { setMsg(err.message || "No se pudo validar Panama", true); }); });
+      byId("recargarBtn").addEventListener("click", function () { load().then(function () { setMsg("Configuracion recargada.", false); }).catch(function (err) { setMsg(err.message || "No se pudo recargar Panama", true); }); });
+      load().catch(function (err) { setMsg(err.message || "No se pudo cargar Panama", true); });
+    })();
+  </script>
+</body>
+</html>

@@ -726,6 +726,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
 				}
+				if carritoClienteObligatorioParaPago(dbEmp, empresaID) && carrito.ClienteID <= 0 {
+					http.Error(w, "cliente obligatorio: registra o selecciona un cliente antes de pagar el carrito", http.StatusConflict)
+					return
+				}
 				if prerequisite, err := validateCarritoPaymentPrerequisites(dbEmp, carrito); err != nil {
 					log.Printf("[carritos] preflight pago empresa_id=%d id=%d error: %v", empresaID, id, err)
 					http.Error(w, "No se pudieron validar las dependencias operativas del pago", http.StatusInternalServerError)
@@ -1892,6 +1896,74 @@ func validateCarritoPayload(payload dbpkg.CarritoCompra) error {
 		return fmt.Errorf("cliente_id invalido")
 	}
 	return nil
+}
+
+func carritoBoolFromConfigValue(value interface{}) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		s := strings.TrimSpace(strings.ToLower(v))
+		return s == "1" || s == "true" || s == "si" || s == "sí" || s == "yes" || s == "on"
+	case float64:
+		return v != 0
+	case int:
+		return v != 0
+	case int64:
+		return v != 0
+	case json.Number:
+		n, _ := v.Int64()
+		return n != 0
+	default:
+		return false
+	}
+}
+
+func carritoParseConfigJSON(raw string) map[string]interface{} {
+	var current interface{} = strings.TrimSpace(raw)
+	for i := 0; i < 3; i++ {
+		text, ok := current.(string)
+		if !ok {
+			break
+		}
+		text = strings.TrimSpace(text)
+		if text == "" {
+			return nil
+		}
+		var next interface{}
+		if err := json.Unmarshal([]byte(text), &next); err != nil {
+			return nil
+		}
+		current = next
+	}
+	if cfg, ok := current.(map[string]interface{}); ok {
+		return cfg
+	}
+	return nil
+}
+
+func carritoClienteObligatorioParaPago(dbEmp *sql.DB, empresaID int64) bool {
+	if dbEmp == nil || empresaID <= 0 {
+		return false
+	}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil || pref == nil || strings.TrimSpace(pref.Valor) == "" {
+		return false
+	}
+	root := carritoParseConfigJSON(pref.Valor)
+	if root == nil {
+		return false
+	}
+	for _, key := range []string{"carrito_ui_global", "carrito", "carrito_configuracion_global"} {
+		cfg, ok := root[key].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if carritoBoolFromConfigValue(cfg["cliente_obligatorio_pago"]) {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizeCarritoCajaCode(value string) string {

@@ -18142,6 +18142,111 @@ html[data-theme^="dark"] .mc-bulk select {
   }
 }
 
+/* Reparacion movil del shell empresarial: evita cache visual antiguo, scroll doble y paginas encajonadas. */
+@media (max-width: 900px) {
+  body.admin-empresa-shell {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body.admin-empresa-shell .admin-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+  }
+
+  body.admin-empresa-shell .admin-sidebar {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    box-shadow: none;
+    box-sizing: border-box;
+  }
+
+  body.admin-empresa-shell .admin-content {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    padding: 6px;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  body.admin-empresa-shell .admin-empresa-frame {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: calc(100dvh - 156px);
+    height: auto;
+    border: 0;
+    background: var(--bg);
+  }
+
+  body.admin-empresa-shell .admin-empresa-frame[data-mobile-auto-height="1"] {
+    min-height: calc(100dvh - 156px);
+  }
+}
+
+@media (max-width: 640px) {
+  body.admin-empresa-shell .admin-sidebar {
+    padding: 10px;
+  }
+
+  body.admin-empresa-shell .admin-sidebar .nav.admin-nav-grouped,
+  body.admin-empresa-shell .admin-sidebar .nav,
+  body.admin-empresa-shell .admin-sidebar .nav .admin-nav-sublist {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    width: 100%;
+    overflow: visible;
+  }
+
+  body.admin-empresa-shell .admin-sidebar .nav li,
+  body.admin-empresa-shell .admin-sidebar .nav .admin-nav-group {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+  }
+
+  body.admin-empresa-shell .admin-sidebar .nav a,
+  body.admin-empresa-shell .admin-sidebar .nav .admin-nav-group-title,
+  body.admin-empresa-shell .admin-menu-visibility-toggle {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
+  }
+
+  body.admin-empresa-shell .admin-frame-toolbar {
+    right: 10px;
+    top: 10px;
+  }
+
+  body.admin-empresa-shell .admin-content {
+    padding: 4px;
+  }
+}
+
 /* Override ABSOLUTO final del carrito de compras.
    Este bloque queda al cierre del CSS para anular temas, modo tactil y estilos legacy. */
 body.carrito-flat-page,

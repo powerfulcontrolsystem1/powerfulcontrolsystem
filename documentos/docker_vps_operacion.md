@@ -1,6 +1,25 @@
 # Docker en VPS - Operacion y migracion
 
-Fecha de actualizacion: 2026-05-10
+Fecha de actualizacion: 2026-05-19
+
+## Paquete portable desde Super Administrador
+
+El panel `Super Administrador > Plataforma > Docker VPS` permite revisar el estado del paquete Docker portable y descargar un `.tar.gz` del proyecto base.
+
+La descarga usa:
+
+```text
+GET /super/api/docker_portabilidad?action=status
+GET /super/api/docker_portabilidad?action=download
+```
+
+El endpoint exige rol `super_administrador`. El paquete incluye codigo, `deploy/docker-compose.platform.yml`, Dockerfiles, scripts y documentacion operativa, pero no incluye secretos ni datos runtime:
+
+- No incluye `deploy/.env.platform`, `backend/.env*`, llaves privadas ni `.env` reales.
+- No incluye `web/uploads`, `descargas`, backups, logs, caches, binarios ni evidencias QA.
+- No incluye dumps de PostgreSQL ni volumenes Docker.
+
+Para una migracion real se debe descargar este paquete y combinarlo con el snapshot operativo de PostgreSQL/volumenes generado por `scripts/vps_backup_operacion.ps1`.
 
 ## Estado actual
 
