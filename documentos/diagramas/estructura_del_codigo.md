@@ -1,3 +1,13 @@
+## Actualizacion 2026-05-18 (contraste reporte de turno oscuro)
+
+- Frontend:
+  - `web/administrar_empresa/corte_de_caja.html` alinea la vista previa del reporte con `var(--text)`, `var(--muted)`, `var(--surface)` y `var(--surface-soft)`.
+  - `web/administrar_empresa/reportes_turnos.html` hace lo mismo para la vista historica imprimible.
+- Impresion:
+  - `@media print` conserva papel blanco y texto oscuro.
+- Alcance:
+  - Cambio visual; no modifica endpoints, tablas, permisos ni cierre de caja.
+
 ## Actualizacion 2026-05-18 (cerrar turno, imprimir y logout)
 
 - Frontend:

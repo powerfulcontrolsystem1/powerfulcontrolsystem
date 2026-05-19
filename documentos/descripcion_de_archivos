@@ -1,3 +1,9 @@
+2026-05-18 - Contraste reporte de turno en modo oscuro
+- `web/administrar_empresa/corte_de_caja.html`:
+	- ajusta encabezados, tarjetas de resumen, metadatos y tablas del reporte para que usen colores del tema activo en pantalla.
+- `web/administrar_empresa/reportes_turnos.html`:
+	- reemplaza colores fijos de la vista historica por variables del tema y conserva blanco/negro solo al imprimir.
+
 2026-05-18 - Cerrar turno, imprimir y cerrar sesion
 - `web/administrar_empresa/corte_de_caja.html`:
 	- agrega el boton `Cerrar turno e imprimir reporte` en Lectura rapida.

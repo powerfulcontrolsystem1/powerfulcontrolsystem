@@ -1,3 +1,8 @@
+## [2026-05-18] Contraste del reporte de turno en modo oscuro
+- [UX] `corte_de_caja.html` y `reportes_turnos.html` corrigen textos oscuros del reporte cuando el panel esta en modo oscuro.
+- [Impresion] La salida impresa conserva fondo blanco y texto oscuro.
+- [Alcance] No cambia backend, permisos ni tablas.
+
 ## [2026-05-18] Cerrar turno, imprimir y cerrar sesion
 - [Frontend] `corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte`.
 - [Operacion] La accion guarda el cierre, imprime el reporte y cierra sesion con `/auth/logout` al finalizar la impresion.

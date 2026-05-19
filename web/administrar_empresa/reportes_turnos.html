@@ -13,14 +13,14 @@
     .turnos-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;align-items:end;margin-top:14px}
     .turnos-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
     .turnos-table-actions{display:flex;flex-wrap:wrap;gap:6px}
-    .turnos-preview{background:#fff;color:#111827;border:1px solid var(--border);border-radius:8px;padding:22px;margin:14px auto 0;max-width:8.5in;min-height:11in}
-    .turnos-preview-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:1px solid #d7dee9;padding-bottom:12px;margin-bottom:12px}
-    .turnos-preview-head h2{margin:0;font-size:1.35rem;color:#111827}
-    .turnos-preview-head p{margin:5px 0 0;color:#52627a}
+    .turnos-preview{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:22px;margin:14px auto 0;max-width:8.5in;min-height:11in}
+    .turnos-preview-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
+    .turnos-preview-head h2{margin:0;font-size:1.35rem;color:var(--text)}
+    .turnos-preview-head p{margin:5px 0 0;color:var(--muted)}
     .turnos-preview-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0}
-    .turnos-preview-meta div,.turnos-summary-card{border:1px solid #d7dee9;border-radius:8px;padding:9px 10px;background:#f8fafc}
-    .turnos-preview-meta span,.turnos-summary-card span{display:block;color:#52627a;font-size:.72rem;text-transform:uppercase;font-weight:800}
-    .turnos-preview-meta strong,.turnos-summary-card strong{display:block;margin-top:3px;color:#111827}
+    .turnos-preview-meta div,.turnos-summary-card{border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-soft);color:var(--text)}
+    .turnos-preview-meta span,.turnos-summary-card span{display:block;color:var(--muted);font-size:.72rem;text-transform:uppercase;font-weight:800}
+    .turnos-preview-meta strong,.turnos-summary-card strong{display:block;margin-top:3px;color:var(--text)}
     .turnos-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0}
     .turnos-preview .table-wrap{overflow-x:visible}
     .turnos-preview table{width:100%;min-width:0;table-layout:fixed}
@@ -40,9 +40,9 @@
     .turnos-preview.is-pos tbody,
     .turnos-preview.is-pos tr,
     .turnos-preview.is-pos td{display:block;width:100%}
-    .turnos-preview.is-pos tr{border:1px solid #d7dee9;margin-bottom:6px;padding:4px;break-inside:avoid}
+    .turnos-preview.is-pos tr{border:1px solid var(--border);margin-bottom:6px;padding:4px;break-inside:avoid}
     .turnos-preview.is-pos td{border:0!important;padding:2px 0!important;font-size:10px!important}
-    .turnos-preview.is-pos td::before{content:attr(data-label) ": ";font-weight:800;color:#52627a}
+    .turnos-preview.is-pos td::before{content:attr(data-label) ": ";font-weight:800;color:var(--muted)}
     .turnos-email-box{display:none;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;margin-top:12px}
     .turnos-email-box.is-open{display:block}
     .turnos-email-grid{display:grid;grid-template-columns:minmax(220px,1fr) 130px auto;gap:10px;align-items:end}
@@ -54,7 +54,17 @@
       @page{size:letter;margin:12mm}
       body *{visibility:hidden !important}
       #turnoPreview,#turnoPreview *{visibility:visible !important}
-      #turnoPreview{position:absolute;inset:0;margin:0;border:0;border-radius:0;padding:18px}
+      #turnoPreview{position:absolute;inset:0;margin:0;border:0;border-radius:0;padding:18px;background:#fff !important;color:#111827 !important}
+      #turnoPreview *{color:#111827 !important;box-shadow:none !important;text-shadow:none !important}
+      #turnoPreview .turnos-preview-head p,
+      #turnoPreview .turnos-preview-meta span,
+      #turnoPreview .turnos-summary-card span{color:#475569 !important}
+      #turnoPreview .turnos-preview-meta div,
+      #turnoPreview .turnos-summary-card,
+      #turnoPreview .table-wrap,
+      #turnoPreview th,
+      #turnoPreview td{background:#fff !important;border-color:#cbd5e1 !important}
+      #turnoPreview thead th{background:#f8fafc !important}
       body.turno-paper-pos{width:80mm}
       body.turno-paper-pos #turnoPreview{width:72mm;max-width:72mm;padding:0;font-size:10px}
     }

@@ -1,3 +1,9 @@
+2026-05-18: Contraste del reporte de turno en modo oscuro.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- Frontend: `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` dejan de mostrar textos oscuros sobre fondos oscuros en la vista del reporte.
+- UX: titulos, valores, etiquetas, tablas y tarjetas usan variables de tema en pantalla; la salida impresa sigue en papel blanco con texto oscuro.
+- QA: parseo JS y verificacion visual local en modo oscuro con reporte mock.
+
 2026-05-18: Cerrar turno, imprimir reporte y cerrar sesion.
 - Modulos afectados: `corte_de_caja`, `autenticacion`, `frontend_ux`, `operacion_sistema`.
 - Frontend: `web/administrar_empresa/corte_de_caja.html` agrega `Cerrar turno e imprimir reporte` en Lectura rapida y comparte estado con `Guardar cierre`.

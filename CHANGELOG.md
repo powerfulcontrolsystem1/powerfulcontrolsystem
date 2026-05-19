@@ -1,3 +1,5 @@
+- 2026-05-18: `Reporte de turno` corrige contraste en modo oscuro para que titulos, valores, etiquetas y tablas sean legibles en reportes actuales e historicos.
+
 - 2026-05-18: `Corte de caja` agrega `Cerrar turno e imprimir reporte`, que guarda el cierre, imprime el reporte y cierra la sesion del usuario al finalizar la impresion.
 
 - 2026-05-18: `Reporte de turno` agrega la metrica configurable `Total descuentos`, calculada desde ventas cerradas con descuento y visible en reporte actual, historicos y exportaciones.

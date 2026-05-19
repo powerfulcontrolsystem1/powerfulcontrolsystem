@@ -1,5 +1,7 @@
 ## Descripcion del proyecto (version compacta)
 
+Revision contraste reporte turno oscuro 2026-05-18: las vistas de reporte de turno en `corte_de_caja.html` y `reportes_turnos.html` usan variables de tema para titulos, valores, etiquetas, tarjetas y tablas en pantalla. En modo oscuro el texto queda claro y legible; la impresion conserva papel blanco con texto oscuro.
+
 Revision cierre turno imprimir logout 2026-05-18: `web/administrar_empresa/corte_de_caja.html` agrega el boton `Cerrar turno e imprimir reporte` en Lectura rapida. La accion guarda el cierre del turno con el endpoint existente, imprime el reporte seleccionado y al finalizar la impresion cierra la sesion del usuario mediante `/auth/logout`.
 
 Revision descuentos reporte turno 2026-05-18: el reporte de turno/corte de caja suma `descuentos_total` desde las ventas cerradas del turno y muestra `Total descuentos` con la cantidad de ventas que tuvieron descuento. La metrica se puede activar o desactivar desde `Configuracion de empresa > Reporte de corte`, aparece en reportes historicos y queda incluida en exportaciones.
