@@ -1,3 +1,27 @@
+2026-05-19: Documentos imprimibles blanco y negro.
+- Modulos afectados: `facturacion`, `ventas`, `documentos`, `corte_de_caja`, `reportes`, `frontend_ux`.
+- Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte quedan visualmente independientes del modo claro u oscuro del panel.
+- Las vistas previas y paginas de impresion usan papel blanco, texto negro/gris, bordes simples y sin sombras, para coincidir con lo que saldra en la hoja o ticket POS.
+- Se conserva la configuracion existente de logo empresarial y logo del sistema para facturas, recibos, reportes y documentos; ventas y facturas esperan la configuracion avanzada antes de pintar la primera vista previa, y los logos se muestran en escala de grises en documentos imprimibles.
+- Sin cambios de backend, endpoints, permisos ni tablas.
+
+2026-05-19: Legibilidad POS reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- El resumen financiero en formato POS 80mm evita partir importes monetarios en varias lineas y mantiene la informacion compacta para rollo de 80mm.
+- Sin cambios de backend, endpoints, permisos ni tablas.
+
+2026-05-19: Prueba operativa Motel Calipso.
+- Modulos afectados: `carritos`, `corte_de_caja`, `inventario`, `codigos_descuento`, `reportes`.
+- Las rutas transaccionales de pago y anulacion de carritos usan helpers compatibles con PostgreSQL para consultas, actualizaciones, restauracion de inventario y reversion de codigos de descuento.
+- El cierre de pago persiste `descuento_total` junto con `descuento_valor`, para que el reporte de turno muestre el total de descuentos del turno.
+- Sin nuevas tablas, endpoints, permisos ni dependencias.
+
+2026-05-19: Login de usuarios operativos.
+- Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`.
+- El acceso empresarial compartido que se asegura al iniciar sesion como usuario de empresa corrige el `INSERT` de `estado` y `observaciones`.
+- Esto desbloquea el login operativo y la carga del panel empresarial para cajeros y otros roles de empresa.
+- Sin cambios de tablas, endpoints, permisos efectivos ni dependencias.
+
 2026-05-19: Reporte de turno profesional compacto.
 - Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
 - El reporte de turno actual e historico queda como informe operativo profesional, compacto y completo, con encabezado, datos del turno, resumen y detalle fila a fila sin cuadriculas.

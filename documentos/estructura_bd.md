@@ -22,6 +22,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-19 (pago/anulacion carritos PostgreSQL)
+- No se agregan tablas ni columnas fisicas.
+- Las transacciones de pago/anulacion de `carritos_compras`, restauracion de inventario y codigos de descuento usan helpers SQL compatibles con PostgreSQL.
+- `pagar_estacion` conserva `descuento_valor` y actualiza tambien `descuento_total` para que `corte_caja` lea correctamente descuentos por turno.
+
 Actualizacion 2026-05-18 (configuracion operativa en PostgreSQL)
 - No se agregan tablas ni columnas fisicas.
 - Los guardados de `empresa_configuracion_operativa`, `empresa_configuracion_operativa_roles`, `empresa_configuracion_operativa_politicas` y `empresa_configuracion_operativa_historial` retornan el `id` con `RETURNING id`.

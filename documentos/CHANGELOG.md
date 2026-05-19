@@ -1,3 +1,24 @@
+## [2026-05-19] Documentos imprimibles blanco y negro
+- [UX] Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte ya no heredan la apariencia clara u oscura del panel.
+- [Impresion] Las vistas previas y ventanas de impresion usan hoja blanca, texto negro/gris, bordes simples y sin sombras para verse como saldran en papel o POS.
+- [Logos] Se respeta la configuracion existente de logo empresarial y logo del sistema; ventas y facturas esperan la configuracion avanzada antes de pintar la primera vista previa y en documentos imprimibles se renderizan en escala de grises.
+- [Alcance] No cambia backend, endpoints, permisos ni tablas.
+
+## [2026-05-19] Reporte de turno POS legible
+- [UX] El resumen financiero en POS 80mm muestra importes monetarios en una sola linea cuando caben en el rollo.
+- [Impresion] Aplica al reporte actual de corte y al historico de reportes de turnos.
+- [Alcance] No cambia backend, endpoints, permisos ni tablas.
+
+## [2026-05-19] Prueba operativa Motel Calipso
+- [Backend] Pago y anulacion de carritos usan helpers transaccionales compatibles con PostgreSQL en las rutas tocadas por cierre, anulacion, restauracion de inventario y descuentos.
+- [Reportes] El pago persiste `descuento_total`, dejando correcto el total de descuentos en el reporte de turno.
+- [Alcance] No cambia tablas, rutas, permisos ni dependencias.
+
+## [2026-05-19] Login de usuarios operativos
+- [Backend] Se corrige `UpsertAdminEmpresaCompartidaAcceso` para insertar `estado` y `observaciones` junto con el acceso empresarial creado al iniciar sesion.
+- [Operacion] El login de cajeros y otros usuarios de empresa ya no falla por SQL de columnas/valores al asegurar el acceso compartido.
+- [Alcance] No cambia tablas, rutas, permisos efectivos ni dependencias.
+
 ## [2026-05-19] Reporte de turno profesional compacto
 - [UX] El reporte de turno actual e historico queda como informe operativo profesional: compacto, completo, con datos ordenados fila a fila y sin cuadriculas.
 - [Impresion] Se mantiene compatibilidad con POS 80mm y papel grande.

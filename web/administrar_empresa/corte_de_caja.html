@@ -48,7 +48,7 @@
     .turno-report-company p { margin:4px 0 0; color:var(--muted); font-size:.86rem; }
     .turno-report-meta,.corte-summary-grid,.turno-detail-list { display:flex; flex-direction:column; gap:0; margin:0; border-top:0; }
     .turno-report-meta div,.corte-summary-row,.turno-detail-row { display:grid; grid-template-columns:minmax(108px,.42fr) minmax(0,1fr); gap:10px; align-items:start; padding:7px 0; border-bottom:1px solid var(--border); background:transparent; }
-    .corte-summary-row { grid-template-columns:minmax(128px,.45fr) minmax(0,1fr) minmax(100px,.55fr); }
+    .corte-summary-row { grid-template-columns:minmax(150px,.34fr) minmax(132px,.24fr) minmax(180px,1fr); }
     .corte-caja-report .turno-report-panel { margin:12px 18px 0; border:1px solid var(--border); border-radius:8px; background:var(--card); padding:12px; }
     .corte-caja-report .turno-report-panel h3 { margin:0 0 8px; color:var(--text); font-size:1rem; }
     .corte-caja-report .turno-report-panel:last-child { margin-bottom:18px; }
@@ -57,6 +57,7 @@
     .corte-caja-report .turno-detail-line strong { color:var(--muted); font-weight:800; }
     .turno-report-meta span,.corte-summary-row span,.turno-detail-row span { display:block; color:var(--muted); font-size:.72rem; font-weight:800; text-transform:uppercase; }
     .turno-report-meta strong,.corte-summary-row strong,.turno-detail-row strong { display:block; color:var(--text); font-size:.9rem; overflow-wrap:anywhere; }
+    .corte-summary-row strong { white-space:nowrap; overflow-wrap:normal; word-break:normal; }
     .corte-summary-row small { color:var(--muted); font-size:.78rem; line-height:1.35; }
     .turno-detail-list { border-top:0; gap:8px; }
     .turno-detail-item { break-inside:avoid; border-top:1px solid var(--border); }
@@ -67,27 +68,27 @@
     .corte-caja-page .corte-final-note span { color:var(--text); }
     .corte-caja-page .corte-final-note span { font-weight:900; }
     .cash-close-stamp { border:1px dashed color-mix(in srgb, var(--border) 80%, var(--muted)); border-radius:8px; padding:10px 12px; font-size:.85rem; color:var(--muted); background:color-mix(in srgb, var(--surface-soft) 80%, var(--card)); }
-    .corte-caja-page.print-preview-active { background:var(--bg); color:var(--text); }
+    .corte-caja-page.print-preview-active { background:#f3f4f6; color:#111827; color-scheme:light; }
     .corte-caja-page.print-preview-active .corte-caja-report {
       width:min(100%, 8.5in);
       max-width:8.5in;
       min-height:11in;
       margin:18px auto 34px;
       padding:24px;
-      background:var(--card) !important;
-      color:var(--text) !important;
-      border:1px solid var(--border) !important;
+      background:#fff !important;
+      color:#111827 !important;
+      border:1px solid #111827 !important;
       box-shadow:none !important;
     }
     .corte-caja-page.print-preview-active .corte-caja-report .form-help,
     .corte-caja-page.print-preview-active .corte-caja-report small {
-      color:var(--muted) !important;
+      color:#374151 !important;
     }
     .corte-caja-page.print-preview-active .corte-caja-report .empresa-section-title,
     .corte-caja-page.print-preview-active .corte-caja-report h2,
     .corte-caja-page.print-preview-active .corte-caja-report h3,
     .corte-caja-page.print-preview-active .corte-caja-report strong {
-      color:var(--text) !important;
+      color:#111827 !important;
     }
     .corte-caja-page.print-preview-active .corte-report-badge,
     .corte-caja-page.print-preview-active .turno-report-company,
@@ -95,30 +96,30 @@
     .corte-caja-page.print-preview-active .corte-summary-row,
     .corte-caja-page.print-preview-active .turno-detail-row {
       background:transparent !important;
-      color:var(--text) !important;
-      border-color:var(--border) !important;
+      color:#111827 !important;
+      border-color:#d1d5db !important;
     }
     .corte-caja-page.print-preview-active .corte-summary-row span,
     .corte-caja-page.print-preview-active .corte-summary-row small,
     .corte-caja-page.print-preview-active .turno-detail-row span,
     .corte-caja-page.print-preview-active .turno-report-meta span,
     .corte-caja-page.print-preview-active .turno-report-company p {
-      color:var(--muted) !important;
+      color:#374151 !important;
     }
     .corte-caja-page.print-preview-active .corte-summary-row strong,
     .corte-caja-page.print-preview-active .turno-detail-row strong,
     .corte-caja-page.print-preview-active .turno-report-meta strong,
     .corte-caja-page.print-preview-active .turno-report-company h3 {
-      color:var(--text) !important;
+      color:#111827 !important;
     }
     .corte-caja-page.print-preview-active .corte-final-note {
-      background:color-mix(in srgb, var(--surface-soft) 88%, var(--accent) 12%) !important;
-      color:var(--text) !important;
-      border-color:color-mix(in srgb, var(--accent) 55%, var(--border)) !important;
+      background:#fff !important;
+      color:#111827 !important;
+      border-color:#111827 !important;
     }
     .corte-caja-page.print-preview-active .corte-final-note strong,
     .corte-caja-page.print-preview-active .corte-final-note span {
-      color:var(--text) !important;
+      color:#111827 !important;
     }
     .corte-caja-page.print-preview-active.report-print-pos .corte-caja-report {
       width:80mm;
@@ -150,8 +151,20 @@
       gap:6px;
       padding:4px 0;
     }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row {
+      display:block;
+    }
+    .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row strong {
+      display:block;
+      font-size:11px;
+      line-height:1.25;
+      white-space:nowrap;
+      overflow-wrap:normal;
+      word-break:normal;
+    }
     .corte-caja-page.print-preview-active.report-print-pos .corte-summary-row small {
-      grid-column:1 / -1;
+      display:block;
+      margin-top:2px;
     }
     .corte-caja-page.print-preview-active.report-print-pos .turno-report-company,
     .corte-caja-page.print-preview-active.report-print-pos .turno-report-panel {

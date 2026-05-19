@@ -1,3 +1,28 @@
+2026-05-19: Documentos imprimibles blanco y negro.
+- Modulos afectados: `facturacion`, `ventas`, `documentos`, `corte_de_caja`, `reportes`, `frontend_ux`.
+- Facturas, ventas, notas, documentos imprimibles y reportes de turno/corte dejan de heredar el modo claro u oscuro del panel.
+- Las vistas previas y ventanas de impresion usan hoja blanca, texto negro/gris, bordes simples y sin sombras, para que en pantalla se vean como saldran en la hoja o ticket POS.
+- Se conserva la opcion existente de logo empresarial y logo del sistema; ventas y facturas esperan la configuracion avanzada antes de pintar la primera vista previa y los documentos imprimibles los muestran en escala de grises.
+- Sin cambios de backend, endpoints, permisos ni tablas.
+
+2026-05-19: Legibilidad POS del reporte de turno.
+- Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
+- `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` ajustan el resumen financiero POS para no partir importes monetarios en varias lineas.
+- Sin cambios de backend, endpoints, permisos ni tablas.
+
+2026-05-19: Prueba operativa Motel Calipso, pago, anulacion y reporte de turno.
+- Modulos afectados: `carritos`, `corte_de_caja`, `inventario`, `codigos_descuento`, `reportes`.
+- `backend/db/carritos_compras.go` regulariza pago y anulacion de carritos dentro de transacciones PostgreSQL, incluyendo restauracion de inventario y consultas auxiliares.
+- `backend/db/codigos_descuento.go` regulariza marca y reversion de codigos de descuento dentro de transacciones PostgreSQL.
+- El pago de carrito persiste `descuento_total` junto con `descuento_valor`, dejando consistente el dato usado por el reporte de turno.
+- No cambia tablas, rutas, permisos efectivos ni dependencias.
+
+2026-05-19: Login de usuarios operativos con acceso empresarial.
+- Modulos afectados: `autenticacion`, `permisos`, `usuarios_empresa`.
+- `backend/db/empresa_admin_compartida.go` corrige el `INSERT` de `UpsertAdminEmpresaCompartidaAcceso` para incluir los valores de `estado` y `observaciones` antes de las fechas automaticas.
+- El login de usuarios de empresa vuelve a poder crear/actualizar el acceso empresarial compartido sin error PostgreSQL `INSERT has more target columns than expressions`.
+- No cambia tablas, rutas, permisos efectivos ni dependencias.
+
 2026-05-19: Reporte de turno profesional y compacto.
 - Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
 - `web/administrar_empresa/corte_de_caja.html` deja el reporte de turno como informe operativo: encabezado compacto, datos del turno, resumen financiero y detalle fila a fila sin cuadriculas ni apariencia fiscal.

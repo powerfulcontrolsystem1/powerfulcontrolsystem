@@ -849,7 +849,7 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, `+sqlNowExpr()+`, `+sqlNowExpr()+`)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+sqlNowExpr()+`, `+sqlNowExpr()+`)`,
 		payload.EmpresaID,
 		payload.AdminEmail,
 		payload.CompartidoPorEmail,

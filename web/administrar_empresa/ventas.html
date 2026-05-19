@@ -490,7 +490,7 @@
         return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
           '<title>'+esc((item && item.documento_codigo) || "Venta")+'</title>' +
           '<link rel="stylesheet" href="/estilos.css">' +
-          '<style>body{margin:0;background:#eef2f7;color:#14212d;font-family:Georgia,"Times New Roman",serif}.factura-print-shell{max-width:'+(formato==="compacta"?"780":"1120")+'px;margin:0 auto;padding:28px 18px 42px}.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}@media print{.factura-print-toolbar{display:none}body{background:#fff}.factura-print-shell{padding:0}}</style>' +
+          '<style>body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light}.factura-print-shell{max-width:'+(formato==="compacta"?"780":"1120")+'px;margin:0 auto;padding:28px 18px 42px;background:#fff}.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}</style>' +
           '</head><body><div class="factura-print-shell"><div class="factura-print-toolbar">' +
           '<button type="button" class="btn" onclick="window.print()">Imprimir ahora</button>' +
           '<button type="button" class="btn secondary" onclick="window.close()">Cerrar</button>' +
@@ -746,9 +746,7 @@
           state.viewMode = currentViewMode();
           if(state.selectedKey && state.index[state.selectedKey]) renderDetail(state.index[state.selectedKey]);
         });
-        loadEmpresa();
-        loadEmpresaConfigAvanzada();
-        run();
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada()]).finally(run);
       })();
     })();
   </script>

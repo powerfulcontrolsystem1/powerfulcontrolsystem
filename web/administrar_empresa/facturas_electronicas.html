@@ -550,11 +550,11 @@
           '<title>' + escapeHtml((item && item.documento_codigo) || "Documento") + '</title>' +
           '<link rel="stylesheet" href="/estilos.css">' +
           '<style>' +
-            'body{margin:0;background:#eef2f7;color:#14212d;font-family:Georgia,"Times New Roman",serif;}' +
-            '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;}' +
+            'body{margin:0;background:#fff;color:#111827;font-family:Georgia,"Times New Roman",serif;color-scheme:light;}' +
+            '.factura-print-shell{max-width:' + (formato === "compacta" ? "780" : "1120") + 'px;margin:0 auto;padding:28px 18px 42px;background:#fff;}' +
             '.factura-print-toolbar{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;}' +
             '.factura-print-compacta{padding:18px}.factura-print-compacta .factura-print-strip{grid-template-columns:repeat(2,minmax(0,1fr))}' +
-            '@media print{.factura-print-toolbar{display:none}body{background:#fff}.factura-print-shell{padding:0}}' +
+            '@media print{.factura-print-toolbar{display:none}body{background:#fff;color:#111827}.factura-print-shell{padding:0}}' +
           '</style></head><body>' +
           '<div class="factura-print-shell">' +
             '<div class="factura-print-toolbar">' +
@@ -911,9 +911,7 @@
         state.autoPrintDone = false;
         clearFilters();
         applyFiltersFromQueryParams();
-        loadEmpresa();
-        loadEmpresaConfigAvanzada();
-        runSearch();
+        Promise.all([loadEmpresa(), loadEmpresaConfigAvanzada()]).finally(runSearch);
       }
 
       init();

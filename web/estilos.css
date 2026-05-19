@@ -7438,11 +7438,11 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 }
 
 .factura-print-preview-empty{
-  border:1px dashed var(--border);
-  border-radius:16px;
+  border:1px dashed #6b7280;
+  border-radius:8px;
   padding:18px;
-  color:var(--muted);
-  background:rgba(255,255,255,0.025);
+  color:#374151;
+  background:#fff;
 }
 
 .reportes-prof-table td.is-number,
@@ -7481,24 +7481,27 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 }
 
 .factura-print-sheet{
-  border-radius:22px;
-  border:1px solid rgba(15,30,47,0.08);
-  background:linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
-  color:#172635;
-  box-shadow:0 24px 70px rgba(11,28,44,0.14);
+  border-radius:0;
+  border:1px solid #111827;
+  background:#fff;
+  color:#111827;
+  box-shadow:none;
   overflow:hidden;
+  color-scheme:light;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
 }
 
 .factura-print-sheet.factura{
-  border-top:8px solid #0e8e8a;
+  border-top:4px solid #111827;
 }
 
 .factura-print-sheet.comprobante{
-  border-top:8px solid #c47a18;
+  border-top:4px solid #111827;
 }
 
 .factura-print-sheet.nota-credito{
-  border-top:8px solid #2f78c4;
+  border-top:4px solid #111827;
 }
 
 .factura-print-head{
@@ -7513,9 +7516,10 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   display:inline-flex;
   align-items:center;
   padding:5px 10px;
-  border-radius:999px;
-  background:rgba(19,40,60,0.08);
-  color:#35506a;
+  border-radius:0;
+  background:#fff;
+  border:1px solid #111827;
+  color:#111827;
   font-size:.76rem;
   font-weight:800;
   letter-spacing:.08em;
@@ -7525,13 +7529,13 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .factura-print-head h3{
   margin:10px 0 6px;
   font-size:1.85rem;
-  color:#112131;
+  color:#111827;
 }
 
 .factura-print-head p{
   margin:0;
   max-width:520px;
-  color:#4e6479;
+  color:#374151;
   line-height:1.5;
 }
 
@@ -7542,17 +7546,18 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   gap:4px;
   padding:16px 18px;
   border-radius:18px;
-  background:rgba(17,33,49,0.05);
+  background:#fff;
+  border:1px solid #d1d5db;
   text-align:right;
 }
 
 .factura-print-company strong{
   font-size:1rem;
-  color:#15283b;
+  color:#111827;
 }
 
 .factura-print-company span{
-  color:#5c7185;
+  color:#374151;
   font-size:.86rem;
 }
 
@@ -7566,21 +7571,27 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
+  flex:0 0 auto;
+  max-width:126px;
+  min-width:64px;
 }
 .factura-print-logo img{
   width:auto;
   max-width:120px;
   max-height:56px;
+  min-width:48px;
+  flex:0 0 auto;
   object-fit:contain;
-  border-radius:10px;
-  border:1px solid rgba(17,33,49,0.10);
-  background:rgba(255,255,255,0.7);
+  border-radius:0;
+  border:1px solid #d1d5db;
+  background:#fff;
+  filter:grayscale(1) contrast(1.08);
 }
 .factura-print-legal{
   margin-top:14px;
   padding:14px 18px;
-  border-top:1px dashed rgba(17,33,49,0.18);
-  color:#4e6479;
+  border-top:1px dashed #6b7280;
+  color:#111827;
   font-size:.88rem;
   line-height:1.45;
   white-space:pre-wrap;
@@ -7590,14 +7601,14 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
   gap:0;
-  border-top:1px solid rgba(17,33,49,0.08);
-  border-bottom:1px solid rgba(17,33,49,0.08);
-  background:rgba(17,33,49,0.035);
+  border-top:1px solid #111827;
+  border-bottom:1px solid #111827;
+  background:#fff;
 }
 
 .factura-print-strip div{
   padding:16px 20px;
-  border-right:1px solid rgba(17,33,49,0.08);
+  border-right:1px solid #d1d5db;
 }
 
 .factura-print-strip div:last-child{
@@ -7607,14 +7618,14 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .factura-print-strip span{
   display:block;
   margin-bottom:4px;
-  color:#65798d;
+  color:#374151;
   font-size:.8rem;
   text-transform:uppercase;
   letter-spacing:.05em;
 }
 
 .factura-print-strip strong{
-  color:#132538;
+  color:#111827;
   font-size:1rem;
 }
 
@@ -7626,8 +7637,8 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 }
 
 .factura-print-panel{
-  border:1px solid rgba(16,33,48,0.1);
-  border-radius:18px;
+  border:1px solid #d1d5db;
+  border-radius:0;
   background:#fff;
   padding:18px;
 }
@@ -7638,7 +7649,7 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 
 .factura-print-panel h4{
   margin:0 0 12px;
-  color:#13263a;
+  color:#111827;
   font-size:1rem;
 }
 
@@ -7655,7 +7666,7 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   justify-content:space-between;
   gap:16px;
   padding-bottom:10px;
-  border-bottom:1px solid rgba(18,37,56,0.08);
+  border-bottom:1px solid #d1d5db;
 }
 
 .factura-print-panel dl div:last-child,
@@ -7666,14 +7677,14 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 
 .factura-print-panel dt,
 .factura-print-doc-meta dt{
-  color:#5f7488;
+  color:#374151;
   font-weight:700;
 }
 
 .factura-print-panel dd,
 .factura-print-doc-meta dd{
   margin:0;
-  color:#112131;
+  color:#111827;
   font-weight:700;
   text-align:right;
 }
@@ -7681,20 +7692,20 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .factura-print-note{
   margin:16px 24px 24px;
   padding:18px;
-  border-radius:18px;
-  background:linear-gradient(180deg, rgba(18,37,56,0.05), rgba(18,37,56,0.02));
-  border:1px solid rgba(18,37,56,0.08);
+  border-radius:0;
+  background:#fff;
+  border:1px dashed #6b7280;
 }
 
 .factura-print-note strong{
   display:block;
   margin-bottom:8px;
-  color:#112131;
+  color:#111827;
 }
 
 .factura-print-note p{
   margin:0;
-  color:#4d6478;
+  color:#111827;
   line-height:1.6;
 }
 

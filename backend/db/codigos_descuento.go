@@ -1211,7 +1211,7 @@ func resolveClienteSegmentoTx(tx *sql.Tx, empresaID, clienteID int64) string {
 	}
 	var compras int64
 	var ultima sql.NullString
-	err := tx.QueryRow(`SELECT
+	err := queryRowTxSQLCompat(tx, `SELECT
 		COALESCE(COUNT(1), 0),
 		MAX(NULLIF(pagado_en, ''))
 	FROM carritos_compras
@@ -1244,7 +1244,7 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 	}
 	if carritoID > 0 {
 		var reused int64
-		err := tx.QueryRow(`SELECT COUNT(1)
+		err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 			FROM codigos_descuento_redenciones
 			WHERE empresa_id = ?
 				AND codigo_descuento_id = ?
@@ -1263,7 +1263,7 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 	}
 
 	var usosEmpresa int64
-	err := tx.QueryRow(`SELECT COUNT(1)
+	err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 		FROM codigos_descuento_redenciones
 		WHERE empresa_id = ?
 			AND codigo_descuento_id = ?
@@ -1288,7 +1288,7 @@ func validateCodigoDescuentoAntiFraudeTx(tx *sql.Tx, item *CodigoDescuento, clie
 		}
 		desde := ahora.Add(-time.Duration(ventana) * time.Hour).Format("2006-01-02 15:04:05")
 		var usosCliente int64
-		err := tx.QueryRow(`SELECT COUNT(1)
+		err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 			FROM codigos_descuento_redenciones
 			WHERE empresa_id = ?
 				AND codigo_descuento_id = ?
@@ -1317,7 +1317,7 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, 
 	ahora := time.Now()
 
 	var item CodigoDescuento
-	err := tx.QueryRow(`SELECT
+	err := queryRowTxSQLCompat(tx, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo, ''),
@@ -1376,7 +1376,7 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, 
 	var clienteID int64
 	var canalVenta string
 	var montoBase float64
-	err = tx.QueryRow(`SELECT
+	err = queryRowTxSQLCompat(tx, `SELECT
 		COALESCE(cliente_id, 0),
 		COALESCE(canal_venta, 'mostrador'),
 		COALESCE(total, 0)
@@ -1397,9 +1397,9 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, 
 		return err
 	}
 
-	res, err := tx.Exec(`UPDATE codigos_de_descuento
+	res, err := execTxSQLCompat(tx, `UPDATE codigos_de_descuento
 	SET usos_actuales = usos_actuales + 1,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+sqlNowExpr()+`
 	WHERE empresa_id = ? AND id = ?
 		AND usos_actuales < 1`, empresaID, codigoID)
 	if err != nil {
@@ -1414,7 +1414,7 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, 
 	if strings.TrimSpace(segmentoCliente) == "" {
 		segmentoCliente = "desconocido"
 	}
-	_, err = tx.Exec(`INSERT INTO codigos_descuento_redenciones (
+	_, err = execTxSQLCompat(tx, `INSERT INTO codigos_descuento_redenciones (
 		empresa_id,
 		codigo_descuento_id,
 		carrito_id,
@@ -1433,7 +1433,7 @@ func markCodigoDescuentoUsoTx(tx *sql.Tx, empresaID, codigoID, carritoID int64, 
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aplicada', ?, ?, datetime('now','localtime'), datetime('now','localtime'), datetime('now','localtime'), ?, 'activo', ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'aplicada', ?, ?, `+sqlNowExpr()+`, `+sqlNowExpr()+`, `+sqlNowExpr()+`, ?, 'activo', ?)`,
 		empresaID,
 		codigoID,
 		carritoID,
@@ -1469,7 +1469,7 @@ func revertCodigoDescuentoUsoPorCarritoTx(tx *sql.Tx, empresaID, carritoID int64
 	motivo = strings.TrimSpace(motivo)
 	usuario = strings.TrimSpace(usuario)
 
-	rows, err := tx.Query(`SELECT id, codigo_descuento_id
+	rows, err := queryTxSQLCompat(tx, `SELECT id, codigo_descuento_id
 	FROM codigos_descuento_redenciones
 	WHERE empresa_id = ?
 		AND carrito_id = ?
@@ -1477,33 +1477,46 @@ func revertCodigoDescuentoUsoPorCarritoTx(tx *sql.Tx, empresaID, carritoID int64
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
+	type redencionDescuento struct {
+		id       int64
+		codigoID int64
+	}
+	redenciones := make([]redencionDescuento, 0)
 	for rows.Next() {
-		var redencionID, codigoID int64
-		if err := rows.Scan(&redencionID, &codigoID); err != nil {
+		var redencion redencionDescuento
+		if err := rows.Scan(&redencion.id, &redencion.codigoID); err != nil {
+			rows.Close()
 			return err
 		}
-		if _, err := tx.Exec(`UPDATE codigos_de_descuento
+		redenciones = append(redenciones, redencion)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	for _, redencion := range redenciones {
+		if _, err := execTxSQLCompat(tx, `UPDATE codigos_de_descuento
 		SET usos_actuales = CASE WHEN usos_actuales > 0 THEN usos_actuales - 1 ELSE 0 END,
-			fecha_actualizacion = datetime('now','localtime')
-		WHERE empresa_id = ? AND id = ?`, empresaID, codigoID); err != nil {
+			fecha_actualizacion = `+sqlNowExpr()+`
+		WHERE empresa_id = ? AND id = ?`, empresaID, redencion.codigoID); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(`UPDATE codigos_descuento_redenciones
+		if _, err := execTxSQLCompat(tx, `UPDATE codigos_descuento_redenciones
 		SET estado_redencion = ?,
 			motivo = CASE
 				WHEN trim(COALESCE(motivo, '')) = '' THEN ?
 				ELSE trim(COALESCE(motivo, '')) || ' | ' || ?
 			END,
-			fecha_actualizacion = datetime('now','localtime'),
+			fecha_actualizacion = `+sqlNowExpr()+`,
 			usuario_creador = CASE WHEN trim(COALESCE(usuario_creador, '')) = '' THEN ? ELSE usuario_creador END
-		WHERE id = ?`, estadoDestino, motivo, motivo, usuario, redencionID); err != nil {
+		WHERE id = ?`, estadoDestino, motivo, motivo, usuario, redencion.id); err != nil {
 			return err
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
 	}
 
 	return nil

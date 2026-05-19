@@ -1999,7 +1999,7 @@ func CancelCarritoSale(dbConn *sql.DB, empresaID, carritoID int64, motivo, usuar
 		var estadoCarrito string
 		var devolucionActual float64
 		var observacionesActual string
-		if err := tx.QueryRow(`SELECT
+		if err := queryRowTxSQLCompat(tx, `SELECT
 			COALESCE(pagado_en, ''),
 			COALESCE(estado_carrito, 'abierto'),
 			COALESCE(total_pagado, 0),
@@ -2035,12 +2035,12 @@ func CancelCarritoSale(dbConn *sql.DB, empresaID, carritoID int64, motivo, usuar
 		}
 		nota += anulacionNota
 
-		_, err := tx.Exec(`UPDATE carritos_compras SET
+		_, err := execTxSQLCompat(tx, `UPDATE carritos_compras SET
 			estado = 'inactivo',
 			estado_carrito = 'anulado',
 			total_pagado = 0,
 			devolucion_total = ?,
-			fecha_actualizacion = datetime('now','localtime'),
+			fecha_actualizacion = `+sqlNowExpr()+`,
 			observaciones = ?
 		WHERE empresa_id = ? AND id = ?`, devolucionTotalNueva, nota, empresaID, carritoID)
 		return err
@@ -2236,27 +2236,29 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		}
 	}
 
-	_, err = tx.Exec(`UPDATE carritos_compras SET
+	_, err = execTxSQLCompat(tx, `UPDATE carritos_compras SET
 		estado = 'inactivo',
 		estado_carrito = 'cerrado',
-		pagado_en = datetime('now','localtime'),
+		pagado_en = `+sqlNowExpr()+`,
 		metodo_pago = ?,
 		referencia_pago = ?,
 		descuento_tipo = ?,
 		descuento_codigo = ?,
 		descuento_valor = ?,
+		descuento_total = ?,
 		devolucion_total = ?,
 		total_pagado = ?,
 		cierre_caja_id = ?,
 		caja_codigo = ?,
 		caja_turno = ?,
 		caja_sucursal_id = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+sqlNowExpr()+`
 	WHERE empresa_id = ? AND id = ?`,
 		metodoPago,
 		strings.TrimSpace(referenciaPago),
 		strings.TrimSpace(descuentoTipo),
 		strings.TrimSpace(descuentoCodigo),
+		round2(descuentoValor),
 		round2(descuentoValor),
 		round2(devolucionTotal),
 		round2(totalPagado),
@@ -2896,7 +2898,7 @@ type carritoItemSnapshot struct {
 
 func getCarritoEstadoTx(tx *sql.Tx, empresaID, carritoID int64) (string, error) {
 	var estadoCarrito string
-	err := tx.QueryRow(`SELECT COALESCE(estado_carrito, 'abierto') FROM carritos_compras WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, carritoID).Scan(&estadoCarrito)
+	err := queryRowTxSQLCompat(tx, `SELECT COALESCE(estado_carrito, 'abierto') FROM carritos_compras WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, carritoID).Scan(&estadoCarrito)
 	if err != nil {
 		return "", err
 	}
@@ -2904,7 +2906,7 @@ func getCarritoEstadoTx(tx *sql.Tx, empresaID, carritoID int64) (string, error) 
 }
 
 func getCarritoItemSnapshotTx(tx *sql.Tx, empresaID, carritoID, itemID int64) (*carritoItemSnapshot, error) {
-	row := tx.QueryRow(`SELECT
+	row := queryRowTxSQLCompat(tx, `SELECT
 		id,
 		COALESCE(tipo_item, 'producto'),
 		COALESCE(referencia_id, 0),
@@ -2980,7 +2982,7 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 		comboQuery += ` AND COALESCE(estado, 'activo') = 'activo'`
 	}
 	var comboCount int64
-	if err := tx.QueryRow(comboQuery, comboArgs...).Scan(&comboCount); err != nil {
+	if err := queryRowTxSQLCompat(tx, comboQuery, comboArgs...).Scan(&comboCount); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
 			return nil, fmt.Errorf("modulo de combos no disponible en la base de datos")
 		}
@@ -2993,7 +2995,7 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 		return nil, fmt.Errorf("combo no encontrado")
 	}
 
-	rows, err := tx.Query(`SELECT
+	rows, err := queryTxSQLCompat(tx, `SELECT
 		COALESCE(producto_id, 0),
 		COALESCE(cantidad, 0)
 	FROM combos_productos_detalle
@@ -3048,7 +3050,7 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int64, float64, error) {
 	var bodegaPrincipal sql.NullInt64
 	var costo float64
-	err := tx.QueryRow(`SELECT bodega_principal_id, COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&bodegaPrincipal, &costo)
+	err := queryRowTxSQLCompat(tx, `SELECT bodega_principal_id, COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&bodegaPrincipal, &costo)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -3061,7 +3063,7 @@ func resolveProductoStockContextTx(tx *sql.Tx, empresaID, productoID int64) (int
 		return bodegaID, costo, nil
 	}
 
-	err = tx.QueryRow(`SELECT bodega_id FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? ORDER BY cantidad DESC, bodega_id ASC LIMIT 1`, empresaID, productoID).Scan(&bodegaID)
+	err = queryRowTxSQLCompat(tx, `SELECT bodega_id FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? ORDER BY cantidad DESC, bodega_id ASC LIMIT 1`, empresaID, productoID).Scan(&bodegaID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, costo, nil
@@ -3127,9 +3129,9 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 		}
 
 		if reservar {
-			res, err := tx.Exec(`UPDATE inventario_existencias
+			res, err := execTxSQLCompat(tx, `UPDATE inventario_existencias
 			SET cantidad = cantidad - ?,
-				fecha_actualizacion = datetime('now','localtime')
+				fecha_actualizacion = `+sqlNowExpr()+`
 			WHERE empresa_id = ?
 				AND producto_id = ?
 				AND bodega_id = ?
@@ -3181,7 +3183,7 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 }
 
 func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo string) error {
-	rows, err := tx.Query(`SELECT
+	rows, err := queryTxSQLCompat(tx, `SELECT
 		id,
 		COALESCE(tipo_item, 'producto'),
 		COALESCE(referencia_id, 0),
@@ -3192,34 +3194,49 @@ func restoreCarritoItemsStockTx(tx *sql.Tx, empresaID, carritoID int64, motivo s
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
+	type itemStockRestore struct {
+		itemID       int64
+		tipoItem     string
+		referenciaID int64
+		cantidad     float64
+		usuario      string
+	}
+	items := make([]itemStockRestore, 0)
 	for rows.Next() {
-		var itemID int64
-		var tipoItem string
-		var referenciaID int64
-		var cantidad float64
-		var usuario string
-		if err := rows.Scan(&itemID, &tipoItem, &referenciaID, &cantidad, &usuario); err != nil {
+		var item itemStockRestore
+		if err := rows.Scan(&item.itemID, &item.tipoItem, &item.referenciaID, &item.cantidad, &item.usuario); err != nil {
+			rows.Close()
 			return err
 		}
-		referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, itemID)
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		referencia := fmt.Sprintf("carrito:%d:item:%d", carritoID, item.itemID)
 		if err := adjustCarritoItemStockTx(
 			tx,
 			empresaID,
 			carritoID,
-			tipoItem,
-			referenciaID,
-			cantidad,
+			item.tipoItem,
+			item.referenciaID,
+			item.cantidad,
 			false,
 			referencia,
-			usuario,
+			item.usuario,
 			"liberacion de stock por "+motivo,
 		); err != nil {
 			return err
 		}
 	}
-	return rows.Err()
+	return nil
 }
 
 const seedCarritoSystemUser = "sistema_carrito"
@@ -3229,7 +3246,7 @@ func recalculateCarritoTotalsTx(tx *sql.Tx, empresaID, carritoID int64) error {
 	var descuento float64
 	var impuesto float64
 	var total float64
-	if err := tx.QueryRow(`SELECT
+	if err := queryRowTxSQLCompat(tx, `SELECT
 		COALESCE(SUM(subtotal_linea), 0),
 		COALESCE(SUM(valor_descuento), 0),
 		COALESCE(SUM(valor_impuesto), 0),
@@ -3239,19 +3256,19 @@ func recalculateCarritoTotalsTx(tx *sql.Tx, empresaID, carritoID int64) error {
 		return err
 	}
 
-	_, err := tx.Exec(`UPDATE carritos_compras SET
+	_, err := execTxSQLCompat(tx, `UPDATE carritos_compras SET
 		subtotal = ?,
 		descuento_total = ?,
 		impuesto_total = ?,
 		total = ?,
-		fecha_actualizacion = datetime('now','localtime')
+		fecha_actualizacion = `+sqlNowExpr()+`
 	WHERE empresa_id = ? AND id = ?`, round2(subtotal), round2(descuento), round2(impuesto), round2(total), empresaID, carritoID)
 	return err
 }
 
 func validateCarritoEnEmpresaTx(tx *sql.Tx, empresaID, carritoID int64) error {
 	var count int64
-	if err := tx.QueryRow(`SELECT COUNT(1) FROM carritos_compras WHERE empresa_id = ? AND id = ?`, empresaID, carritoID).Scan(&count); err != nil {
+	if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1) FROM carritos_compras WHERE empresa_id = ? AND id = ?`, empresaID, carritoID).Scan(&count); err != nil {
 		return err
 	}
 	if count == 0 {

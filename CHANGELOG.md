@@ -1,3 +1,11 @@
+- 2026-05-19: `Documentos imprimibles` deja facturas, ventas, notas, documentos y reportes imprimibles en blanco y negro, independientes del tema claro/oscuro; ventas y facturas esperan la configuracion avanzada para respetar desde la primera vista previa los logos de empresa/sistema en escala de grises.
+
+- 2026-05-19: `Reporte de turno POS` evita que los importes monetarios del resumen financiero se partan en varias lineas en vista previa e impresion POS 80mm.
+
+- 2026-05-19: `Carritos y corte de caja` regulariza pago/anulacion en transacciones PostgreSQL y guarda `descuento_total` al pagar, para que el reporte de turno refleje descuentos y permita anular ventas durante la prueba operativa de Motel Calipso.
+
+- 2026-05-19: `Login de usuarios operativos` corrige el alta del acceso empresarial compartido al iniciar sesion, evitando el error PostgreSQL de columnas/valores en `UpsertAdminEmpresaCompartidaAcceso`.
+
 - 2026-05-19: `Reporte de turno` queda como informe operativo profesional, compacto y completo; ventas y facturas electronicas conservan el estilo visual de factura electronica en POS y carta.
 
 - 2026-05-19: `Login` ajusta el titulo `Powerful Control System` para verse mas compacto, cuadrado y siempre en una sola fila.
