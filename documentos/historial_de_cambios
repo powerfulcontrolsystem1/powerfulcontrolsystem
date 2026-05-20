@@ -1,3 +1,35 @@
+2026-05-20: Centro de reportes por selector y vista imprimible.
+- Modulos afectados: `reportes`, `frontend_ux`, `exportaciones`.
+- Frontend: `web/administrar_empresa/reportes_ejecutivos.html` reemplaza las tarjetas del catalogo por un selector principal y una lista tabular compacta de reportes.
+- Vista previa: el dataset seleccionado se muestra en `reportsPrintableSheet` como documento blanco y negro listo para imprimir; el modo POS 80mm o carta se inicializa desde `/api/empresa/corte_caja/configuracion`.
+- Exportacion: los botones PDF, Excel, CSV, JSON y TXT solicitan descargas del reporte seleccionado usando el endpoint existente `/api/empresa/reportes?action=export`, incluyendo filtros de fecha, usuario, caja, turno y cierre.
+- Pruebas: validacion de scripts inline con Node empaquetado y verificacion visual con API mock de catalogo, dataset, papel POS/carta y exportaciones multiformato.
+- Alcance: sin cambios de backend, tablas, rutas, permisos ni dependencias.
+
+2026-05-20: Traslado de productos entre bodegas.
+- Modulos afectados: `inventario`, `bodegas`, `administrar_productos`, `frontend_ux`.
+- Backend: `backend/db/productos.go` ajusta `TransferirProductoEntreBodegas` para consultar costo/stock y actualizar existencias con `queryRowTxSQLCompat`/`execTxSQLCompat`, manteniendo la transaccion, validacion por `empresa_id`, kardex y costos por lotes.
+- Frontend: `web/administrar_empresa/administrar_productos.html` corrige las tarjetas de `Traslado entre bodegas` y `Movimientos recientes` para que pertenezcan a la vista `Bodegas` y no queden ocultas por el filtro visual.
+- Pruebas: se agrega regresion en `backend/db/productos_bodegas_test.go` para impedir llamadas SQL directas dentro del traslado transaccional.
+- Alcance: sin tablas, rutas, permisos ni dependencias nuevas.
+
+2026-05-20: Nomina profesional con demo Motel Calipso.
+- Modulos afectados: `nomina_sueldos`, `asistencia_empleados`, `finanzas`, `contabilidad_colombia`, `frontend_ux`.
+- Backend: `backend/db/nomina_colombia_avanzada.go` amplia conceptos Colombia, agrega seed profesional y aplica novedades aprobadas a la liquidacion.
+- API: `backend/handlers/nomina_sueldos.go` agrega acciones `aprobar_novedad_colombia` y `seed_motel_calipso` en `/api/empresa/nomina`.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega cobertura profesional, boton demo Motel Calipso y acciones de aprobacion/rechazo de novedades.
+- Pruebas: `go test -count=1 ./db ./handlers`, validacion de scripts inline con Node empaquetado y verificacion visual con servidor mock del boton demo y aprobacion de novedad.
+- Alcance: sin dependencias externas nuevas, sin tablas adicionales en este cierre y con aislamiento por `empresa_id`.
+
+2026-05-20: Nombres configurables de estaciones por empresa.
+- Modulos afectados: `configuracion`, `estaciones`, `carritos`, `preconfiguracion_tipos_empresa`, `administrar_empresa`.
+- Configuracion: `web/administrar_empresa/configuracion_de_estaciones.html` agrega los campos singular/plural del recurso operativo y los persiste en `estaciones_config` por `empresa_id`.
+- Frontend: `web/js/estaciones_labels.js` centraliza el reemplazo visible de `Estacion/Estaciones`; el panel, submenu, estaciones, carrito y configuracion del carrito cargan ese helper.
+- Backend/defaults: las preconfiguraciones de tipo de empresa registran `estacion_nombre_singular`, `estacion_nombre_plural`, `tipo_recurso` y `tipo_recurso_plural`; motel y hotel quedan como `Habitacion/Habitaciones`, restaurantes como `Mesa/Mesas`.
+- Empresas existentes: la normalizacion de `estaciones_config` completa etiquetas faltantes o genericas desde `tipo_nombre`, manteniendo los nombres personalizados que ya no sean `Estacion/Estaciones`.
+- Pruebas: `go test -count=1 ./db ./handlers`, `node --check web/js/estaciones_labels.js` y validacion de sintaxis de scripts inline en las paginas afectadas.
+- Alcance: sin tablas, rutas, permisos ni dependencias nuevas; aislamiento por `empresa_id`.
+
 2026-05-20: Pagos QR desde carrito.
 - Modulos afectados: `carritos`, `ventas_simple`, `pagos`, `caja`, `configuracion_empresarial`, `frontend_ux`.
 - Investigacion: Bre-B permite pagos por llave o QR interoperable en Colombia; Nequi Negocios ofrece QR y QR dinamico por API para comercios con contrato/certificacion. El sistema queda preparado para payload oficial o plantilla de proveedor sin simular una API bancaria no contratada.

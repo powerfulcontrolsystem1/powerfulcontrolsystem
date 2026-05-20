@@ -31,6 +31,33 @@ $status = "OK"
 $sections = New-Object System.Collections.Generic.List[string]
 $fence = '```'
 
+function Resolve-NodeRuntime {
+  $candidates = @()
+  if ($env:PCS_NODE_PATH) {
+    $candidates += $env:PCS_NODE_PATH
+  }
+  $candidates += @(
+    (Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"),
+    "node"
+  )
+
+  foreach ($candidate in $candidates) {
+    if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+    try {
+      $global:LASTEXITCODE = 0
+      & $candidate --version *> $null
+      if ($LASTEXITCODE -eq 0) {
+        return $candidate
+      }
+    } catch {
+      continue
+    }
+  }
+  throw "No se encontro un runtime Node.js ejecutable para el preflight"
+}
+
+$nodeCmd = Resolve-NodeRuntime
+
 function Add-Section {
   param([string]$Title, [string]$Body)
   $script:sections.Add("## $Title`n$Body`n") | Out-Null
@@ -94,7 +121,7 @@ try {
   Invoke-Captured -Title "Sintaxis JavaScript frontend" -Required -Script {
     $files = Get-ChildItem -Path (Join-Path "web" "js") -Filter "*.js" -File -Recurse | Sort-Object FullName
     foreach ($file in $files) {
-      & node --check $file.FullName
+      & $nodeCmd --check $file.FullName
       if ($LASTEXITCODE -ne 0) { throw "node --check fallo en $($file.FullName)" }
     }
     "JS files checked: $($files.Count)"
@@ -102,117 +129,117 @@ try {
 
   if (-not $SkipAudit) {
     Invoke-Captured -Title "Auditoria profesional de modulos, permisos y portal" -Required:$Strict -Script {
-      & node tools\professional_audit.mjs --out $ReportDir
+      & $nodeCmd tools\professional_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria profesional fallo con codigo $code" }
       "Auditoria profesional finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Auditoria de seguridad" -Required:$Strict -Script {
-      & node tools\security_audit.mjs --out $ReportDir
+      & $nodeCmd tools\security_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria de seguridad fallo con codigo $code" }
       "Auditoria de seguridad finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Auditoria de permisos y licencias" -Required:$Strict -Script {
-      & node tools\permissions_license_audit.mjs --out $ReportDir
+      & $nodeCmd tools\permissions_license_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria de permisos/licencias fallo con codigo $code" }
       "Auditoria de permisos/licencias finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Inventario OpenAPI generado" -Required -Script {
-      & node tools\openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
+      & $nodeCmd tools\openapi_inventory.mjs --out documentos/api/openapi.generated.yaml
       if ($LASTEXITCODE -ne 0) { throw "generacion OpenAPI fallo con codigo $LASTEXITCODE" }
     }
 
     Invoke-Captured -Title "Reporte de observabilidad" -Required:$Strict -Script {
-      & node tools\observability_report.mjs --out $ReportDir
+      & $nodeCmd tools\observability_report.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "reporte de observabilidad fallo con codigo $code" }
       "Reporte de observabilidad finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Observabilidad de negocio y capacidad" -Required:$Strict -Script {
-      & node tools\business_observability_audit.mjs --out $ReportDir
+      & $nodeCmd tools\business_observability_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "observabilidad de negocio fallo con codigo $code" }
       "Observabilidad de negocio finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Auditoria de migraciones" -Required:$Strict -Script {
-      & node tools\migration_audit.mjs --out $ReportDir
+      & $nodeCmd tools\migration_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria de migraciones fallo con codigo $code" }
       "Auditoria de migraciones finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "QA funcional por modulos criticos" -Required:$Strict -Script {
-      & node tools\qa_module_contracts.mjs --out $ReportDir
+      & $nodeCmd tools\qa_module_contracts.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "QA funcional por modulos fallo con codigo $code" }
       "QA funcional por modulos finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "QA por roles operativos" -Required:$Strict -Script {
-      & node tools\qa_roles_matrix.mjs --out $ReportDir
+      & $nodeCmd tools\qa_roles_matrix.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "QA por roles fallo con codigo $code" }
       "QA por roles finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Matriz de pagos y comprobantes" -Required:$Strict -Script {
-      & node tools\payment_matrix_audit.mjs --out $ReportDir
+      & $nodeCmd tools\payment_matrix_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "matriz de pagos fallo con codigo $code" }
       "Matriz de pagos finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Contrato de pagos reales" -Required:$Strict -Script {
-      & node tools\payment_real_matrix_audit.mjs --out $ReportDir
+      & $nodeCmd tools\payment_real_matrix_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "contrato de pagos reales fallo con codigo $code" }
       "Contrato de pagos reales finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Centro de soporte interno" -Required:$Strict -Script {
-      & node tools\support_center_audit.mjs --out $ReportDir
+      & $nodeCmd tools\support_center_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "centro de soporte fallo con codigo $code" }
       "Centro de soporte finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Anonimizacion de staging" -Required:$Strict -Script {
-      & node tools\staging_anonymization_audit.mjs --out $ReportDir
+      & $nodeCmd tools\staging_anonymization_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "anonimizacion de staging fallo con codigo $code" }
       "Anonimizacion de staging finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "SLO/SLA operativo" -Required:$Strict -Script {
-      & node tools\slo_sla_audit.mjs --out $ReportDir
+      & $nodeCmd tools\slo_sla_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "SLO/SLA fallo con codigo $code" }
       "SLO/SLA finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Hardening VPS" -Required:$Strict -Script {
-      & node tools\vps_hardening_audit.mjs --out $ReportDir
+      & $nodeCmd tools\vps_hardening_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "hardening VPS fallo con codigo $code" }
       "Hardening VPS finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Auditoria UX global" -Required:$Strict -Script {
-      & node tools\ux_consistency_audit.mjs --out $ReportDir
+      & $nodeCmd tools\ux_consistency_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       if ($Strict -and $code -ne 0) { throw "auditoria UX fallo con codigo $code" }
       "Auditoria UX finalizo con codigo $code"
     }
 
     Invoke-Captured -Title "Normalizacion documental" -Script {
-      & node tools\docs_normalization_audit.mjs --out $ReportDir
+      & $nodeCmd tools\docs_normalization_audit.mjs --out $ReportDir
       $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
       "Normalizacion documental finalizo con codigo $code"
     }

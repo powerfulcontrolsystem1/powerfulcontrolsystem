@@ -839,9 +839,9 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 		}
 	}
 	if isTipoEmpresaMotel(tipoNombre) {
-		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Estacion", 10, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("BASE-MOTEL-001", "Estacion sencilla", "Estaciones", "Servicio base por turno", 18000, 45000, 0),
-			productoPreconfig("BASE-MOTEL-002", "Estacion doble", "Estaciones", "Servicio doble por turno", 25000, 65000, 0),
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("MOTEL", "Habitacion", 10, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("BASE-MOTEL-001", "Habitacion sencilla", "Habitaciones", "Servicio base por turno", 18000, 45000, 0),
+			productoPreconfig("BASE-MOTEL-002", "Habitacion doble", "Habitaciones", "Servicio doble por turno", 25000, 65000, 0),
 			productoPreconfig("BASE-MOTEL-003", "Suite jacuzzi", "Estaciones", "Servicio premium por turno", 42000, 110000, 0),
 			productoPreconfig("BASE-MOTEL-004", "Hora adicional", "Adicionales", "Tiempo adicional de permanencia", 6000, 15000, 0),
 			productoPreconfig("BASE-MOTEL-005", "Minibar gaseosa", "Minibar", "Bebida de minibar", 2500, 6000, 8),
@@ -850,12 +850,12 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Recepcion principal", "recepcion", "Gestiona ingresos, salidas y disponibilidad."),
 			usuarioPreconfig("Caja turno", "caja", "Registra cobros y cierres de turno."),
 			usuarioPreconfig("Limpieza estaciones", "operacion", "Actualiza estados de limpieza y alistamiento."),
-		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion."), operacionPreconfig("motel", "Estacion", "Estaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
+		}, "Asistente operativo para recepcion, turnos, limpieza, tarifas y facturacion."), operacionPreconfig("motel", "Habitacion", "Habitaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
 	}
 	if isTipoEmpresaHotel(tipoNombre) {
-		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Estacion", 12, []TipoEmpresaPreconfigProducto{
-			productoPreconfig("BASE-HOTEL-001", "Noche estacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
-			productoPreconfig("BASE-HOTEL-002", "Noche estacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
+		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("HOTEL", "Habitacion", 12, []TipoEmpresaPreconfigProducto{
+			productoPreconfig("BASE-HOTEL-001", "Noche habitacion sencilla", "Alojamiento", "Hospedaje por noche", 45000, 95000, 0),
+			productoPreconfig("BASE-HOTEL-002", "Noche habitacion doble", "Alojamiento", "Hospedaje doble por noche", 65000, 145000, 0),
 			productoPreconfig("BASE-HOTEL-003", "Desayuno huesped", "Restaurante", "Desayuno servido a huesped", 8000, 18000, 10),
 			productoPreconfig("BASE-HOTEL-004", "Lavanderia por kilo", "Servicios", "Servicio de lavanderia", 3500, 9000, 0),
 			productoPreconfig("BASE-HOTEL-005", "Late checkout", "Adicionales", "Salida extendida", 15000, 35000, 0),
@@ -863,7 +863,7 @@ func DefaultTipoEmpresaPreconfigTemplate(tipoNombre string) TipoEmpresaPreconfig
 			usuarioPreconfig("Recepcion hotel", "recepcion", "Atiende reservas, check-in y check-out."),
 			usuarioPreconfig("Caja hotel", "caja", "Controla pagos, anticipos y facturacion."),
 			usuarioPreconfig("Ama de llaves", "operacion", "Coordina limpieza y disponibilidad."),
-		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario."), operacionPreconfig("hotel", "Estacion", "Estaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
+		}, "Asistente guia para reservas, ocupacion, consumos, pagos y cierre diario."), operacionPreconfig("hotel", "Habitacion", "Habitaciones", true, false, false, "", "", 0, []string{"recepcion", "caja", "operacion"}))
 	}
 	if isTipoEmpresaBar(tipoNombre) {
 		return withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate("BAR", "Mesa", 10, []TipoEmpresaPreconfigProducto{

@@ -610,6 +610,21 @@
           </div>
         </div>
         <div id="nomCoMsg" class="form-help"></div>
+        <div class="nomina-workflow-grid" aria-label="Cobertura profesional de nomina">
+          <div class="nomina-workflow-item"><strong>Contratos</strong><span>Fichas salariales y tipos de contrato</span></div>
+          <div class="nomina-workflow-item"><strong>Novedades</strong><span>Devengados, deducciones y aprobacion</span></div>
+          <div class="nomina-workflow-item"><strong>Liquidacion</strong><span>Asistencia, recargos, descuentos y neto</span></div>
+          <div class="nomina-workflow-item"><strong>PILA</strong><span>Seguridad social y aportes patronales</span></div>
+          <div class="nomina-workflow-item"><strong>Provisiones</strong><span>Cesantias, prima y vacaciones</span></div>
+          <div class="nomina-workflow-item"><strong>Pagos</strong><span>Control contable y desprendibles</span></div>
+        </div>
+        <div class="nomina-demo-panel">
+          <div>
+            <strong>Demo Motel Calipso</strong>
+            <span id="nomCoDemoResumen" class="form-help">Sin nomina demo creada en esta sesion.</span>
+          </div>
+          <button id="nomCoSeedProfesionalBtn" type="button" class="btn">Crear nomina demo Motel Calipso</button>
+        </div>
         <div class="table-wrap">
           <table class="table nomina-table">
             <thead>
@@ -635,10 +650,11 @@
                 <th>Periodo</th>
                 <th>Estado</th>
                 <th>Valor</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="nomCoNovedadesBody">
-              <tr><td colspan="5">Sin novedades Colombia para mostrar.</td></tr>
+              <tr><td colspan="6">Sin novedades Colombia para mostrar.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1772,6 +1788,12 @@
               setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
             });
         });
+
+        window.addEventListener('nomina:refresh-all', function () {
+          refreshAll().catch(function (err) {
+            setMessage('mainMsg', err.message || 'No se pudo actualizar el modulo de nomina.', 'error');
+          });
+        });
       }
 
       async function bootstrap() {
@@ -1883,16 +1905,22 @@
         const list = Array.isArray(rows) ? rows : [];
         if (!body) return;
         if (!list.length) {
-          body.innerHTML = '<tr><td colspan="5">Sin novedades Colombia para mostrar.</td></tr>';
+          body.innerHTML = '<tr><td colspan="6">Sin novedades Colombia para mostrar.</td></tr>';
           return;
         }
         body.innerHTML = list.slice(0, 30).map(function (item) {
+          const id = Number(item.id || 0);
+          const estado = txt(item.estado_aprobacion).toLowerCase();
+          const acciones = estado === 'pendiente'
+            ? '<button type="button" class="btn secondary" data-novedad-aprobar="' + id + '" data-estado="aprobado">Aprobar</button> <button type="button" class="btn secondary" data-novedad-aprobar="' + id + '" data-estado="rechazado">Rechazar</button>'
+            : '<span class="form-help">Procesada</span>';
           return '<tr>' +
             '<td><strong>' + esc(item.codigo_concepto || item.tipo) + '</strong><br><span class="form-help">' + esc(item.descripcion) + '</span></td>' +
             '<td>' + esc(item.empleado_nombre || ('Empleado #' + item.empleado_nomina_id)) + '</td>' +
             '<td>' + esc(item.periodo_desde) + ' / ' + esc(item.periodo_hasta) + '</td>' +
             '<td>' + esc(item.estado_aprobacion) + '</td>' +
             '<td>' + money(item.valor_total) + '</td>' +
+            '<td>' + acciones + '</td>' +
           '</tr>';
         }).join('');
       }
@@ -1942,6 +1970,36 @@
         msg('Parametros demo de nomina Colombia cargados.', 'success');
       }
 
+      async function seedNominaProfesional() {
+        const data = await requestJSON('/api/empresa/nomina?action=seed_motel_calipso&empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
+        await loadDashboard(true);
+        const resumen = document.getElementById('nomCoDemoResumen');
+        if (resumen) {
+          const empleados = Array.isArray(data && data.empleados) ? data.empleados.length : 0;
+          const liq = data && data.liquidacion ? Number(data.liquidacion.calculados || 0) : 0;
+          const pagos = data && data.pagos ? Number(data.pagos.generados || 0) : 0;
+          resumen.textContent = 'Periodo ' + esc(data.periodo_desde || '-') + ' a ' + esc(data.periodo_hasta || '-') +
+            ' | Empleados: ' + empleados +
+            ' | Asistencias: ' + Number(data && data.asistencias_creadas || 0) +
+            ' | Novedades: ' + Number(data && data.novedades_creadas || 0) +
+            ' | Liquidaciones: ' + liq +
+            ' | Pagos nuevos: ' + pagos;
+        }
+        window.dispatchEvent(new CustomEvent('nomina:refresh-all'));
+        msg('Nomina demo profesional de Motel Calipso creada y liquidada.', 'success');
+      }
+
+      async function cambiarEstadoNovedad(id, estado) {
+        await requestJSON('/api/empresa/nomina?action=aprobar_novedad_colombia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa_id: state.empresaID, id: Number(id), estado_aprobacion: estado })
+        });
+        await loadDashboard(true);
+        window.dispatchEvent(new CustomEvent('nomina:refresh-all'));
+        msg('Estado de novedad actualizado.', 'success');
+      }
+
       async function generarPila() {
         const p = periodo();
         if (!p.desde || !p.hasta) {
@@ -1959,10 +2017,22 @@
       function bind() {
         const refresh = document.getElementById('nomCoRefreshBtn');
         const seed = document.getElementById('nomCoSeedBtn');
+        const seedPro = document.getElementById('nomCoSeedProfesionalBtn');
         const pila = document.getElementById('nomCoPilaBtn');
         if (refresh) refresh.addEventListener('click', function () { loadDashboard(false).catch(function (err) { msg(err.message, 'error'); }); });
         if (seed) seed.addEventListener('click', function () { seedParametros().catch(function (err) { msg(err.message, 'error'); }); });
+        if (seedPro) seedPro.addEventListener('click', function () { seedNominaProfesional().catch(function (err) { msg(err.message, 'error'); }); });
         if (pila) pila.addEventListener('click', function () { generarPila().catch(function (err) { msg(err.message, 'error'); }); });
+        const novedadesBody = document.getElementById('nomCoNovedadesBody');
+        if (novedadesBody) {
+          novedadesBody.addEventListener('click', function (ev) {
+            const btn = ev.target.closest('button[data-novedad-aprobar]');
+            if (!btn) return;
+            cambiarEstadoNovedad(btn.getAttribute('data-novedad-aprobar'), btn.getAttribute('data-estado')).catch(function (err) {
+              msg(err.message || 'No se pudo actualizar la novedad.', 'error');
+            });
+          });
+        }
       }
 
       state.empresaID = Number(qp('empresa_id') || 0);

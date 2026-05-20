@@ -544,19 +544,21 @@ func buildEmpresaEstacionesPreconfig(estaciones dbpkg.TipoEmpresaPreconfigEstaci
 		cardSize = "medium"
 	}
 	raw, _ := json.Marshal(map[string]any{
-		"cantidad":            cantidad,
-		"estaciones":          items,
-		"tipo_recurso":        tipoRecurso,
-		"tipo_recurso_plural": tipoRecursoPlural,
-		"adaptacion_nucleo":   true,
-		"card_size":           cardSize,
-		"caja_enabled":        estaciones.CajaEnabled,
-		"caja_placement":      "before",
-		"youtube_enabled":     false,
-		"notas_enabled":       false,
-		"ia_pedidos_enabled":  false,
-		"carrito_ui_global":   defaultEmpresaPreconfigCarritoUI(),
-		"station_card_ui":     map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true},
+		"cantidad":                 cantidad,
+		"estaciones":               items,
+		"tipo_recurso":             tipoRecurso,
+		"tipo_recurso_plural":      tipoRecursoPlural,
+		"estacion_nombre_singular": tipoRecurso,
+		"estacion_nombre_plural":   tipoRecursoPlural,
+		"adaptacion_nucleo":        true,
+		"card_size":                cardSize,
+		"caja_enabled":             estaciones.CajaEnabled,
+		"caja_placement":           "before",
+		"youtube_enabled":          false,
+		"notas_enabled":            false,
+		"ia_pedidos_enabled":       false,
+		"carrito_ui_global":        defaultEmpresaPreconfigCarritoUI(),
+		"station_card_ui":          map[string]any{"mostrar_cliente_nombre": true, "mostrar_tarifa_resumen": true, "mostrar_inicio": true, "mostrar_fin": true, "mostrar_total": true},
 	})
 	return string(raw), cantidad
 }
@@ -613,6 +615,22 @@ func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
 	if err := dbpkg.EnsureEmpresaEstacionPrefsSchema(dbEmp); err != nil {
 		return err
 	}
+
+	empresas, err := dbpkg.GetEmpresas(dbEmp)
+	if err != nil {
+		return err
+	}
+	labelPresets := make(map[int64]empresaStationLabelPreset, len(empresas))
+	for _, empresa := range empresas {
+		empresaID := empresa.EmpresaID
+		if empresaID <= 0 {
+			empresaID = empresa.ID
+		}
+		if empresaID > 0 {
+			labelPresets[empresaID] = stationLabelsForTipoEmpresaName(empresa.TipoNombre)
+		}
+	}
+
 	rows, err := dbpkg.ExecQueryCompat(dbEmp, `
 		SELECT id, empresa_id, COALESCE(valor, '')
 		FROM empresa_estacion_prefs
@@ -636,7 +654,7 @@ func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
 			return err
 		}
 		seenEmpresas[empresaID] = true
-		nextRaw, changed, err := applyDefaultCarritoUIPresetToConfig(raw, defaultEmpresaPreconfigCarritoUI())
+		nextRaw, changed, err := applyDefaultCarritoUIPresetToConfig(raw, defaultEmpresaPreconfigCarritoUI(), labelPresets[empresaID])
 		if err != nil {
 			skippedInvalid++
 			log.Printf("[empresa_preconfiguracion] carrito_ui empresa_id=%d pref_id=%d json invalido: %v", empresaID, id, err)
@@ -658,10 +676,6 @@ func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
 		return err
 	}
 
-	empresas, err := dbpkg.GetEmpresas(dbEmp)
-	if err != nil {
-		return err
-	}
 	for _, empresa := range empresas {
 		empresaID := empresa.EmpresaID
 		if empresaID <= 0 {
@@ -674,12 +688,16 @@ func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
 		if estado == "inactivo" || estado == "eliminado" {
 			continue
 		}
+		labels := labelPresets[empresaID]
 		rawConfig, _ := buildEmpresaEstacionesPreconfig(dbpkg.TipoEmpresaPreconfigEstaciones{
 			Cantidad:    1,
-			Prefijo:     "Estacion",
+			Prefijo:     defaultString(labels.Singular, "Estacion"),
 			CardSize:    "medium",
 			CajaEnabled: false,
-		}, dbpkg.TipoEmpresaPreconfigAdaptacionNucleo{})
+		}, dbpkg.TipoEmpresaPreconfigAdaptacionNucleo{
+			EntidadEstacionSingular: labels.Singular,
+			EntidadEstacionPlural:   labels.Plural,
+		})
 		if _, err := dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
 			EmpresaID:      empresaID,
 			EstacionID:     0,
@@ -699,7 +717,53 @@ func ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmp *sql.DB) error {
 	return nil
 }
 
-func applyDefaultCarritoUIPresetToConfig(raw string, preset map[string]any) (string, bool, error) {
+type empresaStationLabelPreset struct {
+	Singular string
+	Plural   string
+}
+
+func stationLabelsForTipoEmpresaName(tipoNombre string) empresaStationLabelPreset {
+	template := dbpkg.DefaultTipoEmpresaPreconfigTemplate(tipoNombre)
+	singular := defaultString(template.Operacion.NombreEstacionSingular, template.Estaciones.Prefijo)
+	singular = defaultString(singular, "Estacion")
+	plural := defaultString(template.Operacion.NombreEstacionPlural, pluralizeStationName(singular))
+	return empresaStationLabelPreset{Singular: singular, Plural: plural}
+}
+
+func stringFromConfigMap(cfg map[string]any, key string) string {
+	if cfg == nil {
+		return ""
+	}
+	value, ok := cfg[key]
+	if !ok || value == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(value))
+}
+
+func shouldReplaceGenericStationLabel(value string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	return normalized == "" || normalized == "estacion" || normalized == "estaciones"
+}
+
+func applyStationLabelsToExistingConfig(cfg map[string]any, labels empresaStationLabelPreset) {
+	singular := defaultString(labels.Singular, "Estacion")
+	plural := defaultString(labels.Plural, pluralizeStationName(singular))
+	if shouldReplaceGenericStationLabel(stringFromConfigMap(cfg, "estacion_nombre_singular")) {
+		cfg["estacion_nombre_singular"] = singular
+	}
+	if shouldReplaceGenericStationLabel(stringFromConfigMap(cfg, "estacion_nombre_plural")) {
+		cfg["estacion_nombre_plural"] = plural
+	}
+	if shouldReplaceGenericStationLabel(stringFromConfigMap(cfg, "tipo_recurso")) {
+		cfg["tipo_recurso"] = singular
+	}
+	if shouldReplaceGenericStationLabel(stringFromConfigMap(cfg, "tipo_recurso_plural")) {
+		cfg["tipo_recurso_plural"] = plural
+	}
+}
+
+func applyDefaultCarritoUIPresetToConfig(raw string, preset map[string]any, labels empresaStationLabelPreset) (string, bool, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
 		return "", false, nil
@@ -713,6 +777,7 @@ func applyDefaultCarritoUIPresetToConfig(raw string, preset map[string]any) (str
 		return "", false, err
 	}
 
+	applyStationLabelsToExistingConfig(cfg, labels)
 	cfg["carrito_ui_global"] = copyAnyMap(preset)
 	if items, ok := cfg["estaciones"].([]any); ok {
 		for _, item := range items {

@@ -1,3 +1,26 @@
+## [2026-05-20] Centro de reportes por selector
+- [Frontend] `reportes_ejecutivos.html` elimina las tarjetas del catalogo y muestra todos los reportes en un selector y una lista compacta.
+- [Vista previa] El reporte seleccionado se renderiza como documento imprimible en blanco y negro, con modo POS 80mm o carta tomado de la configuracion previa de corte/reporte.
+- [Exportacion] Los botones PDF, Excel, CSV, JSON y TXT descargan el dataset seleccionado mediante `/api/empresa/reportes?action=export`.
+- [Alcance] No agrega rutas, permisos, tablas ni dependencias nuevas.
+
+## [2026-05-20] Traslado entre bodegas
+- [Inventario] La vista `Bodegas` vuelve a mostrar la tarjeta `Traslado entre bodegas`, existencias, alertas y movimientos recientes.
+- [Backend] `TransferirProductoEntreBodegas` valida producto/bodegas por `empresa_id`, descuenta origen, suma destino y registra kardex con wrappers SQL compatibles con PostgreSQL.
+- [Pruebas] Se agrega regresion para impedir `tx.QueryRow`/`tx.Exec` directos en el traslado transaccional.
+
+## [2026-05-20] Nomina profesional
+- [Backend] Nomina Colombia avanzada amplia el catalogo de conceptos y agrega `aprobar_novedad_colombia` y `seed_motel_calipso`.
+- [Liquidacion] Las novedades aprobadas impactan devengado, deducciones, IBC, salud, pension y neto a pagar.
+- [Demo] El seed profesional crea empleados simulados de Motel Calipso, asistencia, novedades, liquidaciones, PILA y pagos.
+- [Frontend] La pantalla de nomina agrega tablero de cobertura profesional, boton demo y acciones para aprobar/rechazar novedades.
+
+## [2026-05-20] Nombres configurables de estaciones
+- [Configuracion] `Configuracion > Estaciones` permite definir el nombre singular y plural del recurso operativo de la empresa.
+- [Frontend] Administrar empresa, estaciones, carrito unificado y configuracion del carrito reemplazan `Estacion/Estaciones` por el nombre configurado.
+- [Preconfiguracion] Las plantillas por tipo de empresa registran valores iniciales como `Mesa/Mesas`, `Habitacion/Habitaciones`, `Bahia/Bahias`, `Zona/Zonas` y `Consultorio/Consultorios`.
+- [Alcance] No agrega tablas, rutas, permisos ni dependencias; reutiliza `empresa_estacion_prefs.estaciones_config`.
+
 ## [2026-05-20] Datáfonos POS multiempresa
 - [Backend] Nuevo `/api/empresa/datafonos` permite configurar terminales Redeban, CredibanCo, Bold y BBVA por empresa, iniciar pagos y consultar confirmaciones.
 - [Pagos] La respuesta del proveedor se normaliza a `pendiente`, `aprobado`, `rechazado` o `error`, y se valida contra monto/referencia antes de cerrar el carrito.

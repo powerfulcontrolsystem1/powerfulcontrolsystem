@@ -1,3 +1,8 @@
+2026-05-20: Nota de nombres configurables de estaciones
+- La edicion de singular/plural del recurso operativo vive en `web/administrar_empresa/configuracion_de_estaciones.html` y reutiliza el permiso existente de configuracion de estaciones.
+- No se agregan permisos, wrappers ni modulos de licencia: la preferencia queda por `empresa_id` en `empresa_estacion_prefs.estaciones_config`.
+- El helper `web/js/estaciones_labels.js` solo adapta textos visibles; no concede acceso adicional a estaciones, carritos ni configuracion.
+
 2026-05-20: Nota de datáfonos POS multiempresa
 - `/api/empresa/datafonos` queda protegido con `WithEmpresaVentasPermissions`, igual que carritos, porque puede iniciar cobros y aplicar pagos al POS.
 - No se crea permiso independiente en esta fase: la configuracion tecnica del terminal exige acceso empresarial autenticado y el mismo alcance de ventas/caja del usuario.
@@ -431,7 +436,7 @@
 
 2026-05-06: Nota operativa para `nomina_sueldos` y Nomina Colombia avanzada
 - La capa Colombia de nomina se implementa dentro del modulo existente `nomina_sueldos`; no crea licencia, wrapper ni pagina duplicada para evitar fragmentar el control financiero.
-- Las acciones `conceptos_colombia`, `novedades_colombia`, `pila_colombia`, `dashboard_colombia`, `concepto_colombia`, `novedad_colombia`, `generar_pila` y `seed_colombia` siguen bajo `/api/empresa/nomina` y heredan el mismo alcance por `empresa_id` de la nomina actual.
+- Las acciones `conceptos_colombia`, `novedades_colombia`, `pila_colombia`, `dashboard_colombia`, `concepto_colombia`, `novedad_colombia`, `generar_pila`, `seed_colombia`, `aprobar_novedad_colombia` y `seed_motel_calipso` siguen bajo `/api/empresa/nomina` y heredan el mismo alcance por `empresa_id` de la nomina actual.
 - Las nuevas tablas `empresa_nomina_colombia_conceptos`, `empresa_nomina_colombia_novedades` y `empresa_nomina_colombia_pila_resumen` son multiempresa y se consultan solo desde el contexto empresarial autorizado.
 
 2026-05-06: Nota operativa para `tesoreria_presupuesto`

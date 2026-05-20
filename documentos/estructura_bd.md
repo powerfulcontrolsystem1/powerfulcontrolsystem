@@ -22,6 +22,13 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-20 (nombres configurables de estaciones por empresa)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.
+- El JSON `estaciones_config` almacena `estacion_nombre_singular` y `estacion_nombre_plural`; por compatibilidad tambien se mantienen `tipo_recurso` y `tipo_recurso_plural`.
+- Las plantillas en `tipo_empresa_preconfiguraciones.config_json` registran esos nombres por tipo de empresa para que nuevas empresas nazcan con recursos adecuados: restaurantes `Mesa/Mesas`, moteles y hoteles `Habitacion/Habitaciones`, lavaderos/talleres `Bahia/Bahias`, gimnasios `Zona/Zonas`, odontologia `Consultorio/Consultorios`, entre otros.
+- El normalizador de preferencias conserva nombres personalizados y solo completa o reemplaza valores genericos `Estacion/Estaciones` cuando puede inferir el tipo de empresa desde `empresas.tipo_nombre`.
+
 Actualizacion 2026-05-20 (datáfonos POS multiempresa)
 - Nueva tabla `empresa_datafonos_config` para registrar por `empresa_id` la configuracion contractual de Redeban, CredibanCo, Bold o BBVA: proveedor, terminal, comercio, endpoints, modo de autenticacion, referencia segura de secreto `env:*`, moneda, metodo de pago POS y estado activo.
 - Nueva tabla `empresa_datafonos_transacciones` para la trazabilidad de solicitudes, consultas y confirmaciones de pago por datáfono: empresa, proveedor, carrito, referencia, monto, cliente, estado normalizado (`pendiente`, `aprobado`, `rechazado`, `error`), id de transaccion del proveedor, codigo de autorizacion, respuesta saneada y validacion.
@@ -1084,6 +1091,17 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - ingreso_base_cotizacion, deduccion_salud, deduccion_pension, deduccion_fondo_solidaridad
   - deduccion_fija, otras_deducciones, deduccion_total, neto_pagar
   - origen_calculo, resumen_json, fecha_generacion
+- empresa_nomina_colombia_conceptos:
+  - empresa_id, codigo, nombre, tipo (`devengado`, `deduccion`, `aporte`, `provision`)
+  - base_cotizacion, afecta_pila, afecta_nomina_electronica, porcentaje, valor_fijo, cuenta_contable
+- empresa_nomina_colombia_novedades:
+  - empresa_id, empleado_nomina_id, periodo_desde, periodo_hasta, fecha_novedad
+  - tipo, concepto_id, codigo_concepto, descripcion, cantidad, valor_unitario, valor_total
+  - afecta_ibc, estado_aprobacion, estado
+- empresa_nomina_colombia_pila_resumen:
+  - empresa_id, periodo, empleado_nomina_id, empleado_nombre, empleado_documento
+  - ibc, salud_empleado, pension_empleado, salud_empleador, pension_empleador
+  - arl, caja_compensacion, icbf, sena, total_aportes, estado
 
 ### Tabla de registro vehicular por empresa
 - empresa_vehiculos_registro:
@@ -1538,6 +1556,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-06: se fortalece `reservas_hotel` con politica automatica avanzada (expiracion + no_show) y reconversion operativa a carrito; el estado de reserva extiende valores operativos con `en_curso` y `no_show`.
 - 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
 - 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
+- 2026-05-20: se documenta el alcance operativo de Nomina Colombia avanzada. No se agregan tablas nuevas en este cierre; se amplian conceptos seed, novedades aprobadas aplicadas a liquidacion y flujo demo profesional por empresa.
 - 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
 - 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
 - 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.

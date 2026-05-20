@@ -2533,6 +2533,9 @@ func GenerateEmpresaNominaLiquidaciones(dbConn *sql.DB, req EmpresaNominaCalculo
 
 		detail := buildNominaHorasDetalle(rowsAsistencia, cfg, festivos)
 		liq := buildNominaLiquidacion(empleado, cfg, req, detail)
+		if err := aplicarNovedadesColombiaEnLiquidacion(dbConn, &liq, cfg); err != nil {
+			messages = append(messages, fmt.Sprintf("No se pudieron aplicar novedades Colombia para %s: %v", empleado.EmpleadoNombre, err))
+		}
 		var resumenComision *EmpresaComisionServicioLiquidacionResumen
 		if comisionesDisponibles {
 			aliases := BuildEmpresaComisionServicioAliases(

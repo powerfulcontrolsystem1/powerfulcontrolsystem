@@ -544,6 +544,41 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusCreated, map[string]interface{}{"ok": true, "id": id})
 				return
 
+			case "aprobar_novedad_colombia", "estado_novedad_colombia":
+				var payload struct {
+					EmpresaID        int64  `json:"empresa_id"`
+					ID               int64  `json:"id"`
+					EstadoAprobacion string `json:"estado_aprobacion"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.ID <= 0 {
+					if id, err := parseInt64QueryOptional(r, "id"); err == nil && id > 0 {
+						payload.ID = id
+					}
+				}
+				if payload.EmpresaID <= 0 || payload.ID <= 0 {
+					http.Error(w, "empresa_id e id son obligatorios", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetEmpresaNominaNovedadColombiaEstadoAprobacion(dbEmp, payload.EmpresaID, payload.ID, payload.EstadoAprobacion, strings.TrimSpace(adminEmailFromRequest(r))); err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						http.Error(w, "novedad Colombia no encontrada", http.StatusNotFound)
+						return
+					}
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+
 			case "generar_pila_colombia", "generar_pila":
 				var payload struct {
 					EmpresaID    int64  `json:"empresa_id"`
@@ -587,6 +622,20 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+
+			case "seed_profesional", "seed_motel_calipso", "seed_nomina_profesional":
+				empresaID, err := parseInt64QueryOptional(r, "empresa_id")
+				if err != nil || empresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				result, err := dbpkg.SeedEmpresaNominaProfesionalDemo(dbEmp, empresaID, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, result)
 				return
 
 			default:

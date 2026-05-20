@@ -77,7 +77,10 @@ func TestApplyDefaultCarritoUIPresetToConfigActualizaEmpresasViejas(t *testing.T
 		]
 	}`
 
-	nextRaw, changed, err := applyDefaultCarritoUIPresetToConfig(raw, defaultEmpresaPreconfigCarritoUI())
+	nextRaw, changed, err := applyDefaultCarritoUIPresetToConfig(raw, defaultEmpresaPreconfigCarritoUI(), empresaStationLabelPreset{
+		Singular: "Mesa",
+		Plural:   "Mesas",
+	})
 	if err != nil {
 		t.Fatalf("applyDefaultCarritoUIPresetToConfig error: %v", err)
 	}
@@ -98,6 +101,9 @@ func TestApplyDefaultCarritoUIPresetToConfigActualizaEmpresasViejas(t *testing.T
 	}
 	if cfg["cantidad"].(float64) != 2 {
 		t.Fatal("no debe cambiar la cantidad de estaciones")
+	}
+	if cfg["estacion_nombre_singular"] != "Mesa" || cfg["estacion_nombre_plural"] != "Mesas" {
+		t.Fatalf("debe completar nombres singulares/plurales del recurso: %+v", cfg)
 	}
 	if _, ok := cfg["station_card_ui"].(map[string]any); !ok {
 		t.Fatal("debe preservar station_card_ui")

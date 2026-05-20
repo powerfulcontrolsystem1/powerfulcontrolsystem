@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
-<body class="empresa-subpage estaciones-page">
+<body class="empresa-subpage estaciones-page" data-auto-estacion-labels="true">
   <div class="container empresa-module">
 <section class="card empresa-section">
       <div class="empresa-section-header estaciones-toolbar" style="display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
@@ -19,6 +19,7 @@
     </section>
   </div>
 
+  <script src="/js/estaciones_labels.js"></script>
   <script>
     const notesAlertState = {
       blinkId: null,
@@ -111,7 +112,10 @@
 
     function setStatus(message) {
       if (statusEl) {
-        const text = String(message || '').trim();
+        let text = String(message || '').trim();
+        if (text && window.PCSEstacionLabels && typeof window.PCSEstacionLabels.replace === 'function') {
+          text = window.PCSEstacionLabels.replace(text, normalizeStationLabels(stationConfig || {}));
+        }
         statusEl.textContent = text;
         statusEl.hidden = text === '';
       }
@@ -138,7 +142,32 @@
       return data;
     }
 
+    function normalizeStationLabels(cfg) {
+      const src = cfg || stationConfig || {};
+      const singular = String(src.estacion_nombre_singular || src.nombre_estacion_singular || src.tipo_recurso || src.entidad_estacion_singular || 'Estacion').trim() || 'Estacion';
+      const plural = String(src.estacion_nombre_plural || src.nombre_estacion_plural || src.tipo_recurso_plural || src.entidad_estacion_plural || '').trim() ||
+        (/s$/i.test(singular) ? singular : (/[aeiou]$/i.test(singular) ? singular + 's' : singular + 'es'));
+      return {
+        singular,
+        plural,
+        singularLower: singular.toLocaleLowerCase('es-CO'),
+        pluralLower: plural.toLocaleLowerCase('es-CO')
+      };
+    }
+
+    function stationDefaultName(id, cfg) {
+      return normalizeStationLabels(cfg).singular + ' ' + id;
+    }
+
+    function applyStationLabelsToDOM(cfg, root) {
+      if (window.PCSEstacionLabels && typeof window.PCSEstacionLabels.apply === 'function') {
+        window.PCSEstacionLabels.apply(root || document.body, normalizeStationLabels(cfg || stationConfig || {}));
+      }
+    }
+
     function normalizeConfig(cfg) {
+      cfg = cfg && typeof cfg === 'object' ? cfg : {};
+      const labels = normalizeStationLabels(cfg);
       const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || 1)));
       const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
       const out = [];
@@ -191,7 +220,7 @@
         const nombre = String(current.nombre || '').trim();
         out.push({
           id: i + 1,
-          nombre: nombre || ('Estación ' + (i + 1)),
+          nombre: nombre || (labels.singular + ' ' + (i + 1)),
           mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
           mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
@@ -222,6 +251,10 @@
       const ia_pedidos_placement = normalizeSpecialPlacement(cfg && (cfg.ia_pedidos_placement !== undefined ? cfg.ia_pedidos_placement : cfg.iaPedidosPlacement));
       return {
         cantidad,
+        estacion_nombre_singular: labels.singular,
+        estacion_nombre_plural: labels.plural,
+        tipo_recurso: labels.singular,
+        tipo_recurso_plural: labels.plural,
         estaciones: out,
         card_size,
         caja_enabled,
@@ -1860,9 +1893,11 @@
 
     function renderEstaciones(cfg) {
       const grid = document.getElementById('estacionesGrid');
+      const labels = normalizeStationLabels(cfg || stationConfig || {});
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
         if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.ia_pedidos_enabled)) {
-          grid.innerHTML = '<p class="form-help">No hay estaciones configuradas. Ve a Configuración de estaciones para crearlas.</p>';
+          grid.innerHTML = '<p class="form-help">No hay ' + sanitize(labels.pluralLower) + ' configuradas. Ve a Configuración de ' + sanitize(labels.pluralLower) + ' para crearlas.</p>';
+          applyStationLabelsToDOM(cfg, grid);
           return;
         }
       }
@@ -1884,6 +1919,7 @@
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
         html += afterSpecial.join('');
         grid.innerHTML = html;
+        applyStationLabelsToDOM(cfg, grid);
         wireSpecialStationCards(cfg);
         syncAutoTextCardHeight();
         return;
@@ -1933,7 +1969,7 @@
             stationMetaRowHtml('aseo', 'Aseo', 'Clic para reportar', isDirty && state.aseoControlEnabled) +
             stationMetaRowHtml('total', 'Total', meta.total, useMostrarTotal && !!meta.total) +
           '</div>';
-          return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir estación ' + sanitize(est.nombre) + '">' +
+          return '<article class="portal-card station-launch-card ' + stationClass + '" style="--station-state-bg:' + sanitize(stationColor) + ';" data-estacion-id="' + stationID + '" data-estacion-nombre="' + sanitize(est.nombre) + '" data-mostrar-total="' + (useMostrarTotal ? '1' : '0') + '" tabindex="0" role="button" aria-label="Abrir ' + sanitize(est.nombre) + '">' +
             '<div class="station-sensor-indicator" data-sensor-color="' + sanitize(sensorColor) + '"></div>' +
             '<h3>' + sanitize(est.nombre) + '</h3>' +
             stationDataHtml +
@@ -1941,6 +1977,7 @@
       }).join('');
           html += afterSpecial.join('');
       grid.innerHTML = html;
+      applyStationLabelsToDOM(cfg, grid);
       // Aplicar color de sensor desde data-attribute para cada indicador (soporta var(--station-sensor-default))
       grid.querySelectorAll('.station-sensor-indicator[data-sensor-color]').forEach(function(el){
         try { el.style.backgroundColor = el.getAttribute('data-sensor-color'); } catch (e) {}
@@ -2307,6 +2344,7 @@
           try { await saveConfigToServer(cfg); } catch (err) { console.warn('No se pudo guardar config por defecto', err); }
         }
         stationConfig = cfg;
+        applyStationLabelsToDOM(stationConfig);
         applyCardSize(stationConfig);
         window.addEventListener('resize', function() {
           window.clearTimeout(window.__pcsStationAutoTextResizeTimer);

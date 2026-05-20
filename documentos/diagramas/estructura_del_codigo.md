@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-20 (nombres configurables de estaciones)
+
+- `backend/db/tipo_empresa_preconfiguracion.go`: define el recurso operativo por plantilla (`Mesa`, `Habitacion`, `Bahia`, `Zona`, `Consultorio`, etc.) y lo deja en `Operacion`.
+- `backend/handlers/empresa_preconfiguracion.go`: al aplicar la plantilla escribe `estacion_nombre_singular`, `estacion_nombre_plural`, `tipo_recurso` y `tipo_recurso_plural` dentro de `estaciones_config`.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: permite editar singular/plural desde Configuracion > Estaciones.
+- `web/js/estaciones_labels.js`: helper compartido que lee `empresa_estacion_prefs.estaciones_config` y adapta textos visibles en paneles empresariales.
+- Flujo de capas: Tipo de empresa -> plantilla JSON -> `empresa_estacion_prefs.estaciones_config` -> helper frontend -> estaciones/carrito/menu/configuracion con etiquetas propias por empresa.
+
 ## Actualizacion 2026-05-20 (datáfonos POS multiempresa)
 
 - `backend/db/datafonos.go`: define tablas `empresa_datafonos_config` y `empresa_datafonos_transacciones`, normaliza proveedores/estados y valida monto/referencia antes de confirmar.
@@ -132,6 +140,22 @@
   - La vista en pantalla hereda el tema activo del shell empresarial; `@media print` conserva papel blanco y texto oscuro.
 - Alcance:
   - Cambio visual; no modifica endpoints, tablas, permisos ni flujo de cierre.
+
+## Actualizacion 2026-05-20 (centro de reportes por selector)
+
+- Frontend empresa:
+  - `web/administrar_empresa/reportes_ejecutivos.html` deja de renderizar tarjetas de reporte y centraliza el catalogo en:
+    - selector principal de reporte,
+    - lista tabular compacta,
+    - vista previa imprimible `reportsPrintableSheet`.
+- Flujo:
+  - `reportes_ejecutivos.html` -> `GET /api/empresa/reportes?action=catalogo` -> selector/lista.
+  - Usuario selecciona reporte -> `GET /api/empresa/reportes?action=dataset&dataset=...` -> vista previa blanca y negra.
+  - Usuario exporta -> `GET /api/empresa/reportes?action=export&format=pdf|xls|csv|json|txt`.
+- Papel:
+  - La pantalla consulta `/api/empresa/corte_caja/configuracion` para iniciar la vista en POS 80mm o carta segun la configuracion previa de la empresa.
+- Seguridad:
+  - Se reutiliza `WithEmpresaReportesPermissions`; no se agregan rutas ni permisos.
 
 ## Actualizacion 2026-05-18 (reporte de turno: papel grande y POS)
 
@@ -3623,6 +3647,22 @@ flowchart TD
     - valida desprendible y conciliacion con auto-recalculo.
   - `backend/handlers/nomina_sueldos_test.go`:
     - cubre endpoints de desprendible y conciliacion.
+
+## Actualizacion 2026-05-20 (nomina profesional y demo Motel Calipso)
+
+- Backend nomina:
+  - `backend/db/nomina_colombia_avanzada.go`:
+    - amplia conceptos Colombia para cubrir devengados, deducciones, aportes, parafiscales y provisiones,
+    - agrega seed profesional `SeedEmpresaNominaProfesionalDemo` con empleados simulados, asistencia, novedades, liquidaciones, PILA y pagos,
+    - aplica novedades aprobadas al calculo de liquidacion, recalculando IBC, salud, pension, deducciones y neto.
+  - `backend/handlers/nomina_sueldos.go`:
+    - agrega `POST /api/empresa/nomina?action=aprobar_novedad_colombia`,
+    - agrega `POST /api/empresa/nomina?action=seed_motel_calipso`.
+- Frontend nomina:
+  - `web/administrar_empresa/nomina_sueldos.html`:
+    - agrega tablero de cobertura profesional, boton `Crear nomina demo Motel Calipso` y acciones de aprobacion/rechazo de novedades.
+  - `web/estilos.css`:
+    - agrega estilos responsivos para el tablero y panel demo.
 
 ## Actualizacion 2026-04-06 (cierre modulo 6: registro de vehiculos)
 

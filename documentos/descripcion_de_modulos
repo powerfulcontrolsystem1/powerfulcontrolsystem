@@ -1,3 +1,18 @@
+2026-05-20: Centro de reportes por selector y vista imprimible
+- Modulos afectados: `reportes`, `frontend_ux`, `exportaciones`.
+- Cambio funcional: el centro unico de reportes deja de presentar tarjetas por informe y usa un selector/lista compacta para todos los datasets disponibles.
+- Vista previa: el reporte seleccionado se renderiza como documento imprimible en papel POS 80mm o carta, tomando como base la configuracion previa de corte/reporte de la empresa.
+- Exportacion: se conservan los formatos PDF, Excel, CSV, JSON y TXT sobre `/api/empresa/reportes`, con filtros de fecha, caja, turno, usuario y cierre.
+- Alcance: no agrega endpoints, permisos, tablas ni dependencias externas.
+
+2026-05-20: Nombres configurables para estaciones por tipo de empresa.
+- Modulos afectados: `configuracion`, `estaciones`, `carritos`, `preconfiguracion_tipos_empresa`, `administrar_empresa`.
+- Cambio funcional: `Configuracion > Estaciones` agrega campos para definir el nombre singular y plural del recurso operativo de la empresa; por ejemplo `Mesa/Mesas`, `Habitacion/Habitaciones`, `Bahia/Bahias` o `Consultorio/Consultorios`.
+- Frontend: `web/js/estaciones_labels.js` aplica esos nombres en el panel de Administrar empresa, submenu de configuracion, tablero de estaciones, carrito unificado y configuracion del carrito, incluyendo textos generados despues de cargar la configuracion.
+- Backend/defaults: las plantillas de tipo de empresa guardan `estacion_nombre_singular`, `estacion_nombre_plural`, `tipo_recurso` y `tipo_recurso_plural` en `estaciones_config`; motel y hotel quedan preconfigurados como habitaciones.
+- Empresas existentes: el normalizador de preferencias completa o reemplaza etiquetas genericas `Estacion/Estaciones` usando el tipo de empresa cuando crea/actualiza `estaciones_config` antes de produccion.
+- Alcance: no cambia rutas, permisos ni tablas; mantiene aislamiento por `empresa_id`.
+
 2026-05-20: Pagos QR desde carrito.
 - Modulos afectados: `carritos`, `ventas_simple`, `pagos`, `caja`, `configuracion_empresarial`, `frontend_ux`.
 - Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega `Pagos por QR` con activacion y lista de cuentas receptoras para Bre-B, Nequi u otro proveedor, guardadas en `estaciones_config.carrito_ui_global.pago_qr_cuentas`.
@@ -1245,6 +1260,13 @@
 - Seguridad: se reutiliza la cobertura de nomina/finanzas para evitar duplicar roles, rutas o licencias; la activacion sigue pasando por el modulo financiero y los permisos de la pagina `linkNominaSueldos`.
 - Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega seccion Colombia con KPIs, conceptos, novedades y PILA adaptable a las apariencias centralizadas.
 - Documentacion: se agrega `documentos/nomina_colombia_avanzada.md`.
+
+2026-05-20: Refuerzo profesional de `nomina_sueldos`
+- Modulos afectados: `nomina_sueldos`, `asistencia_empleados`, `finanzas`, `contabilidad_colombia`, `roles/licencias`.
+- Cambio funcional: las novedades Colombia aprobadas se aplican a la liquidacion real del periodo, ajustando devengados, deducciones, IBC, salud, pension, fondo de solidaridad y neto a pagar.
+- Backend: `/api/empresa/nomina` agrega `aprobar_novedad_colombia` y `seed_motel_calipso`/`seed_profesional`; el seed crea empleados simulados, asistencia, novedades, liquidaciones, PILA y pagos para validar el ciclo completo.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega cobertura profesional, boton `Crear nomina demo Motel Calipso` y acciones de aprobacion/rechazo de novedades.
+- Seguridad: se mantiene el mismo wrapper/permisos de nomina y aislamiento por `empresa_id`; no se agregan licencias ni rutas duplicadas.
 
 2026-05-06: Tesoreria y presupuesto
 - Modulos afectados: `tesoreria_presupuesto`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
@@ -2626,6 +2648,7 @@ Criterio de esta guia:
 
 11) Inventario
 - Productos, bodegas, existencias, movimientos, alertas y conteo ciclico.
+- El traslado entre bodegas se opera desde `Inventario y compras > Bodegas`, valida producto, origen y destino por `empresa_id`, descuenta la bodega origen, suma la bodega destino y deja movimiento de kardex tipo `traslado`.
 
 12) Combos de productos
 - Recetas versionadas, costo teorico/real y venta de combos con descuento de ingredientes.

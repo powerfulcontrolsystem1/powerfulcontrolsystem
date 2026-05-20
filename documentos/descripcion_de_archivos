@@ -1,3 +1,13 @@
+2026-05-20 - Nombres configurables de estaciones
+- `web/js/estaciones_labels.js`:
+	- helper compartido que carga `estaciones_config` por empresa y reemplaza textos visibles de `Estacion/Estaciones` por el singular/plural configurado.
+- `web/administrar_empresa/configuracion_de_estaciones.html`:
+	- agrega campos `Nombre singular del recurso` y `Nombre plural del recurso`, guardados en `empresa_estacion_prefs.estaciones_config`.
+- `web/administrar_empresa/estaciones.html` y `web/administrar_empresa/carrito_de_compras.html`:
+	- usan el nombre configurado para titulos, mensajes, nombres por defecto y etiquetas generadas dinamicamente.
+- `backend/handlers/empresa_preconfiguracion.go` y `backend/db/tipo_empresa_preconfiguracion.go`:
+	- registran los nombres por defecto del recurso operativo al aplicar preconfiguraciones de tipo de empresa.
+
 2026-05-20 - Facturacion offline para carritos
 - `backend/db/offline_ventas.go`:
 	- crea y administra `empresa_ventas_offline_sync`, bitacora idempotente para ventas capturadas sin internet por `empresa_id` y `sync_key`.
@@ -9820,3 +9830,20 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- prueba normalizacion de respuesta, saneamiento de datos sensibles y llamada HTTP simulada con autenticacion por variable de entorno.
 - `backend/main.go`:
 	- asegura el esquema de datáfonos al arrancar y registra la ruta empresarial con permisos de ventas.
+2026-05-20 - Refuerzo profesional modulo nomina
+- `backend/db/nomina_colombia_avanzada.go`:
+	- Amplia catalogo profesional de conceptos Colombia.
+	- Agrega seed demo Motel Calipso con empleados, asistencias, novedades, liquidaciones, PILA y pagos.
+	- Agrega aprobacion de novedades y aplicacion de novedades aprobadas a liquidaciones.
+- `backend/db/nomina_sueldos.go`:
+	- Incorpora novedades Colombia aprobadas durante `GenerateEmpresaNominaLiquidaciones`.
+- `backend/handlers/nomina_sueldos.go`:
+	- Agrega acciones `aprobar_novedad_colombia` y `seed_motel_calipso` en `/api/empresa/nomina`.
+- `backend/db/nomina_colombia_avanzada_test.go`:
+	- Cubre catalogo profesional y aplicacion de novedades aprobadas.
+- `web/administrar_empresa/nomina_sueldos.html`:
+	- Agrega tablero de cobertura profesional, boton demo Motel Calipso y acciones de aprobacion/rechazo de novedades.
+- `web/estilos.css`:
+	- Agrega estilos responsivos para cobertura profesional y panel demo de nomina.
+- `documentos/nomina_colombia_avanzada.md`:
+	- Documenta acciones nuevas, flujo demo y validacion.

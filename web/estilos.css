@@ -7809,6 +7809,50 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   font-weight:600;
 }
 
+.nomina-workflow-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:10px 0;
+}
+
+.nomina-workflow-item{
+  min-width:0;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:rgba(255,255,255,.03);
+}
+
+.nomina-workflow-item strong,
+.nomina-workflow-item span{
+  display:block;
+}
+
+.nomina-workflow-item span{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:.84rem;
+  line-height:1.3;
+}
+
+.nomina-demo-panel{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  border:1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  border-radius:8px;
+  background:color-mix(in srgb, var(--accent) 8%, transparent);
+  margin:10px 0 12px;
+}
+
+.nomina-demo-panel .form-help{
+  display:block;
+  margin-top:4px;
+}
+
 .nomina-control-card{
   margin:0 0 14px;
   padding:12px;
@@ -7929,12 +7973,22 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 }
 
 @media (max-width: 760px){
+  .nomina-workflow-grid{
+    grid-template-columns:1fr 1fr;
+  }
   .nomina-control-grid{
     grid-template-columns:1fr 1fr;
   }
 }
 
 @media (max-width: 520px){
+  .nomina-workflow-grid{
+    grid-template-columns:1fr;
+  }
+  .nomina-demo-panel{
+    align-items:stretch;
+    flex-direction:column;
+  }
   .nomina-control-header{
     flex-direction:column;
   }

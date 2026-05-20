@@ -3501,12 +3501,12 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 	}
 
 	var costoUnitario float64
-	if err := tx.QueryRow("SELECT costo FROM productos WHERE empresa_id = ? AND id = ?", empresaID, productoID).Scan(&costoUnitario); err != nil {
+	if err := queryRowTxSQLCompat(tx, "SELECT COALESCE(costo, 0) FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1", empresaID, productoID).Scan(&costoUnitario); err != nil {
 		return err
 	}
 
 	var stockOrigen float64
-	err = tx.QueryRow("SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?", empresaID, productoID, bodegaOrigenID).Scan(&stockOrigen)
+	err = queryRowTxSQLCompat(tx, "SELECT cantidad FROM inventario_existencias WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?", empresaID, productoID, bodegaOrigenID).Scan(&stockOrigen)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrStockInsuficiente
@@ -3528,7 +3528,7 @@ func TransferirProductoEntreBodegas(dbConn *sql.DB, empresaID, productoID, bodeg
 		costoUnitario = costoTransferido
 	}
 
-	if _, err := tx.Exec(`UPDATE inventario_existencias
+	if _, err := execTxSQLCompat(tx, `UPDATE inventario_existencias
 		SET cantidad = cantidad - ?, fecha_actualizacion = datetime('now','localtime')
 		WHERE empresa_id = ? AND producto_id = ? AND bodega_id = ?`, cantidad, empresaID, productoID, bodegaOrigenID); err != nil {
 		return err

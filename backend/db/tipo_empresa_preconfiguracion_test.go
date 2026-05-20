@@ -13,8 +13,8 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 		permiteSinEstacion bool
 	}{
 		{nombre: "Restaurante", prefijo: "Mesa", estaciones: 8, ventaDirecta: true, nombreSingular: "Mesa"},
-		{nombre: "Motel", prefijo: "Estacion", estaciones: 10, nombreSingular: "Estacion"},
-		{nombre: "Hotel", prefijo: "Estacion", estaciones: 12, nombreSingular: "Estacion"},
+		{nombre: "Motel", prefijo: "Habitacion", estaciones: 10, nombreSingular: "Habitacion"},
+		{nombre: "Hotel", prefijo: "Habitacion", estaciones: 12, nombreSingular: "Habitacion"},
 		{nombre: "Bar", prefijo: "Mesa", estaciones: 10, nombreSingular: "Mesa"},
 		{nombre: "Salon de belleza", prefijo: "Silla", estaciones: 6, ventaDirecta: true, comisiones: true, nombreSingular: "Silla"},
 		{nombre: "Lavadero de autos", prefijo: "Bahia", estaciones: 6, ventaDirecta: true, comisiones: true, nombreSingular: "Bahia"},

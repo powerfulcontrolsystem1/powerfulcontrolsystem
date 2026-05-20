@@ -8,7 +8,7 @@
   <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
 </head>
-<body class="super-page form-bg-dark carrito-flat-page">
+<body class="super-page form-bg-dark carrito-flat-page" data-auto-estacion-labels="true">
   <div class="container">
 <div class="page-header">
       <div class="carrito-title-line">
@@ -633,6 +633,7 @@
     </div>
   </div>
 
+  <script src="/js/estaciones_labels.js"></script>
   <script>
     const state = {
       empresaID: 0,
@@ -1156,8 +1157,12 @@
 
     function renderInitialLoadError(err) {
       const box = document.getElementById('carritosList');
-      const normalized = normalizeInitialLoadErrorMessage(err && err.message);
-      const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? ('Estación ' + state.stationID) : '');
+      const normalizedRaw = normalizeInitialLoadErrorMessage(err && err.message);
+      const normalized = {
+        title: applyStationLabelText(normalizedRaw.title),
+        message: applyStationLabelText(normalizedRaw.message)
+      };
+      const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? stationDefaultName(state.stationID) : '');
       const stationContext = state.stationMode && stationLabel
         ? '<div class="form-help mt-6">Contexto: ' + escapeHtml(stationLabel) + '</div>'
         : '';
@@ -1170,7 +1175,7 @@
           stationContext +
           '<div class="form-actions mt-14">' +
             '<button type="button" id="retryInitialLoadBtn" class="btn">Reintentar carga</button>' +
-            (state.stationMode && !state.directSaleMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Regresar a estaciones</button>' : '') +
+            (state.stationMode && !state.directSaleMode ? '<button type="button" id="backToStationsBtn" class="btn secondary">Regresar a ' + escapeHtml(stationTerm(false)) + '</button>' : '') +
           '</div>' +
         '</div>';
 
@@ -1357,15 +1362,67 @@
       return current && typeof current === 'object' ? current : null;
     }
 
+    function normalizeStationLabels(config) {
+      const src = config || state.stationConfig || {};
+      const singular = normalize(
+        src.estacion_nombre_singular ||
+        src.nombre_estacion_singular ||
+        src.tipo_recurso ||
+        src.entidad_estacion_singular ||
+        'Estacion'
+      ) || 'Estacion';
+      const plural = normalize(
+        src.estacion_nombre_plural ||
+        src.nombre_estacion_plural ||
+        src.tipo_recurso_plural ||
+        src.entidad_estacion_plural ||
+        ''
+      ) || (/s$/i.test(singular) ? singular : (/[aeiou]$/i.test(singular) ? singular + 's' : singular + 'es'));
+      return {
+        singular: singular,
+        plural: plural,
+        singularLower: singular.toLocaleLowerCase('es-CO'),
+        pluralLower: plural.toLocaleLowerCase('es-CO')
+      };
+    }
+
+    function stationDefaultName(id, config) {
+      return normalizeStationLabels(config).singular + ' ' + id;
+    }
+
+    function stationTerm(singular) {
+      const labels = normalizeStationLabels();
+      return singular ? labels.singularLower : labels.pluralLower;
+    }
+
+    function applyStationLabelText(text) {
+      const labels = normalizeStationLabels();
+      if (window.PCSEstacionLabels && typeof window.PCSEstacionLabels.replace === 'function') {
+        return window.PCSEstacionLabels.replace(text, labels);
+      }
+      return String(text == null ? '' : text)
+        .replace(/\bEstaciones\b/g, labels.plural)
+        .replace(/\bestaciones\b/g, labels.pluralLower)
+        .replace(/\bEstación\b/g, labels.singular)
+        .replace(/\bestación\b/g, labels.singularLower)
+        .replace(/\bEstacion\b/g, labels.singular)
+        .replace(/\bestacion\b/g, labels.singularLower);
+    }
+
     function normalizeStationConfig(raw) {
       const src = raw && typeof raw === 'object' ? raw : {};
       const estaciones = Array.isArray(src.estaciones) ? src.estaciones : [];
+      const labels = normalizeStationLabels(src);
       return {
         cantidad: Math.max(1, Number(src.cantidad || estaciones.length || 1)),
+        estacion_nombre_singular: labels.singular,
+        estacion_nombre_plural: labels.plural,
+        tipo_recurso: labels.singular,
+        tipo_recurso_plural: labels.plural,
         estaciones: estaciones.map(function(current, idx) {
           return {
             id: Number((current && current.id) || (idx + 1)),
-            nombre: normalize(current && current.nombre) || ('Estación ' + (idx + 1)),
+            nombre: normalize(current && current.nombre) || (labels.singular + ' ' + (idx + 1)),
             mostrar_total: current && current.mostrar_total === undefined ? true : Boolean(current && current.mostrar_total),
             carrito: normalizeStationCarritoConfig(current && (current.carrito || current.carrito_ui))
           };
@@ -1449,6 +1506,9 @@
         state.stationConfig = normalizeStationConfig(parseStationConfigValue(pref && pref.valor));
       } catch (_) {
         state.stationConfig = normalizeStationConfig({});
+      }
+      if (window.PCSEstacionLabels && typeof window.PCSEstacionLabels.apply === 'function') {
+        window.PCSEstacionLabels.apply(document.body, state.stationConfig);
       }
       return state.stationConfig;
     }
@@ -5625,7 +5685,7 @@
       const selected = getSelectedCarrito();
       if (!selected) {
         if (title) title.textContent = '';
-        target.textContent = state.stationMode ? 'Se está preparando el carrito asociado a la estación.' : 'Selecciona un carrito para agregar items.';
+        target.textContent = state.stationMode ? 'Se está preparando el carrito asociado a la ' + stationTerm(true) + '.' : 'Selecciona un carrito para agregar items.';
         updateStationHeaderTitle('');
         renderScannerPanel();
         return;
@@ -5649,7 +5709,7 @@
         header.hidden = true;
         return;
       }
-      header.textContent = 'Estación: ' + stationLabel;
+      header.textContent = normalizeStationLabels().singular + ': ' + stationLabel;
       header.hidden = false;
     }
 
@@ -7052,7 +7112,7 @@
       if (!state.stationMode || !carrito) return false;
       const expectedCode = normalizedCode(state.selectedCarritoCode || getDefaultStationCarritoCode());
       const expectedReference = normalizedCode(getStationReference());
-      const expectedName = normalize(state.stationName || ('Estación ' + state.stationID));
+      const expectedName = normalize(state.stationName || stationDefaultName(state.stationID));
       if (expectedCode && normalizedCode(carrito.codigo) !== expectedCode) return true;
       if (expectedReference && normalizedCode(carrito.referencia_externa) !== expectedReference) return true;
       if (expectedName && normalize(carrito.nombre) !== expectedName) return true;
@@ -7067,7 +7127,7 @@
         id: Number(carrito.id || 0),
         empresa_id: Number(state.empresaID),
         codigo: getDefaultStationCarritoCode(),
-        nombre: state.stationName || ('Estación ' + state.stationID),
+        nombre: state.stationName || stationDefaultName(state.stationID),
         canal_venta: String(carrito.canal_venta || 'mostrador'),
         cliente_id: Number(carrito.cliente_id || 0),
         estado_carrito: String(carrito.estado_carrito || 'abierto'),
@@ -7110,7 +7170,7 @@
         const createPayload = {
           empresa_id: Number(state.empresaID),
           codigo: state.selectedCarritoCode,
-          nombre: state.stationName || ('Estación ' + state.stationID),
+          nombre: state.stationName || stationDefaultName(state.stationID),
           canal_venta: 'mostrador',
           moneda: 'COP',
           referencia_externa: getStationReference(),
@@ -7748,7 +7808,7 @@
 
       if (state.stationMode) {
         if (!state.stationName && state.stationID > 0) {
-          state.stationName = 'Estación ' + state.stationID;
+          state.stationName = stationDefaultName(state.stationID);
         }
       } else if (state.directSaleMode && !state.stationName) {
         state.stationName = 'Venta directa';

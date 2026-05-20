@@ -1,3 +1,11 @@
+- 2026-05-20: `Centro de reportes` reemplaza las tarjetas de reportes por un selector y una lista compacta, agrega vista previa imprimible segun papel POS 80mm o carta, y mantiene exportacion directa a PDF, Excel, CSV, JSON y TXT desde `/api/empresa/reportes`.
+
+- 2026-05-20: `Traslado entre bodegas` corrige el flujo de Inventario > Bodegas para que la tarjeta de traslado y el kardex se muestren en la vista correcta, y el backend mueve stock entre bodegas usando wrappers SQL compatibles con PostgreSQL dentro de la transaccion.
+
+- 2026-05-20: `Nomina profesional` robustece Nomina Colombia dentro de `nomina_sueldos`: catalogo amplio de conceptos, novedades aprobadas aplicadas a liquidacion, aprobacion/rechazo de novedades y seed demo Motel Calipso con empleados, asistencia, liquidaciones, PILA y pagos simulados.
+
+- 2026-05-20: `Nombres configurables de estaciones` agrega singular/plural por empresa en Configuracion > Estaciones y aplica esos textos en Administrar empresa, estaciones, carrito y configuracion del carrito. Las preconfiguraciones por tipo de empresa guardan el recurso operativo adecuado y las empresas existentes con etiquetas genericas se normalizan por tipo: restaurantes `Mesa/Mesas`, moteles y hoteles `Habitacion/Habitaciones`, lavaderos/talleres `Bahia/Bahias`, entre otros.
+
 - 2026-05-20: `Datáfonos POS multiempresa` agrega backend Go para configurar Redeban, CredibanCo, Bold y BBVA por empresa, iniciar/consultar pagos HTTP/JSON con endpoints contractuales, validar monto/referencia y aplicar confirmaciones aprobadas al carrito/caja del usuario. Las claves se referencian con `env:*`, sin dependencias nuevas.
 
 - 2026-05-20: `Pagos QR en carrito` agrega configuracion de cuentas receptoras para Bre-B, Nequi u otros proveedores y boton `QR de pago` en el carrito. El QR se genera localmente con `/vendor/qrcode.min.js`, puede usar payload oficial/plantilla del proveedor con placeholders y registra el cobro como transferencia bancaria con referencia automatica, sin tablas ni dependencias nuevas.

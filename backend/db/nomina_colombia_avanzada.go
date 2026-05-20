@@ -83,6 +83,20 @@ type EmpresaNominaColombiaAvanzadaDashboard struct {
 	PILA                []EmpresaNominaPILAResumenColombia `json:"pila"`
 }
 
+type EmpresaNominaProfesionalDemoResult struct {
+	EmpresaID          int64                                  `json:"empresa_id"`
+	PeriodoDesde       string                                 `json:"periodo_desde"`
+	PeriodoHasta       string                                 `json:"periodo_hasta"`
+	Empleados          []EmpresaNominaEmpleado                `json:"empleados"`
+	AsistenciasCreadas int                                    `json:"asistencias_creadas"`
+	NovedadesCreadas   int                                    `json:"novedades_creadas"`
+	Liquidacion        *EmpresaNominaCalculoResult            `json:"liquidacion,omitempty"`
+	PILA               []EmpresaNominaPILAResumenColombia     `json:"pila"`
+	Pagos              *EmpresaNominaPagosResult              `json:"pagos,omitempty"`
+	Dashboard          EmpresaNominaColombiaAvanzadaDashboard `json:"dashboard"`
+	Mensajes           []string                               `json:"mensajes,omitempty"`
+}
+
 func EnsureEmpresaNominaColombiaAvanzadaSchema(dbConn *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_nomina_colombia_conceptos (
@@ -262,6 +276,24 @@ func ListEmpresaNominaNovedadesColombia(dbConn *sql.DB, empresaID int64, periodo
 	return out, rows.Err()
 }
 
+func SetEmpresaNominaNovedadColombiaEstadoAprobacion(dbConn *sql.DB, empresaID, id int64, estadoAprobacion, usuario string) error {
+	if empresaID <= 0 || id <= 0 {
+		return errors.New("empresa_id e id son obligatorios")
+	}
+	estado := normalizeNominaAprobacionColombia(estadoAprobacion)
+	res, err := ExecCompat(dbConn, `UPDATE empresa_nomina_colombia_novedades
+		SET estado_aprobacion=?, fecha_actualizacion=CAST(CURRENT_TIMESTAMP AS TEXT), usuario_creador=COALESCE(NULLIF(?,''), usuario_creador)
+		WHERE empresa_id=? AND id=? AND estado='activo'`, estado, strings.TrimSpace(usuario), empresaID, id)
+	if err != nil {
+		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func GenerarEmpresaNominaPILAResumenColombia(dbConn *sql.DB, empresaID int64, periodoDesde, periodoHasta, usuario string) ([]EmpresaNominaPILAResumenColombia, error) {
 	if err := EnsureEmpresaNominaColombiaAvanzadaSchema(dbConn); err != nil {
 		return nil, err
@@ -334,19 +366,377 @@ func SeedEmpresaNominaColombiaAvanzadaDemo(dbConn *sql.DB, empresaID int64, usua
 	if err := EnsureEmpresaNominaSchema(dbConn); err != nil {
 		return err
 	}
-	defaults := []EmpresaNominaConceptoColombia{
-		{EmpresaID: empresaID, Codigo: "BASICO", Nombre: "Salario basico", Tipo: "devengado", BaseCotizacion: true, AfectaPILA: true, AfectaNominaElectronica: true, CuentaContable: "510506", Estado: "activo", UsuarioCreador: usuario},
-		{EmpresaID: empresaID, Codigo: "AUXTRANS", Nombre: "Auxilio de transporte", Tipo: "devengado", BaseCotizacion: false, AfectaPILA: false, AfectaNominaElectronica: true, CuentaContable: "510527", Estado: "activo", UsuarioCreador: usuario},
-		{EmpresaID: empresaID, Codigo: "SALUD", Nombre: "Deduccion salud empleado", Tipo: "deduccion", BaseCotizacion: false, AfectaPILA: true, AfectaNominaElectronica: true, Porcentaje: 4, CuentaContable: "237005", Estado: "activo", UsuarioCreador: usuario},
-		{EmpresaID: empresaID, Codigo: "PENSION", Nombre: "Deduccion pension empleado", Tipo: "deduccion", BaseCotizacion: false, AfectaPILA: true, AfectaNominaElectronica: true, Porcentaje: 4, CuentaContable: "238030", Estado: "activo", UsuarioCreador: usuario},
-		{EmpresaID: empresaID, Codigo: "BONO", Nombre: "Bonificacion no salarial", Tipo: "devengado", BaseCotizacion: false, AfectaPILA: false, AfectaNominaElectronica: true, CuentaContable: "510548", Estado: "activo", UsuarioCreador: usuario},
-	}
-	for _, row := range defaults {
+	for _, row := range nominaColombiaConceptosProfesionales(empresaID, usuario) {
 		if _, err := UpsertEmpresaNominaConceptoColombia(dbConn, row); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func SeedEmpresaNominaProfesionalDemo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaNominaProfesionalDemoResult, error) {
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaNominaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	if err := EnsureEmpresaAsistenciaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema"
+	}
+	if err := SeedEmpresaNominaColombiaAvanzadaDemo(dbConn, empresaID, usuario); err != nil {
+		return nil, err
+	}
+
+	desde, hasta := nominaDemoPeriodoActual()
+	res := &EmpresaNominaProfesionalDemoResult{EmpresaID: empresaID, PeriodoDesde: desde, PeriodoHasta: hasta}
+
+	cfg := defaultEmpresaNominaConfiguracion(empresaID)
+	cfg.UsuarioCreador = usuario
+	cfg.Observaciones = "Configuracion demo profesional de nomina para Motel Calipso"
+	if _, err := UpsertEmpresaNominaConfiguracion(dbConn, cfg); err != nil {
+		res.Mensajes = append(res.Mensajes, fmt.Sprintf("No se pudo guardar configuracion demo: %v", err))
+	}
+
+	empleados, err := upsertNominaDemoEmpleados(dbConn, empresaID, usuario)
+	if err != nil {
+		return nil, err
+	}
+	res.Empleados = empleados
+
+	asistencias, err := seedNominaDemoAsistencias(dbConn, empresaID, desde, hasta, empleados, usuario)
+	if err != nil {
+		return nil, err
+	}
+	res.AsistenciasCreadas = asistencias
+
+	novedades, err := seedNominaDemoNovedades(dbConn, empresaID, desde, hasta, empleados, usuario)
+	if err != nil {
+		return nil, err
+	}
+	res.NovedadesCreadas = novedades
+
+	liq, err := GenerateEmpresaNominaLiquidaciones(dbConn, EmpresaNominaCalculoRequest{
+		EmpresaID:      empresaID,
+		PeriodoDesde:   desde,
+		PeriodoHasta:   hasta,
+		Overwrite:      true,
+		UsuarioCreador: usuario,
+		Observaciones:  "demo profesional motel calipso",
+	})
+	if err != nil {
+		return nil, err
+	}
+	res.Liquidacion = liq
+
+	pila, err := GenerarEmpresaNominaPILAResumenColombia(dbConn, empresaID, desde, hasta, usuario)
+	if err != nil {
+		return nil, err
+	}
+	res.PILA = pila
+
+	pagos, err := GenerateEmpresaNominaPagos(dbConn, empresaID, desde, hasta, 0, "transferencia_bancaria", "demo-motel-calipso", usuario)
+	if err != nil {
+		res.Mensajes = append(res.Mensajes, fmt.Sprintf("Liquidacion y PILA creadas; pagos no generados: %v", err))
+	} else {
+		res.Pagos = pagos
+	}
+
+	dashboard, err := BuildEmpresaNominaColombiaAvanzadaDashboard(dbConn, empresaID, nominaColombiaPeriodo(desde, hasta))
+	if err != nil {
+		return nil, err
+	}
+	res.Dashboard = dashboard
+	return res, nil
+}
+
+func nominaColombiaConceptosProfesionales(empresaID int64, usuario string) []EmpresaNominaConceptoColombia {
+	base := func(codigo, nombre, tipo, cuenta string, ibc, pila, electronica bool, porcentaje float64) EmpresaNominaConceptoColombia {
+		return EmpresaNominaConceptoColombia{
+			EmpresaID: empresaID, Codigo: codigo, Nombre: nombre, Tipo: tipo,
+			BaseCotizacion: ibc, AfectaPILA: pila, AfectaNominaElectronica: electronica,
+			Porcentaje: porcentaje, CuentaContable: cuenta, Estado: "activo", UsuarioCreador: usuario,
+		}
+	}
+	return []EmpresaNominaConceptoColombia{
+		base("BASICO", "Salario basico", "devengado", "510506", true, true, true, 0),
+		base("AUXTRANS", "Auxilio de transporte", "devengado", "510527", false, false, true, 0),
+		base("HED", "Hora extra diurna", "devengado", "510515", true, true, true, 125),
+		base("HEN", "Hora extra nocturna", "devengado", "510515", true, true, true, 175),
+		base("RECNOCT", "Recargo nocturno", "devengado", "510515", true, true, true, 35),
+		base("DOMFEST", "Dominical o festivo", "devengado", "510515", true, true, true, 75),
+		base("BONO", "Bonificacion no salarial", "devengado", "510548", false, false, true, 0),
+		base("COMISION", "Comisiones", "devengado", "510548", true, true, true, 0),
+		base("VACACIONES", "Vacaciones disfrutadas", "devengado", "510530", true, true, true, 0),
+		base("INCAP", "Incapacidad reconocida", "devengado", "510536", true, true, true, 0),
+		base("SALUD", "Deduccion salud empleado", "deduccion", "237005", false, true, true, 4),
+		base("PENSION", "Deduccion pension empleado", "deduccion", "238030", false, true, true, 4),
+		base("SOLIDARIDAD", "Fondo de solidaridad pensional", "deduccion", "238095", false, true, true, 1),
+		base("PRESTAMO", "Prestamo o anticipo", "deduccion", "136595", false, false, true, 0),
+		base("EMBARGO", "Embargo judicial", "deduccion", "237090", false, false, true, 0),
+		base("RETEFTE", "Retencion en la fuente", "deduccion", "236505", false, false, true, 0),
+		base("APOSALUD", "Aporte salud empleador", "aporte", "510568", false, true, false, 8.5),
+		base("APOPENSION", "Aporte pension empleador", "aporte", "510570", false, true, false, 12),
+		base("ARL", "Riesgos laborales ARL", "aporte", "510572", false, true, false, 0.522),
+		base("CAJA", "Caja de compensacion", "aporte", "510578", false, true, false, 4),
+		base("ICBF", "Aporte ICBF", "aporte", "510575", false, true, false, 3),
+		base("SENA", "Aporte SENA", "aporte", "510578", false, true, false, 2),
+		base("CESANTIAS", "Provision cesantias", "provision", "510530", false, false, false, 8.33),
+		base("INTCES", "Provision intereses cesantias", "provision", "510533", false, false, false, 1),
+		base("PRIMA", "Provision prima de servicios", "provision", "510536", false, false, false, 8.33),
+		base("PROVVAC", "Provision vacaciones", "provision", "510539", false, false, false, 4.17),
+	}
+}
+
+func nominaDemoPeriodoActual() (string, string) {
+	now := time.Now()
+	desde := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	hasta := now
+	if hasta.Day() < 15 {
+		hasta = time.Date(now.Year(), now.Month(), 15, 0, 0, 0, 0, now.Location())
+	}
+	return desde.Format("2006-01-02"), hasta.Format("2006-01-02")
+}
+
+func upsertNominaDemoEmpleados(dbConn *sql.DB, empresaID int64, usuario string) ([]EmpresaNominaEmpleado, error) {
+	out := make([]EmpresaNominaEmpleado, 0, len(nominaDemoEmpleados(empresaID, usuario)))
+	for _, empleado := range nominaDemoEmpleados(empresaID, usuario) {
+		existing, err := findNominaEmpleadoByCodigo(dbConn, empresaID, empleado.EmpleadoCodigo)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+		if existing != nil && existing.ID > 0 {
+			empleado.ID = existing.ID
+			if err := UpdateEmpresaNominaEmpleado(dbConn, empleado); err != nil {
+				return nil, err
+			}
+			_ = SetEmpresaNominaEmpleadoEstado(dbConn, empresaID, existing.ID, "activo")
+			empleado.ID = existing.ID
+		} else {
+			id, err := CreateEmpresaNominaEmpleado(dbConn, empleado)
+			if err != nil {
+				return nil, err
+			}
+			empleado.ID = id
+		}
+		out = append(out, empleado)
+	}
+	return out, nil
+}
+
+func nominaDemoEmpleados(empresaID int64, usuario string) []EmpresaNominaEmpleado {
+	return []EmpresaNominaEmpleado{
+		{EmpresaID: empresaID, EmpleadoCodigo: "CAL-NOM-001", EmpleadoNombre: "Ana Maria Rojas", EmpleadoDocumento: "1002003001", Cargo: "Recepcionista", TipoContrato: "indefinido", FechaIngreso: "2025-11-03", SalarioBasicoMensual: 1800000, AuxilioTransporteMensual: 200000, BonificacionFijaMensual: 120000, JornadaHorasDia: 8, IncluirAuxilioTransporte: true, Estado: "activo", UsuarioCreador: usuario},
+		{EmpresaID: empresaID, EmpleadoCodigo: "CAL-NOM-002", EmpleadoNombre: "Jose David Perez", EmpleadoDocumento: "1002003002", Cargo: "Cajero nocturno", TipoContrato: "indefinido", FechaIngreso: "2025-09-15", SalarioBasicoMensual: 2100000, AuxilioTransporteMensual: 200000, BonificacionFijaMensual: 180000, JornadaHorasDia: 8, IncluirAuxilioTransporte: true, Estado: "activo", UsuarioCreador: usuario},
+		{EmpresaID: empresaID, EmpleadoCodigo: "CAL-NOM-003", EmpleadoNombre: "Luz Marina Gomez", EmpleadoDocumento: "1002003003", Cargo: "Aseadora", TipoContrato: "fijo", FechaIngreso: "2026-01-10", SalarioBasicoMensual: 1600000, AuxilioTransporteMensual: 200000, JornadaHorasDia: 8, IncluirAuxilioTransporte: true, Estado: "activo", UsuarioCreador: usuario},
+		{EmpresaID: empresaID, EmpleadoCodigo: "CAL-NOM-004", EmpleadoNombre: "Mateo Sierra", EmpleadoDocumento: "1002003004", Cargo: "Administrador de turno", TipoContrato: "indefinido", FechaIngreso: "2024-08-01", SalarioBasicoMensual: 2800000, BonificacionFijaMensual: 250000, JornadaHorasDia: 8, IncluirAuxilioTransporte: false, Estado: "activo", UsuarioCreador: usuario},
+		{EmpresaID: empresaID, EmpleadoCodigo: "CAL-NOM-005", EmpleadoNombre: "Karen Paola Ruiz", EmpleadoDocumento: "1002003005", Cargo: "Auxiliar de servicios", TipoContrato: "obra_labor", FechaIngreso: "2026-02-04", SalarioBasicoMensual: 1700000, AuxilioTransporteMensual: 200000, JornadaHorasDia: 8, IncluirAuxilioTransporte: true, Estado: "activo", UsuarioCreador: usuario},
+	}
+}
+
+func findNominaEmpleadoByCodigo(dbConn *sql.DB, empresaID int64, codigo string) (*EmpresaNominaEmpleado, error) {
+	rows, err := ListEmpresaNominaEmpleados(dbConn, empresaID, true, strings.TrimSpace(codigo), 20)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		if strings.EqualFold(strings.TrimSpace(row.EmpleadoCodigo), strings.TrimSpace(codigo)) {
+			item := row
+			return &item, nil
+		}
+	}
+	return nil, sql.ErrNoRows
+}
+
+func seedNominaDemoAsistencias(dbConn *sql.DB, empresaID int64, desde, hasta string, empleados []EmpresaNominaEmpleado, usuario string) (int, error) {
+	if _, err := ExecCompat(dbConn, `DELETE FROM empresa_asistencia_empleados
+		WHERE empresa_id=? AND empleado_codigo LIKE 'CAL-NOM-%' AND fecha_asistencia>=? AND fecha_asistencia<=?`, empresaID, desde, hasta); err != nil {
+		return 0, err
+	}
+	dias, err := nominaDemoDiasLaborales(desde, hasta)
+	if err != nil {
+		return 0, err
+	}
+	total := 0
+	for _, empleado := range empleados {
+		for i, dia := range dias {
+			turno, entrada, salida := "manana", "08:00:00", "16:00:00"
+			if strings.Contains(strings.ToLower(empleado.Cargo), "nocturno") {
+				turno, entrada, salida = "noche", "22:00:00", "06:00:00"
+			} else if i%5 == 4 {
+				turno, entrada, salida = "tarde", "14:00:00", "22:00:00"
+			}
+			if _, err := CreateEmpresaAsistenciaEmpleado(dbConn, EmpresaAsistenciaEmpleado{
+				EmpresaID: empleado.EmpresaID, EmpleadoID: empleado.ID, EmpleadoCodigo: empleado.EmpleadoCodigo,
+				EmpleadoNombre: empleado.EmpleadoNombre, EmpleadoDocumento: empleado.EmpleadoDocumento, Cargo: empleado.Cargo,
+				Turno: turno, FechaAsistencia: dia, HoraEntrada: entrada, HoraSalida: salida,
+				EstadoAsistencia: "presente", Novedad: "demo nomina motel calipso",
+				UsuarioCreador: usuario, Estado: "activo",
+			}); err != nil {
+				return total, err
+			}
+			total++
+		}
+	}
+	return total, nil
+}
+
+func nominaDemoDiasLaborales(desde, hasta string) ([]string, error) {
+	start, err := time.Parse("2006-01-02", desde)
+	if err != nil {
+		return nil, err
+	}
+	end, err := time.Parse("2006-01-02", hasta)
+	if err != nil {
+		return nil, err
+	}
+	out := []string{}
+	for day := start; !day.After(end); day = day.AddDate(0, 0, 1) {
+		if day.Weekday() == time.Sunday {
+			continue
+		}
+		out = append(out, day.Format("2006-01-02"))
+		if len(out) >= 24 {
+			break
+		}
+	}
+	return out, nil
+}
+
+func seedNominaDemoNovedades(dbConn *sql.DB, empresaID int64, desde, hasta string, empleados []EmpresaNominaEmpleado, usuario string) (int, error) {
+	if _, err := ExecCompat(dbConn, `DELETE FROM empresa_nomina_colombia_novedades
+		WHERE empresa_id=? AND periodo_desde=? AND periodo_hasta=? AND descripcion LIKE 'Demo Motel Calipso:%'`, empresaID, desde, hasta); err != nil {
+		return 0, err
+	}
+	byCode := map[string]EmpresaNominaEmpleado{}
+	for _, empleado := range empleados {
+		byCode[empleado.EmpleadoCodigo] = empleado
+	}
+	defs := []struct {
+		empleado string
+		tipo     string
+		concepto string
+		desc     string
+		cantidad float64
+		unitario float64
+		ibc      bool
+	}{
+		{"CAL-NOM-002", "devengado", "RECNOCT", "Demo Motel Calipso: recargo nocturno controlado", 6, 18000, true},
+		{"CAL-NOM-003", "devengado", "HED", "Demo Motel Calipso: horas extra aseo y cierre", 4, 22000, true},
+		{"CAL-NOM-001", "deduccion", "PRESTAMO", "Demo Motel Calipso: descuento prestamo interno", 1, 50000, false},
+		{"CAL-NOM-004", "devengado", "BONO", "Demo Motel Calipso: bono de responsabilidad", 1, 120000, false},
+	}
+	total := 0
+	for _, def := range defs {
+		empleado, ok := byCode[def.empleado]
+		if !ok || empleado.ID <= 0 {
+			continue
+		}
+		if _, err := CreateEmpresaNominaNovedadColombia(dbConn, EmpresaNominaNovedadColombia{
+			EmpresaID: empresaID, EmpleadoNominaID: empleado.ID, PeriodoDesde: desde, PeriodoHasta: hasta, FechaNovedad: desde,
+			Tipo: def.tipo, CodigoConcepto: def.concepto, Descripcion: def.desc, Cantidad: def.cantidad, ValorUnitario: def.unitario,
+			AfectaIBC: def.ibc, EstadoAprobacion: "aprobado", Estado: "activo", UsuarioCreador: usuario,
+		}); err != nil {
+			return total, err
+		}
+		total++
+	}
+	return total, nil
+}
+
+func aplicarNovedadesColombiaEnLiquidacion(dbConn *sql.DB, liq *EmpresaNominaLiquidacion, cfg *EmpresaNominaConfiguracion) error {
+	if dbConn == nil || liq == nil || cfg == nil || liq.EmpresaID <= 0 || liq.EmpleadoNominaID <= 0 {
+		return nil
+	}
+	if err := EnsureEmpresaNominaColombiaAvanzadaSchema(dbConn); err != nil {
+		return err
+	}
+	rows, err := ExecQueryCompat(dbConn, `SELECT id,empresa_id,empleado_nomina_id,periodo_desde,periodo_hasta,fecha_novedad,tipo,concepto_id,codigo_concepto,descripcion,cantidad,valor_unitario,valor_total,afecta_ibc,estado_aprobacion,estado,usuario_creador
+		FROM empresa_nomina_colombia_novedades
+		WHERE empresa_id=? AND empleado_nomina_id=? AND estado='activo' AND estado_aprobacion='aprobado'
+		  AND periodo_desde<=? AND periodo_hasta>=?
+		ORDER BY fecha_novedad ASC, id ASC`, liq.EmpresaID, liq.EmpleadoNominaID, liq.PeriodoHasta, liq.PeriodoDesde)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	novedades := []EmpresaNominaNovedadColombia{}
+	for rows.Next() {
+		var item EmpresaNominaNovedadColombia
+		var afectaIBC int
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.EmpleadoNominaID, &item.PeriodoDesde, &item.PeriodoHasta, &item.FechaNovedad, &item.Tipo, &item.ConceptoID, &item.CodigoConcepto, &item.Descripcion, &item.Cantidad, &item.ValorUnitario, &item.ValorTotal, &afectaIBC, &item.EstadoAprobacion, &item.Estado, &item.UsuarioCreador); err != nil {
+			return err
+		}
+		item.AfectaIBC = afectaIBC > 0
+		novedades = append(novedades, item)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	aplicarNovedadesAprobadasEnLiquidacion(liq, cfg, novedades)
+	return nil
+}
+
+func aplicarNovedadesAprobadasEnLiquidacion(liq *EmpresaNominaLiquidacion, cfg *EmpresaNominaConfiguracion, novedades []EmpresaNominaNovedadColombia) (int, float64, float64) {
+	if liq == nil || cfg == nil || len(novedades) == 0 {
+		return 0, 0, 0
+	}
+	devengadoNovedades := 0.0
+	deduccionNovedades := 0.0
+	ibcExtra := 0.0
+	aplicadas := 0
+	for _, item := range novedades {
+		if normalizeNominaAprobacionColombia(item.EstadoAprobacion) != "aprobado" || normalizeNominaEstado(item.Estado) != "activo" {
+			continue
+		}
+		valor := round2(item.ValorTotal)
+		if valor <= 0 {
+			valor = round2(item.Cantidad * item.ValorUnitario)
+		}
+		switch normalizeNominaColombiaTipo(item.Tipo) {
+		case "deduccion":
+			deduccionNovedades = round2(deduccionNovedades + valor)
+		case "devengado":
+			devengadoNovedades = round2(devengadoNovedades + valor)
+			if item.AfectaIBC {
+				ibcExtra = round2(ibcExtra + valor)
+			}
+		}
+		aplicadas++
+	}
+	if aplicadas == 0 {
+		return 0, 0, 0
+	}
+	liq.Bonificacion = round2(liq.Bonificacion + devengadoNovedades)
+	liq.OtrasDeducciones = round2(liq.OtrasDeducciones + deduccionNovedades)
+	liq.DevengadoTotal = round2(liq.DevengadoTotal + devengadoNovedades)
+	liq.IngresoBaseCotizacion = round2(liq.IngresoBaseCotizacion + ibcExtra)
+	liq.DeduccionSalud = round2(liq.IngresoBaseCotizacion * (cfg.DeduccionSaludPorcentaje / 100.0))
+	liq.DeduccionPension = round2(liq.IngresoBaseCotizacion * (cfg.DeduccionPensionPorcentaje / 100.0))
+	liq.DeduccionFondoSolidaridad = round2(liq.IngresoBaseCotizacion * (cfg.DeduccionFondoSolidaridadPorcentaje / 100.0))
+	liq.DeduccionTotal = round2(liq.DeduccionSalud + liq.DeduccionPension + liq.DeduccionFondoSolidaridad + liq.DeduccionFija + liq.OtrasDeducciones)
+	liq.NetoPagar = round2(liq.DevengadoTotal - liq.DeduccionTotal)
+	liq.ResumenJSON = appendNominaResumenJSON(liq.ResumenJSON, fmt.Sprintf(`"novedades_colombia":%d,"devengado_novedades":%.2f,"deduccion_novedades":%.2f`, aplicadas, devengadoNovedades, deduccionNovedades))
+	return aplicadas, devengadoNovedades, deduccionNovedades
+}
+
+func appendNominaResumenJSON(base, fragment string) string {
+	base = strings.TrimSpace(base)
+	fragment = strings.TrimSpace(fragment)
+	if fragment == "" {
+		return base
+	}
+	if base == "" || base == "{}" {
+		return "{" + fragment + "}"
+	}
+	if strings.HasSuffix(base, "}") {
+		return strings.TrimSuffix(base, "}") + "," + fragment + "}"
+	}
+	return base
 }
 
 func buildNominaPILARowColombia(empresaID int64, periodo string, liq EmpresaNominaLiquidacion, cfg *EmpresaNominaConfiguracion, usuario string) EmpresaNominaPILAResumenColombia {

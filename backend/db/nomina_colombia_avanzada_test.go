@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNormalizeNominaColombiaConcepto(t *testing.T) {
 	item := normalizeNominaConceptoColombia(EmpresaNominaConceptoColombia{
@@ -86,5 +89,53 @@ func TestBuildNominaPILARowColombia(t *testing.T) {
 	}
 	if row.Periodo != "2026-05" || row.Estado != "generado" {
 		t.Fatalf("periodo/estado = %q/%q", row.Periodo, row.Estado)
+	}
+}
+
+func TestNominaColombiaConceptosProfesionalesIncluyePrestaciones(t *testing.T) {
+	rows := nominaColombiaConceptosProfesionales(9, "qa")
+	seen := map[string]bool{}
+	for _, row := range rows {
+		seen[row.Codigo] = true
+		if row.EmpresaID != 9 || row.UsuarioCreador != "qa" {
+			t.Fatalf("concepto sin empresa/usuario esperado: %+v", row)
+		}
+	}
+	for _, code := range []string{"BASICO", "HED", "SALUD", "PENSION", "ARL", "CAJA", "CESANTIAS", "PRIMA", "PROVVAC"} {
+		if !seen[code] {
+			t.Fatalf("falta concepto profesional %s", code)
+		}
+	}
+}
+
+func TestAplicarNovedadesAprobadasEnLiquidacion(t *testing.T) {
+	liq := &EmpresaNominaLiquidacion{
+		DevengadoTotal:        1000000,
+		IngresoBaseCotizacion: 1000000,
+		Bonificacion:          0,
+		DeduccionFija:         10000,
+		OtrasDeducciones:      0,
+		ResumenJSON:           `{"asistencia_registros":4}`,
+	}
+	cfg := &EmpresaNominaConfiguracion{DeduccionSaludPorcentaje: 4, DeduccionPensionPorcentaje: 4}
+	aplicadas, devengado, deduccion := aplicarNovedadesAprobadasEnLiquidacion(liq, cfg, []EmpresaNominaNovedadColombia{
+		{Tipo: "devengado", ValorTotal: 100000, AfectaIBC: true, EstadoAprobacion: "aprobado", Estado: "activo"},
+		{Tipo: "deduccion", ValorTotal: 50000, EstadoAprobacion: "aprobado", Estado: "activo"},
+		{Tipo: "devengado", ValorTotal: 999999, AfectaIBC: true, EstadoAprobacion: "pendiente", Estado: "activo"},
+	})
+	if aplicadas != 2 || devengado != 100000 || deduccion != 50000 {
+		t.Fatalf("novedades aplicadas=%d dev=%v ded=%v", aplicadas, devengado, deduccion)
+	}
+	if liq.DevengadoTotal != 1100000 || liq.IngresoBaseCotizacion != 1100000 {
+		t.Fatalf("totales dev/ibc = %v/%v", liq.DevengadoTotal, liq.IngresoBaseCotizacion)
+	}
+	if liq.DeduccionSalud != 44000 || liq.DeduccionPension != 44000 {
+		t.Fatalf("deducciones salud/pension = %v/%v", liq.DeduccionSalud, liq.DeduccionPension)
+	}
+	if liq.DeduccionTotal != 148000 || liq.NetoPagar != 952000 {
+		t.Fatalf("total ded/neto = %v/%v", liq.DeduccionTotal, liq.NetoPagar)
+	}
+	if !strings.Contains(liq.ResumenJSON, `"novedades_colombia":2`) {
+		t.Fatalf("resumen no incluye novedades: %s", liq.ResumenJSON)
 	}
 }
