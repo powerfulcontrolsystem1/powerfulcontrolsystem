@@ -139,11 +139,23 @@ type EmpresaBackupPurgeTableResult struct {
 type EmpresaBackupPurgeResult struct {
 	EmpresaID           int64                           `json:"empresa_id"`
 	FechaCorte          string                          `json:"fecha_corte"`
+	Modo                string                          `json:"modo,omitempty"`
+	DryRun              bool                            `json:"dry_run,omitempty"`
+	Confirmacion        string                          `json:"confirmacion_requerida,omitempty"`
 	TablasEvaluadas     int                             `json:"tablas_evaluadas"`
 	TablasDepuradas     int                             `json:"tablas_depuradas"`
 	RegistrosEliminados int64                           `json:"registros_eliminados"`
 	TablasSinFecha      []string                        `json:"tablas_sin_fecha,omitempty"`
+	TablasProtegidas    []string                        `json:"tablas_protegidas,omitempty"`
 	Detalle             []EmpresaBackupPurgeTableResult `json:"detalle,omitempty"`
+}
+
+type EmpresaOperationalResetOptions struct {
+	FechaCorte    string
+	AllTime       bool
+	DryRun        bool
+	IncludeTables []string
+	ExcludeTables []string
 }
 
 func normalizeEmpresaBackupEstado(raw string) string {
@@ -261,6 +273,81 @@ func empresaBackupExcludedInternalTable(table string) bool {
 	default:
 		return false
 	}
+}
+
+func empresaBackupProtectedOperationalResetTable(table string) bool {
+	table = strings.ToLower(strings.TrimSpace(table))
+	if table == "" {
+		return true
+	}
+	if empresaBackupExcludedInternalTable(table) {
+		return true
+	}
+	for _, configTable := range empresaConfigBackupDefaultTables {
+		if table == strings.ToLower(strings.TrimSpace(configTable)) {
+			return true
+		}
+	}
+	protected := map[string]struct{}{
+		"empresas":                                  {},
+		"users":                                     {},
+		"roles_de_usuario":                          {},
+		"tipos_de_usuario":                          {},
+		"admin_empresa_compartida":                  {},
+		"admin_empresa_compartida_invitaciones":     {},
+		"empresa_ai_modelo_preferido":               {},
+		"empresa_asistencia_configuracion":          {},
+		"empresa_calculadora_configuracion":         {},
+		"empresa_comisiones_servicio_configuracion": {},
+		"empresa_configuracion_avanzada":            {},
+		"empresa_configuracion_general":             {},
+		"empresa_configuracion_operativa":           {},
+		"empresa_configuracion_operativa_politicas": {},
+		"empresa_configuracion_operativa_roles":     {},
+		"empresa_corte_caja_configuracion":          {},
+		"empresa_dian_configuracion":                {},
+		"empresa_estacion_prefs":                    {},
+		"empresa_finanzas_configuracion":            {},
+		"empresa_impresoras":                        {},
+		"empresa_impresoras_funcionalidades":        {},
+		"empresa_impresoras_productos":              {},
+		"empresa_integraciones_apis":                {},
+		"empresa_integraciones_bancos":              {},
+		"empresa_inventario_configuracion":          {},
+		"empresa_nomina_configuracion":              {},
+		"empresa_payment_settings":                  {},
+		"empresa_permisos_modulos":                  {},
+		"empresa_permisos_paginas":                  {},
+		"empresa_propinas_configuracion":            {},
+		"empresa_reportes_plantillas":               {},
+		"empresa_reportes_programaciones":           {},
+		"empresa_sensor_puertas_devices":            {},
+		"empresa_soporte_remoto_configuracion":      {},
+		"empresa_tarifas_por_dia":                   {},
+		"empresa_tarifas_por_minutos":               {},
+		"empresa_tarifas_por_minutos_configuracion": {},
+		"empresa_vehiculos_configuracion":           {},
+		"empresa_venta_publica_configuracion":       {},
+		"empresa_venta_publica_paginas":             {},
+	}
+	if _, ok := protected[table]; ok {
+		return true
+	}
+	protectedPrefixes := []string{
+		"empresa_configuracion_",
+		"empresa_permisos_",
+		"empresa_integraciones_",
+		"empresa_impresoras_",
+		"empresa_reportes_program",
+		"facturacion_electronica_config",
+		"facturacion_electronica_pais",
+	}
+	for _, prefix := range protectedPrefixes {
+		if strings.HasPrefix(table, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func empresaBackupResolveDateColumn(columns []string) string {
@@ -428,6 +515,25 @@ func empresaBackupListCandidateTables(dbConn *sql.DB, includeTables, excludeTabl
 	}
 	sort.Strings(out)
 	return out, nil
+}
+
+func empresaBackupListOperationalResetTables(dbConn *sql.DB, includeTables, excludeTables []string) ([]string, []string, error) {
+	tables, err := empresaBackupListCandidateTables(dbConn, includeTables, excludeTables)
+	if err != nil {
+		return nil, nil, err
+	}
+	out := make([]string, 0, len(tables))
+	protected := make([]string, 0)
+	for _, table := range tables {
+		if empresaBackupProtectedOperationalResetTable(table) {
+			protected = append(protected, table)
+			continue
+		}
+		out = append(out, table)
+	}
+	sort.Strings(out)
+	sort.Strings(protected)
+	return out, protected, nil
 }
 
 func empresaBackupFetchTableSnapshot(dbConn *sql.DB, table string, empresaID int64) (EmpresaBackupTablePayload, error) {
@@ -1319,6 +1425,108 @@ func PurgeEmpresaDataByDateCorte(dbConn *sql.DB, empresaID int64, fechaCorte str
 	}
 	tx = nil
 
+	return result, nil
+}
+
+func ResetEmpresaOperationalData(dbConn *sql.DB, empresaID int64, options EmpresaOperationalResetOptions) (*EmpresaBackupPurgeResult, error) {
+	if dbConn == nil {
+		return nil, errors.New("db connection is nil")
+	}
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id invalido")
+	}
+	fechaCorte := strings.TrimSpace(options.FechaCorte)
+	if !options.AllTime && fechaCorte == "" {
+		return nil, errors.New("fecha_corte es obligatoria cuando no se seleccionan todos los tiempos")
+	}
+
+	tables, protected, err := empresaBackupListOperationalResetTables(dbConn, options.IncludeTables, options.ExcludeTables)
+	if err != nil {
+		return nil, err
+	}
+	mode := "hasta_fecha"
+	if options.AllTime {
+		mode = "todos"
+	}
+	result := &EmpresaBackupPurgeResult{
+		EmpresaID:        empresaID,
+		FechaCorte:       fechaCorte,
+		Modo:             mode,
+		DryRun:           options.DryRun,
+		Confirmacion:     fmt.Sprintf("REINICIAR EMPRESA %d", empresaID),
+		TablasEvaluadas:  len(tables),
+		TablasDepuradas:  0,
+		TablasSinFecha:   make([]string, 0),
+		TablasProtegidas: protected,
+		Detalle:          make([]EmpresaBackupPurgeTableResult, 0, len(tables)),
+	}
+	if len(tables) == 0 {
+		return result, nil
+	}
+
+	tx, err := dbConn.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	for _, table := range tables {
+		columns, colErr := empresaBackupGetTableColumns(tx, table)
+		if colErr != nil {
+			result.TablasSinFecha = append(result.TablasSinFecha, table)
+			continue
+		}
+		dateColumn := ""
+		whereSQL := "empresa_id = ?"
+		args := []interface{}{empresaID}
+		if !options.AllTime {
+			dateColumn = empresaBackupResolveDateColumn(columns)
+			if dateColumn == "" {
+				result.TablasSinFecha = append(result.TablasSinFecha, table)
+				continue
+			}
+			whereSQL += " AND COALESCE(" + dateColumn + ", '') <> '' AND datetime(" + dateColumn + ") <= datetime(?)"
+			args = append(args, fechaCorte)
+		}
+
+		var affected int64
+		if options.DryRun {
+			if err := queryRowTxSQLCompat(tx, "SELECT COUNT(1) FROM "+table+" WHERE "+whereSQL, args...).Scan(&affected); err != nil {
+				return nil, err
+			}
+		} else {
+			execResult, execErr := execTxSQLCompat(tx, "DELETE FROM "+table+" WHERE "+whereSQL, args...)
+			if execErr != nil {
+				return nil, execErr
+			}
+			if rowsAffected, affErr := execResult.RowsAffected(); affErr == nil {
+				affected = rowsAffected
+			}
+		}
+		result.RegistrosEliminados += affected
+		result.TablasDepuradas++
+		result.Detalle = append(result.Detalle, EmpresaBackupPurgeTableResult{
+			Table:      table,
+			DateColumn: dateColumn,
+			Deleted:    affected,
+		})
+	}
+
+	if options.DryRun {
+		if err := tx.Rollback(); err != nil {
+			return nil, err
+		}
+		tx = nil
+		return result, nil
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	tx = nil
 	return result, nil
 }
 

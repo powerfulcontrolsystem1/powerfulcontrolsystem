@@ -1,3 +1,38 @@
+2026-05-20: Pagos QR desde carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `pagos`, `caja`, `configuracion_empresarial`, `frontend_ux`.
+- Investigacion: Bre-B permite pagos por llave o QR interoperable en Colombia; Nequi Negocios ofrece QR y QR dinamico por API para comercios con contrato/certificacion. El sistema queda preparado para payload oficial o plantilla de proveedor sin simular una API bancaria no contratada.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega activacion y cuentas receptoras QR por empresa, persistidas en `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega `QR de pago`, selector de cuenta receptora, generacion local con `web/vendor/qrcode.min.js` y aplicacion del cobro como `transferencia_bancaria` con referencia automatica.
+- Backend/defaults: `backend/handlers/empresa_preconfiguracion.go` agrega claves `pago_qr_*` sin nuevas tablas, endpoints, permisos ni dependencias.
+- Riesgo controlado: si no se configura llave/cuenta o payload oficial, el carrito bloquea el QR y pide configurar una cuenta receptora.
+
+2026-05-20: Facturacion offline para carritos.
+- Modulos afectados: `carritos`, `ventas_simple`, `inventario`, `caja`, `facturacion`, `frontend_ux`.
+- Backend: se agrega `/api/empresa/offline_ventas` bajo permisos de ventas y la tabla `empresa_ventas_offline_sync` para sincronizacion idempotente por `empresa_id + sync_key`.
+- Sincronizacion: la venta offline reutiliza el carrito unificado, items, inventario, caja abierta del usuario, metricas de estacion y documento de venta; si el usuario no tiene caja abierta, se abre una caja para ese usuario y codigo de caja sin mezclar otras cajas de la empresa.
+- Frontend: el carrito detecta caidas de internet, muestra aviso flotante persistente, imprime comprobante/factura provisional y guarda la cola local hasta que vuelva la conexion.
+- Configuracion: `Configuracion > Carrito unificado` agrega checks para activar/desactivar el modo offline y para mostrar/ocultar la marca `OFFLINE/Pendiente de sincronizar`, activa por defecto.
+- Alcance: no agrega dependencias externas y conserva aislamiento multiempresa.
+
+2026-05-19: Envio y comparticion de codigos de descuento.
+- Modulos afectados: `codigos_descuento`, `ventas`, `comunicaciones`.
+- `backend/handlers/codigos_descuento.go` recibe `dbSuper` para poder enviar correos SMTP desde la accion `POST /api/empresa/codigos_de_descuento?action=enviar_correo`.
+- El envio valida empresa, codigo y correo destino; usa el modo de prueba de correos cuando esta activo y no expone credenciales.
+- `web/administrar_empresa/codigos_de_descuento.html` muestra botones `Enviar correo` y `WhatsApp` en cada fila de cupones.
+- `backend/main.go` registra el handler con `dbEmpresas` y `dbSuper`.
+- Pruebas: `go test ./handlers ./db`, validacion de script inline de `codigos_de_descuento.html`, verificacion visual con API simulada.
+- Alcance: sin tablas nuevas, sin dependencias externas, sin permisos nuevos y con aislamiento por `empresa_id`.
+
+2026-05-19: Reinicio operativo seguro desde backups empresariales.
+- Modulos afectados: `backups`, `carritos`, `ventas`, `finanzas`, `facturacion`, `auditoria`.
+- `backend/db/backups_empresariales.go` agrega `ResetEmpresaOperationalData`, catalogo de tablas protegidas y soporte `dry_run` para contar registros antes de borrar.
+- `backend/handlers/backups_empresariales.go` agrega la accion `/api/empresa/backups?action=reset_operativo`, con modo `hasta_fecha` o `todos`, confirmacion exacta `REINICIAR EMPRESA {empresa_id}` y backup previo automatico opcional.
+- `web/administrar_empresa/backups.html` agrega la seccion `Reiniciar datos operativos`, con previsualizacion, filtros opcionales por tablas operativas, confirmacion y boton de eliminacion; la depuracion legacy queda oculta para evitar borrar configuracion por accidente.
+- `web/js/personas_activos_submenu.js` cambia el acceso del submenu de backups a `Reiniciar datos`.
+- Documentacion actualizada en `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/estructura_bd.md`, `CHANGELOG.md` y `documentos/CHANGELOG.md`.
+- Pruebas: `go test ./db ./handlers`, validacion de sintaxis JS de `personas_activos_submenu.js` y validacion del script inline de `backups.html`.
+- Alcance: sin tablas nuevas, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
+
 2026-05-19: Codigos de descuento y promocion de asesor de un solo uso.
 - Modulos afectados: `carritos`, `pagos`, `licencias`, `asesor_comercial`.
 - `backend/db/codigos_descuento.go` normaliza `usos_maximos=1`, marca como consumidos los codigos con redenciones historicas, valida cualquier redencion como uso previo y deja de decrementar `usos_actuales` al anular/reabrir carritos.
@@ -26757,6 +26792,13 @@ Archivos modificados:
 - El JSON `estaciones_config.carrito_ui_global` incorpora `cliente_obligatorio_pago`; cuando esta activo el frontend bloquea `Pagar y cerrar carrito` si no hay `cliente_id`.
 - `backend/handlers/carritos_compras.go` valida tambien en `action=pagar_estacion` que el carrito tenga cliente cuando la configuracion exige cliente, evitando saltarse la regla desde consola.
 - El preset global de carrito mantiene `cliente_obligatorio_pago=false` por defecto para no romper empresas existentes.
+
+2026-05-20: Modulo de datáfonos POS multiempresa
+- Se agrega `backend/db/datafonos.go` con tablas `empresa_datafonos_config` y `empresa_datafonos_transacciones`, aisladas por `empresa_id`, para configurar Redeban, CredibanCo, Bold y BBVA y auditar cada solicitud/confirmacion.
+- Se agrega `backend/handlers/datafonos.go` con `/api/empresa/datafonos`, protegido por permisos de ventas, para listar proveedores, guardar configuracion, iniciar pagos y consultar confirmaciones.
+- La autenticacion de proveedor se resuelve mediante referencias seguras `env:*`; las claves reales no se almacenan ni se registran en logs.
+- La confirmacion del datáfono valida estado, monto y referencia antes de aplicar el pago al carrito/caja del usuario mediante el flujo POS existente.
+- Validacion ejecutada: `go test -count=1 ./db ./handlers`.
 
 2026-05-19: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

@@ -1,3 +1,13 @@
+- 2026-05-20: `Datáfonos POS multiempresa` agrega backend Go para configurar Redeban, CredibanCo, Bold y BBVA por empresa, iniciar/consultar pagos HTTP/JSON con endpoints contractuales, validar monto/referencia y aplicar confirmaciones aprobadas al carrito/caja del usuario. Las claves se referencian con `env:*`, sin dependencias nuevas.
+
+- 2026-05-20: `Pagos QR en carrito` agrega configuracion de cuentas receptoras para Bre-B, Nequi u otros proveedores y boton `QR de pago` en el carrito. El QR se genera localmente con `/vendor/qrcode.min.js`, puede usar payload oficial/plantilla del proveedor con placeholders y registra el cobro como transferencia bancaria con referencia automatica, sin tablas ni dependencias nuevas.
+
+- 2026-05-20: `Facturacion offline para carritos` agrega modo activable por empresa para cerrar e imprimir ventas sin internet, guardar cola local y sincronizar luego por `/api/empresa/offline_ventas`; actualiza carrito, inventario, caja del usuario, metricas y documento de venta sin mezclar varias cajas de la misma empresa.
+
+- 2026-05-19: `Codigos de descuento` agrega acciones por cupon para enviar por correo con SMTP configurado y compartir por WhatsApp con mensaje listo; mantiene permisos existentes, modo de prueba de correos y aislamiento por empresa.
+
+- 2026-05-19: `Backups empresariales` agrega reinicio seguro de datos operativos por fecha o todos los tiempos, con previsualizacion, backup previo opcional, confirmacion exacta y proteccion de configuracion, usuarios, permisos, impresoras, integraciones y preferencias del sistema.
+
 - 2026-05-19: `Codigos de descuento y asesor` deja los cupones del carrito como consumo unico por empresa, sin liberar cupo al anular/reabrir ventas, y hace que la promocion por codigo de asesor en checkout de licencias solo aplique una vez por empresa cuando la promocion global tenga porcentaje activo.
 
 - 2026-05-19: `Reporte de turno POS` compacta el ticket 80mm usando dos columnas en datos del turno, resumen financiero y detalle de ventas, reduciendo longitud del comprobante sin cambiar datos ni endpoints.

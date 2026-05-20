@@ -218,6 +218,60 @@
           </div>
         </div>
 
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgFacturacionOffline" type="checkbox">
+              Permitir facturacion offline si se cae internet
+            </label>
+            <div class="form-help">Cuando esta activo, el cajero puede cerrar la cuenta en modo sin internet; el sistema guarda la venta en este equipo y la sincroniza cuando vuelva la conexion, respetando la caja del usuario.</div>
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMarcaOffline" type="checkbox" checked>
+              Marcar factura offline como pendiente de sincronizar
+            </label>
+            <div class="form-help">Por defecto el soporte impreso queda identificado como provisional/offline hasta que el sistema sincronice la venta.</div>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Pagos por QR</h3>
+              <p class="form-help mt-0">Configura las cuentas receptoras donde llegara el dinero de Bre-B, Nequi u otro QR bancario.</p>
+            </div>
+            <button id="btnAgregarCuentaQR" type="button" class="btn secondary">Agregar cuenta</button>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPagoQR" type="checkbox">
+                Mostrar pago por QR en el carrito
+              </label>
+              <div class="form-help">El cobro se registra como transferencia bancaria con una referencia automatica; el cajero debe verificar el abono antes de pagar y cerrar.</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="empresa-table qr-accounts-table">
+              <thead>
+                <tr>
+                  <th>Activa</th>
+                  <th>Nombre</th>
+                  <th>Proveedor</th>
+                  <th>Llave / cuenta</th>
+                  <th>Comercio</th>
+                  <th>Payload oficial / plantilla</th>
+                  <th>Instrucciones</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="qrAccountsTableBody"></tbody>
+            </table>
+          </div>
+          <p class="form-help">Puedes usar placeholders en el payload oficial: {valor}, {referencia}, {llave}, {comercio}, {empresa_id}, {carrito_id}, {carrito_codigo}. Si el proveedor entrega un QR estatico o una plantilla EMV/API, pegala aqui.</p>
+        </div>
+
         <p class="form-help">Las estaciones individuales pueden heredar esta configuración o sobrescribirla desde la pantalla de configuración de estaciones.</p>
       </div>
 
@@ -263,6 +317,59 @@
       box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
     }
 
+    function normalizeText(value) {
+      return String(value == null ? '' : value).trim();
+    }
+
+    function paymentQrProviderLabel(provider) {
+      const p = normalizeText(provider).toLowerCase();
+      if (p === 'nequi') return 'Nequi';
+      if (p === 'breb') return 'Bre-B';
+      return 'Otro';
+    }
+
+    function normalizeQrAccounts(raw, fallback) {
+      const rows = Array.isArray(raw) ? raw : [];
+      const normalized = [];
+      rows.forEach(function(item, index) {
+        if (!item || typeof item !== 'object') return;
+        let provider = normalizeText(item.proveedor || item.provider || 'breb').toLowerCase();
+        if (provider !== 'breb' && provider !== 'nequi' && provider !== 'otro') provider = 'breb';
+        const key = normalizeText(item.llave || item.cuenta || item.key || '');
+        const payload = normalizeText(item.payload_oficial || item.officialPayload || item.qr_payload || '');
+        const name = normalizeText(item.nombre || item.name || item.alias || '');
+        if (!key && !payload && !name) return;
+        normalized.push({
+          id: normalizeText(item.id || item.codigo || '') || ('qr_account_' + String(index + 1)),
+          nombre: name || paymentQrProviderLabel(provider),
+          proveedor: provider,
+          llave: key,
+          comercio: normalizeText(item.comercio || item.merchant || ''),
+          payload_oficial: payload,
+          instrucciones: normalizeText(item.instrucciones || item.instructions || ''),
+          activa: item.activa === undefined && item.active === undefined ? true : !!(item.activa !== undefined ? item.activa : item.active)
+        });
+      });
+      if (!normalized.length && fallback) {
+        const provider = normalizeText(fallback.pago_qr_proveedor || 'breb').toLowerCase() || 'breb';
+        const key = normalizeText(fallback.pago_qr_llave || '');
+        const payload = normalizeText(fallback.pago_qr_payload_oficial || '');
+        if (key || payload) {
+          normalized.push({
+            id: 'qr_legacy_account',
+            nombre: normalizeText(fallback.pago_qr_comercio || '') || paymentQrProviderLabel(provider),
+            proveedor: provider === 'nequi' || provider === 'otro' ? provider : 'breb',
+            llave: key,
+            comercio: normalizeText(fallback.pago_qr_comercio || ''),
+            payload_oficial: payload,
+            instrucciones: normalizeText(fallback.pago_qr_instrucciones || ''),
+            activa: true
+          });
+        }
+      }
+      return normalized;
+    }
+
     function defaultUnifiedCartConfig() {
       return {
         modo_pantalla_tactil: false,
@@ -291,7 +398,16 @@
         mostrar_control_electrico_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
-        mostrar_tarjeta_vip_cliente: true
+        mostrar_tarjeta_vip_cliente: true,
+        facturacion_offline_habilitada: false,
+        marcar_factura_offline_pendiente: true,
+        pago_qr_habilitado: false,
+        pago_qr_proveedor: 'breb',
+        pago_qr_llave: '',
+        pago_qr_comercio: '',
+        pago_qr_payload_oficial: '',
+        pago_qr_instrucciones: '',
+        pago_qr_cuentas: []
       };
     }
 
@@ -325,7 +441,18 @@
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : !!src.mostrar_control_electrico_carrito,
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : !!src.mostrar_tarjeta_valores_pago,
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : !!src.mostrar_tarjeta_comision,
-        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente
+        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente,
+        facturacion_offline_habilitada: src.facturacion_offline_habilitada === undefined
+          ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : !!src.permitir_facturacion_offline)
+          : !!src.facturacion_offline_habilitada,
+        marcar_factura_offline_pendiente: src.marcar_factura_offline_pendiente === undefined ? base.marcar_factura_offline_pendiente : !!src.marcar_factura_offline_pendiente,
+        pago_qr_habilitado: src.pago_qr_habilitado === undefined ? base.pago_qr_habilitado : !!src.pago_qr_habilitado,
+        pago_qr_proveedor: normalizeText(src.pago_qr_proveedor || base.pago_qr_proveedor).toLowerCase() || base.pago_qr_proveedor,
+        pago_qr_llave: normalizeText(src.pago_qr_llave || ''),
+        pago_qr_comercio: normalizeText(src.pago_qr_comercio || ''),
+        pago_qr_payload_oficial: normalizeText(src.pago_qr_payload_oficial || ''),
+        pago_qr_instrucciones: normalizeText(src.pago_qr_instrucciones || ''),
+        pago_qr_cuentas: normalizeQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src)
       };
     }
 
@@ -434,6 +561,89 @@
       return normalizeUnifiedCartConfig(parsed.carrito_ui_global);
     }
 
+    function renderQrAccounts(accounts) {
+      const tbody = document.getElementById('qrAccountsTableBody');
+      if (!tbody) return;
+      const rows = normalizeQrAccounts(accounts, null);
+      tbody.innerHTML = '';
+      if (!rows.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="8" class="form-help">Sin cuentas receptoras. Agrega al menos una cuenta Bre-B, Nequi u otro proveedor.</td>';
+        tbody.appendChild(tr);
+        return;
+      }
+      rows.forEach(function(account, index) {
+        const tr = document.createElement('tr');
+        tr.dataset.qrAccountIndex = String(index);
+        tr.innerHTML = '' +
+          '<td><input type="checkbox" data-qr-field="activa" ' + (account.activa ? 'checked' : '') + '></td>' +
+          '<td><input class="form-input" data-qr-field="nombre" value="' + escapeAttr(account.nombre) + '" placeholder="Ej: Cuenta caja principal"></td>' +
+          '<td><select class="form-input" data-qr-field="proveedor">' +
+            '<option value="breb">Bre-B</option>' +
+            '<option value="nequi">Nequi</option>' +
+            '<option value="otro">Otro</option>' +
+          '</select></td>' +
+          '<td><input class="form-input" data-qr-field="llave" value="' + escapeAttr(account.llave) + '" placeholder="Celular, correo, documento o cuenta"></td>' +
+          '<td><input class="form-input" data-qr-field="comercio" value="' + escapeAttr(account.comercio) + '" placeholder="Nombre del comercio"></td>' +
+          '<td><textarea class="form-input" rows="2" data-qr-field="payload_oficial" placeholder="Payload/plantilla oficial">' + escapeHtmlText(account.payload_oficial) + '</textarea></td>' +
+          '<td><textarea class="form-input" rows="2" data-qr-field="instrucciones" placeholder="Ej: confirma en la app antes de cerrar">' + escapeHtmlText(account.instrucciones) + '</textarea></td>' +
+          '<td><button type="button" class="btn danger btn-remove-qr-account">Eliminar</button></td>';
+        tbody.appendChild(tr);
+        const provider = tr.querySelector('[data-qr-field="proveedor"]');
+        if (provider) provider.value = account.proveedor;
+      });
+    }
+
+    function escapeHtmlText(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(value) {
+      return escapeHtmlText(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function readQrAccounts() {
+      const tbody = document.getElementById('qrAccountsTableBody');
+      if (!tbody) return [];
+      const rows = Array.from(tbody.querySelectorAll('tr[data-qr-account-index]'));
+      return normalizeQrAccounts(rows.map(function(tr, index) {
+        const read = function(field) {
+          const el = tr.querySelector('[data-qr-field="' + field + '"]');
+          if (!el) return '';
+          if (el.type === 'checkbox') return el.checked;
+          return el.value;
+        };
+        return {
+          id: 'qr_account_' + String(index + 1),
+          activa: read('activa'),
+          nombre: read('nombre'),
+          proveedor: read('proveedor'),
+          llave: read('llave'),
+          comercio: read('comercio'),
+          payload_oficial: read('payload_oficial'),
+          instrucciones: read('instrucciones')
+        };
+      }), null);
+    }
+
+    function addQrAccount(account) {
+      const current = readQrAccounts();
+      current.push(account || {
+        id: 'qr_account_' + String(current.length + 1),
+        activa: true,
+        nombre: 'Cuenta QR ' + String(current.length + 1),
+        proveedor: 'breb',
+        llave: '',
+        comercio: '',
+        payload_oficial: '',
+        instrucciones: ''
+      });
+      renderQrAccounts(current);
+    }
+
     function applyConfig(cfg) {
       const normalized = normalizeUnifiedCartConfig(cfg);
       document.getElementById('carritoCfgModoTactil').checked = !!normalized.modo_pantalla_tactil;
@@ -463,6 +673,10 @@
       document.getElementById('carritoCfgPagoMixto').checked = !!normalized.permitir_pago_mixto;
       document.getElementById('carritoCfgResumenTotales').checked = !!normalized.mostrar_resumen_totales_carrito;
       document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
+      document.getElementById('carritoCfgFacturacionOffline').checked = !!normalized.facturacion_offline_habilitada;
+      document.getElementById('carritoCfgMarcaOffline').checked = !!normalized.marcar_factura_offline_pendiente;
+      document.getElementById('carritoCfgPagoQR').checked = !!normalized.pago_qr_habilitado;
+      renderQrAccounts(normalized.pago_qr_cuentas);
       return normalized;
     }
 
@@ -498,7 +712,11 @@
           'carritoCfgComision',
           'carritoCfgPagoMixto',
           'carritoCfgResumenTotales',
-          'carritoCfgDesgloseCobro'
+          'carritoCfgDesgloseCobro',
+          'carritoCfgFacturacionOffline',
+          'carritoCfgMarcaOffline',
+          'carritoCfgPagoQR',
+          'btnAgregarCuentaQR'
         ].forEach(function(id) {
           var el = document.getElementById(id);
           if (el) el.disabled = true;
@@ -543,7 +761,11 @@
           mostrar_comision: document.getElementById('carritoCfgComision').checked,
           permitir_pago_mixto: document.getElementById('carritoCfgPagoMixto').checked,
           mostrar_resumen_totales_carrito: document.getElementById('carritoCfgResumenTotales').checked,
-          mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked
+          mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked,
+          facturacion_offline_habilitada: document.getElementById('carritoCfgFacturacionOffline').checked,
+          marcar_factura_offline_pendiente: document.getElementById('carritoCfgMarcaOffline').checked,
+          pago_qr_habilitado: document.getElementById('carritoCfgPagoQR').checked,
+          pago_qr_cuentas: readQrAccounts()
         });
         const stored = await saveConfig(cfg);
         applyConfig(stored);
@@ -552,6 +774,26 @@
         setMessage(err.message || 'No se pudo guardar la configuracion.', 'error');
       }
     });
+
+    const btnAgregarCuentaQR = document.getElementById('btnAgregarCuentaQR');
+    if (btnAgregarCuentaQR) {
+      btnAgregarCuentaQR.addEventListener('click', function() {
+        addQrAccount();
+      });
+    }
+
+    const qrAccountsTableBody = document.getElementById('qrAccountsTableBody');
+    if (qrAccountsTableBody) {
+      qrAccountsTableBody.addEventListener('click', function(ev) {
+        const btn = ev.target.closest('.btn-remove-qr-account');
+        if (!btn) return;
+        const tr = btn.closest('tr[data-qr-account-index]');
+        if (!tr) return;
+        tr.remove();
+        const rows = readQrAccounts();
+        renderQrAccounts(rows);
+      });
+    }
 
     document.getElementById('btnGuardarVisibilidadPagoCarrito').addEventListener('click', function() {
       document.getElementById('btnGuardarConfigCarrito').click();

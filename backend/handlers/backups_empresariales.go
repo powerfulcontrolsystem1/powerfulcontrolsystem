@@ -34,6 +34,10 @@ type empresaBackupRestorePayload struct {
 type empresaBackupPurgePayload struct {
 	EmpresaID          int64    `json:"empresa_id"`
 	FechaCorte         string   `json:"fecha_corte"`
+	Modo               string   `json:"modo"`
+	TodosLosTiempos    bool     `json:"todos_los_tiempos"`
+	DryRun             bool     `json:"dry_run"`
+	Confirmacion       string   `json:"confirmacion"`
 	IncludeTables      []string `json:"include_tables"`
 	ExcludeTables      []string `json:"exclude_tables"`
 	UsuarioCreador     string   `json:"usuario_creador"`
@@ -81,6 +85,8 @@ func empresaBackupsNormalizeAction(raw string) string {
 		return "importar_configuracion"
 	case "depurar_fecha", "purgar_fecha", "eliminar_hasta_fecha", "depurar_hasta_fecha":
 		return "depurar_fecha"
+	case "reset_operativo", "reiniciar_operacion", "limpiar_operacion", "reiniciar_datos", "limpiar_datos_operativos":
+		return "reset_operativo"
 	case "enviar_email", "email", "send_email":
 		return "enviar_email"
 	case "activar":
@@ -226,6 +232,9 @@ func EmpresaBackupsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			case "depurar_fecha":
 				empresaBackupsHandlePurgeByDate(w, r, dbEmp)
 				return
+			case "reset_operativo":
+				empresaBackupsHandleOperationalReset(w, r, dbEmp)
+				return
 			case "enviar_email":
 				empresaBackupsHandleSendEmail(w, r, dbEmp, dbSuper)
 				return
@@ -240,6 +249,9 @@ func EmpresaBackupsHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				return
 			case "depurar_fecha":
 				empresaBackupsHandlePurgeByDate(w, r, dbEmp)
+				return
+			case "reset_operativo":
+				empresaBackupsHandleOperationalReset(w, r, dbEmp)
 				return
 			case "activar", "desactivar":
 				empresaBackupsHandleToggle(w, r, dbEmp, action)
@@ -971,6 +983,103 @@ func empresaBackupsHandlePurgeByDate(w http.ResponseWriter, r *http.Request, dbE
 		"resultado":            result,
 		"backup_previo":        backupPrevio,
 		"backup_previo_creado": backupPrevio != nil,
+	})
+}
+
+func empresaBackupsHandleOperationalReset(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB) {
+	empresaID, err := parseEmpresaIDQuery(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var payload empresaBackupPurgePayload
+	if err := empresaBackupsDecodeBodyJSON(r, &payload); err != nil && err != io.EOF {
+		http.Error(w, "payload JSON invalido", http.StatusBadRequest)
+		return
+	}
+	if payload.EmpresaID > 0 && payload.EmpresaID != empresaID {
+		http.Error(w, "empresa_id no coincide con el contexto", http.StatusBadRequest)
+		return
+	}
+	if len(payload.IncludeTables) == 0 {
+		payload.IncludeTables = parseCSVStrings(r.URL.Query().Get("include_tables"))
+	}
+	if len(payload.ExcludeTables) == 0 {
+		payload.ExcludeTables = parseCSVStrings(r.URL.Query().Get("exclude_tables"))
+	}
+
+	mode := strings.ToLower(strings.TrimSpace(payload.Modo))
+	allTime := payload.TodosLosTiempos || mode == "todos" || mode == "all" || mode == "todos_los_tiempos"
+	fechaCorte := ""
+	if !allTime {
+		fechaCorteRaw := strings.TrimSpace(payload.FechaCorte)
+		if fechaCorteRaw == "" {
+			fechaCorteRaw = strings.TrimSpace(r.URL.Query().Get("fecha_corte"))
+		}
+		fechaCorte, err = empresaBackupsNormalizeFechaCorte(fechaCorteRaw)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	usuario := empresaBackupsUsuarioFromRequest(r, payload.UsuarioCreador)
+	expectedConfirmation := fmt.Sprintf("REINICIAR EMPRESA %d", empresaID)
+	if !payload.DryRun && strings.TrimSpace(payload.Confirmacion) != expectedConfirmation {
+		http.Error(w, "confirmacion requerida: escriba "+expectedConfirmation, http.StatusBadRequest)
+		return
+	}
+
+	var backupPrevio *dbpkg.EmpresaBackup
+	if !payload.DryRun {
+		crearBackupPrevio := true
+		if payload.CrearBackupPrevio != nil {
+			crearBackupPrevio = *payload.CrearBackupPrevio
+		}
+		if crearBackupPrevio {
+			nombreBackup := strings.TrimSpace(payload.NombreBackupPrevio)
+			if nombreBackup == "" {
+				nombreBackup = fmt.Sprintf("Backup previo a reinicio operativo %s", time.Now().In(time.Local).Format("2006-01-02 15:04:05"))
+			}
+			obsBackup := strings.TrimSpace(payload.Observaciones)
+			if obsBackup == "" {
+				obsBackup = "backup automatico antes de reiniciar datos operativos"
+			}
+			backupID, backupErr := dbpkg.CreateEmpresaBackupSnapshot(dbEmp, empresaID, nombreBackup, obsBackup, usuario, dbpkg.EmpresaBackupBuildOptions{
+				CreatedBy: usuario,
+			})
+			if backupErr != nil {
+				http.Error(w, "No se pudo crear backup previo al reinicio operativo", http.StatusInternalServerError)
+				return
+			}
+			backupPrevio, _ = dbpkg.GetEmpresaBackupByID(dbEmp, empresaID, backupID, false)
+		}
+	}
+
+	result, err := dbpkg.ResetEmpresaOperationalData(dbEmp, empresaID, dbpkg.EmpresaOperationalResetOptions{
+		FechaCorte:    fechaCorte,
+		AllTime:       allTime,
+		DryRun:        payload.DryRun,
+		IncludeTables: payload.IncludeTables,
+		ExcludeTables: payload.ExcludeTables,
+	})
+	if err != nil {
+		http.Error(w, "No se pudo reiniciar datos operativos", http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":                   true,
+		"empresa_id":           empresaID,
+		"action":               "reset_operativo",
+		"dry_run":              payload.DryRun,
+		"modo":                 result.Modo,
+		"confirmacion":         expectedConfirmation,
+		"resultado":            result,
+		"backup_previo":        backupPrevio,
+		"backup_previo_creado": backupPrevio != nil,
+		"ejecutado_por":        usuario,
 	})
 }
 

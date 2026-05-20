@@ -175,6 +175,15 @@
       return String(v == null ? '' : v).trim();
     }
 
+    function esc(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function toNumber(v, fallback) {
       const n = Number(v);
       return Number.isFinite(n) ? n : fallback;
@@ -269,6 +278,69 @@
         return 'Sin reglas avanzadas';
       }
       return parts.join(' | ');
+    }
+
+    function codigoShareUrl(item) {
+      const url = new URL('/administrar_empresa/codigos_de_descuento.html', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('q', normalize(item.codigo));
+      return url.toString();
+    }
+
+    function buildCodigoShareMessage(item) {
+      const lines = [
+        'Código de descuento: ' + normalize(item.codigo),
+        'Descuento: ' + formatValor(item),
+        'Compra mínima: ' + (toNumber(item.monto_minimo_compra, 0) > 0 ? ((normalize(item.moneda) || 'COP') + ' ' + toNumber(item.monto_minimo_compra, 0).toFixed(2)) : 'Sin mínimo'),
+        'Vigencia: ' + formatBackendDate(item.fecha_vencimiento),
+        'Usos disponibles: ' + Math.max(0, Number(item.usos_maximos || 0) - Number(item.usos_actuales || 0)) + ' de ' + Number(item.usos_maximos || 1)
+      ];
+      const reglas = formatReglas(item);
+      if (reglas && reglas !== 'Sin reglas avanzadas') {
+        lines.push('Reglas: ' + reglas);
+      }
+      lines.push('Enlace: ' + codigoShareUrl(item));
+      return lines.join('\n');
+    }
+
+    function compartirCodigoWhatsApp(item) {
+      if (!item) return;
+      const href = 'https://wa.me/?text=' + encodeURIComponent(buildCodigoShareMessage(item));
+      window.open(href, '_blank', 'noopener,noreferrer');
+    }
+
+    async function enviarCodigoPorCorreo(item) {
+      if (!item) return;
+      const correo = window.prompt('Correo destino para enviar el código:', '');
+      if (correo === null) return;
+      const email = normalize(correo).toLowerCase();
+      if (!email) {
+        setMessage('El correo destino es obligatorio.', true);
+        return;
+      }
+      const nombre = window.prompt('Nombre del destinatario (opcional):', '');
+      if (nombre === null) return;
+      const mensaje = window.prompt('Mensaje adicional (opcional):', '');
+      if (mensaje === null) return;
+
+      try {
+        setMessage('Enviando código por correo...', false);
+        const res = await fetch('/api/empresa/codigos_de_descuento?action=enviar_correo&empresa_id=' + encodeURIComponent(String(state.empresaID)) + '&id=' + encodeURIComponent(String(item.id || 0)), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            id: Number(item.id || 0),
+            email: email,
+            nombre_destinatario: normalize(nombre),
+            mensaje: normalize(mensaje)
+          })
+        });
+        await ensureOk(res);
+        setMessage('Código enviado por correo a ' + email + '.', false);
+      } catch (err) {
+        setMessage(err.message || 'No se pudo enviar el código por correo', true);
+      }
     }
 
     function resetForm(hide) {
@@ -380,6 +452,8 @@
           '<td>' + estado + '</td>' +
           '<td class="actions">' +
           '<button class="edit btn secondary" data-id="' + Number(item.id || 0) + '">Editar</button> ' +
+          '<button class="email-code btn secondary" data-id="' + Number(item.id || 0) + '">Enviar correo</button> ' +
+          '<button class="wa-code btn secondary" data-id="' + Number(item.id || 0) + '">WhatsApp</button> ' +
           '<button class="toggle btn" data-id="' + Number(item.id || 0) + '" data-estado="' + estado + '">' + toggleText + '</button> ' +
           '<button class="del btn danger" data-id="' + Number(item.id || 0) + '">Eliminar</button>' +
           '</td>';
@@ -414,6 +488,24 @@
           } catch (err) {
             setMessage(err.message || 'No se pudo actualizar el estado', true);
           }
+        };
+      });
+
+      document.querySelectorAll('.email-code').forEach(function(btn) {
+        btn.onclick = async function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.codigos.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+          await enviarCodigoPorCorreo(item);
+        };
+      });
+
+      document.querySelectorAll('.wa-code').forEach(function(btn) {
+        btn.onclick = function() {
+          const id = Number(btn.getAttribute('data-id'));
+          const item = state.codigos.find(function(x) { return Number(x.id) === id; });
+          if (!item) return;
+          compartirCodigoWhatsApp(item);
         };
       });
 

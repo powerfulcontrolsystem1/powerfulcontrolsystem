@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Carrito de compras</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page">
@@ -214,6 +215,7 @@
           <button type="button" id="carritoBtnTaxi" class="btn secondary">Taxi</button>
           <button type="button" id="carritoBtnClientes" class="btn secondary">Clientes</button>
           <button type="button" id="carritoBtnAbonos" class="btn secondary">Abonos</button>
+          <button type="button" id="carritoBtnPagoQR" class="btn secondary">QR de pago</button>
           <button type="button" id="carritoBtnVehiculo" class="btn secondary">Vehículo</button>
         </div>
         <div id="carritoTarifaPanel" class="empresa-section mt-10 is-hidden" hidden>
@@ -454,6 +456,31 @@
         </div>
       </section>
 
+      <section id="stationPaymentQrCard" class="card empresa-section carrito-payment-qr-card is-hidden mt-12" hidden>
+        <div class="empresa-section-header compact">
+          <div>
+            <h3 class="section-heading">Pago por QR</h3>
+            <p id="paymentQrSubtitle" class="form-help mt-0">Genera un QR para recibir el pago por Bre-B o Nequi.</p>
+          </div>
+          <div class="form-actions actions-wrap-gap-10">
+            <button type="button" id="paymentQrGenerateBtn" class="btn secondary">Generar QR</button>
+            <button type="button" id="paymentQrUseBtn" class="btn primary">Usar como pago</button>
+          </div>
+        </div>
+        <div class="carrito-payment-qr-layout">
+          <div class="carrito-payment-qr-canvas-wrap">
+            <canvas id="paymentQrCanvas" width="220" height="220" aria-label="Codigo QR de pago"></canvas>
+          </div>
+          <div class="carrito-payment-qr-details">
+            <label class="form-label" for="paymentQrAccountSelect">Cuenta que recibe el dinero</label>
+            <select id="paymentQrAccountSelect" class="form-input"></select>
+            <div id="paymentQrMeta" class="carrito-payment-qr-meta"></div>
+            <div id="paymentQrPayloadPreview" class="form-help carrito-payment-qr-preview"></div>
+            <div id="paymentQrStatus" class="form-help mt-8"></div>
+          </div>
+        </div>
+      </section>
+
       <section id="stationWorkerCommissionCard" class="card empresa-section carrito-worker-card is-hidden mt-12" hidden>
         <div class="empresa-section-header compact">
           <h3 class="section-heading">Lavador</h3>
@@ -683,6 +710,15 @@
       },
       paymentInProgress: false,
       stationPaymentNotice: null,
+      paymentQr: {
+        open: false,
+        reference: '',
+        payload: '',
+        amount: 0,
+        provider: '',
+        carritoID: 0,
+        accountKey: ''
+      },
       paymentAmountsManual: false,
       cashReceivedAmount: 0,
       paymentAmounts: {
@@ -690,6 +726,10 @@
         tarjeta_debito: 0,
         tarjeta_credito: 0,
         transferencia_bancaria: 0
+      },
+      offlineVentas: {
+        lastOnline: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
+        syncing: false
       }
     };
 
@@ -1193,8 +1233,59 @@
         mostrar_control_electrico_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
-        mostrar_tarjeta_vip_cliente: true
+        mostrar_tarjeta_vip_cliente: true,
+        facturacion_offline_habilitada: false,
+        marcar_factura_offline_pendiente: true,
+        pago_qr_habilitado: false,
+        pago_qr_proveedor: 'breb',
+        pago_qr_llave: '',
+        pago_qr_comercio: '',
+        pago_qr_payload_oficial: '',
+        pago_qr_instrucciones: '',
+        pago_qr_cuentas: []
       };
+    }
+
+    function normalizePaymentQrAccounts(raw, fallback) {
+      const rows = Array.isArray(raw) ? raw : [];
+      const normalized = [];
+      rows.forEach(function(item, index) {
+        if (!item || typeof item !== 'object') return;
+        let provider = normalize(item.proveedor || item.provider || 'breb').toLowerCase();
+        if (provider !== 'breb' && provider !== 'nequi' && provider !== 'otro') provider = 'breb';
+        const key = normalize(item.llave || item.cuenta || item.account || item.key || '');
+        const officialPayload = normalize(item.payload_oficial || item.officialPayload || item.qr_payload || '');
+        const name = normalize(item.nombre || item.name || item.alias || '');
+        if (!key && !officialPayload && !name) return;
+        normalized.push({
+          id: normalize(item.id || item.codigo || '') || ('qr_account_' + String(index + 1)),
+          nombre: name || paymentQrProviderLabel(provider),
+          proveedor: provider,
+          llave: key,
+          comercio: normalize(item.comercio || item.merchant || ''),
+          payload_oficial: officialPayload,
+          instrucciones: normalize(item.instrucciones || item.instructions || ''),
+          activa: item.activa === undefined && item.active === undefined ? true : Boolean(item.activa !== undefined ? item.activa : item.active)
+        });
+      });
+      if (!normalized.length && fallback) {
+        const provider = normalize(fallback.pago_qr_proveedor || 'breb').toLowerCase() || 'breb';
+        const key = normalize(fallback.pago_qr_llave || '');
+        const payload = normalize(fallback.pago_qr_payload_oficial || '');
+        if (key || payload) {
+          normalized.push({
+            id: 'qr_legacy_account',
+            nombre: fallback.pago_qr_comercio || paymentQrProviderLabel(provider),
+            proveedor: provider === 'nequi' || provider === 'otro' ? provider : 'breb',
+            llave: key,
+            comercio: normalize(fallback.pago_qr_comercio || ''),
+            payload_oficial: payload,
+            instrucciones: normalize(fallback.pago_qr_instrucciones || ''),
+            activa: true
+          });
+        }
+      }
+      return normalized;
     }
 
     function normalizeUnifiedCartUIConfig(raw) {
@@ -1227,7 +1318,18 @@
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : Boolean(src.mostrar_control_electrico_carrito),
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : Boolean(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : Boolean(src.mostrar_tarjeta_comision),
-        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente)
+        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente),
+        facturacion_offline_habilitada: src.facturacion_offline_habilitada === undefined
+          ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : Boolean(src.permitir_facturacion_offline))
+          : Boolean(src.facturacion_offline_habilitada),
+        marcar_factura_offline_pendiente: src.marcar_factura_offline_pendiente === undefined ? base.marcar_factura_offline_pendiente : Boolean(src.marcar_factura_offline_pendiente),
+        pago_qr_habilitado: src.pago_qr_habilitado === undefined ? base.pago_qr_habilitado : Boolean(src.pago_qr_habilitado),
+        pago_qr_proveedor: normalize(src.pago_qr_proveedor || base.pago_qr_proveedor).toLowerCase() || base.pago_qr_proveedor,
+        pago_qr_llave: normalize(src.pago_qr_llave || ''),
+        pago_qr_comercio: normalize(src.pago_qr_comercio || ''),
+        pago_qr_payload_oficial: normalize(src.pago_qr_payload_oficial || ''),
+        pago_qr_instrucciones: normalize(src.pago_qr_instrucciones || ''),
+        pago_qr_cuentas: normalizePaymentQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src)
       };
     }
 
@@ -1574,6 +1676,12 @@
             panel.style.display = 'none';
           }
         }
+      }
+      const btnPagoQR = document.getElementById('carritoBtnPagoQR');
+      if (btnPagoQR) {
+        const showPagoQR = Boolean(ui.pago_qr_habilitado) && (state.stationMode || state.directSaleMode);
+        btnPagoQR.style.display = showPagoQR ? '' : 'none';
+        btnPagoQR.hidden = !showPagoQR;
       }
 
       const itemCatalogSearchRow = document.getElementById('itemCatalogSearchRow');
@@ -2760,6 +2868,245 @@
       renderCashReceivedChange(carrito);
     }
 
+    function getPaymentQrConfig() {
+      const cfg = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
+      let provider = normalize(cfg.pago_qr_proveedor || 'breb').toLowerCase();
+      if (provider !== 'breb' && provider !== 'nequi' && provider !== 'otro') provider = 'breb';
+      const accounts = normalizePaymentQrAccounts(cfg.pago_qr_cuentas, cfg).filter(function(account) {
+        return account.activa !== false;
+      });
+      return {
+        enabled: Boolean(cfg.pago_qr_habilitado),
+        provider: provider,
+        key: normalize(cfg.pago_qr_llave || ''),
+        merchant: normalize(cfg.pago_qr_comercio || ''),
+        officialPayload: normalize(cfg.pago_qr_payload_oficial || ''),
+        instructions: normalize(cfg.pago_qr_instrucciones || ''),
+        accounts: accounts
+      };
+    }
+
+    function getSelectedPaymentQrAccount(cfg) {
+      const accounts = Array.isArray(cfg && cfg.accounts) ? cfg.accounts : [];
+      if (!accounts.length) {
+        return {
+          id: 'qr_default_account',
+          nombre: cfg.merchant || paymentQrProviderLabel(cfg.provider),
+          proveedor: cfg.provider,
+          llave: cfg.key,
+          comercio: cfg.merchant,
+          payload_oficial: cfg.officialPayload,
+          instrucciones: cfg.instructions,
+          activa: true
+        };
+      }
+      const select = document.getElementById('paymentQrAccountSelect');
+      const selectedKey = normalize((select && select.value) || state.paymentQr.accountKey);
+      const found = accounts.find(function(account) {
+        return normalize(account.id) === selectedKey;
+      });
+      return found || accounts[0];
+    }
+
+    function paymentQrProviderLabel(provider) {
+      const p = normalize(provider).toLowerCase();
+      if (p === 'nequi') return 'Nequi';
+      if (p === 'breb') return 'Bre-B';
+      return 'QR';
+    }
+
+    function buildPaymentQrReference(carrito, account) {
+      const now = new Date();
+      const pad = function(n) { return String(n).padStart(2, '0'); };
+      const stamp = String(now.getFullYear()) + pad(now.getMonth() + 1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+      const cartPart = normalize(carrito && (carrito.codigo || carrito.nombre)) || ('CRT' + String(carrito && carrito.id || 0));
+      return ('QR-' + paymentQrProviderLabel(account && account.proveedor) + '-' + cartPart + '-' + stamp)
+        .replace(/\s+/g, '-')
+        .replace(/[^A-Za-z0-9_-]/g, '')
+        .slice(0, 80);
+    }
+
+    function applyQrTemplate(template, data) {
+      return String(template || '').replace(/\{([a-zA-Z0-9_]+)\}/g, function(_, key) {
+        return Object.prototype.hasOwnProperty.call(data, key) ? String(data[key]) : '';
+      });
+    }
+
+    function buildPaymentQrPayload(carrito, pay, account, reference) {
+      const amount = roundMoney(Number(pay && pay.totalPagarFinal || 0));
+      const provider = normalize(account && account.proveedor).toLowerCase() || 'breb';
+      const data = {
+        proveedor: paymentQrProviderLabel(provider),
+        provider: provider,
+        valor: amount.toFixed(2),
+        total: amount.toFixed(2),
+        moneda: normalize(carrito && carrito.moneda) || 'COP',
+        referencia: reference,
+        reference: reference,
+        empresa_id: String(state.empresaID || ''),
+        carrito_id: String(carrito && carrito.id || ''),
+        carrito_codigo: normalize(carrito && carrito.codigo) || '',
+        llave: normalize(account && account.llave),
+        cuenta: normalize(account && account.llave),
+        comercio: normalize(account && account.comercio) || normalize(account && account.nombre) || ('Empresa ' + String(state.empresaID || ''))
+      };
+      if (normalize(account && account.payload_oficial)) return applyQrTemplate(account.payload_oficial, data);
+      return JSON.stringify({
+        tipo: 'PCS_PAGO_QR',
+        proveedor: data.proveedor,
+        moneda: data.moneda,
+        valor: data.valor,
+        referencia: data.referencia,
+        llave: data.llave,
+        comercio: data.comercio,
+        empresa_id: Number(state.empresaID || 0),
+        carrito_id: Number(carrito && carrito.id || 0)
+      });
+    }
+
+    function ensurePaymentQrData(carrito, pay, cfg, account, force) {
+      const amount = roundMoney(Number(pay && pay.totalPagarFinal || 0));
+      const carritoID = Number(carrito && carrito.id || 0);
+      const accountKey = normalize(account && account.id);
+      if (!force && state.paymentQr.reference && state.paymentQr.provider === account.proveedor && state.paymentQr.accountKey === accountKey && state.paymentQr.carritoID === carritoID && Math.abs(Number(state.paymentQr.amount || 0) - amount) <= 0.01) {
+        return state.paymentQr;
+      }
+      const reference = buildPaymentQrReference(carrito, account);
+      const payload = buildPaymentQrPayload(carrito, pay, account, reference);
+      state.paymentQr = {
+        open: true,
+        reference: reference,
+        payload: payload,
+        amount: amount,
+        provider: account.proveedor,
+        carritoID: carritoID,
+        accountKey: accountKey
+      };
+      return state.paymentQr;
+    }
+
+    function setPaymentQrStatus(text, isError) {
+      const status = document.getElementById('paymentQrStatus');
+      if (!status) return;
+      status.textContent = text || '';
+      status.classList.toggle('value-negative', Boolean(isError));
+    }
+
+    function clearPaymentQrCanvas() {
+      const canvas = document.getElementById('paymentQrCanvas');
+      if (!canvas || !canvas.getContext) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function renderPaymentQrCard(carrito, pay, force) {
+      const card = document.getElementById('stationPaymentQrCard');
+      const button = document.getElementById('carritoBtnPagoQR');
+      const cfg = getPaymentQrConfig();
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const showButton = focusedSaleMode && cfg.enabled;
+      if (button) {
+        button.hidden = !showButton;
+        button.style.display = showButton ? '' : 'none';
+      }
+      const visible = showButton && state.paymentQr.open && Boolean(carrito);
+      if (card) {
+        card.classList.toggle('is-hidden', !visible);
+        card.hidden = !visible;
+        card.style.display = visible ? '' : 'none';
+      }
+      if (!visible) {
+        clearPaymentQrCanvas();
+        return;
+      }
+
+      const breakdown = pay || getStationPaymentBreakdown(carrito);
+      const account = getSelectedPaymentQrAccount(cfg);
+      const accountSelect = document.getElementById('paymentQrAccountSelect');
+      if (accountSelect) {
+        const accounts = Array.isArray(cfg.accounts) && cfg.accounts.length ? cfg.accounts : [account];
+        accountSelect.innerHTML = '';
+        accounts.forEach(function(row) {
+          const label = (normalize(row.nombre) || paymentQrProviderLabel(row.proveedor)) + ' · ' + paymentQrProviderLabel(row.proveedor) + (row.llave ? (' · ' + row.llave) : '');
+          accountSelect.appendChild(new Option(label, normalize(row.id)));
+        });
+        accountSelect.value = normalize(account.id);
+        accountSelect.disabled = accounts.length <= 1;
+      }
+      const qr = ensurePaymentQrData(carrito, breakdown, cfg, account, force);
+      const subtitle = document.getElementById('paymentQrSubtitle');
+      const meta = document.getElementById('paymentQrMeta');
+      const preview = document.getElementById('paymentQrPayloadPreview');
+      if (subtitle) {
+        subtitle.textContent = paymentQrProviderLabel(account.proveedor) + ' · ' + formatAmount(qr.amount, carrito.moneda) + ' · referencia ' + qr.reference;
+      }
+      if (meta) {
+        meta.innerHTML = '' +
+          '<div><strong>Cuenta:</strong> ' + escapeHtml(account.nombre || account.comercio || paymentQrProviderLabel(account.proveedor)) + '</div>' +
+          '<div><strong>Proveedor:</strong> ' + escapeHtml(paymentQrProviderLabel(account.proveedor)) + '</div>' +
+          '<div><strong>Valor:</strong> ' + escapeHtml(formatAmount(qr.amount, carrito.moneda)) + '</div>' +
+          '<div><strong>Referencia:</strong> ' + escapeHtml(qr.reference) + '</div>' +
+          (account.llave ? '<div><strong>Llave / cuenta:</strong> ' + escapeHtml(account.llave) + '</div>' : '') +
+          (account.instrucciones ? '<div><strong>Instrucciones:</strong> ' + escapeHtml(account.instrucciones) + '</div>' : '');
+      }
+      if (preview) {
+        preview.textContent = account.payload_oficial
+          ? 'QR generado con el payload oficial configurado para el proveedor.'
+          : 'QR operativo con valor, llave y referencia. Para que sea leído como QR bancario nativo, pega en configuración el payload oficial o la plantilla entregada por Bre-B/Nequi.';
+      }
+      if (!account.llave && !account.payload_oficial) {
+        clearPaymentQrCanvas();
+        setPaymentQrStatus('Configura al menos una cuenta receptora con llave/cuenta o payload oficial antes de generar QR.', true);
+        return;
+      }
+
+      if (typeof QRCode === 'undefined' || !QRCode || typeof QRCode.toCanvas !== 'function') {
+        clearPaymentQrCanvas();
+        setPaymentQrStatus('No se encontró el generador QR local. Revisa /vendor/qrcode.min.js.', true);
+        return;
+      }
+      const canvas = document.getElementById('paymentQrCanvas');
+      if (!canvas) return;
+      QRCode.toCanvas(canvas, qr.payload, { width: 220, margin: 1, errorCorrectionLevel: 'M' }, function(err) {
+        if (err) {
+          clearPaymentQrCanvas();
+          setPaymentQrStatus('No se pudo generar el QR: ' + (err.message || err), true);
+          return;
+        }
+        setPaymentQrStatus(account.payload_oficial ? 'QR listo para escanear desde la app del proveedor.' : 'QR listo. Confirma el pago recibido antes de cerrar el carrito.', false);
+      });
+    }
+
+    function applyPaymentQrToCheckout() {
+      const selected = getSelectedCarrito();
+      if (!selected) {
+        setPaymentQrStatus('Selecciona o carga un carrito antes de generar el QR.', true);
+        return;
+      }
+      const cfg = getPaymentQrConfig();
+      if (!cfg.enabled) {
+        setPaymentQrStatus('Activa el pago por QR en Configuracion > Carrito unificado.', true);
+        return;
+      }
+      const pay = getStationPaymentBreakdown(selected);
+      const account = getSelectedPaymentQrAccount(cfg);
+      if (!account.llave && !account.payload_oficial) {
+        setPaymentQrStatus('Configura una cuenta receptora para poder usar pago QR.', true);
+        return;
+      }
+      const qr = ensurePaymentQrData(selected, pay, cfg, account, false);
+      state.paymentAmountsManual = false;
+      state.stationDiscount.paymentMethod = 'transferencia_bancaria';
+      state.stationDiscount.paymentReference = qr.reference;
+      state.stationDiscount.mixedPayments = [];
+      const methodEl = document.getElementById('paymentMethod');
+      const refEl = document.getElementById('paymentReference');
+      if (methodEl) methodEl.value = 'transferencia_bancaria';
+      if (refEl) refEl.value = qr.reference;
+      renderStationPaymentPanel(selected);
+      setStationPaymentMessage('QR aplicado como transferencia bancaria. Verifica el abono en ' + paymentQrProviderLabel(account.proveedor) + ' antes de presionar Pagar y cerrar carrito.', false);
+    }
+
     function roundMoney(value) {
       return Math.round(Number(value || 0) * 100) / 100;
     }
@@ -3161,14 +3508,16 @@
             formatAmount(qty * pu, moneda)
           ];
         });
+        const offlineProvisional = Boolean(pay && pay.offlineProvisional);
+        const markOfflinePending = offlineProvisional && shouldMarkOfflineInvoicePending();
         const printed = printPCSPrintDocument({
-          title: 'Recibo de cobro',
+          title: markOfflinePending ? 'Factura provisional offline' : 'Recibo de cobro',
           kind: 'recibo',
           format: printFormat,
           logos: window.PCSPrint.resolveDocumentLogos(cfg),
           company: 'Empresa #' + String(state.empresaID || ''),
           subtitle: 'Carrito: ' + ((carrito && carrito.nombre) || '') + ' | Codigo: ' + ((carrito && carrito.codigo) || ''),
-          badge: printFormat.toUpperCase(),
+          badge: markOfflinePending ? 'OFFLINE' : printFormat.toUpperCase(),
           meta: [
             { label: 'Metodo', value: normalize(pay.paymentLabel || pay.paymentMethod || '') },
             { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') },
@@ -3179,7 +3528,7 @@
           rows: printRows,
           totalLabel: 'Total a pagar',
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
-          footer: 'Gracias por su compra.',
+          footer: markOfflinePending ? 'Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.' : 'Gracias por su compra.',
           signatures: false
         }, printTarget);
         if (!printed) setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
@@ -3195,7 +3544,8 @@
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Recibo de cobro</title>' +
         '<style>' + pageStyle + baseStyle + '</style>' +
         '</head><body>' +
-        '<h1>Recibo de cobro</h1>' +
+        '<h1>' + (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? 'Factura provisional offline' : 'Recibo de cobro') + '</h1>' +
+        (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p><strong>Estado:</strong> Pendiente de sincronizar</p>' : '') +
         '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' +
         '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || '') + '</p>' +
         '<p><strong>Formato:</strong> ' + escapeHtml(printFormat.toUpperCase()) + '</p>' +
@@ -3206,6 +3556,7 @@
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
         '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' +
         '<p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias: ' + escapeHtml(String(copias)) + '</p>' +
+        (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p class="muted">Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.</p>' : '') +
         '</body></html>';
 
       const printed = printHTMLDocument(html, printFormat === 'pos' ? 'width=320,height=720' : 'width=820,height=900', printTarget);
@@ -3331,6 +3682,222 @@
         createdAt: Date.now()
       } : null;
       writeStationPaymentMessage(message, isError);
+    }
+
+    function isOfflineBillingEnabled() {
+      const ui = getCurrentStationCartUIConfig();
+      return Boolean(ui && ui.facturacion_offline_habilitada);
+    }
+
+    function shouldMarkOfflineInvoicePending() {
+      const ui = getCurrentStationCartUIConfig();
+      return !ui || ui.marcar_factura_offline_pendiente !== false;
+    }
+
+    function updateOfflineFloatingNotice() {
+      let box = document.getElementById('offlineFloatingNotice');
+      const show = isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'offlineFloatingNotice';
+        box.setAttribute('role', 'status');
+        box.style.position = 'fixed';
+        box.style.left = '50%';
+        box.style.bottom = '18px';
+        box.style.transform = 'translateX(-50%)';
+        box.style.zIndex = '9999';
+        box.style.maxWidth = 'min(560px, calc(100vw - 28px))';
+        box.style.padding = '12px 16px';
+        box.style.border = '1px solid #111';
+        box.style.background = '#fff';
+        box.style.color = '#111';
+        box.style.boxShadow = '0 10px 22px rgba(0,0,0,.20)';
+        box.style.fontWeight = '700';
+        box.style.textAlign = 'center';
+        box.style.borderRadius = '6px';
+        document.body.appendChild(box);
+      }
+      box.textContent = 'Modo sin internet activo: las ventas se imprimen provisionalmente y se sincronizan al volver la conexion.';
+      box.hidden = !show;
+      box.style.display = show ? 'block' : 'none';
+    }
+
+    function isLikelyNetworkError(err) {
+      const msg = normalize(err && err.message).toLowerCase();
+      return (typeof navigator !== 'undefined' && navigator.onLine === false) ||
+        (err && err.name === 'TypeError') ||
+        msg.includes('failed to fetch') ||
+        msg.includes('load failed') ||
+        msg.includes('network') ||
+        msg.includes('tiempo de espera agotado');
+    }
+
+    function notifyOfflineModeEntered() {
+      updateOfflineFloatingNotice();
+      setStationPaymentPersistentMessage('Modo sin internet activado. La venta se guardará en este equipo y se sincronizará cuando vuelva la conexión.', false);
+    }
+
+    function notifyOnlineModeRestored() {
+      updateOfflineFloatingNotice();
+      setStationPaymentPersistentMessage('Internet restablecido. Sincronizando ventas offline pendientes...', false);
+    }
+
+    function offlineQueueKey() {
+      return 'pcs_offline_ventas_' + String(state.empresaID || 0);
+    }
+
+    function loadOfflineQueue() {
+      try {
+        const raw = localStorage.getItem(offlineQueueKey());
+        const rows = raw ? JSON.parse(raw) : [];
+        return Array.isArray(rows) ? rows : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveOfflineQueue(rows) {
+      try {
+        localStorage.setItem(offlineQueueKey(), JSON.stringify(Array.isArray(rows) ? rows : []));
+      } catch (_) {}
+    }
+
+    function createOfflineSyncKey(carrito) {
+      const code = normalize(carrito && carrito.codigo).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase();
+      return 'OFF-' + String(state.empresaID || 0) + '-' + (code || ('CRT' + String(carrito && carrito.id || 0))) + '-' + String(Date.now());
+    }
+
+    function buildOfflineSalePayload(carrito, pay, items, cashForPayment) {
+      const caja = cashForPayment || getSelectedCashRegister() || {};
+      const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? ('Estacion ' + state.stationID) : (state.directSaleMode ? 'Venta directa' : ''));
+      return {
+        empresa_id: Number(state.empresaID || 0),
+        sync_key: createOfflineSyncKey(carrito),
+        fecha_offline: new Date().toISOString(),
+        carrito_id: Number(carrito && carrito.id || 0),
+        carrito_codigo: normalize(carrito && carrito.codigo),
+        estacion_id: Number(state.stationID || 0),
+        estacion_nombre: stationLabel,
+        modo: state.directSaleMode ? 'venta_directa' : (state.stationMode ? 'estacion' : 'carrito'),
+        carrito: {
+          id: Number(carrito && carrito.id || 0),
+          codigo: normalize(carrito && carrito.codigo),
+          nombre: normalize(carrito && carrito.nombre),
+          canal_venta: normalize(carrito && carrito.canal_venta) || 'mostrador',
+          cliente_id: Number(carrito && carrito.cliente_id || 0),
+          moneda: normalize(carrito && carrito.moneda) || 'COP',
+          referencia_externa: normalize(carrito && carrito.referencia_externa),
+          total: Number(carrito && carrito.total || 0),
+          observaciones: normalize(carrito && carrito.observaciones)
+        },
+        items: (Array.isArray(items) ? items : []).filter(function(it) {
+          return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
+        }).map(function(it) {
+          return {
+            tipo_item: normalize(it.tipo_item) || 'producto',
+            referencia_id: Number(it.referencia_id || 0),
+            codigo_item: normalize(it.codigo_item),
+            descripcion: normalize(it.descripcion) || 'Item',
+            unidad_medida: normalize(it.unidad_medida) || 'unidad',
+            cantidad: Number(it.cantidad || 0),
+            precio_unitario: Number(it.precio_unitario || 0),
+            descuento_porcentaje: Number(it.descuento_porcentaje || 0),
+            impuesto_porcentaje: Number(it.impuesto_porcentaje || 0),
+            impuesto_codigo: normalize(it.impuesto_codigo) || 'IVA',
+            observaciones: normalize(it.observaciones)
+          };
+        }),
+        pago: {
+          metodo_pago: pay.paymentMethod,
+          referencia_pago: pay.paymentReference,
+          pagos_mixtos: pay.paymentMethod === 'mixto' ? pay.mixedPayments : [],
+          descuento_tipo: pay.discountType,
+          descuento_codigo: pay.discountCodeApplied,
+          codigo_descuento: pay.discountCodeApplied,
+          descuento_valor: pay.discountValue,
+          devolucion_total: pay.devolucion,
+          abonos_total: pay.abonosTotal,
+          total_pagado: pay.totalPagarFinal,
+          aplicar_propina: pay.tipApplied,
+          cierre_caja_id: Number(caja.id || 0),
+          caja_codigo: normalizeCashCode(caja.caja_codigo) || 'CAJA-1',
+          caja_turno: normalize(caja.turno) || 'general',
+          caja_sucursal_id: Number(caja.sucursal_id || 0)
+        }
+      };
+    }
+
+    function enqueueOfflineSale(payload) {
+      if (!payload || !payload.sync_key) return false;
+      const rows = loadOfflineQueue();
+      const exists = rows.some(function(row) { return row && row.sync_key === payload.sync_key; });
+      if (!exists) {
+        rows.push(Object.assign({}, payload, { estado_local: 'pendiente' }));
+        saveOfflineQueue(rows);
+      }
+      return true;
+    }
+
+    async function printOfflineSaleReceipt(carrito, pay, items, printTarget) {
+      const payCopy = Object.assign({}, pay || {}, {
+        paymentLabel: normalize(pay && pay.paymentLabel) || normalize(pay && pay.paymentMethod) || 'Pago offline',
+        offlineProvisional: true
+      });
+      const printed = await printSaleReceiptIfEnabled(carrito, payCopy, items, printTarget);
+      if (!printed) return false;
+      setStationPaymentPersistentMessage('Factura/comprobante provisional impreso en modo sin internet. Queda pendiente de sincronizar.', false);
+      return true;
+    }
+
+    async function syncOfflineSalesQueue() {
+      if (!state.empresaID || state.offlineVentas.syncing || !isOfflineBillingEnabled()) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      const rows = loadOfflineQueue();
+      const pending = rows.filter(function(row) { return row && row.estado_local !== 'sincronizado'; });
+      if (!pending.length) return;
+      state.offlineVentas.syncing = true;
+      let synced = 0;
+      try {
+        for (let i = 0; i < pending.length; i += 1) {
+          const item = pending[i];
+          try {
+            const res = await fetchWithTimeout('/api/empresa/offline_ventas?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=sync', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(item)
+            }, 60000);
+            await ensureOk(res);
+            item.estado_local = 'sincronizado';
+            item.sincronizado_en = new Date().toISOString();
+            synced += 1;
+          } catch (err) {
+            item.estado_local = 'pendiente';
+            item.ultimo_error = err && err.message ? err.message : 'No se pudo sincronizar.';
+          }
+        }
+        const remaining = pending.filter(function(row) { return row.estado_local !== 'sincronizado'; });
+        saveOfflineQueue(remaining);
+        if (synced > 0) {
+          setStationPaymentPersistentMessage('Internet restablecido. Se sincronizaron ' + synced + ' venta(s) offline; inventario, caja y documentos quedaron actualizados.', false);
+          try {
+            await Promise.all([loadCarritos(), loadItems(), loadActiveCashRegisters()]);
+          } catch (_) {}
+        }
+      } finally {
+        state.offlineVentas.syncing = false;
+      }
+    }
+
+    async function storeAndPrintOfflineSale(carrito, pay, itemsSnapshot, printTargets, cashForPayment) {
+      if (!isOfflineBillingEnabled()) return false;
+      const payload = buildOfflineSalePayload(carrito, pay, itemsSnapshot, cashForPayment);
+      enqueueOfflineSale(payload);
+      notifyOfflineModeEntered();
+      await printOfflineSaleReceipt(carrito, pay, itemsSnapshot, printTargets && printTargets.receipt);
+      closeUnusedPaymentPrintTargets(printTargets);
+      setStationPaymentPersistentMessage('Venta guardada en modo sin internet. Pendiente por sincronizar: ' + loadOfflineQueue().length + '.', false);
+      return true;
     }
 
     function getStationPaymentPersistentNotice(carrito) {
@@ -3475,6 +4042,7 @@
       const vipCard = document.getElementById('stationVipAccessCard');
       const commissionCard = document.getElementById('stationWorkerCommissionCard');
       const paymentAmountsCard = document.getElementById('stationPaymentAmountsCard');
+      const paymentQrCard = document.getElementById('stationPaymentQrCard');
       const optionalControls = document.getElementById('stationOptionalSectionsControls');
       const stationItemsPanel = document.getElementById('stationCartSplitRow');
       const focusedSaleMode = state.stationMode || state.directSaleMode;
@@ -3516,6 +4084,11 @@
           paymentAmountsCard.hidden = true;
           paymentAmountsCard.classList.add('is-hidden');
         }
+        if (paymentQrCard) {
+          paymentQrCard.style.display = 'none';
+          paymentQrCard.hidden = true;
+          paymentQrCard.classList.add('is-hidden');
+        }
         if (optionalControls) {
           optionalControls.style.display = 'none';
           optionalControls.hidden = true;
@@ -3527,6 +4100,7 @@
         }
         syncStationPaymentDisplayInputs(null);
         renderPaymentMethodsCards(null);
+        renderPaymentQrCard(null, null, false);
         return;
       }
 
@@ -3676,6 +4250,7 @@
       const showDetailedMixedInputs = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod && !state.paymentAmountsManual;
       const selectedCash = getSelectedCashRegister();
       renderPaymentMethodsCards(carrito);
+      renderPaymentQrCard(carrito, pay, false);
       getStationPaymentAmountInputDefs().forEach(function(def) {
         const el = document.getElementById(def.id);
         if (!el) return;
@@ -3894,6 +4469,11 @@
       const printTargets = preparePaymentPrintTargets();
       const selectedCash = getSelectedCashRegister();
       let cashForPayment = selectedCash;
+      const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
+      if (isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false) {
+        await storeAndPrintOfflineSale(selected, pay, itemsSnapshot, printTargets, cashForPayment);
+        return;
+      }
       if (!cashForPayment) {
         await loadActiveCashRegisters();
         cashForPayment = getSelectedCashRegister();
@@ -3914,8 +4494,6 @@
           }
         }
       }
-
-      const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
 
       try {
         state.paymentInProgress = true;
@@ -4024,7 +4602,9 @@
         window.location.assign(buildStationsURL());
       } catch (err) {
         closeUnusedPaymentPrintTargets(printTargets);
-        if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
+        if (isOfflineBillingEnabled() && isLikelyNetworkError(err)) {
+          await storeAndPrintOfflineSale(selected, pay, itemsSnapshot, preparePaymentPrintTargets(), cashForPayment);
+        } else if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
           setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
         }
       } finally {
@@ -6952,6 +7532,37 @@
         registerCarritoAbono();
       });
     }
+    const carritoBtnPagoQR = document.getElementById('carritoBtnPagoQR');
+    if (carritoBtnPagoQR) {
+      carritoBtnPagoQR.addEventListener('click', function() {
+        state.paymentQr.open = true;
+        const selected = getSelectedCarrito();
+        if (selected) {
+          renderPaymentQrCard(selected, getStationPaymentBreakdown(selected), true);
+          setPaymentQrStatus('QR generado. Verifica el pago recibido antes de cerrar.', false);
+        }
+      });
+    }
+    const paymentQrGenerateBtn = document.getElementById('paymentQrGenerateBtn');
+    if (paymentQrGenerateBtn) {
+      paymentQrGenerateBtn.addEventListener('click', function() {
+        state.paymentQr.open = true;
+        const selected = getSelectedCarrito();
+        if (selected) renderPaymentQrCard(selected, getStationPaymentBreakdown(selected), true);
+      });
+    }
+    const paymentQrAccountSelect = document.getElementById('paymentQrAccountSelect');
+    if (paymentQrAccountSelect) {
+      paymentQrAccountSelect.addEventListener('change', function() {
+        state.paymentQr.accountKey = normalize(paymentQrAccountSelect.value);
+        const selected = getSelectedCarrito();
+        if (selected) renderPaymentQrCard(selected, getStationPaymentBreakdown(selected), true);
+      });
+    }
+    const paymentQrUseBtn = document.getElementById('paymentQrUseBtn');
+    if (paymentQrUseBtn) {
+      paymentQrUseBtn.addEventListener('click', applyPaymentQrToCheckout);
+    }
     document.getElementById('carritoBtnVehiculo').addEventListener('click', function() {
       window.location.href = '/administrar_empresa/vehiculos_registro.html';
     });
@@ -7156,6 +7767,21 @@
           window.location.href = buildStationsURL();
         });
       }
+      window.addEventListener('offline', function() {
+        state.offlineVentas.lastOnline = false;
+        updateOfflineFloatingNotice();
+        if (isOfflineBillingEnabled()) {
+          notifyOfflineModeEntered();
+        }
+      });
+      window.addEventListener('online', function() {
+        state.offlineVentas.lastOnline = true;
+        updateOfflineFloatingNotice();
+        if (isOfflineBillingEnabled()) {
+          notifyOnlineModeRestored();
+          syncOfflineSalesQueue();
+        }
+      });
 
       try {
         document.getElementById('empresa_id').value = String(empresaID);
@@ -7190,6 +7816,10 @@
         const selectedOnOpen = ensureSelectedCarritoFromLoadedList();
         if (selectedOnOpen || state.selectedCarritoID) {
           await loadItems();
+        }
+        updateOfflineFloatingNotice();
+        if (isOfflineBillingEnabled()) {
+          syncOfflineSalesQueue();
         }
       } catch (err) {
         renderInitialLoadError(err);

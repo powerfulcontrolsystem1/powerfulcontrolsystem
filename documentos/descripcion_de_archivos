@@ -1,3 +1,9 @@
+2026-05-20 - Facturacion offline para carritos
+- `backend/db/offline_ventas.go`:
+	- crea y administra `empresa_ventas_offline_sync`, bitacora idempotente para ventas capturadas sin internet por `empresa_id` y `sync_key`.
+- `backend/handlers/offline_ventas.go`:
+	- expone `/api/empresa/offline_ventas` para listar sincronizaciones y aplicar ventas offline al carrito unificado, inventario, caja del usuario y documentos.
+
 2026-05-19 - Compactacion POS del reporte de turno
 - `web/administrar_empresa/corte_de_caja.html`:
 	- compacta datos del turno, resumen financiero y detalle de ventas en dos columnas para ticket POS 80mm.
@@ -9802,3 +9808,15 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- define `cliente_obligatorio_pago=false` dentro del preset de carrito para empresas nuevas y antiguas.
 - `backend/handlers/empresa_preconfiguracion_carrito_test.go`:
 	- cubre que la nueva bandera quede apagada por defecto.
+
+2026-05-20 - Datáfonos POS multiempresa
+- `backend/db/datafonos.go`:
+	- agrega esquema, modelos y helpers para configuracion de terminales, transacciones, normalizacion de proveedor/estado y validacion monto/referencia.
+- `backend/db/datafonos_test.go`:
+	- cubre normalizacion de proveedores/estados y rechazo de confirmaciones con monto o referencia distintos.
+- `backend/handlers/datafonos.go`:
+	- agrega `/api/empresa/datafonos` con catalogo de proveedores, CRUD de configuracion, inicio/consulta de pago y cliente HTTP configurable para Redeban, CredibanCo, Bold y BBVA.
+- `backend/handlers/datafonos_test.go`:
+	- prueba normalizacion de respuesta, saneamiento de datos sensibles y llamada HTTP simulada con autenticacion por variable de entorno.
+- `backend/main.go`:
+	- asegura el esquema de datáfonos al arrancar y registra la ruta empresarial con permisos de ventas.

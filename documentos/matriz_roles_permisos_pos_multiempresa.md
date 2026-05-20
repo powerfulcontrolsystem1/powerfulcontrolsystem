@@ -1,3 +1,9 @@
+2026-05-20: Nota de datáfonos POS multiempresa
+- `/api/empresa/datafonos` queda protegido con `WithEmpresaVentasPermissions`, igual que carritos, porque puede iniciar cobros y aplicar pagos al POS.
+- No se crea permiso independiente en esta fase: la configuracion tecnica del terminal exige acceso empresarial autenticado y el mismo alcance de ventas/caja del usuario.
+- La aplicacion al carrito valida `empresa_id`, caja abierta del usuario y referencia/monto confirmados por el proveedor antes de cerrar la venta.
+- Las credenciales de proveedor no son visibles para roles operativos; se guardan solo referencias `env:*` y no secretos reales.
+
 2026-05-19: Nota de Docker VPS portable
 - `web/super/docker_portabilidad.html` queda disponible solo para `super_administrador` dentro del grupo Plataforma del panel super.
 - `/super/api/docker_portabilidad` exige sesion y rol `super_administrador` mediante `paginaPrincipalRequireSuperAdmin`; no se agrega permiso empresarial ni acceso para `control_super_administrador`.

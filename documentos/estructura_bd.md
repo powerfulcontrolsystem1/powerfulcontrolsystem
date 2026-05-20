@@ -22,6 +22,32 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-20 (datáfonos POS multiempresa)
+- Nueva tabla `empresa_datafonos_config` para registrar por `empresa_id` la configuracion contractual de Redeban, CredibanCo, Bold o BBVA: proveedor, terminal, comercio, endpoints, modo de autenticacion, referencia segura de secreto `env:*`, moneda, metodo de pago POS y estado activo.
+- Nueva tabla `empresa_datafonos_transacciones` para la trazabilidad de solicitudes, consultas y confirmaciones de pago por datáfono: empresa, proveedor, carrito, referencia, monto, cliente, estado normalizado (`pendiente`, `aprobado`, `rechazado`, `error`), id de transaccion del proveedor, codigo de autorizacion, respuesta saneada y validacion.
+- Indices: configuracion por empresa/proveedor/terminal, busqueda de configuraciones activas, unicidad de transaccion por `empresa_id, proveedor, referencia`, busqueda por carrito y estado.
+- La aplicacion al POS valida `empresa_id`, monto y referencia antes de cerrar el carrito mediante el flujo existente de `PayCarritoStationSession`; las claves reales no se guardan en base de datos, solo referencias a variables de entorno.
+
+Actualizacion 2026-05-20 (pagos QR desde carrito)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.
+- El JSON `estaciones_config.carrito_ui_global` puede incluir `pago_qr_habilitado`, `pago_qr_proveedor`, `pago_qr_llave`, `pago_qr_comercio`, `pago_qr_payload_oficial`, `pago_qr_instrucciones` y `pago_qr_cuentas`.
+- `pago_qr_cuentas` almacena cuentas receptoras por empresa con proveedor, nombre, llave/cuenta, comercio, payload oficial/plantilla, instrucciones y estado activo. El pago final sigue usando `metodo_pago='transferencia_bancaria'` y `referencia_pago` generada por el carrito.
+
+Actualizacion 2026-05-20 (facturacion offline de carrito)
+- Nueva tabla `empresa_ventas_offline_sync` para bitacora e idempotencia de ventas capturadas sin internet.
+- Campos principales: `empresa_id`, `sync_key`, `carrito_id`, `documento_codigo`, `payload_json`, `resultado_json`, `estado_sync`, `error_mensaje`, `fecha_offline`, `fecha_sync`, `usuario_creador`, `estado`, `observaciones`, `fecha_creacion`, `fecha_actualizacion`.
+- Indices: `ux_empresa_ventas_offline_sync_key` asegura unicidad por `empresa_id, sync_key`; `ix_empresa_ventas_offline_estado` lista pendientes/sincronizadas; `ix_empresa_ventas_offline_carrito` traza la venta al carrito.
+- La configuracion no agrega columnas: se reutiliza `empresa_estacion_prefs` con `clave='estaciones_config'`, `carrito_ui_global.facturacion_offline_habilitada` y `carrito_ui_global.marcar_factura_offline_pendiente`.
+- La sincronizacion final actualiza tablas existentes de carritos, items, inventario, cierres de caja, metricas y documentos por `empresa_id`; no mezcla cajas porque resuelve la caja abierta por usuario autenticado.
+
+Actualizacion 2026-05-19 (reinicio operativo desde backups empresariales)
+- No se agregan tablas ni columnas fisicas.
+- `/api/empresa/backups?action=reset_operativo` reutiliza las tablas existentes con `empresa_id` y elimina solo registros operativos.
+- El catalogo protegido excluye configuracion, usuarios, permisos, impresoras, integraciones, tarifas, preferencias, plantillas/programaciones de reportes, dispositivos, pasarelas y backups internos.
+- El modo `hasta_fecha` usa la columna temporal disponible (`fecha_creacion`, `fecha_evento`, `fecha_movimiento`, `pagado_en`, `activado_en` o `fecha`) y omite tablas sin fecha; el modo `todos` elimina todos los registros operativos de la empresa en las tablas permitidas.
+- `dry_run` solo cuenta registros y no confirma cambios; la ejecucion real exige confirmacion textual desde el handler.
+
 Actualizacion 2026-05-19 (codigos de descuento y asesor de venta de un solo uso)
 - No se agregan tablas ni columnas fisicas.
 - `codigos_de_descuento.usos_maximos` se normaliza a `1` y `usos_actuales` queda consumido cuando existe cualquier redencion historica, incluso si el carrito fue anulado o reabierto.

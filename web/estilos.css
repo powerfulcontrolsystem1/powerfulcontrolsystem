@@ -550,10 +550,12 @@ body.carrito-flat-page .carrito-actions-card,
 body.carrito-flat-page .carrito-worker-card,
 body.carrito-flat-page .carrito-vip-card,
 body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page .carrito-payment-qr-card,
 body.carrito-flat-page #scannerPanel,
 body.carrito-flat-page #stationCheckoutPanel,
 body.carrito-flat-page #stationCartActionsCard,
 body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationPaymentQrCard,
 body.carrito-flat-page #stationWorkerCommissionCard,
 body.carrito-flat-page #stationVipAccessCard,
 body.carrito-flat-page #carritoTotalsPanel,
@@ -1296,7 +1298,8 @@ img{max-width:100%;height:auto}
 .carrito-flat-page .carrito-actions-card,
 .carrito-flat-page .carrito-worker-card,
 .carrito-flat-page .carrito-vip-card,
-.carrito-flat-page .carrito-payment-amounts-card{
+.carrito-flat-page .carrito-payment-amounts-card,
+.carrito-flat-page .carrito-payment-qr-card{
   box-shadow:none !important;
 }
 .carrito-flat-page .btn{
@@ -8359,6 +8362,7 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 .carrito-primary-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(238px,306px);gap:18px;align-items:start;width:100%;}
 .carrito-primary-main{min-width:0;width:100%;display:flex;flex-direction:column;}
 .carrito-primary-main #stationPaymentAmountsCard{order:40;}
+.carrito-primary-main #stationPaymentQrCard{order:45;}
 .carrito-primary-main #stationCheckoutPanel{order:50;}
 .carrito-primary-main #stationCartActionsCard{order:60;}
 .carrito-primary-main #stationWorkerCommissionCard{order:70;}
@@ -8444,6 +8448,58 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
 }
 .carrito-payment-amounts-card.is-hidden{
   display:none;
+}
+.carrito-payment-qr-card{
+  display:block;
+}
+.carrito-payment-qr-card.is-hidden{
+  display:none;
+}
+.carrito-payment-qr-layout{
+  display:grid;
+  grid-template-columns:minmax(180px, 240px) minmax(0, 1fr);
+  gap:14px;
+  align-items:start;
+}
+.carrito-payment-qr-canvas-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:236px;
+  border:1px solid var(--border);
+  background:#fff;
+}
+.carrito-payment-qr-meta{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:8px 12px;
+  margin-top:10px;
+  color:var(--text);
+}
+.carrito-payment-qr-preview{
+  margin-top:10px;
+}
+.qr-accounts-table{
+  min-width:1180px;
+}
+.qr-accounts-table th,
+.qr-accounts-table td{
+  vertical-align:top;
+}
+.qr-accounts-table .form-input{
+  min-width:128px;
+}
+.qr-accounts-table textarea.form-input{
+  min-width:180px;
+  resize:vertical;
+}
+@media (max-width: 720px){
+  .carrito-payment-qr-layout{
+    grid-template-columns:1fr;
+  }
+  .carrito-payment-qr-meta{
+    grid-template-columns:1fr;
+  }
 }
 .carrito-worker-card{
   display:block;
@@ -18283,10 +18339,12 @@ body.carrito-flat-page .carrito-actions-card,
 body.carrito-flat-page .carrito-worker-card,
 body.carrito-flat-page .carrito-vip-card,
 body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page .carrito-payment-qr-card,
 body.carrito-flat-page #scannerPanel,
 body.carrito-flat-page #stationCheckoutPanel,
 body.carrito-flat-page #stationCartActionsCard,
 body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationPaymentQrCard,
 body.carrito-flat-page #stationWorkerCommissionCard,
 body.carrito-flat-page #stationVipAccessCard,
 body.carrito-flat-page #carritoTotalsPanel,

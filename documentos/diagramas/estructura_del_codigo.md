@@ -1,3 +1,54 @@
+## Actualizacion 2026-05-20 (datáfonos POS multiempresa)
+
+- `backend/db/datafonos.go`: define tablas `empresa_datafonos_config` y `empresa_datafonos_transacciones`, normaliza proveedores/estados y valida monto/referencia antes de confirmar.
+- `backend/handlers/datafonos.go`: expone `/api/empresa/datafonos` bajo `WithEmpresaVentasPermissions`; lista proveedores, guarda configuracion, inicia pagos y consulta confirmaciones por HTTP/JSON.
+- `backend/main.go`: asegura el esquema de datáfonos al arrancar y registra la ruta empresarial junto a carritos/offline ventas.
+- Flujo de capas: POS/carrito -> `/api/empresa/datafonos?action=iniciar_pago` -> API contractual del proveedor -> transaccion auditada -> validacion monto/referencia -> caja abierta del usuario -> `PayCarritoStationSession`.
+- Seguridad: las credenciales reales se resuelven por variables de entorno (`api_key_ref=env:*`) y las respuestas guardadas se sanean para no persistir PAN/tokens/secretos.
+
+## Actualizacion 2026-05-20 (pagos QR carrito)
+
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: administra la activacion de pago QR y la lista de cuentas receptoras por empresa dentro de `carrito_ui_global`.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: preserva los campos QR al guardar overrides de carrito por estacion.
+- `web/administrar_empresa/carrito_de_compras.html`: usa `web/vendor/qrcode.min.js` para generar el QR localmente, permite elegir cuenta receptora y registra el pago como transferencia bancaria con referencia automatica.
+- `backend/handlers/empresa_preconfiguracion.go`: agrega defaults de `pago_qr_*` para nuevas configuraciones de carrito.
+- Flujo de capas: Configuracion carrito -> `empresa_estacion_prefs.estaciones_config.carrito_ui_global.pago_qr_cuentas` -> Carrito -> QR local -> pago `transferencia_bancaria` -> caja/reportes/facturacion existentes.
+
+## Actualizacion 2026-05-20 (facturacion offline)
+
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: administra los checks de facturacion offline y marca provisional del documento impreso.
+- `web/administrar_empresa/carrito_de_compras.html`: detecta eventos `offline/online`, muestra aviso flotante, imprime comprobante provisional y sincroniza la cola local al recuperar internet.
+- `backend/handlers/offline_ventas.go`: endpoint empresarial `/api/empresa/offline_ventas` para listar bitacora y sincronizar ventas offline con idempotencia.
+- `backend/db/offline_ventas.go`: esquema y helpers de `empresa_ventas_offline_sync`.
+- `backend/main.go`: registra la ruta bajo `WithEmpresaVentasPermissions`.
+- Flujo de capas: Carrito HTML -> cola local por empresa -> POST `/api/empresa/offline_ventas?action=sync` -> carrito unificado/inventario/caja del usuario/documento de venta -> bitacora sincronizada.
+
+## Actualizacion 2026-05-19 (envio de codigos de descuento)
+
+- Frontend:
+  - `web/administrar_empresa/codigos_de_descuento.html` conserva el CRUD de cupones y agrega acciones por fila para correo y WhatsApp.
+  - WhatsApp usa `https://wa.me/?text=...` con un resumen del cupon y enlace al modulo filtrado por codigo.
+- Backend:
+  - `backend/handlers/codigos_descuento.go` recibe `dbSuper` para consultar SMTP global y agrega `action=enviar_correo` sobre la ruta existente `/api/empresa/codigos_de_descuento`.
+  - `backend/main.go` registra el handler con `dbEmpresas` y `dbSuper` bajo el mismo wrapper `WithEmpresaVentasPermissions`.
+- Flujo:
+  - Codigos de descuento -> fila del cupon -> `Enviar correo` solicita destinatario y mensaje -> backend valida empresa/codigo/email -> SMTP o modo prueba -> respuesta JSON.
+- Alcance:
+  - No agrega ruta base, tablas, dependencias ni permisos nuevos; mantiene aislamiento por `empresa_id`.
+
+## Actualizacion 2026-05-19 (reinicio operativo desde backups empresariales)
+
+- Frontend:
+  - `web/administrar_empresa/backups.html` agrega la seccion `Reiniciar datos operativos` con previsualizacion, modo por fecha o todos los tiempos, confirmacion y backup previo opcional.
+  - `web/js/personas_activos_submenu.js` muestra el acceso de backups como `Reiniciar datos`.
+- Backend:
+  - `backend/handlers/backups_empresariales.go` agrega `action=reset_operativo` sobre `/api/empresa/backups`.
+  - `backend/db/backups_empresariales.go` agrega `ResetEmpresaOperationalData`, catalogo protegido y conteo `dry_run` sobre tablas con `empresa_id`.
+- Flujo:
+  - Backups -> Reiniciar datos -> Previsualizar -> escribir `REINICIAR EMPRESA {empresa_id}` -> crear backup previo opcional -> eliminar solo datos operativos permitidos.
+- Alcance:
+  - No agrega rutas base, tablas ni dependencias; conserva el wrapper `WithEmpresaBackupsPermissions`.
+
 ## Actualizacion 2026-05-19 (Docker VPS portable desde Super Administrador)
 
 - `web/super_administrador.html` agrega el acceso `Docker VPS` dentro de Plataforma y `web/js/super_administrador.js` permite restaurar esa pagina en el iframe super.

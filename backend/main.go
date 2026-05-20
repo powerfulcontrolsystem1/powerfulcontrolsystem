@@ -752,6 +752,10 @@ func main() {
 		log.Fatalf("failed to ensure carritos schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_carritos_schema")
+	if err := dbpkg.EnsureEmpresaDatafonosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure datafonos schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_datafonos_schema")
 	if err := handlers.ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmpresas); err != nil {
 		log.Fatalf("failed to apply default cart UI to existing empresas: %v", err)
 	}
@@ -1041,6 +1045,8 @@ func main() {
 	http.HandleFunc("/api/empresa/crm_avanzado", handlers.WithEmpresaCRMUnificadoPermissions(dbEmpresas, dbSuper, handlers.EmpresaCRMVentasAvanzadasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/carritos_compra", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritosCompraHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/carritos_compra/items", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCarritoItemsHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/offline_ventas", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaOfflineVentasHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/datafonos", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaDatafonosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/venta_publica", handlers.WithEmpresaVentaPublicaPermissions(dbEmpresas, dbSuper, handlers.EmpresaVentaPublicaHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/venta_publica", handlers.PublicVentaPublicaHandler(dbEmpresas))
 	http.HandleFunc("/api/public/turnos_atencion", handlers.PublicTurnosAtencionHandler(dbEmpresas))
@@ -1065,7 +1071,7 @@ func main() {
 	http.HandleFunc("/api/empresa/tarifas_motel", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaTarifasMotelHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/hotel_tarjetas_acceso", handlers.WithEmpresaReservasHotelPermissions(dbEmpresas, dbSuper, handlers.EmpresaHotelTarjetasAccesoHandler(dbEmpresas)))
 	http.HandleFunc("/api/public/hotel_tarjetas_acceso", handlers.PublicHotelTarjetasAccesoHandler(dbEmpresas))
-	http.HandleFunc("/api/empresa/codigos_de_descuento", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCodigosDescuentoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/codigos_de_descuento", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCodigosDescuentoHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/propinas", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaPropinasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/comisiones", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaComisionesServicioHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_general", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGeneralHandler(dbEmpresas)))

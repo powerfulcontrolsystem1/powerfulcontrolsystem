@@ -4,8 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/mail"
+	"net/smtp"
 	"strconv"
 	"strings"
 
@@ -13,7 +17,7 @@ import (
 )
 
 // EmpresaCodigosDescuentoHandler gestiona CRUD de codigos de descuento por empresa.
-func EmpresaCodigosDescuentoHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaCodigosDescuentoHandler(dbEmp *sql.DB, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -94,6 +98,12 @@ func EmpresaCodigosDescuentoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "enviar_correo" || action == "enviar_email" {
+				empresaCodigosDescuentoEnviarCorreo(w, r, dbEmp, dbSuper)
+				return
+			}
+
 			var payload dbpkg.CodigoDescuento
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -180,6 +190,238 @@ func EmpresaCodigosDescuentoHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+type codigoDescuentoEmailPayload struct {
+	EmpresaID            int64  `json:"empresa_id"`
+	ID                   int64  `json:"id"`
+	Email                string `json:"email"`
+	NombreDestinatario   string `json:"nombre_destinatario"`
+	MensajePersonalizado string `json:"mensaje"`
+}
+
+func empresaCodigosDescuentoEnviarCorreo(w http.ResponseWriter, r *http.Request, dbEmp *sql.DB, dbSuper *sql.DB) {
+	if dbSuper == nil {
+		http.Error(w, "configuracion SMTP no disponible", http.StatusInternalServerError)
+		return
+	}
+
+	var payload codigoDescuentoEmailPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+
+	empresaID := payload.EmpresaID
+	if empresaID <= 0 {
+		if id, err := parseEmpresaIDQuery(r); err == nil {
+			empresaID = id
+		}
+	}
+	if empresaID <= 0 {
+		http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+		return
+	}
+
+	codigoID := payload.ID
+	if codigoID <= 0 {
+		if id, err := parseInt64QueryOptional(r, "id"); err == nil {
+			codigoID = id
+		}
+	}
+	if codigoID <= 0 {
+		http.Error(w, "id es obligatorio", http.StatusBadRequest)
+		return
+	}
+
+	toEmail := strings.ToLower(strings.TrimSpace(payload.Email))
+	if toEmail == "" {
+		http.Error(w, "email es obligatorio", http.StatusBadRequest)
+		return
+	}
+	if _, err := mail.ParseAddress(toEmail); err != nil {
+		http.Error(w, "correo destino invalido", http.StatusBadRequest)
+		return
+	}
+
+	item, err := dbpkg.GetCodigoDescuentoByID(dbEmp, empresaID, codigoID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "codigo de descuento no encontrado", http.StatusNotFound)
+			return
+		}
+		log.Printf("[codigos_descuento] enviar_correo get empresa_id=%d id=%d error: %v", empresaID, codigoID, err)
+		http.Error(w, "No se pudo consultar el codigo de descuento", http.StatusInternalServerError)
+		return
+	}
+
+	empresaNombre := fmt.Sprintf("Empresa %d", empresaID)
+	if empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID); err == nil && empresa != nil && strings.TrimSpace(empresa.Nombre) != "" {
+		empresaNombre = strings.TrimSpace(empresa.Nombre)
+	}
+
+	subject, body := buildCodigoDescuentoEmailContent(r, dbSuper, empresaID, empresaNombre, strings.TrimSpace(payload.NombreDestinatario), strings.TrimSpace(payload.MensajePersonalizado), item)
+	if err := sendCodigoDescuentoEmail(r, dbSuper, empresaID, toEmail, subject, body, item.Codigo); err != nil {
+		log.Printf("[codigos_descuento] enviar_correo empresa_id=%d id=%d email=%q error: %v", empresaID, codigoID, toEmail, err)
+		http.Error(w, "No se pudo enviar el correo: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":           true,
+		"email_sent":   true,
+		"destinatario": toEmail,
+		"codigo":       item.Codigo,
+	})
+}
+
+func buildCodigoDescuentoEmailContent(r *http.Request, dbSuper *sql.DB, empresaID int64, empresaNombre, nombreDestinatario, mensaje string, item *dbpkg.CodigoDescuento) (string, string) {
+	codigo := strings.TrimSpace(item.Codigo)
+	if codigo == "" {
+		codigo = "CODIGO"
+	}
+	nombreDestinatario = strings.TrimSpace(nombreDestinatario)
+	if nombreDestinatario == "" {
+		nombreDestinatario = "cliente"
+	}
+	empresaNombre = strings.TrimSpace(empresaNombre)
+	if empresaNombre == "" {
+		empresaNombre = fmt.Sprintf("Empresa %d", empresaID)
+	}
+
+	baseURL := strings.TrimRight(resolveBaseURLForConfirmation(r, dbSuper), "/")
+	enlace := baseURL + "/administrar_empresa/codigos_de_descuento.html?empresa_id=" + strconv.FormatInt(empresaID, 10) + "&q=" + codigo
+
+	valor := codigoDescuentoEmailValor(item)
+	minimo := codigoDescuentoEmailMoney(item.MontoMinimoCompra, item.Moneda)
+	if item.MontoMinimoCompra <= 0 {
+		minimo = "Sin minimo de compra"
+	}
+	vence := strings.TrimSpace(item.FechaVencimiento)
+	if vence == "" {
+		vence = "Sin fecha de vencimiento configurada"
+	}
+	usos := fmt.Sprintf("%d disponibles de %d", codigoDescuentoMaxInt64(0, item.UsosMaximos-item.UsosActuales), item.UsosMaximos)
+	if item.UsosMaximos <= 0 {
+		usos = "Uso sujeto a disponibilidad"
+	}
+
+	subject := "Codigo de descuento " + codigo + " - " + empresaNombre
+	lines := []string{
+		"Hola " + nombreDestinatario + ",",
+		"",
+		empresaNombre + " te comparte este codigo de descuento:",
+		"",
+		"Codigo: " + codigo,
+		"Descuento: " + valor,
+		"Compra minima: " + minimo,
+		"Vigencia: " + vence,
+		"Usos: " + usos,
+	}
+	if canal := strings.TrimSpace(item.CanalVenta); canal != "" && !strings.EqualFold(canal, "todos") {
+		lines = append(lines, "Canal: "+canal)
+	}
+	if segmento := strings.TrimSpace(item.SegmentoCliente); segmento != "" && !strings.EqualFold(segmento, "todos") {
+		lines = append(lines, "Segmento: "+segmento)
+	}
+	if mensaje != "" {
+		lines = append(lines, "", mensaje)
+	}
+	lines = append(lines,
+		"",
+		"Consulta o valida el codigo desde:",
+		enlace,
+		"",
+		"Este codigo esta sujeto a vigencia, disponibilidad y reglas comerciales de la empresa.",
+	)
+	return subject, strings.Join(lines, "\n")
+}
+
+func codigoDescuentoEmailValor(item *dbpkg.CodigoDescuento) string {
+	if item == nil {
+		return ""
+	}
+	if strings.EqualFold(strings.TrimSpace(item.TipoDescuento), "porcentaje") {
+		return fmt.Sprintf("%.2f%%", item.Valor)
+	}
+	return codigoDescuentoEmailMoney(item.Valor, item.Moneda)
+}
+
+func codigoDescuentoEmailMoney(valor float64, moneda string) string {
+	moneda = strings.ToUpper(strings.TrimSpace(moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+	return fmt.Sprintf("%s %.2f", moneda, valor)
+}
+
+func sendCodigoDescuentoEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, toEmail, subject, body, codigo string) error {
+	if isEmpresaUsuarioMailTestMode(dbSuper) {
+		metadataJSON := fmt.Sprintf(`{"codigo":%q,"mail_mode":"test"}`, strings.TrimSpace(codigo))
+		return captureEmpresaUsuarioMailNotification(dbSuper, "codigo_descuento_enviado", empresaID, toEmail, subject, body, strings.TrimSpace(codigo), metadataJSON, adminEmailFromRequest(r))
+	}
+
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return err
+	}
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return err
+	}
+	smtpEmail = strings.TrimSpace(smtpEmail)
+	smtpPass = strings.TrimSpace(smtpPass)
+	if smtpEmail == "" {
+		return fmt.Errorf("gmail.smtp_email no configurado")
+	}
+	if smtpPass == "" {
+		return fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+
+	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+	smtpHost = strings.TrimSpace(smtpHost)
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	smtpPort = strings.TrimSpace(smtpPort)
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+	fromName = strings.TrimSpace(fromName)
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+
+	hostForAuth := smtpHost
+	if strings.Contains(smtpHost, ":") {
+		if h, _, splitErr := net.SplitHostPort(smtpHost); splitErr == nil && strings.TrimSpace(h) != "" {
+			hostForAuth = h
+		}
+	}
+	addr := smtpHost
+	if !strings.Contains(addr, ":") {
+		addr = net.JoinHostPort(smtpHost, smtpPort)
+	}
+
+	from := (&mail.Address{Name: fromName, Address: smtpEmail}).String()
+	to := (&mail.Address{Address: toEmail}).String()
+	msg := "From: " + from + "\r\n" +
+		"To: " + to + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+	auth := smtp.PlainAuth("", smtpEmail, smtpPass, hostForAuth)
+	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+}
+
+func codigoDescuentoMaxInt64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func codigoDescuentoWriteStatus(err error) int {

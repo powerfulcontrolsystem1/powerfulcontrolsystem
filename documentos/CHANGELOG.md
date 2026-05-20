@@ -1,3 +1,34 @@
+## [2026-05-20] Datáfonos POS multiempresa
+- [Backend] Nuevo `/api/empresa/datafonos` permite configurar terminales Redeban, CredibanCo, Bold y BBVA por empresa, iniciar pagos y consultar confirmaciones.
+- [Pagos] La respuesta del proveedor se normaliza a `pendiente`, `aprobado`, `rechazado` o `error`, y se valida contra monto/referencia antes de cerrar el carrito.
+- [Seguridad] Las credenciales se referencian con `env:*`; no se guardan claves reales ni se imprimen secretos.
+- [Alcance] Agrega tablas `empresa_datafonos_config` y `empresa_datafonos_transacciones`, sin dependencias nuevas.
+
+## [2026-05-20] Pagos QR en carrito
+- [Configuracion] `Configuracion > Carrito unificado` permite activar pago QR y registrar varias cuentas receptoras con proveedor, llave/cuenta, comercio, payload oficial/plantilla e instrucciones.
+- [Carritos] El carrito muestra `QR de pago`, permite elegir la cuenta receptora y genera el codigo localmente con `/vendor/qrcode.min.js`.
+- [Pagos] Al usar el QR, el cobro se aplica como `transferencia_bancaria` con referencia automatica para conservar caja, turnos, reportes, facturacion y pagos mixtos.
+- [Alcance] Sin tablas, endpoints ni dependencias nuevas; el payload oficial/API de Bre-B o Nequi se configura cuando el comercio tenga la plantilla o credenciales del proveedor.
+
+## [2026-05-20] Facturacion offline para carritos
+- [Carritos] El carrito unificado puede operar en modo sin internet cuando la empresa lo active desde Configuracion > Carrito unificado.
+- [Frontend] Al perder conexion se muestra aviso flotante persistente, se imprime comprobante/factura provisional y la venta queda en cola local por empresa.
+- [Backend] Nuevo `/api/empresa/offline_ventas` sincroniza ventas con idempotencia por `sync_key`, actualizando carrito, inventario, caja del usuario, metricas y documento de venta.
+- [Configuracion] La marca `OFFLINE/Pendiente de sincronizar` del impreso queda activa por defecto y puede desactivarse con un check.
+- [Alcance] Sin dependencias externas; agrega tabla `empresa_ventas_offline_sync` y mantiene aislamiento por `empresa_id`.
+
+## [2026-05-19] Envio y WhatsApp para codigos de descuento
+- [Empresa] `Codigos de descuento` agrega acciones por cupon para enviar por correo y compartir por WhatsApp.
+- [Backend] Nuevo `POST /api/empresa/codigos_de_descuento?action=enviar_correo`, usando SMTP global configurado y modo de prueba de correos.
+- [Frontend] Cada fila muestra `Enviar correo` y `WhatsApp` con mensaje comercial listo: codigo, descuento, vigencia, minimo, usos y enlace de consulta.
+- [Alcance] No agrega tablas, permisos ni dependencias; mantiene aislamiento por `empresa_id`.
+
+## [2026-05-19] Reinicio operativo desde backups empresariales
+- [Empresa] `Backups empresariales` agrega una seccion para reiniciar datos operativos por fecha o desde todos los tiempos.
+- [Seguridad] La ejecucion real exige escribir `REINICIAR EMPRESA {empresa_id}` y puede crear backup previo automatico; `dry_run` previsualiza sin borrar.
+- [Backend] Nuevo `reset_operativo` en `/api/empresa/backups`, con catalogo protegido para no borrar configuracion, usuarios, permisos, impresoras, integraciones, tarifas ni preferencias.
+- [Alcance] No agrega tablas, permisos ni dependencias; opera solo sobre tablas con `empresa_id`.
+
 ## [2026-05-19] Codigos de descuento y asesor de un solo uso
 - [Carritos] Los codigos de descuento quedan consumidos una sola vez por empresa; anular, reabrir o revertir un carrito conserva la auditoria y no devuelve el cupo.
 - [Licencias] La promocion por codigo de asesor solo descuenta si esta activa y con porcentaje configurado; si la empresa ya uso asesor en pagos/activaciones/comisiones, no vuelve a aplicar descuento.

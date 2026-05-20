@@ -80,7 +80,33 @@
       <div id="crearBackupMsg" class="form-help"></div>
     </section>
 
-    <section class="form creditos-section" data-pcs-submenu-section="depuracion">
+    <section class="form creditos-section" data-pcs-submenu-section="reinicio">
+      <div class="page-header creditos-section-header">
+        <h2 class="creditos-section-title">Reiniciar datos operativos</h2>
+      </div>
+      <p class="form-help">Elimina ventas, carritos, descuentos, movimientos, cierres, facturas y registros operativos sin borrar configuracion, usuarios, permisos, impresoras, integraciones ni preferencias del sistema.</p>
+      <div class="backups-toolbar-grid">
+        <select id="bkResetModo" class="form-input">
+          <option value="hasta_fecha">Eliminar hasta una fecha</option>
+          <option value="todos">Eliminar todos los tiempos</option>
+        </select>
+        <input id="bkResetFechaCorte" class="form-input" type="date" placeholder="Fecha de corte">
+        <label class="form-help creditos-filter-check backups-filter-check">
+          <input id="bkResetCrearBackupPrevio" type="checkbox" checked> Crear backup previo automatico
+        </label>
+        <input id="bkResetInclude" class="form-input" type="text" placeholder="Limitar a tablas operativas (coma), opcional">
+        <input id="bkResetExclude" class="form-input" type="text" placeholder="Excluir tablas operativas (coma), opcional">
+        <input id="bkResetConfirmacion" class="form-input" type="text" placeholder="Confirmacion requerida antes de eliminar">
+      </div>
+      <div class="form-actions creditos-actions-top">
+        <button id="btnPrevisualizarReset" type="button" class="btn secondary">Previsualizar registros</button>
+        <button id="btnResetOperativo" type="button" class="btn danger">Eliminar registros operativos</button>
+      </div>
+      <div id="resetBackupMsg" class="form-help"></div>
+      <div id="resetBackupPreview" class="table-wrap mt-10" style="display:none"></div>
+    </section>
+
+    <section class="form creditos-section" data-pcs-submenu-section="depuracion_legacy" style="display:none">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Depurar información por fecha</h2>
       </div>
@@ -156,6 +182,8 @@
       var crearMsgEl = document.getElementById('crearBackupMsg');
       var configMsgEl = document.getElementById('configBackupMsg');
       var purgaMsgEl = document.getElementById('purgaBackupMsg');
+      var resetMsgEl = document.getElementById('resetBackupMsg');
+      var resetPreviewEl = document.getElementById('resetBackupPreview');
       var listaMsgEl = document.getElementById('listaBackupMsg');
       var tablaBody = document.getElementById('tablaBackupsBody');
       var detalleMetaEl = document.getElementById('detalleBackupMeta');
@@ -561,6 +589,90 @@
         return backup;
       }
 
+      function expectedResetConfirmation() {
+        return 'REINICIAR EMPRESA ' + String(empresaId || 0);
+      }
+
+      function collectOperationalResetPayload(dryRun) {
+        var mode = String((document.getElementById('bkResetModo') && document.getElementById('bkResetModo').value) || 'hasta_fecha');
+        var allTime = mode === 'todos';
+        var fechaCorte = String((document.getElementById('bkResetFechaCorte') && document.getElementById('bkResetFechaCorte').value) || '').trim();
+        if (!allTime && !fechaCorte) {
+          throw new Error('Selecciona una fecha de corte o usa todos los tiempos.');
+        }
+        return {
+          empresa_id: empresaId,
+          modo: mode,
+          todos_los_tiempos: allTime,
+          fecha_corte: allTime ? '' : fechaCorte,
+          dry_run: dryRun === true,
+          include_tables: parseTableList(document.getElementById('bkResetInclude').value || ''),
+          exclude_tables: parseTableList(document.getElementById('bkResetExclude').value || ''),
+          crear_backup_previo: !!document.getElementById('bkResetCrearBackupPrevio').checked,
+          confirmacion: String((document.getElementById('bkResetConfirmacion') && document.getElementById('bkResetConfirmacion').value) || '').trim(),
+          observaciones: 'reinicio de datos operativos desde modulo backups'
+        };
+      }
+
+      function renderOperationalResetPreview(resultado) {
+        if (!resetPreviewEl) return;
+        var detalle = resultado && Array.isArray(resultado.detalle) ? resultado.detalle : [];
+        var protectedRows = resultado && Array.isArray(resultado.tablas_protegidas) ? resultado.tablas_protegidas : [];
+        var rows = detalle
+          .filter(function (row) { return Number(row.deleted || 0) > 0; })
+          .sort(function (a, b) { return Number(b.deleted || 0) - Number(a.deleted || 0); })
+          .slice(0, 80);
+        var html = '<table class="table"><thead><tr><th>Tabla</th><th>Filtro fecha</th><th>Registros</th></tr></thead><tbody>';
+        if (!rows.length) {
+          html += '<tr><td colspan="3" class="backups-empty-cell">Sin registros operativos para eliminar con estos filtros.</td></tr>';
+        } else {
+          html += rows.map(function (row) {
+            return '<tr><td>' + String(row.table || '-') + '</td><td>' + String(row.date_column || 'todos') + '</td><td>' + Number(row.deleted || 0) + '</td></tr>';
+          }).join('');
+        }
+        html += '</tbody></table>';
+        if (protectedRows.length) {
+          html += '<p class="form-help">Tablas protegidas: ' + protectedRows.slice(0, 30).join(', ') + (protectedRows.length > 30 ? '...' : '') + '</p>';
+        }
+        resetPreviewEl.innerHTML = html;
+        resetPreviewEl.style.display = 'block';
+      }
+
+      async function previsualizarResetOperativo() {
+        var payload = collectOperationalResetPayload(true);
+        var data = await requestJSON('POST', 'reset_operativo', null, payload);
+        var resultado = data.resultado || {};
+        renderOperationalResetPreview(resultado);
+        var msg = 'Previsualizacion lista. Registros encontrados: ' + Number(resultado.registros_eliminados || 0) +
+          ' | Tablas con registros: ' + Number(resultado.tablas_depuradas || 0) +
+          ' | Confirmacion para ejecutar: ' + expectedResetConfirmation();
+        setMsg(resetMsgEl, msg, 'success');
+        if (document.getElementById('bkResetConfirmacion')) {
+          document.getElementById('bkResetConfirmacion').placeholder = expectedResetConfirmation();
+        }
+      }
+
+      async function ejecutarResetOperativo() {
+        var payload = collectOperationalResetPayload(false);
+        var expected = expectedResetConfirmation();
+        if (payload.confirmacion !== expected) {
+          throw new Error('Escribe exactamente: ' + expected);
+        }
+        var modeLabel = payload.todos_los_tiempos ? 'todos los tiempos' : ('hasta ' + payload.fecha_corte);
+        var ok = window.confirm('Se eliminaran registros operativos de ' + modeLabel + '. La configuracion del sistema queda protegida. Deseas continuar?');
+        if (!ok) return;
+        var data = await requestJSON('POST', 'reset_operativo', null, payload);
+        var resultado = data.resultado || {};
+        renderOperationalResetPreview(resultado);
+        var msg = 'Reinicio operativo completado. Registros eliminados: ' + Number(resultado.registros_eliminados || 0) +
+          ' | Tablas procesadas: ' + Number(resultado.tablas_depuradas || 0);
+        if (data.backup_previo && data.backup_previo.codigo) {
+          msg += ' | Backup previo: ' + data.backup_previo.codigo;
+        }
+        setMsg(resetMsgEl, msg, 'success');
+        await cargarBackups();
+      }
+
       async function purgarPorFecha() {
         var fechaCorte = (document.getElementById('bkPurgeFechaCorte').value || '').trim();
         if (!fechaCorte) {
@@ -681,6 +793,39 @@
             setMsg(listaMsgEl, 'Error al consultar backups: ' + (err && err.message ? err.message : err), 'error');
           }
         });
+
+        var resetModo = document.getElementById('bkResetModo');
+        var resetFecha = document.getElementById('bkResetFechaCorte');
+        if (resetModo && resetFecha) {
+          resetModo.addEventListener('change', function () {
+            resetFecha.disabled = resetModo.value === 'todos';
+          });
+          resetFecha.disabled = resetModo.value === 'todos';
+        }
+
+        var btnPreviewReset = document.getElementById('btnPrevisualizarReset');
+        if (btnPreviewReset) {
+          btnPreviewReset.addEventListener('click', async function () {
+            try {
+              setMsg(resetMsgEl, '', '');
+              await previsualizarResetOperativo();
+            } catch (err) {
+              setMsg(resetMsgEl, 'Error en previsualizacion: ' + (err && err.message ? err.message : err), 'error');
+            }
+          });
+        }
+
+        var btnResetOperativo = document.getElementById('btnResetOperativo');
+        if (btnResetOperativo) {
+          btnResetOperativo.addEventListener('click', async function () {
+            try {
+              setMsg(resetMsgEl, '', '');
+              await ejecutarResetOperativo();
+            } catch (err) {
+              setMsg(resetMsgEl, 'Error reiniciando datos operativos: ' + (err && err.message ? err.message : err), 'error');
+            }
+          });
+        }
 
         document.getElementById('btnPurgarFecha').addEventListener('click', async function () {
           try {

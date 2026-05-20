@@ -1,3 +1,25 @@
+2026-05-20: Pagos QR desde carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `pagos`, `caja`, `configuracion_empresarial`, `frontend_ux`.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega `Pagos por QR` con activacion y lista de cuentas receptoras para Bre-B, Nequi u otro proveedor, guardadas en `estaciones_config.carrito_ui_global.pago_qr_cuentas`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` muestra el boton `QR de pago`, permite elegir la cuenta receptora, genera el codigo con `/vendor/qrcode.min.js` y aplica el cobro como `transferencia_bancaria` con referencia automatica.
+- Integracion: acepta payload oficial o plantilla del proveedor con placeholders `{valor}`, `{referencia}`, `{llave}`, `{comercio}`, `{empresa_id}`, `{carrito_id}` y `{carrito_codigo}`; sin payload oficial genera un QR operativo interno que requiere verificacion manual del abono.
+- Alcance: no agrega tablas, endpoints, permisos ni dependencias; conserva reportes, caja por usuario, pagos mixtos y facturacion existentes.
+
+2026-05-20: Facturacion offline desde carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `inventario`, `caja`, `facturacion`, `frontend_ux`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` detecta caida de internet, muestra aviso flotante permanente mientras dure el modo offline, imprime soporte provisional y guarda la venta en `localStorage` por empresa.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega checks para activar/desactivar facturacion offline y para mostrar/ocultar la marca `OFFLINE/Pendiente de sincronizar` en el impreso, activa por defecto.
+- Backend: `/api/empresa/offline_ventas` sincroniza ventas pendientes, mantiene idempotencia por `empresa_id + sync_key`, reutiliza el carrito unificado, reserva/descarga inventario al crear items, paga el carrito, actualiza caja del usuario, metricas y documento de venta.
+- Caja multiusuario: la sincronizacion respeta `usuario_creador`, `cierre_caja_id`, `caja_codigo`, `turno` y `sucursal_id`; si el usuario no tiene caja abierta, abre una para ese usuario sin mezclar otras cajas de la misma empresa.
+- Alcance: agrega una tabla de bitacora offline, sin dependencias externas ni cambios de permisos fuera del wrapper empresarial de ventas.
+
+2026-05-19: Envio y WhatsApp para codigos de descuento.
+- Modulos afectados: `codigos_descuento`, `ventas`, `comunicaciones`, `frontend_ux`.
+- Backend: `/api/empresa/codigos_de_descuento?action=enviar_correo` envia el codigo por correo usando SMTP global configurado y respeta el modo de prueba de correos mediante `captureEmpresaUsuarioMailNotification`.
+- Seguridad: el envio valida `empresa_id`, `id`, correo destino y consulta el cupon por empresa antes de construir el mensaje, manteniendo aislamiento multiempresa y el wrapper existente `WithEmpresaVentasPermissions`.
+- Frontend: `web/administrar_empresa/codigos_de_descuento.html` agrega botones `Enviar correo` y `WhatsApp` por fila; WhatsApp abre `wa.me` con codigo, descuento, vigencia, minimo, usos disponibles y enlace del modulo.
+- Alcance: sin tablas nuevas, sin dependencias externas y sin permisos nuevos.
+
 2026-05-19: Compactacion POS del reporte de turno.
 - Modulos afectados: `corte_de_caja`, `reportes`, `frontend_ux`.
 - `web/administrar_empresa/corte_de_caja.html` compacta la vista actual del reporte de turno en POS 80mm: datos del turno, resumen financiero y detalle de ventas usan dos columnas cuando hay espacio.
@@ -417,6 +439,13 @@
 - Compatibilidad: si ya existe el carrito legacy `VENTA-DIRECTA-{empresa_id}` o un carrito con `referencia_externa=CAJA_DIRECTA`, la pantalla lo reutiliza antes de crear uno nuevo.
 - UX: venta directa deja de mostrar error de carrito faltante y oculta el boton `Regresar a estaciones`; estaciones mantienen su asignacion `EST-{empresa_id}-{estacion_id}`.
 - Alcance: cambio frontend; no agrega tablas, endpoints ni dependencias y conserva aislamiento por `empresa_id`.
+
+2026-05-19: Reinicio operativo seguro desde backups empresariales
+- Modulos afectados: `backups`, `carritos`, `ventas`, `finanzas`, `facturacion`, `auditoria`.
+- Cambio funcional: `web/administrar_empresa/backups.html` agrega `Reiniciar datos operativos` con previsualizacion, modo `hasta fecha` o `todos los tiempos`, backup previo opcional y confirmacion exacta antes de eliminar.
+- Backend: `/api/empresa/backups?action=reset_operativo` usa `ResetEmpresaOperationalData` para borrar solo tablas operativas con `empresa_id`; la configuracion del sistema, usuarios, permisos, impresoras, integraciones, tarifas, preferencias y backups internos quedan protegidos aunque se intenten incluir manualmente.
+- Seguridad: el endpoint exige `REINICIAR EMPRESA {empresa_id}` para ejecucion real, permite `dry_run` sin borrar y conserva aislamiento por `empresa_id`.
+- Persistencia: no agrega tablas ni dependencias; reutiliza el modulo de backups y deja trazabilidad mediante backup previo cuando esta activado.
 
 2026-05-19: Codigos de descuento y promocion de asesor de un solo uso
 - Modulos afectados: `carritos`, `pagos`, `licencias`, `asesor_comercial`.
@@ -2787,3 +2816,10 @@ Captura inteligente de compras y gastos
 - La configuracion del carrito incorpora `Exigir cliente registrado para pagar`; cuando esta activa, el sistema bloquea el pago hasta que el carrito tenga `cliente_id`.
 - El backend valida la misma regla en `pagar_estacion`, manteniendo aislamiento por `empresa_id` y reutilizando el modulo central de clientes.
 - No se agregan tablas ni dependencias externas; la regla se guarda en `estaciones_config.carrito_ui_global`.
+
+2026-05-20: Datáfonos POS multiempresa
+- Modulos afectados: `carritos`, `ventas_simple`, `corte de caja`, `pagos`, `seguridad y permisos`.
+- Se agrega `/api/empresa/datafonos` protegido con permisos de ventas para configurar terminales de Redeban, CredibanCo, Bold y BBVA por empresa, iniciar pagos, consultar confirmaciones y registrar transacciones.
+- El cliente Go usa HTTP/JSON configurable por endpoint contractual del proveedor, con autenticacion por referencia segura `env:*`; no se guardan claves reales en base de datos ni se imprimen en logs.
+- La respuesta del proveedor se normaliza a estados POS (`pendiente`, `aprobado`, `rechazado`, `error`) y se valida contra monto y referencia antes de aplicar el pago al carrito/caja.
+- Si el pago queda aprobado y se solicita `aplicar_al_pos`, el backend usa el cierre de caja abierto del usuario autenticado y marca el carrito con el metodo POS configurado para el datáfono.

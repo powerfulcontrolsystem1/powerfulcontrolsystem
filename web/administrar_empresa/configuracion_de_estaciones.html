@@ -638,8 +638,57 @@
         mostrar_control_electrico_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
-        mostrar_tarjeta_vip_cliente: true
+        mostrar_tarjeta_vip_cliente: true,
+        pago_qr_habilitado: false,
+        pago_qr_proveedor: 'breb',
+        pago_qr_llave: '',
+        pago_qr_comercio: '',
+        pago_qr_payload_oficial: '',
+        pago_qr_instrucciones: '',
+        pago_qr_cuentas: []
       };
+    }
+
+    function normalizeQrAccounts(raw, fallback) {
+      var rows = Array.isArray(raw) ? raw : [];
+      var out = [];
+      rows.forEach(function(item, index) {
+        if (!item || typeof item !== 'object') return;
+        var provider = normalizeText(item.proveedor || item.provider || 'breb');
+        if (provider !== 'breb' && provider !== 'nequi' && provider !== 'otro') provider = 'breb';
+        var key = String(item.llave || item.cuenta || item.key || '').trim();
+        var payload = String(item.payload_oficial || item.officialPayload || item.qr_payload || '').trim();
+        var name = String(item.nombre || item.name || item.alias || '').trim();
+        if (!key && !payload && !name) return;
+        out.push({
+          id: String(item.id || item.codigo || ('qr_account_' + String(index + 1))).trim(),
+          nombre: name || provider,
+          proveedor: provider,
+          llave: key,
+          comercio: String(item.comercio || item.merchant || '').trim(),
+          payload_oficial: payload,
+          instrucciones: String(item.instrucciones || item.instructions || '').trim(),
+          activa: item.activa === undefined && item.active === undefined ? true : toBool(item.activa !== undefined ? item.activa : item.active)
+        });
+      });
+      if (!out.length && fallback) {
+        var fallbackKey = String(fallback.pago_qr_llave || '').trim();
+        var fallbackPayload = String(fallback.pago_qr_payload_oficial || '').trim();
+        if (fallbackKey || fallbackPayload) {
+          var fallbackProvider = normalizeText(fallback.pago_qr_proveedor || 'breb');
+          out.push({
+            id: 'qr_legacy_account',
+            nombre: String(fallback.pago_qr_comercio || fallbackProvider).trim(),
+            proveedor: fallbackProvider === 'nequi' || fallbackProvider === 'otro' ? fallbackProvider : 'breb',
+            llave: fallbackKey,
+            comercio: String(fallback.pago_qr_comercio || '').trim(),
+            payload_oficial: fallbackPayload,
+            instrucciones: String(fallback.pago_qr_instrucciones || '').trim(),
+            activa: true
+          });
+        }
+      }
+      return out;
     }
 
     function normalizeUnifiedCartConfig(raw) {
@@ -672,7 +721,14 @@
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : toBool(src.mostrar_control_electrico_carrito),
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : toBool(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : toBool(src.mostrar_tarjeta_comision),
-        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : toBool(src.mostrar_tarjeta_vip_cliente)
+        mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : toBool(src.mostrar_tarjeta_vip_cliente),
+        pago_qr_habilitado: src.pago_qr_habilitado === undefined ? base.pago_qr_habilitado : toBool(src.pago_qr_habilitado),
+        pago_qr_proveedor: normalizeText(src.pago_qr_proveedor || base.pago_qr_proveedor) || base.pago_qr_proveedor,
+        pago_qr_llave: String(src.pago_qr_llave || '').trim(),
+        pago_qr_comercio: String(src.pago_qr_comercio || '').trim(),
+        pago_qr_payload_oficial: String(src.pago_qr_payload_oficial || '').trim(),
+        pago_qr_instrucciones: String(src.pago_qr_instrucciones || '').trim(),
+        pago_qr_cuentas: normalizeQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src)
       };
     }
 
@@ -1191,6 +1247,18 @@
       });
     }
 
+    function preserveQrConfigFields(nextConfig, previousConfig) {
+      var prev = normalizeUnifiedCartConfig(previousConfig || {});
+      nextConfig.pago_qr_habilitado = prev.pago_qr_habilitado;
+      nextConfig.pago_qr_proveedor = prev.pago_qr_proveedor;
+      nextConfig.pago_qr_llave = prev.pago_qr_llave;
+      nextConfig.pago_qr_comercio = prev.pago_qr_comercio;
+      nextConfig.pago_qr_payload_oficial = prev.pago_qr_payload_oficial;
+      nextConfig.pago_qr_instrucciones = prev.pago_qr_instrucciones;
+      nextConfig.pago_qr_cuentas = prev.pago_qr_cuentas;
+      return nextConfig;
+    }
+
     async function saveSelectedCarritoConfig() {
       var current = await getConfigFromServer();
       if (!current) current = normalizeConfig({ cantidad: 1, estaciones: [] });
@@ -1198,10 +1266,13 @@
       var nextConfig = readCarritoConfigForm();
 
       if (targetID <= 0) {
+        preserveQrConfigFields(nextConfig, current.carrito_ui_global);
         current.carrito_ui_global = nextConfig;
       } else {
         var station = getStationByID(current, targetID);
         if (!station) throw new Error('No se encontró la estación seleccionada para configurar el carrito.');
+        var previousStationConfig = station.carrito && station.carrito.configuracion ? station.carrito.configuracion : current.carrito_ui_global;
+        preserveQrConfigFields(nextConfig, previousStationConfig);
         station.carrito = normalizeStationCarritoConfig({
           usar_configuracion_global: document.getElementById('carritoConfigUseGlobal').checked,
           configuracion: nextConfig

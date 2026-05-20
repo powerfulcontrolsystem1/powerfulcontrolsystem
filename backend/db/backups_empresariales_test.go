@@ -85,3 +85,34 @@ func TestNormalizeEmpresaConfigBackupTablesFallsBackToFullCatalog(t *testing.T) 
 		t.Fatalf("debe volver al catalogo completo cuando no hay tablas validas: got %d want %d", len(normalized), len(defaults))
 	}
 }
+
+func TestEmpresaBackupProtectedOperationalResetTable(t *testing.T) {
+	protected := []string{
+		"empresa_configuracion_general",
+		"empresa_permisos_modulos",
+		"empresa_impresoras",
+		"empresa_integraciones_apis",
+		"empresa_estacion_prefs",
+		"empresa_backups",
+		"users",
+	}
+	for _, table := range protected {
+		if !empresaBackupProtectedOperationalResetTable(table) {
+			t.Fatalf("tabla de configuracion/sistema debe estar protegida: %s", table)
+		}
+	}
+
+	operational := []string{
+		"carritos_compras",
+		"carrito_compra_items",
+		"codigos_de_descuento",
+		"empresa_finanzas_movimientos",
+		"facturas_electronicas",
+		"clientes",
+	}
+	for _, table := range operational {
+		if empresaBackupProtectedOperationalResetTable(table) {
+			t.Fatalf("tabla operativa no debe estar protegida por defecto: %s", table)
+		}
+	}
+}

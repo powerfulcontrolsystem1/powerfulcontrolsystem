@@ -51,7 +51,7 @@
     "backups.html": [
       ["configuracion", "Configuracion"],
       ["snapshot", "Snapshot"],
-      ["depuracion", "Depuracion"],
+      ["reinicio", "Reiniciar datos"],
       ["historial", "Historial"],
       ["detalle", "Detalle"]
     ],
