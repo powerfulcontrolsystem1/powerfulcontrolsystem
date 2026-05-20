@@ -10458,3 +10458,35 @@ Archivos modificados:
 - web/super/docker_portabilidad.html
 - web/super_administrador.html
 - web/sw.js
+
+2026-05-20 16:40:57 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a5837896; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/backups_empresariales.go
+- backend/db/backups_empresariales_test.go
+- backend/db/datafonos.go
+- backend/db/datafonos_test.go
+- backend/db/offline_ventas.go
+- backend/handlers/backups_empresariales.go
+- backend/handlers/codigos_descuento.go
+- backend/handlers/datafonos.go
+- backend/handlers/datafonos_test.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/handlers/offline_ventas.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/backups.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/codigos_de_descuento.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/estilos.css
+- web/js/personas_activos_submenu.js
