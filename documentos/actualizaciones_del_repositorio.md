@@ -10525,3 +10525,21 @@ Archivos modificados:
 - web/administrar_empresa/reportes_ejecutivos.html
 - web/estilos.css
 - web/js/estaciones_labels.js
+
+2026-05-20 19:34:40 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 9d89de7d; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/db/facturacion_electronica_paises_test.go
+- backend/handlers/documentos_lifecycle.go
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica.html

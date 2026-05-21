@@ -26963,3 +26963,22 @@ Archivos modificados:
 - Cambio funcional: el carrito detecta si ya existe una venta offline pendiente para el mismo carrito/codigo y bloquea el boton de pago hasta sincronizar, evitando duplicados por doble clic o reintento durante caida de internet.
 - Validacion: se comprobo visualmente el carrito en venta directa con modo offline activo, aviso flotante persistente, guardado local de una venta por COP 30000 y sincronizacion posterior contra `/api/empresa/offline_ventas`.
 - Archivos: `web/administrar_empresa/carrito_de_compras.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/historial_de_cambios`.
+
+2026-05-20: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/facturacion_electronica.go
+- backend/db/facturacion_electronica_paises_test.go
+- backend/handlers/documentos_lifecycle.go
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/facturacion_electronica.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/facturacion_electronica.html
