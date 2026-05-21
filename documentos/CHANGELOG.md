@@ -1,3 +1,32 @@
+## [2026-05-21] Botones configurables en acciones del carrito
+- [Configuracion] `Configuracion > Carrito unificado` y `Configuracion > Estaciones` permiten activar u ocultar el panel de cliente y cada boton de acciones del carrito.
+- [Frontend] El carrito aplica visibilidad individual para `Descuentos`, `Cambiar tarifa`, `Control electrico`, `Cancelar carrito`, `Taxi`, `Clientes`, `Abonos` y `Vehiculo`.
+- [Operacion] Si todos los controles de acciones quedan ocultos, la tarjeta de acciones no se muestra vacia.
+- [Alcance] Se guarda en el JSON de `estaciones_config`; no agrega tablas, rutas ni permisos.
+
+## [2026-05-21] Alerta visual configurable en carrito
+- [Configuracion] `Configuracion > Carrito unificado` y `Configuracion > Estaciones` agregan visibilidad del check, minutos de alerta y activacion por defecto.
+- [Frontend] El carrito oculta la alerta si la configuracion no la permite; si se muestra, queda desactivada hasta que el cajero la marque o hasta que la empresa active el default.
+- [Operacion] El temporizador usa el tiempo configurado y ya no se reinicia en cada refresco automatico del carrito.
+- [Alcance] Se guarda en `estaciones_config.carrito_ui_global` y en overrides por estacion; no agrega tablas, rutas ni permisos.
+
+## [2026-05-21] Clientes en carrito por busqueda de nombre
+- [Frontend] `carrito_de_compras.html` retira el texto auxiliar y el selector visible `Cliente registrado` del panel de cliente.
+- [UX] El campo `Nombre / razon social` ahora lista clientes activos por nombre/documento; al elegir uno se asigna al carrito actual.
+- [Operacion] Si se crea un cliente nuevo desde el mismo panel, queda asociado al carrito; si el carrito no tiene cliente, el campo de nombre inicia en blanco.
+- [Alcance] Reutiliza `/api/empresa/clientes` y `/api/empresa/carritos_compra`; no cambia tablas, permisos ni dependencias.
+
+## [2026-05-21] Carrito movil con busqueda primero
+- [Frontend] `estilos.css` ajusta el orden responsive del carrito para que en celular la tarjeta de codigo/SKU, `Agregar` y `Buscar Productos` quede primero.
+- [UX] La columna de totales deja de subirse por encima de la busqueda en pantallas menores a 900px.
+- [Alcance] No cambia HTML, JavaScript, endpoints, tablas, permisos ni el orden de escritorio.
+
+## [2026-05-21] Panel movil sin indicadores economicos
+- [Frontend] `administrar_empresa.html` carga `service_worker_update.js` con version nueva para celulares/PWA.
+- [PWA] `sw.js` sube el cache a `pcs-shell-v4` y pide navegaciones, JS y CSS con `cache: no-store` antes de guardar la copia nueva.
+- [Ayuda] Se retira la referencia antigua que indicaba mostrar USD/COP e indicadores de mercado en el panel.
+- [Validacion] Panel y shell administrativo servidos localmente no contienen `Mercado en contexto`, `Indicadores economicos`, `USD / COP`, `Bitcoin`, `Ethereum`, `S&P 500` ni `Nasdaq 100`.
+
 ## [2026-05-20] Catalogo DIAN Colombia
 - [Backend] Se agrega catalogo de documentos electronicos DIAN Colombia, documentos equivalentes, notas de ajuste, contingencia y eventos RADIAN.
 - [Frontend] `facturacion_electronica.html` muestra una tarjeta Colombia para activar documentos del SFE y guardar la seleccion en `campos_pais_json`.

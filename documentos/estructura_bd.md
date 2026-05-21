@@ -22,6 +22,14 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-21 (alerta visual configurable de carrito)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`, y los overrides por estacion dentro de `estaciones_config.estaciones[].carrito.configuracion`.
+- El JSON `estaciones_config.carrito_ui_global` puede incluir `mostrar_alerta_tiempo_carrito`, `alerta_tiempo_minutos` y `alerta_tiempo_activa_default`.
+- Por defecto la opcion visible y la activacion automatica quedan apagadas; `alerta_tiempo_minutos` se normaliza a 10 minutos si no hay valor valido.
+- El mismo JSON puede incluir banderas de visualizacion por boton de acciones: `mostrar_boton_descuentos_carrito`, `mostrar_boton_cambiar_tarifa_carrito`, `mostrar_boton_control_electrico_carrito`, `mostrar_boton_cancelar_carrito`, `mostrar_boton_taxi_carrito`, `mostrar_boton_clientes_carrito`, `mostrar_boton_abonos_carrito` y `mostrar_boton_vehiculo_carrito`.
+- `mostrar_selector_cliente` controla la visualizacion del panel de cliente del carrito; si `cliente_obligatorio_pago` esta activo, el panel puede mostrarse aunque el panel opcional este apagado para permitir cumplir la regla antes de pagar.
+
 Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.

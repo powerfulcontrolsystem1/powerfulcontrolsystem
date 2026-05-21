@@ -1,3 +1,13 @@
+- 2026-05-21: `Botones del carrito` agrega configuracion para visualizar u ocultar el panel de cliente y cada boton operativo de la barra de acciones: descuentos, cambiar tarifa, control electrico, cancelar, taxi, clientes, abonos y vehiculo.
+
+- 2026-05-21: `Alerta visual de carrito` agrega configuracion por empresa/estacion para mostrar u ocultar el check de alerta, definir minutos y decidir si inicia activada por defecto; queda apagada por defecto y sin tablas nuevas.
+
+- 2026-05-21: `Clientes en carrito` elimina textos redundantes del panel, convierte el campo de nombre en buscador de clientes existentes y asigna automaticamente el cliente elegido o recien creado al carrito activo.
+
+- 2026-05-21: `Carrito movil` prioriza en celular la tarjeta de busqueda/agregado de productos por codigo o boton, antes de totales y demas tarjetas operativas; no cambia el flujo desktop, APIs ni permisos.
+
+- 2026-05-21: `Panel de administrar empresa movil` fuerza refresco de cache PWA/service worker a `pcs-shell-v4`, pide navegaciones y JS/CSS con red primero sin cache vieja, y actualiza la ayuda para que no reaparezcan indicadores economicos antiguos en celulares.
+
 - 2026-05-20: `Facturacion electronica Colombia` agrega catalogo DIAN de documentos electronicos y eventos RADIAN en la pagina por pais, separa obligaciones que normalmente prepara el contador y guarda la seleccion por empresa en `facturacion_electronica_pais.campos_pais_json`; no agrega tablas, permisos ni dependencias.
 
 - 2026-05-20: `Centro de reportes` reemplaza las tarjetas de reportes por un selector y una lista compacta, agrega vista previa imprimible segun papel POS 80mm o carta, y mantiene exportacion directa a PDF, Excel, CSV, JSON y TXT desde `/api/empresa/reportes`.

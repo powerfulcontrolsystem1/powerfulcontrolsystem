@@ -1,3 +1,35 @@
+2026-05-21: Botones configurables en acciones del carrito
+- Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: el panel de cliente y cada boton de la barra de acciones del carrito puede visualizarse u ocultarse desde la configuracion global del carrito o desde la configuracion propia de una estacion.
+- Botones cubiertos: `Descuentos`, `Cambiar tarifa`, `Control electrico`, `Cancelar carrito`, `Taxi`, `Clientes`, `Abonos` y `Vehiculo`. `QR de pago` conserva su configuracion especializada de pagos QR.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` aplica las nuevas banderas de visibilidad y oculta la tarjeta de acciones si no queda ningun control visible.
+- Alcance: no cambia tablas, endpoints ni permisos; las preferencias se guardan dentro de `estaciones_config.carrito_ui_global` o en `estaciones[].carrito.configuracion`.
+
+2026-05-21: Alerta visual configurable en carrito
+- Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: la alerta visual del carrito deja de ser fija de 10 minutos y pasa a configurarse por empresa o por estacion: mostrar/ocultar el check, minutos de alerta y activacion por defecto.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` lee `mostrar_alerta_tiempo_carrito`, `alerta_tiempo_minutos` y `alerta_tiempo_activa_default`; si la opcion no esta visible, el temporizador se apaga. Si esta visible, el cajero puede activarla manualmente y el sistema respeta el tiempo configurado.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/administrar_empresa/configuracion_de_estaciones.html` guardan los campos nuevos dentro de `estaciones_config.carrito_ui_global` o en la configuracion propia de la estacion. Los defaults del backend quedan apagados por defecto con 10 minutos.
+- Alcance: no cambia tablas, endpoints ni permisos; mantiene el JSON existente de preferencias de estaciones.
+
+2026-05-21: Clientes en carrito por busqueda de nombre
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el panel de cliente del carrito deja de mostrar textos redundantes y permite buscar clientes existentes desde el campo `Nombre / razon social`.
+- Frontend: el campo de nombre usa sugerencias de clientes activos; al elegir una sugerencia se actualiza `cliente_id` del carrito con el flujo existente. Si se crea un cliente nuevo desde el panel, tambien queda asignado al carrito activo.
+- Alcance: no cambia backend, tablas, permisos ni configuracion; conserva la validacion de cliente obligatorio para pagar.
+
+2026-05-21: Carrito movil con busqueda primero
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: en celular, la tarjeta para buscar/agregar productos por codigo/SKU o por boton queda como primer bloque operativo del carrito.
+- Frontend: `web/estilos.css` ajusta el orden responsive de `scannerPanel`, `carrito-primary-main`, `carrito-primary-layout` y la columna de totales para evitar que los totales aparezcan antes que la busqueda.
+- Alcance: no cambia backend, base de datos, permisos, configuracion de carrito ni flujo desktop.
+
+2026-05-21: Panel movil sin indicadores economicos
+- Modulos afectados: `administrar_empresa`, `pwa`, `frontend_ux`.
+- Cambio funcional: se fuerza actualizacion de cache para celulares/PWA con `pcs-shell-v4` y se evita que navegaciones, JS y CSS usen copias viejas donde aun existia la tarjeta de indicadores economicos.
+- Frontend: `web/administrar_empresa.html`, `web/sw.js`, `web/js/service_worker_update.js` y `web/ayuda/ayuda.html`.
+- Alcance: no cambia APIs, tablas, permisos ni el panel desktop; solo limpia cache movil y documentacion de ayuda.
+
 2026-05-20: Catalogo DIAN Colombia de documentos electronicos
 - Modulos afectados: `facturacion_electronica`, `frontend_ux`, `contabilidad_colombia`.
 - Backend: `/api/empresa/facturacion_electronica?action=documentos_dian_colombia` expone catalogo Colombia con documentos del SFE, eventos RADIAN, obligaciones de contador y fuentes normativas. Las transiciones documentales aceptan nuevos tipos canonicos sin agregar rutas ni tablas.

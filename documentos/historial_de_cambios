@@ -1,3 +1,36 @@
+2026-05-21: Botones configurables en acciones del carrito.
+- Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: la configuracion del carrito ahora separa la visualizacion del panel de cliente y la visualizacion individual de botones de acciones: descuentos, cambiar tarifa, control electrico, cancelar, taxi, clientes, abonos y vehiculo.
+- Implementacion: se agregan banderas `mostrar_boton_*_carrito` en la normalizacion frontend y en `defaultEmpresaPreconfigCarritoUI`; el carrito aplica `hidden/display` por boton y evita mostrar una tarjeta de acciones vacia.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `backend/handlers/empresa_preconfiguracion.go`, `backend/handlers/empresa_preconfiguracion_carrito_test.go`, documentacion y changelog.
+- Validacion: `go test ./handlers -run TestDefaultEmpresaPreconfigCarritoUISimplificado`, `git diff --check` y parseo de scripts inline de carrito/configuracion sin errores.
+
+2026-05-21: Alerta visual configurable en carrito.
+- Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: el check de alerta visual en acciones del carrito ahora se puede mostrar u ocultar desde configuracion, su tiempo es editable entre 1 y 1440 minutos y queda desactivado por defecto salvo que la empresa active `alerta_tiempo_activa_default`.
+- Implementacion: se agregan `mostrar_alerta_tiempo_carrito`, `alerta_tiempo_minutos` y `alerta_tiempo_activa_default` en la normalizacion frontend y en `defaultEmpresaPreconfigCarritoUI`; el temporizador del carrito conserva el intervalo durante el auto-refresco y solo se reinicia si cambia carrito/tiempo/estado.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`, `web/administrar_empresa/configuracion_de_estaciones.html`, `backend/handlers/empresa_preconfiguracion.go`, `backend/handlers/empresa_preconfiguracion_carrito_test.go`, documentacion y changelog.
+- Validacion: `go test ./handlers -run TestDefaultEmpresaPreconfigCarritoUISimplificado`, `git diff --check` y parseo de scripts inline de carrito/configuracion sin errores.
+
+2026-05-21: Clientes en carrito por busqueda de nombre.
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: se elimina del panel del carrito el texto `Selecciona un cliente existente o registra uno nuevo sin salir del carrito` y el label visible `Cliente registrado`; el campo `Nombre / razon social` ahora funciona como buscador con sugerencias y asigna al carrito el cliente elegido.
+- Operacion: cuando se crea un cliente nuevo desde el boton `Clientes`, el sistema lo guarda y lo asigna al carrito activo; cuando el carrito no tiene `cliente_id`, el campo de nombre se mantiene en blanco al renderizar el panel.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+- Validacion: script inline del carrito parseado con `new Function(...)` sin errores; `git diff --check` sin errores. No cambia APIs, tablas, permisos ni dependencias.
+
+2026-05-21: Carrito movil con busqueda primero.
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: se ajusta el orden responsive para que `scannerPanel` sea la primera tarjeta operativa en celular, con campo de codigo/SKU, boton `Agregar` y boton `Buscar Productos` antes de totales y tarjetas secundarias.
+- Archivos: `web/estilos.css`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+- Validacion: `git diff --check` sin errores; verificacion con PowerShell confirma que el bloque responsive final queda despues de la regla movil anterior que subia los totales y contiene overrides para `scannerPanel` y la columna de totales. El cambio es CSS responsive sin impacto en APIs, tablas ni permisos.
+
+2026-05-21: Panel movil sin indicadores economicos.
+- Modulos afectados: `administrar_empresa`, `pwa`, `frontend_ux`.
+- Cambio funcional: se actualiza el service worker a `pcs-shell-v4`, se cambia el actualizador de cache a `pcs_sw_cache_refresh_v4` y el shell de Administrar empresa carga el script con version nueva para que celulares/PWA dejen de mostrar el panel antiguo con indicadores economicos.
+- Archivos: `web/sw.js`, `web/js/service_worker_update.js`, `web/administrar_empresa.html`, `web/ayuda/ayuda.html`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+- Validacion: `rg` confirma que ya no quedan textos `Mercado en contexto`, `Indicadores economicos`, `USD / COP`, `Bitcoin`, `Ethereum`, `S&P 500` ni `Nasdaq 100` en HTML/JS/CSS del panel; prueba visual local del panel y del shell confirma cero coincidencias.
+
 2026-05-20: Catalogo DIAN Colombia de documentos electronicos.
 - Modulos afectados: `facturacion_electronica`, `contabilidad_colombia`, `frontend_ux`.
 - Backend: `backend/db/facturacion_electronica.go` agrega catalogo de documentos del SFE Colombia, documentos equivalentes electronicos, notas de ajuste, contingencia, eventos RADIAN, obligaciones de contador y fuentes DIAN; `backend/handlers/facturacion_electronica.go` expone `action=documentos_dian_colombia` en la ruta existente.

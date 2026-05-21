@@ -28,6 +28,14 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_control_electrico_carrito",
 		"mostrar_tarjeta_valores_pago",
 		"mostrar_tarjeta_vip_cliente",
+		"mostrar_boton_descuentos_carrito",
+		"mostrar_boton_cambiar_tarifa_carrito",
+		"mostrar_boton_control_electrico_carrito",
+		"mostrar_boton_cancelar_carrito",
+		"mostrar_boton_taxi_carrito",
+		"mostrar_boton_clientes_carrito",
+		"mostrar_boton_abonos_carrito",
+		"mostrar_boton_vehiculo_carrito",
 	}
 	for _, key := range wantTrue {
 		if got, _ := cfg[key].(bool); !got {
@@ -44,11 +52,16 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_desglose_cobro",
 		"mostrar_tarjeta_cobro_estados",
 		"mostrar_tarjeta_comision",
+		"mostrar_alerta_tiempo_carrito",
+		"alerta_tiempo_activa_default",
 	}
 	for _, key := range wantFalse {
 		if got, _ := cfg[key].(bool); got {
 			t.Fatalf("%s debe quedar apagado por defecto", key)
 		}
+	}
+	if got, _ := cfg["alerta_tiempo_minutos"].(int); got != 10 {
+		t.Fatalf("alerta_tiempo_minutos debe quedar en 10 por defecto, got=%v", cfg["alerta_tiempo_minutos"])
 	}
 }
 

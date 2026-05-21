@@ -1,4 +1,4 @@
-const PCS_CACHE = "pcs-shell-v3";
+const PCS_CACHE = "pcs-shell-v4";
 const PCS_SHELL = [
   "/login.html",
   "/img/logo.png",
@@ -11,7 +11,7 @@ function isRuntimeStatic(url) {
 }
 
 function networkFirst(request) {
-  return fetch(request).then(function (response) {
+  return fetch(request, { cache: "no-store" }).then(function (response) {
     if (response && response.ok) {
       var copy = response.clone();
       caches.open(PCS_CACHE).then(function (cache) { cache.put(request, copy); }).catch(function () {});
@@ -56,7 +56,7 @@ self.addEventListener("fetch", function (event) {
   }
 
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(function () { return caches.match("/login.html"); }));
+    event.respondWith(fetch(request, { cache: "no-store" }).catch(function () { return caches.match("/login.html"); }));
     return;
   }
 

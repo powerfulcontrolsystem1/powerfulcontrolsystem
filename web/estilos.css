@@ -18514,3 +18514,35 @@ body.carrito-flat-page #carritoActionToolbar > .btn:hover{
   box-shadow:0 9px 18px rgba(15,23,42,.22) !important;
   transform:translateY(-1px) !important;
 }
+
+@media (max-width:900px){
+  body.carrito-flat-page .carrito-workspace-card{
+    display:flex !important;
+    flex-direction:column !important;
+  }
+
+  body.carrito-flat-page .carrito-primary-layout{
+    order:-20 !important;
+  }
+
+  body.carrito-flat-page .carrito-primary-main{
+    order:-2 !important;
+  }
+
+  body.carrito-flat-page #scannerPanel{
+    order:-100 !important;
+  }
+
+  body.carrito-flat-page #buscarProductosActions{
+    order:-90 !important;
+  }
+
+  body.carrito-flat-page #carritoResumen{
+    order:10 !important;
+  }
+
+  body.carrito-flat-page .carrito-side-column,
+  body.carrito-flat-page #carritoTotalsPanel{
+    order:20 !important;
+  }
+}

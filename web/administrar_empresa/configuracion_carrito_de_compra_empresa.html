@@ -62,7 +62,7 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgCliente" type="checkbox" checked>
-              Mostrar selector de cliente del carrito
+              Visualizar panel de cliente en el carrito
             </label>
           </div>
           <div class="form-col">
@@ -171,8 +171,92 @@
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
               <input id="carritoCfgControlElectrico" type="checkbox" checked>
-              Mostrar boton Control electrico
+              Habilitar modulo Control electrico
             </label>
+          </div>
+        </div>
+
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Botones de acciones del carrito</h3>
+              <p class="form-help mt-0">Activa solo los botones que debe ver el cajero en la barra de acciones.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonDescuentos" type="checkbox" checked>
+                Visualizar boton Descuentos
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonCambiarTarifa" type="checkbox" checked>
+                Visualizar boton Cambiar tarifa
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonControlElectrico" type="checkbox" checked>
+                Visualizar boton Control electrico
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonCancelar" type="checkbox" checked>
+                Visualizar boton Cancelar carrito
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonTaxi" type="checkbox" checked>
+                Visualizar boton Taxi
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonClientes" type="checkbox" checked>
+                Visualizar boton Clientes
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonAbonos" type="checkbox" checked>
+                Visualizar boton Abonos
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgBotonVehiculo" type="checkbox" checked>
+                Visualizar boton Vehiculo
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgMostrarAlertaTiempo" type="checkbox">
+              Mostrar opcion de alerta visual por tiempo en el carrito
+            </label>
+            <div class="form-help">Si esta desactivado, el cajero no vera el check de alerta visual en las acciones del carrito.</div>
+          </div>
+          <div class="form-col maxw-180">
+            <label class="form-label" for="carritoCfgAlertaTiempoMinutos">Minutos de alerta</label>
+            <input id="carritoCfgAlertaTiempoMinutos" type="number" min="1" max="1440" step="1" class="form-input" value="10">
+          </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgAlertaTiempoDefault" type="checkbox">
+              Activar la alerta por defecto al abrir el carrito
+            </label>
+            <div class="form-help">Por defecto queda apagada; el cajero puede activarla manualmente si el check visible esta habilitado.</div>
           </div>
         </div>
 
@@ -371,6 +455,13 @@
       return normalized;
     }
 
+    function clampCarritoAlertMinutes(value) {
+      var parsed = Math.floor(Number(value || 0));
+      if (!Number.isFinite(parsed) || parsed < 1) parsed = 10;
+      if (parsed > 1440) parsed = 1440;
+      return parsed;
+    }
+
     function defaultUnifiedCartConfig() {
       return {
         modo_pantalla_tactil: false,
@@ -400,6 +491,17 @@
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
         mostrar_tarjeta_vip_cliente: true,
+        mostrar_boton_descuentos_carrito: true,
+        mostrar_boton_cambiar_tarifa_carrito: true,
+        mostrar_boton_control_electrico_carrito: true,
+        mostrar_boton_cancelar_carrito: true,
+        mostrar_boton_taxi_carrito: true,
+        mostrar_boton_clientes_carrito: true,
+        mostrar_boton_abonos_carrito: true,
+        mostrar_boton_vehiculo_carrito: true,
+        mostrar_alerta_tiempo_carrito: false,
+        alerta_tiempo_minutos: 10,
+        alerta_tiempo_activa_default: false,
         facturacion_offline_habilitada: false,
         marcar_factura_offline_pendiente: true,
         pago_qr_habilitado: false,
@@ -443,6 +545,22 @@
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : !!src.mostrar_tarjeta_valores_pago,
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : !!src.mostrar_tarjeta_comision,
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente,
+        mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : !!src.mostrar_boton_descuentos_carrito,
+        mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : !!src.mostrar_boton_cambiar_tarifa_carrito,
+        mostrar_boton_control_electrico_carrito: src.mostrar_boton_control_electrico_carrito === undefined
+          ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_boton_control_electrico_carrito : !!src.mostrar_control_electrico_carrito)
+          : !!src.mostrar_boton_control_electrico_carrito,
+        mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined
+          ? base.mostrar_boton_control_electrico_carrito
+          : !!src.mostrar_control_electrico_carrito,
+        mostrar_boton_cancelar_carrito: src.mostrar_boton_cancelar_carrito === undefined ? base.mostrar_boton_cancelar_carrito : !!src.mostrar_boton_cancelar_carrito,
+        mostrar_boton_taxi_carrito: src.mostrar_boton_taxi_carrito === undefined ? base.mostrar_boton_taxi_carrito : !!src.mostrar_boton_taxi_carrito,
+        mostrar_boton_clientes_carrito: src.mostrar_boton_clientes_carrito === undefined ? base.mostrar_boton_clientes_carrito : !!src.mostrar_boton_clientes_carrito,
+        mostrar_boton_abonos_carrito: src.mostrar_boton_abonos_carrito === undefined ? base.mostrar_boton_abonos_carrito : !!src.mostrar_boton_abonos_carrito,
+        mostrar_boton_vehiculo_carrito: src.mostrar_boton_vehiculo_carrito === undefined ? base.mostrar_boton_vehiculo_carrito : !!src.mostrar_boton_vehiculo_carrito,
+        mostrar_alerta_tiempo_carrito: src.mostrar_alerta_tiempo_carrito === undefined ? base.mostrar_alerta_tiempo_carrito : !!src.mostrar_alerta_tiempo_carrito,
+        alerta_tiempo_minutos: clampCarritoAlertMinutes(src.alerta_tiempo_minutos === undefined ? base.alerta_tiempo_minutos : src.alerta_tiempo_minutos),
+        alerta_tiempo_activa_default: src.alerta_tiempo_activa_default === undefined ? base.alerta_tiempo_activa_default : !!src.alerta_tiempo_activa_default,
         facturacion_offline_habilitada: src.facturacion_offline_habilitada === undefined
           ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : !!src.permitir_facturacion_offline)
           : !!src.facturacion_offline_habilitada,
@@ -668,6 +786,17 @@
       document.getElementById('carritoCfgTarjetaComision').checked = !!normalized.mostrar_tarjeta_comision;
       document.getElementById('carritoCfgTarjetaVip').checked = !!normalized.mostrar_tarjeta_vip_cliente;
       document.getElementById('carritoCfgControlElectrico').checked = !!normalized.mostrar_control_electrico_carrito;
+      document.getElementById('carritoCfgBotonDescuentos').checked = !!normalized.mostrar_boton_descuentos_carrito;
+      document.getElementById('carritoCfgBotonCambiarTarifa').checked = !!normalized.mostrar_boton_cambiar_tarifa_carrito;
+      document.getElementById('carritoCfgBotonControlElectrico').checked = !!normalized.mostrar_boton_control_electrico_carrito;
+      document.getElementById('carritoCfgBotonCancelar').checked = !!normalized.mostrar_boton_cancelar_carrito;
+      document.getElementById('carritoCfgBotonTaxi').checked = !!normalized.mostrar_boton_taxi_carrito;
+      document.getElementById('carritoCfgBotonClientes').checked = !!normalized.mostrar_boton_clientes_carrito;
+      document.getElementById('carritoCfgBotonAbonos').checked = !!normalized.mostrar_boton_abonos_carrito;
+      document.getElementById('carritoCfgBotonVehiculo').checked = !!normalized.mostrar_boton_vehiculo_carrito;
+      document.getElementById('carritoCfgMostrarAlertaTiempo').checked = !!normalized.mostrar_alerta_tiempo_carrito;
+      document.getElementById('carritoCfgAlertaTiempoMinutos').value = String(normalized.alerta_tiempo_minutos || 10);
+      document.getElementById('carritoCfgAlertaTiempoDefault').checked = !!normalized.alerta_tiempo_activa_default;
       document.getElementById('carritoCfgDescuentos').checked = !!normalized.mostrar_descuentos;
       document.getElementById('carritoCfgPropina').checked = !!normalized.mostrar_propina;
       document.getElementById('carritoCfgComision').checked = !!normalized.mostrar_comision;
@@ -708,6 +837,17 @@
           'carritoCfgTarjetaComision',
           'carritoCfgTarjetaVip',
           'carritoCfgControlElectrico',
+          'carritoCfgBotonDescuentos',
+          'carritoCfgBotonCambiarTarifa',
+          'carritoCfgBotonControlElectrico',
+          'carritoCfgBotonCancelar',
+          'carritoCfgBotonTaxi',
+          'carritoCfgBotonClientes',
+          'carritoCfgBotonAbonos',
+          'carritoCfgBotonVehiculo',
+          'carritoCfgMostrarAlertaTiempo',
+          'carritoCfgAlertaTiempoMinutos',
+          'carritoCfgAlertaTiempoDefault',
           'carritoCfgDescuentos',
           'carritoCfgPropina',
           'carritoCfgComision',
@@ -757,6 +897,17 @@
           mostrar_tarjeta_comision: document.getElementById('carritoCfgTarjetaComision').checked,
           mostrar_tarjeta_vip_cliente: document.getElementById('carritoCfgTarjetaVip').checked,
           mostrar_control_electrico_carrito: document.getElementById('carritoCfgControlElectrico').checked,
+          mostrar_boton_descuentos_carrito: document.getElementById('carritoCfgBotonDescuentos').checked,
+          mostrar_boton_cambiar_tarifa_carrito: document.getElementById('carritoCfgBotonCambiarTarifa').checked,
+          mostrar_boton_control_electrico_carrito: document.getElementById('carritoCfgBotonControlElectrico').checked,
+          mostrar_boton_cancelar_carrito: document.getElementById('carritoCfgBotonCancelar').checked,
+          mostrar_boton_taxi_carrito: document.getElementById('carritoCfgBotonTaxi').checked,
+          mostrar_boton_clientes_carrito: document.getElementById('carritoCfgBotonClientes').checked,
+          mostrar_boton_abonos_carrito: document.getElementById('carritoCfgBotonAbonos').checked,
+          mostrar_boton_vehiculo_carrito: document.getElementById('carritoCfgBotonVehiculo').checked,
+          mostrar_alerta_tiempo_carrito: document.getElementById('carritoCfgMostrarAlertaTiempo').checked,
+          alerta_tiempo_minutos: document.getElementById('carritoCfgAlertaTiempoMinutos').value,
+          alerta_tiempo_activa_default: document.getElementById('carritoCfgAlertaTiempoDefault').checked,
           mostrar_descuentos: document.getElementById('carritoCfgDescuentos').checked,
           mostrar_propina: document.getElementById('carritoCfgPropina').checked,
           mostrar_comision: document.getElementById('carritoCfgComision').checked,

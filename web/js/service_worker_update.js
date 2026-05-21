@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  var currentCache = "pcs-shell-v3";
-  var reloadKey = "pcs_sw_cache_refresh_v3";
+  var currentCache = "pcs-shell-v4";
+  var reloadKey = "pcs_sw_cache_refresh_v4";
 
   function clearOldCaches() {
     if (!("caches" in window)) {

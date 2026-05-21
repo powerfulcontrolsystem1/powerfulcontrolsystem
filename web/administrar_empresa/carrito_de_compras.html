@@ -134,12 +134,10 @@
         <div class="empresa-section-header compact">
           <div>
             <h3 class="section-heading">Cliente del carrito</h3>
-            <p id="stationCustomerRequiredHint" class="form-help mt-0">Selecciona un cliente existente o registra uno nuevo sin salir del carrito.</p>
           </div>
         </div>
-        <div class="form-row">
+        <div id="stationClienteSelectorRow" class="form-row" hidden>
           <div class="form-col">
-            <label class="form-label" for="stationCarritoClienteID">Cliente registrado</label>
             <select id="stationCarritoClienteID" class="form-input"></select>
           </div>
           <div class="form-col maxw-220 flex-col-end">
@@ -168,7 +166,8 @@
             </div>
             <div class="form-col">
               <label class="form-label" for="quickClienteNombre">Nombre / razon social</label>
-              <input id="quickClienteNombre" class="form-input" autocomplete="off" placeholder="Nombre del cliente">
+              <input id="quickClienteNombre" class="form-input" autocomplete="off" list="quickClienteNombreList" placeholder="Buscar o escribir nombre del cliente">
+              <datalist id="quickClienteNombreList"></datalist>
             </div>
           </div>
           <div class="form-row">
@@ -208,9 +207,9 @@
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
           <button type="button" id="carritoBtnControlElectrico" class="btn secondary">Control electrico</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
-          <label class="form-help inline-check carrito-alert10-check">
-            <input type="checkbox" id="carritoAlerta10Enable" checked>
-            Alerta visual 10 min
+          <label id="carritoAlertaTiempoControl" class="form-help inline-check carrito-alert10-check" hidden>
+            <input type="checkbox" id="carritoAlerta10Enable">
+            <span id="carritoAlertaTiempoLabel">Alerta visual</span>
           </label>
           <button type="button" id="carritoBtnTaxi" class="btn secondary">Taxi</button>
           <button type="button" id="carritoBtnClientes" class="btn secondary">Clientes</button>
@@ -649,6 +648,8 @@
       stationCartUI: null,
       stationUpdateInterval: null,
       stationAlert10Interval: null,
+      stationAlert10IntervalKey: '',
+      stationAlert10ControlKey: '',
       controlElectrico: {
         loaded: false,
         config: null,
@@ -1239,6 +1240,17 @@
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
         mostrar_tarjeta_vip_cliente: true,
+        mostrar_boton_descuentos_carrito: true,
+        mostrar_boton_cambiar_tarifa_carrito: true,
+        mostrar_boton_control_electrico_carrito: true,
+        mostrar_boton_cancelar_carrito: true,
+        mostrar_boton_taxi_carrito: true,
+        mostrar_boton_clientes_carrito: true,
+        mostrar_boton_abonos_carrito: true,
+        mostrar_boton_vehiculo_carrito: true,
+        mostrar_alerta_tiempo_carrito: false,
+        alerta_tiempo_minutos: 10,
+        alerta_tiempo_activa_default: false,
         facturacion_offline_habilitada: false,
         marcar_factura_offline_pendiente: true,
         pago_qr_habilitado: false,
@@ -1293,6 +1305,13 @@
       return normalized;
     }
 
+    function clampCarritoAlertMinutes(value) {
+      let parsed = Math.floor(Number(value || 0));
+      if (!Number.isFinite(parsed) || parsed < 1) parsed = 10;
+      if (parsed > 1440) parsed = 1440;
+      return parsed;
+    }
+
     function normalizeUnifiedCartUIConfig(raw) {
       const base = defaultUnifiedCartUIConfig();
       const src = raw && typeof raw === 'object' ? raw : {};
@@ -1324,6 +1343,22 @@
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : Boolean(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : Boolean(src.mostrar_tarjeta_comision),
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente),
+        mostrar_boton_descuentos_carrito: src.mostrar_boton_descuentos_carrito === undefined ? base.mostrar_boton_descuentos_carrito : Boolean(src.mostrar_boton_descuentos_carrito),
+        mostrar_boton_cambiar_tarifa_carrito: src.mostrar_boton_cambiar_tarifa_carrito === undefined ? base.mostrar_boton_cambiar_tarifa_carrito : Boolean(src.mostrar_boton_cambiar_tarifa_carrito),
+        mostrar_boton_control_electrico_carrito: src.mostrar_boton_control_electrico_carrito === undefined
+          ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_boton_control_electrico_carrito : Boolean(src.mostrar_control_electrico_carrito))
+          : Boolean(src.mostrar_boton_control_electrico_carrito),
+        mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined
+          ? base.mostrar_boton_control_electrico_carrito
+          : Boolean(src.mostrar_control_electrico_carrito),
+        mostrar_boton_cancelar_carrito: src.mostrar_boton_cancelar_carrito === undefined ? base.mostrar_boton_cancelar_carrito : Boolean(src.mostrar_boton_cancelar_carrito),
+        mostrar_boton_taxi_carrito: src.mostrar_boton_taxi_carrito === undefined ? base.mostrar_boton_taxi_carrito : Boolean(src.mostrar_boton_taxi_carrito),
+        mostrar_boton_clientes_carrito: src.mostrar_boton_clientes_carrito === undefined ? base.mostrar_boton_clientes_carrito : Boolean(src.mostrar_boton_clientes_carrito),
+        mostrar_boton_abonos_carrito: src.mostrar_boton_abonos_carrito === undefined ? base.mostrar_boton_abonos_carrito : Boolean(src.mostrar_boton_abonos_carrito),
+        mostrar_boton_vehiculo_carrito: src.mostrar_boton_vehiculo_carrito === undefined ? base.mostrar_boton_vehiculo_carrito : Boolean(src.mostrar_boton_vehiculo_carrito),
+        mostrar_alerta_tiempo_carrito: src.mostrar_alerta_tiempo_carrito === undefined ? base.mostrar_alerta_tiempo_carrito : Boolean(src.mostrar_alerta_tiempo_carrito),
+        alerta_tiempo_minutos: clampCarritoAlertMinutes(src.alerta_tiempo_minutos === undefined ? base.alerta_tiempo_minutos : src.alerta_tiempo_minutos),
+        alerta_tiempo_activa_default: src.alerta_tiempo_activa_default === undefined ? base.alerta_tiempo_activa_default : Boolean(src.alerta_tiempo_activa_default),
         facturacion_offline_habilitada: src.facturacion_offline_habilitada === undefined
           ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : Boolean(src.permitir_facturacion_offline))
           : Boolean(src.facturacion_offline_habilitada),
@@ -1705,11 +1740,79 @@
       }
     }
 
+    function syncCarritoAlertTimeControl(ui) {
+      const control = document.getElementById('carritoAlertaTiempoControl');
+      const checkbox = document.getElementById('carritoAlerta10Enable');
+      const label = document.getElementById('carritoAlertaTiempoLabel');
+      if (!control || !checkbox) return;
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const visible = focusedSaleMode && Boolean(ui && ui.mostrar_tarjeta_acciones_carrito && ui.mostrar_alerta_tiempo_carrito);
+      const minutes = clampCarritoAlertMinutes(ui && ui.alerta_tiempo_minutos);
+      control.hidden = !visible;
+      control.style.display = visible ? '' : 'none';
+      if (label) label.textContent = 'Alerta visual cada ' + String(minutes) + ' min';
+      const selected = getSelectedCarrito();
+      const key = [
+        Number(selected && selected.id || 0),
+        visible ? '1' : '0',
+        minutes,
+        ui && ui.alerta_tiempo_activa_default ? '1' : '0'
+      ].join('|');
+      if (!visible) {
+        checkbox.checked = false;
+        state.stationAlert10ControlKey = '';
+        stopStationAlert10Timer();
+        return;
+      }
+      if (state.stationAlert10ControlKey !== key) {
+        checkbox.checked = Boolean(ui && ui.alerta_tiempo_activa_default);
+        state.stationAlert10ControlKey = key;
+      }
+      ensureStationAlert10Timer();
+    }
+
+    function setCarritoActionControlVisible(id, visible) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.hidden = !visible;
+      el.style.display = visible ? '' : 'none';
+    }
+
+    function syncCarritoActionButtons(ui) {
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      const actionsVisible = focusedSaleMode && Boolean(ui && ui.mostrar_tarjeta_acciones_carrito);
+      setCarritoActionControlVisible('carritoBtnDescuentos', actionsVisible && Boolean(ui.mostrar_boton_descuentos_carrito));
+      setCarritoActionControlVisible('carritoBtnCambiarTarifa', actionsVisible && Boolean(ui.mostrar_boton_cambiar_tarifa_carrito));
+      setCarritoActionControlVisible('carritoBtnControlElectrico', actionsVisible && Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito));
+      setCarritoActionControlVisible('carritoBtnCancelarCarrito', actionsVisible && Boolean(ui.mostrar_boton_cancelar_carrito));
+      setCarritoActionControlVisible('carritoBtnTaxi', actionsVisible && Boolean(ui.mostrar_boton_taxi_carrito));
+      setCarritoActionControlVisible('carritoBtnClientes', actionsVisible && Boolean(ui.mostrar_boton_clientes_carrito));
+      setCarritoActionControlVisible('carritoBtnAbonos', actionsVisible && Boolean(ui.mostrar_boton_abonos_carrito));
+      setCarritoActionControlVisible('carritoBtnVehiculo', actionsVisible && Boolean(ui.mostrar_boton_vehiculo_carrito));
+    }
+
+    function hasVisibleCarritoActionControl(ui) {
+      const cfg = normalizeUnifiedCartUIConfig(ui || {});
+      return Boolean(
+        cfg.mostrar_boton_descuentos_carrito ||
+        cfg.mostrar_boton_cambiar_tarifa_carrito ||
+        (cfg.mostrar_control_electrico_carrito && cfg.mostrar_boton_control_electrico_carrito) ||
+        cfg.mostrar_boton_cancelar_carrito ||
+        cfg.mostrar_boton_taxi_carrito ||
+        cfg.mostrar_boton_clientes_carrito ||
+        cfg.mostrar_boton_abonos_carrito ||
+        cfg.pago_qr_habilitado ||
+        cfg.mostrar_boton_vehiculo_carrito ||
+        cfg.mostrar_alerta_tiempo_carrito
+      );
+    }
+
     function applyStationCartUIConfig() {
       const ui = getCurrentStationCartUIConfig();
       state.stationCartUI = ui;
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       placeVipCardBelowTotals();
+      syncCarritoActionButtons(ui);
 
       const searchActions = document.getElementById('buscarProductosActions');
       if (searchActions) {
@@ -1725,9 +1828,7 @@
 
       const btnControlElectrico = document.getElementById('carritoBtnControlElectrico');
       if (btnControlElectrico) {
-        const showControlElectrico = Boolean(ui.mostrar_control_electrico_carrito);
-        btnControlElectrico.style.display = showControlElectrico ? '' : 'none';
-        btnControlElectrico.hidden = !showControlElectrico;
+        const showControlElectrico = Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito);
         if (!showControlElectrico) {
           const panel = document.getElementById('carritoControlElectricoPanel');
           if (panel) {
@@ -1743,6 +1844,7 @@
         btnPagoQR.style.display = showPagoQR ? '' : 'none';
         btnPagoQR.hidden = !showPagoQR;
       }
+      syncCarritoAlertTimeControl(ui);
 
       const itemCatalogSearchRow = document.getElementById('itemCatalogSearchRow');
       const itemCatalogSection = document.getElementById('itemCatalogSection');
@@ -1806,7 +1908,7 @@
 
       const actionsCard = document.getElementById('stationCartActionsCard');
       if (actionsCard) {
-        const showActionsCard = Boolean(ui.mostrar_tarjeta_acciones_carrito) && focusedSaleMode && Boolean(getSelectedCarrito());
+        const showActionsCard = Boolean(ui.mostrar_tarjeta_acciones_carrito) && hasVisibleCarritoActionControl(ui) && focusedSaleMode && Boolean(getSelectedCarrito());
         actionsCard.classList.toggle('is-hidden', !showActionsCard);
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';
@@ -5209,6 +5311,58 @@
       }) || null;
     }
 
+    function clienteSearchLabel(cliente) {
+      if (!cliente) return '';
+      const name = normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial) || 'Cliente';
+      const doc = [normalize(cliente.tipo_documento), normalize(cliente.numero_documento)].filter(Boolean).join(' ');
+      return name + (doc ? (' - ' + doc) : '');
+    }
+
+    function fillQuickClienteNombreList() {
+      const list = document.getElementById('quickClienteNombreList');
+      if (!list) return;
+      list.innerHTML = '';
+      state.clientes.forEach(function(c) {
+        if (normalize(c.estado) && normalize(c.estado) !== 'activo') return;
+        const label = clienteSearchLabel(c);
+        if (!label) return;
+        const opt = document.createElement('option');
+        opt.value = label;
+        list.appendChild(opt);
+      });
+    }
+
+    function resolveClienteFromNameSearch(value) {
+      const target = normalize(value).toLowerCase();
+      if (!target) return null;
+      return state.clientes.find(function(c) {
+        if (normalize(c.estado) && normalize(c.estado) !== 'activo') return false;
+        const labels = [
+          clienteSearchLabel(c),
+          normalize(c.nombre_razon_social),
+          normalize(c.nombre_comercial),
+          normalize(c.numero_documento)
+        ].filter(Boolean).map(function(v) { return normalize(v).toLowerCase(); });
+        return labels.indexOf(target) !== -1;
+      }) || null;
+    }
+
+    function syncQuickClienteNameInput(carrito) {
+      const input = document.getElementById('quickClienteNombre');
+      if (!input) return;
+      fillQuickClienteNombreList();
+      const cartID = Number(carrito && carrito.id || 0);
+      const sameCart = Number(input.dataset.carritoId || 0) === cartID;
+      const previousAssignedID = Number(input.dataset.assignedClienteId || 0);
+      const selectedID = Number(carrito && carrito.cliente_id || 0);
+      const cliente = getClienteByID(selectedID);
+      const nextValue = cliente ? clienteSearchLabel(cliente) : '';
+      if (document.activeElement === input && sameCart && normalize(input.value) && input.value !== nextValue && (!previousAssignedID || previousAssignedID === selectedID)) return;
+      if (input.value !== nextValue) input.value = nextValue;
+      input.dataset.carritoId = String(cartID || '');
+      input.dataset.assignedClienteId = String(selectedID || '');
+    }
+
     function customerRequiredForCurrentCart() {
       const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
       return Boolean(ui.cliente_obligatorio_pago);
@@ -5224,11 +5378,12 @@
     function toggleQuickClienteForm(show) {
       const form = document.getElementById('stationClienteQuickForm');
       if (!form) return;
+      const wasHidden = form.hidden;
       const visible = show === undefined ? form.hidden : Boolean(show);
       form.hidden = !visible;
       form.classList.toggle('is-hidden', !visible);
       form.style.display = visible ? '' : 'none';
-      if (visible) {
+      if (visible && wasHidden) {
         const name = document.getElementById('quickClienteNombre');
         if (name && typeof name.focus === 'function') name.focus();
       }
@@ -5244,22 +5399,17 @@
       card.classList.toggle('is-hidden', !show);
       card.style.display = show ? '' : 'none';
       if (!show) return;
+      toggleQuickClienteForm(true);
 
       const selectedID = Number(carrito && carrito.cliente_id || 0);
       fillStationClientesSelect(selectedID);
+      syncQuickClienteNameInput(carrito);
       const cliente = getClienteByID(selectedID);
       const actual = document.getElementById('stationClienteActual');
       if (actual) {
         actual.textContent = cliente
           ? 'Cliente actual: ' + (normalize(cliente.nombre_razon_social) || ('Cliente #' + selectedID))
           : 'Cliente actual: consumidor final.';
-      }
-      const hint = document.getElementById('stationCustomerRequiredHint');
-      if (hint) {
-        hint.textContent = ui.cliente_obligatorio_pago
-          ? 'Cliente obligatorio para pagar: selecciona uno existente o registra uno nuevo desde este panel.'
-          : 'Selecciona un cliente existente o registra uno nuevo sin salir del carrito.';
-        hint.style.color = ui.cliente_obligatorio_pago && !selectedID ? '#ef5350' : '';
       }
     }
 
@@ -5307,10 +5457,30 @@
       setStationClienteMessage(id > 0 ? 'Cliente asignado al carrito.' : 'El carrito quedo como consumidor final.', false);
     }
 
+    async function assignClienteFromNameSearch() {
+      const input = document.getElementById('quickClienteNombre');
+      if (!input) return false;
+      const cliente = resolveClienteFromNameSearch(input.value);
+      if (!cliente || !Number(cliente.id || 0)) return false;
+      const selected = getSelectedCarrito();
+      if (selected && Number(selected.cliente_id || 0) === Number(cliente.id || 0)) {
+        syncQuickClienteNameInput(selected);
+        return true;
+      }
+      await assignClienteToSelectedCarrito(Number(cliente.id || 0));
+      return true;
+    }
+
     async function createClienteFromCartButton() {
       const nombre = normalize(document.getElementById('quickClienteNombre').value);
       const documento = normalize(document.getElementById('quickClienteDocumento').value);
       const tipoDoc = normalize(document.getElementById('quickClienteTipoDoc').value) || 'CC';
+      try {
+        if (await assignClienteFromNameSearch()) return;
+      } catch (err) {
+        setStationClienteMessage(err.message || 'No se pudo asignar el cliente al carrito.', true);
+        return;
+      }
       if (!nombre || !documento) {
         setStationClienteMessage('Nombre y documento del cliente son obligatorios.', true);
         return;
@@ -5341,11 +5511,11 @@
         if (newID > 0) {
           await assignClienteToSelectedCarrito(newID);
         }
-        ['quickClienteDocumento', 'quickClienteNombre', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
+        ['quickClienteDocumento', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
           const el = document.getElementById(id);
           if (el) el.value = '';
         });
-        toggleQuickClienteForm(false);
+        syncQuickClienteNameInput(getSelectedCarrito());
         setStationClienteMessage('Cliente creado y asignado al carrito.', false);
       } catch (err) {
         setStationClienteMessage(err.message || 'No se pudo crear el cliente desde el carrito.', true);
@@ -6506,7 +6676,7 @@
       const selected = getSelectedCarrito();
       const stationID = resolveCarritoEstacionID(selected);
       const stationUI = getCurrentStationCartUIConfig();
-      if (!stationUI.mostrar_control_electrico_carrito) {
+      if (!stationUI.mostrar_control_electrico_carrito || !stationUI.mostrar_boton_control_electrico_carrito) {
         setMessage('itemMsg', 'El boton Control electrico esta desactivado en la configuracion del carrito.', true);
         return;
       }
@@ -6648,18 +6818,34 @@
         clearInterval(state.stationAlert10Interval);
         state.stationAlert10Interval = null;
       }
+      state.stationAlert10IntervalKey = '';
     }
 
     function ensureStationAlert10Timer() {
-      stopStationAlert10Timer();
-      if (!state.stationMode) return;
+      const ui = normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+      const focusedSaleMode = state.stationMode || state.directSaleMode;
+      if (!focusedSaleMode || !ui.mostrar_tarjeta_acciones_carrito || !ui.mostrar_alerta_tiempo_carrito) {
+        stopStationAlert10Timer();
+        return;
+      }
       const cb = document.getElementById('carritoAlerta10Enable');
-      if (!cb || !cb.checked) return;
+      if (!cb || !cb.checked) {
+        stopStationAlert10Timer();
+        return;
+      }
       const selected = getSelectedCarrito();
-      if (!selected || !isCarritoOperativoActivo(selected)) return;
+      if (!selected || !isCarritoOperativoActivo(selected)) {
+        stopStationAlert10Timer();
+        return;
+      }
+      const minutes = clampCarritoAlertMinutes(ui.alerta_tiempo_minutos);
+      const key = [Number(selected.id || 0), minutes, cb.checked ? '1' : '0'].join('|');
+      if (state.stationAlert10Interval && state.stationAlert10IntervalKey === key) return;
+      stopStationAlert10Timer();
+      state.stationAlert10IntervalKey = key;
       state.stationAlert10Interval = setInterval(function() {
-        showCarritoAlert('Alerta visual: quedan 10 minutos para revisar este carrito.');
-      }, 600000);
+        showCarritoAlert('Alerta visual: revisa este carrito. Han pasado ' + String(minutes) + ' minutos.');
+      }, minutes * 60000);
     }
 
     function renderProductosCarritoTable() {
@@ -7611,6 +7797,23 @@
     if (quickClienteGuardarBtn) {
       quickClienteGuardarBtn.addEventListener('click', function() {
         createClienteFromCartButton();
+      });
+    }
+    const quickClienteNombreInput = document.getElementById('quickClienteNombre');
+    if (quickClienteNombreInput) {
+      quickClienteNombreInput.addEventListener('change', async function() {
+        try {
+          await assignClienteFromNameSearch();
+        } catch (err) {
+          setStationClienteMessage(err.message || 'No se pudo asignar el cliente al carrito.', true);
+        }
+      });
+      quickClienteNombreInput.addEventListener('blur', async function() {
+        try {
+          await assignClienteFromNameSearch();
+        } catch (err) {
+          setStationClienteMessage(err.message || 'No se pudo asignar el cliente al carrito.', true);
+        }
       });
     }
     ['quickClienteDocumento', 'quickClienteNombre', 'quickClienteTelefono', 'quickClienteEmail'].forEach(function(id) {
