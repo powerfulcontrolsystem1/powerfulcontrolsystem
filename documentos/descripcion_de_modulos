@@ -1,3 +1,10 @@
+2026-05-20: Catalogo DIAN Colombia de documentos electronicos
+- Modulos afectados: `facturacion_electronica`, `frontend_ux`, `contabilidad_colombia`.
+- Backend: `/api/empresa/facturacion_electronica?action=documentos_dian_colombia` expone catalogo Colombia con documentos del SFE, eventos RADIAN, obligaciones de contador y fuentes normativas. Las transiciones documentales aceptan nuevos tipos canonicos sin agregar rutas ni tablas.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` muestra una tarjeta Colombia para activar documentos/eventos DIAN y otra lista separada de obligaciones contables que preparan contadores.
+- Configuracion: `facturacion_electronica_pais.campos_pais_json` guarda `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version` por empresa y pais.
+- Alcance: no implementa transporte real nuevo para cada anexo DIAN; deja catalogo, configuracion, persistencia documental y cola fiscal preparados para proveedor/API real por empresa.
+
 2026-05-20: Centro de reportes por selector y vista imprimible
 - Modulos afectados: `reportes`, `frontend_ux`, `exportaciones`.
 - Cambio funcional: el centro unico de reportes deja de presentar tarjetas por informe y usa un selector/lista compacta para todos los datasets disponibles.
@@ -23,6 +30,7 @@
 2026-05-20: Facturacion offline desde carrito.
 - Modulos afectados: `carritos`, `ventas_simple`, `inventario`, `caja`, `facturacion`, `frontend_ux`.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` detecta caida de internet, muestra aviso flotante permanente mientras dure el modo offline, imprime soporte provisional y guarda la venta en `localStorage` por empresa.
+- Control local: cuando una venta ya quedo guardada offline para el mismo carrito/codigo, el boton de pago queda bloqueado y muestra la referencia pendiente para evitar cierres duplicados antes de sincronizar.
 - Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega checks para activar/desactivar facturacion offline y para mostrar/ocultar la marca `OFFLINE/Pendiente de sincronizar` en el impreso, activa por defecto.
 - Backend: `/api/empresa/offline_ventas` sincroniza ventas pendientes, mantiene idempotencia por `empresa_id + sync_key`, reutiliza el carrito unificado, reserva/descarga inventario al crear items, paga el carrito, actualiza caja del usuario, metricas y documento de venta.
 - Caja multiusuario: la sincronizacion respeta `usuario_creador`, `cierre_caja_id`, `caja_codigo`, `turno` y `sucursal_id`; si el usuario no tiene caja abierta, abre una para ese usuario sin mezclar otras cajas de la misma empresa.

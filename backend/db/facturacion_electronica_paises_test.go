@@ -89,6 +89,49 @@ func TestDefaultFacturacionConfigPaisAplicaProveedorYCampos(t *testing.T) {
 	}
 }
 
+func TestCatalogoDianColombiaIncluyeDocumentosYObligacionesContables(t *testing.T) {
+	cfg := defaultFacturacionConfig(10, "CO")
+	var extra map[string]interface{}
+	if err := json.Unmarshal([]byte(cfg.CamposPaisJSON), &extra); err != nil {
+		t.Fatalf("invalid Colombia JSON: %v", err)
+	}
+
+	docsRaw, ok := extra["documentos_soportados"].([]interface{})
+	if !ok {
+		t.Fatalf("expected documentos_soportados array, got %#v", extra["documentos_soportados"])
+	}
+	wantDocs := map[string]bool{
+		"factura_electronica":                      false,
+		"nota_credito":                             false,
+		"nota_debito":                              false,
+		"documento_soporte":                        false,
+		"nota_ajuste_documento_soporte":            false,
+		"nomina_electronica":                       false,
+		"nota_ajuste_nomina_electronica":           false,
+		"documento_equivalente_pos":                false,
+		"nota_ajuste_documento_equivalente":        false,
+		"documento_equivalente_servicios_publicos": false,
+		"eventos_radian_recepcion":                 false,
+	}
+	for _, raw := range docsRaw {
+		if _, exists := wantDocs[raw.(string)]; exists {
+			wantDocs[raw.(string)] = true
+		}
+	}
+	for code, found := range wantDocs {
+		if !found {
+			t.Fatalf("missing DIAN document %s in %#v", code, docsRaw)
+		}
+	}
+
+	if got := ListFacturacionDianObligacionesContadores(); len(got) < 4 {
+		t.Fatalf("expected accounting obligations for Colombia, got %#v", got)
+	}
+	if got := ListFacturacionDianFuentesNormativas(); len(got) < 3 {
+		t.Fatalf("expected official DIAN sources, got %#v", got)
+	}
+}
+
 func TestBuildFacturacionPanamaChecklistIndependiente(t *testing.T) {
 	cfg := defaultFacturacionConfig(7, "PA")
 	cfg.IdentificadorFiscal = "155555-1-555555"

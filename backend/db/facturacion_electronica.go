@@ -63,6 +63,35 @@ type FacturacionEcuadorFuenteNormativa struct {
 	URL    string `json:"url"`
 }
 
+// FacturacionDianDocumentoCatalogItem describe documentos y eventos del SFE Colombia.
+type FacturacionDianDocumentoCatalogItem struct {
+	Codigo               string `json:"codigo"`
+	Titulo               string `json:"titulo"`
+	Categoria            string `json:"categoria"`
+	Alcance              string `json:"alcance"`
+	ModuloSugerido       string `json:"modulo_sugerido"`
+	EstadoImplementacion string `json:"estado_implementacion"`
+	RequiereNumeracion   bool   `json:"requiere_numeracion"`
+	RequiereFirma        bool   `json:"requiere_firma"`
+	EsEvento             bool   `json:"es_evento"`
+	Observacion          string `json:"observacion"`
+}
+
+// FacturacionDianObligacionContableItem lista obligaciones que suelen preparar contadores.
+type FacturacionDianObligacionContableItem struct {
+	Codigo       string `json:"codigo"`
+	Titulo       string `json:"titulo"`
+	Tipo         string `json:"tipo"`
+	Envio        string `json:"envio"`
+	Periodicidad string `json:"periodicidad"`
+	Descripcion  string `json:"descripcion"`
+}
+
+type FacturacionDianFuenteNormativa struct {
+	Titulo string `json:"titulo"`
+	URL    string `json:"url"`
+}
+
 // FacturacionElectronicaPaisConfig define configuración FE por empresa y país.
 type FacturacionElectronicaPaisConfig struct {
 	ID                            int64  `json:"id"`
@@ -517,6 +546,60 @@ func defaultFacturacionConfig(empresaID int64, paisCodigo string) FacturacionEle
 	return cfg
 }
 
+func DefaultFacturacionDianDocumentosSoportados() []string {
+	items := ListFacturacionDianDocumentosElectronicos()
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		out = append(out, item.Codigo)
+	}
+	return out
+}
+
+func ListFacturacionDianDocumentosElectronicos() []FacturacionDianDocumentoCatalogItem {
+	return []FacturacionDianDocumentoCatalogItem{
+		{Codigo: "factura_electronica", Titulo: "Factura electronica de venta", Categoria: "Venta", Alcance: "Venta de bienes o servicios validada previamente por DIAN.", ModuloSugerido: "ventas_simple/carritos", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "nota_credito", Titulo: "Nota credito electronica", Categoria: "Ajustes de venta", Alcance: "Disminuye, corrige o reversa valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "base_operativa", RequiereFirma: true},
+		{Codigo: "nota_debito", Titulo: "Nota debito electronica", Categoria: "Ajustes de venta", Alcance: "Aumenta o corrige valores de una factura electronica.", ModuloSugerido: "facturacion_electronica", EstadoImplementacion: "base_operativa", RequiereFirma: true},
+		{Codigo: "factura_talonario_contingencia", Titulo: "Reporte de factura de talonario o papel por contingencia", Categoria: "Contingencia", Alcance: "Reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.", ModuloSugerido: "facturacion_electronica/offline", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_soporte", Titulo: "Documento soporte en adquisiciones a no obligados", Categoria: "Compras", Alcance: "Soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.", ModuloSugerido: "compras", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "nota_ajuste_documento_soporte", Titulo: "Nota de ajuste del documento soporte", Categoria: "Compras", Alcance: "Ajusta o corrige un documento soporte de adquisiciones.", ModuloSugerido: "compras", EstadoImplementacion: "catalogado", RequiereFirma: true},
+		{Codigo: "nomina_electronica", Titulo: "Documento soporte de pago de nomina electronica", Categoria: "Nomina", Alcance: "Soporta valores devengados, deducidos y pagados a empleados.", ModuloSugerido: "nomina", EstadoImplementacion: "base_operativa", RequiereFirma: true},
+		{Codigo: "nota_ajuste_nomina_electronica", Titulo: "Nota de ajuste de nomina electronica", Categoria: "Nomina", Alcance: "Ajusta o corrige documentos soporte de pago de nomina electronica.", ModuloSugerido: "nomina", EstadoImplementacion: "catalogado", RequiereFirma: true},
+		{Codigo: "documento_equivalente_pos", Titulo: "Documento equivalente electronico POS", Categoria: "Documentos equivalentes", Alcance: "Tiquete de maquina registradora con sistema POS transmitido para validacion.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "base_operativa", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "nota_ajuste_documento_equivalente", Titulo: "Nota de ajuste del documento equivalente electronico", Categoria: "Documentos equivalentes", Alcance: "Ajusta errores aritmeticos o de contenido en documentos equivalentes electronicos.", ModuloSugerido: "pos/carritos", EstadoImplementacion: "catalogado", RequiereFirma: true},
+		{Codigo: "documento_equivalente_servicios_publicos", Titulo: "Documento equivalente electronico de servicios publicos", Categoria: "Documentos equivalentes", Alcance: "Documento electronico aplicable a servicios publicos domiciliarios.", ModuloSugerido: "verticales/servicios_publicos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_transporte_pasajeros", Titulo: "Documento equivalente electronico de transporte de pasajeros", Categoria: "Documentos equivalentes", Alcance: "Tiquete de transporte de pasajeros cuando aplique la modalidad equivalente.", ModuloSugerido: "verticales/transporte", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_extracto", Titulo: "Documento equivalente electronico extracto", Categoria: "Documentos equivalentes", Alcance: "Extracto reconocido como documento equivalente electronico segun actividad.", ModuloSugerido: "contabilidad", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_transporte_aereo", Titulo: "Documento equivalente electronico de transporte aereo", Categoria: "Documentos equivalentes", Alcance: "Tiquete o billete de transporte aereo de pasajeros.", ModuloSugerido: "verticales/transporte", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_juegos_suerte_azar", Titulo: "Documento equivalente electronico de juegos de suerte y azar", Categoria: "Documentos equivalentes", Alcance: "Boleta, fraccion, formulario, carton, billete o instrumento de juegos de suerte y azar no localizados.", ModuloSugerido: "verticales/juegos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_juegos_localizados", Titulo: "Documento equivalente electronico de juegos localizados", Categoria: "Documentos equivalentes", Alcance: "Documento emitido para juegos localizados segun la actividad.", ModuloSugerido: "verticales/juegos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_peajes", Titulo: "Documento equivalente electronico de peajes", Categoria: "Documentos equivalentes", Alcance: "Documento expedido para cobro de peajes.", ModuloSugerido: "verticales/peajes", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_bolsa_valores", Titulo: "Comprobante electronico de Bolsa de Valores", Categoria: "Documentos equivalentes", Alcance: "Comprobante de liquidacion de operaciones expedido por la Bolsa de Valores.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_bolsa_agropecuaria", Titulo: "Documento electronico de bolsa agropecuaria y commodities", Categoria: "Documentos equivalentes", Alcance: "Operaciones de bolsa agropecuaria y de otros commodities.", ModuloSugerido: "contabilidad/tesoreria", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_espectaculos", Titulo: "Documento equivalente electronico de espectaculos publicos", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a espectaculos publicos de artes escenicas y otros espectaculos.", ModuloSugerido: "verticales/eventos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "documento_equivalente_cine", Titulo: "Documento equivalente electronico de cine", Categoria: "Documentos equivalentes", Alcance: "Boleta de ingreso a cine.", ModuloSugerido: "verticales/eventos", EstadoImplementacion: "catalogado", RequiereNumeracion: true, RequiereFirma: true},
+		{Codigo: "eventos_radian_recepcion", Titulo: "Eventos de recepcion y aceptacion RADIAN", Categoria: "Eventos", Alcance: "Acuse de recibo, recibo de bienes o servicios, aceptacion, reclamo y trazabilidad de factura como titulo valor.", ModuloSugerido: "facturacion_electronica/radian", EstadoImplementacion: "catalogado", RequiereFirma: true, EsEvento: true, Observacion: "Son eventos/servicios asociados a facturas electronicas, no una venta nueva."},
+	}
+}
+
+func ListFacturacionDianObligacionesContadores() []FacturacionDianObligacionContableItem {
+	return []FacturacionDianObligacionContableItem{
+		{Codigo: "declaraciones_tributarias", Titulo: "Declaraciones tributarias", Tipo: "Obligacion fiscal", Envio: "Servicios informaticos DIAN", Periodicidad: "Segun calendario tributario", Descripcion: "IVA, retencion, renta y otros formularios que no son documentos UBL de factura."},
+		{Codigo: "informacion_exogena", Titulo: "Informacion exogena / medios magneticos", Tipo: "Reporte tributario", Envio: "Servicios informaticos DIAN", Periodicidad: "Anual o segun resolucion vigente", Descripcion: "Reportes de terceros, pagos, retenciones y saldos preparados desde la contabilidad."},
+		{Codigo: "certificados_retencion", Titulo: "Certificados de retencion", Tipo: "Soporte contable", Envio: "Entrega a terceros y soporte fiscal", Periodicidad: "Anual o por solicitud", Descripcion: "Se preparan desde movimientos contables y retenciones practicadas."},
+		{Codigo: "conciliacion_fiscal", Titulo: "Conciliacion fiscal y anexos", Tipo: "Soporte fiscal", Envio: "DIAN o archivo interno segun obligacion", Periodicidad: "Anual", Descripcion: "Relaciona saldos contables y fiscales; no reemplaza la factura electronica."},
+	}
+}
+
+func ListFacturacionDianFuentesNormativas() []FacturacionDianFuenteNormativa {
+	return []FacturacionDianFuenteNormativa{
+		{Titulo: "DIAN - Abece Sistema de Factura Electronica", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/abece-sistema-de-factura-electronica/"},
+		{Titulo: "DIAN - Documento Equivalente Electronico", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/documento-equivalente-electronico/"},
+		{Titulo: "DIAN - Resolucion 000165 de 2023 compilada", URL: "https://normograma.dian.gov.co/dian/compilacion/docs/resolucion_dian_0165_2023.htm"},
+		{Titulo: "DIAN - RADIAN", URL: "https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/radian/"},
+	}
+}
+
 func defaultCamposPaisJSON(paisCodigo string) string {
 	fields := map[string]interface{}{"perfil_auto": true}
 	switch normalizePaisCodigo(paisCodigo) {
@@ -575,7 +658,9 @@ func defaultCamposPaisJSON(paisCodigo string) string {
 		fields["moneda_referencia"] = "VES"
 	default:
 		fields["integracion"] = "dian_ubl_2_1"
-		fields["documentos_soportados"] = []string{"factura_electronica", "nota_credito", "nota_debito", "documento_soporte", "nomina_electronica", "documento_equivalente_pos"}
+		fields["documentos_soportados"] = DefaultFacturacionDianDocumentosSoportados()
+		fields["documentos_contadores_colombia"] = []string{"declaraciones_tributarias", "informacion_exogena", "certificados_retencion", "conciliacion_fiscal"}
+		fields["documentos_dian_catalogo_version"] = "2026-05-20"
 		fields["documentos_siigo_referencia"] = []string{"documento_soporte", "nota_credito_ventas", "nota_debito_ventas", "nomina_electronica", "pos_electronico"}
 	}
 	raw, _ := json.Marshal(fields)

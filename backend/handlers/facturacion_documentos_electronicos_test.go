@@ -15,6 +15,9 @@ func TestNormalizeFacturacionDocumentoElectronicoTipoIncluyeDocumentosSiigoDian(
 		"tiquete maquina registradora pos":             "documento_equivalente_pos",
 		"documento equivalente electronico POS":        "documento_equivalente_pos",
 		"nota credito":                                 "nota_credito",
+		"nota ajuste documento soporte":                "nota_ajuste_documento_soporte",
+		"factura papel contingencia":                   "factura_talonario_contingencia",
+		"eventos RADIAN":                               "eventos_radian_recepcion",
 	}
 	for raw, want := range cases {
 		if got := normalizeFacturacionDocumentoElectronicoTipo(raw); got != want {
@@ -36,6 +39,8 @@ func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.
 		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", wantAccion: "documento_soporte", wantEstado: "emitida", wantEvento: "documento_soporte_emitido"},
 		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", wantAccion: "nomina_electronica", wantEstado: "emitida", wantEvento: "nomina_electronica_emitida"},
 		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", wantAccion: "documento_equivalente_pos", wantEstado: "emitida", wantEvento: "documento_equivalente_pos_emitido"},
+		{name: "nota ajuste soporte", action: "emitir_nota_ajuste_documento_soporte", tipoDocumento: "nota_ajuste_documento_soporte", wantAccion: "nota_ajuste_documento_soporte", wantEstado: "emitida", wantEvento: "nota_ajuste_documento_soporte_emitido"},
+		{name: "documento equivalente peajes", action: "documento_equivalente_peajes", tipoDocumento: "documento_equivalente_peajes", wantAccion: "documento_equivalente_peajes", wantEstado: "emitida", wantEvento: "documento_equivalente_peajes_emitido"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

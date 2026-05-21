@@ -1,3 +1,5 @@
+- 2026-05-20: `Facturacion electronica Colombia` agrega catalogo DIAN de documentos electronicos y eventos RADIAN en la pagina por pais, separa obligaciones que normalmente prepara el contador y guarda la seleccion por empresa en `facturacion_electronica_pais.campos_pais_json`; no agrega tablas, permisos ni dependencias.
+
 - 2026-05-20: `Centro de reportes` reemplaza las tarjetas de reportes por un selector y una lista compacta, agrega vista previa imprimible segun papel POS 80mm o carta, y mantiene exportacion directa a PDF, Excel, CSV, JSON y TXT desde `/api/empresa/reportes`.
 
 - 2026-05-20: `Traslado entre bodegas` corrige el flujo de Inventario > Bodegas para que la tarjeta de traslado y el kardex se muestren en la vista correcta, y el backend mueve stock entre bodegas usando wrappers SQL compatibles con PostgreSQL dentro de la transaccion.
@@ -10,7 +12,7 @@
 
 - 2026-05-20: `Pagos QR en carrito` agrega configuracion de cuentas receptoras para Bre-B, Nequi u otros proveedores y boton `QR de pago` en el carrito. El QR se genera localmente con `/vendor/qrcode.min.js`, puede usar payload oficial/plantilla del proveedor con placeholders y registra el cobro como transferencia bancaria con referencia automatica, sin tablas ni dependencias nuevas.
 
-- 2026-05-20: `Facturacion offline para carritos` agrega modo activable por empresa para cerrar e imprimir ventas sin internet, guardar cola local y sincronizar luego por `/api/empresa/offline_ventas`; actualiza carrito, inventario, caja del usuario, metricas y documento de venta sin mezclar varias cajas de la misma empresa.
+- 2026-05-20: `Facturacion offline para carritos` agrega modo activable por empresa para cerrar e imprimir ventas sin internet, guardar cola local y sincronizar luego por `/api/empresa/offline_ventas`; bloquea el pago si el mismo carrito ya tiene una venta offline pendiente, y actualiza carrito, inventario, caja del usuario, metricas y documento de venta sin mezclar varias cajas de la misma empresa.
 
 - 2026-05-19: `Codigos de descuento` agrega acciones por cupon para enviar por correo con SMTP configurado y compartir por WhatsApp con mensaje listo; mantiene permisos existentes, modo de prueba de correos y aislamiento por empresa.
 

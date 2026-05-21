@@ -3827,6 +3827,25 @@
       return 'OFF-' + String(state.empresaID || 0) + '-' + (code || ('CRT' + String(carrito && carrito.id || 0))) + '-' + String(Date.now());
     }
 
+    function findPendingOfflineSaleForCarrito(carrito) {
+      if (!carrito || !isOfflineBillingEnabled()) return null;
+      const carritoID = Number(carrito.id || 0);
+      const carritoCode = normalizedCode(carrito.codigo || '');
+      return loadOfflineQueue().find(function(row) {
+        if (!row || normalize(row.estado_local).toLowerCase() === 'sincronizado') return false;
+        const rowCarritoID = Number(row.carrito_id || (row.carrito && row.carrito.id) || 0);
+        const rowCarritoCode = normalizedCode(row.carrito_codigo || (row.carrito && row.carrito.codigo) || '');
+        return (carritoID > 0 && rowCarritoID === carritoID) || (carritoCode && rowCarritoCode === carritoCode);
+      }) || null;
+    }
+
+    function pendingOfflineSaleMessage(row) {
+      const syncKey = normalize(row && row.sync_key);
+      return 'Esta venta ya quedó guardada en modo sin internet y está pendiente de sincronizar' +
+        (syncKey ? (' (' + syncKey + ')') : '') +
+        '. No vuelvas a presionar pagar para evitar duplicarla.';
+    }
+
     function buildOfflineSalePayload(carrito, pay, items, cashForPayment) {
       const caja = cashForPayment || getSelectedCashRegister() || {};
       const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? ('Estacion ' + state.stationID) : (state.directSaleMode ? 'Venta directa' : ''));
@@ -3951,12 +3970,21 @@
 
     async function storeAndPrintOfflineSale(carrito, pay, itemsSnapshot, printTargets, cashForPayment) {
       if (!isOfflineBillingEnabled()) return false;
+      const pending = findPendingOfflineSaleForCarrito(carrito);
+      if (pending) {
+        closeUnusedPaymentPrintTargets(printTargets);
+        setStationPaymentPersistentMessage(pendingOfflineSaleMessage(pending), true);
+        return true;
+      }
       const payload = buildOfflineSalePayload(carrito, pay, itemsSnapshot, cashForPayment);
       enqueueOfflineSale(payload);
       notifyOfflineModeEntered();
       await printOfflineSaleReceipt(carrito, pay, itemsSnapshot, printTargets && printTargets.receipt);
       closeUnusedPaymentPrintTargets(printTargets);
-      setStationPaymentPersistentMessage('Venta guardada en modo sin internet. Pendiente por sincronizar: ' + loadOfflineQueue().length + '.', false);
+      const savedMessage = 'Venta guardada en modo sin internet. Pendiente por sincronizar: ' + loadOfflineQueue().length + '.';
+      setStationPaymentPersistentMessage(savedMessage, false);
+      renderStationPaymentPanel(carrito);
+      setStationPaymentPersistentMessage(savedMessage, false);
       return true;
     }
 
@@ -4309,6 +4337,7 @@
       const isMixedMethod = pay.paymentMethod === 'mixto';
       const showDetailedMixedInputs = stationUI.mostrar_tarjetas_pago && stationUI.permitir_pago_mixto && selectedActive && isMixedMethod && !state.paymentAmountsManual;
       const selectedCash = getSelectedCashRegister();
+      const pendingOfflineSale = findPendingOfflineSaleForCarrito(carrito);
       renderPaymentMethodsCards(carrito);
       renderPaymentQrCard(carrito, pay, false);
       getStationPaymentAmountInputDefs().forEach(function(def) {
@@ -4355,21 +4384,25 @@
         breakdownEl.textContent += ' | Detalle mixto: ' + pay.mixedSummary;
       }
 
-      const hasBlockingError = !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || Boolean(pay.paymentAmountsMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
+      const hasBlockingError = Boolean(pendingOfflineSale) || !hasAllowedPaymentMethods || Boolean(pay.operativaMessage) || Boolean(pay.discountCodeMessage) || Boolean(pay.mixedMessage) || Boolean(pay.paymentAmountsMessage) || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0);
       const payDisabledReason = !selectedActive
         ? (state.directSaleMode ? 'Carrito inactivo. Reabre la venta directa para iniciar una nueva venta.' : 'Carrito inactivo. Activalo para iniciar una nueva sesion de estacion.')
-        : (!selectedCash
+        : (pendingOfflineSale
+          ? pendingOfflineSaleMessage(pendingOfflineSale)
+          : (!selectedCash
           ? 'Clic para refrescar cajas abiertas y cobrar.'
         : (!hasAllowedPaymentMethods
           ? 'No hay metodos de pago habilitados para este rol.'
-          : (pay.operativaMessage || pay.discountCodeMessage || pay.paymentAmountsMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : ''))));
+          : (pay.operativaMessage || pay.discountCodeMessage || pay.paymentAmountsMessage || pay.mixedMessage || (pay.paymentMethod === 'codigo_descuento' && pay.tipAmount > 0 ? 'El codigo de descuento no puede cubrir propina activa.' : '')))));
       setStationPayButtonState({
         disabled: !selectedActive || hasBlockingError || state.paymentInProgress,
         loading: state.paymentInProgress,
         title: payDisabledReason
       });
 
-      if (!selectedCash && selectedActive) {
+      if (pendingOfflineSale) {
+        setStationPaymentMessage(pendingOfflineSaleMessage(pendingOfflineSale), true);
+      } else if (!selectedCash && selectedActive) {
         setStationPaymentMessage('Abre una caja en Finanzas > Corte de caja y selecciónala para poder cobrar.', true);
       } else if (!hasAllowedPaymentMethods) {
         setStationPaymentMessage('No hay métodos de pago habilitados para este rol en la configuración operativa.', true);
@@ -4471,6 +4504,12 @@
       }
       if (!isCarritoOperativoActivo(selected)) {
         setStationPaymentMessage('El carrito ya está inactivo.', true);
+        return;
+      }
+      const pendingOfflineSale = findPendingOfflineSaleForCarrito(selected);
+      if (pendingOfflineSale) {
+        setStationPaymentPersistentMessage(pendingOfflineSaleMessage(pendingOfflineSale), true);
+        renderStationPaymentPanel(selected);
         return;
       }
 

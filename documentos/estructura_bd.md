@@ -22,6 +22,13 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-20 (catalogo DIAN Colombia documentos electronicos)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `facturacion_electronica_pais` con `pais_codigo='CO'` y `UNIQUE(empresa_id, pais_codigo)`.
+- `campos_pais_json` agrega/actualiza `documentos_soportados`, `documentos_contadores_colombia` y `documentos_dian_catalogo_version` para activar por empresa factura electronica, notas, documento soporte, nomina, documentos equivalentes electronicos, contingencia y eventos RADIAN.
+- `empresa_facturacion_documentos` y `facturacion_electronica_reintentos` aceptan los nuevos codigos canonicos como `tipo_documento`, siempre aislados por `empresa_id`.
+- Las obligaciones de contador se registran como configuracion/catalogo, no como documentos UBL de venta.
+
 Actualizacion 2026-05-20 (nombres configurables de estaciones por empresa)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`.

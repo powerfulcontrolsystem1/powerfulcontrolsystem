@@ -14,6 +14,11 @@
 - `/super/api/docker_portabilidad` exige sesion y rol `super_administrador` mediante `paginaPrincipalRequireSuperAdmin`; no se agrega permiso empresarial ni acceso para `control_super_administrador`.
 - La descarga es operativa y tecnica: no concede acceso a datos empresariales, no expone secretos y no sustituye los permisos de backups ni de PostgreSQL.
 
+2026-05-20: Nota de catalogo DIAN Colombia
+- `web/administrar_empresa/facturacion_electronica.html` agrega la tarjeta de documentos electronicos DIAN Colombia dentro de la pagina existente del modulo `facturacion_electronica`.
+- El endpoint usa la ruta ya protegida `/api/empresa/facturacion_electronica?action=documentos_dian_colombia`, por lo que hereda `WithEmpresaFacturacionPermissions` y no crea permiso, rol ni licencia nuevos.
+- La lista de obligaciones del contador es informativa/configurable por empresa; no concede acceso a declaraciones o exogena fuera de los modulos contables que ya correspondan.
+
 2026-05-19: Nota de Facturacion electronica Ecuador
 - La pagina `web/administrar_empresa/facturacion_electronica_ecuador.html` y el endpoint `/api/empresa/facturacion_electronica/ecuador` quedan bajo el modulo independiente `facturacion_ecuador`.
 - La licencia puede habilitar o deshabilitar Ecuador/SRI sin activar DIAN Colombia ni Panama/DGI; el permiso de pagina es `linkFacturacionEcuador` con accion crear/configurar.

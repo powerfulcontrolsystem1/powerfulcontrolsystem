@@ -1,3 +1,10 @@
+2026-05-20: Catalogo DIAN Colombia de documentos electronicos.
+- Modulos afectados: `facturacion_electronica`, `contabilidad_colombia`, `frontend_ux`.
+- Backend: `backend/db/facturacion_electronica.go` agrega catalogo de documentos del SFE Colombia, documentos equivalentes electronicos, notas de ajuste, contingencia, eventos RADIAN, obligaciones de contador y fuentes DIAN; `backend/handlers/facturacion_electronica.go` expone `action=documentos_dian_colombia` en la ruta existente.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` muestra la tarjeta Colombia de documentos/eventos DIAN y obligaciones contables, y fusiona la seleccion con `campos_pais_json`.
+- Pruebas: `go test ./db -run "Test(DefaultFacturacionConfigPaisAplicaProveedorYCampos|CatalogoDianColombiaIncluyeDocumentosYObligacionesContables)"`, `go test ./handlers -run "Test(NormalizeFacturacionDocumentoElectronicoTipoIncluyeDocumentosSiigoDian|ResolveFacturacionTransitionForDocumentosElectronicosNuevos)"`, y validacion de sintaxis del script inline con el runtime JS disponible.
+- Riesgo: no se implementa transporte real individual para cada anexo DIAN; queda configurado y modelado para proveedor/API real por empresa.
+
 2026-05-20: Centro de reportes por selector y vista imprimible.
 - Modulos afectados: `reportes`, `frontend_ux`, `exportaciones`.
 - Frontend: `web/administrar_empresa/reportes_ejecutivos.html` reemplaza las tarjetas del catalogo por un selector principal y una lista tabular compacta de reportes.
@@ -26950,3 +26957,9 @@ Archivos modificados:
 - web/administrar_empresa/reportes_ejecutivos.html
 - web/estilos.css
 - web/js/estaciones_labels.js
+
+2026-05-20: prueba visual y bloqueo de duplicados en facturacion offline
+- Modulos afectados: carritos, ventas_simple, facturacion offline, frontend_ux, qa_operacion.
+- Cambio funcional: el carrito detecta si ya existe una venta offline pendiente para el mismo carrito/codigo y bloquea el boton de pago hasta sincronizar, evitando duplicados por doble clic o reintento durante caida de internet.
+- Validacion: se comprobo visualmente el carrito en venta directa con modo offline activo, aviso flotante persistente, guardado local de una venta por COP 30000 y sincronizacion posterior contra `/api/empresa/offline_ventas`.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/historial_de_cambios`.

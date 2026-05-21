@@ -100,6 +100,27 @@
       </form>
     </div>
 
+    <div id="feDianDocumentosCard" class="card is-hidden">
+      <h2>Documentos electronicos DIAN Colombia</h2>
+      <p class="form-help">Activa los documentos del Sistema de Facturacion Electronica que la empresa usara. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <h3>Documentos y eventos del SFE</h3>
+          <div id="feDianDocumentosList" class="fe-check-list"></div>
+        </div>
+        <div class="form-col">
+          <h3>Lo que suelen preparar los contadores</h3>
+          <div id="feDianContadorList" class="fe-check-list"></div>
+        </div>
+      </div>
+      <div id="feDianFuentesList" class="form-help"></div>
+      <div class="form-actions">
+        <button id="feDianSelectAllDocs" class="btn secondary" type="button">Activar todos</button>
+        <button id="feDianApplyDocs" class="btn" type="button">Aplicar seleccion al JSON</button>
+      </div>
+      <div id="feDianDocumentosMsg" class="form-help"></div>
+    </div>
+
     <div id="feEstructuradoEC" class="card is-hidden fe-estructurado fe-estructurado-ec">
       <h3>Campos estructurados — Ecuador (SRI)</h3>
       <p class="form-help">Se fusionan con <code>campos_pais_json</code> (claves: <code>ruc</code>, <code>establecimiento</code>, <code>punto_emision</code>, <code>ambiente_sri</code>). No interfiere con Colombia ni con la DIAN.</p>
@@ -500,7 +521,8 @@
       paisSeleccionado: "",
       paises: [],
       catalog: [],
-      dianConfig: null
+      dianConfig: null,
+      dianCatalogo: null
     };
 
     const advancedConfigState = {
@@ -739,6 +761,10 @@
         if (dianConfigCard) {
           dianConfigCard.classList.toggle("is-hidden", codeU !== "CO");
         }
+        var dianDocumentosCard = document.getElementById("feDianDocumentosCard");
+        if (dianDocumentosCard) {
+          dianDocumentosCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
         if (vista.label_identificador) {
           var li = document.getElementById("labelIdentificador");
           if (li) li.textContent = vista.label_identificador;
@@ -811,6 +837,116 @@
       } catch (_) {
         box.textContent = String(data || "");
       }
+    }
+
+    function listFromValue(value) {
+      if (Array.isArray(value)) return value.map(function(x) { return txt(x); }).filter(Boolean);
+      if (typeof value === "string") return value.split(",").map(function(x) { return txt(x); }).filter(Boolean);
+      return [];
+    }
+
+    function selectedValues(selector) {
+      return Array.prototype.slice.call(document.querySelectorAll(selector + ":checked"))
+        .map(function(input) { return txt(input.value); })
+        .filter(Boolean);
+    }
+
+    function setDianDocumentosMessage(text, isError) {
+      var el = document.getElementById("feDianDocumentosMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function renderCheckItem(container, item, checked, cssClass) {
+      var label = document.createElement("label");
+      label.className = "form-help";
+      label.style.display = "block";
+      label.style.padding = "8px 0";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.className = cssClass;
+      input.value = item.codigo || "";
+      input.checked = !!checked;
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(" " + (item.titulo || item.codigo || "")));
+      if (item.categoria || item.tipo) {
+        var meta = document.createElement("span");
+        meta.textContent = " - " + (item.categoria || item.tipo);
+        meta.style.opacity = "0.75";
+        label.appendChild(meta);
+      }
+      var small = document.createElement("div");
+      small.className = "form-help";
+      small.textContent = item.alcance || item.descripcion || "";
+      label.appendChild(small);
+      container.appendChild(label);
+    }
+
+    function renderDianCatalog(data) {
+      state.dianCatalogo = data || {};
+      var docsBox = document.getElementById("feDianDocumentosList");
+      var contadorBox = document.getElementById("feDianContadorList");
+      if (!docsBox || !contadorBox) return;
+      docsBox.innerHTML = "";
+      contadorBox.innerHTML = "";
+      var docsActivos = {};
+      listFromValue(data && data.documentos_soportados).forEach(function(code) { docsActivos[code] = true; });
+      var contadorActivos = {};
+      listFromValue(data && data.documentos_contadores_colombia).forEach(function(code) { contadorActivos[code] = true; });
+      (data && data.documentos || []).forEach(function(item) {
+        renderCheckItem(docsBox, item, docsActivos[item.codigo], "fe-dian-doc-check");
+      });
+      (data && data.obligaciones_contador || []).forEach(function(item) {
+        renderCheckItem(contadorBox, item, contadorActivos[item.codigo], "fe-dian-contador-check");
+      });
+      var fuentes = document.getElementById("feDianFuentesList");
+      if (fuentes) {
+        var src = (data && data.fuentes || []).map(function(f) { return f.titulo || f.url || ""; }).filter(Boolean);
+        fuentes.textContent = src.length ? "Fuentes: " + src.join(" | ") : "";
+      }
+      syncDianCatalogFromJson();
+    }
+
+    async function loadDianCatalog() {
+      if (!state.empresaID) return;
+      try {
+        var res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID) + "&action=documentos_dian_colombia", { credentials: "same-origin" });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data && data.error ? data.error : "HTTP " + res.status);
+        renderDianCatalog(data);
+      } catch (e) {
+        setDianDocumentosMessage(e && e.message ? e.message : "No se pudo cargar catalogo DIAN.", true);
+      }
+    }
+
+    function syncDianCatalogFromJson() {
+      var raw = txt(document.getElementById("campos_pais_json") && document.getElementById("campos_pais_json").value);
+      var extra = {};
+      try { if (raw) extra = JSON.parse(raw) || {}; } catch (e) { extra = {}; }
+      var docs = {};
+      listFromValue(extra.documentos_soportados).forEach(function(code) { docs[code] = true; });
+      var contador = {};
+      listFromValue(extra.documentos_contadores_colombia).forEach(function(code) { contador[code] = true; });
+      document.querySelectorAll(".fe-dian-doc-check").forEach(function(input) {
+        input.checked = !!docs[input.value] || (!extra.documentos_soportados && input.checked);
+      });
+      document.querySelectorAll(".fe-dian-contador-check").forEach(function(input) {
+        input.checked = !!contador[input.value] || (!extra.documentos_contadores_colombia && input.checked);
+      });
+    }
+
+    function applyDianCatalogToJson() {
+      var extra = {};
+      try {
+        var raw = txt(document.getElementById("campos_pais_json").value);
+        if (raw) extra = JSON.parse(raw) || {};
+      } catch (e) { extra = {}; }
+      extra.documentos_soportados = selectedValues(".fe-dian-doc-check");
+      extra.documentos_contadores_colombia = selectedValues(".fe-dian-contador-check");
+      extra.documentos_dian_catalogo_version = "2026-05-20";
+      document.getElementById("campos_pais_json").value = JSON.stringify(extra, null, 2);
+      setDianDocumentosMessage("Seleccion aplicada al JSON. Guarda la configuracion para persistirla.", false);
     }
 
     function asBool(v) {
@@ -1022,6 +1158,11 @@
         if (document.getElementById("fe_ve_proveedor")) extra.proveedor_homologado = txt(document.getElementById("fe_ve_proveedor").value) || extra.proveedor_homologado;
       }
       if (code === "CO") {
+        var docsSeleccionados = selectedValues(".fe-dian-doc-check");
+        var contadorSeleccionados = selectedValues(".fe-dian-contador-check");
+        if (docsSeleccionados.length) extra.documentos_soportados = docsSeleccionados;
+        if (contadorSeleccionados.length) extra.documentos_contadores_colombia = contadorSeleccionados;
+        if (docsSeleccionados.length || contadorSeleccionados.length) extra.documentos_dian_catalogo_version = "2026-05-20";
         delete extra.modo_offline_dian_activo;
         delete extra.modo_offline_preguntar;
         delete extra.modo_offline_auto_reintentar;
@@ -1180,6 +1321,9 @@
       document.getElementById("observaciones").value = txt(cfg.observaciones);
       applyEstructuradoFromJson(document.getElementById("campos_pais_json").value);
       applyVistaForPais(document.getElementById("pais_codigo").value, null);
+      if (txt(document.getElementById("pais_codigo").value).toUpperCase() === "CO") {
+        loadDianCatalog();
+      }
     }
 
     async function loadCountryConfig(countryCode) {
@@ -1250,6 +1394,7 @@
           loadDianConfig().catch(function(err) {
             setDianConfigMessage(err && err.message ? err.message : "No se pudo cargar DIAN Colombia", true);
           });
+          loadDianCatalog();
         }
       } else {
         applyVistaForPais("", null);
@@ -1292,6 +1437,21 @@
           setDianConfigMessage(err && err.message ? err.message : "No se pudo guardar DIAN Colombia", true);
         });
       });
+    }
+
+    var btnDianSelectAllDocs = document.getElementById("feDianSelectAllDocs");
+    if (btnDianSelectAllDocs) {
+      btnDianSelectAllDocs.addEventListener("click", function() {
+        document.querySelectorAll(".fe-dian-doc-check, .fe-dian-contador-check").forEach(function(input) {
+          input.checked = true;
+        });
+        applyDianCatalogToJson();
+      });
+    }
+
+    var btnDianApplyDocs = document.getElementById("feDianApplyDocs");
+    if (btnDianApplyDocs) {
+      btnDianApplyDocs.addEventListener("click", applyDianCatalogToJson);
     }
 
     var btnDianConfigValidar = document.getElementById("btnDianConfigValidar");

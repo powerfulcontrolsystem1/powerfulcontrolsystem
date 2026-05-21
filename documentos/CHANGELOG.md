@@ -1,3 +1,9 @@
+## [2026-05-20] Catalogo DIAN Colombia
+- [Backend] Se agrega catalogo de documentos electronicos DIAN Colombia, documentos equivalentes, notas de ajuste, contingencia y eventos RADIAN.
+- [Frontend] `facturacion_electronica.html` muestra una tarjeta Colombia para activar documentos del SFE y guardar la seleccion en `campos_pais_json`.
+- [Contabilidad] Se separan obligaciones que suelen preparar contadores, como declaraciones, informacion exogena, certificados de retencion y conciliacion fiscal.
+- [Alcance] No agrega rutas base, tablas, permisos, licencias ni dependencias nuevas.
+
 ## [2026-05-20] Centro de reportes por selector
 - [Frontend] `reportes_ejecutivos.html` elimina las tarjetas del catalogo y muestra todos los reportes en un selector y una lista compacta.
 - [Vista previa] El reporte seleccionado se renderiza como documento imprimible en blanco y negro, con modo POS 80mm o carta tomado de la configuracion previa de corte/reporte.
@@ -36,6 +42,7 @@
 ## [2026-05-20] Facturacion offline para carritos
 - [Carritos] El carrito unificado puede operar en modo sin internet cuando la empresa lo active desde Configuracion > Carrito unificado.
 - [Frontend] Al perder conexion se muestra aviso flotante persistente, se imprime comprobante/factura provisional y la venta queda en cola local por empresa.
+- [Seguridad operativa] Si el mismo carrito ya tiene una venta offline pendiente, el boton de pago queda bloqueado hasta sincronizar para evitar duplicados por doble clic o reintento del cajero.
 - [Backend] Nuevo `/api/empresa/offline_ventas` sincroniza ventas con idempotencia por `sync_key`, actualizando carrito, inventario, caja del usuario, metricas y documento de venta.
 - [Configuracion] La marca `OFFLINE/Pendiente de sincronizar` del impreso queda activa por defecto y puede desactivarse con un check.
 - [Alcance] Sin dependencias externas; agrega tabla `empresa_ventas_offline_sync` y mantiene aislamiento por `empresa_id`.

@@ -116,6 +116,19 @@ func resolveFacturacionTransitionForDocument(actionRaw, estadoActualRaw, tipoDoc
 			EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
 		},
 	}
+	if facturacionDocumentoElectronicoPermitido(tipoDocumento) {
+		if _, ok := rules[tipoDocumento]; !ok {
+			rule := documentoTransitionRule{
+				AccionCanonica: tipoDocumento,
+				Evento:         facturacionDocumentoEvento(tipoDocumento, "emitido"),
+				EstadoNuevo:    "emitida",
+				EstadoDefault:  "borrador",
+				EstadosPrevios: toAllowedSet("borrador", "pendiente_emision"),
+			}
+			rules[tipoDocumento] = rule
+			rules["emitir_"+tipoDocumento] = rule
+		}
+	}
 	return resolveDocumentoTransition("facturacion", actionRaw, estadoActualRaw, rules)
 }
 

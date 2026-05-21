@@ -244,6 +244,38 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				return
 			}
 
+			if action == "catalogo_dian_colombia" || action == "documentos_dian_colombia" {
+				cfg, err := dbpkg.GetFacturacionElectronicaPaisConfig(dbEmp, empresaID, "CO")
+				if err != nil && !errors.Is(err, sql.ErrNoRows) {
+					http.Error(w, "No se pudo consultar catalogo DIAN Colombia", http.StatusInternalServerError)
+					return
+				}
+				extra := map[string]interface{}{}
+				if cfg != nil {
+					extra = facturacionTryParseJSONMap(cfg.CamposPaisJSON)
+				}
+				documentosActivos := facturacionStringListFromAny(extra["documentos_soportados"])
+				if len(documentosActivos) == 0 {
+					documentosActivos = dbpkg.DefaultFacturacionDianDocumentosSoportados()
+				}
+				obligacionesActivas := facturacionStringListFromAny(extra["documentos_contadores_colombia"])
+				if len(obligacionesActivas) == 0 {
+					obligacionesActivas = []string{"declaraciones_tributarias", "informacion_exogena", "certificados_retencion", "conciliacion_fiscal"}
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":                             true,
+					"empresa_id":                     empresaID,
+					"pais_codigo":                    "CO",
+					"documentos":                     dbpkg.ListFacturacionDianDocumentosElectronicos(),
+					"documentos_soportados":          documentosActivos,
+					"obligaciones_contador":          dbpkg.ListFacturacionDianObligacionesContadores(),
+					"documentos_contadores_colombia": obligacionesActivas,
+					"fuentes":                        dbpkg.ListFacturacionDianFuentesNormativas(),
+					"nota":                           "El catalogo separa documentos electronicos del SFE y obligaciones contables/tributarias que preparan contadores.",
+				})
+				return
+			}
+
 			paisCodigo := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("pais_codigo")))
 			incluirInactivas := parseTruthy(r.URL.Query().Get("incluir_inactivas"))
 
@@ -1267,26 +1299,38 @@ func normalizeFacturacionDocumentoElectronicoTipo(raw string) string {
 		return "nota_debito"
 	case "documento_soporte", "documento_soporte_electronico", "documento_soporte_adquisicion", "documento_soporte_adquisiciones", "soporte_compras":
 		return "documento_soporte"
+	case "nota_ajuste_documento_soporte", "nota_ajuste_soporte", "ajuste_documento_soporte":
+		return "nota_ajuste_documento_soporte"
 	case "nomina", "nomina_electronica", "documento_soporte_nomina", "documento_soporte_pago_nomina", "documento_soporte_de_pago_nomina", "documento_soporte_pago_nomina_electronica", "documento_soporte_de_pago_nomina_electronica":
 		return "nomina_electronica"
+	case "nota_ajuste_nomina", "nota_ajuste_nomina_electronica", "ajuste_nomina_electronica":
+		return "nota_ajuste_nomina_electronica"
 	case "pos", "pos_electronico", "tiquete_pos", "tiquete_maquina_registradora_pos", "tiquete_de_maquina_registradora_pos", "documento_equivalente", "documento_equivalente_pos", "documento_equivalente_electronico_pos":
 		return "documento_equivalente_pos"
+	case "nota_ajuste_documento_equivalente", "nota_ajuste_equivalente", "ajuste_documento_equivalente":
+		return "nota_ajuste_documento_equivalente"
+	case "factura_talonario", "factura_papel_contingencia", "talonario_contingencia", "factura_talonario_contingencia":
+		return "factura_talonario_contingencia"
+	case "eventos_radian", "evento_radian", "radian", "eventos_radian_recepcion":
+		return "eventos_radian_recepcion"
 	default:
 		return v
 	}
 }
 
 func facturacionDocumentoElectronicoPermitido(tipo string) bool {
-	switch normalizeFacturacionDocumentoElectronicoTipo(tipo) {
-	case "factura_electronica", "nota_credito", "nota_debito", "documento_soporte", "nomina_electronica", "documento_equivalente_pos":
-		return true
-	default:
-		return false
+	normalized := normalizeFacturacionDocumentoElectronicoTipo(tipo)
+	for _, item := range dbpkg.ListFacturacionDianDocumentosElectronicos() {
+		if item.Codigo == normalized {
+			return true
+		}
 	}
+	return false
 }
 
 func facturacionDocumentoTipoFromAction(actionRaw string) string {
-	switch normalizeDocumentoState(actionRaw) {
+	action := normalizeDocumentoState(actionRaw)
+	switch action {
 	case "nota_credito", "emitir_nota_credito":
 		return "nota_credito"
 	case "nota_debito", "emitir_nota_debito":
@@ -1298,6 +1342,13 @@ func facturacionDocumentoTipoFromAction(actionRaw string) string {
 	case "documento_equivalente_pos", "emitir_documento_equivalente_pos":
 		return "documento_equivalente_pos"
 	default:
+		if strings.HasPrefix(action, "emitir_") {
+			action = strings.TrimPrefix(action, "emitir_")
+		}
+		docType := normalizeFacturacionDocumentoElectronicoTipo(action)
+		if facturacionDocumentoElectronicoPermitido(docType) {
+			return docType
+		}
 		return ""
 	}
 }
@@ -1317,16 +1368,24 @@ func facturacionDocumentoEntidad(tipo string) string {
 	case "documento_equivalente_pos":
 		return "documento_equivalente_pos"
 	default:
+		normalized := normalizeFacturacionDocumentoElectronicoTipo(tipo)
+		if facturacionDocumentoElectronicoPermitido(normalized) {
+			return normalized
+		}
 		return "documento_electronico"
 	}
 }
 
 func facturacionActionRequiresFiscalIntegration(action string) bool {
-	switch normalizeDocumentoState(action) {
+	actionNormalized := normalizeDocumentoState(action)
+	switch actionNormalized {
 	case "emitir", "anular", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito", "documento_soporte", "emitir_documento_soporte", "nomina_electronica", "emitir_nomina_electronica", "documento_equivalente_pos", "emitir_documento_equivalente_pos":
 		return true
 	default:
-		return false
+		if strings.HasPrefix(actionNormalized, "emitir_") {
+			actionNormalized = strings.TrimPrefix(actionNormalized, "emitir_")
+		}
+		return facturacionDocumentoElectronicoPermitido(actionNormalized)
 	}
 }
 
@@ -1361,6 +1420,37 @@ func facturacionAnyToBool(v interface{}) bool {
 	default:
 		return false
 	}
+}
+
+func facturacionStringListFromAny(v interface{}) []string {
+	out := []string{}
+	seen := map[string]struct{}{}
+	appendOne := func(raw string) {
+		item := strings.TrimSpace(raw)
+		if item == "" {
+			return
+		}
+		if _, ok := seen[item]; ok {
+			return
+		}
+		seen[item] = struct{}{}
+		out = append(out, item)
+	}
+	switch t := v.(type) {
+	case []string:
+		for _, item := range t {
+			appendOne(item)
+		}
+	case []interface{}:
+		for _, item := range t {
+			appendOne(fmt.Sprintf("%v", item))
+		}
+	case string:
+		for _, item := range strings.Split(t, ",") {
+			appendOne(item)
+		}
+	}
+	return out
 }
 
 func facturacionDianOfflineSettingsFromConfig(cfg *dbpkg.FacturacionElectronicaPaisConfig) facturacionDianOfflineSettings {
@@ -1972,6 +2062,10 @@ func facturacionDeriveAccionByDocumento(doc dbpkg.EmpresaDocumentoFacturacion) s
 		return "nomina_electronica"
 	case "documento_equivalente_pos":
 		return "documento_equivalente_pos"
+	default:
+		if facturacionDocumentoElectronicoPermitido(tipo) {
+			return normalizeFacturacionDocumentoElectronicoTipo(tipo)
+		}
 	}
 	if estado == "anulada" {
 		return "anular"

@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-20 (catalogo DIAN Colombia)
+
+- `backend/db/facturacion_electronica.go`: define el catalogo canonico de documentos electronicos DIAN Colombia, eventos RADIAN, obligaciones de contador y fuentes normativas.
+- `backend/handlers/facturacion_electronica.go`: expone `action=documentos_dian_colombia` en la ruta existente `/api/empresa/facturacion_electronica` y amplia normalizacion/validacion de tipos documentales.
+- `backend/handlers/documentos_lifecycle.go`: crea transiciones documentales genericas para tipos DIAN catalogados sin duplicar reglas por cada anexo.
+- `web/administrar_empresa/facturacion_electronica.html`: agrega la tarjeta Colombia de documentos/eventos DIAN y obligaciones contables, fusionando la seleccion con `campos_pais_json`.
+- Flujo: Facturacion por pais -> pais CO -> cargar catalogo DIAN -> seleccionar documentos -> guardar `facturacion_electronica_pais.campos_pais_json` por `empresa_id` -> documentos transaccionales/cola fiscal usan `tipo_documento` canonico.
+
 ## Actualizacion 2026-05-20 (nombres configurables de estaciones)
 
 - `backend/db/tipo_empresa_preconfiguracion.go`: define el recurso operativo por plantilla (`Mesa`, `Habitacion`, `Bahia`, `Zona`, `Consultorio`, etc.) y lo deja en `Operacion`.
