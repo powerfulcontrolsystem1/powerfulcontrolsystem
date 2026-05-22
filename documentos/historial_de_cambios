@@ -1,3 +1,63 @@
+2026-05-21: Impuestos dentro de Finanzas y cumplimiento.
+- Modulos afectados: `administrar_empresa`, `finanzas`, `impuestos`, `permisos`, `frontend_ux`.
+- Cambio funcional: el acceso `Impuestos` se retira del menu interno de Configuracion y queda como boton directo en la seccion principal `Finanzas y cumplimiento`.
+- Centro financiero: `web/administrar_empresa/finanzas_menu.html` agrega `Impuestos` en la barra lateral y como chip superior, cargando `web/administrar_empresa/impuestos.html` dentro del iframe financiero.
+- Permisos: `linkImpuestos` conserva el modulo `facturacion` y accion `U`, y queda agrupado en el catalogo financiero-contable.
+- Alcance: no cambia endpoint, tablas, reglas tributarias ni persistencia de impuestos.
+
+2026-05-21: Emisoras online por pais y por empresa.
+- Modulos afectados: `radio_online`, `chat_flotante`, `administrar_empresa`, `frontend_ux`.
+- Cambio funcional: el modulo de emisora detecta el pais de la empresa y muestra un catalogo base de 10 emisoras principales solo para Panama (`PA`) o Ecuador (`EC`). Si el pais detectado no es soportado, la pantalla muestra un aviso y permite agregar emisoras propias.
+- Backend: `/api/chat_flotante/preferencias` agrega las preferencias `radio_country` y `radio_custom_stations`; ambas se guardan por `empresa_id` en `empresa_estacion_prefs` con `estacion_id=0`, sin tablas nuevas.
+- Frontend: `web/js/radio_catalog.js` separa los catalogos PA/EC; `web/js/radio_player.js` y `web/js/radio_online.js` detectan pais desde facturacion/configuracion o `/api/public/geo`, renderizan las 10 emisoras del pais, y permiten agregar/eliminar emisoras personalizadas por empresa.
+- Alcance: no agrega dependencias, permisos ni tablas; conserva el check existente para activar/desactivar la emisora online.
+- Validacion: `go test ./db ./handlers -count=1`, `node --check web/js/radio_catalog.js`, `node --check web/js/radio_player.js`, `node --check web/js/radio_online.js`, y prueba visual local confirma catalogo Panama, catalogo Ecuador, emisora personalizada visible/eliminable y drawer flotante del shell.
+
+2026-05-21: Avisos globales de conexion a internet.
+- Modulos afectados: `administrar_empresa`, `frontend_ux`, `carritos`.
+- Cambio funcional: el sistema emite un aviso visual cuando el navegador pierde conexion a internet y otro cuando la recupera; ambos eventos quedan trazados en auditoria empresarial. En modulos sin modo offline, el aviso pide esperar a que vuelva la conexion. En carrito/caja con facturacion offline activa, el aviso permite seguir vendiendo, imprimir provisionalmente y sincronizar despues.
+- Backend: `backend/handlers/auditoria_empresa.go` acepta `POST /api/empresa/auditoria/eventos?action=conexion` para crear eventos `modulo=conectividad`, `accion=internet_perdido` o `internet_restaurado`, con IP, user-agent, request_id, usuario y metadata del navegador.
+- Frontend: `web/js/empresa_submenu_context.js` instala listeners globales `offline/online`, muestra aviso persistente en perdida de conexion, guarda el evento localmente si no hay red y lo envia al volver; `web/administrar_empresa/carrito_de_compras.html` publica si la caja/carrito puede seguir operando offline; `web/administrar_empresa/auditoria.html` agrega el filtro `Conectividad`.
+- Permisos: `action=conexion` se trata como lectura para que usuarios operativos puedan reportar conectividad sin permiso administrativo de auditoria.
+- Alcance: no agrega tablas ni dependencias; usa `empresa_auditoria_eventos` con aislamiento por `empresa_id`.
+- Validacion: `go test ./db ./handlers -count=1`, parseo JS y prueba visual simulada de eventos `offline` y `online`.
+
+2026-05-21: Vuelto compacto en carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: el mensaje de cambio de efectivo en la tarjeta de valores por medio de pago queda mas grande y compacto, usando `Vuelto:` cuando hay cambio y `Falta:` cuando el efectivo recibido no cubre el monto.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`, `CHANGELOG.md`, `documentos/historial_de_cambios`.
+- Alcance: cambio visual; no modifica calculos, backend, endpoints, permisos ni tablas.
+
+2026-05-21: Impresoras por producto, categoria o todos.
+- Modulos afectados: `impresoras`, `productos`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: cada producto puede tener impresora especifica y, ademas, la empresa puede aplicar una impresora a todos los productos o a una categoria completa, util para cocina/bar en restaurantes.
+- Backend: se agrega `empresa_impresoras_productos_reglas`, acciones `producto_regla` y `catalogo_categorias` en `/api/empresa/impresoras`, y el resolver prioriza producto especifico, categoria, todos, funcionalidad y predeterminada.
+- Frontend: `web/administrar_empresa/configuracion_impresora.html` y la pagina legacy `configuracion.html` muestran selector de alcance, catalogo de categorias y tabla unificada de reglas/productos.
+- Documentacion: se actualizan descripcion del proyecto, descripcion de modulos, estructura BD, matriz de permisos, diagramas y changelog.
+- Validacion: `go test ./db ./handlers -count=1`, scripts inline parseados con runtime JS empaquetado, y prueba visual local con API simulada confirma guardado de regla por categoria y producto especifico.
+
+2026-05-21: Renombre tecnico a recetas de productos.
+- Modulos afectados: `inventario`, `carritos`, `impresoras`, `reportes`, `frontend_ux`.
+- Cambio funcional: el modulo compuesto queda como receta vendible con ingredientes, costo teorico/real, versionado, estado e impresora por receta.
+- Backend: se reemplaza la ruta por `/api/empresa/recetas_productos`, estructuras `RecetaProducto`, tablas `recetas_productos*`, items de carrito `tipo_item=receta` y validaciones de stock por ingrediente aisladas por `empresa_id`.
+- Frontend: `administrar_empresa/recetas_productos.html` reemplaza la pantalla anterior, el menu de productos muestra `Recetas` y el carrito carga recetas desde la busqueda inteligente.
+- Documentacion: se actualizan descripcion del proyecto, descripcion de modulos, estructura de BD, diagramas, changelog y descripcion de archivos.
+- Validacion: gofmt aplicado a backend; pruebas enfocadas de `db` y `handlers`; queda pendiente verificacion visual final con Motel Calipso al cerrar la tarea.
+
+2026-05-21: Compactacion visual de tarjetas del carrito.
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: la tarjeta de codigo/SKU y cantidad usa una grilla compacta que deja `Codigo de barras o SKU`, `Cantidad`, `Agregar` y `Buscar Productos` en una misma fila en escritorio.
+- Cliente: el panel de cliente mueve `Cliente actual` al encabezado, compacta el buscador por nombre/identificacion y organiza el formulario rapido de nuevo cliente en mas columnas.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+- Validacion: script inline del carrito parseado con `new Function(...)` sin errores, `git diff --check` sin errores, y vista local de verificacion confirma que los controles de escaneo quedan alineados en una sola fila de controles en escritorio; en 390px el codigo queda completo, cantidad y agregar comparten fila, y `Buscar Productos` baja completo.
+
+2026-05-21: Busqueda de cliente del carrito.
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el formulario de nuevo cliente queda oculto al abrir el panel de cliente del carrito; el campo visible de cliente se convierte en buscador de clientes existentes con modo por nombre o por NIT/cedula/identificacion.
+- Implementacion: se agrega `stationClienteSearchMode`, `stationClienteSearchInput` y `stationClienteSearchList`; el formulario `stationClienteQuickForm` permanece oculto hasta usar `Nuevo cliente`, y la busqueda asigna el cliente mediante el flujo existente de `cliente_id`.
+- Archivos: `web/administrar_empresa/carrito_de_compras.html`, `CHANGELOG.md`, `documentos/CHANGELOG.md`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+- Validacion: script inline del carrito parseado con `new Function(...)` sin errores y `git diff --check` sin errores.
+
 2026-05-21: Botones configurables en acciones del carrito.
 - Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
 - Cambio funcional: la configuracion del carrito ahora separa la visualizacion del panel de cliente y la visualizacion individual de botones de acciones: descuentos, cambiar tarifa, control electrico, cancelar, taxi, clientes, abonos y vehiculo.

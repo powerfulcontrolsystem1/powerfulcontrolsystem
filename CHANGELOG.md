@@ -1,3 +1,17 @@
+- 2026-05-21: `Impuestos en Finanzas y cumplimiento` mueve el acceso de `Impuestos` desde Configuracion al grupo financiero del panel empresarial y lo agrega tambien dentro del Centro financiero y contable.
+- 2026-05-21: `Emisoras por pais` actualiza el modulo de radio online para detectar Panama o Ecuador, mostrar 10 emisoras principales del pais y permitir emisoras personalizadas guardadas por empresa en `empresa_estacion_prefs` mediante `/api/chat_flotante/preferencias`.
+- 2026-05-21: `Conectividad operativa` agrega aviso global cuando el navegador pierde internet y confirmacion cuando vuelve la conexion; tambien registra en auditoria empresarial los eventos `internet_perdido` e `internet_restaurado` con cola local hasta recuperar internet.
+- 2026-05-21: `Conectividad por contexto` diferencia modulos normales y caja offline: los modulos sin operacion offline piden esperar a que vuelva internet, mientras el carrito/caja con facturacion offline activa permite seguir vendiendo e imprimir provisionalmente.
+- 2026-05-21: `Vuelto en carrito` compacta el mensaje de cambio de efectivo a `Vuelto:` / `Falta:` con texto mas grande y bloque visual corto dentro de valores por medio de pago.
+
+- 2026-05-21: `Impresoras por producto` agrega reglas masivas para enviar pedidos a impresoras por `todos los productos` o por `categoria`, manteniendo prioridad `producto especifico -> categoria -> todos -> funcionalidad -> predeterminada`; la pantalla de Configuracion > Impresora permite administrar las tres opciones sin dependencias nuevas.
+
+- 2026-05-21: `Recetas de productos` consolida el modulo compuesto como recetas: ruta `/api/empresa/recetas_productos`, pagina `administrar_empresa/recetas_productos.html`, tablas `recetas_productos*`, items de carrito `tipo_item=receta`, permisos `linkRecetasProductos` e impresoras por receta. Mantiene versionado, costo teorico/real y descuento de inventario por ingredientes.
+
+- 2026-05-21: `Carrito compacto` reorganiza la tarjeta de codigo/SKU y cantidad para dejar botones en la misma fila en escritorio, y compacta el panel de cliente con mas columnas, cliente actual en el encabezado y alta rapida en una sola grilla responsive.
+
+- 2026-05-21: `Cliente en carrito` deja el formulario de nuevo cliente oculto por defecto y separa el buscador visible con opciones por nombre o por NIT/cedula/identificacion.
+
 - 2026-05-21: `Botones del carrito` agrega configuracion para visualizar u ocultar el panel de cliente y cada boton operativo de la barra de acciones: descuentos, cambiar tarifa, control electrico, cancelar, taxi, clientes, abonos y vehiculo.
 
 - 2026-05-21: `Alerta visual de carrito` agrega configuracion por empresa/estacion para mostrar u ocultar el check de alerta, definir minutos y decidir si inicia activada por defecto; queda apagada por defecto y sin tablas nuevas.

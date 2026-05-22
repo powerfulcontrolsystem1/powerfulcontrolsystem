@@ -1,3 +1,20 @@
+## Actualizacion 2026-05-21 (emisoras online por pais)
+
+- `backend/handlers/chat_flotante_config.go`: extiende `/api/chat_flotante/preferencias` con `radio_country` y `radio_custom_stations`, saneando URLs y limitando emisoras personalizadas por empresa.
+- `web/js/radio_catalog.js`: define catalogos base por pais (`PA`, `EC`) con 10 emisoras principales cada uno y helpers para normalizar emisoras personalizadas.
+- `web/js/radio_player.js`: reproductor flotante del shell empresarial; carga preferencias de empresa, detecta pais desde facturacion/IP y permite escuchar, agregar o eliminar emisoras personalizadas.
+- `web/js/radio_online.js`: pagina de configuracion/operacion de emisora; usa el mismo catalogo y sincroniza los cambios con el reproductor padre.
+- Flujo de capas: Shell/Pagina radio -> `/api/chat_flotante/preferencias` -> `empresa_estacion_prefs` -> catalogo PA/EC + emisoras personalizadas -> reproductor compacto.
+
+## Actualizacion 2026-05-21 (recetas de productos)
+
+- Backend inventario: el modulo compuesto usa `RecetaProducto` y ruta protegida `/api/empresa/recetas_productos`; las tablas vigentes son `recetas_productos`, `recetas_productos_detalle` y `recetas_productos_versiones`.
+- Carritos: los items compuestos viajan como `tipo_item=receta` con `referencia_id` de la receta; el ajuste de stock descompone ingredientes en una transaccion por `empresa_id`.
+- Impresoras: las comandas por receta se resuelven con `empresa_impresoras_recetas` y `receta_id`; los productos pueden usar impresora especifica o reglas masivas en `empresa_impresoras_productos_reglas` por categoria/todos, manteniendo prioridad receta -> producto -> categoria -> todos -> funcionalidad -> predeterminada.
+- Conectividad frontend: `web/js/empresa_submenu_context.js` instala avisos globales `offline/online`; `web/administrar_empresa.html` lo carga en el shell principal y los modulos internos lo reutilizan para avisar perdida y regreso de internet. `web/administrar_empresa/carrito_de_compras.html` publica si caja/carrito puede seguir vendiendo offline para cambiar el mensaje del aviso. El mismo monitor envia eventos al endpoint de auditoria `POST /api/empresa/auditoria/eventos?action=conexion`, usando cola local si la red se cae.
+- Frontend: `web/administrar_empresa/recetas_productos.html` reemplaza la pagina anterior, el menu usa `linkRecetasProductos` y el carrito consume `/api/empresa/recetas_productos` desde busqueda inteligente.
+- Flujo de capas: Productos/ingredientes -> Receta vendible -> Carrito `tipo_item=receta` -> reserva/liberacion de inventario por ingredientes -> impresion/reportes por empresa.
+
 ## Actualizacion 2026-05-20 (catalogo DIAN Colombia)
 
 - `backend/db/facturacion_electronica.go`: define el catalogo canonico de documentos electronicos DIAN Colombia, eventos RADIAN, obligaciones de contador y fuentes normativas.
@@ -2219,8 +2236,8 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
 
 - Backend DB:
   - nuevo modulo `backend/db/empresa_impresoras.go` con esquema y operaciones de impresoras por empresa.
-  - nuevas tablas: `empresa_impresoras`, `empresa_impresoras_funcionalidades`, `empresa_impresoras_productos`.
-  - logica de resolucion operativa por prioridad: `producto` -> `funcionalidad` -> `predeterminada`.
+  - tablas: `empresa_impresoras`, `empresa_impresoras_funcionalidades`, `empresa_impresoras_productos`, `empresa_impresoras_productos_reglas` y `empresa_impresoras_recetas`.
+  - logica de resolucion operativa por prioridad: `receta` -> `producto` -> `categoria de producto` -> `todos los productos` -> `funcionalidad` -> `predeterminada`.
 - Backend handlers:
   - nuevo archivo `backend/handlers/empresa_impresoras.go`.
   - rutas registradas en `backend/main.go`:
@@ -2228,8 +2245,8 @@ Cada cambio estructural de rutas, modelos, autenticacion o base de datos debe re
     - `/api/empresa/impresoras/resolver` (resolucion operativa de destino de impresion; wrapper de ventas).
   - nueva migracion de esquema: `2026-04-14-031-impresoras-operativas`.
 - Frontend empresa:
-  - `web/administrar_empresa/configuracion.html` incorpora tarjeta de impresoras del sistema.
-  - integra CRUD de impresoras, impresora predeterminada, activacion/inactivacion, asignacion por funcionalidad y por producto.
+  - `web/administrar_empresa/configuracion_impresora.html` incorpora tarjeta de impresoras del sistema.
+  - integra CRUD de impresoras, impresora predeterminada, activacion/inactivacion, asignacion por funcionalidad, por producto, por categoria y por todos los productos.
   - `web/administrar_empresa/carrito_de_compras.html`, `web/administrar_empresa/finanzas.html` y `web/administrar_empresa/reportes.html` consumen el resolver para mostrar impresora objetivo en flujos de impresion.
 
 ## Actualizacion 2026-04-14 (super: administracion de base de datos PostgreSQL)

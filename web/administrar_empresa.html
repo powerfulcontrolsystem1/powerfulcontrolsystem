@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/service_worker_update.js?v=20260521-admin-mobile-cache-v4"></script>
   <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js?v=20260521-connectivity"></script>
   <script src="/js/verticales_integracion_catalogo.js"></script>
   <script src="/js/nuevos_verticales_catalogo.js"></script>
 </head>
@@ -60,6 +61,7 @@
           <button type="button" class="admin-nav-group-title" aria-expanded="false">Finanzas y cumplimiento</button>
           <ul class="admin-nav-sublist">
             <li><a id="linkFinanzas" href="/administrar_empresa/finanzas_menu.html" target="contentFrame"><img class="icon" src="/img/money.svg" alt="">Centro financiero y contable</a></li>
+            <li><a id="linkImpuestos" href="/administrar_empresa/impuestos.html" target="contentFrame"><img class="icon" src="/img/taxes.svg" alt="">Impuestos</a></li>
             <li><a id="linkFacturacionElectronica" href="/administrar_empresa/facturacion_electronica_menu.html" target="contentFrame"><img class="icon" src="/img/invoice.svg" alt="">Facturación electrónica</a></li>
             <li><a id="linkReportes" href="/administrar_empresa/reportes_menu.html" target="contentFrame"><img class="icon" src="/img/report.svg" alt="">Reportes ejecutivos</a></li>
           </ul>
@@ -153,8 +155,8 @@
   <section id="radioDrawer" class="radio-drawer" aria-hidden="true">
     <div class="radio-drawer-header">
       <div>
-        <h2>Musica latina online</h2>
-        <p>Activa una emisora latina y sigue trabajando con el reproductor compacto.</p>
+        <h2>Emisoras online</h2>
+        <p>El sistema detecta Panama o Ecuador y muestra las 10 emisoras principales para esa empresa.</p>
       </div>
       <div class="radio-drawer-actions">
         <label class="radio-drawer-toggle" for="radioFloatingEnabled">
@@ -167,6 +169,35 @@
         <button id="closeRadioDrawer" type="button" class="ai-chat-close" aria-label="Cerrar radio">×</button>
       </div>
     </div>
+    <div class="radio-country-panel">
+      <div>
+        <strong>Catalogo por pais</strong>
+        <small id="radioCountryStatus">Detectando pais de la empresa...</small>
+      </div>
+      <select id="radioCountrySelect" class="form-input" aria-label="Pais de emisoras">
+        <option value="">Detectar automaticamente</option>
+        <option value="PA">Panama</option>
+        <option value="EC">Ecuador</option>
+      </select>
+    </div>
+    <form id="radioCustomForm" class="radio-custom-form">
+      <div class="radio-custom-title">
+        <strong>Agregar emisora personalizada</strong>
+        <small>Se guarda solo para esta empresa.</small>
+      </div>
+      <div class="radio-custom-fields">
+        <input id="radioCustomName" class="form-input" type="text" maxlength="120" placeholder="Nombre" aria-label="Nombre de emisora">
+        <input id="radioCustomGenre" class="form-input" type="text" maxlength="80" placeholder="Genero" aria-label="Genero de emisora">
+        <input id="radioCustomStream" class="form-input" type="url" placeholder="URL streaming http/https" aria-label="URL de streaming">
+        <input id="radioCustomSource" class="form-input" type="url" placeholder="Sitio web opcional" aria-label="Sitio web de la emisora">
+        <select id="radioCustomCountry" class="form-input" aria-label="Pais de emisora personalizada">
+          <option value="">Personalizada</option>
+          <option value="PA">Panama</option>
+          <option value="EC">Ecuador</option>
+        </select>
+        <button type="submit" class="btn small">Agregar</button>
+      </div>
+    </form>
     <div id="radioStationGrid" class="radio-station-grid"></div>
   </section>
 
@@ -271,8 +302,8 @@
 
   <script src="/js/estaciones_labels.js"></script>
   <script src="/js/administrar_empresa.js"></script>
-  <script src="/js/radio_catalog.js?v=20260510-latina"></script>
-  <script src="/js/radio_player.js?v=20260510-latina"></script>
+  <script src="/js/radio_catalog.js?v=20260521-pais-emisoras"></script>
+  <script src="/js/radio_player.js?v=20260521-pais-emisoras"></script>
   <script src="/js/ai_chat_drawer.js"></script>
 </body>
 </html>

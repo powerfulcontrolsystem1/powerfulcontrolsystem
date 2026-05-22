@@ -1069,7 +1069,7 @@ var reporteModulosResumenDefs = []reporteModuloResumenDef{
 	{ModuloKey: "clientes", Modulo: "Clientes", Categoria: "operativo", Tabla: "clientes", FechaCampo: "fecha_creacion"},
 	{ModuloKey: "productos", Modulo: "Inventario - Productos", Categoria: "operativo", Tabla: "productos", FechaCampo: "fecha_creacion"},
 	{ModuloKey: "servicios", Modulo: "Servicios", Categoria: "operativo", Tabla: "servicios", FechaCampo: "fecha_creacion"},
-	{ModuloKey: "combos_productos", Modulo: "Combos de productos", Categoria: "operativo", Tabla: "combos_productos", FechaCampo: "fecha_creacion"},
+	{ModuloKey: "recetas_productos", Modulo: "Recetas de productos", Categoria: "operativo", Tabla: "recetas_productos", FechaCampo: "fecha_creacion"},
 	{ModuloKey: "codigos_descuento", Modulo: "Códigos de descuento", Categoria: "operativo", Tabla: "codigos_de_descuento", FechaCampo: "fecha_creacion"},
 	{ModuloKey: "carritos", Modulo: "Carritos de compra", Categoria: "ventas", Tabla: "carritos_compras", FechaCampo: "fecha_creacion"},
 	{ModuloKey: "reservas", Modulo: "Reservas por estación", Categoria: "ventas", Tabla: "reservas_hotel", FechaCampo: "fecha_creacion"},
@@ -1932,7 +1932,7 @@ func (b *reportesBuilder) buildOperativoTurnoDataset() (empresaReporteDataset, e
 			switch strings.ToLower(strings.TrimSpace(item.TipoItem)) {
 			case "servicio":
 				totalServiciosCarrito += totalLinea
-			case "producto", "combo":
+			case "producto", "receta":
 				totalProductosCarrito += totalLinea
 			default:
 				totalOtrosCarrito += totalLinea

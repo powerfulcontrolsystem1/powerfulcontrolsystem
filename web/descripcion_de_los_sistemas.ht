@@ -48,7 +48,7 @@
           detalle_parrafo_dos: 'Ademas de cobrar, el sistema ayuda a controlar inventario, descuentos, precios, clientes frecuentes, cierres de caja y reportes operativos. Esto permite que el comercio no solo venda mas rapido, sino que tambien mantenga orden financiero y visibilidad real sobre lo que esta ocurriendo en el negocio.',
           detalle_puntos: [
             'Facturacion electronica y documentos de venta con trazabilidad por empresa.',
-            'Carritos de compra rapidos con productos, servicios, combos y descuentos controlados.',
+            'Carritos de compra rapidos con productos, servicios, recetas y descuentos controlados.',
             'Cierres de caja, metodos de pago y conciliacion operativa para supervision diaria.',
             'Inventario sincronizado, historial de ventas y reportes para decisiones comerciales.'
           ]

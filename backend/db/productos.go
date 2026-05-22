@@ -19,7 +19,7 @@ var (
 const (
 	inventarioPoliticaCostoPromedio = "promedio"
 	inventarioPoliticaCostoPEPS     = "peps"
-	comboCostoVariacionMaximaPct    = 35.0
+	recetaCostoVariacionMaximaPct   = 35.0
 )
 
 // Bodega representa una ubicación de inventario dentro de una empresa.
@@ -87,35 +87,35 @@ type Producto struct {
 	Observaciones         string  `json:"observaciones,omitempty"`
 }
 
-// ComboProducto representa un producto compuesto (combo) que se vende a precio unico.
-type ComboProducto struct {
-	ID                 int64                  `json:"id"`
-	EmpresaID          int64                  `json:"empresa_id"`
-	Codigo             string                 `json:"codigo,omitempty"`
-	Nombre             string                 `json:"nombre"`
-	Descripcion        string                 `json:"descripcion,omitempty"`
-	UnidadMedida       string                 `json:"unidad_medida,omitempty"`
-	Precio             float64                `json:"precio"`
-	ImpuestoPorcentaje float64                `json:"impuesto_porcentaje"`
-	RecetaVersion      int64                  `json:"receta_version,omitempty"`
-	CostoTeorico       float64                `json:"costo_teorico,omitempty"`
-	CostoReal          float64                `json:"costo_real,omitempty"`
-	VariacionCosto     float64                `json:"variacion_costo,omitempty"`
-	VariacionCostoPct  float64                `json:"variacion_costo_porcentaje,omitempty"`
-	IngredientesCount  int64                  `json:"ingredientes_count,omitempty"`
-	FechaCreacion      string                 `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string                 `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string                 `json:"usuario_creador,omitempty"`
-	Estado             string                 `json:"estado,omitempty"`
-	Observaciones      string                 `json:"observaciones,omitempty"`
-	Ingredientes       []ComboProductoDetalle `json:"ingredientes,omitempty"`
+// RecetaProducto representa un producto compuesto (receta) que se vende a precio unico.
+type RecetaProducto struct {
+	ID                 int64                   `json:"id"`
+	EmpresaID          int64                   `json:"empresa_id"`
+	Codigo             string                  `json:"codigo,omitempty"`
+	Nombre             string                  `json:"nombre"`
+	Descripcion        string                  `json:"descripcion,omitempty"`
+	UnidadMedida       string                  `json:"unidad_medida,omitempty"`
+	Precio             float64                 `json:"precio"`
+	ImpuestoPorcentaje float64                 `json:"impuesto_porcentaje"`
+	RecetaVersion      int64                   `json:"receta_version,omitempty"`
+	CostoTeorico       float64                 `json:"costo_teorico,omitempty"`
+	CostoReal          float64                 `json:"costo_real,omitempty"`
+	VariacionCosto     float64                 `json:"variacion_costo,omitempty"`
+	VariacionCostoPct  float64                 `json:"variacion_costo_porcentaje,omitempty"`
+	IngredientesCount  int64                   `json:"ingredientes_count,omitempty"`
+	FechaCreacion      string                  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string                  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string                  `json:"usuario_creador,omitempty"`
+	Estado             string                  `json:"estado,omitempty"`
+	Observaciones      string                  `json:"observaciones,omitempty"`
+	Ingredientes       []RecetaProductoDetalle `json:"ingredientes,omitempty"`
 }
 
-// ComboProductoDetalle representa la receta/ingredientes de un combo.
-type ComboProductoDetalle struct {
+// RecetaProductoDetalle representa los ingredientes de una receta vendible.
+type RecetaProductoDetalle struct {
 	ID                 int64   `json:"id"`
 	EmpresaID          int64   `json:"empresa_id"`
-	ComboID            int64   `json:"combo_id"`
+	RecetaID           int64   `json:"receta_id"`
 	ProductoID         int64   `json:"producto_id"`
 	ProductoNombre     string  `json:"producto_nombre,omitempty"`
 	ProductoSKU        string  `json:"producto_sku,omitempty"`
@@ -564,7 +564,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
-		`CREATE TABLE IF NOT EXISTS combos_productos (
+		`CREATE TABLE IF NOT EXISTS recetas_productos (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -575,7 +575,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			codigo TEXT,
 			nombre TEXT NOT NULL,
 			descripcion TEXT,
-			unidad_medida TEXT DEFAULT 'combo',
+			unidad_medida TEXT DEFAULT 'receta',
 			precio REAL DEFAULT 0,
 			impuesto_porcentaje REAL DEFAULT 0,
 			receta_version INTEGER DEFAULT 1,
@@ -584,7 +584,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			variacion_costo REAL DEFAULT 0,
 			variacion_costo_porcentaje REAL DEFAULT 0
 		);`,
-		`CREATE TABLE IF NOT EXISTS combos_productos_detalle (
+		`CREATE TABLE IF NOT EXISTS recetas_productos_detalle (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -592,12 +592,12 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			empresa_id INTEGER NOT NULL,
-			combo_id INTEGER NOT NULL,
+			receta_id INTEGER NOT NULL,
 			producto_id INTEGER NOT NULL,
 			cantidad REAL NOT NULL DEFAULT 0,
 			unidad_medida TEXT DEFAULT 'unidad'
 		);`,
-		`CREATE TABLE IF NOT EXISTS combos_productos_versiones (
+		`CREATE TABLE IF NOT EXISTS recetas_productos_versiones (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -605,7 +605,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT,
 			empresa_id INTEGER NOT NULL,
-			combo_id INTEGER NOT NULL,
+			receta_id INTEGER NOT NULL,
 			receta_version INTEGER NOT NULL,
 			ingredientes_json TEXT DEFAULT '[]',
 			costo_teorico REAL DEFAULT 0,
@@ -717,13 +717,13 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_codigo ON proveedores(empresa_id, codigo);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_proveedores_empresa_nombre ON proveedores(empresa_id, nombre);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_servicios_empresa_codigo ON servicios(empresa_id, codigo);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_empresa_codigo ON combos_productos(empresa_id, codigo);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_empresa_nombre ON combos_productos(empresa_id, nombre);`,
-		`CREATE INDEX IF NOT EXISTS ix_combos_empresa_estado ON combos_productos(empresa_id, estado, nombre);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_detalle_combo_producto ON combos_productos_detalle(empresa_id, combo_id, producto_id);`,
-		`CREATE INDEX IF NOT EXISTS ix_combos_detalle_empresa_producto ON combos_productos_detalle(empresa_id, producto_id);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_versiones_empresa_combo_version ON combos_productos_versiones(empresa_id, combo_id, receta_version);`,
-		`CREATE INDEX IF NOT EXISTS ix_combos_versiones_empresa_combo_fecha ON combos_productos_versiones(empresa_id, combo_id, fecha_creacion);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_empresa_codigo ON recetas_productos(empresa_id, codigo);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_empresa_nombre ON recetas_productos(empresa_id, nombre);`,
+		`CREATE INDEX IF NOT EXISTS ix_recetas_empresa_estado ON recetas_productos(empresa_id, estado, nombre);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_detalle_receta_producto ON recetas_productos_detalle(empresa_id, receta_id, producto_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_recetas_detalle_empresa_producto ON recetas_productos_detalle(empresa_id, producto_id);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_versiones_empresa_receta_version ON recetas_productos_versiones(empresa_id, receta_id, receta_version);`,
+		`CREATE INDEX IF NOT EXISTS ix_recetas_versiones_empresa_receta_fecha ON recetas_productos_versiones(empresa_id, receta_id, fecha_creacion);`,
 		`CREATE INDEX IF NOT EXISTS ix_historial_precios_empresa_producto ON producto_precios_historial(empresa_id, producto_id);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_existencias_empresa_prod_bodega ON inventario_existencias(empresa_id, producto_id, bodega_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_existencias_empresa_bodega ON inventario_existencias(empresa_id, bodega_id);`,
@@ -941,135 +941,135 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "usuario_creador", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "usuario_creador", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "observaciones", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "empresa_id", "INTEGER"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "empresa_id", "INTEGER"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "codigo", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "codigo", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "nombre", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "nombre", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "descripcion", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "descripcion", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "unidad_medida", "TEXT DEFAULT 'combo'"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "unidad_medida", "TEXT DEFAULT 'receta'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "precio", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "precio", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "impuesto_porcentaje", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "impuesto_porcentaje", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "receta_version", "INTEGER DEFAULT 1"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "receta_version", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "costo_teorico", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "costo_teorico", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "costo_real", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "costo_real", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "variacion_costo", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "variacion_costo", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos", "variacion_costo_porcentaje", "REAL DEFAULT 0"); err != nil {
-		return err
-	}
-
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "usuario_creador", "TEXT"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "estado", "TEXT DEFAULT 'activo'"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "observaciones", "TEXT"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "empresa_id", "INTEGER"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "combo_id", "INTEGER"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "producto_id", "INTEGER"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "cantidad", "REAL DEFAULT 0"); err != nil {
-		return err
-	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_detalle", "unidad_medida", "TEXT DEFAULT 'unidad'"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos", "variacion_costo_porcentaje", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
 
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "usuario_creador", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "usuario_creador", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "estado", "TEXT DEFAULT 'activo'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "observaciones", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "empresa_id", "INTEGER"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "empresa_id", "INTEGER"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "combo_id", "INTEGER"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "receta_id", "INTEGER"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "receta_version", "INTEGER DEFAULT 1"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "producto_id", "INTEGER"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "ingredientes_json", "TEXT DEFAULT '[]'"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "cantidad", "REAL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "costo_teorico", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_detalle", "unidad_medida", "TEXT DEFAULT 'unidad'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "costo_real", "REAL DEFAULT 0"); err != nil {
+
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "variacion_costo", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "variacion_costo_porcentaje", "REAL DEFAULT 0"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "usuario_creador", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "combos_productos_versiones", "motivo", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "estado", "TEXT DEFAULT 'activo'"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_combos_versiones_empresa_combo_version ON combos_productos_versiones(empresa_id, combo_id, receta_version);`); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "observaciones", "TEXT"); err != nil {
 		return err
 	}
-	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_combos_versiones_empresa_combo_fecha ON combos_productos_versiones(empresa_id, combo_id, fecha_creacion);`); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "empresa_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "receta_id", "INTEGER"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "receta_version", "INTEGER DEFAULT 1"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "ingredientes_json", "TEXT DEFAULT '[]'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "costo_teorico", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "costo_real", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "variacion_costo", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "variacion_costo_porcentaje", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "recetas_productos_versiones", "motivo", "TEXT"); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_recetas_versiones_empresa_receta_version ON recetas_productos_versiones(empresa_id, receta_id, receta_version);`); err != nil {
+		return err
+	}
+	if _, err := dbConn.Exec(`CREATE INDEX IF NOT EXISTS ix_recetas_versiones_empresa_receta_fecha ON recetas_productos_versiones(empresa_id, receta_id, fecha_creacion);`); err != nil {
 		return err
 	}
 
@@ -3832,15 +3832,15 @@ func SetProveedorEstado(dbConn *sql.DB, empresaID, proveedorID int64, estado str
 	return nil
 }
 
-func defaultComboUnidad(v string) string {
+func defaultRecetaUnidad(v string) string {
 	v = strings.TrimSpace(strings.ToLower(v))
 	if v == "" {
-		return "combo"
+		return "receta"
 	}
 	return v
 }
 
-func normalizeComboEstado(v string) string {
+func normalizeRecetaEstado(v string) string {
 	v = strings.TrimSpace(strings.ToLower(v))
 	if v == "" {
 		return "activo"
@@ -3848,7 +3848,7 @@ func normalizeComboEstado(v string) string {
 	return v
 }
 
-func validateComboProductoPayload(c ComboProducto) error {
+func validateRecetaProductoPayload(c RecetaProducto) error {
 	if c.EmpresaID <= 0 {
 		return fmt.Errorf("empresa_id es obligatorio")
 	}
@@ -3864,7 +3864,7 @@ func validateComboProductoPayload(c ComboProducto) error {
 	return nil
 }
 
-func validateComboIngredientePayload(i ComboProductoDetalle) error {
+func validateRecetaIngredientePayload(i RecetaProductoDetalle) error {
 	if i.ProductoID <= 0 {
 		return fmt.Errorf("producto_id es obligatorio")
 	}
@@ -3874,23 +3874,23 @@ func validateComboIngredientePayload(i ComboProductoDetalle) error {
 	return nil
 }
 
-func normalizeComboIngredientesInput(ingredientes []ComboProductoDetalle) ([]ComboProductoDetalle, error) {
+func normalizeRecetaIngredientesInput(ingredientes []RecetaProductoDetalle) ([]RecetaProductoDetalle, error) {
 	if len(ingredientes) == 0 {
-		return nil, fmt.Errorf("el combo debe tener al menos un ingrediente")
+		return nil, fmt.Errorf("la receta debe tener al menos un ingrediente")
 	}
 
-	merged := make(map[int64]ComboProductoDetalle)
+	merged := make(map[int64]RecetaProductoDetalle)
 	for _, raw := range ingredientes {
-		if err := validateComboIngredientePayload(raw); err != nil {
+		if err := validateRecetaIngredientePayload(raw); err != nil {
 			return nil, err
 		}
 		item, exists := merged[raw.ProductoID]
 		if !exists {
-			merged[raw.ProductoID] = ComboProductoDetalle{
+			merged[raw.ProductoID] = RecetaProductoDetalle{
 				ProductoID:    raw.ProductoID,
 				Cantidad:      raw.Cantidad,
 				UnidadMedida:  strings.TrimSpace(raw.UnidadMedida),
-				Estado:        normalizeComboEstado(raw.Estado),
+				Estado:        normalizeRecetaEstado(raw.Estado),
 				Observaciones: strings.TrimSpace(raw.Observaciones),
 			}
 			continue
@@ -3903,7 +3903,7 @@ func normalizeComboIngredientesInput(ingredientes []ComboProductoDetalle) ([]Com
 			item.Observaciones = strings.TrimSpace(raw.Observaciones)
 		}
 		if item.Estado == "" {
-			item.Estado = normalizeComboEstado(raw.Estado)
+			item.Estado = normalizeRecetaEstado(raw.Estado)
 		}
 		merged[raw.ProductoID] = item
 	}
@@ -3914,30 +3914,30 @@ func normalizeComboIngredientesInput(ingredientes []ComboProductoDetalle) ([]Com
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 
-	out := make([]ComboProductoDetalle, 0, len(keys))
+	out := make([]RecetaProductoDetalle, 0, len(keys))
 	for _, productID := range keys {
 		item := merged[productID]
 		if item.Cantidad <= 0 {
 			continue
 		}
 		item.Cantidad = round2(item.Cantidad)
-		item.Estado = normalizeComboEstado(item.Estado)
+		item.Estado = normalizeRecetaEstado(item.Estado)
 		out = append(out, item)
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("el combo debe tener al menos un ingrediente")
+		return nil, fmt.Errorf("la receta debe tener al menos un ingrediente")
 	}
 	return out, nil
 }
 
-type comboCostoMetrics struct {
+type recetaCostoMetrics struct {
 	CostoTeorico      float64
 	CostoReal         float64
 	VariacionCosto    float64
 	VariacionCostoPct float64
 }
 
-func normalizeComboUnidadDetalle(v string) string {
+func normalizeRecetaUnidadDetalle(v string) string {
 	v = strings.TrimSpace(strings.ToLower(v))
 	if v == "" {
 		return "unidad"
@@ -3945,9 +3945,9 @@ func normalizeComboUnidadDetalle(v string) string {
 	return v
 }
 
-func comboIngredientesEquivalent(a, b []ComboProductoDetalle) bool {
-	na, errA := normalizeComboIngredientesInput(a)
-	nb, errB := normalizeComboIngredientesInput(b)
+func recetaIngredientesEquivalent(a, b []RecetaProductoDetalle) bool {
+	na, errA := normalizeRecetaIngredientesInput(a)
+	nb, errB := normalizeRecetaIngredientesInput(b)
 	if errA != nil || errB != nil {
 		return false
 	}
@@ -3961,16 +3961,16 @@ func comboIngredientesEquivalent(a, b []ComboProductoDetalle) bool {
 		if round2(na[idx].Cantidad) != round2(nb[idx].Cantidad) {
 			return false
 		}
-		if normalizeComboUnidadDetalle(na[idx].UnidadMedida) != normalizeComboUnidadDetalle(nb[idx].UnidadMedida) {
+		if normalizeRecetaUnidadDetalle(na[idx].UnidadMedida) != normalizeRecetaUnidadDetalle(nb[idx].UnidadMedida) {
 			return false
 		}
 	}
 	return true
 }
 
-func buildComboIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes []ComboProductoDetalle) ([]ComboProductoDetalle, comboCostoMetrics, error) {
-	metrics := comboCostoMetrics{}
-	normalized, err := normalizeComboIngredientesInput(ingredientes)
+func buildRecetaIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes []RecetaProductoDetalle) ([]RecetaProductoDetalle, recetaCostoMetrics, error) {
+	metrics := recetaCostoMetrics{}
+	normalized, err := normalizeRecetaIngredientesInput(ingredientes)
 	if err != nil {
 		return nil, metrics, err
 	}
@@ -3981,7 +3981,7 @@ func buildComboIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes
 	}
 	usarCostoLotes := politicaCosto == inventarioPoliticaCostoPEPS || politicaCosto == inventarioPoliticaCostoPromedio
 
-	prepared := make([]ComboProductoDetalle, 0, len(normalized))
+	prepared := make([]RecetaProductoDetalle, 0, len(normalized))
 	for _, it := range normalized {
 		var unidadProducto sql.NullString
 		var costoProducto float64
@@ -4019,8 +4019,8 @@ func buildComboIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes
 		metrics.CostoTeorico += it.Cantidad * costoTeoricoUnit
 		metrics.CostoReal += it.Cantidad * costoRealUnit
 
-		it.UnidadMedida = normalizeComboUnidadDetalle(unidad)
-		it.Estado = normalizeComboEstado(it.Estado)
+		it.UnidadMedida = normalizeRecetaUnidadDetalle(unidad)
+		it.Estado = normalizeRecetaEstado(it.Estado)
 		prepared = append(prepared, it)
 	}
 
@@ -4034,19 +4034,19 @@ func buildComboIngredientesValidadosTx(tx *sql.Tx, empresaID int64, ingredientes
 	return prepared, metrics, nil
 }
 
-func validateComboCostos(c ComboProducto, metrics comboCostoMetrics) error {
-	precioCombo := round2(c.Precio)
-	if metrics.CostoReal > 0 && precioCombo+0.0001 < metrics.CostoReal {
-		return fmt.Errorf("el precio del combo (%.2f) no cubre el costo real (%.2f)", precioCombo, metrics.CostoReal)
+func validateRecetaCostos(c RecetaProducto, metrics recetaCostoMetrics) error {
+	precioReceta := round2(c.Precio)
+	if metrics.CostoReal > 0 && precioReceta+0.0001 < metrics.CostoReal {
+		return fmt.Errorf("el precio de la receta (%.2f) no cubre el costo real (%.2f)", precioReceta, metrics.CostoReal)
 	}
-	if metrics.CostoTeorico > 0 && math.Abs(metrics.VariacionCostoPct) > comboCostoVariacionMaximaPct {
-		return fmt.Errorf("la variacion de costo teorico vs real (%.2f%%) supera el maximo permitido (%.2f%%)", math.Abs(metrics.VariacionCostoPct), comboCostoVariacionMaximaPct)
+	if metrics.CostoTeorico > 0 && math.Abs(metrics.VariacionCostoPct) > recetaCostoVariacionMaximaPct {
+		return fmt.Errorf("la variacion de costo teorico vs real (%.2f%%) supera el maximo permitido (%.2f%%)", math.Abs(metrics.VariacionCostoPct), recetaCostoVariacionMaximaPct)
 	}
 	return nil
 }
 
-func getComboProductoCurrentStateTx(tx *sql.Tx, empresaID, comboID int64) (int64, comboCostoMetrics, error) {
-	metrics := comboCostoMetrics{}
+func getRecetaProductoCurrentStateTx(tx *sql.Tx, empresaID, recetaID int64) (int64, recetaCostoMetrics, error) {
+	metrics := recetaCostoMetrics{}
 	var version sql.NullInt64
 	err := queryRowTxSQLCompat(tx, `SELECT
 		COALESCE(receta_version, 1),
@@ -4054,9 +4054,9 @@ func getComboProductoCurrentStateTx(tx *sql.Tx, empresaID, comboID int64) (int64
 		COALESCE(costo_real, 0),
 		COALESCE(variacion_costo, 0),
 		COALESCE(variacion_costo_porcentaje, 0)
-	FROM combos_productos
+	FROM recetas_productos
 	WHERE empresa_id = ? AND id = ?
-	LIMIT 1`, empresaID, comboID).Scan(
+	LIMIT 1`, empresaID, recetaID).Scan(
 		&version,
 		&metrics.CostoTeorico,
 		&metrics.CostoReal,
@@ -4072,38 +4072,38 @@ func getComboProductoCurrentStateTx(tx *sql.Tx, empresaID, comboID int64) (int64
 	return version.Int64, metrics, nil
 }
 
-func getComboProductoIngredientesTx(tx *sql.Tx, empresaID, comboID int64) ([]ComboProductoDetalle, error) {
+func getRecetaProductoIngredientesTx(tx *sql.Tx, empresaID, recetaID int64) ([]RecetaProductoDetalle, error) {
 	rows, err := queryTxSQLCompat(tx, `SELECT
 		COALESCE(producto_id, 0),
 		COALESCE(cantidad, 0),
 		COALESCE(unidad_medida, 'unidad')
-	FROM combos_productos_detalle
-	WHERE empresa_id = ? AND combo_id = ? AND COALESCE(estado, 'activo') = 'activo'
-	ORDER BY producto_id ASC, id ASC`, empresaID, comboID)
+	FROM recetas_productos_detalle
+	WHERE empresa_id = ? AND receta_id = ? AND COALESCE(estado, 'activo') = 'activo'
+	ORDER BY producto_id ASC, id ASC`, empresaID, recetaID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	out := make([]ComboProductoDetalle, 0)
+	out := make([]RecetaProductoDetalle, 0)
 	for rows.Next() {
-		var item ComboProductoDetalle
+		var item RecetaProductoDetalle
 		if err := rows.Scan(&item.ProductoID, &item.Cantidad, &item.UnidadMedida); err != nil {
 			return nil, err
 		}
-		item.UnidadMedida = normalizeComboUnidadDetalle(item.UnidadMedida)
+		item.UnidadMedida = normalizeRecetaUnidadDetalle(item.UnidadMedida)
 		out = append(out, item)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("el combo debe tener al menos un ingrediente")
+		return nil, fmt.Errorf("la receta debe tener al menos un ingrediente")
 	}
 	return out, nil
 }
 
-func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion int64, ingredientes []ComboProductoDetalle, metrics comboCostoMetrics, usuario, motivo string) error {
+func insertRecetaVersionSnapshotTx(tx *sql.Tx, empresaID, recetaID, recetaVersion int64, ingredientes []RecetaProductoDetalle, metrics recetaCostoMetrics, usuario, motivo string) error {
 	if recetaVersion <= 0 {
 		recetaVersion = 1
 	}
@@ -4113,14 +4113,14 @@ func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion 
 	}
 
 	nowExpr := sqlNowExpr()
-	insertStmt := `INSERT OR IGNORE INTO combos_productos_versiones (
+	insertStmt := `INSERT OR IGNORE INTO recetas_productos_versiones (
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones,
 		empresa_id,
-		combo_id,
+		receta_id,
 		receta_version,
 		ingredientes_json,
 		costo_teorico,
@@ -4146,13 +4146,13 @@ func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion 
 	)`
 	if isPostgresDialect() {
 		insertStmt = strings.Replace(insertStmt, "INSERT OR IGNORE INTO", "INSERT INTO", 1)
-		insertStmt += " ON CONFLICT (empresa_id, combo_id, receta_version) DO NOTHING"
+		insertStmt += " ON CONFLICT (empresa_id, receta_id, receta_version) DO NOTHING"
 	}
 	_, err = execTxSQLCompat(tx, insertStmt,
 		strings.TrimSpace(usuario),
 		strings.TrimSpace(motivo),
 		empresaID,
-		comboID,
+		recetaID,
 		recetaVersion,
 		string(payload),
 		round2(metrics.CostoTeorico),
@@ -4164,25 +4164,25 @@ func insertComboVersionSnapshotTx(tx *sql.Tx, empresaID, comboID, recetaVersion 
 	return err
 }
 
-func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredientes []ComboProductoDetalle, usuario string) error {
+func replaceRecetaIngredientesTx(tx *sql.Tx, empresaID, recetaID int64, ingredientes []RecetaProductoDetalle, usuario string) error {
 	if len(ingredientes) == 0 {
-		return fmt.Errorf("el combo debe tener al menos un ingrediente")
+		return fmt.Errorf("la receta debe tener al menos un ingrediente")
 	}
 
-	if _, err := execTxSQLCompat(tx, `DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM recetas_productos_detalle WHERE empresa_id = ? AND receta_id = ?`, empresaID, recetaID); err != nil {
 		return err
 	}
 
 	nowExpr := sqlNowExpr()
 	for _, it := range ingredientes {
-		if _, err := execTxSQLCompat(tx, `INSERT INTO combos_productos_detalle (
+		if _, err := execTxSQLCompat(tx, `INSERT INTO recetas_productos_detalle (
 			fecha_creacion,
 			fecha_actualizacion,
 			usuario_creador,
 			estado,
 			observaciones,
 			empresa_id,
-			combo_id,
+			receta_id,
 			producto_id,
 			cantidad,
 			unidad_medida
@@ -4199,13 +4199,13 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 			?
 		)`,
 			strings.TrimSpace(usuario),
-			normalizeComboEstado(it.Estado),
+			normalizeRecetaEstado(it.Estado),
 			strings.TrimSpace(it.Observaciones),
 			empresaID,
-			comboID,
+			recetaID,
 			it.ProductoID,
 			round2(it.Cantidad),
-			normalizeComboUnidadDetalle(it.UnidadMedida),
+			normalizeRecetaUnidadDetalle(it.UnidadMedida),
 		); err != nil {
 			return err
 		}
@@ -4214,16 +4214,16 @@ func replaceComboIngredientesTx(tx *sql.Tx, empresaID, comboID int64, ingredient
 	return nil
 }
 
-func countActiveOpenCarritoItemsByComboTx(tx *sql.Tx, empresaID, comboID int64) (int64, error) {
+func countActiveOpenCarritoItemsByRecetaTx(tx *sql.Tx, empresaID, recetaID int64) (int64, error) {
 	var total int64
 	err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 	FROM carrito_compra_items i
 	JOIN carritos_compras c ON c.empresa_id = i.empresa_id AND c.id = i.carrito_id
 	WHERE i.empresa_id = ?
-	  AND COALESCE(LOWER(i.tipo_item), '') = 'combo'
+	  AND COALESCE(LOWER(i.tipo_item), '') = 'receta'
 	  AND COALESCE(i.referencia_id, 0) = ?
 	  AND COALESCE(i.estado, 'activo') = 'activo'
-	  AND COALESCE(c.estado_carrito, 'abierto') <> 'cerrado'`, empresaID, comboID).Scan(&total)
+	  AND COALESCE(c.estado_carrito, 'abierto') <> 'cerrado'`, empresaID, recetaID).Scan(&total)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
 			return 0, nil
@@ -4233,14 +4233,14 @@ func countActiveOpenCarritoItemsByComboTx(tx *sql.Tx, empresaID, comboID int64) 
 	return total, nil
 }
 
-// CreateComboProducto crea un combo y su receta de ingredientes por empresa.
-func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []ComboProductoDetalle) (int64, error) {
-	if err := validateComboProductoPayload(combo); err != nil {
+// CreateRecetaProducto crea una receta vendible y sus ingredientes por empresa.
+func CreateRecetaProducto(dbConn *sql.DB, receta RecetaProducto, ingredientes []RecetaProductoDetalle) (int64, error) {
+	if err := validateRecetaProductoPayload(receta); err != nil {
 		return 0, err
 	}
 
-	combo.UnidadMedida = defaultComboUnidad(combo.UnidadMedida)
-	combo.Estado = normalizeComboEstado(combo.Estado)
+	receta.UnidadMedida = defaultRecetaUnidad(receta.UnidadMedida)
+	receta.Estado = normalizeRecetaEstado(receta.Estado)
 
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -4248,16 +4248,16 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 	}
 	defer tx.Rollback()
 
-	preparedIngredientes, metrics, err := buildComboIngredientesValidadosTx(tx, combo.EmpresaID, ingredientes)
+	preparedIngredientes, metrics, err := buildRecetaIngredientesValidadosTx(tx, receta.EmpresaID, ingredientes)
 	if err != nil {
 		return 0, err
 	}
-	if err := validateComboCostos(combo, metrics); err != nil {
+	if err := validateRecetaCostos(receta, metrics); err != nil {
 		return 0, err
 	}
 
 	nowExpr := sqlNowExpr()
-	comboID, err := insertTxSQLCompat(tx, `INSERT INTO combos_productos (
+	recetaID, err := insertTxSQLCompat(tx, `INSERT INTO recetas_productos (
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
@@ -4294,16 +4294,16 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		?,
 		?
 	)`,
-		strings.TrimSpace(combo.UsuarioCreador),
-		combo.Estado,
-		strings.TrimSpace(combo.Observaciones),
-		combo.EmpresaID,
-		strings.TrimSpace(combo.Codigo),
-		strings.TrimSpace(combo.Nombre),
-		strings.TrimSpace(combo.Descripcion),
-		combo.UnidadMedida,
-		round2(combo.Precio),
-		round2(combo.ImpuestoPorcentaje),
+		strings.TrimSpace(receta.UsuarioCreador),
+		receta.Estado,
+		strings.TrimSpace(receta.Observaciones),
+		receta.EmpresaID,
+		strings.TrimSpace(receta.Codigo),
+		strings.TrimSpace(receta.Nombre),
+		strings.TrimSpace(receta.Descripcion),
+		receta.UnidadMedida,
+		round2(receta.Precio),
+		round2(receta.ImpuestoPorcentaje),
 		metrics.CostoTeorico,
 		metrics.CostoReal,
 		metrics.VariacionCosto,
@@ -4313,22 +4313,22 @@ func CreateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		return 0, err
 	}
 
-	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, comboID, preparedIngredientes, combo.UsuarioCreador); err != nil {
+	if err := replaceRecetaIngredientesTx(tx, receta.EmpresaID, recetaID, preparedIngredientes, receta.UsuarioCreador); err != nil {
 		return 0, err
 	}
 
-	if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, comboID, 1, preparedIngredientes, metrics, combo.UsuarioCreador, "creacion_combo"); err != nil {
+	if err := insertRecetaVersionSnapshotTx(tx, receta.EmpresaID, recetaID, 1, preparedIngredientes, metrics, receta.UsuarioCreador, "creacion_receta"); err != nil {
 		return 0, err
 	}
 
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
-	return comboID, nil
+	return recetaID, nil
 }
 
-// GetCombosProductosByEmpresa lista combos por empresa con filtros opcionales.
-func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado string, incluirInactivos bool, limit, offset int) ([]ComboProducto, error) {
+// GetRecetasProductosByEmpresa lista recetas por empresa con filtros opcionales.
+func GetRecetasProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado string, incluirInactivos bool, limit, offset int) ([]RecetaProducto, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 200
 	}
@@ -4342,7 +4342,7 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 		COALESCE(c.codigo, ''),
 		COALESCE(c.nombre, ''),
 		COALESCE(c.descripcion, ''),
-		COALESCE(c.unidad_medida, 'combo'),
+		COALESCE(c.unidad_medida, 'receta'),
 		COALESCE(c.precio, 0),
 		COALESCE(c.impuesto_porcentaje, 0),
 		COALESCE(c.receta_version, 1),
@@ -4356,13 +4356,13 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 		COALESCE(c.usuario_creador, ''),
 		COALESCE(c.estado, 'activo'),
 		COALESCE(c.observaciones, '')
-	FROM combos_productos c
+	FROM recetas_productos c
 	LEFT JOIN (
-		SELECT empresa_id, combo_id, COUNT(1) AS ingredientes_count
-		FROM combos_productos_detalle
+		SELECT empresa_id, receta_id, COUNT(1) AS ingredientes_count
+		FROM recetas_productos_detalle
 		WHERE COALESCE(estado, 'activo') = 'activo'
-		GROUP BY empresa_id, combo_id
-	) det ON det.empresa_id = c.empresa_id AND det.combo_id = c.id
+		GROUP BY empresa_id, receta_id
+	) det ON det.empresa_id = c.empresa_id AND det.receta_id = c.id
 	WHERE c.empresa_id = ?`
 
 	args := []interface{}{empresaID}
@@ -4388,9 +4388,9 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 	}
 	defer rows.Close()
 
-	out := make([]ComboProducto, 0)
+	out := make([]RecetaProducto, 0)
 	for rows.Next() {
-		var c ComboProducto
+		var c RecetaProducto
 		if err := rows.Scan(
 			&c.ID,
 			&c.EmpresaID,
@@ -4419,15 +4419,15 @@ func GetCombosProductosByEmpresa(dbConn *sql.DB, empresaID int64, filtro, estado
 	return out, nil
 }
 
-// GetComboProductoByID obtiene un combo por empresa e incluye su receta.
-func GetComboProductoByID(dbConn *sql.DB, empresaID, comboID int64) (*ComboProducto, error) {
+// GetRecetaProductoByID obtiene una receta por empresa e incluye sus ingredientes.
+func GetRecetaProductoByID(dbConn *sql.DB, empresaID, recetaID int64) (*RecetaProducto, error) {
 	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(codigo, ''),
 		COALESCE(nombre, ''),
 		COALESCE(descripcion, ''),
-		COALESCE(unidad_medida, 'combo'),
+		COALESCE(unidad_medida, 'receta'),
 		COALESCE(precio, 0),
 		COALESCE(impuesto_porcentaje, 0),
 		COALESCE(receta_version, 1),
@@ -4440,49 +4440,49 @@ func GetComboProductoByID(dbConn *sql.DB, empresaID, comboID int64) (*ComboProdu
 		COALESCE(usuario_creador, ''),
 		COALESCE(estado, 'activo'),
 		COALESCE(observaciones, '')
-	FROM combos_productos
+	FROM recetas_productos
 	WHERE empresa_id = ? AND id = ?
-	LIMIT 1`, empresaID, comboID)
+	LIMIT 1`, empresaID, recetaID)
 
-	var combo ComboProducto
+	var receta RecetaProducto
 	if err := row.Scan(
-		&combo.ID,
-		&combo.EmpresaID,
-		&combo.Codigo,
-		&combo.Nombre,
-		&combo.Descripcion,
-		&combo.UnidadMedida,
-		&combo.Precio,
-		&combo.ImpuestoPorcentaje,
-		&combo.RecetaVersion,
-		&combo.CostoTeorico,
-		&combo.CostoReal,
-		&combo.VariacionCosto,
-		&combo.VariacionCostoPct,
-		&combo.FechaCreacion,
-		&combo.FechaActualizacion,
-		&combo.UsuarioCreador,
-		&combo.Estado,
-		&combo.Observaciones,
+		&receta.ID,
+		&receta.EmpresaID,
+		&receta.Codigo,
+		&receta.Nombre,
+		&receta.Descripcion,
+		&receta.UnidadMedida,
+		&receta.Precio,
+		&receta.ImpuestoPorcentaje,
+		&receta.RecetaVersion,
+		&receta.CostoTeorico,
+		&receta.CostoReal,
+		&receta.VariacionCosto,
+		&receta.VariacionCostoPct,
+		&receta.FechaCreacion,
+		&receta.FechaActualizacion,
+		&receta.UsuarioCreador,
+		&receta.Estado,
+		&receta.Observaciones,
 	); err != nil {
 		return nil, err
 	}
 
-	ingredientes, err := GetComboProductoIngredientes(dbConn, empresaID, comboID, true)
+	ingredientes, err := GetRecetaProductoIngredientes(dbConn, empresaID, recetaID, true)
 	if err != nil {
 		return nil, err
 	}
-	combo.Ingredientes = ingredientes
-	combo.IngredientesCount = int64(len(ingredientes))
-	return &combo, nil
+	receta.Ingredientes = ingredientes
+	receta.IngredientesCount = int64(len(ingredientes))
+	return &receta, nil
 }
 
-// GetComboProductoIngredientes lista la receta de un combo.
-func GetComboProductoIngredientes(dbConn *sql.DB, empresaID, comboID int64, incluirInactivos bool) ([]ComboProductoDetalle, error) {
+// GetRecetaProductoIngredientes lista los ingredientes de una receta.
+func GetRecetaProductoIngredientes(dbConn *sql.DB, empresaID, recetaID int64, incluirInactivos bool) ([]RecetaProductoDetalle, error) {
 	query := `SELECT
 		d.id,
 		d.empresa_id,
-		d.combo_id,
+		d.receta_id,
 		d.producto_id,
 		COALESCE(p.nombre, ''),
 		COALESCE(p.sku, ''),
@@ -4494,10 +4494,10 @@ func GetComboProductoIngredientes(dbConn *sql.DB, empresaID, comboID int64, incl
 		COALESCE(d.usuario_creador, ''),
 		COALESCE(d.estado, 'activo'),
 		COALESCE(d.observaciones, '')
-	FROM combos_productos_detalle d
+	FROM recetas_productos_detalle d
 	LEFT JOIN productos p ON p.empresa_id = d.empresa_id AND p.id = d.producto_id
-	WHERE d.empresa_id = ? AND d.combo_id = ?`
-	args := []interface{}{empresaID, comboID}
+	WHERE d.empresa_id = ? AND d.receta_id = ?`
+	args := []interface{}{empresaID, recetaID}
 	if !incluirInactivos {
 		query += ` AND COALESCE(d.estado, 'activo') = 'activo'`
 	}
@@ -4509,13 +4509,13 @@ func GetComboProductoIngredientes(dbConn *sql.DB, empresaID, comboID int64, incl
 	}
 	defer rows.Close()
 
-	out := make([]ComboProductoDetalle, 0)
+	out := make([]RecetaProductoDetalle, 0)
 	for rows.Next() {
-		var d ComboProductoDetalle
+		var d RecetaProductoDetalle
 		if err := rows.Scan(
 			&d.ID,
 			&d.EmpresaID,
-			&d.ComboID,
+			&d.RecetaID,
 			&d.ProductoID,
 			&d.ProductoNombre,
 			&d.ProductoSKU,
@@ -4535,17 +4535,17 @@ func GetComboProductoIngredientes(dbConn *sql.DB, empresaID, comboID int64, incl
 	return out, nil
 }
 
-// UpdateComboProducto actualiza cabecera y receta de un combo.
-func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []ComboProductoDetalle) error {
-	if combo.ID <= 0 {
+// UpdateRecetaProducto actualiza cabecera e ingredientes de una receta.
+func UpdateRecetaProducto(dbConn *sql.DB, receta RecetaProducto, ingredientes []RecetaProductoDetalle) error {
+	if receta.ID <= 0 {
 		return fmt.Errorf("id es obligatorio")
 	}
-	if err := validateComboProductoPayload(combo); err != nil {
+	if err := validateRecetaProductoPayload(receta); err != nil {
 		return err
 	}
 
-	combo.UnidadMedida = defaultComboUnidad(combo.UnidadMedida)
-	combo.Estado = normalizeComboEstado(combo.Estado)
+	receta.UnidadMedida = defaultRecetaUnidad(receta.UnidadMedida)
+	receta.Estado = normalizeRecetaEstado(receta.Estado)
 
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -4553,15 +4553,15 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 	}
 	defer tx.Rollback()
 
-	openItems, err := countActiveOpenCarritoItemsByComboTx(tx, combo.EmpresaID, combo.ID)
+	openItems, err := countActiveOpenCarritoItemsByRecetaTx(tx, receta.EmpresaID, receta.ID)
 	if err != nil {
 		return err
 	}
 	if openItems > 0 {
-		return fmt.Errorf("no se puede modificar el combo mientras tenga items activos en carritos abiertos")
+		return fmt.Errorf("no se puede modificar la receta mientras tenga items activos en carritos abiertos")
 	}
 
-	currentVersion, currentMetrics, err := getComboProductoCurrentStateTx(tx, combo.EmpresaID, combo.ID)
+	currentVersion, currentMetrics, err := getRecetaProductoCurrentStateTx(tx, receta.EmpresaID, receta.ID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return sql.ErrNoRows
@@ -4572,30 +4572,30 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		currentVersion = 1
 	}
 
-	currentIngredientes, err := getComboProductoIngredientesTx(tx, combo.EmpresaID, combo.ID)
+	currentIngredientes, err := getRecetaProductoIngredientesTx(tx, receta.EmpresaID, receta.ID)
 	if err != nil {
 		return err
 	}
 
-	preparedIngredientes, metrics, err := buildComboIngredientesValidadosTx(tx, combo.EmpresaID, ingredientes)
+	preparedIngredientes, metrics, err := buildRecetaIngredientesValidadosTx(tx, receta.EmpresaID, ingredientes)
 	if err != nil {
 		return err
 	}
-	if err := validateComboCostos(combo, metrics); err != nil {
+	if err := validateRecetaCostos(receta, metrics); err != nil {
 		return err
 	}
 
-	recipeChanged := !comboIngredientesEquivalent(currentIngredientes, preparedIngredientes)
+	recipeChanged := !recetaIngredientesEquivalent(currentIngredientes, preparedIngredientes)
 	nextVersion := currentVersion
 	if recipeChanged {
-		if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, combo.ID, currentVersion, currentIngredientes, currentMetrics, combo.UsuarioCreador, "snapshot_pre_actualizacion"); err != nil {
+		if err := insertRecetaVersionSnapshotTx(tx, receta.EmpresaID, receta.ID, currentVersion, currentIngredientes, currentMetrics, receta.UsuarioCreador, "snapshot_pre_actualizacion"); err != nil {
 			return err
 		}
 		nextVersion = currentVersion + 1
 	}
 
 	nowExpr := sqlNowExpr()
-	res, err := execTxSQLCompat(tx, `UPDATE combos_productos SET
+	res, err := execTxSQLCompat(tx, `UPDATE recetas_productos SET
 		codigo = NULLIF(?, ''),
 		nombre = ?,
 		descripcion = ?,
@@ -4611,21 +4611,21 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		observaciones = ?,
 		fecha_actualizacion = `+nowExpr+`
 	WHERE id = ? AND empresa_id = ?`,
-		strings.TrimSpace(combo.Codigo),
-		strings.TrimSpace(combo.Nombre),
-		strings.TrimSpace(combo.Descripcion),
-		combo.UnidadMedida,
-		round2(combo.Precio),
-		round2(combo.ImpuestoPorcentaje),
+		strings.TrimSpace(receta.Codigo),
+		strings.TrimSpace(receta.Nombre),
+		strings.TrimSpace(receta.Descripcion),
+		receta.UnidadMedida,
+		round2(receta.Precio),
+		round2(receta.ImpuestoPorcentaje),
 		nextVersion,
 		metrics.CostoTeorico,
 		metrics.CostoReal,
 		metrics.VariacionCosto,
 		metrics.VariacionCostoPct,
-		combo.Estado,
-		strings.TrimSpace(combo.Observaciones),
-		combo.ID,
-		combo.EmpresaID,
+		receta.Estado,
+		strings.TrimSpace(receta.Observaciones),
+		receta.ID,
+		receta.EmpresaID,
 	)
 	if err != nil {
 		return err
@@ -4635,18 +4635,18 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 		return sql.ErrNoRows
 	}
 
-	if err := replaceComboIngredientesTx(tx, combo.EmpresaID, combo.ID, preparedIngredientes, combo.UsuarioCreador); err != nil {
+	if err := replaceRecetaIngredientesTx(tx, receta.EmpresaID, receta.ID, preparedIngredientes, receta.UsuarioCreador); err != nil {
 		return err
 	}
 
 	if recipeChanged {
-		if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, combo.ID, nextVersion, preparedIngredientes, metrics, combo.UsuarioCreador, "actualizacion_receta"); err != nil {
+		if err := insertRecetaVersionSnapshotTx(tx, receta.EmpresaID, receta.ID, nextVersion, preparedIngredientes, metrics, receta.UsuarioCreador, "actualizacion_receta"); err != nil {
 			return err
 		}
 	}
 
 	if !recipeChanged && currentVersion == 1 {
-		if err := insertComboVersionSnapshotTx(tx, combo.EmpresaID, combo.ID, currentVersion, preparedIngredientes, metrics, combo.UsuarioCreador, "normalizacion_version_inicial"); err != nil {
+		if err := insertRecetaVersionSnapshotTx(tx, receta.EmpresaID, receta.ID, currentVersion, preparedIngredientes, metrics, receta.UsuarioCreador, "normalizacion_version_inicial"); err != nil {
 			return err
 		}
 	}
@@ -4657,32 +4657,32 @@ func UpdateComboProducto(dbConn *sql.DB, combo ComboProducto, ingredientes []Com
 	return nil
 }
 
-// DeleteComboProducto elimina un combo y su receta.
-func DeleteComboProducto(dbConn *sql.DB, empresaID, comboID int64) error {
+// DeleteRecetaProducto elimina una receta y sus ingredientes.
+func DeleteRecetaProducto(dbConn *sql.DB, empresaID, recetaID int64) error {
 	tx, err := dbConn.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	openItems, err := countActiveOpenCarritoItemsByComboTx(tx, empresaID, comboID)
+	openItems, err := countActiveOpenCarritoItemsByRecetaTx(tx, empresaID, recetaID)
 	if err != nil {
 		return err
 	}
 	if openItems > 0 {
-		return fmt.Errorf("no se puede eliminar el combo mientras tenga items activos en carritos abiertos")
+		return fmt.Errorf("no se puede eliminar la receta mientras tenga items activos en carritos abiertos")
 	}
 
-	if _, err := execTxSQLCompat(tx, `DELETE FROM combos_productos_detalle WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM recetas_productos_detalle WHERE empresa_id = ? AND receta_id = ?`, empresaID, recetaID); err != nil {
 		return err
 	}
-	if _, err := execTxSQLCompat(tx, `DELETE FROM empresa_impresoras_combos WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID); err != nil {
+	if _, err := execTxSQLCompat(tx, `DELETE FROM empresa_impresoras_recetas WHERE empresa_id = ? AND receta_id = ?`, empresaID, recetaID); err != nil {
 		errMsg := strings.ToLower(err.Error())
 		if !strings.Contains(errMsg, "no such table") && !strings.Contains(errMsg, "does not exist") {
 			return err
 		}
 	}
-	res, err := execTxSQLCompat(tx, `DELETE FROM combos_productos WHERE empresa_id = ? AND id = ?`, empresaID, comboID)
+	res, err := execTxSQLCompat(tx, `DELETE FROM recetas_productos WHERE empresa_id = ? AND id = ?`, empresaID, recetaID)
 	if err != nil {
 		return err
 	}
@@ -4694,9 +4694,9 @@ func DeleteComboProducto(dbConn *sql.DB, empresaID, comboID int64) error {
 	return tx.Commit()
 }
 
-// SetComboProductoEstado activa/desactiva un combo por empresa.
-func SetComboProductoEstado(dbConn *sql.DB, empresaID, comboID int64, estado string) error {
-	nuevoEstado := normalizeComboEstado(estado)
+// SetRecetaProductoEstado activa/desactiva una receta por empresa.
+func SetRecetaProductoEstado(dbConn *sql.DB, empresaID, recetaID int64, estado string) error {
+	nuevoEstado := normalizeRecetaEstado(estado)
 
 	tx, err := dbConn.Begin()
 	if err != nil {
@@ -4705,19 +4705,19 @@ func SetComboProductoEstado(dbConn *sql.DB, empresaID, comboID int64, estado str
 	defer tx.Rollback()
 
 	if nuevoEstado == "inactivo" {
-		openItems, err := countActiveOpenCarritoItemsByComboTx(tx, empresaID, comboID)
+		openItems, err := countActiveOpenCarritoItemsByRecetaTx(tx, empresaID, recetaID)
 		if err != nil {
 			return err
 		}
 		if openItems > 0 {
-			return fmt.Errorf("no se puede desactivar el combo mientras tenga items activos en carritos abiertos")
+			return fmt.Errorf("no se puede desactivar la receta mientras tenga items activos en carritos abiertos")
 		}
 	}
 
 	nowExpr := sqlNowExpr()
-	res, err := execTxSQLCompat(tx, `UPDATE combos_productos
+	res, err := execTxSQLCompat(tx, `UPDATE recetas_productos
 	SET estado = ?, fecha_actualizacion = `+nowExpr+`
-	WHERE id = ? AND empresa_id = ?`, nuevoEstado, comboID, empresaID)
+	WHERE id = ? AND empresa_id = ?`, nuevoEstado, recetaID, empresaID)
 	if err != nil {
 		return err
 	}

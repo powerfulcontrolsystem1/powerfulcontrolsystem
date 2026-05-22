@@ -501,19 +501,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/combos_productos":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/combos_productos
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/combos_productos
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/comisiones":
     get:
       tags: [empresa]
@@ -1616,6 +1603,19 @@ paths:
     post:
       tags: [empresa]
       summary: Ruta inventariada /api/empresa/publicaciones/
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/recetas_productos":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/recetas_productos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/recetas_productos
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

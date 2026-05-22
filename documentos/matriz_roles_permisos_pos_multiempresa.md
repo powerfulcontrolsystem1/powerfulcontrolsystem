@@ -336,6 +336,10 @@
 - Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `inventario` y `compras`.
 - Todas las ubicaciones, ordenes, items, despachos y eventos incluyen `empresa_id`; el modulo se integra con inventario sin duplicar productos ni existencias.
 
+2026-05-21: Nota de navegacion para `linkImpuestos`
+- `linkImpuestos` conserva el modulo efectivo `facturacion` con accion `U`.
+- El acceso visible cambia de Configuracion a `Finanzas y cumplimiento` para alinear impuestos con el centro financiero, contable y fiscal; el catalogo interno lo mantiene dentro del grupo financiero-contable universal.
+
 2026-05-06: Nota operativa para `declaraciones_tributarias`
 - Se agrega clave independiente `declaraciones_tributarias`, activable por licencia mediante `licencias.modulos_habilitados`.
 - Las paginas `linkDeclaracionesTributarias` y `linkDeclaracionesTributariasMenu` quedan registradas en el catalogo de paginas y se muestran en Finanzas y cumplimiento / Centro financiero y contable.
@@ -1647,12 +1651,12 @@ Regla de lectura comun (R):
 | `/api/empresa/usuarios` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/usuarios solo administracion empresa |
 | `/api/empresa/configuracion_avanzada` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/configuracion sensible |
 | `/api/empresa/configuracion_avanzada/logo` | `WithEmpresaSeguridadPermissions` | - | SA, AE | carga multipart del logo empresarial; persiste `empresa_configuracion_avanzada.logo_url` y `mostrar_logo` por `empresa_id` |
-| `/api/empresa/impresoras` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | CRUD impresoras y acciones `predeterminada|activar|desactivar|funcionalidad|producto` por empresa |
-| `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`/`producto_id` |
+| `/api/empresa/impresoras` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | CRUD impresoras y acciones `predeterminada|activar|desactivar|funcionalidad|producto|producto_regla|receta`, con catalogo de productos/categorias por empresa |
+| `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`, `producto_id` o `receta_id`, aplicando prioridad producto/categoria/todos |
 | `/api/empresa/control_electrico` | `WithEmpresaControlElectricoPermissions` | SA, AE, SS | SA, AE | configuracion Raspberry Pi, reles GPIO por estacion, pruebas manuales y sincronizacion electrica; acciones de prueba/sincronizacion requieren `A` |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
-| `/api/empresa/auditoria/eventos` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`) |
+| `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |
 | `/api/empresa/backups` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | snapshots/restauracion y depuracion por fecha (`action=restaurar|depurar_fecha` requiere `A`) |
 
 ### Endpoints fuera de wrapper (control alterno)

@@ -2254,8 +2254,8 @@ func validateCarritoItemPayload(payload dbpkg.CarritoCompraItem) error {
 		return fmt.Errorf("precio_unitario invalido")
 	}
 	tipoItem := strings.TrimSpace(strings.ToLower(payload.TipoItem))
-	if tipoItem == "combo" && payload.ReferenciaID <= 0 {
-		return fmt.Errorf("referencia_id es obligatoria para tipo_item combo")
+	if tipoItem == "receta" && payload.ReferenciaID <= 0 {
+		return fmt.Errorf("referencia_id es obligatoria para tipo_item receta")
 	}
 	return nil
 }
@@ -2771,7 +2771,7 @@ func validateCarritoPaymentPrerequisites(dbEmp *sql.DB, carrito *dbpkg.CarritoCo
 			RobotMessage: "No cierres todavia este carrito: la cuenta esta en cero. Primero agrega productos, servicios o configura una tarifa para esta estacion; revisa que el total sea mayor que cero y despues vuelve a presionar Pagar.",
 			Scope:        "pagar_estacion",
 			Steps: []string{
-				"Agrega un producto, combo, servicio o tarifa al carrito.",
+				"Agrega un producto, receta, servicio o tarifa al carrito.",
 				"Verifica que el total del carrito sea mayor que cero.",
 				"Vuelve a presionar Pagar cuando el detalle este completo.",
 			},

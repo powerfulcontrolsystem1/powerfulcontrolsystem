@@ -1,3 +1,30 @@
+2026-05-21: Impuestos dentro de Finanzas y cumplimiento
+- Modulos afectados: `impuestos`, `finanzas`, `administrar_empresa`.
+- Cambio funcional: el area `Impuestos` pasa de Configuracion al grupo `Finanzas y cumplimiento` del panel empresarial.
+- Navegacion: el menu principal muestra `Impuestos` junto al Centro financiero, Facturacion electronica y Reportes; el centro financiero tambien lo ofrece en barra lateral y accesos rapidos.
+- Alcance: no cambia APIs, tablas ni calculos tributarios; solo reubica el acceso operativo.
+
+2026-05-21: Emisoras online por pais
+- Modulos afectados: `radio_online`, `chat_flotante`, `administrar_empresa`.
+- Cambio funcional: la emisora online deja de usar un listado latino generico y carga catalogo por pais solo para Panama y Ecuador, con 10 emisoras principales por pais y emisoras personalizadas por empresa.
+- Configuracion: la pagina `Radio online` permite activar/desactivar el reproductor, elegir/detectar pais y agregar URL de streaming personalizada. El reproductor flotante ofrece el mismo control sin salir del panel.
+- Persistencia: se reutiliza `/api/chat_flotante/preferencias` y `empresa_estacion_prefs` para `radio_country` y `radio_custom_stations`.
+- Alcance: no cambia permisos, licencias, tablas ni dependencias.
+
+2026-05-21: Compactacion visual de tarjetas del carrito
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `frontend_ux`.
+- Cambio funcional: la tarjeta de codigo/SKU y cantidad queda en una grilla compacta con los botones `Agregar` y `Buscar Productos` en la misma fila cuando hay ancho suficiente.
+- Cliente: el panel de cliente del carrito muestra el cliente actual en el encabezado, compacta la busqueda por nombre o identificacion y convierte el formulario rapido de nuevo cliente en una grilla de mas columnas y menos filas.
+- Pago: el mensaje de cambio de efectivo queda como bloque compacto `Vuelto:` / `Falta:` con texto mas grande dentro de valores por medio de pago.
+- Responsive: en celular las grillas se reorganizan para conservar campos completos y botones tactiles sin regresar al formato largo anterior.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni configuracion del carrito.
+
+2026-05-21: Busqueda de cliente del carrito
+- Modulos afectados: `carritos`, `clientes`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el panel de cliente del carrito muestra primero un buscador de clientes existentes y mantiene oculto el formulario de nuevo cliente hasta que el usuario presiona `Nuevo cliente`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` agrega selector de busqueda por `Nombre` o `NIT / cedula / identificacion`, genera sugerencias segun el modo y asigna el cliente al carrito al elegir una coincidencia.
+- Alcance: no cambia backend, tablas, permisos ni la regla de cliente obligatorio; conserva la creacion rapida y asignacion automatica del cliente nuevo.
+
 2026-05-21: Botones configurables en acciones del carrito
 - Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
 - Cambio funcional: el panel de cliente y cada boton de la barra de acciones del carrito puede visualizarse u ocultarse desde la configuracion global del carrito o desde la configuracion propia de una estacion.
@@ -1434,7 +1461,7 @@
 
 2026-04-27: Carrito de estación ? panel de cobro (toolbar, tabla fija, totales, montos por método)
 - Módulos afectados: `carritos`, `estaciones`
-- Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/combo, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
+- Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/receta, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
 - Archivos clave: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`
 
 2026-04-25: Facturación electrónica ? Ecuador y Panamá (perfiles independientes de Colombia)
@@ -2554,16 +2581,25 @@ Actualizacion 2026-04-14 (venta publica por subdominio empresarial):
 - En `administrar_empresa/venta_publica.html` se agrega enlace operativo sugerido por subdominio para publicacion automatizada por empresa.
 - No hay cambios de permisos por rol; se mantiene alcance publico en `/api/public/venta_publica` y aislamiento por `empresa_id` en el backend.
 
+Actualizacion 2026-05-21 (avisos globales de conexion):
+- El contexto comun `web/js/empresa_submenu_context.js` escucha los eventos del navegador `offline` y `online`.
+- Al perder internet muestra un aviso flotante persistente. Los modulos sin modo offline piden esperar a que vuelva la conexion; el carrito/caja con facturacion offline activa indica que puede seguir vendiendo, imprimir provisionalmente y sincronizar al volver internet.
+- `web/administrar_empresa.html` carga el mismo monitor para cubrir el shell principal y los modulos internos.
+- `web/administrar_empresa/carrito_de_compras.html` publica al contenedor si la operacion offline esta habilitada para que el mensaje global respete el contexto del cajero.
+- `backend/handlers/auditoria_empresa.go` agrega `action=conexion` sobre `/api/empresa/auditoria/eventos` para registrar `internet_perdido` e `internet_restaurado` en `empresa_auditoria_eventos`.
+- El frontend conserva eventos en cola local cuando no hay red y los envia al restaurarse la conexion; `auditoria.html` permite filtrar el modulo `Conectividad`.
+- No agrega tablas ni dependencias; complementa la facturacion offline del carrito y mantiene aislamiento por `empresa_id`.
+
 Actualizacion 2026-04-14 (super: administracion de base de datos PostgreSQL):
 - Se agrega el submodulo de administracion profesional de base de datos en `web/super/administrar_base_de_datos.html`.
 - El backend incorpora el endpoint protegido `/super/api/postgres/performance` para exponer salud del cluster, metricas por base, consultas activas prolongadas y recomendaciones automaticas.
 - El alcance de permisos se mantiene exclusivo para `super_administrador`; no hay cambios en CRUD/A de modulos empresariales ni en aislamiento por `empresa_id`.
 
 Actualizacion 2026-04-14 (impresoras operativas por empresa):
-- Se agrega el modulo de impresoras del sistema con gestion completa en `administrar_empresa/configuracion.html`.
-- El backend incorpora `/api/empresa/impresoras` para CRUD, predeterminada, activacion/inactivacion, asignacion por funcionalidad y por producto.
+- Se agrega el modulo de impresoras del sistema con gestion completa en `administrar_empresa/configuracion_impresora.html`.
+- El backend incorpora `/api/empresa/impresoras` para CRUD, predeterminada, activacion/inactivacion, asignacion por funcionalidad, por producto especifico y reglas masivas por categoria o todos los productos.
 - Se incorpora `/api/empresa/impresoras/resolver` para determinar impresora objetivo en flujos operativos de impresion.
-- La resolucion opera con prioridad `producto -> funcionalidad -> predeterminada` y mantiene aislamiento estricto por `empresa_id`.
+- La resolucion opera con prioridad `receta -> producto -> categoria de producto -> todos los productos -> funcionalidad -> predeterminada` y mantiene aislamiento estricto por `empresa_id`.
 
 Actualizacion 2026-04-14 (migracion motor legado retirado -> PostgreSQL en VPS):
 - Se completa el bloque core de conmutacion runtime para operar con PostgreSQL en VPS mediante `DB_DIALECT=postgres` y DSN separados para `pcs_superadministrador` y `pcs_empresas`.
@@ -2690,8 +2726,8 @@ Criterio de esta guia:
 - Productos, bodegas, existencias, movimientos, alertas y conteo ciclico.
 - El traslado entre bodegas se opera desde `Inventario y compras > Bodegas`, valida producto, origen y destino por `empresa_id`, descuenta la bodega origen, suma la bodega destino y deja movimiento de kardex tipo `traslado`.
 
-12) Combos de productos
-- Recetas versionadas, costo teorico/real y venta de combos con descuento de ingredientes.
+12) Recetas de productos
+- Recetas versionadas, costo teorico/real y venta de recetas con descuento de ingredientes.
 
 13) Codigos de descuento
 - Reglas promocionales por canal/segmento/horario y trazabilidad de redenciones.

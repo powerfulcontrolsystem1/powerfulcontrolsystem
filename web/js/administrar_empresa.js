@@ -311,7 +311,7 @@ try {
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkProductosMain: { module: permModuleInventario, action: permActionCreate },
     linkInventarioAvanzado: { module: permModuleInventario, action: permActionCreate },
-    linkCombosProductos: { module: permModuleInventario, action: permActionCreate },
+    linkRecetasProductos: { module: permModuleInventario, action: permActionCreate },
     linkPreciosHistorial: { module: permModuleInventario, action: permActionRead },
     linkBodegas: { module: permModuleInventario, action: permActionUpdate },
     linkCategorias: { module: permModuleInventario, action: permActionUpdate },

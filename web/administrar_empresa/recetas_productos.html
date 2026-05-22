@@ -1,0 +1,957 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Recetas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .receta-shell{display:grid;gap:16px}
+    .receta-hero,.receta-card{background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 94%,var(--accent) 6%),color-mix(in srgb,var(--surface-soft) 92%,var(--accent-2) 8%));border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:18px;color:var(--text)}
+    .receta-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:16px}
+    .receta-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border));color:var(--text);font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+    .receta-hero h1,.receta-card h2,.receta-card h3{margin:12px 0 8px;color:var(--text)}
+    .receta-hero p,.receta-card p{margin:0;color:var(--muted);line-height:1.55}
+    .receta-grid-2,.receta-grid-3,.receta-grid-main{display:grid;gap:16px}
+    .receta-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .receta-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .receta-grid-main{grid-template-columns:minmax(0,1.5fr) minmax(340px,.9fr)}
+    .receta-inline-metrics{display:grid;gap:10px}
+    .receta-inline-metric{padding:12px 14px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border)}
+    .receta-inline-metric strong{display:block;color:var(--text)}
+    .receta-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .receta-summary-box{padding:14px 16px;border-radius:8px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
+    .receta-summary-box span{display:block;font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .receta-summary-box strong{display:block;margin-top:8px;color:var(--text);font-size:1.55rem}
+    .receta-form{display:grid;gap:16px}
+    .receta-section{padding:16px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border)}
+    .receta-form-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .receta-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .receta-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:.82rem;font-weight:700}
+    .receta-empty{padding:18px;border-radius:8px;border:1px dashed var(--border);color:var(--muted);text-align:center}
+    .receta-ingredients-table .table{margin:0}
+    .receta-card-list{display:grid;gap:12px}
+    .receta-item{padding:16px;border-radius:8px;background:var(--surface);border:1px solid var(--border)}
+    .receta-item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .receta-item-title{display:grid;gap:6px}
+    .receta-item-title strong{font-size:1.02rem;color:var(--text)}
+    .receta-item-title small{color:var(--muted)}
+    .receta-item-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .receta-item-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+    .receta-item-stat{padding:10px 12px;border-radius:8px;background:var(--surface-soft);border:1px solid var(--border)}
+    .receta-item-stat span{display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+    .receta-item-stat strong{display:block;margin-top:6px;color:var(--text)}
+    .receta-status-active{color:var(--success)}
+    .receta-status-inactive{color:var(--danger)}
+    .receta-metric-positive{color:var(--success)}
+    .receta-metric-negative{color:var(--danger)}
+    .receta-helper{color:var(--muted);font-size:.92rem}
+    .receta-msg-error{color:var(--danger)}
+    @media (max-width: 1100px){.receta-grid-main,.receta-hero,.receta-summary-grid,.receta-item-stats{grid-template-columns:1fr}}
+    @media (max-width: 880px){.receta-grid-2,.receta-grid-3{grid-template-columns:1fr}}
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="super-page">
+  <div class="container receta-shell">
+    <section class="receta-hero">
+      <article>
+        <span class="receta-kicker">Recetas</span>
+        <h1>Diseña recetas vendibles con costo, margen y control de inventario</h1>
+        <p>Construye recetas comerciales con ingredientes reales del catálogo, controla su versionado y valida si el precio final sostiene un margen saludable frente al costo teórico y al costo real.</p>
+      </article>
+      <aside class="receta-inline-metrics">
+        <div class="receta-inline-metric">
+          <strong>Uso recomendado</strong>
+          <span class="receta-helper">Ideal para platos ejecutivos, packs promocionales, desayunos, menús especiales y productos armados con múltiples componentes.</span>
+        </div>
+        <div class="receta-inline-metric">
+          <strong>Control operativo</strong>
+          <span class="receta-helper">Cada venta descuenta inventario por ingrediente y conserva historial de receta para medir variaciones de costo.</span>
+        </div>
+      </aside>
+    </section>
+
+    <section class="receta-summary-grid">
+      <div class="receta-summary-box"><span>Total recetas</span><strong id="kpiTotalRecetas">0</strong></div>
+      <div class="receta-summary-box"><span>Activos</span><strong id="kpiActivos">0</strong></div>
+      <div class="receta-summary-box"><span>Margen prom.</span><strong id="kpiMargen">0%</strong></div>
+      <div class="receta-summary-box"><span>Recetas riesgosas</span><strong id="kpiRiesgo">0</strong></div>
+    </section>
+
+    <section class="receta-grid-main">
+      <div class="receta-card">
+        <div class="receta-form-header">
+          <div>
+            <h2 id="pageTitle">Recetas</h2>
+            <p>Administra ingredientes, precio, impresora y comportamiento económico de cada receta desde una sola vista.</p>
+          </div>
+          <div class="receta-item-actions">
+            <button id="nuevoRecetaBtn" class="btn add" type="button">Nueva receta</button>
+          </div>
+        </div>
+
+        <form id="recetaForm" class="receta-form" style="display:none;">
+          <input type="hidden" id="recetaId">
+
+          <div class="receta-section">
+            <div class="receta-form-header">
+              <div>
+                <h3 id="recetaFormTitle">Ficha de la receta</h3>
+                <p>Define cómo se venderá la receta y cómo se verá en caja o catálogo interno.</p>
+              </div>
+              <div class="receta-pills" id="recetaInsightPills">
+                <span class="receta-pill">Receta nueva</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="recetaNombre">Nombre de la receta</label>
+                <input id="recetaNombre" class="form-input" required placeholder="Ej: Plato ejecutivo premium">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="recetaCodigo">Código</label>
+                <input id="recetaCodigo" class="form-input" placeholder="Ej: REC-PLATO-01">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="recetaPrecio">Precio de venta</label>
+                <input id="recetaPrecio" type="number" min="0" step="0.01" class="form-input" value="0" required>
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="recetaImpuesto">Impuesto %</label>
+                <input id="recetaImpuesto" type="number" min="0" max="100" step="0.01" class="form-input" value="0">
+              </div>
+              <div class="form-col">
+                <label class="form-label" for="recetaUnidad">Unidad</label>
+                <input id="recetaUnidad" class="form-input" value="receta" placeholder="receta">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="recetaDescripcion">Descripción</label>
+                <textarea id="recetaDescripcion" class="form-textarea" placeholder="Qué incluye, para qué tipo de cliente aplica o qué valor comercial ofrece"></textarea>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="recetaImpresoraPedido">Impresora para pedidos de la receta</label>
+                <select id="recetaImpresoraPedido" class="form-input"></select>
+                <div class="form-help">Si queda en configuracion general, el pedido usara la impresora de orden de servicio o la predeterminada.</div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-col">
+                <label class="form-label" for="recetaObservaciones">Observaciones</label>
+                <textarea id="recetaObservaciones" class="form-textarea" placeholder="Notas internas de cocina, producción, costos o empaque"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="receta-grid-2">
+            <div class="receta-section">
+              <div class="receta-form-header">
+                <div>
+                  <h3>Ingredientes de la receta</h3>
+                  <p>Agrega productos reales del inventario para que el descuento se haga por componente al vender la receta.</p>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-col">
+                  <label class="form-label" for="ingredienteProducto">Producto ingrediente</label>
+                  <select id="ingredienteProducto" class="form-input"></select>
+                </div>
+                <div class="form-col" style="max-width:180px;">
+                  <label class="form-label" for="ingredienteCantidad">Cantidad</label>
+                  <input id="ingredienteCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
+                </div>
+                <div class="form-col" style="max-width:180px;">
+                  <label class="form-label" for="ingredienteUnidad">Unidad</label>
+                  <input id="ingredienteUnidad" class="form-input" placeholder="unidad">
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button id="agregarIngredienteBtn" type="button" class="btn">Agregar ingrediente</button>
+              </div>
+              <div id="ingredienteContexto" class="form-help"></div>
+
+              <div id="ingredientesList" class="receta-ingredients-table" style="margin-top:12px;">Sin ingredientes agregados.</div>
+            </div>
+
+            <div class="receta-section">
+              <div class="receta-form-header">
+                <div>
+                  <h3>Lectura económica</h3>
+                  <p>Usa esta vista para validar si la receta sostiene precio y margen antes de publicarla.</p>
+                </div>
+              </div>
+              <div class="receta-card-list" id="recetaFinancialPreview">
+                <div class="receta-empty">Aún no hay datos económicos para mostrar.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="guardarRecetaBtn" class="btn">Guardar receta</button>
+            <button type="button" id="cancelarRecetaBtn" class="btn secondary">Cancelar</button>
+          </div>
+          <div id="recetaCostoInfo" class="form-help"></div>
+          <div id="recetaMsg" class="form-help"></div>
+        </form>
+
+        <div id="recetaSearchBlock" class="receta-section">
+          <div class="receta-form-header">
+            <div>
+              <h3>Bandeja de recetas</h3>
+              <p>Busca por nombre o código y revisa versión, ingredientes, costo y margen sin abrir cada ficha.</p>
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom:0;">
+            <div class="form-col">
+              <label class="form-label" for="buscarReceta">Buscar receta</label>
+              <input id="buscarReceta" class="form-input" placeholder="Buscar por nombre o código">
+            </div>
+            <div class="form-col" style="max-width:180px;display:flex;align-items:flex-end;">
+              <button id="buscarRecetaBtn" type="button" class="btn secondary" style="width:100%;">Buscar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="recetasList" style="margin-top:16px;">Cargando recetas...</div>
+      </div>
+
+      <aside class="receta-card">
+        <h2>Buenas prácticas</h2>
+        <div class="receta-card-list">
+          <div class="receta-item">
+            <div class="receta-item-title">
+              <strong>Piensa la receta como operación, no solo como precio</strong>
+              <small>Si cambias ingredientes, la versión debe seguir ayudándote a comparar costos históricos.</small>
+            </div>
+          </div>
+          <div class="receta-item">
+            <div class="receta-item-title">
+              <strong>Cuida el margen antes de vender</strong>
+              <small>Una receta puede mover volumen, pero si el costo real se come el precio, el ticket sube y la utilidad baja.</small>
+            </div>
+          </div>
+          <div class="receta-item">
+            <div class="receta-item-title">
+              <strong>Evita ingredientes sin stock o inactivos</strong>
+              <small>La receta debe apoyarse en productos operables para que la venta no termine rompiendo la experiencia en caja o cocina.</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      empresaID: 0,
+      q: '',
+      recetas: [],
+      productos: [],
+      impresoras: [],
+      impresorasRecetas: [],
+      impresorasLoaded: false,
+      draftIngredientes: []
+    };
+
+    function getQueryParam(name) {
+      const p = new URLSearchParams(window.location.search);
+      return p.get(name);
+    }
+
+    function parseEmpresaId(raw) {
+      const n = Number(String(raw || '').trim());
+      if (!Number.isFinite(n)) return 0;
+      const v = Math.trunc(n);
+      return v > 0 ? v : 0;
+    }
+
+    function resolveEmpresaId() {
+      const own = parseEmpresaId(getQueryParam('empresa_id') || getQueryParam('id'));
+      if (own > 0) return own;
+      try {
+        let ctx = window.parent;
+        let depth = 0;
+        while (ctx && ctx !== window && depth < 4) {
+          try {
+            if (typeof ctx.__resolveEmpresaIdContext === 'function') {
+              const resolved = parseEmpresaId(ctx.__resolveEmpresaIdContext());
+              if (resolved > 0) return resolved;
+            }
+          } catch (_) {}
+          try {
+            const parentParams = new URLSearchParams(ctx.location.search || '');
+            const fromParent = parseEmpresaId(parentParams.get('empresa_id') || parentParams.get('id'));
+            if (fromParent > 0) return fromParent;
+          } catch (_) {}
+          try {
+            if (!ctx.parent || ctx.parent === ctx) break;
+            ctx = ctx.parent;
+          } catch (_) { break; }
+          depth += 1;
+        }
+      } catch (_) {}
+      try {
+        return parseEmpresaId(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id'));
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function normalize(v) {
+      return (v || '').toString().trim();
+    }
+
+    function toNumber(v, fallback) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function round2(v) {
+      return Math.round(Number(v || 0) * 100) / 100;
+    }
+
+    function setMessage(id, text, isError) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.toggle('receta-msg-error', !!isError);
+    }
+
+    async function ensureOk(res) {
+      if (res.ok) return;
+      const t = await res.text();
+      throw new Error(t || ('HTTP ' + res.status));
+    }
+
+    function escapeHtml(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatMoney(v) {
+      return Number(v || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatSignedPercent(v) {
+      const n = Number(v || 0);
+      if (!Number.isFinite(n)) return '0.00%';
+      const abs = Math.abs(n).toFixed(2) + '%';
+      if (n > 0) return '+' + abs;
+      if (n < 0) return '-' + abs;
+      return abs;
+    }
+
+    function recetaMarginPct(receta) {
+      const price = Number(receta && receta.precio || 0);
+      const cost = Number(receta && receta.costo_real || receta && receta.costo_teorico || 0);
+      if (price <= 0) return 0;
+      return ((price - cost) / price) * 100;
+    }
+
+    function recetaRiskFlag(receta) {
+      const margin = recetaMarginPct(receta);
+      const varPct = Number(receta && receta.variacion_costo_porcentaje || 0);
+      if (margin < 15 || varPct > 20) return 'alto';
+      if (margin < 30 || varPct > 10) return 'medio';
+      return 'bajo';
+    }
+
+    function renderKPIs() {
+      const total = state.recetas.length;
+      const active = state.recetas.filter(function(c) { return normalize(c.estado || 'activo') === 'activo'; }).length;
+      const risky = state.recetas.filter(function(c) { return recetaRiskFlag(c) === 'alto'; }).length;
+      const avgMargin = total ? state.recetas.reduce(function(acc, c) { return acc + recetaMarginPct(c); }, 0) / total : 0;
+      document.getElementById('kpiTotalRecetas').textContent = String(total);
+      document.getElementById('kpiActivos').textContent = String(active);
+      document.getElementById('kpiMargen').textContent = avgMargin.toFixed(1) + '%';
+      document.getElementById('kpiRiesgo').textContent = String(risky);
+    }
+
+    function renderRecetaCostInfo(receta) {
+      const info = document.getElementById('recetaCostoInfo');
+      if (!receta || Number(receta.id || 0) <= 0) {
+        info.textContent = '';
+        return;
+      }
+      const version = Number(receta.receta_version || 1);
+      const costoTeorico = formatMoney(receta.costo_teorico || 0);
+      const costoReal = formatMoney(receta.costo_real || 0);
+      const variacion = formatSignedPercent(receta.variacion_costo_porcentaje || 0);
+      info.textContent = 'Receta v' + version + ' | Costo teórico: ' + costoTeorico + ' | Costo real: ' + costoReal + ' | Variación: ' + variacion;
+    }
+
+    function fillProductosSelect() {
+      const sel = document.getElementById('ingredienteProducto');
+      sel.innerHTML = '';
+      if (!state.productos.length) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Sin productos activos';
+        sel.appendChild(opt);
+        sel.disabled = true;
+        return;
+      }
+      sel.disabled = false;
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '-- Selecciona producto ingrediente --';
+      sel.appendChild(placeholder);
+      state.productos.forEach(function(p) {
+        const opt = document.createElement('option');
+        opt.value = String(p.id);
+        const code = normalize(p.codigo_barras) || normalize(p.sku) || '-';
+        opt.textContent = (normalize(p.nombre) || 'Producto') + ' | ' + code + ' | stock ' + Number(p.stock_total || 0).toFixed(2);
+        sel.appendChild(opt);
+      });
+    }
+
+    async function loadProductosActivos() {
+      const url = new URL('/api/empresa/productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('estado', 'activo');
+      url.searchParams.set('limit', '600');
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      state.productos = Array.isArray(rows) ? rows : [];
+      fillProductosSelect();
+      updateIngredienteContext();
+    }
+
+    function printerDisplayName(printer) {
+      if (!printer) return 'Configuracion general';
+      const name = normalize(printer.nombre) || normalize(printer.impresora_nombre);
+      const code = normalize(printer.codigo) || normalize(printer.impresora_codigo);
+      if (name && code) return name + ' (' + code + ')';
+      return name || code || 'Impresora #' + Number(printer.id || printer.impresora_id || 0);
+    }
+
+    function getRecetaPrinterAssignment(recetaID) {
+      const id = Number(recetaID || 0);
+      if (id <= 0) return null;
+      return state.impresorasRecetas.find(function(item) {
+        return Number(item.receta_id || 0) === id && normalize(item.estado || 'activo') === 'activo';
+      }) || null;
+    }
+
+    function refreshRecetaPrinterSelector(recetaID) {
+      const sel = document.getElementById('recetaImpresoraPedido');
+      if (!sel) return;
+      sel.innerHTML = '';
+      const general = document.createElement('option');
+      general.value = '';
+      general.textContent = 'Configuracion general';
+      sel.appendChild(general);
+      state.impresoras
+        .filter(function(p) { return normalize(p.estado || 'activo') === 'activo'; })
+        .forEach(function(p) {
+          const opt = document.createElement('option');
+          opt.value = String(p.id || 0);
+          opt.textContent = printerDisplayName(p);
+          sel.appendChild(opt);
+        });
+      const assignment = getRecetaPrinterAssignment(recetaID);
+      sel.value = assignment ? String(assignment.impresora_id || '') : '';
+    }
+
+    async function loadRecetaPrinterConfig(force) {
+      if (state.impresorasLoaded && !force) {
+        refreshRecetaPrinterSelector(Number(document.getElementById('recetaId').value || 0));
+        return;
+      }
+      if (!state.empresaID) return;
+      const url = new URL('/api/empresa/impresoras', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('action', 'resumen');
+      const res = await fetch(url.pathname + url.search, { credentials: 'same-origin' });
+      await ensureOk(res);
+      const resumen = await res.json();
+      state.impresoras = Array.isArray(resumen.impresoras) ? resumen.impresoras : [];
+      state.impresorasRecetas = Array.isArray(resumen.recetas) ? resumen.recetas : [];
+      state.impresorasLoaded = true;
+      refreshRecetaPrinterSelector(Number(document.getElementById('recetaId').value || 0));
+    }
+
+    async function saveRecetaPrinterAssignment(recetaID) {
+      const id = Number(recetaID || 0);
+      if (id <= 0) return;
+      const printerID = Number(document.getElementById('recetaImpresoraPedido').value || 0);
+      const base = '/api/empresa/impresoras?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=receta';
+      if (printerID <= 0) {
+        const res = await fetch(base + '&receta_id=' + encodeURIComponent(id), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        await ensureOk(res);
+      } else {
+        const res = await fetch(base, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            empresa_id: Number(state.empresaID),
+            receta_id: id,
+            impresora_id: printerID,
+            estado: 'activo'
+          })
+        });
+        await ensureOk(res);
+      }
+      state.impresorasLoaded = false;
+      await loadRecetaPrinterConfig(true);
+    }
+
+    function getProductoByID(productoID) {
+      return state.productos.find(function(p) { return Number(p.id) === Number(productoID); }) || null;
+    }
+
+    function resolveIngredienteNombre(item) {
+      const fromCatalog = getProductoByID(item.producto_id);
+      if (fromCatalog && normalize(fromCatalog.nombre)) return normalize(fromCatalog.nombre);
+      return normalize(item.producto_nombre) || ('Producto #' + Number(item.producto_id || 0));
+    }
+
+    function updateIngredienteContext() {
+      const productoID = Number(document.getElementById('ingredienteProducto').value || 0);
+      const box = document.getElementById('ingredienteContexto');
+      if (!productoID) {
+        box.textContent = '';
+        return;
+      }
+      const p = getProductoByID(productoID);
+      if (!p) {
+        box.textContent = '';
+        return;
+      }
+      const stock = Number(p.stock_total || 0).toFixed(2);
+      const costo = formatMoney(p.costo || 0);
+      const unidad = normalize(p.unidad_medida) || 'unidad';
+      box.textContent = 'Stock total: ' + stock + ' | Costo base: ' + costo + ' | Unidad sugerida: ' + unidad;
+    }
+
+    function renderRecetaPreview() {
+      const box = document.getElementById('recetaFinancialPreview');
+      const payload = buildRecetaPayload();
+      if (!payload.ingredientes.length) {
+        box.innerHTML = '<div class="receta-empty">Agrega ingredientes para ver una lectura operativa de la receta.</div>';
+        document.getElementById('recetaInsightPills').innerHTML = '<span class="receta-pill">Receta nueva</span>';
+        return;
+      }
+
+      let costoEstimado = 0;
+      let productosSinCosto = 0;
+      payload.ingredientes.forEach(function(it) {
+        const p = getProductoByID(it.producto_id);
+        const costo = Number(p && p.costo || 0);
+        if (costo <= 0) productosSinCosto += 1;
+        costoEstimado += costo * Number(it.cantidad || 0);
+      });
+      costoEstimado = round2(costoEstimado);
+      const precio = Number(payload.precio || 0);
+      const utilidad = round2(precio - costoEstimado);
+      const margen = precio > 0 ? ((utilidad / precio) * 100) : 0;
+      const riesgo = margen < 15 ? 'Margen en riesgo' : (margen < 30 ? 'Margen vigilado' : 'Margen saludable');
+      const riskClass = margen < 15 ? 'receta-metric-negative' : 'receta-metric-positive';
+
+      box.innerHTML = [
+        '<div class="receta-item-stat"><span>Ingredientes</span><strong>' + payload.ingredientes.length + '</strong></div>',
+        '<div class="receta-item-stat"><span>Costo estimado</span><strong>$' + formatMoney(costoEstimado) + '</strong></div>',
+        '<div class="receta-item-stat"><span>Utilidad estimada</span><strong>$' + formatMoney(utilidad) + '</strong></div>',
+        '<div class="receta-item-stat"><span>Margen estimado</span><strong class="' + riskClass + '">' + margen.toFixed(1) + '%</strong></div>',
+        '<div class="receta-item-stat"><span>Riesgo</span><strong class="' + riskClass + '">' + riesgo + '</strong></div>',
+        productosSinCosto ? '<div class="receta-item"><div class="receta-item-title"><strong>Atención con costos incompletos</strong><small>' + productosSinCosto + ' ingrediente(s) no tienen costo base; eso puede distorsionar el margen estimado.</small></div></div>' : ''
+      ].join('');
+
+      document.getElementById('recetaInsightPills').innerHTML = [
+        '<span class="receta-pill">Ingredientes: ' + payload.ingredientes.length + '</span>',
+        '<span class="receta-pill">Margen: ' + margen.toFixed(1) + '%</span>',
+        '<span class="receta-pill">' + riesgo + '</span>'
+      ].join('');
+    }
+
+    function renderIngredientesDraft() {
+      const box = document.getElementById('ingredientesList');
+      if (!state.draftIngredientes.length) {
+        box.innerHTML = '<div class="receta-empty">Sin ingredientes agregados.</div>';
+        renderRecetaPreview();
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table';
+      table.innerHTML = '<thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>Stock referencial</th><th>Acciones</th></tr></thead>';
+      const tbody = document.createElement('tbody');
+      state.draftIngredientes.forEach(function(item, idx) {
+        const p = getProductoByID(item.producto_id);
+        const stock = Number(p && p.stock_total || 0).toFixed(2);
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + escapeHtml(resolveIngredienteNombre(item)) + '</td>' +
+          '<td>' + Number(item.cantidad || 0).toFixed(4) + '</td>' +
+          '<td>' + escapeHtml(normalize(item.unidad_medida) || 'unidad') + '</td>' +
+          '<td>' + stock + '</td>' +
+          '<td class="actions"><button class="btn danger removeIngrediente" data-idx="' + idx + '">Quitar</button></td>';
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      box.innerHTML = '';
+      box.appendChild(table);
+
+      document.querySelectorAll('.removeIngrediente').forEach(function(btn) {
+        btn.onclick = function() {
+          const idx = Number(btn.getAttribute('data-idx'));
+          if (idx < 0 || idx >= state.draftIngredientes.length) return;
+          state.draftIngredientes.splice(idx, 1);
+          renderIngredientesDraft();
+        };
+      });
+
+      renderRecetaPreview();
+    }
+
+    function addIngredienteDraft() {
+      const productoID = Number(document.getElementById('ingredienteProducto').value || 0);
+      const cantidad = toNumber(document.getElementById('ingredienteCantidad').value, 0);
+      const unidadInput = normalize(document.getElementById('ingredienteUnidad').value);
+      if (productoID <= 0) {
+        setMessage('recetaMsg', 'Selecciona un producto ingrediente válido.', true);
+        return;
+      }
+      if (cantidad <= 0) {
+        setMessage('recetaMsg', 'La cantidad del ingrediente debe ser mayor que cero.', true);
+        return;
+      }
+      const producto = getProductoByID(productoID);
+      const unidad = unidadInput || normalize(producto && producto.unidad_medida) || 'unidad';
+      const existing = state.draftIngredientes.find(function(it) { return Number(it.producto_id) === productoID; });
+      if (existing) {
+        existing.cantidad = round2(Number(existing.cantidad || 0) + cantidad);
+        if (!normalize(existing.unidad_medida)) existing.unidad_medida = unidad;
+      } else {
+        state.draftIngredientes.push({
+          producto_id: productoID,
+          producto_nombre: normalize(producto && producto.nombre),
+          cantidad: round2(cantidad),
+          unidad_medida: unidad
+        });
+      }
+      document.getElementById('ingredienteCantidad').value = '1';
+      document.getElementById('ingredienteUnidad').value = '';
+      renderIngredientesDraft();
+      setMessage('recetaMsg', 'Ingrediente agregado a la receta.', false);
+    }
+
+    function resetRecetaForm(hide) {
+      document.getElementById('recetaFormTitle').textContent = 'Ficha de la receta';
+      document.getElementById('recetaId').value = '';
+      document.getElementById('recetaNombre').value = '';
+      document.getElementById('recetaCodigo').value = '';
+      document.getElementById('recetaPrecio').value = '0';
+      document.getElementById('recetaImpuesto').value = '0';
+      document.getElementById('recetaUnidad').value = 'receta';
+      document.getElementById('recetaDescripcion').value = '';
+      document.getElementById('recetaObservaciones').value = '';
+      refreshRecetaPrinterSelector(0);
+      document.getElementById('guardarRecetaBtn').textContent = 'Guardar receta';
+      state.draftIngredientes = [];
+      renderIngredientesDraft();
+      renderRecetaCostInfo(null);
+      setMessage('recetaMsg', '', false);
+      if (hide) {
+        const form = document.getElementById('recetaForm');
+        form.hidden = true;
+        form.style.display = 'none';
+      }
+    }
+
+    function showRecetaForm() {
+      const form = document.getElementById('recetaForm');
+      form.hidden = false;
+      form.style.display = 'grid';
+      const nombre = document.getElementById('recetaNombre');
+      if (nombre && typeof nombre.focus === 'function') nombre.focus();
+      if (form && typeof form.scrollIntoView === 'function') {
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function openCreateRecetaForm() {
+      resetRecetaForm(false);
+      showRecetaForm();
+    }
+
+    function buildRecetaPayload() {
+      return {
+        id: Number(document.getElementById('recetaId').value || 0),
+        empresa_id: Number(state.empresaID),
+        codigo: normalize(document.getElementById('recetaCodigo').value),
+        nombre: normalize(document.getElementById('recetaNombre').value),
+        descripcion: normalize(document.getElementById('recetaDescripcion').value),
+        unidad_medida: normalize(document.getElementById('recetaUnidad').value) || 'receta',
+        precio: toNumber(document.getElementById('recetaPrecio').value, 0),
+        impuesto_porcentaje: toNumber(document.getElementById('recetaImpuesto').value, 0),
+        observaciones: normalize(document.getElementById('recetaObservaciones').value),
+        ingredientes: state.draftIngredientes.map(function(it) {
+          return {
+            producto_id: Number(it.producto_id || 0),
+            cantidad: Number(it.cantidad || 0),
+            unidad_medida: normalize(it.unidad_medida) || 'unidad'
+          };
+        })
+      };
+    }
+
+    async function loadRecetaForEdit(recetaID) {
+      const url = new URL('/api/empresa/recetas_productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('id', String(recetaID));
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      return await res.json();
+    }
+
+    function renderRecetas() {
+      const box = document.getElementById('recetasList');
+      renderKPIs();
+      if (!state.recetas.length) {
+        box.innerHTML = '<div class="receta-empty">No hay recetas registradas para esta empresa.</div>';
+        return;
+      }
+
+      box.innerHTML = '<div class="receta-card-list">' + state.recetas.map(function(c) {
+        const estado = normalize(c.estado) || 'activo';
+        const toggleLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
+        const version = Number(c.receta_version || 1);
+        const margin = recetaMarginPct(c);
+        const varPct = Number(c.variacion_costo_porcentaje || 0);
+        const risk = recetaRiskFlag(c);
+        const riskText = risk === 'alto' ? 'En riesgo' : (risk === 'medio' ? 'Vigilado' : 'Sano');
+        const riskClass = risk === 'alto' ? 'receta-metric-negative' : 'receta-metric-positive';
+        const printerAssignment = getRecetaPrinterAssignment(c.id);
+        const printerText = printerAssignment ? printerDisplayName(printerAssignment) : 'Configuracion general';
+        return '<article class="receta-item">' +
+          '<div class="receta-item-head">' +
+            '<div class="receta-item-title">' +
+              '<strong>' + escapeHtml(normalize(c.nombre) || '-') + '</strong>' +
+              '<small>Código: ' + escapeHtml(normalize(c.codigo) || '-') + ' · Receta v' + version + '</small>' +
+            '</div>' +
+            '<div class="receta-item-actions">' +
+              '<button class="btn secondary editReceta" data-id="' + Number(c.id || 0) + '">Editar</button>' +
+              '<button class="btn toggleReceta" data-id="' + Number(c.id || 0) + '" data-estado="' + escapeHtml(estado) + '">' + toggleLabel + '</button>' +
+              '<button class="btn danger delReceta" data-id="' + Number(c.id || 0) + '">Eliminar</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="receta-pills">' +
+            '<span class="receta-pill ' + (estado === 'activo' ? 'receta-status-active' : 'receta-status-inactive') + '">Estado: ' + escapeHtml(estado) + '</span>' +
+            '<span class="receta-pill">Ingredientes: ' + Number(c.ingredientes_count || 0) + '</span>' +
+            '<span class="receta-pill">Impresora: ' + escapeHtml(printerText) + '</span>' +
+            '<span class="receta-pill ' + riskClass + '">Riesgo: ' + riskText + '</span>' +
+          '</div>' +
+          '<div class="receta-item-stats">' +
+            '<div class="receta-item-stat"><span>Precio</span><strong>$' + formatMoney(c.precio || 0) + '</strong></div>' +
+            '<div class="receta-item-stat"><span>Impuesto</span><strong>' + Number(c.impuesto_porcentaje || 0).toFixed(2) + '%</strong></div>' +
+            '<div class="receta-item-stat"><span>Costo teórico</span><strong>$' + formatMoney(c.costo_teorico || 0) + '</strong></div>' +
+            '<div class="receta-item-stat"><span>Costo real</span><strong>$' + formatMoney(c.costo_real || 0) + '</strong></div>' +
+            '<div class="receta-item-stat"><span>Margen</span><strong class="' + riskClass + '">' + margin.toFixed(1) + '%</strong></div>' +
+          '</div>' +
+          '<div class="receta-pills" style="margin-top:12px;">' +
+            '<span class="receta-pill">Variación costo: ' + escapeHtml(formatSignedPercent(varPct)) + '</span>' +
+            '<span class="receta-pill">Unidad: ' + escapeHtml(normalize(c.unidad_medida) || 'receta') + '</span>' +
+          '</div>' +
+        '</article>';
+      }).join('') + '</div>';
+
+      document.querySelectorAll('.editReceta').forEach(function(btn) {
+        btn.onclick = async function() {
+          const recetaID = Number(btn.getAttribute('data-id'));
+          if (recetaID <= 0) return;
+          try {
+            const receta = await loadRecetaForEdit(recetaID);
+            document.getElementById('recetaFormTitle').textContent = 'Editar receta';
+            document.getElementById('recetaId').value = String(receta.id || '');
+            document.getElementById('recetaNombre').value = normalize(receta.nombre);
+            document.getElementById('recetaCodigo').value = normalize(receta.codigo);
+            document.getElementById('recetaPrecio').value = Number(receta.precio || 0);
+            document.getElementById('recetaImpuesto').value = Number(receta.impuesto_porcentaje || 0);
+            document.getElementById('recetaUnidad').value = normalize(receta.unidad_medida) || 'receta';
+            document.getElementById('recetaDescripcion').value = normalize(receta.descripcion);
+            document.getElementById('recetaObservaciones').value = normalize(receta.observaciones);
+            refreshRecetaPrinterSelector(receta.id || recetaID);
+            document.getElementById('guardarRecetaBtn').textContent = 'Actualizar receta';
+            state.draftIngredientes = (receta.ingredientes || []).map(function(it) {
+              return {
+                producto_id: Number(it.producto_id || 0),
+                producto_nombre: normalize(it.producto_nombre),
+                cantidad: Number(it.cantidad || 0),
+                unidad_medida: normalize(it.unidad_medida) || 'unidad'
+              };
+            }).filter(function(it) { return it.producto_id > 0 && it.cantidad > 0; });
+            renderIngredientesDraft();
+            renderRecetaCostInfo(receta);
+            setMessage('recetaMsg', '', false);
+            showRecetaForm();
+          } catch (err) {
+            setMessage('recetaMsg', err.message || 'No se pudo cargar la receta para editar.', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.toggleReceta').forEach(function(btn) {
+        btn.onclick = async function() {
+          const recetaID = Number(btn.getAttribute('data-id'));
+          const estadoActual = normalize(btn.getAttribute('data-estado')) || 'activo';
+          const action = estadoActual === 'activo' ? 'desactivar' : 'activar';
+          try {
+            const res = await fetch('/api/empresa/recetas_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(recetaID) + '&action=' + encodeURIComponent(action), { method: 'PUT' });
+            await ensureOk(res);
+            await loadRecetas();
+          } catch (err) {
+            setMessage('recetaMsg', err.message || 'No se pudo cambiar el estado de la receta.', true);
+          }
+        };
+      });
+
+      document.querySelectorAll('.delReceta').forEach(function(btn) {
+        btn.onclick = async function() {
+          const recetaID = Number(btn.getAttribute('data-id'));
+          if (recetaID <= 0) return;
+          if (!confirm('¿Eliminar esta receta y sus ingredientes?')) return;
+          try {
+            const res = await fetch('/api/empresa/recetas_productos?empresa_id=' + encodeURIComponent(state.empresaID) + '&id=' + encodeURIComponent(recetaID), { method: 'DELETE' });
+            await ensureOk(res);
+            await loadRecetas();
+            setMessage('recetaMsg', 'Receta eliminada.', false);
+          } catch (err) {
+            setMessage('recetaMsg', err.message || 'No se pudo eliminar la receta.', true);
+          }
+        };
+      });
+    }
+
+    async function loadRecetas() {
+      const url = new URL('/api/empresa/recetas_productos', window.location.origin);
+      url.searchParams.set('empresa_id', String(state.empresaID));
+      url.searchParams.set('include_inactive', '1');
+      url.searchParams.set('limit', '300');
+      if (state.q) url.searchParams.set('q', state.q);
+      const res = await fetch(url.pathname + url.search);
+      await ensureOk(res);
+      const rows = await res.json();
+      state.recetas = Array.isArray(rows) ? rows : [];
+      await loadRecetaPrinterConfig(false);
+      renderRecetas();
+    }
+
+    document.getElementById('nuevoRecetaBtn').addEventListener('click', function() {
+      openCreateRecetaForm();
+    });
+
+    document.getElementById('cancelarRecetaBtn').addEventListener('click', function() {
+      resetRecetaForm(true);
+    });
+
+    document.getElementById('agregarIngredienteBtn').addEventListener('click', function() {
+      addIngredienteDraft();
+    });
+
+    document.getElementById('ingredienteProducto').addEventListener('change', updateIngredienteContext);
+    document.getElementById('recetaPrecio').addEventListener('input', renderRecetaPreview);
+    document.getElementById('recetaImpuesto').addEventListener('input', renderRecetaPreview);
+
+    document.getElementById('recetaForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const payload = buildRecetaPayload();
+      if (!payload.nombre) {
+        setMessage('recetaMsg', 'El nombre de la receta es obligatorio.', true);
+        return;
+      }
+      if (payload.precio < 0) {
+        setMessage('recetaMsg', 'El precio de la receta no puede ser negativo.', true);
+        return;
+      }
+      if (payload.impuesto_porcentaje < 0 || payload.impuesto_porcentaje > 100) {
+        setMessage('recetaMsg', 'El impuesto de la receta debe estar entre 0 y 100.', true);
+        return;
+      }
+      if (!payload.ingredientes.length) {
+        setMessage('recetaMsg', 'Debes agregar al menos un ingrediente a la receta.', true);
+        return;
+      }
+      try {
+        const method = payload.id > 0 ? 'PUT' : 'POST';
+        const res = await fetch('/api/empresa/recetas_productos', {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        const out = await res.json().catch(function() { return {}; });
+        const savedID = payload.id > 0 ? payload.id : Number(out && out.id || 0);
+        if (savedID > 0) {
+          try {
+            await saveRecetaPrinterAssignment(savedID);
+          } catch (printerErr) {
+            setMessage('recetaMsg', 'Receta guardada, pero no se pudo guardar la impresora del pedido: ' + (printerErr.message || printerErr), true);
+            await loadRecetas();
+            return;
+          }
+        }
+        resetRecetaForm(true);
+        await loadRecetas();
+        setMessage('recetaMsg', payload.id > 0 ? 'Receta actualizada.' : 'Receta creada.', false);
+      } catch (err) {
+        setMessage('recetaMsg', err.message || 'No se pudo guardar la receta.', true);
+      }
+    });
+
+    document.getElementById('buscarRecetaBtn').addEventListener('click', async function() {
+      state.q = normalize(document.getElementById('buscarReceta').value);
+      try {
+        await loadRecetas();
+      } catch (err) {
+        setMessage('recetaMsg', err.message || 'Error buscando recetas.', true);
+      }
+    });
+
+    document.getElementById('buscarReceta').addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      document.getElementById('buscarRecetaBtn').click();
+    });
+
+    (async function init() {
+      const empresaID = resolveEmpresaId();
+      if (!empresaID) {
+        document.getElementById('recetasList').innerHTML = '<div class="receta-empty">empresa_id requerido en la URL</div>';
+        setMessage('recetaMsg', 'No se encontró empresa_id. Puedes abrir el formulario, pero no se podrá guardar hasta cargar la empresa correctamente.', true);
+        return;
+      }
+      state.empresaID = empresaID;
+      try {
+        await Promise.all([loadProductosActivos(), loadRecetas()]);
+        renderIngredientesDraft();
+      } catch (err) {
+        document.getElementById('recetasList').innerHTML = '<div class="receta-empty">Error cargando recetas</div>';
+        setMessage('recetaMsg', err.message || 'Error cargando recetas', true);
+      }
+    })();
+  </script>
+</body>
+</html>
+

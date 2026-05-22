@@ -538,19 +538,19 @@ func findEpaycoPaymentRecordByCandidates(dbSuper *sql.DB, transactionCandidates 
 	return nil, nil
 }
 
-func resolveEpaycoPaymentContextCandidates(dbSuper *sql.DB, lookupCombos [][2]string) (int64, int64, bool) {
-	seenCombos := make(map[string]struct{}, len(lookupCombos))
-	for _, combo := range lookupCombos {
-		txCandidate := strings.TrimSpace(combo[0])
-		refCandidate := strings.TrimSpace(combo[1])
+func resolveEpaycoPaymentContextCandidates(dbSuper *sql.DB, lookupPairs [][2]string) (int64, int64, bool) {
+	seenPairs := make(map[string]struct{}, len(lookupPairs))
+	for _, pair := range lookupPairs {
+		txCandidate := strings.TrimSpace(pair[0])
+		refCandidate := strings.TrimSpace(pair[1])
 		if txCandidate == "" && refCandidate == "" {
 			continue
 		}
 		key := txCandidate + "|" + refCandidate
-		if _, seen := seenCombos[key]; seen {
+		if _, seen := seenPairs[key]; seen {
 			continue
 		}
-		seenCombos[key] = struct{}{}
+		seenPairs[key] = struct{}{}
 
 		licenciaID, empresaID, found, err := dbpkg.GetEpaycoPaymentContext(dbSuper, txCandidate, refCandidate)
 		if err != nil {
@@ -5212,7 +5212,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		preLicenciaID := int64(0)
 		preEmpresaID := int64(0)
 		preHasContext := false
-		preLookupCombos := [][2]string{
+		preLookupPairs := [][2]string{
 			{recordTransactionID, recordReference},
 			{"", recordReference},
 			{"", invoiceReference},
@@ -5221,7 +5221,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			{originalTransactionID, originalReference},
 			{transactionID, reference},
 		}
-		preLicenciaID, preEmpresaID, preHasContext = resolveEpaycoPaymentContextCandidates(dbSuper, preLookupCombos)
+		preLicenciaID, preEmpresaID, preHasContext = resolveEpaycoPaymentContextCandidates(dbSuper, preLookupPairs)
 		if !preHasContext {
 			preLicenciaID, preEmpresaID, preHasContext = paymentContextFromInternalReference(recordReference, invoiceReference, queryInvoiceReference, reference, transactionID, recordTransactionID, originalReference, originalTransactionID)
 		}
@@ -5276,7 +5276,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 		licenciaID := int64(0)
 		empresaID := int64(0)
 		hasContext := false
-		lookupCombos := [][2]string{
+		lookupPairs := [][2]string{
 			{recordTransactionID, recordReference},
 			{"", recordReference},
 			{"", invoiceReference},
@@ -5285,7 +5285,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 			{originalTransactionID, originalReference},
 			{transactionID, reference},
 		}
-		licenciaID, empresaID, hasContext = resolveEpaycoPaymentContextCandidates(dbSuper, lookupCombos)
+		licenciaID, empresaID, hasContext = resolveEpaycoPaymentContextCandidates(dbSuper, lookupPairs)
 		if !hasContext {
 			licenciaID, empresaID, hasContext = paymentContextFromInternalReference(recordReference, invoiceReference, queryInvoiceReference, reference, transactionID, recordTransactionID, originalReference, originalTransactionID)
 		}

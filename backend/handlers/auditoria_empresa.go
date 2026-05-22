@@ -65,6 +65,16 @@ type auditoriaForenseExportPayload struct {
 	Registros []auditoriaForenseRegistro `json:"registros"`
 }
 
+type auditoriaConexionPayload struct {
+	Estado       string `json:"estado"`
+	FechaEvento  string `json:"fecha_evento"`
+	EventoID     string `json:"evento_id"`
+	Origen       string `json:"origen"`
+	Path         string `json:"path"`
+	Online       bool   `json:"online"`
+	PendingCount int    `json:"pending_count"`
+}
+
 func (rw *auditCaptureResponseWriter) WriteHeader(code int) {
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
@@ -213,6 +223,25 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			if action == "" {
 				action = "retener"
 			}
+			if action == "conexion" || action == "conectividad" || action == "connectivity" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				registradoID, estado, err := registrarAuditoriaConexionInternet(dbEmp, r, empresaID)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":         true,
+					"empresa_id": empresaID,
+					"id":         registradoID,
+					"estado":     estado,
+				})
+				return
+			}
 			if action != "retener" && action != "purgar" {
 				http.Error(w, "action invalida", http.StatusBadRequest)
 				return
@@ -247,6 +276,103 @@ func EmpresaAuditoriaEventosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		http.Error(w, "Metodo no permitido", http.StatusMethodNotAllowed)
 	}
+}
+
+func registrarAuditoriaConexionInternet(dbEmp *sql.DB, r *http.Request, empresaID int64) (int64, string, error) {
+	if empresaID <= 0 {
+		return 0, "", fmt.Errorf("empresa_id es obligatorio")
+	}
+	defer r.Body.Close()
+
+	var payload auditoriaConexionPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		return 0, "", fmt.Errorf("payload de conectividad invalido")
+	}
+
+	estado, accion, err := normalizeAuditoriaConexionEstado(payload.Estado, payload.Online)
+	if err != nil {
+		return 0, "", err
+	}
+
+	fechaEvento, err := normalizeAuditoriaDateTime(payload.FechaEvento, false)
+	if err != nil {
+		return 0, "", fmt.Errorf("fecha_evento invalida")
+	}
+
+	metadata, err := json.Marshal(map[string]interface{}{
+		"estado_conexion": estado,
+		"evento_id":       strings.TrimSpace(payload.EventoID),
+		"origen":          sanitizeAuditMetadataText(payload.Origen, 80),
+		"path":            sanitizeAuditMetadataText(payload.Path, 240),
+		"online":          payload.Online,
+		"pending_count":   payload.PendingCount,
+		"source":          "frontend_connectivity_monitor",
+		"severity":        auditoriaConexionSeverity(estado),
+	})
+	if err != nil {
+		return 0, "", fmt.Errorf("metadata de conectividad invalida")
+	}
+
+	id, err := dbpkg.CreateEmpresaAuditoriaEvento(dbEmp, dbpkg.EmpresaAuditoriaEvento{
+		EmpresaID:      empresaID,
+		Modulo:         "conectividad",
+		Accion:         accion,
+		Recurso:        "conexion_internet",
+		MetodoHTTP:     r.Method,
+		Endpoint:       r.URL.Path,
+		Resultado:      "ok",
+		CodigoHTTP:     http.StatusOK,
+		RequestID:      resolveAuditoriaRequestID(r),
+		IPOrigen:       resolveAuditoriaIP(r),
+		UserAgent:      r.UserAgent(),
+		MetadataJSON:   string(metadata),
+		FechaEvento:    fechaEvento,
+		UsuarioCreador: adminEmailFromRequest(r),
+		Estado:         "activo",
+		Observaciones:  "registro de conectividad del navegador",
+	})
+	if err != nil {
+		return 0, "", fmt.Errorf("No se pudo registrar la conectividad en auditoria")
+	}
+
+	return id, estado, nil
+}
+
+func normalizeAuditoriaConexionEstado(raw string, online bool) (string, string, error) {
+	estado := strings.ToLower(strings.TrimSpace(raw))
+	estado = strings.ReplaceAll(estado, "-", "_")
+	estado = strings.ReplaceAll(estado, " ", "_")
+	if estado == "" {
+		if online {
+			estado = "online"
+		} else {
+			estado = "offline"
+		}
+	}
+	switch estado {
+	case "online", "conectado", "conexion_restaurada", "internet_restaurado", "restaurado":
+		return "online", "internet_restaurado", nil
+	case "offline", "desconectado", "sin_internet", "conexion_perdida", "internet_perdido", "perdida_conexion":
+		return "offline", "internet_perdido", nil
+	default:
+		return "", "", fmt.Errorf("estado de conectividad invalido")
+	}
+}
+
+func auditoriaConexionSeverity(estado string) string {
+	if strings.EqualFold(strings.TrimSpace(estado), "offline") {
+		return "media"
+	}
+	return "info"
+}
+
+func sanitizeAuditMetadataText(raw string, maxLen int) string {
+	v := strings.TrimSpace(strings.ReplaceAll(raw, "\n", " "))
+	v = strings.Join(strings.Fields(v), " ")
+	if maxLen > 0 && len(v) > maxLen {
+		return v[:maxLen]
+	}
+	return v
 }
 
 func buildAuditoriaForenseExportPayload(empresaID int64, filter dbpkg.EmpresaAuditoriaEventoFilter, total int64, rows []dbpkg.EmpresaAuditoriaEvento) (auditoriaForenseExportPayload, error) {

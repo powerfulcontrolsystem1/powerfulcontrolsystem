@@ -1,3 +1,45 @@
+## [2026-05-21] Impuestos en Finanzas y cumplimiento
+- [Navegacion] `Impuestos` sale del menu interno de Configuracion y queda como boton directo en `Finanzas y cumplimiento`.
+- [Centro financiero] `finanzas_menu.html` agrega `Impuestos` en la barra lateral y en los accesos rapidos superiores.
+- [Permisos] `linkImpuestos` conserva el mismo modulo/accion efectivo y queda agrupado en el catalogo financiero-contable.
+
+## [2026-05-21] Emisoras online por pais
+- [Backend] `/api/chat_flotante/preferencias` agrega `radio_country` y `radio_custom_stations`, persistidos por `empresa_id` en `empresa_estacion_prefs` sin tablas nuevas.
+- [Frontend] El reproductor flotante y `administrar_empresa/radio_online.html` detectan pais por configuracion/facturacion o IP publica, muestran catalogo solo para Panama y Ecuador, y permiten agregar/eliminar emisoras personalizadas de la empresa.
+- [Catalogo] `web/js/radio_catalog.js` publica las 10 emisoras base de Panama y las 10 de Ecuador; paises no soportados muestran mensaje operativo y opcion de emisoras propias.
+- [Validacion] `go test ./db ./handlers -count=1`, `node --check` de los JS de radio con runtime empaquetado y prueba visual local de Panama, Ecuador, emisora personalizada y drawer flotante.
+
+## [2026-05-21] Avisos globales de conexion
+- [Frontend] `empresa_submenu_context.js` escucha eventos `offline` y `online` del navegador para avisar perdida y regreso de internet.
+- [UX] Cuando se pierde internet el aviso queda persistente; los modulos normales piden esperar a que vuelva la conexion, y el carrito/caja con facturacion offline activa indica que puede seguir vendiendo e imprimir provisionalmente.
+- [Shell] `administrar_empresa.html` carga el monitor comun para que el panel principal tambien emita el aviso, no solo los modulos internos.
+- [Auditoria] `/api/empresa/auditoria/eventos?action=conexion` registra `internet_perdido` e `internet_restaurado` en `empresa_auditoria_eventos`; si el navegador queda sin red, el evento se conserva en cola local y se envia al volver.
+- [Alcance] No agrega tablas ni dependencias; usa el modulo de auditoria existente con aislamiento por `empresa_id`.
+
+## [2026-05-21] Impresoras por producto, categoria o todos
+- [Backend] `/api/empresa/impresoras` agrega `producto_regla` y `catalogo_categorias` para guardar reglas masivas por todos los productos o por categoria, siempre aisladas por `empresa_id`.
+- [Resolucion] La prioridad operativa queda `receta -> producto especifico -> categoria de producto -> todos los productos -> funcionalidad -> predeterminada`.
+- [Frontend] `Configuracion > Impresora` permite elegir el alcance `Producto especifico`, `Categoria de producto` o `Todos los productos`, y muestra las reglas en una tabla unificada.
+- [Validacion] `go test ./db ./handlers -count=1`, parseo de scripts inline y prueba visual local con API simulada de cocina/bar.
+
+## [2026-05-21] Recetas de productos
+- [Backend] Se consolida el contrato compuesto como recetas: `/api/empresa/recetas_productos`, estructuras `RecetaProducto`, tablas `recetas_productos`, `recetas_productos_detalle` y `recetas_productos_versiones`.
+- [Carrito] Los items compuestos usan `tipo_item=receta` y descuentan inventario por ingredientes con el mismo control transaccional por `empresa_id`.
+- [Frontend] El modulo queda como `administrar_empresa/recetas_productos.html`, el menu de productos muestra `Recetas` y el carrito busca recetas desde el catalogo inteligente.
+- [Operacion] Las asignaciones de impresora por receta usan `empresa_impresoras_recetas` y el reporte de corte clasifica recetas junto a productos.
+
+## [2026-05-21] Carrito compacto
+- [Frontend] La tarjeta de codigo/SKU y cantidad usa grilla compacta para mostrar `Codigo de barras o SKU`, `Cantidad`, `Agregar` y `Buscar Productos` en una sola fila cuando hay ancho.
+- [UX] El panel de cliente muestra `Cliente actual` en el encabezado, compacta busqueda por nombre/identificacion y deja el formulario rapido de nuevo cliente en mas columnas.
+- [Responsive] En celular las grillas se reorganizan sin perder campos completos ni botones tactiles.
+- [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias.
+
+## [2026-05-21] Busqueda de cliente del carrito
+- [Frontend] El formulario de nuevo cliente en el carrito inicia oculto y solo se abre con `Nuevo cliente`.
+- [UX] El campo visible `Cliente del carrito` busca clientes existentes por `Nombre` o por `NIT / cedula / identificacion`.
+- [Operacion] Al elegir un cliente de las sugerencias se asigna al carrito; si no existe, el cajero abre el formulario de creacion.
+- [Alcance] No cambia endpoints, tablas ni permisos; reutiliza clientes y actualizacion de `cliente_id` del carrito.
+
 ## [2026-05-21] Botones configurables en acciones del carrito
 - [Configuracion] `Configuracion > Carrito unificado` y `Configuracion > Estaciones` permiten activar u ocultar el panel de cliente y cada boton de acciones del carrito.
 - [Frontend] El carrito aplica visibilidad individual para `Descuentos`, `Cambiar tarifa`, `Control electrico`, `Cancelar carrito`, `Taxi`, `Clientes`, `Abonos` y `Vehiculo`.

@@ -165,11 +165,11 @@
           troubleshooting: ['Si el comando se omite, revisa que el modulo este habilitado.', 'Si hay error de conexion, valida IP, puerto, token y red de la Raspberry.', 'Si el boton no aparece en carrito, activa el check Control electrico en la configuracion del carrito.']
         },
         {
-          match: ['producto', 'inventario', 'bodega', 'combo'],
-          purpose: 'Administra productos, existencias, vencimientos, combos, bodegas e informacion de venta para mantener inventario confiable.',
-          before: ['Define bodega y categoria cuando aplique.', 'Revisa codigo, precio, impuestos y vencimiento.', 'Confirma impresora de pedido si el producto o combo requiere comanda.'],
+          match: ['producto', 'inventario', 'bodega', 'receta'],
+          purpose: 'Administra productos, existencias, vencimientos, recetas, bodegas e informacion de venta para mantener inventario confiable.',
+          before: ['Define bodega y categoria cuando aplique.', 'Revisa codigo, precio, impuestos y vencimiento.', 'Confirma impresora de pedido si el producto o receta requiere comanda.'],
           steps: ['Crea o selecciona el producto.', 'Completa datos comerciales y operativos.', 'Guarda y prueba agregandolo al carrito.'],
-          troubleshooting: ['Si no aparece en venta, valida estado activo y stock.', 'Si imprime mal, revisa la impresora asignada al producto o combo.', 'Si el vencimiento alerta, revisa lote y fecha registrada.']
+          troubleshooting: ['Si no aparece en venta, valida estado activo y stock.', 'Si imprime mal, revisa la impresora asignada al producto o receta.', 'Si el vencimiento alerta, revisa lote y fecha registrada.']
         },
         {
           match: ['tarifa', 'motel', 'hotel', 'minutos', 'estacion'],

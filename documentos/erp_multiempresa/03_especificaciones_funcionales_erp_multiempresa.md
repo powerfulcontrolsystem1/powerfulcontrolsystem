@@ -32,7 +32,7 @@ Definir requisitos funcionales verificables del ERP multiempresa, organizados po
 - RF-101: Gestionar clientes con CRUD, perfil comercial e historial de compras.
 - RF-102: Gestionar cotizaciones y pedidos con transiciones de estado.
 - RF-103: Permitir conversion cotizacion -> pedido -> documento final.
-- RF-104: Operar carritos de compra con items de producto, servicio y combo.
+- RF-104: Operar carritos de compra con items de producto, servicio y receta.
 - RF-105: Validar metodos de pago habilitados por contexto operativo.
 - RF-106: Aplicar descuentos por codigo segun vigencia, uso y reglas de canal.
 - RF-107: Integrar propinas y comisiones segun configuracion empresarial.

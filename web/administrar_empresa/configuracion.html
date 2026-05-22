@@ -1040,11 +1040,23 @@
         </div>
 
         <div class="form">
-          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Asignacion por producto</h3>
+          <h3 style="margin:0 0 10px 0;font-size:0.95rem;">Asignacion de productos a impresora</h3>
           <div class="form-row">
             <div class="form-col">
+              <label class="form-label" for="printerProductoAlcance">Aplicar a</label>
+              <select id="printerProductoAlcance" class="form-input">
+                <option value="producto">Producto especifico</option>
+                <option value="categoria">Categoria de producto</option>
+                <option value="todos">Todos los productos</option>
+              </select>
+            </div>
+            <div class="form-col printer-product-scope" data-printer-product-scope="producto">
               <label class="form-label" for="printerProducto">Producto</label>
               <select id="printerProducto" class="form-input"></select>
+            </div>
+            <div class="form-col printer-product-scope" data-printer-product-scope="categoria" style="display:none;">
+              <label class="form-label" for="printerCategoria">Categoria</label>
+              <select id="printerCategoria" class="form-input"></select>
             </div>
             <div class="form-col">
               <label class="form-label" for="printerProductoImpresora">Impresora</label>
@@ -1052,14 +1064,15 @@
             </div>
           </div>
           <div class="form-actions" >
-            <button id="btnGuardarImpresoraProducto" type="button" class="btn secondary">Guardar producto</button>
+            <button id="btnGuardarImpresoraProducto" type="button" class="btn secondary">Guardar asignacion</button>
           </div>
 
           <div class="table-wrap" >
             <table class="table">
               <thead>
                 <tr>
-                  <th>Producto</th>
+                  <th>Alcance</th>
+                  <th>Objetivo</th>
                   <th>Impresora</th>
                   <th>Acción</th>
                 </tr>
@@ -1283,7 +1296,9 @@
       impresoras: [],
       funcionalidades: [],
       productos: [],
+      productoReglas: [],
       catalogoProductos: [],
+      catalogoCategorias: [],
       editingId: 0
     };
 
@@ -2349,6 +2364,44 @@
       }
     }
 
+    function renderCategoriaSelect(selectedID) {
+      const select = document.getElementById('printerCategoria');
+      if (!select) return;
+      const rows = Array.isArray(impresorasState.catalogoCategorias) ? impresorasState.catalogoCategorias : [];
+      if (!rows.length) {
+        select.innerHTML = '<option value="">Sin categorias activas</option>';
+        select.value = '';
+        return;
+      }
+      select.innerHTML = rows.map(function(item) {
+        const code = String(item.codigo || '').trim();
+        const suffix = code ? (' | ' + code) : '';
+        return '<option value="' + Number(item.id || 0) + '">' +
+          escapeConfigHtml(String(item.nombre || ('Categoria #' + Number(item.id || 0)))) +
+          escapeConfigHtml(suffix) +
+          '</option>';
+      }).join('');
+      const selected = Number(selectedID || 0);
+      if (selected > 0) {
+        select.value = String(selected);
+      }
+    }
+
+    function getPrinterProductScope() {
+      const select = document.getElementById('printerProductoAlcance');
+      const value = String(select && select.value ? select.value : 'producto').trim().toLowerCase();
+      if (value === 'categoria' || value === 'todos') return value;
+      return 'producto';
+    }
+
+    function syncPrinterProductoScopeUI() {
+      const scope = getPrinterProductScope();
+      document.querySelectorAll('.printer-product-scope').forEach(function(node) {
+        const nodeScope = String(node.getAttribute('data-printer-product-scope') || '').trim().toLowerCase();
+        node.style.display = nodeScope === scope ? '' : 'none';
+      });
+    }
+
     function bindImpresorasTableActions() {
       document.querySelectorAll('.printer-edit').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -2392,6 +2445,14 @@
           eliminarAsignacionProducto(productoID);
         });
       });
+
+      document.querySelectorAll('.printer-prod-rule-delete').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const alcance = String(btn.getAttribute('data-alcance') || 'todos').trim();
+          const categoriaID = Number(btn.getAttribute('data-categoria-id') || 0);
+          eliminarAsignacionProductoRegla(alcance, categoriaID);
+        });
+      });
     }
 
     function renderImpresorasTables() {
@@ -2402,6 +2463,7 @@
       const printers = Array.isArray(impresorasState.impresoras) ? impresorasState.impresoras : [];
       const funcs = Array.isArray(impresorasState.funcionalidades) ? impresorasState.funcionalidades : [];
       const products = Array.isArray(impresorasState.productos) ? impresorasState.productos : [];
+      const productRules = Array.isArray(impresorasState.productoReglas) ? impresorasState.productoReglas : [];
 
       if (!printers.length) {
         printersBody.innerHTML = '<tr><td colspan="5">Sin impresoras registradas.</td></tr>';
@@ -2438,17 +2500,30 @@
         }).join('');
       }
 
-      if (!products.length) {
-        productosBody.innerHTML = '<tr><td colspan="3">Sin asignaciones por producto.</td></tr>';
+      if (!products.length && !productRules.length) {
+        productosBody.innerHTML = '<tr><td colspan="4">Sin asignaciones por producto, categoria o todos los productos.</td></tr>';
       } else {
-        productosBody.innerHTML = products.map(function(item) {
+        const ruleRows = productRules.map(function(item) {
+          const alcance = String(item.alcance || 'todos').trim().toLowerCase() === 'categoria' ? 'categoria' : 'todos';
+          const categoriaID = Number(item.categoria_id || 0);
+          const target = alcance === 'todos' ? 'Todos los productos' : String(item.categoria_nombre || ('Categoria #' + categoriaID));
+          return '<tr>' +
+            '<td>' + (alcance === 'todos' ? 'Regla general' : 'Categoria') + '</td>' +
+            '<td>' + escapeConfigHtml(target) + '</td>' +
+            '<td>' + escapeConfigHtml(String(item.impresora_nombre || item.impresora_codigo || ('#' + Number(item.impresora_id || 0)))) + '</td>' +
+            '<td><button type="button" class="btn danger printer-prod-rule-delete" data-alcance="' + escapeConfigHtml(alcance) + '" data-categoria-id="' + categoriaID + '">Eliminar</button></td>' +
+          '</tr>';
+        });
+        const productRows = products.map(function(item) {
           const productoID = Number(item.producto_id || 0);
           return '<tr>' +
+            '<td>Producto</td>' +
             '<td>' + escapeConfigHtml(String(item.producto_nombre || ('Producto #' + productoID))) + '</td>' +
             '<td>' + escapeConfigHtml(String(item.impresora_nombre || item.impresora_codigo || ('#' + Number(item.impresora_id || 0)))) + '</td>' +
             '<td><button type="button" class="btn danger printer-prod-delete" data-producto-id="' + productoID + '">Eliminar</button></td>' +
           '</tr>';
-        }).join('');
+        });
+        productosBody.innerHTML = ruleRows.concat(productRows).join('');
       }
 
       const selectedFuncPrinter = Number(document.getElementById('printerFuncionalidadImpresora').value || 0);
@@ -2457,6 +2532,8 @@
       renderPrinterSelect('printerFuncionalidadImpresora', selectedFuncPrinter);
       renderPrinterSelect('printerProductoImpresora', selectedProdPrinter);
       renderProductoSelect(selectedProducto);
+      renderCategoriaSelect(Number(document.getElementById('printerCategoria').value || 0));
+      syncPrinterProductoScopeUI();
       bindImpresorasTableActions();
     }
 
@@ -2476,19 +2553,30 @@
       return res.json();
     }
 
+    async function fetchImpresorasCatalogoCategorias() {
+      const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=catalogo_categorias', {
+        credentials: 'same-origin'
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
     async function loadImpresorasConfig(showSuccessMessage) {
       if (!empresaId) return;
       try {
-        const results = await Promise.allSettled([fetchImpresorasResumen(), fetchImpresorasCatalogoProductos()]);
+        const results = await Promise.allSettled([fetchImpresorasResumen(), fetchImpresorasCatalogoProductos(), fetchImpresorasCatalogoCategorias()]);
         if (results[0].status !== 'fulfilled') {
           throw results[0].reason || new Error('No se pudo cargar el resumen de impresoras.');
         }
         const resumen = results[0].value && typeof results[0].value === 'object' ? results[0].value : {};
         const catalogo = results[1].status === 'fulfilled' && results[1].value && typeof results[1].value === 'object' ? results[1].value : {};
+        const catalogoCategorias = results[2].status === 'fulfilled' && results[2].value && typeof results[2].value === 'object' ? results[2].value : {};
         impresorasState.impresoras = Array.isArray(resumen.impresoras) ? resumen.impresoras : [];
         impresorasState.funcionalidades = Array.isArray(resumen.funcionalidades) ? resumen.funcionalidades : [];
         impresorasState.productos = Array.isArray(resumen.productos) ? resumen.productos : [];
+        impresorasState.productoReglas = Array.isArray(resumen.producto_reglas) ? resumen.producto_reglas : [];
         impresorasState.catalogoProductos = Array.isArray(catalogo.productos) ? catalogo.productos : [];
+        impresorasState.catalogoCategorias = Array.isArray(catalogoCategorias.categorias) ? catalogoCategorias.categorias : [];
         renderImpresorasTables();
         if (impresorasState.editingId > 0) {
           const editingItem = getPrinterByID(impresorasState.editingId);
@@ -2575,27 +2663,45 @@
         setImpresorasMessage('No se puede guardar sin empresa seleccionada.', 'error');
         return;
       }
+      const alcance = getPrinterProductScope();
       const productoID = Number(document.getElementById('printerProducto').value || 0);
+      const categoriaID = Number(document.getElementById('printerCategoria').value || 0);
       const impresoraID = Number(document.getElementById('printerProductoImpresora').value || 0);
-      if (!productoID || !impresoraID) {
-        setImpresorasMessage('Selecciona producto e impresora para guardar la asignacion.', 'error');
+      if (!impresoraID) {
+        setImpresorasMessage('Selecciona una impresora activa para guardar la asignacion.', 'error');
+        return;
+      }
+      if (alcance === 'producto' && !productoID) {
+        setImpresorasMessage('Selecciona el producto para guardar la asignacion.', 'error');
+        return;
+      }
+      if (alcance === 'categoria' && !categoriaID) {
+        setImpresorasMessage('Selecciona la categoria para guardar la asignacion.', 'error');
         return;
       }
       try {
-        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=producto', {
+        const action = alcance === 'producto' ? 'producto' : 'producto_regla';
+        const payload = alcance === 'producto' ? {
+          empresa_id: Number(empresaId),
+          producto_id: productoID,
+          impresora_id: impresoraID,
+          estado: 'activo'
+        } : {
+          empresa_id: Number(empresaId),
+          alcance: alcance,
+          categoria_id: alcance === 'categoria' ? categoriaID : 0,
+          impresora_id: impresoraID,
+          estado: 'activo'
+        };
+        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=' + action, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({
-            empresa_id: Number(empresaId),
-            producto_id: productoID,
-            impresora_id: impresoraID,
-            estado: 'activo'
-          })
+          body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error(await res.text());
         await loadImpresorasConfig(false);
-        setImpresorasMessage('Asignacion por producto guardada.', 'success');
+        setImpresorasMessage('Asignacion de impresora guardada.', 'success');
       } catch (err) {
         setImpresorasMessage('No se pudo guardar la asignación por producto: ' + (err && err.message ? err.message : err), 'error');
       }
@@ -2655,6 +2761,21 @@
         setImpresorasMessage('Asignación por producto eliminada.', 'success');
       } catch (err) {
         setImpresorasMessage('No se pudo eliminar la asignación de producto: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function eliminarAsignacionProductoRegla(alcance, categoriaID) {
+      try {
+        const normalizedScope = String(alcance || 'todos').trim().toLowerCase() === 'categoria' ? 'categoria' : 'todos';
+        const res = await fetch('/api/empresa/impresoras?empresa_id=' + encodeURIComponent(empresaId) + '&action=producto_regla&alcance=' + encodeURIComponent(normalizedScope) + '&categoria_id=' + encodeURIComponent(Number(categoriaID || 0)), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        await loadImpresorasConfig(false);
+        setImpresorasMessage('Regla de impresora eliminada.', 'success');
+      } catch (err) {
+        setImpresorasMessage('No se pudo eliminar la regla de impresora: ' + (err && err.message ? err.message : err), 'error');
       }
     }
 
@@ -3192,6 +3313,7 @@
         setImpresorasMessage('Formulario de impresora limpio.', '');
       });
       document.getElementById('btnGuardarImpresoraFuncionalidad').addEventListener('click', guardarImpresoraFuncionalidad);
+      document.getElementById('printerProductoAlcance').addEventListener('change', syncPrinterProductoScopeUI);
       document.getElementById('btnGuardarImpresoraProducto').addEventListener('click', guardarImpresoraProducto);
       document.getElementById('btnDescargarBackup').addEventListener('click', descargarBackup);
       document.getElementById('btnRestaurarBackup').addEventListener('click', restaurarBackup);

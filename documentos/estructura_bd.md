@@ -22,6 +22,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-21 (emisoras online por pais)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0` para preferencias de emisora por empresa.
+- Claves nuevas: `chat_flotante.radio_country` guarda `PA` o `EC`; `chat_flotante.radio_custom_stations` guarda un arreglo JSON saneado de emisoras personalizadas con nombre, genero, pais opcional, `streamUrl` http/https y `sourceUrl` opcional.
+- El catalogo base de las 10 emisoras principales por pais vive en frontend (`web/js/radio_catalog.js`) y no se persiste en base de datos.
+
 Actualizacion 2026-05-21 (alerta visual configurable de carrito)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`, y los overrides por estacion dentro de `estaciones_config.estaciones[].carrito.configuracion`.
@@ -471,15 +477,15 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - empresa_id, bodega_principal_id, proveedor_principal_id, categoria_id, sku, codigo_barras
   - nombre, descripcion, categoria, marca, unidad_medida
   - costo, precio, impuesto_porcentaje, stock_minimo, stock_maximo, imagen_url
-- combos_productos:
+- recetas_productos:
   - empresa_id, codigo, nombre, descripcion, unidad_medida
   - precio, impuesto_porcentaje
   - receta_version, costo_teorico, costo_real, variacion_costo, variacion_costo_porcentaje
-- combos_productos_detalle:
-  - empresa_id, combo_id, producto_id
+- recetas_productos_detalle:
+  - empresa_id, receta_id, producto_id
   - cantidad, unidad_medida
-- combos_productos_versiones:
-  - empresa_id, combo_id, receta_version
+- recetas_productos_versiones:
+  - empresa_id, receta_id, receta_version
   - ingredientes_json
   - costo_teorico, costo_real, variacion_costo, variacion_costo_porcentaje
   - motivo
@@ -775,8 +781,12 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_impresoras_productos:
   - empresa_id, producto_id, impresora_id
   - indice unico: `(empresa_id, producto_id)`
+- empresa_impresoras_productos_reglas:
+  - empresa_id, alcance (`todos`/`categoria`), categoria_id, impresora_id
+  - estado, usuario_creador, observaciones
+  - indice unico: `(empresa_id, alcance, categoria_id)`
 - Regla de resolucion operativa:
-  - prioridad de asignacion: `producto` -> `funcionalidad` -> `predeterminada`.
+  - prioridad de asignacion: `receta` -> `producto` -> `categoria de producto` -> `todos los productos` -> `funcionalidad` -> `predeterminada`.
 
 ### Tablas de calculadora operativa por empresa
 - empresa_calculadora_configuracion:
@@ -910,6 +920,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - request_id, ip_origen, user_agent
   - metadata_json
   - retencion_dias, fecha_evento, fecha_expiracion
+  - Los eventos de conectividad del navegador usan `modulo=conectividad`, `recurso=conexion_internet` y acciones `internet_perdido` / `internet_restaurado`. En `metadata_json` guardan `estado_conexion`, `evento_id`, `origen`, `path`, `online`, `pending_count` y `source=frontend_connectivity_monitor`.
 
 ### Objetos de busqueda full-text de auditoria (FTS operativa)
 - empresa_auditoria_eventos_fts (tabla virtual):
@@ -1458,7 +1469,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresas.id -> clientes.empresa_id, categorias_productos.empresa_id, productos.empresa_id, carritos_compras.empresa_id, chat_tareas*.empresa_id
 - empresas.id -> empresa_inventario_configuracion.empresa_id, inventario_costos_lotes.empresa_id, inventario_conteos_ciclicos.empresa_id
 - empresas.id -> reservas_hotel.empresa_id
-- empresas.id -> combos_productos.empresa_id, combos_productos_detalle.empresa_id
+- empresas.id -> recetas_productos.empresa_id, recetas_productos_detalle.empresa_id
 - empresas.id -> codigos_de_descuento.empresa_id
 - empresas.id -> codigos_descuento_redenciones.empresa_id
 - empresas.id -> empresa_comisiones_servicio_configuracion.empresa_id, empresa_comisiones_servicio_escalas.empresa_id, empresa_comisiones_servicio_movimientos.empresa_id
@@ -1491,8 +1502,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_facturacion_documentos.(empresa_id,tipo_documento,documento_codigo) -> facturacion_electronica_reintentos.(empresa_id,tipo_documento,documento_codigo) [relacion logica de reconciliacion FE]
 - proveedores.id -> empresa_compras_documentos.proveedor_id
 - categorias_productos.id -> productos.categoria_id
-- combos_productos.id -> combos_productos_detalle.combo_id
-- productos.id -> combos_productos_detalle.producto_id
+- recetas_productos.id -> recetas_productos_detalle.receta_id
+- productos.id -> recetas_productos_detalle.producto_id
 - productos.id -> inventario_costos_lotes.producto_id, inventario_conteos_ciclicos.producto_id
 - bodegas.id -> inventario_existencias.bodega_id, inventario_movimientos.bodega_(origen|destino)_id, inventario_costos_lotes.bodega_id, inventario_conteos_ciclicos.bodega_id
 - inventario_movimientos.id -> inventario_conteos_ciclicos.movimiento_id
@@ -1580,7 +1591,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-05: se agrega `codigos_de_descuento` por empresa para promociones con vigencia, usos y validacion de pago en carrito.
 - 2026-04-05: se amplía `carritos_compras` con `metodo_pago` y `referencia_pago` para trazabilidad del cierre de venta por estacion.
 - 2026-04-17: `empresa_configuracion_avanzada` agrega `modo_documento_venta` para definir por empresa si la venta pagada genera `factura_electronica` o `comprobante_pago`, reutilizando `empresa_facturacion_documentos` como repositorio canonico de ambos documentos.
-- 2026-04-05: se agregan `combos_productos` y `combos_productos_detalle` para venta compuesta con precio unico y receta de ingredientes por empresa.
+- 2026-04-05: se agregan `recetas_productos` y `recetas_productos_detalle` para venta compuesta con precio unico e ingredientes por empresa.
 - 2026-04-04: se amplía `proveedores` con campos comerciales (`catalogo_referencia`, `precio_base_referencial`, `descuento_porcentaje`, `plazo_pago_dias`, `condicion_entrega`) para gestionar catálogo, precios y condiciones por empresa.
 - 2026-04-04: se agrega `empresa_auditoria_eventos` para trazabilidad de acciones criticas por `empresa_id`, modulo/accion/recurso, resultado HTTP y metadatos (`request_id`, IP, user-agent), con retencion configurable y purga.
 - 2026-04-04: se agrega `empresa_asientos_contables` como persistencia canonica de asientos por evento procesado, con idempotencia por `hash_idempotencia` y referencia a `evento_contable_id`.

@@ -1,14 +1,14 @@
 (function () {
   "use strict";
 
-  if (!window.__pcsRadioStations || !document.getElementById("radioMiniAudio")) {
+  if (!window.PCSRadioCatalog || !document.getElementById("radioMiniAudio")) {
     return;
   }
 
   var STORAGE_KEY = "pcs_radio_player_state";
   var ENABLED_KEY = "pcs_radio_online_enabled";
   var PREFS_ENDPOINT = "/api/chat_flotante/preferencias";
-  var stations = window.__pcsRadioStations.slice();
+  var countryTools = window.PCSRadioCatalog;
   var drawer = document.getElementById("radioDrawer");
   var openBtn = document.getElementById("openRadioDrawer");
   var closeBtn = document.getElementById("closeRadioDrawer");
@@ -22,12 +22,24 @@
   var miniClose = document.getElementById("radioMiniClose");
   var enabledToggle = document.getElementById("radioFloatingEnabled");
   var enabledStatus = document.getElementById("radioFloatingStatus");
+  var countrySelect = document.getElementById("radioCountrySelect");
+  var countryStatus = document.getElementById("radioCountryStatus");
+  var customForm = document.getElementById("radioCustomForm");
+  var customName = document.getElementById("radioCustomName");
+  var customGenre = document.getElementById("radioCustomGenre");
+  var customStream = document.getElementById("radioCustomStream");
+  var customSource = document.getElementById("radioCustomSource");
+  var customCountry = document.getElementById("radioCustomCountry");
 
   var state = {
     stationId: "",
     playing: false,
     volume: 0.7,
-    enabled: true
+    enabled: true,
+    countryCode: "",
+    countrySource: "",
+    customStations: [],
+    configLoaded: false
   };
 
   function parsePositiveInt(raw) {
@@ -70,9 +82,22 @@
     return PREFS_ENDPOINT + "?empresa_id=" + encodeURIComponent(String(empresaId));
   }
 
+  function buildCountryEndpoint() {
+    var empresaId = getCurrentEmpresaId();
+    var tz = "";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (_) {}
+    var lang = "";
+    try { lang = window.navigator.language || ""; } catch (_) {}
+    return "/api/empresa/facturacion_electronica/pais_detectado?empresa_id=" + encodeURIComponent(String(empresaId || 0)) + "&tz=" + encodeURIComponent(tz) + "&lang=" + encodeURIComponent(lang);
+  }
+
   function saveState() {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        stationId: state.stationId,
+        playing: state.playing,
+        volume: state.volume
+      }));
     } catch (_) {}
   }
 
@@ -94,8 +119,31 @@
     }
   }
 
+  function escapeHTML(value) {
+    return String(value || "").replace(/[&<>\"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]; });
+  }
+
+  function currentStations() {
+    return countryTools.stationsForCountry(state.countryCode, state.customStations);
+  }
+
   function stationById(id) {
-    return stations.find(function (item) { return item.id === id; }) || null;
+    return currentStations().find(function (item) { return item.id === id; }) || null;
+  }
+
+  function countryLabel(code) {
+    return (countryTools.labels && countryTools.labels[code]) || code || "pais no soportado";
+  }
+
+  function updateCountryControls() {
+    if (countrySelect) countrySelect.value = state.countryCode || "";
+    if (customCountry && !customCountry.value && state.countryCode) customCountry.value = state.countryCode;
+    if (!countryStatus) return;
+    if (state.countryCode) {
+      countryStatus.textContent = "Pais de emisoras: " + countryLabel(state.countryCode) + ". Se muestran 10 principales y las personalizadas de la empresa.";
+    } else {
+      countryStatus.textContent = "La deteccion automatica no encontro Panama o Ecuador. Puedes escoger un pais o agregar emisoras personalizadas.";
+    }
   }
 
   function setDrawerOpen(open) {
@@ -110,12 +158,18 @@
 
   function renderGrid() {
     if (!grid) return;
+    var stations = currentStations();
     grid.classList.toggle("is-disabled", !state.enabled);
+    if (!stations.length) {
+      grid.innerHTML = '<div class="radio-station-empty">Este modulo muestra emisoras principales solo para Panama y Ecuador. Selecciona uno de esos paises o agrega una emisora personalizada para esta empresa.</div>';
+      updateCountryControls();
+      return;
+    }
     grid.innerHTML = stations.map(function (station) {
       var active = state.stationId === station.id;
       return '' +
-        '<article class="radio-station-card' + (active ? ' is-active' : '') + '">' +
-        '  <div class="radio-station-badge">' + escapeHTML(station.country) + '</div>' +
+        '<article class="radio-station-card' + (active ? ' is-active' : '') + (station.custom ? ' is-custom' : '') + '">' +
+        '  <div class="radio-station-badge">' + escapeHTML(station.custom ? 'Personalizada' : station.country) + '</div>' +
         '  <h3>' + escapeHTML(station.name) + '</h3>' +
         '  <p>' + escapeHTML(station.tagline) + '</p>' +
         '  <div class="radio-station-meta">' +
@@ -123,14 +177,12 @@
         '  </div>' +
         '  <div class="radio-station-actions">' +
         '    <button type="button" class="btn' + (active ? '' : ' secondary') + ' small" data-radio-play="' + escapeHTML(station.id) + '"' + (!state.enabled ? ' disabled' : '') + '>' + (!state.enabled ? 'Desactivada' : (active && state.playing ? 'Sonando' : 'Escuchar')) + '</button>' +
-        '    <a href="' + escapeHTML(station.sourceUrl) + '" target="_blank" rel="noopener" class="btn secondary small">Fuente</a>' +
+        (station.sourceUrl ? '    <a href="' + escapeHTML(station.sourceUrl) + '" target="_blank" rel="noopener" class="btn secondary small">Fuente</a>' : '') +
+        (station.custom ? '    <button type="button" class="btn danger small" data-radio-delete="' + escapeHTML(station.id) + '">Eliminar</button>' : '') +
         '  </div>' +
         '</article>';
     }).join("");
-  }
-
-  function escapeHTML(value) {
-    return String(value || "").replace(/[&<>\"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]; });
+    updateCountryControls();
   }
 
   function updateMiniPlayer() {
@@ -142,6 +194,7 @@
     var station = stationById(state.stationId);
     if (!station) {
       mini.hidden = true;
+      renderGrid();
       return;
     }
     mini.hidden = false;
@@ -206,47 +259,105 @@
       openBtn.classList.toggle("is-disabled", !state.enabled);
       openBtn.setAttribute("aria-hidden", state.enabled ? "false" : "true");
       openBtn.setAttribute("aria-pressed", state.enabled ? "true" : "false");
-      openBtn.setAttribute("title", "Abrir musica latina online");
+      openBtn.setAttribute("title", "Abrir emisoras online");
       var label = openBtn.querySelector(".ai-chat-toggle-label");
-      if (label) label.textContent = "Musica latina";
+      if (label) label.textContent = "Emisoras";
     }
     renderGrid();
     updateMiniPlayer();
   }
 
-  function persistRadioEnabled(enabled) {
+  function persistRadioConfig() {
     return fetch(buildPrefsEndpoint(), {
       method: "PUT",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ radio_online_enabled: !!enabled })
+      body: JSON.stringify({
+        radio_online_enabled: !!state.enabled,
+        radio_country: state.countryCode || "",
+        radio_custom_stations: state.customStations
+      })
     }).then(function (res) {
       if (!res.ok) throw new Error("No se pudo guardar la emisora.");
       return res.json();
     }).then(function (data) {
-      if (data && typeof data.radio_online_enabled === "boolean") {
-        setRadioEnabled(data.radio_online_enabled);
-      }
+      applyPreferencePayload(data || {});
     }).catch(function (err) {
       if (enabledStatus) {
         enabledStatus.textContent = state.enabled ? "Activa localmente, sin guardar" : "Apagada localmente, sin guardar";
       }
-      console.warn("No se pudo guardar la preferencia de emisora:", err);
+      console.warn("No se pudo guardar la configuracion de emisoras:", err);
     });
+  }
+
+  function applyPreferencePayload(data) {
+    if (data && typeof data.radio_online_enabled === "boolean") {
+      state.enabled = data.radio_online_enabled;
+      try { window.localStorage.setItem(ENABLED_KEY, state.enabled ? "1" : "0"); } catch (_) {}
+    }
+    if (data && Array.isArray(data.radio_custom_stations)) {
+      state.customStations = countryTools.normalizeCustomList(data.radio_custom_stations);
+    }
+    if (data && Object.prototype.hasOwnProperty.call(data, "radio_country")) {
+      var savedCountry = countryTools.normalizeCountry(data.radio_country);
+      if (savedCountry) {
+        state.countryCode = savedCountry;
+        state.countrySource = "empresa";
+      }
+    }
+    setRadioEnabled(state.enabled);
+    updateCountryControls();
+  }
+
+  function fetchDetectedCountry() {
+    return fetch(buildCountryEndpoint(), { credentials: "same-origin" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("sin pais empresa");
+        return res.json();
+      })
+      .then(function (data) {
+        return {
+          country: countryTools.normalizeCountry(data && (data.pais_codigo || data.country_code || data.country)),
+          source: data && data.source ? String(data.source) : "empresa"
+        };
+      })
+      .catch(function () {
+        return fetch("/api/public/geo", { credentials: "same-origin" })
+          .then(function (res) {
+            if (!res.ok) throw new Error("sin geo");
+            return res.json();
+          })
+          .then(function (data) {
+            return {
+              country: countryTools.normalizeCountry(data && (data.pais_codigo || data.country_code || data.country)),
+              source: data && data.source ? String(data.source) : "ip"
+            };
+          });
+      });
   }
 
   function loadCompanyRadioPreference() {
     fetch(buildPrefsEndpoint(), { credentials: "same-origin" })
       .then(function (res) {
-        if (!res.ok) return null;
+        if (!res.ok) return {};
         return res.json();
       })
       .then(function (data) {
-        if (data && typeof data.radio_online_enabled === "boolean") {
-          setRadioEnabled(data.radio_online_enabled);
-        }
+        applyPreferencePayload(data || {});
+        if (state.countryCode) return null;
+        return fetchDetectedCountry().then(function (detected) {
+          if (detected && detected.country) {
+            state.countryCode = detected.country;
+            state.countrySource = detected.source || "detectado";
+            renderGrid();
+            updateCountryControls();
+          }
+          return null;
+        });
       })
-      .catch(function () {});
+      .catch(function () {
+        renderGrid();
+      });
   }
 
   function togglePlayback() {
@@ -265,6 +376,35 @@
     }
   }
 
+  function addCustomStation() {
+    var station = countryTools.normalizeCustomList([{
+      name: customName ? customName.value : "",
+      genre: customGenre ? customGenre.value : "",
+      streamUrl: customStream ? customStream.value : "",
+      sourceUrl: customSource ? customSource.value : "",
+      countryCode: customCountry ? customCountry.value : state.countryCode,
+      country: countryLabel(customCountry ? customCountry.value : state.countryCode),
+      tagline: "Emisora personalizada de esta empresa."
+    }])[0];
+    if (!station) {
+      if (countryStatus) countryStatus.textContent = "Escribe nombre y URL http/https valida para agregar la emisora.";
+      return;
+    }
+    state.customStations = state.customStations.filter(function (item) { return item.id !== station.id; });
+    state.customStations.push(station);
+    if (customForm) customForm.reset();
+    if (customCountry && state.countryCode) customCountry.value = state.countryCode;
+    renderGrid();
+    persistRadioConfig();
+  }
+
+  function deleteCustomStation(id) {
+    state.customStations = state.customStations.filter(function (item) { return item.id !== id; });
+    if (state.stationId === id) stopPlayback();
+    renderGrid();
+    persistRadioConfig();
+  }
+
   function wireEvents() {
     if (openBtn) openBtn.addEventListener("click", function () {
       if (!drawer) return;
@@ -274,7 +414,31 @@
     if (closeBtn) closeBtn.addEventListener("click", function () { setDrawerOpen(false); });
     if (enabledToggle) enabledToggle.addEventListener("change", function () {
       setRadioEnabled(!!enabledToggle.checked);
-      persistRadioEnabled(state.enabled);
+      persistRadioConfig();
+    });
+    if (countrySelect) countrySelect.addEventListener("change", function () {
+      var selectedCountry = countryTools.normalizeCountry(countrySelect.value);
+      if (!selectedCountry) {
+        fetchDetectedCountry().then(function (detected) {
+          state.countryCode = detected && detected.country ? detected.country : "";
+          state.countrySource = detected && detected.source ? detected.source : "detectado";
+          renderGrid();
+          persistRadioConfig();
+        }).catch(function () {
+          state.countryCode = "";
+          renderGrid();
+          persistRadioConfig();
+        });
+        return;
+      }
+      state.countryCode = selectedCountry;
+      state.countrySource = "empresa";
+      renderGrid();
+      persistRadioConfig();
+    });
+    if (customForm) customForm.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      addCustomStation();
     });
     if (miniClose) miniClose.addEventListener("click", stopPlayback);
     if (miniPlayPause) miniPlayPause.addEventListener("click", togglePlayback);
@@ -285,6 +449,11 @@
     });
     if (grid) {
       grid.addEventListener("click", function (ev) {
+        var deleteButton = ev.target.closest("[data-radio-delete]");
+        if (deleteButton) {
+          deleteCustomStation(deleteButton.getAttribute("data-radio-delete"));
+          return;
+        }
         var button = ev.target.closest("[data-radio-play]");
         if (!button) return;
         if (!state.enabled) return;
@@ -318,6 +487,7 @@
   window.__pcsRadioPlayerIsEnabled = function () {
     return !!state.enabled;
   };
+  window.__pcsRadioPlayerReloadConfig = loadCompanyRadioPreference;
 
   loadState();
   wireEvents();

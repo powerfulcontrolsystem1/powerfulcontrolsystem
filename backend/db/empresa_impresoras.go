@@ -64,12 +64,29 @@ type EmpresaImpresoraProducto struct {
 	Observaciones      string `json:"observaciones,omitempty"`
 }
 
-// EmpresaImpresoraCombo define la impresora asignada por combo.
-type EmpresaImpresoraCombo struct {
+// EmpresaImpresoraProductoRegla define una regla masiva de impresora para productos.
+type EmpresaImpresoraProductoRegla struct {
 	ID                 int64  `json:"id"`
 	EmpresaID          int64  `json:"empresa_id"`
-	ComboID            int64  `json:"combo_id"`
-	ComboNombre        string `json:"combo_nombre,omitempty"`
+	Alcance            string `json:"alcance"`
+	CategoriaID        int64  `json:"categoria_id,omitempty"`
+	CategoriaNombre    string `json:"categoria_nombre,omitempty"`
+	ImpresoraID        int64  `json:"impresora_id"`
+	ImpresoraNombre    string `json:"impresora_nombre,omitempty"`
+	ImpresoraCodigo    string `json:"impresora_codigo,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
+	Observaciones      string `json:"observaciones,omitempty"`
+}
+
+// EmpresaImpresoraReceta define la impresora asignada por receta.
+type EmpresaImpresoraReceta struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	RecetaID           int64  `json:"receta_id"`
+	RecetaNombre       string `json:"receta_nombre,omitempty"`
 	ImpresoraID        int64  `json:"impresora_id"`
 	ImpresoraNombre    string `json:"impresora_nombre,omitempty"`
 	ImpresoraCodigo    string `json:"impresora_codigo,omitempty"`
@@ -85,7 +102,8 @@ type EmpresaImpresoraResolucion struct {
 	EmpresaID     int64            `json:"empresa_id"`
 	Funcionalidad string           `json:"funcionalidad,omitempty"`
 	ProductoID    int64            `json:"producto_id,omitempty"`
-	ComboID       int64            `json:"combo_id,omitempty"`
+	CategoriaID   int64            `json:"categoria_id,omitempty"`
+	RecetaID      int64            `json:"receta_id,omitempty"`
 	TipoItem      string           `json:"tipo_item,omitempty"`
 	Fuente        string           `json:"fuente"`
 	Impresora     EmpresaImpresora `json:"impresora"`
@@ -140,10 +158,11 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_producto ON empresa_impresoras_productos(empresa_id, producto_id);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_productos_printer ON empresa_impresoras_productos(empresa_id, impresora_id);`,
-		`CREATE TABLE IF NOT EXISTS empresa_impresoras_combos (
+		`CREATE TABLE IF NOT EXISTS empresa_impresoras_productos_reglas (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL,
-			combo_id INTEGER NOT NULL,
+			alcance TEXT NOT NULL DEFAULT 'todos',
+			categoria_id INTEGER NOT NULL DEFAULT 0,
 			impresora_id INTEGER NOT NULL,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -151,8 +170,21 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
 		);`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_combo ON empresa_impresoras_combos(empresa_id, combo_id);`,
-		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_combos_printer ON empresa_impresoras_combos(empresa_id, impresora_id);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_productos_regla ON empresa_impresoras_productos_reglas(empresa_id, alcance, categoria_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_productos_reglas_printer ON empresa_impresoras_productos_reglas(empresa_id, impresora_id);`,
+		`CREATE TABLE IF NOT EXISTS empresa_impresoras_recetas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			receta_id INTEGER NOT NULL,
+			impresora_id INTEGER NOT NULL,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo',
+			observaciones TEXT
+		);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS ux_empresa_impresoras_receta ON empresa_impresoras_recetas(empresa_id, receta_id);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_impresoras_recetas_printer ON empresa_impresoras_recetas(empresa_id, impresora_id);`,
 	}
 
 	for _, stmt := range stmts {
@@ -257,29 +289,58 @@ func EnsureEmpresaImpresorasSchema(dbConn *sql.DB) error {
 		return err
 	}
 
-	// Tabla por combo
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "empresa_id", "INTEGER NOT NULL"); err != nil {
+	// Reglas masivas por todos los productos o por categoria
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "empresa_id", "INTEGER NOT NULL"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "combo_id", "INTEGER NOT NULL"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "alcance", "TEXT NOT NULL DEFAULT 'todos'"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "impresora_id", "INTEGER NOT NULL"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "categoria_id", "INTEGER NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "impresora_id", "INTEGER NOT NULL"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "usuario_creador", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "usuario_creador", "TEXT"); err != nil {
 		return err
 	}
-	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_combos", "observaciones", "TEXT"); err != nil {
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_productos_reglas", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	// Tabla por receta
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "empresa_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "receta_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "impresora_id", "INTEGER NOT NULL"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "fecha_creacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "fecha_actualizacion", "TEXT DEFAULT (datetime('now','localtime'))"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "usuario_creador", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "estado", "TEXT DEFAULT 'activo'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_impresoras_recetas", "observaciones", "TEXT"); err != nil {
 		return err
 	}
 
@@ -1068,12 +1129,169 @@ func DeleteEmpresaImpresoraProducto(dbConn *sql.DB, empresaID, productoID int64)
 	return err
 }
 
-// ListEmpresaImpresoraCombosByEmpresa lista asignaciones por combo.
-func ListEmpresaImpresoraCombosByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaImpresoraCombo, error) {
+func normalizeEmpresaImpresoraProductoReglaAlcance(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "categoria", "category":
+		return "categoria"
+	default:
+		return "todos"
+	}
+}
+
+// ListEmpresaImpresoraProductoReglasByEmpresa lista reglas masivas por todos los productos o por categoria.
+func ListEmpresaImpresoraProductoReglasByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaImpresoraProductoRegla, error) {
+	rows, err := querySQLCompat(dbConn, `SELECT
+		r.id,
+		r.empresa_id,
+		COALESCE(r.alcance, 'todos'),
+		COALESCE(r.categoria_id, 0),
+		COALESCE(c.nombre, ''),
+		r.impresora_id,
+		COALESCE(i.nombre, ''),
+		COALESCE(i.codigo, ''),
+		COALESCE(r.fecha_creacion, ''),
+		COALESCE(r.fecha_actualizacion, ''),
+		COALESCE(r.usuario_creador, ''),
+		COALESCE(r.estado, 'activo'),
+		COALESCE(r.observaciones, '')
+	FROM empresa_impresoras_productos_reglas r
+	LEFT JOIN categorias_productos c ON c.id = r.categoria_id AND c.empresa_id = r.empresa_id
+	LEFT JOIN empresa_impresoras i ON i.id = r.impresora_id AND i.empresa_id = r.empresa_id
+	WHERE r.empresa_id = ?
+	ORDER BY CASE WHEN COALESCE(r.alcance, 'todos') = 'todos' THEN 0 ELSE 1 END, c.nombre ASC, r.id ASC`, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]EmpresaImpresoraProductoRegla, 0)
+	for rows.Next() {
+		item := EmpresaImpresoraProductoRegla{}
+		if err := rows.Scan(
+			&item.ID,
+			&item.EmpresaID,
+			&item.Alcance,
+			&item.CategoriaID,
+			&item.CategoriaNombre,
+			&item.ImpresoraID,
+			&item.ImpresoraNombre,
+			&item.ImpresoraCodigo,
+			&item.FechaCreacion,
+			&item.FechaActualizacion,
+			&item.UsuarioCreador,
+			&item.Estado,
+			&item.Observaciones,
+		); err != nil {
+			return nil, err
+		}
+		item.Alcance = normalizeEmpresaImpresoraProductoReglaAlcance(item.Alcance)
+		item.Estado = normalizeEmpresaImpresoraEstado(item.Estado)
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func ensureEmpresaCategoriaProductoExists(dbConn *sql.DB, empresaID, categoriaID int64) error {
+	var id int64
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM categorias_productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, categoriaID).Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("categoria no encontrada")
+		}
+		return err
+	}
+	return nil
+}
+
+// UpsertEmpresaImpresoraProductoRegla crea/actualiza una regla masiva de producto -> impresora.
+func UpsertEmpresaImpresoraProductoRegla(dbConn *sql.DB, payload EmpresaImpresoraProductoRegla) (int64, error) {
+	if payload.EmpresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id requerido")
+	}
+	if payload.ImpresoraID <= 0 {
+		return 0, fmt.Errorf("impresora_id requerido")
+	}
+	payload.Alcance = normalizeEmpresaImpresoraProductoReglaAlcance(payload.Alcance)
+	if payload.Alcance == "todos" {
+		payload.CategoriaID = 0
+	} else if payload.CategoriaID <= 0 {
+		return 0, fmt.Errorf("categoria_id requerido")
+	}
+	if payload.Alcance == "categoria" {
+		if err := ensureEmpresaCategoriaProductoExists(dbConn, payload.EmpresaID, payload.CategoriaID); err != nil {
+			return 0, err
+		}
+	}
+	if err := ensureEmpresaImpresoraExistsAndActive(dbConn, payload.EmpresaID, payload.ImpresoraID); err != nil {
+		return 0, err
+	}
+
+	payload.UsuarioCreador = strings.TrimSpace(payload.UsuarioCreador)
+	if payload.UsuarioCreador == "" {
+		payload.UsuarioCreador = "sistema"
+	}
+	payload.Estado = normalizeEmpresaImpresoraEstado(payload.Estado)
+	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
+
+	if _, err := execSQLCompat(dbConn, `INSERT INTO empresa_impresoras_productos_reglas (
+		empresa_id,
+		alcance,
+		categoria_id,
+		impresora_id,
+		fecha_creacion,
+		fecha_actualizacion,
+		usuario_creador,
+		estado,
+		observaciones
+	) VALUES (?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
+	ON CONFLICT(empresa_id, alcance, categoria_id) DO UPDATE SET
+		impresora_id = excluded.impresora_id,
+		fecha_actualizacion = datetime('now','localtime'),
+		usuario_creador = excluded.usuario_creador,
+		estado = excluded.estado,
+		observaciones = excluded.observaciones`,
+		payload.EmpresaID,
+		payload.Alcance,
+		payload.CategoriaID,
+		payload.ImpresoraID,
+		payload.UsuarioCreador,
+		payload.Estado,
+		payload.Observaciones,
+	); err != nil {
+		return 0, err
+	}
+
+	var id int64
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras_productos_reglas WHERE empresa_id = ? AND alcance = ? AND categoria_id = ? LIMIT 1`, payload.EmpresaID, payload.Alcance, payload.CategoriaID).Scan(&id); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// DeleteEmpresaImpresoraProductoRegla elimina una regla masiva por todos los productos o por categoria.
+func DeleteEmpresaImpresoraProductoRegla(dbConn *sql.DB, empresaID int64, alcance string, categoriaID int64) error {
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id requerido")
+	}
+	alcance = normalizeEmpresaImpresoraProductoReglaAlcance(alcance)
+	if alcance == "todos" {
+		categoriaID = 0
+	} else if categoriaID <= 0 {
+		return fmt.Errorf("categoria_id requerido")
+	}
+	_, err := execSQLCompat(dbConn, `DELETE FROM empresa_impresoras_productos_reglas WHERE empresa_id = ? AND alcance = ? AND categoria_id = ?`, empresaID, alcance, categoriaID)
+	return err
+}
+
+// ListEmpresaImpresoraRecetasByEmpresa lista asignaciones por receta.
+func ListEmpresaImpresoraRecetasByEmpresa(dbConn *sql.DB, empresaID int64) ([]EmpresaImpresoraReceta, error) {
 	rows, err := querySQLCompat(dbConn, `SELECT
 		a.id,
 		a.empresa_id,
-		a.combo_id,
+		a.receta_id,
 		COALESCE(c.nombre, ''),
 		a.impresora_id,
 		COALESCE(i.nombre, ''),
@@ -1083,24 +1301,24 @@ func ListEmpresaImpresoraCombosByEmpresa(dbConn *sql.DB, empresaID int64) ([]Emp
 		COALESCE(a.usuario_creador, ''),
 		COALESCE(a.estado, 'activo'),
 		COALESCE(a.observaciones, '')
-	FROM empresa_impresoras_combos a
-	LEFT JOIN combos_productos c ON c.id = a.combo_id AND c.empresa_id = a.empresa_id
+	FROM empresa_impresoras_recetas a
+	LEFT JOIN recetas_productos c ON c.id = a.receta_id AND c.empresa_id = a.empresa_id
 	LEFT JOIN empresa_impresoras i ON i.id = a.impresora_id AND i.empresa_id = a.empresa_id
 	WHERE a.empresa_id = ?
-	ORDER BY c.nombre ASC, a.combo_id ASC`, empresaID)
+	ORDER BY c.nombre ASC, a.receta_id ASC`, empresaID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	out := make([]EmpresaImpresoraCombo, 0)
+	out := make([]EmpresaImpresoraReceta, 0)
 	for rows.Next() {
-		item := EmpresaImpresoraCombo{}
+		item := EmpresaImpresoraReceta{}
 		if err := rows.Scan(
 			&item.ID,
 			&item.EmpresaID,
-			&item.ComboID,
-			&item.ComboNombre,
+			&item.RecetaID,
+			&item.RecetaNombre,
 			&item.ImpresoraID,
 			&item.ImpresoraNombre,
 			&item.ImpresoraCodigo,
@@ -1121,29 +1339,29 @@ func ListEmpresaImpresoraCombosByEmpresa(dbConn *sql.DB, empresaID int64) ([]Emp
 	return out, nil
 }
 
-func ensureEmpresaComboExists(dbConn *sql.DB, empresaID, comboID int64) error {
+func ensureEmpresaRecetaExists(dbConn *sql.DB, empresaID, recetaID int64) error {
 	var id int64
-	if err := queryRowSQLCompat(dbConn, `SELECT id FROM combos_productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, comboID).Scan(&id); err != nil {
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM recetas_productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, recetaID).Scan(&id); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("combo no encontrado")
+			return fmt.Errorf("receta no encontrada")
 		}
 		return err
 	}
 	return nil
 }
 
-// UpsertEmpresaImpresoraCombo crea/actualiza asignacion combo -> impresora.
-func UpsertEmpresaImpresoraCombo(dbConn *sql.DB, payload EmpresaImpresoraCombo) (int64, error) {
+// UpsertEmpresaImpresoraReceta crea/actualiza asignacion receta -> impresora.
+func UpsertEmpresaImpresoraReceta(dbConn *sql.DB, payload EmpresaImpresoraReceta) (int64, error) {
 	if payload.EmpresaID <= 0 {
 		return 0, fmt.Errorf("empresa_id requerido")
 	}
-	if payload.ComboID <= 0 {
-		return 0, fmt.Errorf("combo_id requerido")
+	if payload.RecetaID <= 0 {
+		return 0, fmt.Errorf("receta_id requerido")
 	}
 	if payload.ImpresoraID <= 0 {
 		return 0, fmt.Errorf("impresora_id requerido")
 	}
-	if err := ensureEmpresaComboExists(dbConn, payload.EmpresaID, payload.ComboID); err != nil {
+	if err := ensureEmpresaRecetaExists(dbConn, payload.EmpresaID, payload.RecetaID); err != nil {
 		return 0, err
 	}
 	if err := ensureEmpresaImpresoraExistsAndActive(dbConn, payload.EmpresaID, payload.ImpresoraID); err != nil {
@@ -1157,9 +1375,9 @@ func UpsertEmpresaImpresoraCombo(dbConn *sql.DB, payload EmpresaImpresoraCombo) 
 	payload.Estado = normalizeEmpresaImpresoraEstado(payload.Estado)
 	payload.Observaciones = strings.TrimSpace(payload.Observaciones)
 
-	if _, err := execSQLCompat(dbConn, `INSERT INTO empresa_impresoras_combos (
+	if _, err := execSQLCompat(dbConn, `INSERT INTO empresa_impresoras_recetas (
 		empresa_id,
-		combo_id,
+		receta_id,
 		impresora_id,
 		fecha_creacion,
 		fecha_actualizacion,
@@ -1167,14 +1385,14 @@ func UpsertEmpresaImpresoraCombo(dbConn *sql.DB, payload EmpresaImpresoraCombo) 
 		estado,
 		observaciones
 	) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)
-	ON CONFLICT(empresa_id, combo_id) DO UPDATE SET
+	ON CONFLICT(empresa_id, receta_id) DO UPDATE SET
 		impresora_id = excluded.impresora_id,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = excluded.usuario_creador,
 		estado = excluded.estado,
 		observaciones = excluded.observaciones`,
 		payload.EmpresaID,
-		payload.ComboID,
+		payload.RecetaID,
 		payload.ImpresoraID,
 		payload.UsuarioCreador,
 		payload.Estado,
@@ -1184,21 +1402,21 @@ func UpsertEmpresaImpresoraCombo(dbConn *sql.DB, payload EmpresaImpresoraCombo) 
 	}
 
 	var id int64
-	if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras_combos WHERE empresa_id = ? AND combo_id = ? LIMIT 1`, payload.EmpresaID, payload.ComboID).Scan(&id); err != nil {
+	if err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_impresoras_recetas WHERE empresa_id = ? AND receta_id = ? LIMIT 1`, payload.EmpresaID, payload.RecetaID).Scan(&id); err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
-// DeleteEmpresaImpresoraCombo elimina asignacion por combo.
-func DeleteEmpresaImpresoraCombo(dbConn *sql.DB, empresaID, comboID int64) error {
+// DeleteEmpresaImpresoraReceta elimina asignacion por receta.
+func DeleteEmpresaImpresoraReceta(dbConn *sql.DB, empresaID, recetaID int64) error {
 	if empresaID <= 0 {
 		return fmt.Errorf("empresa_id requerido")
 	}
-	if comboID <= 0 {
-		return fmt.Errorf("combo_id requerido")
+	if recetaID <= 0 {
+		return fmt.Errorf("receta_id requerido")
 	}
-	_, err := execSQLCompat(dbConn, `DELETE FROM empresa_impresoras_combos WHERE empresa_id = ? AND combo_id = ?`, empresaID, comboID)
+	_, err := execSQLCompat(dbConn, `DELETE FROM empresa_impresoras_recetas WHERE empresa_id = ? AND receta_id = ?`, empresaID, recetaID)
 	return err
 }
 
@@ -1232,7 +1450,25 @@ func resolveEmpresaImpresoraByProducto(dbConn *sql.DB, empresaID, productoID int
 	return item, nil
 }
 
-func resolveEmpresaImpresoraByCombo(dbConn *sql.DB, empresaID, comboID int64) (*EmpresaImpresora, error) {
+func getEmpresaProductoCategoriaID(dbConn *sql.DB, empresaID, productoID int64) (int64, error) {
+	var categoriaID sql.NullInt64
+	if err := queryRowSQLCompat(dbConn, `SELECT categoria_id FROM productos WHERE empresa_id = ? AND id = ? LIMIT 1`, empresaID, productoID).Scan(&categoriaID); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	if categoriaID.Valid && categoriaID.Int64 > 0 {
+		return categoriaID.Int64, nil
+	}
+	return 0, nil
+}
+
+func resolveEmpresaImpresoraByProductoRegla(dbConn *sql.DB, empresaID int64, alcance string, categoriaID int64) (*EmpresaImpresora, error) {
+	alcance = normalizeEmpresaImpresoraProductoReglaAlcance(alcance)
+	if alcance == "todos" {
+		categoriaID = 0
+	}
 	row := queryRowSQLCompat(dbConn, `SELECT
 		i.id,
 		i.empresa_id,
@@ -1248,13 +1484,44 @@ func resolveEmpresaImpresoraByCombo(dbConn *sql.DB, empresaID, comboID int64) (*
 		COALESCE(i.usuario_creador, ''),
 		COALESCE(i.estado, 'activo'),
 		COALESCE(i.observaciones, '')
-	FROM empresa_impresoras_combos c
+	FROM empresa_impresoras_productos_reglas r
+	INNER JOIN empresa_impresoras i ON i.id = r.impresora_id AND i.empresa_id = r.empresa_id
+	WHERE r.empresa_id = ?
+		AND r.alcance = ?
+		AND COALESCE(r.categoria_id, 0) = ?
+		AND COALESCE(NULLIF(TRIM(r.estado), ''), 'activo') = 'activo'
+		AND COALESCE(NULLIF(TRIM(i.estado), ''), 'activo') = 'activo'
+	LIMIT 1`, empresaID, alcance, categoriaID)
+	item, err := scanEmpresaImpresora(row)
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
+func resolveEmpresaImpresoraByReceta(dbConn *sql.DB, empresaID, recetaID int64) (*EmpresaImpresora, error) {
+	row := queryRowSQLCompat(dbConn, `SELECT
+		i.id,
+		i.empresa_id,
+		COALESCE(i.codigo, ''),
+		COALESCE(i.nombre, ''),
+		COALESCE(i.tipo_conexion, 'red'),
+		COALESCE(i.direccion, ''),
+		COALESCE(i.area_operativa, ''),
+		COALESCE(i.formato_impresion, 'pos'),
+		`+empresaImpresoraDefaultSelectExpr("i")+`,
+		COALESCE(i.fecha_creacion, ''),
+		COALESCE(i.fecha_actualizacion, ''),
+		COALESCE(i.usuario_creador, ''),
+		COALESCE(i.estado, 'activo'),
+		COALESCE(i.observaciones, '')
+	FROM empresa_impresoras_recetas c
 	INNER JOIN empresa_impresoras i ON i.id = c.impresora_id AND i.empresa_id = c.empresa_id
 	WHERE c.empresa_id = ?
-		AND c.combo_id = ?
+		AND c.receta_id = ?
 		AND COALESCE(NULLIF(TRIM(c.estado), ''), 'activo') = 'activo'
 		AND COALESCE(NULLIF(TRIM(i.estado), ''), 'activo') = 'activo'
-	LIMIT 1`, empresaID, comboID)
+	LIMIT 1`, empresaID, recetaID)
 	item, err := scanEmpresaImpresora(row)
 	if err != nil {
 		return nil, err
@@ -1321,7 +1588,7 @@ func resolveEmpresaImpresoraPredeterminada(dbConn *sql.DB, empresaID int64) (*Em
 	return item, nil
 }
 
-// ResolveEmpresaImpresoraOperacion selecciona impresora por item -> funcionalidad -> predeterminada.
+// ResolveEmpresaImpresoraOperacion selecciona impresora por item -> categoria/todos -> funcionalidad -> predeterminada.
 func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcionalidad string, tipoItem string, referenciaID int64) (*EmpresaImpresoraResolucion, error) {
 	if empresaID <= 0 {
 		return nil, fmt.Errorf("empresa_id requerido")
@@ -1332,15 +1599,15 @@ func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcional
 		tipoItem = "producto"
 	}
 
-	if tipoItem == "combo" && referenciaID > 0 {
-		impresora, err := resolveEmpresaImpresoraByCombo(dbConn, empresaID, referenciaID)
+	if tipoItem == "receta" && referenciaID > 0 {
+		impresora, err := resolveEmpresaImpresoraByReceta(dbConn, empresaID, referenciaID)
 		if err == nil {
 			return &EmpresaImpresoraResolucion{
 				EmpresaID:     empresaID,
 				Funcionalidad: funcionalidad,
-				ComboID:       referenciaID,
-				TipoItem:      "combo",
-				Fuente:        "combo",
+				RecetaID:      referenciaID,
+				TipoItem:      "receta",
+				Fuente:        "receta",
 				Impresora:     *impresora,
 			}, nil
 		}
@@ -1364,6 +1631,44 @@ func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcional
 		if err != sql.ErrNoRows {
 			return nil, err
 		}
+
+		categoriaID, err := getEmpresaProductoCategoriaID(dbConn, empresaID, referenciaID)
+		if err != nil {
+			return nil, err
+		}
+		if categoriaID > 0 {
+			impresora, err := resolveEmpresaImpresoraByProductoRegla(dbConn, empresaID, "categoria", categoriaID)
+			if err == nil {
+				return &EmpresaImpresoraResolucion{
+					EmpresaID:     empresaID,
+					Funcionalidad: funcionalidad,
+					ProductoID:    referenciaID,
+					CategoriaID:   categoriaID,
+					TipoItem:      "producto",
+					Fuente:        "categoria_producto",
+					Impresora:     *impresora,
+				}, nil
+			}
+			if err != sql.ErrNoRows {
+				return nil, err
+			}
+		}
+
+		impresora, err = resolveEmpresaImpresoraByProductoRegla(dbConn, empresaID, "todos", 0)
+		if err == nil {
+			return &EmpresaImpresoraResolucion{
+				EmpresaID:     empresaID,
+				Funcionalidad: funcionalidad,
+				ProductoID:    referenciaID,
+				CategoriaID:   categoriaID,
+				TipoItem:      "producto",
+				Fuente:        "todos_productos",
+				Impresora:     *impresora,
+			}, nil
+		}
+		if err != sql.ErrNoRows {
+			return nil, err
+		}
 	}
 
 	if funcionalidad != "" {
@@ -1373,7 +1678,7 @@ func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcional
 				EmpresaID:     empresaID,
 				Funcionalidad: funcionalidad,
 				ProductoID:    mapEmpresaImpresoraProductoID(tipoItem, referenciaID),
-				ComboID:       mapEmpresaImpresoraComboID(tipoItem, referenciaID),
+				RecetaID:      mapEmpresaImpresoraRecetaID(tipoItem, referenciaID),
 				TipoItem:      tipoItem,
 				Fuente:        "funcionalidad",
 				Impresora:     *impresora,
@@ -1395,7 +1700,7 @@ func ResolveEmpresaImpresoraOperacion(dbConn *sql.DB, empresaID int64, funcional
 		EmpresaID:     empresaID,
 		Funcionalidad: funcionalidad,
 		ProductoID:    mapEmpresaImpresoraProductoID(tipoItem, referenciaID),
-		ComboID:       mapEmpresaImpresoraComboID(tipoItem, referenciaID),
+		RecetaID:      mapEmpresaImpresoraRecetaID(tipoItem, referenciaID),
 		TipoItem:      tipoItem,
 		Fuente:        "predeterminada",
 		Impresora:     *impresora,
@@ -1409,8 +1714,8 @@ func mapEmpresaImpresoraProductoID(tipoItem string, referenciaID int64) int64 {
 	return 0
 }
 
-func mapEmpresaImpresoraComboID(tipoItem string, referenciaID int64) int64 {
-	if tipoItem == "combo" {
+func mapEmpresaImpresoraRecetaID(tipoItem string, referenciaID int64) int64 {
+	if tipoItem == "receta" {
 		return referenciaID
 	}
 	return 0

@@ -21,7 +21,7 @@ Todo modulo del sistema debe nacer como un nucleo universal reutilizable. Los ti
 ## Ejemplos aplicados
 
 - Alquiler universal cubre herramientas, motos, equipos, espacios, vehiculos y cualquier objeto alquilable.
-- Inventario universal cubre productos, servicios, insumos, lotes, bodegas, combos y costeo.
+- Inventario universal cubre productos, servicios, insumos, lotes, bodegas, recetas y costeo.
 - Operacion universal cubre estaciones, carritos, venta directa, turnos, reservas y venta publica.
 - Finanzas universales cubren caja, bancos, cartera, egresos, ingresos, contabilidad, impuestos y reportes.
 - CRM universal cubre clientes, embudos, seguimiento, cartera comercial y comunicaciones.

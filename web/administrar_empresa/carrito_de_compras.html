@@ -111,7 +111,7 @@
         <div class="empresa-section-header" hidden>
           <h3 class="section-heading"></h3>
         </div>
-        <div id="carritoClienteRow" class="form-row carrito-scanner-stack">
+        <div id="carritoClienteRow" class="form-row carrito-scanner-stack carrito-scanner-compact-grid">
           <div class="form-col carrito-scanner-column">
             <label class="form-label" for="scannerCodigo">Código de barras o SKU</label>
             <input id="scannerCodigo" class="form-input" autocomplete="off" placeholder="Escanea codigo">
@@ -131,10 +131,11 @@
       </div>
 
       <section id="stationCustomerCard" class="card empresa-section carrito-customer-card is-hidden mt-12" hidden>
-        <div class="empresa-section-header compact">
+        <div class="empresa-section-header compact carrito-customer-header">
           <div>
             <h3 class="section-heading">Cliente del carrito</h3>
           </div>
+          <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: consumidor final.</div>
         </div>
         <div id="stationClienteSelectorRow" class="form-row" hidden>
           <div class="form-col">
@@ -143,13 +144,26 @@
           <div class="form-col maxw-220 flex-col-end">
             <button type="button" id="stationAssignClienteBtn" class="btn secondary w-full">Asignar cliente</button>
           </div>
+        </div>
+        <div class="form-row carrito-customer-search-grid">
+          <div class="form-col maxw-180">
+            <label class="form-label" for="stationClienteSearchMode">Buscar por</label>
+            <select id="stationClienteSearchMode" class="form-input">
+              <option value="nombre">Nombre</option>
+              <option value="identificacion">NIT / cedula / identificacion</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="stationClienteSearchInput">Cliente del carrito</label>
+            <input id="stationClienteSearchInput" class="form-input" autocomplete="off" list="stationClienteSearchList" placeholder="Buscar cliente">
+            <datalist id="stationClienteSearchList"></datalist>
+          </div>
           <div class="form-col maxw-220 flex-col-end">
             <button type="button" id="stationNewClienteToggleBtn" class="btn secondary w-full">Nuevo cliente</button>
           </div>
         </div>
-        <div id="stationClienteActual" class="form-help mt-6">Cliente actual: consumidor final.</div>
         <div id="stationClienteQuickForm" class="empresa-section mt-10 is-hidden" hidden>
-          <div class="form-row">
+          <div class="form-row carrito-customer-quick-grid">
             <div class="form-col maxw-180">
               <label class="form-label" for="quickClienteTipoDoc">Tipo doc.</label>
               <select id="quickClienteTipoDoc" class="form-input">
@@ -166,11 +180,8 @@
             </div>
             <div class="form-col">
               <label class="form-label" for="quickClienteNombre">Nombre / razon social</label>
-              <input id="quickClienteNombre" class="form-input" autocomplete="off" list="quickClienteNombreList" placeholder="Buscar o escribir nombre del cliente">
-              <datalist id="quickClienteNombreList"></datalist>
+              <input id="quickClienteNombre" class="form-input" autocomplete="off" placeholder="Nombre del cliente">
             </div>
-          </div>
-          <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="quickClienteTelefono">Telefono</label>
               <input id="quickClienteTelefono" class="form-input" autocomplete="off" placeholder="Opcional">
@@ -450,7 +461,7 @@
           <div class="form-col">
             <label class="form-label" for="stationCashReceivedDisplay">Efectivo recibido</label>
             <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" placeholder="COP 0.00">
-            <div id="stationCashChangeHint" class="form-help mt-6">Cambio a devolver: COP 0.00</div>
+            <div id="stationCashChangeHint" class="cash-change-hint mt-6">Vuelto: COP 0.00</div>
           </div>
         </div>
       </section>
@@ -519,7 +530,7 @@
           <div class="form-col">
             <label class="form-label">Buscar en catálogo inteligente</label>
             <input id="itemBuscarCatalogo" class="form-input" placeholder="Busca por nombre, SKU, código de barras o código del servicio">
-            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de ítem (producto/servicio/combo) y escribe al menos 2 caracteres.</div>
+            <div id="itemBusquedaHint" class="form-help">Selecciona tipo de ítem (producto/servicio/receta) y escribe al menos 2 caracteres.</div>
           </div>
           <div class="form-col maxw-220 flex-end">
             <button id="buscarCatalogoBtn" type="button" class="btn secondary w-full">Buscar catálogo</button>
@@ -544,7 +555,7 @@
             <label class="form-label">Tipo de item</label>
             <select id="itemTipo" class="form-input">
               <option value="producto">Producto</option>
-              <option value="combo">Combo</option>
+              <option value="receta">Receta</option>
               <option value="servicio">Servicio</option>
               <option value="otro">Otro</option>
             </select>
@@ -562,7 +573,7 @@
         <div id="itemTaxRow" class="form-row">
           <div class="form-col">
             <label class="form-label">Descripción</label>
-            <input id="itemDescripcion" class="form-input" required placeholder="Nombre del producto, combo o servicio">
+            <input id="itemDescripcion" class="form-input" required placeholder="Nombre del producto, receta o servicio">
           </div>
           <div class="form-col">
             <label class="form-label">Unidad</label>
@@ -1810,6 +1821,7 @@
     function applyStationCartUIConfig() {
       const ui = getCurrentStationCartUIConfig();
       state.stationCartUI = ui;
+      publishConnectivityContext();
       document.body.classList.toggle('cart-touch-mode', Boolean(ui.modo_pantalla_tactil));
       placeVipCardBelowTotals();
       syncCarritoActionButtons(ui);
@@ -2956,13 +2968,13 @@
 
       if (hint) {
         if (recibido <= 0) {
-          hint.textContent = 'Cambio a devolver: ' + formatAmount(0, moneda);
+          hint.textContent = 'Vuelto: ' + formatAmount(0, moneda);
           hint.classList.remove('value-negative');
         } else if (faltante > 0) {
-          hint.textContent = 'Falta recibir: ' + formatAmount(faltante, moneda);
+          hint.textContent = 'Falta: ' + formatAmount(faltante, moneda);
           hint.classList.add('value-negative');
         } else {
-          hint.textContent = 'Cambio a devolver: ' + formatAmount(cambio, moneda);
+          hint.textContent = 'Vuelto: ' + formatAmount(cambio, moneda);
           hint.classList.remove('value-negative');
         }
       }
@@ -3284,9 +3296,9 @@
         params.set('tipo_item', 'producto');
         params.set('producto_id', String(Math.trunc(referenciaID)));
       }
-      if (tipoItem === 'combo' && Number.isFinite(referenciaID) && referenciaID > 0) {
-        params.set('tipo_item', 'combo');
-        params.set('combo_id', String(Math.trunc(referenciaID)));
+      if (tipoItem === 'receta' && Number.isFinite(referenciaID) && referenciaID > 0) {
+        params.set('tipo_item', 'receta');
+        params.set('receta_id', String(Math.trunc(referenciaID)));
       }
 
       try {
@@ -3856,7 +3868,29 @@
       return !ui || ui.marcar_factura_offline_pendiente !== false;
     }
 
+    function publishConnectivityContext() {
+      const ctx = {
+        module: 'carrito',
+        label: state.directSaleMode || state.stationMode ? 'caja' : 'carrito',
+        canContinueOffline: isOfflineBillingEnabled(),
+        offlineSalesEnabled: isOfflineBillingEnabled()
+      };
+      window.__PCSConnectivityContext = function() {
+        return ctx;
+      };
+      try {
+        if (window.parent && window.parent !== window) {
+          window.parent.__PCSActiveModuleConnectivityContext = ctx;
+          if (window.parent.__empresaModuleGuard && typeof window.parent.__empresaModuleGuard.refreshConnectivityAlert === 'function') {
+            window.parent.__empresaModuleGuard.refreshConnectivityAlert();
+          }
+        }
+      } catch (_) {}
+      return ctx;
+    }
+
     function updateOfflineFloatingNotice() {
+      publishConnectivityContext();
       let box = document.getElementById('offlineFloatingNotice');
       const show = isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false;
       if (!box) {
@@ -4536,7 +4570,7 @@
       document.getElementById('itemForm').style.display = 'none';
       document.getElementById('itemForm').hidden = true;
       if (!selectedActive) {
-        setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos, combos o servicios.', true);
+        setMessage('itemMsg', 'El carrito está inactivo. Debes activarlo para agregar productos, recetas o servicios.', true);
       }
 
       renderScannerPanel();
@@ -4617,12 +4651,12 @@
 
       if (customerRequiredForCurrentCart() && Number(selected.cliente_id || 0) <= 0) {
         applyStationCartUIConfig();
-        toggleQuickClienteForm(true);
+        toggleQuickClienteForm(false);
         setStationClienteMessage('Registra o selecciona un cliente para poder pagar este carrito.', true);
         setStationPaymentMessage('Cliente obligatorio: debes registrar o seleccionar un cliente antes de pagar y cerrar el carrito.', true);
-        const clienteNombre = document.getElementById('quickClienteNombre');
-        if (clienteNombre && typeof clienteNombre.focus === 'function') {
-          clienteNombre.focus();
+        const clienteSearch = document.getElementById('stationClienteSearchInput');
+        if (clienteSearch && typeof clienteSearch.focus === 'function') {
+          clienteSearch.focus();
         }
         return;
       }
@@ -5318,13 +5352,21 @@
       return name + (doc ? (' - ' + doc) : '');
     }
 
-    function fillQuickClienteNombreList() {
-      const list = document.getElementById('quickClienteNombreList');
+    function clienteDocumentSearchLabel(cliente) {
+      if (!cliente) return '';
+      const name = normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial) || 'Cliente';
+      const doc = [normalize(cliente.tipo_documento), normalize(cliente.numero_documento)].filter(Boolean).join(' ');
+      return doc ? (doc + ' - ' + name) : name;
+    }
+
+    function fillStationClienteSearchList() {
+      const list = document.getElementById('stationClienteSearchList');
       if (!list) return;
+      const mode = normalize(document.getElementById('stationClienteSearchMode') && document.getElementById('stationClienteSearchMode').value) || 'nombre';
       list.innerHTML = '';
       state.clientes.forEach(function(c) {
         if (normalize(c.estado) && normalize(c.estado) !== 'activo') return;
-        const label = clienteSearchLabel(c);
+        const label = mode === 'identificacion' ? clienteDocumentSearchLabel(c) : clienteSearchLabel(c);
         if (!label) return;
         const opt = document.createElement('option');
         opt.value = label;
@@ -5339,24 +5381,27 @@
         if (normalize(c.estado) && normalize(c.estado) !== 'activo') return false;
         const labels = [
           clienteSearchLabel(c),
+          clienteDocumentSearchLabel(c),
           normalize(c.nombre_razon_social),
           normalize(c.nombre_comercial),
+          [normalize(c.tipo_documento), normalize(c.numero_documento)].filter(Boolean).join(' '),
           normalize(c.numero_documento)
         ].filter(Boolean).map(function(v) { return normalize(v).toLowerCase(); });
         return labels.indexOf(target) !== -1;
       }) || null;
     }
 
-    function syncQuickClienteNameInput(carrito) {
-      const input = document.getElementById('quickClienteNombre');
+    function syncStationClienteSearchInput(carrito) {
+      const input = document.getElementById('stationClienteSearchInput');
       if (!input) return;
-      fillQuickClienteNombreList();
+      fillStationClienteSearchList();
       const cartID = Number(carrito && carrito.id || 0);
       const sameCart = Number(input.dataset.carritoId || 0) === cartID;
       const previousAssignedID = Number(input.dataset.assignedClienteId || 0);
       const selectedID = Number(carrito && carrito.cliente_id || 0);
       const cliente = getClienteByID(selectedID);
-      const nextValue = cliente ? clienteSearchLabel(cliente) : '';
+      const mode = normalize(document.getElementById('stationClienteSearchMode') && document.getElementById('stationClienteSearchMode').value) || 'nombre';
+      const nextValue = cliente ? (mode === 'identificacion' ? clienteDocumentSearchLabel(cliente) : clienteSearchLabel(cliente)) : '';
       if (document.activeElement === input && sameCart && normalize(input.value) && input.value !== nextValue && (!previousAssignedID || previousAssignedID === selectedID)) return;
       if (input.value !== nextValue) input.value = nextValue;
       input.dataset.carritoId = String(cartID || '');
@@ -5399,11 +5444,10 @@
       card.classList.toggle('is-hidden', !show);
       card.style.display = show ? '' : 'none';
       if (!show) return;
-      toggleQuickClienteForm(true);
 
       const selectedID = Number(carrito && carrito.cliente_id || 0);
       fillStationClientesSelect(selectedID);
-      syncQuickClienteNameInput(carrito);
+      syncStationClienteSearchInput(carrito);
       const cliente = getClienteByID(selectedID);
       const actual = document.getElementById('stationClienteActual');
       if (actual) {
@@ -5458,13 +5502,13 @@
     }
 
     async function assignClienteFromNameSearch() {
-      const input = document.getElementById('quickClienteNombre');
+      const input = document.getElementById('stationClienteSearchInput');
       if (!input) return false;
       const cliente = resolveClienteFromNameSearch(input.value);
       if (!cliente || !Number(cliente.id || 0)) return false;
       const selected = getSelectedCarrito();
       if (selected && Number(selected.cliente_id || 0) === Number(cliente.id || 0)) {
-        syncQuickClienteNameInput(selected);
+        syncStationClienteSearchInput(selected);
         return true;
       }
       await assignClienteToSelectedCarrito(Number(cliente.id || 0));
@@ -5475,12 +5519,6 @@
       const nombre = normalize(document.getElementById('quickClienteNombre').value);
       const documento = normalize(document.getElementById('quickClienteDocumento').value);
       const tipoDoc = normalize(document.getElementById('quickClienteTipoDoc').value) || 'CC';
-      try {
-        if (await assignClienteFromNameSearch()) return;
-      } catch (err) {
-        setStationClienteMessage(err.message || 'No se pudo asignar el cliente al carrito.', true);
-        return;
-      }
       if (!nombre || !documento) {
         setStationClienteMessage('Nombre y documento del cliente son obligatorios.', true);
         return;
@@ -5515,7 +5553,10 @@
           const el = document.getElementById(id);
           if (el) el.value = '';
         });
-        syncQuickClienteNameInput(getSelectedCarrito());
+        const nameEl = document.getElementById('quickClienteNombre');
+        if (nameEl) nameEl.value = '';
+        toggleQuickClienteForm(false);
+        syncStationClienteSearchInput(getSelectedCarrito());
         setStationClienteMessage('Cliente creado y asignado al carrito.', false);
       } catch (err) {
         setStationClienteMessage(err.message || 'No se pudo crear el cliente desde el carrito.', true);
@@ -5558,11 +5599,11 @@
       document.getElementById('cancelItemBtn').style.display = 'none';
       setMessage('itemMsg', '', false);
       document.getElementById('itemBuscarCatalogo').value = '';
-      clearCatalogResults('Selecciona tipo de ítem (producto/servicio/combo) y escribe al menos 2 caracteres.');
+      clearCatalogResults('Selecciona tipo de ítem (producto/servicio/receta) y escribe al menos 2 caracteres.');
     }
 
     function isCatalogSearchType(tipo) {
-      return tipo === 'producto' || tipo === 'servicio' || tipo === 'combo';
+      return tipo === 'producto' || tipo === 'servicio' || tipo === 'receta';
     }
 
     function renderCatalogHint(text, isError) {
@@ -5611,10 +5652,10 @@
 
       const nombre = normalize(raw.nombre);
       const descripcionBase = normalize(raw.descripcion);
-      const descripcion = descripcionBase || nombre || (tipo === 'servicio' ? 'Servicio' : (tipo === 'combo' ? 'Combo' : 'Producto'));
+      const descripcion = descripcionBase || nombre || (tipo === 'servicio' ? 'Servicio' : (tipo === 'receta' ? 'Receta' : 'Producto'));
       const unidad = tipo === 'producto'
         ? (normalize(raw.unidad_medida) || 'unidad')
-        : (normalize(raw.unidad_medida) || (tipo === 'combo' ? 'combo' : 'servicio'));
+        : (normalize(raw.unidad_medida) || (tipo === 'receta' ? 'receta' : 'servicio'));
 
       return {
         id: toNumber(raw.id, 0),
@@ -5633,7 +5674,7 @@
       const q = normalize(document.getElementById('itemBuscarCatalogo').value);
 
       if (!isCatalogSearchType(tipo)) {
-        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto, Servicio o Combo.');
+        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto, Servicio o Receta.');
         return;
       }
 
@@ -5645,8 +5686,8 @@
       let endpoint = '/api/empresa/productos';
       if (tipo === 'servicio') {
         endpoint = '/api/empresa/servicios';
-      } else if (tipo === 'combo') {
-        endpoint = '/api/empresa/combos_productos';
+      } else if (tipo === 'receta') {
+        endpoint = '/api/empresa/recetas_productos';
       }
       const url = new URL(endpoint, window.location.origin);
       url.searchParams.set('empresa_id', String(state.empresaID));
@@ -5684,7 +5725,7 @@
       const sel = document.getElementById('itemBusquedaResultados');
       const idx = Number(sel.value);
       if (!Number.isInteger(idx) || idx < 0 || idx >= state.itemCatalogResults.length) {
-        setMessage('itemMsg', 'Selecciona un producto, combo o servicio de la lista', true);
+        setMessage('itemMsg', 'Selecciona un producto, receta o servicio de la lista', true);
         return false;
       }
 
@@ -5984,7 +6025,7 @@
         entryLabel: 'Entrada',
         exitLabel: 'Salida',
         itemsLabel: 'Items totales',
-        productItemsLabel: 'Productos / combos (items)',
+        productItemsLabel: 'Productos / recetas (items)',
         serviceItemsLabel: 'Servicios (items)',
         productAmountLabel: 'Productos facturados',
         serviceAmountLabel: 'Servicios facturados',
@@ -6412,7 +6453,7 @@
       const paid = isCarritoOperativoActivo(selected) ? getCartAbonosTotal() : Number(selected.total_pagado || 0);
       const balance = total - paid;
       const countItems = state.items.length;
-      const productsCount = state.items.filter(function(item) { return ['producto', 'combo'].includes(normalize(item.tipo_item)); }).length;
+      const productsCount = state.items.filter(function(item) { return ['producto', 'receta'].includes(normalize(item.tipo_item)); }).length;
       const servicesCount = state.items.filter(function(item) { return normalize(item.tipo_item) === 'servicio'; }).length;
       let totalServiciosLineas = 0;
       let totalProductosLineas = 0;
@@ -6420,7 +6461,7 @@
         const tipo = normalize(item.tipo_item);
         const line = Number(item.total_linea || 0);
         if (tipo === 'servicio') totalServiciosLineas += line;
-        else if (tipo === 'producto' || tipo === 'combo') totalProductosLineas += line;
+        else if (tipo === 'producto' || tipo === 'receta') totalProductosLineas += line;
       });
       const cliente = state.clientes.find(function(c) { return Number(c.id) === Number(selected.cliente_id); });
       const clienteName = cliente ? normalize(cliente.nombre) : '-';
@@ -6858,11 +6899,11 @@
       }
       const productos = state.items.filter(function(item) {
         const tipo = normalize(item.tipo_item);
-        return tipo === 'producto' || tipo === 'combo';
+        return tipo === 'producto' || tipo === 'receta';
       });
 
       if (!productos.length) {
-        box.textContent = 'Este carrito no tiene productos o combos agregados.';
+        box.textContent = 'Este carrito no tiene productos o recetas agregados.';
         return;
       }
 
@@ -7645,7 +7686,7 @@
     document.getElementById('itemTipo').addEventListener('change', function() {
       const tipo = normalize(document.getElementById('itemTipo').value);
       if (!isCatalogSearchType(tipo)) {
-        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto, Servicio o Combo.');
+        clearCatalogResults('Para búsqueda inteligente selecciona tipo Producto, Servicio o Receta.');
         return;
       }
 
@@ -7774,8 +7815,10 @@
     document.getElementById('carritoBtnClientes').addEventListener('click', function() {
       state.customerPanelOpen = true;
       renderStationCustomerPanel(getSelectedCarrito());
-      toggleQuickClienteForm(true);
-      setStationClienteMessage('Registra el cliente desde este panel y quedara asociado al carrito actual.', false);
+      toggleQuickClienteForm(false);
+      const search = document.getElementById('stationClienteSearchInput');
+      if (search && typeof search.focus === 'function') search.focus();
+      setStationClienteMessage('Busca por nombre o identificacion. Usa Nuevo cliente solo si no existe.', false);
     });
     const stationAssignClienteBtn = document.getElementById('stationAssignClienteBtn');
     if (stationAssignClienteBtn) {
@@ -7799,16 +7842,23 @@
         createClienteFromCartButton();
       });
     }
-    const quickClienteNombreInput = document.getElementById('quickClienteNombre');
-    if (quickClienteNombreInput) {
-      quickClienteNombreInput.addEventListener('change', async function() {
+    const stationClienteSearchMode = document.getElementById('stationClienteSearchMode');
+    if (stationClienteSearchMode) {
+      stationClienteSearchMode.addEventListener('change', function() {
+        syncStationClienteSearchInput(getSelectedCarrito());
+      });
+    }
+    const stationClienteSearchInput = document.getElementById('stationClienteSearchInput');
+    if (stationClienteSearchInput) {
+      stationClienteSearchInput.addEventListener('input', fillStationClienteSearchList);
+      stationClienteSearchInput.addEventListener('change', async function() {
         try {
           await assignClienteFromNameSearch();
         } catch (err) {
           setStationClienteMessage(err.message || 'No se pudo asignar el cliente al carrito.', true);
         }
       });
-      quickClienteNombreInput.addEventListener('blur', async function() {
+      stationClienteSearchInput.addEventListener('blur', async function() {
         try {
           await assignClienteFromNameSearch();
         } catch (err) {
@@ -8130,5 +8180,3 @@
   </script>
 </body>
 </html>
-
-

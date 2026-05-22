@@ -458,7 +458,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Productos y servicios", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkProductosMain", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Inventario (Productos)", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkInventarioAvanzado", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Inventario avanzado", Grupo: "Inventario y compras"},
-	{PaginaClave: "linkCombosProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Combos y paquetes", Grupo: "Inventario y compras"},
+	{PaginaClave: "linkRecetasProductos", Modulo: permModuleInventario, Accion: permActionCreate, Titulo: "Recetas y paquetes", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkPreciosHistorial", Modulo: permModuleInventario, Accion: permActionRead, Titulo: "Historial de productos", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkBodegas", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Bodegas", Grupo: "Inventario y compras"},
 	{PaginaClave: "linkCategorias", Modulo: permModuleInventario, Accion: permActionUpdate, Titulo: "Categorias", Grupo: "Inventario y compras"},
@@ -517,7 +517,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkPruebasDian", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Pruebas DIAN y documentos", Grupo: "Facturacion electronica"},
 	{PaginaClave: "linkProveedoresFirmaDigital", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Proveedores de firma digital", Grupo: "Facturacion electronica"},
 	{PaginaClave: "linkFacturasElectronicas", Modulo: permModuleFacturacion, Accion: permActionRead, Titulo: "Documentos y consultas FE", Grupo: "Facturacion electronica"},
-	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkImpuestos", Modulo: permModuleFacturacion, Accion: permActionUpdate, Titulo: "Impuestos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
 
 	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro de reportes", Grupo: "Analisis y control"},
@@ -2088,6 +2088,8 @@ func resolveSeguridadPermissionAction(r *http.Request) string {
 func resolveVerticalPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
+	case "conexion", "conectividad", "connectivity":
+		return permActionRead
 	case "activar", "desactivar":
 		return permActionUpdate
 	case "anular", "cancelar", "eliminar":

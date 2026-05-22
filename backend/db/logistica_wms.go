@@ -567,7 +567,7 @@ func SeedEmpresaWMSDemo(dbConn *sql.DB, empresaID int64, usuario string) error {
 		return err
 	}
 	_, _ = CreateEmpresaWMSItem(dbConn, EmpresaWMSItem{EmpresaID: empresaID, OrdenID: ordenID, ProductoNombre: "Producto demo WMS", SKU: "WMS-DEMO-001", UbicacionOrigen: "BOD-A-P01-R01-N01", UbicacionDestino: "PACK-01", CantidadSolicitada: 12, CantidadPickeada: 6, CantidadEmpacada: 0, Estado: "en_picking"}, usuario)
-	_, _ = CreateEmpresaWMSItem(dbConn, EmpresaWMSItem{EmpresaID: empresaID, OrdenID: ordenID, ProductoNombre: "Combo embalado demo", SKU: "WMS-DEMO-002", UbicacionOrigen: "BOD-A-P02-R03-N02", UbicacionDestino: "PACK-01", CantidadSolicitada: 4, Estado: "pendiente"}, usuario)
+	_, _ = CreateEmpresaWMSItem(dbConn, EmpresaWMSItem{EmpresaID: empresaID, OrdenID: ordenID, ProductoNombre: "Receta embalada demo", SKU: "WMS-DEMO-002", UbicacionOrigen: "BOD-A-P02-R03-N02", UbicacionDestino: "PACK-01", CantidadSolicitada: 4, Estado: "pendiente"}, usuario)
 	_, _ = UpsertEmpresaWMSDespacho(dbConn, EmpresaWMSDespacho{EmpresaID: empresaID, OrdenID: ordenID, Codigo: fmt.Sprintf("DSP-%s-001", time.Now().Format("20060102")), Transportadora: "Mensajeria interna", Conductor: "Domiciliario demo", Vehiculo: "Moto 01", Ruta: "Ruta centro", Estado: "programado", FechaSalida: time.Now().AddDate(0, 0, 1).Format("2006-01-02"), CostoFlete: 8500, UsuarioCreador: usuario})
 	return nil
 }

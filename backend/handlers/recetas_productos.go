@@ -11,8 +11,8 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-// EmpresaCombosProductosHandler gestiona CRUD de combos de productos por empresa.
-func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
+// EmpresaRecetasProductosHandler gestiona CRUD de recetas de productos por empresa.
+func EmpresaRecetasProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -23,17 +23,17 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 
 			if id, _ := parseInt64QueryOptional(r, "id"); id > 0 {
-				combo, err := dbpkg.GetComboProductoByID(dbEmp, empresaID, id)
+				receta, err := dbpkg.GetRecetaProductoByID(dbEmp, empresaID, id)
 				if err != nil {
 					if errors.Is(err, sql.ErrNoRows) {
-						http.Error(w, "combo no encontrado", http.StatusNotFound)
+						http.Error(w, "receta no encontrada", http.StatusNotFound)
 						return
 					}
-					log.Printf("[combos] get empresa_id=%d id=%d error: %v", empresaID, id, err)
-					http.Error(w, "No se pudo consultar el combo", http.StatusInternalServerError)
+					log.Printf("[recetas] get empresa_id=%d id=%d error: %v", empresaID, id, err)
+					http.Error(w, "No se pudo consultar la receta", http.StatusInternalServerError)
 					return
 				}
-				writeJSON(w, http.StatusOK, combo)
+				writeJSON(w, http.StatusOK, receta)
 				return
 			}
 
@@ -44,10 +44,10 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			limit, _ := parseIntQueryOptional(r, "limit")
 			offset, _ := parseIntQueryOptional(r, "offset")
 
-			rows, err := dbpkg.GetCombosProductosByEmpresa(dbEmp, empresaID, q, estado, includeInactive, limit, offset)
+			rows, err := dbpkg.GetRecetasProductosByEmpresa(dbEmp, empresaID, q, estado, includeInactive, limit, offset)
 			if err != nil {
-				log.Printf("[combos] list empresa_id=%d error: %v", empresaID, err)
-				http.Error(w, "No se pudieron listar los combos", http.StatusInternalServerError)
+				log.Printf("[recetas] list empresa_id=%d error: %v", empresaID, err)
+				http.Error(w, "No se pudieron listar las recetas", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, rows)
@@ -55,8 +55,8 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			var payload struct {
-				dbpkg.ComboProducto
-				Ingredientes []dbpkg.ComboProductoDetalle `json:"ingredientes"`
+				dbpkg.RecetaProducto
+				Ingredientes []dbpkg.RecetaProductoDetalle `json:"ingredientes"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -64,10 +64,10 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
-			id, err := dbpkg.CreateComboProducto(dbEmp, payload.ComboProducto, payload.Ingredientes)
+			id, err := dbpkg.CreateRecetaProducto(dbEmp, payload.RecetaProducto, payload.Ingredientes)
 			if err != nil {
-				status := comboWriteStatus(err)
-				log.Printf("[combos] create empresa_id=%d nombre=%q error: %v", payload.EmpresaID, payload.Nombre, err)
+				status := recetaWriteStatus(err)
+				log.Printf("[recetas] create empresa_id=%d nombre=%q error: %v", payload.EmpresaID, payload.Nombre, err)
 				http.Error(w, err.Error(), status)
 				return
 			}
@@ -91,9 +91,9 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				if action == "activar" {
 					estado = "activo"
 				}
-				if err := dbpkg.SetComboProductoEstado(dbEmp, empresaID, id, estado); err != nil {
-					status := comboWriteStatus(err)
-					log.Printf("[combos] set estado empresa_id=%d id=%d estado=%s error: %v", empresaID, id, estado, err)
+				if err := dbpkg.SetRecetaProductoEstado(dbEmp, empresaID, id, estado); err != nil {
+					status := recetaWriteStatus(err)
+					log.Printf("[recetas] set estado empresa_id=%d id=%d estado=%s error: %v", empresaID, id, estado, err)
 					http.Error(w, err.Error(), status)
 					return
 				}
@@ -102,8 +102,8 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 
 			var payload struct {
-				dbpkg.ComboProducto
-				Ingredientes []dbpkg.ComboProductoDetalle `json:"ingredientes"`
+				dbpkg.RecetaProducto
+				Ingredientes []dbpkg.RecetaProductoDetalle `json:"ingredientes"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "JSON invalido", http.StatusBadRequest)
@@ -115,9 +115,9 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
-			if err := dbpkg.UpdateComboProducto(dbEmp, payload.ComboProducto, payload.Ingredientes); err != nil {
-				status := comboWriteStatus(err)
-				log.Printf("[combos] update empresa_id=%d id=%d error: %v", payload.EmpresaID, payload.ID, err)
+			if err := dbpkg.UpdateRecetaProducto(dbEmp, payload.RecetaProducto, payload.Ingredientes); err != nil {
+				status := recetaWriteStatus(err)
+				log.Printf("[recetas] update empresa_id=%d id=%d error: %v", payload.EmpresaID, payload.ID, err)
 				http.Error(w, err.Error(), status)
 				return
 			}
@@ -135,9 +135,9 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "id es obligatorio", http.StatusBadRequest)
 				return
 			}
-			if err := dbpkg.DeleteComboProducto(dbEmp, empresaID, id); err != nil {
-				status := comboWriteStatus(err)
-				log.Printf("[combos] delete empresa_id=%d id=%d error: %v", empresaID, id, err)
+			if err := dbpkg.DeleteRecetaProducto(dbEmp, empresaID, id); err != nil {
+				status := recetaWriteStatus(err)
+				log.Printf("[recetas] delete empresa_id=%d id=%d error: %v", empresaID, id, err)
 				http.Error(w, err.Error(), status)
 				return
 			}
@@ -149,7 +149,7 @@ func EmpresaCombosProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
-func comboWriteStatus(err error) int {
+func recetaWriteStatus(err error) int {
 	if err == nil {
 		return http.StatusOK
 	}

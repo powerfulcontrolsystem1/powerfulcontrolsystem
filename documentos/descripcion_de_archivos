@@ -1,3 +1,18 @@
+2026-05-21 - Recetas de productos
+- `backend/handlers/recetas_productos.go`:
+	- expone el CRUD de recetas vendibles en `/api/empresa/recetas_productos`.
+- `backend/db/productos.go`:
+	- define `RecetaProducto`, `RecetaProductoDetalle` y las tablas `recetas_productos`, `recetas_productos_detalle`, `recetas_productos_versiones`.
+	- conserva versionado, costo teorico/real y validacion de ingredientes por empresa.
+- `backend/db/carritos_compras.go` y `backend/handlers/carritos_compras.go`:
+	- operan items compuestos como `tipo_item=receta` y descuentan/liberan stock por ingredientes.
+- `backend/db/empresa_impresoras.go` y `backend/handlers/empresa_impresoras.go`:
+	- administran asignaciones de impresora por receta con `empresa_impresoras_recetas`.
+- `web/administrar_empresa/recetas_productos.html`:
+	- pagina administrativa para crear, editar, activar/desactivar, eliminar y asignar impresora a recetas.
+- `web/administrar_empresa/administrar_productos_menu.html`, `web/administrar_empresa/carrito_de_compras.html`, `web/js/administrar_empresa.js`:
+	- actualizan menu, permisos y busqueda/catalogo del carrito para recetas.
+
 2026-05-20 - Nombres configurables de estaciones
 - `web/js/estaciones_labels.js`:
 	- helper compartido que carga `estaciones_config` por empresa y reemplaza textos visibles de `Estacion/Estaciones` por el singular/plural configurado.
@@ -997,7 +1012,7 @@
 	- `backend/handlers/payments_handlers_test.go` : cubre firma del formulario clasico y saneamiento de `p_key`.
 	- `web/js/ai_chat_drawer.js` y `web/estilos.css` : la secretaria IA se rediseÃƒÂ±a como avatar estilo caricatura ejecutiva joven, usa voz femenina efectiva y mantiene robot/chat cuadrado con fallback a texto.
 	- `web/administrar_empresa/configuracion_chat_flotante.html` : configuracion empresarial del chat/robot/secretaria, voz del avatar y emisora online por empresa.
-	- `backend/handlers/chat_flotante_config.go`, `web/js/radio_player.js` : preferencias del chat flotante y la emisora online persistidas por `empresa_id` mediante `empresa_estacion_prefs`.
+	- `backend/handlers/chat_flotante_config.go`, `backend/handlers/chat_flotante_config_test.go`, `web/js/radio_catalog.js`, `web/js/radio_player.js`, `web/js/radio_online.js` : preferencias del chat flotante y la emisora online persistidas por `empresa_id` mediante `empresa_estacion_prefs`; la radio detecta Panama/Ecuador, muestra 10 emisoras base por pais y permite emisoras personalizadas por empresa.
 	- `backend/handlers/empresa_compartida_handlers.go`, `web/js/editar_empresa.js`, `web/js/seleccionar_empresa.js` : consulta y revocacion de administradores compartidos desde el editor de empresa, con trazabilidad.
 	- `backend/db/hoja_vida_operativa.go`, `backend/handlers/hoja_vida_operativa.go`, `web/administrar_empresa/hoja_vida_operativa.html` : hoja de vida operativa universal para motos de taller, pacientes, vehiculos, equipos, activos o mascotas, con eventos, servicios, alertas y resumen.
 	- `backend/handlers/dynamic_documents.go` y `backend/handlers/dynamic_documents_test.go` : endpoints `/generate` y `/download` para generar documentos dinamicos con IA/templates y exportar PDF, DOCX, XLSX, HTML, TXT o JSON.

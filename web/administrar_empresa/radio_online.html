@@ -9,22 +9,51 @@
 <body class="admin-empresa-shell">
   <div class="page-shell">
     <section class="card">
-      <h1>Musica latina online para acompanar la operacion</h1>
-      <p class="form-help">Activa una emisora latina sin salir del sistema. El reproductor se queda pequeno y fijo para seguir trabajando sin ruido visual.</p>
+      <h1>Emisoras online por pais</h1>
+      <p class="form-help">El modulo detecta Panama o Ecuador y muestra las 10 emisoras principales del pais. Las emisoras personalizadas se guardan por empresa.</p>
       <div class="radio-config-panel">
         <label class="radio-config-toggle" for="radioOnlineEnabled">
           <input id="radioOnlineEnabled" type="checkbox" checked>
           <span>
-            <strong>Activar musica latina online</strong>
+            <strong>Activar emisora online</strong>
             <small>Controla el boton flotante, el panel de emisoras y el reproductor compacto.</small>
           </span>
         </label>
-        <div id="radioOnlineStatus" class="form-help">Musica latina online activa.</div>
+        <div id="radioOnlineStatus" class="form-help">Emisora online activa.</div>
+        <div class="radio-country-panel">
+          <div>
+            <strong>Catalogo por pais</strong>
+            <small id="radioCountryStatus">Detectando pais de la empresa...</small>
+          </div>
+          <select id="radioCountrySelect" class="form-input" aria-label="Pais de emisoras">
+            <option value="">Detectar automaticamente</option>
+            <option value="PA">Panama</option>
+            <option value="EC">Ecuador</option>
+          </select>
+        </div>
+        <form id="radioCustomForm" class="radio-custom-form">
+          <div class="radio-custom-title">
+            <strong>Agregar emisora personalizada</strong>
+            <small>Se guarda solo para esta empresa.</small>
+          </div>
+          <div class="radio-custom-fields">
+            <input id="radioCustomName" class="form-input" type="text" maxlength="120" placeholder="Nombre" aria-label="Nombre de emisora">
+            <input id="radioCustomGenre" class="form-input" type="text" maxlength="80" placeholder="Genero" aria-label="Genero de emisora">
+            <input id="radioCustomStream" class="form-input" type="url" placeholder="URL streaming http/https" aria-label="URL de streaming">
+            <input id="radioCustomSource" class="form-input" type="url" placeholder="Sitio web opcional" aria-label="Sitio web de la emisora">
+            <select id="radioCustomCountry" class="form-input" aria-label="Pais de emisora personalizada">
+              <option value="">Personalizada</option>
+              <option value="PA">Panama</option>
+              <option value="EC">Ecuador</option>
+            </select>
+            <button type="submit" class="btn small">Agregar</button>
+          </div>
+        </form>
       </div>
       <div id="radioCatalogPage" class="radio-station-grid"></div>
     </section>
   </div>
-  <script src="/js/radio_catalog.js?v=20260510-latina"></script>
-  <script src="/js/radio_online.js?v=20260510-latina"></script>
+  <script src="/js/radio_catalog.js?v=20260521-pais-emisoras"></script>
+  <script src="/js/radio_online.js?v=20260521-pais-emisoras"></script>
 </body>
 </html>

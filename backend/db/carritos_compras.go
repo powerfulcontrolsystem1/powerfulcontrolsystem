@@ -2948,7 +2948,7 @@ func isTrackableProduct(tipoItem string, referenciaID int64) bool {
 		return false
 	}
 	itemType := strings.TrimSpace(strings.ToLower(tipoItem))
-	return itemType == "producto" || itemType == "combo"
+	return itemType == "producto" || itemType == "receta"
 }
 
 type carritoStockComponent struct {
@@ -2963,7 +2963,7 @@ type carritoStockContext struct {
 	CostoUnitario float64
 }
 
-func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem string, referenciaID int64, cantidad float64, requireActiveCombo bool) ([]carritoStockComponent, error) {
+func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem string, referenciaID int64, cantidad float64, requireActiveReceta bool) ([]carritoStockComponent, error) {
 	tipo := strings.TrimSpace(strings.ToLower(tipoItem))
 	if referenciaID <= 0 || cantidad <= 0 {
 		return nil, nil
@@ -2972,37 +2972,37 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 	if tipo == "producto" {
 		return []carritoStockComponent{{ProductoID: referenciaID, Cantidad: cantidad}}, nil
 	}
-	if tipo != "combo" {
+	if tipo != "receta" {
 		return nil, nil
 	}
 
-	comboQuery := `SELECT COUNT(1) FROM combos_productos WHERE empresa_id = ? AND id = ?`
-	comboArgs := []interface{}{empresaID, referenciaID}
-	if requireActiveCombo {
-		comboQuery += ` AND COALESCE(estado, 'activo') = 'activo'`
+	recetaQuery := `SELECT COUNT(1) FROM recetas_productos WHERE empresa_id = ? AND id = ?`
+	recetaArgs := []interface{}{empresaID, referenciaID}
+	if requireActiveReceta {
+		recetaQuery += ` AND COALESCE(estado, 'activo') = 'activo'`
 	}
-	var comboCount int64
-	if err := queryRowTxSQLCompat(tx, comboQuery, comboArgs...).Scan(&comboCount); err != nil {
+	var recetaCount int64
+	if err := queryRowTxSQLCompat(tx, recetaQuery, recetaArgs...).Scan(&recetaCount); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
-			return nil, fmt.Errorf("modulo de combos no disponible en la base de datos")
+			return nil, fmt.Errorf("modulo de recetas no disponible en la base de datos")
 		}
 		return nil, err
 	}
-	if comboCount == 0 {
-		if requireActiveCombo {
-			return nil, fmt.Errorf("combo no encontrado o inactivo")
+	if recetaCount == 0 {
+		if requireActiveReceta {
+			return nil, fmt.Errorf("receta no encontrada o inactiva")
 		}
-		return nil, fmt.Errorf("combo no encontrado")
+		return nil, fmt.Errorf("receta no encontrada")
 	}
 
 	rows, err := queryTxSQLCompat(tx, `SELECT
 		COALESCE(producto_id, 0),
 		COALESCE(cantidad, 0)
-	FROM combos_productos_detalle
-	WHERE empresa_id = ? AND combo_id = ? AND COALESCE(estado, 'activo') = 'activo'`, empresaID, referenciaID)
+	FROM recetas_productos_detalle
+	WHERE empresa_id = ? AND receta_id = ? AND COALESCE(estado, 'activo') = 'activo'`, empresaID, referenciaID)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such table") {
-			return nil, fmt.Errorf("detalle de combos no disponible en la base de datos")
+			return nil, fmt.Errorf("detalle de recetas no disponible en la base de datos")
 		}
 		return nil, err
 	}
@@ -3011,20 +3011,20 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 	merged := make(map[int64]float64)
 	for rows.Next() {
 		var productoID int64
-		var cantidadPorCombo float64
-		if err := rows.Scan(&productoID, &cantidadPorCombo); err != nil {
+		var cantidadPorReceta float64
+		if err := rows.Scan(&productoID, &cantidadPorReceta); err != nil {
 			return nil, err
 		}
-		if productoID <= 0 || cantidadPorCombo <= 0 {
+		if productoID <= 0 || cantidadPorReceta <= 0 {
 			continue
 		}
-		merged[productoID] = round2(merged[productoID] + (cantidadPorCombo * cantidad))
+		merged[productoID] = round2(merged[productoID] + (cantidadPorReceta * cantidad))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	if len(merged) == 0 {
-		return nil, fmt.Errorf("el combo no tiene ingredientes activos")
+		return nil, fmt.Errorf("la receta no tiene ingredientes activos")
 	}
 
 	ids := make([]int64, 0, len(merged))
@@ -3042,7 +3042,7 @@ func resolveCarritoStockComponentsTx(tx *sql.Tx, empresaID int64, tipoItem strin
 		components = append(components, carritoStockComponent{ProductoID: id, Cantidad: qty})
 	}
 	if len(components) == 0 {
-		return nil, fmt.Errorf("el combo no tiene ingredientes validos")
+		return nil, fmt.Errorf("la receta no tiene ingredientes validos")
 	}
 	return components, nil
 }
@@ -3124,8 +3124,8 @@ func adjustCarritoItemStockTx(tx *sql.Tx, empresaID, carritoID int64, tipoItem s
 
 	for _, ctx := range contexts {
 		movRef := baseReferencia
-		if normalizedTipo == "combo" {
-			movRef = fmt.Sprintf("%s:combo:%d:producto:%d", baseReferencia, referenciaID, ctx.ProductoID)
+		if normalizedTipo == "receta" {
+			movRef = fmt.Sprintf("%s:receta:%d:producto:%d", baseReferencia, referenciaID, ctx.ProductoID)
 		}
 
 		if reservar {

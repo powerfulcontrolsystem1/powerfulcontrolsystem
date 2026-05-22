@@ -202,12 +202,275 @@
     document.body.appendChild(alert);
   }
 
-  window.__empresaModuleGuard = window.__empresaModuleGuard || {
-    resolveEmpresaId: resolveEmpresaId,
-    withEmpresa: withEmpresa,
-    applyThemeContext: applyThemeContext,
-    applyEmpresaContext: applyEmpresaContext,
-    showRuntimeAlert: showRuntimeAlert
+  let connectivityHideTimer = null;
+  const CONNECTIVITY_AUDIT_QUEUE_PREFIX = 'pcs_connectivity_audit_queue_';
+  const CONNECTIVITY_LAST_STATE_KEY = 'pcs_connectivity_last_state';
+
+  function clearConnectivityHideTimer() {
+    if (connectivityHideTimer) {
+      clearTimeout(connectivityHideTimer);
+      connectivityHideTimer = null;
+    }
+  }
+
+  function isTopLevelWindow() {
+    try {
+      return window.top === window;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function connectivityAuditQueueKey() {
+    const empresaId = resolveEmpresaId();
+    return CONNECTIVITY_AUDIT_QUEUE_PREFIX + (empresaId > 0 ? String(empresaId) : 'sin_empresa');
+  }
+
+  function readConnectivityAuditQueue() {
+    try {
+      const raw = localStorage.getItem(connectivityAuditQueueKey()) || '[]';
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeConnectivityAuditQueue(items) {
+    try {
+      localStorage.setItem(connectivityAuditQueueKey(), JSON.stringify(items.slice(-40)));
+    } catch (_) {}
+  }
+
+  function queueConnectivityAuditEvent(eventData) {
+    if (!isTopLevelWindow()) return;
+    const queue = readConnectivityAuditQueue();
+    queue.push(eventData);
+    writeConnectivityAuditQueue(queue);
+  }
+
+  function readConnectivityLastState() {
+    try {
+      return sessionStorage.getItem(CONNECTIVITY_LAST_STATE_KEY) || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function writeConnectivityLastState(state) {
+    try {
+      sessionStorage.setItem(CONNECTIVITY_LAST_STATE_KEY, state);
+    } catch (_) {}
+  }
+
+  function normalizeConnectivityContext(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    return {
+      canContinueOffline: !!(raw.canContinueOffline || raw.offlineSalesEnabled || raw.facturacionOfflineHabilitada),
+      module: String(raw.module || raw.modulo || '').trim(),
+      label: String(raw.label || raw.etiqueta || '').trim()
+    };
+  }
+
+  function readConnectivityContextFrom(win) {
+    if (!win) return null;
+    try {
+      if (typeof win.__PCSConnectivityContext === 'function') {
+        return normalizeConnectivityContext(win.__PCSConnectivityContext());
+      }
+      return normalizeConnectivityContext(win.__PCSConnectivityContext);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function resolveConnectivityContext() {
+    const own = readConnectivityContextFrom(window);
+    if (own) return own;
+    try {
+      const active = normalizeConnectivityContext(window.__PCSActiveModuleConnectivityContext);
+      if (active) return active;
+    } catch (_) {}
+    try {
+      const frame = document.getElementById('contentFrame') || document.querySelector('iframe.admin-empresa-frame');
+      if (frame && frame.contentWindow) {
+        const child = readConnectivityContextFrom(frame.contentWindow);
+        if (child) return child;
+      }
+    } catch (_) {}
+    return { canContinueOffline: false, module: '', label: '' };
+  }
+
+  function connectivityAlertCopy(online) {
+    const ctx = resolveConnectivityContext();
+    if (online) {
+      return {
+        title: 'Conexion a internet restablecida',
+        detail: ctx.canContinueOffline
+          ? 'El sistema volvio a estar en linea. Se sincronizaran las ventas pendientes y puedes continuar.'
+          : 'El sistema volvio a estar en linea. Ya puedes continuar con este modulo.'
+      };
+    }
+    if (ctx.canContinueOffline) {
+      return {
+        title: 'Modo sin internet para caja activo',
+        detail: 'Puedes seguir vendiendo en esta caja. Las ventas se imprimen provisionalmente y se sincronizan cuando vuelva internet.'
+      };
+    }
+    return {
+      title: 'Se perdio la conexion a internet',
+      detail: 'Este modulo necesita internet para operar. Por favor espere a que vuelva la conexion; manten esta ventana abierta.'
+    };
+  }
+
+  function buildConnectivityAuditEvent(online) {
+    return {
+      estado: online ? 'online' : 'offline',
+      online: !!online,
+      fecha_evento: new Date().toISOString(),
+      evento_id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 10),
+      origen: 'browser',
+      path: String(window.location.pathname || '').slice(0, 220),
+      pending_count: readConnectivityAuditQueue().length
+    };
+  }
+
+  function sendConnectivityAuditEvent(eventData) {
+    const empresaId = resolveEmpresaId();
+    if (!empresaId || typeof fetch !== 'function') {
+      return Promise.reject(new Error('empresa_id no disponible'));
+    }
+    return fetch('/api/empresa/auditoria/eventos?empresa_id=' + encodeURIComponent(String(empresaId)) + '&action=conexion', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(eventData || {})
+    }).then(function(response) {
+      if (!response.ok) throw new Error('auditoria conectividad HTTP ' + response.status);
+      return response;
+    });
+  }
+
+  function flushConnectivityAuditQueue() {
+    if (!isTopLevelWindow() || navigator.onLine === false) return Promise.resolve(false);
+    const queue = readConnectivityAuditQueue();
+    if (!queue.length) return Promise.resolve(true);
+    let chain = Promise.resolve();
+    const sent = [];
+    queue.forEach(function(item) {
+      chain = chain.then(function() {
+        return sendConnectivityAuditEvent(item).then(function() {
+          sent.push(item);
+        });
+      });
+    });
+    return chain.then(function() {
+      writeConnectivityAuditQueue([]);
+      return true;
+    }).catch(function() {
+      const remaining = queue.slice(sent.length);
+      writeConnectivityAuditQueue(remaining);
+      return false;
+    });
+  }
+
+  function registerConnectivityState(online) {
+    if (!isTopLevelWindow()) return;
+    const state = online ? 'online' : 'offline';
+    const previous = readConnectivityLastState();
+    if (previous === state) {
+      if (online) flushConnectivityAuditQueue();
+      return;
+    }
+    writeConnectivityLastState(state);
+    queueConnectivityAuditEvent(buildConnectivityAuditEvent(online));
+    if (online) flushConnectivityAuditQueue();
+  }
+
+  function renderConnectivityAlert(online) {
+    if (!document.body) return;
+    clearConnectivityHideTimer();
+
+    const old = document.getElementById('empresaConnectivityAlert');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    const alert = document.createElement('aside');
+    alert.id = 'empresaConnectivityAlert';
+    alert.className = 'empresa-runtime-alert empresa-connectivity-alert ' + (online ? 'is-online' : 'is-offline');
+    alert.setAttribute('role', 'alert');
+    alert.setAttribute('aria-live', 'assertive');
+    alert.innerHTML = [
+      '<div>',
+      '<strong></strong>',
+      '<p></p>',
+      '</div>',
+      '<div class="empresa-runtime-alert-actions">',
+      '<button class="empresa-runtime-close" type="button" aria-label="Cerrar aviso" data-connectivity-close>&times;</button>',
+      '</div>'
+    ].join('');
+
+    const strong = alert.querySelector('strong');
+    const paragraph = alert.querySelector('p');
+    const copy = connectivityAlertCopy(online);
+    if (strong) strong.textContent = copy.title;
+    if (paragraph) paragraph.textContent = copy.detail;
+
+    const close = alert.querySelector('[data-connectivity-close]');
+    if (close) {
+      close.addEventListener('click', function() {
+        clearConnectivityHideTimer();
+        if (alert.parentNode) alert.parentNode.removeChild(alert);
+      });
+    }
+    document.body.appendChild(alert);
+
+    if (online) {
+      connectivityHideTimer = setTimeout(function() {
+        if (alert.parentNode) alert.parentNode.removeChild(alert);
+      }, 8000);
+    }
+  }
+
+  function syncConnectivityState() {
+    if (navigator.onLine === false) {
+      renderConnectivityAlert(false);
+      registerConnectivityState(false);
+    } else {
+      flushConnectivityAuditQueue();
+    }
+  }
+
+  function installConnectivityMonitor() {
+    if (window.__empresaConnectivityMonitorInstalled) return;
+    window.__empresaConnectivityMonitorInstalled = true;
+    window.addEventListener('offline', function() {
+      renderConnectivityAlert(false);
+      registerConnectivityState(false);
+    });
+    window.addEventListener('online', function() {
+      renderConnectivityAlert(true);
+      registerConnectivityState(true);
+    });
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', syncConnectivityState);
+    } else {
+      syncConnectivityState();
+    }
+  }
+
+  window.__empresaModuleGuard = window.__empresaModuleGuard || {};
+  window.__empresaModuleGuard.resolveEmpresaId = window.__empresaModuleGuard.resolveEmpresaId || resolveEmpresaId;
+  window.__empresaModuleGuard.withEmpresa = window.__empresaModuleGuard.withEmpresa || withEmpresa;
+  window.__empresaModuleGuard.applyThemeContext = window.__empresaModuleGuard.applyThemeContext || applyThemeContext;
+  window.__empresaModuleGuard.applyEmpresaContext = window.__empresaModuleGuard.applyEmpresaContext || applyEmpresaContext;
+  window.__empresaModuleGuard.showRuntimeAlert = window.__empresaModuleGuard.showRuntimeAlert || showRuntimeAlert;
+  window.__empresaModuleGuard.showConnectivityAlert = renderConnectivityAlert;
+  window.__empresaModuleGuard.refreshConnectivityAlert = function() {
+    if (document.getElementById('empresaConnectivityAlert') && navigator.onLine === false) {
+      renderConnectivityAlert(false);
+    }
   };
 
   function withEmpresa(rawUrl) {
@@ -250,6 +513,7 @@
 
   window.addEventListener('storage', applyThemeContext);
   window.addEventListener('pageshow', applyThemeContext);
+  installConnectivityMonitor();
   window.addEventListener('error', function(event) {
     const message = event && (event.message || (event.error && event.error.message));
     showRuntimeAlert('Error inesperado en el modulo', message);

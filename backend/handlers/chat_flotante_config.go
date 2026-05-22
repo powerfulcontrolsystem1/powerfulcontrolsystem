@@ -10,16 +10,30 @@ import (
 )
 
 const (
-	chatFlotanteChatEnabledKey        = "chat_flotante.chat_enabled"
-	chatFlotanteRobotEnabledKey       = "chat_flotante.robot_enabled"
-	chatFlotanteVoiceEnabledKey       = "chat_flotante.voice_enabled"
-	chatFlotanteRobotVoiceKey         = "chat_flotante.robot_voice"
-	chatFlotantePersonalityModeKey    = "chat_flotante.personality_mode"
-	chatFlotanteRadioOnlineEnabledKey = "chat_flotante.radio_online_enabled"
-	chatFlotantePersonalityNormal     = "normal"
-	chatFlotantePersonalityRobot      = "robot"
-	chatFlotantePersonalitySecretary  = "secretary"
+	chatFlotanteChatEnabledKey         = "chat_flotante.chat_enabled"
+	chatFlotanteRobotEnabledKey        = "chat_flotante.robot_enabled"
+	chatFlotanteVoiceEnabledKey        = "chat_flotante.voice_enabled"
+	chatFlotanteRobotVoiceKey          = "chat_flotante.robot_voice"
+	chatFlotantePersonalityModeKey     = "chat_flotante.personality_mode"
+	chatFlotanteRadioOnlineEnabledKey  = "chat_flotante.radio_online_enabled"
+	chatFlotanteRadioCountryKey        = "chat_flotante.radio_country"
+	chatFlotanteRadioCustomStationsKey = "chat_flotante.radio_custom_stations"
+	chatFlotantePersonalityNormal      = "normal"
+	chatFlotantePersonalityRobot       = "robot"
+	chatFlotantePersonalitySecretary   = "secretary"
 )
+
+type chatFlotanteRadioStationPref struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Tagline     string `json:"tagline"`
+	Country     string `json:"country"`
+	CountryCode string `json:"countryCode"`
+	Genre       string `json:"genre"`
+	StreamURL   string `json:"streamUrl"`
+	SourceURL   string `json:"sourceUrl,omitempty"`
+	Custom      bool   `json:"custom"`
+}
 
 func parseChatFlotanteBool(raw string) bool {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
@@ -103,6 +117,122 @@ func normalizeChatFlotantePersonalityMode(raw string) string {
 	}
 }
 
+func normalizeChatFlotanteRadioCountry(raw string) string {
+	switch strings.ToUpper(strings.TrimSpace(raw)) {
+	case "PA", "PANAMA", "PANAMÁ":
+		return "PA"
+	case "EC", "ECUADOR":
+		return "EC"
+	default:
+		return ""
+	}
+}
+
+func chatFlotanteLimitText(raw string, maxLen int) string {
+	value := strings.TrimSpace(raw)
+	if maxLen <= 0 || len(value) <= maxLen {
+		return value
+	}
+	return strings.TrimSpace(value[:maxLen])
+}
+
+func chatFlotanteSafeURL(raw string) string {
+	value := strings.TrimSpace(raw)
+	lower := strings.ToLower(value)
+	if len(value) > 512 {
+		return ""
+	}
+	if strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "http://") {
+		return value
+	}
+	return ""
+}
+
+func chatFlotanteRadioSlug(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	var b strings.Builder
+	lastDash := false
+	for _, r := range value {
+		ok := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+		if ok {
+			b.WriteRune(r)
+			lastDash = false
+			continue
+		}
+		if !lastDash {
+			b.WriteByte('-')
+			lastDash = true
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "emisora"
+	}
+	if len(out) > 80 {
+		out = strings.Trim(out[:80], "-")
+	}
+	return out
+}
+
+func sanitizeChatFlotanteRadioStations(raw json.RawMessage) ([]chatFlotanteRadioStationPref, string, error) {
+	if len(raw) == 0 || strings.EqualFold(strings.TrimSpace(string(raw)), "null") {
+		return []chatFlotanteRadioStationPref{}, "[]", nil
+	}
+	var items []chatFlotanteRadioStationPref
+	if err := json.Unmarshal(raw, &items); err != nil {
+		return nil, "", err
+	}
+	out := make([]chatFlotanteRadioStationPref, 0, len(items))
+	seen := map[string]bool{}
+	for _, item := range items {
+		name := chatFlotanteLimitText(item.Name, 120)
+		streamURL := chatFlotanteSafeURL(item.StreamURL)
+		if name == "" || streamURL == "" {
+			continue
+		}
+		countryCode := normalizeChatFlotanteRadioCountry(item.CountryCode)
+		id := chatFlotanteLimitText(item.ID, 120)
+		if id == "" {
+			id = "custom-" + chatFlotanteRadioSlug(name)
+		} else {
+			id = "custom-" + chatFlotanteRadioSlug(id)
+		}
+		if seen[id] {
+			id = id + "-" + strings.TrimSpace(strings.ReplaceAll(streamURL, "://", "-"))
+			id = "custom-" + chatFlotanteRadioSlug(id)
+		}
+		seen[id] = true
+		out = append(out, chatFlotanteRadioStationPref{
+			ID:          id,
+			Name:        name,
+			Tagline:     chatFlotanteLimitText(item.Tagline, 220),
+			Country:     chatFlotanteLimitText(item.Country, 80),
+			CountryCode: countryCode,
+			Genre:       chatFlotanteLimitText(item.Genre, 80),
+			StreamURL:   streamURL,
+			SourceURL:   chatFlotanteSafeURL(item.SourceURL),
+			Custom:      true,
+		})
+		if len(out) >= 40 {
+			break
+		}
+	}
+	encoded, err := json.Marshal(out)
+	if err != nil {
+		return nil, "", err
+	}
+	return out, string(encoded), nil
+}
+
+func getChatFlotanteRadioCustomStations(dbSuper, dbEmp *sql.DB, empresaID int64) []chatFlotanteRadioStationPref {
+	raw := getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioCustomStationsKey, "[]")
+	items, _, err := sanitizeChatFlotanteRadioStations(json.RawMessage(raw))
+	if err != nil {
+		return []chatFlotanteRadioStationPref{}
+	}
+	return items
+}
+
 func getChatFlotantePersonalityMode(dbSuper *sql.DB) string {
 	if dbSuper == nil {
 		return chatFlotantePersonalityNormal
@@ -178,6 +308,7 @@ func getChatFlotanteStringForEmpresa(dbSuper, dbEmp *sql.DB, empresaID int64, ke
 func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[string]any {
 	robotVoice := normalizeChatFlotanteRobotVoice(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotVoiceKey, "es-CO"))
 	personalityMode := normalizeChatFlotantePersonalityMode(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotantePersonalityModeKey, chatFlotantePersonalityNormal))
+	radioCountry := normalizeChatFlotanteRadioCountry(getChatFlotanteStringForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioCountryKey, ""))
 	return map[string]any{
 		"ok":         true,
 		"empresa_id": empresaID,
@@ -187,12 +318,14 @@ func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[stri
 			}
 			return "global"
 		}(),
-		"chat_enabled":         getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteChatEnabledKey, true),
-		"robot_enabled":        getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotEnabledKey, true),
-		"radio_online_enabled": getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, true),
-		"voice_enabled":        getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteVoiceEnabledKey, false),
-		"robot_voice":          robotVoice,
-		"personality_mode":     personalityMode,
+		"chat_enabled":          getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteChatEnabledKey, true),
+		"robot_enabled":         getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotEnabledKey, true),
+		"radio_online_enabled":  getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, true),
+		"radio_country":         radioCountry,
+		"radio_custom_stations": getChatFlotanteRadioCustomStations(dbSuper, dbEmp, empresaID),
+		"voice_enabled":         getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteVoiceEnabledKey, false),
+		"robot_voice":           robotVoice,
+		"personality_mode":      personalityMode,
 	}
 }
 
@@ -218,13 +351,15 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			return
 		case http.MethodPost, http.MethodPut:
 			var payload struct {
-				EmpresaID          int64  `json:"empresa_id"`
-				ChatEnabled        *bool  `json:"chat_enabled"`
-				RobotEnabled       *bool  `json:"robot_enabled"`
-				RadioOnlineEnabled *bool  `json:"radio_online_enabled"`
-				VoiceEnabled       *bool  `json:"voice_enabled"`
-				RobotVoice         string `json:"robot_voice"`
-				PersonalityMode    string `json:"personality_mode"`
+				EmpresaID           int64           `json:"empresa_id"`
+				ChatEnabled         *bool           `json:"chat_enabled"`
+				RobotEnabled        *bool           `json:"robot_enabled"`
+				RadioOnlineEnabled  *bool           `json:"radio_online_enabled"`
+				RadioCountry        *string         `json:"radio_country"`
+				RadioCustomStations json.RawMessage `json:"radio_custom_stations"`
+				VoiceEnabled        *bool           `json:"voice_enabled"`
+				RobotVoice          string          `json:"robot_voice"`
+				PersonalityMode     string          `json:"personality_mode"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido: "+err.Error(), http.StatusBadRequest)
@@ -267,6 +402,34 @@ func ChatFlotantePreferenciasHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					}
 				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRadioOnlineEnabledKey, value, false); err != nil {
 					http.Error(w, "No se pudo guardar chat_flotante.radio_online_enabled: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			if payload.RadioCountry != nil {
+				value := normalizeChatFlotanteRadioCountry(*payload.RadioCountry)
+				if empresaID > 0 {
+					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioCountryKey, value, usuario); err != nil {
+						http.Error(w, "No se pudo guardar chat_flotante.radio_country por empresa: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRadioCountryKey, value, false); err != nil {
+					http.Error(w, "No se pudo guardar chat_flotante.radio_country: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			if payload.RadioCustomStations != nil {
+				_, value, err := sanitizeChatFlotanteRadioStations(payload.RadioCustomStations)
+				if err != nil {
+					http.Error(w, "emisoras personalizadas invalidas: "+err.Error(), http.StatusBadRequest)
+					return
+				}
+				if empresaID > 0 {
+					if err := setChatFlotanteEmpresaPref(dbEmp, empresaID, chatFlotanteRadioCustomStationsKey, value, usuario); err != nil {
+						http.Error(w, "No se pudo guardar chat_flotante.radio_custom_stations por empresa: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+				} else if err := dbpkg.SetConfigValue(dbSuper, chatFlotanteRadioCustomStationsKey, value, false); err != nil {
+					http.Error(w, "No se pudo guardar chat_flotante.radio_custom_stations: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			}

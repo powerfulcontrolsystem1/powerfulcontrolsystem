@@ -1339,7 +1339,7 @@ func buildCorteCajaReport(dbEmp *sql.DB, empresaID int64, desde, hasta, usuario 
 	resp.ItemsPorTipo = items
 	for _, item := range items {
 		switch normalizeCorteCajaTipoItem(item.Tipo) {
-		case "producto", "combo":
+		case "producto", "receta":
 			resp.Resumen.TotalProductos += item.Total
 		case "servicio":
 			resp.Resumen.TotalServicios += item.Total
