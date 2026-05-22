@@ -1,3 +1,17 @@
+2026-05-21: Iconos globales en botones del sistema.
+- Modulos afectados: `frontend_ux`, `administrar_empresa`, `super_administrador`, `portal_publico`, `carritos`.
+- Cambio funcional: los botones de las paginas HTML del sistema reciben un icono de color relacionado con la funcion del boton mediante un decorador comun. Cubre botones generados dinamicamente con `MutationObserver`.
+- Implementacion: se agrega `web/js/button_icons.js` y estilos globales `.pcs-btn-icon*` en `web/estilos.css`; `backend/main.go` inyecta el script con `buttonIconsStaticHandler` solo en HTML, sin tocar assets ni duplicar la etiqueta.
+- Excepciones visuales: botones con icono nativo, cierres, calculadora y controles de juegos se respetan para no duplicar iconografia.
+- Pruebas: `go test . -count=1`, `node --check web/js/button_icons.js` y prueba visual local en `administrar_empresa.html` con 19 botones relevantes decorados y cero faltantes.
+
+2026-05-21: Iconos de color en botones del carrito.
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: todos los botones visibles del carrito unificado reciben una insignia/icono de color segun su accion, incluyendo botones estaticos y botones creados dinamicamente por JavaScript en acciones, tablas, QR, clientes, abonos y pago.
+- Implementacion: `web/administrar_empresa/carrito_de_compras.html` agrega un decorador con `MutationObserver` para cubrir cambios de texto/render; `web/estilos.css` define las insignias de color y mantiene alineacion compacta.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias externas.
+- Validacion: scripts inline del carrito parseados con runtime JS empaquetado y prueba visual local confirma 32 botones visibles con icono y cero faltantes.
+
 2026-05-21: Impuestos dentro de Finanzas y cumplimiento.
 - Modulos afectados: `administrar_empresa`, `finanzas`, `impuestos`, `permisos`, `frontend_ux`.
 - Cambio funcional: el acceso `Impuestos` se retira del menu interno de Configuracion y queda como boton directo en la seccion principal `Finanzas y cumplimiento`.

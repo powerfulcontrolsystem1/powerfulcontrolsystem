@@ -1,3 +1,14 @@
+## [2026-05-21] Iconos globales de botones
+- [Frontend] Se agrega `web/js/button_icons.js`, un decorador comun que detecta botones estaticos o dinamicos y les asigna un icono de color segun funcion: guardar, buscar, pagar, exportar, imprimir, correo, WhatsApp, cliente, inventario, reportes, caja, QR, soporte o configuracion.
+- [Servidor] `backend/main.go` inyecta el script en respuestas HTML estaticas mediante `buttonIconsStaticHandler`, sin tocar CSS/JS/imagenes ni duplicar la etiqueta cuando ya existe.
+- [UX] Los botones con iconos nativos, botones de cierre, calculadora y controles de juegos se respetan para evitar duplicados o ruido visual.
+- [Validacion] `go test . -count=1`, `node --check web/js/button_icons.js` y prueba visual local en `administrar_empresa.html` confirmando 19 botones relevantes con icono y cero faltantes.
+
+## [2026-05-21] Iconos de color en botones del carrito
+- [Frontend] `carrito_de_compras.html` decora automaticamente botones fijos y dinamicos con un icono de color segun accion: pago, agregar, buscar, cliente, descuento, QR, abono, cancelar, editar o regresar.
+- [UX] Los iconos se renderizan como insignias pequeñas dentro del boton, manteniendo botones planos y legibles en escritorio y movil.
+- [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias externas.
+
 ## [2026-05-21] Impuestos en Finanzas y cumplimiento
 - [Navegacion] `Impuestos` sale del menu interno de Configuracion y queda como boton directo en `Finanzas y cumplimiento`.
 - [Centro financiero] `finanzas_menu.html` agrega `Impuestos` en la barra lateral y en los accesos rapidos superiores.

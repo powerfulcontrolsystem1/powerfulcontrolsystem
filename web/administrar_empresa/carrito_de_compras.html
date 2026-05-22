@@ -8178,5 +8178,109 @@
       }
     })();
   </script>
+  <script>
+    (function decorateCarritoButtonsWithIcons() {
+      const iconRules = [
+        { re: /pagar|cobrar|facturar|pago|payment|cerrar/i, symbol: '$', tone: 'success' },
+        { re: /agregar|guardar|registrar|crear|nuevo|activar|encender|usar como pago/i, symbol: '+', tone: 'success' },
+        { re: /buscar|catálogo|catalogo|productos|producto|scanner|código|codigo/i, symbol: '⌕', tone: 'info' },
+        { re: /cliente|vip/i, symbol: 'ID', tone: 'purple' },
+        { re: /descuento|tarifa/i, symbol: '%', tone: 'warning' },
+        { re: /control|electrico|apagar|rele/i, symbol: '⚡', tone: 'warning' },
+        { re: /cancelar|eliminar|quitar|devolver|danger|del/i, symbol: 'X', tone: 'danger' },
+        { re: /abono/i, symbol: 'A', tone: 'teal' },
+        { re: /qr|bre|nequi/i, symbol: 'QR', tone: 'teal' },
+        { re: /taxi/i, symbol: 'TX', tone: 'warning' },
+        { re: /vehiculo|vehículo/i, symbol: 'V', tone: 'slate' },
+        { re: /abrir|editar|reintentar|regresar/i, symbol: '↺', tone: 'info' },
+        { re: /imprimir/i, symbol: 'P', tone: 'slate' }
+      ];
+
+      function normalize(value) {
+        return String(value || '').trim();
+      }
+
+      function buttonKey(button) {
+        const data = button.dataset ? Object.keys(button.dataset).map(function(key) {
+          return key + ' ' + button.dataset[key];
+        }).join(' ') : '';
+        return [
+          button.id,
+          button.className,
+          data,
+          button.getAttribute('aria-label'),
+          button.getAttribute('title'),
+          button.textContent
+        ].map(normalize).filter(Boolean).join(' ');
+      }
+
+      function iconFor(button) {
+        const key = buttonKey(button);
+        for (let i = 0; i < iconRules.length; i += 1) {
+          if (iconRules[i].re.test(key)) return iconRules[i];
+        }
+        return { symbol: '•', tone: 'default' };
+      }
+
+      function shouldDecorate(button) {
+        if (!button || button.nodeType !== 1) return false;
+        if (button.querySelector('.cart-btn-icon')) return false;
+        if (button.closest('[data-cart-icons="off"]')) return false;
+        if (button.matches('.cart-btn-icon, .ai-chat-icon-btn, .ai-chat-minibar-btn')) return false;
+        const label = normalize(button.textContent || button.getAttribute('aria-label') || button.getAttribute('title'));
+        if (!label || label === '×' || label === 'x') return false;
+        return Boolean(button.closest('body.carrito-flat-page'));
+      }
+
+      function decorate(button) {
+        if (!shouldDecorate(button)) return;
+        const icon = iconFor(button);
+        const badge = document.createElement('span');
+        badge.className = 'cart-btn-icon cart-btn-icon-' + icon.tone;
+        badge.setAttribute('aria-hidden', 'true');
+        badge.textContent = icon.symbol;
+        button.classList.add('cart-btn-with-icon');
+        button.insertBefore(badge, button.firstChild);
+      }
+
+      function decorateAll(root) {
+        const scope = root && root.querySelectorAll ? root : document;
+        if (scope.matches && (scope.matches('button') || scope.matches('a.btn'))) {
+          decorate(scope);
+        }
+        scope.querySelectorAll('button, a.btn').forEach(decorate);
+      }
+
+      let pending = false;
+      function scheduleDecorate(root) {
+        if (pending) return;
+        pending = true;
+        window.requestAnimationFrame(function() {
+          pending = false;
+          decorateAll(root || document);
+        });
+      }
+
+      window.decorateCarritoButtonsWithIcons = function(root) {
+        scheduleDecorate(root || document);
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { scheduleDecorate(document); });
+      } else {
+        scheduleDecorate(document);
+      }
+
+      const observer = new MutationObserver(function(records) {
+        for (let i = 0; i < records.length; i += 1) {
+          if (records[i].type === 'childList' || records[i].type === 'characterData') {
+            scheduleDecorate(document);
+            break;
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+    })();
+  </script>
 </body>
 </html>

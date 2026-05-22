@@ -1,3 +1,12 @@
+2026-05-21 - Iconos globales de botones
+- `web/js/button_icons.js`:
+	- decorador frontend comun que agrega iconos de color relacionados con la accion de cada boton estatico o dinamico.
+	- respeta botones con iconos nativos, cierres, calculadora y controles de juegos.
+- `backend/main.go`:
+	- agrega `buttonIconsStaticHandler` para inyectar el script en HTML estatico sin tocar assets ni duplicar la etiqueta.
+- `backend/contextual_help_test.go`:
+	- agrega pruebas para inyeccion, no duplicacion y preservacion de assets.
+
 2026-05-21 - Recetas de productos
 - `backend/handlers/recetas_productos.go`:
 	- expone el CRUD de recetas vendibles en `/api/empresa/recetas_productos`.

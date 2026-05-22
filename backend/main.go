@@ -554,6 +554,77 @@ func contextualHelpStaticHandler(next http.Handler) http.Handler {
 	})
 }
 
+const buttonIconsScriptTag = "\n<script src=\"/js/button_icons.js?v=20260521-global-button-icons\" defer></script>\n"
+
+func buttonIconsStaticHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if !shouldCaptureButtonIconsRequest(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		capture := &contextualHelpCaptureWriter{header: make(http.Header)}
+		next.ServeHTTP(capture, r)
+		status := capture.status
+		if status == 0 {
+			status = http.StatusOK
+		}
+
+		body := capture.body
+		if shouldInjectButtonIcons(r, capture.Header(), status, body) {
+			body = injectButtonIconsScript(body)
+			capture.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		}
+
+		for key, values := range capture.Header() {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+		w.WriteHeader(status)
+		_, _ = w.Write(body)
+	})
+}
+
+func shouldCaptureButtonIconsRequest(r *http.Request) bool {
+	path := strings.ToLower(strings.TrimSpace(r.URL.Path))
+	if path == "" || path == "/" {
+		return true
+	}
+	ext := strings.ToLower(filepath.Ext(path))
+	return ext == "" || ext == ".html" || ext == ".htm"
+}
+
+func shouldInjectButtonIcons(r *http.Request, header http.Header, status int, body []byte) bool {
+	if status < 200 || status >= 300 || len(body) == 0 {
+		return false
+	}
+	path := strings.ToLower(strings.TrimSpace(r.URL.Path))
+	contentType := strings.ToLower(header.Get("Content-Type"))
+	if !strings.Contains(contentType, "text/html") && !strings.HasSuffix(path, ".html") && path != "/" {
+		return false
+	}
+	text := strings.ToLower(string(body))
+	if strings.Contains(text, "/js/button_icons.js") {
+		return false
+	}
+	return strings.Contains(text, "<body") || strings.Contains(text, "</body>")
+}
+
+func injectButtonIconsScript(body []byte) []byte {
+	text := string(body)
+	lower := strings.ToLower(text)
+	insertAt := strings.LastIndex(lower, "</body>")
+	if insertAt < 0 {
+		return append(body, []byte(buttonIconsScriptTag)...)
+	}
+	return []byte(text[:insertAt] + buttonIconsScriptTag + text[insertAt:])
+}
+
 func resolveDownloadsDir() string {
 	candidates := []string{
 		"descargas",
@@ -1320,7 +1391,7 @@ func main() {
 	}
 	faviconPath := filepath.Join(webDir, "favicon.ico")
 	fallbackFaviconPath := filepath.Join(webDir, "img", "punto_venta.png")
-	staticFS := noCacheAdminStaticHandler(contextualHelpStaticHandler(http.FileServer(http.Dir(webDir))))
+	staticFS := noCacheAdminStaticHandler(buttonIconsStaticHandler(contextualHelpStaticHandler(http.FileServer(http.Dir(webDir)))))
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		if info, err := os.Stat(faviconPath); err == nil && !info.IsDir() {
 			http.ServeFile(w, r, faviconPath)

@@ -1,3 +1,10 @@
+## Actualizacion 2026-05-21 (iconos globales de botones)
+
+- `backend/main.go`: `buttonIconsStaticHandler` envuelve el servidor estatico y agrega `/js/button_icons.js` solo a respuestas HTML 2xx, evitando CSS, JS, imagenes y duplicados.
+- `web/js/button_icons.js`: decorador global con reglas por texto, id, clase y `data-*`; usa `MutationObserver` para cubrir botones generados despues de cargar la pagina.
+- `web/estilos.css`: define `.pcs-btn-icon*` y `.pcs-btn-with-icon` para botones globales; el carrito conserva sus estilos especificos cuando ya trae `.cart-btn-icon`.
+- Flujo de capas: HTML estatico -> middleware de inyeccion -> `button_icons.js` -> botones visibles/dinamicos -> icono de color relacionado -> CSS global.
+
 ## Actualizacion 2026-05-21 (emisoras online por pais)
 
 - `backend/handlers/chat_flotante_config.go`: extiende `/api/chat_flotante/preferencias` con `radio_country` y `radio_custom_stations`, saneando URLs y limitando emisoras personalizadas por empresa.

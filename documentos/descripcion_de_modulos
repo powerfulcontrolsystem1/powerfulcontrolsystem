@@ -1459,6 +1459,19 @@
 - Tolerancia a fallos: la voz por servidor queda desactivada por defecto; si el microservicio no existe, no responde o devuelve error, el chat cae a voz del navegador o continua en texto sin romper el servidor.
 - Organizacion super: `web/super_administrador.html` agrupa accesos por operacion global, empresas/licencias, seguridad/acceso, IA/automatizacion e infraestructura/comunicaciones. `web/super/configuracion_avanzada.html` agrega mapa por categorias y separa infraestructura, pagos, comunicaciones, seguridad, IA, operacion y respaldos.
 
+2026-05-21: Iconos globales en botones del sistema
+- Modulos afectados: `frontend_ux`, `administrar_empresa`, `super_administrador`, `portal_publico`, `carritos`.
+- Cambio funcional: se crea `web/js/button_icons.js` para decorar automaticamente botones estaticos y dinamicos con iconos de color relacionados con su funcion. La cobertura aplica a paginas HTML servidas por el sistema sin editar los 255 HTML uno por uno.
+- Backend: `backend/main.go` agrega `buttonIconsStaticHandler`, que inyecta el script solo en respuestas HTML y deja intactos assets CSS/JS/imagenes, respuestas no 2xx y paginas que ya lo incluyan.
+- UX: si un boton ya trae `img.icon`, SVG, icono nativo, cierre, calculadora o control de juego, el decorador no agrega otro icono.
+- Pruebas: `backend/contextual_help_test.go` cubre inyeccion, no duplicado y no modificacion de assets.
+
+2026-05-21: Iconos de color en botones del carrito
+- Modulos afectados: `carritos`, `estaciones`, `ventas_simple`, `frontend_ux`.
+- Cambio funcional: el carrito unificado decora automaticamente todos los botones visibles con una insignia/icono de color segun la accion detectada, incluyendo botones estaticos y botones renderizados dinamicamente en tablas, paneles de pago, acciones de estacion, QR, clientes y abonos.
+- Archivos clave: `web/administrar_empresa/carrito_de_compras.html`, `web/estilos.css`.
+- Alcance: no cambia APIs, permisos, tablas, backend ni dependencias externas; es una mejora visual sobre el flujo POS existente.
+
 2026-04-27: Carrito de estación ? panel de cobro (toolbar, tabla fija, totales, montos por método)
 - Módulos afectados: `carritos`, `estaciones`
 - Cambio funcional: en `carrito_de_compras.html` modo estación, la primera fila agrupa Pagar, Descuentos, Cambiar tarifa, Cancelar, checkbox de alerta visual a 10 min y accesos Taxi/Clientes/Abonos/Vehículo; debajo, bloque en dos columnas con lista completa de ítems (scroll) y resumen ampliado (fechas entrada/salida, sumas por líneas de servicio vs producto/receta, minutos extra si aplica `tarifa_por_minutos`); fila de cuatro campos de solo lectura con montos por método alineados al cálculo de cobro (incluye mixto). La rejilla inferior `#carritoGrid` se oculta en estación para evitar duplicar la lista. Auto-refresco periódico más corto con sesión activa en estación.
