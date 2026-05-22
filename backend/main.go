@@ -1131,6 +1131,7 @@ func main() {
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
+	http.HandleFunc("/api/public/portal_visitas", handlers.PublicPortalVisitasHandler(dbSuper))
 	http.HandleFunc("/api/public/verticales_nuevos/catalogo", handlers.PublicVerticalesNuevosCatalogoHandler())
 	http.HandleFunc("/api/public/verticales_integracion/catalogo", handlers.PublicVerticalesIntegracionCatalogoHandler())
 	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))

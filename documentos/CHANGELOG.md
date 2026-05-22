@@ -1,3 +1,14 @@
+## [2026-05-22] Index con modulos principales en parrafo unico
+- [Portal] `web/index.html` simplifica la seccion publica de modulos a un solo parrafo con funciones principales del sistema.
+- [Contenido] El resumen incluye inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y verticales operativas.
+- [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias externas.
+
+## [2026-05-21] Contador de visitas por pais en index
+- [Portal] `index.html` agrega al final un contador total de visitas, mapa mundial con marcadores de color por pais y ranking con barras proporcionales.
+- [Backend] `/api/public/portal_visitas` registra y consulta visitas agregadas por pais/fecha en `portal_visitas_paises`.
+- [Privacidad] No se guardan IP, user-agent, correos ni identificadores personales; solo pais, fecha y conteo.
+- [Validacion] `go test . ./handlers -count=1`, `node --check web/js/portal_visits.js`, parseo inline de `index.html` y prueba visual local con 6 paises/6 marcadores.
+
 ## [2026-05-21] Iconos globales de botones
 - [Frontend] Se agrega `web/js/button_icons.js`, un decorador comun que detecta botones estaticos o dinamicos y les asigna un icono de color segun funcion: guardar, buscar, pagar, exportar, imprimir, correo, WhatsApp, cliente, inventario, reportes, caja, QR, soporte o configuracion.
 - [Servidor] `backend/main.go` inyecta el script en respuestas HTML estaticas mediante `buttonIconsStaticHandler`, sin tocar CSS/JS/imagenes ni duplicar la etiqueta cuando ya existe.

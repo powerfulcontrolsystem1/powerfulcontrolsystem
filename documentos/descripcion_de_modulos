@@ -1,3 +1,9 @@
+2026-05-22: Index con resumen de modulos principales
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: la seccion de modulos del `index` deja de usar tarjetas individuales y presenta un unico parrafo comercial con las funciones principales.
+- Contenido visible: inventario profesional con bodegas, compras, datafonos, cajon monedero, cajas simultaneas, cortes de caja por usuario, pagos QR, facturacion offline, facturacion electronica, impuestos, modulo del contador, finanzas, nomina, IA, control electrico, sensores, reportes y verticales.
+- Alcance: cambio HTML/CSS sin backend, tablas, endpoints, permisos ni dependencias.
+
 2026-05-21: Impuestos dentro de Finanzas y cumplimiento
 - Modulos afectados: `impuestos`, `finanzas`, `administrar_empresa`.
 - Cambio funcional: el area `Impuestos` pasa de Configuracion al grupo `Finanzas y cumplimiento` del panel empresarial.
@@ -1458,6 +1464,13 @@
 - Cambio funcional: se agrega un servidor abierto FastAPI + Piper TTS para voz natural en VPS, configurable desde `web/super/voz_streaming_ia.html`. El backend registra `/super/api/config/voice_stream`, `/api/voice_stream/status` y `/api/voice_stream/tts`; el chat flotante usa el proxy para reproducir audio cuando `voice_stream.enabled` esta activo.
 - Tolerancia a fallos: la voz por servidor queda desactivada por defecto; si el microservicio no existe, no responde o devuelve error, el chat cae a voz del navegador o continua en texto sin romper el servidor.
 - Organizacion super: `web/super_administrador.html` agrupa accesos por operacion global, empresas/licencias, seguridad/acceso, IA/automatizacion e infraestructura/comunicaciones. `web/super/configuracion_avanzada.html` agrega mapa por categorias y separa infraestructura, pagos, comunicaciones, seguridad, IA, operacion y respaldos.
+
+2026-05-21: Contador publico de visitas por pais en el index
+- Modulos afectados: `portal_publico`, `analitica`, `frontend_ux`, `backend`.
+- Cambio funcional: el `index.html` muestra al final un contador total de visitas, mapa mundial con colores por pais y ranking de paises con barras proporcionales.
+- Backend: nuevo endpoint publico `/api/public/portal_visitas` registra visitas agregadas por pais/fecha en `portal_visitas_paises`, usando pais detectado por proxy/CDN o payload del frontend.
+- Privacidad: no se guardan IP, user-agent, correos ni identificadores personales; solo `pais_codigo`, `fecha`, `visitas` y `actualizado_en`.
+- Frontend: `web/js/portal_visits.js` usa `/api/public/geo`, limita conteos repetidos por navegador durante 30 minutos y renderiza mapa/lista sin dependencias externas.
 
 2026-05-21: Iconos globales en botones del sistema
 - Modulos afectados: `frontend_ux`, `administrar_empresa`, `super_administrador`, `portal_publico`, `carritos`.

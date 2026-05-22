@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-21 (contador publico de visitas por pais)
+
+- `backend/handlers/portal_visitas.go`: registra visitas agregadas por pais en `/api/public/portal_visitas`, usando headers de pais o payload del frontend.
+- `backend/main.go`: expone la ruta publica junto a `pagina_principal` y `geo`.
+- `web/index.html`: agrega el bloque final con total de visitas, mapa mundial y ranking por pais.
+- `web/js/portal_visits.js`: detecta pais con `/api/public/geo`, evita contar varias veces al mismo navegador en intervalos cortos, consulta totales y renderiza marcadores de color.
+- Flujo de capas: Index -> `/api/public/geo` -> `/api/public/portal_visitas` -> `portal_visitas_paises` -> mapa/lista de paises en frontend.
+
 ## Actualizacion 2026-05-21 (iconos globales de botones)
 
 - `backend/main.go`: `buttonIconsStaticHandler` envuelve el servidor estatico y agrega `/js/button_icons.js` solo a respuestas HTML 2xx, evitando CSS, JS, imagenes y duplicados.

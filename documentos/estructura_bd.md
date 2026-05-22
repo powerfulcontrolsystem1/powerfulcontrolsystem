@@ -22,6 +22,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-21 (contador publico de visitas por pais)
+- Nueva tabla `portal_visitas_paises` en la base `pcs_superadministrador`.
+- Campos: `pais_codigo TEXT`, `fecha DATE`, `visitas BIGINT`, `actualizado_en TIMESTAMPTZ`.
+- Clave primaria: `(pais_codigo, fecha)` para acumular visitas diarias por pais sin guardar IP, user-agent ni datos personales.
+- El endpoint publico `/api/public/portal_visitas` hace `UPSERT` por pais/fecha y devuelve el acumulado total por pais para el mapa del `index.html`.
+
 Actualizacion 2026-05-21 (emisoras online por pais)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0` para preferencias de emisora por empresa.

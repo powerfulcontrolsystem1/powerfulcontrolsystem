@@ -1,3 +1,17 @@
+2026-05-22: Index con modulos principales en parrafo unico.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: la seccion de modulos de `web/index.html` deja de usar grilla de tarjetas y queda como un solo parrafo con las funciones principales.
+- Contenido: inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y verticales operativas.
+- Alcance: frontend estatico; sin cambios en backend, base de datos, permisos, endpoints, licencias ni dependencias.
+
+2026-05-21: Contador publico de visitas por pais en el index.
+- Modulos afectados: `portal_publico`, `analitica`, `frontend_ux`, `backend`.
+- Cambio funcional: se agrega al final de `web/index.html` un contador de visitas con total acumulado, mapa mundial de colores por pais y ranking por pais.
+- Backend: `backend/handlers/portal_visitas.go` expone `/api/public/portal_visitas` para registrar y consultar visitas agregadas por `pais_codigo` y `fecha` en `portal_visitas_paises`.
+- Privacidad: el conteo no guarda IP, user-agent, correo ni identificadores personales; solo pais, fecha, total y fecha de actualizacion.
+- Frontend: `web/js/portal_visits.js` detecta pais con `/api/public/geo`, evita conteos repetidos por navegador durante 30 minutos y renderiza mapa/lista sin dependencias externas.
+- Validacion: `go test . ./handlers -count=1`, `node --check web/js/portal_visits.js`, parseo de scripts inline de `index.html` y prueba visual local con 6 paises, 6 marcadores y total visible.
+
 2026-05-21: Iconos globales en botones del sistema.
 - Modulos afectados: `frontend_ux`, `administrar_empresa`, `super_administrador`, `portal_publico`, `carritos`.
 - Cambio funcional: los botones de las paginas HTML del sistema reciben un icono de color relacionado con la funcion del boton mediante un decorador comun. Cubre botones generados dinamicamente con `MutationObserver`.
