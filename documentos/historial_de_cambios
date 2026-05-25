@@ -27407,3 +27407,8 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/db/creditos.go
+
+2026-05-25: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/creditos.html

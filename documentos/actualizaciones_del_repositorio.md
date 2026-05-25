@@ -10759,3 +10759,7 @@ Archivos modificados:
 2026-05-25 16:12:46 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: fa282c26; PushStatus: OK
 Archivos modificados:
 - backend/db/creditos.go
+
+2026-05-25 16:16:39 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 03216f8d; PushStatus: OK
+Archivos modificados:
+- web/administrar_empresa/creditos.html
