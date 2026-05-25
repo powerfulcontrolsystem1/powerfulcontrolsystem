@@ -1,3 +1,17 @@
+## [2026-05-25] Selector de empresa con tipos en orden inverso
+- [UX] `web/js/seleccionar_empresa.js` invierte el orden visible del selector `Tipo de empresa` al abrir el formulario `Agregar Empresa`.
+- [Alcance] No cambia `/super/api/tipos_empresas`, backend, tablas, permisos ni preconfiguraciones; solo cambia la presentacion del listado en esa pantalla.
+
+## [2026-05-25] Contador de visitas compacto con mapa realista
+- [Portal] `web/index.html` centra y compacta la tarjeta del contador de visitas por pais para que total, mapa y ranking queden dentro de un solo bloque mas pequeno.
+- [Mapa] `web/js/portal_visits.js` reemplaza el mapa esquematico de blobs por una silueta mundial SVG mas realista con graticula, continentes y marcadores de color por pais.
+- [Alcance] No cambia backend, endpoint `/api/public/portal_visitas`, tablas ni datos almacenados.
+
+## [2026-05-25] Index con modulos y documentos electronicos en lista
+- [Portal] `web/index.html` cambia la descripcion publica de modulos desde un parrafo unico hacia una lista de caracteristicas principales.
+- [Documentos electronicos] La lista incluye factura electronica, notas credito/debito, documento soporte, notas de ajuste, nomina electronica, documentos equivalentes electronicos/POS electronico, contingencia y eventos RADIAN para Colombia; tambien menciona factura, nota credito y nota debito para Panama y Ecuador segun pais configurado.
+- [Alcance] No cambia backend, tablas, endpoints, permisos ni licencias; es un ajuste de contenido y presentacion del portal publico.
+
 ## [2026-05-22] Index con modulos principales en parrafo unico
 - [Portal] `web/index.html` simplifica la seccion publica de modulos a un solo parrafo con funciones principales del sistema.
 - [Contenido] El resumen incluye inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y verticales operativas.

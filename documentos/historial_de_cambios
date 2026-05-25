@@ -1,3 +1,21 @@
+2026-05-25: Selector de empresa muestra tipos en orden inverso.
+- Modulos afectados: `selector_empresas`, `frontend_ux`.
+- Cambio funcional: el formulario `Agregar Empresa` de `seleccionar_empresa.html` invierte el orden visible del campo `Tipo de empresa`.
+- Implementacion: `web/js/seleccionar_empresa.js` usa una copia invertida de `tipos` para poblar el `<select>`, sin alterar el arreglo original ni la respuesta de `/super/api/tipos_empresas`.
+- Alcance: frontend estatico y documentacion; sin cambios en backend, tablas, endpoints, permisos ni licencias.
+
+2026-05-25: Contador de visitas del index con mapa realista y tarjeta compacta.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`, `analitica_publica`.
+- Cambio funcional: la tarjeta del contador de visitas por pais queda centrada, mas pequena y con todos los datos dentro del mismo bloque.
+- Implementacion: `web/index.html` compacta el layout y `web/js/portal_visits.js` reemplaza el mapa esquematico por una silueta mundial SVG mas realista con graticula, continentes y marcadores de color.
+- Alcance: frontend estatico y documentacion; sin cambios en backend, tablas, endpoints, permisos, privacidad ni dependencias.
+
+2026-05-25: Index con lista de modulos y documentos electronicos.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`, `facturacion_electronica`.
+- Cambio funcional: la descripcion publica de modulos de `web/index.html` pasa de parrafo a lista de caracteristicas principales.
+- Contenido: se agregan explicitamente los documentos electronicos que puede manejar el sistema: factura electronica, notas credito/debito, documento soporte, notas de ajuste, nomina electronica, documentos equivalentes electronicos/POS electronico, contingencia y eventos RADIAN para Colombia, y documentos base para Panama/Ecuador segun pais.
+- Alcance: frontend estatico y documentacion; sin cambios de backend, base de datos, permisos, endpoints, licencias ni dependencias.
+
 2026-05-22: Index con modulos principales en parrafo unico.
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
 - Cambio funcional: la seccion de modulos de `web/index.html` deja de usar grilla de tarjetas y queda como un solo parrafo con las funciones principales.

@@ -129,6 +129,31 @@
   function renderMap(rows) {
     if (!mapEl) return;
     var max = rows.reduce(function(acc, item) { return Math.max(acc, Number(item.visitas || 0)); }, 0);
+    var graticule = [120, 240, 360, 480, 600, 720, 840].map(function(x) {
+      return '<path class="portal-visit-graticule" d="M' + x + ' 52 C' + (x - 18) + ' 180 ' + (x + 18) + ' 340 ' + x + ' 468"></path>';
+    }).join("") + [120, 200, 280, 360, 440].map(function(y) {
+      return '<path class="portal-visit-graticule" d="M54 ' + y + ' C250 ' + (y - 18) + ' 750 ' + (y - 18) + ' 946 ' + y + '"></path>';
+    }).join("");
+    var land = [
+      "M88 118 C125 76 190 58 245 76 C279 87 315 104 335 132 C353 158 336 181 365 203 C393 225 420 224 431 252 C445 287 398 299 365 283 C334 268 314 245 278 252 C240 260 229 236 207 226 C178 212 143 226 116 202 C88 176 64 145 88 118Z",
+      "M220 257 C250 250 282 265 298 292 C318 325 331 354 344 388 C360 429 342 478 313 486 C286 494 272 451 259 414 C247 379 236 350 218 322 C202 295 196 269 220 257Z",
+      "M414 133 C456 93 538 86 600 102 C648 115 680 144 717 165 C754 186 774 211 762 241 C751 270 704 268 681 294 C654 325 671 371 628 390 C589 408 538 374 515 338 C497 310 482 278 441 264 C404 252 364 220 378 185 C385 166 397 149 414 133Z",
+      "M508 263 C546 255 587 276 609 315 C629 351 630 402 604 440 C584 468 548 469 523 441 C499 414 488 374 489 337 C489 305 491 278 508 263Z",
+      "M689 154 C730 111 804 95 867 119 C920 139 959 184 953 230 C947 273 895 288 850 274 C806 260 783 231 735 232 C697 233 660 205 670 181 C674 171 680 162 689 154Z",
+      "M778 363 C819 334 894 347 930 389 C960 424 942 464 895 474 C848 484 793 458 770 421 C755 397 755 379 778 363Z",
+      "M451 64 C485 50 537 50 575 67 C536 82 490 82 451 64Z",
+      "M768 86 C801 72 854 79 884 105 C840 108 801 102 768 86Z",
+      "M626 218 C642 211 668 218 677 237 C660 242 638 237 626 218Z"
+    ].map(function(d) {
+      return '<path class="portal-visit-coast" d="' + d + '"></path>';
+    }).join("");
+    var regionalTint = [
+      "M210 232 C250 214 300 225 323 260 C286 254 258 263 225 252 Z",
+      "M456 190 C502 164 579 170 632 202 C585 215 515 213 456 190 Z",
+      "M702 188 C752 166 842 174 895 214 C837 221 764 216 702 188 Z"
+    ].map(function(d) {
+      return '<path class="portal-visit-country-shape" d="' + d + '"></path>';
+    }).join("");
     var markers = rows.map(function(item, index) {
       var code = normalizeCountry(item.pais_codigo);
       var meta = metaFor(code);
@@ -144,13 +169,9 @@
 
     mapEl.innerHTML =
       '<svg class="portal-visit-world" viewBox="0 0 1000 520" role="img" aria-label="Mapa de visitas por pais">' +
-      '<rect class="portal-visit-ocean" x="0" y="0" width="1000" height="520" rx="18"></rect>' +
-      '<path class="portal-visit-land" d="M90 140 C125 82 230 78 285 130 C318 162 282 202 322 232 C362 260 332 315 282 300 C230 285 225 235 175 232 C120 229 70 195 90 140Z"></path>' +
-      '<path class="portal-visit-land" d="M260 300 C318 318 378 360 370 430 C362 485 315 505 285 455 C260 412 238 345 260 300Z"></path>' +
-      '<path class="portal-visit-land" d="M430 155 C520 105 650 122 710 180 C765 235 700 272 750 325 C792 370 710 420 625 382 C552 350 565 285 505 260 C445 235 380 190 430 155Z"></path>' +
-      '<path class="portal-visit-land" d="M505 265 C575 255 630 318 615 395 C602 465 535 470 500 410 C470 358 465 292 505 265Z"></path>' +
-      '<path class="portal-visit-land" d="M692 170 C782 112 900 155 930 225 C960 292 865 310 815 278 C760 244 670 235 692 170Z"></path>' +
-      '<path class="portal-visit-land" d="M780 370 C842 340 930 365 945 420 C958 468 878 485 825 462 C775 440 742 395 780 370Z"></path>' +
+      '<defs><radialGradient id="portalVisitOcean" cx="50%" cy="35%" r="70%"><stop offset="0%" stop-color="rgba(20,184,166,.20)"></stop><stop offset="100%" stop-color="rgba(37,99,235,.08)"></stop></radialGradient></defs>' +
+      '<rect class="portal-visit-map-frame" x="20" y="26" width="960" height="468" rx="22" fill="url(#portalVisitOcean)"></rect>' +
+      '<g aria-hidden="true">' + graticule + land + regionalTint + '</g>' +
       '<g role="list">' + markers + '</g>' +
       '</svg>';
   }

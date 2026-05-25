@@ -1521,7 +1521,7 @@
       var tipoSelect = document.getElementById("tipo_id");
       if (tipoSelect) {
         tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
-        tipos.forEach(function (t) {
+        tipos.slice().reverse().forEach(function (t) {
           var opt = document.createElement("option");
           opt.value = t.nombre;
           opt.text = t.nombre;

@@ -1,3 +1,21 @@
+2026-05-25: Selector de empresa con tipos invertidos
+- Modulos afectados: `selector_empresas`, `frontend_ux`.
+- Cambio funcional: al abrir `Agregar Empresa` en `seleccionar_empresa.html`, el selector `Tipo de empresa` presenta los tipos en orden inverso al catalogo recibido.
+- Alcance: cambio de presentacion en `web/js/seleccionar_empresa.js`, sin backend, tablas, endpoints, permisos, licencias ni preconfiguraciones.
+
+2026-05-25: Contador de visitas compacto con mapa realista
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`, `analitica_publica`.
+- Cambio funcional: la tarjeta publica de visitas por pais queda mas pequena, centrada y con total, mapa y ranking dentro del mismo contenedor.
+- Frontend: `web/js/portal_visits.js` renderiza una silueta mundial SVG mas realista con graticula, continentes y marcadores por pais; `web/index.html` ajusta la tarjeta a una sola columna centrada.
+- Alcance: no cambia backend, endpoints, tablas, privacidad ni datos almacenados.
+
+2026-05-25: Index con modulos y documentos electronicos en lista
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`, `facturacion_electronica`.
+- Cambio funcional: la seccion de modulos del `index` pasa de parrafo compacto a lista de caracteristicas principales.
+- Contenido visible: inventario profesional, ventas POS, pagos y hardware, documentos electronicos, finanzas/cumplimiento, estaciones, IA, control fisico, gestion empresarial y verticales listas.
+- Documentos electronicos visibles: factura electronica, notas credito/debito, documento soporte, notas de ajuste, nomina electronica, documentos equivalentes electronicos/POS electronico, contingencia y eventos RADIAN para Colombia; factura, nota credito y nota debito para Panama y Ecuador segun configuracion por pais.
+- Alcance: cambio HTML/CSS del portal publico sin backend, tablas, endpoints, permisos ni dependencias.
+
 2026-05-22: Index con resumen de modulos principales
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
 - Cambio funcional: la seccion de modulos del `index` deja de usar tarjetas individuales y presenta un unico parrafo comercial con las funciones principales.
