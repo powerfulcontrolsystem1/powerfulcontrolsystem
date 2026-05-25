@@ -27377,3 +27377,18 @@ Archivos modificados:
     - Se actualiza `web/administrar_empresa/creditos.html` para crear creditos con cuota diaria pactada, omitir domingos opcionalmente y mostrar periodicidad, cuota y dias/cuotas que debe en cartera/estado de cuenta.
     - Se agrega prueba `TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays` en `backend/db/creditos_postgres_test.go`.
     - Verificacion local: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y `node --check` sobre scripts inline de creditos.
+
+2026-05-25: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/creditos.go
+- backend/db/creditos_postgres_test.go
+- backend/handlers/creditos.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/creditos.html
+- web/index.html

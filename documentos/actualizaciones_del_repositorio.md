@@ -10733,3 +10733,17 @@ Archivos modificados:
 - documentos/descripcion_del_proyecto
 - documentos/historial_de_cambios
 - web/pagar_licencia.html
+
+2026-05-25 15:58:45 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: c4e25f81; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/creditos.go
+- backend/db/creditos_postgres_test.go
+- backend/handlers/creditos.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/creditos.html
+- web/index.html
