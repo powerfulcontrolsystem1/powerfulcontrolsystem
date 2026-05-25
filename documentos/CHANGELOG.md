@@ -1,9 +1,10 @@
 ## [2026-05-25] Licencia gratis de 15 dias reparada
 - [Backend] `backend/db/licencias_gratis.go` crea `licencias_activaciones_gratis.id` como `BIGSERIAL PRIMARY KEY` y repara secuencias/defaults existentes en PostgreSQL antes de insertar marcas de prueba/gratis.
+- [Middleware] `backend/utils/utils.go` permite sin sesion `/api/public/licencias/checkout_summary` y `/licencias/activar_sin_pago`, manteniendo la validacion real en los handlers de licencia, empresa y total cero.
 - [Licencias] `POST /licencias/activar_sin_pago` queda idempotente para reintentos: si una activacion valor cero ya quedo vigente para la empresa, responde exito y redirige en lugar de devolver error.
 - [Operacion] La preconfiguracion del tipo de empresa se intenta aplicar, pero si falla despues de activar la licencia se registra advertencia y no bloquea la licencia de prueba.
 - [PWA] `web/sw.js` captura fallos de red en recursos GET cacheables para evitar promesas rechazadas visibles en consola.
-- [QA] `go test ./db -run "Licencia|PostgresPrimaryKey|PaymentGateway" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi|Checkout|Payment" -count=1`; `node --check web/sw.js`.
+- [QA] `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; `go test ./db -run "Licencia|PostgresPrimaryKey|PaymentGateway" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi|Checkout|Payment" -count=1`; `node --check web/sw.js`.
 
 ## [2026-05-25] Super administrador con analitica al final
 - [UX] `web/estilos.css` evita que la tarjeta `Analitica publica / Visitas al portal por pais` reste alto al panel principal de super administrador.

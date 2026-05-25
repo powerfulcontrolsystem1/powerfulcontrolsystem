@@ -5,6 +5,8 @@
 	- prueba de regresion para evitar que la tabla de activaciones gratis vuelva a quedar sin id autogenerado.
 - `backend/handlers/payments_handlers.go`:
 	- hace idempotente `/licencias/activar_sin_pago` cuando una activacion valor cero ya quedo vigente y evita bloquear la licencia por fallos posteriores de preconfiguracion.
+- `backend/utils/utils.go` y `backend/utils/auth_middleware_test.go`:
+	- agregan al allowlist publico el resumen de checkout de licencias y la activacion sin pago, con prueba de middleware.
 - `web/sw.js`:
 	- captura fallos de red en recursos cacheables para evitar promesas rechazadas en consola.
 

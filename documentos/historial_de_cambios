@@ -2,8 +2,9 @@
 - Modulos afectados: `licencias`, `checkout_publico`, `backend_db`, `pwa`, `qa_operacion`.
 - Causa tecnica: `licencias_activaciones_gratis.id` podia quedar como `INTEGER PRIMARY KEY` sin secuencia/default en PostgreSQL si la tabla se creaba al primer uso, provocando 500 al insertar la marca de activacion gratis. Ademas, si la licencia alcanzaba a activarse y fallaba una fase posterior, un reintento podia quedar bloqueado.
 - Backend: `backend/db/licencias_gratis.go` usa `BIGSERIAL PRIMARY KEY` y ejecuta reparacion de secuencias; `backend/handlers/payments_handlers.go` vuelve idempotente `/licencias/activar_sin_pago` cuando ya existe una licencia valor cero vigente para la empresa y registra como advertencia la falla de preconfiguracion posterior.
+- Middleware: `backend/utils/utils.go` agrega `/api/public/licencias/checkout_summary` y `/licencias/activar_sin_pago` al allowlist publico; `backend/utils/auth_middleware_test.go` cubre esa exposicion controlada.
 - Frontend/PWA: `web/sw.js` captura fallos de red GET cacheables para no dejar promesas rechazadas visibles en consola.
-- QA: `go test ./db -run "Licencia|PostgresPrimaryKey|PaymentGateway" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi|Checkout|Payment" -count=1`; `node --check web/sw.js`.
+- QA: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; `go test ./db -run "Licencia|PostgresPrimaryKey|PaymentGateway" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi|Checkout|Payment" -count=1`; `node --check web/sw.js`.
 - Alcance: mantiene una sola prueba/gratis por `empresa_id`; no cambia permisos, pasarelas, reglas comerciales ni dependencias.
 
 2026-05-25: Super administrador con analitica publica al final del panel.

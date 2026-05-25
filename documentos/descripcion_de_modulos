@@ -2,6 +2,7 @@
 - Modulos afectados: `licencias`, `checkout_publico`, `pwa`, `backend_db`.
 - Cambio funcional: la activacion sin pago vuelve a aceptar licencias de prueba o valor cero y responde de forma segura ante reintentos de usuario.
 - Persistencia: `licencias_activaciones_gratis.id` queda autogenerado en PostgreSQL con `BIGSERIAL` y reparacion de secuencia para tablas existentes.
+- Acceso publico controlado: el middleware deja pasar el resumen publico del checkout y la activacion sin pago; la autorizacion efectiva sigue en el handler mediante total cero, empresa valida y uso unico por empresa.
 - Operacion: se conserva la regla de una sola prueba/gratis por empresa; si la activacion ya esta vigente, el reintento retorna exito y redireccion. La preconfiguracion posterior no bloquea la licencia si falla.
 - QA: pruebas dirigidas de `db`, `handlers` y sintaxis de `web/sw.js`.
 
