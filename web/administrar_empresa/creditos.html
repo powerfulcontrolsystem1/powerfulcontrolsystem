@@ -1230,7 +1230,7 @@
             '<td>' + esc(row.codigo) + '</td>' +
             '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
             '<td>' + esc(row.fecha_vencimiento) + '</td>' +
-            '<td>' + esc(i(row.cuotas_vencidas || row.dias_mora)) + '</td>' +
+            '<td>' + esc(String(i(row.cuotas_vencidas || row.dias_mora || 0))) + '</td>' +
             '<td>' + esc(money(row.saldo_actual)) + '</td>' +
             '<td>' + stateChip(row.estado_credito) + '</td>';
           body.appendChild(tr);
@@ -1254,7 +1254,7 @@
             '<td>' + esc(id) + '</td>' +
             '<td>' + esc(row.codigo) + '</td>' +
             '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
-            '<td>' + esc(i(row.cuotas_vencidas || row.dias_mora)) + '</td>' +
+            '<td>' + esc(String(i(row.cuotas_vencidas || row.dias_mora || 0))) + '</td>' +
             '<td>' + esc(money(row.saldo_actual)) + '</td>' +
             '<td>' + stateChip(row.clasificacion_cartera) + '</td>' +
             '<td><button class="btn secondary" data-action="detalle" data-id="' + id + '">Ver</button></td>';
@@ -1297,7 +1297,7 @@
             '<td>' + esc(money(row.saldo_disponible)) + '</td>' +
             '<td>' + stateChip(row.estado_credito) + '</td>' +
             '<td>' + stateChip(row.clasificacion_cartera) + '</td>' +
-            '<td>' + esc(i(row.cuotas_vencidas || row.dias_mora)) + '</td>' +
+            '<td>' + esc(String(i(row.cuotas_vencidas || row.dias_mora || 0))) + '</td>' +
             '<td>' + esc(row.fecha_vencimiento) + '</td>' +
             '<td class="creditos-actions">' +
               '<button class="btn" data-action="detalle" data-id="' + id + '">Estado cuenta</button>' +
@@ -1434,7 +1434,7 @@
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Cliente</span><strong>' + esc(normalize(credito.cliente_nombre || ('#' + i(credito.cliente_id)))) + '</strong></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Saldo actual</span><strong>' + esc(money(credito.saldo_actual)) + '</strong></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Cuota pactada</span><strong>' + esc((credito.periodicidad_cuota || 'mensual') + ' · ' + money(credito.valor_cuota_pactada || 0)) + '</strong></div>' +
-                '<div class="creditos-focus-row"><span class="creditos-focus-label">Cuotas vencidas</span><strong>' + esc(i(credito.cuotas_vencidas || 0)) + '</strong></div>' +
+                '<div class="creditos-focus-row"><span class="creditos-focus-label">Cuotas vencidas</span><strong>' + esc(String(i(credito.cuotas_vencidas || 0))) + '</strong></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Estado</span><span>' + stateChip(credito.estado_credito) + '</span></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Clasificación</span><span>' + stateChip(credito.clasificacion_cartera) + '</span></div>' +
               '</div>';
