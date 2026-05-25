@@ -78,6 +78,11 @@ self.addEventListener("fetch", function (event) {
         }
         return response;
       });
+    }).catch(function () {
+      if (request.mode === "navigate") {
+        return caches.match("/login.html");
+      }
+      return new Response("", { status: 503, statusText: "Service unavailable" });
     })
   );
 });

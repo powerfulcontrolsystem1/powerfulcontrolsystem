@@ -174,8 +174,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 						return
 					}
 					if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licID, "licencias.prueba_15_dias"); err != nil {
-						http.Error(w, "failed to apply tipo empresa preconfig after trial licencia: "+err.Error(), http.StatusInternalServerError)
-						return
+						log.Printf("warning: failed to apply tipo empresa preconfig after trial licencia empresa=%d licencia=%d: %v", empresaID, licID, err)
 					}
 					invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 				}
@@ -1118,6 +1117,28 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	lic.FechaInicio = fechaInicio
 	lic.FechaFin = fechaFin
 	return true, nil
+}
+
+func finalizeEmpresaAfterLicenciaActivation(dbEmp, dbSuper *sql.DB, empresaID, licenciaID int64, origen string) error {
+	if empresaID <= 0 {
+		return nil
+	}
+	if dbEmp == nil {
+		dbEmp = dbpkg.GetDB()
+	}
+	if dbEmp == nil {
+		return nil
+	}
+	if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
+		return err
+	}
+	if licenciaID > 0 {
+		if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, origen); err != nil {
+			log.Printf("warning: failed to apply tipo empresa preconfig after licencia activation empresa=%d licencia=%d origen=%s: %v", empresaID, licenciaID, origen, err)
+		}
+	}
+	invalidateEmpresaPermissionCacheForEmpresa(empresaID)
+	return nil
 }
 
 func normalizeLicenciaCheckoutMode(raw string) string {
@@ -5667,6 +5688,26 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			return
 		}
 		if summary.ZeroTotalBlocked {
+			if activeLic, activeErr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID); activeErr == nil && activeLic != nil && activeLic.Valor <= 0 {
+				if err := finalizeEmpresaAfterLicenciaActivation(dbEmpresas, dbSuper, payload.EmpresaID, activeLic.ID, "licencias.activacion_sin_pago_idempotente"); err != nil {
+					http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"activated":      true,
+					"already_active": true,
+					"provider":       "manual",
+					"payment_method": "ACTIVAR_SIN_PAGO",
+					"licencia_id":    activeLic.ID,
+					"empresa_id":     payload.EmpresaID,
+					"fecha_inicio":   activeLic.FechaInicio,
+					"fecha_fin":      activeLic.FechaFin,
+					"summary":        summary,
+					"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
+				})
+				return
+			}
 			http.Error(w, summary.Message, http.StatusConflict)
 			return
 		}
@@ -5681,6 +5722,26 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			fechaFin = now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
 			if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo, payload.AsesorID); err != nil {
 				if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
+					if activeLic, activeErr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID); activeErr == nil && activeLic != nil && activeLic.Valor <= 0 {
+						if ferr := finalizeEmpresaAfterLicenciaActivation(dbEmpresas, dbSuper, payload.EmpresaID, activeLic.ID, "licencias.activacion_sin_pago_idempotente"); ferr != nil {
+							http.Error(w, "failed to activate empresa: "+ferr.Error(), http.StatusInternalServerError)
+							return
+						}
+						w.Header().Set("Content-Type", "application/json")
+						json.NewEncoder(w).Encode(map[string]interface{}{
+							"activated":      true,
+							"already_active": true,
+							"provider":       "manual",
+							"payment_method": "ACTIVAR_SIN_PAGO",
+							"licencia_id":    activeLic.ID,
+							"empresa_id":     payload.EmpresaID,
+							"fecha_inicio":   activeLic.FechaInicio,
+							"fecha_fin":      activeLic.FechaFin,
+							"summary":        summary,
+							"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
+						})
+						return
+					}
 					http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
 					return
 				}
@@ -5693,8 +5754,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 					return
 				}
 				if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, payload.EmpresaID, payload.LicenciaID, "licencias.activacion_sin_pago"); err != nil {
-					http.Error(w, "failed to apply tipo empresa preconfig: "+err.Error(), http.StatusInternalServerError)
-					return
+					log.Printf("warning: failed to apply tipo empresa preconfig after zero-total activation empresa=%d licencia=%d: %v", payload.EmpresaID, payload.LicenciaID, err)
 				}
 				invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 			}

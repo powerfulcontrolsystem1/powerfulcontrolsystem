@@ -1,3 +1,16 @@
+2026-05-25: Licencia gratis de 15 dias reparada
+- Modulos afectados: `licencias`, `checkout_publico`, `pwa`, `backend_db`.
+- Cambio funcional: la activacion sin pago vuelve a aceptar licencias de prueba o valor cero y responde de forma segura ante reintentos de usuario.
+- Persistencia: `licencias_activaciones_gratis.id` queda autogenerado en PostgreSQL con `BIGSERIAL` y reparacion de secuencia para tablas existentes.
+- Operacion: se conserva la regla de una sola prueba/gratis por empresa; si la activacion ya esta vigente, el reintento retorna exito y redireccion. La preconfiguracion posterior no bloquea la licencia si falla.
+- QA: pruebas dirigidas de `db`, `handlers` y sintaxis de `web/sw.js`.
+
+2026-05-25: Super administrador con analitica al final
+- Modulos afectados: `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: la tarjeta de visitas al portal por pais queda al final del panel, debajo del iframe principal.
+- UX: el panel principal mantiene una vista completa y la analitica se consulta al bajar, sin ocupar espacio superior.
+- Alcance: no cambia backend, endpoints, tablas, permisos, privacidad ni dependencias.
+
 2026-05-25: Login y registro administrador verificados
 - Modulos afectados: `autenticacion_admin`, `registro_admin`, `frontend_ux`.
 - Cambio funcional: se comprueba el flujo de login por correo, registro de nuevo administrador desde `login.html` e inicio OAuth Google en escritorio y celular.

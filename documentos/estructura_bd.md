@@ -167,6 +167,7 @@ Actualizacion 2026-05-15 (empresas compartidas con alcance)
 
 Actualizacion 2026-05-15 (licencia de prueba unica por empresa)
 - `pcs_superadministrador.licencias_activaciones_gratis` agrega `asesor_id` para trazabilidad comercial de pruebas/activaciones sin pago.
+- Actualizacion 2026-05-25: `id` queda como clave autogenerada en PostgreSQL (`BIGSERIAL`/secuencia reparada por runtime) para que las activaciones sin pago puedan insertar la marca sin enviar un id manual.
 - Se crea `ux_licencias_gratis_empresa_unica` como indice unico parcial sobre `empresa_id` cuando `estado` esta activo, impidiendo que una misma empresa use mas de una prueba/gratis activa.
 - Al asegurar esquema, duplicados activos historicos se marcan como `historico_duplicado` antes de crear el indice unico.
 - La prueba automatica de 15 dias se registra con 250 documentos/ventas mensuales y conserva aislamiento por `empresa_id`.

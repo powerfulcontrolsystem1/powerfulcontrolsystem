@@ -2079,8 +2079,8 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .super-admin-shell .admin-sidebar .nav .admin-nav-group-title{font-size:.67rem;letter-spacing:.07em}
 .super-admin-shell .admin-sidebar .nav .admin-nav-sublist a{min-height:38px;padding:8px 10px;font-size:.84rem;font-weight:800}
 .super-admin-shell .admin-sidebar .nav a.active{box-shadow:0 10px 22px color-mix(in srgb,var(--accent) 18%,transparent)}
-.super-admin-shell .admin-content{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 96%,#0f766e 4%),var(--bg));gap:12px;overflow:auto}
-.super-admin-shell .admin-empresa-frame{min-height:0}
+.super-admin-shell .admin-content{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 96%,#0f766e 4%),var(--bg));gap:0;overflow:auto}
+.super-admin-shell .admin-empresa-frame{flex:0 0 calc(100vh - 20px);height:calc(100vh - 20px);min-height:720px}
 .admin-empresa-shell .admin-content{
   height:100vh;
   min-height:0;
@@ -2093,7 +2093,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 }
 .admin-empresa-shell.super-admin-shell .admin-content{
   overflow:auto;
-  gap:12px;
+  gap:0;
 }
 
 .portal-visit-counter{
@@ -2220,7 +2220,7 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .super-portal-visit-counter{
   width:100%;
   max-width:680px;
-  margin:0 auto 12px;
+  margin:18px auto 28px;
   padding:0 8px;
 }
 .super-portal-visit-counter .portal-visit-shell{

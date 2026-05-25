@@ -14,7 +14,7 @@ func EnsureLicenciasGratisActivacionesSchema(dbConn *sql.DB) error {
 	}
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS licencias_activaciones_gratis (
-			id INTEGER PRIMARY KEY,
+			id BIGSERIAL PRIMARY KEY,
 			licencia_id BIGINT NOT NULL,
 			empresa_id BIGINT NOT NULL,
 			discount_code TEXT,
@@ -47,6 +47,9 @@ func EnsureLicenciasGratisActivacionesSchema(dbConn *sql.DB) error {
 		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
+	}
+	if err := EnsurePostgresPrimaryKeySequences(dbConn); err != nil {
+		return err
 	}
 	return nil
 }

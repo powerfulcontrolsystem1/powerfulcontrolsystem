@@ -1,3 +1,13 @@
+2026-05-25 - Licencia gratis de 15 dias reparada
+- `backend/db/licencias_gratis.go`:
+	- corrige `licencias_activaciones_gratis.id` para PostgreSQL con `BIGSERIAL PRIMARY KEY` y reparacion de secuencia/default en tablas existentes.
+- `backend/db/licencias_gratis_postgres_test.go`:
+	- prueba de regresion para evitar que la tabla de activaciones gratis vuelva a quedar sin id autogenerado.
+- `backend/handlers/payments_handlers.go`:
+	- hace idempotente `/licencias/activar_sin_pago` cuando una activacion valor cero ya quedo vigente y evita bloquear la licencia por fallos posteriores de preconfiguracion.
+- `web/sw.js`:
+	- captura fallos de red en recursos cacheables para evitar promesas rechazadas en consola.
+
 2026-05-21 - Contador publico de visitas por pais
 - `backend/handlers/portal_visitas.go`:
 	- endpoint publico `/api/public/portal_visitas` para registrar visitas agregadas por pais y consultar totales.
