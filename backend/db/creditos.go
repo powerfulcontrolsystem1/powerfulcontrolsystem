@@ -1270,8 +1270,8 @@ func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCred
 	var fechaProxima string
 	err := queryRowSQLCompat(dbConn, `SELECT
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN 1 ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime') THEN 1 ELSE 0 END), 0),
-		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime') THEN fecha_vencimiento ELSE NULL END), ''),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10) < SUBSTR(datetime('now','localtime'), 1, 10) THEN 1 ELSE 0 END), 0),
+		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10) < SUBSTR(datetime('now','localtime'), 1, 10) THEN fecha_vencimiento ELSE NULL END), ''),
 		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN fecha_vencimiento ELSE NULL END), '')
 	FROM empresa_creditos_cuotas
 	WHERE empresa_id = ?
