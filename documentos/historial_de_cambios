@@ -27373,6 +27373,7 @@ Archivos modificados:
 - web/pagar_licencia.html
 - 2026-05-25: Creditos diarios para Venta Moto.
     - Se actualiza `backend/db/creditos.go` para agregar `periodicidad_cuota`, `valor_cuota_pactada`, `omitir_domingos`, agenda de cuotas diaria/semanal/quincenal/mensual, soporte de contratos diarios largos y calculo de cuotas vencidas/dias que debe desde `empresa_creditos_cuotas`.
+    - Se actualiza `backend/main.go` para ejecutar `EnsureEmpresaCreditosSchema` al arrancar y migrar el esquema de creditos en PostgreSQL sin pasos manuales.
     - Se actualiza `backend/handlers/creditos.go` para aceptar y exportar los nuevos campos de contrato.
     - Se actualiza `web/administrar_empresa/creditos.html` para crear creditos con cuota diaria pactada, omitir domingos opcionalmente y mostrar periodicidad, cuota y dias/cuotas que debe en cartera/estado de cuenta.
     - Se agrega prueba `TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays` en `backend/db/creditos_postgres_test.go`.

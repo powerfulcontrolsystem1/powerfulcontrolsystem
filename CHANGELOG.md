@@ -4491,6 +4491,6 @@
 - [Configuracion] Nuevo check `Exigir cliente registrado para pagar` dentro de la configuracion del carrito.
 - [Backend] `pagar_estacion` bloquea el cierre cuando `cliente_obligatorio_pago` esta activo y el carrito no tiene cliente.
 - Creditos diarios para ventas financiadas de motos.
-	- Archivos modificados: `backend/db/creditos.go`, `backend/handlers/creditos.go`, `backend/db/creditos_postgres_test.go`, `web/administrar_empresa/creditos.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+	- Archivos modificados: `backend/db/creditos.go`, `backend/handlers/creditos.go`, `backend/db/creditos_postgres_test.go`, `backend/main.go`, `web/administrar_empresa/creditos.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
 	- Descripcion: el contrato de credito acepta periodicidad de cuota, valor pactado y omision opcional de domingos; las cuotas diarias soportan planes largos de dos anos y la cartera muestra cuotas/dias vencidos desde el calendario de pagos.
 	- Verificacion: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y validacion de sintaxis JS de `web/administrar_empresa/creditos.html`.

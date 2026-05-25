@@ -835,6 +835,10 @@ func main() {
 		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_finanzas_schema")
+	if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_creditos_schema")
 	if err := dbpkg.EnsureEmpresaContabilidadColombiaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure contabilidad colombia schema in empresas db: %v", err)
 	}

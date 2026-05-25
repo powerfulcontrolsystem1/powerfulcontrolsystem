@@ -3013,6 +3013,6 @@ Captura inteligente de compras y gastos
 - Si el pago queda aprobado y se solicita `aplicar_al_pos`, el backend usa el cierre de caja abierto del usuario autenticado y marca el carrito con el metodo POS configurado para el datáfono.
 2026-05-25: Creditos diarios para ventas financiadas de motos
 - Modulo: `creditos`, `cartera`, `finanzas`.
-- Backend: `backend/db/creditos.go` agrega periodicidad de cuota, valor pactado y omision opcional de domingos; la generacion de cuotas permite contratos diarios largos y calcula cuotas vencidas/dias que debe desde el calendario de pagos.
+- Backend: `backend/db/creditos.go` agrega periodicidad de cuota, valor pactado y omision opcional de domingos; la generacion de cuotas permite contratos diarios largos y calcula cuotas vencidas/dias que debe desde el calendario de pagos. `backend/main.go` asegura `EnsureEmpresaCreditosSchema` en el arranque para migrar columnas de creditos en PostgreSQL.
 - API/UI: `backend/handlers/creditos.go` y `web/administrar_empresa/creditos.html` aceptan `periodicidad_cuota`, `valor_cuota_pactada` y `omitir_domingos`; la tabla de cartera muestra periodicidad, cuota pactada y dias/cuotas que debe.
 - QA: `backend/db/creditos_postgres_test.go` cubre contratos diarios de dos años y salto de domingos; se valido `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y sintaxis JS del modulo.
