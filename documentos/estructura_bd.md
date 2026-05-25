@@ -22,6 +22,10 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-25 (activacion gratis con licencia asignada real)
+- `licencias_activaciones_gratis`: la activacion valor cero registra una sola fila activa por empresa y usa el `licencia_id` devuelto por la asignacion real de la licencia. Cuando una licencia base se copia para la empresa, no se intenta insertar una segunda marca con la licencia origen para no violar `ux_licencias_gratis_empresa_unica`.
+- La restriccion de negocio sigue siendo una prueba/licencia gratis activa por `empresa_id`; el historial mantiene aislamiento por empresa y evita transacciones abortadas en PostgreSQL.
+
 Actualizacion 2026-05-21 (contador publico de visitas por pais)
 - Nueva tabla `portal_visitas_paises` en la base `pcs_superadministrador`.
 - Campos: `pais_codigo TEXT`, `fecha DATE`, `visitas BIGINT`, `actualizado_en TIMESTAMPTZ`.

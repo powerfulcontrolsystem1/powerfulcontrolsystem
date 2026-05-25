@@ -322,17 +322,15 @@ func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int6
 	if err != nil {
 		return err
 	}
+	if assignedLicenciaID <= 0 {
+		assignedLicenciaID = licenciaID
+	}
 
-	if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, asesor_id, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", licenciaID, empresaID, strings.TrimSpace(discountCode), asesorID, strings.TrimSpace(motivo)); err != nil {
+	if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, asesor_id, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", assignedLicenciaID, empresaID, strings.TrimSpace(discountCode), asesorID, strings.TrimSpace(motivo)); err != nil {
 		if isLicenciaGratisUniqueConstraintErr(err) {
 			return ErrLicenciaGratisYaUsada
 		}
 		return err
-	}
-	if assignedLicenciaID != licenciaID {
-		if _, err := execTxSQLCompat(tx, "INSERT INTO licencias_activaciones_gratis (licencia_id, empresa_id, discount_code, asesor_id, motivo, fecha_creacion, fecha_actualizacion, estado) VALUES (?, ?, ?, ?, ?, "+nowExpr+", "+nowExpr+", 'activo')", assignedLicenciaID, empresaID, strings.TrimSpace(discountCode), asesorID, strings.TrimSpace(motivo)); err != nil && !isLicenciaGratisUniqueConstraintErr(err) {
-			return err
-		}
 	}
 
 	if err := tx.Commit(); err != nil {

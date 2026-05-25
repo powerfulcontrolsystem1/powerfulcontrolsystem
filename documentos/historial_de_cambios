@@ -1,3 +1,10 @@
+2026-05-25: Licencia gratis valor cero sin rollback.
+- Modulos afectados: `licencias`, `checkout_publico`, `backend_db`, `qa_operacion`.
+- Causa tecnica: cuando la licencia base valor cero se copiaba para una empresa, la activacion intentaba insertar una marca con la licencia origen y otra con la licencia asignada. La segunda chocaba con `ux_licencias_gratis_empresa_unica`; aunque el error se ignoraba en Go, PostgreSQL marcaba la transaccion como abortada y el `Commit` devolvia `commit unexpectedly resulted in rollback`.
+- Backend: `backend/db/licencias_gratis.go` guarda una sola fila en `licencias_activaciones_gratis`, usando el `licencia_id` activo realmente asignado a la empresa.
+- QA: `go test ./db -run "Licencia|PostgresPrimaryKey|PaymentGateway" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi|Checkout|Payment" -count=1`.
+- Alcance: mantiene una sola prueba/gratis por `empresa_id`; no cambia permisos, pasarelas, reglas comerciales ni dependencias.
+
 2026-05-25: Reparacion de licencia gratis de 15 dias y activacion sin pago.
 - Modulos afectados: `licencias`, `checkout_publico`, `backend_db`, `pwa`, `qa_operacion`.
 - Causa tecnica: `licencias_activaciones_gratis.id` podia quedar como `INTEGER PRIMARY KEY` sin secuencia/default en PostgreSQL si la tabla se creaba al primer uso, provocando 500 al insertar la marca de activacion gratis. Ademas, si la licencia alcanzaba a activarse y fallaba una fase posterior, un reintento podia quedar bloqueado.
