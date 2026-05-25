@@ -1,3 +1,4 @@
+- 2026-05-25: `Index modulos mas compactos` ajusta la seccion `Modulos y caracteristicas principales` para que las tarjetas usen columnas mas anchas, menor padding interno, iconos mas compactos y caracteristicas en flujo punteado sin huecos artificiales.
 - 2026-05-25: `Licencia gratis 15 dias transaccion PostgreSQL` evita que la activacion valor cero registre dos marcas gratis para la misma empresa cuando la licencia base se copia a la empresa; ahora guarda solo la licencia activa asignada y no deja la transaccion abortada en `commit unexpectedly resulted in rollback`.
 - 2026-05-25: `Checkout licencia gratis sin Wompi innecesario` evita cargar tarjetas/terminos de Wompi cuando el resumen ya esta en total cero y la licencia se activa sin pasarela, eliminando el 502 residual de `/wompi/terms` en este flujo.
 - 2026-05-25: `Licencia gratis 15 dias reparada` corrige la activacion sin pago en PostgreSQL para que `licencias_activaciones_gratis.id` tenga secuencia/default, habilita como publicos el resumen/activacion valor cero del checkout, tolera reintentos cuando la licencia ya quedo activa y evita errores no capturados del service worker ante fallos de red.
@@ -4489,3 +4490,7 @@
 - [Carritos] El boton `Clientes` abre un panel interno para crear/asignar cliente al carrito activo sin salir de venta directa o estaciones.
 - [Configuracion] Nuevo check `Exigir cliente registrado para pagar` dentro de la configuracion del carrito.
 - [Backend] `pagar_estacion` bloquea el cierre cuando `cliente_obligatorio_pago` esta activo y el carrito no tiene cliente.
+- Creditos diarios para ventas financiadas de motos.
+	- Archivos modificados: `backend/db/creditos.go`, `backend/handlers/creditos.go`, `backend/db/creditos_postgres_test.go`, `web/administrar_empresa/creditos.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+	- Descripcion: el contrato de credito acepta periodicidad de cuota, valor pactado y omision opcional de domingos; las cuotas diarias soportan planes largos de dos anos y la cartera muestra cuotas/dias vencidos desde el calendario de pagos.
+	- Verificacion: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y validacion de sintaxis JS de `web/administrar_empresa/creditos.html`.

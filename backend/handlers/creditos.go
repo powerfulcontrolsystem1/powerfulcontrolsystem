@@ -24,6 +24,9 @@ type empresaCreditoCreatePayload struct {
 	SaldoActual           float64 `json:"saldo_actual"`
 	TasaInteres           float64 `json:"tasa_interes"`
 	TasaMora              float64 `json:"tasa_mora"`
+	PeriodicidadCuota     string  `json:"periodicidad_cuota"`
+	ValorCuotaPactada     float64 `json:"valor_cuota_pactada"`
+	OmitirDomingos        bool    `json:"omitir_domingos"`
 	PlazoDias             int     `json:"plazo_dias"`
 	PlazoCuotas           int     `json:"plazo_cuotas"`
 	FechaInicio           string  `json:"fecha_inicio"`
@@ -229,6 +232,9 @@ func handleEmpresaCreditosCreate(w http.ResponseWriter, r *http.Request, dbEmp *
 		SaldoActual:           payload.SaldoActual,
 		TasaInteres:           payload.TasaInteres,
 		TasaMora:              payload.TasaMora,
+		PeriodicidadCuota:     strings.TrimSpace(payload.PeriodicidadCuota),
+		ValorCuotaPactada:     payload.ValorCuotaPactada,
+		OmitirDomingos:        payload.OmitirDomingos,
 		PlazoDias:             payload.PlazoDias,
 		PlazoCuotas:           payload.PlazoCuotas,
 		FechaInicio:           strings.TrimSpace(payload.FechaInicio),
@@ -737,6 +743,9 @@ func buildEmpresaCreditosMorosidadDataset(empresaID int64, alertas *dbpkg.Empres
 				"cliente_nombre":        row.ClienteNombre,
 				"saldo_actual":          row.SaldoActual,
 				"dias_mora":             row.DiasMora,
+				"cuotas_vencidas":       row.CuotasVencidas,
+				"dias_cuotas_vencidas":  row.DiasCuotasVencidas,
+				"fecha_proxima_cuota":   row.FechaProximaCuota,
 				"fecha_vencimiento":     row.FechaVencimiento,
 				"estado_credito":        row.EstadoCredito,
 				"clasificacion_cartera": row.ClasificacionCartera,
@@ -772,7 +781,7 @@ func buildEmpresaCreditosMorosidadDataset(empresaID int64, alertas *dbpkg.Empres
 		EmpresaID:   empresaID,
 		GeneratedAt: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
 		Columns: []string{
-			"grupo", "id", "codigo", "cliente_id", "cliente_nombre", "saldo_actual", "dias_mora", "fecha_vencimiento", "estado_credito", "clasificacion_cartera",
+			"grupo", "id", "codigo", "cliente_id", "cliente_nombre", "saldo_actual", "dias_mora", "cuotas_vencidas", "dias_cuotas_vencidas", "fecha_proxima_cuota", "fecha_vencimiento", "estado_credito", "clasificacion_cartera",
 		},
 		Rows:     rows,
 		RowCount: len(rows),
@@ -1079,6 +1088,15 @@ func handleEmpresaCreditosUpdate(w http.ResponseWriter, r *http.Request, dbEmp *
 	if v, ok := body["tasa_mora"]; ok {
 		current.TasaMora = creditoAnyToFloat64(v)
 	}
+	if v, ok := body["periodicidad_cuota"]; ok {
+		current.PeriodicidadCuota = strings.TrimSpace(creditoAnyToString(v))
+	}
+	if v, ok := body["valor_cuota_pactada"]; ok {
+		current.ValorCuotaPactada = creditoAnyToFloat64(v)
+	}
+	if v, ok := body["omitir_domingos"]; ok {
+		current.OmitirDomingos = creditoAnyToBool(v)
+	}
 	if v, ok := body["plazo_dias"]; ok {
 		current.PlazoDias = creditoAnyToInt(v)
 	}
@@ -1204,11 +1222,17 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 			"saldo_disponible":      row.SaldoDisponible,
 			"tasa_interes":          row.TasaInteres,
 			"tasa_mora":             row.TasaMora,
+			"periodicidad_cuota":    row.PeriodicidadCuota,
+			"valor_cuota_pactada":   row.ValorCuotaPactada,
+			"omitir_domingos":       row.OmitirDomingos,
 			"plazo_dias":            row.PlazoDias,
 			"plazo_cuotas":          row.PlazoCuotas,
 			"fecha_inicio":          row.FechaInicio,
 			"fecha_vencimiento":     row.FechaVencimiento,
 			"dias_mora":             row.DiasMora,
+			"cuotas_vencidas":       row.CuotasVencidas,
+			"dias_cuotas_vencidas":  row.DiasCuotasVencidas,
+			"fecha_proxima_cuota":   row.FechaProximaCuota,
 			"estado_credito":        row.EstadoCredito,
 			"clasificacion_cartera": row.ClasificacionCartera,
 			"estado":                row.Estado,
@@ -1226,7 +1250,7 @@ func handleEmpresaCreditosReporte(w http.ResponseWriter, r *http.Request, dbEmp 
 		GeneratedAt: time.Now().In(time.Local).Format("2006-01-02 15:04:05"),
 		Columns: []string{
 			"id", "codigo", "cliente_id", "cliente_nombre", "tipo_credito", "monto_aprobado", "cupo_credito", "saldo_actual", "saldo_disponible",
-			"tasa_interes", "tasa_mora", "plazo_dias", "plazo_cuotas", "fecha_inicio", "fecha_vencimiento", "dias_mora", "estado_credito", "clasificacion_cartera", "estado",
+			"tasa_interes", "tasa_mora", "periodicidad_cuota", "valor_cuota_pactada", "omitir_domingos", "plazo_dias", "plazo_cuotas", "fecha_inicio", "fecha_vencimiento", "dias_mora", "cuotas_vencidas", "dias_cuotas_vencidas", "fecha_proxima_cuota", "estado_credito", "clasificacion_cartera", "estado",
 		},
 		Rows:     datasetRows,
 		RowCount: len(datasetRows),

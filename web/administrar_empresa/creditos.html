@@ -410,6 +410,19 @@
         </div>
       </div>
       <div class="form-row">
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crPeriodicidad">Periodicidad de cuota</label>
+          <select id="crPeriodicidad" class="form-input">
+            <option value="mensual">Mensual</option>
+            <option value="diaria">Diaria</option>
+            <option value="semanal">Semanal</option>
+            <option value="quincenal">Quincenal</option>
+          </select>
+        </div>
+        <div class="form-col creditos-col-220">
+          <label class="form-label" for="crValorCuota">Valor cuota pactada</label>
+          <input id="crValorCuota" class="form-input" type="number" min="0" step="0.01" placeholder="Ej: 30000">
+        </div>
         <div class="form-col creditos-col-200">
           <label class="form-label" for="crPlazoDias">Plazo días</label>
           <input id="crPlazoDias" class="form-input" type="number" min="0" step="1" value="0">
@@ -432,6 +445,12 @@
           <label class="form-help creditos-inline-check">
             <input id="crBloqueoMora" type="checkbox" checked>
             Bloqueo automático por mora
+          </label>
+        </div>
+        <div class="form-col creditos-col-280">
+          <label class="form-help creditos-inline-check">
+            <input id="crOmitirDomingos" type="checkbox">
+            No generar cuota los domingos
           </label>
         </div>
         <div class="form-col">
@@ -504,18 +523,20 @@
                 <th>Código</th>
                 <th>Cliente</th>
                 <th>Tipo</th>
+                <th>Periodicidad</th>
+                <th>Cuota pactada</th>
                 <th>Monto aprobado</th>
                 <th>Saldo actual</th>
                 <th>Disponible</th>
                 <th>Estado crédito</th>
                 <th>Clasificación</th>
-                <th>Días mora</th>
+                <th>Días debe</th>
                 <th>Vencimiento</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="tablaCreditosBody">
-              <tr><td colspan="12" class="creditos-empty-cell">Sin datos</td></tr>
+              <tr><td colspan="14" class="creditos-empty-cell">Sin datos</td></tr>
             </tbody>
           </table>
         </div>
@@ -631,7 +652,7 @@
                   <th>Código</th>
                   <th>Cliente</th>
                   <th>Vencimiento</th>
-                  <th>Días mora</th>
+                  <th>Días debe</th>
                   <th>Saldo</th>
                   <th>Estado</th>
                 </tr>
@@ -652,7 +673,7 @@
                   <th>ID</th>
                   <th>Código</th>
                   <th>Cliente</th>
-                  <th>Días mora</th>
+                  <th>Días debe</th>
                   <th>Saldo</th>
                   <th>Clasificación</th>
                   <th>Acción</th>
@@ -1209,7 +1230,7 @@
             '<td>' + esc(row.codigo) + '</td>' +
             '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
             '<td>' + esc(row.fecha_vencimiento) + '</td>' +
-            '<td>' + esc(i(row.dias_mora)) + '</td>' +
+            '<td>' + esc(i(row.cuotas_vencidas || row.dias_mora)) + '</td>' +
             '<td>' + esc(money(row.saldo_actual)) + '</td>' +
             '<td>' + stateChip(row.estado_credito) + '</td>';
           body.appendChild(tr);
@@ -1233,7 +1254,7 @@
             '<td>' + esc(id) + '</td>' +
             '<td>' + esc(row.codigo) + '</td>' +
             '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
-            '<td>' + esc(i(row.dias_mora)) + '</td>' +
+            '<td>' + esc(i(row.cuotas_vencidas || row.dias_mora)) + '</td>' +
             '<td>' + esc(money(row.saldo_actual)) + '</td>' +
             '<td>' + stateChip(row.clasificacion_cartera) + '</td>' +
             '<td><button class="btn secondary" data-action="detalle" data-id="' + id + '">Ver</button></td>';
@@ -1246,7 +1267,7 @@
         if (!body) return;
         body.innerHTML = '';
         if (!Array.isArray(rows) || rows.length === 0) {
-          body.innerHTML = '<tr><td colspan="12" class="creditos-empty-cell">Sin datos</td></tr>';
+          body.innerHTML = '<tr><td colspan="14" class="creditos-empty-cell">Sin datos</td></tr>';
           return;
         }
         rows.forEach(function (row) {
@@ -1269,12 +1290,14 @@
             '<td><strong>' + esc(row.codigo) + '</strong></td>' +
             '<td>' + esc(row.cliente_nombre || ('#' + i(row.cliente_id))) + '</td>' +
             '<td>' + esc(row.tipo_credito) + '</td>' +
+            '<td>' + esc(row.periodicidad_cuota || 'mensual') + (row.omitir_domingos ? '<br><small>sin domingos</small>' : '') + '</td>' +
+            '<td>' + esc(money(row.valor_cuota_pactada || 0)) + '</td>' +
             '<td>' + esc(money(row.monto_aprobado)) + '</td>' +
             '<td>' + esc(money(row.saldo_actual)) + '</td>' +
             '<td>' + esc(money(row.saldo_disponible)) + '</td>' +
             '<td>' + stateChip(row.estado_credito) + '</td>' +
             '<td>' + stateChip(row.clasificacion_cartera) + '</td>' +
-            '<td>' + esc(i(row.dias_mora)) + '</td>' +
+            '<td>' + esc(i(row.cuotas_vencidas || row.dias_mora)) + '</td>' +
             '<td>' + esc(row.fecha_vencimiento) + '</td>' +
             '<td class="creditos-actions">' +
               '<button class="btn" data-action="detalle" data-id="' + id + '">Estado cuenta</button>' +
@@ -1410,6 +1433,8 @@
               '<div class="creditos-focus-meta">' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Cliente</span><strong>' + esc(normalize(credito.cliente_nombre || ('#' + i(credito.cliente_id)))) + '</strong></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Saldo actual</span><strong>' + esc(money(credito.saldo_actual)) + '</strong></div>' +
+                '<div class="creditos-focus-row"><span class="creditos-focus-label">Cuota pactada</span><strong>' + esc((credito.periodicidad_cuota || 'mensual') + ' · ' + money(credito.valor_cuota_pactada || 0)) + '</strong></div>' +
+                '<div class="creditos-focus-row"><span class="creditos-focus-label">Cuotas vencidas</span><strong>' + esc(i(credito.cuotas_vencidas || 0)) + '</strong></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Estado</span><span>' + stateChip(credito.estado_credito) + '</span></div>' +
                 '<div class="creditos-focus-row"><span class="creditos-focus-label">Clasificación</span><span>' + stateChip(credito.clasificacion_cartera) + '</span></div>' +
               '</div>';
@@ -1541,6 +1566,9 @@
           cupo_credito: n(document.getElementById('crCupo').value || 0),
           tasa_interes: n(document.getElementById('crTasaInteres').value || 0),
           tasa_mora: n(document.getElementById('crTasaMora').value || 0),
+          periodicidad_cuota: normalize(document.getElementById('crPeriodicidad').value) || 'mensual',
+          valor_cuota_pactada: n(document.getElementById('crValorCuota').value || 0),
+          omitir_domingos: bool(document.getElementById('crOmitirDomingos').checked),
           plazo_dias: i(document.getElementById('crPlazoDias').value || 0),
           plazo_cuotas: i(document.getElementById('crPlazoCuotas').value || 0),
           fecha_inicio: normalize(document.getElementById('crFechaInicio').value),
@@ -1558,11 +1586,14 @@
         document.getElementById('crCupo').value = '';
         document.getElementById('crTasaInteres').value = '0';
         document.getElementById('crTasaMora').value = '0';
+        document.getElementById('crPeriodicidad').value = 'mensual';
+        document.getElementById('crValorCuota').value = '';
         document.getElementById('crPlazoDias').value = '0';
         document.getElementById('crPlazoCuotas').value = '12';
         document.getElementById('crFechaInicio').value = '';
         document.getElementById('crFechaVencimiento').value = '';
         document.getElementById('crBloqueoMora').checked = true;
+        document.getElementById('crOmitirDomingos').checked = false;
         document.getElementById('crObservaciones').value = '';
       }
 

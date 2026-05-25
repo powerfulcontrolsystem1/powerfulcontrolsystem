@@ -1,3 +1,9 @@
+2026-05-25: Index modulos mas compactos
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: la seccion `Modulos y caracteristicas principales` reduce margenes internos y usa tarjetas mas anchas para que las caracteristicas ocupen mejor el area.
+- UX: las caracteristicas se muestran como flujo punteado compacto, sin justificar cada item corto de forma independiente para evitar huecos visuales.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
 2026-05-25: Licencia gratis valor cero sin rollback
 - Modulos afectados: `licencias`, `checkout_publico`, `backend_db`.
 - Cambio funcional: la activacion sin pago guarda una sola marca gratis por empresa y la asocia a la licencia activa realmente asignada.
@@ -3005,3 +3011,8 @@ Captura inteligente de compras y gastos
 - El cliente Go usa HTTP/JSON configurable por endpoint contractual del proveedor, con autenticacion por referencia segura `env:*`; no se guardan claves reales en base de datos ni se imprimen en logs.
 - La respuesta del proveedor se normaliza a estados POS (`pendiente`, `aprobado`, `rechazado`, `error`) y se valida contra monto y referencia antes de aplicar el pago al carrito/caja.
 - Si el pago queda aprobado y se solicita `aplicar_al_pos`, el backend usa el cierre de caja abierto del usuario autenticado y marca el carrito con el metodo POS configurado para el datáfono.
+2026-05-25: Creditos diarios para ventas financiadas de motos
+- Modulo: `creditos`, `cartera`, `finanzas`.
+- Backend: `backend/db/creditos.go` agrega periodicidad de cuota, valor pactado y omision opcional de domingos; la generacion de cuotas permite contratos diarios largos y calcula cuotas vencidas/dias que debe desde el calendario de pagos.
+- API/UI: `backend/handlers/creditos.go` y `web/administrar_empresa/creditos.html` aceptan `periodicidad_cuota`, `valor_cuota_pactada` y `omitir_domingos`; la tabla de cartera muestra periodicidad, cuota pactada y dias/cuotas que debe.
+- QA: `backend/db/creditos_postgres_test.go` cubre contratos diarios de dos años y salto de domingos; se valido `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y sintaxis JS del modulo.

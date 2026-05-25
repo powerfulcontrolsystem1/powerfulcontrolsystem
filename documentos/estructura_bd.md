@@ -22,6 +22,11 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-25 (creditos diarios para venta de motos)
+- `empresa_creditos`: se agregan `periodicidad_cuota TEXT DEFAULT 'mensual'`, `valor_cuota_pactada REAL DEFAULT 0` y `omitir_domingos INTEGER DEFAULT 0`.
+- La generacion de `empresa_creditos_cuotas` soporta contratos diarios largos, incluyendo planes de dos años con cuota diaria pactada, y puede omitir vencimientos en domingo cuando el contrato lo requiera.
+- La consulta de cartera calcula `cuotas_vencidas`, `dias_cuotas_vencidas` y `fecha_proxima_cuota` desde `empresa_creditos_cuotas` para indicar los dias/cuotas que el cliente debe aunque la fecha final del contrato aun no haya vencido.
+
 Actualizacion 2026-05-25 (activacion gratis con licencia asignada real)
 - `licencias_activaciones_gratis`: la activacion valor cero registra una sola fila activa por empresa y usa el `licencia_id` devuelto por la asignacion real de la licencia. Cuando una licencia base se copia para la empresa, no se intenta insertar una segunda marca con la licencia origen para no violar `ux_licencias_gratis_empresa_unica`.
 - La restriccion de negocio sigue siendo una prueba/licencia gratis activa por `empresa_id`; el historial mantiene aislamiento por empresa y evita transacciones abortadas en PostgreSQL.

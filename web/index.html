@@ -320,29 +320,29 @@
       padding: 0;
       list-style: none;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
       gap: 10px;
     }
 
     .portal-modules-list li {
-      padding: 14px;
+      padding: 12px;
       border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
       border-radius: 8px;
       background: color-mix(in srgb, var(--surface) 84%, transparent);
       color: var(--text);
       min-height: 100%;
       display: grid;
-      grid-template-columns: 58px minmax(0, 1fr);
+      grid-template-columns: 48px minmax(0, 1fr);
       align-items: start;
-      gap: 12px;
+      gap: 8px;
     }
 
     .portal-module-icon {
-      width: 54px;
-      height: 54px;
+      width: 46px;
+      height: 46px;
       object-fit: contain;
-      border-radius: 14px;
-      padding: 8px;
+      border-radius: 12px;
+      padding: 7px;
       background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), color-mix(in srgb, var(--surface-soft) 96%, transparent));
       border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
       box-sizing: border-box;
@@ -350,35 +350,36 @@
 
     .portal-module-text {
       min-width: 0;
-      line-height: 1.52;
-      text-align: justify;
-      text-justify: inter-word;
+      line-height: 1.48;
+      text-align: left;
     }
 
     .portal-module-feature-list {
-      display: grid;
-      gap: 4px;
-      margin-top: 6px;
-      text-align: justify;
-      text-justify: inter-word;
+      display: block;
+      margin-top: 4px;
+      line-height: 1.48;
+      text-align: left;
+      text-align-last: left;
     }
 
     .portal-module-feature-list span {
-      display: block;
-      position: relative;
-      padding-left: 20px;
+      display: inline;
+      position: static;
+      padding-left: 0;
+      margin-right: 10px;
     }
 
     .portal-module-feature-list span::before {
       content: "";
-      position: absolute;
-      left: 0;
-      top: 0.62em;
-      width: 9px;
-      height: 9px;
+      position: static;
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin: 0 6px 2px 0;
       border-radius: 999px;
       background: #111827;
       box-shadow: 0 0 0 2px color-mix(in srgb, #111827 12%, transparent);
+      vertical-align: middle;
     }
 
     .portal-modules-list strong {

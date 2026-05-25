@@ -25,12 +25,19 @@ type EmpresaCredito struct {
 	SaldoDisponible       float64 `json:"saldo_disponible"`
 	TasaInteres           float64 `json:"tasa_interes"`
 	TasaMora              float64 `json:"tasa_mora"`
+	PeriodicidadCuota     string  `json:"periodicidad_cuota"`
+	ValorCuotaPactada     float64 `json:"valor_cuota_pactada"`
+	OmitirDomingos        bool    `json:"omitir_domingos"`
 	PlazoDias             int     `json:"plazo_dias"`
 	PlazoCuotas           int     `json:"plazo_cuotas"`
 	FechaInicio           string  `json:"fecha_inicio"`
 	FechaVencimiento      string  `json:"fecha_vencimiento"`
 	FechaUltimoPago       string  `json:"fecha_ultimo_pago,omitempty"`
 	DiasMora              int     `json:"dias_mora"`
+	CuotasPendientes      int     `json:"cuotas_pendientes,omitempty"`
+	CuotasVencidas        int     `json:"cuotas_vencidas,omitempty"`
+	DiasCuotasVencidas    int     `json:"dias_cuotas_vencidas,omitempty"`
+	FechaProximaCuota     string  `json:"fecha_proxima_cuota,omitempty"`
 	ClasificacionCartera  string  `json:"clasificacion_cartera"`
 	BloqueoAutomaticoMora bool    `json:"bloqueo_automatico_mora"`
 	VentaOrigenID         int64   `json:"venta_origen_id,omitempty"`
@@ -242,6 +249,70 @@ func creditoNormalizeTipo(raw string) string {
 	default:
 		return "cuotas"
 	}
+}
+
+func creditoNormalizePeriodicidad(raw string) string {
+	v := strings.ToLower(strings.TrimSpace(raw))
+	v = strings.ReplaceAll(v, "í", "i")
+	switch v {
+	case "diaria", "diario", "dia", "dias", "daily":
+		return "diaria"
+	case "semanal", "semana", "weekly":
+		return "semanal"
+	case "quincenal", "quincena":
+		return "quincenal"
+	case "mensual", "mes", "month", "monthly", "":
+		return "mensual"
+	default:
+		return "mensual"
+	}
+}
+
+func creditoMaxCuotas(periodicidad string) int {
+	switch creditoNormalizePeriodicidad(periodicidad) {
+	case "diaria":
+		return 2400
+	case "semanal":
+		return 520
+	default:
+		return 600
+	}
+}
+
+func creditoAddPeriodo(base time.Time, periodicidad string, step int) time.Time {
+	if step <= 0 {
+		step = 1
+	}
+	switch creditoNormalizePeriodicidad(periodicidad) {
+	case "diaria":
+		return base.AddDate(0, 0, step)
+	case "semanal":
+		return base.AddDate(0, 0, step*7)
+	case "quincenal":
+		return base.AddDate(0, 0, step*15)
+	default:
+		return base.AddDate(0, step, 0)
+	}
+}
+
+func creditoNextFechaCuota(fechaInicio time.Time, periodicidad string, numeroCuota int, omitirDomingos bool) time.Time {
+	periodicidad = creditoNormalizePeriodicidad(periodicidad)
+	if numeroCuota <= 0 {
+		numeroCuota = 1
+	}
+	if periodicidad != "diaria" || !omitirDomingos {
+		return creditoAddPeriodo(fechaInicio, periodicidad, numeroCuota)
+	}
+	fecha := fechaInicio
+	generadas := 0
+	for generadas < numeroCuota {
+		fecha = fecha.AddDate(0, 0, 1)
+		if fecha.Weekday() == time.Sunday {
+			continue
+		}
+		generadas++
+	}
+	return fecha
 }
 
 func creditoNormalizeEstado(raw string) string {
@@ -595,6 +666,9 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 			saldo_disponible REAL DEFAULT 0,
 			tasa_interes REAL DEFAULT 0,
 			tasa_mora REAL DEFAULT 0,
+			periodicidad_cuota TEXT DEFAULT 'mensual',
+			valor_cuota_pactada REAL DEFAULT 0,
+			omitir_domingos INTEGER DEFAULT 0,
 			plazo_dias INTEGER DEFAULT 0,
 			plazo_cuotas INTEGER DEFAULT 0,
 			fecha_inicio TEXT DEFAULT (datetime('now','localtime')),
@@ -723,6 +797,15 @@ func EnsureEmpresaCreditosSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_creditos", "fecha_ultimo_pago", "TEXT"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_creditos", "periodicidad_cuota", "TEXT DEFAULT 'mensual'"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_creditos", "valor_cuota_pactada", "REAL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_creditos", "omitir_domingos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_creditos", "documento_origen", "TEXT"); err != nil {
 		return err
 	}
@@ -827,6 +910,7 @@ func creditoHydrate(row *EmpresaCredito) {
 		return
 	}
 	row.TipoCredito = creditoNormalizeTipo(row.TipoCredito)
+	row.PeriodicidadCuota = creditoNormalizePeriodicidad(row.PeriodicidadCuota)
 	row.EstadoCredito = creditoNormalizeEstado(row.EstadoCredito)
 	row.Estado = creditoNormalizeRowEstado(row.Estado)
 	if row.CupoCredito <= 0 {
@@ -838,6 +922,7 @@ func creditoHydrate(row *EmpresaCredito) {
 	row.SaldoActual = creditoRound(creditoMax(row.SaldoActual, 0))
 	row.CupoCredito = creditoRound(creditoMax(row.CupoCredito, 0))
 	row.SaldoDisponible = creditoRound(creditoMax(row.CupoCredito-row.SaldoActual, 0))
+	row.ValorCuotaPactada = creditoRound(creditoMax(row.ValorCuotaPactada, 0))
 	row.DiasMora = creditoDaysMora(row.FechaVencimiento, row.SaldoActual)
 	row.ClasificacionCartera = creditoResolveClasificacion(row.EstadoCredito, row.FechaVencimiento, row.SaldoActual)
 }
@@ -891,6 +976,14 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 	if payload.PlazoCuotas < 0 {
 		payload.PlazoCuotas = 0
 	}
+	payload.PeriodicidadCuota = creditoNormalizePeriodicidad(payload.PeriodicidadCuota)
+	payload.ValorCuotaPactada = creditoRound(creditoMax(payload.ValorCuotaPactada, 0))
+	if payload.TipoCredito == "cuotas" && payload.ValorCuotaPactada > 0 && payload.PlazoCuotas <= 0 {
+		payload.PlazoCuotas = int(math.Ceil(payload.MontoAprobado / payload.ValorCuotaPactada))
+	}
+	if payload.TipoCredito == "cuotas" && payload.PeriodicidadCuota == "diaria" && payload.PlazoDias > 0 && payload.PlazoCuotas <= 0 {
+		payload.PlazoCuotas = payload.PlazoDias
+	}
 	if payload.TipoCredito == "cuotas" && payload.PlazoCuotas <= 0 {
 		if payload.PlazoDias > 0 {
 			payload.PlazoCuotas = int(math.Ceil(float64(payload.PlazoDias) / 30.0))
@@ -918,10 +1011,12 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 	if strings.TrimSpace(payload.FechaVencimiento) == "" {
 		if payload.TipoCredito == "rotativo" {
 			payload.FechaVencimiento = fechaInicio.AddDate(1, 0, 0).Format("2006-01-02")
+		} else if payload.PlazoCuotas > 0 && payload.PeriodicidadCuota == "diaria" && payload.OmitirDomingos {
+			payload.FechaVencimiento = creditoNextFechaCuota(fechaInicio, payload.PeriodicidadCuota, payload.PlazoCuotas, payload.OmitirDomingos).Format("2006-01-02")
 		} else if payload.PlazoDias > 0 {
 			payload.FechaVencimiento = fechaInicio.AddDate(0, 0, payload.PlazoDias).Format("2006-01-02")
 		} else if payload.PlazoCuotas > 0 {
-			payload.FechaVencimiento = fechaInicio.AddDate(0, payload.PlazoCuotas, 0).Format("2006-01-02")
+			payload.FechaVencimiento = creditoAddPeriodo(fechaInicio, payload.PeriodicidadCuota, payload.PlazoCuotas).Format("2006-01-02")
 		}
 	}
 	if strings.TrimSpace(payload.FechaVencimiento) == "" {
@@ -957,6 +1052,9 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		saldo_disponible,
 		tasa_interes,
 		tasa_mora,
+		periodicidad_cuota,
+		valor_cuota_pactada,
+		omitir_domingos,
 		plazo_dias,
 		plazo_cuotas,
 		fecha_inicio,
@@ -972,7 +1070,7 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nowExpr+`, `+nowExpr+`, ?, ?, ?)`,
 		payload.EmpresaID,
 		payload.Codigo,
 		payload.ClienteID,
@@ -984,6 +1082,9 @@ func CreateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) (int64, error)
 		creditoRound(payload.CupoCredito-payload.SaldoActual),
 		creditoRound(payload.TasaInteres),
 		creditoRound(payload.TasaMora),
+		payload.PeriodicidadCuota,
+		payload.ValorCuotaPactada,
+		boolToInt(payload.OmitirDomingos),
 		payload.PlazoDias,
 		payload.PlazoCuotas,
 		payload.FechaInicio,
@@ -1029,8 +1130,9 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 	if nCuotas <= 0 {
 		nCuotas = 1
 	}
-	if nCuotas > 600 {
-		nCuotas = 600
+	maxCuotas := creditoMaxCuotas(payload.PeriodicidadCuota)
+	if nCuotas > maxCuotas {
+		nCuotas = maxCuotas
 	}
 	if startNumero <= 0 {
 		startNumero = 1
@@ -1045,9 +1147,12 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 		fechaFin = fechaInicio.AddDate(0, nCuotas, 0)
 	}
 
-	capitalCuota := creditoRound(payload.MontoAprobado / float64(nCuotas))
 	interesTotal := creditoRound(payload.MontoAprobado * (payload.TasaInteres / 100.0))
 	interesCuota := creditoRound(interesTotal / float64(nCuotas))
+	capitalCuota := creditoRound(payload.MontoAprobado / float64(nCuotas))
+	if payload.ValorCuotaPactada > 0 && payload.TasaInteres <= 0 {
+		capitalCuota = creditoRound(payload.ValorCuotaPactada)
+	}
 	valorCuotaBase := creditoRound(capitalCuota + interesCuota)
 	nowExpr := sqlNowExpr()
 
@@ -1057,7 +1162,7 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 		if payload.TipoCredito == "fijo" {
 			fechaCuota = fechaFin
 		} else {
-			fechaCuota = fechaInicio.AddDate(0, i, 0)
+			fechaCuota = creditoNextFechaCuota(fechaInicio, payload.PeriodicidadCuota, i, payload.OmitirDomingos)
 		}
 
 		capital := capitalCuota
@@ -1067,9 +1172,9 @@ func creditoGenerateCuotasTxWithStart(tx *sql.Tx, empresaID, creditoID int64, pa
 		// Ajuste de centavos en la ultima cuota.
 		if i == nCuotas {
 			subtotalCapital := creditoRound(capitalCuota * float64(nCuotas-1))
-			capital = creditoRound(payload.MontoAprobado - subtotalCapital)
+			capital = creditoRound(creditoMax(payload.MontoAprobado-subtotalCapital, 0))
 			subtotalInteres := creditoRound(interesCuota * float64(nCuotas-1))
-			interes = creditoRound(interesTotal - subtotalInteres)
+			interes = creditoRound(creditoMax(interesTotal-subtotalInteres, 0))
 			valorCuota = creditoRound(capital + interes)
 		}
 
@@ -1113,6 +1218,7 @@ func scanEmpresaCredito(scanner interface {
 }) (*EmpresaCredito, error) {
 	var row EmpresaCredito
 	var bloqueoMora int
+	var omitirDomingos int
 	if err := scanner.Scan(
 		&row.ID,
 		&row.EmpresaID,
@@ -1126,6 +1232,9 @@ func scanEmpresaCredito(scanner interface {
 		&row.SaldoDisponible,
 		&row.TasaInteres,
 		&row.TasaMora,
+		&row.PeriodicidadCuota,
+		&row.ValorCuotaPactada,
+		&omitirDomingos,
 		&row.PlazoDias,
 		&row.PlazoCuotas,
 		&row.FechaInicio,
@@ -1145,9 +1254,51 @@ func scanEmpresaCredito(scanner interface {
 	); err != nil {
 		return nil, err
 	}
+	row.OmitirDomingos = omitirDomingos == 1
 	row.BloqueoAutomaticoMora = bloqueoMora == 1
 	creditoHydrate(&row)
 	return &row, nil
+}
+
+func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCredito) {
+	if dbConn == nil || row == nil || empresaID <= 0 || row.ID <= 0 {
+		return
+	}
+	var pendientes int
+	var vencidas int
+	var fechaMasAntigua string
+	var fechaProxima string
+	err := queryRowSQLCompat(dbConn, `SELECT
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime') THEN 1 ELSE 0 END), 0),
+		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime') THEN fecha_vencimiento ELSE NULL END), ''),
+		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN fecha_vencimiento ELSE NULL END), '')
+	FROM empresa_creditos_cuotas
+	WHERE empresa_id = ?
+	  AND credito_id = ?
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID, row.ID).Scan(&pendientes, &vencidas, &fechaMasAntigua, &fechaProxima)
+	if err != nil {
+		return
+	}
+	row.CuotasPendientes = pendientes
+	row.CuotasVencidas = vencidas
+	row.FechaProximaCuota = strings.TrimSpace(fechaProxima)
+	if dt, ok := creditoParseDate(fechaMasAntigua); ok && row.SaldoActual > 0 {
+		today := time.Now().In(time.Local)
+		days := int(today.Sub(dt).Hours() / 24)
+		if days > 0 {
+			row.DiasCuotasVencidas = days
+		}
+	}
+	if row.CuotasVencidas > 0 && row.DiasMora <= 0 {
+		row.ClasificacionCartera = "vencido"
+	}
+}
+
+func creditoHydrateCuotaStatusRows(dbConn *sql.DB, empresaID int64, rows []EmpresaCredito) {
+	for idx := range rows {
+		creditoHydrateCuotaStatus(dbConn, empresaID, &rows[idx])
+	}
 }
 
 func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, orderSQL string, args []interface{}, limit int) ([]EmpresaCredito, error) {
@@ -1180,6 +1331,9 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 		COALESCE(saldo_disponible, 0),
 		COALESCE(tasa_interes, 0),
 		COALESCE(tasa_mora, 0),
+		COALESCE(periodicidad_cuota, 'mensual'),
+		COALESCE(valor_cuota_pactada, 0),
+		COALESCE(omitir_domingos, 0),
 		COALESCE(plazo_dias, 0),
 		COALESCE(plazo_cuotas, 0),
 		COALESCE(fecha_inicio, ''),
@@ -1224,6 +1378,7 @@ func listEmpresaCreditosByWhere(dbConn *sql.DB, empresaID int64, whereSQL, order
 		return nil, err
 	}
 
+	creditoHydrateCuotaStatusRows(dbConn, empresaID, out)
 	return out, nil
 }
 
@@ -1249,6 +1404,9 @@ func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*Empresa
 		COALESCE(saldo_disponible, 0),
 		COALESCE(tasa_interes, 0),
 		COALESCE(tasa_mora, 0),
+		COALESCE(periodicidad_cuota, 'mensual'),
+		COALESCE(valor_cuota_pactada, 0),
+		COALESCE(omitir_domingos, 0),
 		COALESCE(plazo_dias, 0),
 		COALESCE(plazo_cuotas, 0),
 		COALESCE(fecha_inicio, ''),
@@ -1270,7 +1428,12 @@ func GetEmpresaCreditoByID(dbConn *sql.DB, empresaID, creditoID int64) (*Empresa
 	  AND id = ?
 	LIMIT 1`, empresaID, creditoID)
 
-	return scanEmpresaCredito(row)
+	credito, err := scanEmpresaCredito(row)
+	if err != nil {
+		return nil, err
+	}
+	creditoHydrateCuotaStatus(dbConn, empresaID, credito)
+	return credito, nil
 }
 
 func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
@@ -1306,7 +1469,19 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 		args = append(args, pattern, pattern, pattern)
 	}
 	if filter.SoloVencidos {
-		clauses = append(clauses, "COALESCE(saldo_actual, 0) > 0 AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime')")
+		clauses = append(clauses, `COALESCE(saldo_actual, 0) > 0 AND (
+			date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+			OR EXISTS (
+				SELECT 1
+				FROM empresa_creditos_cuotas cc
+				WHERE cc.empresa_id = empresa_creditos.empresa_id
+				  AND cc.credito_id = empresa_creditos.id
+				  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
+				  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
+				  AND COALESCE(cc.saldo_cuota, 0) > 0
+				  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+			)
+		)`)
 	}
 
 	if len(clauses) == 0 {
@@ -1347,6 +1522,9 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 		COALESCE(saldo_disponible, 0),
 		COALESCE(tasa_interes, 0),
 		COALESCE(tasa_mora, 0),
+		COALESCE(periodicidad_cuota, 'mensual'),
+		COALESCE(valor_cuota_pactada, 0),
+		COALESCE(omitir_domingos, 0),
 		COALESCE(plazo_dias, 0),
 		COALESCE(plazo_cuotas, 0),
 		COALESCE(fecha_inicio, ''),
@@ -1388,6 +1566,7 @@ func ListEmpresaCreditos(dbConn *sql.DB, empresaID int64, filter EmpresaCreditoF
 		return nil, 0, err
 	}
 
+	creditoHydrateCuotaStatusRows(dbConn, empresaID, out)
 	return out, total, nil
 }
 
@@ -1613,6 +1792,9 @@ func RegisterEmpresaCreditoAbono(dbConn *sql.DB, input EmpresaCreditoAbonoInput)
 		COALESCE(saldo_disponible, 0),
 		COALESCE(tasa_interes, 0),
 		COALESCE(tasa_mora, 0),
+		COALESCE(periodicidad_cuota, 'mensual'),
+		COALESCE(valor_cuota_pactada, 0),
+		COALESCE(omitir_domingos, 0),
 		COALESCE(plazo_dias, 0),
 		COALESCE(plazo_cuotas, 0),
 		COALESCE(fecha_inicio, ''),
@@ -1890,6 +2072,8 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 
 	payload.ClienteNombre = strings.TrimSpace(payload.ClienteNombre)
 	payload.TipoCredito = creditoNormalizeTipo(payload.TipoCredito)
+	payload.PeriodicidadCuota = creditoNormalizePeriodicidad(payload.PeriodicidadCuota)
+	payload.ValorCuotaPactada = creditoRound(creditoMax(payload.ValorCuotaPactada, 0))
 	payload.EstadoCredito = creditoNormalizeEstado(payload.EstadoCredito)
 	payload.Estado = creditoNormalizeRowEstado(payload.Estado)
 	payload.ClasificacionCartera = creditoNormalizeClasificacion(payload.ClasificacionCartera)
@@ -1924,6 +2108,9 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 		saldo_disponible = ?,
 		tasa_interes = ?,
 		tasa_mora = ?,
+		periodicidad_cuota = ?,
+		valor_cuota_pactada = ?,
+		omitir_domingos = ?,
 		plazo_dias = ?,
 		plazo_cuotas = ?,
 		fecha_inicio = ?,
@@ -1950,6 +2137,9 @@ func UpdateEmpresaCredito(dbConn *sql.DB, payload EmpresaCredito) error {
 		payload.SaldoDisponible,
 		creditoRound(payload.TasaInteres),
 		creditoRound(payload.TasaMora),
+		payload.PeriodicidadCuota,
+		payload.ValorCuotaPactada,
+		boolToInt(payload.OmitirDomingos),
 		payload.PlazoDias,
 		payload.PlazoCuotas,
 		strings.TrimSpace(payload.FechaInicio),
@@ -2167,8 +2357,27 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 	query := `SELECT
 		COUNT(1),
 		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'activo' THEN 1 ELSE 0 END),
-		SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), SUBSTR(datetime('now','localtime'), 1, 10)) < SUBSTR(datetime('now','localtime'), 1, 10) THEN 1 ELSE 0 END),
-		SUM(CASE WHEN COALESCE(dias_mora, 0) > 0 THEN 1 ELSE 0 END),
+		SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND (
+			COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), SUBSTR(datetime('now','localtime'), 1, 10)) < SUBSTR(datetime('now','localtime'), 1, 10)
+			OR EXISTS (
+				SELECT 1 FROM empresa_creditos_cuotas cc
+				WHERE cc.empresa_id = empresa_creditos.empresa_id
+				  AND cc.credito_id = empresa_creditos.id
+				  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
+				  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
+				  AND COALESCE(cc.saldo_cuota, 0) > 0
+				  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+			)
+		) THEN 1 ELSE 0 END),
+		SUM(CASE WHEN COALESCE(dias_mora, 0) > 0 OR EXISTS (
+			SELECT 1 FROM empresa_creditos_cuotas cc
+			WHERE cc.empresa_id = empresa_creditos.empresa_id
+			  AND cc.credito_id = empresa_creditos.id
+			  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
+			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
+			  AND COALESCE(cc.saldo_cuota, 0) > 0
+			  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+		) THEN 1 ELSE 0 END),
 		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'cerrado' THEN 1 ELSE 0 END),
 		COALESCE(SUM(COALESCE(monto_aprobado, 0)), 0),
 		COALESCE(SUM(COALESCE(saldo_actual, 0)), 0),
@@ -2241,26 +2450,36 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 		return nil, err
 	}
 
-	vencidosWhere := baseWhere + " AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?)"
+	cuotaVencidaSQL := `EXISTS (
+		SELECT 1
+		FROM empresa_creditos_cuotas cc
+		WHERE cc.empresa_id = empresa_creditos.empresa_id
+		  AND cc.credito_id = empresa_creditos.id
+		  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
+		  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
+		  AND COALESCE(cc.saldo_cuota, 0) > 0
+		  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date(?)
+	)`
+	vencidosWhere := baseWhere + " AND (date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR " + cuotaVencidaSQL + ")"
 	vencidosRows, err := listEmpresaCreditosByWhere(
 		dbConn,
 		empresaID,
 		vencidosWhere,
 		"date(COALESCE(fecha_vencimiento, date('now','localtime'))) ASC, COALESCE(saldo_actual, 0) DESC, id DESC",
-		[]interface{}{today},
+		[]interface{}{today, today},
 		top,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	rankingWhere := baseWhere + " AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?)"
+	rankingWhere := baseWhere + " AND (date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR " + cuotaVencidaSQL + ")"
 	rankingRows, err := listEmpresaCreditosByWhere(
 		dbConn,
 		empresaID,
 		rankingWhere,
 		"CAST(julianday(date('now','localtime')) - julianday(date(COALESCE(fecha_vencimiento, date('now','localtime')))) AS INTEGER) DESC, COALESCE(saldo_actual, 0) DESC, id DESC",
-		[]interface{}{today},
+		[]interface{}{today, today},
 		top,
 	)
 	if err != nil {
@@ -2270,15 +2489,31 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	countQuery := `SELECT
 		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) >= date(?)
 			AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) <= date(?) THEN 1 ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR EXISTS (
+			SELECT 1 FROM empresa_creditos_cuotas cc
+			WHERE cc.empresa_id = empresa_creditos.empresa_id
+			  AND cc.credito_id = empresa_creditos.id
+			  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
+			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
+			  AND COALESCE(cc.saldo_cuota, 0) > 0
+			  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date(?)
+		) THEN 1 ELSE 0 END), 0),
 		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) >= date(?)
 			AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) <= date(?) THEN COALESCE(saldo_actual, 0) ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) THEN COALESCE(saldo_actual, 0) ELSE 0 END), 0)
+		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR EXISTS (
+			SELECT 1 FROM empresa_creditos_cuotas cc
+			WHERE cc.empresa_id = empresa_creditos.empresa_id
+			  AND cc.credito_id = empresa_creditos.id
+			  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
+			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
+			  AND COALESCE(cc.saldo_cuota, 0) > 0
+			  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date(?)
+		) THEN COALESCE(saldo_actual, 0) ELSE 0 END), 0)
 	FROM empresa_creditos
 	WHERE empresa_id = ?
 	  AND COALESCE(saldo_actual, 0) > 0
 	  AND LOWER(COALESCE(estado_credito, 'activo')) IN ('activo','suspendido','castigado')`
-	countArgs := []interface{}{today, maxDate, today, today, maxDate, today, empresaID}
+	countArgs := []interface{}{today, maxDate, today, today, today, maxDate, today, today, empresaID}
 	if !includeInactive {
 		countQuery += " AND LOWER(COALESCE(estado, 'activo')) = 'activo'"
 	}
@@ -2693,6 +2928,9 @@ func GetEmpresaCreditoByIDTx(tx *sql.Tx, empresaID, creditoID int64) (*EmpresaCr
 		COALESCE(saldo_disponible, 0),
 		COALESCE(tasa_interes, 0),
 		COALESCE(tasa_mora, 0),
+		COALESCE(periodicidad_cuota, 'mensual'),
+		COALESCE(valor_cuota_pactada, 0),
+		COALESCE(omitir_domingos, 0),
 		COALESCE(plazo_dias, 0),
 		COALESCE(plazo_cuotas, 0),
 		COALESCE(fecha_inicio, ''),

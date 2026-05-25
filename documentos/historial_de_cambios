@@ -1,3 +1,9 @@
+2026-05-25: Index modulos mas compactos.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: `web/index.html` reduce padding, icono y separacion interna de las tarjetas de `Modulos y caracteristicas principales`, y aumenta el ancho minimo de tarjeta para evitar texto demasiado angosto.
+- UX: las caracteristicas quedan en flujo punteado compacto; se quita la justificacion por item corto para evitar espacios grandes entre palabras en escritorio y movil.
+- QA: verificacion visual local en escritorio 1365px y movil 390px, sin desbordamiento horizontal.
+
 2026-05-25: Licencia gratis valor cero sin rollback.
 - Modulos afectados: `licencias`, `checkout_publico`, `backend_db`, `qa_operacion`.
 - Causa tecnica: cuando la licencia base valor cero se copiaba para una empresa, la activacion intentaba insertar una marca con la licencia origen y otra con la licencia asignada. La segunda chocaba con `ux_licencias_gratis_empresa_unica`; aunque el error se ignoraba en Go, PostgreSQL marcaba la transaccion como abortada y el `Commit` devolvia `commit unexpectedly resulted in rollback`.
@@ -27365,3 +27371,9 @@ Archivos modificados:
 - documentos/descripcion_del_proyecto
 - documentos/historial_de_cambios
 - web/pagar_licencia.html
+- 2026-05-25: Creditos diarios para Venta Moto.
+    - Se actualiza `backend/db/creditos.go` para agregar `periodicidad_cuota`, `valor_cuota_pactada`, `omitir_domingos`, agenda de cuotas diaria/semanal/quincenal/mensual, soporte de contratos diarios largos y calculo de cuotas vencidas/dias que debe desde `empresa_creditos_cuotas`.
+    - Se actualiza `backend/handlers/creditos.go` para aceptar y exportar los nuevos campos de contrato.
+    - Se actualiza `web/administrar_empresa/creditos.html` para crear creditos con cuota diaria pactada, omitir domingos opcionalmente y mostrar periodicidad, cuota y dias/cuotas que debe en cartera/estado de cuenta.
+    - Se agrega prueba `TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays` en `backend/db/creditos_postgres_test.go`.
+    - Verificacion local: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y `node --check` sobre scripts inline de creditos.

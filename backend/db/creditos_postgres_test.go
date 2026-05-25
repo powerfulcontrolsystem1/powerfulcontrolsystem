@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCreateEmpresaCreditoUsesPostgresCompatibleWrites(t *testing.T) {
@@ -47,6 +48,20 @@ func TestCreditoGenerateCuotasTxUsesPostgresCompatibleWrites(t *testing.T) {
 	}
 	if !strings.Contains(body, "sqlNowExpr()") {
 		t.Fatalf("creditoGenerateCuotasTxWithStart debe usar sqlNowExpr() para fechas runtime: %s", body)
+	}
+}
+
+func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
+	if got := creditoMaxCuotas("diaria"); got < 730 {
+		t.Fatalf("los creditos diarios deben permitir contratos de al menos dos años, got=%d", got)
+	}
+	inicio := time.Date(2026, time.May, 23, 0, 0, 0, 0, time.Local)
+	primera := creditoNextFechaCuota(inicio, "diaria", 1, true)
+	if primera.Weekday() == time.Sunday {
+		t.Fatalf("la primera cuota no debe caer domingo cuando se omiten domingos: %s", primera.Format("2006-01-02"))
+	}
+	if primera.Format("2006-01-02") != "2026-05-25" {
+		t.Fatalf("se esperaba saltar domingo 2026-05-24 y vencer 2026-05-25, got=%s", primera.Format("2006-01-02"))
 	}
 }
 

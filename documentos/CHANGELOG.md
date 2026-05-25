@@ -1,3 +1,8 @@
+## [2026-05-25] Index modulos mas compactos
+- [Portal] `web/index.html` compacta la seccion `Modulos y caracteristicas principales` para que cada tarjeta tenga menos margen interno y mas ancho util para el texto.
+- [UX] Las caracteristicas quedan como texto fluido con puntos negros por elemento, evitando los huecos grandes que generaba justificar cada item corto por separado.
+- [Responsive] Se valida escritorio y movil sin desbordamiento horizontal.
+
 ## [2026-05-25] Licencia gratis valor cero sin rollback
 - [Backend] `backend/db/licencias_gratis.go` registra una sola activacion gratis por empresa usando la licencia activa realmente asignada por `activateLicenciaForEmpresaTx`.
 - [PostgreSQL] Evita ignorar un segundo `INSERT` que chocaba con `ux_licencias_gratis_empresa_unica`; aunque el error se ignoraba en Go, PostgreSQL abortaba la transaccion y el `Commit` devolvia `commit unexpectedly resulted in rollback`.
@@ -1628,3 +1633,7 @@
 - [Frontend] `web/administrar_empresa.html` elimina el cuadro de evidencia `Verticales · conteo · API/local` del encabezado del menu lateral.
 - [Navegacion] `Soluciones por negocio` queda reubicado en la parte baja del menu, inmediatamente encima de `Administracion`.
 - [Alcance] Sin cambios de API, permisos, base de datos ni dependencias.
+- Creditos diarios para ventas financiadas de motos.
+	- Archivos modificados: `backend/db/creditos.go`, `backend/handlers/creditos.go`, `backend/db/creditos_postgres_test.go`, `web/administrar_empresa/creditos.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
+	- Descripcion: el modulo de creditos registra periodicidad de cuota, valor pactado y omision opcional de domingos; permite cuotas diarias largas y expone cuotas/dias vencidos para ver rapidamente cuanto debe cada cliente.
+	- Verificacion: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y sintaxis JS del modulo.
