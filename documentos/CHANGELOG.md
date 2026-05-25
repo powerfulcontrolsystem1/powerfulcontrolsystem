@@ -1,3 +1,9 @@
+## [2026-05-25] Portal y super admin con analitica compartida
+- [Portal] `web/index.html` muestra cada modulo principal con un icono mediano relacionado con inventario, POS, pagos, documentos electronicos, finanzas, estaciones, IA, control fisico, gestion y verticales.
+- [Super administrador] `web/super_administrador.html` agrega en la parte baja el mismo contador de visitas por pais en modo lectura, usando el componente comun sin incrementar visitas desde el panel interno.
+- [Frontend] `web/js/portal_visits.js` soporta multiples widgets con atributos `data-portal-visits-*`, centraliza la consulta/registro, evita POST duplicados por pagina y agrega halos visuales a los marcadores del mapa.
+- [Alcance] No cambia backend, tablas, endpoint `/api/public/portal_visitas`, privacidad, permisos ni dependencias externas.
+
 ## [2026-05-25] Selector de empresa con tipos en orden inverso
 - [UX] `web/js/seleccionar_empresa.js` invierte el orden visible del selector `Tipo de empresa` al abrir el formulario `Agregar Empresa`.
 - [Alcance] No cambia `/super/api/tipos_empresas`, backend, tablas, permisos ni preconfiguraciones; solo cambia la presentacion del listado en esa pantalla.

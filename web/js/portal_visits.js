@@ -1,15 +1,15 @@
 (function initPortalVisits() {
   "use strict";
 
-  var root = document.getElementById("portalVisitCounter");
-  if (!root) return;
+  var widgets = Array.prototype.slice.call(document.querySelectorAll("[data-portal-visits-widget]"));
+  var legacyRoot = document.getElementById("portalVisitCounter");
+  if (!widgets.length && legacyRoot) widgets = [legacyRoot];
+  if (!widgets.length) return;
 
-  var totalEl = document.getElementById("portalVisitTotal");
-  var statusEl = document.getElementById("portalVisitStatus");
-  var mapEl = document.getElementById("portalVisitMap");
-  var listEl = document.getElementById("portalVisitCountries");
   var localKey = "pcs_portal_visit_counted_at_v1";
   var countIntervalMs = 30 * 60 * 1000;
+  var countedInPage = false;
+  var sharedCountryPromise = null;
 
   var countryMeta = {
     CO: { name: "Colombia", x: 282, y: 285 },
@@ -78,6 +78,21 @@
     } catch (err) {}
   }
 
+  function widgetShouldCount(widget) {
+    var raw = widget.getAttribute("data-count-visit");
+    if (raw == null || raw === "") return widget.id === "portalVisitCounter";
+    return /^(1|true|si|yes)$/i.test(raw);
+  }
+
+  function partsFor(widget) {
+    return {
+      totalEl: widget.querySelector("[data-portal-visits-total]") || document.getElementById("portalVisitTotal"),
+      statusEl: widget.querySelector("[data-portal-visits-status]") || document.getElementById("portalVisitStatus"),
+      mapEl: widget.querySelector("[data-portal-visits-map]") || document.getElementById("portalVisitMap"),
+      listEl: widget.querySelector("[data-portal-visits-countries]") || document.getElementById("portalVisitCountries")
+    };
+  }
+
   async function detectCountry() {
     try {
       var res = await fetch("/api/public/geo", { credentials: "same-origin" });
@@ -89,15 +104,15 @@
     }
   }
 
-  async function loadStats(country) {
-    var method = shouldCountVisit() ? "POST" : "GET";
-    var url = "/api/public/portal_visitas";
+  async function loadStats(country, countVisit) {
+    var method = countVisit && !countedInPage && shouldCountVisit() ? "POST" : "GET";
     var options = { method: method, credentials: "same-origin", headers: {} };
     if (method === "POST") {
+      countedInPage = true;
       options.headers["Content-Type"] = "application/json";
       options.body = JSON.stringify({ pais_codigo: country || "" });
     }
-    var res = await fetch(url, options);
+    var res = await fetch("/api/public/portal_visitas", options);
     var data = await res.json().catch(function() { return null; });
     if (!res.ok || !data || data.ok === false) {
       throw new Error(data && data.error ? data.error : "No se pudo cargar el contador");
@@ -126,7 +141,7 @@
     return "#2563eb";
   }
 
-  function renderMap(rows) {
+  function renderMap(mapEl, rows) {
     if (!mapEl) return;
     var max = rows.reduce(function(acc, item) { return Math.max(acc, Number(item.visitas || 0)); }, 0);
     var graticule = [120, 240, 360, 480, 600, 720, 840].map(function(x) {
@@ -160,7 +175,8 @@
       var count = Number(item.visitas || 0);
       var radius = Math.max(7, Math.min(24, 7 + Math.sqrt(count || 1) * 3));
       var color = markerColor(index, count, max);
-      return '<g class="portal-visit-marker" tabindex="0" role="listitem" aria-label="' + esc(meta.name) + ': ' + esc(formatNumber(count)) + ' visitas">' +
+      return '<g class="portal-visit-marker" tabindex="0" role="listitem" style="color:' + color + '" aria-label="' + esc(meta.name) + ': ' + esc(formatNumber(count)) + ' visitas">' +
+        '<circle class="portal-visit-marker-halo" cx="' + meta.x + '" cy="' + meta.y + '" r="' + (radius + 8) + '"></circle>' +
         '<circle cx="' + meta.x + '" cy="' + meta.y + '" r="' + radius + '" fill="' + color + '"></circle>' +
         '<text x="' + meta.x + '" y="' + (meta.y + 4) + '">' + esc(code) + '</text>' +
         '<title>' + esc(meta.name) + ': ' + esc(formatNumber(count)) + ' visitas</title>' +
@@ -176,7 +192,7 @@
       '</svg>';
   }
 
-  function renderList(rows) {
+  function renderList(listEl, rows) {
     if (!listEl) return;
     if (!rows.length) {
       listEl.innerHTML = '<div class="portal-visit-empty">Aun no hay visitas registradas.</div>';
@@ -197,26 +213,31 @@
     }).join("");
   }
 
-  function render(data) {
+  function render(widget, data) {
+    var parts = partsFor(widget);
     var rows = Array.isArray(data && data.paises) ? data.paises : [];
-    if (totalEl) totalEl.textContent = formatNumber(data && data.total_visitas);
-    renderMap(rows);
-    renderList(rows);
-    if (statusEl) {
+    if (parts.totalEl) parts.totalEl.textContent = formatNumber(data && data.total_visitas);
+    renderMap(parts.mapEl, rows);
+    renderList(parts.listEl, rows);
+    if (parts.statusEl) {
       var country = normalizeCountry(data && data.pais_registrado);
-      statusEl.textContent = country ? "Tu visita cuenta para " + metaFor(country).name + "." : "Conteo agregado por pais, sin guardar IP.";
+      parts.statusEl.textContent = country ? "Tu visita cuenta para " + metaFor(country).name + "." : "Conteo agregado por pais, sin guardar IP.";
     }
   }
 
-  (async function run() {
+  async function runWidget(widget) {
+    var parts = partsFor(widget);
     try {
-      if (statusEl) statusEl.textContent = "Cargando contador...";
-      var country = await detectCountry();
-      var data = await loadStats(country);
-      render(data);
+      if (parts.statusEl) parts.statusEl.textContent = "Cargando contador...";
+      if (!sharedCountryPromise) sharedCountryPromise = detectCountry();
+      var country = await sharedCountryPromise;
+      var data = await loadStats(country, widgetShouldCount(widget));
+      render(widget, data);
     } catch (err) {
-      if (statusEl) statusEl.textContent = "Contador temporalmente no disponible.";
-      render({ total_visitas: 0, paises: [] });
+      if (parts.statusEl) parts.statusEl.textContent = "Contador temporalmente no disponible.";
+      render(widget, { total_visitas: 0, paises: [] });
     }
-  })();
+  }
+
+  widgets.forEach(runWidget);
 })();

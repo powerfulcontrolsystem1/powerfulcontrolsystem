@@ -99,6 +99,27 @@
 
     <main class="admin-content">
       <iframe name="contentFrame" id="contentFrame" src="/super/licencias_resumen.html" title="Contenido" class="admin-empresa-frame"></iframe>
+      <section id="superPortalVisitCounter" class="portal-visit-counter super-portal-visit-counter" aria-labelledby="superPortalVisitTitle" data-portal-visits-widget data-count-visit="0">
+        <div class="portal-visit-shell">
+          <div class="portal-visit-main">
+            <div class="portal-visit-head">
+              <div>
+                <span class="portal-visit-kicker">Analitica publica</span>
+                <h2 id="superPortalVisitTitle">Visitas al portal por pais</h2>
+                <p class="portal-visit-status" data-portal-visits-status>Cargando contador...</p>
+              </div>
+              <div class="portal-visit-total" aria-label="Total de visitas registradas">
+                <strong data-portal-visits-total>0</strong>
+                <span>visitas registradas</span>
+              </div>
+            </div>
+            <div class="portal-visit-map" aria-live="polite" data-portal-visits-map></div>
+          </div>
+          <aside class="portal-visit-side" aria-label="Visitas por pais">
+            <div data-portal-visits-countries></div>
+          </aside>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -185,6 +206,7 @@
     </div>
   </section>
 
+  <script src="/js/portal_visits.js?v=20260525-portal-visitas-compartido"></script>
   <script src="/js/super_administrador.js"></script>
   <script src="/js/ai_chat_drawer.js"></script>
 </body>

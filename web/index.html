@@ -325,25 +325,42 @@
     }
 
     .portal-modules-list li {
-      position: relative;
-      padding: 12px 14px 12px 36px;
+      padding: 14px;
       border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
       border-radius: 8px;
       background: color-mix(in srgb, var(--surface) 84%, transparent);
       color: var(--text);
       min-height: 100%;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      align-items: start;
+      gap: 12px;
     }
 
-    .portal-modules-list li::before {
-      content: "";
-      position: absolute;
-      left: 14px;
-      top: 20px;
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+    .portal-module-icon {
+      width: 54px;
+      height: 54px;
+      object-fit: contain;
+      border-radius: 14px;
+      padding: 8px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--surface)), color-mix(in srgb, var(--surface-soft) 96%, transparent));
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+      box-sizing: border-box;
+    }
+
+    .portal-module-text {
+      min-width: 0;
+      line-height: 1.52;
+    }
+
+    .portal-module-items {
+      display: grid;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .portal-module-items span {
+      display: block;
     }
 
     .portal-modules-list strong {
@@ -1219,39 +1236,39 @@
         <div class="portal-modules-summary">
           <h2>Modulos y caracteristicas principales</h2>
           <ul class="portal-modules-list">
-            <li><strong>Inventario profesional:</strong> productos, servicios, recetas, categorias, bodegas, kardex, traslados, compras, proveedores y control de existencias.</li>
-            <li><strong>Ventas POS:</strong> venta directa, carritos por estacion, pagos mixtos, abonos, descuentos, codigos promocionales, caja por usuario y varias cajas simultaneas.</li>
-            <li><strong>Pagos y hardware:</strong> manejo de datafonos, pagos QR, cajon monedero, impresoras POS, impresoras por area o producto y facturacion offline.</li>
-            <li><strong>Documentos electronicos:</strong> factura electronica, notas credito/debito, documento soporte, notas de ajuste, nomina electronica, documentos equivalentes electronicos/POS electronico, contingencia y eventos RADIAN para Colombia; factura, nota credito y nota debito para Panama y Ecuador segun el pais configurado.</li>
-            <li><strong>Finanzas y cumplimiento:</strong> impuestos, bancos, ingresos, egresos, tesoreria, presupuesto, reportes, modulo del contador, certificados tributarios e informacion exogena.</li>
-            <li><strong>Operacion por estaciones:</strong> estaciones, mesas, habitaciones, zonas o bahias configurables, control de estados, turnos, reservas, alertas de tiempo, aseo y cierre/corte de caja.</li>
-            <li><strong>Automatizacion e IA:</strong> integracion con IA, documentos inteligentes, OCR de compras, soporte operativo, reportes asistidos y acciones confirmables.</li>
-            <li><strong>Control fisico:</strong> control electrico, manejo de sensores, puertas, reles, permanencia, acceso, vehiculos, parqueaderos y trazabilidad operativa.</li>
-            <li><strong>Gestion empresarial:</strong> clientes, CRM, usuarios, roles, permisos, licencias, auditoria, backups, comunicaciones, soporte, chat y tareas.</li>
-            <li><strong>Verticales listas:</strong> hotel, motel, restaurante, gimnasio, odontologia, propiedad horizontal, domicilios, taxi, carta QR, venta publica y red social comercial.</li>
+            <li><img class="portal-module-icon" src="/img/warehouse-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Inventario profesional:</strong> productos, servicios, recetas, categorias, bodegas, kardex, traslados, compras, proveedores y control de existencias.</span></li>
+            <li><img class="portal-module-icon" src="/img/punto_venta.png" alt="" loading="lazy"><span class="portal-module-text"><strong>Ventas POS:</strong> venta directa, carritos por estacion, pagos mixtos, abonos, descuentos, codigos promocionales, caja por usuario y varias cajas simultaneas.</span></li>
+            <li><img class="portal-module-icon" src="/img/money.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Pagos y hardware:</strong> manejo de datafonos, pagos QR, cajon monedero, impresoras POS, impresoras por area o producto y facturacion offline.</span></li>
+            <li><img class="portal-module-icon" src="/img/invoice.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Documentos electronicos:</strong><span class="portal-module-items"><span>* Factura electronica</span><span>* Notas credito/debito</span><span>* Documento soporte</span><span>* Notas de ajuste</span><span>* Nomina electronica</span><span>* Documentos equivalentes electronicos/POS electronico</span><span>* Contingencia y eventos RADIAN para Colombia</span><span>* Factura, nota credito y nota debito para Panama y Ecuador segun el pais configurado</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/taxes.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Finanzas y cumplimiento:</strong> impuestos, bancos, ingresos, egresos, tesoreria, presupuesto, reportes, modulo del contador, certificados tributarios e informacion exogena.</span></li>
+            <li><img class="portal-module-icon" src="/img/hotel-logo.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Operacion por estaciones:</strong> estaciones, mesas, habitaciones, zonas o bahias configurables, control de estados, turnos, reservas, alertas de tiempo, aseo y cierre/corte de caja.</span></li>
+            <li><img class="portal-module-icon" src="/img/gpt.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Automatizacion e IA:</strong> integracion con IA, documentos inteligentes, OCR de compras, soporte operativo, reportes asistidos y acciones confirmables.</span></li>
+            <li><img class="portal-module-icon" src="/img/sensor.png" alt="" loading="lazy"><span class="portal-module-text"><strong>Control fisico:</strong> control electrico, manejo de sensores, puertas, reles, permanencia, acceso, vehiculos, parqueaderos y trazabilidad operativa.</span></li>
+            <li><img class="portal-module-icon" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Gestion empresarial:</strong> clientes, CRM, usuarios, roles, permisos, licencias, auditoria, backups, comunicaciones, soporte, chat y tareas.</span></li>
+            <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Verticales listas:</strong> hotel, motel, restaurante, gimnasio, odontologia, propiedad horizontal, domicilios, taxi, carta QR, venta publica y red social comercial.</span></li>
           </ul>
         </div>
       </section>
 
     </main>
-    <section id="portalVisitCounter" class="portal-visit-counter" aria-labelledby="portalVisitTitle">
+    <section id="portalVisitCounter" class="portal-visit-counter" aria-labelledby="portalVisitTitle" data-portal-visits-widget data-count-visit="1">
       <div class="portal-visit-shell">
         <div class="portal-visit-main">
           <div class="portal-visit-head">
             <div>
               <span class="portal-visit-kicker">Visitas al portal</span>
               <h2 id="portalVisitTitle">Usuarios que llegan a Powerful Control System por pais</h2>
-              <p id="portalVisitStatus" class="portal-visit-status">Cargando contador...</p>
+              <p id="portalVisitStatus" class="portal-visit-status" data-portal-visits-status>Cargando contador...</p>
             </div>
             <div class="portal-visit-total" aria-label="Total de visitas registradas">
-              <strong id="portalVisitTotal">0</strong>
+              <strong id="portalVisitTotal" data-portal-visits-total>0</strong>
               <span>visitas registradas</span>
             </div>
           </div>
-          <div id="portalVisitMap" class="portal-visit-map" aria-live="polite"></div>
+          <div id="portalVisitMap" class="portal-visit-map" aria-live="polite" data-portal-visits-map></div>
         </div>
         <aside class="portal-visit-side" aria-label="Visitas por pais">
-          <div id="portalVisitCountries"></div>
+          <div id="portalVisitCountries" data-portal-visits-countries></div>
         </aside>
       </div>
     </section>
@@ -1271,7 +1288,7 @@
   </a>
 
   <script src="/js/nuevos_verticales_catalogo.js"></script>
-  <script src="/js/portal_visits.js?v=20260525-portal-visitas-mapa-real"></script>
+  <script src="/js/portal_visits.js?v=20260525-portal-visitas-compartido"></script>
   <script>
     window.__pcsAutoInjectChatShell = true;
     window.__pcsUseFloatingPublicChat = true;
@@ -1789,6 +1806,7 @@
               '  <img class="home-offer-banner-img" src="' + escapeHTML(card.imagen_url) + '" alt="Banner: ' + escapeHTML(card.titulo) + '">' +
               '</article>';
           }
+          var figureSrc = carouselMode ? "/img/sistema punto de venta.png" : (card.imagen_secundaria_url || "/img/sistema punto de venta.png");
           return '' +
             '<article class="portal-card home-offer-card' + (carouselMode ? ' portal-carousel-card' : '') + '" style="animation-delay:' + (idx * 90) + 'ms">' +
             '  <div class="home-offer-head">' +
@@ -1796,7 +1814,7 @@
             '    <h3 class="home-offer-title">' + escapeHTML(card.titulo) + '</h3>' +
             '  </div>' +
             '  <div class="home-offer-figure">' +
-            '    <img class="card-figure-img" src="' + escapeHTML(card.imagen_secundaria_url || "/img/sistema punto de venta.png") + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
+            '    <img class="card-figure-img" src="' + escapeHTML(figureSrc) + '" alt="Ilustración: ' + escapeHTML(card.titulo) + '">' +
             '  </div>' +
             '  <div class="home-offer-body">' +
             '    <p>' + escapeHTML(card.descripcion) + '</p>' +

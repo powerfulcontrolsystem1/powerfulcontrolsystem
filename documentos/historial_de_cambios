@@ -1,3 +1,9 @@
+2026-05-25: Portal publico y super administrador comparten contador de visitas.
+- Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`, `analitica_publica`.
+- Cambio funcional: la lista de `Modulos y caracteristicas principales` del index incorpora iconos medianos por modulo, y el panel de super administrador muestra al fondo el contador/mapa de visitas por pais.
+- Implementacion: `web/js/portal_visits.js` deja de depender de IDs unicos y soporta widgets declarativos con `data-portal-visits-*`; solo los widgets con `data-count-visit="1"` registran visitas, por lo que el super admin consulta en modo lectura y no duplica el conteo. El mapa agrega halos a los marcadores para una lectura mas profesional.
+- Alcance: frontend estatico y documentacion; sin cambios en backend, tablas, endpoint `/api/public/portal_visitas`, privacidad, permisos ni dependencias.
+
 2026-05-25: Selector de empresa muestra tipos en orden inverso.
 - Modulos afectados: `selector_empresas`, `frontend_ux`.
 - Cambio funcional: el formulario `Agregar Empresa` de `seleccionar_empresa.html` invierte el orden visible del campo `Tipo de empresa`.

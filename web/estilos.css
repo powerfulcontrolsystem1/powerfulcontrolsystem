@@ -2079,7 +2079,8 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .super-admin-shell .admin-sidebar .nav .admin-nav-group-title{font-size:.67rem;letter-spacing:.07em}
 .super-admin-shell .admin-sidebar .nav .admin-nav-sublist a{min-height:38px;padding:8px 10px;font-size:.84rem;font-weight:800}
 .super-admin-shell .admin-sidebar .nav a.active{box-shadow:0 10px 22px color-mix(in srgb,var(--accent) 18%,transparent)}
-.super-admin-shell .admin-content{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 96%,#0f766e 4%),var(--bg))}
+.super-admin-shell .admin-content{background:linear-gradient(180deg,color-mix(in srgb,var(--bg) 96%,#0f766e 4%),var(--bg));gap:12px;overflow:auto}
+.super-admin-shell .admin-empresa-frame{min-height:0}
 .admin-empresa-shell .admin-content{
   height:100vh;
   min-height:0;
@@ -2089,6 +2090,146 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
 .admin-empresa-shell .admin-empresa-frame{
   height:100%;
   min-height:0;
+}
+.admin-empresa-shell.super-admin-shell .admin-content{
+  overflow:auto;
+  gap:12px;
+}
+
+.portal-visit-counter{
+  max-width:720px;
+  margin:8px auto 34px;
+  padding:0 18px;
+  box-sizing:border-box;
+  scroll-margin-top:96px;
+}
+.portal-visit-shell{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  align-items:stretch;
+  border:1px solid color-mix(in srgb,var(--border) 82%,var(--accent) 18%);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--surface-soft) 92%,transparent),var(--surface));
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 16px 34px color-mix(in srgb,#020617 12%,transparent);
+}
+.portal-visit-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:12px;
+}
+.portal-visit-kicker{
+  display:block;
+  color:var(--accent);
+  font-weight:900;
+  font-size:.78rem;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  margin-bottom:4px;
+}
+.portal-visit-head h2{
+  margin:0;
+  color:var(--text);
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(1.08rem,1.7vw,1.42rem);
+  letter-spacing:0;
+}
+.portal-visit-total{min-width:132px;text-align:right}
+.portal-visit-total strong{
+  display:block;
+  color:var(--text);
+  font-size:clamp(1.45rem,3vw,2.1rem);
+  font-family:'Montserrat',sans-serif;
+  line-height:1;
+}
+.portal-visit-total span,
+.portal-visit-status{color:var(--muted);font-size:.9rem}
+.portal-visit-map{max-width:600px;min-height:230px;margin:0 auto;width:100%}
+.portal-visit-world{width:100%;min-height:230px;display:block}
+.portal-visit-map-frame{
+  fill:color-mix(in srgb,var(--surface-soft) 88%,var(--accent) 12%);
+  stroke:color-mix(in srgb,var(--border) 72%,var(--accent) 28%);
+  stroke-width:2;
+}
+.portal-visit-graticule{
+  fill:none;
+  stroke:color-mix(in srgb,var(--border) 52%,transparent);
+  stroke-width:.8;
+  stroke-dasharray:4 8;
+}
+.portal-visit-coast{
+  fill:color-mix(in srgb,var(--muted) 30%,var(--surface) 70%);
+  stroke:color-mix(in srgb,var(--border) 78%,var(--text) 22%);
+  stroke-width:1.4;
+  filter:drop-shadow(0 8px 14px rgba(15,23,42,.14));
+}
+.portal-visit-country-shape{
+  fill:color-mix(in srgb,var(--accent) 9%,transparent);
+  stroke:color-mix(in srgb,var(--border) 60%,transparent);
+  stroke-width:.7;
+}
+.portal-visit-marker .portal-visit-marker-halo{fill:none;stroke:currentColor;stroke-width:2;opacity:.28;filter:none}
+.portal-visit-marker circle{
+  stroke:#fff;
+  stroke-width:3;
+  filter:drop-shadow(0 7px 12px rgba(15,23,42,.22));
+}
+.portal-visit-marker text{
+  fill:#fff;
+  font-size:13px;
+  font-weight:900;
+  text-anchor:middle;
+  pointer-events:none;
+}
+.portal-visit-side{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:0;
+  max-width:600px;
+  width:100%;
+  margin:0 auto;
+}
+.portal-visit-country{
+  display:grid;
+  grid-template-columns:minmax(118px,1fr) minmax(110px,.75fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:8px 0;
+  border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent);
+}
+.portal-visit-country strong,
+.portal-visit-country b{color:var(--text);font-weight:900}
+.portal-visit-country span{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}
+.portal-visit-bar{
+  height:9px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--border) 58%,transparent);
+  overflow:hidden;
+}
+.portal-visit-bar i{display:block;height:100%;border-radius:inherit}
+.portal-visit-empty{
+  color:var(--muted);
+  border:1px dashed var(--border);
+  padding:14px;
+  border-radius:10px;
+}
+.super-portal-visit-counter{
+  width:100%;
+  max-width:680px;
+  margin:0 auto 12px;
+  padding:0 8px;
+}
+.super-portal-visit-counter .portal-visit-shell{
+  padding:14px;
+  box-shadow:none;
+}
+.super-portal-visit-counter .portal-visit-map,
+.super-portal-visit-counter .portal-visit-world{
+  min-height:190px;
 }
 
 /* Responsive: colapsar sidebar */
