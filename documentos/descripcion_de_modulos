@@ -1,3 +1,15 @@
+2026-05-25: Login y registro administrador verificados
+- Modulos afectados: `autenticacion_admin`, `registro_admin`, `frontend_ux`.
+- Cambio funcional: se comprueba el flujo de login por correo, registro de nuevo administrador desde `login.html` e inicio OAuth Google en escritorio y celular.
+- UX: el titulo de registro administrador ahora envuelve texto en celular para evitar recortes y mantener el formulario usable.
+- Alcance: no cambia backend, endpoints, tablas, permisos, reCAPTCHA, Google OAuth ni dependencias.
+
+2026-05-25: Index con caracteristicas punteadas por modulo
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: cada modulo de la seccion publica `Modulos y caracteristicas principales` muestra sus caracteristicas como items separados.
+- UX: los items usan punto negro grande y texto justificado para aprovechar mejor el ancho de cada tarjeta.
+- Alcance: no cambia backend, endpoints, tablas, permisos, licencias ni dependencias.
+
 2026-05-25: Portal y super administrador comparten analitica publica
 - Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`, `analitica_publica`.
 - Cambio funcional: el index muestra iconos medianos por cada modulo principal y el panel de super administrador agrega en la parte baja el mismo contador/mapa de visitas por pais.

@@ -351,16 +351,34 @@
     .portal-module-text {
       min-width: 0;
       line-height: 1.52;
+      text-align: justify;
+      text-justify: inter-word;
     }
 
-    .portal-module-items {
+    .portal-module-feature-list {
       display: grid;
       gap: 4px;
       margin-top: 6px;
+      text-align: justify;
+      text-justify: inter-word;
     }
 
-    .portal-module-items span {
+    .portal-module-feature-list span {
       display: block;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .portal-module-feature-list span::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.62em;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #111827;
+      box-shadow: 0 0 0 2px color-mix(in srgb, #111827 12%, transparent);
     }
 
     .portal-modules-list strong {
@@ -1236,16 +1254,16 @@
         <div class="portal-modules-summary">
           <h2>Modulos y caracteristicas principales</h2>
           <ul class="portal-modules-list">
-            <li><img class="portal-module-icon" src="/img/warehouse-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Inventario profesional:</strong> productos, servicios, recetas, categorias, bodegas, kardex, traslados, compras, proveedores y control de existencias.</span></li>
-            <li><img class="portal-module-icon" src="/img/punto_venta.png" alt="" loading="lazy"><span class="portal-module-text"><strong>Ventas POS:</strong> venta directa, carritos por estacion, pagos mixtos, abonos, descuentos, codigos promocionales, caja por usuario y varias cajas simultaneas.</span></li>
-            <li><img class="portal-module-icon" src="/img/money.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Pagos y hardware:</strong> manejo de datafonos, pagos QR, cajon monedero, impresoras POS, impresoras por area o producto y facturacion offline.</span></li>
-            <li><img class="portal-module-icon" src="/img/invoice.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Documentos electronicos:</strong><span class="portal-module-items"><span>* Factura electronica</span><span>* Notas credito/debito</span><span>* Documento soporte</span><span>* Notas de ajuste</span><span>* Nomina electronica</span><span>* Documentos equivalentes electronicos/POS electronico</span><span>* Contingencia y eventos RADIAN para Colombia</span><span>* Factura, nota credito y nota debito para Panama y Ecuador segun el pais configurado</span></span></span></li>
-            <li><img class="portal-module-icon" src="/img/taxes.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Finanzas y cumplimiento:</strong> impuestos, bancos, ingresos, egresos, tesoreria, presupuesto, reportes, modulo del contador, certificados tributarios e informacion exogena.</span></li>
-            <li><img class="portal-module-icon" src="/img/hotel-logo.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Operacion por estaciones:</strong> estaciones, mesas, habitaciones, zonas o bahias configurables, control de estados, turnos, reservas, alertas de tiempo, aseo y cierre/corte de caja.</span></li>
-            <li><img class="portal-module-icon" src="/img/gpt.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Automatizacion e IA:</strong> integracion con IA, documentos inteligentes, OCR de compras, soporte operativo, reportes asistidos y acciones confirmables.</span></li>
-            <li><img class="portal-module-icon" src="/img/sensor.png" alt="" loading="lazy"><span class="portal-module-text"><strong>Control fisico:</strong> control electrico, manejo de sensores, puertas, reles, permanencia, acceso, vehiculos, parqueaderos y trazabilidad operativa.</span></li>
-            <li><img class="portal-module-icon" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Gestion empresarial:</strong> clientes, CRM, usuarios, roles, permisos, licencias, auditoria, backups, comunicaciones, soporte, chat y tareas.</span></li>
-            <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Verticales listas:</strong> hotel, motel, restaurante, gimnasio, odontologia, propiedad horizontal, domicilios, taxi, carta QR, venta publica y red social comercial.</span></li>
+            <li><img class="portal-module-icon" src="/img/warehouse-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Inventario profesional:</strong><span class="portal-module-feature-list"><span>Productos</span><span>Servicios</span><span>Recetas</span><span>Categorias</span><span>Bodegas</span><span>Kardex</span><span>Traslados</span><span>Compras</span><span>Proveedores</span><span>Control de existencias</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/punto_venta.png" alt="" loading="lazy"><span class="portal-module-text"><strong>Ventas POS:</strong><span class="portal-module-feature-list"><span>Venta directa</span><span>Carritos por estacion</span><span>Pagos mixtos</span><span>Abonos</span><span>Descuentos</span><span>Codigos promocionales</span><span>Caja por usuario</span><span>Varias cajas simultaneas</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/money.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Pagos y hardware:</strong><span class="portal-module-feature-list"><span>Manejo de datafonos</span><span>Pagos QR</span><span>Cajon monedero</span><span>Impresoras POS</span><span>Impresoras por area o producto</span><span>Facturacion offline</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/invoice.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Documentos electronicos:</strong><span class="portal-module-feature-list"><span>Factura electronica</span><span>Notas credito/debito</span><span>Documento soporte</span><span>Notas de ajuste</span><span>Nomina electronica</span><span>Documentos equivalentes electronicos/POS electronico</span><span>Contingencia y eventos RADIAN para Colombia</span><span>Factura, nota credito y nota debito para Panama y Ecuador segun el pais configurado</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/taxes.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Finanzas y cumplimiento:</strong><span class="portal-module-feature-list"><span>Impuestos</span><span>Bancos</span><span>Ingresos</span><span>Egresos</span><span>Tesoreria</span><span>Presupuesto</span><span>Reportes</span><span>Modulo del contador</span><span>Certificados tributarios</span><span>Informacion exogena</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/hotel-logo.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Operacion por estaciones:</strong><span class="portal-module-feature-list"><span>Estaciones</span><span>Mesas</span><span>Habitaciones</span><span>Zonas o bahias configurables</span><span>Control de estados</span><span>Turnos</span><span>Reservas</span><span>Alertas de tiempo</span><span>Aseo</span><span>Cierre/corte de caja</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/gpt.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Automatizacion e IA:</strong><span class="portal-module-feature-list"><span>Integracion con IA</span><span>Documentos inteligentes</span><span>OCR de compras</span><span>Soporte operativo</span><span>Reportes asistidos</span><span>Acciones confirmables</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/sensor.png" alt="" loading="lazy"><span class="portal-module-text"><strong>Control fisico:</strong><span class="portal-module-feature-list"><span>Control electrico</span><span>Manejo de sensores</span><span>Puertas</span><span>Reles</span><span>Permanencia</span><span>Acceso</span><span>Vehiculos</span><span>Parqueaderos</span><span>Trazabilidad operativa</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Gestion empresarial:</strong><span class="portal-module-feature-list"><span>Clientes</span><span>CRM</span><span>Usuarios</span><span>Roles</span><span>Permisos</span><span>Licencias</span><span>Auditoria</span><span>Backups</span><span>Comunicaciones</span><span>Soporte</span><span>Chat y tareas</span></span></span></li>
+            <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><span class="portal-module-text"><strong>Verticales listas:</strong><span class="portal-module-feature-list"><span>Hotel</span><span>Motel</span><span>Restaurante</span><span>Gimnasio</span><span>Odontologia</span><span>Propiedad horizontal</span><span>Domicilios</span><span>Taxi</span><span>Carta QR</span><span>Venta publica</span><span>Red social comercial</span></span></span></li>
           </ul>
         </div>
       </section>

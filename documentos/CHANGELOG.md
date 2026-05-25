@@ -1,8 +1,20 @@
+## [2026-05-25] Login y registro administrador verificados
+- [QA] Se valida en produccion el login administrativo por correo en escritorio y movil, con reCAPTCHA v3 activo y redireccion correcta al panel de super administrador.
+- [Registro] `registrar_nuevo_usuario_administrador.html` permite crear una cuenta administrativa nueva desde el enlace de `login.html` y redirige al login con el correo precargado.
+- [Google] El boton `Continuar con Google` abre correctamente el flujo OAuth hacia `accounts.google.com` en escritorio y movil, con `redirect_uri` productivo hacia `/auth/google/callback`.
+- [UX] `web/estilos.css` permite que el titulo del registro administrador se parta en varias lineas en celular, evitando recortes horizontales.
+- [Alcance] No cambia backend, endpoints, tablas, permisos, reCAPTCHA, Google OAuth ni dependencias externas.
+
 ## [2026-05-25] Portal y super admin con analitica compartida
 - [Portal] `web/index.html` muestra cada modulo principal con un icono mediano relacionado con inventario, POS, pagos, documentos electronicos, finanzas, estaciones, IA, control fisico, gestion y verticales.
 - [Super administrador] `web/super_administrador.html` agrega en la parte baja el mismo contador de visitas por pais en modo lectura, usando el componente comun sin incrementar visitas desde el panel interno.
 - [Frontend] `web/js/portal_visits.js` soporta multiples widgets con atributos `data-portal-visits-*`, centraliza la consulta/registro, evita POST duplicados por pagina y agrega halos visuales a los marcadores del mapa.
 - [Alcance] No cambia backend, tablas, endpoint `/api/public/portal_visitas`, privacidad, permisos ni dependencias externas.
+
+## [2026-05-25] Index con caracteristicas punteadas por modulo
+- [Portal] `web/index.html` convierte las descripciones de `Modulos y caracteristicas principales` en listas compactas.
+- [UX] Cada caracteristica se muestra con punto negro grande y texto justificado dentro del ancho de la tarjeta, manteniendo los iconos medianos existentes.
+- [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias.
 
 ## [2026-05-25] Selector de empresa con tipos en orden inverso
 - [UX] `web/js/seleccionar_empresa.js` invierte el orden visible del selector `Tipo de empresa` al abrir el formulario `Agregar Empresa`.

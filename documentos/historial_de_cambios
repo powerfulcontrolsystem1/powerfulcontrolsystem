@@ -1,8 +1,21 @@
+2026-05-25: Login y registro administrador verificados.
+- Modulos afectados: `autenticacion_admin`, `registro_admin`, `frontend_ux`, `qa_operacion`.
+- Cambio funcional: se valida en produccion el acceso administrador por correo/clave en escritorio y movil, el registro de una cuenta administrativa nueva desde `login.html` y el arranque del flujo OAuth Google en ambos tamanos de pantalla.
+- Implementacion: `web/estilos.css` ajusta el titulo de `registrar_nuevo_usuario_administrador.html` para que pueda partirse en varias lineas en celular sin salirse de la pantalla.
+- QA: login de escritorio y movil redirige a `super_administrador.html`; registro movil crea cuenta nueva y redirige a `login.html`; Google OAuth abre `accounts.google.com` con `redirect_uri` productivo. La comprobacion OAuth se limita al inicio del proveedor externo, sin usar credenciales de Google.
+- Alcance: sin cambios de backend, endpoints, tablas, permisos, reCAPTCHA, Google OAuth ni dependencias.
+
 2026-05-25: Portal publico y super administrador comparten contador de visitas.
 - Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`, `analitica_publica`.
 - Cambio funcional: la lista de `Modulos y caracteristicas principales` del index incorpora iconos medianos por modulo, y el panel de super administrador muestra al fondo el contador/mapa de visitas por pais.
 - Implementacion: `web/js/portal_visits.js` deja de depender de IDs unicos y soporta widgets declarativos con `data-portal-visits-*`; solo los widgets con `data-count-visit="1"` registran visitas, por lo que el super admin consulta en modo lectura y no duplica el conteo. El mapa agrega halos a los marcadores para una lectura mas profesional.
 - Alcance: frontend estatico y documentacion; sin cambios en backend, tablas, endpoint `/api/public/portal_visitas`, privacidad, permisos ni dependencias.
+
+2026-05-25: Index con caracteristicas punteadas por modulo.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: las descripciones de la seccion `Modulos y caracteristicas principales` dejan de verse como parrafos corridos y pasan a listas compactas por caracteristica.
+- Implementacion: `web/index.html` usa `portal-module-feature-list` para mostrar cada elemento con punto negro grande y texto justificado al ancho de la tarjeta.
+- Alcance: frontend estatico y documentacion; sin cambios en backend, tablas, endpoints, permisos ni dependencias.
 
 2026-05-25: Selector de empresa muestra tipos en orden inverso.
 - Modulos afectados: `selector_empresas`, `frontend_ux`.

@@ -1,3 +1,5 @@
+- 2026-05-25: `Login y registro administrador verificados` valida en produccion el login por correo, registro de nuevo administrador desde `login.html` e inicio OAuth Google en escritorio y movil; `web/estilos.css` corrige el titulo del registro administrador para que no se corte en celular.
+- 2026-05-25: `Index modulos con caracteristicas punteadas` convierte las descripciones de cada modulo principal en listas justificadas con punto negro grande por caracteristica.
 - 2026-05-25: `Index Mas sistemas` unifica la imagen grande de todas las tarjetas del carrusel `Mas sistemas` usando la imagen de la tarjeta POS, sin cambiar logos, textos ni enlaces.
 - 2026-05-25: `Index documentos electronicos` muestra los documentos electronicos dentro de la lista de modulos como elementos separados con `*` al inicio de cada item.
 - 2026-05-25: `Portal y super admin con analitica compartida` agrega iconos medianos a cada modulo principal del `index`, reutiliza `web/js/portal_visits.js` para mostrar el mismo contador/mapa en el panel de super administrador sin registrar visitas duplicadas, y mejora el mapa con halos de marcador.

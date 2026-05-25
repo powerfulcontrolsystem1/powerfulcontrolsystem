@@ -2511,6 +2511,7 @@ body.theme-dark .login-page{
 }
 .register-admin-page .container{max-width:640px}
 .register-admin-page .login-header{max-width:640px}
+.register-admin-page .login-title{white-space:normal;overflow-wrap:anywhere}
 .register-admin-page .card{padding:30px 32px}
 .admin-link-btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .auth-alt-actions .admin-link-btn{min-height:42px}
@@ -16232,6 +16233,12 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
     line-height: 1.12;
     white-space: nowrap;
     overflow-wrap: normal;
+  }
+
+  .register-admin-page .login-title {
+    font-size: clamp(1.05rem, 7vw, 1.45rem) !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .login-page .form-actions,
