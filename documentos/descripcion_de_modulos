@@ -2,6 +2,7 @@
 - Modulos afectados: `licencias`, `checkout_publico`, `backend_db`.
 - Cambio funcional: la activacion sin pago guarda una sola marca gratis por empresa y la asocia a la licencia activa realmente asignada.
 - Persistencia: si la licencia base se copia para la empresa, no se inserta una segunda fila con la licencia origen; asi se respeta el indice unico de prueba por empresa sin abortar la transaccion PostgreSQL.
+- UX checkout: si el resumen esta en total cero, `pagar_licencia.html` muestra activacion directa y no consulta Wompi/terminos porque no habra pasarela.
 - QA: pruebas dirigidas de `db` y `handlers` para el flujo de licencias.
 
 2026-05-25: Licencia gratis de 15 dias reparada

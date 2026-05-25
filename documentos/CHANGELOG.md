@@ -1,6 +1,7 @@
 ## [2026-05-25] Licencia gratis valor cero sin rollback
 - [Backend] `backend/db/licencias_gratis.go` registra una sola activacion gratis por empresa usando la licencia activa realmente asignada por `activateLicenciaForEmpresaTx`.
 - [PostgreSQL] Evita ignorar un segundo `INSERT` que chocaba con `ux_licencias_gratis_empresa_unica`; aunque el error se ignoraba en Go, PostgreSQL abortaba la transaccion y el `Commit` devolvia `commit unexpectedly resulted in rollback`.
+- [Checkout] `web/pagar_licencia.html` no carga tarjetas ni terminos Wompi cuando el resumen ya esta en total cero, porque ese flujo se activa sin pasarela y no debe producir 502 residual de `/wompi/terms`.
 - [QA] `go test ./db -run "Licencia|PostgresPrimaryKey|PaymentGateway" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi|Checkout|Payment" -count=1`.
 
 ## [2026-05-25] Licencia gratis de 15 dias reparada

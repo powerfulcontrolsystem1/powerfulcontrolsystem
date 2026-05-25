@@ -526,6 +526,8 @@
           }
 
           const paymentCards = [];
+          const initialCheckoutSummary = summaryPayload && summaryPayload.summary ? summaryPayload.summary : null;
+          const initialZeroTotal = !!(initialCheckoutSummary && initialCheckoutSummary.is_zero_total);
           if (epaycoProvider && epaycoProvider.available) {
             const epaycoBadge = availableMethods.length === 1 ? 'Único disponible' : 'Epayco';
             paymentCards.push(''+
@@ -541,7 +543,7 @@
               '</button>'
             );
           }
-          if (wompiProvider && wompiProvider.available) {
+          if (wompiProvider && wompiProvider.available && !initialZeroTotal) {
             const wompiBadge = availableMethods.length === 1 ? 'Único disponible' : 'Wompi';
             paymentCards.push(''+
               '<button id="selectWompiCard" type="button" class="payment-method-card payment-method-card-licenses payment-method-wompi">'+
@@ -1140,7 +1142,7 @@
 
           refreshCheckoutSummary();
 
-          if (wompiProvider && wompiProvider.available) {
+          if (wompiProvider && wompiProvider.available && !(checkoutSummaryState && checkoutSummaryState.is_zero_total)) {
             try{
               const termsRes = await fetch('/wompi/terms');
               if (termsRes.ok) {
