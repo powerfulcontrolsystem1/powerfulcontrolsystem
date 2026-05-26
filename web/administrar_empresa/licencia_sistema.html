@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Licencia del sistema</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .license-page{max-width:1120px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .license-header{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:16px}
+    .license-title{display:grid;gap:6px}
+    .license-title h1{margin:0;color:var(--text);font-size:1.35rem;line-height:1.15}
+    .license-title p{margin:0;color:var(--muted);line-height:1.45}
+    .license-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .license-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .license-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;display:grid;gap:8px}
+    .license-card span{color:var(--muted);font-size:.78rem;font-weight:850;text-transform:uppercase}
+    .license-card strong{color:var(--text);font-size:1rem;word-break:break-word}
+    .license-document{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:18px;color:var(--text)}
+    .license-document h2{margin:0 0 10px;font-size:1.05rem;color:var(--text)}
+    .license-document h3{margin:18px 0 8px;font-size:.98rem;color:var(--text)}
+    .license-document p,.license-document li{line-height:1.5;color:var(--text)}
+    .license-document ul{margin:8px 0 0;padding-left:20px}
+    .license-module-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .license-module-pill{border:1px solid var(--border);border-radius:999px;padding:5px 8px;background:var(--surface-soft);color:var(--text);font-size:.82rem}
+    .license-status{min-height:20px;color:var(--muted);font-weight:750}
+    @media(max-width:820px){.license-header{display:grid}.license-actions{justify-content:flex-start}.license-grid{grid-template-columns:1fr}}
+    @media print{body{background:#fff;color:#000}.floating-menu,.license-actions{display:none!important}.license-page{max-width:none;padding:0}.license-header,.license-card,.license-document{border-color:#999;background:#fff;color:#000;box-shadow:none}.license-title h1,.license-title p,.license-card span,.license-card strong,.license-document h2,.license-document h3,.license-document p,.license-document li{color:#000}}
+  </style>
+</head>
+<body class="admin-empresa-shell">
+  <main class="license-page">
+    <section class="license-header">
+      <div class="license-title">
+        <h1>Licencia del sistema</h1>
+        <p>Documento de uso de Powerful Control System para esta empresa, con alcance de modulos, permisos y condiciones generales de operacion SaaS.</p>
+      </div>
+      <div class="license-actions">
+        <button id="downloadTxtBtn" class="btn primary" type="button">Descargar TXT</button>
+        <button id="downloadHtmlBtn" class="btn secondary" type="button">Descargar HTML</button>
+        <button id="printLicenseBtn" class="btn secondary" type="button">Imprimir / PDF</button>
+      </div>
+    </section>
+
+    <section class="license-grid" aria-label="Resumen de licencia">
+      <article class="license-card">
+        <span>Empresa</span>
+        <strong id="companyName">Cargando...</strong>
+      </article>
+      <article class="license-card">
+        <span>Licencia activa</span>
+        <strong id="licenseName">Validando...</strong>
+      </article>
+      <article class="license-card">
+        <span>Rol efectivo</span>
+        <strong id="effectiveRole">Validando...</strong>
+      </article>
+    </section>
+
+    <section class="license-document" id="licenseDocument">
+      <h2>Documento descargable</h2>
+      <p class="license-status" id="licenseStatus">Cargando informacion de la empresa...</p>
+      <div id="licenseBody"></div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      "use strict";
+
+      var state = {
+        empresaId: "",
+        empresaNombre: "",
+        context: null,
+        generatedAt: new Date()
+      };
+
+      function byId(id){ return document.getElementById(id); }
+
+      function text(value, fallback){
+        var raw = value == null ? "" : String(value).trim();
+        return raw || fallback || "-";
+      }
+
+      function escapeHTML(value){
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function(ch){
+          return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];
+        });
+      }
+
+      function resolveEmpresaId(){
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          var fromURL = text(params.get("empresa_id") || params.get("id"), "");
+          if (fromURL) return fromURL;
+        } catch (e) {}
+        try {
+          if (window.parent && typeof window.parent.__resolveEmpresaIdContext === "function") {
+            var fromParent = window.parent.__resolveEmpresaIdContext();
+            if (fromParent) return String(fromParent);
+          }
+        } catch (e) {}
+        return "";
+      }
+
+      function resolveCompanyName(){
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          var fromURL = text(params.get("empresa_nombre") || params.get("nombre"), "");
+          if (fromURL) return fromURL;
+        } catch (e) {}
+        try {
+          if (window.parent && window.parent.document) {
+            var node = window.parent.document.getElementById("empresaNameMenu") || window.parent.document.getElementById("empresaTitleMenu");
+            if (node && text(node.textContent, "")) return text(node.textContent, "");
+          }
+        } catch (e) {}
+        return state.empresaId ? "Empresa " + state.empresaId : "Empresa";
+      }
+
+      function formatDate(date){
+        try {
+          return date.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short" });
+        } catch (e) {
+          return date.toISOString();
+        }
+      }
+
+      function enabledModules(ctx){
+        var modules = [];
+        if (ctx && ctx.licencia && Array.isArray(ctx.licencia.modulos_habilitados)) {
+          modules = ctx.licencia.modulos_habilitados.slice();
+        }
+        if (!modules.length && ctx && Array.isArray(ctx.modulos)) {
+          modules = ctx.modulos.filter(function(row){ return row && (row.read || row.create || row.update || row.delete || row.approve); }).map(function(row){ return row.modulo; });
+        }
+        return modules.filter(Boolean).slice(0, 120);
+      }
+
+      function plainDocument(){
+        var ctx = state.context || {};
+        var lic = ctx.licencia || {};
+        var modules = enabledModules(ctx);
+        var lines = [
+          "LICENCIA DEL SISTEMA - POWERFUL CONTROL SYSTEM",
+          "",
+          "Empresa: " + state.empresaNombre,
+          "Empresa ID: " + text(state.empresaId, "No disponible"),
+          "Fecha de descarga: " + formatDate(state.generatedAt),
+          "Usuario/rol: " + text(ctx.rol_efectivo || ctx.rol, "No disponible"),
+          "Licencia activa: " + text(lic.nombre, "Sin licencia activa detectada"),
+          "Licencia ID: " + text(lic.licencia_id, "No disponible"),
+          "",
+          "ALCANCE",
+          "Esta licencia autoriza el uso de Powerful Control System como plataforma SaaS multiempresa para la empresa indicada. El acceso se limita a los modulos habilitados por la licencia activa, por los permisos del rol y por las reglas de empresa configuradas.",
+          "",
+          "CONDICIONES GENERALES",
+          "- La informacion, ventas, inventario, usuarios y documentos se operan de forma aislada por empresa_id.",
+          "- La licencia habilita uso del sistema, no transfiere propiedad del codigo fuente, infraestructura, marca ni componentes internos.",
+          "- La continuidad del servicio depende de la licencia vigente, la configuracion contratada y las reglas tecnicas de la plataforma.",
+          "- Las integraciones externas, pasarelas, facturacion electronica, datafonos, correo o servicios de terceros dependen de credenciales y condiciones propias de cada proveedor.",
+          "- El administrador de la empresa debe asignar usuarios y permisos de acuerdo con sus responsabilidades reales.",
+          "",
+          "MODULOS HABILITADOS",
+          modules.length ? modules.join(", ") : "No se encontraron modulos habilitados en el contexto actual.",
+          "",
+          "SOPORTE",
+          "Para soporte operativo use Crear ticket de ayuda desde el menu flotante o los canales definidos por Powerful Control System.",
+          "",
+          "Documento generado automaticamente desde Administrar empresa."
+        ];
+        return lines.join("\r\n");
+      }
+
+      function render(){
+        var ctx = state.context || {};
+        var lic = ctx.licencia || {};
+        var modules = enabledModules(ctx);
+        byId("companyName").textContent = state.empresaNombre;
+        byId("licenseName").textContent = text(lic.nombre, "Sin licencia activa detectada");
+        byId("effectiveRole").textContent = text(ctx.rol_efectivo || ctx.rol, "No disponible");
+        byId("licenseStatus").textContent = "Documento listo para descargar.";
+        byId("licenseBody").innerHTML =
+          "<h3>Alcance de uso</h3>" +
+          "<p>Esta licencia autoriza el uso de Powerful Control System como plataforma SaaS multiempresa para <strong>" + escapeHTML(state.empresaNombre) + "</strong>. El acceso efectivo depende de la licencia activa, los modulos habilitados, el rol del usuario y las reglas de permisos configuradas para la empresa.</p>" +
+          "<h3>Condiciones principales</h3>" +
+          "<ul>" +
+          "<li>La operacion se mantiene aislada por <strong>empresa_id " + escapeHTML(state.empresaId || "-") + "</strong>.</li>" +
+          "<li>La licencia habilita el uso del sistema; no transfiere propiedad del codigo fuente, infraestructura, marca ni componentes internos.</li>" +
+          "<li>La vigencia, limites y modulos dependen del plan contratado y de la licencia activa.</li>" +
+          "<li>Integraciones externas como pasarelas, facturacion electronica, correo, datafonos o servicios de terceros dependen de sus credenciales y condiciones propias.</li>" +
+          "<li>El administrador de empresa debe asignar usuarios y permisos segun las responsabilidades reales de cada persona.</li>" +
+          "</ul>" +
+          "<h3>Modulos habilitados</h3>" +
+          (modules.length ? "<div class=\"license-module-list\">" + modules.map(function(item){ return "<span class=\"license-module-pill\">" + escapeHTML(item) + "</span>"; }).join("") + "</div>" : "<p>No se encontraron modulos habilitados en el contexto actual.</p>") +
+          "<h3>Descarga</h3>" +
+          "<p>Use los botones superiores para descargar el documento en TXT, guardar una copia HTML o imprimirlo como PDF.</p>";
+      }
+
+      function download(filename, content, type){
+        var blob = new Blob([content], { type: type || "text/plain;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }
+
+      function safeFilename(value){
+        return String(value || "empresa").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "empresa";
+      }
+
+      function downloadText(){
+        download("licencia-sistema-" + safeFilename(state.empresaNombre) + ".txt", plainDocument(), "text/plain;charset=utf-8");
+      }
+
+      function downloadHTML(){
+        var content = "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Licencia del sistema</title><style>body{font-family:Arial,sans-serif;line-height:1.45;color:#111;margin:28px;max-width:900px}h1,h2,h3{color:#111}.pill{display:inline-block;border:1px solid #777;border-radius:999px;padding:4px 8px;margin:3px}</style></head><body><pre style=\"white-space:pre-wrap;font-family:Arial,sans-serif\">" + escapeHTML(plainDocument()) + "</pre></body></html>";
+        download("licencia-sistema-" + safeFilename(state.empresaNombre) + ".html", content, "text/html;charset=utf-8");
+      }
+
+      async function load(){
+        state.empresaId = resolveEmpresaId();
+        state.empresaNombre = resolveCompanyName();
+        byId("companyName").textContent = state.empresaNombre;
+        if (!state.empresaId) {
+          byId("licenseStatus").textContent = "No se pudo detectar empresa_id para cargar la licencia.";
+          return;
+        }
+        try {
+          var response = await fetch("/api/empresa/permisos_contexto?empresa_id=" + encodeURIComponent(state.empresaId), { credentials: "same-origin" });
+          if (!response.ok) throw new Error(await response.text());
+          state.context = await response.json();
+          render();
+        } catch (err) {
+          byId("licenseStatus").textContent = "No se pudo cargar el contexto de licencia. Intenta nuevamente.";
+          byId("licenseBody").innerHTML = "<p class=\"error\">" + escapeHTML(err && err.message ? err.message : err) + "</p>";
+        }
+      }
+
+      byId("downloadTxtBtn").addEventListener("click", downloadText);
+      byId("downloadHtmlBtn").addEventListener("click", downloadHTML);
+      byId("printLicenseBtn").addEventListener("click", function(){ window.print(); });
+      load();
+    })();
+  </script>
+</body>
+</html>

@@ -1,3 +1,9 @@
+2026-05-25: Licencia del sistema descargable por empresa
+- Modulos afectados: `administrar_empresa`, `licencias`, `seguridad`, `frontend_ux`.
+- Cambio funcional: se agrega el boton `Licencia del sistema` al final del grupo `Administracion` en `Administrar empresa`.
+- UX: la pagina muestra empresa, licencia activa, rol efectivo, alcance SaaS y modulos habilitados; permite descargar TXT, descargar HTML o imprimir/guardar PDF.
+- Permisos: usa `linkLicenciaSistema` con modulo `seguridad` y accion lectura; no crea endpoints, tablas ni dependencias nuevas.
+
 2026-05-25: Menu flotante sin ayuda administrador
 - Modulos afectados: `menu_flotante`, `frontend_ux`.
 - Cambio funcional: se elimina el enlace `Ayuda administrador` del menu flotante centralizado.

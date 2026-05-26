@@ -1,3 +1,9 @@
+2026-05-25 - Licencia del sistema descargable por empresa
+- `web/administrar_empresa/licencia_sistema.html`:
+	- pagina empresarial que muestra el alcance de la licencia de Powerful Control System para la empresa actual.
+	- consulta `/api/empresa/permisos_contexto` con `empresa_id`, presenta licencia activa, rol efectivo y modulos habilitados.
+	- permite descargar el documento como TXT, HTML o imprimir/guardar PDF desde el navegador.
+
 2026-05-25 - Licencia gratis de 15 dias reparada
 - `backend/db/licencias_gratis.go`:
 	- corrige `licencias_activaciones_gratis.id` para PostgreSQL con `BIGSERIAL PRIMARY KEY` y reparacion de secuencia/default en tablas existentes.

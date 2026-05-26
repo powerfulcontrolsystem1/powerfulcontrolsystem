@@ -544,6 +544,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
 
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de empresa", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkLicenciaSistema", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Licencia del sistema", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionMain", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Productos y pedidos", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionIdentidadVisual", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Identidad visual", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionCobroOperativo", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Cobro operativo", Grupo: "Administracion y configuracion"},

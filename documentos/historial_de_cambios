@@ -1,3 +1,10 @@
+2026-05-25: Licencia del sistema descargable en Administrar empresa.
+- Modulos afectados: `administrar_empresa`, `licencias`, `seguridad`, `frontend_ux`.
+- Cambio funcional: se agrega el boton `Licencia del sistema` al final del grupo `Administracion` del menu empresarial, debajo de la configuracion y los backups.
+- Implementacion: `web/administrar_empresa/licencia_sistema.html` consulta `/api/empresa/permisos_contexto`, muestra el alcance de la licencia por `empresa_id` y permite descargar el documento como TXT, HTML o imprimir/guardar PDF.
+- Permisos: se registra `linkLicenciaSistema` con modulo `seguridad` y accion `R` en frontend y catalogo backend de paginas; no agrega tablas, wrappers ni dependencias.
+- QA: pendiente de validacion sintactica y visual en esta misma intervencion.
+
 2026-05-25: Quitar ayuda administrador del menu flotante.
 - Modulos afectados: `menu_flotante`, `frontend_ux`.
 - Cambio funcional: `web/menu.js` deja de inyectar el enlace `Ayuda administrador` y elimina la logica que lo mostraba solo a `super_administrador`.

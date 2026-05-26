@@ -1,3 +1,8 @@
+## [2026-05-25] Licencia del sistema descargable por empresa
+- [Administrar empresa] `web/administrar_empresa.html` agrega `Licencia del sistema` al final del grupo `Administracion`.
+- [Frontend] `web/administrar_empresa/licencia_sistema.html` muestra el alcance de licencia por empresa y permite descargar TXT, descargar HTML o imprimir/guardar PDF.
+- [Permisos] `linkLicenciaSistema` queda bajo `seguridad:R` en frontend y backend; no se crean endpoints, tablas ni dependencias.
+
 ## [2026-05-25] Menu flotante sin ayuda administrador
 - [Frontend] `web/menu.js` elimina el enlace `Ayuda administrador` del menu flotante centralizado.
 - [Soporte] Se conserva el boton `Crear ticket de ayuda` para solicitudes operativas.

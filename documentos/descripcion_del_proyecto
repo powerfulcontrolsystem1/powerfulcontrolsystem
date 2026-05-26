@@ -1,3 +1,5 @@
+Revision licencia descargable por empresa 2026-05-25: `Administrar empresa` agrega al final del grupo `Administracion` el boton `Licencia del sistema`, debajo de la configuracion empresarial. La nueva pagina `web/administrar_empresa/licencia_sistema.html` consulta el contexto efectivo de licencia y permisos por `empresa_id`, explica el alcance de uso SaaS de Powerful Control System y permite descargar el documento en TXT, HTML o imprimirlo como PDF. No agrega tablas ni dependencias; usa permisos existentes de `seguridad:R`.
+
 Revision menu flotante sin ayuda administrador 2026-05-25: el menu flotante centralizado elimina el acceso `Ayuda administrador`, que antes se inyectaba solo para super administrador desde `web/menu.js`. Se mantiene `Crear ticket de ayuda` para soporte operativo y no cambian rutas, permisos, endpoints ni datos.
 
 Revision orden menu finanzas 2026-05-25: en `Administrar empresa`, el grupo `Finanzas y cumplimiento` queda ubicado inmediatamente debajo de `Inventario y compras` para que cartera, impuestos, facturacion y reportes esten mas cerca del flujo operativo de inventario/compras. No cambia permisos, rutas, endpoints ni datos.

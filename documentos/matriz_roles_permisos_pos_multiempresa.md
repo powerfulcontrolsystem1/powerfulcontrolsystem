@@ -1,3 +1,8 @@
+2026-05-25: Nota de licencia del sistema descargable
+- `linkLicenciaSistema` se agrega al grupo `Administracion y configuracion` con modulo `seguridad` y accion `R`.
+- La pagina `web/administrar_empresa/licencia_sistema.html` solo consulta el contexto efectivo de permisos/licencia de la empresa y genera una descarga local en el navegador; no crea endpoint nuevo ni concede acceso adicional a datos operativos.
+- El documento descargable se genera por `empresa_id` y conserva el aislamiento multiempresa.
+
 2026-05-25: Nota de orden de menu financiero
 - `Finanzas y cumplimiento` se reubica debajo de `Inventario y compras` en el menu principal de `Administrar empresa`.
 - El cambio es solo de navegacion visual; conserva los mismos `PaginaClave`, modulos, acciones y wrappers existentes.
