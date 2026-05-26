@@ -10795,3 +10795,17 @@ Archivos modificados:
 - documentos/descripcion_del_proyecto
 - documentos/historial_de_cambios
 - web/menu.js
+
+2026-05-25 19:31:08 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 310a93c1; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/administrar_empresa/licencia_sistema.html
+- web/js/administrar_empresa.js
