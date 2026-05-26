@@ -1,3 +1,8 @@
+2026-05-25: Finanzas debajo de inventario y compras
+- Modulos afectados: `administrar_empresa`, `finanzas`, `frontend_ux`.
+- Cambio funcional: el grupo `Finanzas y cumplimiento` se mueve para quedar justo debajo de `Inventario y compras` en el menu principal empresarial.
+- Alcance: solo cambia orden de navegacion; no cambia rutas, permisos, APIs, tablas ni dependencias.
+
 2026-05-25: Navegacion financiera y paginas empresariales conectadas
 - Modulos afectados: `finanzas`, `creditos`, `cobranza`, `chat_ia`, `configuracion`, `frontend_ux`.
 - Cambio funcional: `Creditos y cartera` y `Gestion de cobranza` quedan visibles como botones directos en `Finanzas y cumplimiento` y como accesos rapidos del `Centro financiero y contable`.

@@ -1,3 +1,9 @@
+2026-05-25: Finanzas y cumplimiento debajo de inventario.
+- Modulos afectados: `administrar_empresa`, `finanzas`, `frontend_ux`.
+- Cambio funcional: `web/administrar_empresa.html` reordena el menu principal para ubicar `Finanzas y cumplimiento` inmediatamente despues de `Inventario y compras`.
+- Seguridad: no cambia permisos, catalogo de paginas, endpoints, licencias ni aislamiento por `empresa_id`.
+- QA: validacion de orden del DOM y `git diff --check`.
+
 2026-05-25: Navegacion de creditos, cartera y paginas huerfanas.
 - Modulos afectados: `administrar_empresa`, `finanzas`, `creditos`, `cobranza`, `chat_ia`, `configuracion`, `frontend_ux`.
 - Causa tecnica: `creditos.html` y `cobranza.html` estaban enlazadas solo dentro del centro financiero, mientras el menu principal de `Finanzas y cumplimiento` no mostraba botones directos. Ademas, `chat_con_inteligencia_artificial.html`, `configuracion_guiada.html` y `configuracion_integraciones.html` existian como paginas operativas sin entrada directa de navegacion.

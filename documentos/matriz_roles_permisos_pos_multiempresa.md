@@ -1,3 +1,7 @@
+2026-05-25: Nota de orden de menu financiero
+- `Finanzas y cumplimiento` se reubica debajo de `Inventario y compras` en el menu principal de `Administrar empresa`.
+- El cambio es solo de navegacion visual; conserva los mismos `PaginaClave`, modulos, acciones y wrappers existentes.
+
 2026-05-25: Nota de navegacion financiera y paginas huerfanas
 - `linkCreditos` y `linkCobranza` se muestran como accesos directos en `Administrar empresa > Finanzas y cumplimiento`; conservan los permisos existentes de `finanzas:C` y `cobranza:C` respectivamente.
 - `linkChatIA`, `linkConfiguracionGuiada` y `linkERPExtendido` se conectan desde menus visibles para paginas empresariales ya existentes. No se crean wrappers nuevos ni se relaja el aislamiento por `empresa_id`.

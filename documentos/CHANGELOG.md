@@ -1,3 +1,7 @@
+## [2026-05-25] Finanzas debajo de inventario
+- [UX] `web/administrar_empresa.html` mueve el grupo `Finanzas y cumplimiento` para quedar inmediatamente debajo de `Inventario y compras`.
+- [Alcance] Cambio de orden de menu sin modificar permisos, rutas, endpoints, tablas ni dependencias.
+
 ## [2026-05-25] Navegacion financiera y paginas huerfanas
 - [Finanzas] `web/administrar_empresa.html` muestra `Creditos y cartera` y `Gestion de cobranza` directamente dentro de `Finanzas y cumplimiento`.
 - [Centro financiero] `web/administrar_empresa/finanzas_menu.html` agrega accesos rapidos a creditos y cobranza, manteniendo la barra lateral existente.
