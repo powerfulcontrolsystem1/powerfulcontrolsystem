@@ -1,3 +1,8 @@
+## [2026-05-25] Creditos y cartera con submenu
+- [UX] `web/administrar_empresa/creditos_menu.html` separa el modulo en botones de subpagina: panel, nuevo credito, cartera, morosidad, riesgo y limites, abonos/operaciones, aprobaciones y estado de cuenta.
+- [Frontend] `web/administrar_empresa/creditos.html` soporta vistas por `view=` y conserva el credito seleccionado al saltar desde cartera o morosidad hacia estado de cuenta u operaciones.
+- [Permisos] Los nuevos links internos quedan registrados bajo `finanzas:C`; no cambian endpoints, tablas ni dependencias.
+
 ## [2026-05-25] Licencia del sistema descargable por empresa
 - [Administrar empresa] `web/administrar_empresa.html` agrega `Licencia del sistema` al final del grupo `Administracion`.
 - [Frontend] `web/administrar_empresa/licencia_sistema.html` muestra el alcance de licencia por empresa y permite descargar TXT, descargar HTML o imprimir/guardar PDF.

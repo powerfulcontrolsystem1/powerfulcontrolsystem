@@ -1,3 +1,17 @@
+## Actualizacion 2026-05-25 (submenu de creditos y cartera)
+
+- `web/administrar_empresa/creditos_menu.html`:
+  - agrega contenedor de navegacion interna para el modulo `Creditos y cartera`.
+  - carga `creditos.html` en iframe con `view=panel|crear|cartera|morosidad|limites|operaciones|aprobaciones|estado`.
+- `web/administrar_empresa/creditos.html`:
+  - etiqueta cada bloque funcional con `data-creditos-section`.
+  - filtra la vista activa por parametro `view` sin duplicar logica ni APIs.
+  - conserva el credito seleccionado al saltar desde cartera/morosidad hacia estado de cuenta u operaciones.
+- `web/administrar_empresa.html` y `web/administrar_empresa/finanzas_menu.html`:
+  - apuntan el acceso de creditos al nuevo contenedor `creditos_menu.html`.
+- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js`:
+  - registran permisos para los botones internos del submenu bajo `finanzas:C`.
+
 ## Actualizacion 2026-05-21 (contador publico de visitas por pais)
 
 - `backend/handlers/portal_visitas.go`: registra visitas agregadas por pais en `/api/public/portal_visitas`, usando headers de pais o payload del frontend.

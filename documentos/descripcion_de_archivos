@@ -1,3 +1,8 @@
+2026-05-25 - Submenu Creditos y cartera
+- `web/administrar_empresa/creditos_menu.html`:
+	- contenedor empresarial con botones para separar Creditos y cartera en panel, nuevo credito, cartera, morosidad, riesgo/limites, abonos/operaciones, aprobaciones y estado de cuenta.
+	- carga `creditos.html` con parametro `view` dentro de un iframe y conserva `empresa_id` desde el contexto activo.
+
 2026-05-25 - Licencia del sistema descargable por empresa
 - `web/administrar_empresa/licencia_sistema.html`:
 	- pagina empresarial que muestra el alcance de la licencia de Powerful Control System para la empresa actual.

@@ -292,6 +292,58 @@
       color: var(--muted);
       font-size: .92rem;
     }
+    .creditos-view-nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface) 94%, var(--accent) 6%);
+      box-shadow: 0 10px 24px rgba(15,23,42,.10);
+    }
+    .creditos-view-nav a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 40px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      text-decoration: none;
+      font-size: .86rem;
+      font-weight: 850;
+      line-height: 1.15;
+      text-align: center;
+    }
+    .creditos-view-nav a.is-active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-contrast);
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 24%, transparent);
+    }
+    .creditos-view-nav .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+    }
+    .creditos-shell[data-creditos-view="panel"] [data-creditos-section]:not([data-creditos-section="panel"]),
+    .creditos-shell[data-creditos-view="crear"] [data-creditos-section]:not([data-creditos-section="crear"]),
+    .creditos-shell[data-creditos-view="cartera"] [data-creditos-section]:not([data-creditos-section="cartera"]),
+    .creditos-shell[data-creditos-view="morosidad"] [data-creditos-section]:not([data-creditos-section="morosidad"]),
+    .creditos-shell[data-creditos-view="limites"] [data-creditos-section]:not([data-creditos-section="limites"]),
+    .creditos-shell[data-creditos-view="operaciones"] [data-creditos-section]:not([data-creditos-section="operaciones"]),
+    .creditos-shell[data-creditos-view="aprobaciones"] [data-creditos-section]:not([data-creditos-section="aprobaciones"]),
+    .creditos-shell[data-creditos-view="estado"] [data-creditos-section]:not([data-creditos-section="estado"]) {
+      display: none !important;
+    }
     @media (max-width: 1100px) {
       .creditos-insight-grid,
       .creditos-detail-grid,
@@ -312,7 +364,18 @@
 </head>
 <body class="empresa-subpage creditos-shell">
   <div class="container">
-    <section class="empresa-module-header" style="margin-bottom:18px;">
+    <nav class="creditos-view-nav" aria-label="Submenu de creditos y cartera">
+      <a href="/administrar_empresa/creditos.html?view=panel" data-creditos-view-link="panel"><img class="icon" src="/img/analytics-color.svg" alt="">Panel</a>
+      <a href="/administrar_empresa/creditos.html?view=crear" data-creditos-view-link="crear"><img class="icon" src="/img/money.svg" alt="">Nuevo credito</a>
+      <a href="/administrar_empresa/creditos.html?view=cartera" data-creditos-view-link="cartera"><img class="icon" src="/img/report.svg" alt="">Cartera</a>
+      <a href="/administrar_empresa/creditos.html?view=morosidad" data-creditos-view-link="morosidad"><img class="icon" src="/img/taxes.svg" alt="">Morosos</a>
+      <a href="/administrar_empresa/creditos.html?view=limites" data-creditos-view-link="limites"><img class="icon" src="/img/shield-security-color.svg" alt="">Riesgo y limites</a>
+      <a href="/administrar_empresa/creditos.html?view=operaciones" data-creditos-view-link="operaciones"><img class="icon" src="/img/network-color.svg" alt="">Abonos y operaciones</a>
+      <a href="/administrar_empresa/creditos.html?view=aprobaciones" data-creditos-view-link="aprobaciones"><img class="icon" src="/img/shield-license-color.svg" alt="">Aprobaciones</a>
+      <a href="/administrar_empresa/creditos.html?view=estado" data-creditos-view-link="estado"><img class="icon" src="/img/customer.svg" alt="">Estado de cuenta</a>
+    </nav>
+
+    <section class="empresa-module-header" data-creditos-section="panel" style="margin-bottom:18px;">
       <div>
         <span class="empresa-module-kicker">Riesgo y cobranza</span>
         <h2 style="margin:6px 0 8px;">Decisiones de cartera con visión ejecutiva</h2>
@@ -336,7 +399,7 @@
       </div>
     </section>
 
-    <section class="creditos-hero">
+    <section class="creditos-hero" data-creditos-section="panel">
       <p class="creditos-hero-kicker">Cartera y aprobaciones</p>
       <h1 class="creditos-page-title">Créditos y cartera empresarial</h1>
       <p>Supervisa la salud de cartera, controla el riesgo por cliente, aplica cobranzas con trazabilidad y administra aprobaciones de refinanciación o reverso desde una sola vista profesional.</p>
@@ -353,9 +416,9 @@
       <div id="creditosContexto" class="form-help creditos-context" style="margin-top:14px;"></div>
     </section>
 
-    <section id="dashboardGrid" class="creditos-dashboard-grid"></section>
+    <section id="dashboardGrid" class="creditos-dashboard-grid" data-creditos-section="panel"></section>
 
-    <section class="creditos-insight-grid">
+    <section class="creditos-insight-grid" data-creditos-section="panel">
       <article class="creditos-card">
         <h2>Salud de cartera</h2>
         <p class="creditos-inline-note">Indicadores ejecutivos para priorizar cobranzas, identificar concentración de riesgo y anticipar vencimientos.</p>
@@ -369,7 +432,7 @@
       </article>
     </section>
 
-    <section class="form creditos-section creditos-section-first" id="crearCreditoSection">
+    <section class="form creditos-section creditos-section-first" id="crearCreditoSection" data-creditos-section="crear">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Crear crédito</h2>
       </div>
@@ -465,7 +528,7 @@
       <div id="crearMsg" class="form-help"></div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-creditos-section="cartera">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Filtros de cartera y exportación</h2>
       </div>
@@ -543,7 +606,7 @@
       </div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-creditos-section="limites">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Riesgo por cliente y políticas de cupo</h2>
       </div>
@@ -615,7 +678,7 @@
       </div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-creditos-section="morosidad">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Alertas y ranking de morosidad</h2>
       </div>
@@ -688,7 +751,7 @@
       </div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-creditos-section="aprobaciones">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Bandeja de aprobaciones y workflows</h2>
       </div>
@@ -745,7 +808,7 @@
       </div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-creditos-section="operaciones">
       <div class="page-header creditos-section-header">
         <h2 class="creditos-section-title">Operaciones especiales y cobranzas</h2>
       </div>
@@ -855,9 +918,13 @@
       </div>
     </section>
 
-    <section class="form creditos-section">
+    <section class="form creditos-section" data-creditos-section="estado">
       <div class="page-header creditos-section-header">
         <h2 id="detalleTitulo" class="creditos-section-title">Estado de cuenta</h2>
+      </div>
+      <div class="creditos-toolbar-grid" style="margin-bottom:12px;">
+        <input id="estadoCreditoId" class="form-input" type="number" min="1" step="1" placeholder="Credito ID">
+        <button id="btnConsultarEstadoCuenta" type="button" class="btn">Consultar estado de cuenta</button>
       </div>
       <div id="detalleMeta" class="form-help creditos-detail-meta">Selecciona un crédito para ver cuotas, movimientos y seguimiento de cartera.</div>
       <div class="creditos-detail-grid">
@@ -916,6 +983,41 @@
 
       function normalize(v) {
         return String(v || '').trim();
+      }
+
+      var currentView = normalize(getQueryParam('view') || 'panel').toLowerCase();
+      var validViews = {
+        panel: true,
+        crear: true,
+        cartera: true,
+        morosidad: true,
+        limites: true,
+        operaciones: true,
+        aprobaciones: true,
+        estado: true,
+        todo: true
+      };
+      if (!validViews[currentView]) currentView = 'panel';
+
+      function applyCreditView() {
+        var showAll = currentView === 'todo';
+        document.querySelectorAll('[data-creditos-section]').forEach(function (section) {
+          var sectionView = normalize(section.getAttribute('data-creditos-section')).toLowerCase();
+          section.hidden = !showAll && sectionView !== currentView;
+        });
+        document.querySelectorAll('[data-creditos-view-link]').forEach(function (link) {
+          var view = normalize(link.getAttribute('data-creditos-view-link')).toLowerCase();
+          link.classList.toggle('is-active', view === currentView);
+          var params = new URLSearchParams(window.location.search);
+          var empresa = normalize(params.get('empresa_id') || params.get('id') || '');
+          params.set('view', view);
+          if (empresa) params.set('empresa_id', empresa);
+          link.href = window.location.pathname + '?' + params.toString();
+        });
+        document.body.setAttribute('data-creditos-view', currentView);
+        try {
+          window.parent.postMessage({ type: 'pcs:creditos:view', view: currentView }, window.location.origin);
+        } catch (_) {}
       }
 
       function n(v) {
@@ -987,6 +1089,7 @@
       }
 
       var empresaID = resolveEmpresaID();
+      applyCreditView();
       var contexto = document.getElementById('creditosContexto');
       if (contexto) {
         contexto.textContent = empresaID > 0
@@ -1985,6 +2088,62 @@
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
+      function sameView(view) {
+        return currentView === 'todo' || currentView === normalize(view).toLowerCase();
+      }
+
+      function goToView(view, payload) {
+        try {
+          if (payload && payload.detalle_id) sessionStorage.setItem('creditos_pending_detalle', String(i(payload.detalle_id)));
+          if (payload && payload.abono_id) sessionStorage.setItem('creditos_pending_abono', String(i(payload.abono_id)));
+          if (payload && payload.refi_id) sessionStorage.setItem('creditos_pending_refi', String(i(payload.refi_id)));
+          if (payload && payload.reverso_credito_id) sessionStorage.setItem('creditos_pending_reverso_credito', String(i(payload.reverso_credito_id)));
+          if (payload && payload.reverso_movimiento_id) sessionStorage.setItem('creditos_pending_reverso_movimiento', String(i(payload.reverso_movimiento_id)));
+        } catch (_) {}
+        try {
+          window.parent.postMessage({ type: 'pcs:creditos:view', view: view }, window.location.origin);
+        } catch (_) {}
+        var params = new URLSearchParams(window.location.search);
+        params.set('view', view);
+        window.location.search = params.toString();
+      }
+
+      function consumePendingActions() {
+        var pendingDetalle = 0;
+        var pendingAbono = 0;
+        var pendingRefi = 0;
+        var pendingRevCredito = 0;
+        var pendingRevMov = 0;
+        try {
+          pendingDetalle = i(sessionStorage.getItem('creditos_pending_detalle') || 0);
+          pendingAbono = i(sessionStorage.getItem('creditos_pending_abono') || 0);
+          pendingRefi = i(sessionStorage.getItem('creditos_pending_refi') || 0);
+          pendingRevCredito = i(sessionStorage.getItem('creditos_pending_reverso_credito') || 0);
+          pendingRevMov = i(sessionStorage.getItem('creditos_pending_reverso_movimiento') || 0);
+          sessionStorage.removeItem('creditos_pending_detalle');
+          sessionStorage.removeItem('creditos_pending_abono');
+          sessionStorage.removeItem('creditos_pending_refi');
+          sessionStorage.removeItem('creditos_pending_reverso_credito');
+          sessionStorage.removeItem('creditos_pending_reverso_movimiento');
+        } catch (_) {}
+        if (pendingDetalle > 0) {
+          var estadoInput = document.getElementById('estadoCreditoId');
+          if (estadoInput) estadoInput.value = String(pendingDetalle);
+          loadEstadoCuenta(pendingDetalle, false);
+        }
+        if (pendingAbono > 0) {
+          document.getElementById('abCreditoId').value = String(pendingAbono);
+          var abMonto = document.getElementById('abMonto');
+          if (abMonto) abMonto.focus();
+        }
+        if (pendingRefi > 0) {
+          prefillRefinanciacion(pendingRefi);
+        }
+        if (pendingRevCredito > 0 || pendingRevMov > 0) {
+          prefillReverso(pendingRevCredito, pendingRevMov);
+        }
+      }
+
       function bindActions() {
         document.getElementById('btnConsultar').addEventListener('click', consultarTodo);
         document.getElementById('btnExportar').addEventListener('click', function () { exportarReporte(); });
@@ -2002,8 +2161,22 @@
         document.getElementById('btnSolicitarRefinanciacion').addEventListener('click', solicitarRefinanciacion);
         document.getElementById('btnSolicitarReverso').addEventListener('click', solicitarReverso);
         document.getElementById('btnHeroConsultar').addEventListener('click', consultarTodo);
-        document.getElementById('btnHeroCrear').addEventListener('click', function () { scrollToId('crearCreditoSection'); });
-        document.getElementById('btnHeroExportar').addEventListener('click', function () { exportarReporte(); });
+        document.getElementById('btnHeroCrear').addEventListener('click', function () {
+          if (!sameView('crear')) return goToView('crear');
+          scrollToId('crearCreditoSection');
+        });
+        document.getElementById('btnHeroExportar').addEventListener('click', function () {
+          if (!sameView('cartera')) return goToView('cartera');
+          exportarReporte();
+        });
+        document.getElementById('btnConsultarEstadoCuenta').addEventListener('click', function () {
+          var id = i(document.getElementById('estadoCreditoId').value || 0);
+          if (id <= 0) {
+            setMessage('consultaMsg', 'Credito ID es obligatorio para consultar estado de cuenta.', true);
+            return;
+          }
+          loadEstadoCuenta(id, false);
+        });
 
         document.getElementById('tablaCreditosBody').addEventListener('click', function (ev) {
           var btn = ev.target.closest('button[data-action]');
@@ -2011,14 +2184,20 @@
           var action = normalize(btn.getAttribute('data-action'));
           var id = i(btn.getAttribute('data-id'));
           var value = normalize(btn.getAttribute('data-value'));
-          if (action === 'detalle' && id > 0) return loadEstadoCuenta(id, false);
+          if (action === 'detalle' && id > 0) {
+            if (!sameView('estado')) return goToView('estado', { detalle_id: id });
+            document.getElementById('estadoCreditoId').value = String(id);
+            return loadEstadoCuenta(id, false);
+          }
           if (action === 'prefill_abono' && id > 0) {
+            if (!sameView('operaciones')) return goToView('operaciones', { abono_id: id });
             document.getElementById('abCreditoId').value = String(id);
             loadEstadoCuenta(id, true);
             scrollToId('abCreditoId');
             return;
           }
           if (action === 'prefill_refi' && id > 0) {
+            if (!sameView('operaciones')) return goToView('operaciones', { refi_id: id });
             prefillRefinanciacion(id);
             scrollToId('rfCreditoId');
             return;
@@ -2030,7 +2209,10 @@
         document.getElementById('tablaRankingBody').addEventListener('click', function (ev) {
           var btn = ev.target.closest('button[data-action="detalle"]');
           if (!btn) return;
-          loadEstadoCuenta(i(btn.getAttribute('data-id')), false);
+          var id = i(btn.getAttribute('data-id'));
+          if (!sameView('estado')) return goToView('estado', { detalle_id: id });
+          document.getElementById('estadoCreditoId').value = String(id);
+          loadEstadoCuenta(id, false);
         });
 
         document.getElementById('tablaLimitesBody').addEventListener('click', function (ev) {
@@ -2064,13 +2246,19 @@
         document.getElementById('tablaMovimientosBody').addEventListener('click', function (ev) {
           var btn = ev.target.closest('button[data-action="solicitar_reverso"]');
           if (!btn) return;
+          if (!sameView('operaciones')) {
+            return goToView('operaciones', {
+              reverso_credito_id: btn.getAttribute('data-credito-id'),
+              reverso_movimiento_id: btn.getAttribute('data-mov-id')
+            });
+          }
           prefillReverso(btn.getAttribute('data-credito-id'), btn.getAttribute('data-mov-id'));
           scrollToId('rvCreditoId');
         });
       }
 
       bindActions();
-      consultarTodo();
+      consultarTodo().then(consumePendingActions);
     })();
   </script>
 </body>

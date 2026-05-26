@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Creditos y cartera</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .creditos-menu-shell{display:grid;grid-template-columns:260px minmax(0,1fr);height:100vh;min-height:0;background:var(--bg);color:var(--text)}
+    .creditos-menu-aside{border-right:1px solid var(--border);background:var(--surface);padding:16px 12px;overflow:auto}
+    .creditos-menu-aside h1{margin:0 0 4px;font-size:1.12rem;line-height:1.2;color:var(--text)}
+    .creditos-menu-aside p{margin:0 0 14px;color:var(--muted);font-size:.86rem;line-height:1.35}
+    .creditos-menu-nav{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+    .creditos-menu-link{display:flex;align-items:center;gap:9px;width:100%;min-height:42px;padding:10px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:850;text-decoration:none;cursor:pointer;text-align:left}
+    .creditos-menu-link:hover,.creditos-menu-link.is-active{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .creditos-menu-link .icon{width:20px;height:20px;flex:0 0 20px}
+    .creditos-menu-main{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr)}
+    .creditos-menu-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .creditos-menu-title strong{display:block;color:var(--text);font-size:1rem}
+    .creditos-menu-title span{display:block;color:var(--muted);font-size:.84rem;margin-top:2px}
+    .creditos-menu-status{display:none;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--muted);padding:7px 10px;font-size:.84rem;font-weight:750}
+    .creditos-menu-status.is-visible{display:inline-flex}
+    .creditos-menu-frame-wrap{position:relative;min-height:0}
+    .creditos-menu-frame{width:100%;height:100%;border:0;background:var(--bg)}
+    @media(max-width:760px){
+      .creditos-menu-shell{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+      .creditos-menu-aside{border-right:0;border-bottom:1px solid var(--border)}
+      .creditos-menu-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .creditos-menu-link{font-size:.86rem}
+      .creditos-menu-top{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body>
+  <div class="creditos-menu-shell">
+    <aside class="creditos-menu-aside">
+      <h1>Creditos y cartera</h1>
+      <p>Gestiona creditos, cartera, morosidad, limites, abonos y aprobaciones por empresa.</p>
+      <ul class="creditos-menu-nav" id="creditosMenuNav">
+        <li><a id="linkCreditosPanelMenu" class="creditos-menu-link is-active" href="/administrar_empresa/creditos.html?view=panel" target="creditosContentFrame" data-view="panel"><img class="icon" src="/img/analytics-color.svg" alt="">Panel</a></li>
+        <li><a id="linkCreditosCrearMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=crear" target="creditosContentFrame" data-view="crear"><img class="icon" src="/img/money.svg" alt="">Nuevo credito</a></li>
+        <li><a id="linkCreditosCarteraMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=cartera" target="creditosContentFrame" data-view="cartera"><img class="icon" src="/img/report.svg" alt="">Cartera</a></li>
+        <li><a id="linkCreditosMorosidadMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=morosidad" target="creditosContentFrame" data-view="morosidad"><img class="icon" src="/img/taxes.svg" alt="">Morosos</a></li>
+        <li><a id="linkCreditosLimitesMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=limites" target="creditosContentFrame" data-view="limites"><img class="icon" src="/img/shield-security-color.svg" alt="">Riesgo y limites</a></li>
+        <li><a id="linkCreditosOperacionesMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=operaciones" target="creditosContentFrame" data-view="operaciones"><img class="icon" src="/img/network-color.svg" alt="">Abonos y operaciones</a></li>
+        <li><a id="linkCreditosAprobacionesMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=aprobaciones" target="creditosContentFrame" data-view="aprobaciones"><img class="icon" src="/img/shield-license-color.svg" alt="">Aprobaciones</a></li>
+        <li><a id="linkCreditosEstadoMenu" class="creditos-menu-link" href="/administrar_empresa/creditos.html?view=estado" target="creditosContentFrame" data-view="estado"><img class="icon" src="/img/customer.svg" alt="">Estado de cuenta</a></li>
+      </ul>
+    </aside>
+    <main class="creditos-menu-main">
+      <div class="creditos-menu-top">
+        <div class="creditos-menu-title">
+          <strong id="creditosMenuTitle">Panel</strong>
+          <span id="creditosMenuSubtitle">Resumen ejecutivo de cartera y riesgo.</span>
+        </div>
+        <span id="creditosMenuStatus" class="creditos-menu-status">Cargando...</span>
+      </div>
+      <div class="creditos-menu-frame-wrap">
+        <iframe id="creditosContentFrame" name="creditosContentFrame" class="creditos-menu-frame" src="/administrar_empresa/creditos.html?view=panel" title="Contenido de creditos y cartera"></iframe>
+      </div>
+    </main>
+  </div>
+  <script src="/js/administrar_empresa.js"></script>
+  <script src="/menu.js"></script>
+  <script>
+    (function(){
+      var frame = document.getElementById("creditosContentFrame");
+      var status = document.getElementById("creditosMenuStatus");
+      var title = document.getElementById("creditosMenuTitle");
+      var subtitle = document.getElementById("creditosMenuSubtitle");
+      var copy = {
+        panel: ["Panel", "Resumen ejecutivo de cartera y riesgo."],
+        crear: ["Nuevo credito", "Creacion de creditos y contratos por cuotas."],
+        cartera: ["Cartera", "Listado, filtros y exportacion de creditos."],
+        morosidad: ["Morosidad", "Alertas, vencimientos y ranking de mora."],
+        limites: ["Riesgo y limites", "Politicas de cupo y control por cliente."],
+        operaciones: ["Abonos y operaciones", "Abonos, reversos y refinanciaciones."],
+        aprobaciones: ["Aprobaciones", "Bandeja de workflows y decisiones."],
+        estado: ["Estado de cuenta", "Cuotas, movimientos y detalle del credito seleccionado."]
+      };
+      function empresaId(){
+        try{
+          var parentID = parent && parent.__resolveEmpresaIdContext && parent.__resolveEmpresaIdContext();
+          if(parentID) return parentID;
+        }catch(_){}
+        try{
+          var fromUrl = new URLSearchParams(location.search).get("empresa_id");
+          if(fromUrl) return fromUrl;
+        }catch(_){}
+        try{return localStorage.getItem("active_empresa_id") || "";}catch(_){return "";}
+      }
+      function withEmpresa(href){
+        var id = empresaId();
+        if(!id) return href;
+        return href + (href.indexOf("?") >= 0 ? "&" : "?") + "empresa_id=" + encodeURIComponent(id);
+      }
+      function setActiveView(view){
+        var link = document.querySelector('.creditos-menu-link[data-view="' + String(view || "panel").replace(/"/g, "") + '"]') || document.querySelector(".creditos-menu-link");
+        if(!link) return;
+        document.querySelectorAll(".creditos-menu-link").forEach(function(item){ item.classList.toggle("is-active", item === link); });
+        var c = copy[link.getAttribute("data-view") || "panel"] || copy.panel;
+        title.textContent = c[0];
+        subtitle.textContent = c[1];
+      }
+      function activate(link){
+        var view = link.getAttribute("data-view") || "panel";
+        setActiveView(view);
+        status.textContent = "Cargando...";
+        status.classList.add("is-visible");
+        frame.src = withEmpresa(link.getAttribute("href"));
+      }
+      document.querySelectorAll(".creditos-menu-link").forEach(function(link){
+        link.addEventListener("click", function(ev){
+          ev.preventDefault();
+          activate(link);
+        });
+      });
+      window.addEventListener("message", function(ev){
+        var data = ev && ev.data ? ev.data : {};
+        if(data && data.type === "pcs:creditos:view") setActiveView(data.view || "panel");
+      });
+      frame.addEventListener("load", function(){ status.classList.remove("is-visible"); });
+      var requestedView = "panel";
+      try {
+        requestedView = new URLSearchParams(location.search).get("view") || "panel";
+      } catch (_) {}
+      var first = document.querySelector('.creditos-menu-link[data-view="' + String(requestedView).replace(/"/g, "") + '"]') || document.querySelector(".creditos-menu-link.is-active") || document.querySelector(".creditos-menu-link");
+      if(first) activate(first);
+    })();
+  </script>
+</body>
+</html>

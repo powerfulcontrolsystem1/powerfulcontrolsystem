@@ -1,3 +1,8 @@
+2026-05-25: Nota operativa para `creditos` y `finanzas`
+- `Creditos y cartera` se divide en subpaginas internas: panel, nuevo credito, cartera, morosidad, riesgo/limites, operaciones, aprobaciones y estado de cuenta.
+- Los nuevos links `linkCreditosPanelMenu`, `linkCreditosCrearMenu`, `linkCreditosCarteraMenu`, `linkCreditosMorosidadMenu`, `linkCreditosLimitesMenu`, `linkCreditosOperacionesMenu`, `linkCreditosAprobacionesMenu` y `linkCreditosEstadoMenu` conservan modulo `finanzas` con accion `C`, igual que `linkCreditos`.
+- No cambian wrappers, tablas, datos ni aislamiento por `empresa_id`; el backend sigue resolviendo `/api/empresa/creditos` bajo permisos financieros.
+
 2026-05-25: Nota de licencia del sistema descargable
 - `linkLicenciaSistema` se agrega al grupo `Administracion y configuracion` con modulo `seguridad` y accion `R`.
 - La pagina `web/administrar_empresa/licencia_sistema.html` solo consulta el contexto efectivo de permisos/licencia de la empresa y genera una descarga local en el navegador; no crea endpoint nuevo ni concede acceso adicional a datos operativos.

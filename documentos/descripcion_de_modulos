@@ -1,3 +1,9 @@
+2026-05-25: Creditos y cartera con submenu operativo.
+- Modulos afectados: `creditos`, `cartera`, `finanzas`, `administrar_empresa`.
+- Cambio funcional: `web/administrar_empresa/creditos_menu.html` concentra el modulo con botones de subpagina para Panel, Nuevo credito, Cartera, Morosidad, Riesgo y limites, Abonos y operaciones, Aprobaciones y Estado de cuenta.
+- Frontend: `web/administrar_empresa/creditos.html` soporta `view=panel|crear|cartera|morosidad|limites|operaciones|aprobaciones|estado|todo` para mostrar solo la seccion correspondiente; los botones de cartera/ranking saltan a la subpagina correcta conservando el credito seleccionado.
+- Permisos: los botones nuevos usan el modulo `finanzas` con accion `C`, igual que el acceso principal de creditos; no se agregan endpoints, tablas ni dependencias.
+
 2026-05-25: Licencia del sistema descargable por empresa
 - Modulos afectados: `administrar_empresa`, `licencias`, `seguridad`, `frontend_ux`.
 - Cambio funcional: se agrega el boton `Licencia del sistema` al final del grupo `Administracion` en `Administrar empresa`.
