@@ -1,3 +1,10 @@
+2026-05-25: Navegacion de creditos, cartera y paginas huerfanas.
+- Modulos afectados: `administrar_empresa`, `finanzas`, `creditos`, `cobranza`, `chat_ia`, `configuracion`, `frontend_ux`.
+- Causa tecnica: `creditos.html` y `cobranza.html` estaban enlazadas solo dentro del centro financiero, mientras el menu principal de `Finanzas y cumplimiento` no mostraba botones directos. Ademas, `chat_con_inteligencia_artificial.html`, `configuracion_guiada.html` y `configuracion_integraciones.html` existian como paginas operativas sin entrada directa de navegacion.
+- Implementacion: `web/administrar_empresa.html` agrega `linkCreditos`, `linkCobranza` y `linkChatIA`; `web/administrar_empresa/finanzas_menu.html` suma accesos rapidos a creditos y cobranza; `web/administrar_empresa/configuracion_menu.html` conecta configuracion guiada e integraciones; `web/js/administrar_empresa.js` registra los nuevos elementos visibles con sus permisos existentes.
+- Seguridad: no se agregan permisos efectivos ni endpoints; los links usan `linkCreditos`, `linkCobranza`, `linkChatIA`, `linkConfiguracionGuiada` y `linkERPExtendido` con reglas ya declaradas o equivalentes en el catalogo empresarial.
+- QA: pendiente de validacion visual y despliegue en esta misma intervencion.
+
 2026-05-25: Index modulos mas compactos.
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
 - Cambio funcional: `web/index.html` reduce padding, icono y separacion interna de las tarjetas de `Modulos y caracteristicas principales`, y aumenta el ancho minimo de tarjeta para evitar texto demasiado angosto.

@@ -1,3 +1,9 @@
+2026-05-25: Navegacion financiera y paginas empresariales conectadas
+- Modulos afectados: `finanzas`, `creditos`, `cobranza`, `chat_ia`, `configuracion`, `frontend_ux`.
+- Cambio funcional: `Creditos y cartera` y `Gestion de cobranza` quedan visibles como botones directos en `Finanzas y cumplimiento` y como accesos rapidos del `Centro financiero y contable`.
+- Navegacion adicional: se agregan accesos a `Chat IA centralizado`, `Configuracion guiada` e `Integraciones`, que ya existian como paginas pero no tenian entrada directa en el menu empresarial.
+- Alcance: no cambia APIs, tablas, reglas de negocio, licencias ni dependencias.
+
 2026-05-25: Index modulos mas compactos
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
 - Cambio funcional: la seccion `Modulos y caracteristicas principales` reduce margenes internos y usa tarjetas mas anchas para que las caracteristicas ocupen mejor el area.

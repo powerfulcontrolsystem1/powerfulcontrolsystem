@@ -1,3 +1,8 @@
+2026-05-25: Nota de navegacion financiera y paginas huerfanas
+- `linkCreditos` y `linkCobranza` se muestran como accesos directos en `Administrar empresa > Finanzas y cumplimiento`; conservan los permisos existentes de `finanzas:C` y `cobranza:C` respectivamente.
+- `linkChatIA`, `linkConfiguracionGuiada` y `linkERPExtendido` se conectan desde menus visibles para paginas empresariales ya existentes. No se crean wrappers nuevos ni se relaja el aislamiento por `empresa_id`.
+- Las paginas legacy o generadas por accion, como `frecuencia_fp.html` y `soporte_remoto_view.html`, no se promocionan a menu principal porque son alias/visores de flujo, no modulos de entrada operativa.
+
 2026-05-20: Nota de nombres configurables de estaciones
 - La edicion de singular/plural del recurso operativo vive en `web/administrar_empresa/configuracion_de_estaciones.html` y reutiliza el permiso existente de configuracion de estaciones.
 - No se agregan permisos, wrappers ni modulos de licencia: la preferencia queda por `empresa_id` en `empresa_estacion_prefs.estaciones_config`.

@@ -1,3 +1,10 @@
+## [2026-05-25] Navegacion financiera y paginas huerfanas
+- [Finanzas] `web/administrar_empresa.html` muestra `Creditos y cartera` y `Gestion de cobranza` directamente dentro de `Finanzas y cumplimiento`.
+- [Centro financiero] `web/administrar_empresa/finanzas_menu.html` agrega accesos rapidos a creditos y cobranza, manteniendo la barra lateral existente.
+- [Configuracion] `web/administrar_empresa/configuracion_menu.html` conecta `Configuracion guiada` e `Integraciones`, paginas que ya existian sin link directo.
+- [Canales] `Chat IA centralizado` queda disponible desde Canales digitales y colaboracion.
+- [Permisos] `web/js/administrar_empresa.js` registra los links visibles con permisos existentes; no se agregan endpoints, tablas ni dependencias.
+
 ## [2026-05-25] Index modulos mas compactos
 - [Portal] `web/index.html` compacta la seccion `Modulos y caracteristicas principales` para que cada tarjeta tenga menos margen interno y mas ancho util para el texto.
 - [UX] Las caracteristicas quedan como texto fluido con puntos negros por elemento, evitando los huecos grandes que generaba justificar cada item corto por separado.

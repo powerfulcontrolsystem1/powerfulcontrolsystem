@@ -22,6 +22,7 @@
             <li><a id="linkConfiguracionImpresora" href="/administrar_empresa/configuracion_impresora.html" target="configuracionContentFrame"><img class="icon" src="/img/print-color.svg" alt="">Impresora</a></li>
             <li><a id="linkConfiguracionPermisos" href="/administrar_empresa/configuracion_permisos.html" target="configuracionContentFrame"><img class="icon" src="/img/shield-license-color.svg" alt="">Permisos</a></li>
             <li><a id="linkVerticalesIntegracion" href="/administrar_empresa/verticales_integracion.html" target="configuracionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Adaptacion por tipo</a></li>
+            <li><a id="linkConfiguracionGuiada" href="/administrar_empresa/configuracion_guiada.html" target="configuracionContentFrame"><img class="icon" src="/img/gpt.svg" alt="">Configuracion guiada</a></li>
           </ul>
         </li>
 
@@ -91,6 +92,7 @@
           <ul class="admin-nav-sublist">
             <li><a id="linkConfiguracionBackupsPasarelas" href="/administrar_empresa/configuracion/respaldo.html" target="configuracionContentFrame"><img class="icon" src="/img/backup.svg" alt="">Respaldo</a></li>
             <li><a id="linkConfiguracionPasarelasPago" href="/administrar_empresa/configuracion/pasarelas_pago.html" target="configuracionContentFrame"><img class="icon" src="/img/ecommerce.svg" alt="">Pasarelas de pago</a></li>
+            <li><a id="linkERPExtendido" href="/administrar_empresa/configuracion_integraciones.html" target="configuracionContentFrame"><img class="icon" src="/img/network-color.svg" alt="">Integraciones</a></li>
           </ul>
         </li>
         <li class="admin-menu-visibility-item">
@@ -143,7 +145,10 @@
         chat_flotante: ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
         'chat-flotante': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
         chat_robot: ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
-        'chat-robot': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html']
+        'chat-robot': ['linkConfiguracionChatFlotante', '/administrar_empresa/configuracion_chat_flotante.html'],
+        guiada: ['linkConfiguracionGuiada', '/administrar_empresa/configuracion_guiada.html'],
+        configuracion_guiada: ['linkConfiguracionGuiada', '/administrar_empresa/configuracion_guiada.html'],
+        integraciones: ['linkERPExtendido', '/administrar_empresa/configuracion_integraciones.html']
       };
       var route = sectionRoutes[requested];
       if (route) {
