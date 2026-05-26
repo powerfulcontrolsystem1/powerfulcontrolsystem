@@ -27495,3 +27495,21 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/administrar_empresa/licencia_sistema.html
 - web/js/administrar_empresa.js
+
+2026-05-25: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/historial_de_cambios
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/administrar_empresa/creditos.html
+- web/administrar_empresa/creditos_menu.html
+- web/administrar_empresa/finanzas_menu.html
+- web/js/administrar_empresa.js
