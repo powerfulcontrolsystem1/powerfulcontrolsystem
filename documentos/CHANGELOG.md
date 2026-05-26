@@ -1,3 +1,8 @@
+## [2026-05-25] Menu flotante sin ayuda administrador
+- [Frontend] `web/menu.js` elimina el enlace `Ayuda administrador` del menu flotante centralizado.
+- [Soporte] Se conserva el boton `Crear ticket de ayuda` para solicitudes operativas.
+- [Alcance] No cambia backend, permisos, rutas, endpoints, tablas ni dependencias.
+
 ## [2026-05-25] Finanzas debajo de inventario
 - [UX] `web/administrar_empresa.html` mueve el grupo `Finanzas y cumplimiento` para quedar inmediatamente debajo de `Inventario y compras`.
 - [Alcance] Cambio de orden de menu sin modificar permisos, rutas, endpoints, tablas ni dependencias.

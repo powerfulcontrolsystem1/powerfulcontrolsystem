@@ -425,7 +425,6 @@
           '</div>' +
         '</div>' +
         '<a class="fm-item" href="/configuracion_de_la_cuenta.html">Configuración de la cuenta</a>' +
-        '<a id="adminHelpLink" class="fm-item" href="/ayuda/ayuda.html" hidden>Ayuda administrador</a>' +
         '' +
         '<div class="theme-selector-item" id="themeToggleWrapper" style="position:relative;">' +
           '<button id="themeToggle" class="fm-item theme-toggle-btn" type="button" aria-expanded="false" aria-haspopup="true" aria-label="Cambiar apariencia">Cambiar apariencia \u25BC</button>' +
@@ -456,7 +455,6 @@
     var toggle = wrapper.querySelector('.fm-toggle');
     var panel = wrapper.querySelector('.fm-panel');
     var sessionLink = wrapper.querySelector('#sessionLink');
-    var adminHelpLink = wrapper.querySelector('#adminHelpLink');
     var themeToggle = wrapper.querySelector('#themeToggle');
     var themeSelectorPopup = wrapper.querySelector('#themeSelectorPopup');
     var utilitiesToggle = wrapper.querySelector('#utilitiesMenuToggle');
@@ -1032,9 +1030,6 @@
         }
         if (authData && typeof authData === 'object') {
           setSessionLinkAuthenticated(true);
-          if (adminHelpLink) {
-            adminHelpLink.hidden = String(authData.role || '').trim().toLowerCase() !== 'super_administrador';
-          }
           var photo = authData.photo || authData.avatar || '';
           var name = authData.name || authData.email || '';
           if (photo) setAvatarUrl(photo, name); else fallbackIcon();
@@ -1047,9 +1042,6 @@
           })
           .then(function(data){
             setSessionLinkAuthenticated(true);
-            if (adminHelpLink) {
-              adminHelpLink.hidden = !(data && String(data.role || '').trim().toLowerCase() === 'super_administrador');
-            }
             var photo = (data && (data.photo || data.avatar)) || '';
             var name = (data && (data.name || data.email)) || '';
             if (photo) setAvatarUrl(photo, name); else fallbackIcon();

@@ -1,3 +1,4 @@
+- 2026-05-25: `Menu flotante` elimina el enlace `Ayuda administrador`; se conserva `Crear ticket de ayuda` y no cambian permisos ni endpoints.
 - 2026-05-25: `Orden menu administrar empresa` mueve `Finanzas y cumplimiento` para quedar justo debajo de `Inventario y compras`, sin cambiar permisos, rutas ni endpoints.
 - 2026-05-25: `Navegacion finanzas y paginas huerfanas` agrega accesos directos a Creditos y cartera y Gestion de cobranza en Finanzas y cumplimiento, suma ambos a los accesos rapidos del centro financiero y conecta Chat IA, Configuracion guiada e Integraciones en sus menus correspondientes sin cambiar permisos ni endpoints.
 - 2026-05-25: `Index modulos mas compactos` ajusta la seccion `Modulos y caracteristicas principales` para que las tarjetas usen columnas mas anchas, menor padding interno, iconos mas compactos y caracteristicas en flujo punteado sin huecos artificiales.

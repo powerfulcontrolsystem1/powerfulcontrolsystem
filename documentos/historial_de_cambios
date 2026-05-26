@@ -1,3 +1,9 @@
+2026-05-25: Quitar ayuda administrador del menu flotante.
+- Modulos afectados: `menu_flotante`, `frontend_ux`.
+- Cambio funcional: `web/menu.js` deja de inyectar el enlace `Ayuda administrador` y elimina la logica que lo mostraba solo a `super_administrador`.
+- Alcance: `Crear ticket de ayuda` permanece disponible en el menu flotante; no cambia rutas, endpoints, permisos ni datos.
+- QA: busqueda dirigida confirma que `adminHelpLink` y `Ayuda administrador` ya no existen en `web/menu.js`.
+
 2026-05-25: Finanzas y cumplimiento debajo de inventario.
 - Modulos afectados: `administrar_empresa`, `finanzas`, `frontend_ux`.
 - Cambio funcional: `web/administrar_empresa.html` reordena el menu principal para ubicar `Finanzas y cumplimiento` inmediatamente despues de `Inventario y compras`.

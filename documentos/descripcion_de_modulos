@@ -1,3 +1,8 @@
+2026-05-25: Menu flotante sin ayuda administrador
+- Modulos afectados: `menu_flotante`, `frontend_ux`.
+- Cambio funcional: se elimina el enlace `Ayuda administrador` del menu flotante centralizado.
+- Alcance: se conserva `Crear ticket de ayuda`; no cambia backend, permisos, endpoints, tablas ni dependencias.
+
 2026-05-25: Finanzas debajo de inventario y compras
 - Modulos afectados: `administrar_empresa`, `finanzas`, `frontend_ux`.
 - Cambio funcional: el grupo `Finanzas y cumplimiento` se mueve para quedar justo debajo de `Inventario y compras` en el menu principal empresarial.
