@@ -1,3 +1,7 @@
+- 2026-05-27: `Login administrador con logo imagen` reemplaza el titulo textual del login por `web/img/titulo-powerful-control-system-login.png` con tamano pequeno y responsive, sin cambiar autenticacion.
+- 2026-05-27: `Index subtitulo POS domotica` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
+- 2026-05-27: `Index modulos con vinetas reales` convierte cada caracteristica de las tarjetas de modulos principales en elementos `ul/li` con vinetas visibles y compactas, sin cambiar backend ni datos.
+- 2026-05-26: `Cliente general configurable en carrito` agrega por empresa el campo `cliente_general_nombre` para nombrar ventas sin cliente registrado, por defecto `Cliente General`, y lo usa en carrito, listados e impresiones sin crear tablas ni endpoints.
 - 2026-05-25: `Creditos y cartera con submenu` separa el modulo en subpaginas internas para panel, nuevo credito, cartera, morosidad, riesgo/limites, operaciones, aprobaciones y estado de cuenta, manteniendo `/api/empresa/creditos` y permisos `finanzas:C`.
 - 2026-05-25: `Licencia del sistema` agrega una pagina descargable por empresa en `Administrar empresa > Administracion`, con descarga TXT/HTML e impresion PDF usando el contexto real de licencia y permisos.
 - 2026-05-25: `Menu flotante` elimina el enlace `Ayuda administrador`; se conserva `Crear ticket de ayuda` y no cambian permisos ni endpoints.

@@ -1,3 +1,27 @@
+2026-05-27: Logo imagen en login administrador
+- Modulos afectados: `autenticacion_admin`, `login`, `frontend_ux`.
+- Cambio funcional: el encabezado de `web/login.html` usa la imagen `web/img/titulo-powerful-control-system-login.png` en lugar del titulo textual.
+- UX: `web/estilos.css` limita el ancho y alto del asset para que se vea pequeno, centrado y responsive sobre el formulario.
+- Alcance: no cambia backend, endpoints, tablas, permisos, reCAPTCHA ni Google OAuth.
+
+2026-05-27: Subtitulo publico POS multiempresa con domotica
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: el encabezado del index muestra `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
+- Alcance: cambio de texto publico sin backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-27: Index con vinetas reales por caracteristica
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: cada tarjeta de `Modulos y caracteristicas principales` usa una lista `ul/li` para que cada caracteristica del modulo tenga su propia vineta.
+- UX: las vinetas quedan en una grilla compacta dentro de cada tarjeta, con buena lectura en escritorio y movil, manteniendo icono y titulo de cada modulo.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-26: Cliente general configurable para ventas de carrito
+- Modulos afectados: `carritos`, `ventas_simple`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: cada empresa puede definir el nombre universal para ventas sin cliente registrado, con `Cliente General` como valor por defecto.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` guarda el campo global y `web/administrar_empresa/configuracion_de_estaciones.html` permite heredarlo o sobrescribirlo por estacion.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` muestra ese nombre en el cliente actual, en listados de carritos y en recibos/facturas provisionales offline cuando `cliente_id` es cero.
+- Alcance: no cambia tablas, endpoints, permisos ni dependencias; se usa `estaciones_config.carrito_ui_global.cliente_general_nombre`.
+
 2026-05-25: Creditos y cartera con submenu operativo.
 - Modulos afectados: `creditos`, `cartera`, `finanzas`, `administrar_empresa`.
 - Cambio funcional: `web/administrar_empresa/creditos_menu.html` concentra el modulo con botones de subpagina para Panel, Nuevo credito, Cartera, Morosidad, Riesgo y limites, Abonos y operaciones, Aprobaciones y Estado de cuenta.

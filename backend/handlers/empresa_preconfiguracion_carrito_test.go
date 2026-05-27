@@ -63,6 +63,9 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 	if got, _ := cfg["alerta_tiempo_minutos"].(int); got != 10 {
 		t.Fatalf("alerta_tiempo_minutos debe quedar en 10 por defecto, got=%v", cfg["alerta_tiempo_minutos"])
 	}
+	if got, _ := cfg["cliente_general_nombre"].(string); got != "Cliente General" {
+		t.Fatalf("cliente_general_nombre debe quedar en Cliente General por defecto, got=%v", cfg["cliente_general_nombre"])
+	}
 }
 
 func TestApplyDefaultCarritoUIPresetToConfigActualizaEmpresasViejas(t *testing.T) {
@@ -111,6 +114,9 @@ func TestApplyDefaultCarritoUIPresetToConfigActualizaEmpresasViejas(t *testing.T
 	}
 	if got, _ := global["mostrar_tarjeta_valores_pago"].(bool); !got {
 		t.Fatal("carrito_ui_global debe conservar valores por medio de pago")
+	}
+	if got, _ := global["cliente_general_nombre"].(string); got != "Cliente General" {
+		t.Fatalf("carrito_ui_global debe completar cliente_general_nombre, got=%v", global["cliente_general_nombre"])
 	}
 	if cfg["cantidad"].(float64) != 2 {
 		t.Fatal("no debe cambiar la cantidad de estaciones")

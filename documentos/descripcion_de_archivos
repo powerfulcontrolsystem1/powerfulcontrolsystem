@@ -1,3 +1,8 @@
+2026-05-27 - Logo imagen login administrador
+- `web/img/titulo-powerful-control-system-login.png`:
+	- asset PNG con fondo transparente real para el encabezado del login administrativo.
+	- version liviana basada en el titulo visual de Powerful Control System, preparada para mostrarse pequena y responsive.
+
 2026-05-25 - Submenu Creditos y cartera
 - `web/administrar_empresa/creditos_menu.html`:
 	- contenedor empresarial con botones para separar Creditos y cartera en panel, nuevo credito, cartera, morosidad, riesgo/limites, abonos/operaciones, aprobaciones y estado de cuenta.

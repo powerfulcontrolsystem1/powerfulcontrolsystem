@@ -1,3 +1,27 @@
+2026-05-27: Logo imagen en login administrador.
+- Modulos afectados: `autenticacion_admin`, `login`, `frontend_ux`.
+- Cambio funcional: se reemplaza el titulo textual `Powerful Control System` por el asset `web/img/titulo-powerful-control-system-login.png`.
+- Implementacion: `web/login.html` usa un `h1` con imagen accesible y `web/estilos.css` define tamano pequeno/responsive para el logo.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni flujos de autenticacion.
+
+2026-05-27: Subtitulo publico POS multiempresa con domotica.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: `web/index.html` actualiza el texto `Sistema de Facturacion Electronica` del encabezado a `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-27: Index con vinetas reales por caracteristica.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: la seccion `Modulos y caracteristicas principales` deja de usar `span` con puntos simulados y ahora cada tarjeta renderiza caracteristicas como `ul/li`.
+- Implementacion: `web/index.html` actualiza la estructura de tarjetas y el CSS de `.portal-module-feature-list` para mostrar vinetas compactas, legibles y alineadas.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-26: Cliente general configurable en carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
+- Cambio funcional: cada empresa puede definir el nombre universal para ventas de carrito sin cliente registrado, con `Cliente General` como valor por defecto.
+- Implementacion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/administrar_empresa/configuracion_de_estaciones.html` guardan `cliente_general_nombre`; `web/administrar_empresa/carrito_de_compras.html` lo usa en cliente actual, listados y documentos imprimibles del carrito.
+- Backend: `defaultEmpresaPreconfigCarritoUI()` incluye la clave para empresas nuevas y normalizacion de preferencias antiguas.
+- Datos: no agrega tablas, columnas, endpoints ni dependencias; se mantiene el JSON `estaciones_config.carrito_ui_global` por `empresa_id`.
+
 2026-05-25: Creditos y cartera con submenu operativo
 - Modulos afectados: `creditos`, `cartera`, `finanzas`, `administrar_empresa`, `frontend_ux`.
 - Cambio funcional: se agrega `web/administrar_empresa/creditos_menu.html` como entrada principal con botones para panel, nuevo credito, cartera, morosidad, riesgo/limites, operaciones, aprobaciones y estado de cuenta.

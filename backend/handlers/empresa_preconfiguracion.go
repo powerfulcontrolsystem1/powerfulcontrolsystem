@@ -572,6 +572,7 @@ func defaultEmpresaPreconfigCarritoUI() map[string]any {
 		"mostrar_observaciones_item":              true,
 		"mostrar_selector_cliente":                true,
 		"cliente_obligatorio_pago":                false,
+		"cliente_general_nombre":                  "Cliente General",
 		"mostrar_impuestos_item":                  true,
 		"mostrar_lector_codigo_barras":            true,
 		"mostrar_descuentos":                      false,

@@ -1,3 +1,23 @@
+## [2026-05-27] Login administrador con logo imagen
+- [Login] `web/login.html` reemplaza el titulo textual `Powerful Control System` por la imagen `web/img/titulo-powerful-control-system-login.png`.
+- [UX] `web/estilos.css` define un tamano pequeno y responsive para que el logo no empuje el formulario.
+- [Alcance] No cambia backend, endpoints, permisos, reCAPTCHA ni Google OAuth.
+
+## [2026-05-27] Index subtitulo POS multiempresa con domotica
+- [Portal] `web/index.html` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
+- [Alcance] Cambio de texto visible sin backend, endpoints, tablas, permisos ni dependencias.
+
+## [2026-05-27] Index con vinetas reales por caracteristica
+- [Portal] `web/index.html` convierte las caracteristicas de cada tarjeta de `Modulos y caracteristicas principales` en listas HTML reales.
+- [UX] Cada caracteristica queda con su propia vineta visible y una distribucion compacta dentro de la tarjeta.
+- [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias.
+
+## [2026-05-26] Cliente general configurable en carrito
+- [Configuracion] `Configuracion > Carrito unificado` y `Configuracion > Estaciones` agregan el campo `Nombre para ventas sin cliente`.
+- [Carritos] El carrito usa el nombre configurado por empresa cuando no hay `cliente_id`, incluyendo cliente actual, listados y documentos imprimibles del carrito.
+- [Backend] `defaultEmpresaPreconfigCarritoUI()` define `cliente_general_nombre` como `Cliente General` por defecto.
+- [Alcance] Se guarda en `estaciones_config.carrito_ui_global`; no agrega tablas, endpoints, permisos ni dependencias.
+
 ## [2026-05-25] Creditos y cartera con submenu
 - [UX] `web/administrar_empresa/creditos_menu.html` separa el modulo en botones de subpagina: panel, nuevo credito, cartera, morosidad, riesgo y limites, abonos/operaciones, aprobaciones y estado de cuenta.
 - [Frontend] `web/administrar_empresa/creditos.html` soporta vistas por `view=` y conserva el credito seleccionado al saltar desde cartera o morosidad hacia estado de cuenta u operaciones.

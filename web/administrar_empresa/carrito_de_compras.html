@@ -135,7 +135,7 @@
           <div>
             <h3 class="section-heading">Cliente del carrito</h3>
           </div>
-          <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: consumidor final.</div>
+          <div id="stationClienteActual" class="form-help carrito-customer-current">Cliente actual: Cliente General.</div>
         </div>
         <div id="stationClienteSelectorRow" class="form-row" hidden>
           <div class="form-col">
@@ -1231,6 +1231,7 @@
         mostrar_observaciones_item: true,
         mostrar_selector_cliente: true,
         cliente_obligatorio_pago: false,
+        cliente_general_nombre: 'Cliente General',
         mostrar_impuestos_item: true,
         mostrar_lector_codigo_barras: true,
         mostrar_descuentos: false,
@@ -1334,6 +1335,7 @@
         mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : Boolean(src.mostrar_observaciones_item),
         mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : Boolean(src.mostrar_selector_cliente),
         cliente_obligatorio_pago: src.cliente_obligatorio_pago === undefined ? base.cliente_obligatorio_pago : Boolean(src.cliente_obligatorio_pago),
+        cliente_general_nombre: normalize(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : Boolean(src.mostrar_impuestos_item),
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : Boolean(src.mostrar_lector_codigo_barras),
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : Boolean(src.mostrar_descuentos),
@@ -1624,6 +1626,22 @@
         cfg.mostrar_tarjetas_pago = true;
       }
       return cfg;
+    }
+
+    function configuredGeneralCustomerName() {
+      const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
+      return normalize(ui.cliente_general_nombre) || 'Cliente General';
+    }
+
+    function carritoCustomerDisplayName(carrito) {
+      const selectedID = Number(carrito && carrito.cliente_id || 0);
+      if (selectedID > 0) {
+        const cliente = getClienteByID(selectedID);
+        return cliente
+          ? (normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial) || ('Cliente #' + selectedID))
+          : (normalize(carrito && carrito.cliente_nombre) || ('Cliente #' + selectedID));
+      }
+      return configuredGeneralCustomerName();
     }
 
     function setFieldColumnVisibility(id, visible) {
@@ -3658,6 +3676,7 @@
       const printFormat = normalize(printerTarget && printerTarget.formato_impresion).toLowerCase() === 'carta' ? 'carta' : 'pos';
       const copias = 1;
       const now = new Date();
+      const clienteNombre = carritoCustomerDisplayName(carrito);
 
       let rowsHtml = '';
       (Array.isArray(items) ? items : []).forEach(function(it) {
@@ -3693,6 +3712,7 @@
           subtitle: 'Carrito: ' + ((carrito && carrito.nombre) || '') + ' | Codigo: ' + ((carrito && carrito.codigo) || ''),
           badge: markOfflinePending ? 'OFFLINE' : printFormat.toUpperCase(),
           meta: [
+            { label: 'Cliente', value: clienteNombre },
             { label: 'Metodo', value: normalize(pay.paymentLabel || pay.paymentMethod || '') },
             { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') },
             { label: 'Fecha', value: now.toLocaleString() },
@@ -3722,6 +3742,7 @@
         (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p><strong>Estado:</strong> Pendiente de sincronizar</p>' : '') +
         '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' +
         '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || '') + '</p>' +
+        '<p><strong>Cliente:</strong> ' + escapeHtml(clienteNombre) + '</p>' +
         '<p><strong>Formato:</strong> ' + escapeHtml(printFormat.toUpperCase()) + '</p>' +
         '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' +
         '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' +
@@ -4000,6 +4021,7 @@
           nombre: normalize(carrito && carrito.nombre),
           canal_venta: normalize(carrito && carrito.canal_venta) || 'mostrador',
           cliente_id: Number(carrito && carrito.cliente_id || 0),
+          cliente_nombre: carritoCustomerDisplayName(carrito),
           moneda: normalize(carrito && carrito.moneda) || 'COP',
           referencia_externa: normalize(carrito && carrito.referencia_externa),
           total: Number(carrito && carrito.total || 0),
@@ -5310,7 +5332,7 @@
 
     function fillClientesSelect(selected) {
       const sel = document.getElementById('carritoClienteID');
-      sel.innerHTML = '<option value="">-- Consumidor final / sin cliente --</option>';
+      sel.innerHTML = '<option value="">-- ' + escapeHtml(configuredGeneralCustomerName()) + ' / sin cliente --</option>';
       state.clientes.forEach(function(c) {
         if (normalize(c.estado) && normalize(c.estado) !== 'activo') return;
         const opt = document.createElement('option');
@@ -5325,7 +5347,7 @@
     function fillStationClientesSelect(selected) {
       const sel = document.getElementById('stationCarritoClienteID');
       if (!sel) return;
-      sel.innerHTML = '<option value="">-- Consumidor final / sin cliente --</option>';
+      sel.innerHTML = '<option value="">-- ' + escapeHtml(configuredGeneralCustomerName()) + ' / sin cliente --</option>';
       state.clientes.forEach(function(c) {
         if (normalize(c.estado) && normalize(c.estado) !== 'activo') return;
         const opt = document.createElement('option');
@@ -5448,12 +5470,9 @@
       const selectedID = Number(carrito && carrito.cliente_id || 0);
       fillStationClientesSelect(selectedID);
       syncStationClienteSearchInput(carrito);
-      const cliente = getClienteByID(selectedID);
       const actual = document.getElementById('stationClienteActual');
       if (actual) {
-        actual.textContent = cliente
-          ? 'Cliente actual: ' + (normalize(cliente.nombre_razon_social) || ('Cliente #' + selectedID))
-          : 'Cliente actual: consumidor final.';
+        actual.textContent = 'Cliente actual: ' + carritoCustomerDisplayName(carrito) + '.';
       }
     }
 
@@ -5464,7 +5483,7 @@
         if (Number(c && c.id) !== Number(state.selectedCarritoID)) return c;
         const next = Object.assign({}, c);
         next.cliente_id = id;
-        next.cliente_nombre = cliente ? (normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial)) : '';
+        next.cliente_nombre = cliente ? (normalize(cliente.nombre_razon_social) || normalize(cliente.nombre_comercial)) : configuredGeneralCustomerName();
         return next;
       });
     }
@@ -5498,7 +5517,7 @@
       updateSelectedCarritoClienteLocal(id);
       renderStationCustomerPanel(getSelectedCarrito());
       renderResumen();
-      setStationClienteMessage(id > 0 ? 'Cliente asignado al carrito.' : 'El carrito quedo como consumidor final.', false);
+      setStationClienteMessage(id > 0 ? 'Cliente asignado al carrito.' : 'El carrito quedo como ' + configuredGeneralCustomerName() + '.', false);
     }
 
     async function assignClienteFromNameSearch() {
@@ -5800,7 +5819,7 @@
 
         const estado = normalize(item.estado) || 'activo';
         const estadoCarrito = normalize(item.estado_carrito) || 'abierto';
-        const cliente = normalize(item.cliente_nombre) || 'Consumidor final';
+        const cliente = carritoCustomerDisplayName(item);
         const toggleEstadoLabel = estado === 'activo' ? 'Desactivar' : 'Activar';
         const toggleOperacionLabel = estadoCarrito === 'cerrado' ? 'Reabrir' : 'Cerrar';
 

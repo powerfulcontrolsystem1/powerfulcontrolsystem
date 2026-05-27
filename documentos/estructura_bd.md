@@ -22,6 +22,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-26 (cliente general configurable en carrito)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`, y los overrides por estacion dentro de `estaciones_config.estaciones[].carrito.configuracion`.
+- El JSON `estaciones_config.carrito_ui_global` puede incluir `cliente_general_nombre`; por defecto se normaliza como `Cliente General`.
+- Cuando `carritos_compras.cliente_id` es cero, el frontend usa este nombre para visualizacion e impresion, sin crear un registro en `clientes` ni romper la regla `cliente_obligatorio_pago` cuando esta activa.
+
 Actualizacion 2026-05-25 (creditos diarios para venta de motos)
 - `empresa_creditos`: se agregan `periodicidad_cuota TEXT DEFAULT 'mensual'`, `valor_cuota_pactada REAL DEFAULT 0` y `omitir_domingos INTEGER DEFAULT 0`.
 - La generacion de `empresa_creditos_cuotas` soporta contratos diarios largos, incluyendo planes de dos años con cuota diaria pactada, y puede omitir vencimientos en domingo cuando el contrato lo requiera.
