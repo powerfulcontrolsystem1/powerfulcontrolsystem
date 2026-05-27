@@ -22,6 +22,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-27 (informacion editable de modulos del index)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `pcs_superadministrador.configuraciones` con las claves `super.informacion_modulos.v1` y `super.informacion_modulos.v1.updated_by`.
+- El valor principal guarda JSON editorial con `titulo`, `modulos[].titulo`, `modulos[].icono_url` y `modulos[].caracteristicas`.
+- La API publica solo lee la configuracion normalizada y el super administrador es el unico rol que puede guardar cambios.
+
 Actualizacion 2026-05-26 (cliente general configurable en carrito)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`, y los overrides por estacion dentro de `estaciones_config.estaciones[].carrito.configuracion`.

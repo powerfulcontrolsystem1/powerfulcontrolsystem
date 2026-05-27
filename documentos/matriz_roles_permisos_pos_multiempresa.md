@@ -1,3 +1,8 @@
+2026-05-27: Nota de informacion editable de modulos del index
+- `web/super/informacion_de_modulos.html` queda disponible solo dentro del panel de Super Administrador.
+- `/super/api/informacion_de_modulos` exige sesion y rol `super_administrador` mediante la misma validacion usada por pagina principal.
+- `/api/public/informacion_de_modulos` es lectura publica del portal y solo devuelve contenido editorial saneado; no concede permisos empresariales ni acceso a datos privados.
+
 2026-05-25: Nota operativa para `creditos` y `finanzas`
 - `Creditos y cartera` se divide en subpaginas internas: panel, nuevo credito, cartera, morosidad, riesgo/limites, operaciones, aprobaciones y estado de cuenta.
 - Los nuevos links `linkCreditosPanelMenu`, `linkCreditosCrearMenu`, `linkCreditosCarteraMenu`, `linkCreditosMorosidadMenu`, `linkCreditosLimitesMenu`, `linkCreditosOperacionesMenu`, `linkCreditosAprobacionesMenu` y `linkCreditosEstadoMenu` conservan modulo `finanzas` con accion `C`, igual que `linkCreditos`.

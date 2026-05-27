@@ -1135,6 +1135,7 @@ func main() {
 	http.HandleFunc("/api/public/soporte_remoto", handlers.PublicEmpresaSoporteRemotoAgentHandler(dbEmpresas))
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
+	http.HandleFunc("/api/public/informacion_de_modulos", handlers.PublicInformacionModulosHandler(dbSuper))
 	http.HandleFunc("/api/public/portal_visitas", handlers.PublicPortalVisitasHandler(dbSuper))
 	http.HandleFunc("/api/public/verticales_nuevos/catalogo", handlers.PublicVerticalesNuevosCatalogoHandler())
 	http.HandleFunc("/api/public/verticales_integracion/catalogo", handlers.PublicVerticalesIntegracionCatalogoHandler())
@@ -1311,6 +1312,7 @@ func main() {
 	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.SuperContextoIALogicaNegocioHandler(dbSuper))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
+	http.HandleFunc("/super/api/informacion_de_modulos", handlers.SuperInformacionModulosHandler(dbSuper, webDir))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_checkout", handlers.WompiCreateCheckoutHandler(dbSuper))

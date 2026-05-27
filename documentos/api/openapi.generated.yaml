@@ -2126,6 +2126,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/informacion_de_modulos":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/informacion_de_modulos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/informacion_de_modulos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/public/juegos/records":
     get:
       tags: [publico]
@@ -3150,6 +3163,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/explorador_archivos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/informacion_de_modulos":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/informacion_de_modulos
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/informacion_de_modulos
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

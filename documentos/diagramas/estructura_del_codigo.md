@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-27 (informacion editable de modulos del index)
+
+- `backend/handlers/pagina_principal_handlers.go` agrega la configuracion `informacionModulos` junto al flujo de pagina principal.
+- `backend/main.go` registra `/api/public/informacion_de_modulos` para el index y `/super/api/informacion_de_modulos` para el panel super; `backend/utils/utils.go` permite la lectura publica.
+- `web/super/informacion_de_modulos.html` edita titulo, iconos y vinetas; `web/super_administrador.html` y `web/js/super_administrador.js` agregan la navegacion.
+- `web/index.html` conserva el HTML de respaldo y reemplaza la lista al recibir la configuracion publica.
+- Flujo de capas: Super Admin -> `/super/api/informacion_de_modulos` -> `configuraciones` -> `/api/public/informacion_de_modulos` -> Index publico.
+
 ## Actualizacion 2026-05-25 (submenu de creditos y cartera)
 
 - `web/administrar_empresa/creditos_menu.html`:

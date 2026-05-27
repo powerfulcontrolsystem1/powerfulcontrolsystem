@@ -1,3 +1,22 @@
+2026-05-27: Mapa real para analitica publica de visitas
+- Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: el contador `Visitas al portal por pais` usa un mapa mundial real basado en Natural Earth en lugar de continentes esquematicos dibujados a mano.
+- UX: el asset se muestra como capa base dentro del mismo widget reutilizable y conserva marcadores, ranking y total por pais.
+- Alcance: no cambia endpoint `/api/public/portal_visitas`, almacenamiento agregado, privacidad, permisos ni dependencias.
+
+2026-05-27: Vinetas visibles por tema en modulos del index
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: las vinetas de `Modulos y caracteristicas principales` se renderizan con una viñeta visual propia en lugar de depender del marcador nativo.
+- UX: el color se calcula desde variables de tema para que se vea en modo claro y en temas oscuros.
+- Alcance: solo cambia CSS embebido de `web/index.html`; no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-27: Informacion editable de modulos del index
+- Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`.
+- Cambio funcional: la lista `Modulos y caracteristicas principales` del index se vuelve editable desde el panel super administrador.
+- Backend: `/super/api/informacion_de_modulos` permite leer/guardar la configuracion y `/api/public/informacion_de_modulos` expone titulo, icono y vinetas al portal publico.
+- Frontend: `web/super/informacion_de_modulos.html` administra modulos, iconos y vinetas; `web/index.html` renderiza el contenido dinamico con fallback estatico.
+- Alcance: usa `pcs_superadministrador.configuraciones`; no agrega tablas, permisos empresariales ni dependencias.
+
 2026-05-27: Logo imagen en login administrador
 - Modulos afectados: `autenticacion_admin`, `login`, `frontend_ux`.
 - Cambio funcional: el encabezado de `web/login.html` usa la imagen `web/img/titulo-powerful-control-system-login.png` en lugar del titulo textual.

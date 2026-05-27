@@ -2160,16 +2160,17 @@ body.has-floating-menu.admin-empresa-shell .admin-frame-toolbar{top:calc(var(--f
   stroke-width:.8;
   stroke-dasharray:4 8;
 }
-.portal-visit-coast{
-  fill:color-mix(in srgb,var(--muted) 30%,var(--surface) 70%);
-  stroke:color-mix(in srgb,var(--border) 78%,var(--text) 22%);
-  stroke-width:1.4;
-  filter:drop-shadow(0 8px 14px rgba(15,23,42,.14));
+.portal-visit-real-map{
+  opacity:.9;
+  filter:drop-shadow(0 10px 18px rgba(15,23,42,.16)) saturate(1.05);
+  mix-blend-mode:multiply;
 }
-.portal-visit-country-shape{
-  fill:color-mix(in srgb,var(--accent) 9%,transparent);
-  stroke:color-mix(in srgb,var(--border) 60%,transparent);
-  stroke-width:.7;
+html[data-theme^="dark"] .portal-visit-real-map,
+[data-theme="dark"] .portal-visit-real-map,
+.theme-dark .portal-visit-real-map{
+  opacity:.82;
+  filter:brightness(.86) contrast(1.12) saturate(.9) drop-shadow(0 10px 16px rgba(0,0,0,.32));
+  mix-blend-mode:screen;
 }
 .portal-visit-marker .portal-visit-marker-halo{fill:none;stroke:currentColor;stroke-width:2;opacity:.28;filter:none}
 .portal-visit-marker circle{

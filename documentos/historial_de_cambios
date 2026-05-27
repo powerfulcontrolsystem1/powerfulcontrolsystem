@@ -1,3 +1,22 @@
+2026-05-27: Mapa real para analitica publica de visitas.
+- Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: `Analitica publica / Visitas al portal por pais` deja de usar una silueta mundial esquematica y ahora renderiza un mapa real descargado/generado desde datos Natural Earth de dominio publico.
+- Implementacion: `web/img/world-map-natural-earth-public-domain.svg` contiene 177 paises; `web/js/portal_visits.js` lo monta como capa base y mantiene marcadores, ranking y total; `web/index.html` y `web/estilos.css` ajustan tema claro/oscuro.
+- Alcance: no cambia backend, endpoints, tablas, permisos, privacidad ni dependencias.
+
+2026-05-27: Vinetas visibles en modulos del index.
+- Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
+- Cambio funcional: las vinetas de la descripcion de modulos principales dejan de usar `::marker` con color fijo y pasan a una viñeta visual propia compatible con temas claros y oscuros.
+- Implementacion: `web/index.html` usa `li::before` con colores derivados de variables de tema, reforzando contraste y presencia visual.
+- QA: validacion sintactica de `web/index.html` y verificacion visual local en modo claro y oscuro.
+
+2026-05-27: Informacion editable de modulos del index.
+- Modulos afectados: `portal_publico`, `super_administrador`, `frontend_ux`, `backend_db`.
+- Cambio funcional: `Modulos y caracteristicas principales` del index se puede editar desde el panel super administrador.
+- Implementacion: `web/super/informacion_de_modulos.html` edita titulo, iconos y vinetas; `web/index.html` carga `/api/public/informacion_de_modulos` y mantiene fallback HTML; `web/super_administrador.html` y `web/js/super_administrador.js` enlazan la nueva pagina.
+- Backend: `backend/handlers/pagina_principal_handlers.go` agrega lectura/guardado en `pcs_superadministrador.configuraciones`; `backend/main.go` registra endpoints publico y super; `backend/utils/utils.go` deja publica la lectura `/api/public/informacion_de_modulos`.
+- QA: `go test ./handlers -run InformacionModulos -count=1`; validacion sintactica de `web/index.html`, `web/super/informacion_de_modulos.html` y `web/js/super_administrador.js`; verificacion visual local con Chrome headless.
+
 2026-05-27: Logo imagen en login administrador.
 - Modulos afectados: `autenticacion_admin`, `login`, `frontend_ux`.
 - Cambio funcional: se reemplaza el titulo textual `Powerful Control System` por el asset `web/img/titulo-powerful-control-system-login.png`.

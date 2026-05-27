@@ -24,6 +24,8 @@
 
   var coreSuperPages = {
     "/super/licencias_resumen.html": true,
+    "/super/pagina_principal.html": true,
+    "/super/informacion_de_modulos.html": true,
     "/super/tipos_empresas.html": true,
     "/super/verticales_produccion_masiva.html": true,
     "/super/licencias.html": true,

@@ -361,22 +361,39 @@
       column-gap: 16px;
       row-gap: 4px;
       margin: 7px 0 0;
-      padding-left: 18px;
-      list-style: disc;
+      padding-left: 0;
+      list-style: none;
       line-height: 1.48;
       text-align: left;
       text-align-last: left;
     }
 
     .portal-module-feature-list li {
-      padding-left: 2px;
+      position: relative;
+      padding-left: 18px;
       margin: 0;
       break-inside: avoid;
+      color: var(--text);
     }
 
-    .portal-module-feature-list li::marker {
-      color: #111827;
-      font-size: 1.05em;
+    .portal-module-feature-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .72em;
+      width: .48em;
+      height: .48em;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+      transform: translateY(-50%);
+    }
+
+    html[data-theme="dark"] .portal-module-feature-list li::before,
+    html[data-theme="dark-violet"] .portal-module-feature-list li::before,
+    html[data-theme="dark-emerald"] .portal-module-feature-list li::before {
+      background: color-mix(in srgb, var(--accent-yellow, #fbbf24) 74%, var(--text) 26%);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-yellow, #fbbf24) 20%, transparent);
     }
 
     .portal-modules-list strong {
@@ -729,17 +746,18 @@
       stroke-dasharray: 4 8;
     }
 
-    .portal-visit-coast {
-      fill: color-mix(in srgb, var(--muted) 30%, var(--surface) 70%);
-      stroke: color-mix(in srgb, var(--border) 78%, var(--text) 22%);
-      stroke-width: 1.4;
-      filter: drop-shadow(0 8px 14px rgba(15, 23, 42, .14));
+    .portal-visit-real-map {
+      opacity: .9;
+      filter: drop-shadow(0 10px 18px rgba(15, 23, 42, .16)) saturate(1.05);
+      mix-blend-mode: multiply;
     }
 
-    .portal-visit-country-shape {
-      fill: color-mix(in srgb, var(--accent) 9%, transparent);
-      stroke: color-mix(in srgb, var(--border) 60%, transparent);
-      stroke-width: .7;
+    html[data-theme^="dark"] .portal-visit-real-map,
+    [data-theme="dark"] .portal-visit-real-map,
+    .theme-dark .portal-visit-real-map {
+      opacity: .82;
+      filter: brightness(.86) contrast(1.12) saturate(.9) drop-shadow(0 10px 16px rgba(0, 0, 0, .32));
+      mix-blend-mode: screen;
     }
 
     .portal-visit-marker circle {
@@ -1250,8 +1268,8 @@
       </section>
       <section class="portal-modules-section portal-modules-section--summary" aria-label="Modulos y funciones principales">
         <div class="portal-modules-summary">
-          <h2>Modulos y caracteristicas principales</h2>
-          <ul class="portal-modules-list">
+          <h2 id="portalModulesTitle">Modulos y caracteristicas principales</h2>
+          <ul id="portalModulesList" class="portal-modules-list">
             <li><img class="portal-module-icon" src="/img/warehouse-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Inventario profesional:</strong><ul class="portal-module-feature-list"><li>Productos</li><li>Servicios</li><li>Recetas</li><li>Categorias</li><li>Bodegas</li><li>Kardex</li><li>Traslados</li><li>Compras</li><li>Proveedores</li><li>Control de existencias</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/punto_venta.png" alt="" loading="lazy"><div class="portal-module-text"><strong>Ventas POS:</strong><ul class="portal-module-feature-list"><li>Venta directa</li><li>Carritos por estacion</li><li>Pagos mixtos</li><li>Abonos</li><li>Descuentos</li><li>Codigos promocionales</li><li>Caja por usuario</li><li>Varias cajas simultaneas</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/money.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Pagos y hardware:</strong><ul class="portal-module-feature-list"><li>Manejo de datafonos</li><li>Pagos QR</li><li>Cajon monedero</li><li>Impresoras POS</li><li>Impresoras por area o producto</li><li>Facturacion offline</li></ul></div></li>
@@ -1348,6 +1366,8 @@
       var carouselNextBtn = document.getElementById('portalCarouselNext');
       var statusEl = document.getElementById('portalCardsStatus');
       var whatsAppFloatingCTA = document.querySelector('.whatsapp-floating-cta');
+      var portalModulesTitleEl = document.getElementById('portalModulesTitle');
+      var portalModulesListEl = document.getElementById('portalModulesList');
 
       var fallbackCards = [
         {
@@ -1640,6 +1660,69 @@
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
+      }
+
+      function normalizeModuleIcon(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/company-briefcase-color.svg';
+        }
+        return value;
+      }
+
+      function normalizeModuleFeatures(raw) {
+        var source = Array.isArray(raw) ? raw : [];
+        var out = [];
+        source.forEach(function (item) {
+          var value = String(item || '').trim();
+          if (value) out.push(value);
+        });
+        return out.length ? out : ['Caracteristica principal'];
+      }
+
+      function normalizeModuleInfoItems(rawModules) {
+        var source = Array.isArray(rawModules) ? rawModules : [];
+        return source.map(function (item, index) {
+          return {
+            titulo: String((item && item.titulo) || '').trim() || ('Modulo ' + (index + 1)),
+            icono_url: normalizeModuleIcon(item && item.icono_url),
+            caracteristicas: normalizeModuleFeatures(item && item.caracteristicas)
+          };
+        }).filter(function (item) {
+          return item.titulo && item.caracteristicas.length;
+        });
+      }
+
+      function renderModuleInfo(payload) {
+        if (!portalModulesListEl) return;
+        var modules = normalizeModuleInfoItems(payload && payload.modulos);
+        if (!modules.length) return;
+        if (portalModulesTitleEl) {
+          portalModulesTitleEl.textContent = String((payload && payload.titulo) || '').trim() || 'Modulos y caracteristicas principales';
+        }
+        portalModulesListEl.innerHTML = modules.map(function (mod) {
+          return '' +
+            '<li><img class="portal-module-icon" src="' + escapeHTML(mod.icono_url) + '" alt="" loading="lazy">' +
+            '<div class="portal-module-text"><strong>' + escapeHTML(mod.titulo) + ':</strong>' +
+            '<ul class="portal-module-feature-list">' + mod.caracteristicas.map(function (feature) {
+              return '<li>' + escapeHTML(feature) + '</li>';
+            }).join('') + '</ul></div></li>';
+        }).join('');
+      }
+
+      async function loadModuleInfo() {
+        if (!portalModulesListEl) return;
+        try {
+          var response = await fetch('/api/public/informacion_de_modulos', { credentials: 'same-origin' });
+          var payload = null;
+          try { payload = await response.json(); } catch (_) { payload = null; }
+          if (!response.ok) {
+            throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
+          }
+          renderModuleInfo(payload);
+        } catch (_) {
+          // El HTML estatico queda como respaldo del portal publico.
+        }
       }
 
       function slugifyTitle(value, index) {
@@ -2224,6 +2307,7 @@
       }
 
       loadCards();
+      loadModuleInfo();
 
       // Reajustar títulos si cambia el ancho (móvil/desktop)
       try {

@@ -20,7 +20,11 @@ import (
 const (
 	paginaPrincipalConfigKey          = "super.pagina_principal.cards.v1"
 	paginaPrincipalConfigUpdatedByKey = "super.pagina_principal.cards.v1.updated_by"
+	informacionModulosConfigKey       = "super.informacion_modulos.v1"
+	informacionModulosUpdatedByKey    = "super.informacion_modulos.v1.updated_by"
 	paginaPrincipalDefaultCardLimit   = 12
+	informacionModulosDefaultLimit    = 24
+	informacionModulosFeatureLimit    = 32
 )
 
 const (
@@ -65,6 +69,17 @@ type paginaPrincipalConfig struct {
 	Cantidad int                           `json:"cantidad"`
 	Tarjetas []paginaPrincipalCard         `json:"tarjetas"`
 	Estilos  paginaPrincipalVisualSettings `json:"estilos"`
+}
+
+type informacionModuloItem struct {
+	Titulo          string   `json:"titulo"`
+	IconoURL        string   `json:"icono_url"`
+	Caracteristicas []string `json:"caracteristicas"`
+}
+
+type informacionModulosConfig struct {
+	Titulo  string                  `json:"titulo"`
+	Modulos []informacionModuloItem `json:"modulos"`
 }
 
 func paginaPrincipalDefaultWhatsAppContactNumber() string {
@@ -267,6 +282,24 @@ func paginaPrincipalDefaultConfig() paginaPrincipalConfig {
 		Cantidad: len(cards),
 		Tarjetas: cards,
 		Estilos:  paginaPrincipalDefaultVisualSettings(),
+	}
+}
+
+func informacionModulosDefaultConfig() informacionModulosConfig {
+	return informacionModulosConfig{
+		Titulo: "Modulos y caracteristicas principales",
+		Modulos: []informacionModuloItem{
+			{Titulo: "Inventario profesional", IconoURL: "/img/warehouse-color.svg", Caracteristicas: []string{"Productos", "Servicios", "Recetas", "Categorias", "Bodegas", "Kardex", "Traslados", "Compras", "Proveedores", "Control de existencias"}},
+			{Titulo: "Ventas POS", IconoURL: "/img/punto_venta.png", Caracteristicas: []string{"Venta directa", "Carritos por estacion", "Pagos mixtos", "Abonos", "Descuentos", "Codigos promocionales", "Caja por usuario", "Varias cajas simultaneas"}},
+			{Titulo: "Pagos y hardware", IconoURL: "/img/money.svg", Caracteristicas: []string{"Manejo de datafonos", "Pagos QR", "Cajon monedero", "Impresoras POS", "Impresoras por area o producto", "Facturacion offline"}},
+			{Titulo: "Documentos electronicos", IconoURL: "/img/invoice.svg", Caracteristicas: []string{"Factura electronica", "Notas credito/debito", "Documento soporte", "Notas de ajuste", "Nomina electronica", "Documentos equivalentes electronicos/POS electronico", "Contingencia y eventos RADIAN para Colombia", "Factura, nota credito y nota debito para Panama y Ecuador segun el pais configurado"}},
+			{Titulo: "Finanzas y cumplimiento", IconoURL: "/img/taxes.svg", Caracteristicas: []string{"Impuestos", "Bancos", "Ingresos", "Egresos", "Tesoreria", "Presupuesto", "Reportes", "Modulo del contador", "Certificados tributarios", "Informacion exogena"}},
+			{Titulo: "Operacion por estaciones", IconoURL: "/img/hotel-logo.svg", Caracteristicas: []string{"Estaciones", "Mesas", "Habitaciones", "Zonas o bahias configurables", "Control de estados", "Turnos", "Reservas", "Alertas de tiempo", "Aseo", "Cierre/corte de caja"}},
+			{Titulo: "Automatizacion e IA", IconoURL: "/img/gpt.svg", Caracteristicas: []string{"Integracion con IA", "Documentos inteligentes", "OCR de compras", "Soporte operativo", "Reportes asistidos", "Acciones confirmables"}},
+			{Titulo: "Control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Control electrico", "Manejo de sensores", "Puertas", "Reles", "Permanencia", "Acceso", "Vehiculos", "Parqueaderos", "Trazabilidad operativa"}},
+			{Titulo: "Gestion empresarial", IconoURL: "/img/company-briefcase-color.svg", Caracteristicas: []string{"Clientes", "CRM", "Usuarios", "Roles", "Permisos", "Licencias", "Auditoria", "Backups", "Comunicaciones", "Soporte", "Chat y tareas"}},
+			{Titulo: "Verticales listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Gimnasio", "Odontologia", "Propiedad horizontal", "Domicilios", "Taxi", "Carta QR", "Venta publica", "Red social comercial"}},
+		},
 	}
 }
 
@@ -475,6 +508,112 @@ func paginaPrincipalNormalizeConfig(cfg paginaPrincipalConfig) paginaPrincipalCo
 	}
 }
 
+func informacionModulosNormalizeFeatures(raw []string, fallback []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(raw))
+	for _, item := range raw {
+		value := strings.TrimSpace(item)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, value)
+		if len(out) >= informacionModulosFeatureLimit {
+			break
+		}
+	}
+	if len(out) > 0 {
+		return out
+	}
+	for _, item := range fallback {
+		value := strings.TrimSpace(item)
+		if value == "" {
+			continue
+		}
+		out = append(out, value)
+		if len(out) >= informacionModulosFeatureLimit {
+			break
+		}
+	}
+	if len(out) == 0 {
+		out = []string{"Caracteristica principal"}
+	}
+	return out
+}
+
+func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacionModulosConfig {
+	defaults := informacionModulosDefaultConfig()
+	title := strings.TrimSpace(cfg.Titulo)
+	if title == "" {
+		title = defaults.Titulo
+	}
+
+	source := cfg.Modulos
+	if len(source) == 0 {
+		source = defaults.Modulos
+	}
+	if len(source) > informacionModulosDefaultLimit {
+		source = source[:informacionModulosDefaultLimit]
+	}
+
+	modules := make([]informacionModuloItem, 0, len(source))
+	for i, item := range source {
+		base := defaults.Modulos[i%len(defaults.Modulos)]
+		moduleTitle := strings.TrimSpace(item.Titulo)
+		if moduleTitle == "" {
+			moduleTitle = base.Titulo
+		}
+		modules = append(modules, informacionModuloItem{
+			Titulo:          moduleTitle,
+			IconoURL:        paginaPrincipalNormalizeImageURL(item.IconoURL, base.IconoURL),
+			Caracteristicas: informacionModulosNormalizeFeatures(item.Caracteristicas, base.Caracteristicas),
+		})
+	}
+
+	return informacionModulosConfig{Titulo: title, Modulos: modules}
+}
+
+func informacionModulosLoadConfig(dbSuper *sql.DB) (informacionModulosConfig, string, string, error) {
+	cfg := informacionModulosDefaultConfig()
+	stored, _, _, updatedAt, err := dbpkg.GetConfigEntry(dbSuper, informacionModulosConfigKey)
+	if err != nil {
+		return cfg, "", "", err
+	}
+	updatedBy, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, informacionModulosUpdatedByKey)
+	if strings.TrimSpace(stored) == "" {
+		return cfg, "", strings.TrimSpace(updatedBy), nil
+	}
+	var decoded informacionModulosConfig
+	if err := json.Unmarshal([]byte(stored), &decoded); err != nil {
+		log.Printf("[informacion_modulos] invalid config JSON, fallback defaults: %v", err)
+		return cfg, strings.TrimSpace(updatedAt), strings.TrimSpace(updatedBy), nil
+	}
+	return informacionModulosNormalizeConfig(decoded), strings.TrimSpace(updatedAt), strings.TrimSpace(updatedBy), nil
+}
+
+func informacionModulosSaveConfig(dbSuper *sql.DB, cfg informacionModulosConfig, updatedBy string) (informacionModulosConfig, error) {
+	normalized := informacionModulosNormalizeConfig(cfg)
+	encoded, err := json.Marshal(normalized)
+	if err != nil {
+		return normalized, err
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, informacionModulosConfigKey, string(encoded), false); err != nil {
+		return normalized, err
+	}
+	actor := strings.TrimSpace(updatedBy)
+	if actor == "" {
+		actor = "sistema"
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, informacionModulosUpdatedByKey, actor, false); err != nil {
+		return normalized, err
+	}
+	return normalized, nil
+}
+
 func paginaPrincipalLoadConfig(dbSuper *sql.DB) (paginaPrincipalConfig, string, string, error) {
 	cfg := paginaPrincipalDefaultConfig()
 	stored, _, _, updatedAt, err := dbpkg.GetConfigEntry(dbSuper, paginaPrincipalConfigKey)
@@ -646,6 +785,105 @@ func paginaPrincipalRequireSuperAdmin(w http.ResponseWriter, r *http.Request, db
 		return "", false
 	}
 	return strings.TrimSpace(admin.Email), true
+}
+
+// SuperInformacionModulosHandler administra la lista editable de modulos principales del portal.
+func SuperInformacionModulosHandler(dbSuper *sql.DB, webDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		adminEmail, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper)
+		if !ok {
+			return
+		}
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		if action == "" {
+			action = "config"
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			switch action {
+			case "config", "get", "listar":
+				cfg, updatedAt, updatedBy, err := informacionModulosLoadConfig(dbSuper)
+				if err != nil {
+					http.Error(w, "failed to read informacion de modulos: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":          true,
+					"config":      cfg,
+					"updated_at":  updatedAt,
+					"updated_by":  updatedBy,
+					"admin_email": adminEmail,
+				})
+				return
+			case "defaults", "predeterminados":
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":     true,
+					"config": informacionModulosDefaultConfig(),
+				})
+				return
+			case "imagenes", "images", "listar_imagenes":
+				images, err := paginaPrincipalListImageURLs(webDir)
+				if err != nil {
+					http.Error(w, "failed to list images: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "imagenes": images, "total": len(images)})
+				return
+			default:
+				http.Error(w, "action not supported", http.StatusBadRequest)
+				return
+			}
+
+		case http.MethodPut, http.MethodPost:
+			if action != "config" && action != "save" && action != "guardar" {
+				http.Error(w, "action not supported", http.StatusBadRequest)
+				return
+			}
+			var payload informacionModulosConfig
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			normalized, err := informacionModulosSaveConfig(dbSuper, payload, adminEmail)
+			if err != nil {
+				http.Error(w, "failed to save informacion de modulos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":         true,
+				"saved":      true,
+				"config":     normalized,
+				"updated_by": adminEmail,
+			})
+			return
+
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// PublicInformacionModulosHandler expone los modulos principales configurados para el index publico.
+func PublicInformacionModulosHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		cfg, updatedAt, _, err := informacionModulosLoadConfig(dbSuper)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "failed to read informacion de modulos: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"titulo":     cfg.Titulo,
+			"modulos":    cfg.Modulos,
+			"updated_at": updatedAt,
+		})
+	}
 }
 
 // SuperPaginaPrincipalHandler administra las tarjetas configurables del portal principal y su landing descriptiva.

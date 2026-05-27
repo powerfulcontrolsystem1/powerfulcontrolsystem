@@ -1,3 +1,15 @@
+2026-05-27 - Mapa real para analitica publica
+- `web/img/world-map-natural-earth-public-domain.svg`:
+	- asset SVG mundial generado desde Natural Earth 1:110m admin 0 countries, de dominio publico.
+	- se usa como mapa base real del widget `Analitica publica / Visitas al portal por pais` en el index y el panel super administrador.
+
+2026-05-27 - Informacion editable de modulos del index
+- `web/super/informacion_de_modulos.html`:
+	- pagina privada del panel super administrador para editar la seccion publica `Modulos y caracteristicas principales`.
+	- permite ajustar titulo, nombre de modulo, icono y vinetas, con vista previa y guardado por API super.
+- `backend/handlers/informacion_modulos_test.go`:
+	- prueba de normalizacion del JSON editorial de modulos, iconos y vinetas.
+
 2026-05-27 - Logo imagen login administrador
 - `web/img/titulo-powerful-control-system-login.png`:
 	- asset PNG con fondo transparente real para el encabezado del login administrativo.

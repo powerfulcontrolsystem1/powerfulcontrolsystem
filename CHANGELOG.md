@@ -1,3 +1,6 @@
+- 2026-05-27: `Mapa real en analitica publica` reemplaza el mapa esquematico de `Visitas al portal por pais` por un SVG mundial real basado en Natural Earth, compartido entre el index y el panel super administrador, manteniendo marcadores por pais y sin cambiar backend ni privacidad.
+- 2026-05-27: `Vinetas visibles en modulos del index` refuerza las viñetas de `Modulos y caracteristicas principales` con un punto visual propio que respeta apariencia clara y oscura.
+- 2026-05-27: `Informacion editable de modulos del index` agrega `/super/informacion_de_modulos.html` para que el super administrador edite titulo, iconos y vinetas de `Modulos y caracteristicas principales`; el index lee `/api/public/informacion_de_modulos` con fallback estatico.
 - 2026-05-27: `Login administrador con logo imagen` reemplaza el titulo textual del login por `web/img/titulo-powerful-control-system-login.png` con tamano pequeno y responsive, sin cambiar autenticacion.
 - 2026-05-27: `Index subtitulo POS domotica` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
 - 2026-05-27: `Index modulos con vinetas reales` convierte cada caracteristica de las tarjetas de modulos principales en elementos `ul/li` con vinetas visibles y compactas, sin cambiar backend ni datos.

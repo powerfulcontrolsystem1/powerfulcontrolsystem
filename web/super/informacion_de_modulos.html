@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Informacion de modulos</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem("theme") || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        if (!ok[t]) t = "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        document.documentElement.classList.toggle("theme-light", t.indexOf("light") === 0);
+        document.documentElement.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+  <style>
+    .modules-editor-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .modules-editor-list {
+      display: grid;
+      gap: 12px;
+    }
+    .module-editor-card {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .module-editor-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .module-editor-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 900;
+      color: var(--text);
+    }
+    .module-editor-title img {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+    }
+    .module-preview-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+    .module-preview-list > li {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 9px;
+      align-items: start;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 90%, var(--accent) 10%);
+    }
+    .module-preview-list img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+    .module-preview-list strong {
+      color: var(--accent);
+      font-family: "Montserrat", sans-serif;
+      font-weight: 900;
+    }
+    .module-preview-feature-list {
+      margin: 6px 0 0;
+      padding-left: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 3px 12px;
+      list-style: disc;
+      line-height: 1.4;
+    }
+    .module-preview-feature-list li::marker {
+      color: #111827;
+      font-size: 1.08em;
+    }
+    @media (max-width: 920px) {
+      .modules-editor-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="super-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>Informacion de modulos</h1>
+      <p class="form-help">Contenido editable de la seccion publica "Modulos y caracteristicas principales" del index.</p>
+      <div class="form-actions">
+        <a href="/index.html" class="btn secondary" target="_top">Ver index publico</a>
+        <button id="btnReload" type="button" class="btn secondary">Recargar</button>
+        <button id="btnDefaults" type="button" class="btn secondary">Cargar predeterminado</button>
+        <button id="btnAddModule" type="button" class="btn">Agregar modulo</button>
+        <button id="btnSave" type="button" class="btn primary">Guardar cambios</button>
+      </div>
+      <div id="pageMessage" class="form-help" aria-live="polite"></div>
+    </div>
+
+    <section class="modules-editor-layout">
+      <div class="card form">
+        <h2>Contenido publico</h2>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="modulesTitle">Titulo de la seccion</label>
+            <input id="modulesTitle" class="form-input" type="text" maxlength="120" placeholder="Modulos y caracteristicas principales">
+          </div>
+        </div>
+        <div id="modulesEditor" class="modules-editor-list"></div>
+      </div>
+
+      <aside class="card form">
+        <h2>Vista previa</h2>
+        <p id="metaInfo" class="form-help"></p>
+        <ul id="modulesPreview" class="module-preview-list"></ul>
+      </aside>
+    </section>
+  </div>
+
+  <datalist id="imageOptions"></datalist>
+
+  <script>
+    (function () {
+      var state = {
+        images: [],
+        config: { titulo: 'Modulos y caracteristicas principales', modulos: [] }
+      };
+
+      var titleEl = document.getElementById('modulesTitle');
+      var editorEl = document.getElementById('modulesEditor');
+      var previewEl = document.getElementById('modulesPreview');
+      var msgEl = document.getElementById('pageMessage');
+      var metaEl = document.getElementById('metaInfo');
+      var imageOptionsEl = document.getElementById('imageOptions');
+
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function setMessage(text, type) {
+        msgEl.textContent = text || '';
+        msgEl.classList.remove('error', 'success');
+        if (type) msgEl.classList.add(type);
+      }
+
+      function normalizeIcon(raw) {
+        var value = String(raw || '').trim();
+        if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) {
+          return '/img/company-briefcase-color.svg';
+        }
+        return value;
+      }
+
+      function normalizeFeatures(raw) {
+        var source = Array.isArray(raw) ? raw : String(raw || '').split(/\r?\n/);
+        var seen = {};
+        var out = [];
+        source.forEach(function (item) {
+          var value = String(item || '').trim();
+          if (!value) return;
+          var key = value.toLowerCase();
+          if (seen[key]) return;
+          seen[key] = true;
+          out.push(value);
+        });
+        return out.length ? out : ['Caracteristica principal'];
+      }
+
+      function normalizeModule(item, index) {
+        return {
+          titulo: String((item && item.titulo) || '').trim() || ('Modulo ' + (index + 1)),
+          icono_url: normalizeIcon(item && item.icono_url),
+          caracteristicas: normalizeFeatures(item && item.caracteristicas)
+        };
+      }
+
+      function normalizeConfig(raw) {
+        var source = raw && typeof raw === 'object' ? raw : {};
+        var modules = Array.isArray(source.modulos) ? source.modulos : [];
+        return {
+          titulo: String(source.titulo || '').trim() || 'Modulos y caracteristicas principales',
+          modulos: modules.map(normalizeModule)
+        };
+      }
+
+      function collectFromDOM() {
+        var modules = [];
+        Array.prototype.slice.call(editorEl.querySelectorAll('[data-module-card]')).forEach(function (card, index) {
+          modules.push(normalizeModule({
+            titulo: card.querySelector('[data-field="titulo"]').value,
+            icono_url: card.querySelector('[data-field="icono_url"]').value,
+            caracteristicas: card.querySelector('[data-field="caracteristicas"]').value
+          }, index));
+        });
+        state.config = {
+          titulo: String(titleEl.value || '').trim() || 'Modulos y caracteristicas principales',
+          modulos: modules
+        };
+      }
+
+      function renderImageOptions() {
+        imageOptionsEl.innerHTML = state.images.map(function (url) {
+          return '<option value="' + esc(url) + '"></option>';
+        }).join('');
+      }
+
+      function renderEditor() {
+        titleEl.value = state.config.titulo;
+        editorEl.innerHTML = state.config.modulos.map(function (mod, index) {
+          return '' +
+            '<article class="module-editor-card" data-module-card data-index="' + index + '">' +
+            '  <div class="module-editor-head">' +
+            '    <div class="module-editor-title"><img src="' + esc(mod.icono_url) + '" alt=""><span>' + esc(mod.titulo) + '</span></div>' +
+            '    <button type="button" class="btn danger small" data-action="remove">Eliminar</button>' +
+            '  </div>' +
+            '  <div class="form-row">' +
+            '    <div class="form-col"><label class="form-label">Nombre del modulo</label><input class="form-input" data-field="titulo" type="text" value="' + esc(mod.titulo) + '"></div>' +
+            '    <div class="form-col"><label class="form-label">Icono o imagen</label><input class="form-input" data-field="icono_url" list="imageOptions" type="text" value="' + esc(mod.icono_url) + '"></div>' +
+            '  </div>' +
+            '  <label class="form-label">Caracteristicas / vinetas</label>' +
+            '  <textarea class="form-input" data-field="caracteristicas" rows="6" placeholder="Una caracteristica por linea">' + esc(mod.caracteristicas.join('\n')) + '</textarea>' +
+            '</article>';
+        }).join('');
+        renderPreview();
+      }
+
+      function renderPreview() {
+        titleEl.value = String(titleEl.value || '').trim() ? titleEl.value : state.config.titulo;
+        previewEl.innerHTML = state.config.modulos.map(function (mod) {
+          return '' +
+            '<li>' +
+            '  <img src="' + esc(mod.icono_url) + '" alt="">' +
+            '  <div><strong>' + esc(mod.titulo) + ':</strong>' +
+            '    <ul class="module-preview-feature-list">' + mod.caracteristicas.map(function (item) { return '<li>' + esc(item) + '</li>'; }).join('') + '</ul>' +
+            '  </div>' +
+            '</li>';
+        }).join('');
+      }
+
+      function wireEditorEvents() {
+        titleEl.addEventListener('input', function () {
+          collectFromDOM();
+          renderPreview();
+        });
+        editorEl.addEventListener('input', function () {
+          collectFromDOM();
+          renderPreview();
+        });
+        editorEl.addEventListener('click', function (event) {
+          var btn = event.target.closest && event.target.closest('[data-action="remove"]');
+          if (!btn) return;
+          collectFromDOM();
+          var card = btn.closest('[data-module-card]');
+          var index = Number(card && card.dataset.index);
+          if (Number.isFinite(index)) {
+            state.config.modulos.splice(index, 1);
+            renderEditor();
+          }
+        });
+      }
+
+      async function fetchJSON(url, options) {
+        var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var payload = null;
+        try { payload = await response.json(); } catch (_) {}
+        if (!response.ok) {
+          throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
+        }
+        return payload || {};
+      }
+
+      async function loadImages() {
+        try {
+          var payload = await fetchJSON('/super/api/informacion_de_modulos?action=imagenes');
+          state.images = Array.isArray(payload.imagenes) ? payload.imagenes : [];
+          renderImageOptions();
+        } catch (_) {
+          state.images = [];
+        }
+      }
+
+      async function loadConfig() {
+        setMessage('Cargando informacion...', '');
+        var payload = await fetchJSON('/super/api/informacion_de_modulos');
+        state.config = normalizeConfig(payload.config);
+        metaEl.textContent = payload.updated_at ? ('Ultima actualizacion: ' + payload.updated_at + (payload.updated_by ? ' por ' + payload.updated_by : '')) : 'Usando contenido predeterminado.';
+        renderEditor();
+        setMessage('', '');
+      }
+
+      async function loadDefaults() {
+        var payload = await fetchJSON('/super/api/informacion_de_modulos?action=defaults');
+        state.config = normalizeConfig(payload.config);
+        renderEditor();
+        setMessage('Contenido predeterminado cargado. Presiona Guardar cambios para publicarlo.', 'success');
+      }
+
+      async function saveConfig() {
+        collectFromDOM();
+        if (!state.config.modulos.length) {
+          setMessage('Agrega al menos un modulo antes de guardar.', 'error');
+          return;
+        }
+        setMessage('Guardando...', '');
+        var payload = await fetchJSON('/super/api/informacion_de_modulos?action=guardar', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state.config)
+        });
+        state.config = normalizeConfig(payload.config);
+        renderEditor();
+        setMessage('Informacion de modulos guardada correctamente.', 'success');
+      }
+
+      document.getElementById('btnReload').addEventListener('click', function () {
+        loadConfig().catch(function (err) { setMessage('No se pudo recargar: ' + err.message, 'error'); });
+      });
+      document.getElementById('btnDefaults').addEventListener('click', function () {
+        loadDefaults().catch(function (err) { setMessage('No se pudo cargar predeterminado: ' + err.message, 'error'); });
+      });
+      document.getElementById('btnAddModule').addEventListener('click', function () {
+        collectFromDOM();
+        state.config.modulos.push(normalizeModule({
+          titulo: 'Nuevo modulo',
+          icono_url: '/img/company-briefcase-color.svg',
+          caracteristicas: ['Caracteristica principal']
+        }, state.config.modulos.length));
+        renderEditor();
+      });
+      document.getElementById('btnSave').addEventListener('click', function () {
+        saveConfig().catch(function (err) { setMessage('No se pudo guardar: ' + err.message, 'error'); });
+      });
+
+      wireEditorEvents();
+      Promise.all([loadImages(), loadConfig()]).catch(function (err) {
+        setMessage('No se pudo cargar la pagina: ' + err.message, 'error');
+      });
+    })();
+  </script>
+</body>
+</html>

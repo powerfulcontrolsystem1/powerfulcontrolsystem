@@ -1,3 +1,20 @@
+## [2026-05-27] Mapa real en analitica publica
+- [Portal] `web/js/portal_visits.js` usa `web/img/world-map-natural-earth-public-domain.svg` como mapa base real del contador `Visitas al portal por pais`.
+- [Super administrador] El mismo widget compartido muestra el mapa real al final del panel sin duplicar conteos.
+- [Asset] El SVG fue generado desde Natural Earth 1:110m admin 0 countries, de dominio publico.
+- [Alcance] No cambia backend, endpoints, tablas, permisos, privacidad ni dependencias.
+
+## [2026-05-27] Vinetas visibles en modulos del index
+- [Portal] `web/index.html` reemplaza el marcador nativo por una viñeta visual propia en cada caracteristica de `Modulos y caracteristicas principales`.
+- [Tema] Las viñetas usan variables de apariencia para conservar contraste en modo claro y oscuro.
+- [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias.
+
+## [2026-05-27] Informacion editable de modulos del index
+- [Super administrador] Se agrega `web/super/informacion_de_modulos.html` para editar titulo, icono y vinetas de cada modulo principal.
+- [Portal] `web/index.html` carga `/api/public/informacion_de_modulos` y conserva el HTML actual como respaldo si falla la conexion.
+- [Backend] `/super/api/informacion_de_modulos` guarda en `pcs_superadministrador.configuraciones`; `/api/public/informacion_de_modulos` expone solo contenido editorial normalizado.
+- [QA] `go test ./handlers -run InformacionModulos -count=1`; validacion sintactica de HTML/JS; verificacion visual local con Chrome headless.
+
 ## [2026-05-27] Login administrador con logo imagen
 - [Login] `web/login.html` reemplaza el titulo textual `Powerful Control System` por la imagen `web/img/titulo-powerful-control-system-login.png`.
 - [UX] `web/estilos.css` define un tamano pequeno y responsive para que el logo no empuje el formulario.
