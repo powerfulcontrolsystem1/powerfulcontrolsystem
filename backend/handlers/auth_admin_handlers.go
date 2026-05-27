@@ -189,6 +189,7 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		// enviar correo de confirmación
+		NotifySuperAdminAdminRegistered(dbSuper, admin.ID, payload.Email, payload.Name, payload.Telefono, payload.Pais, payload.Ciudad)
 		if _, err := sendAdminConfirmationEmail(r, dbSuper, payload.Email, payload.Name, token); err != nil {
 			log.Println("AdminRegisterHandler send email error:", err)
 			writeAdminAuthJSON(w, http.StatusOK, map[string]interface{}{

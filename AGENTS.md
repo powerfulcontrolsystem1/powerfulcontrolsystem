@@ -43,6 +43,16 @@ checklist interno y entregar una sola salida integrada.
 
 Antes de iniciar cambios funcionales relevantes:
 
+- `documentos/contexto_codex.md` como entrada rapida obligatoria del proyecto.
+- `documentos/mapa_modulos.md` cuando haya que ubicar paginas, APIs, tablas,
+  configuraciones, permisos o pruebas de un modulo.
+- `documentos/flujos_operativos.md` cuando el cambio toque registro, empresas,
+  licencias, caja, ventas, facturacion, modo offline, reportes o alertas.
+- `documentos/comandos_codex.md` antes de ejecutar pruebas, scripts `rs`,
+  sincronizacion, preflight, despliegue o validacion visual.
+- `documentos/decisiones_tecnicas.md` para confirmar reglas tecnicas permanentes
+  antes de proponer arquitectura, dependencias, persistencia o documentos
+  imprimibles.
 - `documentos/descripcion_del_proyecto`
 - `documentos/diagramas/estructura_del_codigo.md` si cambia arquitectura, flujo,
   rutas, integraciones o estructura.

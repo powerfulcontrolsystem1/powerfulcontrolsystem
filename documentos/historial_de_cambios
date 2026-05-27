@@ -1,3 +1,32 @@
+2026-05-27: Contexto operativo permanente para Codex.
+- Modulos afectados: `documentacion`, `agentes`, `qa_operacion`.
+- Cambio funcional: se crea una memoria documental de arranque para Codex con contexto del proyecto, mapa de modulos, flujos operativos, comandos reales y decisiones tecnicas permanentes.
+- Implementacion: `AGENTS.md` ahora indica leer primero `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/comandos_codex.md` y `documentos/decisiones_tecnicas.md` antes de cambios relevantes.
+- Alcance: no cambia backend, frontend, tablas, endpoints ni permisos; mejora la continuidad operativa y reduce busquedas repetidas.
+- QA: validacion documental con `git diff --check`.
+
+2026-05-27: Alertas sistema para registros administrativos y empresas nuevas.
+- Modulos afectados: `super_administrador`, `alertas_sistema`, `autenticacion_admin`, `seleccion_empresas`, `correo`.
+- Cambio funcional: Super administrador puede activar o desactivar el envio de correos cuando un usuario administrador se registra por `login.html` y cuando un administrador agrega una empresa nueva.
+- Backend: `super_alertas_config` agrega `admin_register_enabled` y `empresa_nueva_enabled`; `super_alertas_eventos` conserva historial de envios con tipos `admin_registrado_login` y `empresa_nueva_admin`.
+- Integracion: `AdminRegisterHandler` y `EmpresasHandler` llaman notificaciones no bloqueantes; si SMTP falla, el registro o la creacion de empresa no se revierte y el error queda en historial.
+- Seguridad: no se incluyen contrasenas, tokens de confirmacion, claves SMTP ni secretos; el correo destino sigue siendo el configurado en Alertas sistema, por defecto `powerfulcontrolsystem@gmail.com`.
+- QA: `go test ./db ./handlers -run "SuperAlertas|AdminRegister|Empresas" -count=1`; parseo JS de `web/super/alertas_sistema.html`; verificacion visual local con Chrome headless y CSS real.
+
+2026-05-27: QR DIAN configurable al final de factura o recibo.
+- Modulos afectados: `carritos`, `facturacion_electronica`, `impresion_documental`, `configuracion_empresarial`.
+- Cambio funcional: al pagar un carrito, si la venta genera documento electronico con CUFE/CUDE/codigo de validacion y la empresa activo el check, el recibo y la factura electronica imprimibles agregan un QR de consulta DIAN al final.
+- Configuracion: se agrega `mostrar_qr_factura_electronica` dentro de `estaciones_config.carrito_ui_global`; los overrides por estacion pueden heredar la configuracion global.
+- Frontend: `web/js/print_documents.js` agrega soporte comun de bloque QR; `web/administrar_empresa/carrito_de_compras.html` genera el QR localmente con `/vendor/qrcode.min.js` y elige catalogo DIAN de produccion o habilitacion segun ambiente.
+- Datos/seguridad: no agrega tablas, rutas, permisos ni dependencias; mantiene aislamiento por `empresa_id` y solo imprime URL publica DIAN cuando existe clave documental.
+- QA: `go test ./handlers -run CarritoUI -count=1`; validacion sintactica de JS/HTML; verificacion visual con Chrome headless de check visible y QR POS renderizado.
+
+2026-05-27: Analitica publica visible solo en super administrador.
+- Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: se elimina del index publico la tarjeta visible `Visitas al portal`, dejando la visualizacion del mapa y ranking solo en `web/super_administrador.html`.
+- Implementacion: `web/index.html` retira la seccion y CSS embebido del widget, pero conserva un tracker oculto con `data-portal-visits-widget` para que el conteo agregado siga alimentando el panel super.
+- Alcance: no cambia backend, endpoints, tablas, permisos, privacidad ni dependencias.
+
 2026-05-27: Mapa real para analitica publica de visitas.
 - Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
 - Cambio funcional: `Analitica publica / Visitas al portal por pais` deja de usar una silueta mundial esquematica y ahora renderiza un mapa real descargado/generado desde datos Natural Earth de dominio publico.

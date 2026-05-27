@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 
@@ -368,6 +369,122 @@ func buildSuperSystemAlertBody(c superAlertCandidate, eval *superAlertEvaluation
 	b.WriteString(fmt.Sprintf("- Conexiones PostgreSQL: %d\r\n", eval.DBConnections))
 	b.WriteString("\r\nRevisa el modulo Super administrador > Alertas del sistema.")
 	return b.String()
+}
+
+func NotifySuperAdminAdminRegistered(dbSuper *sql.DB, adminID int64, email, name, telefono, pais, ciudad string) {
+	notifySuperAdminBusinessEvent(dbSuper, "admin_registrado_login", func(cfg dbpkg.SuperAlertaConfig) bool {
+		return cfg.AdminRegisterEnabled
+	}, "Nuevo administrador registrado", map[string]string{
+		"ID administrador": strconv.FormatInt(adminID, 10),
+		"Nombre":           strings.TrimSpace(name),
+		"Correo":           strings.TrimSpace(email),
+		"Telefono":         strings.TrimSpace(telefono),
+		"Pais":             strings.TrimSpace(pais),
+		"Ciudad":           strings.TrimSpace(ciudad),
+		"Origen":           "login.html / registro administrador",
+	})
+}
+
+func NotifySuperAdminEmpresaNueva(dbSuper *sql.DB, empresaID, tipoID int64, nombre, nit, tipoNombre, usuarioCreador string, preconfigAplicada bool, preconfigError string) {
+	notifySuperAdminBusinessEvent(dbSuper, "empresa_nueva_admin", func(cfg dbpkg.SuperAlertaConfig) bool {
+		return cfg.EmpresaNuevaEnabled
+	}, "Nueva empresa creada", map[string]string{
+		"ID empresa":             strconv.FormatInt(empresaID, 10),
+		"Nombre":                 strings.TrimSpace(nombre),
+		"NIT":                    strings.TrimSpace(nit),
+		"Tipo ID":                strconv.FormatInt(tipoID, 10),
+		"Tipo":                   strings.TrimSpace(tipoNombre),
+		"Administrador":          strings.TrimSpace(usuarioCreador),
+		"Preconfiguracion":       boolLabel(preconfigAplicada),
+		"Preconfiguracion aviso": strings.TrimSpace(preconfigError),
+		"Origen":                 "seleccionar_empresa.html / agregar empresa",
+	})
+}
+
+func notifySuperAdminBusinessEvent(dbSuper *sql.DB, tipo string, enabled func(dbpkg.SuperAlertaConfig) bool, titulo string, fields map[string]string) {
+	if dbSuper == nil {
+		return
+	}
+	go func() {
+		cfg, err := dbpkg.GetSuperAlertasConfig(dbSuper)
+		if err != nil {
+			log.Printf("super_alertas: no se pudo leer configuracion para %s: %v", tipo, err)
+			return
+		}
+		if !cfg.Enabled || !enabled(cfg) {
+			return
+		}
+		subject := "[PCS] " + titulo
+		body := buildSuperBusinessAlertBody(titulo, fields)
+		sent, sendErr := sendSuperSystemAlertEmail(dbSuper, cfg.RecipientEmail, subject, body, tipo, "sistema")
+		metadata, _ := json.Marshal(fields)
+		event := dbpkg.SuperAlertaEvento{
+			Tipo:           tipo,
+			Severidad:      "info",
+			Titulo:         titulo,
+			Detalle:        firstNonEmptySuperAlertField(fields["Nombre"], fields["Correo"], tipo),
+			Destinatario:   cfg.RecipientEmail,
+			Asunto:         subject,
+			Cuerpo:         body,
+			CorreoEnviado:  sent,
+			MetadataJSON:   string(metadata),
+			UsuarioCreador: "sistema",
+			Observaciones:  "evento_negocio_super_alertas",
+		}
+		if sendErr != nil {
+			event.CorreoError = sendErr.Error()
+			log.Printf("super_alertas: envio %s error: %v", tipo, sendErr)
+		}
+		if _, err := dbpkg.CreateSuperAlertaEvento(dbSuper, event); err != nil {
+			log.Printf("super_alertas: registrar evento %s error: %v", tipo, err)
+		}
+	}()
+}
+
+func buildSuperBusinessAlertBody(titulo string, fields map[string]string) string {
+	var b strings.Builder
+	b.WriteString("Notificacion del sistema Powerful Control System.\r\n\r\n")
+	b.WriteString("Evento: " + strings.TrimSpace(titulo) + "\r\n")
+	b.WriteString("Fecha: " + time.Now().Format("2006-01-02 15:04:05") + "\r\n\r\n")
+	order := []string{"ID administrador", "ID empresa", "Nombre", "Correo", "Telefono", "Pais", "Ciudad", "NIT", "Tipo ID", "Tipo", "Administrador", "Preconfiguracion", "Preconfiguracion aviso", "Origen"}
+	written := map[string]bool{}
+	for _, key := range order {
+		value := strings.TrimSpace(fields[key])
+		if value == "" {
+			continue
+		}
+		b.WriteString("- " + key + ": " + value + "\r\n")
+		written[key] = true
+	}
+	for key, value := range fields {
+		if written[key] {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		b.WriteString("- " + key + ": " + value + "\r\n")
+	}
+	b.WriteString("\r\nPuedes desactivar este aviso en Super administrador > Alertas del sistema.")
+	return b.String()
+}
+
+func boolLabel(v bool) string {
+	if v {
+		return "si"
+	}
+	return "no"
+}
+
+func firstNonEmptySuperAlertField(values ...string) string {
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func sendSuperSystemAlertEmail(dbSuper *sql.DB, toEmail, subject, body, tipo, usuario string) (bool, error) {

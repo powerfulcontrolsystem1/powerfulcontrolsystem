@@ -1265,6 +1265,7 @@
         alerta_tiempo_activa_default: false,
         facturacion_offline_habilitada: false,
         marcar_factura_offline_pendiente: true,
+        mostrar_qr_factura_electronica: false,
         pago_qr_habilitado: false,
         pago_qr_proveedor: 'breb',
         pago_qr_llave: '',
@@ -1376,6 +1377,9 @@
           ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : Boolean(src.permitir_facturacion_offline))
           : Boolean(src.facturacion_offline_habilitada),
         marcar_factura_offline_pendiente: src.marcar_factura_offline_pendiente === undefined ? base.marcar_factura_offline_pendiente : Boolean(src.marcar_factura_offline_pendiente),
+        mostrar_qr_factura_electronica: src.mostrar_qr_factura_electronica === undefined
+          ? (src.qr_factura_electronica === undefined ? base.mostrar_qr_factura_electronica : Boolean(src.qr_factura_electronica))
+          : Boolean(src.mostrar_qr_factura_electronica),
         pago_qr_habilitado: src.pago_qr_habilitado === undefined ? base.pago_qr_habilitado : Boolean(src.pago_qr_habilitado),
         pago_qr_proveedor: normalize(src.pago_qr_proveedor || base.pago_qr_proveedor).toLowerCase() || base.pago_qr_proveedor,
         pago_qr_llave: normalize(src.pago_qr_llave || ''),
@@ -1611,7 +1615,12 @@
       if (state.stationMode) {
         const station = getStationConfigRecord(state.empresaID, state.stationID);
         if (station && station.carrito && station.carrito.usar_configuracion_global === false) {
-          cfg = Object.assign({}, globalCfg, normalizeUnifiedCartUIConfig(station.carrito.configuracion));
+          const rawStationCartConfig = station.carrito.configuracion && typeof station.carrito.configuracion === 'object' ? station.carrito.configuracion : {};
+          const stationCartConfig = normalizeUnifiedCartUIConfig(rawStationCartConfig);
+          if (rawStationCartConfig.mostrar_qr_factura_electronica === undefined && rawStationCartConfig.qr_factura_electronica === undefined) {
+            stationCartConfig.mostrar_qr_factura_electronica = globalCfg.mostrar_qr_factura_electronica;
+          }
+          cfg = Object.assign({}, globalCfg, stationCartConfig);
         }
       }
 
@@ -3664,7 +3673,106 @@
       return true;
     }
 
-    async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget) {
+    function shouldPrintElectronicInvoiceQR() {
+      const ui = getCurrentStationCartUIConfig();
+      return Boolean(ui && ui.mostrar_qr_factura_electronica);
+    }
+
+    function normalizeCountryCodeForInvoiceQR(doc) {
+      const raw = normalize(doc && (doc.pais_codigo || doc.pais || doc.country || '')).toLowerCase();
+      if (!raw) return '';
+      if (raw === 'co' || raw === 'col' || raw === 'colombia') return 'co';
+      return raw;
+    }
+
+    function electronicInvoiceValidationKey(doc) {
+      const source = doc && typeof doc === 'object' ? doc : {};
+      return normalize(
+        source.cufe ||
+        source.cude ||
+        source.codigo_validacion ||
+        source.uuid ||
+        source.document_key ||
+        source.documentkey ||
+        source.xml_document_key ||
+        source.clave_acceso ||
+        ''
+      );
+    }
+
+    function electronicInvoiceDianURL(doc) {
+      const source = doc && typeof doc === 'object' ? doc : {};
+      const explicitURL = normalize(source.qr_url || source.url_qr || source.url_consulta_dian || source.dian_qr_url || source.consulta_url || '');
+      if (/^https?:\/\//i.test(explicitURL)) return explicitURL;
+      const country = normalizeCountryCodeForInvoiceQR(source);
+      if (country && country !== 'co') return '';
+      const key = electronicInvoiceValidationKey(source);
+      if (!key) return '';
+      const ambiente = normalize(source.ambiente_fe || source.ambiente || source.environment || '').toLowerCase();
+      const base = ambiente.indexOf('hab') >= 0 || ambiente.indexOf('test') >= 0 || ambiente.indexOf('prueba') >= 0
+        ? 'https://catalogo-vpfe-hab.dian.gov.co/document/searchqr?documentkey='
+        : 'https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=';
+      return base + encodeURIComponent(key);
+    }
+
+    function generateQRDataURL(payload, size) {
+      return new Promise(function(resolve) {
+        const value = normalize(payload);
+        if (!value || typeof QRCode === 'undefined' || !QRCode || typeof QRCode.toCanvas !== 'function') {
+          resolve('');
+          return;
+        }
+        try {
+          const canvas = document.createElement('canvas');
+          QRCode.toCanvas(canvas, value, { width: Number(size || 140), margin: 1, errorCorrectionLevel: 'M' }, function(err) {
+            if (err) {
+              console.warn(err);
+              resolve('');
+              return;
+            }
+            try {
+              resolve(canvas.toDataURL('image/png'));
+            } catch (toDataErr) {
+              console.warn(toDataErr);
+              resolve('');
+            }
+          });
+        } catch (err) {
+          console.warn(err);
+          resolve('');
+        }
+      });
+    }
+
+    async function buildElectronicInvoiceQRForPrint(documentoVenta, printFormat) {
+      if (!shouldPrintElectronicInvoiceQR()) return null;
+      const doc = documentoVenta && typeof documentoVenta === 'object' ? documentoVenta : {};
+      const url = electronicInvoiceDianURL(doc);
+      const key = electronicInvoiceValidationKey(doc);
+      if (!url || !key) return null;
+      const size = normalize(printFormat).toLowerCase() === 'pos' ? 140 : 180;
+      const image = await generateQRDataURL(url, size);
+      return {
+        src: image,
+        label: 'Consultar factura electronica DIAN',
+        value: 'CUFE/CUDE: ' + key,
+        url: url,
+        caption: 'Escanee para verificar el documento electronico en DIAN.'
+      };
+    }
+
+    function electronicInvoiceQRFallbackHTML(qr) {
+      if (!qr) return '';
+      return '<section class="invoice-access-qr">' +
+        (qr.src ? '<img src="' + escapeHtml(qr.src) + '" alt="' + escapeHtml(qr.label || 'QR DIAN') + '">' : '') +
+        '<strong>' + escapeHtml(qr.label || 'Consultar factura electronica') + '</strong>' +
+        (qr.value ? '<span>' + escapeHtml(qr.value) + '</span>' : '') +
+        (qr.url ? '<span>' + escapeHtml(qr.url) + '</span>' : '') +
+        (qr.caption ? '<span>' + escapeHtml(qr.caption) + '</span>' : '') +
+        '</section>';
+    }
+
+    async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       if (!shouldPrintCartReceipt(cfg)) return false;
 
@@ -3677,6 +3785,7 @@
       const copias = 1;
       const now = new Date();
       const clienteNombre = carritoCustomerDisplayName(carrito);
+      const invoiceQR = await buildElectronicInvoiceQRForPrint(documentoVenta, printFormat);
 
       let rowsHtml = '';
       (Array.isArray(items) ? items : []).forEach(function(it) {
@@ -3723,6 +3832,7 @@
           totalLabel: 'Total a pagar',
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
           footer: markOfflinePending ? 'Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.' : 'Gracias por su compra.',
+          qr: invoiceQR,
           signatures: false
         }, printTarget);
         if (!printed) setStationPaymentMessage('El navegador bloqueó la impresión del recibo. Permite ventanas emergentes o imprime desde el menú.', true);
@@ -3733,8 +3843,8 @@
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
         : '@media print{@page{size:letter;margin:14mm}body{margin:0}}';
       const baseStyle = printFormat === 'pos'
-        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}'
-        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}';
+        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
+        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Recibo de cobro</title>' +
         '<style>' + pageStyle + baseStyle + '</style>' +
         '</head><body>' +
@@ -3752,6 +3862,7 @@
         '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' +
         '<p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias: ' + escapeHtml(String(copias)) + '</p>' +
         (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p class="muted">Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.</p>' : '') +
+        electronicInvoiceQRFallbackHTML(invoiceQR) +
         '</body></html>';
 
       const printed = printHTMLDocument(html, printFormat === 'pos' ? 'width=320,height=720' : 'width=820,height=900', printTarget);
@@ -3785,6 +3896,7 @@
         return '<tr><td>' + desc + '</td><td style="text-align:right">' + escapeHtml(String(qty)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(pu, moneda)) + '</td><td style="text-align:right">' + escapeHtml(formatAmount(total, moneda)) + '</td></tr>';
       }).join('');
       const now = new Date();
+      const invoiceQR = await buildElectronicInvoiceQRForPrint(doc, formato);
 
       if (window.PCSPrint) {
         const printRows = (Array.isArray(items) ? items : []).filter(function(it) {
@@ -3819,6 +3931,7 @@
           totalValue: formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda),
           note: [notas, pie].filter(Boolean).join('\n'),
           footer: normalize(doc.codigo_validacion) ? ('Validacion: ' + normalize(doc.codigo_validacion)) : '',
+          qr: invoiceQR,
           signatures: false
         }, printTarget);
         if (!printed) setStationPaymentMessage('La factura se emitio, pero el navegador bloqueo la impresion automatica.', true);
@@ -3829,8 +3942,8 @@
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
         : '@media print{@page{size:letter;margin:14mm}body{margin:0}}';
       const bodyStyle = formato === 'pos'
-        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}.muted{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}hr{border:0;border-top:1px dashed #999;margin:7px 0}.logo{max-height:48px;display:block;margin:0 auto 6px;max-width:160px}'
-        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}';
+        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}.muted{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}hr{border:0;border-top:1px dashed #999;margin:7px 0}.logo{max-height:48px;display:block;margin:0 auto 6px;max-width:160px}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
+        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(normalize(doc.documento_codigo || doc.numero_legal || 'Factura electr?nica')) + '</title>' +
         '<style>' + pageStyle + bodyStyle + '</style></head><body>' +
         (logoUrl && cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false ? ('<img class="logo" src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '') +
@@ -3848,6 +3961,7 @@
         (notas ? ('<p><strong>Notas legales:</strong> ' + escapeHtml(notas) + '</p>') : '') +
         (pie ? ('<p class="muted">' + escapeHtml(pie) + '</p>') : '') +
         (normalize(doc.codigo_validacion) ? ('<p class="muted">Validaci?n: ' + escapeHtml(normalize(doc.codigo_validacion)) + '</p>') : '') +
+        electronicInvoiceQRFallbackHTML(invoiceQR) +
         '</body></html>';
 
       const printed = printHTMLDocument(html, formato === 'pos' ? 'width=320,height=760' : 'width=860,height=940', printTarget);
@@ -4818,7 +4932,7 @@
         }
         setStationPaymentPersistentMessage(successMsg, false);
         try {
-          await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot, printTargets && printTargets.receipt);
+          await printSaleReceiptIfEnabled(selected, pay, itemsSnapshot, printTargets && printTargets.receipt, facturaElectronica || documentoVenta);
         } catch (printErr) {
           console.warn(printErr);
         }

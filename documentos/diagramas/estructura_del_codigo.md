@@ -1,3 +1,30 @@
+## Actualizacion 2026-05-27 (contexto operativo Codex)
+
+- `AGENTS.md`: agrega una ruta rapida de lectura obligatoria para contexto Codex.
+- `documentos/contexto_codex.md`: concentra arranque, estructura, rutas, endpoints, flujos, configuraciones, scripts y datos de prueba permitidos.
+- `documentos/mapa_modulos.md`: tabla de modulo, pagina, API/handler, tablas/configuracion, permisos y pruebas.
+- `documentos/flujos_operativos.md`: runbook de registro, empresas, licencias, caja, ventas, facturacion, offline, reportes y alertas.
+- `documentos/comandos_codex.md`: comandos de pruebas, preflight, rs, sync_to_vps, Docker/VPS y validacion visual.
+- `documentos/decisiones_tecnicas.md`: reglas permanentes de backend, frontend, multiempresa, imprimibles, facturacion, caja y despliegue.
+- Flujo documental: `AGENTS.md` -> contexto rapido -> mapa/flujos/comandos/decisiones -> documentacion profunda del modulo.
+
+## Actualizacion 2026-05-27 (alertas de registros y empresas nuevas)
+
+- `web/super/alertas_sistema.html`: agrega controles para `admin_register_enabled` y `empresa_nueva_enabled`.
+- `backend/db/super_alertas.go`: extiende `super_alertas_config` con los dos flags y reutiliza `super_alertas_eventos` como bitacora de envios.
+- `backend/handlers/super_alertas.go`: centraliza notificaciones de eventos de negocio super administrador y usa el mismo canal SMTP/test mode de alertas.
+- `backend/handlers/auth_admin_handlers.go`: al registrar un administrador dispara `admin_registrado_login` sin incluir contrasena ni token.
+- `backend/handlers/system_empresas_handlers.go`: al crear una empresa dispara `empresa_nueva_admin` con datos basicos y estado de preconfiguracion.
+- Flujo de capas: Alertas sistema -> `super_alertas_config` -> Registro admin / Crear empresa -> correo destino -> `super_alertas_eventos`.
+
+## Actualizacion 2026-05-27 (QR DIAN en factura o recibo)
+
+- `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`: agrega el check global `mostrar_qr_factura_electronica` dentro de `carrito_ui_global`.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: permite que una estacion herede o sobrescriba la visualizacion del QR DIAN en documentos impresos.
+- `web/administrar_empresa/carrito_de_compras.html`: despues de pagar toma CUFE/CUDE/codigo de validacion del documento electronico, arma la URL de consulta DIAN y genera el QR local con `/vendor/qrcode.min.js`.
+- `web/js/print_documents.js`: renderiza el bloque QR al final de documentos POS/carta.
+- Flujo de capas: Configuracion carrito -> `empresa_estacion_prefs.estaciones_config.carrito_ui_global.mostrar_qr_factura_electronica` -> Pago carrito -> documento electronico -> URL DIAN -> QR imprimible.
+
 ## Actualizacion 2026-05-27 (informacion editable de modulos del index)
 
 - `backend/handlers/pagina_principal_handlers.go` agrega la configuracion `informacionModulos` junto al flujo de pagina principal.

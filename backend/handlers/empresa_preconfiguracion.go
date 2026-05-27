@@ -606,6 +606,7 @@ func defaultEmpresaPreconfigCarritoUI() map[string]any {
 		"alerta_tiempo_activa_default":            false,
 		"facturacion_offline_habilitada":          false,
 		"marcar_factura_offline_pendiente":        true,
+		"mostrar_qr_factura_electronica":          false,
 		"pago_qr_habilitado":                      false,
 		"pago_qr_proveedor":                       "breb",
 		"pago_qr_llave":                           "",

@@ -1,3 +1,29 @@
+2026-05-27: Contexto operativo para Codex
+- Modulos afectados: `documentacion`, `agente_go`, `qa_operacion`.
+- Cambio funcional: se agrega una capa documental de contexto permanente para acelerar cambios futuros y reducir busqueda repetida de rutas, endpoints, tablas, configuraciones y comandos.
+- Archivos: `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/comandos_codex.md`, `documentos/decisiones_tecnicas.md` y referencia directa desde `AGENTS.md`.
+- Alcance: no cambia funcionalidades del producto, datos, permisos ni dependencias.
+
+2026-05-27: Alertas de sistema para registros administrativos y empresas nuevas
+- Modulos afectados: `super_administrador`, `alertas_sistema`, `autenticacion_admin`, `seleccion_empresas`, `correo`.
+- Configuracion: `web/super/alertas_sistema.html` agrega checks para avisar por correo cuando se registra un administrador desde `login.html` y cuando se crea una empresa nueva.
+- Backend: `backend/db/super_alertas.go` agrega `admin_register_enabled` y `empresa_nueva_enabled`; `backend/handlers/super_alertas.go` centraliza el envio y registro de eventos.
+- Integracion: `backend/handlers/auth_admin_handlers.go` notifica despues de preparar la cuenta administrativa y `backend/handlers/system_empresas_handlers.go` notifica despues de crear la empresa y aplicar la preconfiguracion.
+- Seguridad: no se envian contrasenas, tokens ni secretos; los avisos usan el correo destino configurado y se auditan en `super_alertas_eventos`.
+
+2026-05-27: QR DIAN en factura o recibo de venta
+- Modulos afectados: `carritos`, `facturacion_electronica`, `impresion_documental`, `configuracion_empresarial`, `frontend_ux`.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega el check por empresa `mostrar_qr_factura_electronica`; `web/administrar_empresa/configuracion_de_estaciones.html` permite que un override de estacion lo herede o lo sobrescriba.
+- Carrito: `web/administrar_empresa/carrito_de_compras.html` detecta CUFE/CUDE/codigo de validacion despues de pagar, construye la URL de consulta DIAN y agrega el QR al final del recibo y de la factura electronica si la opcion esta activa.
+- Impresion: `web/js/print_documents.js` incorpora un bloque QR generico para documentos POS/carta, monocromatico y estable para impresion.
+- Alcance: no cambia tablas, endpoints ni permisos; reutiliza `empresa_estacion_prefs.estaciones_config.carrito_ui_global` y `/vendor/qrcode.min.js`.
+
+2026-05-27: Analitica publica visible solo en super administrador
+- Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
+- Cambio funcional: la tarjeta `Visitas al portal` se retira del index publico y la visualizacion queda solo en el panel de super administrador.
+- UX: el portal publico ya no muestra la tarjeta de visitas; el panel super conserva mapa real, ranking y total.
+- Alcance: el index mantiene registro invisible de visitas agregadas por pais para alimentar la analitica; no cambia backend, endpoints, tablas, permisos ni privacidad.
+
 2026-05-27: Mapa real para analitica publica de visitas
 - Modulos afectados: `portal_publico`, `super_administrador`, `analitica_publica`, `frontend_ux`.
 - Cambio funcional: el contador `Visitas al portal por pais` usa un mapa mundial real basado en Natural Earth en lugar de continentes esquematicos dibujados a mano.

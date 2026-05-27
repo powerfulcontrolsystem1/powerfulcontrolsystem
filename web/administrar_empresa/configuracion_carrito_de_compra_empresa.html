@@ -322,6 +322,13 @@
             </label>
             <div class="form-help">Por defecto el soporte impreso queda identificado como provisional/offline hasta que el sistema sincronice la venta.</div>
           </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgQrFacturaElectronica" type="checkbox">
+              Mostrar QR DIAN al final de la factura o recibo
+            </label>
+            <div class="form-help">Cuando la venta tenga CUFE/CUDE o codigo de validacion, el comprobante impreso agrega un QR de consulta publica de la factura electronica.</div>
+          </div>
         </div>
 
         <div class="empresa-section mt-12">
@@ -510,6 +517,7 @@
         alerta_tiempo_activa_default: false,
         facturacion_offline_habilitada: false,
         marcar_factura_offline_pendiente: true,
+        mostrar_qr_factura_electronica: false,
         pago_qr_habilitado: false,
         pago_qr_proveedor: 'breb',
         pago_qr_llave: '',
@@ -572,6 +580,9 @@
           ? (src.permitir_facturacion_offline === undefined ? base.facturacion_offline_habilitada : !!src.permitir_facturacion_offline)
           : !!src.facturacion_offline_habilitada,
         marcar_factura_offline_pendiente: src.marcar_factura_offline_pendiente === undefined ? base.marcar_factura_offline_pendiente : !!src.marcar_factura_offline_pendiente,
+        mostrar_qr_factura_electronica: src.mostrar_qr_factura_electronica === undefined
+          ? (src.qr_factura_electronica === undefined ? base.mostrar_qr_factura_electronica : !!src.qr_factura_electronica)
+          : !!src.mostrar_qr_factura_electronica,
         pago_qr_habilitado: src.pago_qr_habilitado === undefined ? base.pago_qr_habilitado : !!src.pago_qr_habilitado,
         pago_qr_proveedor: normalizeText(src.pago_qr_proveedor || base.pago_qr_proveedor).toLowerCase() || base.pago_qr_proveedor,
         pago_qr_llave: normalizeText(src.pago_qr_llave || ''),
@@ -813,6 +824,7 @@
       document.getElementById('carritoCfgDesgloseCobro').checked = !!normalized.mostrar_desglose_cobro;
       document.getElementById('carritoCfgFacturacionOffline').checked = !!normalized.facturacion_offline_habilitada;
       document.getElementById('carritoCfgMarcaOffline').checked = !!normalized.marcar_factura_offline_pendiente;
+      document.getElementById('carritoCfgQrFacturaElectronica').checked = !!normalized.mostrar_qr_factura_electronica;
       document.getElementById('carritoCfgPagoQR').checked = !!normalized.pago_qr_habilitado;
       renderQrAccounts(normalized.pago_qr_cuentas);
       return normalized;
@@ -865,6 +877,7 @@
           'carritoCfgDesgloseCobro',
           'carritoCfgFacturacionOffline',
           'carritoCfgMarcaOffline',
+          'carritoCfgQrFacturaElectronica',
           'carritoCfgPagoQR',
           'btnAgregarCuentaQR'
         ].forEach(function(id) {
@@ -926,6 +939,7 @@
           mostrar_desglose_cobro: document.getElementById('carritoCfgDesgloseCobro').checked,
           facturacion_offline_habilitada: document.getElementById('carritoCfgFacturacionOffline').checked,
           marcar_factura_offline_pendiente: document.getElementById('carritoCfgMarcaOffline').checked,
+          mostrar_qr_factura_electronica: document.getElementById('carritoCfgQrFacturaElectronica').checked,
           pago_qr_habilitado: document.getElementById('carritoCfgPagoQR').checked,
           pago_qr_cuentas: readQrAccounts()
         });

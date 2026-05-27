@@ -28,6 +28,18 @@ Actualizacion 2026-05-27 (informacion editable de modulos del index)
 - El valor principal guarda JSON editorial con `titulo`, `modulos[].titulo`, `modulos[].icono_url` y `modulos[].caracteristicas`.
 - La API publica solo lee la configuracion normalizada y el super administrador es el unico rol que puede guardar cambios.
 
+Actualizacion 2026-05-27 (alertas de registros administrativos y empresas nuevas)
+- `super_alertas_config`: se agregan `admin_register_enabled INTEGER DEFAULT 1` y `empresa_nueva_enabled INTEGER DEFAULT 1`.
+- `super_alertas_eventos`: se reutiliza para registrar los eventos `admin_registrado_login` y `empresa_nueva_admin`, incluyendo destinatario, asunto, cuerpo, estado de envio, error si aplica y `metadata_json` saneado.
+- No se agregan tablas nuevas; el destino de correo sigue usando `recipient_email`.
+- Los eventos no almacenan contrasenas, tokens de confirmacion, claves SMTP ni secretos.
+
+Actualizacion 2026-05-27 (QR DIAN en factura o recibo)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`, y los overrides por estacion dentro de `estaciones_config.estaciones[].carrito.configuracion`.
+- El JSON `estaciones_config.carrito_ui_global` puede incluir `mostrar_qr_factura_electronica`; por defecto queda `false`.
+- La impresion solo usa datos ya persistidos del documento electronico, como `codigo_validacion`, `numero_legal`, `pais_codigo` y `ambiente_fe`; no crea registros adicionales.
+
 Actualizacion 2026-05-26 (cliente general configurable en carrito)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `empresa_estacion_prefs` con `estacion_id=0`, `clave='estaciones_config'`, y los overrides por estacion dentro de `estaciones_config.estaciones[].carrito.configuracion`.

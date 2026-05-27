@@ -119,6 +119,18 @@
               </div>
             </div>
           </section>
+
+          <section class="alerts-rule">
+            <h3>Registros administrativos</h3>
+            <label class="alerts-toggle"><input id="adminRegisterEnabled" type="checkbox"> Enviar correo cuando se registre un administrador</label>
+            <div class="form-help">Avisa al correo destino cuando alguien complete el registro desde login.html.</div>
+          </section>
+
+          <section class="alerts-rule">
+            <h3>Empresas nuevas</h3>
+            <label class="alerts-toggle"><input id="empresaNuevaEnabled" type="checkbox"> Enviar correo cuando un administrador agregue una empresa</label>
+            <div class="form-help">Avisa al correo destino cuando se cree una empresa desde Seleccionar empresa.</div>
+          </section>
         </div>
 
         <div class="alerts-actions" style="margin-top:12px">
@@ -199,6 +211,8 @@
         $('sessionsThreshold').value = cfg.sessions_threshold || 50;
         $('dbConnectionsEnabled').checked = !!cfg.db_connections_enabled;
         $('dbConnectionsThreshold').value = cfg.db_connections_threshold || 80;
+        $('adminRegisterEnabled').checked = cfg.admin_register_enabled !== false;
+        $('empresaNuevaEnabled').checked = cfg.empresa_nueva_enabled !== false;
       }
 
       function fillEvaluation(ev){
@@ -270,7 +284,9 @@
           sessions_enabled: $('sessionsEnabled').checked,
           sessions_threshold: Math.max(1, Math.round(num($('sessionsThreshold').value))),
           db_connections_enabled: $('dbConnectionsEnabled').checked,
-          db_connections_threshold: Math.max(1, Math.round(num($('dbConnectionsThreshold').value)))
+          db_connections_threshold: Math.max(1, Math.round(num($('dbConnectionsThreshold').value))),
+          admin_register_enabled: $('adminRegisterEnabled').checked,
+          empresa_nueva_enabled: $('empresaNuevaEnabled').checked
         };
         setMsg('Guardando...', false);
         const res = await fetch(API, { method:'PUT', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });

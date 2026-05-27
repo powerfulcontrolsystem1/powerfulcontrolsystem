@@ -1,3 +1,15 @@
+2026-05-27 - Contexto operativo Codex
+- `documentos/contexto_codex.md`:
+	- guia rapida obligatoria para que Codex entienda arranque, estructura, rutas principales, endpoints, flujos de login/empresa/carrito/caja/facturacion, configuraciones, scripts y datos de prueba permitidos.
+- `documentos/mapa_modulos.md`:
+	- tabla de ubicacion por modulo con pagina, API/handler, tablas/configuracion, permisos y pruebas sugeridas.
+- `documentos/flujos_operativos.md`:
+	- runbook resumido para registro administrador, creacion de empresa, licencia gratis, configuracion, caja, venta directa, estaciones, pago, facturacion electronica, modo offline, reportes de turno y alertas super administrador.
+- `documentos/comandos_codex.md`:
+	- comandos confirmados para pruebas Go, validacion HTML/JS, preflight, rs, sync_to_vps, Docker/VPS y pruebas visuales con Chrome for Testing.
+- `documentos/decisiones_tecnicas.md`:
+	- decisiones permanentes del proyecto: Go puro, PostgreSQL unico, frontend HTML/JS/CSS, aislamiento por empresa, configuracion empresarial, documentos imprimibles, POS 80mm y despliegue Docker/VPS.
+
 2026-05-27 - Mapa real para analitica publica
 - `web/img/world-map-natural-earth-public-domain.svg`:
 	- asset SVG mundial generado desde Natural Earth 1:110m admin 0 countries, de dominio publico.

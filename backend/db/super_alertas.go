@@ -23,6 +23,8 @@ type SuperAlertaConfig struct {
 	SessionsThreshold      int64   `json:"sessions_threshold"`
 	DBConnectionsEnabled   bool    `json:"db_connections_enabled"`
 	DBConnectionsThreshold int64   `json:"db_connections_threshold"`
+	AdminRegisterEnabled   bool    `json:"admin_register_enabled"`
+	EmpresaNuevaEnabled    bool    `json:"empresa_nueva_enabled"`
 	CooldownMinutes        int64   `json:"cooldown_minutes"`
 	FechaCreacion          string  `json:"fecha_creacion,omitempty"`
 	FechaActualizacion     string  `json:"fecha_actualizacion,omitempty"`
@@ -68,6 +70,8 @@ func defaultSuperAlertaConfig() SuperAlertaConfig {
 		SessionsThreshold:      50,
 		DBConnectionsEnabled:   true,
 		DBConnectionsThreshold: 80,
+		AdminRegisterEnabled:   true,
+		EmpresaNuevaEnabled:    true,
 		CooldownMinutes:        60,
 		UsuarioCreador:         "sistema",
 		Estado:                 "activo",
@@ -96,6 +100,8 @@ func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
 			sessions_threshold BIGINT DEFAULT 50,
 			db_connections_enabled INTEGER DEFAULT 1,
 			db_connections_threshold BIGINT DEFAULT 80,
+			admin_register_enabled INTEGER DEFAULT 1,
+			empresa_nueva_enabled INTEGER DEFAULT 1,
 			cooldown_minutes BIGINT DEFAULT 60,
 			fecha_creacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
 			fecha_actualizacion TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT)),
@@ -139,6 +145,8 @@ func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
 			sessions_threshold INTEGER DEFAULT 50,
 			db_connections_enabled INTEGER DEFAULT 1,
 			db_connections_threshold INTEGER DEFAULT 80,
+			admin_register_enabled INTEGER DEFAULT 1,
+			empresa_nueva_enabled INTEGER DEFAULT 1,
 			cooldown_minutes INTEGER DEFAULT 60,
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
@@ -192,6 +200,8 @@ func EnsureSuperAlertasSchema(dbConn *sql.DB) error {
 		{"sessions_threshold", "BIGINT DEFAULT 50"},
 		{"db_connections_enabled", "INTEGER DEFAULT 1"},
 		{"db_connections_threshold", "BIGINT DEFAULT 80"},
+		{"admin_register_enabled", "INTEGER DEFAULT 1"},
+		{"empresa_nueva_enabled", "INTEGER DEFAULT 1"},
 		{"cooldown_minutes", "BIGINT DEFAULT 60"},
 		{"fecha_creacion", "TEXT"},
 		{"fecha_actualizacion", "TEXT"},
@@ -245,9 +255,9 @@ func GetSuperAlertasConfig(dbConn *sql.DB) (SuperAlertaConfig, error) {
 		return SuperAlertaConfig{}, err
 	}
 	cfg := SuperAlertaConfig{}
-	row := QueryRowCompat(dbConn, `SELECT id, COALESCE(enabled,1), COALESCE(recipient_email,''), COALESCE(disk_enabled,1), COALESCE(disk_threshold_pct,80), COALESCE(traffic_enabled,1), COALESCE(traffic_threshold_pct,80), COALESCE(traffic_threshold_gb,0), COALESCE(sessions_enabled,1), COALESCE(sessions_threshold,50), COALESCE(db_connections_enabled,1), COALESCE(db_connections_threshold,80), COALESCE(cooldown_minutes,60), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM super_alertas_config WHERE id = 1 LIMIT 1`)
-	var enabled, diskEnabled, trafficEnabled, sessionsEnabled, dbConnectionsEnabled int
-	err := row.Scan(&cfg.ID, &enabled, &cfg.RecipientEmail, &diskEnabled, &cfg.DiskThresholdPct, &trafficEnabled, &cfg.TrafficThresholdPct, &cfg.TrafficThresholdGB, &sessionsEnabled, &cfg.SessionsThreshold, &dbConnectionsEnabled, &cfg.DBConnectionsThreshold, &cfg.CooldownMinutes, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones)
+	row := QueryRowCompat(dbConn, `SELECT id, COALESCE(enabled,1), COALESCE(recipient_email,''), COALESCE(disk_enabled,1), COALESCE(disk_threshold_pct,80), COALESCE(traffic_enabled,1), COALESCE(traffic_threshold_pct,80), COALESCE(traffic_threshold_gb,0), COALESCE(sessions_enabled,1), COALESCE(sessions_threshold,50), COALESCE(db_connections_enabled,1), COALESCE(db_connections_threshold,80), COALESCE(admin_register_enabled,1), COALESCE(empresa_nueva_enabled,1), COALESCE(cooldown_minutes,60), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM super_alertas_config WHERE id = 1 LIMIT 1`)
+	var enabled, diskEnabled, trafficEnabled, sessionsEnabled, dbConnectionsEnabled, adminRegisterEnabled, empresaNuevaEnabled int
+	err := row.Scan(&cfg.ID, &enabled, &cfg.RecipientEmail, &diskEnabled, &cfg.DiskThresholdPct, &trafficEnabled, &cfg.TrafficThresholdPct, &cfg.TrafficThresholdGB, &sessionsEnabled, &cfg.SessionsThreshold, &dbConnectionsEnabled, &cfg.DBConnectionsThreshold, &adminRegisterEnabled, &empresaNuevaEnabled, &cfg.CooldownMinutes, &cfg.FechaCreacion, &cfg.FechaActualizacion, &cfg.UsuarioCreador, &cfg.Estado, &cfg.Observaciones)
 	if err == sql.ErrNoRows {
 		cfg = defaultSuperAlertaConfig()
 		if saveErr := SaveSuperAlertasConfig(dbConn, cfg); saveErr != nil {
@@ -263,6 +273,8 @@ func GetSuperAlertasConfig(dbConn *sql.DB) (SuperAlertaConfig, error) {
 	cfg.TrafficEnabled = trafficEnabled != 0
 	cfg.SessionsEnabled = sessionsEnabled != 0
 	cfg.DBConnectionsEnabled = dbConnectionsEnabled != 0
+	cfg.AdminRegisterEnabled = adminRegisterEnabled != 0
+	cfg.EmpresaNuevaEnabled = empresaNuevaEnabled != 0
 	cfg.normalize()
 	return cfg, nil
 }
@@ -273,8 +285,8 @@ func SaveSuperAlertasConfig(dbConn *sql.DB, cfg SuperAlertaConfig) error {
 	}
 	cfg.normalize()
 	nowExpr := sqlNowExpr()
-	res, err := ExecCompat(dbConn, `UPDATE super_alertas_config SET enabled=?, recipient_email=?, disk_enabled=?, disk_threshold_pct=?, traffic_enabled=?, traffic_threshold_pct=?, traffic_threshold_gb=?, sessions_enabled=?, sessions_threshold=?, db_connections_enabled=?, db_connections_threshold=?, cooldown_minutes=?, fecha_actualizacion=`+nowExpr+`, usuario_creador=?, estado=?, observaciones=? WHERE id=1`,
-		superAlertBoolInt(cfg.Enabled), cfg.RecipientEmail, superAlertBoolInt(cfg.DiskEnabled), cfg.DiskThresholdPct, superAlertBoolInt(cfg.TrafficEnabled), cfg.TrafficThresholdPct, cfg.TrafficThresholdGB, superAlertBoolInt(cfg.SessionsEnabled), cfg.SessionsThreshold, superAlertBoolInt(cfg.DBConnectionsEnabled), cfg.DBConnectionsThreshold, cfg.CooldownMinutes, cfg.UsuarioCreador, cfg.Estado, cfg.Observaciones)
+	res, err := ExecCompat(dbConn, `UPDATE super_alertas_config SET enabled=?, recipient_email=?, disk_enabled=?, disk_threshold_pct=?, traffic_enabled=?, traffic_threshold_pct=?, traffic_threshold_gb=?, sessions_enabled=?, sessions_threshold=?, db_connections_enabled=?, db_connections_threshold=?, admin_register_enabled=?, empresa_nueva_enabled=?, cooldown_minutes=?, fecha_actualizacion=`+nowExpr+`, usuario_creador=?, estado=?, observaciones=? WHERE id=1`,
+		superAlertBoolInt(cfg.Enabled), cfg.RecipientEmail, superAlertBoolInt(cfg.DiskEnabled), cfg.DiskThresholdPct, superAlertBoolInt(cfg.TrafficEnabled), cfg.TrafficThresholdPct, cfg.TrafficThresholdGB, superAlertBoolInt(cfg.SessionsEnabled), cfg.SessionsThreshold, superAlertBoolInt(cfg.DBConnectionsEnabled), cfg.DBConnectionsThreshold, superAlertBoolInt(cfg.AdminRegisterEnabled), superAlertBoolInt(cfg.EmpresaNuevaEnabled), cfg.CooldownMinutes, cfg.UsuarioCreador, cfg.Estado, cfg.Observaciones)
 	if err != nil {
 		return err
 	}
@@ -282,8 +294,8 @@ func SaveSuperAlertasConfig(dbConn *sql.DB, cfg SuperAlertaConfig) error {
 	if affected > 0 {
 		return nil
 	}
-	_, err = ExecCompat(dbConn, `INSERT INTO super_alertas_config (id, enabled, recipient_email, disk_enabled, disk_threshold_pct, traffic_enabled, traffic_threshold_pct, traffic_threshold_gb, sessions_enabled, sessions_threshold, db_connections_enabled, db_connections_threshold, cooldown_minutes, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,`+nowExpr+`,`+nowExpr+`,?,?,?)`,
-		superAlertBoolInt(cfg.Enabled), cfg.RecipientEmail, superAlertBoolInt(cfg.DiskEnabled), cfg.DiskThresholdPct, superAlertBoolInt(cfg.TrafficEnabled), cfg.TrafficThresholdPct, cfg.TrafficThresholdGB, superAlertBoolInt(cfg.SessionsEnabled), cfg.SessionsThreshold, superAlertBoolInt(cfg.DBConnectionsEnabled), cfg.DBConnectionsThreshold, cfg.CooldownMinutes, cfg.UsuarioCreador, cfg.Estado, cfg.Observaciones)
+	_, err = ExecCompat(dbConn, `INSERT INTO super_alertas_config (id, enabled, recipient_email, disk_enabled, disk_threshold_pct, traffic_enabled, traffic_threshold_pct, traffic_threshold_gb, sessions_enabled, sessions_threshold, db_connections_enabled, db_connections_threshold, admin_register_enabled, empresa_nueva_enabled, cooldown_minutes, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,`+nowExpr+`,`+nowExpr+`,?,?,?)`,
+		superAlertBoolInt(cfg.Enabled), cfg.RecipientEmail, superAlertBoolInt(cfg.DiskEnabled), cfg.DiskThresholdPct, superAlertBoolInt(cfg.TrafficEnabled), cfg.TrafficThresholdPct, cfg.TrafficThresholdGB, superAlertBoolInt(cfg.SessionsEnabled), cfg.SessionsThreshold, superAlertBoolInt(cfg.DBConnectionsEnabled), cfg.DBConnectionsThreshold, superAlertBoolInt(cfg.AdminRegisterEnabled), superAlertBoolInt(cfg.EmpresaNuevaEnabled), cfg.CooldownMinutes, cfg.UsuarioCreador, cfg.Estado, cfg.Observaciones)
 	return err
 }
 

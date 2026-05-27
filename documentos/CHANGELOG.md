@@ -1,3 +1,29 @@
+## [2026-05-27] Contexto operativo Codex
+- [Documentacion] Se agregan `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/comandos_codex.md` y `documentos/decisiones_tecnicas.md`.
+- [AGENTS] La guia principal ahora exige revisar primero estos archivos para tener contexto de arranque, ubicacion de modulos, flujos, comandos y decisiones tecnicas permanentes.
+- [Alcance] Cambio documental sin backend, frontend runtime, tablas, endpoints ni permisos.
+- [QA] `git diff --check`.
+
+## [2026-05-27] Alertas sistema para registros y empresas nuevas
+- [Super administrador] `web/super/alertas_sistema.html` agrega dos checks: avisar registro de administrador y avisar creacion de empresa nueva.
+- [Backend] `super_alertas_config` agrega `admin_register_enabled` y `empresa_nueva_enabled`, con destino existente `recipient_email` y defaults activos.
+- [Eventos] `AdminRegisterHandler` y `EmpresasHandler` disparan notificaciones no bloqueantes despues de crear la cuenta administrativa o la empresa.
+- [Historial] Cada aviso queda registrado en `super_alertas_eventos` con tipo `admin_registrado_login` o `empresa_nueva_admin`, estado de correo y metadata saneada sin claves ni tokens.
+- [QA] `go test ./db ./handlers -run "SuperAlertas|AdminRegister|Empresas" -count=1`; validacion sintactica de `alertas_sistema.html`; verificacion visual local con Chrome headless.
+
+## [2026-05-27] QR DIAN en factura o recibo
+- [Configuracion] `Configuracion > Carrito unificado` agrega el check `Mostrar QR DIAN al final de la factura o recibo`, guardado en `estaciones_config.carrito_ui_global.mostrar_qr_factura_electronica`.
+- [Carritos] Al cerrar una venta con documento electronico, `carrito_de_compras.html` arma la URL publica DIAN desde CUFE/CUDE/codigo de validacion y la imprime al final del recibo y de la factura electronica si la opcion esta activa.
+- [Impresion] `web/js/print_documents.js` soporta un bloque QR comun en documentos POS/carta, en blanco y negro y sin depender de tema claro/oscuro.
+- [QA] `go test ./handlers -run CarritoUI -count=1`; validacion sintactica JS/HTML; verificacion visual con Chrome headless de check visible y QR POS renderizado.
+- [Alcance] No agrega tablas, endpoints, permisos ni dependencias externas; reutiliza `/vendor/qrcode.min.js` y mantiene aislamiento por `empresa_id`.
+
+## [2026-05-27] Analitica publica solo en super administrador
+- [Portal] `web/index.html` elimina la tarjeta visible `Visitas al portal` y sus estilos embebidos.
+- [Analitica] El portal conserva un tracker oculto para seguir registrando visitas agregadas por pais sin mostrar la tarjeta al publico.
+- [Super administrador] `web/super_administrador.html` mantiene la visualizacion completa con mapa real, ranking y total.
+- [Alcance] No cambia backend, endpoints, tablas, permisos, privacidad ni dependencias.
+
 ## [2026-05-27] Mapa real en analitica publica
 - [Portal] `web/js/portal_visits.js` usa `web/img/world-map-natural-earth-public-domain.svg` como mapa base real del contador `Visitas al portal por pais`.
 - [Super administrador] El mismo widget compartido muestra el mapa real al final del panel sin duplicar conteos.

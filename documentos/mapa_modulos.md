@@ -1,0 +1,36 @@
+# Mapa de modulos
+
+Tabla de ubicacion rapida para no buscar desde cero cada modulo. Si una fila
+queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
+
+| Modulo | Pagina | Handler/API | Tablas o configuracion | Permisos | Pruebas sugeridas |
+| --- | --- | --- | --- | --- | --- |
+| Autenticacion administrador | `web/login.html`, `web/registrar_nuevo_usuario_administrador.html` | `backend/handlers/auth_admin_handlers.go`, `/auth/*` | usuarios/admin en `pcs_superadministrador` | sesion admin, super admin | Login correo, registro, OAuth Google, celular y PC |
+| Seleccion y creacion de empresas | `web/seleccionar_empresa.html`, `web/js/seleccionar_empresa.js` | `/super/api/empresas`, `backend/handlers/system_empresas_handlers.go` | empresas, tipos, preconfiguracion, licencias | administrador autenticado | Crear empresa, aplicar tipo, entrar al panel |
+| Licencias | `web/pagar_licencia.html`, paginas super de licencias | `/licencias/activar_sin_pago`, handlers de pagos/licencias | licencias, activaciones gratis | licencia/super admin | Activar 15 dias una sola vez por empresa |
+| Panel administrar empresa | `web/administrar_empresa.html`, `web/administrar_empresa/panel.html` | contexto/permisos empresa | preferencias, permisos, modulos | rol efectivo por empresa | Abrir panel por defecto, responsive movil |
+| Configuracion empresa | `web/administrar_empresa/configuracion_menu.html`, `web/administrar_empresa/configuracion/*.html` | `/api/empresa/configuracion_*`, `/api/empresa/estacion_prefs` | configuracion avanzada, operativa, estacion prefs | configuracion/seguridad | Guardar seccion independiente y recargar |
+| Configuracion carrito | `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` | `/api/empresa/estacion_prefs` | `estaciones_config.carrito_ui_global` | ventas/configuracion | Checks visibles, pagar, cliente obligatorio, QR, offline |
+| Estaciones | `web/administrar_empresa/estaciones.html` | `/api/empresa/carritos_compra`, `/api/empresa/estacion_prefs` | estaciones en `empresa_estacion_prefs`, carritos | ventas/estaciones | Activar estacion, doble clic, estados entre usuarios |
+| Carrito y venta directa | `web/administrar_empresa/carrito_de_compras.html` | `/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items` | `carritos_compras`, `carrito_compra_items`, abonos | ventas/carritos | Agregar item, cliente, abono, pago, imprimir |
+| Caja y corte de turno | `web/administrar_empresa/corte_de_caja.html` | `/api/empresa/corte_caja`, `/api/empresa/corte_caja/configuracion` | `empresa_cierres_caja`, movimientos, corte config | finanzas/corte caja | Corte automatico, reporte mi turno, cerrar e imprimir |
+| Reportes de turnos | `web/administrar_empresa/reportes_turnos.html` | `/api/empresa/corte_caja?action=turnos|turno_reporte|turno_export|turno_email` | `empresa_cierres_caja` | finanzas/reportes | Vista POS 80mm, carta, exportar, email |
+| Facturacion electronica Colombia | `web/administrar_empresa/facturacion_electronica.html`, `facturacion_electronica_pruebas_dian.html` | `/api/empresa/facturacion_electronica`, acciones DIAN | `facturacion_electronica_pais`, reintentos | facturacion_electronica | Configurar empresa, firma, pruebas DIAN, cola |
+| Facturacion electronica Panama | `web/administrar_empresa/facturacion_electronica_panama.html` | `/api/empresa/facturacion_electronica/panama` | `facturacion_electronica_pais` | facturacion_panama | Detectar pais PA, guardar DGI, licencia |
+| Facturacion electronica Ecuador | `web/administrar_empresa/facturacion_electronica_ecuador.html` | `/api/empresa/facturacion_electronica/ecuador` | `facturacion_electronica_pais` | facturacion_ecuador | Detectar pais EC, checklist SRI, guardar |
+| Facturacion offline | carrito y service worker/conectividad | `/api/empresa/offline_ventas` | `empresa_ventas_offline_sync`, cola local navegador | ventas/offline | Perder internet, imprimir provisional, sincronizar |
+| Inventario y productos | paginas de productos, bodegas, categorias, recetas | APIs `/api/empresa/productos*`, `/api/empresa/recetas_productos` | productos, bodegas, kardex, recetas | inventario | Crear producto, bodega, receta, traslado |
+| Compras y proveedores | paginas de compras/proveedores | APIs de compras/proveedores | compras, proveedores, movimientos inventario | compras/inventario | Compra con proveedor creado y stock |
+| Creditos y cartera | `web/administrar_empresa/creditos_menu.html`, `creditos.html` | `/api/empresa/creditos` | creditos, cuotas, abonos, clientes | finanzas | Nuevo credito, abonos, morosidad, estado de cuenta |
+| Reportes ejecutivos | `web/administrar_empresa/reportes_ejecutivos.html` | `/api/empresa/reportes` | datos operativos por modulo | reportes | Select de reporte, vista previa, exportar |
+| Impuestos | paginas de impuestos en Finanzas | APIs de impuestos/configuracion fiscal | configuraciones tributarias por empresa | finanzas/impuestos | Crear impuesto, aplicar a venta, reporte |
+| Impresoras | configuracion de impresoras | APIs de impresoras empresa | `empresa_impresoras*` | configuracion/impresion | POS 80mm default, impresora por producto/categoria |
+| Pagos QR y datafonos | carrito, configuracion pagos | APIs de pagos QR/datafonos | cuentas receptoras, transacciones pago | pagos/ventas | Generar QR, confirmar pago, error proveedor |
+| Nomina | modulo nomina | APIs de nomina | empleados, novedades, liquidaciones | nomina | Liquidar empleados demo, PILA, reportes |
+| Asistencia empleados | modulo asistencia | APIs de asistencia | asistencia, empleados, turnos | rrhh/asistencia | Entrada/salida, reporte, botones |
+| Backup empresarial | backup/restablecimiento empresa | APIs backup empresa | datos operativos por empresa | super/seguridad | Previsualizar, backup previo, eliminar por fecha |
+| Alertas sistema super | `web/super/alertas_sistema.html` | `/super/api/alertas_sistema` | `super_alertas_config`, `super_alertas_eventos` | super_administrador | Guardar checks, enviar prueba, historial |
+| Informacion modulos index | `web/super/informacion_de_modulos.html`, `web/index.html` | `/super/api/informacion_de_modulos`, `/api/public/informacion_de_modulos` | `pcs_superadministrador.configuraciones` | super_administrador | Editar vineta, ver index con fallback |
+| Portal publico | `web/index.html`, `web/js/portal_visits.js` | `/api/public/*` | portal, visitas agregadas | publico/super lectura | Modo claro/oscuro, movil, mapa en super |
+| Docker y VPS | `deploy/`, `web/super/docker_portabilidad.html` | APIs super Docker portabilidad | snapshot sin secretos | super_administrador | Exportar paquete, revisar exclusiones, rs/sync |
+

@@ -54,6 +54,7 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_tarjeta_comision",
 		"mostrar_alerta_tiempo_carrito",
 		"alerta_tiempo_activa_default",
+		"mostrar_qr_factura_electronica",
 	}
 	for _, key := range wantFalse {
 		if got, _ := cfg[key].(bool); got {
