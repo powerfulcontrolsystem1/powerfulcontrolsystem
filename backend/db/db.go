@@ -437,6 +437,7 @@ type Admin struct {
 	TOTPEnabled         int    `json:"totp_enabled,omitempty"`
 	TOTPSecret          string `json:"-"`
 	TOTPConfirmadoEn    string `json:"totp_confirmado_en,omitempty"`
+	InvitationStatus    string `json:"invitation_status,omitempty"`
 }
 
 // NOTE: tipos_de_licencia CRUD removed per project decision (frontend/page/link removed).

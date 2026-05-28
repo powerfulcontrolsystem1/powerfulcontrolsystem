@@ -1,3 +1,9 @@
+2026-05-27: Estado de invitacion en administradores
+- Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `super_administrador`.
+- Cambio funcional: el listado muestra `Invitacion` separado del estado de cuenta para indicar si el invitado acepto o sigue pendiente.
+- Backend: `filterAdministradoresForPrincipalScope` completa `invitation_status`; `GetAdministradores` entrega `email_confirmado`.
+- Frontend: `web/super/administradores.html` muestra columnas `Invitacion` y `Estado cuenta`.
+
 2026-05-27: Administradores del selector filtrados y super administradores por invitacion
 - Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `super_administrador`, `autenticacion_admin`.
 - Cambio funcional: el selector abre Administradores en modo `scope=principal`, mostrando solo los invitados por el administrador autenticado.

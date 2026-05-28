@@ -1327,12 +1327,32 @@ func filterAdministradoresForPrincipalScope(dbSuper *sql.DB, principalEmail stri
 	if principalEmail == "" {
 		return admins, nil
 	}
+	delegationStatusByAdmin := map[string]string{}
+	if dbSuper != nil {
+		delegations, err := dbpkg.ListAdminPrincipalDelegacionesByPrincipal(dbSuper, principalEmail)
+		if err != nil {
+			return nil, err
+		}
+		for _, delegation := range delegations {
+			email := strings.ToLower(strings.TrimSpace(delegation.AdminEmail))
+			if email == "" {
+				continue
+			}
+			delegationStatusByAdmin[email] = adminInvitationStatusFromDelegation(delegation.Estado)
+		}
+	}
 	filtered := make([]dbpkg.Admin, 0, len(admins))
 	for _, admin := range admins {
 		if strings.EqualFold(strings.TrimSpace(admin.Email), principalEmail) {
 			continue
 		}
 		if strings.EqualFold(strings.TrimSpace(admin.UsuarioCreador), principalEmail) {
+			admin.InvitationStatus = adminInvitationStatusFromAdmin(admin)
+			filtered = append(filtered, admin)
+			continue
+		}
+		if status, ok := delegationStatusByAdmin[strings.ToLower(strings.TrimSpace(admin.Email))]; ok {
+			admin.InvitationStatus = status
 			filtered = append(filtered, admin)
 			continue
 		}
@@ -1341,10 +1361,29 @@ func filterAdministradoresForPrincipalScope(dbSuper *sql.DB, principalEmail stri
 			return nil, err
 		}
 		if ok {
+			admin.InvitationStatus = adminInvitationStatusFromAdmin(admin)
 			filtered = append(filtered, admin)
 		}
 	}
 	return filtered, nil
+}
+
+func adminInvitationStatusFromAdmin(admin dbpkg.Admin) string {
+	if admin.EmailConfirmado == 1 {
+		return "aceptada"
+	}
+	return "pendiente"
+}
+
+func adminInvitationStatusFromDelegation(estado string) string {
+	switch strings.ToLower(strings.TrimSpace(estado)) {
+	case "activo", "activa", "aceptada":
+		return "aceptada"
+	case "revocada", "rechazada", "expirada":
+		return strings.ToLower(strings.TrimSpace(estado))
+	default:
+		return "pendiente"
+	}
 }
 
 // ListSesionesHandler devuelve JSON con la lista de sesiones (super DB)

@@ -1,3 +1,13 @@
+2026-05-27: Estado de invitacion visible en administradores.
+- Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `super_administrador`.
+- Cambio funcional: la lista de administradores muestra si la invitacion esta aceptada o pendiente, separando ese estado del estado de cuenta.
+- Backend:
+  - `backend/db/db.go` mantiene `email_confirmado` en el listado.
+  - `backend/handlers/auth_admin_handlers.go` agrega `invitation_status` al resultado filtrado por principal.
+- Frontend:
+  - `web/super/administradores.html` agrega columnas `Invitacion` y `Estado cuenta`.
+- QA: `go test ./utils ./handlers ./db -run "FilterAdministradoresForPrincipalScope|AdministradoresEffectivePrincipalScope|ValidatePendingAdminInvitationToken" -count=1`; validacion sintactica del script embebido; `git diff --check`.
+
 2026-05-27: Administradores del selector filtrados y super administradores por invitacion.
 - Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `super_administrador`, `autenticacion_admin`.
 - Cambio funcional: `seleccionar_empresa.html > Administradores` ya no usa la vista global; abre con `scope=principal` y muestra solo administradores invitados por la cuenta autenticada.

@@ -37,7 +37,7 @@ func TestFilterAdministradoresForPrincipalScopeExcludesPrincipal(t *testing.T) {
 
 	admins := []dbpkg.Admin{
 		{Email: "principal@example.com", UsuarioCreador: ""},
-		{Email: "delegado@example.com", UsuarioCreador: "principal@example.com"},
+		{Email: "delegado@example.com", UsuarioCreador: "principal@example.com", EmailConfirmado: 0},
 	}
 
 	got, err := filterAdministradoresForPrincipalScope(nil, "principal@example.com", admins)
@@ -49,6 +49,9 @@ func TestFilterAdministradoresForPrincipalScopeExcludesPrincipal(t *testing.T) {
 	}
 	if got[0].Email != "delegado@example.com" {
 		t.Fatalf("expected delegated admin, got %q", got[0].Email)
+	}
+	if got[0].InvitationStatus != "pendiente" {
+		t.Fatalf("expected pending invitation status, got %q", got[0].InvitationStatus)
 	}
 }
 

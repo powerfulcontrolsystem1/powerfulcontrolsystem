@@ -1,3 +1,8 @@
+## [2026-05-27] Estado de invitacion en administradores
+- [UI] `web/super/administradores.html` separa `Invitacion` y `Estado cuenta`.
+- [Backend] `GetAdministradores` expone `email_confirmado` y el filtro de alcance agrega `invitation_status` para distinguir invitaciones aceptadas, pendientes o cerradas.
+- [QA] `go test ./utils ./handlers ./db -run "FilterAdministradoresForPrincipalScope|AdministradoresEffectivePrincipalScope|ValidatePendingAdminInvitationToken" -count=1`; validacion sintactica del script embebido en `web/super/administradores.html`; `git diff --check`.
+
 ## [2026-05-27] Administradores del selector filtrados y super administradores por invitacion
 - [Selector] El enlace `Administradores` de `seleccionar_empresa.html` abre `/super/administradores.html?scope=principal`.
 - [Backend] `/super/api/administradores?scope=principal` filtra por el administrador autenticado aunque la cuenta tenga rol super; sin ese parametro el panel super conserva la lista global.

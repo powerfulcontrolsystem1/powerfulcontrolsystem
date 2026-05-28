@@ -108,13 +108,14 @@
         const data = await res.json();
         const table = document.createElement('table');
         table.className = 'table table-compact';
-        table.innerHTML = '<thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>';
+        table.innerHTML = '<thead><tr><th>ID</th><th>Email</th><th>Nombre</th><th>Rol</th><th>InvitaciÃ³n</th><th>Estado cuenta</th><th>Acciones</th></tr></thead>';
         const tbody = document.createElement('tbody');
         data.forEach(i=>{
           const tr = document.createElement('tr');
           const confirmado = Number(i.email_confirmado || 0) === 1;
-          const estado = confirmado ? (i.estado || 'activo') : 'Invitacion pendiente';
-          tr.innerHTML = `<td>${escapeHTML(i.id)}</td><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.name||'')}</td><td>${escapeHTML(i.role||'')}</td><td>${escapeHTML(estado)}</td><td class="actions"><button data-id="${escapeHTML(i.id)}" class="del btn danger">Eliminar</button></td>`;
+          const invitationStatus = invitationStatusLabel(i.invitation_status || (confirmado ? 'aceptada' : 'pendiente'));
+          const estadoCuenta = confirmado ? (i.estado || 'activo') : 'Pendiente de registro';
+          tr.innerHTML = `<td>${escapeHTML(i.id)}</td><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.name||'')}</td><td>${escapeHTML(i.role||'')}</td><td>${escapeHTML(invitationStatus)}</td><td>${escapeHTML(estadoCuenta)}</td><td class="actions"><button data-id="${escapeHTML(i.id)}" class="del btn danger">Eliminar</button></td>`;
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -137,6 +138,15 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function invitationStatusLabel(value){
+      const status = String(value || '').trim().toLowerCase();
+      if(status === 'aceptada' || status === 'activo' || status === 'activa') return 'Aceptada';
+      if(status === 'revocada') return 'Revocada';
+      if(status === 'rechazada') return 'Rechazada';
+      if(status === 'expirada') return 'Expirada';
+      return 'Pendiente';
     }
 
     async function ensureOK(res){
