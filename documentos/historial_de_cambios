@@ -28306,3 +28306,41 @@ Archivos modificados:
   incrustacion, queda disponible el boton `Abrir buzón`.
 - QA: scripts embebidos de `web/administrar_empresa/panel.html` validados con
   Node del runtime de Codex.
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/email_corporativo.go
+- backend/db/usuario_config_schema.go
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- backend/tools/register_iredmail_secrets/main.go
+- deploy/.env.platform.example
+- deploy/README-compose-platform.md
+- deploy/docker-compose.platform.yml
+- deploy/iredmail/.env.example
+- deploy/iredmail/README.md
+- deploy/iredmail/docker-compose.iredmail.yml
+- deploy/nginx/edge-http-only.conf.template
+- deploy/nginx/edge.conf.template
+- deploy/scripts/vps-docker-preflight.sh
+- deploy/scripts/vps-register-iredmail-secrets.sh
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/docker_vps_operacion.md
+- documentos/email_corporativo_iredmail.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/panel.html
+- web/super/docker_portabilidad.html
+- web/super/email_corporativo.html
+- web/super/explorador_archivos.html
+- web/super/licencias.html
+- web/super/licencias_resumen.html
+- web/super_administrador.html
