@@ -588,6 +588,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - empresa_inventario_configuracion:
   - empresa_id (UNIQUE)
   - politica_costo (`promedio` o `peps`)
+  - producto_campos_obligatorios_json: JSON por empresa con checks de campos obligatorios al registrar/editar productos (SKU, categoria, costo, precio, bodega, proveedor, vencimiento, lote, etc.)
 - inventario_costos_lotes:
   - empresa_id, producto_id, bodega_id
   - referencia, cantidad, costo_unitario, fecha_movimiento

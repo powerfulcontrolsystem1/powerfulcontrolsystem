@@ -58,6 +58,31 @@
       font-size:.78rem;
       white-space:nowrap;
     }
+    .producto-required-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .producto-required-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-height:36px;
+      padding:8px 10px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      background:color-mix(in srgb,var(--surface-soft) 78%,var(--card));
+      color:var(--text);
+      font-size:.9rem;
+      font-weight:700;
+    }
+    .producto-required-item input{width:16px;height:16px}
+    .producto-field-required::after{
+      content:" *";
+      color:var(--danger);
+      font-weight:900;
+    }
     @media (max-width:720px){
       .producto-inline-form-header{align-items:stretch;flex-direction:column}
       .producto-inline-form-header .btn{width:100%}
@@ -137,6 +162,40 @@
     </section>
 
     <div id="messageBox" class="form-help"></div>
+
+    <section class="card empresa-section" data-view-section="productos">
+      <div class="empresa-section-header">
+        <div>
+          <h2>Campos obligatorios para productos</h2>
+          <p class="form-help" style="margin:4px 0 0;">Cada empresa decide que datos debe diligenciar antes de guardar un producto. El nombre siempre es obligatorio.</p>
+        </div>
+        <button id="btnGuardarProductoCamposObligatorios" class="btn secondary" type="button">Guardar campos</button>
+      </div>
+      <div class="producto-required-grid">
+        <label class="producto-required-item"><input type="checkbox" checked disabled> Nombre (siempre)</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="sku"> SKU</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="codigo_barras"> Codigo de barras</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="categoria_id"> Categoria</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="marca"> Marca</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="unidad_medida"> Unidad de medida</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="costo"> Costo</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="precio"> Precio</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="impuesto_porcentaje"> Impuesto</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="stock_minimo"> Stock minimo</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="stock_maximo"> Stock maximo</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="stock_inicial"> Stock inicial</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="bodega_principal_id"> Bodega principal</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="proveedor_principal_id"> Proveedor principal</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="imagen_url"> URL de imagen</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="descripcion"> Descripcion</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="observaciones"> Observaciones</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="maneja_vencimiento"> Control de vencimiento</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="fecha_vencimiento"> Fecha de vencimiento</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="dias_alerta_vencimiento"> Dias alerta vencimiento</label>
+        <label class="producto-required-item"><input type="checkbox" data-product-required="lote_codigo"> Lote</label>
+      </div>
+      <p id="productoCamposObligatoriosEstado" class="form-help">Sincronizando configuracion...</p>
+    </section>
 
     <section class="card empresa-section" data-view-section="bodegas">
       <div class="empresa-section-header">
@@ -1173,12 +1232,42 @@
       servicios: [],
       alertasInventario: [],
       inventarioConfiguracion: null,
+      productoCamposObligatorios: {},
       conteosCiclicos: [],
       inventarioPlanReposicionRows: [],
       planReposicionProveedorFiltro: 0,
       planReposicionBorrador: null,
       ultimaOrdenReposicion: null
     };
+
+    const productoCampoObligatorioDefs = [
+      { key: 'sku', input: 'productoSKU', label: 'SKU', type: 'text' },
+      { key: 'codigo_barras', input: 'productoCodigoBarras', label: 'codigo de barras', type: 'text' },
+      { key: 'categoria_id', input: 'productoCategoria', label: 'categoria', type: 'select' },
+      { key: 'marca', input: 'productoMarca', label: 'marca', type: 'text' },
+      { key: 'unidad_medida', input: 'productoUnidad', label: 'unidad de medida', type: 'text' },
+      { key: 'costo', input: 'productoCosto', label: 'costo', type: 'number-present' },
+      { key: 'precio', input: 'productoPrecio', label: 'precio', type: 'number-present' },
+      { key: 'impuesto_porcentaje', input: 'productoImpuesto', label: 'impuesto', type: 'number-present' },
+      { key: 'stock_minimo', input: 'productoStockMin', label: 'stock minimo', type: 'number-present' },
+      { key: 'stock_maximo', input: 'productoStockMax', label: 'stock maximo', type: 'number-present' },
+      { key: 'stock_inicial', input: 'productoStockInicial', label: 'stock inicial', type: 'number-present-create' },
+      { key: 'bodega_principal_id', input: 'productoBodegaPrincipal', label: 'bodega principal', type: 'select' },
+      { key: 'proveedor_principal_id', input: 'productoProveedorPrincipal', label: 'proveedor principal', type: 'select' },
+      { key: 'imagen_url', input: 'productoImagenURL', label: 'URL de imagen', type: 'text' },
+      { key: 'descripcion', input: 'productoDescripcion', label: 'descripcion', type: 'text' },
+      { key: 'observaciones', input: 'productoObservaciones', label: 'observaciones', type: 'text' },
+      { key: 'maneja_vencimiento', input: 'productoManejaVencimiento', label: 'control de vencimiento', type: 'checkbox' },
+      { key: 'fecha_vencimiento', input: 'productoFechaVencimiento', label: 'fecha de vencimiento', type: 'text' },
+      { key: 'dias_alerta_vencimiento', input: 'productoDiasAlertaVencimiento', label: 'dias alerta vencimiento', type: 'number-present' },
+      { key: 'lote_codigo', input: 'productoLoteCodigo', label: 'lote', type: 'text' }
+    ];
+
+    function defaultProductoCamposObligatorios() {
+      const cfg = {};
+      productoCampoObligatorioDefs.forEach(def => { cfg[def.key] = false; });
+      return cfg;
+    }
 
     const messageBox = document.getElementById('messageBox');
 
@@ -1215,6 +1304,80 @@
     function num(v) {
       const n = Number(v);
       return Number.isFinite(n) ? n : 0;
+    }
+
+    function normalizeProductoCamposObligatorios(raw) {
+      const cfg = defaultProductoCamposObligatorios();
+      if (raw && typeof raw === 'object') {
+        productoCampoObligatorioDefs.forEach(def => {
+          cfg[def.key] = Boolean(raw[def.key]);
+        });
+      }
+      return cfg;
+    }
+
+    function collectProductoCamposObligatorios() {
+      const cfg = defaultProductoCamposObligatorios();
+      document.querySelectorAll('[data-product-required]').forEach(input => {
+        cfg[input.dataset.productRequired] = Boolean(input.checked);
+      });
+      return cfg;
+    }
+
+    function renderProductoCamposObligatorios() {
+      const cfg = normalizeProductoCamposObligatorios(state.productoCamposObligatorios);
+      document.querySelectorAll('[data-product-required]').forEach(input => {
+        input.checked = Boolean(cfg[input.dataset.productRequired]);
+      });
+      const status = document.getElementById('productoCamposObligatoriosEstado');
+      if (status) {
+        const total = Object.keys(cfg).filter(key => cfg[key]).length;
+        status.textContent = total > 0
+          ? (total + ' campo(s) adicional(es) obligatorio(s) para registrar productos.')
+          : 'Solo el nombre del producto es obligatorio.';
+      }
+      applyProductoRequiredMarkers();
+    }
+
+    function applyProductoRequiredMarkers() {
+      const cfg = normalizeProductoCamposObligatorios(state.productoCamposObligatorios);
+      productoCampoObligatorioDefs.forEach(def => {
+        const input = document.getElementById(def.input);
+        if (!input) return;
+        const required = Boolean(cfg[def.key]);
+        if (def.type !== 'checkbox') {
+          input.toggleAttribute('required', required);
+        }
+        const label = document.querySelector('label[for="' + def.input + '"]');
+        if (label) label.classList.toggle('producto-field-required', required);
+      });
+      const nombreLabel = document.querySelector('label[for="productoNombre"]');
+      if (nombreLabel) nombreLabel.classList.add('producto-field-required');
+    }
+
+    function validateProductoCamposObligatoriosFormulario(isCreate) {
+      const cfg = normalizeProductoCamposObligatorios(state.productoCamposObligatorios);
+      for (let i = 0; i < productoCampoObligatorioDefs.length; i++) {
+        const def = productoCampoObligatorioDefs[i];
+        if (!cfg[def.key]) continue;
+        if (def.type === 'number-present-create' && !isCreate) continue;
+        const input = document.getElementById(def.input);
+        if (!input) continue;
+        let ok = true;
+        if (def.type === 'checkbox') {
+          ok = Boolean(input.checked);
+        } else if (def.type === 'select') {
+          ok = Number(input.value || 0) > 0;
+        } else {
+          ok = String(input.value == null ? '' : input.value).trim() !== '';
+        }
+        if (!ok) {
+          showMessage('Campo obligatorio por configuracion de la empresa: ' + def.label + '.', 'error');
+          if (typeof input.focus === 'function') input.focus();
+          return false;
+        }
+      }
+      return true;
     }
 
     function buildOptions(select, items, selected, emptyText) {
@@ -2123,6 +2286,7 @@
       document.getElementById('productoMotivoPrecio').value = '';
       document.getElementById('productoReferenciaPrecio').value = '';
       document.getElementById('productoImagen').value = '';
+      applyProductoRequiredMarkers();
     }
 
     async function saveProducto(ev) {
@@ -2167,6 +2331,9 @@
       };
       if (!payload.nombre) {
         showMessage('El nombre del producto es obligatorio.', 'error');
+        return;
+      }
+      if (!validateProductoCamposObligatoriosFormulario(id <= 0)) {
         return;
       }
       if (payload.fecha_vencimiento) {
@@ -2382,16 +2549,19 @@
     async function loadInventarioConfiguracion() {
       const cfg = await requestJSON('/api/empresa/inventario/configuracion?empresa_id=' + empresaId);
       state.inventarioConfiguracion = cfg || null;
+      state.productoCamposObligatorios = normalizeProductoCamposObligatorios(cfg && cfg.producto_campos_obligatorios);
 
       const politica = String((cfg && cfg.politica_costo) || 'promedio').trim().toLowerCase();
       document.getElementById('inventarioPoliticaCosto').value = politica === 'peps' ? 'peps' : 'promedio';
       document.getElementById('inventarioConfigObservaciones').value = String((cfg && cfg.observaciones) || '').trim();
+      renderProductoCamposObligatorios();
     }
 
     async function saveInventarioConfiguracion() {
       const payload = {
         empresa_id: empresaId,
         politica_costo: String(document.getElementById('inventarioPoliticaCosto').value || 'promedio').trim().toLowerCase(),
+        producto_campos_obligatorios: normalizeProductoCamposObligatorios(state.productoCamposObligatorios),
         observaciones: document.getElementById('inventarioConfigObservaciones').value.trim(),
         usuario_aplicacion: 'ui_admin_productos'
       };
@@ -2409,6 +2579,29 @@
 
       await loadInventarioConfiguracion();
       showMessage('Política de costo guardada correctamente.', 'success');
+    }
+
+    async function saveProductoCamposObligatorios() {
+      const payload = {
+        empresa_id: empresaId,
+        politica_costo: String(document.getElementById('inventarioPoliticaCosto').value || 'promedio').trim().toLowerCase(),
+        producto_campos_obligatorios: collectProductoCamposObligatorios(),
+        observaciones: document.getElementById('inventarioConfigObservaciones').value.trim(),
+        usuario_aplicacion: 'ui_admin_productos_campos'
+      };
+
+      if (payload.politica_costo !== 'promedio' && payload.politica_costo !== 'peps') {
+        payload.politica_costo = 'promedio';
+      }
+
+      await requestJSON('/api/empresa/inventario/configuracion', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      await loadInventarioConfiguracion();
+      showMessage('Campos obligatorios de productos guardados correctamente.', 'success');
     }
 
     async function loadConteosCiclicos() {
@@ -3461,6 +3654,14 @@
         }
       });
 
+      document.getElementById('btnGuardarProductoCamposObligatorios').addEventListener('click', async () => {
+        try {
+          await saveProductoCamposObligatorios();
+        } catch (e) {
+          showMessage(e.message || 'No se pudieron guardar los campos obligatorios.', 'error');
+        }
+      });
+
       document.getElementById('conteoCiclicoForm').addEventListener('submit', async ev => {
         try {
           await registrarConteoCiclico(ev);
@@ -3670,6 +3871,7 @@
       await loadBodegas();
       await loadCategoriasProductos();
       if (viewMode === 'productos') {
+        await loadInventarioConfiguracion();
         await loadProductos();
         await loadServicios();
       }

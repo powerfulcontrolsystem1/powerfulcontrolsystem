@@ -64,7 +64,12 @@ afecte dinero, documentos, licencias o seguridad.
 3. El backend valida que esa empresa no haya usado antes la licencia gratis.
 4. La activacion debe ser idempotente si el primer intento ya dejo la licencia
    vigente.
-5. Pruebas: activar una vez, reintentar sin duplicar, bloquear segundo uso real.
+5. Una licencia de prueba de 15 dias con valor cero no se renueva desde el
+   historial; si el administrador necesita continuar, debe escoger una licencia
+   comercial desde el cambio de plan.
+6. Pruebas: activar una vez, reintentar sin duplicar, bloquear segundo uso real
+   y comprobar que el historial muestra otras licencias cuando la prueba no es
+   renovable.
 
 ## Configurar empresa
 

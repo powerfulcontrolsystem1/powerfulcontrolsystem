@@ -6686,6 +6686,22 @@ html[data-theme="light-gold"] .super-page .page-header h1{
   line-height: 1.6;
 }
 
+.licencias-page .page-header,
+.administradores-page .page-header,
+.auditoria-global-page .page-header{
+  text-align:left;
+}
+
+.licencias-page .page-header p.form-help,
+.administradores-page .page-header .page-subtitle,
+.auditoria-global-page .page-header .page-subtitle{
+  max-width:760px;
+  margin:6px 0 0;
+  text-align:left;
+  color:var(--muted);
+  line-height:1.55;
+}
+
 /* Elementos de UI general refinados para advanced vars */
 .global-save-bar {
   display: flex;

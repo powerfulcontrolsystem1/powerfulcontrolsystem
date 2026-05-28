@@ -87,6 +87,30 @@ type Producto struct {
 	Observaciones         string  `json:"observaciones,omitempty"`
 }
 
+// ProductoCamposObligatorios define que campos debe diligenciar una empresa al crear o editar productos.
+type ProductoCamposObligatorios struct {
+	SKU                   bool `json:"sku"`
+	CodigoBarras          bool `json:"codigo_barras"`
+	CategoriaID           bool `json:"categoria_id"`
+	Marca                 bool `json:"marca"`
+	UnidadMedida          bool `json:"unidad_medida"`
+	Costo                 bool `json:"costo"`
+	Precio                bool `json:"precio"`
+	ImpuestoPorcentaje    bool `json:"impuesto_porcentaje"`
+	StockMinimo           bool `json:"stock_minimo"`
+	StockMaximo           bool `json:"stock_maximo"`
+	StockInicial          bool `json:"stock_inicial"`
+	BodegaPrincipalID     bool `json:"bodega_principal_id"`
+	ProveedorPrincipalID  bool `json:"proveedor_principal_id"`
+	ImagenURL             bool `json:"imagen_url"`
+	Descripcion           bool `json:"descripcion"`
+	Observaciones         bool `json:"observaciones"`
+	ManejaVencimiento     bool `json:"maneja_vencimiento"`
+	FechaVencimiento      bool `json:"fecha_vencimiento"`
+	DiasAlertaVencimiento bool `json:"dias_alerta_vencimiento"`
+	LoteCodigo            bool `json:"lote_codigo"`
+}
+
 // RecetaProducto representa un producto compuesto (receta) que se vende a precio unico.
 type RecetaProducto struct {
 	ID                 int64                   `json:"id"`
@@ -245,14 +269,15 @@ type InventarioAlertaOperativa struct {
 
 // EmpresaInventarioConfiguracion representa reglas operativas de inventario por empresa.
 type EmpresaInventarioConfiguracion struct {
-	ID                 int64  `json:"id"`
-	EmpresaID          int64  `json:"empresa_id"`
-	PoliticaCosto      string `json:"politica_costo"`
-	FechaCreacion      string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador     string `json:"usuario_creador,omitempty"`
-	Estado             string `json:"estado,omitempty"`
-	Observaciones      string `json:"observaciones,omitempty"`
+	ID                         int64                      `json:"id"`
+	EmpresaID                  int64                      `json:"empresa_id"`
+	PoliticaCosto              string                     `json:"politica_costo"`
+	ProductoCamposObligatorios ProductoCamposObligatorios `json:"producto_campos_obligatorios"`
+	FechaCreacion              string                     `json:"fecha_creacion,omitempty"`
+	FechaActualizacion         string                     `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador             string                     `json:"usuario_creador,omitempty"`
+	Estado                     string                     `json:"estado,omitempty"`
+	Observaciones              string                     `json:"observaciones,omitempty"`
 }
 
 // InventarioConteoCiclico representa un conteo ciclico con trazabilidad de ajuste.
@@ -666,6 +691,7 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			politica_costo TEXT NOT NULL DEFAULT 'promedio',
+			producto_campos_obligatorios_json TEXT DEFAULT '{}',
 			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
 			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
 			usuario_creador TEXT,
@@ -1110,6 +1136,10 @@ func EnsureEmpresaProductosSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "producto_precios_historial", "observaciones", "TEXT"); err != nil {
+		return err
+	}
+
+	if err := ensureColumnIfMissing(dbConn, "empresa_inventario_configuracion", "producto_campos_obligatorios_json", "TEXT DEFAULT '{}'"); err != nil {
 		return err
 	}
 
@@ -2109,6 +2139,31 @@ func normalizeInventarioPoliticaCosto(raw string) string {
 	}
 }
 
+func normalizeProductoCamposObligatorios(raw ProductoCamposObligatorios) ProductoCamposObligatorios {
+	return raw
+}
+
+func productoCamposObligatoriosFromJSON(raw string) ProductoCamposObligatorios {
+	var cfg ProductoCamposObligatorios
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return cfg
+	}
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return ProductoCamposObligatorios{}
+	}
+	return normalizeProductoCamposObligatorios(cfg)
+}
+
+func productoCamposObligatoriosToJSON(cfg ProductoCamposObligatorios) string {
+	cfg = normalizeProductoCamposObligatorios(cfg)
+	b, err := json.Marshal(cfg)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
 // GetEmpresaInventarioConfiguracion obtiene la configuracion operativa de inventario por empresa.
 func GetEmpresaInventarioConfiguracion(dbConn *sql.DB, empresaID int64) (EmpresaInventarioConfiguracion, error) {
 	conf := EmpresaInventarioConfiguracion{
@@ -2117,14 +2172,15 @@ func GetEmpresaInventarioConfiguracion(dbConn *sql.DB, empresaID int64) (Empresa
 		Estado:        "activo",
 	}
 
-	row := dbConn.QueryRow(`SELECT id, empresa_id, politica_costo, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+	row := dbConn.QueryRow(`SELECT id, empresa_id, politica_costo, producto_campos_obligatorios_json, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
 		FROM empresa_inventario_configuracion
 		WHERE empresa_id = ?
 		LIMIT 1`, empresaID)
 
 	var politicaCosto sql.NullString
+	var productoCamposJSON sql.NullString
 	var fechaCre, fechaAct, usuario, estado, obs sql.NullString
-	err := row.Scan(&conf.ID, &conf.EmpresaID, &politicaCosto, &fechaCre, &fechaAct, &usuario, &estado, &obs)
+	err := row.Scan(&conf.ID, &conf.EmpresaID, &politicaCosto, &productoCamposJSON, &fechaCre, &fechaAct, &usuario, &estado, &obs)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return conf, nil
@@ -2133,6 +2189,9 @@ func GetEmpresaInventarioConfiguracion(dbConn *sql.DB, empresaID int64) (Empresa
 	}
 
 	conf.PoliticaCosto = normalizeInventarioPoliticaCosto(politicaCosto.String)
+	if productoCamposJSON.Valid {
+		conf.ProductoCamposObligatorios = productoCamposObligatoriosFromJSON(productoCamposJSON.String)
+	}
 	if fechaCre.Valid {
 		conf.FechaCreacion = fechaCre.String
 	}
@@ -2159,21 +2218,25 @@ func UpsertEmpresaInventarioConfiguracion(dbConn *sql.DB, conf EmpresaInventario
 	}
 
 	conf.PoliticaCosto = normalizeInventarioPoliticaCosto(conf.PoliticaCosto)
+	conf.ProductoCamposObligatorios = normalizeProductoCamposObligatorios(conf.ProductoCamposObligatorios)
 	if strings.TrimSpace(conf.Estado) == "" {
 		conf.Estado = "activo"
 	}
+	productoCamposJSON := productoCamposObligatoriosToJSON(conf.ProductoCamposObligatorios)
 
 	_, err := dbConn.Exec(`INSERT INTO empresa_inventario_configuracion (
 		empresa_id,
 		politica_costo,
+		producto_campos_obligatorios_json,
 		fecha_creacion,
 		fecha_actualizacion,
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)
+	) VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, COALESCE(NULLIF(?, ''), 'activo'), ?)
 	ON CONFLICT(empresa_id) DO UPDATE SET
 		politica_costo = excluded.politica_costo,
+		producto_campos_obligatorios_json = excluded.producto_campos_obligatorios_json,
 		fecha_actualizacion = datetime('now','localtime'),
 		usuario_creador = CASE
 			WHEN TRIM(COALESCE(excluded.usuario_creador, '')) <> '' THEN excluded.usuario_creador
@@ -2183,6 +2246,7 @@ func UpsertEmpresaInventarioConfiguracion(dbConn *sql.DB, conf EmpresaInventario
 		observaciones = excluded.observaciones`,
 		conf.EmpresaID,
 		conf.PoliticaCosto,
+		productoCamposJSON,
 		strings.TrimSpace(conf.UsuarioCreador),
 		strings.TrimSpace(conf.Estado),
 		strings.TrimSpace(conf.Observaciones),

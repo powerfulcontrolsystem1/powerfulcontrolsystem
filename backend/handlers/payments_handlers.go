@@ -56,9 +56,11 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			usuarioCreador := strings.TrimSpace(q.Get("usuario_creador"))
 			paisCodigo := strings.ToUpper(strings.TrimSpace(q.Get("pais_codigo")))
 			tipoIDFiltro, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmptyString(q.Get("tipo_id"), q.Get("tipo_empresa_id"))), 10, 64)
+			scopeMine := strings.EqualFold(strings.TrimSpace(q.Get("scope")), "mine")
+			var allowedEmpresaIDs map[int64]bool
 
 			// scope=mine permite filtrar por el administrador autenticado sin exponer email en la URL.
-			if strings.EqualFold(strings.TrimSpace(q.Get("scope")), "mine") && usuarioCreador == "" {
+			if scopeMine && usuarioCreador == "" {
 				c, err := r.Cookie("session_token")
 				if err != nil || c == nil || strings.TrimSpace(c.Value) == "" {
 					http.Error(w, "unauthenticated", http.StatusUnauthorized)
@@ -70,6 +72,34 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					return
 				}
 				usuarioCreador = strings.TrimSpace(s.AdminEmail)
+				if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+					requesterEmail := strings.ToLower(strings.TrimSpace(s.AdminEmail))
+					_, principalEmail, err := resolveRequesterAdminScope(dbSuper, r)
+					if err != nil {
+						http.Error(w, "failed to resolve admin scope: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					empresas, err := dbpkg.GetEmpresas(dbEmp)
+					if err != nil {
+						http.Error(w, "failed to query empresas scope: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					empresas, err = decorateEmpresasByEffectiveAccess(dbSuper, requesterEmail, principalEmail, empresas)
+					if err != nil {
+						http.Error(w, "failed to resolve empresa access: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					allowedEmpresaIDs = make(map[int64]bool, len(empresas))
+					for _, empresa := range empresas {
+						if empresa.EmpresaID > 0 {
+							allowedEmpresaIDs[empresa.EmpresaID] = true
+						}
+						if empresa.ID > 0 {
+							allowedEmpresaIDs[empresa.ID] = true
+						}
+					}
+					usuarioCreador = ""
+				}
 			}
 
 			licencias, err := dbpkg.GetLicenciasFilteredByPais(dbSuper, soloActivas, usuarioCreador, conEmpresa, paisCodigo)
@@ -77,6 +107,15 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				log.Println("GET /super/api/licencias error:", err)
 				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
 				return
+			}
+			if allowedEmpresaIDs != nil {
+				filtered := make([]dbpkg.Licencia, 0, len(licencias))
+				for _, lic := range licencias {
+					if lic.EmpresaID > 0 && allowedEmpresaIDs[lic.EmpresaID] {
+						filtered = append(filtered, lic)
+					}
+				}
+				licencias = filtered
 			}
 			if tipoIDFiltro > 0 {
 				filtered := make([]dbpkg.Licencia, 0, len(licencias))

@@ -52,8 +52,34 @@
     .lic-risk-list{display:grid;gap:7px;margin-top:8px}
     .lic-risk-item{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.45);font-size:.76rem;color:var(--text)}
     .lic-risk-item strong{white-space:nowrap}
+    .lic-history-table-section{margin:14px 0 0}
+    .lic-history-table-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 8px;color:var(--text)}
+    .lic-history-table-title h2{margin:0;font-size:1rem}
+    .lic-history-table-title span{color:var(--muted);font-size:.78rem;font-weight:800}
+    .lic-history-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+    .lic-history-table{min-width:1080px;margin:0}
+    .lic-history-table th,.lic-history-table td{padding:7px 9px;font-size:.82rem;line-height:1.22}
+    .lic-history-table th,.lic-history-table td{vertical-align:top}
+    .lic-history-table .btn{min-height:30px;padding:5px 8px;font-size:.76rem}
+    .lic-history-days{font-weight:900;color:var(--text)}
+    .lic-history-days.warn{color:#92400e}
+    .lic-history-days.danger{color:#b91c1c}
+    .lic-history-trial-note{display:block;margin-top:4px;color:var(--muted);font-size:.72rem;line-height:1.25}
+    .lic-history-actions-cell{display:flex;gap:6px;flex-wrap:wrap}
+    .lic-history-card{gap:8px;padding:12px;border-radius:12px}
+    .lic-history-card-head{gap:8px}
+    .lic-history-card h3{margin:2px 0;font-size:.98rem}
+    .lic-history-company,.lic-history-type,.lic-history-detail,.lic-history-meta{font-size:.78rem;line-height:1.25}
+    .lic-history-badge{padding:5px 8px;font-size:.74rem}
+    .lic-history-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .lic-history-metrics div{padding:7px 8px;border-radius:8px}
+    .lic-history-metrics span{font-size:.68rem;margin-bottom:2px}
+    .lic-history-metrics strong{font-size:.86rem}
+    .lic-history-foot{align-items:center;gap:8px}
+    .lic-history-actions{gap:6px}
+    .lic-history-actions .btn{min-height:30px;padding:5px 8px;font-size:.76rem}
     @media (max-width:1120px){.lic-admin-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:1fr}}
+    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:1fr}.lic-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:480px){.lic-admin-kpis,.lic-admin-health{grid-template-columns:1fr}}
   </style>
 </head>
@@ -803,15 +829,33 @@
       function buildStatusMeta(item){
         const daysRemaining = getDaysRemaining(item.fecha_fin);
         if (daysRemaining === null) {
-          return { tone: 'unknown', label: 'Sin vencimiento registrado', detail: 'Esta licencia no tiene una fecha de vencimiento visible.', renew: false, priority: 4 };
+          return { tone: 'unknown', label: 'Sin vencimiento registrado', detail: 'Esta licencia no tiene una fecha de vencimiento visible.', renew: false, priority: 2, daysRemaining: null };
         }
         if (daysRemaining < 0) {
-          return { tone: 'expired', label: 'Vencida', detail: 'Vencio hace ' + Math.abs(daysRemaining) + ' dia' + (Math.abs(daysRemaining) === 1 ? '' : 's') + '.', renew: true, priority: 3 };
+          return { tone: 'expired', label: 'Vencida', detail: 'Vencio hace ' + Math.abs(daysRemaining) + ' dia' + (Math.abs(daysRemaining) === 1 ? '' : 's') + '.', renew: true, priority: 3, daysRemaining: daysRemaining };
         }
         if (daysRemaining <= 7) {
-          return { tone: 'expiring', label: 'Por vencer', detail: 'Vence en ' + daysRemaining + ' dia' + (daysRemaining === 1 ? '' : 's') + '.', renew: true, priority: 1 };
+          return { tone: 'expiring', label: 'Por vencer', detail: 'Vence en ' + daysRemaining + ' dia' + (daysRemaining === 1 ? '' : 's') + '.', renew: true, priority: 1, daysRemaining: daysRemaining };
         }
-        return { tone: 'active', label: 'Activa', detail: 'Vigente por ' + daysRemaining + ' dia' + (daysRemaining === 1 ? '' : 's') + ' mas.', renew: false, priority: 2 };
+        return { tone: 'active', label: 'Activa', detail: 'Vigente por ' + daysRemaining + ' dia' + (daysRemaining === 1 ? '' : 's') + ' mas.', renew: false, priority: 2, daysRemaining: daysRemaining };
+      }
+
+      function isTrial15FreeLicense(item){
+        return Number(item && item.valor || 0) <= 0 && Number(item && item.duracion_dias || 0) === 15;
+      }
+
+      function daysRemainingLabel(meta){
+        if (!meta || meta.daysRemaining === null || meta.daysRemaining === undefined) return 'Sin vencimiento';
+        if (meta.daysRemaining < 0) return 'Vencida hace ' + Math.abs(meta.daysRemaining) + ' dia' + (Math.abs(meta.daysRemaining) === 1 ? '' : 's');
+        if (meta.daysRemaining === 0) return 'Vence hoy';
+        return 'Le quedan ' + meta.daysRemaining + ' dia' + (meta.daysRemaining === 1 ? '' : 's');
+      }
+
+      function daysRemainingClass(meta){
+        if (!meta || meta.daysRemaining === null || meta.daysRemaining === undefined) return '';
+        if (meta.daysRemaining < 0) return 'danger';
+        if (meta.daysRemaining <= 7) return 'warn';
+        return '';
       }
 
       function collectPreferredEmpresaID(){
@@ -852,6 +896,20 @@
         // UX: dejar rastro del contexto actual.
         if (item && item.id) params.set('current_licencia_id', item.id);
         return '/elegir_licencia.html?' + params.toString();
+      }
+
+      function buildLicenseActions(item, meta){
+        const trial = isTrial15FreeLicense(item);
+        const actions = [];
+        if (trial) {
+          actions.push('<a class="btn" href="' + buildChangeURL(item) + '">Ver otras licencias</a>');
+        } else {
+          actions.push('<a class="btn" href="' + buildRenewURL(item) + '">Renovar licencia</a>');
+          actions.push('<a class="btn secondary" href="' + buildChangeURL(item) + '">Cambiar licencia</a>');
+        }
+        actions.push('<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(item.empresa_id) + '&empresa_id=' + encodeURIComponent(item.empresa_id) + '">Abrir empresa</a>');
+        const note = trial ? '<span class="lic-history-trial-note">La prueba gratis de 15 dias con valor cero no se puede renovar. Elige un plan comercial.</span>' : '';
+        return '<div class="lic-history-actions-cell">' + actions.join('') + note + '</div>';
       }
 
       function renderHistorySummary(items){
@@ -919,43 +977,58 @@
           return;
         }
 
-        list.innerHTML = '<div class="lic-history-grid"></div>';
-        const grid = list.querySelector('.lic-history-grid');
+        const activeRows = [];
+        const expiredRows = [];
         filtered.forEach(function(item){
           const meta = buildStatusMeta(item);
-          const card = document.createElement('article');
-          card.className = 'lic-history-card lic-history-card--' + meta.tone;
-          card.innerHTML = '' +
-            '<div class="lic-history-card-head">' +
-              '<div>' +
-                '<div class="lic-history-company">' + escapeHTML(item.empresa_nombre || ('Empresa #' + item.empresa_id)) + '</div>' +
-                '<h3>' + escapeHTML(item.nombre || 'Licencia') + '</h3>' +
-                '<p class="lic-history-type">' + escapeHTML(item.tipo_nombre || 'Tipo no especificado') + '</p>' +
-              '</div>' +
-              '<span class="lic-history-badge lic-history-badge--' + meta.tone + '">' + escapeHTML(meta.label) + '</span>' +
-            '</div>' +
-            '<p class="lic-history-detail">' + escapeHTML(meta.detail) + '</p>' +
-            '<div class="lic-history-metrics">' +
-              '<div><span>Inicio</span><strong>' + escapeHTML(formatDate(item.fecha_inicio)) + '</strong></div>' +
-              '<div><span>Vence</span><strong>' + escapeHTML(formatDate(item.fecha_fin)) + '</strong></div>' +
-              '<div><span>Valor pagado</span><strong>' + escapeHTML(formatMoney(item.valor)) + '</strong></div>' +
-              '<div><span>Duración</span><strong>' + escapeHTML(String(item.duracion_dias || 0)) + ' días</strong></div>' +
-            '</div>' +
-            '<div class="lic-history-foot">' +
-              '<div class="lic-history-meta">Modulos: ' + escapeHTML(modulosToLabel(item.modulos_habilitados || '')) + '</div>' +
-              '<div class="lic-history-actions">' +
-                '<a class="btn" href="' + buildRenewURL(item) + '">Renovar licencia</a>' +
-                '<a class="btn secondary" href="' + buildChangeURL(item) + '">Cambiar licencia</a>' +
-                '<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(item.empresa_id) + '&empresa_id=' + encodeURIComponent(item.empresa_id) + '">Abrir empresa</a>' +
-              '</div>' +
-            '</div>';
-          grid.appendChild(card);
+          const row = { item: item, meta: meta };
+          if (meta.daysRemaining !== null && meta.daysRemaining < 0) {
+            expiredRows.push(row);
+          } else {
+            activeRows.push(row);
+          }
         });
+
+        function renderTableSection(title, rows, emptyText){
+          if (!rows.length) {
+            return '<section class="lic-history-table-section">' +
+              '<div class="lic-history-table-title"><h2>' + escapeHTML(title) + '</h2><span>0 registros</span></div>' +
+              '<div class="lic-history-empty">' + escapeHTML(emptyText) + '</div>' +
+            '</section>';
+          }
+          const body = rows.map(function(row){
+            const item = row.item;
+            const meta = row.meta;
+            const trial = isTrial15FreeLicense(item);
+            return '<tr>' +
+              '<td><strong>' + escapeHTML(item.empresa_nombre || ('Empresa #' + item.empresa_id)) + '</strong><div class="lic-plan-sub">Empresa #' + escapeHTML(item.empresa_id || '') + '</div></td>' +
+              '<td><div class="lic-plan-name">' + escapeHTML(item.nombre || 'Licencia') + '</div><div class="lic-plan-sub">' + escapeHTML(item.tipo_nombre || 'Tipo no especificado') + (trial ? ' · Prueba gratis no renovable' : '') + '</div></td>' +
+              '<td><span class="lic-history-badge lic-history-badge--' + meta.tone + '">' + escapeHTML(meta.label) + '</span><div class="lic-plan-sub">' + escapeHTML(meta.detail) + '</div></td>' +
+              '<td><span class="lic-history-days ' + daysRemainingClass(meta) + '">' + escapeHTML(daysRemainingLabel(meta)) + '</span></td>' +
+              '<td>' + escapeHTML(formatDate(item.fecha_inicio)) + '</td>' +
+              '<td>' + escapeHTML(formatDate(item.fecha_fin)) + '</td>' +
+              '<td>' + escapeHTML(formatMoney(item.valor)) + '<div class="lic-plan-sub">' + escapeHTML(String(item.duracion_dias || 0)) + ' dias</div></td>' +
+              '<td>' + escapeHTML(modulosToLabel(item.modulos_habilitados || '')) + '</td>' +
+              '<td>' + buildLicenseActions(item, meta) + '</td>' +
+            '</tr>';
+          }).join('');
+          return '<section class="lic-history-table-section">' +
+            '<div class="lic-history-table-title"><h2>' + escapeHTML(title) + '</h2><span>' + rows.length + ' registro' + (rows.length === 1 ? '' : 's') + '</span></div>' +
+            '<div class="lic-history-table-wrap"><table class="table lic-history-table">' +
+              '<thead><tr><th>Empresa</th><th>Licencia</th><th>Estado</th><th>Dias restantes</th><th>Inicio</th><th>Vence</th><th>Valor</th><th>Modulos</th><th>Acciones</th></tr></thead>' +
+              '<tbody>' + body + '</tbody>' +
+            '</table></div>' +
+          '</section>';
+        }
+
+        list.innerHTML =
+          renderTableSection('Licencias activas y por vencer', activeRows, 'No hay licencias activas para el filtro actual.') +
+          renderTableSection('Licencias vencidas', expiredRows, 'No hay licencias vencidas para el filtro actual.');
       }
 
       async function loadHistory(){
         pageTitle.textContent = 'Estado e historial de licencias';
-        pageLead.textContent = 'Aquí se muestran todas las licencias asociadas a tus empresas (vigentes o vencidas). Puedes renovar la licencia actual o cambiar a una nueva.';
+        pageLead.textContent = 'Aqui se muestran las licencias de las empresas que puedes administrar. Las pruebas gratis de 15 dias con valor cero no se renuevan; en ese caso se muestran otros planes disponibles.';
         addBtn.style.display = 'none';
         form.style.display = 'none';
         crudExecutivePanel.hidden = true;

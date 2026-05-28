@@ -1,3 +1,17 @@
+2026-05-28: Historial de licencias por empresa y prueba no renovable.
+- Modulos afectados: `licencias`, `seleccion_empresas`, `seguridad_multiempresa`, `documentacion`.
+- Cambio funcional: `web/super/licencias.html?scope=mine&con_empresa=1` reemplaza las tarjetas por tablas separadas de licencias activas/por vencer y vencidas, con dias restantes, fechas, valor, modulos y acciones por empresa.
+- Regla comercial: si una licencia es prueba de 15 dias y valor cero, el boton no permite renovar esa misma prueba; muestra `Ver otras licencias` y abre el cambio de plan.
+- Backend: `LicenciasHandler` filtra `scope=mine` por el alcance efectivo de empresas del selector, incluyendo empresas propias, delegadas y compartidas, para no listar licencias fuera del administrador autenticado.
+- QA: `go test ./handlers -run "^$" -count=1` (ok); script inline de `web/super/licencias.html` parseado con Node sin errores; captura visual local con datos simulados en `test_runs/licencias_historial_tabla_trial_no_renovable.png`.
+
+2026-05-28: Campos obligatorios configurables para registrar productos.
+- Modulos afectados: `inventario`, `productos`, `configuracion_empresa`, `seguridad_multiempresa`, `documentacion`.
+- Cambio funcional: en `web/administrar_empresa/administrar_productos.html` se agrega una tarjeta de checks por empresa para exigir campos adicionales al registrar/editar productos. El formulario marca visualmente los campos requeridos y frena el guardado cuando falta un dato.
+- Backend: `backend/db/productos.go` agrega `ProductoCamposObligatorios` y persiste la configuracion como JSON en `empresa_inventario_configuracion.producto_campos_obligatorios_json`; `backend/handlers/productos.go` valida la configuracion en `POST/PUT /api/empresa/productos`.
+- Seguridad: la validacion usa la configuracion de la misma `empresa_id`, conserva el permiso `inventario` y evita que la regla se salte llamando la API directamente.
+- QA: `go test ./db` (ok); `go test ./handlers -run "^$" -count=1` (compila ok); `go test ./handlers` queda bloqueado por una falla preexistente no relacionada en `TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups`; script inline de `administrar_productos.html` parseado con Node sin errores; captura visual local `test_runs/producto_campos_obligatorios_config_local.png`.
+
 2026-05-28: Auditoria global del selector de empresas.
 - Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `licencias`, `reportes_globales`, `auditoria`, `documentacion`.
 - Cambio funcional: `Seleccionar empresa` agrega el boton `Auditoria`, que abre `web/super/auditoria_global.html` en el panel derecho. La pagina lista movimientos, filtra por fecha/modulo/usuario/empresa/resultado/busqueda, muestra KPIs, detalle JSON saneado, exporta CSV/JSON y permite abrir `Agregar administrador`.

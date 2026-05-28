@@ -16,6 +16,101 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
+func jsonPayloadKeys(body []byte) map[string]bool {
+	keys := make(map[string]bool)
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return keys
+	}
+	for key, value := range raw {
+		if len(value) == 0 || string(value) == "null" {
+			continue
+		}
+		keys[key] = true
+	}
+	return keys
+}
+
+func hasJSONPayloadValue(keys map[string]bool, key string) bool {
+	return keys != nil && keys[key]
+}
+
+func validateProductoCamposObligatorios(dbEmp *sql.DB, p dbpkg.Producto, stockInicial float64, isCreate bool, keys map[string]bool) error {
+	conf, err := dbpkg.GetEmpresaInventarioConfiguracion(dbEmp, p.EmpresaID)
+	if err != nil {
+		return fmt.Errorf("no se pudo cargar la configuracion de campos obligatorios: %w", err)
+	}
+	required := conf.ProductoCamposObligatorios
+	missing := make([]string, 0)
+	addMissing := func(label string) {
+		missing = append(missing, label)
+	}
+	if required.SKU && strings.TrimSpace(p.SKU) == "" {
+		addMissing("SKU")
+	}
+	if required.CodigoBarras && strings.TrimSpace(p.CodigoBarras) == "" {
+		addMissing("codigo de barras")
+	}
+	if required.CategoriaID && p.CategoriaID <= 0 {
+		addMissing("categoria")
+	}
+	if required.Marca && strings.TrimSpace(p.Marca) == "" {
+		addMissing("marca")
+	}
+	if required.UnidadMedida && strings.TrimSpace(p.UnidadMedida) == "" {
+		addMissing("unidad de medida")
+	}
+	if required.Costo && !hasJSONPayloadValue(keys, "costo") {
+		addMissing("costo")
+	}
+	if required.Precio && !hasJSONPayloadValue(keys, "precio") {
+		addMissing("precio")
+	}
+	if required.ImpuestoPorcentaje && !hasJSONPayloadValue(keys, "impuesto_porcentaje") {
+		addMissing("impuesto")
+	}
+	if required.StockMinimo && !hasJSONPayloadValue(keys, "stock_minimo") {
+		addMissing("stock minimo")
+	}
+	if required.StockMaximo && !hasJSONPayloadValue(keys, "stock_maximo") {
+		addMissing("stock maximo")
+	}
+	if required.StockInicial && isCreate && (!hasJSONPayloadValue(keys, "stock_inicial") || stockInicial < 0) {
+		addMissing("stock inicial")
+	}
+	if required.BodegaPrincipalID && p.BodegaPrincipalID <= 0 {
+		addMissing("bodega principal")
+	}
+	if required.ProveedorPrincipalID && p.ProveedorPrincipalID <= 0 {
+		addMissing("proveedor principal")
+	}
+	if required.ImagenURL && strings.TrimSpace(p.ImagenURL) == "" {
+		addMissing("URL de imagen")
+	}
+	if required.Descripcion && strings.TrimSpace(p.Descripcion) == "" {
+		addMissing("descripcion")
+	}
+	if required.Observaciones && strings.TrimSpace(p.Observaciones) == "" {
+		addMissing("observaciones")
+	}
+	if required.ManejaVencimiento && !p.ManejaVencimiento {
+		addMissing("control de vencimiento")
+	}
+	if required.FechaVencimiento && strings.TrimSpace(p.FechaVencimiento) == "" {
+		addMissing("fecha de vencimiento")
+	}
+	if required.DiasAlertaVencimiento && (!hasJSONPayloadValue(keys, "dias_alerta_vencimiento") || p.DiasAlertaVencimiento <= 0) {
+		addMissing("dias de alerta de vencimiento")
+	}
+	if required.LoteCodigo && strings.TrimSpace(p.LoteCodigo) == "" {
+		addMissing("lote")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("campos obligatorios por configuracion de la empresa: %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
 // EmpresaBodegasHandler maneja CRUD de bodegas por empresa.
 func EmpresaBodegasHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -314,7 +409,13 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				ReferenciaInicial string  `json:"referencia_inicial"`
 				MotivoPrecio      string  `json:"motivo_precio"`
 			}
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			payloadKeys := jsonPayloadKeys(body)
+			if err := json.Unmarshal(body, &payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
@@ -328,6 +429,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if payload.StockInicial > 0 && payload.BodegaPrincipalID <= 0 {
 				http.Error(w, "bodega_principal_id required when stock_inicial is greater than zero", http.StatusBadRequest)
+				return
+			}
+			if err := validateProductoCamposObligatorios(dbEmp, payload.Producto, payload.StockInicial, true, payloadKeys); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
@@ -371,7 +476,13 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			var payload dbpkg.Producto
 			var motivoPrecio string
 			var referenciaPrecio string
-			if err := json.NewDecoder(r.Body).Decode(&struct {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			payloadKeys := jsonPayloadKeys(body)
+			if err := json.Unmarshal(body, &struct {
 				*dbpkg.Producto
 				MotivoPrecio     *string `json:"motivo_precio"`
 				ReferenciaPrecio *string `json:"referencia_precio"`
@@ -385,6 +496,10 @@ func EmpresaProductosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if strings.TrimSpace(payload.Nombre) == "" {
 				http.Error(w, "nombre required", http.StatusBadRequest)
+				return
+			}
+			if err := validateProductoCamposObligatorios(dbEmp, payload, 0, false, payloadKeys); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			payload.UsuarioCreador = adminEmailFromRequest(r)
@@ -536,9 +651,10 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		case http.MethodPut:
 			var payload struct {
-				EmpresaID     int64  `json:"empresa_id"`
-				PoliticaCosto string `json:"politica_costo"`
-				Observaciones string `json:"observaciones"`
+				EmpresaID                  int64                             `json:"empresa_id"`
+				PoliticaCosto              string                            `json:"politica_costo"`
+				ProductoCamposObligatorios *dbpkg.ProductoCamposObligatorios `json:"producto_campos_obligatorios"`
+				Observaciones              string                            `json:"observaciones"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -559,12 +675,25 @@ func EmpresaInventarioConfiguracionHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 
+			productoCampos := dbpkg.ProductoCamposObligatorios{}
+			if payload.ProductoCamposObligatorios != nil {
+				productoCampos = *payload.ProductoCamposObligatorios
+			} else {
+				actual, err := dbpkg.GetEmpresaInventarioConfiguracion(dbEmp, payload.EmpresaID)
+				if err != nil {
+					http.Error(w, "failed to get inventario config actual: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				productoCampos = actual.ProductoCamposObligatorios
+			}
+
 			conf, err := dbpkg.UpsertEmpresaInventarioConfiguracion(dbEmp, dbpkg.EmpresaInventarioConfiguracion{
-				EmpresaID:      payload.EmpresaID,
-				PoliticaCosto:  politica,
-				UsuarioCreador: adminEmailFromRequest(r),
-				Estado:         "activo",
-				Observaciones:  strings.TrimSpace(payload.Observaciones),
+				EmpresaID:                  payload.EmpresaID,
+				PoliticaCosto:              politica,
+				ProductoCamposObligatorios: productoCampos,
+				UsuarioCreador:             adminEmailFromRequest(r),
+				Estado:                     "activo",
+				Observaciones:              strings.TrimSpace(payload.Observaciones),
 			})
 			if err != nil {
 				http.Error(w, "failed to save inventario config: "+err.Error(), http.StatusInternalServerError)
