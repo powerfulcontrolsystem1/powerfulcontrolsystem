@@ -1,3 +1,21 @@
+2026-05-28: Codigo de asesor en prueba gratis de 15 dias
+- Modulos afectados: `licencias`, `checkout_licencias`, `asesor_comercial`.
+- Cambio funcional: la tarjeta de licencia gratis de 15 dias en `web/elegir_licencia.html` permite escribir el codigo de asesor comercial antes de continuar.
+- Flujo: el codigo viaja como `asesor_id` a `pagar_licencia.html`; el checkout conserva la validacion existente y al activar sin pago lo guarda en la activacion gratis, trazabilidad de pago y comisiones.
+- UX: el campo solo se muestra en la prueba gratis de 15 dias para no duplicar el formulario de planes pagos.
+
+2026-05-28: Licencias del selector con tabla global paginada
+- Modulos afectados: `seleccion_empresas`, `licencias`, `frontend_ux`.
+- Cambio funcional: `web/super/licencias.html?scope=mine&con_empresa=1` conserva el selector superior para destacar una empresa y operar sobre ella primero.
+- UX: debajo se muestra la tarjeta `Todas las empresas y vencimientos`, con todas las empresas visibles para el administrador, ordenadas por dias de licencia, paginadas de 10 en 10 y con botones de elegir/cambiar/renovar licencia, editar empresa y abrir empresa.
+- Alcance: la tabla global no se filtra al elegir una empresa arriba; el selector solo controla la tarjeta destacada y las tablas de detalle de licencias de esa empresa.
+
+2026-05-28: Selector de licencias oculta prueba ya usada
+- Modulos afectados: `licencias`, `seleccion_empresas`, `checkout_licencias`.
+- Cambio funcional: al abrir `elegir_licencia.html` para una empresa, la pagina consulta `/super/api/licencias` con `empresa_id` y `ocultar_prueba_usada=1`.
+- Backend: `LicenciasHandler` usa `HasAnyLicenciaGratisActivationForEmpresa` para detectar si la empresa ya tuvo una activacion gratis/prueba. Si ya la uso, quita del catalogo la licencia base valor cero de 15 dias y marca la respuesta con `X-PCS-Trial-Used`.
+- UX: el selector muestra un aviso y deja visibles solo planes comerciales del tipo de empresa; `pagar_licencia.html` mantiene el bloqueo de activacion sin pago para enlaces antiguos.
+
 2026-05-28: Robot IA y emisora desactivados por defecto
 - Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`.
 - Cambio funcional: en contexto empresarial, el robot/secretaria IA 3D y la emisora flotante quedan apagados si la empresa no tiene una preferencia explicita guardada. Ya no heredan un encendido global ni una preferencia vieja de `localStorage`; por estar en preproduccion, el arranque crea o actualiza en `0` estas preferencias para todas las empresas activas existentes.

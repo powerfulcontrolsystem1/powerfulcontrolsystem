@@ -56,6 +56,8 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			usuarioCreador := strings.TrimSpace(q.Get("usuario_creador"))
 			paisCodigo := strings.ToUpper(strings.TrimSpace(q.Get("pais_codigo")))
 			tipoIDFiltro, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmptyString(q.Get("tipo_id"), q.Get("tipo_empresa_id"))), 10, 64)
+			empresaIDFiltro, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmptyString(q.Get("empresa_id"), q.Get("id"))), 10, 64)
+			ocultarPruebaUsada := parseTruthy(firstNonEmptyString(q.Get("ocultar_prueba_usada"), q.Get("hide_trial_if_used"), q.Get("exclude_trial_used")))
 			scopeMine := strings.EqualFold(strings.TrimSpace(q.Get("scope")), "mine")
 			var allowedEmpresaIDs map[int64]bool
 
@@ -125,6 +127,26 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 				licencias = filtered
+			}
+			if ocultarPruebaUsada && empresaIDFiltro > 0 {
+				yaUsoPrueba, err := dbpkg.HasAnyLicenciaGratisActivationForEmpresa(dbSuper, empresaIDFiltro)
+				if err != nil {
+					log.Println("GET /super/api/licencias trial history error:", err)
+					http.Error(w, "failed to validate trial licencia history: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if yaUsoPrueba {
+					filtered := make([]dbpkg.Licencia, 0, len(licencias))
+					for _, lic := range licencias {
+						if isLicenciaPrueba15DiasCatalogo(lic) {
+							continue
+						}
+						filtered = append(filtered, lic)
+					}
+					licencias = filtered
+					w.Header().Set("X-PCS-Trial-Used", "1")
+					w.Header().Set("X-PCS-Trial-Filtered", "1")
+				}
 			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(licencias)
@@ -1663,6 +1685,23 @@ func rejectLicenciaOcultaParaClientes(w http.ResponseWriter, lic *dbpkg.Licencia
 	}
 	http.Error(w, "licencia no disponible para clientes", http.StatusNotFound)
 	return true
+}
+
+func isLicenciaPrueba15DiasCatalogo(lic dbpkg.Licencia) bool {
+	if lic.EmpresaID > 0 || lic.EsAdicional == 1 {
+		return false
+	}
+	if lic.DuracionDias != 15 || roundLicenciaCheckoutAmount(lic.Valor) > 0 {
+		return false
+	}
+	texto := strings.ToLower(strings.TrimSpace(lic.Nombre + " " + lic.Descripcion + " " + lic.CodigoFuncion))
+	if texto == "" {
+		return true
+	}
+	return strings.Contains(texto, "prueba") ||
+		strings.Contains(texto, "gratis") ||
+		strings.Contains(texto, "gratuita") ||
+		strings.Contains(texto, "trial")
 }
 
 func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia, empresaID int64, discountCode, asesorID, checkoutMode string, addonLicenciaIDs []int64) (licenciaCheckoutSummary, *dbpkg.EmpresaLicenciaBundleSummary, error) {

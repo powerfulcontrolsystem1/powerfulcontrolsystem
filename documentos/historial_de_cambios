@@ -1,3 +1,23 @@
+2026-05-28: Codigo de asesor al elegir licencia de prueba.
+- Modulos afectados: `licencias`, `checkout_licencias`, `asesor_comercial`, `documentacion`.
+- Cambio funcional: `web/elegir_licencia.html` muestra un campo `Codigo de asesor comercial` en la tarjeta de licencia gratis de 15 dias. Al presionar `Activar licencia`, el codigo se envia en la URL del checkout como `asesor_id`.
+- Persistencia: no cambia el contrato backend; `pagar_licencia.html`, `/api/public/licencias/checkout_summary`, `/licencias/activar_sin_pago` y `ActivateLicenciaGratisForEmpresa` ya validan/persisten `asesor_id` en la activacion gratis, pagos sinteticos y comisiones.
+- QA: script inline de `web/elegir_licencia.html` parseado con Node; `go test ./db ./handlers -run "^$" -count=1` (ok); prueba visual local con Chrome confirmo campo solo en prueba de 15 dias, precarga desde URL y redireccion a checkout con `asesor_id=AC-777`.
+
+2026-05-28: Tabla global de empresas en licencias del selector.
+- Modulos afectados: `seleccion_empresas`, `licencias`, `frontend_ux`, `documentacion`.
+- Cambio funcional: en `web/super/licencias.html?scope=mine&con_empresa=1`, el selector superior de empresa ahora sirve para destacar una empresa y operar primero sobre ella; ya no es necesario seleccionar una empresa para ver su vencimiento.
+- UX: se agrega la tarjeta `Todas las empresas y vencimientos`, que lista todas las empresas visibles para el administrador con estado, dias restantes, fecha de vencimiento, valor y acciones. La tabla carga de 10 en 10 empresas con botones Anterior/Siguiente.
+- Acciones: cada fila permite elegir/cambiar/renovar licencia, editar empresa y abrir empresa. La tabla global no se filtra cuando se selecciona una empresa arriba; las tablas de detalle si muestran el historial de la empresa elegida.
+- QA: script inline de `web/super/licencias.html` parseado con Node; `go test ./handlers -run "^$" -count=1` (ok); prueba visual local con Chrome y datos simulados confirmo paginacion 10/23, pagina siguiente, empresa destacada y tabla global sin filtro.
+
+2026-05-28: Selector de licencias filtra prueba de 15 dias ya usada.
+- Modulos afectados: `licencias`, `seleccion_empresas`, `checkout_licencias`, `documentacion`.
+- Cambio funcional: `web/elegir_licencia.html` envia `empresa_id` y `ocultar_prueba_usada=1` al cargar planes. Si la empresa ya uso una activacion gratis/prueba, el backend no devuelve la licencia base de prueba de 15 dias con valor cero y la pagina muestra un aviso claro.
+- Backend: `backend/handlers/payments_handlers.go` reutiliza `HasAnyLicenciaGratisActivationForEmpresa` y agrega `isLicenciaPrueba15DiasCatalogo` para filtrar solo licencias base valor cero de 15 dias, sin ocultar planes pagos ni licencias asignadas.
+- Paginas relacionadas: `web/super/licencias.html` ya redirige las pruebas usadas a `Ver otras licencias`; `web/pagar_licencia.html` mantiene el bloqueo efectivo de activacion sin pago si alguien abre un enlace antiguo.
+- QA: `go test ./handlers -run "TestIsLicenciaPrueba15DiasCatalogo|TestBuildWompiIntegritySignatureUsesOfficialWebCheckoutFormula" -count=1` (ok); `go test ./db ./handlers -run "^$" -count=1` (ok); scripts inline de `web/elegir_licencia.html` parseados con Node; prueba visual local con Chrome y API simulada confirmo que aparecen planes comerciales, no aparece `Licencia de prueba` y se muestra el aviso.
+
 2026-05-28: Robot IA y emisora opt-in por empresa.
 - Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`, `documentacion`.
 - Cambio funcional: `/api/chat_flotante/preferencias?empresa_id=...` devuelve `robot_enabled=false` y `radio_online_enabled=false` cuando la empresa no tiene una preferencia explicita guardada en `empresa_estacion_prefs`. Como el proyecto aun no esta en produccion, el arranque ejecuta una migracion idempotente que crea o actualiza en `0` las preferencias de robot/emisora para todas las empresas activas existentes.

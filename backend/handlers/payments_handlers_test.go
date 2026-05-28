@@ -213,6 +213,23 @@ func TestBuildWompiIntegritySignatureUsesOfficialWebCheckoutFormula(t *testing.T
 	}
 }
 
+func TestIsLicenciaPrueba15DiasCatalogo(t *testing.T) {
+	trial := dbpkg.Licencia{Nombre: "Licencia de prueba 15 dias", Valor: 0, DuracionDias: 15}
+	if !isLicenciaPrueba15DiasCatalogo(trial) {
+		t.Fatal("expected free 15-day trial catalog license to be detected")
+	}
+
+	paid := dbpkg.Licencia{Nombre: "Plan mensual", Valor: 60000, DuracionDias: 15}
+	if isLicenciaPrueba15DiasCatalogo(paid) {
+		t.Fatal("paid 15-day license must remain visible")
+	}
+
+	assigned := dbpkg.Licencia{Nombre: "Licencia de prueba 15 dias", Valor: 0, DuracionDias: 15, EmpresaID: 32}
+	if isLicenciaPrueba15DiasCatalogo(assigned) {
+		t.Fatal("assigned company license must not be treated as catalog trial")
+	}
+}
+
 func TestBuildWompiWebCheckoutFormUsesOfficialFields(t *testing.T) {
 	form := buildWompiWebCheckoutForm(
 		"pub_test_123",

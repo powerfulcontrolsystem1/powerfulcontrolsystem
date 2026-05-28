@@ -24,6 +24,8 @@ Claves guardadas en `configuraciones`:
 ## Comportamiento
 
 - El comprador escribe el codigo en `pagar_licencia.html`.
+- En la licencia gratis de 15 dias, tambien puede escribir el codigo desde
+  `elegir_licencia.html`; ese valor viaja al checkout como `asesor_id`.
 - El resumen publico `/api/public/licencias/checkout_summary` recibe `asesor_id`.
 - Si la promocion esta activa y el asesor existe, esta activo y acepto la invitacion, se aplica el porcentaje configurado.
 - El descuento por asesor se suma al descuento total mostrado, pero se conserva como `advisor_discount_value` y `advisor_discount_percent` para trazabilidad.

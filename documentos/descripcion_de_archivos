@@ -1,3 +1,24 @@
+2026-05-28 - Asesor comercial en prueba de 15 dias
+- `web/elegir_licencia.html`:
+	- agrega campo `Codigo de asesor comercial` solo en tarjetas de licencia gratis de 15 dias.
+	- precarga `asesor_id`/`codigo_asesor` desde la URL cuando exista.
+	- envia el valor normalizado como `asesor_id` a `pagar_licencia.html` para que la activacion sin pago quede asociada al asesor.
+
+2026-05-28 - Licencias del selector con empresas paginadas
+- `web/super/licencias.html`:
+	- agrega tarjeta de empresa seleccionada para operar rapido sobre editar, renovar, cambiar o abrir.
+	- reemplaza el resumen dependiente del filtro por una tabla global `Todas las empresas y vencimientos`, siempre basada en todas las empresas visibles para el administrador.
+	- pagina la tabla global de empresas de 10 en 10 y mantiene acciones por fila.
+
+2026-05-28 - Selector de licencias con prueba usada
+- `backend/handlers/payments_handlers.go`:
+	- `GET /super/api/licencias` acepta `empresa_id` y `ocultar_prueba_usada=1` para retirar la licencia de prueba de 15 dias cuando la empresa ya tuvo una activacion gratis.
+	- agrega deteccion de licencia base de prueba valor cero sin afectar planes pagos ni licencias ya asignadas.
+- `backend/handlers/payments_handlers_test.go`:
+	- prueba la deteccion de licencia de prueba de 15 dias frente a planes pagos y licencias asignadas.
+- `web/elegir_licencia.html`:
+	- envia el contexto de empresa al backend, lee la cabecera `X-PCS-Trial-Used` y muestra un aviso cuando solo quedan planes comerciales.
+
 2026-05-28 - Auditoria global del selector
 - `backend/db/auditoria_super.go`:
 	- esquema y helpers de `super_auditoria_eventos` para movimientos del selector, administradores, licencias, reportes y empresas compartidas.

@@ -168,6 +168,38 @@
     body.elegir-licencia-page .license-sales-card .card-actions{
       margin-top:auto;
     }
+    body.elegir-licencia-page .license-advisor-field{
+      margin-top:2px;
+      padding:9px;
+      border:1px solid color-mix(in srgb,var(--license-card-accent) 22%,var(--border));
+      border-radius:10px;
+      background:color-mix(in srgb,var(--surface) 88%,var(--license-card-accent) 12%);
+    }
+    body.elegir-licencia-page .license-advisor-field label{
+      display:block;
+      margin:0 0 5px;
+      color:var(--text);
+      font-size:.78rem;
+      font-weight:850;
+    }
+    body.elegir-licencia-page .license-advisor-field input{
+      width:100%;
+      min-height:36px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:7px 9px;
+      background:var(--surface);
+      color:var(--text);
+      font-weight:800;
+      text-transform:uppercase;
+    }
+    body.elegir-licencia-page .license-advisor-field small{
+      display:block;
+      margin-top:5px;
+      color:var(--muted);
+      font-size:.72rem;
+      line-height:1.25;
+    }
     body.elegir-licencia-page .license-sales-card .home-offer-btn{
       display:inline-flex;
       align-items:center;
@@ -420,7 +452,15 @@
         }
       }
 
-      function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre, currencyCtx) {
+      function isTrial15License(licencia) {
+        var valor = getLicenciaValor(licencia);
+        var duracion = Number(licencia && (licencia.duracion_dias || licencia.DuracionDias || 0));
+        if (valor > 0 || duracion !== 15) return false;
+        var text = String((licencia && (licencia.nombre || licencia.Nombre || '')) + ' ' + (licencia && (licencia.descripcion || licencia.Descripcion || ''))).toLowerCase();
+        return !text || text.indexOf('prueba') >= 0 || text.indexOf('gratis') >= 0 || text.indexOf('trial') >= 0;
+      }
+
+      function buildLicenciaCard(licencia, idx, empresaId, tipoId, tipoNombre, currencyCtx, initialAsesorID) {
         var valor = getLicenciaValor(licencia);
         var duracion = (licencia.duracion_dias || licencia.DuracionDias || '');
         var icono = normalizeImage(getLicenciaIcon(licencia, tipoNombre));
@@ -429,6 +469,14 @@
         var money = formatMoney(valor, currencyCtx && currencyCtx.currency, currencyCtx && currencyCtx.locale);
         var toneClass = getLicenciaToneClass(licencia, tipoNombre, idx);
         var kicker = getLicenciaKicker(licencia, tipoNombre);
+        var trial15 = isTrial15License(licencia);
+        var advisorField = trial15 ? (
+          '    <div class="license-advisor-field">' +
+          '      <label for="asesor_licencia_' + escapeHtml(String(licencia.id || idx)) + '">Código de asesor comercial</label>' +
+          '      <input id="asesor_licencia_' + escapeHtml(String(licencia.id || idx)) + '" class="js-license-advisor" type="text" placeholder="Ej: AC-123ABC" value="' + escapeHtml(initialAsesorID || '') + '">' +
+          '      <small>Opcional. Si escribes el codigo, la prueba queda registrada con ese asesor al activarla.</small>' +
+          '    </div>'
+        ) : '';
         return '' +
           '<article class="portal-card home-offer-card license-sales-card ' + escapeHtml(toneClass) + '" style="animation-delay:' + (idx * 90) + 'ms">' +
           '  <div class="license-sales-top">' +
@@ -446,6 +494,7 @@
           '      <div class="license-sales-metric"><span>Valor</span><strong>' + escapeHtml(money) + '</strong></div>' +
           '      <div class="license-sales-metric"><span>Duración</span><strong>' + escapeHtml(String(duracion || '--')) + ' días</strong></div>' +
           '    </div>' +
+          advisorField +
           '    <div class="card-actions">' +
           '      <button class="home-offer-btn js-buy-license" type="button" data-licencia="' + escapeHtml(String(licencia.id)) + '" data-empresa-id="' + escapeHtml(String(empresaId || '')) + '" data-tipo-id="' + escapeHtml(String(tipoId || '')) + '" data-tipo-nombre="' + escapeHtml(String(tipoNombre || '')) + '">' + escapeHtml(actionLabel) + '</button>' +
           '    </div>' +
@@ -459,6 +508,7 @@
           const empresaId = params.get('empresa_id');
           let tipoId = params.get('tipo_id');
           let tipoNombre = params.get('tipo_nombre');
+          const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim().toUpperCase();
 
           // auth check
           const meRes = await fetch('/me');
@@ -501,12 +551,21 @@
           licParams.set('activo', '1');
           licParams.set('pais_codigo', paisCodigo);
           if (tipoId) licParams.set('tipo_id', String(tipoId));
+          if (empresaId) {
+            licParams.set('empresa_id', String(empresaId));
+            licParams.set('ocultar_prueba_usada', '1');
+          }
           const licRes = await fetch('/super/api/licencias?' + licParams.toString(), { credentials: 'same-origin' });
           const licencias = licRes.ok ? await licRes.json() : [];
+          const pruebaUsada = licRes && licRes.headers && licRes.headers.get('X-PCS-Trial-Used') === '1';
 
           const titleEl = document.getElementById('pageTitle');
           if (empresaName) titleEl.textContent = 'Elegir licencia para: ' + empresaName;
           else if (tipoNombre) titleEl.textContent = 'Licencias para tipo: ' + decodeURIComponent(tipoNombre);
+          const helpEl = document.getElementById('licenciasHelp');
+          if (helpEl && pruebaUsada) {
+            helpEl.textContent = 'Esta empresa ya uso la prueba gratuita de 15 dias. Solo se muestran planes comerciales disponibles para continuar.';
+          }
 
           // filter by tipo_id or tipo_nombre
           const filtered = (licencias||[]).filter(function(l){
@@ -528,16 +587,20 @@
           }
 
           container.innerHTML = filtered.map(function(l, idx){
-            return buildLicenciaCard(l, idx, empresaId, tipoId, tipoNombre, currencyCtx);
+            return buildLicenciaCard(l, idx, empresaId, tipoId, tipoNombre, currencyCtx, initialAsesorID);
           }).join('');
 
           Array.prototype.forEach.call(container.querySelectorAll('.js-buy-license'), function(btn){
             btn.addEventListener('click', function(){
               const q = new URLSearchParams();
+              const card = btn.closest('.license-sales-card');
+              const asesorInput = card ? card.querySelector('.js-license-advisor') : null;
+              const asesorID = asesorInput ? String(asesorInput.value || '').trim().toUpperCase() : '';
               q.set('licencia_id', String(btn.getAttribute('data-licencia') || ''));
               if (btn.getAttribute('data-empresa-id')) q.set('empresa_id', btn.getAttribute('data-empresa-id'));
               if (btn.getAttribute('data-tipo-id')) q.set('tipo_id', btn.getAttribute('data-tipo-id'));
               if (btn.getAttribute('data-tipo-nombre')) q.set('tipo_nombre', btn.getAttribute('data-tipo-nombre'));
+              if (asesorID) q.set('asesor_id', asesorID);
               window.location.href = '/pagar_licencia.html?' + q.toString();
             });
           });
