@@ -48,7 +48,20 @@
   </div>
 
   <script>
-    let currentAdminScope = { superPanel: false };
+    let currentAdminScope = { superPanel: false, scopedPrincipal: false };
+
+    function isScopedPrincipalMode(){
+      try{
+        const params = new URLSearchParams(window.location.search || '');
+        return String(params.get('scope') || '').trim().toLowerCase() === 'principal';
+      }catch(_err){
+        return false;
+      }
+    }
+
+    function scopedQuery(){
+      return currentAdminScope.scopedPrincipal ? '?scope=principal' : '';
+    }
 
     function normalizeRole(value){
       return String(value || '').trim().toLowerCase();
@@ -61,8 +74,10 @@
         const data = await res.json();
         const role = normalizeRole((data && (data.role || (data.admin && data.admin.role))) || '');
         currentAdminScope.superPanel = role === 'super_administrador' || role === 'control_super_administrador';
+        currentAdminScope.scopedPrincipal = isScopedPrincipalMode();
       }catch(_err){
         currentAdminScope.superPanel = false;
+        currentAdminScope.scopedPrincipal = isScopedPrincipalMode();
       }
       applyAdminScopeUI();
     }
@@ -70,7 +85,7 @@
     function applyAdminScopeUI(){
       const roleSelect = document.getElementById('role');
       if(!roleSelect) return;
-      if(currentAdminScope.superPanel) return;
+      if(currentAdminScope.superPanel && !currentAdminScope.scopedPrincipal) return;
       Array.from(roleSelect.options).forEach(opt=>{
         if(opt.value !== 'administrador') opt.remove();
       });
@@ -88,7 +103,7 @@
 
     async function load(){
       try{
-        const res = await fetch('/super/api/administradores');
+        const res = await fetch('/super/api/administradores' + scopedQuery());
         if(!res.ok) throw new Error('failed to query administradores');
         const data = await res.json();
         const table = document.createElement('table');
@@ -108,7 +123,8 @@
         document.querySelectorAll('.del').forEach(b=>b.onclick = async ()=>{
           if(!confirm('Eliminar administrador?')) return;
           const id = b.getAttribute('data-id');
-          await ensureOK(await fetch('/super/api/administradores?id='+encodeURIComponent(id), { method: 'DELETE' }));
+          const sep = currentAdminScope.scopedPrincipal ? '&' : '?';
+          await ensureOK(await fetch('/super/api/administradores' + scopedQuery() + sep + 'id='+encodeURIComponent(id), { method: 'DELETE' }));
           load();
         });
       }catch(err){ document.getElementById('list').innerText = 'Error cargando administradores: '+(err.message||err); }
@@ -149,7 +165,7 @@
       };
       try{
         if(!payload.Email){ document.getElementById('msg').innerText='Email requerido'; return }
-        const result = await ensureOK(await fetch('/super/api/administradores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        const result = await ensureOK(await fetch('/super/api/administradores' + scopedQuery(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
         const body = await result.json().catch(()=> null);
         resetForm();
         document.getElementById('form').style.display = 'none';

@@ -1,3 +1,15 @@
+2026-05-27: Administradores del selector filtrados y super administradores por invitacion.
+- Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `super_administrador`, `autenticacion_admin`.
+- Cambio funcional: `seleccionar_empresa.html > Administradores` ya no usa la vista global; abre con `scope=principal` y muestra solo administradores invitados por la cuenta autenticada.
+- Backend:
+  - `backend/handlers/auth_admin_handlers.go` resuelve el alcance principal solicitado por query, incluso para cuentas con rol super, y mantiene la vista global solo cuando no hay `scope=principal`.
+  - `AdminRegisterHandler` exige token tambien para invitaciones pendientes sin `usuario_creador`, lo que cubre nuevos `super_administrador`.
+  - `backend/db/db.go` expone `email_confirmado` en `GetAdministradores` para mostrar activos/pendientes correctamente.
+- Frontend:
+  - `web/seleccionar_empresa.html` agrega `?scope=principal`.
+  - `web/super/administradores.html` propaga el scope en GET/POST/DELETE.
+- QA: `go test ./utils ./handlers ./db -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope|AdministradoresEffectivePrincipalScope|ValidatePendingAdminInvitationToken|CanAdminAccessEmpresa|AdminPrincipalDeleg" -count=1`; `git diff --check`.
+
 2026-05-27: Delegacion de portafolio entre administradores registrados.
 - Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `seguridad_multiempresa`, `correo`.
 - Cambio funcional: cuando un administrador principal invita a un correo que ya tiene cuenta confirmada, el sistema activa una delegacion de portafolio para que ese administrador vea sus empresas propias mas las empresas compartidas. Si el correo no existe o no esta confirmado, se conserva la invitacion de registro con token.

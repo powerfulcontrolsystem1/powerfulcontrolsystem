@@ -1,3 +1,11 @@
+## Actualizacion 2026-05-27 (administradores del selector filtrados y super por invitacion)
+
+- `web/seleccionar_empresa.html`: el enlace Administradores usa `/super/administradores.html?scope=principal`.
+- `web/super/administradores.html`: cuando recibe `scope=principal`, llama `/super/api/administradores?scope=principal`, fuerza rol `administrador` en ese contexto y mantiene el panel super global sin ese parametro.
+- `backend/handlers/auth_admin_handlers.go`: `administradoresEffectivePrincipalScope` permite que incluso un rol super vea solo sus invitados cuando el request pide alcance principal; el registro con token aplica tambien para invitaciones super.
+- `backend/db/db.go`: `GetAdministradores` devuelve `email_confirmado` para no marcar como pendiente a cuentas ya confirmadas.
+- Flujo de capas: selector empresa -> scope principal -> API filtrada -> lista vacia si no hay invitados -> panel super sin scope -> administradores globales.
+
 ## Actualizacion 2026-05-27 (delegacion de portafolio entre administradores)
 
 - `backend/db/admin_principal_delegaciones.go`: agrega tabla y helpers para compartir el portafolio de un administrador principal con un administrador registrado sin modificar su cuenta.

@@ -170,8 +170,10 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		isScopedInvitation := existing != nil && strings.TrimSpace(existing.UsuarioCreador) != "" && existing.EmailConfirmado != 1
-		if isScopedInvitation {
+		isPendingAdminInvitation := existing != nil &&
+			existing.EmailConfirmado != 1 &&
+			(strings.TrimSpace(existing.EmailConfirmToken) != "" || strings.TrimSpace(existing.UsuarioCreador) != "")
+		if isPendingAdminInvitation {
 			if status, msg := validatePendingAdminInvitationToken(existing, payload.InvitationToken, time.Now()); status != http.StatusOK {
 				writeAdminAuthError(w, status, msg)
 				return
@@ -216,7 +218,7 @@ func AdminRegisterHandler(dbSuper *sql.DB) http.HandlerFunc {
 		}
 
 		// generar token confirmación
-		if isScopedInvitation {
+		if isPendingAdminInvitation {
 			if _, err := dbpkg.ConfirmAdministradorByToken(dbSuper, payload.InvitationToken); err != nil {
 				log.Println("AdminRegisterHandler confirm invited admin error:", err)
 				writeAdminAuthError(w, http.StatusInternalServerError, "No se pudo activar la cuenta invitada.")
@@ -1263,6 +1265,7 @@ func ListAdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "administradores fuera del alcance del administrador autenticado", http.StatusForbidden)
 			return
 		}
+		principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
 		admins, err := dbpkg.GetAdministradores(dbSuper)
 		if err != nil {
 			http.Error(w, "failed to query administradores", http.StatusInternalServerError)
@@ -1294,6 +1297,29 @@ func adminCanManageScopedAdministradores(requesterAdmin *dbpkg.Admin, principalE
 		requesterEmail != "" &&
 		principalEmail != "" &&
 		requesterEmail == principalEmail
+}
+
+func administradoresRequestUsesPrincipalScope(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	return scope == "principal" || scope == "mis" || scope == "mios" || scope == "invitados"
+}
+
+func administradoresEffectivePrincipalScope(r *http.Request, requesterAdmin *dbpkg.Admin, principalEmail string) string {
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	if principalEmail != "" {
+		return principalEmail
+	}
+	if !administradoresRequestUsesPrincipalScope(r) || requesterAdmin == nil {
+		return ""
+	}
+	requesterEmail := strings.ToLower(strings.TrimSpace(requesterAdmin.Email))
+	if requesterEmail == "" {
+		return ""
+	}
+	return requesterEmail
 }
 
 func filterAdministradoresForPrincipalScope(dbSuper *sql.DB, principalEmail string, admins []dbpkg.Admin) ([]dbpkg.Admin, error) {
@@ -1348,6 +1374,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "administradores fuera del alcance del administrador autenticado", http.StatusForbidden)
 				return
 			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
 			admins, err := dbpkg.GetAdministradores(dbSuper)
 			if err != nil {
 				http.Error(w, "failed to query administradores", http.StatusInternalServerError)
@@ -1375,6 +1402,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "solo el administrador principal puede agregar administradores de su empresa", http.StatusForbidden)
 				return
 			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
 			var payload struct{ Email, Name, Role, Photo string }
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
@@ -1399,7 +1427,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if payload.Role == "" {
 				payload.Role = "administrador"
 			}
-			if !utils.IsSuperPanelRole(requesterAdmin.Role) {
+			if !utils.IsSuperPanelRole(requesterAdmin.Role) || administradoresRequestUsesPrincipalScope(r) {
 				payload.Role = "administrador"
 			}
 			if payload.Role != "administrador" && payload.Role != "super_administrador" && payload.Role != utils.SuperControlRole {
@@ -1518,6 +1546,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "administrador fuera del alcance del administrador autenticado", http.StatusForbidden)
 				return
 			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
 			targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
 			if err != nil {
 				if err == sql.ErrNoRows {
@@ -1594,6 +1623,7 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "solo el administrador principal puede eliminar administradores de su alcance", http.StatusForbidden)
 				return
 			}
+			principalEmail = administradoresEffectivePrincipalScope(r, requesterAdmin, principalEmail)
 			targetAdmin, err := dbpkg.GetAdminByID(dbSuper, id)
 			if err != nil {
 				if err == sql.ErrNoRows {

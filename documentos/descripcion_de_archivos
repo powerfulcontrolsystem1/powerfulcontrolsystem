@@ -1,3 +1,13 @@
+2026-05-27 - Administradores del selector filtrados y super por invitacion
+- `web/seleccionar_empresa.html`:
+	- abre Administradores con `scope=principal` para evitar la lista global del sistema.
+- `web/super/administradores.html`:
+	- propaga `scope=principal` al API y fuerza rol `administrador` cuando viene desde selector.
+- `backend/handlers/auth_admin_handlers.go`:
+	- agrega resolucion de alcance principal por query y valida invitaciones pendientes tambien para rol super.
+- `backend/db/db.go`:
+	- `GetAdministradores` incluye `email_confirmado` para estados correctos en UI.
+
 2026-05-27 - Delegacion de portafolio entre administradores
 - `backend/db/admin_principal_delegaciones.go`:
 	- nuevo archivo con esquema y helpers de `admin_principal_delegaciones`.

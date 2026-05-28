@@ -1,3 +1,8 @@
+2026-05-27: Nota de filtrado de administradores en selector y super por invitacion
+- `seleccionar_empresa.html > Administradores` usa `scope=principal`; debe listar solo administradores invitados por la cuenta autenticada, no la lista global del sistema.
+- La vista global de administradores queda reservada al panel super cuando se accede sin `scope=principal`.
+- Los nuevos roles `super_administrador` se crean por invitacion con token; no deben quedar activos sin aceptar correo y completar registro.
+
 2026-05-27: Nota de delegacion de portafolio entre administradores
 - Un administrador principal puede compartir su portafolio de empresas con un administrador ya confirmado sin cambiar `administradores.usuario_creador` ni la propiedad de empresas.
 - La relacion vive en `admin_principal_delegaciones`; el acceso se evalua en backend junto al acceso directo por creador y al acceso compartido por empresa.

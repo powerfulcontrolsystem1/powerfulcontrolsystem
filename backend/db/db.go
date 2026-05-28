@@ -1145,7 +1145,7 @@ func GetAdminByID(dbConn *sql.DB, id int64) (*Admin, error) {
 // GetAdministradores lista todos los administradores
 func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 	// Intentar consulta que incluya la columna acepta_contrato cuando exista
-	rows, err := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0) FROM administradores ORDER BY id DESC")
+	rows, err := querySQLCompat(dbConn, "SELECT id, email, name, role, photo, COALESCE(usuario_creador, ''), fecha_creacion, fecha_actualizacion, estado, COALESCE(acepta_contrato, 0), COALESCE(email_confirmado, 0) FROM administradores ORDER BY id DESC")
 	if err != nil {
 		// Fallback si la columna no existe en esquemas antiguos
 		if isMissingColumnError(err) {
@@ -1178,7 +1178,8 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 		var photo sql.NullString
 		var usuarioCreador sql.NullString
 		var acepta sql.NullInt64
-		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta); err != nil {
+		var emailConfirmado sql.NullInt64
+		if err := rows.Scan(&a.ID, &a.Email, &a.Name, &a.Role, &photo, &usuarioCreador, &a.FechaCreacion, &a.FechaActualizacion, &a.Estado, &acepta, &emailConfirmado); err != nil {
 			return nil, err
 		}
 		if photo.Valid {
@@ -1192,6 +1193,7 @@ func GetAdministradores(dbConn *sql.DB) ([]Admin, error) {
 		} else {
 			a.AceptaContrato = 0
 		}
+		a.EmailConfirmado = int(emailConfirmado.Int64)
 		out = append(out, a)
 	}
 	return out, nil

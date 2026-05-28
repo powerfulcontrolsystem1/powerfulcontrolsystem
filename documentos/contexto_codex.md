@@ -57,6 +57,10 @@ botones, desde handlers estaticos del backend.
   Si el correo no existe se registra por invitacion con token; si ya existe y
   esta confirmado se usa `admin_principal_delegaciones` para que vea sus empresas
   propias mas las empresas compartidas, sin cambiar `usuario_creador`.
+  Desde `seleccionar_empresa.html` siempre se abre con `scope=principal` y solo
+  debe mostrar invitados del administrador autenticado; sin ese parametro el
+  panel super mantiene la vista global. Los nuevos `super_administrador` tambien
+  se crean por invitacion con token.
 - Licencia gratis: `web/pagar_licencia.html`, `/licencias/activar_sin_pago`.
 - Panel empresarial: `web/administrar_empresa.html`,
   `web/administrar_empresa/panel.html`.

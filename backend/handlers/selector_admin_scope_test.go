@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -48,6 +49,21 @@ func TestFilterAdministradoresForPrincipalScopeExcludesPrincipal(t *testing.T) {
 	}
 	if got[0].Email != "delegado@example.com" {
 		t.Fatalf("expected delegated admin, got %q", got[0].Email)
+	}
+}
+
+func TestAdministradoresEffectivePrincipalScopeForScopedSuperRequest(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/super/api/administradores?scope=principal", nil)
+	admin := &dbpkg.Admin{Email: "principal@example.com", Role: "super_administrador"}
+
+	got := administradoresEffectivePrincipalScope(req, admin, "")
+	if got != "principal@example.com" {
+		t.Fatalf("expected scoped principal email, got %q", got)
+	}
+
+	globalReq := httptest.NewRequest(http.MethodGet, "/super/api/administradores", nil)
+	if got := administradoresEffectivePrincipalScope(globalReq, admin, ""); got != "" {
+		t.Fatalf("expected global super scope to remain empty, got %q", got)
 	}
 }
 

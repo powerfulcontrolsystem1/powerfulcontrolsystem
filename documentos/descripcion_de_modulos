@@ -1,3 +1,9 @@
+2026-05-27: Administradores del selector filtrados y super administradores por invitacion
+- Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `super_administrador`, `autenticacion_admin`.
+- Cambio funcional: el selector abre Administradores en modo `scope=principal`, mostrando solo los invitados por el administrador autenticado.
+- Super administrador: desde el panel super, crear rol `super_administrador` genera invitacion; el registro exige token y conserva rol super para entrar al modulo super.
+- Backend: `GetAdministradores` expone `email_confirmado` para que la UI diferencie activos de pendientes.
+
 2026-05-27: Delegacion de portafolio entre administradores
 - Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `seguridad_multiempresa`, `correo`.
 - Cambio funcional: un administrador confirmado puede recibir el portafolio de otro administrador sin duplicar cuenta ni perder sus empresas propias.

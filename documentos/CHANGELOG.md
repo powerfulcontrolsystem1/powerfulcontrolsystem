@@ -1,3 +1,10 @@
+## [2026-05-27] Administradores del selector filtrados y super administradores por invitacion
+- [Selector] El enlace `Administradores` de `seleccionar_empresa.html` abre `/super/administradores.html?scope=principal`.
+- [Backend] `/super/api/administradores?scope=principal` filtra por el administrador autenticado aunque la cuenta tenga rol super; sin ese parametro el panel super conserva la lista global.
+- [Super administradores] Crear un `super_administrador` tambien genera invitacion y exige token al registrarse; al aceptar conserva rol super y entra al modulo de super administrador.
+- [Datos] `GetAdministradores` ahora devuelve `email_confirmado` para distinguir cuentas activas de invitaciones pendientes.
+- [QA] `go test ./utils ./handlers ./db -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope|AdministradoresEffectivePrincipalScope|ValidatePendingAdminInvitationToken|CanAdminAccessEmpresa|AdminPrincipalDeleg" -count=1`.
+
 ## [2026-05-27] Delegacion de portafolio entre administradores
 - [Flujo] Si el administrador invitado no existe, se conserva el flujo de invitacion por correo y registro con token.
 - [Cuenta existente] Si el correo ya pertenece a un administrador confirmado, no se crea otra cuenta ni se cambia `usuario_creador`; se activa una delegacion de portafolio y el selector muestra sus empresas propias mas las compartidas.

@@ -27,7 +27,8 @@ afecte dinero, documentos, licencias o seguridad.
 ## Administradores delegados
 
 1. El administrador principal entra a `seleccionar_empresa.html` y abre
-   `Administradores`.
+   `Administradores`; ese enlace usa `scope=principal`, por lo que la lista solo
+   muestra administradores invitados por la cuenta autenticada.
 2. Invita administradores con rol forzado `administrador`; el backend guarda
    `administradores.usuario_creador` con el correo del principal y envia correo
    con enlace de invitacion.
@@ -42,6 +43,18 @@ afecte dinero, documentos, licencias o seguridad.
 8. Pruebas: principal invita delegado, correo/enlace funciona, delegado ve
    empresas del principal, no ve empresas de otro principal y no puede compartir
    por URL ni boton.
+
+## Super administradores por invitacion
+
+1. El super administrador entra al panel super y abre `Administradores` sin
+   `scope=principal`.
+2. Invita un correo con rol `super_administrador`.
+3. Backend crea una cuenta pendiente, genera token y envia correo; no queda
+   acceso activo hasta que el invitado complete registro con ese token.
+4. Al aceptar, la cuenta conserva rol `super_administrador` y el login redirige
+   al modulo de super administrador.
+5. Pruebas: invitar super, intentar registro sin token, aceptar con token, login
+   y entrada al panel super.
 
 ## Licencia gratis 15 dias
 
