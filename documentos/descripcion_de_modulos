@@ -1,3 +1,9 @@
+2026-05-28: Email corporativo para todas las empresas existentes
+- Modulos afectados: `email_corporativo`, `administrar_empresa`, `backend_db`, `frontend_ux`.
+- Cambio funcional: al iniciar el backend, si `email_corporativo.auto_create` esta activo, el sistema genera registros de correo corporativo para todas las empresas existentes que no tengan correo asignado.
+- UX: la tarjeta `Bandeja de correo corporativo` muestra diagnosticos de estado del buzon, estado del webmail y dominio, con avisos claros cuando falta provisionar iRedMail o iRedAdmin rechaza credenciales.
+- Alcance: no expone claves iniciales ni contrasenas; el buzon real sigue requiriendo provision correcta de iRedMail/iRedAdmin-Pro para leer mensajes.
+
 2026-05-28: Panel empresarial sin carga automatica de webmail
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
 - Cambio funcional: la tarjeta `Bandeja de correo corporativo` deja de cargar automaticamente `mail/?_task=mail&_mbox=INBOX` dentro de un iframe para evitar errores `401 Unauthorized` en el panel cuando Roundcube/iRedMail no tiene sesion iniciada.

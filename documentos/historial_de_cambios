@@ -1,3 +1,10 @@
+2026-05-28: Generacion de correo corporativo para empresas existentes.
+- Modulos afectados: `email_corporativo`, `administrar_empresa`, `backend_db`, `frontend_ux`.
+- Motivo: en preproduccion se permite crear correo corporativo para todas las empresas existentes, no solo para empresas nuevas.
+- Backend: el arranque llama `EnsureCorporateEmailRowsForExistingCompanies`; si `email_corporativo.auto_create` esta activo, crea filas faltantes en `empresa_email_corporativo` usando dominio y webmail configurados.
+- Frontend: el panel empresarial muestra diagnostico de estado del buzon, webmail y dominio; diferencia correo asignado, buzon pendiente, error de provision iRedAdmin y modulo desactivado.
+- Seguridad: no se muestran claves, tokens ni contrasenas; los buzones reales siguen dependiendo de provision iRedMail/iRedAdmin-Pro valida.
+
 2026-05-28: Panel empresarial evita iframe automatico de webmail.
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
 - Motivo: cargar automaticamente `mail/?_task=mail&_mbox=INBOX` dentro del panel generaba `401 Unauthorized` cuando el webmail no tenia sesion propia activa, confundiendo el estado del panel empresarial.

@@ -51,6 +51,13 @@ type corporateEmailProvisionResult struct {
 	Error  string `json:"error,omitempty"`
 }
 
+type corporateWebmailCheck struct {
+	Checked bool   `json:"checked"`
+	OK      bool   `json:"ok"`
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+}
+
 func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 	cfg := CorporateEmailConfig{
 		Enabled:       false,
@@ -325,6 +332,17 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 	return item, nil
 }
 
+func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuario string) (int, error) {
+	if dbSuper == nil || dbEmp == nil {
+		return 0, nil
+	}
+	cfg := getCorporateEmailConfig(dbSuper)
+	if !cfg.AutoCreate {
+		return 0, nil
+	}
+	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario)
+}
+
 func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
 	if !cfg.Enabled {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_modulo_desactivado", "El modulo global esta desactivado", false)
@@ -405,6 +423,69 @@ func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Value
 		return errors.New(msg)
 	}
 	return nil
+}
+
+func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" || rawURL == "#" {
+		return corporateWebmailCheck{Checked: false, OK: false, Message: "Webmail sin URL configurada"}
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return corporateWebmailCheck{Checked: true, OK: false, Message: "URL de webmail invalida"}
+	}
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, err := http.NewRequest(http.MethodHead, rawURL, nil)
+	if err != nil {
+		return corporateWebmailCheck{Checked: true, OK: false, Message: "No se pudo preparar la verificacion del webmail"}
+	}
+	req.Header.Set("User-Agent", "PowerfulControlSystem-WebmailCheck/1.0")
+	res, err := client.Do(req)
+	if err != nil {
+		return corporateWebmailCheck{Checked: true, OK: false, Message: "No se pudo conectar con el webmail"}
+	}
+	defer res.Body.Close()
+	status := res.StatusCode
+	if status == http.StatusMethodNotAllowed {
+		reqGet, reqErr := http.NewRequest(http.MethodGet, rawURL, nil)
+		if reqErr == nil {
+			reqGet.Header.Set("User-Agent", "PowerfulControlSystem-WebmailCheck/1.0")
+			if resGet, getErr := client.Do(reqGet); getErr == nil {
+				defer resGet.Body.Close()
+				status = resGet.StatusCode
+			}
+		}
+	}
+	switch {
+	case status >= 200 && status < 400:
+		return corporateWebmailCheck{Checked: true, OK: true, Status: status, Message: "Webmail disponible"}
+	case status == http.StatusUnauthorized || status == http.StatusForbidden:
+		return corporateWebmailCheck{Checked: true, OK: false, Status: status, Message: "El webmail responde autenticacion requerida"}
+	default:
+		return corporateWebmailCheck{Checked: true, OK: false, Status: status, Message: fmt.Sprintf("El webmail respondio HTTP %d", status)}
+	}
+}
+
+func corporateEmailResponse(cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool) map[string]interface{} {
+	webmailURL := cfg.WebmailURL
+	if account != nil && strings.TrimSpace(account.WebmailURL) != "" {
+		webmailURL = account.WebmailURL
+	}
+	resp := map[string]interface{}{
+		"ok":          true,
+		"enabled":     cfg.Enabled,
+		"auto_create": cfg.AutoCreate,
+		"account":     account,
+		"webmail":     webmailURL,
+		"domain":      cfg.Domain,
+	}
+	if strings.TrimSpace(message) != "" {
+		resp["message"] = strings.TrimSpace(message)
+	}
+	if checkWebmail {
+		resp["webmail_check"] = checkCorporateWebmail(webmailURL)
+	}
+	return resp
 }
 
 func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
@@ -527,6 +608,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		cfg := getCorporateEmailConfig(dbSuper)
+		checkWebmail := parseConfigBool(r.URL.Query().Get("check_webmail"), false)
 		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -535,15 +617,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
 							account = created
 						} else {
-							writeJSON(w, http.StatusOK, map[string]interface{}{
-								"ok":          true,
-								"enabled":     cfg.Enabled,
-								"auto_create": cfg.AutoCreate,
-								"account":     nil,
-								"webmail":     cfg.WebmailURL,
-								"domain":      cfg.Domain,
-								"message":     "No se pudo generar el email corporativo",
-							})
+							writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, nil, "No se pudo generar el email corporativo", checkWebmail))
 							return
 						}
 					}
@@ -552,26 +626,10 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					if account.WebmailURL == "" {
 						account.WebmailURL = cfg.WebmailURL
 					}
-					writeJSON(w, http.StatusOK, map[string]interface{}{
-						"ok":          true,
-						"enabled":     cfg.Enabled,
-						"auto_create": cfg.AutoCreate,
-						"account":     account,
-						"webmail":     account.WebmailURL,
-						"domain":      cfg.Domain,
-						"message":     "Email corporativo generado",
-					})
+					writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, account, "Email corporativo generado", checkWebmail))
 					return
 				}
-				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":          true,
-					"enabled":     cfg.Enabled,
-					"auto_create": cfg.AutoCreate,
-					"account":     nil,
-					"webmail":     cfg.WebmailURL,
-					"domain":      cfg.Domain,
-					"message":     "Sin email corporativo generado",
-				})
+				writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, nil, "Sin email corporativo generado", checkWebmail))
 				return
 			}
 			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)
@@ -580,13 +638,6 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		if account.WebmailURL == "" {
 			account.WebmailURL = cfg.WebmailURL
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":          true,
-			"enabled":     cfg.Enabled,
-			"auto_create": cfg.AutoCreate,
-			"account":     account,
-			"webmail":     account.WebmailURL,
-			"domain":      cfg.Domain,
-		})
+		writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, account, "", checkWebmail))
 	}
 }

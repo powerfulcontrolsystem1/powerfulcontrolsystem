@@ -645,6 +645,48 @@
       font-size: .84rem;
     }
 
+    .empresa-email-diagnostics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .empresa-email-diagnostic {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .empresa-email-diagnostic span {
+      display: block;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-email-diagnostic strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--text);
+      font-size: .9rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .empresa-email-alert {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--warning, #f59e0b) 45%, var(--border));
+      background: color-mix(in srgb, var(--warning, #f59e0b) 12%, var(--surface) 88%);
+      color: var(--text);
+      font-size: .84rem;
+      line-height: 1.4;
+    }
+
     .empresa-email-head {
       display: flex;
       align-items: flex-start;
@@ -829,6 +871,10 @@
       .empresa-email-actions {
         justify-content: flex-start;
         width: 100%;
+      }
+
+      .empresa-email-diagnostics {
+        grid-template-columns: 1fr;
       }
 
       .empresa-email-embed,
@@ -1347,6 +1393,21 @@
           </a>
         </div>
       </div>
+      <div class="empresa-email-diagnostics" aria-label="Estado del correo corporativo">
+        <div class="empresa-email-diagnostic">
+          <span>Estado del buzon</span>
+          <strong id="empresaEmailProvisionStatus">Consultando...</strong>
+        </div>
+        <div class="empresa-email-diagnostic">
+          <span>Webmail</span>
+          <strong id="empresaEmailWebmailStatus">Consultando...</strong>
+        </div>
+        <div class="empresa-email-diagnostic">
+          <span>Dominio</span>
+          <strong id="empresaEmailDomainStatus">powerfulcontrolsystem.com</strong>
+        </div>
+      </div>
+      <p id="empresaEmailAlert" class="empresa-email-alert" hidden></p>
       <div class="empresa-email-embed">
         <div id="empresaEmailPlaceholder" class="empresa-email-placeholder">
           Abre el buzon en una ventana segura del webmail para iniciar sesion y leer los mensajes de la empresa.
@@ -1378,6 +1439,10 @@
       var empresaEmailFrameEl = document.getElementById("empresaEmailFrame");
       var empresaEmailEmbedEl = document.querySelector(".empresa-email-embed");
       var empresaEmailPlaceholderEl = document.getElementById("empresaEmailPlaceholder");
+      var empresaEmailProvisionStatusEl = document.getElementById("empresaEmailProvisionStatus");
+      var empresaEmailWebmailStatusEl = document.getElementById("empresaEmailWebmailStatus");
+      var empresaEmailDomainStatusEl = document.getElementById("empresaEmailDomainStatus");
+      var empresaEmailAlertEl = document.getElementById("empresaEmailAlert");
       var empresaEmailReloadEl = document.getElementById("empresaEmailReload");
       var weatherGpsBtn = document.getElementById("weatherGpsBtn");
       var weatherManualToggle = document.getElementById("weatherManualToggle");
@@ -1482,6 +1547,43 @@
           empresaEmailFrameEl.hidden = true;
           empresaEmailFrameEl.src = "about:blank";
         }
+      }
+
+      function setEmpresaEmailDiagnostics(provisionText, webmailText, domainText, alertText) {
+        if (empresaEmailProvisionStatusEl) empresaEmailProvisionStatusEl.textContent = provisionText || "Sin consultar";
+        if (empresaEmailWebmailStatusEl) empresaEmailWebmailStatusEl.textContent = webmailText || "Sin consultar";
+        if (empresaEmailDomainStatusEl) empresaEmailDomainStatusEl.textContent = domainText || "Sin dominio";
+        if (empresaEmailAlertEl) {
+          var alert = text(alertText);
+          empresaEmailAlertEl.textContent = alert;
+          empresaEmailAlertEl.hidden = !alert;
+        }
+      }
+
+      function emailProvisionLabel(status) {
+        var raw = text(status).toLowerCase();
+        if (raw === "provisionado") return "Activo";
+        if (raw === "pendiente_provision" || raw === "pendiente" || raw === "pendiente_provision_manual") return "Pendiente";
+        if (raw === "pendiente_modulo_desactivado") return "Modulo desactivado";
+        if (raw === "pendiente_api") return "API pendiente";
+        if (raw === "pendiente_clave" || raw === "pendiente_cifrado") return "Clave pendiente";
+        if (raw.indexOf("error") === 0) return "Error de provision";
+        return raw ? raw.replace(/_/g, " ") : "Sin estado";
+      }
+
+      function emailProvisionAlert(account, enabled, webmailCheck) {
+        if (!enabled) return "El modulo global de email corporativo esta desactivado. Activalo desde Super administrador > Email corporativo.";
+        if (!account || !account.email) return "Esta empresa todavia no tiene correo generado. En preproduccion el sistema lo crea automaticamente al reiniciar o actualizar.";
+        var status = text(account.estado_provision).toLowerCase();
+        if (status === "provisionado") {
+          if (webmailCheck && webmailCheck.ok === false) return webmailCheck.message || "El buzon existe, pero el webmail no esta disponible.";
+          return "";
+        }
+        if (status === "error_login") return "El correo ya fue asignado, pero iRedAdmin rechazo las credenciales de provision. Revisa la configuracion del modulo Email corporativo en super administrador.";
+        if (status === "error_provision") return "El correo ya fue asignado, pero iRedMail rechazo la creacion del buzon. Reintenta la provision desde super administrador.";
+        if (status === "pendiente_api") return "Falta configurar la URL, usuario o clave de iRedAdmin-Pro para crear el buzon real.";
+        if (status === "pendiente_provision_manual" || status === "pendiente_provision" || status === "pendiente") return "El correo ya esta generado y falta provisionar el buzon real en iRedMail.";
+        return "El correo esta generado, pero requiere revision de provision antes de leer mensajes.";
       }
 
       function renderMaintenanceNotice(data) {
@@ -1654,14 +1756,19 @@
 
       function loadEmpresaEmail() {
         if (!empresaEmailPanelEl || !empresaId) return;
-        fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId))
+        fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) + "&check_webmail=1")
           .then(function (data) {
             var account = data && data.account;
             var webmail = account && account.webmail_url ? account.webmail_url : (data && data.webmail ? data.webmail : "");
             var enabled = !!(data && data.enabled);
+            var webmailCheck = data && data.webmail_check ? data.webmail_check : null;
+            var webmailStatus = webmailCheck && webmailCheck.checked
+              ? (webmailCheck.ok ? "Disponible" : (webmailCheck.message || "No disponible"))
+              : (webmail ? "Configurado" : "Sin configurar");
             if (!data || !data.ok) {
               empresaEmailAddressEl.textContent = "Correo corporativo";
               empresaEmailMetaEl.textContent = "No se pudo consultar el estado del buzon. Presiona Actualizar estado para intentar nuevamente.";
+              setEmpresaEmailDiagnostics("Error", "Sin consultar", "", "No se pudo consultar el estado del correo corporativo.");
               setEmpresaEmailLink("", false);
               resetEmpresaEmailEmbed();
               empresaEmailPanelEl.hidden = false;
@@ -1672,6 +1779,7 @@
               empresaEmailMetaEl.textContent = enabled
                 ? "El modulo esta activo, pero esta empresa aun no tiene buzon generado. Actualiza el estado o sincroniza las empresas desde Super administrador > Email corporativo."
                 : "El modulo global de email corporativo esta desactivado. Activalo desde Super administrador > Email corporativo para crear y abrir buzones por empresa.";
+              setEmpresaEmailDiagnostics("Sin correo", webmailStatus, data.domain || "", emailProvisionAlert(null, enabled, webmailCheck));
               setEmpresaEmailLink(webmail, enabled);
               resetEmpresaEmailEmbed();
               empresaEmailPanelEl.hidden = false;
@@ -1685,6 +1793,7 @@
             } else {
               empresaEmailMetaEl.textContent = "Buzon generado, pendiente de provision en iRedMail. Cuando este activo, aqui se vera la bandeja.";
             }
+            setEmpresaEmailDiagnostics(emailProvisionLabel(account.estado_provision), webmailStatus, account.domain || data.domain || "", emailProvisionAlert(account, enabled, webmailCheck));
             setEmpresaEmailLink(webmail, enabled);
             resetEmpresaEmailEmbed();
             empresaEmailPanelEl.hidden = false;
@@ -1692,6 +1801,7 @@
           .catch(function () {
             empresaEmailAddressEl.textContent = "Correo corporativo";
             empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Revisa la conexion o actualiza el estado.";
+            setEmpresaEmailDiagnostics("Error", "Sin consultar", "", "No se pudo cargar la informacion del correo corporativo.");
             setEmpresaEmailLink("", false);
             resetEmpresaEmailEmbed();
             empresaEmailPanelEl.hidden = false;

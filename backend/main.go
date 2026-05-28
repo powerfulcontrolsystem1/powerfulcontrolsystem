@@ -781,6 +781,12 @@ func main() {
 			log.Printf("warning: no se pudo registrar configuracion iRedMail desde entorno: %v", err)
 		}
 		startupTrace("after_empresa_email_corporativo_env")
+		if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudieron generar emails corporativos para empresas existentes: %v", err)
+		} else if created > 0 {
+			log.Printf("INFO: emails corporativos generados para empresas existentes: %d", created)
+		}
+		startupTrace("after_empresa_email_corporativo_existing_companies")
 		if err := dbpkg.DecommissionNextcloudArtifacts(dbEmpresas, dbSuper); err != nil {
 			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
 		}
