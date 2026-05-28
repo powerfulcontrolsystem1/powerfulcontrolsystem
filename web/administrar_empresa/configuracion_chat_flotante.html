@@ -184,8 +184,8 @@
       var resetBtn = document.getElementById('resetChatModeBtn');
       var status = document.getElementById('chatModeStatus');
       var currentChatEnabled = true;
-      var currentRobotEnabled = true;
-      var currentRadioEnabled = true;
+      var currentRobotEnabled = false;
+      var currentRadioEnabled = false;
 
       function parsePositiveInt(raw) {
         var value = Number(String(raw || '').trim());
@@ -429,22 +429,22 @@
       function loadMode() {
         var current = 'normal';
         var currentChat = true;
-        var currentRobot = true;
-        var currentRadio = true;
+        var currentRobot = false;
+        var currentRadio = false;
         var currentVoice = false;
         var currentRobotVoice = 'es-CO';
         try {
           currentChat = readLocalEnabled(CHAT_ENABLED_STORAGE_KEY, true);
-          currentRobot = readLocalEnabled(ROBOT_ENABLED_STORAGE_KEY, true);
-          currentRadio = readLocalEnabled(RADIO_ENABLED_STORAGE_KEY, true);
+          currentRobot = false;
+          currentRadio = false;
           current = normalize(window.localStorage.getItem(STORAGE_KEY) || 'normal');
           currentVoice = window.localStorage.getItem(VOICE_STORAGE_KEY) === '1';
           currentRobotVoice = normalizeRobotVoice(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || 'es-CO');
         } catch (err) {
           current = 'normal';
           currentChat = true;
-          currentRobot = true;
-          currentRadio = true;
+          currentRobot = false;
+          currentRadio = false;
           currentVoice = false;
           currentRobotVoice = 'es-CO';
         }
@@ -485,8 +485,8 @@
 
       function saveMode() {
         var chatOn = setChatEnabled(chatEnabledCheckbox ? chatEnabledCheckbox.checked : true);
-        var robotOn = setRobotEnabled(robotEnabledCheckbox ? robotEnabledCheckbox.checked : true);
-        var radioOn = setRadioEnabled(radioEnabledCheckbox ? radioEnabledCheckbox.checked : true);
+        var robotOn = setRobotEnabled(robotEnabledCheckbox ? robotEnabledCheckbox.checked : false);
+        var radioOn = setRadioEnabled(radioEnabledCheckbox ? radioEnabledCheckbox.checked : false);
         var mode = storeLocalMode(getSelectedMode());
         var voice = setVoiceEnabled(voiceCheckbox && voiceCheckbox.checked);
         var robotVoice = setSelectedRobotVoice(getSelectedRobotVoice());
@@ -527,8 +527,8 @@
 
       function resetMode() {
         setChatEnabled(true);
-        setRobotEnabled(true);
-        setRadioEnabled(true);
+        setRobotEnabled(false);
+        setRadioEnabled(false);
         setSelectedMode('normal');
         saveMode();
       }

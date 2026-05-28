@@ -104,6 +104,13 @@ botones, desde handlers estaticos del backend.
   correo usando SMTP configurado.
 - Analitica publica por pais: `/api/public/portal_visitas`,
   `web/js/portal_visits.js`.
+- Chat/robot/emisora flotante: `web/js/ai_chat_drawer.js`,
+  `web/js/radio_player.js`, `web/js/radio_online.js`,
+  `/api/chat_flotante/preferencias`. En contexto empresarial, robot/secretaria
+  IA 3D y emisora online deben iniciar apagados salvo preferencia explicita por
+  `empresa_id`; no deben prenderse por configuracion global ni por
+  `localStorage` viejo. Mientras el proyecto siga en preproduccion, el arranque
+  puede limpiar preferencias antiguas encendidas para dejar el default en cero.
 
 ## Flujo de login
 
@@ -156,6 +163,9 @@ real vive en backend y en `CanAdminAccessEmpresaIA`.
 
 - Configuracion visual/operativa del carrito:
   `empresa_estacion_prefs.estaciones_config.carrito_ui_global`.
+- Configuracion chat flotante/robot/emisora:
+  claves `chat_flotante.*` en `empresa_estacion_prefs` con `estacion_id=0`.
+  Robot/secretaria y emisora son opt-in por empresa.
 - Overrides por estacion:
   `empresa_estacion_prefs.estaciones_config.estaciones[].carrito.configuracion`.
 - Configuracion de estaciones y nombres singular/plural:

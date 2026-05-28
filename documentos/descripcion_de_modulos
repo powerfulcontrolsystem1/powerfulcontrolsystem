@@ -1,6 +1,13 @@
+2026-05-28: Robot IA y emisora desactivados por defecto
+- Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`.
+- Cambio funcional: en contexto empresarial, el robot/secretaria IA 3D y la emisora flotante quedan apagados si la empresa no tiene una preferencia explicita guardada. Ya no heredan un encendido global ni una preferencia vieja de `localStorage`; por estar en preproduccion, el arranque tambien limpia preferencias antiguas encendidas y las deja en `0`.
+- Configuracion: `Configuracion > Configurar chat y robot` conserva los checks para activar chat, avatares IA 3D y emisora online por empresa. Restablecer el chat cuadrado mantiene robot y emisora apagados.
+- UX: el icono flotante de la emisora en `administrar_empresa.html` inicia oculto y solo aparece cuando `/api/chat_flotante/preferencias?empresa_id=...` responde `radio_online_enabled=true`; el avatar del robot solo aparece cuando `robot_enabled=true` y el modo avatar esta activo.
+- Alcance: no agrega tablas, endpoints ni dependencias; reutiliza `empresa_estacion_prefs` y conserva el chat flotante tradicional con su configuracion independiente.
+
 2026-05-28: Licencias del selector con prueba no renovable
 - Proposito: desde `Seleccionar empresa > Licencias`, el administrador ve todas las licencias de las empresas que puede administrar.
-- Funciones: el historial se organiza en tablas separadas de licencias activas/por vencer y licencias vencidas, mostrando empresa, plan, estado, fecha de inicio, vencimiento, valor, modulos y dias restantes.
+- Funciones: el historial se organiza en tablas separadas de licencias activas/por vencer y licencias vencidas, mostrando empresa, plan, estado, fecha de inicio, vencimiento, valor, modulos y dias restantes. Entre ambas se agrega `Resumen por empresa`, que lista cada empresa visible para el administrador ordenada desde la que menos dias tiene hasta la que mas tiene, con acciones de renovar, cambiar o elegir licencia.
 - Regla comercial: una licencia de prueba de 15 dias con valor cero se detecta como no renovable; el boton dirige a escoger otras licencias en vez de renovar la misma prueba.
 - Backend: `/super/api/licencias?scope=mine&con_empresa=1` filtra por el alcance efectivo del selector, incluyendo empresas propias, delegadas o compartidas, sin exponer licencias de empresas ajenas.
 

@@ -291,6 +291,16 @@ func getChatFlotanteBoolForEmpresa(dbSuper, dbEmp *sql.DB, empresaID int64, key 
 	return parseChatFlotanteBool(raw)
 }
 
+func getChatFlotanteBoolExplicitForEmpresa(dbSuper, dbEmp *sql.DB, empresaID int64, key string, globalFallback bool) bool {
+	if empresaID > 0 {
+		if raw, ok := getChatFlotanteEmpresaPref(dbEmp, empresaID, key); ok {
+			return parseChatFlotanteBool(raw)
+		}
+		return false
+	}
+	return getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, key, globalFallback)
+}
+
 func getChatFlotanteStringForEmpresa(dbSuper, dbEmp *sql.DB, empresaID int64, key, globalFallback string) string {
 	if raw, ok := getChatFlotanteEmpresaPref(dbEmp, empresaID, key); ok {
 		return raw
@@ -319,8 +329,8 @@ func chatFlotantePrefsResponse(dbSuper, dbEmp *sql.DB, empresaID int64) map[stri
 			return "global"
 		}(),
 		"chat_enabled":          getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteChatEnabledKey, true),
-		"robot_enabled":         getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotEnabledKey, true),
-		"radio_online_enabled":  getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, true),
+		"robot_enabled":         getChatFlotanteBoolExplicitForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRobotEnabledKey, false),
+		"radio_online_enabled":  getChatFlotanteBoolExplicitForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteRadioOnlineEnabledKey, false),
 		"radio_country":         radioCountry,
 		"radio_custom_stations": getChatFlotanteRadioCustomStations(dbSuper, dbEmp, empresaID),
 		"voice_enabled":         getChatFlotanteBoolForEmpresa(dbSuper, dbEmp, empresaID, chatFlotanteVoiceEnabledKey, false),

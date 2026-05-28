@@ -43,7 +43,7 @@
     loading: false,
     selectedAttachment: null,
     chatEnabled: true,
-    robotEnabled: true,
+    robotEnabled: false,
     voiceEnabled: false,
     listening: false,
     conversationMode: false,
@@ -61,7 +61,7 @@
     voiceQueueVersion: 0,
     streamingSpeechBuffer: '',
     robotVoice: 'es-CO',
-    radioEnabled: true,
+    radioEnabled: false,
     robotAssistantVisible: false,
     robotMoodTimer: null,
     lastResponseModelMeta: null,
@@ -698,8 +698,8 @@
   function loadVoicePreference(micBtn, voiceBtn, convBtn) {
     try {
       state.chatEnabled = isPublicPortalContext() ? true : readEnabledPreference(CHAT_ENABLED_STORAGE_KEY, true);
-      state.robotEnabled = readEnabledPreference(ROBOT_ENABLED_STORAGE_KEY, true);
-      state.radioEnabled = readEnabledPreference(RADIO_ENABLED_STORAGE_KEY, true);
+      state.robotEnabled = false;
+      state.radioEnabled = false;
       state.voiceEnabled = window.localStorage.getItem(VOICE_COMMAND_STORAGE_KEY) === '1';
       setRobotVoicePreference(window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || state.robotVoice);
     } catch (error) {}

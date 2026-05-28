@@ -1,6 +1,12 @@
+2026-05-28: Robot IA y emisora opt-in por empresa.
+- Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`, `documentacion`.
+- Cambio funcional: `/api/chat_flotante/preferencias?empresa_id=...` devuelve `robot_enabled=false` y `radio_online_enabled=false` cuando la empresa no tiene una preferencia explicita guardada en `empresa_estacion_prefs`. Como el proyecto aun no esta en produccion, el arranque ejecuta una migracion idempotente que pasa a `0` preferencias antiguas de robot/emisora que hubieran quedado encendidas.
+- Frontend: `web/js/ai_chat_drawer.js`, `web/js/radio_player.js`, `web/js/radio_online.js` y `web/administrar_empresa/configuracion_chat_flotante.html` dejan de prender robot/emisora por defecto o por `localStorage` viejo.
+- UX: el icono flotante de emisora en `web/administrar_empresa.html` inicia oculto y solo aparece al activar la emisora de la empresa; robot/secretaria solo aparece con `robot_enabled=true`.
+
 2026-05-28: Historial de licencias por empresa y prueba no renovable.
 - Modulos afectados: `licencias`, `seleccion_empresas`, `seguridad_multiempresa`, `documentacion`.
-- Cambio funcional: `web/super/licencias.html?scope=mine&con_empresa=1` reemplaza las tarjetas por tablas separadas de licencias activas/por vencer y vencidas, con dias restantes, fechas, valor, modulos y acciones por empresa.
+- Cambio funcional: `web/super/licencias.html?scope=mine&con_empresa=1` reemplaza las tarjetas por tablas separadas de licencias activas/por vencer y vencidas, con dias restantes, fechas, valor, modulos y acciones por empresa. Debajo de activas se agrega `Resumen por empresa`, que lista cada empresa visible para el administrador, calcula su licencia vigente o ultima licencia y ordena desde la que menos dias tiene hasta la que mas tiene.
 - Regla comercial: si una licencia es prueba de 15 dias y valor cero, el boton no permite renovar esa misma prueba; muestra `Ver otras licencias` y abre el cambio de plan.
 - Backend: `LicenciasHandler` filtra `scope=mine` por el alcance efectivo de empresas del selector, incluyendo empresas propias, delegadas y compartidas, para no listar licencias fuera del administrador autenticado.
 - QA: `go test ./handlers -run "^$" -count=1` (ok); script inline de `web/super/licencias.html` parseado con Node sin errores; captura visual local con datos simulados en `test_runs/licencias_historial_tabla_trial_no_renovable.png`.

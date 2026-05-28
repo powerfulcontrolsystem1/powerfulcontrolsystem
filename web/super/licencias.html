@@ -898,6 +898,25 @@
         return '/elegir_licencia.html?' + params.toString();
       }
 
+      function getEmpresaIDValue(empresa){
+        return Number((empresa && (empresa.empresa_id || empresa.id)) || 0);
+      }
+
+      function buildCompanyChangeURL(empresa, item){
+        const params = new URLSearchParams();
+        const empresaID = item && item.empresa_id ? Number(item.empresa_id) : getEmpresaIDValue(empresa);
+        if (empresaID > 0) {
+          params.set('empresa_id', String(empresaID));
+          params.set('id', String(empresaID));
+        }
+        const tipoID = item && item.tipo_id ? item.tipo_id : (empresa && empresa.tipo_id);
+        const tipoNombre = item && item.tipo_nombre ? item.tipo_nombre : (empresa && empresa.tipo_nombre);
+        if (tipoID) params.set('tipo_id', tipoID);
+        if (tipoNombre) params.set('tipo_nombre', tipoNombre);
+        if (item && item.id) params.set('current_licencia_id', item.id);
+        return '/elegir_licencia.html?' + params.toString();
+      }
+
       function buildLicenseActions(item, meta){
         const trial = isTrial15FreeLicense(item);
         const actions = [];
@@ -910,6 +929,17 @@
         actions.push('<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(item.empresa_id) + '&empresa_id=' + encodeURIComponent(item.empresa_id) + '">Abrir empresa</a>');
         const note = trial ? '<span class="lic-history-trial-note">La prueba gratis de 15 dias con valor cero no se puede renovar. Elige un plan comercial.</span>' : '';
         return '<div class="lic-history-actions-cell">' + actions.join('') + note + '</div>';
+      }
+
+      function buildCompanyLicenseActions(empresa, item, meta){
+        if (!item) {
+          const empresaID = getEmpresaIDValue(empresa);
+          return '<div class="lic-history-actions-cell">' +
+            '<a class="btn" href="' + buildCompanyChangeURL(empresa, null) + '">Elegir licencia</a>' +
+            (empresaID > 0 ? '<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(empresaID) + '&empresa_id=' + encodeURIComponent(empresaID) + '">Abrir empresa</a>' : '') +
+          '</div>';
+        }
+        return buildLicenseActions(item, meta);
       }
 
       function renderHistorySummary(items){
@@ -928,16 +958,15 @@
       }
 
       function renderHistoryFilters(empresas, licencias){
-        const empresasConHistorial = new Set(licencias.map(function(item){ return String(item.empresa_id || ''); }).filter(Boolean));
         const preferredEmpresaID = historyState.empresaID || currentParams.get('empresa_id') || collectPreferredEmpresaID();
-        historyEmpresaFilter.innerHTML = '<option value="">Todas mis empresas con historial</option>';
+        historyEmpresaFilter.innerHTML = '<option value="">Todas mis empresas</option>';
         empresas
-          .filter(function(item){ return empresasConHistorial.has(String(item.id)); })
           .sort(function(a, b){ return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'); })
           .forEach(function(item){
             const option = document.createElement('option');
-            option.value = item.id;
-            option.textContent = item.nombre || ('Empresa #' + item.id);
+            const empresaID = getEmpresaIDValue(item);
+            option.value = empresaID;
+            option.textContent = item.nombre || ('Empresa #' + empresaID);
             historyEmpresaFilter.appendChild(option);
           });
         if (preferredEmpresaID && Array.from(historyEmpresaFilter.options).some(function(option){ return option.value === String(preferredEmpresaID); })) {
@@ -947,16 +976,20 @@
       }
 
       function renderHistoryList(licencias, empresas){
-        const empresaByID = new Map((Array.isArray(empresas) ? empresas : []).map(function(item){ return [String(item.id), item]; }));
+        const empresaRows = Array.isArray(empresas) ? empresas : [];
+        const empresaByID = new Map(empresaRows.map(function(item){ return [String(getEmpresaIDValue(item)), item]; }));
         const normalized = (Array.isArray(licencias) ? licencias : []).map(function(item){
           const empresa = empresaByID.get(String(item.empresa_id || '')) || null;
           if (!item.empresa_nombre && empresa && empresa.nombre) item.empresa_nombre = empresa.nombre;
           return item;
         });
 
-        renderHistoryFilters(Array.isArray(empresas) ? empresas : [], normalized);
+        renderHistoryFilters(empresaRows, normalized);
 
         const selectedEmpresaID = String(historyEmpresaFilter.value || historyState.empresaID || '');
+        const empresasFiltered = empresaRows.filter(function(item){
+          return !selectedEmpresaID || String(getEmpresaIDValue(item)) === selectedEmpresaID;
+        });
         const filtered = normalized
           .filter(function(item){ return !selectedEmpresaID || String(item.empresa_id || '') === selectedEmpresaID; })
           .sort(function(a, b){
@@ -971,11 +1004,6 @@
           });
 
         renderHistorySummary(filtered);
-
-        if (!filtered.length) {
-          list.innerHTML = '<div class="lic-history-empty">No hay licencias asociadas a tus empresas para mostrar en este alcance.</div>';
-          return;
-        }
 
         const activeRows = [];
         const expiredRows = [];
@@ -1021,8 +1049,77 @@
           '</section>';
         }
 
+        function renderEmpresaResumenSection(empresasVisibles, licenciasVisibles){
+          if (!empresasVisibles.length) {
+            return '<section class="lic-history-table-section">' +
+              '<div class="lic-history-table-title"><h2>Resumen por empresa</h2><span>0 empresas</span></div>' +
+              '<div class="lic-history-empty">No hay empresas visibles para este administrador.</div>' +
+            '</section>';
+          }
+          const licenciasByEmpresa = new Map();
+          licenciasVisibles.forEach(function(item){
+            const key = String(item.empresa_id || '');
+            if (!key) return;
+            if (!licenciasByEmpresa.has(key)) licenciasByEmpresa.set(key, []);
+            licenciasByEmpresa.get(key).push(item);
+          });
+          const rows = empresasVisibles.map(function(empresa){
+            const empresaID = getEmpresaIDValue(empresa);
+            const lics = (licenciasByEmpresa.get(String(empresaID)) || []).slice();
+            const active = lics
+              .map(function(item){ return { item: item, meta: buildStatusMeta(item) }; })
+              .filter(function(row){ return row.meta.daysRemaining === null || row.meta.daysRemaining >= 0; })
+              .sort(function(a, b){
+                const da = a.meta.daysRemaining === null ? Number.MAX_SAFE_INTEGER : a.meta.daysRemaining;
+                const db = b.meta.daysRemaining === null ? Number.MAX_SAFE_INTEGER : b.meta.daysRemaining;
+                return da - db;
+              });
+            const expired = lics
+              .map(function(item){ return { item: item, meta: buildStatusMeta(item) }; })
+              .filter(function(row){ return row.meta.daysRemaining !== null && row.meta.daysRemaining < 0; })
+              .sort(function(a, b){ return b.meta.daysRemaining - a.meta.daysRemaining; });
+            const selected = active[0] || expired[0] || null;
+            const meta = selected ? selected.meta : { tone: 'unknown', label: 'Sin licencia', detail: 'No hay licencia registrada para esta empresa.', daysRemaining: null };
+            return {
+              empresa: empresa,
+              empresaID: empresaID,
+              item: selected ? selected.item : null,
+              meta: meta,
+              sortDays: meta.daysRemaining === null || meta.daysRemaining === undefined ? Number.MAX_SAFE_INTEGER : meta.daysRemaining
+            };
+          }).sort(function(a, b){
+            if (a.sortDays !== b.sortDays) return a.sortDays - b.sortDays;
+            return String(a.empresa.nombre || '').localeCompare(String(b.empresa.nombre || ''), 'es');
+          });
+
+          const body = rows.map(function(row){
+            const item = row.item;
+            const meta = row.meta;
+            const licenciaNombre = item ? (item.nombre || 'Licencia') : 'Sin licencia activa';
+            const tipoNombre = item ? (item.tipo_nombre || 'Tipo no especificado') : (row.empresa.tipo_nombre || 'Tipo no especificado');
+            return '<tr>' +
+              '<td><strong>' + escapeHTML(row.empresa.nombre || ('Empresa #' + row.empresaID)) + '</strong><div class="lic-plan-sub">Empresa #' + escapeHTML(row.empresaID || '') + '</div></td>' +
+              '<td><div class="lic-plan-name">' + escapeHTML(licenciaNombre) + '</div><div class="lic-plan-sub">' + escapeHTML(tipoNombre) + '</div></td>' +
+              '<td><span class="lic-history-badge lic-history-badge--' + meta.tone + '">' + escapeHTML(meta.label) + '</span><div class="lic-plan-sub">' + escapeHTML(meta.detail) + '</div></td>' +
+              '<td><span class="lic-history-days ' + daysRemainingClass(meta) + '">' + escapeHTML(daysRemainingLabel(meta)) + '</span></td>' +
+              '<td>' + escapeHTML(item ? formatDate(item.fecha_fin) : 'Sin fecha') + '</td>' +
+              '<td>' + escapeHTML(item ? formatMoney(item.valor) : '$ 0') + '</td>' +
+              '<td>' + buildCompanyLicenseActions(row.empresa, item, meta) + '</td>' +
+            '</tr>';
+          }).join('');
+
+          return '<section class="lic-history-table-section">' +
+            '<div class="lic-history-table-title"><h2>Resumen por empresa</h2><span>' + rows.length + ' empresa' + (rows.length === 1 ? '' : 's') + '</span></div>' +
+            '<div class="lic-history-table-wrap"><table class="table lic-history-table">' +
+              '<thead><tr><th>Empresa</th><th>Licencia vigente o ultima</th><th>Estado</th><th>Dias restantes</th><th>Vence</th><th>Valor</th><th>Acciones</th></tr></thead>' +
+              '<tbody>' + body + '</tbody>' +
+            '</table></div>' +
+          '</section>';
+        }
+
         list.innerHTML =
           renderTableSection('Licencias activas y por vencer', activeRows, 'No hay licencias activas para el filtro actual.') +
+          renderEmpresaResumenSection(empresasFiltered, filtered) +
           renderTableSection('Licencias vencidas', expiredRows, 'No hay licencias vencidas para el filtro actual.');
       }
 

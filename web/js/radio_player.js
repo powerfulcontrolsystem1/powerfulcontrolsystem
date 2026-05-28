@@ -35,7 +35,7 @@
     stationId: "",
     playing: false,
     volume: 0.7,
-    enabled: true,
+    enabled: false,
     countryCode: "",
     countrySource: "",
     customStations: [],
@@ -112,11 +112,7 @@
         state.volume = Number(parsed.volume || 0.7);
       }
     } catch (_) {}
-    try {
-      state.enabled = window.localStorage.getItem(ENABLED_KEY) !== "0";
-    } catch (_) {
-      state.enabled = true;
-    }
+    state.enabled = false;
   }
 
   function escapeHTML(value) {

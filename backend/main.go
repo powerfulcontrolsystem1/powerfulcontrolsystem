@@ -831,6 +831,10 @@ func main() {
 		log.Fatalf("failed to ensure datafonos schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_datafonos_schema")
+	if err := dbpkg.DisableLegacyFloatingRobotAndRadioPrefs(dbEmpresas); err != nil {
+		log.Fatalf("failed to disable legacy floating robot/radio prefs: %v", err)
+	}
+	startupTrace("after_empresa_chat_robot_radio_defaults")
 	if err := handlers.ApplyDefaultCarritoUIToExistingEmpresaPrefs(dbEmpresas); err != nil {
 		log.Fatalf("failed to apply default cart UI to existing empresas: %v", err)
 	}

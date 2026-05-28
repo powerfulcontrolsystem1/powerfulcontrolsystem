@@ -86,6 +86,30 @@ func EnsureEmpresaEstacionPrefsSchema(dbConn *sql.DB) error {
 	return nil
 }
 
+// DisableLegacyFloatingRobotAndRadioPrefs apaga preferencias antiguas de robot/emisora.
+// El proyecto aun esta en preproduccion: estos iconos deben quedar opt-in por empresa.
+func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	if err := EnsureEmpresaEstacionPrefsSchema(dbConn); err != nil {
+		return err
+	}
+	return ApplySchemaMigration(dbConn, "empresas", "20260528_robot_radio_flotante_off_default", "Apaga robot IA y emisora flotante en preferencias antiguas de empresa", func(tx *sql.DB) error {
+		_, err := execSQLCompat(tx, `
+			UPDATE empresa_estacion_prefs
+			SET valor = '0',
+			    fecha_actualizacion = CURRENT_TIMESTAMP,
+			    observaciones = '[preproduccion_2026-05-28] robot IA y emisora flotante apagados por defecto; activar explicitamente por empresa'
+			WHERE estacion_id = 0
+			  AND clave IN ('chat_flotante.robot_enabled', 'chat_flotante.radio_online_enabled')
+			  AND LOWER(COALESCE(NULLIF(TRIM(estado), ''), 'activo')) = 'activo'
+			  AND COALESCE(NULLIF(TRIM(valor), ''), '0') NOT IN ('0', 'false', 'FALSE')
+		`)
+		return err
+	})
+}
+
 // ListEmpresaEstacionPrefs lista preferencias por empresa y opcionalmente por estacion.
 func ListEmpresaEstacionPrefs(dbConn *sql.DB, empresaID int64, estacionID int64, includeInactive bool) ([]EmpresaEstacionPref, error) {
 	if dbConn == nil {

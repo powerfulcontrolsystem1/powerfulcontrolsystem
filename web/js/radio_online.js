@@ -18,7 +18,7 @@
   if (!container || !catalog) return;
 
   var state = {
-    enabled: true,
+    enabled: false,
     countryCode: "",
     customStations: []
   };
@@ -197,11 +197,7 @@
   }
 
   function load() {
-    try {
-      state.enabled = window.localStorage.getItem(ENABLED_KEY) !== "0";
-    } catch (_) {
-      state.enabled = true;
-    }
+    state.enabled = false;
     render();
     fetch(prefsEndpoint(), { credentials: "same-origin" })
       .then(function (res) {
