@@ -86,7 +86,7 @@ func EnsureEmpresaEstacionPrefsSchema(dbConn *sql.DB) error {
 	return nil
 }
 
-// DisableLegacyFloatingRobotAndRadioPrefs apaga preferencias antiguas de robot/emisora.
+// DisableLegacyFloatingRobotAndRadioPrefs apaga robot/emisora en todas las empresas existentes.
 // El proyecto aun esta en preproduccion: estos iconos deben quedar opt-in por empresa.
 func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
 	if dbConn == nil {
@@ -97,14 +97,30 @@ func DisableLegacyFloatingRobotAndRadioPrefs(dbConn *sql.DB) error {
 	}
 	return ApplySchemaMigration(dbConn, "empresas", "20260528_robot_radio_flotante_off_default", "Apaga robot IA y emisora flotante en preferencias antiguas de empresa", func(tx *sql.DB) error {
 		_, err := execSQLCompat(tx, `
-			UPDATE empresa_estacion_prefs
-			SET valor = '0',
-			    fecha_actualizacion = CURRENT_TIMESTAMP,
-			    observaciones = '[preproduccion_2026-05-28] robot IA y emisora flotante apagados por defecto; activar explicitamente por empresa'
-			WHERE estacion_id = 0
-			  AND clave IN ('chat_flotante.robot_enabled', 'chat_flotante.radio_online_enabled')
-			  AND LOWER(COALESCE(NULLIF(TRIM(estado), ''), 'activo')) = 'activo'
-			  AND COALESCE(NULLIF(TRIM(valor), ''), '0') NOT IN ('0', 'false', 'FALSE')
+			INSERT INTO empresa_estacion_prefs (
+				empresa_id, estacion_id, clave, valor, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
+			)
+			SELECT COALESCE(NULLIF(e.empresa_id, 0), e.id),
+			       0,
+			       pref.clave,
+			       '0',
+			       CURRENT_TIMESTAMP,
+			       CURRENT_TIMESTAMP,
+			       'sistema.preproduccion',
+			       'activo',
+			       '[preproduccion_2026-05-28] robot IA y emisora flotante apagados por defecto; activar explicitamente por empresa'
+			FROM empresas e
+			CROSS JOIN (
+				VALUES ('chat_flotante.robot_enabled'), ('chat_flotante.radio_online_enabled')
+			) AS pref(clave)
+			WHERE COALESCE(NULLIF(e.empresa_id, 0), e.id) > 0
+			  AND LOWER(COALESCE(NULLIF(TRIM(e.estado), ''), 'activo')) NOT IN ('inactivo', 'eliminado')
+			ON CONFLICT(empresa_id, estacion_id, clave) DO UPDATE SET
+				valor = '0',
+				fecha_actualizacion = CURRENT_TIMESTAMP,
+				usuario_creador = 'sistema.preproduccion',
+				estado = 'activo',
+				observaciones = '[preproduccion_2026-05-28] robot IA y emisora flotante apagados por defecto; activar explicitamente por empresa'
 		`)
 		return err
 	})

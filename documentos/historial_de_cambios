@@ -1,6 +1,6 @@
 2026-05-28: Robot IA y emisora opt-in por empresa.
 - Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`, `documentacion`.
-- Cambio funcional: `/api/chat_flotante/preferencias?empresa_id=...` devuelve `robot_enabled=false` y `radio_online_enabled=false` cuando la empresa no tiene una preferencia explicita guardada en `empresa_estacion_prefs`. Como el proyecto aun no esta en produccion, el arranque ejecuta una migracion idempotente que pasa a `0` preferencias antiguas de robot/emisora que hubieran quedado encendidas.
+- Cambio funcional: `/api/chat_flotante/preferencias?empresa_id=...` devuelve `robot_enabled=false` y `radio_online_enabled=false` cuando la empresa no tiene una preferencia explicita guardada en `empresa_estacion_prefs`. Como el proyecto aun no esta en produccion, el arranque ejecuta una migracion idempotente que crea o actualiza en `0` las preferencias de robot/emisora para todas las empresas activas existentes.
 - Frontend: `web/js/ai_chat_drawer.js`, `web/js/radio_player.js`, `web/js/radio_online.js` y `web/administrar_empresa/configuracion_chat_flotante.html` dejan de prender robot/emisora por defecto o por `localStorage` viejo.
 - UX: el icono flotante de emisora en `web/administrar_empresa.html` inicia oculto y solo aparece al activar la emisora de la empresa; robot/secretaria solo aparece con `robot_enabled=true`.
 
