@@ -1,3 +1,8 @@
+2026-05-28: Panel empresarial sin carga automatica de webmail
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
+- Cambio funcional: la tarjeta `Bandeja de correo corporativo` deja de cargar automaticamente `mail/?_task=mail&_mbox=INBOX` dentro de un iframe para evitar errores `401 Unauthorized` en el panel cuando Roundcube/iRedMail no tiene sesion iniciada.
+- UX: el panel conserva el estado del buzon y el boton `Abrir buzón`; el webmail se abre en su propia ventana segura para iniciar sesion y leer mensajes sin mezclar contrasenas o sesiones dentro del panel empresarial.
+
 2026-05-28: Bandeja de correo visible en panel empresarial
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`, `backend_db`.
 - Cambio funcional: `web/administrar_empresa/panel.html` ya no oculta por completo la tarjeta de correo cuando el modulo esta desactivado, falta el buzon o falla la consulta; ahora muestra el estado operativo debajo de Favoritos.
