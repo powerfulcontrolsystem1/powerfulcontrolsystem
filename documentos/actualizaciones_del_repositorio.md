@@ -11281,3 +11281,12 @@ Archivos modificados:
 - tmp_email_panel_after_fix.png
 - tmp_email_panel_logged.png
 - tmp_login_probe.png
+
+2026-05-28 18:38:39 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 49f16dbe; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- web/super/email_corporativo.html
