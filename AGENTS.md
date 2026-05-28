@@ -53,6 +53,9 @@ Antes de iniciar cambios funcionales relevantes:
 - `documentos/decisiones_tecnicas.md` para confirmar reglas tecnicas permanentes
   antes de proponer arquitectura, dependencias, persistencia o documentos
   imprimibles.
+- `documentos/checklist_seguridad_endpoint_multiempresa.md` antes de crear,
+  cambiar o revisar cualquier endpoint empresarial, consulta multiempresa,
+  permiso, licencia, backup, importacion, exportacion o borrado de datos.
 - `documentos/descripcion_del_proyecto`
 - `documentos/diagramas/estructura_del_codigo.md` si cambia arquitectura, flujo,
   rutas, integraciones o estructura.
@@ -97,9 +100,11 @@ Modulos criticos con cierre conjunto obligatorio:
 1. Clasificar modulo, capas afectadas, permisos, datos, frontend y runtime.
 2. Revisar documentacion obligatoria antes de editar.
 3. Implementar con cambios acotados y consistentes con patrones existentes.
-4. Validar con pruebas enfocadas y, si aplica, verificacion visual o runtime.
-5. Actualizar documentacion, diagramas, roles, BD y trazabilidad.
-6. Cerrar con resumen integrado: que cambio, archivos clave, pruebas y riesgos.
+4. Aplicar `documentos/checklist_seguridad_endpoint_multiempresa.md` si hay
+   endpoint, consulta, permiso, licencia o dato de empresa involucrado.
+5. Validar con pruebas enfocadas y, si aplica, verificacion visual o runtime.
+6. Actualizar documentacion, diagramas, roles, BD y trazabilidad.
+7. Cerrar con resumen integrado: que cambio, archivos clave, pruebas y riesgos.
 
 ## Evidencia minima de cierre
 

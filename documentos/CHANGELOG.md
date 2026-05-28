@@ -1,3 +1,9 @@
+## [2026-05-27] Checklist seguridad endpoint multiempresa
+- [Documentacion] Se agrega `documentos/checklist_seguridad_endpoint_multiempresa.md` como requisito operativo para endpoints, consultas y acciones empresariales.
+- [Seguridad] La checklist exige validar sesion, `empresa_id`, IDs secundarios, permisos, licencias, SQL aislado, entrada, auditoria, errores saneados y operaciones destructivas.
+- [QA] Incluye pruebas minimas negativas: alterar `empresa_id`, usar IDs de otra empresa, rol insuficiente, empresa sin licencia y doble clic/concurrencia.
+- [Integracion] `AGENTS.md`, `contexto_codex.md`, `decisiones_tecnicas.md` y `matriz_roles_permisos_pos_multiempresa.md` quedan enlazados a la checklist.
+
 ## [2026-05-27] Contexto operativo Codex
 - [Documentacion] Se agregan `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/comandos_codex.md` y `documentos/decisiones_tecnicas.md`.
 - [AGENTS] La guia principal ahora exige revisar primero estos archivos para tener contexto de arranque, ubicacion de modulos, flujos, comandos y decisiones tecnicas permanentes.

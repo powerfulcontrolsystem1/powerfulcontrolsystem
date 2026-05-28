@@ -27,6 +27,8 @@ trazabilidad en `documentos/historial_de_cambios`.
 ## Multiempresa y seguridad
 
 - Todo dato operativo debe aislarse por `empresa_id`.
+- Todo endpoint o consulta multiempresa debe pasar por
+  `documentos/checklist_seguridad_endpoint_multiempresa.md` antes de cerrarse.
 - El backend debe validar `empresa_id` y permisos efectivos. No confiar solo en
   parametros de URL, cache, localStorage o controles del frontend.
 - Toda consulta o mutacion multiempresa debe filtrar por `empresa_id` cuando la
@@ -92,4 +94,3 @@ trazabilidad en `documentos/historial_de_cambios`.
 - El proyecto aun no esta en produccion. No es obligatorio conservar rutas
   antiguas o paginas duplicadas si el usuario pide unificar o limpiar, salvo que
   exista una razon tecnica concreta para mantenerlas.
-

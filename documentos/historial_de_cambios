@@ -1,3 +1,10 @@
+2026-05-27: Checklist obligatoria de seguridad por endpoint multiempresa.
+- Modulos afectados: `documentacion`, `seguridad`, `permisos`, `backend_db`, `qa_operacion`.
+- Cambio funcional: se agrega `documentos/checklist_seguridad_endpoint_multiempresa.md` como checklist obligatoria antes de crear, modificar o revisar endpoints empresariales, consultas multiempresa, permisos, licencias, backups, importaciones, exportaciones o borrados.
+- Contenido: valida sesion, `empresa_id`, IDs secundarios, wrappers de permisos, licencias, SQL con aislamiento, entrada, errores saneados, auditoria, operaciones masivas y pruebas negativas de cruce entre empresas.
+- Integracion documental: `AGENTS.md`, `contexto_codex.md`, `decisiones_tecnicas.md` y `matriz_roles_permisos_pos_multiempresa.md` ahora referencian la checklist.
+- QA: validacion documental con `git diff --check`.
+
 2026-05-27: Contexto operativo permanente para Codex.
 - Modulos afectados: `documentacion`, `agentes`, `qa_operacion`.
 - Cambio funcional: se crea una memoria documental de arranque para Codex con contexto del proyecto, mapa de modulos, flujos operativos, comandos reales y decisiones tecnicas permanentes.

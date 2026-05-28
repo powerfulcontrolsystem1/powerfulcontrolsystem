@@ -163,9 +163,10 @@ Antes de ejecutar scripts operativos revisar `documentos/comandos_codex.md`.
 
 - Validar `empresa_id` en backend y en consultas SQL.
 - No permitir que una empresa lea, edite o borre datos de otra.
+- Antes de crear, modificar o revisar endpoints empresariales, aplicar
+  `documentos/checklist_seguridad_endpoint_multiempresa.md`.
 - No imprimir secretos ni credenciales.
 - Mantener auditoria en operaciones criticas: caja, pagos, facturacion,
   licencias, usuarios, backups, conectividad y cambios de configuracion.
 - En tareas de limpieza, backup o reinicio de datos, conservar configuracion,
   usuarios, permisos e integraciones salvo instruccion explicita.
-

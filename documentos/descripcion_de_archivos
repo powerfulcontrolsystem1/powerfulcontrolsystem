@@ -1,3 +1,8 @@
+2026-05-27 - Checklist de seguridad por endpoint multiempresa
+- `documentos/checklist_seguridad_endpoint_multiempresa.md`:
+	- checklist obligatoria para crear, modificar o revisar endpoints empresariales.
+	- cubre autenticacion, resolucion segura de `empresa_id`, permisos, licencias, SQL aislado, validacion de entrada, auditoria, errores saneados, operaciones masivas y pruebas negativas contra cruce de empresas.
+
 2026-05-27 - Contexto operativo Codex
 - `documentos/contexto_codex.md`:
 	- guia rapida obligatoria para que Codex entienda arranque, estructura, rutas principales, endpoints, flujos de login/empresa/carrito/caja/facturacion, configuraciones, scripts y datos de prueba permitidos.

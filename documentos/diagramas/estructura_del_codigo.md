@@ -1,3 +1,12 @@
+## Actualizacion 2026-05-27 (checklist seguridad endpoint multiempresa)
+
+- `documentos/checklist_seguridad_endpoint_multiempresa.md`: nueva checklist obligatoria para endpoints y consultas empresariales.
+- `AGENTS.md`: exige aplicar la checklist antes de cerrar cambios con endpoints, consultas, permisos, licencias o datos de empresa.
+- `documentos/contexto_codex.md`: referencia la checklist dentro de seguridad base.
+- `documentos/decisiones_tecnicas.md`: convierte la checklist en decision permanente de seguridad multiempresa.
+- `documentos/matriz_roles_permisos_pos_multiempresa.md`: agrega nota para recordar que ocultar botones no sustituye validacion backend.
+- Flujo de revision: endpoint empresarial -> checklist -> wrapper/permisos -> SQL aislado por `empresa_id` -> pruebas negativas -> evidencia de cierre.
+
 ## Actualizacion 2026-05-27 (contexto operativo Codex)
 
 - `AGENTS.md`: agrega una ruta rapida de lectura obligatoria para contexto Codex.

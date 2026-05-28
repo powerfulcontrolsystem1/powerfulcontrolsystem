@@ -1,3 +1,8 @@
+2026-05-27: Nota obligatoria de seguridad por endpoint multiempresa
+- Antes de crear, modificar o revisar endpoints empresariales se debe aplicar `documentos/checklist_seguridad_endpoint_multiempresa.md`.
+- La checklist exige validar sesion, `empresa_id`, permisos, licencia, SQL con aislamiento, IDs secundarios, auditoria, errores saneados y pruebas negativas de intento de cruce entre empresas.
+- Ocultar botones o paginas en frontend no reemplaza la validacion backend ni el wrapper de permisos correspondiente.
+
 2026-05-27: Nota de informacion editable de modulos del index
 - `web/super/informacion_de_modulos.html` queda disponible solo dentro del panel de Super Administrador.
 - `/super/api/informacion_de_modulos` exige sesion y rol `super_administrador` mediante la misma validacion usada por pagina principal.
