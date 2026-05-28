@@ -22,6 +22,41 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-28 (auditoria global del selector)
+- Nueva tabla en `pcs_superadministrador`: `super_auditoria_eventos`.
+- Proposito: registrar movimientos del selector de empresas, modulos globales y
+  la auditoria especial del panel super administrador: empresas,
+  administradores, empresas compartidas, licencias, reportes globales, tipos de
+  empresa, descargas, configuracion sensible super e interacciones visuales
+  relevantes.
+- Campos principales: `empresa_id`, `principal_email`, `modulo`, `accion`,
+  `recurso`, `recurso_id`, metodo HTTP, endpoint, resultado, codigo HTTP,
+  request id, IP, user agent, metadata saneada, retencion, usuario y fechas.
+- Indices: fecha, principal, empresa, modulo/accion, usuario, request id y
+  resultado HTTP.
+- Alcance: un administrador normal consulta solo su `principal_email`; el super
+  administrador conserva vista global y el alcance `scope=super_panel` queda
+  reservado a roles super. No guarda contrasenas, tokens ni secretos.
+
+Actualizacion 2026-05-28 (energia solar por empresa)
+- Nuevas tablas en `pcs_empresas`: `empresa_energia_solar_sistemas`,
+  `empresa_energia_solar_alertas`, `empresa_energia_solar_lecturas` y
+  `empresa_energia_solar_eventos`.
+- `empresa_energia_solar_sistemas`: guarda `empresa_id`, proveedor
+  (`victron_vrm`, `sma_sunny_portal`, `solaredge_monitoring`, `gateway_local`),
+  modelo, ubicacion, capacidad solar, marca/modelo/serial de bateria,
+  protocolo BMS, capacidad kWh, referencia segura de API `env:*`, gateway local,
+  intervalo, correos de alerta y activacion.
+- `empresa_energia_solar_alertas`: umbrales por sistema para SOC, SOH, carga,
+  paneles, temperatura, celdas, inversor y BMS, con envio de correo opcional.
+- `empresa_energia_solar_lecturas`: telemetria historica de potencia solar,
+  produccion, consumo, SOC, SOH, voltaje, corriente, carga, descarga, ciclos,
+  celdas, temperatura y estados de paneles/bateria/inversor.
+- `empresa_energia_solar_eventos`: alertas disparadas, severidad, mensaje,
+  resultado de correo y trazabilidad por usuario.
+- Indices: busqueda por `empresa_id`, sistema, estado y fecha. Todas las
+  consultas filtran por `empresa_id` y no comparten datos entre empresas.
+
 Actualizacion 2026-05-27 (delegacion de portafolio entre administradores)
 - `pcs_superadministrador.admin_principal_delegaciones`: nueva tabla para relacionar `admin_email` con `principal_email` sin cambiar la propiedad de la cuenta ni de las empresas.
 - Campos principales: `admin_email`, `principal_email`, `invitado_por_email`, `token_hash`, `expira_en`, `fecha_aceptada`, `fecha_revocada`, `estado`.

@@ -54,7 +54,10 @@
     var normalized = normalizeHref(href);
     if (!normalized) return false;
     var path = normalized.split("?")[0].toLowerCase();
-    return path === "/editar_empresa.html" || path === "/editar_empresa.htm";
+    return path === "/editar_empresa.html" ||
+      path === "/editar_empresa.htm" ||
+      path === "/descargar_informacion_de_la_empresa.html" ||
+      path === "/descargar_informacion_de_la_empresa.htm";
   }
 
   function escapeHtml(value) {
@@ -224,6 +227,31 @@
     } catch (e) {}
   }
 
+  function recordSelectorAuditEvent(action, metadata) {
+    try {
+      var body = Object.assign({
+        accion: action,
+        modulo: "selector_empresa_ui",
+        recurso: "seleccionar_empresa",
+        endpoint: window.location.pathname,
+        metadata: Object.assign({
+          path: window.location.pathname,
+          view: (metadata && metadata.view) || ""
+        }, metadata || {})
+      }, {});
+      var empresaId = Number((metadata && metadata.empresa_id) || 0);
+      if (Number.isFinite(empresaId) && empresaId > 0) {
+        body.empresa_id = Math.trunc(empresaId);
+      }
+      fetch("/super/api/auditoria?action=ui_event&scope=principal", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
   function clearEmpresaContextIfMatches(empresaID) {
     var id = String(Math.trunc(Number(empresaID || 0)));
     if (!id || id === "0") return;
@@ -362,11 +390,13 @@
     var linkLicencias = document.getElementById("linkLicencias");
     var linkMisClientes = document.getElementById("linkMisClientes");
     var linkAdministradores = document.getElementById("linkAdministradores");
+    var linkAuditoriaGlobal = document.getElementById("linkAuditoriaGlobal");
     var linkReportes = document.getElementById("linkReportesGlobales");
     var principalSuper = isPrincipalSuperAccount(account);
     setElementVisible(linkLicencias, canManageScopedLicencias(account));
     setElementVisible(linkMisClientes, false);
     setElementVisible(linkAdministradores, canManageScopedAdministradores(account));
+    setElementVisible(linkAuditoriaGlobal, canManageScopedAdministradores(account) || principalSuper);
     setElementVisible(linkReportes, principalSuper);
   }
 
@@ -429,6 +459,7 @@
     contentFrame.setAttribute("src", normalized);
     persistView({ mode: "frame", href: normalized });
     setActiveNav(link);
+    recordSelectorAuditEvent("abrir_panel_lateral", { href: normalized, link_id: link && link.id ? link.id : "", view: "frame" });
   }
 
   function normalizeCompanyTypeName(value) {
@@ -751,6 +782,13 @@
 
   function navigateToEmpresa(empresa, hasLicense) {
     persistEmpresaContext(empresa.id);
+    recordSelectorAuditEvent(hasLicense ? "abrir_empresa" : "abrir_licencias_empresa", {
+      empresa_id: Number(empresa && empresa.id ? empresa.id : 0),
+      empresa_nombre: empresa && empresa.nombre ? empresa.nombre : "",
+      access_source: empresa && empresa.access_source ? empresa.access_source : "",
+      licencia_activa: !!hasLicense,
+      view: "empresa_card"
+    });
     if (hasLicense) {
       var adminURL =
         "/administrar_empresa.html?id=" + encodeURIComponent(empresa.id) +
@@ -1731,6 +1769,7 @@
     var linkAgregar = document.getElementById("linkAgregarEmpresa");
     var linkLicencias = document.getElementById("linkLicencias");
     var linkAdministradores = document.getElementById("linkAdministradores");
+    var linkAuditoriaGlobal = document.getElementById("linkAuditoriaGlobal");
     var linkReportes = document.getElementById("linkReportesGlobales");
 
     if (linkAgregar) {
@@ -1741,7 +1780,7 @@
       });
     }
 
-    [linkLicencias, linkAdministradores, linkReportes].forEach(function (link) {
+    [linkLicencias, linkAdministradores, linkAuditoriaGlobal, linkReportes].forEach(function (link) {
       if (!link) return;
       link.addEventListener("click", function (ev) {
         ev.preventDefault();
@@ -1819,6 +1858,18 @@
       } catch (e) {}
     });
 
+    window.addEventListener("message", function (ev) {
+      if (ev.origin !== window.location.origin) {
+        return;
+      }
+      var data = ev.data || {};
+      if (!data || data.type !== "pcs:selector-show-empresas") {
+        return;
+      }
+      showEmpresasPanel();
+      setActiveNav(document.getElementById("linkAgregarEmpresa"));
+    });
+
     var form = document.getElementById("form");
     if (!form) return;
 
@@ -1867,6 +1918,15 @@
         }
         hideForm();
         await handleEmpresaPreconfigDecision(createData);
+        if (createData && createData.id) {
+          recordSelectorAuditEvent("empresa_creada_desde_selector", {
+            empresa_id: Number(createData.id || 0),
+            empresa_nombre: payload.nombre,
+            tipo_nombre: payload.tipo_nombre,
+            preconfiguracion_aplicada: !!createData.preconfiguracion_aplicada,
+            view: "form_agregar_empresa"
+          });
+        }
         await render();
       } catch (err) {
         document.getElementById("msg").innerText = err.message;
@@ -1986,8 +2046,9 @@
       params.set('empresa_id', String(id));
       params.set('id', String(id));
       if (name) params.set('empresa_nombre', name);
+      params.set('embedded', '1');
       persistEmpresaContext(id);
-      window.location.href = '/descargar_informacion_de_la_empresa.html?' + params.toString();
+      openInRightFrame('/descargar_informacion_de_la_empresa.html?' + params.toString(), null);
       return;
     }
 

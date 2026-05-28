@@ -202,6 +202,7 @@ try {
     document.getElementById("linkHojaVidaOperativa"),
     document.getElementById("linkAuditoria"),
     document.getElementById("linkCalidadProcesos"),
+    document.getElementById("linkEnergiaSolar"),
     document.getElementById("linkChatTareas"),
     document.getElementById("linkClientes"),
     document.getElementById("linkCRMComercial"),
@@ -302,6 +303,7 @@ try {
   var permModuleNominaSueldos = "nomina_sueldos";
   var permModuleReportes = "reportes";
   var permModuleAuditoria = "auditoria";
+  var permModuleEnergiaSolar = "energia_solar";
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
   var menuPermissionCatalog = {
@@ -433,6 +435,7 @@ try {
 
     linkAuditoria: { module: permModuleAuditoria, action: permActionRead },
     linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
+    linkEnergiaSolar: { module: permModuleEnergiaSolar, action: permActionCreate },
     linkBackups: { module: permModuleBackups, action: permActionApprove },
 
     linkDocumentosOnlyOffice: { module: permModuleDocumentosOnlyOffice, action: permActionRead },
@@ -1046,6 +1049,7 @@ try {
       case permModuleCumplimientoKYC:
       case permModuleContratosObligaciones:
       case permModuleCalidadProcesos:
+      case permModuleEnergiaSolar:
       case permModuleAuditoria:
       case permModuleBackups:
       case permModuleDocumentosOnlyOffice:

@@ -1,3 +1,14 @@
+2026-05-28: Nota de auditoria especial super administrador
+- `super_administrador.html > Acceso > Auditoria super` queda reservado para roles super y consulta `/super/api/auditoria?scope=super_panel`.
+- El backend rechaza `scope=super_panel` para administradores que no sean roles de super panel, aunque intenten modificar la URL o llamar la API manualmente.
+- Las APIs sensibles de configuracion super quedan auditadas con `WithSuperAuditoria`; contrasenas, claves, tokens y secretos se redactan antes de persistir metadata.
+
+2026-05-28: Nota de auditoria global del selector
+- `seleccionar_empresa.html > Auditoria` queda disponible para administrador principal y super administrador.
+- `/super/api/auditoria` valida sesion administrativa y aplica alcance por `principal_email`; un administrador normal no consulta movimientos de otros principales.
+- El super administrador puede ver la auditoria global cuando entra desde el panel super; si usa `scope=principal`, ve solo el alcance solicitado.
+- `WithSuperAuditoria` no concede permisos nuevos: solo registra trazabilidad de endpoints super ya autorizados.
+
 2026-05-27: Nota de filtrado de administradores en selector y super por invitacion
 - `seleccionar_empresa.html > Administradores` usa `scope=principal`; debe listar solo administradores invitados por la cuenta autenticada, no la lista global del sistema.
 - La vista global de administradores queda reservada al panel super cuando se accede sin `scope=principal`.
@@ -20,6 +31,12 @@
 - Antes de crear, modificar o revisar endpoints empresariales se debe aplicar `documentos/checklist_seguridad_endpoint_multiempresa.md`.
 - La checklist exige validar sesion, `empresa_id`, permisos, licencia, SQL con aislamiento, IDs secundarios, auditoria, errores saneados y pruebas negativas de intento de cruce entre empresas.
 - Ocultar botones o paginas en frontend no reemplaza la validacion backend ni el wrapper de permisos correspondiente.
+
+2026-05-28: Nota de Energia solar
+- Se agrega clave de modulo independiente `energia_solar`, pagina `linkEnergiaSolar` y wrapper `WithEmpresaEnergiaSolarPermissions`.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal`, `contabilidad` o `auditor` segun la matriz de analisis/control; eliminar queda restringido a `admin_empresa`.
+- Compatibilidad de licencias: si una licencia antigua habilita `control_electrico` o `seguridad`, el modulo solar queda disponible como fallback para no cortar operaciones existentes; las licencias nuevas pueden habilitar explicitamente `energia_solar`.
+- El endpoint `/api/empresa/energia_solar` exige `empresa_id`, valida alcance por empresa y las tablas `empresa_energia_solar_*` siempre filtran por empresa. Las API keys reales deben quedar como referencias `env:*`.
 
 2026-05-27: Nota de informacion editable de modulos del index
 - `web/super/informacion_de_modulos.html` queda disponible solo dentro del panel de Super Administrador.

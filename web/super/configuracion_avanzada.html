@@ -1100,6 +1100,57 @@
       ];
       let rustdeskActiveToggleBusy = false;
 
+      const superConfigAuditTargets = {
+        btnEditConsumos: ['habilitar_edicion_configuracion', 'super_config_consumos'],
+        btnSaveConsumos: ['guardar_configuracion', 'super_config_consumos'],
+        rustdeskEditSshBtn: ['habilitar_edicion_configuracion', 'super_config_rustdesk'],
+        rustdeskSaveSshBtn: ['guardar_configuracion', 'super_config_rustdesk'],
+        onlyofficeEditBtn: ['habilitar_edicion_configuracion', 'super_config_onlyoffice'],
+        onlyofficeSaveBtn: ['guardar_configuracion', 'super_config_onlyoffice'],
+        editEpaycoBtn: ['habilitar_edicion_configuracion', 'super_config_epayco'],
+        saveEpaycoBtn: ['guardar_configuracion', 'super_config_epayco'],
+        editWompiBtn: ['habilitar_edicion_configuracion', 'super_config_wompi'],
+        saveWompiBtn: ['guardar_configuracion', 'super_config_wompi'],
+        editGmailBtn: ['habilitar_edicion_configuracion', 'super_config_gmail'],
+        saveGmailBtn: ['guardar_configuracion', 'super_config_gmail'],
+        editRecaptchaBtn: ['habilitar_edicion_configuracion', 'super_config_recaptcha'],
+        saveRecaptchaBtn: ['guardar_configuracion', 'super_config_recaptcha'],
+        editAdmin2FABtn: ['habilitar_edicion_configuracion', 'super_config_admin_2fa'],
+        saveAdmin2FABtn: ['guardar_configuracion', 'super_config_admin_2fa'],
+        editAiConfigBtn: ['habilitar_edicion_configuracion', 'super_config_ia_global'],
+        saveAiConfigBtn: ['guardar_configuracion', 'super_config_ia_global'],
+        voiceStreamQuickActivateTestBtn: ['activar_prueba_voz_ia', 'super_config_voz_ia'],
+        voiceStreamQuickTestBtn: ['probar_voz_ia', 'super_config_voz_ia'],
+        downloadConfigBackupBtn: ['descargar_respaldo_configuracion', 'super_config_respaldo'],
+        restoreConfigBtn: ['restaurar_respaldo_configuracion', 'super_config_respaldo']
+      };
+
+      function auditSuperConfigEvent(accion, modulo, buttonId){
+        try {
+          fetch('/super/api/auditoria?action=ui_event&scope=super_panel', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accion: accion || 'interaccion_configuracion',
+              modulo: modulo || 'super_configuracion',
+              recurso: 'configuracion_avanzada',
+              endpoint: window.location.pathname + window.location.search,
+              observaciones: 'interaccion visual sobre configuracion avanzada super',
+              metadata: { boton: buttonId || '', seccion: modulo || '' }
+            })
+          }).catch(function(){});
+        } catch (e) {}
+      }
+
+      document.addEventListener('click', function(ev){
+        const btn = ev.target && ev.target.closest ? ev.target.closest('button[id]') : null;
+        if (!btn) return;
+        const target = superConfigAuditTargets[btn.id];
+        if (!target) return;
+        auditSuperConfigEvent(target[0], target[1], btn.id);
+      }, true);
+
       function setDisabledByIds(ids, disabled){
         ids.forEach(function(id){
           const el = document.getElementById(id);

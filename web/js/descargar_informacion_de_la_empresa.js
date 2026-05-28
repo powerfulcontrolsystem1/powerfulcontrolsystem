@@ -7,8 +7,13 @@
   var formEl = document.getElementById("empresaExportForm");
   var formatEl = document.getElementById("empresaExportFormat");
   var downloadBtn = document.getElementById("empresaExportDownload");
+  var backBtn = document.getElementById("empresaExportBack");
   var empresaName = "empresa";
   var isDownloading = false;
+
+  if (params.get("embedded") === "1" && document.body) {
+    document.body.classList.add("empresa-export-page--embedded");
+  }
 
   function setStatus(message, type) {
     if (!statusEl) return;
@@ -72,7 +77,7 @@
         empresaName = empresa.nombre;
         if (titleEl) titleEl.textContent = "Informacion de " + empresa.nombre;
         if (subtitleEl) {
-          subtitleEl.textContent = "Selecciona el formato y descarga la copia de datos de esta empresa.";
+          subtitleEl.textContent = "Selecciona backup completo o un formato de exportacion para descargar la copia de datos de esta empresa.";
         }
       }
     } catch (err) {
@@ -84,7 +89,8 @@
     if (!empresaID || isDownloading) return;
     var format = formatEl && formatEl.value ? formatEl.value : "xls";
     setBusy(true);
-    setStatus("Preparando archivo " + String(format).toUpperCase() + "...", "muted");
+    var label = format === "backup" ? "BACKUP" : String(format).toUpperCase();
+    setStatus("Preparando archivo " + label + "...", "muted");
     try {
       var response = await fetch("/super/api/empresas?id=" + encodeURIComponent(String(empresaID)) + "&action=exportar_informacion&format=" + encodeURIComponent(format), {
         credentials: "same-origin"
@@ -115,6 +121,16 @@
     formEl.addEventListener("submit", function (event) {
       event.preventDefault();
       downloadSelectedFormat();
+    });
+  }
+
+  if (backBtn) {
+    backBtn.addEventListener("click", function () {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: "pcs:selector-show-empresas" }, window.location.origin);
+        return;
+      }
+      window.location.href = "/seleccionar_empresa.html";
     });
   }
 

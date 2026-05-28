@@ -61,6 +61,16 @@ botones, desde handlers estaticos del backend.
   debe mostrar invitados del administrador autenticado; sin ese parametro el
   panel super mantiene la vista global. Los nuevos `super_administrador` tambien
   se crean por invitacion con token.
+- Auditoria global del selector: `web/super/auditoria_global.html`,
+  `/super/api/auditoria`, `backend/handlers/auditoria_super.go`,
+  `pcs_superadministrador.super_auditoria_eventos`. Desde el selector se abre
+  con `scope=principal`: un administrador normal ve solo su alcance y el super
+  administrador puede ver global desde el panel super.
+- Auditoria especial super administrador: `web/super/auditoria_super_admin.html`
+  en `web/super_administrador.html > Acceso`. Usa
+  `/super/api/auditoria?scope=super_panel`, reservado a roles super, para revisar
+  navegacion, botones `Editar`, guardados/pruebas y endpoints sensibles del panel
+  super. Nunca se deben guardar secretos en metadata.
 - Licencia gratis: `web/pagar_licencia.html`, `/licencias/activar_sin_pago`.
 - Panel empresarial: `web/administrar_empresa.html`,
   `web/administrar_empresa/panel.html`.
@@ -87,6 +97,11 @@ botones, desde handlers estaticos del backend.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.
+- Energia solar: `web/administrar_empresa/energia_solar.html`,
+  `web/js/energia_solar.js`, `/api/empresa/energia_solar`,
+  tablas `empresa_energia_solar_*`. El modulo es por empresa, usa permiso
+  `energia_solar`, soporta Victron/SMA/SolarEdge/gateway local y alerta por
+  correo usando SMTP configurado.
 - Analitica publica por pais: `/api/public/portal_visitas`,
   `web/js/portal_visits.js`.
 

@@ -54,6 +54,7 @@ const (
 	permModuleOdontologia          = "odontologia"
 	permModuleTurnos               = "turnos_atencion"
 	permModuleControlElectrico     = "control_electrico"
+	permModuleEnergiaSolar         = "energia_solar"
 	permModuleCarnets              = "carnets"
 	permModuleHorariosTrab         = "horarios_trabajadores"
 	permModuleAsistenciaEmpleados  = "asistencia_empleados"
@@ -295,6 +296,7 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleOdontologia,
 	permModuleTurnos,
 	permModuleControlElectrico,
+	permModuleEnergiaSolar,
 	permModuleCarnets,
 	permModuleHorariosTrab,
 	permModuleAsistenciaEmpleados,
@@ -371,6 +373,7 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleOdontologia:          "Odontologia y agenda clinica",
 	permModuleTurnos:               "Turnos de atencion",
 	permModuleControlElectrico:     "Control electrico e IoT",
+	permModuleEnergiaSolar:         "Energia solar y baterias",
 	permModuleCarnets:              "Carnets empresariales",
 	permModuleHorariosTrab:         "Horarios laborales",
 	permModuleAsistenciaEmpleados:  "Asistencia de empleados",
@@ -544,6 +547,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 
 	{PaginaClave: "linkAuditoria", Modulo: permModuleAuditoria, Accion: permActionRead, Titulo: "Auditoria de acciones", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Analisis y control"},
+	{PaginaClave: "linkEnergiaSolar", Modulo: permModuleEnergiaSolar, Accion: permActionCreate, Titulo: "Energia solar y baterias", Grupo: "Analisis y control"},
 	{PaginaClave: "linkBackups", Modulo: permModuleBackups, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Analisis y control"},
 
 	{PaginaClave: "linkDocumentosOnlyOffice", Modulo: permModuleDocumentosOnlyOffice, Accion: permActionRead, Titulo: "Documentos OnlyOffice", Grupo: "Documentos, nube y soporte"},
@@ -1103,6 +1107,11 @@ func WithEmpresaTurnosAtencionPermissions(dbEmp, dbSuper *sql.DB, next http.Hand
 // WithEmpresaControlElectricoPermissions aplica permisos independientes para control electrico.
 func WithEmpresaControlElectricoPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleControlElectrico, resolveControlElectricoPermissionAction, next)
+}
+
+// WithEmpresaEnergiaSolarPermissions aplica permisos independientes para monitoreo solar y baterias.
+func WithEmpresaEnergiaSolarPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleEnergiaSolar, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaCarnetsPermissions aplica permisos independientes para carnets empresariales.
@@ -2212,7 +2221,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
-	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleEnergiaSolar, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
 		switch action {
 		case permActionRead:
 			return roleIn(role, allReadRoles...)
@@ -2990,6 +2999,7 @@ var permissionModuleLicenseFallbacks = map[string][]string{
 	permModuleNominaSueldos:        {permModuleFinanzas},
 	permModuleReportes:             {permModuleFinanzas},
 	permModuleAuditoria:            {permModuleSeguridad},
+	permModuleEnergiaSolar:         {permModuleControlElectrico, permModuleSeguridad},
 	permModuleBackups:              {permModuleSeguridad},
 	permModuleDocumentosOnlyOffice: {permModuleSeguridad},
 }
@@ -3240,6 +3250,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkContratosObligaciones"
 	case path == "/api/empresa/calidad_procesos":
 		return "linkCalidadProcesos"
+	case path == "/api/empresa/energia_solar":
+		return "linkEnergiaSolar"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_pagar"):

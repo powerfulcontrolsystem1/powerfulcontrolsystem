@@ -1,3 +1,7 @@
+- 2026-05-28: `Auditoria especial super administrador` agrega `/super/auditoria_super_admin.html` al panel super, restringe `scope=super_panel` a roles super, registra navegacion/edicion visual del panel y envuelve APIs sensibles de configuracion super con `WithSuperAuditoria` sin persistir secretos.
+- 2026-05-28: `Auditoria global del selector` agrega `Seleccionar empresa > Auditoria`, tabla `super_auditoria_eventos`, endpoint `/super/api/auditoria`, registro automatico de movimientos globales y eventos visuales del selector, con alcance por administrador y exportacion CSV/JSON.
+- 2026-05-28: `Energia solar multiempresa` agrega modulo empresarial para Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y gateway local, con catalogo de baterias Powerwall/BYD/Pylontech/Enphase/Victron, alertas por correo, lecturas, eventos y documentacion.
+- 2026-05-28: `Descarga de informacion integrada al selector` hace que el boton de descarga de cada empresa abra `descargar_informacion_de_la_empresa.html` en el panel derecho de `seleccionar_empresa.html`, respete la apariencia activa, permita descargar backup completo JSON y tenga boton para regresar al listado.
 - 2026-05-27: `Reportes globales con alcance del selector` hace que `/super/api/reportes_globales` liste y consolide solamente las mismas empresas visibles en `seleccionar_empresa.html`: propias, delegadas o compartidas, sin exponer todas las empresas por rol super.
 - 2026-05-27: `Reportes globales profesionales` simplifica `seleccionar empresa > Reportes globales` a rango de fechas, selector de reporte, formato y acciones Ver/Exportar/Imprimir/Email; mantiene seleccion multiple de empresas, graficos comparativos, resumen por empresa y exportacion PDF/XLS/CSV/TXT/JSON.
 - 2026-05-27: `Vista previa de modulos` corrige las vinetas del super administrador para que usen variables de tema y se vean consistentes en apariencias claras y oscuras, incluso con contenido predeterminado.
@@ -4538,3 +4542,8 @@
 - [UX] `descargar_informacion_de_la_empresa.html` pasa a una vista simple: nombre de empresa, selector de formato y boton `Descargar`.
 - [Frontend] Se eliminan de la pantalla los paneles tecnicos de resumen, formatos y tablas incluidas.
 - [QA] Prueba visual escritorio/movil y descarga CSV desde el boton principal.
+
+## [2026-05-28] Apariencias oscuras profesionales
+- [Temas] Se agregan `Negro Absoluto` (`dark-absolute`) y `Obsidiana Profesional` (`dark-obsidian`) al menu flotante.
+- [Frontend] Los nuevos temas tienen variables completas de fondo, superficies, texto, bordes, acentos, formularios y estados.
+- [QA] Prueba visual seleccionando ambos temas desde el menu flotante y verificando persistencia.

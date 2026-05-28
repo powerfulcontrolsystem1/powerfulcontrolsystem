@@ -532,7 +532,7 @@ func buildPortalCompanyContactAnswer() string {
 }
 
 func buildPortalCompanyModulesAnswer() string {
-	return "Powerful Control System es una plataforma SaaS POS multiempresa. Segun el modulo o plan, puede ayudarte con ventas, inventario, compras, reservas, estaciones, facturacion electronica, finanzas, nomina, creditos, CRM comercial, chat y tareas, venta publica y otros procesos del negocio.\n\nSi me dices que tipo de empresa tienes, te sugiero el modulo o licencia mas conveniente.\n\nNo olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte."
+	return "Powerful Control System es una plataforma SaaS POS multiempresa. Segun el modulo o plan, puede ayudarte con ventas, inventario, compras, reservas, estaciones, facturacion electronica, finanzas, nomina, creditos, CRM comercial, energia solar con monitoreo de paneles/baterias, chat y tareas, venta publica y otros procesos del negocio.\n\nSi me dices que tipo de empresa tienes, te sugiero el modulo o licencia mas conveniente.\n\nNo olvides que puedes probar ya mismo totalmente gratis el sistema con solo registrarte."
 }
 
 func pickPortalChatModel(dbSuper *sql.DB, question string, wantsVision bool) (empresaAIModelDef, bool) {

@@ -33,6 +33,7 @@
     "/super/roles_de_usuario.html": true,
     "/super/permisos_rol.html": true,
     "/super/seguridad_2fa.html": true,
+    "/super/auditoria_super_admin.html": true,
     "/super/integracion_ia.html": true,
     "/super/configuracion_logica_del_chat_con_ia.html": true,
     "/super/contexto_ia_logica_negocio.html": true,
@@ -60,6 +61,26 @@
     "/super/configuracion/ia_global.html": true,
     "/super/configuracion/respaldo.html": true
   };
+
+  function auditSuperPanelEvent(action, payload) {
+    try {
+      var data = Object.assign({
+        accion: action || "interaccion",
+        modulo: "super_panel_ui",
+        recurso: "super_administrador",
+        endpoint: iframe ? iframe.getAttribute("src") : window.location.pathname,
+        observaciones: "evento visual del panel super",
+        metadata: {}
+      }, payload || {});
+      if (!data.metadata || typeof data.metadata !== "object") data.metadata = {};
+      fetch("/super/api/auditoria?action=ui_event&scope=super_panel", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).catch(function () {});
+    } catch (e) {}
+  }
 
   function isAllowedSuperHref(href) {
     var normalized = normalizeHref(href).split("?")[0];
@@ -216,6 +237,14 @@
       if (iframe) {
         iframe.setAttribute("src", href);
         persistLastPage(href);
+        auditSuperPanelEvent("abrir_modulo_super", {
+          recurso: normalizeHref(href).split("?")[0] || "modulo_super",
+          endpoint: href,
+          metadata: {
+            texto: (a.textContent || "").trim(),
+            href: normalizeHref(href)
+          }
+        });
       } else {
         window.location.href = href;
       }

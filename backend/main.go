@@ -757,6 +757,10 @@ func main() {
 			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_licencias_schema")
+		if err := dbpkg.EnsureSuperAuditoriaSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure super auditoria schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_ensure_super_auditoria_schema")
 		if err := dbpkg.EnsureLicenciaVencimientoNotificacionesSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure licencia vencimiento notificaciones schema in superadministrador db: %v", err)
 		}
@@ -900,6 +904,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure control electrico schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaEnergiaSolarSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure energia solar schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
 	}
@@ -1028,7 +1035,7 @@ func main() {
 	http.HandleFunc("/api/user/configuracion", handlers.UserConfiguracionHandler(dbSuper))
 
 	// Endpoints CRUD para tipos de empresas
-	http.HandleFunc("/super/api/tipos_empresas", handlers.TiposEmpresasHandler(dbSuper))
+	http.HandleFunc("/super/api/tipos_empresas", handlers.WithSuperAuditoria(dbSuper, "tipos_empresas", handlers.TiposEmpresasHandler(dbSuper)))
 	http.HandleFunc("/super/api/tipos_empresas/preconfiguracion", handlers.SuperTipoEmpresaPreconfiguracionHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores", handlers.SuperServidoresListHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
@@ -1039,9 +1046,9 @@ func main() {
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
-	http.HandleFunc("/super/api/empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/super/api/empresas/compartidos", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/empresas", handlers.WithSuperAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
 	// Endpoints para asesores comerciales y comisiones de licencias.
 	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialSuperHandler(dbSuper))
 	http.HandleFunc("/api/asesor_comercial/aceptar", handlers.AsesorComercialAcceptHandler(dbSuper))
@@ -1167,6 +1174,7 @@ func main() {
 	http.HandleFunc("/api/empresa/facturacion_electronica/pais_detectado", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisDetectadoHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler()))
 	http.HandleFunc("/api/empresa/impuestos", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpuestosHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/energia_solar", handlers.WithEmpresaEnergiaSolarPermissions(dbEmpresas, dbSuper, handlers.EmpresaEnergiaSolarHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
@@ -1241,19 +1249,20 @@ func main() {
 	http.HandleFunc("/api/account/change_password", handlers.AccountChangePasswordHandler(dbEmpresas, dbSuper))
 	http.HandleFunc("/api/account/set_google_password", handlers.AccountSetGooglePasswordHandler(dbEmpresas, dbSuper))
 	// Endpoint CRUD para administradores (API)
-	http.HandleFunc("/super/api/administradores", handlers.AdministradoresHandler(dbSuper))
+	http.HandleFunc("/super/api/administradores", handlers.WithSuperAuditoria(dbSuper, "administradores", handlers.AdministradoresHandler(dbSuper)))
+	http.HandleFunc("/super/api/auditoria", handlers.SuperAuditoriaHandler(dbEmpresas, dbSuper))
 	// Endpoints adicionales para flujo de autenticación de administradores (registro, login, confirmación, recuperación)
 	http.HandleFunc("/super/api/administradores/register", handlers.AdminRegisterHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/login", handlers.AdminLoginHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/2fa", handlers.AdminTwoFactorHandler(dbSuper))
-	http.HandleFunc("/super/api/config/admin_2fa", handlers.AdminTwoFactorGlobalConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/admin_2fa", handlers.WithSuperAuditoria(dbSuper, "super_config_admin_2fa", handlers.AdminTwoFactorGlobalConfigHandler(dbSuper)))
 	http.HandleFunc("/auth/confirmar_admin", handlers.ConfirmarAdminHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/solicitar_recuperacion", handlers.AdminRequestPasswordRecoveryHandler(dbSuper))
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
-	http.HandleFunc("/super/api/licencias", handlers.LicenciasHandler(dbSuper))
+	http.HandleFunc("/super/api/licencias", handlers.WithSuperAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
 	http.HandleFunc("/super/api/empresa_licencias_adicionales", handlers.EmpresaLicenciasAdicionalesHandler(dbSuper))
-	http.HandleFunc("/super/api/licencias/vencimiento_alertas", handlers.SuperLicenciaVencimientoAlertasHandler(dbSuper, dbEmpresas))
+	http.HandleFunc("/super/api/licencias/vencimiento_alertas", handlers.WithSuperAuditoria(dbSuper, "super_config_alertas_licencia", handlers.SuperLicenciaVencimientoAlertasHandler(dbSuper, dbEmpresas)))
 	// Endpoint super: lista de administradores autorizados (Frecuencia FE/FP)
 	http.HandleFunc("/super/api/administradores_frecuencia_fe", handlers.SuperAdministradoresFrecuenciaFEHandler(dbSuper))
 	// Endpoint publico para exponer metodos de pago activos del checkout de licencias
@@ -1261,27 +1270,27 @@ func main() {
 	// Endpoint publico para calcular total, descuentos y activacion sin pago del checkout de licencias
 	http.HandleFunc("/api/public/licencias/checkout_summary", handlers.LicenciaCheckoutSummaryHandler(dbSuper))
 	// Endpoint para gestionar credenciales de Wompi (GET/PUT)
-	http.HandleFunc("/super/api/config/wompi", handlers.WompiConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/wompi", handlers.WithSuperAuditoria(dbSuper, "super_config_wompi", handlers.WompiConfigHandler(dbSuper)))
 	// Endpoint para gestionar credenciales de Epayco (GET/PUT)
-	http.HandleFunc("/super/api/config/epayco", handlers.EpaycoConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/epayco", handlers.WithSuperAuditoria(dbSuper, "super_config_epayco", handlers.EpaycoConfigHandler(dbSuper)))
 	// Endpoint para gestionar SMTP Gmail (GET/PUT)
-	http.HandleFunc("/super/api/config/gmail", handlers.GmailConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/gmail", handlers.WithSuperAuditoria(dbSuper, "super_config_gmail", handlers.GmailConfigHandler(dbSuper)))
 	// Endpoint para activar o desactivar Google reCAPTCHA (GET/PUT)
-	http.HandleFunc("/super/api/config/recaptcha", handlers.RecaptchaConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/recaptcha", handlers.WithSuperAuditoria(dbSuper, "super_config_recaptcha", handlers.RecaptchaConfigHandler(dbSuper)))
 	// Endpoint para administrar plantillas de correo del panel super
-	http.HandleFunc("/super/api/config/email_templates", handlers.SuperEmailTemplatesHandler(dbSuper))
+	http.HandleFunc("/super/api/config/email_templates", handlers.WithSuperAuditoria(dbSuper, "super_config_email_templates", handlers.SuperEmailTemplatesHandler(dbSuper)))
 	// Endpoint super para administrar venta digital global
 	http.HandleFunc("/super/api/venta_digital", handlers.SuperVentaDigitalHandler(dbSuper))
 	// Endpoint para gestionar credenciales IA de modelos populares (GET/PUT)
-	http.HandleFunc("/super/api/config/ai", handlers.AIModelsConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/ai", handlers.WithSuperAuditoria(dbSuper, "super_config_ia_global", handlers.AIModelsConfigHandler(dbSuper)))
 	// Endpoint para configurar limitaciones por empresa (RustDesk e IA)
-	http.HandleFunc("/super/api/config/limitaciones_empresa", handlers.SuperEmpresaLimitacionesConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/limitaciones_empresa", handlers.WithSuperAuditoria(dbSuper, "super_config_limitaciones", handlers.SuperEmpresaLimitacionesConfigHandler(dbSuper)))
 	// Endpoint para configurar la lógica del chat con IA (empresas y super)
-	http.HandleFunc("/super/api/config/chat_ia_logica", handlers.SuperChatIALogicaConfigHandler(dbEmpresas, dbSuper))
+	http.HandleFunc("/super/api/config/chat_ia_logica", handlers.WithSuperAuditoria(dbSuper, "super_config_chat_ia", handlers.SuperChatIALogicaConfigHandler(dbEmpresas, dbSuper)))
 	// Endpoint para configurar gestion RustDesk en el VPS (GET/PUT)
-	http.HandleFunc("/super/api/config/rustdesk", handlers.RustDeskConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/rustdesk", handlers.WithSuperAuditoria(dbSuper, "super_config_rustdesk", handlers.RustDeskConfigHandler(dbSuper)))
 	// Endpoint para configurar voz natural por streaming en VPS (GET/PUT)
-	http.HandleFunc("/super/api/config/voice_stream", handlers.SuperVoiceStreamConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/voice_stream", handlers.WithSuperAuditoria(dbSuper, "super_config_voz_ia", handlers.SuperVoiceStreamConfigHandler(dbSuper)))
 	http.HandleFunc("/api/voice_stream/status", handlers.VoiceStreamStatusHandler(dbSuper))
 	http.HandleFunc("/api/voice_stream/tts", handlers.VoiceStreamTTSProxyHandler(dbSuper))
 	http.HandleFunc("/api/chat_flotante/preferencias", handlers.ChatFlotantePreferenciasHandler(dbSuper, dbEmpresas))
@@ -1296,23 +1305,23 @@ func main() {
 	http.HandleFunc("/super/api/chat_con_ia_global/consultar_stream", superAIChatController.ConsultarStreamHandler)
 	http.HandleFunc("/super/api/chat_con_ia_global/historial", superAIChatController.HistorialHandler)
 	// Endpoint para respaldo/restauracion de configuracion critica del panel super
-	http.HandleFunc("/super/api/config/backup", handlers.SuperConfigBackupHandler(dbSuper))
+	http.HandleFunc("/super/api/config/backup", handlers.WithSuperAuditoria(dbSuper, "super_config_respaldo", handlers.SuperConfigBackupHandler(dbSuper)))
 	// Endpoint para configuración de modo mantenimiento global
-	http.HandleFunc("/super/api/config/mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_config_mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
-	http.HandleFunc("/super/api/config/onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper))
+	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
 	// Endpoint super para monitoreo centralizado de errores del sistema
 	http.HandleFunc("/super/api/errores", handlers.SuperErroresSistemaHandler(dbSuper))
 	// Endpoint super para consumos (OpenAI/Hostinger/Cursor) y contador de errores
-	http.HandleFunc("/super/api/consumos", handlers.SuperConsumosHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/super/api/alertas_sistema", handlers.SuperAlertasSistemaHandler(dbSuper))
-	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.SuperPortalChatIAInfoHandler(dbSuper))
-	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.SuperContextoIALogicaNegocioHandler(dbSuper))
+	http.HandleFunc("/super/api/consumos", handlers.WithSuperAuditoria(dbSuper, "super_config_consumos", handlers.SuperConsumosHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/alertas_sistema", handlers.WithSuperAuditoria(dbSuper, "super_alertas_sistema", handlers.SuperAlertasSistemaHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/portal_chat_ia_info", handlers.WithSuperAuditoria(dbSuper, "super_config_chat_flotante", handlers.SuperPortalChatIAInfoHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/contexto_ia_logica_negocio", handlers.WithSuperAuditoria(dbSuper, "super_config_contexto_ia", handlers.SuperContextoIALogicaNegocioHandler(dbSuper)))
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
-	http.HandleFunc("/super/api/pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir))
-	http.HandleFunc("/super/api/informacion_de_modulos", handlers.SuperInformacionModulosHandler(dbSuper, webDir))
+	http.HandleFunc("/super/api/pagina_principal", handlers.WithSuperAuditoria(dbSuper, "super_pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir)))
+	http.HandleFunc("/super/api/informacion_de_modulos", handlers.WithSuperAuditoria(dbSuper, "super_informacion_modulos", handlers.SuperInformacionModulosHandler(dbSuper, webDir)))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_checkout", handlers.WompiCreateCheckoutHandler(dbSuper))
@@ -1331,20 +1340,20 @@ func main() {
 	// Endpoints de métricas (actual y histórico)
 	http.HandleFunc("/super/api/metrics/current", handlers.MetricsCurrentHandler(dbSuper))
 	http.HandleFunc("/super/api/metrics/history", handlers.MetricsHistoryHandler(dbSuper))
-	http.HandleFunc("/super/api/reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/super/api/postgres/performance", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper))
-	http.HandleFunc("/super/api/explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper))
-	http.HandleFunc("/super/api/docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper))
+	http.HandleFunc("/super/api/reportes_globales", handlers.WithSuperAuditoria(dbSuper, "reportes_globales", handlers.SuperReportesGlobalesHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/postgres/performance", handlers.WithSuperAuditoria(dbSuper, "super_postgresql", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/explorador_archivos", handlers.WithSuperAuditoria(dbSuper, "super_explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper)))
+	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
 	// Endpoint de seguridad: escaneo de puertos
-	http.HandleFunc("/super/api/security/ports", handlers.SecurityPortsHandler(dbSuper))
+	http.HandleFunc("/super/api/security/ports", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityPortsHandler(dbSuper)))
 	// Endpoint de seguridad: listado de procesos en memoria RAM
-	http.HandleFunc("/super/api/security/processes", handlers.SecurityProcessesHandler(dbSuper))
-	http.HandleFunc("/super/api/security/vps/config", handlers.SecurityVPSConfigHandler(dbSuper, vpsSecurityService))
-	http.HandleFunc("/super/api/security/vps/run", handlers.SecurityVPSRunHandler(dbSuper, vpsSecurityService))
-	http.HandleFunc("/super/api/security/vps/status", handlers.SecurityVPSStatusHandler(dbSuper, vpsSecurityService))
-	http.HandleFunc("/super/api/security/vps/history", handlers.SecurityVPSHistoryHandler(dbSuper, vpsSecurityService))
-	http.HandleFunc("/super/api/security/vps/report", handlers.SecurityVPSReportHandler(dbSuper, vpsSecurityService))
-	http.HandleFunc("/super/api/security/vps/compare", handlers.SecurityVPSCompareHandler(dbSuper, vpsSecurityService))
+	http.HandleFunc("/super/api/security/processes", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityProcessesHandler(dbSuper)))
+	http.HandleFunc("/super/api/security/vps/config", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityVPSConfigHandler(dbSuper, vpsSecurityService)))
+	http.HandleFunc("/super/api/security/vps/run", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityVPSRunHandler(dbSuper, vpsSecurityService)))
+	http.HandleFunc("/super/api/security/vps/status", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityVPSStatusHandler(dbSuper, vpsSecurityService)))
+	http.HandleFunc("/super/api/security/vps/history", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityVPSHistoryHandler(dbSuper, vpsSecurityService)))
+	http.HandleFunc("/super/api/security/vps/report", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityVPSReportHandler(dbSuper, vpsSecurityService)))
+	http.HandleFunc("/super/api/security/vps/compare", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityVPSCompareHandler(dbSuper, vpsSecurityService)))
 	startupTrace("after_super_config_routes")
 
 	// Logout handler: limpiar cookie de sesión (si existe) y redirigir a la página de login

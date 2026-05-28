@@ -501,6 +501,58 @@ html[data-theme="dark-corporate"] {
   --ambient-glow: rgba(62,158,240,0.22);
 }
 
+/* Tema Negro Absoluto: interfaz empresarial sin luz ambiental */
+html[data-theme="dark-absolute"] {
+  --bg: #000000;
+  --bg-alt: #030303;
+  --surface: #070707;
+  --surface-soft: #0d0d0d;
+  --card: #111111;
+  --input-bg: #050505;
+  --input-bg-soft: #0a0a0a;
+  --muted: #a8a8a8;
+  --text: #f5f5f5;
+  --accent: #d6d6d6;
+  --accent-2: #8f8f8f;
+  --danger: #ff5c5c;
+  --success: #32d583;
+  --border: rgba(255,255,255,0.16);
+  --focus: rgba(255,255,255,0.18);
+  --accent-yellow: #f2c94c;
+  --accent-yellow-light: #ffe58f;
+  --form-surface-top: #0a0a0a;
+  --form-surface-bottom: #111111;
+  --form-border: rgba(255,255,255,0.22);
+  --form-input-bg: #030303;
+  --ambient-glow: rgba(255,255,255,0.02);
+}
+
+/* Tema Obsidiana Profesional: negro profundo con acentos azul acero */
+html[data-theme="dark-obsidian"] {
+  --bg: #020407;
+  --bg-alt: #060b12;
+  --surface: #0a111b;
+  --surface-soft: #101a27;
+  --card: #142033;
+  --input-bg: #050911;
+  --input-bg-soft: #0b1320;
+  --muted: #98a7bb;
+  --text: #f2f6fb;
+  --accent: #6aa3ff;
+  --accent-2: #59d6c9;
+  --danger: #ff6464;
+  --success: #3ddc97;
+  --border: rgba(139,161,190,0.22);
+  --focus: rgba(106,163,255,0.24);
+  --accent-yellow: #f0c96a;
+  --accent-yellow-light: #ffe7a6;
+  --form-surface-top: #0d1724;
+  --form-surface-bottom: #111f31;
+  --form-border: rgba(106,163,255,0.26);
+  --form-input-bg: #050911;
+  --ambient-glow: rgba(106,163,255,0.08);
+}
+
 .pcs-section-submenu{
   display:flex;
   flex-wrap:wrap;
@@ -1052,6 +1104,8 @@ html[data-theme="dark"],
 html[data-theme="dark-violet"],
 html[data-theme="dark-emerald"],
 html[data-theme="dark-corporate"],
+html[data-theme="dark-absolute"],
+html[data-theme="dark-obsidian"],
 html[data-theme="dark-neon"] {
   --btn-primary-top: #2a9af7;
   --btn-primary-text: #f7fbff;
@@ -1282,6 +1336,37 @@ html[data-theme="dark-neon"] .btn,
 html[data-theme="dark-neon"] .admin-sidebar .nav a.active{
   text-shadow:0 0 10px rgba(244,247,255,0.38);
   box-shadow:0 10px 24px rgba(0,229,255,0.18), 0 0 18px rgba(255,43,214,0.1);
+}
+
+html[data-theme="dark-absolute"] body{
+  background:#000;
+}
+
+html[data-theme="dark-absolute"] .card,
+html[data-theme="dark-absolute"] .admin-sidebar,
+html[data-theme="dark-absolute"] .floating-menu .fm-panel,
+html[data-theme="dark-absolute"] .floating-menu .fm-submenu,
+html[data-theme="dark-absolute"] .floating-menu .fm-submenu-popup,
+html[data-theme="dark-absolute"] .theme-selector-popup{
+  box-shadow:none;
+}
+
+html[data-theme="dark-absolute"] .btn,
+html[data-theme="dark-absolute"] .admin-sidebar .nav a.active{
+  color:#fff;
+  text-shadow:none;
+}
+
+html[data-theme="dark-obsidian"] body{
+  background:
+    radial-gradient(circle at 8% 6%, rgba(106,163,255,0.08), transparent 30%),
+    linear-gradient(180deg, var(--bg-alt), var(--bg));
+}
+
+html[data-theme="dark-obsidian"] .card,
+html[data-theme="dark-obsidian"] .admin-sidebar,
+html[data-theme="dark-obsidian"] .floating-menu .fm-panel{
+  box-shadow:0 18px 42px rgba(0,0,0,0.42);
 }
 
 html[data-theme="light-wood"] body{
@@ -3219,6 +3304,8 @@ html[data-theme="dark"] .login-usuario-page,
 html[data-theme="dark-violet"] .login-usuario-page,
 html[data-theme="dark-emerald"] .login-usuario-page,
 html[data-theme="dark-corporate"] .login-usuario-page,
+html[data-theme="dark-absolute"] .login-usuario-page,
+html[data-theme="dark-obsidian"] .login-usuario-page,
 html[data-theme="dark-neon"] .login-usuario-page{
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 36%),
@@ -3235,11 +3322,15 @@ html[data-theme="dark"] .login-usuario-page .card,
 html[data-theme="dark-violet"] .login-usuario-page .card,
 html[data-theme="dark-emerald"] .login-usuario-page .card,
 html[data-theme="dark-corporate"] .login-usuario-page .card,
+html[data-theme="dark-absolute"] .login-usuario-page .card,
+html[data-theme="dark-obsidian"] .login-usuario-page .card,
 html[data-theme="dark-neon"] .login-usuario-page .card,
 html[data-theme="dark"] .login-theme-control,
 html[data-theme="dark-violet"] .login-theme-control,
 html[data-theme="dark-emerald"] .login-theme-control,
 html[data-theme="dark-corporate"] .login-theme-control,
+html[data-theme="dark-absolute"] .login-theme-control,
+html[data-theme="dark-obsidian"] .login-theme-control,
 html[data-theme="dark-neon"] .login-theme-control{
   background:color-mix(in srgb, var(--surface) 94%, black 6%);
   border-color:color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
@@ -3297,6 +3388,8 @@ html[data-theme="dark"] .login-usuario-contract,
 html[data-theme="dark-violet"] .login-usuario-contract,
 html[data-theme="dark-emerald"] .login-usuario-contract,
 html[data-theme="dark-corporate"] .login-usuario-contract,
+html[data-theme="dark-absolute"] .login-usuario-contract,
+html[data-theme="dark-obsidian"] .login-usuario-contract,
 html[data-theme="dark-neon"] .login-usuario-contract{
   background:linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, var(--accent) 10%), color-mix(in srgb, var(--surface) 96%, black 4%));
   border-color:color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
@@ -3305,6 +3398,8 @@ html[data-theme="dark"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-violet"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-emerald"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-corporate"] .login-usuario-modal .modal__panel,
+html[data-theme="dark-absolute"] .login-usuario-modal .modal__panel,
+html[data-theme="dark-obsidian"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
   background:var(--surface);
   color:var(--text);
@@ -7390,29 +7485,30 @@ html[data-theme^="dark"] .checkout-payment-hub{
 .payment-btn-nequi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-manual{width:100%;background:#ffcc80;color:#4a2506;border:none}
 
-.empresa-export-page{min-height:100vh;background:linear-gradient(180deg,#f6f8fb 0%,#eef3f8 100%);color:#10233b}
+.empresa-export-page{min-height:100vh;background:linear-gradient(180deg,var(--bg-alt) 0%,var(--bg) 100%);color:var(--text)}
+.empresa-export-page--embedded{background:var(--bg)}
 .empresa-export-minimal{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;box-sizing:border-box}
-.empresa-export-panel{width:min(100%,560px);display:grid;gap:24px;padding:30px;border:1px solid #d7e0ea;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(15,35,63,.12)}
-.empresa-export-brand{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-bottom:1px solid #e2e8f0}
+.empresa-export-page--embedded .empresa-export-minimal{align-items:flex-start;padding-top:32px}
+.empresa-export-panel{width:min(100%,560px);display:grid;gap:24px;padding:30px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:var(--shadow-soft)}
+.empresa-export-brand{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--border)}
 .empresa-export-brand img{width:44px;height:44px;border-radius:8px;object-fit:contain}
-.empresa-export-brand span{display:block;color:#64748b;font-weight:800;font-size:.82rem}
-.empresa-export-brand strong{display:block;color:#10233b;font-size:1.05rem}
+.empresa-export-brand span{display:block;color:var(--muted);font-weight:800;font-size:.82rem}
+.empresa-export-brand strong{display:block;color:var(--text);font-size:1.05rem}
 .empresa-export-copy{display:grid;gap:10px}
-.empresa-export-eyebrow{display:inline-flex;width:max-content;padding:6px 10px;border-radius:6px;background:#e8f2ff;color:#0f5ea8;font-weight:900;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
-.empresa-export-copy h1{margin:0;color:#10233b;font-size:clamp(1.7rem,4vw,2.25rem);line-height:1.1}
-.empresa-export-copy p{margin:0;color:#475569;font-weight:700;line-height:1.5}
+.empresa-export-eyebrow{display:inline-flex;width:max-content;padding:6px 10px;border-radius:6px;background:var(--focus);color:var(--accent);font-weight:900;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+.empresa-export-copy h1{margin:0;color:var(--text);font-size:clamp(1.7rem,4vw,2.25rem);line-height:1.1}
+.empresa-export-copy p{margin:0;color:var(--muted);font-weight:700;line-height:1.5}
 .empresa-export-form{display:grid;gap:12px}
-.empresa-export-form .form-label{margin:0;color:#10233b;font-weight:900}
-.empresa-export-form .form-input{width:100%;min-height:48px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#10233b;font-weight:800}
-.empresa-export-primary{width:100%;min-height:52px;border-radius:8px;background:#0f5ea8 !important;color:#fff !important;border:1px solid #0f5ea8 !important;font-size:1.05rem;font-weight:900}
-.empresa-export-primary:hover{background:#0b4b87 !important;border-color:#0b4b87 !important}
+.empresa-export-form .form-label{margin:0;color:var(--text);font-weight:900}
+.empresa-export-form .form-input{width:100%;min-height:48px;border:1px solid var(--form-border);border-radius:8px;background:var(--form-input-bg);color:var(--text);font-weight:800}
+.empresa-export-primary{width:100%;min-height:52px;border-radius:8px;background:linear-gradient(180deg,var(--btn-primary-top),var(--accent)) !important;color:var(--btn-primary-text) !important;border:1px solid var(--btn-primary-border) !important;font-size:1.05rem;font-weight:900}
+.empresa-export-primary:hover{filter:brightness(1.05)}
 .empresa-export-primary:disabled{opacity:.7;cursor:wait}
-.empresa-export-status{min-height:22px;margin:0;padding:12px 14px;border-radius:8px;background:#f1f5f9;color:#475569;font-weight:800;text-align:center}
-.empresa-export-status.is-success{background:#ecfdf5;color:#047857}
-.empresa-export-status.is-error{background:#fef2f2;color:#b91c1c}
+.empresa-export-status{min-height:22px;margin:0;padding:12px 14px;border-radius:8px;background:var(--input-bg-soft);color:var(--muted);font-weight:800;text-align:center}
+.empresa-export-status.is-success{background:color-mix(in srgb,var(--success) 14%,var(--surface));color:var(--success)}
+.empresa-export-status.is-error{background:color-mix(in srgb,var(--danger) 14%,var(--surface));color:var(--danger)}
 .empresa-export-footer-actions{display:flex;justify-content:center}
-.empresa-export-footer-actions a{color:#0f5ea8;font-weight:900;text-decoration:none}
-.empresa-export-footer-actions a:hover{text-decoration:underline}
+.empresa-export-back{min-height:44px}
 
 @media (max-width:700px){
   .checkout-licencia-page .admin-content{overflow-x:hidden}
@@ -8001,6 +8097,113 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   overflow:auto;
   font-size:.83rem;
   line-height:1.4;
+}
+
+.auditoria-global-page .container{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.auditoria-global-header{
+  align-items:flex-start;
+}
+.auditoria-global-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.auditoria-global-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.auditoria-global-kpis article{
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  border-radius:8px;
+  padding:10px 12px;
+}
+.auditoria-global-kpis span{
+  display:block;
+  color:var(--muted);
+  font-size:.82rem;
+}
+.auditoria-global-kpis strong{
+  display:block;
+  margin-top:4px;
+  font-size:1.25rem;
+  color:var(--text);
+}
+.auditoria-global-filtros{
+  margin:0;
+}
+.auditoria-global-table-card{
+  padding:12px;
+  border-radius:8px;
+}
+.auditoria-global-table-head,
+.auditoria-global-pagination,
+.auditoria-global-dialog-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.auditoria-global-table-head{
+  margin-bottom:10px;
+}
+.auditoria-global-table-head span{
+  color:var(--muted);
+  font-size:.86rem;
+}
+.auditoria-global-pagination{
+  margin-top:10px;
+}
+.audit-ok,
+.audit-bad{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:2px 8px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:.78rem;
+}
+.audit-ok{
+  background:rgba(34,197,94,.14);
+  color:var(--status-success);
+}
+.audit-bad{
+  background:rgba(239,68,68,.14);
+  color:var(--status-danger);
+}
+.auditoria-global-dialog{
+  width:min(820px, calc(100vw - 28px));
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--card);
+  color:var(--text);
+  padding:14px;
+}
+.auditoria-global-dialog::backdrop{
+  background:rgba(15,23,42,.56);
+}
+@media (max-width: 760px){
+  .auditoria-global-actions,
+  .auditoria-global-actions .btn{
+    width:100%;
+  }
+  .auditoria-global-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media (max-width: 460px){
+  .auditoria-global-kpis{
+    grid-template-columns:1fr;
+  }
 }
 
 .empresa-grid-2{
@@ -19026,5 +19229,250 @@ body.carrito-flat-page .actions .cart-btn-icon{
   body.carrito-flat-page .carrito-customer-search-grid > .form-col,
   body.carrito-flat-page .carrito-customer-quick-grid > .form-col{
     grid-column:auto !important;
+  }
+}
+/* Energia solar empresarial */
+.solar-page {
+  background: var(--page-bg, #f7fafc);
+  color: var(--text-color, #172033);
+}
+
+.solar-page .empresa-main {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.solar-page .page-heading.compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 18px;
+}
+
+.solar-page .page-heading h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 2.4vw, 2.45rem);
+  letter-spacing: 0;
+}
+
+.solar-page .page-heading p {
+  margin: 4px 0 0;
+  max-width: 760px;
+  color: var(--muted-text, #536170);
+}
+
+.solar-status {
+  flex-basis: 100%;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent-color, #2563eb) 28%, transparent);
+  background: color-mix(in srgb, var(--accent-color, #2563eb) 8%, transparent);
+  border-radius: 8px;
+}
+
+.solar-status.is-error {
+  border-color: rgba(220, 38, 38, .35);
+  background: rgba(220, 38, 38, .08);
+  color: #b91c1c;
+}
+
+.solar-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.solar-kpi {
+  border: 1px solid var(--border-color, #d8e0ea);
+  background: var(--card-bg, #fff);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.solar-kpi span {
+  display: block;
+  color: var(--muted-text, #617083);
+  font-size: .86rem;
+}
+
+.solar-kpi strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.55rem;
+}
+
+.solar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, .7fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.solar-layout-secondary {
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+  margin-top: 14px;
+}
+
+.solar-panel {
+  margin: 0 0 14px;
+  border: 1px solid var(--border-color, #d8e0ea);
+  background: var(--card-bg, #fff);
+  box-shadow: none;
+}
+
+.solar-panel h2,
+.solar-panel h3 {
+  margin: 0 0 8px;
+  letter-spacing: 0;
+}
+
+.solar-panel p {
+  color: var(--muted-text, #617083);
+}
+
+.solar-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.solar-form-alerts,
+.solar-form-readings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.solar-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: .9rem;
+  color: var(--muted-text, #536170);
+}
+
+.solar-form-wide,
+.solar-form-actions {
+  grid-column: 1 / -1;
+}
+
+.solar-check {
+  flex-direction: row !important;
+  align-items: center;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid var(--border-color, #d8e0ea);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--card-bg, #fff) 88%, var(--accent-color, #2563eb) 4%);
+}
+
+.solar-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.solar-form-actions,
+.page-heading-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.solar-provider-grid,
+.solar-list {
+  display: grid;
+  gap: 8px;
+}
+
+.solar-provider-card,
+.solar-system-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--border-color, #d8e0ea);
+  background: color-mix(in srgb, var(--card-bg, #fff) 94%, var(--accent-color, #2563eb) 4%);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.solar-system-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solar-provider-card span,
+.solar-system-row span,
+.solar-system-row small,
+.solar-provider-card small {
+  color: var(--muted-text, #617083);
+}
+
+.solar-table-wrap {
+  width: 100%;
+  overflow: auto;
+}
+
+.solar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+
+.solar-table th,
+.solar-table td {
+  padding: 8px 9px;
+  border-bottom: 1px solid var(--border-color, #d8e0ea);
+  text-align: left;
+  vertical-align: top;
+}
+
+.solar-table th {
+  color: var(--muted-text, #617083);
+  font-weight: 700;
+}
+
+.solar-events-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  gap: 14px;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--border-color, #d8e0ea);
+  border-radius: 8px;
+  color: var(--muted-text, #617083);
+}
+
+@media (max-width: 980px) {
+  .solar-page .page-heading.compact,
+  .solar-layout,
+  .solar-layout-secondary,
+  .solar-events-grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+  .solar-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .solar-form,
+  .solar-form-alerts,
+  .solar-form-readings {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .solar-page .empresa-main {
+    padding: 12px;
+  }
+  .solar-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .solar-system-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

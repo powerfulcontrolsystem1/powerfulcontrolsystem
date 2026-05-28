@@ -839,6 +839,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/energia_solar":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/energia_solar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/energia_solar
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/estacion_aseo":
     get:
       tags: [empresa]
@@ -2747,6 +2760,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/asesor_comercial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/auditoria":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/auditoria
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/auditoria
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

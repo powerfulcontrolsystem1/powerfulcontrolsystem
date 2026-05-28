@@ -10,6 +10,8 @@
       'dark-violet': true,
       'dark-emerald': true,
       'dark-corporate': true,
+      'dark-absolute': true,
+      'dark-obsidian': true,
       'dark-neon': true,
       'light-wood': true
     };

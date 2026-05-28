@@ -1,3 +1,28 @@
+2026-05-28 - Auditoria global del selector
+- `backend/db/auditoria_super.go`:
+	- esquema y helpers de `super_auditoria_eventos` para movimientos del selector, administradores, licencias, reportes y empresas compartidas.
+- `backend/handlers/auditoria_super.go`:
+	- endpoint `/super/api/auditoria`, registro `ui_event` y middleware `WithSuperAuditoria`.
+- `web/super/auditoria_global.html`:
+	- pagina visible desde `seleccionar_empresa.html` con KPIs, filtros, tabla, detalle y exportacion.
+- `web/js/super_auditoria_global.js`:
+	- logica de consulta, paginacion, detalle y descarga CSV/JSON de auditoria global.
+
+2026-05-28 - Energia solar multiempresa
+- `backend/db/energia_solar.go`:
+	- esquema y helpers para sistemas solares, alertas, lecturas y eventos por `empresa_id`.
+	- normaliza proveedores `victron_vrm`, `sma_sunny_portal`, `solaredge_monitoring` y `gateway_local`.
+- `backend/handlers/energia_solar.go`:
+	- endpoint `/api/empresa/energia_solar` con catalogo, dashboard, CRUD de sistema/alerta, registro de lecturas, eventos y correos.
+- `web/administrar_empresa/energia_solar.html`:
+	- pagina operativa del modulo con dashboard, proveedores, formulario de sistema, alertas, lecturas y eventos.
+- `web/js/energia_solar.js`:
+	- logica frontend para cargar catalogo, guardar configuracion, probar alertas y registrar lecturas.
+- `web/img/solar-energy.svg`:
+	- icono del menu y del portal publico para energia solar.
+- `documentos/energia_solar.md`:
+	- guia operativa y tecnica del nuevo modulo.
+
 2026-05-27 - Empresas compartidas en administrar empresa
 - `web/administrar_empresa/empresas_compartidas.html`:
 	- nueva pagina para listar accesos compartidos activos e invitaciones de la empresa actual.
@@ -10017,3 +10042,37 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Simplifica el flujo: carga el nombre de la empresa, mantiene el formato seleccionado y descarga el archivo con un unico boton.
 - `web/estilos.css`:
 	- Agrega una tarjeta compacta, limpia y responsiva para exportacion de datos, sin paneles tecnicos ni vista previa de tablas.
+
+2026-05-28 - Apariencias oscuras profesionales
+- `web/menu.js`:
+	- Agrega al selector de apariencias los temas `Negro Absoluto` y `Obsidiana Profesional`, persistidos como `dark-absolute` y `dark-obsidian`.
+- `web/estilos.css`:
+	- Define variables completas para ambos temas: negro puro sin luz ambiental y negro obsidiana con acentos azul acero.
+- `web/js/empresa_submenu_context.js` y paginas internas de `web/administrar_empresa/`:
+	- Reconocen los nuevos temas al heredar apariencia desde menu flotante, cookies o `localStorage`.
+
+2026-05-28 - Auditoria especial super administrador
+- `backend/handlers/auditoria_super.go`:
+	- Restringe `scope=super_panel` a roles super y reutiliza la consulta/exportacion de `super_auditoria_eventos`.
+- `backend/main.go`:
+	- Envuelve APIs sensibles del panel super con `WithSuperAuditoria`.
+- `web/super/auditoria_super_admin.html`:
+	- Nueva pagina de auditoria del panel super con filtros, KPIs, detalle y exportacion.
+- `web/js/super_auditoria_global.js`:
+	- Soporta alcance configurable por pagina (`principal` o `super_panel`) y prefijo de descarga.
+- `web/super_administrador.html` y `web/js/super_administrador.js`:
+	- Agregan el boton `Auditoria super` y registran eventos de navegacion del menu super.
+- `web/super/configuracion_avanzada.html` y `web/super/voz_streaming_ia.html`:
+	- Registran interacciones visuales sobre botones `Editar`, guardados, respaldo y pruebas de configuracion sensible.
+
+2026-05-28 - Descarga de informacion integrada al selector
+- `web/js/seleccionar_empresa.js`:
+	- Abre la descarga de informacion de la empresa dentro del `contentFrame` derecho del selector y atiende el mensaje de regreso al listado.
+- `web/descargar_informacion_de_la_empresa.html`:
+	- Reemplaza el enlace simple por el boton `Regresar a seleccionar empresas` y agrega la opcion `Backup completo`.
+- `web/js/descargar_informacion_de_la_empresa.js`:
+	- Detecta modo embebido y comunica al selector cuando el usuario quiere regresar.
+- `backend/handlers/system_empresas_export.go`:
+	- Agrega el formato `backup` para descargar un JSON integral con version, empresa, snapshot y aviso de restauracion.
+- `web/estilos.css`:
+	- Ajusta la pagina de descarga para usar variables de tema y verse consistente en apariencias claras y oscuras.

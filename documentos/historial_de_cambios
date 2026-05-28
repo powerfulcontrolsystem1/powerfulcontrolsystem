@@ -1,3 +1,19 @@
+2026-05-28: Auditoria global del selector de empresas.
+- Modulos afectados: `seleccion_empresas`, `administradores_delegados`, `licencias`, `reportes_globales`, `auditoria`, `documentacion`.
+- Cambio funcional: `Seleccionar empresa` agrega el boton `Auditoria`, que abre `web/super/auditoria_global.html` en el panel derecho. La pagina lista movimientos, filtra por fecha/modulo/usuario/empresa/resultado/busqueda, muestra KPIs, detalle JSON saneado, exporta CSV/JSON y permite abrir `Agregar administrador`.
+- Backend: se agrega `super_auditoria_eventos`, endpoint `/super/api/auditoria` y middleware `WithSuperAuditoria` para registrar operaciones de empresas, administradores, empresas compartidas, tipos de empresa, licencias y reportes globales.
+- Frontend: `web/js/seleccionar_empresa.js` registra eventos visuales relevantes como abrir empresa, abrir panel lateral o crear empresa desde el selector mediante `action=ui_event`.
+- Seguridad: un administrador normal consulta solo su alcance principal/delegado; el super administrador puede consultar global. La metadata se sanea y no guarda contrasenas, tokens ni secretos.
+- QA: `go test ./... -run "^$" -count=1`, `node --check` de JS, y captura visual local en `test_runs/auditoria_global_visual.png`.
+
+2026-05-28: Modulo energia solar multiempresa.
+- Modulos afectados: `energia_solar`, `administrar_empresa`, `permisos`, `portal_publico`, `correo`, `documentacion`.
+- Cambio funcional: cada empresa puede registrar sistemas solares Victron VRM, SMA Sunny Portal, SolarEdge Monitoring o gateway local, asociar baterias famosas como Tesla Powerwall, BYD Battery-Box, Pylontech, Enphase IQ Battery y Victron Lithium, registrar lecturas y disparar alertas.
+- Backend: se agregan tablas `empresa_energia_solar_*`, endpoint `/api/empresa/energia_solar`, evaluacion de alertas por SOC/SOH/carga/temperatura/celdas/inversor/BMS y correos con SMTP configurado.
+- Frontend: nueva pagina `web/administrar_empresa/energia_solar.html` en `Analisis y control`, dashboard, formularios de sistema/alerta/lectura y eventos recientes.
+- Seguridad: endpoint con `WithEmpresaEnergiaSolarPermissions`, filtro por `empresa_id`, licencia activable con clave `energia_solar` y fallback a `control_electrico`/`seguridad`; `api_key_ref` exige referencia `env:*`.
+- QA: `go test ./db ./handlers -run TestDoesNotExist -count=1`; `node --check` de JS; prueba visual con Chrome headless y servidor mock validando carga, guardar sistema y registrar lectura.
+
 2026-05-27: Empresas compartidas en administrar empresa.
 - Modulos afectados: `administracion_empresa`, `empresas_compartidas`, `seguridad_multiempresa`.
 - Cambio funcional: se agrega una seccion dentro de Administrar empresa para listar a quien se le ha compartido la empresa actual, con opcion de desactivar accesos activos o cancelar invitaciones.
@@ -27974,6 +27990,67 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 Cambio funcional: la pantalla de descarga empresarial deja de mostrar resumenes tecnicos, tablas y tarjetas por formato; ahora presenta una sola tarjeta con selector de formato y boton `Descargar`.
 Verificacion: `node --check web/js/descargar_informacion_de_la_empresa.js`; prueba visual escritorio y movil con descarga CSV generada desde el boton principal.
+
+2026-05-28: nuevas apariencias oscuras profesionales
+Modulos afectados: menu_flotante, apariencias, frontend_ux.
+Archivos modificados:
+- web/menu.js
+- web/estilos.css
+- web/js/empresa_submenu_context.js
+- web/administrar_empresa/panel.html
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chat_usuarios.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_papelera.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/estacion_ia_pedidos.html
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+Cambio funcional: el selector de apariencias agrega `Negro Absoluto` (`dark-absolute`) y `Obsidiana Profesional` (`dark-obsidian`), ambos reconocidos por paginas principales e iframes internos.
+Verificacion: `node --check web/menu.js`, `node --check web/js/empresa_submenu_context.js`; prueba visual con menu flotante seleccionando ambos temas y guardando la preferencia en `/api/user/configuracion`.
+
+2026-05-28: auditoria especial super administrador
+Modulos afectados: super_administrador, auditoria_super, configuracion_avanzada, seguridad.
+Archivos modificados:
+- backend/handlers/auditoria_super.go
+- backend/main.go
+- web/super_administrador.html
+- web/js/super_administrador.js
+- web/super/auditoria_super_admin.html
+- web/super/auditoria_global.html
+- web/js/super_auditoria_global.js
+- web/super/configuracion_avanzada.html
+- web/super/voz_streaming_ia.html
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/mapa_modulos.md
+- documentos/contexto_codex.md
+- documentos/CHANGELOG.md
+- CHANGELOG.md
+Cambio funcional: el panel super incorpora auditoria propia con alcance `super_panel`, reservada a super administradores; registra navegacion del menu, ediciones visuales y llamadas automaticas a endpoints sensibles sin guardar secretos.
+Verificacion: pendiente por limitacion local de `node.exe` con acceso denegado; validar con `go test ./... -run "^$" -count=1` y prueba visual del menu `Auditoria super`.
+
+2026-05-28: descarga de informacion integrada al selector
+Modulos afectados: seleccionar_empresa, descarga_informacion_empresa, frontend_ux.
+Archivos modificados:
+- backend/handlers/system_empresas_export.go
+- web/js/seleccionar_empresa.js
+- web/descargar_informacion_de_la_empresa.html
+- web/js/descargar_informacion_de_la_empresa.js
+- web/estilos.css
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+Cambio funcional: el boton de descarga de cada tarjeta de empresa abre la pagina de descarga dentro del panel derecho de `seleccionar_empresa.html`, mantiene la apariencia activa, agrega regreso interno al listado de empresas e incluye formato `backup` para descargar un JSON integral versionado.
+Verificacion: `node --check web/js/seleccionar_empresa.js`, `node --check web/js/descargar_informacion_de_la_empresa.js`; `gofmt`; validacion headless con Chrome local: descarga abre en iframe derecho, muestra Backup completo y conserva boton de regreso.
 
 2026-05-27: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

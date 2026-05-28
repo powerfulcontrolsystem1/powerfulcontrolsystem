@@ -1,3 +1,24 @@
+2026-05-28: Auditoria especial del panel super administrador
+- Proposito: registrar acciones de usuarios super administradores dentro de `super_administrador.html` y sus paginas internas criticas.
+- Pagina: `Super Administrador > Acceso > Auditoria super`, implementada en `web/super/auditoria_super_admin.html`.
+- Funciones: KPIs, filtros por fecha/modulo/usuario/empresa/resultado, detalle JSON saneado y exportacion CSV/JSON para navegacion, ediciones, guardados y pruebas de configuracion super.
+- Backend: `/super/api/auditoria?scope=super_panel` queda reservado para roles super; `WithSuperAuditoria` audita configuracion de Gmail, Wompi/Nequi, Epayco, reCAPTCHA, IA global, OnlyOffice, RustDesk, voz IA, respaldo, seguridad VPS, mantenimiento, consumos y contenido publico.
+- Seguridad: la metadata redacta tokens, claves, passwords y secretos; las tarjetas sensibles mantienen boton `Editar` antes de modificar credenciales guardadas.
+
+2026-05-28: Auditoria global del selector de empresas
+- Proposito: centralizar la trazabilidad de movimientos administrativos antes de entrar a una empresa.
+- Pagina: `Seleccionar empresa > Auditoria`, implementada en `web/super/auditoria_global.html`.
+- Funciones: KPIs, filtros por fecha/modulo/usuario/empresa/resultado, tabla de movimientos, detalle JSON saneado, exportacion CSV/JSON y acceso directo para agregar administradores.
+- Backend: `/super/api/auditoria` consulta `super_auditoria_eventos` y registra eventos visuales `ui_event`; `WithSuperAuditoria` audita endpoints globales usados por el selector.
+- Seguridad: los administradores normales ven solo su alcance principal/delegado y el super administrador puede ver el alcance global; no se guardan secretos.
+
+2026-05-28: Energia solar multiempresa
+- Proposito: monitorear sistemas de energia solar por empresa, incluyendo paneles, inversores, controladoras, baterias y BMS.
+- Proveedores base: Victron VRM/VictronConnect, SMA Sunny Portal powered by ennexOS, SolarEdge Monitoring Platform y gateway local para Modbus/CAN/RS485/MQTT/API.
+- Baterias catalogadas: Tesla Powerwall, BYD Battery-Box Premium, Pylontech US5000/US3000C, Enphase IQ Battery y Victron Lithium NG/Smart Lithium.
+- Funciones: registro de sistemas, capacidad kWp/kWh, referencia segura de API, gateway local, correos de alerta, alertas por SOC/SOH/carga/temperatura/celdas/paneles/inversor/BMS, lecturas historicas y eventos auditables.
+- Integracion: menu `Administrar empresa > Analisis y control > Energia solar`, permiso `energia_solar`, endpoint `/api/empresa/energia_solar` y descripcion publica en index editable por super administrador.
+
 2026-05-27: Empresas compartidas en administrar empresa
 - Modulos afectados: `administracion_empresa`, `empresas_compartidas`, `seguridad_multiempresa`.
 - Cambio funcional: se agrega una pagina empresarial para ver a quienes se compartio la empresa actual y cancelar/desactivar accesos compartidos o invitaciones pendientes.
@@ -3198,3 +3219,14 @@ Captura inteligente de compras y gastos
 - Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `frontend_ux`.
 - Cambio funcional: la pagina de descarga deja de mostrar tarjetas tecnicas, conteos y tablas; ahora muestra solo el nombre de la empresa, un selector de formato y el boton `Descargar`.
 - UX: el formato predeterminado es Excel empresarial y la misma vista funciona en escritorio y celular.
+
+2026-05-28: Apariencias oscuras profesionales
+- Modulos afectados: `menu_flotante`, `apariencias`, `frontend_ux`.
+- Cambio funcional: el selector de apariencias incorpora `Negro Absoluto` y `Obsidiana Profesional`.
+- UX: `Negro Absoluto` usa fondo negro puro y superficies casi negras; `Obsidiana Profesional` mantiene una base super oscura con acentos azul acero para jerarquia empresarial.
+
+2026-05-28: Descarga de informacion integrada al selector
+- Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `frontend_ux`.
+- Cambio funcional: el boton de descarga de cada empresa ya no saca al usuario del selector; abre `descargar_informacion_de_la_empresa.html` dentro del panel derecho junto al menu.
+- UX: la pagina de descarga usa variables de apariencia del sistema y agrega el boton `Regresar a seleccionar empresas`, que vuelve al listado cuando esta embebida.
+- Backup: el selector de formato incluye `Backup completo (.json)` para descargar una copia integral exportable de la informacion de la empresa visible.

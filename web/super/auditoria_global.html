@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Auditoría global</title>
+  <link rel="stylesheet" href="/estilos.css">
+</head>
+<body class="super-page auditoria-global-page" data-audit-scope="principal" data-audit-download-prefix="auditoria_global">
+  <div class="container">
+    <div class="page-header auditoria-global-header">
+      <div>
+        <h1>Auditoría global</h1>
+        <p class="page-subtitle">Registra movimientos del selector de empresas, administradores, licencias, empresas compartidas, descargas y reportes globales. Los administradores ven solo su propio alcance.</p>
+      </div>
+      <div class="auditoria-global-actions">
+        <button id="btnAgregarAdmin" class="btn add" type="button">Agregar administrador</button>
+        <button id="btnActualizar" class="btn secondary" type="button">Actualizar</button>
+      </div>
+    </div>
+
+    <section class="auditoria-global-kpis" aria-label="Resumen de auditoría">
+      <article><span>Total filtrado</span><strong id="kpiTotal">0</strong></article>
+      <article><span>Errores</span><strong id="kpiErrores">0</strong></article>
+      <article><span>Usuarios</span><strong id="kpiUsuarios">0</strong></article>
+      <article><span>Alcance</span><strong id="kpiScope">-</strong></article>
+    </section>
+
+    <form id="filtros" class="form auditoria-global-filtros">
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="desde">Desde</label>
+          <input id="desde" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="hasta">Hasta</label>
+          <input id="hasta" type="date" class="form-input">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="modulo">Módulo</label>
+          <select id="modulo" class="form-input">
+            <option value="">Todos</option>
+            <option value="selector_empresas">Empresas</option>
+            <option value="selector_empresa_ui">Interacciones UI</option>
+            <option value="administradores">Administradores</option>
+            <option value="empresas_compartidas">Empresas compartidas</option>
+            <option value="licencias">Licencias</option>
+            <option value="reportes_globales">Reportes globales</option>
+            <option value="tipos_empresas">Tipos de empresas</option>
+          </select>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="resultado">Resultado</label>
+          <select id="resultado" class="form-input">
+            <option value="">Todos</option>
+            <option value="ok">OK</option>
+            <option value="error">Error</option>
+            <option value="rechazado">Rechazado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label" for="usuario">Usuario</label>
+          <input id="usuario" class="form-input" placeholder="correo o usuario">
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="empresaId">Empresa ID</label>
+          <input id="empresaId" class="form-input" inputmode="numeric" placeholder="Opcional">
+        </div>
+        <div class="form-col form-col-wide">
+          <label class="form-label" for="search">Buscar</label>
+          <input id="search" class="form-input" placeholder="acción, endpoint, recurso, IP, observación">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="submit">Ver auditoría</button>
+        <button id="btnCSV" class="btn secondary" type="button">Exportar CSV</button>
+        <button id="btnJSON" class="btn secondary" type="button">Exportar JSON</button>
+      </div>
+      <div id="msg" class="form-help"></div>
+    </form>
+
+    <section class="card auditoria-global-table-card">
+      <div class="auditoria-global-table-head">
+        <strong>Movimientos recientes</strong>
+        <span id="pagerInfo">Mostrando 0-0 de 0</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-compact" id="tablaAuditoriaGlobal">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Módulo</th>
+              <th>Acción</th>
+              <th>Empresa</th>
+              <th>Resultado</th>
+              <th>Endpoint</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="auditoria-global-pagination">
+        <button id="prevPage" class="btn secondary" type="button">Anterior</button>
+        <button id="nextPage" class="btn secondary" type="button">Siguiente</button>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="detalleDialog" class="auditoria-global-dialog">
+    <div class="auditoria-global-dialog-head">
+      <strong>Detalle del movimiento</strong>
+      <button id="cerrarDetalle" class="btn secondary small" type="button">Cerrar</button>
+    </div>
+    <pre id="detalleJson" class="auditoria-detail-pre"></pre>
+  </dialog>
+
+  <script src="/js/super_auditoria_global.js"></script>
+</body>
+</html>

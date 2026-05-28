@@ -132,7 +132,9 @@
       </div>
 
       <div class="voice-actions">
+        <button id="editVoiceStreamConfig" type="button" class="btn secondary">Editar</button>
         <button id="saveVoiceStreamConfig" type="button" class="btn primary">Guardar</button>
+        <button id="cancelVoiceStreamConfig" type="button" class="btn secondary" style="display:none;">Cancelar</button>
         <button id="activateTestVoiceStreamConfig" type="button" class="btn">Activar y probar</button>
         <button id="testVoiceStreamConfig" type="button" class="btn secondary">Probar servicio</button>
         <span id="voiceStreamMessage" class="form-help"></span>
@@ -159,6 +161,50 @@
       var serviceState = document.getElementById('voiceServiceState');
       var authState = document.getElementById('voiceAuthState');
       var currentMode = 'computer';
+      var editable = true;
+      var editableIds = [
+        'voiceComputerMode',
+        'voiceNaturalMode',
+        'voiceStreamEnabled',
+        'voiceComputerGender',
+        'voiceStreamProvider',
+        'voiceStreamBaseURL',
+        'voiceStreamVoice',
+        'voiceStreamTimeoutMS',
+        'voiceStreamAuthHeader',
+        'voiceStreamAuthToken',
+        'voiceStreamGenerateToken'
+      ];
+
+      function auditVoiceEvent(action) {
+        try {
+          fetch('/super/api/auditoria?action=ui_event&scope=super_panel', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accion: action || 'interaccion_voz_ia',
+              modulo: 'super_config_voz_ia',
+              recurso: 'voz_streaming_ia',
+              endpoint: window.location.pathname,
+              observaciones: 'interaccion visual sobre credenciales de voz IA',
+              metadata: { pagina: 'voz_streaming_ia' }
+            })
+          }).catch(function(){});
+        } catch (e) {}
+      }
+
+      function setEditMode(isEditing) {
+        editable = !!isEditing;
+        editableIds.forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.disabled = !editable;
+        });
+        if (currentMode === 'computer') enabled.disabled = true;
+        document.getElementById('saveVoiceStreamConfig').style.display = editable ? '' : 'none';
+        document.getElementById('editVoiceStreamConfig').style.display = editable ? 'none' : '';
+        document.getElementById('cancelVoiceStreamConfig').style.display = editable ? '' : 'none';
+      }
 
       function setMessage(text, error) {
         msg.textContent = text || '';
@@ -189,6 +235,7 @@
         if (config.encryption_available === false) {
           authState.textContent = 'Cifrado no disponible: configura CONFIG_ENC_KEY';
         }
+        setEditMode(!config.auth_configured);
       }
 
       function setVoiceMode(mode) {
@@ -214,6 +261,7 @@
       }
 
       async function saveConfig() {
+        auditVoiceEvent('guardar_configuracion');
         setMessage('Guardando...');
         try {
           var payload = {
@@ -250,6 +298,7 @@
       }
 
       async function testConfig() {
+        auditVoiceEvent('probar_voz_ia');
         if (currentMode === 'computer') {
           serviceState.textContent = 'No requerido: usa voz del navegador';
           setMessage('Voz rapida lista. No se consulta el servicio natural del VPS.');
@@ -275,6 +324,7 @@
       }
 
       async function activateAndTestConfig() {
+        auditVoiceEvent('activar_prueba_voz_ia');
         setVoiceMode('natural');
         enabled.checked = true;
         setMessage('Activando y registrando credencial...');
@@ -300,6 +350,15 @@
         }
       }
 
+      document.getElementById('editVoiceStreamConfig').addEventListener('click', function () {
+        setEditMode(true);
+        auditVoiceEvent('habilitar_edicion_configuracion');
+        setMessage('Modo edicion activo para voz IA. Los secretos no se guardan en auditoria.');
+      });
+      document.getElementById('cancelVoiceStreamConfig').addEventListener('click', function () {
+        auditVoiceEvent('cancelar_edicion_configuracion');
+        loadConfig();
+      });
       document.getElementById('saveVoiceStreamConfig').addEventListener('click', saveConfig);
       document.getElementById('activateTestVoiceStreamConfig').addEventListener('click', activateAndTestConfig);
       document.getElementById('testVoiceStreamConfig').addEventListener('click', testConfig);

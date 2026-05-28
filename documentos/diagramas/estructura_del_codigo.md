@@ -1,3 +1,50 @@
+## Actualizacion 2026-05-28 (auditoria especial super administrador)
+
+- `web/super_administrador.html`: agrega `Auditoria super` dentro de Acceso.
+- `web/js/super_administrador.js`: registra eventos visuales de apertura de
+  modulos super con `scope=super_panel`.
+- `web/super/auditoria_super_admin.html`: usa el mismo visor de auditoria con
+  filtros y exportacion para movimientos del panel super.
+- `web/super/configuracion_avanzada.html` y `web/super/voz_streaming_ia.html`:
+  registran clics en botones `Editar`, guardados, respaldos y pruebas de
+  configuracion sensible.
+- `backend/handlers/auditoria_super.go`: bloquea `scope=super_panel` para
+  usuarios que no sean roles super y mantiene saneamiento de secretos.
+- `backend/main.go`: envuelve endpoints sensibles super con
+  `WithSuperAuditoria`.
+
+## Actualizacion 2026-05-28 (auditoria global del selector)
+
+- `backend/db/auditoria_super.go`: define `super_auditoria_eventos` y helpers
+  de listado/conteo para la base `pcs_superadministrador`.
+- `backend/handlers/auditoria_super.go`: expone `/super/api/auditoria`, registra
+  eventos visuales `ui_event` y provee `WithSuperAuditoria`.
+- `backend/main.go`: envuelve endpoints globales del selector como empresas,
+  compartidos, administradores, tipos, licencias y reportes globales.
+- `web/seleccionar_empresa.html` agrega `Auditoria` al menu lateral y
+  `web/js/seleccionar_empresa.js` registra aperturas relevantes.
+- `web/super/auditoria_global.html` y `web/js/super_auditoria_global.js`:
+  consultan, filtran, paginan, detallan y exportan movimientos.
+
+## Actualizacion 2026-05-28 (energia solar multiempresa)
+
+- `backend/db/energia_solar.go`: define tablas y helpers para sistemas,
+  alertas, lecturas y eventos solares por `empresa_id`.
+- `backend/handlers/energia_solar.go`: expone `/api/empresa/energia_solar`,
+  catalogo de proveedores/baterias, dashboard, escritura de configuracion,
+  evaluacion de alertas y envio/captura de correos.
+- `backend/handlers/empresa_permisos.go`: agrega modulo `energia_solar`,
+  pagina `linkEnergiaSolar`, wrapper de permisos y fallback de licencia a
+  `control_electrico`/`seguridad`.
+- `web/administrar_empresa.html`: muestra `Energia solar` en `Analisis y
+  control`.
+- `web/administrar_empresa/energia_solar.html` y `web/js/energia_solar.js`:
+  renderizan dashboard, formularios, proveedores, baterias, alertas, lecturas y
+  eventos.
+- Flujo de capas: Administrar empresa -> Energia solar -> API con
+  `empresa_id` -> tablas `empresa_energia_solar_*` -> eventos/correos -> vista
+  operativa actualizada.
+
 ## Actualizacion 2026-05-27 (administradores del selector filtrados y super por invitacion)
 
 - `web/seleccionar_empresa.html`: el enlace Administradores usa `/super/administradores.html?scope=principal`.

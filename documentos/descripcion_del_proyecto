@@ -1,3 +1,7 @@
+Revision auditoria especial super administrador 2026-05-28: `web/super_administrador.html` agrega el modulo `Auditoria super`, reservado al alcance `scope=super_panel` y protegido en backend para roles de super administrador. La pagina `web/super/auditoria_super_admin.html` reutiliza `/super/api/auditoria` para consultar/exportar movimientos del panel super: navegacion del menu, ediciones visuales en configuracion avanzada y llamadas a endpoints sensibles. Las APIs de configuracion super de Gmail SMTP, Wompi/Nequi, Epayco, reCAPTCHA, IA global, OnlyOffice, RustDesk, voz IA, respaldo, seguridad VPS, consumos, mantenimiento y contenido publico quedan envueltas con `WithSuperAuditoria`; la metadata sanea tokens, claves, passwords y secretos antes de persistir.
+
+Revision auditoria global del selector 2026-05-28: `seleccionar_empresa.html` integra un modulo de auditoria global para administradores. Desde el menu lateral se abre `web/super/auditoria_global.html`, que muestra movimientos del selector, administradores, empresas compartidas, licencias, descargas y reportes globales. El backend registra esos eventos en `pcs_superadministrador.super_auditoria_eventos` mediante `/super/api/auditoria` y `WithSuperAuditoria`, con alcance por `principal_email` para que un administrador normal vea solo su operacion y el super administrador conserve vista global. La metadata se sanea para no guardar secretos.
+
 Revision empresas compartidas en administrar empresa 2026-05-27: `Administrar empresa > Administracion` incorpora el boton `Empresas compartidas`, que abre `web/administrar_empresa/empresas_compartidas.html`. La pagina muestra accesos activos e invitaciones de la empresa actual, indica alcance/estado y permite desactivar un acceso compartido o cancelar una invitacion pendiente usando la API existente `/super/api/empresas/compartidos`, con validacion backend de propietario, quien compartio o administrador receptor.
 
 Revision estado de invitacion administradores 2026-05-27: la pagina `web/super/administradores.html`, incluyendo la vista abierta desde `seleccionar_empresa.html`, muestra una columna `Invitacion` con `Aceptada`, `Pendiente`, `Revocada`, `Rechazada` o `Expirada`, y deja aparte `Estado cuenta`. El backend agrega `invitation_status` en el listado filtrado para que el estado no dependa solo del texto visual.
@@ -675,3 +679,16 @@ Revision descarga informacion empresa 2026-05-28: el boton de descarga en `selec
 Revision PWA login 2026-05-28: el portal permite instalar la aplicacion desde `login.html` porque el manifest y el service worker se sirven como recursos publicos. `index.html` y `login.html` quedan alineados con el mismo icono PWA para favicon, apple touch icon y encabezado publico.
 
 Revision descarga informacion empresa 2026-05-28 UX: la vista `descargar_informacion_de_la_empresa.html` se simplifica para operacion administrativa. El usuario elige un formato, por defecto Excel, y presiona `Descargar`; se retiran resumenes tecnicos, conteos y vista previa de tablas de la pantalla.
+
+Revision apariencias 2026-05-28: el menu flotante agrega dos temas oscuros adicionales. `Negro Absoluto` aplica negro puro para fondos y superficies sin luz ambiental; `Obsidiana Profesional` usa una paleta super oscura con acentos azul acero para mantener jerarquia visual empresarial.
+
+Revision descarga informacion empresa 2026-05-28 integrada: desde `seleccionar_empresa.html`, la descarga de informacion de una empresa se abre en el panel derecho del selector, conserva la apariencia activa del sistema y permite regresar al listado con un boton interno sin abandonar el contexto global. La misma pantalla permite descargar un backup completo en JSON ademas de los formatos PDF, Excel, CSV, JSON y TXT.
+Actualizacion 2026-05-28 - Energia solar empresarial
+
+Se agrega un modulo de energia solar por empresa para monitorear paneles,
+inversores, controladoras, baterias y BMS. La solucion incluye proveedores base
+Victron VRM/VictronConnect, SMA Sunny Portal, SolarEdge Monitoring y gateways
+locales, ademas de baterias comunes como Tesla Powerwall, BYD Battery-Box,
+Pylontech, Enphase IQ Battery y Victron Lithium. Cada empresa configura sus
+sistemas, correos, umbrales y lecturas de forma independiente, con alertas por
+correo, eventos auditables y aislamiento por `empresa_id`.

@@ -1,3 +1,28 @@
+## [2026-05-28] Auditoria especial super administrador
+- [Backend] `/super/api/auditoria` acepta `scope=super_panel` solo para roles super y las APIs sensibles de configuracion super quedan envueltas con `WithSuperAuditoria`.
+- [Frontend] `web/super_administrador.html` incorpora `Auditoria super`, con `web/super/auditoria_super_admin.html` para filtros, KPIs, detalle y exportacion CSV/JSON.
+- [Seguridad] Los eventos visuales y automaticos registran navegacion, edicion y guardado sin persistir tokens, claves, passwords ni secretos.
+
+## [2026-05-28] Auditoria global del selector
+- [Backend] Se agrega `/super/api/auditoria`, `super_auditoria_eventos` y el middleware `WithSuperAuditoria` para trazabilidad de empresas, administradores, empresas compartidas, tipos de empresa, licencias y reportes globales.
+- [Frontend] `seleccionar_empresa.html` incorpora el boton `Auditoria` y `web/super/auditoria_global.html` muestra KPIs, filtros, detalle y exportacion CSV/JSON.
+- [Seguridad] La consulta queda limitada por `principal_email` para administradores normales; el super administrador conserva alcance global y la metadata se sanea sin secretos.
+- [QA] `go test ./... -run "^$" -count=1`, `node --check` y captura visual local de la pagina.
+
+## [2026-05-28] Energia solar multiempresa
+- [Backend] Se agrega `/api/empresa/energia_solar` con tablas `empresa_energia_solar_sistemas`, `empresa_energia_solar_alertas`, `empresa_energia_solar_lecturas` y `empresa_energia_solar_eventos`.
+- [Integraciones] Catalogo base para Victron VRM/VictronConnect, SMA Sunny Portal, SolarEdge Monitoring y gateway local/BMS.
+- [Baterias] Soporte operativo para Tesla Powerwall, BYD Battery-Box, Pylontech US5000, Enphase IQ Battery y Victron Lithium con metricas SOC/SOH/voltaje/ciclos/temperatura/celdas.
+- [Frontend] Nueva pagina `Administrar empresa > Analisis y control > Energia solar` con dashboard, configuracion, alertas, lecturas y eventos.
+- [Permisos] Nuevo modulo `energia_solar`, pagina `linkEnergiaSolar`, wrapper `WithEmpresaEnergiaSolarPermissions` y fallback de licencia a `control_electrico`/`seguridad`.
+- [QA] `go test ./db ./handlers -run TestDoesNotExist -count=1`, `node --check` y prueba visual con Chrome headless usando servidor mock.
+
+## [2026-05-28] Descarga de informacion integrada al selector
+- [UX] El boton de descarga de cada tarjeta de empresa abre la pagina dentro del panel derecho de `seleccionar_empresa.html`, junto al menu global.
+- [Apariencia] `descargar_informacion_de_la_empresa.html` usa variables de tema para respetar apariencias claras y oscuras.
+- [Backup] El formato `Backup completo (.json)` descarga un JSON integral versionado con el snapshot de la empresa visible.
+- [Navegacion] Se agrega `Regresar a seleccionar empresas` para volver al listado cuando la pagina esta embebida.
+
 ## [2026-05-27] Reportes globales con alcance del selector
 - [Seguridad] `/super/api/reportes_globales` deja de usar una excepcion global por rol super y ahora reutiliza el alcance efectivo del selector de empresas.
 - [Alcance] El catalogo, tablero, datasets y exportaciones solo pueden usar empresas propias, delegadas o compartidas que el administrador autenticado ve en `seleccionar_empresa.html`.
@@ -1811,3 +1836,8 @@
 - [UX] La pagina de descarga empresarial queda en una sola accion: elegir formato y descargar.
 - [Frontend] Se retiran tarjetas tecnicas y vista previa de tablas de `descargar_informacion_de_la_empresa.html`.
 - [QA] Se comprobo visualmente en escritorio y movil, incluyendo descarga CSV.
+
+## [2026-05-28] Apariencias oscuras profesionales
+- [Temas] El selector del menu flotante incorpora `Negro Absoluto` y `Obsidiana Profesional`.
+- [Frontend] Los iframes y subpaginas internas reconocen `dark-absolute` y `dark-obsidian` al heredar la apariencia.
+- [QA] Se comprobo visualmente el cambio de tema y guardado de preferencia.

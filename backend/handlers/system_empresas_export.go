@@ -235,7 +235,7 @@ func buildEmpresaInfoExportSnapshot(dbEmp, dbSuper *sql.DB, empresaID int64, pre
 	snapshot := &empresaInfoExportSnapshot{
 		Empresa:      empresa,
 		GeneratedAt:  time.Now().Format(time.RFC3339),
-		Formats:      []string{"pdf", "xls", "csv", "json", "txt"},
+		Formats:      []string{"backup", "pdf", "xls", "csv", "json", "txt"},
 		PreviewLimit: previewLimit,
 		SourceTotals: map[string]int{"empresas": 0, "super": 0},
 		Warnings:     make([]string, 0),
@@ -354,6 +354,21 @@ func writeEmpresaInfoExport(w http.ResponseWriter, snapshot *empresaInfoExportSn
 	format = strings.ToLower(strings.TrimSpace(format))
 	if format == "" {
 		return fmt.Errorf("format requerido")
+	}
+	if format == "backup" || format == "backup_json" {
+		fileName := reportesBuildFileName("backup_informacion_integral", snapshot.Empresa.ID, "json")
+		w.Header().Set("Content-Disposition", "attachment; filename=\""+fileName+"\"")
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":           true,
+			"version":      "empresa-info-backup.v1",
+			"tipo":         "backup_informacion_integral",
+			"generado_en":  time.Now().Format(time.RFC3339),
+			"empresa_id":   snapshot.Empresa.ID,
+			"empresa":      snapshot.Empresa,
+			"snapshot":     snapshot,
+			"restauracion": "Este archivo es una copia integral de informacion exportable. Valida compatibilidad antes de restaurar datos en otro ambiente.",
+		})
+		return nil
 	}
 	if format == "json" {
 		fileName := reportesBuildFileName("super_empresa_informacion_integral", snapshot.Empresa.ID, "json")

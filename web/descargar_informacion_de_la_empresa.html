@@ -21,12 +21,13 @@
       <div class="empresa-export-copy">
         <span class="empresa-export-eyebrow">Descargar informacion</span>
         <h1 id="empresaExportTitle">Informacion de la empresa</h1>
-        <p id="empresaExportSubtitle">Elige el formato y descarga una copia de la informacion disponible para esta empresa.</p>
+        <p id="empresaExportSubtitle">Elige backup completo o un formato de exportacion para descargar la informacion disponible de esta empresa.</p>
       </div>
 
       <form id="empresaExportForm" class="empresa-export-form">
         <label class="form-label" for="empresaExportFormat">Formato de descarga</label>
         <select id="empresaExportFormat" class="form-input">
+          <option value="backup">Backup completo (.json)</option>
           <option value="xls">Excel empresarial (.xls)</option>
           <option value="pdf">PDF ejecutivo (.pdf)</option>
           <option value="csv">CSV para otros sistemas (.csv)</option>
@@ -42,7 +43,9 @@
       <p id="empresaExportStatus" class="empresa-export-status" aria-live="polite">Preparando descarga...</p>
 
       <div class="empresa-export-footer-actions">
-        <a href="/seleccionar_empresa.html">Volver a empresas</a>
+        <button id="empresaExportBack" class="btn secondary empresa-export-back" type="button">
+          Regresar a seleccionar empresas
+        </button>
       </div>
     </section>
   </main>

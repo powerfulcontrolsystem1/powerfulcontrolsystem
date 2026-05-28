@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Energía solar</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="empresa-page solar-page" data-auto-estacion-labels="true">
+  <main class="empresa-main">
+    <header class="page-heading compact">
+      <div>
+        <p class="eyebrow">Operación y monitoreo</p>
+        <h1>Energía solar</h1>
+        <p>Monitorea inversores, controladoras, paneles, baterías y BMS por empresa, con alertas automáticas por correo.</p>
+      </div>
+      <div class="page-heading-actions">
+        <button id="btnSolarRefresh" class="btn secondary" type="button">Actualizar</button>
+        <button id="btnSolarTestEmail" class="btn primary" type="button">Probar alerta</button>
+      </div>
+    </header>
+
+    <section class="solar-kpi-grid" aria-label="Indicadores energia solar">
+      <article class="solar-kpi">
+        <span>Sistemas activos</span>
+        <strong id="solarKpiSistemas">0</strong>
+      </article>
+      <article class="solar-kpi">
+        <span>Producción actual</span>
+        <strong id="solarKpiProduccion">0 W</strong>
+      </article>
+      <article class="solar-kpi">
+        <span>Batería promedio</span>
+        <strong id="solarKpiBateria">0%</strong>
+      </article>
+      <article class="solar-kpi">
+        <span>Alertas recientes</span>
+        <strong id="solarKpiAlertas">0</strong>
+      </article>
+    </section>
+
+    <section class="solar-layout">
+      <article class="panel-card solar-panel">
+        <div class="panel-card-header">
+          <div>
+            <h2>Conectar sistema solar</h2>
+            <p>Configura la nube o gateway local. Guarda solo referencias seguras de llaves, por ejemplo <code>env:VICTRON_TOKEN_EMPRESA_32</code>.</p>
+          </div>
+        </div>
+        <form id="solarSystemForm" class="solar-form">
+          <input id="solarSistemaId" type="hidden">
+          <label>Nombre del sistema
+            <input id="solarNombre" class="form-input" type="text" placeholder="Planta solar principal" required>
+          </label>
+          <label>Proveedor
+            <select id="solarProveedor" class="form-input" required></select>
+          </label>
+          <label>Modelo / equipo
+            <input id="solarModelo" class="form-input" type="text" placeholder="Cerbo GX, Sunny Tripower, Home Hub...">
+          </label>
+          <label>Ubicación
+            <input id="solarUbicacion" class="form-input" type="text" placeholder="Techo local principal">
+          </label>
+          <label>Capacidad solar kWp
+            <input id="solarCapacidad" class="form-input" type="number" min="0" step="0.01" value="0">
+          </label>
+          <label>Marca batería
+            <select id="solarBateriaMarca" class="form-input"></select>
+          </label>
+          <label>Modelo batería
+            <input id="solarBateriaModelo" class="form-input" type="text" placeholder="Powerwall, US5000, Battery-Box HVM...">
+          </label>
+          <label>Serial / banco
+            <input id="solarBateriaSerial" class="form-input" type="text" placeholder="Serial o nombre banco">
+          </label>
+          <label>Protocolo BMS
+            <select id="solarBms" class="form-input">
+              <option value="">Sin definir</option>
+              <option value="CAN-bus">CAN-bus</option>
+              <option value="RS485">RS485</option>
+              <option value="Modbus TCP">Modbus TCP</option>
+              <option value="MQTT">MQTT</option>
+              <option value="API nube fabricante">API nube fabricante</option>
+            </select>
+          </label>
+          <label>Capacidad batería kWh
+            <input id="solarCapacidadBateria" class="form-input" type="number" min="0" step="0.01" value="0">
+          </label>
+          <label>Referencia instalación
+            <input id="solarInstalacion" class="form-input" type="text" placeholder="siteId, installationId o VRM id">
+          </label>
+          <label>API base
+            <input id="solarApiBase" class="form-input" type="url" placeholder="https://...">
+          </label>
+          <label>Referencia segura API key
+            <input id="solarApiKeyRef" class="form-input" type="text" placeholder="env:NOMBRE_VARIABLE">
+          </label>
+          <label>Gateway local
+            <input id="solarGateway" class="form-input" type="url" placeholder="http://192.168.1.50:8080">
+          </label>
+          <label>Intervalo de monitoreo (seg.)
+            <input id="solarIntervalo" class="form-input" type="number" min="30" step="30" value="300">
+          </label>
+          <label class="solar-form-wide">Correos de alerta
+            <input id="solarEmails" class="form-input" type="text" placeholder="correo1@empresa.com, correo2@empresa.com">
+          </label>
+          <label class="solar-check">
+            <input id="solarEmailActivo" type="checkbox" checked>
+            <span>Enviar correos automáticos cuando se dispare una alerta</span>
+          </label>
+          <label class="solar-check">
+            <input id="solarActivo" type="checkbox" checked>
+            <span>Sistema activo</span>
+          </label>
+          <div class="solar-form-actions">
+            <button class="btn primary" type="submit">Guardar sistema</button>
+            <button id="btnSolarClear" class="btn secondary" type="button">Nuevo</button>
+          </div>
+        </form>
+      </article>
+
+      <aside class="solar-side">
+        <article class="panel-card solar-panel">
+          <h2>Proveedores soportados</h2>
+          <div id="solarProviderGrid" class="solar-provider-grid"></div>
+        </article>
+        <article class="panel-card solar-panel">
+          <h2>Sistemas configurados</h2>
+          <div id="solarSystemsList" class="solar-list"></div>
+        </article>
+      </aside>
+    </section>
+
+    <section class="solar-layout solar-layout-secondary">
+      <article class="panel-card solar-panel">
+        <div class="panel-card-header">
+          <div>
+            <h2>Alertas por sistema</h2>
+            <p>Define umbrales para paneles, inversor, batería, salud, celdas y BMS.</p>
+          </div>
+        </div>
+        <form id="solarAlertForm" class="solar-form solar-form-alerts">
+          <input id="solarAlertaId" type="hidden">
+          <label>Sistema
+            <select id="solarAlertaSistema" class="form-input" required></select>
+          </label>
+          <label>Tipo de alerta
+            <select id="solarAlertaTipo" class="form-input" required></select>
+          </label>
+          <label>Nombre visible
+            <input id="solarAlertaNombre" class="form-input" type="text" required>
+          </label>
+          <label>Operador
+            <select id="solarAlertaOperador" class="form-input">
+              <option value="<">&lt;</option>
+              <option value="<=">&lt;=</option>
+              <option value=">">&gt;</option>
+              <option value=">=">&gt;=</option>
+              <option value="estado">Estado contiene error</option>
+            </select>
+          </label>
+          <label>Umbral
+            <input id="solarAlertaUmbral" class="form-input" type="number" step="0.01" value="0">
+          </label>
+          <label>Severidad
+            <select id="solarAlertaSeveridad" class="form-input">
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+              <option value="critica">Crítica</option>
+              <option value="info">Informativa</option>
+            </select>
+          </label>
+          <label class="solar-check">
+            <input id="solarAlertaEmail" type="checkbox" checked>
+            <span>Enviar correo</span>
+          </label>
+          <label class="solar-check">
+            <input id="solarAlertaActiva" type="checkbox" checked>
+            <span>Activa</span>
+          </label>
+          <div class="solar-form-actions">
+            <button class="btn primary" type="submit">Guardar alerta</button>
+          </div>
+        </form>
+        <div id="solarAlertsList" class="solar-table-wrap"></div>
+      </article>
+
+      <article class="panel-card solar-panel">
+        <div class="panel-card-header">
+          <div>
+            <h2>Lectura manual / gateway</h2>
+            <p>Permite probar el flujo antes de conectar la API o un gateway local.</p>
+          </div>
+        </div>
+        <form id="solarReadingForm" class="solar-form solar-form-readings">
+          <label>Sistema
+            <select id="solarLecturaSistema" class="form-input" required></select>
+          </label>
+          <label>Producción W
+            <input id="solarLecturaProduccion" class="form-input" type="number" step="0.01" value="1200">
+          </label>
+          <label>SOC batería %
+            <input id="solarLecturaSoc" class="form-input" type="number" step="0.01" value="75">
+          </label>
+          <label>SOH batería %
+            <input id="solarLecturaSoh" class="form-input" type="number" step="0.01" value="95">
+          </label>
+          <label>Carga batería W
+            <input id="solarLecturaCarga" class="form-input" type="number" step="0.01" value="450">
+          </label>
+          <label>Descarga batería W
+            <input id="solarLecturaDescarga" class="form-input" type="number" step="0.01" value="0">
+          </label>
+          <label>Temperatura C
+            <input id="solarLecturaTemp" class="form-input" type="number" step="0.01" value="32">
+          </label>
+          <label>Voltaje min celda
+            <input id="solarLecturaCeldaMin" class="form-input" type="number" step="0.001" value="3.30">
+          </label>
+          <label>Voltaje max celda
+            <input id="solarLecturaCeldaMax" class="form-input" type="number" step="0.001" value="3.34">
+          </label>
+          <label class="solar-form-wide">Estado batería / BMS
+            <input id="solarLecturaEstadoBateria" class="form-input" type="text" placeholder="normal">
+          </label>
+          <label class="solar-form-wide">Estado inversor
+            <input id="solarLecturaEstadoInversor" class="form-input" type="text" placeholder="normal">
+          </label>
+          <button class="btn primary" type="submit">Registrar lectura</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="panel-card solar-panel">
+      <div class="panel-card-header">
+        <div>
+          <h2>Eventos y lecturas recientes</h2>
+          <p>Historial operativo aislado por empresa para auditoría y mantenimiento.</p>
+        </div>
+      </div>
+      <div class="solar-events-grid">
+        <div id="solarEventos" class="solar-table-wrap"></div>
+        <div id="solarLecturas" class="solar-table-wrap"></div>
+      </div>
+    </section>
+  </main>
+  <script src="/js/button_icons.js"></script>
+  <script src="/js/energia_solar.js"></script>
+</body>
+</html>

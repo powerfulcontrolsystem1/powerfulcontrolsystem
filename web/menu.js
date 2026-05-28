@@ -8,6 +8,8 @@
     'dark-violet': true,
     'dark-emerald': true,
     'dark-corporate': true,
+    'dark-absolute': true,
+    'dark-obsidian': true,
     'dark-neon': true,
     light: true,
     'light-rose': true,
@@ -435,6 +437,8 @@
             '<button class="theme-option" type="button" data-theme-value="dark-violet">Morado Midnight</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-emerald">Negro Esmeralda</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-corporate">Corporativo Oscuro</button>' +
+            '<button class="theme-option" type="button" data-theme-value="dark-absolute">Negro Absoluto</button>' +
+            '<button class="theme-option" type="button" data-theme-value="dark-obsidian">Obsidiana Profesional</button>' +
             '<button class="theme-option" type="button" data-theme-value="dark-neon">Neon Nocturno</button>' +
             '<div class="theme-opt-group mt-1">Claros</div>' +
             '<button class="theme-option" type="button" data-theme-value="light">Blanco Corporativo</button>' +
