@@ -11259,3 +11259,13 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
 - web/administrar_empresa/panel.html
+
+2026-05-28 18:18:58 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6fe95f09; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- backend/main.go
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- tmp_email_panel_logged.png
+- tmp_login_probe.png
+- web/administrar_empresa/panel.html
