@@ -28317,6 +28317,14 @@ Archivos modificados:
   volumen PostgreSQL existente, backend no podia autenticar contra `pcs`; se
   alineo el rol PostgreSQL con el secreto vigente del servidor sin imprimirlo.
 
+2026-05-28: verificacion Docker VPS tolera env con saltos Windows
+- Cambio operativo: `deploy/scripts/vps-compose-sidecar-up.sh` elimina `CR` al
+  leer valores desde `deploy/.env.platform`, evitando que `HTTP_PORT` quede con
+  un caracter invisible cuando el archivo fue editado o transferido desde
+  Windows.
+- Impacto: la verificacion `curl http://127.0.0.1:$HTTP_PORT/` ya no falla por
+  formato de fin de linea aunque backend y frontend esten saludables.
+
 2026-05-28: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

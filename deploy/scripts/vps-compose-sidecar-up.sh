@@ -13,10 +13,12 @@ get_env_value() {
   awk -v key="$key" '
     {
       line=$0
+      sub(/\r$/, "", line)
       sub(/^[ \t]+/, "", line)
       if (index(line, key "=") == 1) {
         sub(/^[^=]*=/, "", line)
         gsub(/^["'\'']|["'\'']$/, "", line)
+        sub(/\r$/, "", line)
         value=line
       }
     }
