@@ -175,5 +175,8 @@ afecte dinero, documentos, licencias o seguridad.
 5. La creacion de empresa no debe fallar por errores del servidor de correo.
 6. En el panel empresarial se muestra la tarjeta de webmail solo si el modulo esta
    activo y la empresa tiene cuenta.
-7. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
+7. Si aparecen estados `error_login`, usar `Probar iRedAdmin` en super
+   administrador para validar URL, admin y clave guardados antes de reintentar
+   provision.
+8. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
    duplicada de nombre similar, comprobar sufijo unico y abrir webmail.

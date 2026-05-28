@@ -1,3 +1,10 @@
+2026-05-28: Diagnostico de iRedAdmin en Email corporativo.
+- Modulos afectados: `super_administrador`, `email_corporativo`, `backend_db`, `frontend_ux`.
+- Motivo: cuando iRedAdmin rechaza las credenciales de provision, el panel empresarial debe explicar el bloqueo y super administrador debe poder probar la conexion real sin exponer secretos.
+- Backend: `/super/api/email_corporativo` ahora devuelve diagnostico de modulo, webmail, cuentas, cifrado y configuracion iRedAdmin; tambien agrega `action=test_iredadmin` para validar el login guardado contra iRedAdmin-Pro.
+- Frontend: `web/super/email_corporativo.html` muestra la tarjeta `Diagnostico del servicio` con estado del modulo, iRedAdmin, webmail, cuentas y boton `Probar iRedAdmin`.
+- Seguridad: no se imprimen ni retornan claves; los errores se limitan al estado operativo necesario para corregir URL, usuario o clave.
+
 2026-05-28: Generacion de correo corporativo para empresas existentes.
 - Modulos afectados: `email_corporativo`, `administrar_empresa`, `backend_db`, `frontend_ux`.
 - Motivo: en preproduccion se permite crear correo corporativo para todas las empresas existentes, no solo para empresas nuevas.

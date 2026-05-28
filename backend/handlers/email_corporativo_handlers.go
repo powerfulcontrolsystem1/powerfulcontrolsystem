@@ -58,6 +58,20 @@ type corporateWebmailCheck struct {
 	Message string `json:"message"`
 }
 
+type corporateEmailDiagnostics struct {
+	Enabled              bool                  `json:"enabled"`
+	AutoCreate           bool                  `json:"auto_create"`
+	ProvisionMode        string                `json:"provision_mode"`
+	IredAdminAPIEnabled  bool                  `json:"iredadmin_api_enabled"`
+	IredAdminAPIURLSet   bool                  `json:"iredadmin_api_url_set"`
+	IredAdminAdminSet    bool                  `json:"iredadmin_admin_set"`
+	IredAdminPasswordSet bool                  `json:"iredadmin_password_set"`
+	EncryptionAvailable  bool                  `json:"encryption_available"`
+	Webmail              corporateWebmailCheck `json:"webmail"`
+	Accounts             map[string]int        `json:"accounts"`
+	RecommendedAction    string                `json:"recommended_action"`
+}
+
 func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 	cfg := CorporateEmailConfig{
 		Enabled:       false,
@@ -488,6 +502,85 @@ func corporateEmailResponse(cfg CorporateEmailConfig, account *dbpkg.EmpresaEmai
 	return resp
 }
 
+func corporateEmailAccountsSummary(accounts []dbpkg.EmpresaEmailCorporativo) map[string]int {
+	out := map[string]int{
+		"total":        len(accounts),
+		"provisionado": 0,
+		"pendiente":    0,
+		"error":        0,
+		"sin_clave":    0,
+	}
+	for _, item := range accounts {
+		status := strings.ToLower(strings.TrimSpace(item.EstadoProvision))
+		switch {
+		case status == "provisionado":
+			out["provisionado"]++
+		case strings.HasPrefix(status, "error"):
+			out["error"]++
+		default:
+			out["pendiente"]++
+		}
+		if !item.InitialPasswordSet {
+			out["sin_clave"]++
+		}
+	}
+	return out
+}
+
+func corporateEmailDiagnosticsFor(cfg CorporateEmailConfig, accounts []dbpkg.EmpresaEmailCorporativo) corporateEmailDiagnostics {
+	summary := corporateEmailAccountsSummary(accounts)
+	recommended := "Configuracion lista para asignar correos por empresa."
+	if !cfg.Enabled {
+		recommended = "Activa el modulo para que las empresas puedan abrir su buzon corporativo."
+	} else if cfg.ProvisionMode != "iredadmin_api" {
+		recommended = "El modo manual asigna correos, pero el buzon real se debe crear en iRedMail fuera del sistema."
+	} else if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || !cfg.APIPasswordSet {
+		recommended = "Completa URL API, administrador y clave de iRedAdmin-Pro."
+	} else if summary["error"] > 0 {
+		recommended = "Prueba iRedAdmin y luego reintenta provisionar las cuentas con error."
+	} else if summary["pendiente"] > 0 {
+		recommended = "Provisiona las cuentas pendientes para crear los buzones reales."
+	}
+	return corporateEmailDiagnostics{
+		Enabled:              cfg.Enabled,
+		AutoCreate:           cfg.AutoCreate,
+		ProvisionMode:        cfg.ProvisionMode,
+		IredAdminAPIEnabled:  cfg.Enabled && cfg.ProvisionMode == "iredadmin_api",
+		IredAdminAPIURLSet:   strings.TrimSpace(cfg.APIBaseURL) != "",
+		IredAdminAdminSet:    strings.TrimSpace(cfg.APIAdmin) != "",
+		IredAdminPasswordSet: cfg.APIPasswordSet,
+		EncryptionAvailable:  utils.EncryptionAvailable(),
+		Webmail:              checkCorporateWebmail(cfg.WebmailURL),
+		Accounts:             summary,
+		RecommendedAction:    recommended,
+	}
+}
+
+func testCorporateEmailIredAdminLogin(dbSuper *sql.DB, cfg CorporateEmailConfig) corporateEmailProvisionResult {
+	if !cfg.Enabled {
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
+	}
+	if cfg.ProvisionMode != "iredadmin_api" {
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
+	}
+	adminPassword, err := corporateEmailAPIAdminPassword(dbSuper)
+	if err != nil {
+		return corporateEmailProvisionResult{OK: false, Status: "error", Error: "No se pudo descifrar la clave iRedAdmin"}
+	}
+	if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || strings.TrimSpace(adminPassword) == "" {
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_api", Error: "Faltan URL, usuario o clave de iRedAdmin-Pro"}
+	}
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{Timeout: 20 * time.Second, Jar: jar}
+	loginValues := url.Values{}
+	loginValues.Set("username", cfg.APIAdmin)
+	loginValues.Set("password", adminPassword)
+	if err := iredAdminAPIPostForm(client, cfg.APIBaseURL+"/api/login", loginValues); err != nil {
+		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
+	}
+	return corporateEmailProvisionResult{OK: true, Status: "login_ok"}
+}
+
 func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -502,6 +595,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				"ok":                    true,
 				"config":                cfg,
 				"accounts":              accounts,
+				"diagnostics":           corporateEmailDiagnosticsFor(cfg, accounts),
 				"encryption_available":  utils.EncryptionAvailable(),
 				"iredadmin_api_enabled": cfg.Enabled && cfg.ProvisionMode == "iredadmin_api",
 			})
@@ -516,6 +610,15 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "created": count})
+				return
+			}
+			if action == "test_iredadmin" {
+				result := testCorporateEmailIredAdminLogin(dbSuper, getCorporateEmailConfig(dbSuper))
+				statusCode := http.StatusOK
+				if !result.OK {
+					statusCode = http.StatusBadGateway
+				}
+				writeJSON(w, statusCode, result)
 				return
 			}
 			if action == "provision" {
