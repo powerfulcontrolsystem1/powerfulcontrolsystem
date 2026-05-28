@@ -10009,3 +10009,11 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Declara favicon PNG con el mismo icono PWA usado como apple touch icon.
 - `web/index.html`:
 	- Usa el mismo manifest, favicon, apple touch icon y logo visible del encabezado que el login/PWA.
+
+2026-05-28 - Rediseño simple de descarga de informacion de empresa
+- `web/descargar_informacion_de_la_empresa.html`:
+	- Reemplaza la vista tecnica de resumen, formatos y tablas por una pantalla de una sola accion: seleccionar formato y descargar.
+- `web/js/descargar_informacion_de_la_empresa.js`:
+	- Simplifica el flujo: carga el nombre de la empresa, mantiene el formato seleccionado y descarga el archivo con un unico boton.
+- `web/estilos.css`:
+	- Agrega una tarjeta compacta, limpia y responsiva para exportacion de datos, sin paneles tecnicos ni vista previa de tablas.

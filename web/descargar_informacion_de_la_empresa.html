@@ -3,55 +3,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Descargar Información de la Empresa</title>
+  <title>Descargar Informacion de la Empresa</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
 <body class="empresa-export-page">
-  <div class="admin-layout empresa-export-layout">
-    <main class="admin-content empresa-export-content">
-      <section class="empresa-export-shell">
-        <div class="empresa-export-header portal-card home-offer-card empresa-export-hero">
-          <div class="empresa-export-hero-copy">
-            <span class="empresa-export-eyebrow">Descarga profesional</span>
-            <h1 id="empresaExportTitle">Preparando información empresarial</h1>
-            <p id="empresaExportSubtitle">Estamos consolidando la empresa seleccionada para exportarla en formatos ejecutivos y operativos.</p>
-            <p class="empresa-export-inline-note">La descarga se genera en esta misma vista y conserva la estructura para PDF, Excel, CSV, JSON y TXT.</p>
-          </div>
-          <div class="empresa-export-hero-actions">
-            <a class="home-offer-btn secondary" href="/seleccionar_empresa.html">Volver a empresas</a>
-            <button id="empresaExportRefresh" class="home-offer-btn" type="button">Actualizar resumen</button>
-          </div>
+  <main class="empresa-export-minimal" aria-labelledby="empresaExportTitle">
+    <section class="empresa-export-panel">
+      <div class="empresa-export-brand">
+        <img src="/img/pwa-icon-192.png" alt="" width="44" height="44">
+        <div>
+          <span>Powerful Control System</span>
+          <strong>Exportacion de datos</strong>
         </div>
+      </div>
 
-        <div id="empresaExportStatus" class="portal-cards-status">Cargando resumen de exportaci?n...</div>
+      <div class="empresa-export-copy">
+        <span class="empresa-export-eyebrow">Descargar informacion</span>
+        <h1 id="empresaExportTitle">Informacion de la empresa</h1>
+        <p id="empresaExportSubtitle">Elige el formato y descarga una copia de la informacion disponible para esta empresa.</p>
+      </div>
 
-        <section class="empresa-export-section">
-          <div class="empresa-export-section-head">
-            <h2>Resumen de la empresa</h2>
-            <p>Datos base, totales consolidados y alcance del snapshot.</p>
-          </div>
-          <div id="empresaExportSummary" class="portal-home-grid empresa-export-summary-grid"></div>
-        </section>
+      <form id="empresaExportForm" class="empresa-export-form">
+        <label class="form-label" for="empresaExportFormat">Formato de descarga</label>
+        <select id="empresaExportFormat" class="form-input">
+          <option value="xls">Excel empresarial (.xls)</option>
+          <option value="pdf">PDF ejecutivo (.pdf)</option>
+          <option value="csv">CSV para otros sistemas (.csv)</option>
+          <option value="json">JSON completo (.json)</option>
+          <option value="txt">Texto simple (.txt)</option>
+        </select>
+        <button id="empresaExportDownload" class="btn empresa-export-primary" type="submit">
+          <span aria-hidden="true">&#8595;</span>
+          Descargar
+        </button>
+      </form>
 
-        <section class="empresa-export-section">
-          <div class="empresa-export-section-head">
-            <h2>Formatos disponibles</h2>
-            <p>Todos los formatos mantienen la misma estructura de control para auditoria, intercambio contable y archivo profesional.</p>
-          </div>
-          <div id="empresaExportFormats" class="portal-home-grid empresa-export-format-grid"></div>
-        </section>
+      <p id="empresaExportStatus" class="empresa-export-status" aria-live="polite">Preparando descarga...</p>
 
-        <section class="empresa-export-section">
-          <div class="empresa-export-section-head">
-            <h2>Tablas incluidas</h2>
-            <p>Vista previa de las tablas detectadas para la empresa, separadas por base operativa y base super.</p>
-          </div>
-          <div id="empresaExportTables" class="portal-home-grid empresa-export-table-grid"></div>
-        </section>
-      </section>
-    </main>
-  </div>
+      <div class="empresa-export-footer-actions">
+        <a href="/seleccionar_empresa.html">Volver a empresas</a>
+      </div>
+    </section>
+  </main>
 
   <script src="/js/descargar_informacion_de_la_empresa.js"></script>
 </body>

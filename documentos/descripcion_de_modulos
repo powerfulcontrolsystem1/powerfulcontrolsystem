@@ -3193,3 +3193,8 @@ Captura inteligente de compras y gastos
 - Modulos afectados: `autenticacion`, `portal_publico`, `PWA`.
 - Cambio funcional: `/manifest.webmanifest` y `/sw.js` quedan publicos para que el boton `Instalar app` de `login.html` pueda activar el flujo nativo del navegador.
 - UX: `index.html` y `login.html` comparten el mismo icono PWA en favicon, apple touch icon y encabezado publico.
+
+2026-05-28: Rediseño de descarga de informacion de empresa
+- Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `frontend_ux`.
+- Cambio funcional: la pagina de descarga deja de mostrar tarjetas tecnicas, conteos y tablas; ahora muestra solo el nombre de la empresa, un selector de formato y el boton `Descargar`.
+- UX: el formato predeterminado es Excel empresarial y la misma vista funciona en escritorio y celular.

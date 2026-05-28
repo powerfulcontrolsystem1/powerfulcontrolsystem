@@ -7390,42 +7390,29 @@ html[data-theme^="dark"] .checkout-payment-hub{
 .payment-btn-nequi{width:100%;background:#7ce0a6;color:#0f3521;border:none}
 .payment-btn-manual{width:100%;background:#ffcc80;color:#4a2506;border:none}
 
-.empresa-export-page{
-  background:
-    radial-gradient(circle at top left, rgba(255,128,80,0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(63,146,255,0.14), transparent 22%),
-    linear-gradient(180deg, #07111c 0%, #0d1724 42%, #111f31 100%);
-  color:#e8f1fb;
-}
-.empresa-export-page .admin-content{
-  background:transparent;
-  color:#e8f1fb;
-}
-.empresa-export-shell{max-width:1200px;margin:0 auto;padding:28px 16px 48px;display:grid;gap:22px}
-.empresa-export-page .empresa-export-hero{display:grid;gap:18px;align-items:end;grid-template-columns:minmax(0,1.6fr) minmax(260px,.8fr);padding:26px;border-radius:24px;background:linear-gradient(145deg, #10233b, #172f4a) !important;border:1px solid rgba(135,172,211,0.26);box-shadow:0 22px 48px rgba(0,0,0,0.26)}
-.empresa-export-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(255,153,102,0.14);color:#ffd4b6;font-weight:900;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(255,177,128,0.22)}
-.empresa-export-hero h1{margin:10px 0 8px;font-size:clamp(1.9rem,4vw,3rem);color:#f4f8ff}
-.empresa-export-hero p{margin:0;max-width:760px;color:#c8d7ea}
-.empresa-export-inline-note{margin-top:14px !important;color:#ffcfab !important;font-weight:800}
-.empresa-export-hero-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px}
-.empresa-export-section{display:grid;gap:14px}
-.empresa-export-section-head h2{margin:0;font-size:1.4rem;color:var(--text)}
-.empresa-export-section-head p{margin:6px 0 0;color:var(--muted);font-weight:700}
-.empresa-export-summary-grid,.empresa-export-format-grid,.empresa-export-table-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.empresa-export-info-card,.empresa-export-format-card,.empresa-export-table-card{min-height:unset !important;background:linear-gradient(180deg, rgba(12,27,42,0.96), rgba(16,34,52,0.92));border:1px solid rgba(120,154,190,0.2);box-shadow:0 18px 34px rgba(0,0,0,0.28)}
-.empresa-export-info-card h3,.empresa-export-format-card h3,.empresa-export-table-card h3{color:#f1f6ff}
-.empresa-export-info-card p,.empresa-export-format-card p,.empresa-export-table-card p{color:#b7c9dd;font-weight:700}
-.empresa-export-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(102,179,255,0.12);color:#d3e8ff;font-weight:900;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase;border:1px solid rgba(130,190,255,0.18)}
-.empresa-export-note{margin:0 0 10px;color:#ffcfab;font-weight:800}
-.empresa-export-preview{display:grid;gap:10px;margin-top:10px}
-.empresa-export-preview pre{margin:0;padding:12px;border-radius:16px;background:rgba(3,10,18,0.7);border:1px solid rgba(118,156,198,0.18);color:#d9e7f7;font-size:.82rem;line-height:1.45;white-space:pre-wrap;word-break:break-word}
-.empresa-export-page .portal-cards-status{padding:14px 16px;border-radius:16px;background:rgba(11,27,42,0.9);border:1px solid rgba(123,164,207,0.18);color:#dce9f7;font-weight:800;box-shadow:0 14px 24px rgba(0,0,0,0.22)}
-.empresa-export-page .portal-cards-status.is-error{background:rgba(91,18,18,0.55);border-color:rgba(255,132,132,0.28);color:#ffd4d4;font-weight:900}
-.empresa-export-page .portal-cards-status.is-success{background:rgba(13,56,43,0.82);border-color:rgba(103,215,177,0.3);color:#f4fff9 !important}
-.empresa-export-page .home-offer-btn.secondary{background:transparent;color:#dbe9f8;border:1px solid rgba(152,188,225,0.28)}
-.empresa-export-page .home-offer-btn.secondary:hover{background:rgba(111,161,211,0.14)}
-.empresa-export-download-btn[disabled]{opacity:.68;cursor:wait}
-.empresa-export-download-btn.is-loading{filter:saturate(.75)}
+.empresa-export-page{min-height:100vh;background:linear-gradient(180deg,#f6f8fb 0%,#eef3f8 100%);color:#10233b}
+.empresa-export-minimal{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;box-sizing:border-box}
+.empresa-export-panel{width:min(100%,560px);display:grid;gap:24px;padding:30px;border:1px solid #d7e0ea;border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(15,35,63,.12)}
+.empresa-export-brand{display:flex;align-items:center;gap:12px;padding-bottom:18px;border-bottom:1px solid #e2e8f0}
+.empresa-export-brand img{width:44px;height:44px;border-radius:8px;object-fit:contain}
+.empresa-export-brand span{display:block;color:#64748b;font-weight:800;font-size:.82rem}
+.empresa-export-brand strong{display:block;color:#10233b;font-size:1.05rem}
+.empresa-export-copy{display:grid;gap:10px}
+.empresa-export-eyebrow{display:inline-flex;width:max-content;padding:6px 10px;border-radius:6px;background:#e8f2ff;color:#0f5ea8;font-weight:900;font-size:.78rem;letter-spacing:.04em;text-transform:uppercase}
+.empresa-export-copy h1{margin:0;color:#10233b;font-size:clamp(1.7rem,4vw,2.25rem);line-height:1.1}
+.empresa-export-copy p{margin:0;color:#475569;font-weight:700;line-height:1.5}
+.empresa-export-form{display:grid;gap:12px}
+.empresa-export-form .form-label{margin:0;color:#10233b;font-weight:900}
+.empresa-export-form .form-input{width:100%;min-height:48px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#10233b;font-weight:800}
+.empresa-export-primary{width:100%;min-height:52px;border-radius:8px;background:#0f5ea8 !important;color:#fff !important;border:1px solid #0f5ea8 !important;font-size:1.05rem;font-weight:900}
+.empresa-export-primary:hover{background:#0b4b87 !important;border-color:#0b4b87 !important}
+.empresa-export-primary:disabled{opacity:.7;cursor:wait}
+.empresa-export-status{min-height:22px;margin:0;padding:12px 14px;border-radius:8px;background:#f1f5f9;color:#475569;font-weight:800;text-align:center}
+.empresa-export-status.is-success{background:#ecfdf5;color:#047857}
+.empresa-export-status.is-error{background:#fef2f2;color:#b91c1c}
+.empresa-export-footer-actions{display:flex;justify-content:center}
+.empresa-export-footer-actions a{color:#0f5ea8;font-weight:900;text-decoration:none}
+.empresa-export-footer-actions a:hover{text-decoration:underline}
 
 @media (max-width:700px){
   .checkout-licencia-page .admin-content{overflow-x:hidden}
@@ -7471,8 +7458,7 @@ html[data-theme^="dark"] .checkout-payment-hub{
   .checkout-price-chip{width:100%}
   .payment-method-logo{width:116px}
   .payment-method-panel-logo{width:96px;max-width:46%}
-  .empresa-export-hero{grid-template-columns:1fr}
-  .empresa-export-hero-actions{justify-content:flex-start}
+  .empresa-export-panel{padding:22px}
 }
 
 /* Subpáginas internas del módulo administrar_empresa */

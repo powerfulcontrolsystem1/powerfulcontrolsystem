@@ -27961,6 +27961,20 @@ Archivos modificados:
 Cambio funcional: `/manifest.webmanifest` y `/sw.js` quedan accesibles sin sesion para que el boton `Instalar app` pueda activar el flujo nativo del navegador. `index.html` usa el mismo icono PWA que `login.html`.
 Verificacion: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; prueba visual en `login.html` simulando `beforeinstallprompt` y clic en `Instalar app`; prueba visual de `index.html` validando favicon, apple icon, manifest y logo visible.
 
+2026-05-28: rediseño simple descarga informacion empresa
+Modulos afectados: seleccionar_empresa, descarga_informacion_empresa, frontend_ux.
+Archivos modificados:
+- web/descargar_informacion_de_la_empresa.html
+- web/js/descargar_informacion_de_la_empresa.js
+- web/estilos.css
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+Cambio funcional: la pantalla de descarga empresarial deja de mostrar resumenes tecnicos, tablas y tarjetas por formato; ahora presenta una sola tarjeta con selector de formato y boton `Descargar`.
+Verificacion: `node --check web/js/descargar_informacion_de_la_empresa.js`; prueba visual escritorio y movil con descarga CSV generada desde el boton principal.
+
 2026-05-27: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

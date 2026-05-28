@@ -1806,3 +1806,8 @@
 - [PWA] `manifest.webmanifest` y `sw.js` quedan disponibles sin sesion para habilitar el flujo nativo de instalacion desde el login.
 - [Portal] `index.html` usa el mismo icono PWA que `login.html` como favicon, apple touch icon y logo visible del encabezado.
 - [QA] Se comprobo visualmente el boton `Instalar app` y la consistencia de iconos del index.
+
+## [2026-05-28] Rediseño descarga informacion empresa
+- [UX] La pagina de descarga empresarial queda en una sola accion: elegir formato y descargar.
+- [Frontend] Se retiran tarjetas tecnicas y vista previa de tablas de `descargar_informacion_de_la_empresa.html`.
+- [QA] Se comprobo visualmente en escritorio y movil, incluyendo descarga CSV.

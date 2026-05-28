@@ -673,3 +673,5 @@ Revision alcance reportes globales 2026-05-27: `/super/api/reportes_globales` us
 Revision descarga informacion empresa 2026-05-28: el boton de descarga en `seleccionar_empresa.html` abre la vista dedicada `descargar_informacion_de_la_empresa.html`, muestra resumen de datos por tabla y permite exportar JSON, PDF, XLS, CSV o TXT. El backend conserva el aislamiento por empresa, tolera tablas puntuales con errores registrandolas como advertencia y evita que una tabla impida descargar el resto de la informacion disponible.
 
 Revision PWA login 2026-05-28: el portal permite instalar la aplicacion desde `login.html` porque el manifest y el service worker se sirven como recursos publicos. `index.html` y `login.html` quedan alineados con el mismo icono PWA para favicon, apple touch icon y encabezado publico.
+
+Revision descarga informacion empresa 2026-05-28 UX: la vista `descargar_informacion_de_la_empresa.html` se simplifica para operacion administrativa. El usuario elige un formato, por defecto Excel, y presiona `Descargar`; se retiran resumenes tecnicos, conteos y vista previa de tablas de la pantalla.

@@ -4533,3 +4533,8 @@
 - [Backend] `/manifest.webmanifest` y `/sw.js` quedan publicos en el middleware para que el navegador pueda validar la instalacion de la app sin sesion.
 - [Frontend] `login.html` e `index.html` comparten el mismo icono PWA en favicon/apple touch icon; el encabezado publico del index tambien usa ese icono.
 - [QA] Prueba visual del boton `Instalar app` y validacion de iconos del index.
+
+## [2026-05-28] Rediseño descarga informacion empresa
+- [UX] `descargar_informacion_de_la_empresa.html` pasa a una vista simple: nombre de empresa, selector de formato y boton `Descargar`.
+- [Frontend] Se eliminan de la pantalla los paneles tecnicos de resumen, formatos y tablas incluidas.
+- [QA] Prueba visual escritorio/movil y descarga CSV desde el boton principal.
