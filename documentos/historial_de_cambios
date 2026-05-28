@@ -27931,3 +27931,32 @@ Archivos modificados:
 - documentos/descripcion_del_proyecto
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
+
+2026-05-28: descarga informacion empresa desde selector
+Modulos afectados: seleccionar_empresa, descarga_informacion_empresa, seguridad_multiempresa.
+Archivos modificados:
+- backend/handlers/system_empresas_export.go
+- web/js/descargar_informacion_de_la_empresa.js
+- web/estilos.css
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+Cambio funcional: la pagina de descarga empresarial deja de caer por error interno cuando una tabla puntual falla o tiene diferencia de tipo en `empresa_id`; el snapshot continua con advertencias y permite descargar el resto de informacion disponible.
+Verificacion: prueba visual desde `seleccionar_empresa.html` hasta `descargar_informacion_de_la_empresa.html`, carga de resumen y descarga JSON; `go test ./handlers -run "TestSuperReportesGlobales|TestDecorateEmpresas" -count=1`; `node --check web/js/descargar_informacion_de_la_empresa.js`.
+
+2026-05-28: instalacion PWA desde login e icono unificado
+Modulos afectados: autenticacion, portal_publico, PWA.
+Archivos modificados:
+- backend/utils/utils.go
+- backend/utils/auth_middleware_test.go
+- web/login.html
+- web/index.html
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+Cambio funcional: `/manifest.webmanifest` y `/sw.js` quedan accesibles sin sesion para que el boton `Instalar app` pueda activar el flujo nativo del navegador. `index.html` usa el mismo icono PWA que `login.html`.
+Verificacion: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; prueba visual en `login.html` simulando `beforeinstallprompt` y clic en `Instalar app`; prueba visual de `index.html` validando favicon, apple icon, manifest y logo visible.

@@ -4523,3 +4523,13 @@
 	- Archivos modificados: `backend/db/creditos.go`, `backend/handlers/creditos.go`, `backend/db/creditos_postgres_test.go`, `backend/main.go`, `web/administrar_empresa/creditos.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
 	- Descripcion: el contrato de credito acepta periodicidad de cuota, valor pactado y omision opcional de domingos; las cuotas diarias soportan planes largos de dos anos y la cartera muestra cuotas/dias vencidos desde el calendario de pagos.
 	- Verificacion: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y validacion de sintaxis JS de `web/administrar_empresa/creditos.html`.
+
+## [2026-05-28] Descarga informacion empresa
+- [Backend] El snapshot de `/super/api/empresas?action=resumen_descarga|exportar_informacion` compara `empresa_id`/`id` como texto y continua con advertencias si una tabla puntual no se puede leer, evitando que una tabla tumbe toda la descarga.
+- [Frontend] La vista `descargar_informacion_de_la_empresa.html` conserva estados claros de carga/descarga y mejora contraste visual en temas claros y oscuros.
+- [QA] Validacion visual desde el boton de descarga en `seleccionar_empresa.html` hasta descarga JSON correcta.
+
+## [2026-05-28] Instalacion PWA desde login
+- [Backend] `/manifest.webmanifest` y `/sw.js` quedan publicos en el middleware para que el navegador pueda validar la instalacion de la app sin sesion.
+- [Frontend] `login.html` e `index.html` comparten el mismo icono PWA en favicon/apple touch icon; el encabezado publico del index tambien usa ese icono.
+- [QA] Prueba visual del boton `Instalar app` y validacion de iconos del index.

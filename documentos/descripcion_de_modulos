@@ -3182,3 +3182,14 @@ Captura inteligente de compras y gastos
 - Cambio funcional: `/super/api/reportes_globales` ahora arma su catalogo de empresas con la misma regla que `/super/api/empresas`, es decir, solo empresas propias, delegadas o compartidas visibles para el administrador autenticado.
 - Seguridad: se elimina la excepcion que permitia devolver todas las empresas por rol super dentro de reportes globales; cualquier `empresa_id` fuera del alcance sigue rechazado antes de construir tablero, dataset, exportacion o email.
 - QA: prueba unitaria `TestSuperReportesGlobales*` para validar que el modulo no liste empresas ajenas y que conserve empresas delegadas del selector.
+
+2026-05-28: Descarga de informacion de empresa
+- Modulos afectados: `seleccionar_empresa`, `descarga_informacion_empresa`, `seguridad_multiempresa`.
+- Cambio funcional: desde el selector, el boton de descarga abre una pagina con resumen de tablas y exportacion JSON, PDF, XLS, CSV y TXT para la empresa visible.
+- Backend: el snapshot compara identificadores por texto para evitar fallos por diferencias de tipo en `empresa_id` y continua con advertencias si una tabla puntual no puede consultarse.
+- UX: la pagina de descarga mantiene mensajes claros de carga, error y exito, y el contraste queda legible en apariencia clara u oscura.
+
+2026-05-28: Instalacion PWA desde login
+- Modulos afectados: `autenticacion`, `portal_publico`, `PWA`.
+- Cambio funcional: `/manifest.webmanifest` y `/sw.js` quedan publicos para que el boton `Instalar app` de `login.html` pueda activar el flujo nativo del navegador.
+- UX: `index.html` y `login.html` comparten el mismo icono PWA en favicon, apple touch icon y encabezado publico.

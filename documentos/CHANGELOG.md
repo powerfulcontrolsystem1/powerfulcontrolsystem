@@ -1796,3 +1796,13 @@
 	- Archivos modificados: `backend/db/creditos.go`, `backend/handlers/creditos.go`, `backend/db/creditos_postgres_test.go`, `backend/main.go`, `web/administrar_empresa/creditos.html`, `documentos/estructura_bd.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios`.
 	- Descripcion: el modulo de creditos registra periodicidad de cuota, valor pactado y omision opcional de domingos; permite cuotas diarias largas y expone cuotas/dias vencidos para ver rapidamente cuanto debe cada cliente.
 	- Verificacion: `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y sintaxis JS del modulo.
+
+## [2026-05-28] Descarga informacion empresa
+- [Selector] El boton de descarga de cada empresa visible abre la pagina dedicada sin error y permite exportar JSON, PDF, XLS, CSV o TXT.
+- [Backend] `system_empresas_export.go` deja de abortar todo el snapshot cuando una tabla falla; compara identificadores como texto y agrega advertencias por tabla.
+- [QA] Se comprobo visualmente el flujo selector -> pagina de descarga -> descarga JSON.
+
+## [2026-05-28] Instalacion PWA desde login
+- [PWA] `manifest.webmanifest` y `sw.js` quedan disponibles sin sesion para habilitar el flujo nativo de instalacion desde el login.
+- [Portal] `index.html` usa el mismo icono PWA que `login.html` como favicon, apple touch icon y logo visible del encabezado.
+- [QA] Se comprobo visualmente el boton `Instalar app` y la consistencia de iconos del index.

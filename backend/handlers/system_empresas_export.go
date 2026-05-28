@@ -29,6 +29,7 @@ type empresaInfoExportSnapshot struct {
 	TotalRows    int                      `json:"total_rows"`
 	PreviewLimit int                      `json:"preview_limit,omitempty"`
 	SourceTotals map[string]int           `json:"source_totals,omitempty"`
+	Warnings     []string                 `json:"warnings,omitempty"`
 	Tables       []empresaInfoExportTable `json:"tables"`
 }
 
@@ -127,6 +128,14 @@ func superHasColumn(columns []string, name string) bool {
 	return false
 }
 
+func superTextCompareExpr(column string) string {
+	quoted := superQuoteIdentifier(column)
+	if dbpkg.IsPostgresDialect() {
+		return "CAST(" + quoted + " AS TEXT)"
+	}
+	return "CAST(" + quoted + " AS TEXT)"
+}
+
 func superNormalizeValue(value interface{}) interface{} {
 	switch typed := value.(type) {
 	case nil:
@@ -149,11 +158,16 @@ func superFetchTableRows(dbConn *sql.DB, source, table string, columns []string,
 	whereClause := ""
 	args := []interface{}{}
 	if source == "empresas" && strings.EqualFold(table, "empresas") {
-		whereClause = " WHERE (id = ? OR COALESCE(empresa_id, id) = ?)"
-		args = append(args, empresaID, empresaID)
+		whereClause = " WHERE (" + superTextCompareExpr("id") + " = ?"
+		args = append(args, strconv.FormatInt(empresaID, 10))
+		if superHasColumn(columns, "empresa_id") {
+			whereClause += " OR " + superTextCompareExpr("empresa_id") + " = ?"
+			args = append(args, strconv.FormatInt(empresaID, 10))
+		}
+		whereClause += ")"
 	} else if superHasColumn(columns, "empresa_id") {
-		whereClause = " WHERE empresa_id = ?"
-		args = append(args, empresaID)
+		whereClause = " WHERE " + superTextCompareExpr("empresa_id") + " = ?"
+		args = append(args, strconv.FormatInt(empresaID, 10))
 	} else {
 		return nil, 0, nil
 	}
@@ -224,6 +238,7 @@ func buildEmpresaInfoExportSnapshot(dbEmp, dbSuper *sql.DB, empresaID int64, pre
 		Formats:      []string{"pdf", "xls", "csv", "json", "txt"},
 		PreviewLimit: previewLimit,
 		SourceTotals: map[string]int{"empresas": 0, "super": 0},
+		Warnings:     make([]string, 0),
 		Tables:       make([]empresaInfoExportTable, 0),
 	}
 
@@ -243,11 +258,13 @@ func buildEmpresaInfoExportSnapshot(dbEmp, dbSuper *sql.DB, empresaID int64, pre
 		for _, table := range tables {
 			columns, err := superListColumns(source.db, table)
 			if err != nil {
-				return nil, err
+				snapshot.Warnings = append(snapshot.Warnings, fmt.Sprintf("%s.%s: columnas no disponibles (%v)", source.name, table, err))
+				continue
 			}
 			rows, rowCount, err := superFetchTableRows(source.db, source.name, table, columns, empresaID, previewLimit)
 			if err != nil {
-				return nil, err
+				snapshot.Warnings = append(snapshot.Warnings, fmt.Sprintf("%s.%s: registros no disponibles (%v)", source.name, table, err))
+				continue
 			}
 			if rowCount == 0 {
 				continue

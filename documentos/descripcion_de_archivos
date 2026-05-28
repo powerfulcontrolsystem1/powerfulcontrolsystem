@@ -9989,3 +9989,23 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Elimina la excepcion que listaba todas las empresas cuando el correo tenia rol super.
 - `backend/handlers/reportes_globales_scope_test.go`:
 	- Agrega pruebas para confirmar que reportes globales solo devuelve empresas visibles para el selector y conserva empresas delegadas.
+
+2026-05-28 - Descarga de informacion de empresa desde selector
+- `backend/handlers/system_empresas_export.go`:
+	- Hace robusta la construccion del snapshot exportable: compara `empresa_id` e `id` como texto para evitar errores por diferencias de tipo entre tablas y registra advertencias por tabla cuando una fuente no se puede leer, sin tumbar toda la descarga.
+- `web/js/descargar_informacion_de_la_empresa.js`:
+	- Muestra las advertencias del snapshot dentro del resumen cuando alguna tabla no pudo leerse, conservando disponible la descarga parcial.
+- `web/estilos.css`:
+	- Refuerza contraste del encabezado y secciones de `descargar_informacion_de_la_empresa.html` para que la pagina sea legible en apariencias claras y oscuras.
+- `documentos/mapa_modulos.md`:
+	- Agrega la fila del modulo `Descarga informacion empresa` con pagina, endpoint, handler, datos y pruebas esperadas.
+
+2026-05-28 - Instalacion PWA e icono publico
+- `backend/utils/utils.go`:
+	- Permite servir sin sesion `/manifest.webmanifest` y `/sw.js`, tambien durante mantenimiento, para que el navegador pueda validar la instalacion PWA desde `login.html`.
+- `backend/utils/auth_middleware_test.go`:
+	- Agrega cobertura para manifest y service worker como rutas publicas.
+- `web/login.html`:
+	- Declara favicon PNG con el mismo icono PWA usado como apple touch icon.
+- `web/index.html`:
+	- Usa el mismo manifest, favicon, apple touch icon y logo visible del encabezado que el login/PWA.

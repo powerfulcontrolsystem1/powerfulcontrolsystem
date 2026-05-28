@@ -39,6 +39,8 @@ func TestAuthMiddlewarePublicAndProtectedSuperRoutes(t *testing.T) {
 		"/emulador/emulator/data/loader.js",
 		"/emulador/api/roms",
 		"/ayuda/login_administradores.html",
+		"/manifest.webmanifest",
+		"/sw.js",
 	}
 	for _, path := range publicPaths {
 		path := path

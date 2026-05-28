@@ -172,15 +172,20 @@
 
   function renderSnapshot(snapshot) {
     var empresa = snapshot && snapshot.empresa ? snapshot.empresa : {};
+    var warnings = Array.isArray(snapshot.warnings) ? snapshot.warnings : [];
     titleEl.textContent = empresa.nombre ? 'Descargar informacion de ' + empresa.nombre : 'Descargar informacion empresarial';
     subtitleEl.textContent = 'Empresa ID ' + formatValue(empresa.id) + ' · Tipo ' + formatValue(empresa.tipo_nombre || 'General') + ' · Estado ' + formatValue(empresa.estado || 'activo');
 
-    summaryEl.innerHTML = [
+    var summaryCards = [
       buildSummaryCard('Empresa', formatValue(empresa.nombre || 'Empresa seleccionada'), 'NIT: ' + formatValue(empresa.nit || 'Sin NIT registrado')),
       buildSummaryCard('Tablas detectadas', formatValue(snapshot.total_tables || 0), 'Se incluyen tablas operativas y tablas super asociadas por empresa_id.'),
       buildSummaryCard('Registros consolidados', formatValue(snapshot.total_rows || 0), 'Total de filas detectadas en el snapshot actual.'),
       buildSummaryCard('Fuentes', 'Operativa ' + formatValue(snapshot.source_totals && snapshot.source_totals.empresas || 0) + ' / Super ' + formatValue(snapshot.source_totals && snapshot.source_totals.super || 0), 'Consolidacion cruzada entre base empresarial y base de licencias o administracion.')
-    ].join('');
+    ];
+    if (warnings.length) {
+      summaryCards.push(buildSummaryCard('Advertencias', String(warnings.length), warnings.slice(0, 2).join(' | ')));
+    }
+    summaryEl.innerHTML = summaryCards.join('');
 
     formatsEl.innerHTML = formatCatalog.map(buildFormatCard).join('');
     formatsEl.querySelectorAll('[data-export-format]').forEach(function (button) {
@@ -197,7 +202,7 @@
       tablesEl.innerHTML = tables.map(buildTableCard).join('');
     }
 
-    setStatus('Resumen actualizado. Puedes descargar el formato que necesites.', false);
+    setStatus(warnings.length ? 'Resumen actualizado con advertencias. Puedes descargar la informacion disponible.' : 'Resumen actualizado. Puedes descargar el formato que necesites.', false);
   }
 
   async function loadSnapshot() {
