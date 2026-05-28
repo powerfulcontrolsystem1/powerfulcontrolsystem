@@ -10988,3 +10988,36 @@ Archivos modificados:
 - web/administrar_empresa/empresas_compartidas.html
 - web/js/administrar_empresa.js
 - web/super/administradores.html
+
+2026-05-27 21:43:29 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b8fb8c7a; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/Juegos/arcade_embed.js
+- web/Juegos/menu_juegos.html
+- web/Juegos/open_game_embed.js
+- web/Juegos/open_game_source.css
+- web/administrar_empresa/chat_tareas_agenda.html
+- web/administrar_empresa/chat_tareas_chat_usuarios.html
+- web/administrar_empresa/chat_tareas_chats.html
+- web/administrar_empresa/chat_tareas_papelera.html
+- web/administrar_empresa/chat_tareas_tareas.html
+- web/administrar_empresa/chat_y_tareas.html
+- web/administrar_empresa/estacion_ia_pedidos.html
+- web/administrar_empresa/panel.html
+- web/calculadora.html
+- web/estilos.css
+- web/index.html
+- web/js/empresa_submenu_context.js
+- web/login_usuario.html
+- web/menu.js
+- web/super/docker_portabilidad.html
+- web/super/explorador_archivos.html
+- web/super/informacion_de_modulos.html
+- web/super/licencias_resumen.html
+- web/super/pagina_principal.html
+- web/super/roles_de_usuario.html
