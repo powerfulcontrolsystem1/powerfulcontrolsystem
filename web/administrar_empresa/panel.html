@@ -765,6 +765,11 @@
       line-height: 1.4;
     }
 
+    .empresa-email-placeholder[hidden],
+    .empresa-email-frame[hidden] {
+      display: none !important;
+    }
+
     .empresa-email-frame {
       display: block;
       width: 100%;
@@ -1790,6 +1795,8 @@
               empresaEmailMetaEl.textContent = "Correo generado, pero el modulo global esta desactivado. Activalo para usar la bandeja empresarial.";
             } else if (account.estado_provision === "provisionado") {
               empresaEmailMetaEl.textContent = "Buzon activo. Aqui puedes revisar, abrir y leer los mensajes de la empresa.";
+            } else if (text(account.estado_provision).toLowerCase().indexOf("error") === 0) {
+              empresaEmailMetaEl.textContent = "Correo asignado. El buzon real necesita revisar la provision de iRedMail antes de leer mensajes.";
             } else {
               empresaEmailMetaEl.textContent = "Buzon generado, pendiente de provision en iRedMail. Cuando este activo, aqui se vera la bandeja.";
             }
