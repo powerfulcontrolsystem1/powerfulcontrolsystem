@@ -585,6 +585,40 @@ func testCorporateEmailIredAdminLogin(dbSuper *sql.DB, cfg CorporateEmailConfig)
 	return corporateEmailProvisionResult{OK: true, Status: "login_ok"}
 }
 
+func corporateEmailInitialPasswordForProvision(dbSuper *sql.DB, account dbpkg.EmpresaEmailCorporativo) (string, error) {
+	encryptedPassword, err := dbpkg.GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbSuper, account.EmpresaID)
+	if err == nil && strings.TrimSpace(encryptedPassword) != "" {
+		return utils.DecryptString(encryptedPassword)
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return "", err
+	}
+	if !utils.EncryptionAvailable() {
+		return "", fmt.Errorf("CONFIG_ENC_KEY no esta disponible para cifrar la clave inicial")
+	}
+	initialPassword, err := generateCorporateEmailPassword()
+	if err != nil {
+		return "", err
+	}
+	encryptedPassword, err = utils.EncryptString(initialPassword)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(account.EstadoProvision) == "" {
+		account.EstadoProvision = "pendiente_provision"
+	}
+	if strings.TrimSpace(account.ProvisionProvider) == "" {
+		account.ProvisionProvider = "iredmail"
+	}
+	if strings.TrimSpace(account.Observaciones) == "" {
+		account.Observaciones = "Clave inicial generada al reintentar provision"
+	}
+	if _, err := dbpkg.UpsertEmpresaEmailCorporativo(dbSuper, account, encryptedPassword); err != nil {
+		return "", err
+	}
+	return initialPassword, nil
+}
+
 func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -632,22 +666,14 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se encontro email corporativo: "+err.Error(), http.StatusNotFound)
 					return
 				}
-				encryptedPassword, passErr := dbpkg.GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbSuper, empresaID)
-				initialPassword := ""
-				if passErr == nil && strings.TrimSpace(encryptedPassword) != "" {
-					initialPassword, passErr = utils.DecryptString(encryptedPassword)
-				}
+				initialPassword, passErr := corporateEmailInitialPasswordForProvision(dbSuper, *account)
 				if passErr != nil {
 					_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, empresaID, "pendiente_clave", "No se pudo recuperar la clave inicial cifrada", false)
 					http.Error(w, "No se pudo recuperar la clave inicial cifrada: "+passErr.Error(), http.StatusBadRequest)
 					return
 				}
 				result := provisionEmpresaEmailAccount(dbSuper, getCorporateEmailConfig(dbSuper), *account, initialPassword)
-				statusCode := http.StatusOK
-				if !result.OK {
-					statusCode = http.StatusBadGateway
-				}
-				writeJSON(w, statusCode, result)
+				writeJSON(w, http.StatusOK, result)
 				return
 			}
 			var payload struct {

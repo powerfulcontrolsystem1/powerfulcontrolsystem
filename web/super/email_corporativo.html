@@ -358,13 +358,19 @@
       function provision(empresaId) {
         setStatus("Provisionando cuenta...");
         requestJSON("/super/api/email_corporativo?action=provision&empresa_id=" + encodeURIComponent(empresaId), { method: "POST" })
-          .then(function () {
-            setStatus("Cuenta provisionada.");
-            return load();
+          .then(function (data) {
+            return load().then(function () {
+              if (data && data.ok) {
+                setStatus("Cuenta provisionada.");
+              } else {
+                setStatus("No se pudo provisionar: " + cleanProvisionError((data && data.error) || (data && data.status) || "validacion fallida"), true);
+              }
+            });
           })
           .catch(function (err) {
-            setStatus(err.message || String(err), true);
-            load();
+            return load().then(function () {
+              setStatus(err.message || String(err), true);
+            });
           });
       }
 

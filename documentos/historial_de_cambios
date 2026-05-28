@@ -2,6 +2,7 @@
 - Modulos afectados: `super_administrador`, `email_corporativo`, `backend_db`, `frontend_ux`.
 - Motivo: cuando iRedAdmin rechaza las credenciales de provision, el panel empresarial debe explicar el bloqueo y super administrador debe poder probar la conexion real sin exponer secretos.
 - Backend: `/super/api/email_corporativo` ahora devuelve diagnostico de modulo, webmail, cuentas, cifrado y configuracion iRedAdmin; tambien agrega `action=test_iredadmin` para validar el login guardado contra iRedAdmin-Pro.
+- Backend: al reintentar provision de empresas antiguas sin clave inicial, se genera una clave cifrada antes de llamar iRedAdmin para evitar bloqueos posteriores.
 - Frontend: `web/super/email_corporativo.html` muestra la tarjeta `Diagnostico del servicio` con estado del modulo, iRedAdmin, webmail, cuentas y boton `Probar iRedAdmin`.
 - Seguridad: no se imprimen ni retornan claves; los errores se limitan al estado operativo necesario para corregir URL, usuario o clave.
 
