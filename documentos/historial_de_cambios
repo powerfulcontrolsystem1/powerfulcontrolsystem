@@ -28344,3 +28344,8 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1

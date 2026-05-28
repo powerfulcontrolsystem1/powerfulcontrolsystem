@@ -11236,3 +11236,7 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/licencias_resumen.html
 - web/super_administrador.html
+
+2026-05-28 13:48:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5a4d95f4; PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
