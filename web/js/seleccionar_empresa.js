@@ -325,6 +325,20 @@
     return role === "super_administrador" || role === "administrador";
   }
 
+  function canManageScopedAdministradores(account) {
+    var admin = getAccountAdmin(account);
+    if (!admin) {
+      return false;
+    }
+    if (isPrincipalSuperAccount(account)) {
+      return true;
+    }
+    var role = normalizeEmail(account.role || admin.role);
+    var email = normalizeEmail(account.email || admin.email);
+    var creator = normalizeEmail(admin.usuario_creador);
+    return role === "administrador" && email && (!creator || creator === email);
+  }
+
   function isSidebarLinkVisible(link) {
     if (!link) {
       return false;
@@ -352,7 +366,7 @@
     var principalSuper = isPrincipalSuperAccount(account);
     setElementVisible(linkLicencias, canManageScopedLicencias(account));
     setElementVisible(linkMisClientes, false);
-    setElementVisible(linkAdministradores, principalSuper);
+    setElementVisible(linkAdministradores, canManageScopedAdministradores(account));
     setElementVisible(linkReportes, principalSuper);
   }
 
@@ -716,11 +730,23 @@
       var compartidaPor = String(empresa && empresa.compartida_por ? empresa.compartida_por : "").trim();
       return compartidaPor ? "Compartida por " + compartidaPor : "Empresa compartida contigo";
     }
+    if (accessSource === "delegated") {
+      var principal = String(empresa && empresa.compartida_por ? empresa.compartida_por : "").trim();
+      return principal ? "Administracion delegada por " + principal : "Administracion delegada";
+    }
     return "Empresa propia";
   }
 
+  function getEmpresaAccessSource(empresa) {
+    return String(empresa && empresa.access_source ? empresa.access_source : "owner").toLowerCase();
+  }
+
   function isSharedEmpresa(empresa) {
-    return String(empresa && empresa.access_source ? empresa.access_source : "owner").toLowerCase() === "shared";
+    return getEmpresaAccessSource(empresa) === "shared";
+  }
+
+  function isOwnerEmpresa(empresa) {
+    return getEmpresaAccessSource(empresa) === "owner";
   }
 
   function navigateToEmpresa(empresa, hasLicense) {
@@ -767,9 +793,9 @@
   }
 
   function buildEmpresaShareButton(empresa) {
-    var disabled = isSharedEmpresa(empresa);
+    var disabled = !isOwnerEmpresa(empresa);
     var title = disabled
-      ? "Solo el administrador propietario puede compartir una empresa que recibió por invitación"
+      ? "Solo el administrador propietario puede compartir esta empresa"
       : "Compartir empresa con otro administrador (correo)";
     return '' +
       '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
@@ -783,7 +809,7 @@
   }
 
   function buildEmpresaSharePanel(empresa) {
-    if (isSharedEmpresa(empresa)) {
+    if (!isOwnerEmpresa(empresa)) {
       return '' +
         '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
         '<div class="empresa-card-share-feedback is-error">Solo el administrador propietario puede enviar nuevas invitaciones para esta empresa.</div>' +
@@ -1106,8 +1132,8 @@
     editBtn.type = "button";
     editBtn.className = "license-indicator edit-empresa " + (hasLicense ? "active" : "inactive");
     editBtn.setAttribute("data-empresa-id", String(empresa.id || ""));
-    editBtn.setAttribute("aria-label", (isSharedEmpresa(empresa) ? "Ver administradores de " : "Editar empresa ") + String(empresa.nombre || ""));
-    editBtn.setAttribute("title", isSharedEmpresa(empresa) ? "Ver administradores compartidos" : "Editar empresa");
+    editBtn.setAttribute("aria-label", (isOwnerEmpresa(empresa) ? "Editar empresa " : "Ver empresa ") + String(empresa.nombre || ""));
+    editBtn.setAttribute("title", isOwnerEmpresa(empresa) ? "Editar empresa" : "Ver empresa");
     editBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l9.06-9.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/></svg>';
     editBtn.addEventListener("click", function (ev) {
       ev.preventDefault();

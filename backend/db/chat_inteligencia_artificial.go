@@ -29,6 +29,21 @@ func InvalidateCanAdminAccessEmpresaIACache(empresaID int64, adminEmail string) 
 	canAdminAccessEmpresaIACacheMu.Unlock()
 }
 
+func InvalidateCanAdminAccessEmpresaIAAdminCache(adminEmail string) {
+	adminEmail = strings.TrimSpace(strings.ToLower(adminEmail))
+	if adminEmail == "" {
+		return
+	}
+	suffix := "|" + adminEmail
+	canAdminAccessEmpresaIACacheMu.Lock()
+	for key := range canAdminAccessEmpresaIACache {
+		if strings.HasSuffix(key, suffix) {
+			delete(canAdminAccessEmpresaIACache, key)
+		}
+	}
+	canAdminAccessEmpresaIACacheMu.Unlock()
+}
+
 type cachedAdminEmpresaAccessIA struct {
 	Allowed  bool
 	LoadedAt time.Time
@@ -717,6 +732,31 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 		return true, nil
 	}
 	if dbSuper != nil {
+		principalEmail, err := ResolveAdminPrincipalEmail(dbSuper, adminEmail)
+		if err != nil {
+			return false, err
+		}
+		principalEmail = strings.TrimSpace(strings.ToLower(principalEmail))
+		if principalEmail != "" && principalEmail != adminEmail && creador != "" && creador == principalEmail {
+			canAdminAccessEmpresaIACacheMu.Lock()
+			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
+			canAdminAccessEmpresaIACacheMu.Unlock()
+			return true, nil
+		}
+		if creador != "" {
+			delegatedPrincipals, err := ListActiveAdminPrincipalDelegacionPrincipals(dbSuper, adminEmail)
+			if err != nil {
+				return false, err
+			}
+			for _, delegatedPrincipal := range delegatedPrincipals {
+				if creador == strings.TrimSpace(strings.ToLower(delegatedPrincipal)) {
+					canAdminAccessEmpresaIACacheMu.Lock()
+					canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
+					canAdminAccessEmpresaIACacheMu.Unlock()
+					return true, nil
+				}
+			}
+		}
 		access, err := GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresaID, adminEmail)
 		if err != nil {
 			return false, err

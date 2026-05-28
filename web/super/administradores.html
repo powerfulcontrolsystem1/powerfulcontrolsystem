@@ -12,7 +12,7 @@
       <div>
         <h1>Administradores</h1>
       </div>
-      <button id="addBtn" class="btn add">Agregar</button>
+      <button id="addBtn" class="btn add">Invitar administrador</button>
     </div>
 
     <form id="form" class="form">
@@ -38,7 +38,7 @@
         </div>
       </div>
       <div class="form-actions">
-        <button type="submit" id="saveBtn" class="btn">Guardar</button>
+        <button type="submit" id="saveBtn" class="btn">Enviar invitación</button>
         <button type="button" id="cancelBtn" class="btn secondary">Cancelar</button>
       </div>
       <div class="form-help" id="msg"></div>
@@ -48,6 +48,44 @@
   </div>
 
   <script>
+    let currentAdminScope = { superPanel: false };
+
+    function normalizeRole(value){
+      return String(value || '').trim().toLowerCase();
+    }
+
+    async function loadCurrentAdminScope(){
+      try{
+        const res = await fetch('/me', { credentials: 'same-origin' });
+        if(!res.ok) throw new Error('No se pudo leer la sesion');
+        const data = await res.json();
+        const role = normalizeRole((data && (data.role || (data.admin && data.admin.role))) || '');
+        currentAdminScope.superPanel = role === 'super_administrador' || role === 'control_super_administrador';
+      }catch(_err){
+        currentAdminScope.superPanel = false;
+      }
+      applyAdminScopeUI();
+    }
+
+    function applyAdminScopeUI(){
+      const roleSelect = document.getElementById('role');
+      if(!roleSelect) return;
+      if(currentAdminScope.superPanel) return;
+      Array.from(roleSelect.options).forEach(opt=>{
+        if(opt.value !== 'administrador') opt.remove();
+      });
+      roleSelect.value = 'administrador';
+      roleSelect.disabled = true;
+      const label = roleSelect.closest('.form-col');
+      if(label && !label.querySelector('[data-admin-scope-help]')){
+        const help = document.createElement('div');
+        help.className = 'form-help';
+        help.setAttribute('data-admin-scope-help', '1');
+        help.textContent = 'Los administradores invitados quedan bajo tu cuenta. Primero deben aceptar el correo, registrarse y crear su clave antes de iniciar sesion.';
+        label.appendChild(help);
+      }
+    }
+
     async function load(){
       try{
         const res = await fetch('/super/api/administradores');
@@ -59,7 +97,9 @@
         const tbody = document.createElement('tbody');
         data.forEach(i=>{
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escapeHTML(i.id)}</td><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.name||'')}</td><td>${escapeHTML(i.role||'')}</td><td>${escapeHTML(i.estado||'')}</td><td class="actions"><button data-id="${escapeHTML(i.id)}" class="del btn danger">Eliminar</button></td>`;
+          const confirmado = Number(i.email_confirmado || 0) === 1;
+          const estado = confirmado ? (i.estado || 'activo') : 'Invitacion pendiente';
+          tr.innerHTML = `<td>${escapeHTML(i.id)}</td><td>${escapeHTML(i.email)}</td><td>${escapeHTML(i.name||'')}</td><td>${escapeHTML(i.role||'')}</td><td>${escapeHTML(estado)}</td><td class="actions"><button data-id="${escapeHTML(i.id)}" class="del btn danger">Eliminar</button></td>`;
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -95,7 +135,7 @@
       document.getElementById('email').readOnly=false;
       document.getElementById('name').value='';
       document.getElementById('role').value='administrador';
-      document.getElementById('saveBtn').innerText='Guardar';
+      document.getElementById('saveBtn').innerText='Enviar invitación';
       document.getElementById('cancelBtn').style.display='none';
       document.getElementById('msg').innerText='';
     }
@@ -109,10 +149,12 @@
       };
       try{
         if(!payload.Email){ document.getElementById('msg').innerText='Email requerido'; return }
-        await ensureOK(await fetch('/super/api/administradores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        const result = await ensureOK(await fetch('/super/api/administradores', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }));
+        const body = await result.json().catch(()=> null);
         resetForm();
         document.getElementById('form').style.display = 'none';
         document.getElementById('addBtn').style.display = '';
+        if(body && body.message){ alert(body.message); }
         load();
       }catch(err){ document.getElementById('msg').innerText = err.message }
     }
@@ -129,7 +171,7 @@
     // iniciar oculto
     document.getElementById('form').style.display='none';
     document.getElementById('addBtn').style.display='';
-    load();
+    loadCurrentAdminScope().finally(load);
   </script>
     <!-- Menú flotante eliminado en páginas del panel /super -->
 </body>

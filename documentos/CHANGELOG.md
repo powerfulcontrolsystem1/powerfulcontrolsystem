@@ -1,3 +1,24 @@
+## [2026-05-27] Delegacion de portafolio entre administradores
+- [Flujo] Si el administrador invitado no existe, se conserva el flujo de invitacion por correo y registro con token.
+- [Cuenta existente] Si el correo ya pertenece a un administrador confirmado, no se crea otra cuenta ni se cambia `usuario_creador`; se activa una delegacion de portafolio y el selector muestra sus empresas propias mas las compartidas.
+- [Seguridad] Revocar desde Administradores quita solo la delegacion cuando la cuenta no fue creada por el principal; no borra la cuenta del otro administrador.
+- [BD] Se agrega `admin_principal_delegaciones` en `pcs_superadministrador` para el acceso muchos-a-muchos entre administradores principales y administradores registrados.
+- [QA] `go test ./utils ./handlers ./db -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope|ValidatePendingAdminInvitationToken|CanAdminAccessEmpresa|AdminPrincipalDeleg" -count=1`.
+
+## [2026-05-27] Invitacion de administradores delegados
+- [Flujo] Agregar administrador desde `Administradores` ya no deja una cuenta lista para login: genera invitacion por correo con token.
+- [Registro] El enlace abre `registrar_nuevo_usuario_administrador.html` con correo y token; el invitado acepta la invitacion, completa datos y crea contrasena.
+- [Seguridad] Si la cuenta fue invitada por un principal, el registro exige token valido, vigente y no usado; sin enlace no se puede completar el alta.
+- [Correo] Se agrega la plantilla `admin_scoped_invitation` para personalizar el mensaje de invitacion.
+- [QA] `go test ./utils ./handlers ./db -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope|ValidatePendingAdminInvitationToken|CanAdminAccessEmpresa" -count=1`; `node --check web/js/registrar_nuevo_usuario_administrador.js`.
+
+## [2026-05-27] Administradores por administrador principal
+- [Selector empresas] `seleccionar_empresa.html` muestra el acceso `Administradores` tambien al administrador principal normal, no solo al super administrador.
+- [Backend] `/super/api/administradores` filtra por `administradores.usuario_creador` y por el principal resuelto: el principal no se lista a si mismo y no ve administradores de otros principales.
+- [Acceso empresas] Los administradores delegados heredan acceso a las empresas creadas por el principal como `delegated`, pero no quedan como propietarios para compartirlas.
+- [Seguridad] El handler mantiene validacion backend; cambiar URL, cache o frontend no concede acceso a administradores ni empresas ajenas.
+- [QA] `go test ./utils ./handlers -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope" -count=1`; `node --check web/js/seleccionar_empresa.js`; `git diff --check`.
+
 ## [2026-05-27] Checklist seguridad endpoint multiempresa
 - [Documentacion] Se agrega `documentos/checklist_seguridad_endpoint_multiempresa.md` como requisito operativo para endpoints, consultas y acciones empresariales.
 - [Seguridad] La checklist exige validar sesion, `empresa_id`, IDs secundarios, permisos, licencias, SQL aislado, entrada, auditoria, errores saneados y operaciones destructivas.

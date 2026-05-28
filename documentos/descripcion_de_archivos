@@ -1,3 +1,18 @@
+2026-05-27 - Delegacion de portafolio entre administradores
+- `backend/db/admin_principal_delegaciones.go`:
+	- nuevo archivo con esquema y helpers de `admin_principal_delegaciones`.
+	- permite activar, listar y revocar delegaciones de portafolio entre administradores sin tocar propiedad de cuentas ni empresas.
+- `backend/handlers/auth_admin_handlers.go`:
+	- al invitar un correo ya confirmado activa la delegacion y envia aviso; al invitar un correo nuevo conserva el registro con token.
+- `backend/handlers/empresa_compartida_handlers.go`:
+	- agrega principales efectivos por delegacion activa al decorado de empresas.
+
+2026-05-27 - Administradores por administrador principal
+- `backend/handlers/selector_admin_scope_test.go`:
+	- pruebas unitarias del alcance delegado en el selector de empresas y del filtro de administradores por principal.
+	- valida que una empresa creada por el principal aparezca como `delegated` para el administrador subordinado y que el principal no se liste a si mismo.
+	- cubre validacion de token de invitacion pendiente para administradores delegados.
+
 2026-05-27 - Checklist de seguridad por endpoint multiempresa
 - `documentos/checklist_seguridad_endpoint_multiempresa.md`:
 	- checklist obligatoria para crear, modificar o revisar endpoints empresariales.

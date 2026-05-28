@@ -106,3 +106,27 @@ func TestSuperControlRouteAllowList(t *testing.T) {
 		}
 	}
 }
+
+func TestAdminLimitedRouteAllowListIncludesScopedAdministradores(t *testing.T) {
+	t.Parallel()
+
+	allowed := []struct {
+		path   string
+		method string
+	}{
+		{"/super/administradores.html", http.MethodGet},
+		{"/super/api/administradores", http.MethodGet},
+		{"/super/api/administradores", http.MethodPost},
+		{"/super/api/administradores", http.MethodPut},
+		{"/super/api/administradores", http.MethodDelete},
+	}
+	for _, tc := range allowed {
+		if !allowAdminLimitedSuperRoute(tc.path, tc.method, "administrador") {
+			t.Fatalf("expected administrador to access %s %s", tc.method, tc.path)
+		}
+	}
+
+	if allowAdminLimitedSuperRoute("/super/api/administradores", http.MethodGet, "cajero") {
+		t.Fatalf("expected non administrador role to be blocked")
+	}
+}

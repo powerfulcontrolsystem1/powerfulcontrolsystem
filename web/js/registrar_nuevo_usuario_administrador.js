@@ -14,6 +14,8 @@
   var submitButton = document.getElementById('adminRegisterBtn');
   var messageBox = document.getElementById('adminRegisterMessage');
   var recaptchaManager = window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: 'adminRegisterRecaptcha', action: 'admin_register' }) : null;
+  var queryParams = new URLSearchParams(window.location.search || '');
+  var invitationToken = normalize(queryParams.get('invitation_token'));
 
   var countries = [
     { code: 'AR', name: 'Argentina' },
@@ -148,6 +150,20 @@
   if (countryInput) {
     countryInput.value = detectCountryCode();
   }
+  if (invitationToken) {
+    var invitedEmail = normalize(queryParams.get('email'));
+    if (emailInput && invitedEmail) {
+      emailInput.value = invitedEmail;
+      emailInput.readOnly = true;
+    }
+    if (submitButton) {
+      submitButton.textContent = 'Aceptar invitacion y registrar cuenta';
+    }
+    var subtitle = document.querySelector('.login-subtitle');
+    if (subtitle) {
+      subtitle.textContent = 'Completa tus datos y crea tu contrasena para aceptar la invitacion administrativa. Luego podras iniciar sesion y ver las empresas compartidas por el administrador principal.';
+    }
+  }
 
   function showMessage(text, isError) {
     if (!messageBox) {
@@ -255,6 +271,7 @@
         pais: pais,
         ciudad: ciudad,
 		password: password,
+        invitation_token: invitationToken,
 		recaptcha_token: registerToken
       });
       if (!response.ok) {

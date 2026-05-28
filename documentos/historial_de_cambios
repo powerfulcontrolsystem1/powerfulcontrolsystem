@@ -1,3 +1,36 @@
+2026-05-27: Delegacion de portafolio entre administradores registrados.
+- Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `seguridad_multiempresa`, `correo`.
+- Cambio funcional: cuando un administrador principal invita a un correo que ya tiene cuenta confirmada, el sistema activa una delegacion de portafolio para que ese administrador vea sus empresas propias mas las empresas compartidas. Si el correo no existe o no esta confirmado, se conserva la invitacion de registro con token.
+- Backend:
+  - `backend/db/admin_principal_delegaciones.go` crea y gestiona `admin_principal_delegaciones`.
+  - `backend/handlers/auth_admin_handlers.go` distingue cuenta nueva de cuenta existente y revoca solo delegaciones cuando corresponde.
+  - `backend/handlers/empresa_compartida_handlers.go` incluye principales delegados activos en el selector.
+  - `backend/db/chat_inteligencia_artificial.go` valida el nuevo alcance en `CanAdminAccessEmpresaIA`.
+- Seguridad: compartir portafolio no cambia `usuario_creador`, no vuelve propietario al invitado y no permite borrar cuentas ajenas desde el listado del principal.
+- QA: `go test ./utils ./handlers ./db -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope|ValidatePendingAdminInvitationToken|CanAdminAccessEmpresa|AdminPrincipalDeleg" -count=1`.
+
+2026-05-27: Invitacion obligatoria para administradores delegados.
+- Modulos afectados: `administradores_delegados`, `autenticacion_admin`, `correo`, `seguridad_multiempresa`.
+- Cambio funcional: agregar administrador desde `Administradores` ya no crea acceso directo; crea cuenta pendiente, genera token, envia correo y exige que el invitado acepte el enlace y complete registro.
+- Backend: `AdminRegisterHandler` recibe `invitation_token`, valida token vigente si la cuenta tiene `usuario_creador`, confirma la cuenta despues de crear contrasena y bloquea registro sin invitacion.
+- Correo: se agrega plantilla `admin_scoped_invitation`; el modo prueba captura `invitacion_admin_delegado` con URL de registro en metadata.
+- Frontend: `web/super/administradores.html` cambia el boton a `Invitar administrador` y marca pendientes; `web/js/registrar_nuevo_usuario_administrador.js` precarga correo/token y envia la aceptacion.
+- QA: `go test ./utils ./handlers ./db -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope|ValidatePendingAdminInvitationToken|CanAdminAccessEmpresa" -count=1`; `node --check web/js/registrar_nuevo_usuario_administrador.js`; `git diff --check`.
+
+2026-05-27: Administradores por administrador principal en selector de empresas.
+- Modulos afectados: `seleccion_empresas`, `autenticacion_admin`, `permisos`, `empresas_compartidas`, `seguridad_multiempresa`.
+- Cambio funcional: el administrador principal normal puede abrir `Administradores` desde `seleccionar_empresa.html` y solo ve/gestiona los administradores que agrego bajo su cuenta.
+- Backend:
+  - `backend/utils/utils.go` permite la ruta limitada `/super/administradores.html` y `/super/api/administradores` para rol `administrador`.
+  - `backend/handlers/auth_admin_handlers.go` resuelve el principal, filtra por `administradores.usuario_creador`, excluye al principal y valida alcance en GET/POST/PUT/DELETE.
+  - `backend/handlers/empresa_compartida_handlers.go` marca como `delegated` las empresas creadas por el principal cuando las consulta un administrador delegado.
+  - `backend/db/chat_inteligencia_artificial.go` actualiza `CanAdminAccessEmpresaIA` para aceptar ese alcance delegado sin relajar acceso a empresas ajenas.
+- Frontend:
+  - `web/js/seleccionar_empresa.js` muestra el link `Administradores` solo al principal normal o super, etiqueta empresas delegadas y bloquea compartir cuando la empresa no es propia.
+  - `web/super/administradores.html` fuerza rol `administrador` para principales normales y aclara que las cuentas creadas podran entrar a las empresas administradas por el principal.
+- Seguridad: los delegados no ven administradores de otros principales, no se listan a si mismos como principal y no pueden compartir empresas que no son propias.
+- QA: `go test ./utils ./handlers -run "AdminLimitedRoute|DecorateEmpresasByEffectiveAccess|FilterAdministradoresForPrincipalScope" -count=1`; `node --check web/js/seleccionar_empresa.js`; `git diff --check`.
+
 2026-05-27: Checklist obligatoria de seguridad por endpoint multiempresa.
 - Modulos afectados: `documentacion`, `seguridad`, `permisos`, `backend_db`, `qa_operacion`.
 - Cambio funcional: se agrega `documentos/checklist_seguridad_endpoint_multiempresa.md` como checklist obligatoria antes de crear, modificar o revisar endpoints empresariales, consultas multiempresa, permisos, licencias, backups, importaciones, exportaciones o borrados.

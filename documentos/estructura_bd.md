@@ -22,6 +22,12 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-27 (delegacion de portafolio entre administradores)
+- `pcs_superadministrador.admin_principal_delegaciones`: nueva tabla para relacionar `admin_email` con `principal_email` sin cambiar la propiedad de la cuenta ni de las empresas.
+- Campos principales: `admin_email`, `principal_email`, `invitado_por_email`, `token_hash`, `expira_en`, `fecha_aceptada`, `fecha_revocada`, `estado`.
+- Indices: unico por `(admin_email, principal_email)`, busquedas por administrador/estado, principal/estado y token.
+- Uso: cuentas existentes confirmadas quedan con `estado='activo'`; cuentas nuevas siguen el flujo de invitacion y registro con token.
+
 Actualizacion 2026-05-27 (informacion editable de modulos del index)
 - No se agregan tablas ni columnas fisicas.
 - Se reutiliza `pcs_superadministrador.configuraciones` con las claves `super.informacion_modulos.v1` y `super.informacion_modulos.v1.updated_by`.
@@ -1355,6 +1361,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - administradores:
   - email, name, role, photo
   - acepta_contrato, contrato_version_aceptada, fecha_acepta_contrato
+  - usuario_creador define el administrador principal que agrego una cuenta delegada; en el selector y `/super/api/administradores` los principales normales solo gestionan registros bajo ese valor y los delegados heredan acceso a empresas creadas por el principal sin convertirse en propietarios.
+  - email_confirm_token y email_confirm_expira se reutilizan como token de invitacion para administradores delegados pendientes; el token se consume al completar el registro.
 - sesiones:
   - admin_email, token, ip, user_agent, fecha_inicio, fecha_fin, activo
   - fecha_fin se usa para expiracion y revocacion de sesion

@@ -114,6 +114,9 @@ func EnsureAdministradoresAuthSchema(dbConn *sql.DB) error {
 			return err
 		}
 	}
+	if err := EnsureAdminPrincipalDelegacionesSchema(dbConn); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1345,7 +1348,7 @@ func SetAdministradorConfirmToken(dbConn *sql.DB, email, token, expira string) e
 
 // ConfirmAdministradorByToken confirma el correo de un administrador usando su token.
 func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
-	row := dbConn.QueryRow(`SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1`, strings.TrimSpace(token))
+	row := queryRowSQLCompat(dbConn, `SELECT id, COALESCE(email_confirm_expira, '') FROM administradores WHERE email_confirm_token = ? LIMIT 1`, strings.TrimSpace(token))
 	var id int64
 	var expiraRaw string
 	if err := row.Scan(&id, &expiraRaw); err != nil {
@@ -1358,7 +1361,8 @@ func ConfirmAdministradorByToken(dbConn *sql.DB, token string) (int64, error) {
 			}
 		}
 	}
-	_, err := dbConn.Exec(`UPDATE administradores SET email_confirmado = 1, email_confirmado_en = datetime('now','localtime'), estado = 'activo', email_confirm_token = '', email_confirm_expira = '', fecha_actualizacion = datetime('now','localtime') WHERE id = ?`, id)
+	nowExpr := sqlNowExpr()
+	_, err := execSQLCompat(dbConn, `UPDATE administradores SET email_confirmado = 1, email_confirmado_en = `+nowExpr+`, estado = 'activo', email_confirm_token = '', email_confirm_expira = '', fecha_actualizacion = `+nowExpr+` WHERE id = ?`, id)
 	if err != nil {
 		return 0, err
 	}

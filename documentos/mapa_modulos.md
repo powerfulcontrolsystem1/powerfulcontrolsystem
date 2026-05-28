@@ -6,6 +6,7 @@ queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 | Modulo | Pagina | Handler/API | Tablas o configuracion | Permisos | Pruebas sugeridas |
 | --- | --- | --- | --- | --- | --- |
 | Autenticacion administrador | `web/login.html`, `web/registrar_nuevo_usuario_administrador.html` | `backend/handlers/auth_admin_handlers.go`, `/auth/*` | usuarios/admin en `pcs_superadministrador` | sesion admin, super admin | Login correo, registro, OAuth Google, celular y PC |
+| Administradores delegados | `web/super/administradores.html`, acceso desde `web/seleccionar_empresa.html` | `/super/api/administradores`, `backend/handlers/auth_admin_handlers.go` | `administradores.usuario_creador`, `admin_principal_delegaciones`, `email_confirm_token`, sesiones admin | administrador principal, super admin | Invitar correo nuevo, compartir a administrador existente, verificar que vea empresas propias mas compartidas y que revocar no borre su cuenta |
 | Seleccion y creacion de empresas | `web/seleccionar_empresa.html`, `web/js/seleccionar_empresa.js` | `/super/api/empresas`, `backend/handlers/system_empresas_handlers.go` | empresas, tipos, preconfiguracion, licencias | administrador autenticado | Crear empresa, aplicar tipo, entrar al panel |
 | Licencias | `web/pagar_licencia.html`, paginas super de licencias | `/licencias/activar_sin_pago`, handlers de pagos/licencias | licencias, activaciones gratis | licencia/super admin | Activar 15 dias una sola vez por empresa |
 | Panel administrar empresa | `web/administrar_empresa.html`, `web/administrar_empresa/panel.html` | contexto/permisos empresa | preferencias, permisos, modulos | rol efectivo por empresa | Abrir panel por defecto, responsive movil |
@@ -33,4 +34,3 @@ queda incompleta al implementar una mejora, actualizarla en el mismo cambio.
 | Informacion modulos index | `web/super/informacion_de_modulos.html`, `web/index.html` | `/super/api/informacion_de_modulos`, `/api/public/informacion_de_modulos` | `pcs_superadministrador.configuraciones` | super_administrador | Editar vineta, ver index con fallback |
 | Portal publico | `web/index.html`, `web/js/portal_visits.js` | `/api/public/*` | portal, visitas agregadas | publico/super lectura | Modo claro/oscuro, movil, mapa en super |
 | Docker y VPS | `deploy/`, `web/super/docker_portabilidad.html` | APIs super Docker portabilidad | snapshot sin secretos | super_administrador | Exportar paquete, revisar exclusiones, rs/sync |
-

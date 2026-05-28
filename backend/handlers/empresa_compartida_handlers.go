@@ -240,15 +240,54 @@ func normalizeAdminEmpresaCompartidaInvitation(item dbpkg.AdminEmpresaCompartida
 	return item
 }
 
+func effectiveAdminPrincipalSet(dbSuper *sql.DB, requesterEmail, principalEmail string) (map[string]bool, error) {
+	set := map[string]bool{}
+	requesterEmail = strings.ToLower(strings.TrimSpace(requesterEmail))
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	if principalEmail != "" && principalEmail != requesterEmail {
+		set[principalEmail] = true
+	}
+	if requesterEmail == "" {
+		return set, nil
+	}
+	principals, err := dbpkg.ListActiveAdminPrincipalDelegacionPrincipals(dbSuper, requesterEmail)
+	if err != nil {
+		return nil, err
+	}
+	for _, principal := range principals {
+		principal = strings.ToLower(strings.TrimSpace(principal))
+		if principal != "" && principal != requesterEmail {
+			set[principal] = true
+		}
+	}
+	return set, nil
+}
+
+func adminPrincipalSetOwnsEmpresa(principalSet map[string]bool, empresaCreator string) bool {
+	creator := strings.ToLower(strings.TrimSpace(empresaCreator))
+	if creator == "" {
+		return false
+	}
+	return principalSet[creator]
+}
+
 func decorateEmpresaAccessForRequester(dbSuper *sql.DB, requesterEmail, principalEmail string, empresa *dbpkg.Empresa) error {
 	if empresa == nil {
 		return nil
 	}
-	_ = principalEmail
+	principalSet, err := effectiveAdminPrincipalSet(dbSuper, requesterEmail, principalEmail)
+	if err != nil {
+		return err
+	}
 	owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
 	if owner {
 		empresa.AccessSource = "owner"
 		empresa.CompartidaPor = ""
+		return nil
+	}
+	if adminPrincipalSetOwnsEmpresa(principalSet, empresa.UsuarioCreador) {
+		empresa.AccessSource = "delegated"
+		empresa.CompartidaPor = strings.TrimSpace(empresa.UsuarioCreador)
 		return nil
 	}
 	access, err := dbpkg.GetActiveAdminEmpresaCompartidaAcceso(dbSuper, empresa.EmpresaID, requesterEmail)
@@ -268,6 +307,10 @@ func decorateEmpresasByEffectiveAccess(dbSuper *sql.DB, requesterEmail, principa
 	if len(empresas) == 0 {
 		return empresas, nil
 	}
+	principalSet, err := effectiveAdminPrincipalSet(dbSuper, requesterEmail, principalEmail)
+	if err != nil {
+		return nil, err
+	}
 	shareMap := map[int64]dbpkg.AdminEmpresaCompartidaAcceso{}
 	if strings.TrimSpace(requesterEmail) != "" {
 		shares, err := dbpkg.ListActiveAdminEmpresaCompartidaAccesosByAdmin(dbSuper, requesterEmail)
@@ -280,10 +323,15 @@ func decorateEmpresasByEffectiveAccess(dbSuper *sql.DB, requesterEmail, principa
 	}
 	out := make([]dbpkg.Empresa, 0, len(empresas))
 	for _, empresa := range empresas {
-		_ = principalEmail
 		owner := adminOwnsEmpresaByCreatorEmail(requesterEmail, empresa.UsuarioCreador)
 		if owner {
 			empresa.AccessSource = "owner"
+			out = append(out, empresa)
+			continue
+		}
+		if adminPrincipalSetOwnsEmpresa(principalSet, empresa.UsuarioCreador) {
+			empresa.AccessSource = "delegated"
+			empresa.CompartidaPor = strings.TrimSpace(empresa.UsuarioCreador)
 			out = append(out, empresa)
 			continue
 		}

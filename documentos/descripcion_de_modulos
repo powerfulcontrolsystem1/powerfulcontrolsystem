@@ -1,3 +1,24 @@
+2026-05-27: Delegacion de portafolio entre administradores
+- Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `seguridad_multiempresa`, `correo`.
+- Cambio funcional: un administrador confirmado puede recibir el portafolio de otro administrador sin duplicar cuenta ni perder sus empresas propias.
+- Backend: `admin_principal_delegaciones` guarda la relacion muchos-a-muchos; `CanAdminAccessEmpresaIA` y el selector reconocen esos principales activos.
+- Correo: `admin_portfolio_delegated` avisa al administrador registrado que ya vera sus empresas mas las compartidas al iniciar sesion.
+- Seguridad: al eliminar desde el listado del principal, si la cuenta no fue creada por el, se revoca solo la delegacion.
+
+2026-05-27: Invitacion de administradores delegados
+- Modulos afectados: `autenticacion_admin`, `administradores_delegados`, `correo`, `seguridad_multiempresa`.
+- Cambio funcional: el alta de administradores desde `Administradores` envia invitacion por correo; el invitado debe aceptar el enlace, completar registro y crear contrasena antes de iniciar sesion.
+- Backend: `AdminRegisterHandler` exige `invitation_token` cuando la cuenta pendiente tiene `usuario_creador`; `validatePendingAdminInvitationToken` valida token vigente y no usado antes de confirmar la cuenta.
+- Correo: `admin_scoped_invitation` define asunto, texto y HTML de invitacion con enlace de registro.
+- Frontend: `registrar_nuevo_usuario_administrador.html` precarga el correo invitado, bloquea edicion del correo y envia el token al backend.
+
+2026-05-27: Administradores por administrador principal
+- Modulos afectados: `seleccion_empresas`, `autenticacion_admin`, `permisos`, `empresas_compartidas`.
+- Cambio funcional: un administrador principal puede abrir `Administradores` desde el selector y gestionar solo las cuentas administrativas que agrego para su propia operacion.
+- Backend: `/super/api/administradores` resuelve el principal autenticado, filtra por `administradores.usuario_creador`, excluye al principal y fuerza rol `administrador` cuando el creador no es super panel.
+- Empresas: los administradores delegados heredan acceso a las empresas creadas por el principal con `access_source=delegated`; el propietario sigue siendo el principal y solo el puede compartir.
+- Seguridad: `CanAdminAccessEmpresaIA` valida el alcance delegado en backend y no depende de botones visibles en frontend.
+
 2026-05-27: Checklist de seguridad por endpoint multiempresa
 - Modulos afectados: `seguridad`, `permisos`, `backend_db`, `qa_operacion`, `documentacion`.
 - Cambio funcional: se formaliza una checklist obligatoria para endpoints empresariales, consultas multiempresa, permisos, licencias y operaciones masivas.

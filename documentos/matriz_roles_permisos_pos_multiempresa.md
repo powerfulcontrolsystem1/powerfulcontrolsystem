@@ -1,3 +1,16 @@
+2026-05-27: Nota de delegacion de portafolio entre administradores
+- Un administrador principal puede compartir su portafolio de empresas con un administrador ya confirmado sin cambiar `administradores.usuario_creador` ni la propiedad de empresas.
+- La relacion vive en `admin_principal_delegaciones`; el acceso se evalua en backend junto al acceso directo por creador y al acceso compartido por empresa.
+- El administrador invitado conserva sus empresas propias y ve adicionalmente las empresas compartidas como acceso delegado; no puede compartirlas como propietario.
+- Revocar desde el listado del principal elimina solo la delegacion cuando la cuenta pertenece a otro administrador, evitando borrar o desactivar una cuenta ajena.
+
+2026-05-27: Nota de administradores por administrador principal
+- El enlace `Administradores` en `seleccionar_empresa.html` queda visible para el administrador principal normal y para roles super; no queda visible para administradores delegados.
+- `/super/api/administradores` valida backend: un principal normal solo puede listar, crear, activar/desactivar o eliminar administradores dentro de su propio alcance `usuario_creador`.
+- Crear administrador desde este modulo envia invitacion por correo; el invitado debe registrarse con `invitation_token` antes de iniciar sesion.
+- Los administradores creados por el principal heredan acceso a las empresas del principal como administracion delegada. Esto no los vuelve propietarios: no pueden compartir la empresa ni ver administradores de otros principales.
+- El super administrador conserva vista y gestion global; el control super mantiene su alcance definido por rutas super permitidas.
+
 2026-05-27: Nota obligatoria de seguridad por endpoint multiempresa
 - Antes de crear, modificar o revisar endpoints empresariales se debe aplicar `documentos/checklist_seguridad_endpoint_multiempresa.md`.
 - La checklist exige validar sesion, `empresa_id`, permisos, licencia, SQL con aislamiento, IDs secundarios, auditoria, errores saneados y pruebas negativas de intento de cruce entre empresas.

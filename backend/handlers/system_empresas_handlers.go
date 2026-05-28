@@ -104,11 +104,14 @@ func adminEmailMatchesPrincipalScope(dbSuper *sql.DB, principalEmail, targetEmai
 	resolved, err := dbpkg.ResolveAdminPrincipalEmail(dbSuper, targetEmail)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, nil
+			return dbpkg.AdminHasPrincipalDelegacionInScope(dbSuper, principalEmail, targetEmail)
 		}
 		return false, err
 	}
-	return strings.EqualFold(strings.TrimSpace(resolved), principalEmail), nil
+	if strings.EqualFold(strings.TrimSpace(resolved), principalEmail) {
+		return true, nil
+	}
+	return dbpkg.AdminHasPrincipalDelegacionInScope(dbSuper, principalEmail, targetEmail)
 }
 
 func adminOwnsEmpresaByCreatorEmail(adminEmail, empresaCreator string) bool {
@@ -118,6 +121,15 @@ func adminOwnsEmpresaByCreatorEmail(adminEmail, empresaCreator string) bool {
 		return false
 	}
 	return creator == adminEmail
+}
+
+func adminPrincipalOwnsEmpresaByCreatorEmail(principalEmail, empresaCreator string) bool {
+	principalEmail = strings.ToLower(strings.TrimSpace(principalEmail))
+	creator := strings.ToLower(strings.TrimSpace(empresaCreator))
+	if principalEmail == "" || creator == "" {
+		return false
+	}
+	return creator == principalEmail
 }
 
 func empresaBelongsToPrincipalScope(dbSuper *sql.DB, principalEmail, empresaCreator string) (bool, error) {

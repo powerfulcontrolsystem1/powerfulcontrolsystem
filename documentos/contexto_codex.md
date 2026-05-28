@@ -52,6 +52,11 @@ botones, desde handlers estaticos del backend.
   `backend/handlers/auth_admin_handlers.go`.
 - Seleccion y creacion de empresas: `web/seleccionar_empresa.html`,
   `web/js/seleccionar_empresa.js`, `/super/api/empresas`.
+- Administradores delegados: `web/super/administradores.html`,
+  `/super/api/administradores`, `backend/handlers/auth_admin_handlers.go`.
+  Si el correo no existe se registra por invitacion con token; si ya existe y
+  esta confirmado se usa `admin_principal_delegaciones` para que vea sus empresas
+  propias mas las empresas compartidas, sin cambiar `usuario_creador`.
 - Licencia gratis: `web/pagar_licencia.html`, `/licencias/activar_sin_pago`.
 - Panel empresarial: `web/administrar_empresa.html`,
   `web/administrar_empresa/panel.html`.
@@ -97,6 +102,19 @@ permisos/modulos y puede activar una licencia gratis de 15 dias si corresponde.
 La licencia gratis solo puede usarse una vez por empresa. La creacion de empresa
 puede disparar una alerta por correo al super administrador si el check esta
 activo.
+
+## Flujo de administradores delegados
+
+El administrador principal normal puede abrir `Administradores` desde
+`seleccionar_empresa.html`. Esa pagina no es global para el: `/super/api/administradores`
+filtra por el principal resuelto, excluye al propio principal y permite gestionar
+solo cuentas con `administradores.usuario_creador` dentro de su alcance. El alta
+se hace por invitacion: se crea cuenta pendiente, se envia correo con
+`invitation_token`, el invitado completa `registrar_nuevo_usuario_administrador.html`
+y solo despues de validar el token queda confirmado para login. Los delegados
+heredan acceso a las empresas creadas por el principal como `access_source=delegated`,
+pero no pueden compartirlas ni administrar otros administradores. La validacion
+real vive en backend y en `CanAdminAccessEmpresaIA`.
 
 ## Flujo de carrito, venta, caja y facturacion
 

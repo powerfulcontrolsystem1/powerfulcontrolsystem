@@ -1,3 +1,30 @@
+## Actualizacion 2026-05-27 (delegacion de portafolio entre administradores)
+
+- `backend/db/admin_principal_delegaciones.go`: agrega tabla y helpers para compartir el portafolio de un administrador principal con un administrador registrado sin modificar su cuenta.
+- `backend/handlers/auth_admin_handlers.go`: si el correo invitado ya esta confirmado, activa la delegacion inmediatamente y envia aviso; si no existe, mantiene el registro por invitacion con token.
+- `backend/handlers/empresa_compartida_handlers.go`: el selector incluye empresas de todos los principales activos delegados al administrador autenticado.
+- `backend/db/chat_inteligencia_artificial.go`: `CanAdminAccessEmpresaIA` reconoce delegaciones de portafolio activas antes de bloquear acceso multiempresa.
+- Flujo de capas: Administrador principal -> Administradores -> cuenta existente -> `admin_principal_delegaciones` activo -> selector muestra empresas propias + compartidas -> revocacion sin borrar cuenta ajena.
+
+## Actualizacion 2026-05-27 (invitacion de administradores delegados)
+
+- `backend/handlers/auth_admin_handlers.go`: al crear un administrador desde `/super/api/administradores`, genera token, guarda `email_confirm_token` y envia correo de invitacion; el registro posterior valida `invitation_token` antes de confirmar la cuenta.
+- `backend/handlers/super_email_templates.go`: agrega plantilla `admin_scoped_invitation`.
+- `backend/db/db.go`: `ConfirmAdministradorByToken` usa wrappers SQL compatibles con PostgreSQL para confirmar el token.
+- `web/super/administradores.html`: cambia el alta visible a `Invitar administrador` y muestra pendientes como `Invitacion pendiente`.
+- `web/js/registrar_nuevo_usuario_administrador.js`: lee `invitation_token`, precarga el correo y completa la aceptacion de invitacion.
+- Flujo de capas: Administrador principal -> invitacion correo -> registro con token -> confirmacion cuenta -> login -> empresas delegadas.
+
+## Actualizacion 2026-05-27 (administradores por administrador principal)
+
+- `web/js/seleccionar_empresa.js`: muestra `Administradores` al administrador principal normal, etiqueta empresas delegadas y bloquea compartir cuando la tarjeta no es de propietario.
+- `web/super/administradores.html`: adapta el formulario para administradores principales normales, fuerza rol `administrador` y explica que las cuentas creadas quedan bajo su alcance.
+- `backend/utils/utils.go`: permite a rol `administrador` entrar solo a `/super/administradores.html` y `/super/api/administradores`; el handler conserva la autorizacion real.
+- `backend/handlers/auth_admin_handlers.go`: resuelve el principal autenticado, filtra administradores por `usuario_creador`, excluye al principal y valida POST/PUT/DELETE dentro del mismo alcance.
+- `backend/handlers/empresa_compartida_handlers.go`: decora empresas del principal como `access_source=delegated` para administradores subordinados.
+- `backend/db/chat_inteligencia_artificial.go`: `CanAdminAccessEmpresaIA` reconoce que un administrador delegado puede entrar a empresas cuyo creador sea su principal.
+- Flujo de capas: Selector empresas -> Administradores -> `usuario_creador` -> acceso delegado a empresas del principal -> permisos empresariales efectivos.
+
 ## Actualizacion 2026-05-27 (checklist seguridad endpoint multiempresa)
 
 - `documentos/checklist_seguridad_endpoint_multiempresa.md`: nueva checklist obligatoria para endpoints y consultas empresariales.

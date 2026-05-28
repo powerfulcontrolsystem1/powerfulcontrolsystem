@@ -569,6 +569,10 @@ func allowAdminLimitedSuperRoute(path, method, role string) bool {
 		return false
 	}
 	switch strings.TrimSpace(path) {
+	case "/super/administradores.html",
+		"/super/api/administradores",
+		"/super/administradores":
+		return method == http.MethodGet || method == http.MethodPost || method == http.MethodPut || method == http.MethodDelete
 	case "/super/licencias.html":
 		return method == http.MethodGet
 	case "/super/api/empresas":

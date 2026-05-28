@@ -24,6 +24,25 @@ afecte dinero, documentos, licencias o seguridad.
 5. Pruebas: empresa creada, aparece en selector, entra a panel y conserva
    `empresa_id` correcto.
 
+## Administradores delegados
+
+1. El administrador principal entra a `seleccionar_empresa.html` y abre
+   `Administradores`.
+2. Invita administradores con rol forzado `administrador`; el backend guarda
+   `administradores.usuario_creador` con el correo del principal y envia correo
+   con enlace de invitacion.
+3. Si el correo no existe o no esta confirmado, el invitado abre el enlace, acepta la invitacion, completa datos y crea su
+   contrasena; sin token vigente no puede completar el registro.
+4. Si el correo ya pertenece a un administrador confirmado, no se crea otra cuenta: se activa `admin_principal_delegaciones` y se envia solo un aviso por correo.
+5. Al iniciar sesion, el delegado ve sus empresas propias y las empresas creadas por los principales que le compartieron portafolio como
+   administracion delegada y entra con permisos empresariales efectivos.
+6. El delegado no puede compartir esas empresas ni administrar otros
+   administradores; el propietario sigue siendo el principal.
+7. Eliminar desde el listado revoca la delegacion si la cuenta ya era de otro administrador; no borra su cuenta.
+8. Pruebas: principal invita delegado, correo/enlace funciona, delegado ve
+   empresas del principal, no ve empresas de otro principal y no puede compartir
+   por URL ni boton.
+
 ## Licencia gratis 15 dias
 
 1. Desde el checkout de licencia se obtiene resumen publico.
@@ -127,4 +146,3 @@ afecte dinero, documentos, licencias o seguridad.
 3. Los envios quedan auditados en `super_alertas_eventos`.
 4. Un fallo SMTP no debe bloquear el flujo de negocio que disparo la alerta.
 5. Pruebas: guardar checks, enviar prueba, crear admin/empresa y revisar evento.
-

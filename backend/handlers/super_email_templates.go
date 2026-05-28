@@ -14,6 +14,8 @@ import (
 
 const (
 	superEmailTemplateKeyAdminConfirmation       = "admin_confirmation"
+	superEmailTemplateKeyAdminScopedInvitation   = "admin_scoped_invitation"
+	superEmailTemplateKeyAdminPortfolioDelegated = "admin_portfolio_delegated"
 	superEmailTemplateKeyEmpresaConfirmation     = "empresa_user_confirmation"
 	superEmailTemplateKeyEmpresaAdminShareInvite = "empresa_admin_share_invitation"
 	superEmailTemplateKeyLicenciaActivation      = "licencia_activation_payment"
@@ -59,6 +61,26 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultSubject:  "Confirma tu correo - Powerful Control System",
 		DefaultBodyText: "Hola {{name}},\n\nPara activar tu cuenta, haz clic en el siguiente enlace:\n{{confirm_url}}\n\nDespués de confirmar, inicia sesión aquí:\n{{login_url}}\n\nSi no solicitaste esta cuenta, ignora este mensaje.\n",
 		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p>Para activar tu cuenta, haz clic en el siguiente enlace:</p><p><a href=\"{{confirm_url}}\">Confirmar correo</a></p><p>Después de confirmar, inicia sesión <a href=\"{{login_url}}\">aquí</a>.</p><p>Si no solicitaste esta cuenta, ignora este mensaje.</p></body></html>",
+	},
+	{
+		Key:             superEmailTemplateKeyAdminScopedInvitation,
+		Label:           "Invitacion a administrador delegado",
+		Category:        "administracion",
+		Description:     "Correo enviado cuando un administrador principal agrega otro administrador para operar sus empresas.",
+		Variables:       []string{"name", "invited_by_name", "register_url", "login_url"},
+		DefaultSubject:  "Te invitaron a administrar empresas en Powerful Control System",
+		DefaultBodyText: "Hola {{name}},\n\n{{invited_by_name}} te invito a registrarte como administrador en Powerful Control System.\n\nPara aceptar la invitacion y crear tu clave, abre este enlace:\n{{register_url}}\n\nDespues de registrarte podras iniciar sesion aqui:\n{{login_url}}\n\nSi no esperabas esta invitacion, ignora este mensaje.\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p><strong>{{invited_by_name}}</strong> te invito a registrarte como administrador en <strong>Powerful Control System</strong>.</p><p>Para aceptar la invitacion y crear tu clave, abre este enlace:</p><p><a href=\"{{register_url}}\">Aceptar invitacion y registrarme</a></p><p>Despues de registrarte podras iniciar sesion <a href=\"{{login_url}}\">aqui</a>.</p><p>Si no esperabas esta invitacion, ignora este mensaje.</p></body></html>",
+	},
+	{
+		Key:             superEmailTemplateKeyAdminPortfolioDelegated,
+		Label:           "Aviso de empresas compartidas a administrador registrado",
+		Category:        "administracion",
+		Description:     "Correo enviado cuando un administrador registrado recibe acceso al portafolio de empresas de otro administrador.",
+		Variables:       []string{"name", "invited_by_name", "login_url"},
+		DefaultSubject:  "Ahora puedes ver empresas compartidas en Powerful Control System",
+		DefaultBodyText: "Hola {{name}},\n\n{{invited_by_name}} te compartio sus empresas en Powerful Control System.\n\nComo tu cuenta ya esta registrada, no debes crear otra cuenta. Inicia sesion y veras tus empresas mas las empresas compartidas:\n{{login_url}}\n\nSi no esperabas este acceso, informa al administrador que te invito.\n",
+		DefaultBodyHTML: "<html><body><p>Hola {{name}},</p><p><strong>{{invited_by_name}}</strong> te compartio sus empresas en <strong>Powerful Control System</strong>.</p><p>Como tu cuenta ya esta registrada, no debes crear otra cuenta. Inicia sesion y veras tus empresas mas las empresas compartidas:</p><p><a href=\"{{login_url}}\">Abrir Powerful Control System</a></p><p>Si no esperabas este acceso, informa al administrador que te invito.</p></body></html>",
 	},
 	{
 		Key:             superEmailTemplateKeyEmpresaConfirmation,
