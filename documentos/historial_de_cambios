@@ -28187,3 +28187,20 @@ Archivos modificados:
 - web/estilos.css
 - web/super/administradores.html
 - web/super/licencias.html
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/empresa_estacion_prefs.go
+- backend/handlers/chat_flotante_config.go
+- backend/main.go
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/administrar_empresa/configuracion_chat_flotante.html
+- web/js/ai_chat_drawer.js
+- web/js/radio_online.js
+- web/js/radio_player.js
+- web/super/licencias.html
