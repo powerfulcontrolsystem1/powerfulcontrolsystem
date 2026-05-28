@@ -11240,3 +11240,8 @@ Archivos modificados:
 2026-05-28 13:48:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5a4d95f4; PushStatus: OK
 Archivos modificados:
 - scripts/sync_to_vps.ps1
+
+2026-05-28 15:06:43 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ad7aa437; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-compose-sidecar-up.sh
+- documentos/historial_de_cambios
