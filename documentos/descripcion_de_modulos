@@ -1,3 +1,9 @@
+2026-05-27: Empresas compartidas en administrar empresa
+- Modulos afectados: `administracion_empresa`, `empresas_compartidas`, `seguridad_multiempresa`.
+- Cambio funcional: se agrega una pagina empresarial para ver a quienes se compartio la empresa actual y cancelar/desactivar accesos compartidos o invitaciones pendientes.
+- Frontend: `web/administrar_empresa/empresas_compartidas.html` consume `/super/api/empresas/compartidos?empresa_id=...` y usa `DELETE` para revocar.
+- Navegacion: `Administrar empresa > Administracion > Empresas compartidas`, con permiso `seguridad:U`.
+
 2026-05-27: Estado de invitacion en administradores
 - Modulos afectados: `administradores_delegados`, `seleccion_empresas`, `super_administrador`.
 - Cambio funcional: el listado muestra `Invitacion` separado del estado de cuenta para indicar si el invitado acepto o sigue pendiente.

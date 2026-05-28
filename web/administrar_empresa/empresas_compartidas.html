@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Empresas compartidas</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+</head>
+<body class="admin-subpage empresa-subpage">
+  <main class="container">
+    <header class="page-header">
+      <div>
+        <h1>Empresas compartidas</h1>
+        <p class="page-subtitle">Revisa que administradores tienen acceso a esta empresa. Desde aqui puedes desactivar un acceso compartido o cancelar una invitacion pendiente.</p>
+      </div>
+      <button id="refreshBtn" type="button" class="btn secondary">Actualizar</button>
+    </header>
+
+    <section class="card">
+      <div class="section-title-row">
+        <div>
+          <h2>Accesos activos</h2>
+          <p class="muted">Administradores que ya aceptaron la invitacion y pueden entrar a esta empresa.</p>
+        </div>
+      </div>
+      <div id="activeShares" class="empresa-share-list">
+        <p class="muted">Cargando accesos...</p>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;">
+      <div class="section-title-row">
+        <div>
+          <h2>Invitaciones</h2>
+          <p class="muted">Invitaciones enviadas para compartir esta empresa. Si estan pendientes, aun no han sido aceptadas.</p>
+        </div>
+      </div>
+      <div id="pendingShares" class="empresa-share-list">
+        <p class="muted">Cargando invitaciones...</p>
+      </div>
+    </section>
+
+    <div id="shareMessage" class="form-help" style="margin-top:14px;"></div>
+  </main>
+
+  <script>
+    (function(){
+      "use strict";
+
+      var state = {
+        empresaId: 0,
+        requesterEmail: "",
+        isOwner: false,
+        accesos: [],
+        invitaciones: []
+      };
+
+      function $(id){ return document.getElementById(id); }
+
+      function parsePositiveInt(raw){
+        var n = Number(String(raw || "").trim());
+        if (!Number.isFinite(n)) return 0;
+        n = Math.trunc(n);
+        return n > 0 ? n : 0;
+      }
+
+      function getEmpresaId(){
+        try {
+          if (typeof window.__resolveEmpresaIdContext === "function") {
+            var resolved = parsePositiveInt(window.__resolveEmpresaIdContext());
+            if (resolved > 0) return resolved;
+          }
+        } catch (_) {}
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          var fromUrl = parsePositiveInt(params.get("empresa_id") || params.get("id"));
+          if (fromUrl > 0) return fromUrl;
+        } catch (_) {}
+        try {
+          var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+          for (var i = 0; i < keys.length; i += 1) {
+            var fromSession = parsePositiveInt(window.sessionStorage.getItem(keys[i]));
+            if (fromSession > 0) return fromSession;
+            var fromLocal = parsePositiveInt(window.localStorage.getItem(keys[i]));
+            if (fromLocal > 0) return fromLocal;
+          }
+        } catch (_) {}
+        return 0;
+      }
+
+      function escapeHtml(value){
+        return String(value == null ? "" : value).replace(/[&<>"']/g, function(match){
+          return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[match];
+        });
+      }
+
+      function normalizeEmail(value){
+        return String(value || "").trim().toLowerCase();
+      }
+
+      function setMessage(text, isError){
+        var node = $("shareMessage");
+        if (!node) return;
+        node.textContent = text || "";
+        node.classList.toggle("error", !!isError);
+        node.classList.toggle("success", !!text && !isError);
+      }
+
+      async function fetchJSON(url, options){
+        var res = await fetch(url, Object.assign({ credentials: "same-origin" }, options || {}));
+        var raw = await res.text();
+        var data = null;
+        try { data = raw ? JSON.parse(raw) : null; } catch (_) {}
+        if (!res.ok) {
+          var err = new Error((data && (data.error || data.message)) || raw || ("HTTP " + res.status));
+          err.payload = data;
+          throw err;
+        }
+        return data;
+      }
+
+      function displayPerson(name, email){
+        name = String(name || "").trim();
+        email = String(email || "").trim();
+        return name || email || "Administrador";
+      }
+
+      function shareScopeText(item){
+        var raw = String(item && item.scope_label ? item.scope_label : "").trim();
+        if (raw) return raw;
+        var nivel = String(item && item.nivel_acceso ? item.nivel_acceso : "acceso_total").trim().toLowerCase();
+        if (nivel === "solo_ver") return "Solo ver";
+        if (nivel === "modulos") return "Modulos seleccionados";
+        return "Acceso total";
+      }
+
+      function statusLabel(raw){
+        var status = String(raw || "").trim().toLowerCase();
+        if (status === "activo" || status === "activa" || status === "aceptada") return "Activo";
+        if (status === "pendiente") return "Pendiente";
+        if (status === "expirada") return "Expirada";
+        if (status === "revocada") return "Revocada";
+        if (status === "rechazada") return "Rechazada";
+        return status || "Pendiente";
+      }
+
+      function canManageAccess(item){
+        if (state.isOwner) return true;
+        return normalizeEmail(item && item.admin_email) === normalizeEmail(state.requesterEmail);
+      }
+
+      function canManageInvitation(item){
+        if (state.isOwner) return true;
+        var requester = normalizeEmail(state.requesterEmail);
+        return normalizeEmail(item && item.admin_email) === requester || normalizeEmail(item && item.invitado_por_email) === requester;
+      }
+
+      function renderActiveShares(){
+        var mount = $("activeShares");
+        if (!mount) return;
+        if (!state.accesos.length) {
+          mount.innerHTML = '<p class="muted">Esta empresa no tiene accesos compartidos activos.</p>';
+          return;
+        }
+        mount.innerHTML = state.accesos.map(function(item){
+          var sharedTo = displayPerson(item.admin_name, item.admin_email);
+          var sharedBy = displayPerson(item.compartido_por_name, item.compartido_por_email);
+          var accepted = String(item.fecha_aceptada || item.fecha_creacion || "").trim();
+          var status = String(item.estado || "activo").trim().toLowerCase();
+          var action = canManageAccess(item)
+            ? '<button type="button" class="btn danger" data-share-action="revoke-access" data-id="' + escapeHtml(item.id) + '">Desactivar acceso</button>'
+            : "";
+          return '<article class="empresa-share-item">' +
+            '<div><strong>' + escapeHtml(sharedTo) + '</strong>' +
+            '<div class="muted">' + escapeHtml(item.admin_email || "") + '</div>' +
+            '<div class="muted">Compartido por: ' + escapeHtml(sharedBy) + (accepted ? ' - Desde: ' + escapeHtml(accepted) : '') + '</div>' +
+            '<div class="muted">Alcance: ' + escapeHtml(shareScopeText(item)) + '</div></div>' +
+            '<div class="empresa-share-item-actions">' +
+            '<span class="empresa-share-state is-' + escapeHtml(status || "activo") + '">' + escapeHtml(statusLabel(status)) + '</span>' +
+            action +
+            '</div></article>';
+        }).join("");
+      }
+
+      function renderInvitations(){
+        var mount = $("pendingShares");
+        if (!mount) return;
+        if (!state.invitaciones.length) {
+          mount.innerHTML = '<p class="muted">No hay invitaciones registradas para esta empresa.</p>';
+          return;
+        }
+        mount.innerHTML = state.invitaciones.map(function(item){
+          var status = String(item.estado || "pendiente").trim().toLowerCase();
+          var invitedTo = displayPerson(item.admin_name, item.admin_email);
+          var invitedBy = displayPerson(item.invitado_por_name, item.invitado_por_email);
+          var expira = String(item.expira_en || "").trim();
+          var cancellable = canManageInvitation(item) && status !== "revocada" && status !== "rechazada" && status !== "aceptada";
+          var action = cancellable
+            ? '<button type="button" class="btn danger" data-share-action="revoke-invitation" data-id="' + escapeHtml(item.id) + '">Cancelar invitacion</button>'
+            : "";
+          return '<article class="empresa-share-item">' +
+            '<div><strong>' + escapeHtml(invitedTo) + '</strong>' +
+            '<div class="muted">' + escapeHtml(item.admin_email || "") + '</div>' +
+            '<div class="muted">Invitado por: ' + escapeHtml(invitedBy) + (expira ? ' - Expira: ' + escapeHtml(expira) : '') + '</div>' +
+            '<div class="muted">Alcance: ' + escapeHtml(shareScopeText(item)) + '</div></div>' +
+            '<div class="empresa-share-item-actions">' +
+            '<span class="empresa-share-state is-' + escapeHtml(status || "pendiente") + '">' + escapeHtml(statusLabel(status)) + '</span>' +
+            action +
+            '</div></article>';
+        }).join("");
+      }
+
+      function bindActions(){
+        Array.prototype.forEach.call(document.querySelectorAll("[data-share-action]"), function(btn){
+          btn.addEventListener("click", function(){
+            var action = btn.getAttribute("data-share-action");
+            var id = btn.getAttribute("data-id");
+            handleAction(action, id);
+          });
+        });
+      }
+
+      function renderAll(){
+        renderActiveShares();
+        renderInvitations();
+        bindActions();
+      }
+
+      async function loadShares(){
+        state.empresaId = getEmpresaId();
+        if (!state.empresaId) {
+          $("activeShares").innerHTML = '<p class="muted">No se encontro empresa activa. Vuelve a seleccionar la empresa.</p>';
+          $("pendingShares").innerHTML = '<p class="muted">Sin contexto de empresa.</p>';
+          return;
+        }
+        setMessage("Cargando informacion de comparticion...", false);
+        var data = await fetchJSON("/super/api/empresas/compartidos?empresa_id=" + encodeURIComponent(String(state.empresaId)));
+        state.accesos = Array.isArray(data && data.accesos) ? data.accesos : [];
+        state.invitaciones = Array.isArray(data && data.invitaciones) ? data.invitaciones : [];
+        state.requesterEmail = String(data && data.requester_email ? data.requester_email : "").trim();
+        state.isOwner = !!(data && data.is_owner);
+        renderAll();
+        setMessage("", false);
+      }
+
+      async function handleAction(action, id){
+        id = parsePositiveInt(id);
+        if (!id) return;
+        var isAccess = action === "revoke-access";
+        var prompt = isAccess
+          ? "Deseas desactivar este acceso compartido?"
+          : "Deseas cancelar esta invitacion?";
+        if (!window.confirm(prompt)) return;
+        try {
+          setMessage(isAccess ? "Desactivando acceso..." : "Cancelando invitacion...", false);
+          await fetchJSON("/super/api/empresas/compartidos?id=" + encodeURIComponent(String(id)) + "&kind=" + encodeURIComponent(isAccess ? "access" : "invitation"), {
+            method: "DELETE"
+          });
+          setMessage(isAccess ? "Acceso compartido desactivado." : "Invitacion cancelada.", false);
+          await loadShares();
+        } catch (err) {
+          setMessage(err.message || "No se pudo completar la accion.", true);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function(){
+        var refresh = $("refreshBtn");
+        if (refresh) refresh.addEventListener("click", function(){ loadShares().catch(function(err){ setMessage(err.message || "No se pudo cargar la informacion.", true); }); });
+        loadShares().catch(function(err){
+          setMessage(err.message || "No se pudo cargar la informacion.", true);
+          $("activeShares").innerHTML = '<p class="muted">No se pudieron cargar los accesos.</p>';
+          $("pendingShares").innerHTML = '<p class="muted">No se pudieron cargar las invitaciones.</p>';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

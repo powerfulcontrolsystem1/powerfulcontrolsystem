@@ -1,3 +1,12 @@
+2026-05-27 - Empresas compartidas en administrar empresa
+- `web/administrar_empresa/empresas_compartidas.html`:
+	- nueva pagina para listar accesos compartidos activos e invitaciones de la empresa actual.
+	- permite desactivar accesos y cancelar invitaciones usando la API existente `/super/api/empresas/compartidos`.
+- `web/administrar_empresa.html`:
+	- agrega boton `Empresas compartidas` en el grupo `Administracion`.
+- `web/js/administrar_empresa.js`:
+	- registra `linkEmpresasCompartidas` con permiso `seguridad:U`.
+
 2026-05-27 - Administradores del selector filtrados y super por invitacion
 - `web/seleccionar_empresa.html`:
 	- abre Administradores con `scope=principal` para evitar la lista global del sistema.

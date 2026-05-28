@@ -1,3 +1,13 @@
+## [2026-05-27] Empresas compartidas en administrar empresa
+- [UX] Se agrega `web/administrar_empresa/empresas_compartidas.html` al grupo `Administracion` del menu empresarial.
+- [Funcion] La pagina muestra accesos compartidos activos e invitaciones pendientes de la empresa actual, con opcion para desactivar acceso o cancelar invitacion usando `/super/api/empresas/compartidos`.
+- [Permisos] El menu usa permiso `seguridad:U`; el backend existente conserva la validacion de propietario, quien compartio o administrador receptor.
+- [QA] Validacion sintactica del script embebido en la pagina; `git diff --check`.
+
+## [2026-05-27] Ayuda en administradores
+- [UX] `web/super/administradores.html` agrega una descripcion bajo el titulo para aclarar que las invitaciones son para administrar empresas y que compartir una sola empresa se hace desde el icono Compartir de la tarjeta.
+- [QA] Validacion sintactica del script embebido en `web/super/administradores.html`; `git diff --check`.
+
 ## [2026-05-27] Estado de invitacion en administradores
 - [UI] `web/super/administradores.html` separa `Invitacion` y `Estado cuenta`.
 - [Backend] `GetAdministradores` expone `email_confirmado` y el filtro de alcance agrega `invitation_status` para distinguir invitaciones aceptadas, pendientes o cerradas.

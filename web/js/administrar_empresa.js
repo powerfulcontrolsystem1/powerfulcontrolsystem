@@ -140,6 +140,7 @@ try {
     document.getElementById("linkAlquileres"),
     document.getElementById("linkTurnosAtencion"),
     document.getElementById("linkConfiguracion"),
+    document.getElementById("linkEmpresasCompartidas"),
     document.getElementById("linkLicenciaSistema"),
     document.getElementById("linkConfiguracionMain"),
     document.getElementById("linkConfiguracionIdentidadVisual"),
@@ -440,6 +441,7 @@ try {
     linkSoporteRemoto: { module: permModuleSeguridad, action: permActionApprove },
 
     linkConfiguracion: { module: permModuleSeguridad, action: permActionUpdate },
+    linkEmpresasCompartidas: { module: permModuleSeguridad, action: permActionUpdate },
     linkLicenciaSistema: { module: permModuleSeguridad, action: permActionRead },
     linkConfiguracionMain: { module: permModuleSeguridad, action: permActionUpdate },
     linkConfiguracionIdentidadVisual: { module: permModuleSeguridad, action: permActionUpdate },
