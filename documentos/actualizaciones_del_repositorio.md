@@ -11290,3 +11290,8 @@ Archivos modificados:
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
 - web/super/email_corporativo.html
+
+2026-05-28 18:45:35 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b3feb46a; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- web/super/email_corporativo.html
