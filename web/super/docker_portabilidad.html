@@ -13,9 +13,9 @@
       }
       var theme = "";
       try { theme = window.localStorage.getItem("theme") || ""; } catch (error) {}
-      theme = String(theme || cookie("pcs_theme") || "dark").trim().toLowerCase();
+      theme = String(theme || cookie("pcs_theme") || "light").trim().toLowerCase();
       if (theme === "dark-protect") theme = "dark";
-      if (!valid[theme]) theme = "dark";
+      if (!valid[theme]) theme = "light";
       document.documentElement.setAttribute("data-theme", theme);
       document.documentElement.classList.toggle("theme-light", theme.indexOf("light") === 0);
       document.documentElement.classList.toggle("theme-dark", theme.indexOf("light") !== 0);

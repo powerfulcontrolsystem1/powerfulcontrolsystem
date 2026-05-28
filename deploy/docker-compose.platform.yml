@@ -47,6 +47,15 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ONLYOFFICE_DOCUMENT_SERVER_URL: ${ONLYOFFICE_DOCUMENT_SERVER_URL:-https://onlyoffice.powerfulcontrolsystem.com}
       ONLYOFFICE_JWT_SECRET: ${ONLYOFFICE_JWT_SECRET:-}
+      EMAIL_CORPORATIVO_ENABLED: ${EMAIL_CORPORATIVO_ENABLED:-0}
+      EMAIL_CORPORATIVO_AUTO_CREATE: ${EMAIL_CORPORATIVO_AUTO_CREATE:-1}
+      EMAIL_CORPORATIVO_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_WEBMAIL_URL: ${EMAIL_CORPORATIVO_WEBMAIL_URL:-https://mail.powerfulcontrolsystem.com/mail/}
+      EMAIL_CORPORATIVO_PROVISION_MODE: ${EMAIL_CORPORATIVO_PROVISION_MODE:-manual}
+      EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL: ${EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL:-https://mail.powerfulcontrolsystem.com/iredadmin}
+      EMAIL_CORPORATIVO_IREDADMIN_ADMIN: ${EMAIL_CORPORATIVO_IREDADMIN_ADMIN:-postmaster@powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_IREDADMIN_PASSWORD: ${EMAIL_CORPORATIVO_IREDADMIN_PASSWORD:-}
+      EMAIL_CORPORATIVO_QUOTA_MB: ${EMAIL_CORPORATIVO_QUOTA_MB:-1024}
       VOICE_STREAM_BASE_URL: ${VOICE_STREAM_BASE_URL:-http://voice-stream:8000}
       GOOGLE_RECAPTCHA_SITE_KEY: ${GOOGLE_RECAPTCHA_SITE_KEY:-}
       GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
@@ -66,6 +75,47 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    networks:
+      - pcs_internal
+
+  iredmail:
+    profiles: ["mail"]
+    image: ${IREDMAIL_IMAGE:-iredmail/mariadb:stable}
+    container_name: pcs-iredmail
+    hostname: ${IREDMAIL_HOSTNAME:-mail.powerfulcontrolsystem.com}
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      HOSTNAME: ${IREDMAIL_HOSTNAME:-mail.powerfulcontrolsystem.com}
+      FIRST_MAIL_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      FIRST_MAIL_DOMAIN_ADMIN_PASSWORD: ${IREDMAIL_ADMIN_PASSWORD:-}
+      MLMMJADMIN_API_TOKEN: ${IREDMAIL_MLMMJADMIN_API_TOKEN:-}
+      ROUNDCUBE_DES_KEY: ${IREDMAIL_ROUNDCUBE_DES_KEY:-}
+      MYSQL_ROOT_PASSWORD: ${IREDMAIL_MYSQL_ROOT_PASSWORD:-}
+    volumes:
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/backup-mysql:/var/vmail/backup/mysql
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mailboxes:/var/vmail/vmail1
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mlmmj:/var/vmail/mlmmj
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mlmmj-archive:/var/vmail/mlmmj-archive
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/imapsieve_copy:/var/vmail/imapsieve_copy
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/custom:/opt/iredmail/custom
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/ssl:/opt/iredmail/ssl
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mysql:/var/lib/mysql
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/clamav:/var/lib/clamav
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/sa_rules:/var/lib/spamassassin
+      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/postfix_queue:/var/spool/postfix
+      - ${IREDMAIL_BACKUP_DIR:-/opt/powerfulcontrolsystem/iredmail/backups}:/var/backups
+    ports:
+      - "${IREDMAIL_BIND:-0.0.0.0}:25:25"
+      - "${IREDMAIL_BIND:-0.0.0.0}:110:110"
+      - "${IREDMAIL_BIND:-0.0.0.0}:143:143"
+      - "${IREDMAIL_BIND:-0.0.0.0}:465:465"
+      - "${IREDMAIL_BIND:-0.0.0.0}:587:587"
+      - "${IREDMAIL_BIND:-0.0.0.0}:993:993"
+      - "${IREDMAIL_BIND:-0.0.0.0}:995:995"
+      - "${IREDMAIL_BIND:-0.0.0.0}:4190:4190"
+    expose:
+      - "80"
     networks:
       - pcs_internal
 
@@ -99,6 +149,7 @@ services:
       EDGE_DOMAIN: ${EDGE_DOMAIN:-powerfulcontrolsystem.com}
       EDGE_WWW_DOMAIN: ${EDGE_WWW_DOMAIN:-www.powerfulcontrolsystem.com}
       EDGE_ONLYOFFICE_DOMAIN: ${EDGE_ONLYOFFICE_DOMAIN:-onlyoffice.powerfulcontrolsystem.com}
+      EDGE_MAIL_DOMAIN: ${EDGE_MAIL_DOMAIN:-mail.powerfulcontrolsystem.com}
       EDGE_CERT_NAME: ${EDGE_CERT_NAME:-powerfulcontrolsystem.com}
     ports:
       - "${EDGE_HTTP_BIND:-0.0.0.0}:80:80"

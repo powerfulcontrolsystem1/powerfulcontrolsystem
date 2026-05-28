@@ -10097,3 +10097,25 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Agrega el formato `backup` para descargar un JSON integral con version, empresa, snapshot y aviso de restauracion.
 - `web/estilos.css`:
 	- Ajusta la pagina de descarga para usar variables de tema y verse consistente en apariencias claras y oscuras.
+
+2026-05-28 - Email corporativo iRedMail
+- `backend/db/email_corporativo.go`:
+	- Agrega la tabla `empresa_email_corporativo`, normalizacion de nombres de empresa a correos unicos y consultas de estado por empresa.
+- `backend/handlers/email_corporativo_handlers.go`:
+	- Nuevo handler super para activar/desactivar el modulo, guardar iRedAdmin-Pro API, sincronizar empresas y consultar el correo desde administrar empresa.
+- `backend/handlers/system_empresas_handlers.go`:
+	- Al crear una empresa genera su email corporativo en modo best-effort, sin bloquear la empresa si el servidor de correo no esta listo.
+- `web/super/email_corporativo.html`:
+	- Nueva pagina de super administrador para configurar el modulo, ver cuentas y provisionar buzones pendientes.
+- `web/super_administrador.html`:
+	- Agrega el boton `Email corporativo` dentro de Comunicaciones.
+- `web/administrar_empresa/panel.html`:
+	- Muestra debajo de Favoritos una tarjeta para abrir el webmail de la empresa cuando el modulo esta activo.
+- `deploy/iredmail/README.md`, `deploy/iredmail/.env.example`, `deploy/iredmail/docker-compose.iredmail.yml`:
+	- Documentan y preparan el despliegue Docker aislado de iRedMail/iRedAdmin-Pro para la VPS.
+- `deploy/.env.platform.example`, `deploy/docker-compose.platform.yml`, `deploy/nginx/edge*.template`, `deploy/scripts/vps-docker-preflight.sh`:
+	- Integran variables `EMAIL_CORPORATIVO_*`, perfil Docker `mail`, proxy `mail.powerfulcontrolsystem.com` y generacion/validacion de secretos para portabilidad a otra VPS.
+- `deploy/scripts/vps-register-iredmail-secrets.sh`:
+	- Verifica en la VPS que los secretos privados de iRedMail esten presentes antes de reiniciar backend para registrarlos cifrados.
+- `documentos/email_corporativo_iredmail.md`:
+	- Resume flujo, seguridad, configuraciones, tablas y checklist de despliegue VPS para el nuevo modulo.

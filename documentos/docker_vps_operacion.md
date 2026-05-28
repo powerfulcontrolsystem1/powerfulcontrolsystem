@@ -298,9 +298,11 @@ Para mover a otra VPS:
    - `pcs_downloads`
    - `pcs_backend_logs`
    - `pcs_backups`
-   - `pcs_onlyoffice_*`
-   - `pcs_voice_*`
-   - `pcs_rustdesk_data`
+- `pcs_onlyoffice_*`
+- `pcs_voice_*`
+- datos iRedMail si se activo perfil `mail`: `IREDMAIL_DATA_DIR` y
+  `IREDMAIL_BACKUP_DIR`, por defecto `/opt/powerfulcontrolsystem/iredmail/*`
+- `pcs_rustdesk_data`
 4. Levantar:
 
 ```bash
@@ -308,3 +310,26 @@ docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform
 ```
 
 5. Configurar Nginx del nuevo host para apuntar a `127.0.0.1:8081`.
+
+## Email corporativo iRedMail portable
+
+El correo empresarial se integra al stack portable mediante variables en
+`deploy/.env.platform` y perfil Docker opcional `mail`.
+
+- El backend recibe `EMAIL_CORPORATIVO_*` e `IREDADMIN_*` desde el compose.
+- Al arrancar, registra esas variables en `pcs_superadministrador.configuraciones`.
+- La clave `EMAIL_CORPORATIVO_IREDADMIN_PASSWORD` se guarda cifrada usando
+  `CONFIG_ENC_KEY`; no se escribe en logs ni documentacion.
+- El perfil `mail` publica SMTP/IMAP/POP3 y deja el webmail disponible para el
+  edge Docker en `EDGE_MAIL_DOMAIN`.
+- Antes de activar `--profile mail`, validar DNS A, MX, SPF, DKIM, DMARC, PTR,
+  TLS y que la imagen definida en `IREDMAIL_IMAGE` sea la aprobada para la VPS.
+
+Arranque futuro cuando el correo este listo:
+
+```bash
+deploy/scripts/vps-register-iredmail-secrets.sh
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile mail up -d iredmail
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d edge
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml up -d --build backend
+```

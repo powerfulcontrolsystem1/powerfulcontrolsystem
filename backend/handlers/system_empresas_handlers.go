@@ -575,6 +575,12 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if id > 0 {
 				_ = ensureDir(empresaBackupDir(id))
 			}
+			emailCorporativo, emailCorporativoErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, id, payload.Nombre, payload.UsuarioCreador)
+			emailCorporativoErrText := ""
+			if emailCorporativoErr != nil {
+				emailCorporativoErrText = emailCorporativoErr.Error()
+				log.Printf("POST /super/api/empresas id=%d email corporativo warning: %v", id, emailCorporativoErr)
+			}
 			preconfigResult, preconfigErr := applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, id, payload.TipoID, payload.TipoNombre, payload.UsuarioCreador)
 			if preconfigErr != nil {
 				log.Printf("POST /super/api/empresas id=%d preconfiguracion warning: %v", id, preconfigErr)
@@ -590,6 +596,8 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"preconfiguracion_aplicada": preconfigResult != nil && preconfigResult.Aplicada,
 				"preconfiguracion":          preconfigResult,
 				"preconfiguracion_error":    preconfigErrText,
+				"email_corporativo":         emailCorporativo,
+				"email_corporativo_error":   emailCorporativoErrText,
 			})
 			return
 		case http.MethodPut:

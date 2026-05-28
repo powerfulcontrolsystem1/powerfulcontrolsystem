@@ -607,6 +607,116 @@
       line-height: 1.45;
     }
 
+    .empresa-email-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 12px;
+      padding: 16px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 14px 30px var(--panel-card-shadow);
+    }
+
+    .empresa-email-panel[hidden] {
+      display: none;
+    }
+
+    .empresa-email-kicker {
+      margin: 0 0 4px;
+      color: var(--muted);
+      font-size: .74rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .empresa-email-title {
+      margin: 0;
+      font-size: 1.12rem;
+      line-height: 1.25;
+    }
+
+    .empresa-email-meta {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .empresa-email-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .empresa-email-identity {
+      min-width: 0;
+    }
+
+    .empresa-email-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .empresa-email-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 48%, var(--border));
+      background: color-mix(in srgb, var(--accent, #2563eb) 18%, var(--surface) 82%);
+      color: var(--text);
+      font-weight: 900;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .empresa-email-button.secondary {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .empresa-email-button:hover,
+    .empresa-email-button:focus-visible {
+      border-color: color-mix(in srgb, var(--accent, #2563eb) 64%, var(--border));
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .empresa-email-embed {
+      position: relative;
+      overflow: hidden;
+      min-height: 520px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .empresa-email-frame {
+      display: block;
+      width: 100%;
+      height: 520px;
+      border: 0;
+      background: #fff;
+    }
+
+    .empresa-email-frame-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.35;
+    }
+
     .empresa-home-actions {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -690,6 +800,21 @@
       .empresa-home-actions {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
+
+      .empresa-email-head {
+        flex-direction: column;
+      }
+
+      .empresa-email-actions {
+        justify-content: flex-start;
+        width: 100%;
+      }
+
+      .empresa-email-embed,
+      .empresa-email-frame {
+        min-height: 460px;
+        height: 460px;
+      }
     }
 
     @media (max-width: 560px) {
@@ -747,6 +872,35 @@
         -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
+      }
+
+      .empresa-email-panel {
+        margin-top: 0;
+        padding: 10px;
+        gap: 9px;
+      }
+
+      .empresa-email-title {
+        font-size: .98rem;
+        overflow-wrap: anywhere;
+      }
+
+      .empresa-email-meta,
+      .empresa-email-frame-note {
+        font-size: .76rem;
+      }
+
+      .empresa-email-button {
+        flex: 1 1 140px;
+        min-height: 36px;
+        padding: 8px 10px;
+        font-size: .82rem;
+      }
+
+      .empresa-email-embed,
+      .empresa-email-frame {
+        min-height: 390px;
+        height: 390px;
       }
 
       .empresa-home-subtitle {
@@ -896,6 +1050,18 @@
         padding: 7px;
         font-size: .74rem;
         line-height: 1.16;
+      }
+
+      .empresa-email-panel {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px;
+        margin-top: 8px;
+      }
+
+      .empresa-email-button {
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .empresa-home-actions {
@@ -1144,6 +1310,28 @@
       </div>
     </section>
 
+    <section id="empresaEmailPanel" class="empresa-email-panel" hidden aria-label="Bandeja de correo corporativo">
+      <div class="empresa-email-head">
+        <div class="empresa-email-identity">
+          <p class="empresa-email-kicker">Bandeja de correo corporativo</p>
+          <h2 id="empresaEmailAddress" class="empresa-email-title">Correo de la empresa</h2>
+          <p id="empresaEmailMeta" class="empresa-email-meta">Buzon empresarial administrado por iRedMail.</p>
+        </div>
+        <div class="empresa-email-actions" aria-label="Acciones del correo corporativo">
+          <button id="empresaEmailReload" class="empresa-email-button secondary" type="button">
+            <img src="/img/analytics-color.svg" alt="" width="20" height="20"> Actualizar
+          </button>
+          <a id="empresaEmailLink" class="empresa-email-button" href="#" target="_blank" rel="noopener">
+            <img src="/img/network-color.svg" alt="" width="22" height="22"> Abrir buzón
+          </a>
+        </div>
+      </div>
+      <div class="empresa-email-embed">
+        <iframe id="empresaEmailFrame" class="empresa-email-frame" title="Buzon de correo corporativo" loading="lazy" referrerpolicy="no-referrer"></iframe>
+      </div>
+      <p class="empresa-email-frame-note">Si el servidor de correo bloquea la vista integrada por seguridad, usa Abrir buzón para entrar al webmail completo.</p>
+    </section>
+
     <div class="empresa-home-footer">
       <span id="homeDate"></span>
       <span id="homeStatus" class="empresa-home-status">Clima por Open-Meteo.</span>
@@ -1159,6 +1347,12 @@
       var maintenanceNoticeMetaEl = document.getElementById("maintenanceNoticeMeta");
       var favoritesListEl = document.getElementById("empresaFavoritesList");
       var favoritesCountEl = document.getElementById("empresaFavoritesCount");
+      var empresaEmailPanelEl = document.getElementById("empresaEmailPanel");
+      var empresaEmailAddressEl = document.getElementById("empresaEmailAddress");
+      var empresaEmailMetaEl = document.getElementById("empresaEmailMeta");
+      var empresaEmailLinkEl = document.getElementById("empresaEmailLink");
+      var empresaEmailFrameEl = document.getElementById("empresaEmailFrame");
+      var empresaEmailReloadEl = document.getElementById("empresaEmailReload");
       var weatherGpsBtn = document.getElementById("weatherGpsBtn");
       var weatherManualToggle = document.getElementById("weatherManualToggle");
       var weatherManualForm = document.getElementById("weatherManualForm");
@@ -1237,6 +1431,26 @@
             if (!res.ok) throw new Error("HTTP " + res.status);
             return res.json();
           });
+      }
+
+      function buildEmailInboxURL(rawURL) {
+        var fallback = text(rawURL);
+        if (!fallback || fallback === "#") return "";
+        try {
+          var url = new URL(fallback, window.location.origin);
+          if (!url.searchParams.get("_task")) url.searchParams.set("_task", "mail");
+          if (!url.searchParams.get("_mbox")) url.searchParams.set("_mbox", "INBOX");
+          return url.toString();
+        } catch (e) {
+          return fallback;
+        }
+      }
+
+      function reloadEmpresaEmailFrame() {
+        if (!empresaEmailFrameEl) return;
+        var current = empresaEmailFrameEl.getAttribute("src") || "";
+        if (!current) return;
+        empresaEmailFrameEl.setAttribute("src", current);
       }
 
       function renderMaintenanceNotice(data) {
@@ -1405,6 +1619,38 @@
           });
           favoritesListEl.appendChild(link);
         });
+      }
+
+      function loadEmpresaEmail() {
+        if (!empresaEmailPanelEl || !empresaId) return;
+        fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId))
+          .then(function (data) {
+            var account = data && data.account;
+            if (!data || !data.enabled || !account || !account.email) {
+              empresaEmailPanelEl.hidden = true;
+              if (empresaEmailFrameEl) empresaEmailFrameEl.src = "about:blank";
+              return;
+            }
+            var webmail = account.webmail_url || data.webmail || "#";
+            var inboxURL = buildEmailInboxURL(webmail);
+            empresaEmailAddressEl.textContent = account.email;
+            empresaEmailMetaEl.textContent = account.estado_provision === "provisionado"
+              ? "Buzon activo. Aqui puedes revisar, abrir y leer los mensajes de la empresa."
+              : "Buzon generado, pendiente de provision en iRedMail. Cuando este activo, aqui se vera la bandeja.";
+            empresaEmailLinkEl.href = webmail || "#";
+            if (empresaEmailFrameEl) {
+              empresaEmailFrameEl.src = inboxURL || "about:blank";
+            }
+            empresaEmailPanelEl.hidden = false;
+          })
+          .catch(function () {
+            empresaEmailPanelEl.hidden = true;
+            if (empresaEmailFrameEl) empresaEmailFrameEl.src = "about:blank";
+          });
+      }
+
+      if (empresaEmailReloadEl) {
+        empresaEmailReloadEl.addEventListener("click", reloadEmpresaEmailFrame);
       }
 
       function resolveWeatherLocation(admin) {
@@ -2083,6 +2329,7 @@
         setDateText();
         applyEmpresaLinks();
         renderFavorites();
+        loadEmpresaEmail();
         setupWeatherControls();
         loadMaintenanceNotice();
         var adminPromise = fetchJSON("/me").catch(function () { return {}; });

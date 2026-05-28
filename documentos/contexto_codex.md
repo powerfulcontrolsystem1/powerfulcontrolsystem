@@ -94,6 +94,14 @@ botones, desde handlers estaticos del backend.
   `backend/db/offline_ventas.go`.
 - Alertas sistema super administrador: `web/super/alertas_sistema.html`,
   `/super/api/alertas_sistema`.
+- Email corporativo iRedMail: `web/super/email_corporativo.html`,
+  `/super/api/email_corporativo`, `/api/empresa/email_corporativo`,
+  `backend/handlers/email_corporativo_handlers.go`,
+  `backend/db/email_corporativo.go`, `deploy/iredmail/`.
+  El modulo genera email unico por empresa al crearla; la provision real por API
+  requiere iRedAdmin-Pro REST API y credenciales cifradas. En Docker portable,
+  `deploy/.env.platform` provee `EMAIL_CORPORATIVO_*` / `IREDMAIL_*` y el
+  backend las registra en `configuraciones` al arrancar.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.

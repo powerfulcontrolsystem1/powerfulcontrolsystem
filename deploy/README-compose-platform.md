@@ -137,6 +137,9 @@ En este modo, el host conserva solo Docker, firewall/SSH, cron de renovacion si 
 - Nextcloud ya no forma parte del Compose oficial. Si quedan contenedores o volumenes antiguos, ejecutar `deploy/scripts/vps-remove-nextcloud.sh` en la VPS y usar `--purge-data` solo despues de confirmar que no se requiere recuperacion.
 - `voice-stream`: servicio FastAPI/Piper para voz IA.
 - `rustdesk-hbbs`, `rustdesk-hbbr`: relay/ID server RustDesk.
+- `iredmail`: perfil opcional `mail` para correo empresarial portable. El
+  backend registra `EMAIL_CORPORATIVO_*` desde el entorno y cifra la clave
+  iRedAdmin con `CONFIG_ENC_KEY`.
 
 Todos los servicios comparten la red Docker `pcs_internal` y usan volumenes nombrados para persistencia. La plataforma y sus perfiles oficiales usan PostgreSQL como unico motor relacional; no se debe introducir MariaDB/MySQL en compose, scripts o runbooks operativos del proyecto.
 
@@ -145,6 +148,7 @@ Perfiles opcionales:
 ```bash
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile office up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d
+docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile mail up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile voice up -d
 docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile rustdesk up -d
 ```
@@ -171,7 +175,7 @@ bash deploy/scripts/vps-staging-up.sh
 Para mover la plataforma despues:
 
 - Exporta o publica las imagenes `pcs-backend`, `pcs-frontend` y `pcs-voice-stream`.
-- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `pcs_voice_*`, `pcs_rustdesk_data`. Los volumenes `pcs_nextcloud_*` son legado retirado.
+- Migra los volumenes `pcs_postgres_data`, `pcs_web_uploads`, `pcs_downloads`, `pcs_letsencrypt`, `pcs_certbot_www`, `pcs_onlyoffice_*`, `pcs_voice_*`, `pcs_rustdesk_data` y, si el perfil `mail` esta activo, los directorios `IREDMAIL_DATA_DIR` / `IREDMAIL_BACKUP_DIR`. Los volumenes `pcs_nextcloud_*` son legado retirado.
 - Conserva `deploy/.env.platform` con los mismos secretos.
 - En el nuevo servidor, restaura volumenes, copia el proyecto o las imagenes y ejecuta `docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d`.
 

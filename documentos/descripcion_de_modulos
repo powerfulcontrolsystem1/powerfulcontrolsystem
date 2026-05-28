@@ -1,3 +1,15 @@
+2026-05-28: Bandeja de correo corporativo en panel empresarial
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
+- Cambio funcional: la tarjeta bajo Favoritos en `web/administrar_empresa/panel.html` se convierte en `Bandeja de correo corporativo`.
+- UX: muestra el correo de la empresa, estado del buzon, boton para actualizar, boton `Abrir buzón` y un visor integrado del webmail apuntando a `INBOX`.
+- Seguridad: no expone contrasenas ni claves iniciales del buzon; si el webmail bloquea iframe por cabeceras de seguridad, la tarjeta conserva el acceso en ventana completa.
+
+2026-05-28: Apariencia por defecto blanco corporativo
+- Modulos afectados: `autenticacion`, `apariencias`, `menu_flotante`.
+- Cambio funcional: los usuarios nuevos arrancan con `Blanco Corporativo` como tema predeterminado.
+- Backend: `usuario_configuracion.apariencia` usa default `light`; cuando no existe preferencia guardada para el email, los logins y `/api/user/configuracion` devuelven `light`.
+- Frontend: las paginas super con bootstrap propio ya no usan oscuro como fallback si no existe cookie o localStorage.
+
 2026-05-28: Codigo de asesor en prueba gratis de 15 dias
 - Modulos afectados: `licencias`, `checkout_licencias`, `asesor_comercial`.
 - Cambio funcional: la tarjeta de licencia gratis de 15 dias en `web/elegir_licencia.html` permite escribir el codigo de asesor comercial antes de continuar.
@@ -3268,3 +3280,10 @@ Captura inteligente de compras y gastos
 - Cambio funcional: el boton de descarga de cada empresa ya no saca al usuario del selector; abre `descargar_informacion_de_la_empresa.html` dentro del panel derecho junto al menu.
 - UX: la pagina de descarga usa variables de apariencia del sistema y agrega el boton `Regresar a seleccionar empresas`, que vuelve al listado cuando esta embebida.
 - Backup: el selector de formato incluye `Backup completo (.json)` para descargar una copia integral exportable de la informacion de la empresa visible.
+
+2026-05-28: Email corporativo iRedMail
+- Modulos afectados: `super_administrador`, `administrar_empresa`, `empresas`, `comunicaciones`, `VPS/Docker`.
+- Cambio funcional: el super administrador puede activar o desactivar el modulo de email corporativo, definir dominio, webmail, modo manual o `iRedAdmin-Pro API`, cuota y credenciales cifradas.
+- Empresas: al registrar una empresa se genera automaticamente un correo unico basado en su nombre; si ya existe, se agrega un sufijo numerico. El fallo de provision no bloquea la creacion de la empresa.
+- UX: en administrar empresa aparece debajo de Favoritos una tarjeta para abrir el webmail cuando el modulo esta activo y la empresa tiene email generado.
+- Operacion: se agrega runbook en `deploy/iredmail/` y perfil `mail` en `deploy/docker-compose.platform.yml`; los secretos viven en `deploy/.env.platform`, se registran al arrancar el backend y se cifran en base con `CONFIG_ENC_KEY`.

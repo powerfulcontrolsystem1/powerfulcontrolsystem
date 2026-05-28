@@ -839,6 +839,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/email_corporativo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/email_corporativo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/email_corporativo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/energia_solar":
     get:
       tags: [empresa]
@@ -3111,6 +3124,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/docker_portabilidad
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/email_corporativo":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/email_corporativo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/email_corporativo
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

@@ -22,6 +22,14 @@ Todas las tablas operativas usan como base los campos estandar:
 - estado TEXT DEFAULT 'activo'
 - observaciones TEXT
 
+Actualizacion 2026-05-28 (apariencia de usuarios)
+- Tabla en `pcs_superadministrador`: `usuario_configuracion`.
+- Campo afectado: `apariencia` queda con default `light`, equivalente a
+  `Blanco Corporativo`.
+- Regla operativa: si un email no tiene fila de preferencias, el backend devuelve
+  `light` como apariencia efectiva para usuarios nuevos. Las preferencias ya
+  guardadas se respetan.
+
 Actualizacion 2026-05-28 (auditoria global del selector)
 - Nueva tabla en `pcs_superadministrador`: `super_auditoria_eventos`.
 - Proposito: registrar movimientos del selector de empresas, modulos globales y
@@ -1640,6 +1648,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-19: `empresa_cierres_caja` cambia su unicidad operativa a `empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador`; en PostgreSQL se eliminan constraints e indices legacy sin usuario y se agrega `ux_empresa_cierres_caja_usuario_turno`, permitiendo que varios usuarios de la misma empresa manejen cajas/turnos independientes sin mezclar pagos, abonos, ingresos, egresos ni reportes.
 - 2026-05-19: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para activar/desactivar varias cajas abiertas por empresa y limitar su cupo interno sin superar `licencias.max_cajas_simultaneas`. Los reportes de turno continuan aislados por `empresa_cierres_caja.id`/`cierre_caja_id`.
 - 2026-05-19: `empresa_impresoras` usa `POS_80MM` como codigo operativo predeterminado por empresa activa; `empresa_impresoras_funcionalidades` lo asigna a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` manteniendo indices unicos por `empresa_id`.
+- 2026-05-28: se agrega `empresa_email_corporativo` en `pcs_superadministrador` para mapear cada empresa a un email corporativo unico bajo el dominio configurado. Guarda `empresa_id`, nombre, correo, dominio, webmail, estado de provision iRedMail, intentos, ultimo error, clave inicial cifrada y trazabilidad. Tiene indices unicos activos por `empresa_id` y por `lower(email)` para evitar duplicados.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.

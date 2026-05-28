@@ -773,6 +773,14 @@ func main() {
 			log.Fatalf("failed to ensure usuario configuracion schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_usuario_config_schema")
+		if err := dbpkg.EnsureEmpresaEmailCorporativoSchema(dbSuper); err != nil {
+			log.Fatalf("failed to ensure empresa email corporativo schema in superadministrador db: %v", err)
+		}
+		startupTrace("after_empresa_email_corporativo_schema")
+		if err := handlers.EnsureCorporateEmailConfigFromEnv(dbSuper); err != nil {
+			log.Printf("warning: no se pudo registrar configuracion iRedMail desde entorno: %v", err)
+		}
+		startupTrace("after_empresa_email_corporativo_env")
 		if err := dbpkg.DecommissionNextcloudArtifacts(dbEmpresas, dbSuper); err != nil {
 			log.Printf("warning: no se pudieron retirar artefactos Nextcloud obsoletos: %v", err)
 		}
@@ -1057,6 +1065,7 @@ func main() {
 	http.HandleFunc("/super/api/empresas", handlers.WithSuperAuditoria(dbSuper, "selector_empresas", handlers.EmpresasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/super/api/email_corporativo", handlers.WithSuperAuditoria(dbSuper, "super_email_corporativo", handlers.SuperEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	// Endpoints para asesores comerciales y comisiones de licencias.
 	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialSuperHandler(dbSuper))
 	http.HandleFunc("/api/asesor_comercial/aceptar", handlers.AsesorComercialAcceptHandler(dbSuper))
@@ -1171,6 +1180,7 @@ func main() {
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada/logo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_guiada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGuiadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/email_corporativo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEmailCorporativoHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/db_admin", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaDBAdminHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras/resolver", handlers.WithEmpresaVentasPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasResolverHandler(dbEmpresas)))

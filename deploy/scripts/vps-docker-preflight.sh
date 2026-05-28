@@ -64,10 +64,16 @@ if [ ! -f "$ENV_FILE" ]; then
   upsert_env "$ENV_FILE" POSTGRES_PASSWORD "$(rand_secret)"
   upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$(rand_secret)"
   upsert_env "$ENV_FILE" ONLYOFFICE_JWT_SECRET "$(rand_secret)"
+  mail_admin_password="$(rand_secret)"
+  upsert_env "$ENV_FILE" IREDMAIL_ADMIN_PASSWORD "$mail_admin_password"
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD "$mail_admin_password"
+  upsert_env "$ENV_FILE" IREDMAIL_MLMMJADMIN_API_TOKEN "$(rand_secret)"
+  upsert_env "$ENV_FILE" IREDMAIL_ROUNDCUBE_DES_KEY "$(rand_secret)"
+  upsert_env "$ENV_FILE" IREDMAIL_MYSQL_ROOT_PASSWORD "$(rand_secret)"
   echo "[preflight] Creado $ENV_FILE con secretos nuevos y permisos 600."
 fi
 
-for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL PUBLIC_BASE_URL GEMINI_API_KEY OPENAI_API_KEY GOOGLE_RECAPTCHA_SITE_KEY GOOGLE_RECAPTCHA_SECRET_KEY RECAPTCHA_PROVIDER RECAPTCHA_DEV_BYPASS; do
+for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL PUBLIC_BASE_URL GEMINI_API_KEY OPENAI_API_KEY GOOGLE_RECAPTCHA_SITE_KEY GOOGLE_RECAPTCHA_SECRET_KEY RECAPTCHA_PROVIDER RECAPTCHA_DEV_BYPASS EMAIL_CORPORATIVO_IREDADMIN_PASSWORD IREDMAIL_ADMIN_PASSWORD IREDMAIL_MLMMJADMIN_API_TOKEN IREDMAIL_ROUNDCUBE_DES_KEY IREDMAIL_MYSQL_ROOT_PASSWORD; do
   current="$(get_env_value "$ENV_FILE" "$key")"
   legacy="$(get_env_value "$BACKEND_ENV" "$key")"
   if [ -z "$current" ] && [ -n "$legacy" ]; then
@@ -84,6 +90,24 @@ if [ -f "$BACKEND_ENV" ]; then
   fi
 fi
 
+mail_admin_password="$(get_env_value "$ENV_FILE" IREDMAIL_ADMIN_PASSWORD)"
+corp_admin_password="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD)"
+if [ -n "$mail_admin_password" ] && [ -z "$corp_admin_password" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD "$mail_admin_password"
+fi
+if [ -n "$corp_admin_password" ] && [ -z "$mail_admin_password" ]; then
+  upsert_env "$ENV_FILE" IREDMAIL_ADMIN_PASSWORD "$corp_admin_password"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_MLMMJADMIN_API_TOKEN)" ]; then
+  upsert_env "$ENV_FILE" IREDMAIL_MLMMJADMIN_API_TOKEN "$(rand_secret)"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_ROUNDCUBE_DES_KEY)" ]; then
+  upsert_env "$ENV_FILE" IREDMAIL_ROUNDCUBE_DES_KEY "$(rand_secret)"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_MYSQL_ROOT_PASSWORD)" ]; then
+  upsert_env "$ENV_FILE" IREDMAIL_MYSQL_ROOT_PASSWORD "$(rand_secret)"
+fi
+
 echo "[preflight] Variables requeridas presentes:"
 for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET; do
   value="$(get_env_value "$ENV_FILE" "$key")"
@@ -93,6 +117,21 @@ for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET; do
     echo "  - $key: OK"
   fi
 done
+
+echo "[preflight] Email corporativo/iRedMail:"
+email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
+iredmail_image="$(get_env_value "$ENV_FILE" IREDMAIL_IMAGE)"
+iredmail_secret="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD)"
+if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ]; then
+  [ -n "$iredmail_secret" ] && echo "  - secreto iRedAdmin: OK" || echo "  - secreto iRedAdmin: FALTA"
+  if [ -n "$iredmail_image" ]; then
+    echo "  - imagen iRedMail: OK"
+  else
+    echo "  - imagen iRedMail: FALTA"
+  fi
+else
+  echo "  - modulo: desactivado; los secretos quedan listos para activacion posterior"
+fi
 
 echo "[preflight] Servicio actual:"
 systemctl is-active powerfulcontrolsystem.service >/dev/null 2>&1 && echo "  - powerfulcontrolsystem.service: activo" || echo "  - powerfulcontrolsystem.service: no activo o no existe"

@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Email corporativo iRedMail</title>
+  <link rel="stylesheet" href="/css/admin_theme.css">
+  <style>
+    body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--page-bg, #f5f7fb); color: var(--text, #172033); }
+    .page { max-width: 1180px; margin: 0 auto; padding: 22px; }
+    .hero { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 16px; }
+    .hero h1 { margin: 0 0 6px; font-size: clamp(1.45rem, 2.2vw, 2rem); }
+    .hero p { margin: 0; max-width: 760px; color: var(--muted, #5f6b7a); line-height: 1.45; }
+    .grid { display: grid; grid-template-columns: minmax(340px, .85fr) minmax(0, 1.45fr); gap: 14px; align-items: start; }
+    .card { background: var(--card-bg, #fff); border: 1px solid var(--border, #dbe2ee); border-radius: 8px; padding: 16px; box-shadow: none; }
+    .card h2 { margin: 0 0 12px; font-size: 1.06rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    label { display: grid; gap: 6px; font-size: .84rem; font-weight: 700; color: var(--text, #172033); }
+    input, select { width: 100%; box-sizing: border-box; min-height: 38px; border: 1px solid var(--border, #ccd6e4); border-radius: 6px; padding: 8px 10px; background: var(--input-bg, #fff); color: var(--text, #172033); }
+    .check-row { display: flex; gap: 10px; align-items: center; min-height: 38px; padding: 8px 0; }
+    .check-row input { width: auto; min-height: auto; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button, .btn { border: 0; border-radius: 7px; padding: 10px 14px; font-weight: 800; cursor: pointer; background: #1f6feb; color: #fff; text-decoration: none; }
+    td button { padding: 8px 10px; font-size: .82rem; white-space: nowrap; }
+    button.secondary { background: #edf2f8; color: #172033; border: 1px solid #ccd6e4; }
+    button.danger { background: #9b1c31; }
+    button:disabled { cursor: not-allowed; opacity: .62; }
+    .hint { margin-top: 10px; color: var(--muted, #5f6b7a); font-size: .88rem; line-height: 1.45; }
+    .status { margin: 0 0 12px; min-height: 20px; font-weight: 700; color: #0f766e; }
+    .status.error { color: #b42318; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border, #dbe2ee); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; min-width: 640px; }
+    th, td { padding: 9px; border-bottom: 1px solid var(--border, #e5eaf2); text-align: left; font-size: .86rem; vertical-align: top; overflow-wrap: anywhere; }
+    th { background: rgba(31, 111, 235, .08); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: 0; }
+    .badge { display: inline-flex; align-items: center; min-height: 22px; border-radius: 999px; padding: 2px 8px; font-size: .76rem; font-weight: 800; background: #eef2ff; color: #3730a3; }
+    .badge.ok { background: #dcfce7; color: #166534; }
+    .badge.warn { background: #fef3c7; color: #92400e; }
+    .badge.err { background: #fee2e2; color: #991b1b; }
+    @media (max-width: 860px) {
+      .page { padding: 14px; }
+      .hero { display: block; }
+      .grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <h1>Email corporativo iRedMail</h1>
+        <p>Activa el correo empresarial por empresa, define el dominio y controla el aprovisionamiento. Si el API de iRedAdmin-Pro no esta lista, el sistema deja las cuentas en estado pendiente para crearlas luego sin bloquear el registro de empresas.</p>
+      </div>
+      <a class="btn" href="/super_administrador.html">Panel super</a>
+    </header>
+
+    <p id="status" class="status"></p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Configuracion global</h2>
+        <form id="configForm">
+          <div class="check-row">
+            <input id="enabled" type="checkbox">
+            <label for="enabled">Activar email corporativo para empresas</label>
+          </div>
+          <div class="check-row">
+            <input id="autoCreate" type="checkbox">
+            <label for="autoCreate">Crear email automaticamente al registrar empresa</label>
+          </div>
+          <div class="form-grid">
+            <label>Dominio
+              <input id="domain" placeholder="powerfulcontrolsystem.com" autocomplete="off">
+            </label>
+            <label>Webmail
+              <input id="webmailURL" placeholder="https://mail.powerfulcontrolsystem.com/mail/" autocomplete="off">
+            </label>
+            <label>Modo de provision
+              <select id="provisionMode">
+                <option value="manual">Manual / pendiente</option>
+                <option value="iredadmin_api">iRedAdmin-Pro API</option>
+              </select>
+            </label>
+            <label>Cuota por buzon (MB)
+              <input id="quotaMB" type="number" min="0" step="50">
+            </label>
+            <label>URL API iRedAdmin
+              <input id="apiBaseURL" placeholder="https://mail.powerfulcontrolsystem.com/iredadmin" autocomplete="off">
+            </label>
+            <label>Admin iRedAdmin
+              <input id="apiAdmin" placeholder="postmaster@powerfulcontrolsystem.com" autocomplete="off">
+            </label>
+            <label>Clave iRedAdmin
+              <input id="apiPassword" type="password" placeholder="Dejar vacio para conservar" autocomplete="new-password">
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit">Guardar configuracion</button>
+            <button id="syncBtn" type="button" class="secondary">Sincronizar empresas existentes</button>
+          </div>
+          <p class="hint">Para crear buzones automaticamente se requiere iRedAdmin-Pro con REST API habilitada. Sin esa API, el sistema genera el correo y lo deja pendiente para provision manual.</p>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Cuentas por empresa</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Webmail</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="accountsBody">
+              <tr><td colspan="5">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var statusEl = document.getElementById("status");
+      var accountsBody = document.getElementById("accountsBody");
+      var apiProvisionEnabled = false;
+      var fields = {
+        enabled: document.getElementById("enabled"),
+        autoCreate: document.getElementById("autoCreate"),
+        domain: document.getElementById("domain"),
+        webmailURL: document.getElementById("webmailURL"),
+        provisionMode: document.getElementById("provisionMode"),
+        apiBaseURL: document.getElementById("apiBaseURL"),
+        apiAdmin: document.getElementById("apiAdmin"),
+        apiPassword: document.getElementById("apiPassword"),
+        quotaMB: document.getElementById("quotaMB")
+      };
+
+      function setStatus(text, error) {
+        statusEl.textContent = text || "";
+        statusEl.className = "status" + (error ? " error" : "");
+      }
+
+      function requestJSON(url, options) {
+        return fetch(url, Object.assign({ credentials: "same-origin" }, options || {})).then(function (res) {
+          return res.text().then(function (text) {
+            var data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch (e) {}
+            if (!res.ok) throw new Error((data && data.error) || text || ("HTTP " + res.status));
+            return data;
+          });
+        });
+      }
+
+      function renderConfig(config) {
+        config = config || {};
+        fields.enabled.checked = !!config.enabled;
+        fields.autoCreate.checked = config.auto_create !== false;
+        fields.domain.value = config.domain || "powerfulcontrolsystem.com";
+        fields.webmailURL.value = config.webmail_url || "https://mail.powerfulcontrolsystem.com/mail/";
+        fields.provisionMode.value = config.provision_mode || "manual";
+        fields.apiBaseURL.value = config.iredadmin_api_base_url || "";
+        fields.apiAdmin.value = config.iredadmin_admin || "";
+        fields.quotaMB.value = String(config.quota_mb || 1024);
+        fields.apiPassword.placeholder = config.iredadmin_password_set ? "Clave guardada, dejar vacio para conservar" : "Clave iRedAdmin";
+      }
+
+      function badgeClass(status) {
+        status = String(status || "").toLowerCase();
+        if (status === "provisionado") return "badge ok";
+        if (status.indexOf("error") >= 0) return "badge err";
+        return "badge warn";
+      }
+
+      function renderAccounts(accounts) {
+        accounts = Array.isArray(accounts) ? accounts : [];
+        accountsBody.innerHTML = "";
+        if (!accounts.length) {
+          accountsBody.innerHTML = '<tr><td colspan="5">No hay cuentas generadas todavia.</td></tr>';
+          return;
+        }
+        accounts.forEach(function (item) {
+          var tr = document.createElement("tr");
+          var status = item.estado_provision || "pendiente";
+          tr.innerHTML =
+            "<td><strong></strong><br><small></small></td>" +
+            "<td></td>" +
+            "<td><span></span><br><small></small></td>" +
+            "<td></td>" +
+            "<td><button type=\"button\" class=\"secondary\">Provisionar</button></td>";
+          tr.querySelector("strong").textContent = item.empresa_nombre || ("Empresa " + item.empresa_id);
+          tr.querySelector("small").textContent = "ID " + item.empresa_id;
+          tr.children[1].textContent = item.email || "";
+          tr.querySelector("span").className = badgeClass(status);
+          tr.querySelector("span").textContent = status;
+          tr.children[2].querySelector("small").textContent = item.ultimo_error || "";
+          if (item.webmail_url) {
+            var link = document.createElement("a");
+            link.href = item.webmail_url;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = "Abrir webmail";
+            tr.children[3].appendChild(link);
+          }
+          var provisionBtn = tr.querySelector("button");
+          provisionBtn.disabled = !apiProvisionEnabled;
+          provisionBtn.textContent = apiProvisionEnabled ? "Provisionar" : "Manual";
+          provisionBtn.title = apiProvisionEnabled ? "Crear o reintentar en iRedAdmin-Pro" : "Cambia el modo a iRedAdmin-Pro API para provisionar automaticamente";
+          provisionBtn.addEventListener("click", function () {
+            provision(item.empresa_id);
+          });
+          accountsBody.appendChild(tr);
+        });
+      }
+
+      function load() {
+        setStatus("Cargando modulo...");
+        return requestJSON("/super/api/email_corporativo")
+          .then(function (data) {
+            renderConfig(data.config || {});
+            apiProvisionEnabled = !!data.iredadmin_api_enabled;
+            renderAccounts(data.accounts || []);
+            setStatus("");
+          })
+          .catch(function (err) {
+            setStatus(err.message || String(err), true);
+          });
+      }
+
+      function save(event) {
+        event.preventDefault();
+        setStatus("Guardando...");
+        var payload = {
+          enabled: !!fields.enabled.checked,
+          auto_create: !!fields.autoCreate.checked,
+          domain: fields.domain.value,
+          webmail_url: fields.webmailURL.value,
+          provision_mode: fields.provisionMode.value,
+          iredadmin_api_base_url: fields.apiBaseURL.value,
+          iredadmin_admin: fields.apiAdmin.value,
+          iredadmin_password: fields.apiPassword.value,
+          quota_mb: Number(fields.quotaMB.value || 0)
+        };
+        requestJSON("/super/api/email_corporativo", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function () {
+          fields.apiPassword.value = "";
+          setStatus("Configuracion guardada.");
+          return load();
+        }).catch(function (err) {
+          setStatus(err.message || String(err), true);
+        });
+      }
+
+      function sync() {
+        setStatus("Sincronizando empresas...");
+        requestJSON("/super/api/email_corporativo?action=sync", { method: "POST" })
+          .then(function (data) {
+            setStatus("Empresas sincronizadas: " + (data.created || 0));
+            return load();
+          })
+          .catch(function (err) { setStatus(err.message || String(err), true); });
+      }
+
+      function provision(empresaId) {
+        setStatus("Provisionando cuenta...");
+        requestJSON("/super/api/email_corporativo?action=provision&empresa_id=" + encodeURIComponent(empresaId), { method: "POST" })
+          .then(function () {
+            setStatus("Cuenta provisionada.");
+            return load();
+          })
+          .catch(function (err) {
+            setStatus(err.message || String(err), true);
+            load();
+          });
+      }
+
+      document.getElementById("configForm").addEventListener("submit", save);
+      document.getElementById("syncBtn").addEventListener("click", sync);
+      load();
+    })();
+  </script>
+</body>
+</html>

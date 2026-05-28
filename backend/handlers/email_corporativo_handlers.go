@@ -1,0 +1,555 @@
+package handlers
+
+import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	dbpkg "github.com/you/pos-backend/db"
+	"github.com/you/pos-backend/utils"
+)
+
+const (
+	corporateEmailEnabledKey       = "email_corporativo.enabled"
+	corporateEmailAutoCreateKey    = "email_corporativo.auto_create"
+	corporateEmailDomainKey        = "email_corporativo.domain"
+	corporateEmailWebmailURLKey    = "email_corporativo.webmail_url"
+	corporateEmailProvisionModeKey = "email_corporativo.provision_mode"
+	corporateEmailAPIBaseURLKey    = "email_corporativo.iredadmin_api_base_url"
+	corporateEmailAPIAdminKey      = "email_corporativo.iredadmin_admin"
+	corporateEmailAPIPasswordKey   = "email_corporativo.iredadmin_password"
+	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
+)
+
+type CorporateEmailConfig struct {
+	Enabled        bool   `json:"enabled"`
+	AutoCreate     bool   `json:"auto_create"`
+	Domain         string `json:"domain"`
+	WebmailURL     string `json:"webmail_url"`
+	ProvisionMode  string `json:"provision_mode"`
+	APIBaseURL     string `json:"iredadmin_api_base_url"`
+	APIAdmin       string `json:"iredadmin_admin"`
+	APIPasswordSet bool   `json:"iredadmin_password_set"`
+	QuotaMB        int    `json:"quota_mb"`
+}
+
+type corporateEmailProvisionResult struct {
+	OK     bool   `json:"ok"`
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
+	cfg := CorporateEmailConfig{
+		Enabled:       false,
+		AutoCreate:    true,
+		Domain:        "powerfulcontrolsystem.com",
+		WebmailURL:    "https://mail.powerfulcontrolsystem.com/mail/",
+		ProvisionMode: "manual",
+		QuotaMB:       1024,
+	}
+	if dbSuper == nil {
+		return cfg
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailEnabledKey); err == nil && strings.TrimSpace(value) != "" {
+		cfg.Enabled = parseConfigBool(value, false)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailAutoCreateKey); err == nil && strings.TrimSpace(value) != "" {
+		cfg.AutoCreate = parseConfigBool(value, true)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailDomainKey); err == nil && strings.TrimSpace(value) != "" {
+		cfg.Domain = normalizeCorporateEmailDomain(value)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailWebmailURLKey); err == nil && strings.TrimSpace(value) != "" {
+		cfg.WebmailURL = strings.TrimSpace(value)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailProvisionModeKey); err == nil && strings.TrimSpace(value) != "" {
+		cfg.ProvisionMode = normalizeCorporateEmailProvisionMode(value)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailAPIBaseURLKey); err == nil {
+		cfg.APIBaseURL = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailAPIAdminKey); err == nil {
+		cfg.APIAdmin = strings.TrimSpace(value)
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailQuotaMBKey); err == nil && strings.TrimSpace(value) != "" {
+		if parsed, parseErr := strconv.Atoi(strings.TrimSpace(value)); parseErr == nil && parsed >= 0 {
+			cfg.QuotaMB = parsed
+		}
+	}
+	if raw, _, err := dbpkg.GetConfigValue(dbSuper, corporateEmailAPIPasswordKey); err == nil && strings.TrimSpace(raw) != "" {
+		cfg.APIPasswordSet = true
+	}
+	return cfg
+}
+
+func firstNonEmptyEnv(keys ...string) string {
+	for _, key := range keys {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func corporateEmailEnvBool(keys []string, fallback bool) bool {
+	value := firstNonEmptyEnv(keys...)
+	if value == "" {
+		return fallback
+	}
+	return parseConfigBool(value, fallback)
+}
+
+func corporateEmailAPIAdminPassword(dbSuper *sql.DB) (string, error) {
+	value, err := getDecryptedConfigValue(dbSuper, corporateEmailAPIPasswordKey)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value), nil
+	}
+	return firstNonEmptyEnv("IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD", "EMAIL_CORPORATIVO_IREDADMIN_PASSWORD"), nil
+}
+
+// EnsureCorporateEmailConfigFromEnv registra en base la configuracion iRedMail
+// definida en variables de entorno de la VPS. No imprime secretos y guarda la
+// clave iRedAdmin cifrada si CONFIG_ENC_KEY esta disponible.
+func EnsureCorporateEmailConfigFromEnv(dbSuper *sql.DB) error {
+	if dbSuper == nil {
+		return nil
+	}
+	envKeys := []string{
+		"EMAIL_CORPORATIVO_ENABLED", "IREDMAIL_ENABLED", "EMAIL_CORPORATIVO_AUTO_CREATE", "IREDMAIL_AUTO_CREATE",
+		"EMAIL_CORPORATIVO_DOMAIN", "IREDMAIL_DOMAIN", "EMAIL_CORPORATIVO_WEBMAIL_URL", "IREDMAIL_WEBMAIL_URL",
+		"EMAIL_CORPORATIVO_PROVISION_MODE", "IREDMAIL_PROVISION_MODE", "IREDADMIN_API_BASE_URL",
+		"EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL", "IREDADMIN_ADMIN", "IREDMAIL_ADMIN_EMAIL",
+		"EMAIL_CORPORATIVO_IREDADMIN_ADMIN", "IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD",
+		"EMAIL_CORPORATIVO_IREDADMIN_PASSWORD", "IREDMAIL_QUOTA_MB", "EMAIL_CORPORATIVO_QUOTA_MB",
+	}
+	hasEnv := false
+	for _, key := range envKeys {
+		if strings.TrimSpace(os.Getenv(key)) != "" {
+			hasEnv = true
+			break
+		}
+	}
+	if !hasEnv {
+		return nil
+	}
+	cfg := getCorporateEmailConfig(dbSuper)
+	cfg.Enabled = corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_ENABLED", "IREDMAIL_ENABLED"}, cfg.Enabled)
+	cfg.AutoCreate = corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_AUTO_CREATE", "IREDMAIL_AUTO_CREATE"}, cfg.AutoCreate)
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_DOMAIN", "IREDMAIL_DOMAIN"); value != "" {
+		cfg.Domain = value
+	}
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_WEBMAIL_URL", "IREDMAIL_WEBMAIL_URL"); value != "" {
+		cfg.WebmailURL = value
+	}
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_PROVISION_MODE", "IREDMAIL_PROVISION_MODE"); value != "" {
+		cfg.ProvisionMode = value
+	}
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL", "IREDADMIN_API_BASE_URL"); value != "" {
+		cfg.APIBaseURL = value
+	}
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_IREDADMIN_ADMIN", "IREDADMIN_ADMIN", "IREDMAIL_ADMIN_EMAIL"); value != "" {
+		cfg.APIAdmin = value
+	}
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_QUOTA_MB", "IREDMAIL_QUOTA_MB"); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil && parsed >= 0 {
+			cfg.QuotaMB = parsed
+		}
+	}
+	plainPassword := firstNonEmptyEnv("EMAIL_CORPORATIVO_IREDADMIN_PASSWORD", "IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD")
+	if cfg.ProvisionMode == "manual" && cfg.APIBaseURL != "" && cfg.APIAdmin != "" && plainPassword != "" {
+		cfg.ProvisionMode = "iredadmin_api"
+	}
+	if plainPassword != "" && !utils.EncryptionAvailable() {
+		return fmt.Errorf("CONFIG_ENC_KEY no esta disponible para registrar IREDADMIN_PASSWORD cifrado")
+	}
+	return saveCorporateEmailConfig(dbSuper, cfg, plainPassword)
+}
+
+func parseConfigBool(value string, fallback bool) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "on", "yes", "si", "activo", "activa", "enabled":
+		return true
+	case "0", "false", "off", "no", "inactivo", "inactiva", "disabled":
+		return false
+	default:
+		return fallback
+	}
+}
+
+func normalizeCorporateEmailDomain(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.TrimPrefix(value, "http://")
+	value = strings.TrimPrefix(value, "https://")
+	value = strings.Trim(value, "/ ")
+	if value == "" {
+		return "powerfulcontrolsystem.com"
+	}
+	return value
+}
+
+func normalizeCorporateEmailProvisionMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "iredadmin_api", "iredmail_api", "api":
+		return "iredadmin_api"
+	default:
+		return "manual"
+	}
+}
+
+func generateCorporateEmailPassword() (string, error) {
+	buf := make([]byte, 24)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return strings.TrimRight(base64.URLEncoding.EncodeToString(buf), "=") + "Aa1!", nil
+}
+
+func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPassword string) error {
+	if dbSuper == nil {
+		return fmt.Errorf("base super no disponible")
+	}
+	cfg.Domain = normalizeCorporateEmailDomain(cfg.Domain)
+	cfg.WebmailURL = strings.TrimSpace(cfg.WebmailURL)
+	cfg.APIBaseURL = strings.TrimRight(strings.TrimSpace(cfg.APIBaseURL), "/")
+	cfg.APIAdmin = strings.TrimSpace(cfg.APIAdmin)
+	cfg.ProvisionMode = normalizeCorporateEmailProvisionMode(cfg.ProvisionMode)
+	if cfg.QuotaMB < 0 {
+		cfg.QuotaMB = 0
+	}
+	pairs := []struct {
+		key   string
+		value string
+		enc   bool
+	}{
+		{corporateEmailEnabledKey, strconv.FormatBool(cfg.Enabled), false},
+		{corporateEmailAutoCreateKey, strconv.FormatBool(cfg.AutoCreate), false},
+		{corporateEmailDomainKey, cfg.Domain, false},
+		{corporateEmailWebmailURLKey, cfg.WebmailURL, false},
+		{corporateEmailProvisionModeKey, cfg.ProvisionMode, false},
+		{corporateEmailAPIBaseURLKey, cfg.APIBaseURL, false},
+		{corporateEmailAPIAdminKey, cfg.APIAdmin, false},
+		{corporateEmailQuotaMBKey, strconv.Itoa(cfg.QuotaMB), false},
+	}
+	for _, pair := range pairs {
+		if err := dbpkg.SetConfigValue(dbSuper, pair.key, pair.value, pair.enc); err != nil {
+			return err
+		}
+	}
+	if strings.TrimSpace(plainPassword) != "" {
+		if !utils.EncryptionAvailable() {
+			return fmt.Errorf("CONFIG_ENC_KEY no esta disponible para cifrar la clave iRedAdmin")
+		}
+		enc, err := utils.EncryptString(strings.TrimSpace(plainPassword))
+		if err != nil {
+			return err
+		}
+		if err := dbpkg.SetConfigValue(dbSuper, corporateEmailAPIPasswordKey, enc, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, empresaNombre, usuario string) (*dbpkg.EmpresaEmailCorporativo, error) {
+	if dbSuper == nil || empresaID <= 0 {
+		return nil, nil
+	}
+	cfg := getCorporateEmailConfig(dbSuper)
+	if !cfg.AutoCreate {
+		return nil, nil
+	}
+	if existing, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); err == nil {
+		return existing, nil
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	email, local, err := dbpkg.ResolveUniqueCorporateEmail(dbSuper, empresaID, empresaNombre, cfg.Domain)
+	if err != nil {
+		return nil, err
+	}
+	initialPassword, err := generateCorporateEmailPassword()
+	if err != nil {
+		return nil, err
+	}
+	encryptedPassword := ""
+	status := "pendiente_modulo_desactivado"
+	if cfg.Enabled {
+		status = "pendiente_provision"
+	}
+	if utils.EncryptionAvailable() {
+		encryptedPassword, err = utils.EncryptString(initialPassword)
+		if err != nil {
+			return nil, err
+		}
+	} else if cfg.Enabled && cfg.ProvisionMode == "iredadmin_api" {
+		status = "pendiente_cifrado"
+	}
+	item, err := dbpkg.UpsertEmpresaEmailCorporativo(dbSuper, dbpkg.EmpresaEmailCorporativo{
+		EmpresaID:         empresaID,
+		EmpresaNombre:     empresaNombre,
+		Email:             email,
+		LocalPart:         local,
+		Domain:            cfg.Domain,
+		WebmailURL:        cfg.WebmailURL,
+		EstadoProvision:   status,
+		ProvisionProvider: "iredmail",
+		UsuarioCreador:    usuario,
+		Observaciones:     "Generado automaticamente al crear la empresa",
+	}, encryptedPassword)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.Enabled && cfg.ProvisionMode == "iredadmin_api" && encryptedPassword != "" {
+		result := provisionEmpresaEmailAccount(dbSuper, cfg, *item, initialPassword)
+		if !result.OK {
+			log.Printf("email corporativo empresa_id=%d provision warning: %s", empresaID, result.Error)
+		}
+		item, _ = dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
+	}
+	return item, nil
+}
+
+func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
+	if !cfg.Enabled {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_modulo_desactivado", "El modulo global esta desactivado", false)
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
+	}
+	if cfg.ProvisionMode != "iredadmin_api" {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", "Modo manual: crear o validar la cuenta en iRedMail", false)
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
+	}
+	adminPassword, err := corporateEmailAPIAdminPassword(dbSuper)
+	if err != nil {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error", "No se pudo descifrar la clave iRedAdmin", false)
+		return corporateEmailProvisionResult{OK: false, Status: "error", Error: err.Error()}
+	}
+	if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || strings.TrimSpace(adminPassword) == "" {
+		msg := "Faltan URL, usuario o clave de iRedAdmin-Pro"
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_api", msg, false)
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_api", Error: msg}
+	}
+	if strings.TrimSpace(password) == "" {
+		msg := "La clave inicial de la cuenta no esta disponible para crear el buzon"
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_clave", msg, false)
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_clave", Error: msg}
+	}
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{Timeout: 20 * time.Second, Jar: jar}
+	loginValues := url.Values{}
+	loginValues.Set("username", cfg.APIAdmin)
+	loginValues.Set("password", adminPassword)
+	if err := iredAdminAPIPostForm(client, cfg.APIBaseURL+"/api/login", loginValues); err != nil {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_login", err.Error(), false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
+	}
+	userValues := url.Values{}
+	userValues.Set("name", account.EmpresaNombre)
+	userValues.Set("password", password)
+	userValues.Set("language", "es_ES")
+	userValues.Set("accountStatus", "active")
+	userValues.Set("quota", strconv.Itoa(cfg.QuotaMB))
+	if err := iredAdminAPIPostForm(client, cfg.APIBaseURL+"/api/user/"+url.PathEscape(account.Email), userValues); err != nil {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_provision", err.Error(), false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_provision", Error: err.Error()}
+	}
+	_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "provisionado", "", true)
+	return corporateEmailProvisionResult{OK: true, Status: "provisionado"}
+}
+
+func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Values) error {
+	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(values.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
+	var payload struct {
+		Success bool   `json:"_success"`
+		Msg     string `json:"_msg"`
+	}
+	_ = json.Unmarshal(body, &payload)
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		msg := strings.TrimSpace(payload.Msg)
+		if msg == "" {
+			msg = strings.TrimSpace(string(body))
+		}
+		return fmt.Errorf("iRedAdmin HTTP %d: %s", res.StatusCode, msg)
+	}
+	if strings.Contains(strings.TrimSpace(string(body)), "_success") && !payload.Success {
+		msg := strings.TrimSpace(payload.Msg)
+		if msg == "" {
+			msg = "iRedAdmin rechazo la operacion"
+		}
+		return errors.New(msg)
+	}
+	return nil
+}
+
+func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			cfg := getCorporateEmailConfig(dbSuper)
+			accounts, err := dbpkg.ListEmpresaEmailCorporativo(dbSuper)
+			if err != nil {
+				http.Error(w, "No se pudo listar emails corporativos: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":                    true,
+				"config":                cfg,
+				"accounts":              accounts,
+				"encryption_available":  utils.EncryptionAvailable(),
+				"iredadmin_api_enabled": cfg.Enabled && cfg.ProvisionMode == "iredadmin_api",
+			})
+			return
+		case http.MethodPost, http.MethodPut:
+			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if action == "sync" {
+				cfg := getCorporateEmailConfig(dbSuper)
+				count, err := dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r))
+				if err != nil {
+					http.Error(w, "No se pudo sincronizar empresas: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "created": count})
+				return
+			}
+			if action == "provision" {
+				empresaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
+				if empresaID <= 0 {
+					http.Error(w, "empresa_id requerido", http.StatusBadRequest)
+					return
+				}
+				account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
+				if err != nil {
+					http.Error(w, "No se encontro email corporativo: "+err.Error(), http.StatusNotFound)
+					return
+				}
+				encryptedPassword, passErr := dbpkg.GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbSuper, empresaID)
+				initialPassword := ""
+				if passErr == nil && strings.TrimSpace(encryptedPassword) != "" {
+					initialPassword, passErr = utils.DecryptString(encryptedPassword)
+				}
+				if passErr != nil {
+					_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, empresaID, "pendiente_clave", "No se pudo recuperar la clave inicial cifrada", false)
+					http.Error(w, "No se pudo recuperar la clave inicial cifrada: "+passErr.Error(), http.StatusBadRequest)
+					return
+				}
+				result := provisionEmpresaEmailAccount(dbSuper, getCorporateEmailConfig(dbSuper), *account, initialPassword)
+				statusCode := http.StatusOK
+				if !result.OK {
+					statusCode = http.StatusBadGateway
+				}
+				writeJSON(w, statusCode, result)
+				return
+			}
+			var payload struct {
+				Enabled       *bool  `json:"enabled"`
+				AutoCreate    *bool  `json:"auto_create"`
+				Domain        string `json:"domain"`
+				WebmailURL    string `json:"webmail_url"`
+				ProvisionMode string `json:"provision_mode"`
+				APIBaseURL    string `json:"iredadmin_api_base_url"`
+				APIAdmin      string `json:"iredadmin_admin"`
+				APIPassword   string `json:"iredadmin_password"`
+				QuotaMB       int    `json:"quota_mb"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg := getCorporateEmailConfig(dbSuper)
+			if payload.Enabled != nil {
+				cfg.Enabled = *payload.Enabled
+			}
+			if payload.AutoCreate != nil {
+				cfg.AutoCreate = *payload.AutoCreate
+			}
+			if strings.TrimSpace(payload.Domain) != "" {
+				cfg.Domain = payload.Domain
+			}
+			if strings.TrimSpace(payload.WebmailURL) != "" {
+				cfg.WebmailURL = payload.WebmailURL
+			}
+			if strings.TrimSpace(payload.ProvisionMode) != "" {
+				cfg.ProvisionMode = payload.ProvisionMode
+			}
+			cfg.APIBaseURL = payload.APIBaseURL
+			cfg.APIAdmin = payload.APIAdmin
+			if payload.QuotaMB >= 0 {
+				cfg.QuotaMB = payload.QuotaMB
+			}
+			if err := saveCorporateEmailConfig(dbSuper, cfg, payload.APIPassword); err != nil {
+				http.Error(w, "No se pudo guardar configuracion: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": getCorporateEmailConfig(dbSuper)})
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+func EmpresaEmailCorporativoHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		empresaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
+		if empresaID <= 0 {
+			http.Error(w, "empresa_id requerido", http.StatusBadRequest)
+			return
+		}
+		cfg := getCorporateEmailConfig(dbSuper)
+		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":      true,
+					"enabled": cfg.Enabled,
+					"account": nil,
+					"webmail": cfg.WebmailURL,
+					"message": "Sin email corporativo generado",
+				})
+				return
+			}
+			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if account.WebmailURL == "" {
+			account.WebmailURL = cfg.WebmailURL
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":      true,
+			"enabled": cfg.Enabled,
+			"account": account,
+			"webmail": account.WebmailURL,
+		})
+	}
+}

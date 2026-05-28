@@ -7,9 +7,13 @@ upstream pcs_frontend {
     server frontend:80;
 }
 
+upstream pcs_iredmail {
+    server iredmail:80;
+}
+
 server {
     listen 80;
-    server_name ${EDGE_DOMAIN} ${EDGE_WWW_DOMAIN} ${EDGE_ONLYOFFICE_DOMAIN};
+    server_name ${EDGE_DOMAIN} ${EDGE_WWW_DOMAIN} ${EDGE_ONLYOFFICE_DOMAIN} ${EDGE_MAIL_DOMAIN};
     client_max_body_size 100m;
 
     location ^~ /.well-known/acme-challenge/ {

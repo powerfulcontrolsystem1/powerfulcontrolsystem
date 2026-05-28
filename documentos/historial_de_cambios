@@ -1,3 +1,11 @@
+2026-05-28: Email corporativo iRedMail por empresa.
+- Modulos afectados: `super_administrador`, `administrar_empresa`, `empresas`, `comunicaciones`, `VPS/Docker`.
+- Cambio funcional: se agrega el modulo `Email corporativo` en super administrador para activar/desactivar el servicio, configurar dominio, webmail, cuota, modo manual o iRedAdmin-Pro API y guardar credenciales cifradas.
+- Empresas: al registrar una empresa se genera automaticamente un email unico basado en su nombre; si el nombre ya existe, se agrega un sufijo numerico. La provision de iRedMail es best-effort y no bloquea la creacion de la empresa.
+- UX: el panel de administrar empresa muestra debajo de Favoritos una tarjeta para abrir el webmail cuando el modulo esta activo.
+- Operacion: se agrega `deploy/iredmail/` con runbook y se integra el perfil Docker portable `mail` en `deploy/docker-compose.platform.yml`. El backend registra variables `EMAIL_CORPORATIVO_*` / `IREDMAIL_*` desde `deploy/.env.platform` y guarda la clave iRedAdmin cifrada con `CONFIG_ENC_KEY`.
+- QA: `go test ./db ./handlers -run "EmailCorporativo|CorporateEmail|^$" -count=1` (ok); scripts inline de `web/administrar_empresa/panel.html` y `web/super/email_corporativo.html` parseados con Node del runtime de Codex.
+
 2026-05-28: Codigo de asesor al elegir licencia de prueba.
 - Modulos afectados: `licencias`, `checkout_licencias`, `asesor_comercial`, `documentacion`.
 - Cambio funcional: `web/elegir_licencia.html` muestra un campo `Codigo de asesor comercial` en la tarjeta de licencia gratis de 15 dias. Al presionar `Activar licencia`, el codigo se envia en la URL del checkout como `asesor_id`.
@@ -28260,3 +28268,41 @@ Archivos modificados:
 - documentos/promocion_asesor_licencias.md
 - web/elegir_licencia.html
 - web/super/licencias.html
+
+2026-05-28: email corporativo iRedMail - secretos registrados en base de datos
+- Cambio: se ajusto el registrador de secretos para respetar `CONFIG_ENC_KEY` y
+  los DSN existentes del backend, evitando reemplazar la clave de cifrado al leer
+  `deploy/.env.platform`.
+- Operacion: se compilo `backend/tools/register_iredmail_secrets` como binario
+  Linux, se subio temporalmente a la VPS y se ejecuto contra PostgreSQL. La
+  configuracion `email_corporativo.*` quedo registrada y el password de iRedAdmin
+  quedo cifrado en la tabla de configuraciones.
+- Seguridad: no se documentan ni imprimen secretos; `deploy/.env.platform` queda
+  como archivo privado ignorado por Git y con permisos restringidos en la VPS.
+- QA: `go test ./tools/register_iredmail_secrets -count=1`; `go test ./... -run
+  "EmailCorporativo|CorporateEmail|^$" -count=1`; ejecucion remota del binario
+  finalizo con OK.
+
+2026-05-28: apariencia por defecto blanco corporativo para usuarios nuevos
+- Cambio funcional: `usuario_configuracion.apariencia` cambia su default a
+  `light`, que corresponde al tema `Blanco Corporativo` del menu flotante.
+- Backend: cuando un administrador o usuario operativo no tiene preferencia de
+  apariencia guardada, `/api/user/configuracion` y los logins devuelven `light`
+  en vez de cadena vacia, para que la primera sesion use el tema claro
+  corporativo.
+- Frontend: las paginas super con fallback independiente de tema ya no arrancan
+  en oscuro si no existe cookie/localStorage.
+- QA: busqueda dirigida confirma que no quedan defaults `dark` para la columna
+  `usuario_configuracion.apariencia` ni fallbacks directos `|| "dark"` en
+  frontend/backend fuera de assets excluidos.
+
+2026-05-28: bandeja de correo corporativo embebida en panel empresarial
+- Cambio funcional: `Administrar empresa > Panel`, debajo de Favoritos, ahora
+  muestra una tarjeta `Bandeja de correo corporativo` con correo de la empresa,
+  estado, boton de actualizar, boton para abrir el buzon y visor integrado del
+  webmail en `INBOX`.
+- Seguridad: no se exponen contrasenas ni secretos del buzon en frontend; el
+  iframe usa la URL de webmail configurada y si el servidor de correo bloquea
+  incrustacion, queda disponible el boton `Abrir buzón`.
+- QA: scripts embebidos de `web/administrar_empresa/panel.html` validados con
+  Node del runtime de Codex.
