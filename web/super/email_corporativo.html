@@ -209,6 +209,23 @@
         return "badge warn";
       }
 
+      function cleanProvisionError(value) {
+        var text = String(value || "").trim();
+        if (!text) return "";
+        var jsonStart = text.indexOf("{");
+        if (jsonStart >= 0) {
+          try {
+            var parsed = JSON.parse(text.slice(jsonStart));
+            var message = parsed.error || parsed._msg || parsed.message || "";
+            if (message) {
+              var prefix = text.slice(0, jsonStart).replace(/\s*:\s*$/, "").trim();
+              return prefix ? (prefix + ": " + message) : message;
+            }
+          } catch (e) {}
+        }
+        return text.length > 180 ? text.slice(0, 177) + "..." : text;
+      }
+
       function renderDiagnostics(data) {
         var diagnostics = data && data.diagnostics ? data.diagnostics : {};
         var webmail = diagnostics.webmail || {};
@@ -247,7 +264,7 @@
           tr.children[1].textContent = item.email || "";
           tr.querySelector("span").className = badgeClass(status);
           tr.querySelector("span").textContent = status;
-          tr.children[2].querySelector("small").textContent = item.ultimo_error || "";
+          tr.children[2].querySelector("small").textContent = cleanProvisionError(item.ultimo_error);
           if (item.webmail_url) {
             var link = document.createElement("a");
             link.href = item.webmail_url;
@@ -327,7 +344,7 @@
               if (data && data.ok) {
                 setStatus("iRedAdmin acepto las credenciales guardadas.");
               } else {
-                setStatus("iRedAdmin rechazo la configuracion: " + ((data && data.error) || (data && data.status) || "validacion fallida"), true);
+                setStatus("iRedAdmin rechazo la configuracion: " + cleanProvisionError((data && data.error) || (data && data.status) || "validacion fallida"), true);
               }
             });
           })

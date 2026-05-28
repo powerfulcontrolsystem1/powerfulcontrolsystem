@@ -420,10 +420,14 @@ func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Value
 	var payload struct {
 		Success bool   `json:"_success"`
 		Msg     string `json:"_msg"`
+		Error   string `json:"error"`
 	}
 	_ = json.Unmarshal(body, &payload)
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		msg := strings.TrimSpace(payload.Msg)
+		if msg == "" {
+			msg = strings.TrimSpace(payload.Error)
+		}
 		if msg == "" {
 			msg = strings.TrimSpace(string(body))
 		}
