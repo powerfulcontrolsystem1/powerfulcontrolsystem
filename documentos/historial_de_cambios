@@ -28144,3 +28144,9 @@ Archivos modificados:
 - Verificacion: se crearon datos de prueba `QA Codex` para bodegas, categoria, proveedor, producto con stock inicial, servicio, traslado entre bodegas, ajuste por perdida, devolucion de inventario, documento de compra emitido/recepcionado/contabilizado y devolucion a proveedor. Se validaron movimientos de kardex, existencias por bodega, compras documentales y reportes ejecutivos de inventario/compras.
 - Cambio visual: `web/administrar_empresa/reportes_ejecutivos.html` mejora el formato POS 80mm de metadatos, resumen y filas del documento imprimible para separar etiqueta/valor con columnas compactas y dos puntos, evitando textos pegados como `EMPRESA7`.
 - Evidencia: capturas en `test_runs/inventario_calipso_*_20260528071459.png` y `test_runs/reportes_calipso_*_20260528071459.png`; exportacion CSV de kardex validada.
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/historial_de_cambios
+- web/administrar_empresa/reportes_ejecutivos.html
