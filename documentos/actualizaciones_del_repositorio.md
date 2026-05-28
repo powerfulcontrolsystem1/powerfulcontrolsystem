@@ -11245,3 +11245,11 @@ Archivos modificados:
 Archivos modificados:
 - deploy/scripts/vps-compose-sidecar-up.sh
 - documentos/historial_de_cambios
+
+2026-05-28 17:28:58 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 0daabd5b; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- backend/main.go
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/panel.html
