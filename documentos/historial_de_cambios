@@ -27840,6 +27840,22 @@ Archivos modificados:
 - Compatibilidad: los normalizadores de paginas en iframe y utilidades reconocen `dark-corporate` para evitar que el tema cambie de forma inesperada al navegar.
 - Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
 
+2026-05-27: Reportes globales profesionales en selector de empresas
+- Modulos afectados: `seleccionar_empresa`, `super_administrador`, `reportes_globales`, `frontend_ux`.
+- Archivos modificados:
+  - `web/super/reportes_globales.html`
+  - `web/js/super_reportes_globales.js`
+  - `web/estilos.css`
+  - `documentos/mapa_modulos.md`
+  - `documentos/descripcion_de_modulos`
+  - `documentos/descripcion_del_proyecto`
+  - `documentos/descripcion_de_archivos`
+  - `documentos/CHANGELOG.md`
+  - `CHANGELOG.md`
+- Cambio funcional: la pantalla de reportes globales se simplifica a rango de fechas, selector de reporte disponible, selector de formato y botones Ver, Exportar, Imprimir y Enviar por email.
+- Analitica: conserva seleccion multiple de empresas y muestra KPIs, graficos comparativos, lectura ejecutiva, resumen por empresa y detalle del dataset elegido.
+- QA: `node --check web/js/super_reportes_globales.js`, `git diff --check` y prueba visual Playwright con datos simulados validando graficos, exportacion PDF, impresion y vista movil sin desbordamiento horizontal.
+
 2026-05-27: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

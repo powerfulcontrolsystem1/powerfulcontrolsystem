@@ -3170,3 +3170,9 @@ Captura inteligente de compras y gastos
 - Cambio funcional: se agrega el tema oscuro `Corporativo Oscuro` y se corrige `Blanco Corporativo` en celular.
 - Frontend: `web/menu.js` expone el nuevo boton en el selector; `web/estilos.css` define variables y reglas responsive; paginas embebidas reconocen el nuevo valor de tema.
 - Alcance: sin cambios de backend, tablas, endpoints ni permisos.
+
+2026-05-27: Reportes globales profesionales
+- Modulos afectados: `seleccionar_empresa`, `super_administrador`, `reportes_globales`, `frontend_ux`.
+- Cambio funcional: `web/super/reportes_globales.html` queda enfocado en fecha desde/hasta, selector de reporte disponible, formato y acciones directas Ver, Exportar, Imprimir y Enviar por email.
+- Analitica: la seleccion multiple de empresas se mantiene en tarjeta propia y el resultado muestra KPIs consolidados, graficos por empresa, lectura ejecutiva, resumen por empresa y detalle del dataset elegido.
+- Backend: no cambia el contrato ni permisos; se reutiliza `/super/api/reportes_globales` con formatos PDF, XLS, CSV, TXT y JSON.

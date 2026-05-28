@@ -44,6 +44,10 @@
     return new Intl.NumberFormat('es-CO', { notation: 'compact', maximumFractionDigits: 1 }).format(toNumber(value));
   }
 
+  function isMoneyField(name) {
+    return /(ingres|egres|costo|balance|valor|monto|precio|utilidad|subtotal|importe|recaudo|pago|saldo|cartera|descuento)/.test(normalize(name).toLowerCase());
+  }
+
   function pct(value, total) {
     if (!total) return 0;
     return Math.round((toNumber(value) * 1000) / toNumber(total)) / 10;
@@ -413,7 +417,7 @@
     }
     select.disabled = false;
     select.innerHTML = state.datasets.map(function (item) {
-      var label = '[' + normalize(item.level || 'operativo') + '] ' + normalize(item.title || item.key || 'dataset');
+      var label = normalize(item.title || item.key || 'Reporte');
       return '<option value="' + escapeHtml(item.key) + '">' + escapeHtml(label) + '</option>';
     }).join('');
     if (!normalize(select.value)) {
@@ -644,7 +648,7 @@
     var summaryKeys = Object.keys(summary);
     resumen.textContent = summaryKeys.length ? ('Resumen: ' + summaryKeys.map(function (key) {
       var value = summary[key];
-      if (typeof value === 'number' && (key.indexOf('ingres') >= 0 || key.indexOf('total') >= 0 || key.indexOf('ticket') >= 0 || key.indexOf('costo') >= 0 || key.indexOf('balance') >= 0)) {
+      if (typeof value === 'number' && isMoneyField(key)) {
         return key + ': ' + fmtMoney(value);
       }
       return key + ': ' + String(value);
@@ -659,7 +663,7 @@
     tbody.innerHTML = combinado.rows.map(function (row) {
       return '<tr>' + cols.map(function (col) {
         var value = row[col];
-        if (typeof value === 'number' && (col.indexOf('total') >= 0 || col.indexOf('ingres') >= 0 || col.indexOf('costo') >= 0 || col.indexOf('balance') >= 0)) {
+        if (typeof value === 'number' && isMoneyField(col)) {
           value = fmtMoney(value);
         }
         return '<td>' + escapeHtml(value == null ? '-' : value) + '</td>';
@@ -693,7 +697,7 @@
         rows.map(function (row) {
           return '<tr>' + cols.map(function (col) {
             var value = row[col];
-            if (typeof value === 'number' && (col.indexOf('total') >= 0 || col.indexOf('ingres') >= 0 || col.indexOf('costo') >= 0 || col.indexOf('balance') >= 0)) {
+            if (typeof value === 'number' && isMoneyField(col)) {
               value = fmtMoney(value);
             }
             return '<td>' + escapeHtml(value == null ? '-' : value) + '</td>';

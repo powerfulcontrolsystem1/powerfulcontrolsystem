@@ -3994,6 +3994,17 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
 .empresas-grid .portal-card .card-actions{display:flex;justify-content:center;gap:8px;margin-top:8px}
 .empresas-grid .portal-card .license-indicator{font-weight:900;font-size:0.95rem;padding:8px 12px;border-radius:999px}
 
+.reportes-globales-container{display:flex;flex-direction:column;gap:14px}
+.reportes-globales-page .reportes-globales-header{align-items:flex-start}
+.reportes-globales-page .reportes-globales-header h1{font-size:1.45rem;line-height:1.15;color:var(--text)}
+.reportes-globales-controlbar{display:flex;flex-direction:column;gap:12px;margin-top:14px;padding:14px;border:1px solid var(--content-soft-border);border-radius:14px;background:var(--content-soft-bg)}
+.reportes-globales-control-grid{display:grid;grid-template-columns:minmax(140px,0.7fr) minmax(140px,0.7fr) minmax(260px,1.7fr) minmax(150px,0.8fr);gap:12px;align-items:end}
+.reportes-globales-field{display:flex;min-width:0;flex-direction:column;gap:6px}
+.reportes-globales-field-wide{min-width:220px}
+.reportes-globales-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.reportes-globales-actions .btn,.reportes-globales-email-row .btn{min-height:40px}
+.reportes-globales-email-row{display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:8px;align-items:center}
+.reportes-globales-selection-card .empresa-section-header{align-items:flex-start}
 .reportes-globales-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .reportes-globales-panel{background:var(--content-soft-bg);border:1px solid var(--content-soft-border);border-radius:14px;padding:14px}
 .reportes-globales-selection-toolbar{padding:12px;border-radius:14px;background:var(--content-soft-bg);border:1px solid var(--content-soft-border)}
@@ -4042,6 +4053,10 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
 .reportes-globales-empty{padding:14px;border-radius:12px;background:var(--content-soft-bg-2);color:var(--muted)}
 
 @media (max-width: 720px){
+  .reportes-globales-page .reportes-globales-header h1{font-size:1.25rem}
+  .reportes-globales-control-grid{grid-template-columns:1fr}
+  .reportes-globales-email-row{grid-template-columns:1fr}
+  .reportes-globales-actions .btn{flex:1 1 130px}
   .reportes-globales-grid{grid-template-columns:1fr}
   .reportes-globales-chart-grid{grid-template-columns:1fr}
   .reportes-globales-executive{grid-template-columns:1fr}
@@ -4076,6 +4091,7 @@ body.super-page{
 }
 .super-page .container{max-width:none;width:100%;margin:0;padding:0.6rem 0.8rem}
 .super-page .container h1{font-size:0.95rem;margin:4px 0;color:var(--text)}
+.super-page.reportes-globales-page .container h1{font-size:1.45rem;line-height:1.15;color:var(--text)}
 .page-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .page-header h1{margin:0;font-size:0.95rem;color:var(--text)}
 .page-header .btn.add{margin-bottom:0}
@@ -13644,6 +13660,16 @@ html.theme-light .pcs-pr-mod-card { background: #fff; }
   th, td { border: 1px solid #ddd; padding: 4px; }
   .reportes-globales-chart-grid { display: block !important; }
   .reportes-globales-chart-card { break-inside: avoid; margin-bottom: 20px; }
+  .reportes-globales-page .reportes-globales-controlbar,
+  .reportes-globales-page .reportes-globales-selection-card,
+  .reportes-globales-page #rgMsg { display: none !important; }
+  .reportes-globales-page .reportes-globales-header h1 { color: #000 !important; font-size: 18px !important; }
+  .reportes-globales-page .reportes-globales-executive-card,
+  .reportes-globales-page .reportes-globales-chart-card,
+  .reportes-globales-page .reportes-globales-brief { background: #fff !important; color: #000 !important; border-color: #bbb !important; }
+  .reportes-globales-page .reportes-globales-bar-track,
+  .reportes-globales-page .reportes-globales-compare-track { border: 1px solid #999 !important; background: #fff !important; }
+  .reportes-globales-page .reportes-globales-bar-fill { background: #222 !important; }
   h1, h2, h3, h4 { page-break-after: avoid; }
 }
 

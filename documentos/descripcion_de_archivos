@@ -9971,3 +9971,14 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Agrega estilos responsivos para cobertura profesional y panel demo de nomina.
 - `documentos/nomina_colombia_avanzada.md`:
 	- Documenta acciones nuevas, flujo demo y validacion.
+
+2026-05-27 - Reportes globales profesionales
+- `web/super/reportes_globales.html`:
+	- Reordena la vista como consola compacta con fecha desde/hasta, selector de reporte, formato y acciones Ver, Exportar, Imprimir y Enviar por email.
+	- Mantiene seleccion multiple de empresas y vista previa con KPIs, graficos, resumen por empresa y detalle.
+- `web/js/super_reportes_globales.js`:
+	- Simplifica las etiquetas del selector de reportes y mejora el formateo monetario para no convertir conteos como `total_ventas` en moneda.
+- `web/estilos.css`:
+	- Agrega estilos de barra de control, responsive movil y reglas de impresion para reportes globales.
+- `documentos/mapa_modulos.md`:
+	- Registra la ubicacion rapida de Reportes globales super.

@@ -1,3 +1,9 @@
+## [2026-05-27] Reportes globales profesionales en selector de empresas
+- [UX] `web/super/reportes_globales.html` queda enfocado en fecha desde/hasta, reporte disponible, formato y acciones directas: Ver, Exportar, Imprimir y Enviar por email.
+- [Analitica] La vista conserva seleccion multiple de empresas y muestra KPIs, graficos por empresa, lectura ejecutiva, resumen por empresa y detalle del reporte seleccionado.
+- [Formatos] Se mantienen los formatos existentes del sistema: PDF, XLS/Excel, CSV, TXT y JSON, usando `/super/api/reportes_globales`.
+- [QA] Validacion JS, `git diff --check` y prueba visual Playwright con datos simulados: graficos visibles, exportacion PDF, impresion disparada y movil sin desbordamiento horizontal.
+
 ## [2026-05-27] Vista previa de modulos con vinetas por tema
 - [UX] La vista previa de `web/super/informacion_de_modulos.html` deja de usar marcadores con color fijo.
 - [Apariencias] Las vinetas usan variables de tema y conservan contraste en `Blanco Corporativo`, temas oscuros y `Corporativo Oscuro`.

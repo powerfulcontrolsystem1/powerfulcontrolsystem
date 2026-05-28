@@ -1,148 +1,161 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Reportes globales</title>
   <link rel="stylesheet" href="/estilos.css">
-  <style>
-    .reportes-globales-ai-chat { min-height: 260px; border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: var(--surface-soft); color: var(--text); overflow-y: auto; max-height: 340px; }
-    .reportes-globales-ai-message { margin-bottom: 12px; }
-    .reportes-globales-ai-message.user { text-align: right; }
-    .reportes-globales-ai-message.assistant { text-align: left; }
-    .reportes-globales-ai-message .ai-bubble { display: inline-block; padding: 10px 14px; border-radius: 14px; max-width: 88%; white-space: pre-wrap; word-break: break-word; }
-    .reportes-globales-ai-message.user .ai-bubble { background: linear-gradient(180deg,var(--accent),var(--accent-2)); color: var(--btn-primary-text, #fff); }
-    .reportes-globales-ai-message.assistant .ai-bubble { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .reportes-globales-ai-chat-footer { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
-    .reportes-globales-ai-chat-footer .form-input { flex: 1 1 auto; min-width: 220px; }
-    .reportes-globales-ai-chat-info { font-size: 0.95rem; color: var(--muted); margin-bottom: 10px; }
-  </style>
 </head>
-<body class="super-page form-bg-dark">
-  <div class="container">
+<body class="super-page reportes-globales-page">
+  <div class="container reportes-globales-container">
     <section class="card empresa-section reportes-globales-shell">
-      <div class="empresa-section-header">
+      <div class="empresa-section-header reportes-globales-header">
         <div>
           <h1 class="m-0">Reportes globales</h1>
-          <p class="form-help mt-8 m-0">Consulta reportes combinados, mezclados o individuales de las empresas disponibles para el administrador autenticado.</p>
+          <p class="form-help mt-8 m-0">Consolida varias empresas, compara estadisticas por empresa y exporta el mismo informe en los formatos del sistema.</p>
         </div>
-        <div class="empresa-inline-actions actions-wrap">
-          <input id="rgFechaDesde" type="date" class="form-input">
-          <input id="rgFechaHasta" type="date" class="form-input">
-          <button id="rgAplicar" class="btn secondary" type="button">Aplicar filtros</button>
-          <button id="rgActualizar" class="btn" type="button">Actualizar</button>
+      </div>
+
+      <div class="reportes-globales-controlbar">
+        <div class="reportes-globales-control-grid">
+          <label class="reportes-globales-field">
+            <span class="form-label">Desde</span>
+            <input id="rgFechaDesde" type="date" class="form-input">
+          </label>
+          <label class="reportes-globales-field">
+            <span class="form-label">Hasta</span>
+            <input id="rgFechaHasta" type="date" class="form-input">
+          </label>
+          <label class="reportes-globales-field reportes-globales-field-wide">
+            <span class="form-label">Reporte disponible</span>
+            <select id="rgDataset" class="form-input"></select>
+          </label>
+          <label class="reportes-globales-field">
+            <span class="form-label">Formato</span>
+            <select id="rgFormato" class="form-input">
+              <option value="pdf">PDF</option>
+              <option value="xls">XLS / Excel</option>
+              <option value="csv">CSV</option>
+              <option value="txt">TXT</option>
+              <option value="json">JSON</option>
+            </select>
+          </label>
+        </div>
+
+        <input id="rgModo" type="hidden" value="consolidado">
+        <input id="rgTipoSeleccion" type="hidden" value="multiple">
+        <label id="rgEmpresaUnicaWrap" hidden>
+          <select id="rgEmpresaUnica" class="form-input"></select>
+        </label>
+
+        <div class="reportes-globales-actions">
+          <button id="rgVerDataset" class="btn primary" type="button">Ver</button>
+          <button id="rgExportar" class="btn secondary" type="button">Exportar</button>
+          <button id="rgImprimir" class="btn secondary" type="button">Imprimir</button>
+          <button id="rgActualizar" class="btn secondary" type="button">Actualizar</button>
+        </div>
+
+        <div class="reportes-globales-email-row">
+          <input id="rgEmailTo" class="form-input" type="email" placeholder="Enviar reporte a correo@dominio.com">
+          <button id="rgEnviarEmail" class="btn secondary" type="button">Enviar por email</button>
         </div>
       </div>
 
       <div id="rgMsg" class="form-help mt-10"></div>
+    </section>
 
-      <section class="card empresa-section">
-        <div class="empresa-section-header">
-          <h2 class="m-0">Asistente IA centralizado</h2>
+    <section class="card empresa-section reportes-globales-selection-card">
+      <div class="empresa-section-header">
+        <div>
+          <h2 class="m-0">Empresas a consolidar</h2>
+          <p id="rgSeleccionAyuda" class="form-help mt-6 m-0">Selecciona una o varias empresas. Los totales se suman y los graficos comparan cada empresa.</p>
         </div>
-        <p class="reportes-globales-ai-chat-info">Los reportes globales ahora usan el único asistente IA central del proyecto. Ábrelo desde el botón inferior para continuar tus consultas globales.</p>
-        <div class="form-actions">
-          <button id="rgOpenCentralAI" class="btn" type="button">Abrir asistente IA central</button>
+        <div class="reportes-globales-selection-resume">
+          <span>Seleccionadas</span>
+          <strong id="rgSeleccionResumen">0 empresas</strong>
         </div>
-        <div id="rgAiChatMsg" class="form-help mt-8"></div>
-      </section>
+      </div>
+      <div class="empresa-inline-actions mb-10 actions-wrap-gap-8">
+        <button id="rgSeleccionarTodas" class="btn secondary" type="button">Todas</button>
+        <button id="rgSoloActivas" class="btn secondary" type="button">Activas</button>
+        <button id="rgLimpiarEmpresas" class="btn secondary" type="button">Limpiar</button>
+      </div>
+      <div id="rgEmpresasLista" class="reportes-globales-empresas"></div>
+    </section>
 
-      <div class="reportes-globales-grid mt-14">
-        <section class="reportes-globales-panel">
-          <h2 class="m-0">Empresas del administrador</h2>
-          <div class="empresa-inline-actions reportes-globales-selection-toolbar mb-10 actions-wrap-gap-10-end">
-            <label class="reportes-globales-selection-field">
-              <span class="form-label">Modo de elección</span>
-              <select id="rgTipoSeleccion" class="form-input">
-                <option value="multiple">Varias empresas</option>
-                <option value="single">Una empresa</option>
-              </select>
-            </label>
-            <label id="rgEmpresaUnicaWrap" class="reportes-globales-selection-field" hidden>
-              <span class="form-label">Empresa</span>
-              <select id="rgEmpresaUnica" class="form-input"></select>
-            </label>
-            <div class="reportes-globales-selection-resume">
-              <span class="form-label">Selección actual</span>
-              <strong id="rgSeleccionResumen">0 empresas</strong>
-            </div>
-          </div>
-          <div class="empresa-inline-actions mb-10 actions-wrap-gap-8">
-            <button id="rgSeleccionarTodas" class="btn secondary" type="button">Todas</button>
-            <button id="rgSoloActivas" class="btn secondary" type="button">Activas</button>
-            <button id="rgLimpiarEmpresas" class="btn secondary" type="button">Limpiar</button>
-          </div>
-          <p id="rgSeleccionAyuda" class="form-help my-0-10">Marca una o varias empresas y luego aplica filtros. Si eliges una sola empresa, el reporte se refresca al cambiarla.</p>
-          <div id="rgEmpresasLista" class="reportes-globales-empresas"></div>
-        </section>
+    <section class="card empresa-section reportes-globales-print-area">
+      <div class="empresa-section-header">
+        <div>
+          <h2 class="m-0">Vista previa del reporte</h2>
+          <p id="rgDatasetMeta" class="form-help mt-6 m-0"></p>
+        </div>
+      </div>
 
-        <section class="reportes-globales-panel">
-          <h2 class="m-0">Vista y dataset</h2>
-          <div class="empresa-inline-actions actions-wrap-gap-10">
-            <select id="rgModo" class="form-input minw-220">
-              <option value="consolidado">Consolidado general</option>
-              <option value="individual">Separado por empresa</option>
-            </select>
-            <select id="rgDataset" class="form-input minw-280"></select>
-            <select id="rgFormato" class="form-input minw-160">
-              <option value="json">JSON</option>
-              <option value="csv">CSV</option>
-              <option value="txt">TXT</option>
-              <option value="xls">XLS (Excel)</option>
-              <option value="pdf">PDF</option>
-            </select>
+      <div class="kpi-grid mt-12" id="rgKpis">
+        <div class="kpi-box"><span class="kpi-label">Empresas</span><strong id="rgKpiEmpresas">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Activas</span><strong id="rgKpiEmpresasActivas">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Ventas</span><strong id="rgKpiVentas">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Ingresos</span><strong id="rgKpiIngresos">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Egresos</span><strong id="rgKpiEgresos">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Balance</span><strong id="rgKpiBalance">$0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Clientes</span><strong id="rgKpiClientes">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Productos</span><strong id="rgKpiProductos">0</strong></div>
+        <div class="kpi-box"><span class="kpi-label">Utilidad</span><strong id="rgKpiUtilidad">$0</strong></div>
+      </div>
+
+      <div class="reportes-globales-chart-grid mt-14">
+        <article class="reportes-globales-chart-card">
+          <div class="empresa-section-header mb-10">
+            <h3 class="m-0">Ingresos por empresa</h3>
+            <span class="form-help">Barras comparativas del periodo</span>
           </div>
-          <div class="empresa-inline-actions mt-10 actions-wrap-gap-10">
-            <button id="rgVerDataset" class="btn secondary" type="button">Ver dataset</button>
-            <button id="rgExportar" class="btn secondary" type="button">Exportar dataset</button>
-            <input id="rgEmailTo" class="form-input minw-260" type="email" placeholder="Enviar a correo@dominio.com">
-            <button id="rgEnviarEmail" class="btn secondary" type="button">Enviar por email</button>
-            <button id="rgImprimir" class="btn secondary" type="button">Imprimir reporte</button>
+          <div id="rgChartIngresos" class="reportes-globales-chart"></div>
+        </article>
+        <article class="reportes-globales-chart-card">
+          <div class="empresa-section-header mb-10">
+            <h3 class="m-0">Balance y egresos</h3>
+            <span class="form-help">Comparativo financiero</span>
           </div>
-          <p id="rgDatasetMeta" class="form-help mt-10"></p>
-        </section>
+          <div id="rgChartBalance" class="reportes-globales-chart"></div>
+        </article>
+        <article class="reportes-globales-chart-card">
+          <div class="empresa-section-header mb-10">
+            <h3 class="m-0">Portafolio de empresas</h3>
+            <span class="form-help">Participacion activa</span>
+          </div>
+          <div id="rgChartPortfolio" class="reportes-globales-chart"></div>
+        </article>
+      </div>
+
+      <div class="reportes-globales-executive mt-14">
+        <article class="reportes-globales-executive-card executive-primary">
+          <span class="reportes-globales-chip">Empresa lider</span>
+          <h3 id="rgExecutiveTopEmpresa">Sin datos</h3>
+          <p id="rgExecutiveTopEmpresaMeta" class="form-help m-0"></p>
+        </article>
+        <article class="reportes-globales-executive-card">
+          <span class="reportes-globales-chip">Mayor presion</span>
+          <h3 id="rgExecutiveRiskEmpresa">Sin datos</h3>
+          <p id="rgExecutiveRiskEmpresaMeta" class="form-help m-0"></p>
+        </article>
+        <article class="reportes-globales-executive-card">
+          <span class="reportes-globales-chip">Concentracion</span>
+          <h3 id="rgExecutiveConcentration">0%</h3>
+          <p id="rgExecutiveConcentrationMeta" class="form-help m-0"></p>
+        </article>
+      </div>
+
+      <div class="reportes-globales-brief mt-14">
+        <h3 class="my-0-10">Lectura ejecutiva</h3>
+        <ul id="rgExecutiveNarrative" class="reportes-globales-narrative"></ul>
       </div>
     </section>
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 class="m-0">Resumen ejecutivo consolidado</h2>
+        <h2 class="m-0">Resumen por empresa</h2>
       </div>
-      <div class="kpi-grid mt-12" id="rgKpis">
-        <div class="kpi-box"><span class="kpi-label">Empresas seleccionadas</span><strong id="rgKpiEmpresas">0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Empresas activas</span><strong id="rgKpiEmpresasActivas">0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Ventas cerradas</span><strong id="rgKpiVentas">0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Ingresos</span><strong id="rgKpiIngresos">$0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Egresos</span><strong id="rgKpiEgresos">$0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Balance</span><strong id="rgKpiBalance">$0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Clientes activos</span><strong id="rgKpiClientes">0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Productos activos</span><strong id="rgKpiProductos">0</strong></div>
-        <div class="kpi-box"><span class="kpi-label">Utilidad operacional</span><strong id="rgKpiUtilidad">$0</strong></div>
-      </div>
-      <div class="reportes-globales-executive mt-14">
-        <article class="reportes-globales-executive-card executive-primary">
-          <span class="reportes-globales-chip">Empresa líder</span>
-          <h3 id="rgExecutiveTopEmpresa">Sin datos</h3>
-          <p id="rgExecutiveTopEmpresaMeta" class="form-help m-0"></p>
-        </article>
-        <article class="reportes-globales-executive-card">
-          <span class="reportes-globales-chip">Mayor presión</span>
-          <h3 id="rgExecutiveRiskEmpresa">Sin datos</h3>
-          <p id="rgExecutiveRiskEmpresaMeta" class="form-help m-0"></p>
-        </article>
-        <article class="reportes-globales-executive-card">
-          <span class="reportes-globales-chip">Concentración</span>
-          <h3 id="rgExecutiveConcentration">0%</h3>
-          <p id="rgExecutiveConcentrationMeta" class="form-help m-0"></p>
-        </article>
-      </div>
-      <div class="reportes-globales-brief mt-14">
-        <div class="reportes-globales-brief-copy">
-          <h3 class="my-0-10">Lectura ejecutiva</h3>
-          <ul id="rgExecutiveNarrative" class="reportes-globales-narrative"></ul>
-        </div>
-      </div>
-      <div class="table-wrap mt-14">
+      <div class="table-wrap mt-12">
         <table class="table" id="rgTablaEmpresasResumen">
           <thead>
             <tr>
@@ -152,8 +165,8 @@
               <th>Ingresos</th>
               <th>Egresos</th>
               <th>Balance</th>
-              <th>Clientes activos</th>
-              <th>Productos activos</th>
+              <th>Clientes</th>
+              <th>Productos</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -163,36 +176,7 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
-        <h2 class="m-0">Gráficos globales</h2>
-      </div>
-      <div class="reportes-globales-chart-grid mt-14">
-        <article class="reportes-globales-chart-card">
-          <div class="empresa-section-header mb-10">
-            <h3 class="m-0">Ingresos por empresa</h3>
-            <span class="form-help">Comparativo de aporte al consolidado</span>
-          </div>
-          <div id="rgChartIngresos" class="reportes-globales-chart"></div>
-        </article>
-        <article class="reportes-globales-chart-card">
-          <div class="empresa-section-header mb-10">
-            <h3 class="m-0">Balance vs egresos</h3>
-            <span class="form-help">Pulso financiero por empresa</span>
-          </div>
-          <div id="rgChartBalance" class="reportes-globales-chart"></div>
-        </article>
-        <article class="reportes-globales-chart-card">
-          <div class="empresa-section-header mb-10">
-            <h3 class="m-0">Estado del portafolio</h3>
-            <span class="form-help">Empresas activas, inactivas y peso relativo</span>
-          </div>
-          <div id="rgChartPortfolio" class="reportes-globales-chart"></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Dataset consolidado o mezclado</h2>
+        <h2 class="m-0">Detalle del reporte seleccionado</h2>
       </div>
       <p id="rgDatasetResumen" class="form-help"></p>
       <div class="table-wrap">
@@ -203,36 +187,8 @@
       </div>
     </section>
 
-    <section class="card empresa-section">
-      <div class="empresa-section-header">
-        <h2 class="m-0">Vista individual por empresa</h2>
-      </div>
-      <div id="rgIndividuales" class="reportes-globales-individuales"></div>
-    </section>
+    <div id="rgIndividuales" class="reportes-globales-individuales" hidden></div>
   </div>
   <script src="/js/super_reportes_globales.js"></script>
-  <script>
-    (function(){
-      var btn = document.getElementById('rgOpenCentralAI');
-      var msg = document.getElementById('rgAiChatMsg');
-      if (!btn) return;
-      btn.addEventListener('click', function(){
-        try {
-          if (window.parent && window.parent !== window) {
-            window.parent.postMessage({
-              type: 'pcs-ai-drawer-open',
-              mode: 'operativo',
-              prompt: 'Analiza los reportes globales y responde con hallazgos clave.'
-            }, '*');
-            if (msg) msg.textContent = 'Solicitud enviada al asistente IA central.';
-            return;
-          }
-        } catch (error) {}
-        if (msg) msg.textContent = 'No se pudo abrir el asistente central desde esta vista.';
-      });
-    })();
-  </script>
 </body>
 </html>
-
-
