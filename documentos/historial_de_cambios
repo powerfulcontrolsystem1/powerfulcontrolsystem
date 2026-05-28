@@ -27759,3 +27759,23 @@ Archivos modificados:
 - web/js/registrar_nuevo_usuario_administrador.js
 - web/js/seleccionar_empresa.js
 - web/super/administradores.html
+
+2026-05-27: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/db.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/selector_admin_scope_test.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/seleccionar_empresa.html
+- web/super/administradores.html
