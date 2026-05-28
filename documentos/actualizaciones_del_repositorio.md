@@ -10962,3 +10962,15 @@ Archivos modificados:
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/seleccionar_empresa.html
 - web/super/administradores.html
+
+2026-05-27 20:52:35 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b5e234f7; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/db.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/selector_admin_scope_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- web/super/administradores.html
