@@ -28307,6 +28307,16 @@ Archivos modificados:
 - QA: scripts embebidos de `web/administrar_empresa/panel.html` validados con
   Node del runtime de Codex.
 
+2026-05-28: sincronizacion VPS preserva secretos privados de plataforma
+- Cambio operativo: `scripts/sync_to_vps.ps1` excluye `deploy/.env.platform`,
+  variantes locales y `deploy/iredmail/.env` del paquete tar hacia la VPS.
+- Motivo: evitar que un archivo privado local sobrescriba los secretos reales
+  del servidor, especialmente `POSTGRES_PASSWORD`, `CONFIG_ENC_KEY` y claves de
+  correo corporativo.
+- Incidente resuelto: al cambiar accidentalmente `POSTGRES_PASSWORD` sobre un
+  volumen PostgreSQL existente, backend no podia autenticar contra `pcs`; se
+  alineo el rol PostgreSQL con el secreto vigente del servidor sin imprimirlo.
+
 2026-05-28: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
