@@ -3159,3 +3159,14 @@ Captura inteligente de compras y gastos
 - Backend: `backend/db/creditos.go` agrega periodicidad de cuota, valor pactado y omision opcional de domingos; la generacion de cuotas permite contratos diarios largos y calcula cuotas vencidas/dias que debe desde el calendario de pagos. `backend/main.go` asegura `EnsureEmpresaCreditosSchema` en el arranque para migrar columnas de creditos en PostgreSQL.
 - API/UI: `backend/handlers/creditos.go` y `web/administrar_empresa/creditos.html` aceptan `periodicidad_cuota`, `valor_cuota_pactada` y `omitir_domingos`; la tabla de cartera muestra periodicidad, cuota pactada y dias/cuotas que debe.
 - QA: `backend/db/creditos_postgres_test.go` cubre contratos diarios de dos años y salto de domingos; se valido `go test ./db -run "TestCredito" -count=1`, `go test ./handlers -run '^$' -count=1` y sintaxis JS del modulo.
+2026-05-27: Vista previa de informacion de modulos
+- Modulos afectados: `super_administrador`, `informacion_de_modulos`, `frontend_ux`.
+- Cambio funcional: las vinetas de la vista previa dejan de usar color fijo y se adaptan a la apariencia activa.
+- Frontend: `web/super/informacion_de_modulos.html` usa `li::before` con variables de tema para contenido predeterminado y editado.
+- Alcance: sin cambios de backend, tablas, endpoints ni permisos.
+
+2026-05-27: Apariencias del menu flotante
+- Modulos afectados: `menu_flotante`, `apariencias`, `frontend_ux`.
+- Cambio funcional: se agrega el tema oscuro `Corporativo Oscuro` y se corrige `Blanco Corporativo` en celular.
+- Frontend: `web/menu.js` expone el nuevo boton en el selector; `web/estilos.css` define variables y reglas responsive; paginas embebidas reconocen el nuevo valor de tema.
+- Alcance: sin cambios de backend, tablas, endpoints ni permisos.

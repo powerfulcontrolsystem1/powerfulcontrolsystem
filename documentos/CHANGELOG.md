@@ -1,3 +1,13 @@
+## [2026-05-27] Vista previa de modulos con vinetas por tema
+- [UX] La vista previa de `web/super/informacion_de_modulos.html` deja de usar marcadores con color fijo.
+- [Apariencias] Las vinetas usan variables de tema y conservan contraste en `Blanco Corporativo`, temas oscuros y `Corporativo Oscuro`.
+- [Alcance] Cambio visual sin backend, tablas, endpoints ni permisos.
+
+## [2026-05-27] Tema corporativo oscuro y blanco corporativo movil
+- [UX] Se agrega `Corporativo Oscuro` como tema oscuro seleccionable desde el menu flotante.
+- [Movil] `Blanco Corporativo` conserva fondo, borde y texto claros en el panel de apariencias y submenus del menu flotante.
+- [Compatibilidad] Las paginas embebidas, super administrador, juegos y utilidades reconocen `dark-corporate` para no degradar el tema al navegar.
+
 ## [2026-05-27] Empresas compartidas en administrar empresa
 - [UX] Se agrega `web/administrar_empresa/empresas_compartidas.html` al grupo `Administracion` del menu empresarial.
 - [Funcion] La pagina muestra accesos compartidos activos e invitaciones pendientes de la empresa actual, con opcion para desactivar acceso o cancelar invitacion usando `/super/api/empresas/compartidos`.

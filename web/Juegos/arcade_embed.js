@@ -3,6 +3,7 @@
     dark: true,
     "dark-violet": true,
     "dark-emerald": true,
+    "dark-corporate": true,
     "dark-neon": true,
     light: true,
     "light-rose": true,

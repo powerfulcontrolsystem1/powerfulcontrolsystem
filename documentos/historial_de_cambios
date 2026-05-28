@@ -27827,3 +27827,15 @@ Archivos modificados:
 - web/administrar_empresa/empresas_compartidas.html
 - web/js/administrar_empresa.js
 - web/super/administradores.html
+2026-05-27: Vista previa de modulos con vinetas por apariencia
+- Modulos afectados: `super_administrador`, `informacion_de_modulos`, `frontend_ux`.
+- Cambio funcional: la vista previa de modulos usa vinetas visuales propias con variables del tema en lugar de `::marker` con color fijo.
+- UX: el contenido predeterminado se ve consistente en apariencias claras y oscuras, incluyendo `Corporativo Oscuro`.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.
+
+2026-05-27: Tema corporativo oscuro y correccion movil del blanco corporativo
+- Modulos afectados: `menu_flotante`, `apariencias`, `frontend_ux`.
+- Cambio funcional: se agrega la apariencia `Corporativo Oscuro` como tema oscuro disponible en el selector del menu flotante.
+- UX movil: `Blanco Corporativo` fuerza fondo, borde y texto claros en el panel de apariencias y submenus del menu flotante en celular.
+- Compatibilidad: los normalizadores de paginas en iframe y utilidades reconocen `dark-corporate` para evitar que el tema cambie de forma inesperada al navegar.
+- Alcance: no cambia backend, endpoints, tablas, permisos ni dependencias.

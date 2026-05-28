@@ -50,6 +50,19 @@ html[data-theme="dark-emerald"] {
   --game-warn-soft: #fff7cc;
 }
 
+html[data-theme="dark-corporate"] {
+  --game-bg: #071525;
+  --game-bg-alt: #0d2036;
+  --game-surface: #122b47;
+  --game-surface-soft: #19395b;
+  --game-border: rgba(169, 190, 213, 0.18);
+  --game-text: #f1f7ff;
+  --game-muted: #a9bed5;
+  --game-accent: #3e9ef0;
+  --game-warn: #ffd58a;
+  --game-warn-soft: #ffe7b5;
+}
+
 html[data-theme="dark-neon"] {
   --game-bg: #050614;
   --game-bg-alt: #0b1024;

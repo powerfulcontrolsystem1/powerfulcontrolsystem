@@ -3,9 +3,12 @@
     dark: true,
     "dark-violet": true,
     "dark-emerald": true,
+    "dark-corporate": true,
+    "dark-neon": true,
     light: true,
     "light-rose": true,
-    "light-gold": true
+    "light-gold": true,
+    "light-wood": true
   };
 
   function normalizeTheme(theme) {

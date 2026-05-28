@@ -475,6 +475,32 @@ html[data-theme="dark-emerald"] {
   --ambient-glow: rgba(36,210,154,0.2);
 }
 
+/* Tema Oscuro Corporativo (azul sobrio del menu movil) */
+html[data-theme="dark-corporate"] {
+  --bg: #071525;
+  --bg-alt: #0d2036;
+  --surface: #122b47;
+  --surface-soft: #19395b;
+  --card: #20486d;
+  --input-bg: #0b1d31;
+  --input-bg-soft: #10263f;
+  --muted: #a9bed5;
+  --text: #f1f7ff;
+  --accent: #3e9ef0;
+  --accent-2: #19a7a6;
+  --danger: #ff6b6b;
+  --success: #35c27a;
+  --border: rgba(169,190,213,0.28);
+  --focus: rgba(62,158,240,0.3);
+  --accent-yellow: #ffd58a;
+  --accent-yellow-light: #ffe7b5;
+  --form-surface-top: #163555;
+  --form-surface-bottom: #1f4d79;
+  --form-border: rgba(105,179,244,0.34);
+  --form-input-bg: #0a1c2f;
+  --ambient-glow: rgba(62,158,240,0.22);
+}
+
 .pcs-section-submenu{
   display:flex;
   flex-wrap:wrap;
@@ -1025,6 +1051,7 @@ html[data-theme="light-wood"] {
 html[data-theme="dark"],
 html[data-theme="dark-violet"],
 html[data-theme="dark-emerald"],
+html[data-theme="dark-corporate"],
 html[data-theme="dark-neon"] {
   --btn-primary-top: #2a9af7;
   --btn-primary-text: #f7fbff;
@@ -3191,6 +3218,7 @@ html[data-theme="light-wood"] .login-usuario-page{
 html[data-theme="dark"] .login-usuario-page,
 html[data-theme="dark-violet"] .login-usuario-page,
 html[data-theme="dark-emerald"] .login-usuario-page,
+html[data-theme="dark-corporate"] .login-usuario-page,
 html[data-theme="dark-neon"] .login-usuario-page{
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 18%, transparent), transparent 36%),
@@ -3206,10 +3234,12 @@ html[data-theme="dark-neon"] .login-usuario-page{
 html[data-theme="dark"] .login-usuario-page .card,
 html[data-theme="dark-violet"] .login-usuario-page .card,
 html[data-theme="dark-emerald"] .login-usuario-page .card,
+html[data-theme="dark-corporate"] .login-usuario-page .card,
 html[data-theme="dark-neon"] .login-usuario-page .card,
 html[data-theme="dark"] .login-theme-control,
 html[data-theme="dark-violet"] .login-theme-control,
 html[data-theme="dark-emerald"] .login-theme-control,
+html[data-theme="dark-corporate"] .login-theme-control,
 html[data-theme="dark-neon"] .login-theme-control{
   background:color-mix(in srgb, var(--surface) 94%, black 6%);
   border-color:color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
@@ -3266,6 +3296,7 @@ html[data-theme="light-wood"] .login-usuario-contract-version{
 html[data-theme="dark"] .login-usuario-contract,
 html[data-theme="dark-violet"] .login-usuario-contract,
 html[data-theme="dark-emerald"] .login-usuario-contract,
+html[data-theme="dark-corporate"] .login-usuario-contract,
 html[data-theme="dark-neon"] .login-usuario-contract{
   background:linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, var(--accent) 10%), color-mix(in srgb, var(--surface) 96%, black 4%));
   border-color:color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
@@ -3273,6 +3304,7 @@ html[data-theme="dark-neon"] .login-usuario-contract{
 html[data-theme="dark"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-violet"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-emerald"] .login-usuario-modal .modal__panel,
+html[data-theme="dark-corporate"] .login-usuario-modal .modal__panel,
 html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
   background:var(--surface);
   color:var(--text);
@@ -4236,6 +4268,24 @@ body.super-page{
     box-shadow: none;
     border: 1px solid var(--border);
     background: var(--input-bg);
+  }
+  html[data-theme="light"] .floating-menu .fm-toggle,
+  html[data-theme="light"] .floating-menu .fm-panel,
+  html[data-theme="light"] .floating-menu .fm-submenu,
+  html[data-theme="light"] .floating-menu .fm-submenu-popup,
+  html[data-theme="light"] .theme-selector-popup {
+    background: linear-gradient(180deg, var(--surface), var(--surface-soft));
+    border-color: rgba(15,35,64,0.16);
+    color: var(--text);
+    box-shadow: 0 12px 24px rgba(15,35,64,0.14);
+  }
+  html[data-theme="light"] .floating-menu .fm-submenu-toggle,
+  html[data-theme="light"] .floating-menu .fm-item,
+  html[data-theme="light"] .theme-option {
+    color: var(--text);
+  }
+  html[data-theme="light"] .floating-menu #themeToggle {
+    color: var(--accent);
   }
 }
 .floating-menu .fm-country{cursor:default;background:var(--surface-soft);border:1px solid var(--border)}

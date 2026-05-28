@@ -13,7 +13,7 @@
         try { t = window.localStorage.getItem("theme") || ""; } catch (e) {}
         if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
         t = String(t || "").trim().toLowerCase();
-        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, light: 1, "light-rose": 1, "light-gold": 1 };
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-corporate": 1, "dark-neon": 1, light: 1, "light-rose": 1, "light-gold": 1, "light-wood": 1 };
         if (!ok[t]) t = "dark";
         document.documentElement.setAttribute("data-theme", t);
         document.documentElement.classList.toggle("theme-light", t.indexOf("light") === 0);
@@ -89,16 +89,35 @@
     }
     .module-preview-feature-list {
       margin: 6px 0 0;
-      padding-left: 20px;
+      padding-left: 0;
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 3px 12px;
-      list-style: disc;
+      list-style: none;
       line-height: 1.4;
     }
-    .module-preview-feature-list li::marker {
-      color: #111827;
-      font-size: 1.08em;
+    .module-preview-feature-list li {
+      position: relative;
+      padding-left: 16px;
+      color: color-mix(in srgb, var(--text) 78%, var(--muted) 22%);
+      overflow-wrap: anywhere;
+    }
+    .module-preview-feature-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .72em;
+      width: .52em;
+      height: .52em;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+      transform: translateY(-50%);
+    }
+    html[data-theme^="dark"] .module-preview-feature-list li::before,
+    html.theme-dark .module-preview-feature-list li::before {
+      background: color-mix(in srgb, var(--accent-yellow, #fbbf24) 74%, var(--text) 26%);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-yellow, #fbbf24) 20%, transparent);
     }
     @media (max-width: 920px) {
       .modules-editor-layout { grid-template-columns: 1fr; }
