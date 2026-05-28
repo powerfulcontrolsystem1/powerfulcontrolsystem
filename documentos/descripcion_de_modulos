@@ -1,3 +1,9 @@
+2026-05-28: Bandeja de correo visible en panel empresarial
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`, `backend_db`.
+- Cambio funcional: `web/administrar_empresa/panel.html` ya no oculta por completo la tarjeta de correo cuando el modulo esta desactivado, falta el buzon o falla la consulta; ahora muestra el estado operativo debajo de Favoritos.
+- Backend: `/api/empresa/email_corporativo` recibe tambien la base empresarial y, si la empresa antigua no tiene fila de correo y la autocreacion esta activa, genera el email corporativo al consultar el panel.
+- UX: el boton `Actualizar estado` vuelve a consultar el endpoint, `Abrir buzón` queda disponible solo cuando hay URL de webmail y el visor integrado se muestra solo cuando el modulo esta activo.
+
 2026-05-28: Bandeja de correo corporativo en panel empresarial
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
 - Cambio funcional: la tarjeta bajo Favoritos en `web/administrar_empresa/panel.html` se convierte en `Bandeja de correo corporativo`.

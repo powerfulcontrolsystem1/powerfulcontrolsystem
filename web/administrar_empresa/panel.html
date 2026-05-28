@@ -686,6 +686,12 @@
       color: var(--text);
     }
 
+    .empresa-email-button.is-disabled {
+      opacity: .58;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
     .empresa-email-button:hover,
     .empresa-email-button:focus-visible {
       border-color: color-mix(in srgb, var(--accent, #2563eb) 64%, var(--border));
@@ -700,6 +706,10 @@
       border-radius: 8px;
       border: 1px solid var(--border);
       background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
+    }
+
+    .empresa-email-embed.is-hidden {
+      display: none;
     }
 
     .empresa-email-frame {
@@ -1319,7 +1329,7 @@
         </div>
         <div class="empresa-email-actions" aria-label="Acciones del correo corporativo">
           <button id="empresaEmailReload" class="empresa-email-button secondary" type="button">
-            <img src="/img/analytics-color.svg" alt="" width="20" height="20"> Actualizar
+            <img src="/img/analytics-color.svg" alt="" width="20" height="20"> Actualizar estado
           </button>
           <a id="empresaEmailLink" class="empresa-email-button" href="#" target="_blank" rel="noopener">
             <img src="/img/network-color.svg" alt="" width="22" height="22"> Abrir buzón
@@ -1352,6 +1362,7 @@
       var empresaEmailMetaEl = document.getElementById("empresaEmailMeta");
       var empresaEmailLinkEl = document.getElementById("empresaEmailLink");
       var empresaEmailFrameEl = document.getElementById("empresaEmailFrame");
+      var empresaEmailEmbedEl = document.querySelector(".empresa-email-embed");
       var empresaEmailReloadEl = document.getElementById("empresaEmailReload");
       var weatherGpsBtn = document.getElementById("weatherGpsBtn");
       var weatherManualToggle = document.getElementById("weatherManualToggle");
@@ -1451,6 +1462,27 @@
         var current = empresaEmailFrameEl.getAttribute("src") || "";
         if (!current) return;
         empresaEmailFrameEl.setAttribute("src", current);
+      }
+
+      function setEmpresaEmailLink(webmail, enabled) {
+        if (!empresaEmailLinkEl) return;
+        var href = text(webmail);
+        if (href && href !== "#") {
+          empresaEmailLinkEl.href = href;
+          empresaEmailLinkEl.classList.remove("is-disabled");
+          empresaEmailLinkEl.removeAttribute("aria-disabled");
+          empresaEmailLinkEl.title = "Abrir webmail de la empresa";
+          return;
+        }
+        empresaEmailLinkEl.href = "#";
+        empresaEmailLinkEl.classList.add("is-disabled");
+        empresaEmailLinkEl.setAttribute("aria-disabled", "true");
+        empresaEmailLinkEl.title = enabled ? "Webmail pendiente de configurar" : "Modulo de correo corporativo desactivado";
+      }
+
+      function setEmpresaEmailEmbedVisible(visible) {
+        if (empresaEmailEmbedEl) empresaEmailEmbedEl.classList.toggle("is-hidden", !visible);
+        if (!visible && empresaEmailFrameEl) empresaEmailFrameEl.src = "about:blank";
       }
 
       function renderMaintenanceNotice(data) {
@@ -1626,31 +1658,56 @@
         fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId))
           .then(function (data) {
             var account = data && data.account;
-            if (!data || !data.enabled || !account || !account.email) {
-              empresaEmailPanelEl.hidden = true;
-              if (empresaEmailFrameEl) empresaEmailFrameEl.src = "about:blank";
+            var webmail = account && account.webmail_url ? account.webmail_url : (data && data.webmail ? data.webmail : "");
+            var enabled = !!(data && data.enabled);
+            if (!data || !data.ok) {
+              empresaEmailAddressEl.textContent = "Correo corporativo";
+              empresaEmailMetaEl.textContent = "No se pudo consultar el estado del buzon. Presiona Actualizar estado para intentar nuevamente.";
+              setEmpresaEmailLink("", false);
+              setEmpresaEmailEmbedVisible(false);
+              empresaEmailPanelEl.hidden = false;
               return;
             }
-            var webmail = account.webmail_url || data.webmail || "#";
+            if (!account || !account.email) {
+              empresaEmailAddressEl.textContent = "Correo corporativo pendiente";
+              empresaEmailMetaEl.textContent = enabled
+                ? "El modulo esta activo, pero esta empresa aun no tiene buzon generado. Actualiza el estado o sincroniza las empresas desde Super administrador > Email corporativo."
+                : "El modulo global de email corporativo esta desactivado. Activalo desde Super administrador > Email corporativo para crear y abrir buzones por empresa.";
+              setEmpresaEmailLink(webmail, enabled);
+              setEmpresaEmailEmbedVisible(false);
+              empresaEmailPanelEl.hidden = false;
+              return;
+            }
             var inboxURL = buildEmailInboxURL(webmail);
             empresaEmailAddressEl.textContent = account.email;
-            empresaEmailMetaEl.textContent = account.estado_provision === "provisionado"
-              ? "Buzon activo. Aqui puedes revisar, abrir y leer los mensajes de la empresa."
-              : "Buzon generado, pendiente de provision en iRedMail. Cuando este activo, aqui se vera la bandeja.";
-            empresaEmailLinkEl.href = webmail || "#";
-            if (empresaEmailFrameEl) {
+            if (!enabled) {
+              empresaEmailMetaEl.textContent = "Correo generado, pero el modulo global esta desactivado. Activalo para usar la bandeja empresarial.";
+            } else if (account.estado_provision === "provisionado") {
+              empresaEmailMetaEl.textContent = "Buzon activo. Aqui puedes revisar, abrir y leer los mensajes de la empresa.";
+            } else {
+              empresaEmailMetaEl.textContent = "Buzon generado, pendiente de provision en iRedMail. Cuando este activo, aqui se vera la bandeja.";
+            }
+            setEmpresaEmailLink(webmail, enabled);
+            setEmpresaEmailEmbedVisible(!!(enabled && inboxURL));
+            if (enabled && empresaEmailFrameEl) {
               empresaEmailFrameEl.src = inboxURL || "about:blank";
             }
             empresaEmailPanelEl.hidden = false;
           })
           .catch(function () {
-            empresaEmailPanelEl.hidden = true;
-            if (empresaEmailFrameEl) empresaEmailFrameEl.src = "about:blank";
+            empresaEmailAddressEl.textContent = "Correo corporativo";
+            empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Revisa la conexion o actualiza el estado.";
+            setEmpresaEmailLink("", false);
+            setEmpresaEmailEmbedVisible(false);
+            empresaEmailPanelEl.hidden = false;
           });
       }
 
       if (empresaEmailReloadEl) {
-        empresaEmailReloadEl.addEventListener("click", reloadEmpresaEmailFrame);
+        empresaEmailReloadEl.addEventListener("click", function () {
+          loadEmpresaEmail();
+          reloadEmpresaEmailFrame();
+        });
       }
 
       function resolveWeatherLocation(admin) {

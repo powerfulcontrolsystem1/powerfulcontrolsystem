@@ -1,3 +1,10 @@
+2026-05-28: Bandeja de correo siempre visible en panel empresarial.
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`, `backend_db`.
+- Motivo: el panel podia ocultar por completo la tarjeta de correo corporativo cuando el modulo global estaba desactivado, la empresa aun no tenia buzon generado o la consulta fallaba.
+- Cambio funcional: la tarjeta bajo Favoritos ahora muestra estado claro de `Correo corporativo`, `Correo corporativo pendiente` o el email real de la empresa, sin desaparecer silenciosamente.
+- Backend: `/api/empresa/email_corporativo` puede crear la fila de correo para empresas existentes al consultar el panel si `email_corporativo.auto_create` esta activo.
+- Seguridad: no se exponen claves iniciales ni secretos del buzon; el acceso al endpoint mantiene validacion empresarial y `empresa_id`.
+
 2026-05-28: Email corporativo iRedMail por empresa.
 - Modulos afectados: `super_administrador`, `administrar_empresa`, `empresas`, `comunicaciones`, `VPS/Docker`.
 - Cambio funcional: se agrega el modulo `Email corporativo` en super administrador para activar/desactivar el servicio, configurar dominio, webmail, cuota, modo manual o iRedAdmin-Pro API y guardar credenciales cifradas.

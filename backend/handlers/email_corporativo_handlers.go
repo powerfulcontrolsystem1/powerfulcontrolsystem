@@ -515,7 +515,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
-func EmpresaEmailCorporativoHandler(dbSuper *sql.DB) http.HandlerFunc {
+func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -530,12 +530,47 @@ func EmpresaEmailCorporativoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
+				if cfg.AutoCreate && dbEmp != nil {
+					if empresa, empresaErr := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); empresaErr == nil && empresa != nil {
+						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
+							account = created
+						} else {
+							writeJSON(w, http.StatusOK, map[string]interface{}{
+								"ok":          true,
+								"enabled":     cfg.Enabled,
+								"auto_create": cfg.AutoCreate,
+								"account":     nil,
+								"webmail":     cfg.WebmailURL,
+								"domain":      cfg.Domain,
+								"message":     "No se pudo generar el email corporativo",
+							})
+							return
+						}
+					}
+				}
+				if account != nil {
+					if account.WebmailURL == "" {
+						account.WebmailURL = cfg.WebmailURL
+					}
+					writeJSON(w, http.StatusOK, map[string]interface{}{
+						"ok":          true,
+						"enabled":     cfg.Enabled,
+						"auto_create": cfg.AutoCreate,
+						"account":     account,
+						"webmail":     account.WebmailURL,
+						"domain":      cfg.Domain,
+						"message":     "Email corporativo generado",
+					})
+					return
+				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
-					"ok":      true,
-					"enabled": cfg.Enabled,
-					"account": nil,
-					"webmail": cfg.WebmailURL,
-					"message": "Sin email corporativo generado",
+					"ok":          true,
+					"enabled":     cfg.Enabled,
+					"auto_create": cfg.AutoCreate,
+					"account":     nil,
+					"webmail":     cfg.WebmailURL,
+					"domain":      cfg.Domain,
+					"message":     "Sin email corporativo generado",
 				})
 				return
 			}
@@ -546,10 +581,12 @@ func EmpresaEmailCorporativoHandler(dbSuper *sql.DB) http.HandlerFunc {
 			account.WebmailURL = cfg.WebmailURL
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"ok":      true,
-			"enabled": cfg.Enabled,
-			"account": account,
-			"webmail": account.WebmailURL,
+			"ok":          true,
+			"enabled":     cfg.Enabled,
+			"auto_create": cfg.AutoCreate,
+			"account":     account,
+			"webmail":     account.WebmailURL,
+			"domain":      cfg.Domain,
 		})
 	}
 }
