@@ -322,13 +322,19 @@
       function testIredAdmin() {
         setStatus("Probando iRedAdmin...");
         requestJSON("/super/api/email_corporativo?action=test_iredadmin", { method: "POST" })
-          .then(function () {
-            setStatus("iRedAdmin acepto las credenciales guardadas.");
-            return load();
+          .then(function (data) {
+            return load().then(function () {
+              if (data && data.ok) {
+                setStatus("iRedAdmin acepto las credenciales guardadas.");
+              } else {
+                setStatus("iRedAdmin rechazo la configuracion: " + ((data && data.error) || (data && data.status) || "validacion fallida"), true);
+              }
+            });
           })
           .catch(function (err) {
-            setStatus("iRedAdmin rechazo la configuracion: " + (err.message || String(err)), true);
-            load();
+            return load().then(function () {
+              setStatus("iRedAdmin rechazo la configuracion: " + (err.message || String(err)), true);
+            });
           });
       }
 

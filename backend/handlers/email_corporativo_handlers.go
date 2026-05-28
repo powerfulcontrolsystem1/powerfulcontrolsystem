@@ -614,11 +614,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if action == "test_iredadmin" {
 				result := testCorporateEmailIredAdminLogin(dbSuper, getCorporateEmailConfig(dbSuper))
-				statusCode := http.StatusOK
-				if !result.OK {
-					statusCode = http.StatusBadGateway
-				}
-				writeJSON(w, statusCode, result)
+				writeJSON(w, http.StatusOK, result)
 				return
 			}
 			if action == "provision" {
