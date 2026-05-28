@@ -10915,3 +10915,31 @@ Archivos modificados:
 - documentos/diagramas/estructura_del_codigo.md
 - documentos/historial_de_cambios
 - documentos/matriz_roles_permisos_pos_multiempresa.md
+
+2026-05-27 20:25:50 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 057903ef; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/admin_principal_delegaciones.go
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/db.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/empresa_compartida_handlers.go
+- backend/handlers/selector_admin_scope_test.go
+- backend/handlers/super_email_templates.go
+- backend/handlers/system_empresas_handlers.go
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/js/registrar_nuevo_usuario_administrador.js
+- web/js/seleccionar_empresa.js
+- web/super/administradores.html
