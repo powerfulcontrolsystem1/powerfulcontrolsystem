@@ -1460,7 +1460,7 @@ function Invoke-PuttySync {
   $mkdirCmd = "mkdir -p '$RemotePath'"
   $extractTarFlag = if ($UseCompression) { "-xzf" } else { "-xf" }
   $cleanBackendSourceCmd = "if [ -d '$RemotePath/backend' ]; then find '$RemotePath/backend' -mindepth 1 -maxdepth 1 ! -name '.env' ! -name '.env.local' ! -name 'logs' ! -name 'bin' ! -name 'tmp' ! -name 'secure' -exec rm -rf {} +; fi"
-  $extractCmd = "mkdir -p '$RemotePath' && $cleanBackendSourceCmd && tar $extractTarFlag '$remoteArchive' -C '$RemotePath' && rm -f '$remoteArchive'"
+  $extractCmd = "mkdir -p '$RemotePath' && $cleanBackendSourceCmd && if tar --version 2>/dev/null | grep -qi 'GNU tar'; then tar --warning=no-unknown-keyword $extractTarFlag '$remoteArchive' -C '$RemotePath'; else tar $extractTarFlag '$remoteArchive' -C '$RemotePath'; fi && rm -f '$remoteArchive'"
   if (-not [string]::IsNullOrWhiteSpace($ExecRelativePath)) {
     $remoteExecPath = ($RemotePath.TrimEnd('/') + "/" + $ExecRelativePath.TrimStart('/'))
     $extractCmd += " && if [ -f '$remoteExecPath' ]; then chmod +x '$remoteExecPath'; fi"
