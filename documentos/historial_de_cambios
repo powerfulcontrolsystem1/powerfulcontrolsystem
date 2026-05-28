@@ -27856,6 +27856,21 @@ Archivos modificados:
 - Analitica: conserva seleccion multiple de empresas y muestra KPIs, graficos comparativos, lectura ejecutiva, resumen por empresa y detalle del dataset elegido.
 - QA: `node --check web/js/super_reportes_globales.js`, `git diff --check` y prueba visual Playwright con datos simulados validando graficos, exportacion PDF, impresion y vista movil sin desbordamiento horizontal.
 
+2026-05-27: Reportes globales limitados al alcance visible del selector
+- Modulos afectados: `seleccionar_empresa`, `super_administrador`, `reportes_globales`, `seguridad_multiempresa`.
+- Archivos modificados:
+  - `backend/handlers/reportes_globales.go`
+  - `backend/handlers/reportes_globales_scope_test.go`
+  - `documentos/mapa_modulos.md`
+  - `documentos/descripcion_de_modulos`
+  - `documentos/descripcion_del_proyecto`
+  - `documentos/descripcion_de_archivos`
+  - `documentos/CHANGELOG.md`
+  - `CHANGELOG.md`
+- Cambio funcional: Reportes globales elimina la excepcion que devolvia todas las empresas por rol super y ahora usa el mismo alcance efectivo del selector: propias, delegadas o compartidas.
+- Seguridad: si una empresa no aparece en `seleccionar_empresa.html`, tampoco puede aparecer en el catalogo, tablero, dataset, exportacion o email de reportes globales.
+- QA: `go test ./handlers -run "TestSuperReportesGlobales" -count=1`.
+
 2026-05-27: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

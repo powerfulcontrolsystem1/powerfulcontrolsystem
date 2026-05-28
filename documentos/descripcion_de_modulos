@@ -3176,3 +3176,9 @@ Captura inteligente de compras y gastos
 - Cambio funcional: `web/super/reportes_globales.html` queda enfocado en fecha desde/hasta, selector de reporte disponible, formato y acciones directas Ver, Exportar, Imprimir y Enviar por email.
 - Analitica: la seleccion multiple de empresas se mantiene en tarjeta propia y el resultado muestra KPIs consolidados, graficos por empresa, lectura ejecutiva, resumen por empresa y detalle del dataset elegido.
 - Backend: no cambia el contrato ni permisos; se reutiliza `/super/api/reportes_globales` con formatos PDF, XLS, CSV, TXT y JSON.
+
+2026-05-27: Reportes globales con alcance del selector
+- Modulos afectados: `seleccionar_empresa`, `super_administrador`, `reportes_globales`, `seguridad_multiempresa`.
+- Cambio funcional: `/super/api/reportes_globales` ahora arma su catalogo de empresas con la misma regla que `/super/api/empresas`, es decir, solo empresas propias, delegadas o compartidas visibles para el administrador autenticado.
+- Seguridad: se elimina la excepcion que permitia devolver todas las empresas por rol super dentro de reportes globales; cualquier `empresa_id` fuera del alcance sigue rechazado antes de construir tablero, dataset, exportacion o email.
+- QA: prueba unitaria `TestSuperReportesGlobales*` para validar que el modulo no liste empresas ajenas y que conserve empresas delegadas del selector.

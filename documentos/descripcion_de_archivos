@@ -9982,3 +9982,10 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Agrega estilos de barra de control, responsive movil y reglas de impresion para reportes globales.
 - `documentos/mapa_modulos.md`:
 	- Registra la ubicacion rapida de Reportes globales super.
+
+2026-05-27 - Alcance de reportes globales igual al selector
+- `backend/handlers/reportes_globales.go`:
+	- Resuelve el alcance del administrador autenticado con `resolveRequesterAdminScope` y filtra empresas mediante `decorateEmpresasByEffectiveAccess`.
+	- Elimina la excepcion que listaba todas las empresas cuando el correo tenia rol super.
+- `backend/handlers/reportes_globales_scope_test.go`:
+	- Agrega pruebas para confirmar que reportes globales solo devuelve empresas visibles para el selector y conserva empresas delegadas.

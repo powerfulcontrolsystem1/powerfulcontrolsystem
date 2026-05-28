@@ -1,3 +1,8 @@
+## [2026-05-27] Reportes globales con alcance del selector
+- [Seguridad] `/super/api/reportes_globales` deja de usar una excepcion global por rol super y ahora reutiliza el alcance efectivo del selector de empresas.
+- [Alcance] El catalogo, tablero, datasets y exportaciones solo pueden usar empresas propias, delegadas o compartidas que el administrador autenticado ve en `seleccionar_empresa.html`.
+- [QA] `go test ./handlers -run "TestSuperReportesGlobales" -count=1`.
+
 ## [2026-05-27] Reportes globales profesionales en selector de empresas
 - [UX] `web/super/reportes_globales.html` queda enfocado en fecha desde/hasta, reporte disponible, formato y acciones directas: Ver, Exportar, Imprimir y Enviar por email.
 - [Analitica] La vista conserva seleccion multiple de empresas y muestra KPIs, graficos por empresa, lectura ejecutiva, resumen por empresa y detalle del reporte seleccionado.
