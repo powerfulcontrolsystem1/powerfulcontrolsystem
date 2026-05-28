@@ -27960,3 +27960,21 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 Cambio funcional: `/manifest.webmanifest` y `/sw.js` quedan accesibles sin sesion para que el boton `Instalar app` pueda activar el flujo nativo del navegador. `index.html` usa el mismo icono PWA que `login.html`.
 Verificacion: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; prueba visual en `login.html` simulando `beforeinstallprompt` y clic en `Instalar app`; prueba visual de `index.html` validando favicon, apple icon, manifest y logo visible.
+
+2026-05-27: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/system_empresas_export.go
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/estilos.css
+- web/index.html
+- web/js/descargar_informacion_de_la_empresa.js
+- web/login.html
