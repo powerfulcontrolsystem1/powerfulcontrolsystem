@@ -11295,3 +11295,8 @@ Archivos modificados:
 Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
 - web/super/email_corporativo.html
+
+2026-05-28 18:49:22 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6d9c73dd; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- web/super/email_corporativo.html

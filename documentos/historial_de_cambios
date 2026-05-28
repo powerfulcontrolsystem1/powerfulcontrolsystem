@@ -28457,3 +28457,9 @@ PushStatus: OK
 Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
 - web/super/email_corporativo.html
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- web/super/email_corporativo.html
