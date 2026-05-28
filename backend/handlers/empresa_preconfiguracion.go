@@ -217,6 +217,24 @@ func applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper *sql.DB, empresaID, tipoEmp
 		Estado:         "activo",
 		Observaciones:  empresaPreconfigMarker + " contexto guia para IA",
 	})
+	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          chatFlotanteRobotEnabledKey,
+		Valor:          chatFlotanteBoolValue(template.Asistente.RobotEnabled),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " robot IA apagado por defecto desde preconfiguracion",
+	})
+	_, _ = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          chatFlotanteRadioOnlineEnabledKey,
+		Valor:          chatFlotanteBoolValue(template.Asistente.RadioOnlineEnabled),
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  empresaPreconfigMarker + " emisora online apagada por defecto desde preconfiguracion",
+	})
 
 	metaRaw, _ := json.Marshal(map[string]any{
 		"tipo_empresa_id":     tipoEmpresaID,

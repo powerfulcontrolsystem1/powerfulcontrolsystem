@@ -229,7 +229,7 @@
             </div>
             <label class="form-label" for="instruccionesText">Instrucciones para la IA</label>
             <textarea id="instruccionesText" class="form-textarea" rows="5" spellcheck="false"></textarea>
-            <div class="form-help">Una instrucción por línea. Este contexto se guarda en la base de datos de la empresa para que la IA lo use como guía operativa.</div>
+            <div class="form-help">Una instrucción por línea. Este contexto se guarda en la base de datos de la empresa para que la IA lo use como guía operativa. Robot IA 3D y emisora online quedan apagados por defecto; cada empresa los activa manualmente desde su configuración.</div>
           </section>
 
           <section class="preconfig-section">
@@ -696,6 +696,8 @@
           usuarios: parseUsuarios(),
           asistente_ia: {
             enabled: !!document.getElementById('asistenteEnabled').checked,
+            robot_enabled: false,
+            radio_online_enabled: false,
             rol: document.getElementById('asistenteRol').value.trim(),
             instrucciones: parseInstrucciones()
           },

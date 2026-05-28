@@ -111,6 +111,8 @@ botones, desde handlers estaticos del backend.
   `empresa_id`; no deben prenderse por configuracion global ni por
   `localStorage` viejo. Mientras el proyecto siga en preproduccion, el arranque
   puede limpiar preferencias antiguas encendidas para dejar el default en cero.
+  Las preconfiguraciones por tipo tambien deben guardar/aplicar
+  `asistente_ia.robot_enabled=false` y `asistente_ia.radio_online_enabled=false`.
 
 ## Flujo de login
 

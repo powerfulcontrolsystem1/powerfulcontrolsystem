@@ -160,6 +160,7 @@
 - `web/js/radio_player.js`: reproductor flotante del shell empresarial; carga preferencias de empresa, detecta pais desde facturacion/IP y permite escuchar, agregar o eliminar emisoras personalizadas.
 - `web/js/radio_online.js`: pagina de configuracion/operacion de emisora; usa el mismo catalogo y sincroniza los cambios con el reproductor padre.
 - Flujo de capas: Shell/Pagina radio -> `/api/chat_flotante/preferencias` -> `empresa_estacion_prefs` -> catalogo PA/EC + emisoras personalizadas -> reproductor compacto.
+- Default preproduccion 2026-05-28: `backend/db/tipo_empresa_preconfiguracion.go` normaliza las plantillas con robot y emisora apagados; `backend/handlers/empresa_preconfiguracion.go` aplica `chat_flotante.robot_enabled=0` y `chat_flotante.radio_online_enabled=0` al crear/configurar empresas desde preconfiguracion.
 
 ## Actualizacion 2026-05-21 (recetas de productos)
 

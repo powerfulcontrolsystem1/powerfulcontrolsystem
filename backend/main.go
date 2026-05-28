@@ -811,6 +811,10 @@ func main() {
 			log.Printf("INFO: nuevos verticales verificados: tipos=%d licencias=%d", tipos, licencias)
 		}
 		startupTrace("after_ensure_nuevos_verticales_tipo_licencias")
+		if err := dbpkg.DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
+			log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
+		}
+		startupTrace("after_preconfig_robot_radio_defaults")
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}

@@ -112,9 +112,11 @@ type TipoEmpresaPreconfigUsuario struct {
 }
 
 type TipoEmpresaPreconfigAsistenteIA struct {
-	Enabled       bool     `json:"enabled"`
-	Rol           string   `json:"rol,omitempty"`
-	Instrucciones []string `json:"instrucciones,omitempty"`
+	Enabled            bool     `json:"enabled"`
+	RobotEnabled       bool     `json:"robot_enabled"`
+	RadioOnlineEnabled bool     `json:"radio_online_enabled"`
+	Rol                string   `json:"rol,omitempty"`
+	Instrucciones      []string `json:"instrucciones,omitempty"`
 }
 
 type TipoEmpresaPreconfigTareaGuia struct {
@@ -1744,6 +1746,60 @@ func MarshalTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) 
 	return string(raw), nil
 }
 
+func DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
+		return err
+	}
+	return ApplySchemaMigration(dbConn, "super", "20260528_preconfig_robot_radio_off_default", "Normaliza preconfiguraciones con robot y emisora apagados por defecto", func(tx *sql.DB) error {
+		rows, err := querySQLCompat(tx, `SELECT id, COALESCE(config_json, '') FROM tipo_empresa_preconfiguraciones`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		type item struct {
+			id   int64
+			json string
+		}
+		items := []item{}
+		for rows.Next() {
+			var row item
+			if err := rows.Scan(&row.id, &row.json); err != nil {
+				return err
+			}
+			items = append(items, row)
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, row := range items {
+			template, err := ParseTipoEmpresaPreconfigTemplate(row.json)
+			if err != nil {
+				continue
+			}
+			template.Asistente.RobotEnabled = false
+			template.Asistente.RadioOnlineEnabled = false
+			nextRaw, err := MarshalTipoEmpresaPreconfigTemplate(template)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(nextRaw) == strings.TrimSpace(row.json) {
+				continue
+			}
+			if _, err := execSQLCompat(tx, `
+				UPDATE tipo_empresa_preconfiguraciones
+				SET config_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = 'sistema.preproduccion'
+				WHERE id = ?
+			`, nextRaw, row.id); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate) TipoEmpresaPreconfigTemplate {
 	template.Operacion.TipoNegocio = strings.ToLower(strings.TrimSpace(template.Operacion.TipoNegocio))
 	template.Operacion.NombreEstacionSingular = strings.TrimSpace(template.Operacion.NombreEstacionSingular)
@@ -1864,6 +1920,8 @@ func NormalizeTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 	}
 	template.Usuarios = usuarios
 	template.Asistente.Rol = strings.TrimSpace(template.Asistente.Rol)
+	template.Asistente.RobotEnabled = false
+	template.Asistente.RadioOnlineEnabled = false
 	if template.Asistente.Enabled && template.Asistente.Rol == "" {
 		template.Asistente.Rol = "Asistente guia para configuracion inicial, operacion diaria, auditoria y reportes."
 	}

@@ -2,6 +2,7 @@
 - Modulos afectados: `chat_flotante`, `radio_online`, `administrar_empresa`, `frontend_ux`.
 - Cambio funcional: en contexto empresarial, el robot/secretaria IA 3D y la emisora flotante quedan apagados si la empresa no tiene una preferencia explicita guardada. Ya no heredan un encendido global ni una preferencia vieja de `localStorage`; por estar en preproduccion, el arranque crea o actualiza en `0` estas preferencias para todas las empresas activas existentes.
 - Configuracion: `Configuracion > Configurar chat y robot` conserva los checks para activar chat, avatares IA 3D y emisora online por empresa. Restablecer el chat cuadrado mantiene robot y emisora apagados.
+- Preconfiguraciones: `tipo_empresa_preconfiguraciones.config_json.asistente_ia` normaliza `robot_enabled=false` y `radio_online_enabled=false`; al aplicar una plantilla a una empresa se escriben tambien `chat_flotante.robot_enabled=0` y `chat_flotante.radio_online_enabled=0`.
 - UX: el icono flotante de la emisora en `administrar_empresa.html` inicia oculto y solo aparece cuando `/api/chat_flotante/preferencias?empresa_id=...` responde `radio_online_enabled=true`; el avatar del robot solo aparece cuando `robot_enabled=true` y el modo avatar esta activo.
 - Alcance: no agrega tablas, endpoints ni dependencias; reutiliza `empresa_estacion_prefs` y conserva el chat flotante tradicional con su configuracion independiente.
 
