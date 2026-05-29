@@ -11345,3 +11345,8 @@ Archivos modificados:
 - deploy/scripts/vps-docker-preflight.sh
 - documentos/historial_de_cambios
 - scripts/sync_to_vps.ps1
+
+2026-05-28 19:23:46 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2d29bbb1; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-compose-sidecar-up.sh
+- deploy/scripts/vps-configure-iredmail-host-nginx.sh
