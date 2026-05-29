@@ -147,16 +147,22 @@ func corporateEmailAPIAdminPassword(dbSuper *sql.DB) (string, error) {
 func corporateEmailInternalURL(rawURL string, envKeys ...string) string {
 	rawURL = strings.TrimSpace(rawURL)
 	internalURL := firstNonEmptyEnv(envKeys...)
-	if strings.TrimSpace(internalURL) == "" {
-		return rawURL
-	}
 	parsed, err := url.Parse(rawURL)
 	if err != nil || parsed.Host == "" {
 		return rawURL
 	}
 	host := strings.ToLower(parsed.Hostname())
-	if host == "mail.powerfulcontrolsystem.com" || strings.HasPrefix(host, "mail.") {
-		return strings.TrimRight(strings.TrimSpace(internalURL), "/")
+	if strings.TrimSpace(internalURL) != "" && (host == "iredmail" || host == "mail.powerfulcontrolsystem.com" || strings.HasPrefix(host, "mail.")) {
+		internalURL = strings.TrimRight(strings.TrimSpace(internalURL), "/")
+		if internalParsed, parseErr := url.Parse(internalURL); parseErr == nil && strings.EqualFold(internalParsed.Hostname(), "iredmail") {
+			internalParsed.Scheme = "http"
+			return strings.TrimRight(internalParsed.String(), "/")
+		}
+		return internalURL
+	}
+	if host == "iredmail" && parsed.Scheme == "https" {
+		parsed.Scheme = "http"
+		return strings.TrimRight(parsed.String(), "/")
 	}
 	return rawURL
 }

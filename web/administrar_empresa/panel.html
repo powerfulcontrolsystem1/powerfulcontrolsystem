@@ -1588,7 +1588,13 @@
         if (lastError.indexOf("subdominio mail") >= 0 || lastError.indexOf("backend pos") >= 0) {
           return "El correo ya fue asignado, pero el subdominio mail esta entrando al POS y no al webmail iRedMail. Revisa el proxy de Email corporativo en super administrador.";
         }
-        if (status === "error_login") return "El correo ya fue asignado, pero iRedAdmin rechazo las credenciales de provision. Revisa la configuracion del modulo Email corporativo en super administrador.";
+        if (lastError.indexOf("api no esta disponible") >= 0 || lastError.indexOf("iredadmin-pro api") >= 0 || lastError.indexOf("not found") >= 0) {
+          return "El correo ya fue asignado y el webmail esta disponible. La creacion automatica del buzon requiere iRedAdmin-Pro API; activa esa API o cambia el modulo a provision manual.";
+        }
+        if (lastError.indexOf("certificate") >= 0 || lastError.indexOf("x509") >= 0 || lastError.indexOf("tls") >= 0) {
+          return "El correo ya fue asignado y el webmail esta disponible. La provision automatica necesita revisar la URL interna de iRedAdmin en Super administrador.";
+        }
+        if (status === "error_login") return "El correo ya fue asignado, pero no se pudo iniciar sesion contra iRedAdmin para crear el buzon real. Revisa URL, API y credenciales en Super administrador > Email corporativo.";
         if (status === "error_provision") return "El correo ya fue asignado, pero iRedMail rechazo la creacion del buzon. Reintenta la provision desde super administrador.";
         if (status === "pendiente_api") return "Falta configurar la URL, usuario o clave de iRedAdmin-Pro para crear el buzon real.";
         if (status === "pendiente_provision_manual" || status === "pendiente_provision" || status === "pendiente") return "El correo ya esta generado y falta provisionar el buzon real en iRedMail.";
