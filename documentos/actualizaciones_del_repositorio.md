@@ -11382,3 +11382,8 @@ Archivos modificados:
 - deploy/scripts/vps-docker-preflight.sh
 - documentos/historial_de_cambios
 - web/administrar_empresa/panel.html
+
+2026-05-28 20:15:57 - Mensaje: fix: diagnostico real de email corporativo iRedMail; Commit: 48b5ee0a; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- documentos/historial_de_cambios
