@@ -11361,3 +11361,13 @@ Archivos modificados:
 2026-05-28 19:32:31 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2ff337ff; PushStatus: OK
 Archivos modificados:
 - deploy/scripts/vps-configure-iredmail-host-nginx.sh
+
+2026-05-28 19:39:07 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 532b6a0c; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/docker_vps_operacion.md
+- documentos/email_corporativo_iredmail.md
+- documentos/historial_de_cambios

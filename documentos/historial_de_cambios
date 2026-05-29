@@ -28550,3 +28550,14 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - deploy/scripts/vps-configure-iredmail-host-nginx.sh
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/docker_vps_operacion.md
+- documentos/email_corporativo_iredmail.md
+- documentos/historial_de_cambios
