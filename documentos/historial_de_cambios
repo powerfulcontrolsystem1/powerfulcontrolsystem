@@ -5,6 +5,7 @@
 - Backend/Docker: las comprobaciones internas de webmail y provision iRedAdmin pueden usar `EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL` y `EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL` para entrar por la red Docker (`http://iredmail/...`) sin resolver el dominio publico al certificado interno del contenedor.
 - UX: el panel empresarial ya no presenta todos los fallos de iRedAdmin como "credenciales rechazadas"; diferencia webmail disponible, API iRedAdmin-Pro no disponible, TLS interno y error real de login.
 - Backend: para llamadas internas exclusivamente contra el host Docker `iredmail`, el cliente HTTP acepta el certificado interno del contenedor; la URL publica `mail.powerfulcontrolsystem.com` sigue validando TLS normal con Let's Encrypt.
+- Backend: si la instalacion no expone iRedAdmin-Pro REST API, la cuenta pasa a `pendiente_provision_manual` en vez de quedar como error de credenciales.
 - Seguridad: no se desactiva la validacion TLS del backend ni se imprimen secretos; se corrige la publicacion del certificado en el borde Nginx.
 
 2026-05-28: Proxy real de iRedMail para Email corporativo.

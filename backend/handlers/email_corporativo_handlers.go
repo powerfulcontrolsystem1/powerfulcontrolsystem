@@ -34,6 +34,8 @@ const (
 	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
 )
 
+var errIredAdminAPINotAvailable = errors.New("iRedAdmin-Pro API no esta disponible en la URL configurada")
+
 type CorporateEmailConfig struct {
 	Enabled        bool   `json:"enabled"`
 	AutoCreate     bool   `json:"auto_create"`
@@ -438,6 +440,10 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 	loginValues.Set("username", cfg.APIAdmin)
 	loginValues.Set("password", adminPassword)
 	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/login", loginValues); err != nil {
+		if errors.Is(err, errIredAdminAPINotAvailable) {
+			_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", errIredAdminAPINotAvailable.Error(), false)
+			return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: errIredAdminAPINotAvailable.Error()}
+		}
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_login", err.Error(), false)
 		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
 	}
@@ -483,7 +489,7 @@ func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Value
 			return fmt.Errorf("iRedAdmin no esta publicado: el subdominio mail esta respondiendo el backend POS")
 		}
 		if res.StatusCode == http.StatusNotFound && strings.Contains(endpoint, "/api/login") {
-			return fmt.Errorf("iRedAdmin-Pro API no esta disponible en la URL configurada")
+			return errIredAdminAPINotAvailable
 		}
 		if msg == "" {
 			msg = strings.TrimSpace(string(body))
@@ -644,6 +650,9 @@ func testCorporateEmailIredAdminLogin(dbSuper *sql.DB, cfg CorporateEmailConfig)
 	loginValues.Set("username", cfg.APIAdmin)
 	loginValues.Set("password", adminPassword)
 	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/login", loginValues); err != nil {
+		if errors.Is(err, errIredAdminAPINotAvailable) {
+			return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: errIredAdminAPINotAvailable.Error()}
+		}
 		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
 	}
 	return corporateEmailProvisionResult{OK: true, Status: "login_ok"}
