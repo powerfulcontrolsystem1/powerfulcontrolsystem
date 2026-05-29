@@ -11319,3 +11319,10 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - scripts/sync_to_vps.ps1
 - web/administrar_empresa/panel.html
+
+2026-05-28 19:13:52 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 17a0fb6c; PushStatus: OK
+Archivos modificados:
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/historial_de_cambios
