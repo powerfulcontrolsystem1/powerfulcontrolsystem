@@ -11306,3 +11306,16 @@ Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
 - documentos/historial_de_cambios
 - web/super/email_corporativo.html
+
+2026-05-28 19:09:34 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2958f738; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-compose-sidecar-up.sh
+- deploy/scripts/vps-configure-iredmail-host-nginx.sh
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- scripts/sync_to_vps.ps1
+- web/administrar_empresa/panel.html
