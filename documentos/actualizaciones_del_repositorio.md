@@ -11375,3 +11375,10 @@ Archivos modificados:
 2026-05-28 19:56:29 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ef999bc1; PushStatus: OK
 Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
+
+2026-05-28 20:02:14 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6080696e; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/historial_de_cambios
+- web/administrar_empresa/panel.html
