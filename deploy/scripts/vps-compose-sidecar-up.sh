@@ -26,6 +26,17 @@ get_env_value() {
   ' "$file"
 }
 
+upsert_env() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  if grep -qE "^[[:space:]]*$key=" "$file"; then
+    sed -i "s|^[[:space:]]*$key=.*|$key=$value|" "$file"
+  else
+    printf '%s=%s\n' "$key" "$value" >> "$file"
+  fi
+}
+
 test -f "$COMPOSE_FILE" || { echo "ERROR: no existe $COMPOSE_FILE"; exit 1; }
 test -f "$ENV_FILE" || { echo "ERROR: no existe $ENV_FILE. Ejecuta primero vps-docker-preflight.sh"; exit 1; }
 
@@ -38,6 +49,16 @@ compose_profiles=()
 if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$iredmail_enabled" = "1" ] || [ "$iredmail_enabled" = "true" ]; then
   compose_profiles+=(--profile mail)
   echo "[sidecar] Perfil mail activo: se levanta iRedMail junto al stack."
+  if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_BIND)" ] || [ "$(get_env_value "$ENV_FILE" IREDMAIL_BIND)" = "0.0.0.0" ]; then
+    upsert_env "$ENV_FILE" IREDMAIL_BIND "127.0.0.1"
+  fi
+  for pair in IREDMAIL_HTTP_PORT=8089 IREDMAIL_HTTPS_PORT=8449 IREDMAIL_SMTP_PORT=2525 IREDMAIL_POP3_PORT=8110 IREDMAIL_IMAP_PORT=8143 IREDMAIL_SMTPS_PORT=8465 IREDMAIL_SUBMISSION_PORT=8587 IREDMAIL_IMAPS_PORT=8993 IREDMAIL_POP3S_PORT=8995 IREDMAIL_SIEVE_PORT=8419; do
+    key="${pair%%=*}"
+    value="${pair#*=}"
+    if [ -z "$(get_env_value "$ENV_FILE" "$key")" ]; then
+      upsert_env "$ENV_FILE" "$key" "$value"
+    fi
+  done
 fi
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "${compose_profiles[@]}" up -d --build

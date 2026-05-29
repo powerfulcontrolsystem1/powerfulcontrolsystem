@@ -39,6 +39,7 @@ mail_domain="${mail_domain:-mail.powerfulcontrolsystem.com}"
 cert_name="${cert_name:-powerfulcontrolsystem.com}"
 http_port="${http_port:-8089}"
 https_port="${https_port:-8449}"
+wait_seconds="${IREDMAIL_PROXY_WAIT_SECONDS:-180}"
 
 if [ "$email_enabled" != "1" ] && [ "$email_enabled" != "true" ]; then
   echo "[iredmail-nginx] omitido: EMAIL_CORPORATIVO_ENABLED no esta activo"
@@ -50,7 +51,20 @@ if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-iredmail'; then
   exit 0
 fi
 
-if ! curl -kfsS "https://127.0.0.1:$https_port/" >/dev/null 2>&1; then
+ready=0
+attempts=$(( wait_seconds / 5 ))
+if [ "$attempts" -lt 6 ]; then
+  attempts=6
+fi
+for attempt in $(seq 1 "$attempts"); do
+  if curl -kfsS "https://127.0.0.1:$https_port/" >/dev/null 2>&1; then
+    ready=1
+    break
+  fi
+  echo "[iredmail-nginx] esperando iRedMail HTTPS 127.0.0.1:$https_port intento $attempt/$attempts"
+  sleep 5
+done
+if [ "$ready" != "1" ]; then
   echo "[iredmail-nginx] omitido: iRedMail no responde en 127.0.0.1:$https_port"
   exit 0
 fi
