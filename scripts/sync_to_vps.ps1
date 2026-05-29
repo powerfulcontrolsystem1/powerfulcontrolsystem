@@ -1796,10 +1796,8 @@ rm -rf .codex-gocache .codex-tmp-go .gocache .gotmp tmp \
   backend/.tmp-go-test-* backend/tmp 2>/dev/null || true
 export HEALTH_TIMEOUT_SECONDS=$HealthTimeoutSeconds
 bash deploy/scripts/vps-compose-sidecar-up.sh
-if grep -qiE '^EMAIL_CORPORATIVO_ENABLED=(1|true|yes|si|on)$' deploy/.env.platform 2>/dev/null; then
-  echo "[INFO] Email corporativo activo. Configurando proxy Nginx del host para iRedMail..."
-  bash deploy/scripts/vps-configure-iredmail-host-nginx.sh || echo "[WARN] No se pudo activar el proxy host de iRedMail; revisar deploy/scripts/vps-configure-iredmail-host-nginx.sh"
-fi
+echo "[INFO] Revisando proxy Nginx del host para iRedMail..."
+bash deploy/scripts/vps-configure-iredmail-host-nginx.sh || echo "[WARN] No se pudo activar el proxy host de iRedMail; revisar deploy/scripts/vps-configure-iredmail-host-nginx.sh"
 echo "[INFO] Estado Docker despues del redeploy:"
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(backend|frontend|postgres|iredmail)|NAMES' || true
 "@
