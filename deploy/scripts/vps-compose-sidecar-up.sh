@@ -31,7 +31,16 @@ test -f "$ENV_FILE" || { echo "ERROR: no existe $ENV_FILE. Ejecuta primero vps-d
 
 cd "$PROJECT_DIR"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build
+
+email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
+iredmail_enabled="$(get_env_value "$ENV_FILE" IREDMAIL_ENABLED)"
+compose_profiles=()
+if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$iredmail_enabled" = "1" ] || [ "$iredmail_enabled" = "true" ]; then
+  compose_profiles+=(--profile mail)
+  echo "[sidecar] Perfil mail activo: se levanta iRedMail junto al stack."
+fi
+
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "${compose_profiles[@]}" up -d --build
 
 http_bind="$(get_env_value "$ENV_FILE" HTTP_BIND)"
 http_port="$(get_env_value "$ENV_FILE" HTTP_PORT)"

@@ -103,7 +103,10 @@ botones, desde handlers estaticos del backend.
   `deploy/.env.platform` provee `EMAIL_CORPORATIVO_*` / `IREDMAIL_*` y el
   backend las registra en `configuraciones` al arrancar. La pagina de super
   administrador incluye diagnostico operativo y `Probar iRedAdmin` para validar
-  URL, usuario y clave sin exponer secretos ni crear buzones.
+  URL, usuario y clave sin exponer secretos ni crear buzones. En VPS con Nginx
+  del host, `vps-configure-iredmail-host-nginx.sh` publica
+  `mail.powerfulcontrolsystem.com` hacia iRedMail en `127.0.0.1:8089`; si ese
+  subdominio responde el POS, la provision no puede funcionar.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.

@@ -1584,6 +1584,10 @@
           if (webmailCheck && webmailCheck.ok === false) return webmailCheck.message || "El buzon existe, pero el webmail no esta disponible.";
           return "";
         }
+        var lastError = text(account.ultimo_error).toLowerCase();
+        if (lastError.indexOf("subdominio mail") >= 0 || lastError.indexOf("backend pos") >= 0) {
+          return "El correo ya fue asignado, pero el subdominio mail esta entrando al POS y no al webmail iRedMail. Revisa el proxy de Email corporativo en super administrador.";
+        }
         if (status === "error_login") return "El correo ya fue asignado, pero iRedAdmin rechazo las credenciales de provision. Revisa la configuracion del modulo Email corporativo en super administrador.";
         if (status === "error_provision") return "El correo ya fue asignado, pero iRedMail rechazo la creacion del buzon. Reintenta la provision desde super administrador.";
         if (status === "pendiente_api") return "Falta configurar la URL, usuario o clave de iRedAdmin-Pro para crear el buzon real.";

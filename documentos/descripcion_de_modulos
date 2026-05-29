@@ -1,3 +1,9 @@
+2026-05-28: Publicacion host de iRedMail para Email corporativo
+- Modulo: `Email corporativo` y despliegue VPS.
+- Archivos: `deploy/docker-compose.platform.yml`, `deploy/scripts/vps-compose-sidecar-up.sh`, `deploy/scripts/vps-configure-iredmail-host-nginx.sh`, `scripts/sync_to_vps.ps1`.
+- Funcionalidad: cuando `EMAIL_CORPORATIVO_ENABLED` esta activo, el redeploy levanta el perfil Docker `mail`, publica iRedMail en un puerto HTTP interno y configura Nginx del host para que `mail.powerfulcontrolsystem.com` apunte al webmail/iRedAdmin real.
+- Diagnostico: el backend diferencia credenciales rechazadas por iRedAdmin de un subdominio `mail` que todavia responde el backend POS.
+
 2026-05-28: Diagnostico operativo de Email corporativo iRedMail
 - Modulo: `Email corporativo` en super administrador.
 - Pagina: `web/super/email_corporativo.html`.

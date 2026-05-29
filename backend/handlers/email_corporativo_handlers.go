@@ -428,6 +428,9 @@ func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Value
 		if msg == "" {
 			msg = strings.TrimSpace(payload.Error)
 		}
+		if res.StatusCode == http.StatusUnauthorized && strings.EqualFold(msg, "unauthorized") && (res.Header.Get("X-Request-Id") != "" || strings.Contains(string(body), `"request_id"`)) {
+			return fmt.Errorf("iRedAdmin no esta publicado: el subdominio mail esta respondiendo el backend POS")
+		}
 		if msg == "" {
 			msg = strings.TrimSpace(string(body))
 		}
