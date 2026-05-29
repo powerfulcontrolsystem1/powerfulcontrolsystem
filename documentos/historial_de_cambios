@@ -28583,3 +28583,9 @@ PushStatus: OK
 Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
 - documentos/historial_de_cambios
+
+2026-05-28: fix: correo corporativo queda pendiente manual sin API iRedAdmin
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- documentos/historial_de_cambios

@@ -11387,3 +11387,8 @@ Archivos modificados:
 Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
 - documentos/historial_de_cambios
+
+2026-05-28 20:29:51 - Mensaje: fix: correo corporativo queda pendiente manual sin API iRedAdmin; Commit: fcaecda0; PushStatus: OK
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- documentos/historial_de_cambios
