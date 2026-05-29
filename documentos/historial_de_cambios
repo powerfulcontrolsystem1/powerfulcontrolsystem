@@ -2,6 +2,7 @@
 - Modulos afectados: `email_corporativo`, `VPS/Docker`, `nginx`, `frontend_ux`.
 - Motivo: el subdominio `mail.powerfulcontrolsystem.com` podia seguir entrando al POS y responder 401 desde el backend, lo que parecia un rechazo de credenciales iRedAdmin aunque el webmail real no estuviera publicado.
 - Despliegue: el perfil `mail` se levanta automaticamente cuando `EMAIL_CORPORATIVO_ENABLED` esta activo, iRedMail publica HTTP interno en `127.0.0.1:${IREDMAIL_HTTP_PORT:-8089}` y `vps-configure-iredmail-host-nginx.sh` crea el proxy host para el subdominio `mail`.
+- Proxy: el host publica tambien HTTPS interno de iRedMail en `127.0.0.1:${IREDMAIL_HTTPS_PORT:-8449}` y Nginx proxy hacia ese puerto para evitar redirecciones infinitas HTTP->HTTPS del contenedor.
 - Operacion: los puertos SMTP/IMAP de iRedMail quedan por defecto en loopback y puertos altos para no chocar con servicios de correo existentes del VPS; la exposicion publica de 25/587/993 se habilita solo con configuracion explicita.
 - Backend: la prueba de iRedAdmin detecta respuestas `unauthorized` con `X-Request-Id` del POS y reporta que el subdominio mail esta respondiendo el backend, no iRedAdmin.
 - Frontend: el panel empresarial muestra un aviso especifico cuando el problema es de proxy/ruteo del subdominio mail.

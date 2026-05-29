@@ -107,6 +107,7 @@ services:
       - ${IREDMAIL_BACKUP_DIR:-/opt/powerfulcontrolsystem/iredmail/backups}:/var/backups
     ports:
       - "${IREDMAIL_HTTP_BIND:-127.0.0.1}:${IREDMAIL_HTTP_PORT:-8089}:80"
+      - "${IREDMAIL_HTTP_BIND:-127.0.0.1}:${IREDMAIL_HTTPS_PORT:-8449}:443"
       - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SMTP_PORT:-2525}:25"
       - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_POP3_PORT:-8110}:110"
       - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_IMAP_PORT:-8143}:143"

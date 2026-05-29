@@ -32,11 +32,13 @@ command -v nginx >/dev/null 2>&1 || { echo "[iredmail-nginx] omitido: nginx del 
 mail_domain="$(get_env_value "$ENV_FILE" EDGE_MAIL_DOMAIN)"
 cert_name="$(get_env_value "$ENV_FILE" EDGE_CERT_NAME)"
 http_port="$(get_env_value "$ENV_FILE" IREDMAIL_HTTP_PORT)"
+https_port="$(get_env_value "$ENV_FILE" IREDMAIL_HTTPS_PORT)"
 email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
 
 mail_domain="${mail_domain:-mail.powerfulcontrolsystem.com}"
 cert_name="${cert_name:-powerfulcontrolsystem.com}"
 http_port="${http_port:-8089}"
+https_port="${https_port:-8449}"
 
 if [ "$email_enabled" != "1" ] && [ "$email_enabled" != "true" ]; then
   echo "[iredmail-nginx] omitido: EMAIL_CORPORATIVO_ENABLED no esta activo"
@@ -48,8 +50,8 @@ if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-iredmail'; then
   exit 0
 fi
 
-if ! curl -fsS "http://127.0.0.1:$http_port/" >/dev/null 2>&1; then
-  echo "[iredmail-nginx] omitido: iRedMail no responde en 127.0.0.1:$http_port"
+if ! curl -kfsS "https://127.0.0.1:$https_port/" >/dev/null 2>&1; then
+  echo "[iredmail-nginx] omitido: iRedMail no responde en 127.0.0.1:$https_port"
   exit 0
 fi
 
@@ -101,7 +103,9 @@ server {
         proxy_set_header X-Forwarded-Host \$host;
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
-        proxy_pass http://127.0.0.1:$http_port;
+        proxy_ssl_verify off;
+        proxy_ssl_server_name on;
+        proxy_pass https://127.0.0.1:$https_port;
     }
 }
 NGINX
@@ -109,4 +113,4 @@ NGINX
 ln -sf "$SITE_AVAILABLE" "$SITE_ENABLED"
 nginx -t
 systemctl reload nginx
-echo "[iredmail-nginx] OK: $mail_domain proxy -> 127.0.0.1:$http_port"
+echo "[iredmail-nginx] OK: $mail_domain proxy -> 127.0.0.1:$https_port"
