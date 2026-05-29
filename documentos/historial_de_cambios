@@ -28514,3 +28514,13 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - scripts/sync_to_vps.ps1
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-configure-iredmail-host-nginx.sh
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/historial_de_cambios
+- scripts/sync_to_vps.ps1
