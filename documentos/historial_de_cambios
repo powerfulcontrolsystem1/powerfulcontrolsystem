@@ -1,3 +1,9 @@
+2026-05-28: TLS valido para subdominio de correo corporativo.
+- Modulos afectados: `email_corporativo`, `VPS/Docker`, `nginx`, `certbot`.
+- Motivo: `mail.powerfulcontrolsystem.com` ya apuntaba a iRedMail, pero el certificado entregado no cubria el subdominio y Go rechazaba la prueba de iRedAdmin por verificacion TLS.
+- Despliegue: `vps-configure-iredmail-host-nginx.sh` ahora valida que el certificado Let's Encrypt incluya `mail.powerfulcontrolsystem.com`; si no existe, prepara el challenge HTTP, emite un certificado especifico con certbot y luego publica el proxy HTTPS hacia iRedMail.
+- Seguridad: no se desactiva la validacion TLS del backend ni se imprimen secretos; se corrige la publicacion del certificado en el borde Nginx.
+
 2026-05-28: Proxy real de iRedMail para Email corporativo.
 - Modulos afectados: `email_corporativo`, `VPS/Docker`, `nginx`, `frontend_ux`.
 - Motivo: el subdominio `mail.powerfulcontrolsystem.com` podia seguir entrando al POS y responder 401 desde el backend, lo que parecia un rechazo de credenciales iRedAdmin aunque el webmail real no estuviera publicado.

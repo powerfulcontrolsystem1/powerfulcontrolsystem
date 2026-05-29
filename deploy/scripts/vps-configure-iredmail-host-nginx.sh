@@ -5,6 +5,7 @@ PROJECT_DIR="${PROJECT_DIR:-/root/powerfulcontrolsystem}"
 ENV_FILE="${ENV_FILE:-$PROJECT_DIR/deploy/.env.platform}"
 SITE_AVAILABLE="${SITE_AVAILABLE:-/etc/nginx/sites-available/00-pcs-iredmail}"
 SITE_ENABLED="${SITE_ENABLED:-/etc/nginx/sites-enabled/00-pcs-iredmail}"
+ACME_ROOT="${ACME_ROOT:-/var/www/html}"
 
 get_env_value() {
   local file="$1"
@@ -24,6 +25,75 @@ get_env_value() {
     }
     END { if (value != "") print value }
   ' "$file"
+}
+
+cert_covers_domain() {
+  local cert_file="$1"
+  local domain="$2"
+  [ -f "$cert_file" ] || return 1
+  if openssl x509 -in "$cert_file" -noout -ext subjectAltName 2>/dev/null | grep -Fq "DNS:$domain"; then
+    return 0
+  fi
+  return 1
+}
+
+write_http_challenge_site() {
+  local domain="$1"
+  mkdir -p "$ACME_ROOT/.well-known/acme-challenge"
+  cat > "$SITE_AVAILABLE" <<NGINX
+server {
+    listen 80;
+    server_name $domain;
+    client_max_body_size 100m;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root $ACME_ROOT;
+        default_type "text/plain";
+        try_files \$uri =404;
+    }
+
+    location / {
+        return 200 "iRedMail proxy preparing TLS for $domain\\n";
+        add_header Content-Type text/plain;
+    }
+}
+NGINX
+  ln -sf "$SITE_AVAILABLE" "$SITE_ENABLED"
+  nginx -t
+  systemctl reload nginx
+}
+
+ensure_mail_certificate() {
+  local domain="$1"
+  local fallback_name="$2"
+  local preferred_dir="/etc/letsencrypt/live/$domain"
+  local fallback_dir="/etc/letsencrypt/live/$fallback_name"
+
+  if cert_covers_domain "$preferred_dir/fullchain.pem" "$domain"; then
+    echo "$preferred_dir"
+    return 0
+  fi
+  if cert_covers_domain "$fallback_dir/fullchain.pem" "$domain"; then
+    echo "$fallback_dir"
+    return 0
+  fi
+
+  if ! command -v certbot >/dev/null 2>&1; then
+    echo "[iredmail-nginx] omitido: certbot no esta instalado y no hay certificado valido para $domain" >&2
+    return 1
+  fi
+
+  echo "[iredmail-nginx] creando certificado Let's Encrypt para $domain" >&2
+  write_http_challenge_site "$domain"
+  if certbot certonly --webroot -w "$ACME_ROOT" -d "$domain" --agree-tos --non-interactive --register-unsafely-without-email --keep-until-expiring; then
+    if cert_covers_domain "$preferred_dir/fullchain.pem" "$domain"; then
+      echo "$preferred_dir"
+      return 0
+    fi
+  fi
+
+  echo "[iredmail-nginx] omitido: no se pudo emitir certificado valido para $domain" >&2
+  return 1
 }
 
 test -f "$ENV_FILE" || { echo "[iredmail-nginx] omitido: no existe $ENV_FILE"; exit 0; }
@@ -69,9 +139,7 @@ if [ "$ready" != "1" ]; then
   exit 0
 fi
 
-cert_dir="/etc/letsencrypt/live/$cert_name"
-if [ ! -f "$cert_dir/fullchain.pem" ] || [ ! -f "$cert_dir/privkey.pem" ]; then
-  echo "[iredmail-nginx] omitido: no existe certificado Let's Encrypt en $cert_dir"
+if ! cert_dir="$(ensure_mail_certificate "$mail_domain" "$cert_name")"; then
   exit 0
 fi
 

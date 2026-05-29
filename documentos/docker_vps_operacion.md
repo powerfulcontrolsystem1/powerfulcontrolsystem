@@ -322,6 +322,10 @@ El correo empresarial se integra al stack portable mediante variables en
   `CONFIG_ENC_KEY`; no se escribe en logs ni documentacion.
 - El perfil `mail` publica SMTP/IMAP/POP3 y deja el webmail disponible para el
   edge Docker en `EDGE_MAIL_DOMAIN`.
+- `deploy/scripts/vps-configure-iredmail-host-nginx.sh` valida el certificado
+  del subdominio `mail`; si el certificado existente no lo cubre, usa certbot
+  con webroot en `/var/www/html` y luego recarga Nginx con el proxy HTTPS hacia
+  iRedMail.
 - Antes de activar `--profile mail`, validar DNS A, MX, SPF, DKIM, DMARC, PTR,
   TLS y que la imagen definida en `IREDMAIL_IMAGE` sea la aprobada para la VPS.
 

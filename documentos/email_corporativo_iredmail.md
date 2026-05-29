@@ -55,6 +55,14 @@ El despliegue Docker queda integrado al compose portable como perfil `mail` y
 tambien documentado en `deploy/iredmail/`. El perfil queda apagado por defecto
 para evitar abrir puertos de correo sin DNS, TLS, PTR y politica antispam listos.
 
+Cuando `EMAIL_CORPORATIVO_ENABLED` esta activo, el script
+`deploy/scripts/vps-configure-iredmail-host-nginx.sh` publica
+`mail.powerfulcontrolsystem.com` en Nginx del host. El script valida que el
+certificado Let's Encrypt cubra el subdominio `mail`; si no existe, prepara el
+challenge HTTP y emite un certificado especifico con certbot antes de activar el
+proxy HTTPS hacia iRedMail. Esto evita que el backend desactive la validacion
+TLS para probar iRedAdmin.
+
 Variables principales en `deploy/.env.platform`:
 
 - `EMAIL_CORPORATIVO_ENABLED`
