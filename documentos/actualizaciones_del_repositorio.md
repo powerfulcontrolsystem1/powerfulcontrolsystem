@@ -11326,3 +11326,9 @@ Archivos modificados:
 - deploy/docker-compose.platform.yml
 - deploy/scripts/vps-docker-preflight.sh
 - documentos/historial_de_cambios
+
+2026-05-28 19:15:21 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 10f06be5; PushStatus: OK
+Archivos modificados:
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-docker-preflight.sh

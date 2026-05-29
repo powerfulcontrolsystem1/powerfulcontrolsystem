@@ -28501,3 +28501,10 @@ Archivos modificados:
 - deploy/docker-compose.platform.yml
 - deploy/scripts/vps-docker-preflight.sh
 - documentos/historial_de_cambios
+
+2026-05-28: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-docker-preflight.sh
