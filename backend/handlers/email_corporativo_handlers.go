@@ -492,7 +492,12 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 		return corporateWebmailCheck{Checked: true, OK: false, Message: "URL de webmail invalida"}
 	}
 	requestURL := corporateEmailEffectiveWebmailURL(rawURL)
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	req, err := http.NewRequest(http.MethodHead, requestURL, nil)
 	if err != nil {
 		return corporateWebmailCheck{Checked: true, OK: false, Message: "No se pudo preparar la verificacion del webmail"}
@@ -616,10 +621,11 @@ func testCorporateEmailIredAdminLogin(dbSuper *sql.DB, cfg CorporateEmailConfig)
 	}
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{Timeout: 20 * time.Second, Jar: jar}
+	apiBaseURL := corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL)
 	loginValues := url.Values{}
 	loginValues.Set("username", cfg.APIAdmin)
 	loginValues.Set("password", adminPassword)
-	if err := iredAdminAPIPostForm(client, cfg.APIBaseURL+"/api/login", loginValues); err != nil {
+	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/login", loginValues); err != nil {
 		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
 	}
 	return corporateEmailProvisionResult{OK: true, Status: "login_ok"}
