@@ -107,14 +107,14 @@ services:
       - ${IREDMAIL_BACKUP_DIR:-/opt/powerfulcontrolsystem/iredmail/backups}:/var/backups
     ports:
       - "${IREDMAIL_HTTP_BIND:-127.0.0.1}:${IREDMAIL_HTTP_PORT:-8089}:80"
-      - "${IREDMAIL_BIND:-0.0.0.0}:25:25"
-      - "${IREDMAIL_BIND:-0.0.0.0}:110:110"
-      - "${IREDMAIL_BIND:-0.0.0.0}:143:143"
-      - "${IREDMAIL_BIND:-0.0.0.0}:465:465"
-      - "${IREDMAIL_BIND:-0.0.0.0}:587:587"
-      - "${IREDMAIL_BIND:-0.0.0.0}:993:993"
-      - "${IREDMAIL_BIND:-0.0.0.0}:995:995"
-      - "${IREDMAIL_BIND:-0.0.0.0}:4190:4190"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SMTP_PORT:-2525}:25"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_POP3_PORT:-8110}:110"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_IMAP_PORT:-8143}:143"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SMTPS_PORT:-8465}:465"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SUBMISSION_PORT:-8587}:587"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_IMAPS_PORT:-8993}:993"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_POP3S_PORT:-8995}:995"
+      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SIEVE_PORT:-84190}:4190"
     expose:
       - "80"
     networks:
