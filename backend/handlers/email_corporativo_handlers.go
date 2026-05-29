@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/tls"
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
@@ -180,6 +181,17 @@ func corporateEmailEffectiveWebmailURL(rawURL string) string {
 		return internalURL + "/"
 	}
 	return internalURL
+}
+
+func corporateEmailHTTPClient(timeout time.Duration, jar http.CookieJar, endpoint string) *http.Client {
+	client := &http.Client{Timeout: timeout, Jar: jar}
+	parsed, err := url.Parse(endpoint)
+	if err == nil && strings.EqualFold(parsed.Hostname(), "iredmail") {
+		// El certificado interno del contenedor iRedMail es autofirmado/legacy.
+		// Esta excepcion solo aplica a la red Docker interna; el acceso publico conserva TLS valido.
+		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+	return client
 }
 
 // EnsureCorporateEmailConfigFromEnv registra en base la configuracion iRedMail
@@ -419,9 +431,9 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_clave", msg, false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_clave", Error: msg}
 	}
-	jar, _ := cookiejar.New(nil)
-	client := &http.Client{Timeout: 20 * time.Second, Jar: jar}
 	apiBaseURL := corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL)
+	jar, _ := cookiejar.New(nil)
+	client := corporateEmailHTTPClient(20*time.Second, jar, apiBaseURL)
 	loginValues := url.Values{}
 	loginValues.Set("username", cfg.APIAdmin)
 	loginValues.Set("password", adminPassword)
@@ -625,9 +637,9 @@ func testCorporateEmailIredAdminLogin(dbSuper *sql.DB, cfg CorporateEmailConfig)
 	if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || strings.TrimSpace(adminPassword) == "" {
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_api", Error: "Faltan URL, usuario o clave de iRedAdmin-Pro"}
 	}
-	jar, _ := cookiejar.New(nil)
-	client := &http.Client{Timeout: 20 * time.Second, Jar: jar}
 	apiBaseURL := corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL)
+	jar, _ := cookiejar.New(nil)
+	client := corporateEmailHTTPClient(20*time.Second, jar, apiBaseURL)
 	loginValues := url.Values{}
 	loginValues.Set("username", cfg.APIAdmin)
 	loginValues.Set("password", adminPassword)
