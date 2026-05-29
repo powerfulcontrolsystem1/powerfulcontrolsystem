@@ -1,3 +1,26 @@
+## [2026-05-29] Fotos de usuarios en carpeta de imagenes empresariales
+- [Usuarios] `Administrar usuarios` permite cargar foto para usuarios creados por el administrador de empresa.
+- [Storage] Las fotos se guardan en `/uploads/empresas/empresa_{id}_{slug}/imagenes/usuarios/`, compartiendo la carpeta `imagenes` empresarial con Domotica.
+- [Backend] `users` agrega `foto_url`; `/api/empresa/usuarios?action=foto` valida `empresa_id`, pertenencia del usuario, extension y tamano antes de guardar.
+- [Super] `Storage Imagenes` cuenta el uso de toda la carpeta `/imagenes/` de cada empresa, no solo Domotica.
+
+## [2026-05-29] Domotica empresarial con fotos y storage
+- [Backend] `/api/empresa/control_electrico` agrega integraciones Home Assistant/Siri bridge, Matter, Shelly, Hue, Tuya, Zigbee2MQTT y Z-Wave JS; tambien lecturas de consumo, reglas por sensor, alarmas y reportes.
+- [Storage] Las fotos de aparatos se guardan por empresa en la subcarpeta `/uploads/empresas/empresa_{id}_{slug}/imagenes/domotica/` con limite configurable por super administrador.
+- [Super] Nueva pagina `web/super/domotica_storage.html` y API `/super/api/domotica_storage` para ver carpetas, uso, numero de imagenes y tamano maximo por empresa.
+- [QA] `go test ./db ./handlers ./tools/seed_domotica_motel_calipso -run "ControlElectrico|Domotica|Storage|^$" -count=1`; parseo de scripts inline con Node empaquetado.
+
+## [2026-05-29] Domotica como modulo principal
+- [UX] `Domotica` sale del submenu de Configuracion y queda como boton principal de Administrar empresa.
+- [UX] El submenu de Domotica agrupa resumen, conexion GPIO, controladores, sensores Raspberry, estaciones/aparatos y bitacora.
+- [Permisos] `linkControlElectrico` y `linkConfiguracionSensoresRaspberry` quedan agrupados bajo Domotica conservando la clave tecnica `control_electrico`.
+
+## [2026-05-29] Domotica por estacion en carrito
+- [UX] El modulo visible `Control electrico` pasa a llamarse `Domotica` en configuracion, licencias, ayuda, carrito e index.
+- [Carrito] Si una estacion tiene carrito activo, Domotica habilitada y aparatos configurados, aparece automaticamente la tarjeta `Domotica`; cada aparato abre una ventana con estado, encendido, apagado y programacion horaria.
+- [Datos] Se conserva la clave tecnica `control_electrico` y se reutilizan las tablas existentes de configuracion, aparatos y eventos por `empresa_id`.
+- [QA] `go test ./handlers -run ControlElectrico -count=1`, parseo de scripts inline con Node y `git diff --check`.
+
 ## [2026-05-28] Auditoria especial super administrador
 - [Backend] `/super/api/auditoria` acepta `scope=super_panel` solo para roles super y las APIs sensibles de configuracion super quedan envueltas con `WithSuperAuditoria`.
 - [Frontend] `web/super_administrador.html` incorpora `Auditoria super`, con `web/super/auditoria_super_admin.html` para filtros, KPIs, detalle y exportacion CSV/JSON.

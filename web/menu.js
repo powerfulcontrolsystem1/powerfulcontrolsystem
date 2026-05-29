@@ -418,6 +418,8 @@
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html" target="_blank" rel="noopener">Red social comercial</a>' +
         '<button id="createHelpTicketLink" class="fm-item fm-action-item" type="button">Crear ticket de ayuda</button>' +
+        '<button id="openFloatingAILink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/gpt.svg" alt="">Robot / IA</button>' +
+        '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +
         '<div class="fm-submenu" id="utilitiesMenuWrapper">' +
           '<button id="utilitiesMenuToggle" class="fm-item fm-submenu-toggle" type="button" aria-expanded="false" aria-haspopup="true">Utilidades \u25BC</button>' +
           '<div id="utilitiesMenuPopup" class="fm-submenu-popup" aria-hidden="true" role="menu">' +
@@ -468,6 +470,8 @@
     var calculatorLauncher = wrapper.querySelector('[data-open-calculator]');
     var shareLaunchers = wrapper.querySelectorAll('[data-share-current]');
     var helpTicketLauncher = wrapper.querySelector('#createHelpTicketLink');
+    var floatingAILauncher = wrapper.querySelector('#openFloatingAILink');
+    var floatingRadioLauncher = wrapper.querySelector('#openFloatingRadioLink');
 
     function setPanelOpen(isOpen){
       if (!panel || !toggle) return;
@@ -516,6 +520,62 @@
         win.focus();
       } else {
         window.location.href = '/calculadora.html?compact=1';
+      }
+    }
+
+    function openPathInContentFrame(path){
+      try {
+        var frame = document.getElementById('contentFrame') || document.querySelector('iframe.admin-empresa-frame');
+        if (frame) {
+          frame.src = path;
+          return true;
+        }
+      } catch (error) {}
+      return false;
+    }
+
+    function openFloatingAI(){
+      try {
+        if (window.PCSAIChatOpen && typeof window.PCSAIChatOpen === 'function') {
+          if (window.PCSAIChatOpen({ source: 'menu_flotante', preferRobot: true }) !== false) {
+            return;
+          }
+        }
+      } catch (error) {}
+      try {
+        var aiBtn = document.getElementById('openAIDrawer');
+        if (aiBtn) {
+          window.postMessage({ type: 'pcs-ai-drawer-open', source: 'menu_flotante' }, window.location.origin);
+          return;
+        }
+      } catch (error) {}
+      var empresaID = getActiveEmpresaID();
+      var fallback = '/administrar_empresa/chat_con_inteligencia_artificial.html' + (empresaID ? ('?empresa_id=' + encodeURIComponent(empresaID)) : '');
+      if (!openPathInContentFrame(fallback)) {
+        window.location.href = fallback;
+      }
+    }
+
+    function openFloatingRadio(){
+      try {
+        if (window.__pcsRadioPlayerOpenDrawer && typeof window.__pcsRadioPlayerOpenDrawer === 'function') {
+          window.__pcsRadioPlayerOpenDrawer({ source: 'menu_flotante' });
+          return;
+        }
+      } catch (error) {}
+      try {
+        var radioBtn = document.getElementById('openRadioDrawer');
+        if (radioBtn) {
+          radioBtn.hidden = false;
+          radioBtn.removeAttribute('aria-hidden');
+          radioBtn.click();
+          return;
+        }
+      } catch (error) {}
+      var empresaID = getActiveEmpresaID();
+      var fallback = '/administrar_empresa/radio_online.html' + (empresaID ? ('?empresa_id=' + encodeURIComponent(empresaID)) : '');
+      if (!openPathInContentFrame(fallback)) {
+        window.location.href = fallback;
       }
     }
 
@@ -969,6 +1029,28 @@
         closeUtilitiesPopup();
         closePanel();
         openHelpTicketDialog();
+      });
+    }
+
+    if (floatingAILauncher) {
+      floatingAILauncher.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        closeThemePopup();
+        closeUtilitiesPopup();
+        closePanel();
+        openFloatingAI();
+      });
+    }
+
+    if (floatingRadioLauncher) {
+      floatingRadioLauncher.addEventListener('click', function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        closeThemePopup();
+        closeUtilitiesPopup();
+        closePanel();
+        openFloatingRadio();
       });
     }
 

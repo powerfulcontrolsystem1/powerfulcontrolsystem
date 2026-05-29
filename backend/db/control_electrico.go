@@ -20,7 +20,7 @@ var (
 	empresaControlElectricoSchemaReady bool
 )
 
-const empresaControlElectricoReleSelectColumns = `r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.programacion_habilitada,0), COALESCE(r.hora_encendido,''), COALESCE(r.hora_apagado,''), COALESCE(r.programacion_dias,'todos'), COALESCE(r.programacion_timezone,'America/Bogota'), COALESCE(r.ultima_programacion_on,''), COALESCE(r.ultima_programacion_off,''), COALESCE(r.imagen_url,''), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'')`
+const empresaControlElectricoReleSelectColumns = `r.id, r.empresa_id, COALESCE(r.raspberry_id,0), COALESCE(rp.codigo,''), COALESCE(rp.nombre,''), COALESCE(rp.raspberry_ip,''), COALESCE(rp.tipo_controlador,'raspberry_gpio'), COALESCE(rp.proveedor,''), COALESCE(rp.base_url,''), r.estacion_id, COALESCE(r.estacion_codigo,''), COALESCE(r.estacion_nombre,''), COALESCE(r.salida_codigo,'principal'), COALESCE(r.tipo_carga,'luces'), COALESCE(r.integracion_tipo,'gpio'), COALESCE(r.fabricante,''), COALESCE(r.modelo,''), COALESCE(r.entity_id,''), COALESCE(r.device_id,''), COALESCE(r.capability,''), COALESCE(r.comando_on,''), COALESCE(r.comando_off,''), COALESCE(r.monitoreo_habilitado,0), COALESCE(r.potencia_w,0), COALESCE(r.sensor_consumo_entity_id,''), COALESCE(r.ultimo_consumo_w,0), COALESCE(r.ultimo_consumo_kwh,0), COALESCE(r.ultimo_voltaje_v,0), COALESCE(r.ultimo_corriente_a,0), COALESCE(r.gpio_pin,0), COALESCE(r.relay_name,''), COALESCE(r.active_high,1), COALESCE(r.pulso_ms,0), COALESCE(r.modo,'seguimiento_estacion'), COALESCE(r.programacion_habilitada,0), COALESCE(r.hora_encendido,''), COALESCE(r.hora_apagado,''), COALESCE(r.programacion_dias,'todos'), COALESCE(r.programacion_timezone,'America/Bogota'), COALESCE(r.ultima_programacion_on,''), COALESCE(r.ultima_programacion_off,''), COALESCE(r.imagen_url,''), COALESCE(r.ultimo_estado,'desconocido'), COALESCE(r.ultimo_comando,''), COALESCE(r.ultimo_error,''), COALESCE(r.ultima_sincronizacion,''), COALESCE(r.fecha_creacion,''), COALESCE(r.fecha_actualizacion,''), COALESCE(r.usuario_creador,''), COALESCE(r.estado,'activo'), COALESCE(r.observaciones,'')`
 
 // EmpresaControlElectricoConfig guarda la conexion principal contra la Raspberry Pi.
 type EmpresaControlElectricoConfig struct {
@@ -48,6 +48,9 @@ type EmpresaControlElectricoRaspberry struct {
 	EmpresaID          int64  `json:"empresa_id"`
 	Codigo             string `json:"codigo"`
 	Nombre             string `json:"nombre"`
+	TipoControlador    string `json:"tipo_controlador,omitempty"`
+	Proveedor          string `json:"proveedor,omitempty"`
+	BaseURL            string `json:"base_url,omitempty"`
 	RaspberryIP        string `json:"raspberry_ip"`
 	RaspberryPort      int    `json:"raspberry_port"`
 	APIPath            string `json:"api_path"`
@@ -63,39 +66,57 @@ type EmpresaControlElectricoRaspberry struct {
 
 // EmpresaControlElectricoRele representa la salida fisica asociada a una estacion.
 type EmpresaControlElectricoRele struct {
-	ID                     int64  `json:"id"`
-	EmpresaID              int64  `json:"empresa_id"`
-	RaspberryID            int64  `json:"raspberry_id,omitempty"`
-	RaspberryCodigo        string `json:"raspberry_codigo,omitempty"`
-	RaspberryNombre        string `json:"raspberry_nombre,omitempty"`
-	RaspberryIP            string `json:"raspberry_ip,omitempty"`
-	EstacionID             int64  `json:"estacion_id"`
-	EstacionCodigo         string `json:"estacion_codigo,omitempty"`
-	EstacionNombre         string `json:"estacion_nombre,omitempty"`
-	SalidaCodigo           string `json:"salida_codigo"`
-	TipoCarga              string `json:"tipo_carga,omitempty"`
-	GPIOPin                int    `json:"gpio_pin"`
-	RelayName              string `json:"relay_name"`
-	ActiveHigh             bool   `json:"active_high"`
-	PulsoMS                int    `json:"pulso_ms"`
-	Modo                   string `json:"modo"`
-	ProgramacionHabilitada bool   `json:"programacion_habilitada"`
-	HoraEncendido          string `json:"hora_encendido,omitempty"`
-	HoraApagado            string `json:"hora_apagado,omitempty"`
-	ProgramacionDias       string `json:"programacion_dias,omitempty"`
-	ProgramacionTimezone   string `json:"programacion_timezone,omitempty"`
-	UltimaProgramacionOn   string `json:"ultima_programacion_on,omitempty"`
-	UltimaProgramacionOff  string `json:"ultima_programacion_off,omitempty"`
-	ImagenURL              string `json:"imagen_url,omitempty"`
-	UltimoEstado           string `json:"ultimo_estado,omitempty"`
-	UltimoComando          string `json:"ultimo_comando,omitempty"`
-	UltimoError            string `json:"ultimo_error,omitempty"`
-	UltimaSincronizacion   string `json:"ultima_sincronizacion,omitempty"`
-	FechaCreacion          string `json:"fecha_creacion,omitempty"`
-	FechaActualizacion     string `json:"fecha_actualizacion,omitempty"`
-	UsuarioCreador         string `json:"usuario_creador,omitempty"`
-	Estado                 string `json:"estado,omitempty"`
-	Observaciones          string `json:"observaciones,omitempty"`
+	ID                       int64   `json:"id"`
+	EmpresaID                int64   `json:"empresa_id"`
+	RaspberryID              int64   `json:"raspberry_id,omitempty"`
+	RaspberryCodigo          string  `json:"raspberry_codigo,omitempty"`
+	RaspberryNombre          string  `json:"raspberry_nombre,omitempty"`
+	RaspberryIP              string  `json:"raspberry_ip,omitempty"`
+	RaspberryTipoControlador string  `json:"raspberry_tipo_controlador,omitempty"`
+	RaspberryProveedor       string  `json:"raspberry_proveedor,omitempty"`
+	RaspberryBaseURL         string  `json:"raspberry_base_url,omitempty"`
+	EstacionID               int64   `json:"estacion_id"`
+	EstacionCodigo           string  `json:"estacion_codigo,omitempty"`
+	EstacionNombre           string  `json:"estacion_nombre,omitempty"`
+	SalidaCodigo             string  `json:"salida_codigo"`
+	TipoCarga                string  `json:"tipo_carga,omitempty"`
+	IntegracionTipo          string  `json:"integracion_tipo,omitempty"`
+	Fabricante               string  `json:"fabricante,omitempty"`
+	Modelo                   string  `json:"modelo,omitempty"`
+	EntityID                 string  `json:"entity_id,omitempty"`
+	DeviceID                 string  `json:"device_id,omitempty"`
+	Capability               string  `json:"capability,omitempty"`
+	ComandoOn                string  `json:"comando_on,omitempty"`
+	ComandoOff               string  `json:"comando_off,omitempty"`
+	MonitoreoHabilitado      bool    `json:"monitoreo_habilitado"`
+	PotenciaW                float64 `json:"potencia_w,omitempty"`
+	SensorConsumoEntityID    string  `json:"sensor_consumo_entity_id,omitempty"`
+	UltimoConsumoW           float64 `json:"ultimo_consumo_w,omitempty"`
+	UltimoConsumoKWh         float64 `json:"ultimo_consumo_kwh,omitempty"`
+	UltimoVoltajeV           float64 `json:"ultimo_voltaje_v,omitempty"`
+	UltimoCorrienteA         float64 `json:"ultimo_corriente_a,omitempty"`
+	GPIOPin                  int     `json:"gpio_pin"`
+	RelayName                string  `json:"relay_name"`
+	ActiveHigh               bool    `json:"active_high"`
+	PulsoMS                  int     `json:"pulso_ms"`
+	Modo                     string  `json:"modo"`
+	ProgramacionHabilitada   bool    `json:"programacion_habilitada"`
+	HoraEncendido            string  `json:"hora_encendido,omitempty"`
+	HoraApagado              string  `json:"hora_apagado,omitempty"`
+	ProgramacionDias         string  `json:"programacion_dias,omitempty"`
+	ProgramacionTimezone     string  `json:"programacion_timezone,omitempty"`
+	UltimaProgramacionOn     string  `json:"ultima_programacion_on,omitempty"`
+	UltimaProgramacionOff    string  `json:"ultima_programacion_off,omitempty"`
+	ImagenURL                string  `json:"imagen_url,omitempty"`
+	UltimoEstado             string  `json:"ultimo_estado,omitempty"`
+	UltimoComando            string  `json:"ultimo_comando,omitempty"`
+	UltimoError              string  `json:"ultimo_error,omitempty"`
+	UltimaSincronizacion     string  `json:"ultima_sincronizacion,omitempty"`
+	FechaCreacion            string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion       string  `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador           string  `json:"usuario_creador,omitempty"`
+	Estado                   string  `json:"estado,omitempty"`
+	Observaciones            string  `json:"observaciones,omitempty"`
 }
 
 // EmpresaControlElectricoEvento deja trazabilidad de cada comando enviado.
@@ -117,6 +138,43 @@ type EmpresaControlElectricoEvento struct {
 	Actor          string `json:"actor,omitempty"`
 	Origen         string `json:"origen,omitempty"`
 	MetadataJSON   string `json:"metadata_json,omitempty"`
+}
+
+// EmpresaControlElectricoLectura registra telemetria de estado y consumo por aparato.
+type EmpresaControlElectricoLectura struct {
+	ID           int64   `json:"id"`
+	EmpresaID    int64   `json:"empresa_id"`
+	EstacionID   int64   `json:"estacion_id,omitempty"`
+	ReleID       int64   `json:"rele_id,omitempty"`
+	Origen       string  `json:"origen,omitempty"`
+	Estado       string  `json:"estado,omitempty"`
+	ConsumoW     float64 `json:"consumo_w,omitempty"`
+	ConsumoKWh   float64 `json:"consumo_kwh,omitempty"`
+	VoltajeV     float64 `json:"voltaje_v,omitempty"`
+	CorrienteA   float64 `json:"corriente_a,omitempty"`
+	FechaLectura string  `json:"fecha_lectura,omitempty"`
+	MetadataJSON string  `json:"metadata_json,omitempty"`
+}
+
+// EmpresaControlElectricoRegla define automatizaciones y alarmas por senal de sensor.
+type EmpresaControlElectricoRegla struct {
+	ID                 int64  `json:"id"`
+	EmpresaID          int64  `json:"empresa_id"`
+	Nombre             string `json:"nombre,omitempty"`
+	SensorCodigo       string `json:"sensor_codigo"`
+	SensorTipo         string `json:"sensor_tipo,omitempty"`
+	Condicion          string `json:"condicion"`
+	Valor              string `json:"valor"`
+	Accion             string `json:"accion"`
+	EstacionID         int64  `json:"estacion_id,omitempty"`
+	ReleID             int64  `json:"rele_id,omitempty"`
+	AlarmaHabilitada   bool   `json:"alarma_habilitada"`
+	Severidad          string `json:"severidad,omitempty"`
+	Mensaje            string `json:"mensaje,omitempty"`
+	FechaCreacion      string `json:"fecha_creacion,omitempty"`
+	FechaActualizacion string `json:"fecha_actualizacion,omitempty"`
+	UsuarioCreador     string `json:"usuario_creador,omitempty"`
+	Estado             string `json:"estado,omitempty"`
 }
 
 // EmpresaControlElectricoEstacion resume una estacion operativa y su mapeo electrico.
@@ -171,6 +229,9 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER NOT NULL,
 			codigo TEXT,
 			nombre TEXT,
+			tipo_controlador TEXT DEFAULT 'raspberry_gpio',
+			proveedor TEXT,
+			base_url TEXT,
 			raspberry_ip TEXT NOT NULL,
 			raspberry_port INTEGER DEFAULT 8081,
 			api_path TEXT DEFAULT '/api/gpio/relay',
@@ -193,6 +254,21 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 			estacion_nombre TEXT,
 			salida_codigo TEXT DEFAULT 'principal',
 			tipo_carga TEXT DEFAULT 'luces',
+			integracion_tipo TEXT DEFAULT 'gpio',
+			fabricante TEXT,
+			modelo TEXT,
+			entity_id TEXT,
+			device_id TEXT,
+			capability TEXT,
+			comando_on TEXT,
+			comando_off TEXT,
+			monitoreo_habilitado INTEGER DEFAULT 0,
+			potencia_w REAL DEFAULT 0,
+			sensor_consumo_entity_id TEXT,
+			ultimo_consumo_w REAL DEFAULT 0,
+			ultimo_consumo_kwh REAL DEFAULT 0,
+			ultimo_voltaje_v REAL DEFAULT 0,
+			ultimo_corriente_a REAL DEFAULT 0,
 			gpio_pin INTEGER NOT NULL,
 			relay_name TEXT,
 			active_high INTEGER DEFAULT 1,
@@ -240,6 +316,42 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_eventos_empresa_fecha ON empresa_control_electrico_eventos(empresa_id, fecha_evento);`,
 		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_eventos_estacion ON empresa_control_electrico_eventos(empresa_id, estacion_id);`,
+		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_lecturas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			estacion_id INTEGER,
+			rele_id INTEGER,
+			origen TEXT,
+			estado TEXT,
+			consumo_w REAL DEFAULT 0,
+			consumo_kwh REAL DEFAULT 0,
+			voltaje_v REAL DEFAULT 0,
+			corriente_a REAL DEFAULT 0,
+			fecha_lectura TEXT DEFAULT (datetime('now','localtime')),
+			metadata_json TEXT
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_lecturas_empresa_fecha ON empresa_control_electrico_lecturas(empresa_id, fecha_lectura);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_lecturas_rele_fecha ON empresa_control_electrico_lecturas(empresa_id, rele_id, fecha_lectura);`,
+		`CREATE TABLE IF NOT EXISTS empresa_control_electrico_reglas (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			empresa_id INTEGER NOT NULL,
+			nombre TEXT,
+			sensor_codigo TEXT,
+			sensor_tipo TEXT,
+			condicion TEXT DEFAULT 'igual',
+			valor TEXT,
+			accion TEXT DEFAULT 'alarma',
+			estacion_id INTEGER,
+			rele_id INTEGER,
+			alarma_habilitada INTEGER DEFAULT 1,
+			severidad TEXT DEFAULT 'advertencia',
+			mensaje TEXT,
+			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			usuario_creador TEXT,
+			estado TEXT DEFAULT 'activo'
+		);`,
+		`CREATE INDEX IF NOT EXISTS ix_empresa_control_electrico_reglas_empresa ON empresa_control_electrico_reglas(empresa_id, estado);`,
 	}
 
 	for _, stmt := range stmts {
@@ -263,6 +375,7 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 
 	raspberryCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "codigo": "TEXT", "nombre": "TEXT", "raspberry_ip": "TEXT",
+		"tipo_controlador": "TEXT DEFAULT 'raspberry_gpio'", "proveedor": "TEXT", "base_url": "TEXT",
 		"raspberry_port": "INTEGER DEFAULT 8081", "api_path": "TEXT DEFAULT '/api/gpio/relay'", "api_token": "TEXT",
 		"timeout_ms": "INTEGER DEFAULT 2500", "fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))",
 		"fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))", "usuario_creador": "TEXT",
@@ -277,7 +390,12 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	releCols := map[string]string{
 		"empresa_id": "INTEGER NOT NULL", "raspberry_id": "INTEGER", "estacion_id": "INTEGER NOT NULL", "estacion_codigo": "TEXT",
 		"estacion_nombre": "TEXT", "salida_codigo": "TEXT DEFAULT 'principal'", "tipo_carga": "TEXT DEFAULT 'luces'",
-		"gpio_pin": "INTEGER NOT NULL", "relay_name": "TEXT", "active_high": "INTEGER DEFAULT 1",
+		"integracion_tipo": "TEXT DEFAULT 'gpio'", "fabricante": "TEXT", "modelo": "TEXT", "entity_id": "TEXT",
+		"device_id": "TEXT", "capability": "TEXT", "comando_on": "TEXT", "comando_off": "TEXT",
+		"monitoreo_habilitado": "INTEGER DEFAULT 0", "potencia_w": "REAL DEFAULT 0", "sensor_consumo_entity_id": "TEXT",
+		"ultimo_consumo_w": "REAL DEFAULT 0", "ultimo_consumo_kwh": "REAL DEFAULT 0", "ultimo_voltaje_v": "REAL DEFAULT 0",
+		"ultimo_corriente_a": "REAL DEFAULT 0",
+		"gpio_pin":           "INTEGER NOT NULL", "relay_name": "TEXT", "active_high": "INTEGER DEFAULT 1",
 		"pulso_ms": "INTEGER DEFAULT 0", "modo": "TEXT DEFAULT 'seguimiento_estacion'", "programacion_habilitada": "INTEGER DEFAULT 0",
 		"hora_encendido": "TEXT", "hora_apagado": "TEXT", "programacion_dias": "TEXT DEFAULT 'todos'",
 		"programacion_timezone": "TEXT DEFAULT 'America/Bogota'", "ultima_programacion_on": "TEXT", "ultima_programacion_off": "TEXT",
@@ -309,6 +427,28 @@ func EnsureEmpresaControlElectricoSchema(dbConn *sql.DB) error {
 	}
 	for col, def := range eventCols {
 		if err := ensureColumnIfMissing(dbConn, "empresa_control_electrico_eventos", col, def); err != nil {
+			return err
+		}
+	}
+	lecturaCols := map[string]string{
+		"empresa_id": "INTEGER NOT NULL", "estacion_id": "INTEGER", "rele_id": "INTEGER", "origen": "TEXT", "estado": "TEXT",
+		"consumo_w": "REAL DEFAULT 0", "consumo_kwh": "REAL DEFAULT 0", "voltaje_v": "REAL DEFAULT 0", "corriente_a": "REAL DEFAULT 0",
+		"fecha_lectura": "TEXT DEFAULT (datetime('now','localtime'))", "metadata_json": "TEXT",
+	}
+	for col, def := range lecturaCols {
+		if err := ensureColumnIfMissing(dbConn, "empresa_control_electrico_lecturas", col, def); err != nil {
+			return err
+		}
+	}
+	reglaCols := map[string]string{
+		"empresa_id": "INTEGER NOT NULL", "nombre": "TEXT", "sensor_codigo": "TEXT", "sensor_tipo": "TEXT", "condicion": "TEXT DEFAULT 'igual'",
+		"valor": "TEXT", "accion": "TEXT DEFAULT 'alarma'", "estacion_id": "INTEGER", "rele_id": "INTEGER",
+		"alarma_habilitada": "INTEGER DEFAULT 1", "severidad": "TEXT DEFAULT 'advertencia'", "mensaje": "TEXT",
+		"fecha_creacion": "TEXT DEFAULT (datetime('now','localtime'))", "fecha_actualizacion": "TEXT DEFAULT (datetime('now','localtime'))",
+		"usuario_creador": "TEXT", "estado": "TEXT DEFAULT 'activo'",
+	}
+	for col, def := range reglaCols {
+		if err := ensureColumnIfMissing(dbConn, "empresa_control_electrico_reglas", col, def); err != nil {
 			return err
 		}
 	}
@@ -354,18 +494,20 @@ func EnsureEmpresaControlElectricoPrimaryRaspberry(dbConn *sql.DB, cfg *EmpresaC
 		return nil, err
 	}
 	item := &EmpresaControlElectricoRaspberry{
-		ID:             existingID,
-		EmpresaID:      cfg.EmpresaID,
-		Codigo:         "principal",
-		Nombre:         "Raspberry principal",
-		RaspberryIP:    cfg.RaspberryIP,
-		RaspberryPort:  cfg.RaspberryPort,
-		APIPath:        cfg.APIPath,
-		APIToken:       cfg.APIToken,
-		TimeoutMS:      cfg.TimeoutMS,
-		UsuarioCreador: cfg.UsuarioCreador,
-		Estado:         "activo",
-		Observaciones:  "Nodo principal sincronizado desde la configuracion global",
+		ID:              existingID,
+		EmpresaID:       cfg.EmpresaID,
+		Codigo:          "principal",
+		Nombre:          "Raspberry principal",
+		TipoControlador: "raspberry_gpio",
+		Proveedor:       "raspberry_pi",
+		RaspberryIP:     cfg.RaspberryIP,
+		RaspberryPort:   cfg.RaspberryPort,
+		APIPath:         cfg.APIPath,
+		APIToken:        cfg.APIToken,
+		TimeoutMS:       cfg.TimeoutMS,
+		UsuarioCreador:  cfg.UsuarioCreador,
+		Estado:          "activo",
+		Observaciones:   "Nodo principal sincronizado desde la configuracion global",
 	}
 	id, err := UpsertEmpresaControlElectricoRaspberry(dbConn, item)
 	if err != nil {
@@ -379,7 +521,7 @@ func ListEmpresaControlElectricoRaspberry(dbConn *sql.DB, empresaID int64, inclu
 	if empresaID <= 0 {
 		return nil, errors.New("empresa_id invalido")
 	}
-	q := `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ?`
+	q := `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(tipo_controlador,'raspberry_gpio'), COALESCE(proveedor,''), COALESCE(base_url,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ?`
 	if !includeInactive {
 		q += " AND LOWER(COALESCE(estado,'activo')) = 'activo'"
 	}
@@ -393,7 +535,7 @@ func ListEmpresaControlElectricoRaspberry(dbConn *sql.DB, empresaID int64, inclu
 	for rows.Next() {
 		var item EmpresaControlElectricoRaspberry
 		var token string
-		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.TipoControlador, &item.Proveedor, &item.BaseURL, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
 			return nil, err
 		}
 		item.APITokenConfigured = strings.TrimSpace(token) != ""
@@ -408,10 +550,10 @@ func GetEmpresaControlElectricoRaspberryByID(dbConn *sql.DB, empresaID, raspberr
 	if empresaID <= 0 || raspberryID <= 0 {
 		return nil, errors.New("empresa_id y raspberry_id son obligatorios")
 	}
-	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ? AND id = ? AND LOWER(COALESCE(estado,'activo')) = 'activo' LIMIT 1`, empresaID, raspberryID)
+	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(codigo,''), COALESCE(nombre,''), COALESCE(tipo_controlador,'raspberry_gpio'), COALESCE(proveedor,''), COALESCE(base_url,''), COALESCE(raspberry_ip,''), COALESCE(raspberry_port,8081), COALESCE(api_path,''), COALESCE(api_token,''), COALESCE(timeout_ms,2500), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo'), COALESCE(observaciones,'') FROM empresa_control_electrico_raspberry_pis WHERE empresa_id = ? AND id = ? AND LOWER(COALESCE(estado,'activo')) = 'activo' LIMIT 1`, empresaID, raspberryID)
 	var item EmpresaControlElectricoRaspberry
 	var token string
-	if err := row.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
+	if err := row.Scan(&item.ID, &item.EmpresaID, &item.Codigo, &item.Nombre, &item.TipoControlador, &item.Proveedor, &item.BaseURL, &item.RaspberryIP, &item.RaspberryPort, &item.APIPath, &token, &item.TimeoutMS, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado, &item.Observaciones); err != nil {
 		return nil, err
 	}
 	item.APITokenConfigured = strings.TrimSpace(token) != ""
@@ -447,12 +589,12 @@ func UpsertEmpresaControlElectricoRaspberry(dbConn *sql.DB, item *EmpresaControl
 		token = strings.TrimSpace(item.APIToken)
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET codigo=?, nombre=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE empresa_id=? AND id=?`,
-			item.Codigo, item.Nombre, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), item.EmpresaID, existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_raspberry_pis SET codigo=?, nombre=?, tipo_controlador=?, proveedor=?, base_url=?, raspberry_ip=?, raspberry_port=?, api_path=?, api_token=?, timeout_ms=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE empresa_id=? AND id=?`,
+			item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), item.EmpresaID, existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_raspberry_pis (empresa_id, codigo, nombre, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
-		item.EmpresaID, item.Codigo, item.Nombre, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_raspberry_pis (empresa_id, codigo, nombre, tipo_controlador, proveedor, base_url, raspberry_ip, raspberry_port, api_path, api_token, timeout_ms, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		item.EmpresaID, item.Codigo, item.Nombre, item.TipoControlador, item.Proveedor, item.BaseURL, item.RaspberryIP, item.RaspberryPort, item.APIPath, token, item.TimeoutMS, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
 // SetEmpresaControlElectricoRaspberryEstado activa o desactiva un controlador GPIO.
@@ -489,10 +631,14 @@ func UpsertEmpresaControlElectricoConfig(dbConn *sql.DB, cfg *EmpresaControlElec
 		cfg.EmpresaID, boolInt(cfg.Habilitado), cfg.RaspberryIP, cfg.RaspberryPort, cfg.APIPath, token, cfg.TimeoutMS, boolInt(cfg.AutoSyncEstaciones), boolInt(cfg.FailSafeOnError), strings.TrimSpace(cfg.UsuarioCreador), cfg.Estado, strings.TrimSpace(cfg.Observaciones))
 }
 
-func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, activeHigh, programacionHabilitada *int) []interface{} {
+func empresaControlElectricoReleScanDest(item *EmpresaControlElectricoRele, activeHigh, programacionHabilitada, monitoreoHabilitado *int) []interface{} {
 	return []interface{}{
 		&item.ID, &item.EmpresaID, &item.RaspberryID, &item.RaspberryCodigo, &item.RaspberryNombre, &item.RaspberryIP,
+		&item.RaspberryTipoControlador, &item.RaspberryProveedor, &item.RaspberryBaseURL,
 		&item.EstacionID, &item.EstacionCodigo, &item.EstacionNombre, &item.SalidaCodigo, &item.TipoCarga,
+		&item.IntegracionTipo, &item.Fabricante, &item.Modelo, &item.EntityID, &item.DeviceID, &item.Capability,
+		&item.ComandoOn, &item.ComandoOff, monitoreoHabilitado, &item.PotenciaW, &item.SensorConsumoEntityID,
+		&item.UltimoConsumoW, &item.UltimoConsumoKWh, &item.UltimoVoltajeV, &item.UltimoCorrienteA,
 		&item.GPIOPin, &item.RelayName, activeHigh, &item.PulsoMS, &item.Modo, programacionHabilitada,
 		&item.HoraEncendido, &item.HoraApagado, &item.ProgramacionDias, &item.ProgramacionTimezone,
 		&item.UltimaProgramacionOn, &item.UltimaProgramacionOff, &item.ImagenURL,
@@ -521,11 +667,13 @@ func ListEmpresaControlElectricoReles(dbConn *sql.DB, empresaID int64, includeIn
 		var item EmpresaControlElectricoRele
 		var activeHigh int
 		var programacionHabilitada int
-		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
+		var monitoreoHabilitado int
+		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada, &monitoreoHabilitado)...); err != nil {
 			return nil, err
 		}
 		item.ActiveHigh = activeHigh == 1
 		item.ProgramacionHabilitada = programacionHabilitada == 1
+		item.MonitoreoHabilitado = monitoreoHabilitado == 1
 		normalizeEmpresaControlElectricoRele(&item)
 		out = append(out, item)
 	}
@@ -553,11 +701,13 @@ func GetEmpresaControlElectricoReleByID(dbConn *sql.DB, empresaID, releID int64)
 	var item EmpresaControlElectricoRele
 	var activeHigh int
 	var programacionHabilitada int
-	if err := row.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
+	var monitoreoHabilitado int
+	if err := row.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada, &monitoreoHabilitado)...); err != nil {
 		return nil, err
 	}
 	item.ActiveHigh = activeHigh == 1
 	item.ProgramacionHabilitada = programacionHabilitada == 1
+	item.MonitoreoHabilitado = monitoreoHabilitado == 1
 	normalizeEmpresaControlElectricoRele(&item)
 	return &item, nil
 }
@@ -582,11 +732,13 @@ func ListEmpresaControlElectricoRelesByEstacion(dbConn *sql.DB, empresaID, estac
 		var item EmpresaControlElectricoRele
 		var activeHigh int
 		var programacionHabilitada int
-		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
+		var monitoreoHabilitado int
+		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada, &monitoreoHabilitado)...); err != nil {
 			return nil, err
 		}
 		item.ActiveHigh = activeHigh == 1
 		item.ProgramacionHabilitada = programacionHabilitada == 1
+		item.MonitoreoHabilitado = monitoreoHabilitado == 1
 		normalizeEmpresaControlElectricoRele(&item)
 		out = append(out, item)
 	}
@@ -629,12 +781,12 @@ func UpsertEmpresaControlElectricoRele(dbConn *sql.DB, item *EmpresaControlElect
 		return 0, err
 	}
 	if existingID > 0 {
-		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
-			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
+		_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET raspberry_id=NULLIF(?,0), estacion_codigo=?, estacion_nombre=?, salida_codigo=?, tipo_carga=?, integracion_tipo=?, fabricante=?, modelo=?, entity_id=?, device_id=?, capability=?, comando_on=?, comando_off=?, monitoreo_habilitado=?, potencia_w=?, sensor_consumo_entity_id=?, gpio_pin=?, relay_name=?, active_high=?, pulso_ms=?, modo=?, programacion_habilitada=?, hora_encendido=?, hora_apagado=?, programacion_dias=?, programacion_timezone=?, imagen_url=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=?, observaciones=? WHERE id=?`,
+			item.RaspberryID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones), existingID)
 		return existingID, err
 	}
-	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, gpio_pin, relay_name, active_high, pulso_ms, modo, programacion_habilitada, hora_encendido, hora_apagado, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
-		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reles (empresa_id, raspberry_id, estacion_id, estacion_codigo, estacion_nombre, salida_codigo, tipo_carga, integracion_tipo, fabricante, modelo, entity_id, device_id, capability, comando_on, comando_off, monitoreo_habilitado, potencia_w, sensor_consumo_entity_id, gpio_pin, relay_name, active_high, pulso_ms, modo, programacion_habilitada, hora_encendido, hora_apagado, programacion_dias, programacion_timezone, imagen_url, ultimo_estado, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones) VALUES (?, NULLIF(?,0), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'desconocido', datetime('now','localtime'), datetime('now','localtime'), ?, ?, ?)`,
+		item.EmpresaID, item.RaspberryID, item.EstacionID, item.EstacionCodigo, item.EstacionNombre, item.SalidaCodigo, item.TipoCarga, item.IntegracionTipo, item.Fabricante, item.Modelo, item.EntityID, item.DeviceID, item.Capability, item.ComandoOn, item.ComandoOff, boolInt(item.MonitoreoHabilitado), item.PotenciaW, item.SensorConsumoEntityID, item.GPIOPin, item.RelayName, boolInt(item.ActiveHigh), item.PulsoMS, item.Modo, boolInt(item.ProgramacionHabilitada), item.HoraEncendido, item.HoraApagado, item.ProgramacionDias, item.ProgramacionTimezone, item.ImagenURL, strings.TrimSpace(item.UsuarioCreador), item.Estado, strings.TrimSpace(item.Observaciones))
 }
 
 // SetEmpresaControlElectricoReleEstado cambia estado logico del mapeo.
@@ -659,11 +811,13 @@ func ListEmpresaControlElectricoRelesProgramados(dbConn *sql.DB) ([]EmpresaContr
 		var item EmpresaControlElectricoRele
 		var activeHigh int
 		var programacionHabilitada int
-		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada)...); err != nil {
+		var monitoreoHabilitado int
+		if err := rows.Scan(empresaControlElectricoReleScanDest(&item, &activeHigh, &programacionHabilitada, &monitoreoHabilitado)...); err != nil {
 			return nil, err
 		}
 		item.ActiveHigh = activeHigh == 1
 		item.ProgramacionHabilitada = programacionHabilitada == 1
+		item.MonitoreoHabilitado = monitoreoHabilitado == 1
 		normalizeEmpresaControlElectricoRele(&item)
 		out = append(out, item)
 	}
@@ -702,6 +856,127 @@ func UpdateEmpresaControlElectricoReleRuntime(dbConn *sql.DB, empresaID, releID 
 		return nil
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET ultimo_estado=?, ultimo_comando=?, ultimo_error=?, ultima_sincronizacion=datetime('now','localtime'), fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, strings.TrimSpace(ultimoEstado), strings.TrimSpace(ultimoComando), strings.TrimSpace(ultimoError), empresaID, releID)
+	return err
+}
+
+// InsertEmpresaControlElectricoLectura registra una lectura de telemetria y actualiza el ultimo estado visible del aparato.
+func InsertEmpresaControlElectricoLectura(dbConn *sql.DB, lectura EmpresaControlElectricoLectura) (int64, error) {
+	if lectura.EmpresaID <= 0 {
+		return 0, errors.New("empresa_id invalido")
+	}
+	if lectura.ConsumoW < 0 {
+		lectura.ConsumoW = 0
+	}
+	if lectura.ConsumoKWh < 0 {
+		lectura.ConsumoKWh = 0
+	}
+	if lectura.ReleID > 0 {
+		if _, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reles SET ultimo_estado=COALESCE(NULLIF(?,''), ultimo_estado), ultimo_consumo_w=?, ultimo_consumo_kwh=?, ultimo_voltaje_v=?, ultimo_corriente_a=?, ultima_sincronizacion=datetime('now','localtime'), fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`,
+			strings.TrimSpace(lectura.Estado), lectura.ConsumoW, lectura.ConsumoKWh, lectura.VoltajeV, lectura.CorrienteA, lectura.EmpresaID, lectura.ReleID); err != nil {
+			return 0, err
+		}
+	}
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_lecturas (empresa_id, estacion_id, rele_id, origen, estado, consumo_w, consumo_kwh, voltaje_v, corriente_a, fecha_lectura, metadata_json) VALUES (?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?)`,
+		lectura.EmpresaID, lectura.EstacionID, lectura.ReleID, truncateControlElectricoText(lectura.Origen, 80), truncateControlElectricoText(lectura.Estado, 40), lectura.ConsumoW, lectura.ConsumoKWh, lectura.VoltajeV, lectura.CorrienteA, truncateControlElectricoText(lectura.MetadataJSON, 2000))
+}
+
+// ListEmpresaControlElectricoLecturas lista telemetria reciente por empresa o aparato.
+func ListEmpresaControlElectricoLecturas(dbConn *sql.DB, empresaID, releID int64, limit int) ([]EmpresaControlElectricoLectura, error) {
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id invalido")
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	q := `SELECT id, empresa_id, COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(origen,''), COALESCE(estado,''), COALESCE(consumo_w,0), COALESCE(consumo_kwh,0), COALESCE(voltaje_v,0), COALESCE(corriente_a,0), COALESCE(fecha_lectura,''), COALESCE(metadata_json,'') FROM empresa_control_electrico_lecturas WHERE empresa_id=?`
+	args := []interface{}{empresaID}
+	if releID > 0 {
+		q += " AND rele_id=?"
+		args = append(args, releID)
+	}
+	q += " ORDER BY id DESC LIMIT ?"
+	args = append(args, limit)
+	rows, err := querySQLCompat(dbConn, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaControlElectricoLectura{}
+	for rows.Next() {
+		var item EmpresaControlElectricoLectura
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.EstacionID, &item.ReleID, &item.Origen, &item.Estado, &item.ConsumoW, &item.ConsumoKWh, &item.VoltajeV, &item.CorrienteA, &item.FechaLectura, &item.MetadataJSON); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+// ListEmpresaControlElectricoReglas lista reglas activas o historicas por empresa.
+func ListEmpresaControlElectricoReglas(dbConn *sql.DB, empresaID int64, includeInactive bool) ([]EmpresaControlElectricoRegla, error) {
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id invalido")
+	}
+	q := `SELECT id, empresa_id, COALESCE(nombre,''), COALESCE(sensor_codigo,''), COALESCE(sensor_tipo,''), COALESCE(condicion,'igual'), COALESCE(valor,''), COALESCE(accion,'alarma'), COALESCE(estacion_id,0), COALESCE(rele_id,0), COALESCE(alarma_habilitada,1), COALESCE(severidad,'advertencia'), COALESCE(mensaje,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,''), COALESCE(usuario_creador,''), COALESCE(estado,'activo') FROM empresa_control_electrico_reglas WHERE empresa_id=?`
+	if !includeInactive {
+		q += " AND LOWER(COALESCE(estado,'activo')) = 'activo'"
+	}
+	q += " ORDER BY id DESC"
+	rows, err := querySQLCompat(dbConn, q, empresaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []EmpresaControlElectricoRegla{}
+	for rows.Next() {
+		var item EmpresaControlElectricoRegla
+		var alarma int
+		if err := rows.Scan(&item.ID, &item.EmpresaID, &item.Nombre, &item.SensorCodigo, &item.SensorTipo, &item.Condicion, &item.Valor, &item.Accion, &item.EstacionID, &item.ReleID, &alarma, &item.Severidad, &item.Mensaje, &item.FechaCreacion, &item.FechaActualizacion, &item.UsuarioCreador, &item.Estado); err != nil {
+			return nil, err
+		}
+		item.AlarmaHabilitada = alarma == 1
+		normalizeEmpresaControlElectricoRegla(&item)
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+// UpsertEmpresaControlElectricoRegla crea o actualiza una automatizacion.
+func UpsertEmpresaControlElectricoRegla(dbConn *sql.DB, item *EmpresaControlElectricoRegla) (int64, error) {
+	if item == nil || item.EmpresaID <= 0 {
+		return 0, errors.New("empresa_id invalido")
+	}
+	normalizeEmpresaControlElectricoRegla(item)
+	if item.SensorCodigo == "" {
+		return 0, errors.New("sensor_codigo es obligatorio")
+	}
+	if item.ReleID > 0 {
+		if _, err := GetEmpresaControlElectricoReleByID(dbConn, item.EmpresaID, item.ReleID); err != nil {
+			return 0, errors.New("rele_id no pertenece a esta empresa")
+		}
+	}
+	if item.ID > 0 {
+		var existingID int64
+		err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_control_electrico_reglas WHERE empresa_id=? AND id=? LIMIT 1`, item.EmpresaID, item.ID).Scan(&existingID)
+		if err != nil {
+			return 0, err
+		}
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET nombre=?, sensor_codigo=?, sensor_tipo=?, condicion=?, valor=?, accion=?, estacion_id=NULLIF(?,0), rele_id=NULLIF(?,0), alarma_habilitada=?, severidad=?, mensaje=?, fecha_actualizacion=datetime('now','localtime'), usuario_creador=?, estado=? WHERE empresa_id=? AND id=?`,
+			item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado, item.EmpresaID, existingID)
+		return existingID, err
+	}
+	return insertSQLCompat(dbConn, `INSERT INTO empresa_control_electrico_reglas (empresa_id, nombre, sensor_codigo, sensor_tipo, condicion, valor, accion, estacion_id, rele_id, alarma_habilitada, severidad, mensaje, fecha_creacion, fecha_actualizacion, usuario_creador, estado) VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?,0), NULLIF(?,0), ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'), ?, ?)`,
+		item.EmpresaID, item.Nombre, item.SensorCodigo, item.SensorTipo, item.Condicion, item.Valor, item.Accion, item.EstacionID, item.ReleID, boolInt(item.AlarmaHabilitada), item.Severidad, item.Mensaje, strings.TrimSpace(item.UsuarioCreador), item.Estado)
+}
+
+func SetEmpresaControlElectricoReglaEstado(dbConn *sql.DB, empresaID, reglaID int64, estado string) error {
+	if empresaID <= 0 || reglaID <= 0 {
+		return errors.New("empresa_id y regla_id son obligatorios")
+	}
+	_, err := execSQLCompat(dbConn, `UPDATE empresa_control_electrico_reglas SET estado=?, fecha_actualizacion=datetime('now','localtime') WHERE empresa_id=? AND id=?`, normalizeControlElectricoEstado(estado), empresaID, reglaID)
 	return err
 }
 
@@ -839,7 +1114,13 @@ func normalizeEmpresaControlElectricoRaspberry(item *EmpresaControlElectricoRasp
 	if item.Nombre == "" {
 		item.Nombre = strings.ReplaceAll(item.Codigo, "_", " ")
 	}
+	item.TipoControlador = normalizeControlElectricoTipoControlador(item.TipoControlador)
+	item.Proveedor = normalizeControlElectricoProveedor(item.Proveedor, item.TipoControlador)
+	item.BaseURL = strings.TrimSpace(item.BaseURL)
 	item.RaspberryIP = strings.TrimSpace(item.RaspberryIP)
+	if item.RaspberryIP == "" && item.BaseURL != "" {
+		item.RaspberryIP = item.BaseURL
+	}
 	if item.RaspberryPort <= 0 {
 		item.RaspberryPort = DefaultControlElectricoPort
 	}
@@ -872,12 +1153,33 @@ func normalizeEmpresaControlElectricoRele(item *EmpresaControlElectricoRele) {
 	item.RaspberryCodigo = strings.TrimSpace(item.RaspberryCodigo)
 	item.RaspberryNombre = strings.TrimSpace(item.RaspberryNombre)
 	item.RaspberryIP = strings.TrimSpace(item.RaspberryIP)
+	item.RaspberryTipoControlador = normalizeControlElectricoTipoControlador(item.RaspberryTipoControlador)
+	item.RaspberryProveedor = strings.TrimSpace(item.RaspberryProveedor)
+	item.RaspberryBaseURL = strings.TrimSpace(item.RaspberryBaseURL)
 	item.EstacionCodigo = strings.TrimSpace(item.EstacionCodigo)
 	item.EstacionNombre = strings.TrimSpace(item.EstacionNombre)
 	item.SalidaCodigo = normalizeControlElectricoSalidaCodigo(item.SalidaCodigo, item.TipoCarga, item.RelayName)
 	item.TipoCarga = strings.ToLower(strings.TrimSpace(item.TipoCarga))
 	if item.TipoCarga == "" {
 		item.TipoCarga = item.SalidaCodigo
+	}
+	item.IntegracionTipo = normalizeControlElectricoIntegracionTipo(item.IntegracionTipo, item.RaspberryTipoControlador)
+	item.Fabricante = truncateControlElectricoText(strings.TrimSpace(item.Fabricante), 120)
+	item.Modelo = truncateControlElectricoText(strings.TrimSpace(item.Modelo), 120)
+	item.EntityID = truncateControlElectricoText(strings.TrimSpace(item.EntityID), 180)
+	item.DeviceID = truncateControlElectricoText(strings.TrimSpace(item.DeviceID), 180)
+	item.Capability = truncateControlElectricoText(strings.TrimSpace(item.Capability), 80)
+	item.ComandoOn = truncateControlElectricoText(strings.TrimSpace(item.ComandoOn), 120)
+	item.ComandoOff = truncateControlElectricoText(strings.TrimSpace(item.ComandoOff), 120)
+	item.SensorConsumoEntityID = truncateControlElectricoText(strings.TrimSpace(item.SensorConsumoEntityID), 180)
+	if item.PotenciaW < 0 {
+		item.PotenciaW = 0
+	}
+	if item.UltimoConsumoW < 0 {
+		item.UltimoConsumoW = 0
+	}
+	if item.UltimoConsumoKWh < 0 {
+		item.UltimoConsumoKWh = 0
 	}
 	item.RelayName = strings.TrimSpace(item.RelayName)
 	if item.RelayName == "" {
@@ -898,6 +1200,90 @@ func normalizeEmpresaControlElectricoRele(item *EmpresaControlElectricoRele) {
 		item.PulsoMS = 0
 	}
 	item.Estado = normalizeControlElectricoEstado(item.Estado)
+}
+
+func normalizeEmpresaControlElectricoRegla(item *EmpresaControlElectricoRegla) {
+	if item == nil {
+		return
+	}
+	item.Nombre = truncateControlElectricoText(strings.TrimSpace(item.Nombre), 160)
+	item.SensorCodigo = truncateControlElectricoText(strings.TrimSpace(item.SensorCodigo), 180)
+	item.SensorTipo = truncateControlElectricoText(strings.TrimSpace(item.SensorTipo), 80)
+	switch strings.ToLower(strings.TrimSpace(item.Condicion)) {
+	case "igual", "distinto", "mayor", "menor", "contiene":
+		item.Condicion = strings.ToLower(strings.TrimSpace(item.Condicion))
+	default:
+		item.Condicion = "igual"
+	}
+	item.Valor = truncateControlElectricoText(strings.TrimSpace(item.Valor), 120)
+	switch strings.ToLower(strings.TrimSpace(item.Accion)) {
+	case "encender", "apagar", "alarma":
+		item.Accion = strings.ToLower(strings.TrimSpace(item.Accion))
+	default:
+		item.Accion = "alarma"
+	}
+	switch strings.ToLower(strings.TrimSpace(item.Severidad)) {
+	case "info", "advertencia", "critica":
+		item.Severidad = strings.ToLower(strings.TrimSpace(item.Severidad))
+	default:
+		item.Severidad = "advertencia"
+	}
+	item.Mensaje = truncateControlElectricoText(strings.TrimSpace(item.Mensaje), 600)
+	item.Estado = normalizeControlElectricoEstado(item.Estado)
+}
+
+func normalizeControlElectricoTipoControlador(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "raspberry", "raspberry_pi", "raspberry_gpio", "gpio":
+		return "raspberry_gpio"
+	case "home_assistant", "ha":
+		return "home_assistant"
+	case "shelly", "shelly_rpc":
+		return "shelly_rpc"
+	case "matter", "matter_bridge":
+		return "matter_bridge"
+	case "homekit", "homekit_bridge", "siri":
+		return "homekit_bridge"
+	case "mqtt", "zigbee2mqtt", "zwave_js", "philips_hue", "tuya", "ewelink", "sonoff", "lutron", "knx", "generic_http":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "generic_http"
+	}
+}
+
+func normalizeControlElectricoProveedor(raw, tipo string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	if value != "" {
+		return truncateControlElectricoText(value, 80)
+	}
+	switch tipo {
+	case "home_assistant":
+		return "home_assistant"
+	case "homekit_bridge":
+		return "apple_siri_homekit_bridge"
+	case "matter_bridge":
+		return "matter"
+	case "shelly_rpc":
+		return "shelly"
+	case "raspberry_gpio":
+		return "raspberry_pi"
+	default:
+		return tipo
+	}
+}
+
+func normalizeControlElectricoIntegracionTipo(raw, tipoControlador string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "gpio":
+		if tipoControlador != "" && tipoControlador != "raspberry_gpio" {
+			return tipoControlador
+		}
+		return "gpio"
+	case "home_assistant", "ha", "homekit_siri", "matter_bridge", "philips_hue", "tuya", "zigbee2mqtt", "zwave_js", "shelly_rpc", "mqtt", "generic_http":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "generic_http"
+	}
 }
 
 func normalizeControlElectricoEstado(raw string) string {

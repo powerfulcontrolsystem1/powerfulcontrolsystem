@@ -1,25 +1,60 @@
-2026-05-28: Publicacion host de iRedMail para Email corporativo
-- Modulo: `Email corporativo` y despliegue VPS.
-- Archivos: `deploy/docker-compose.platform.yml`, `deploy/scripts/vps-compose-sidecar-up.sh`, `deploy/scripts/vps-configure-iredmail-host-nginx.sh`, `scripts/sync_to_vps.ps1`.
-- Funcionalidad: cuando `EMAIL_CORPORATIVO_ENABLED` esta activo, el redeploy levanta el perfil Docker `mail`, publica iRedMail en un puerto HTTP interno y configura Nginx del host para que `mail.powerfulcontrolsystem.com` apunte al webmail/iRedAdmin real.
-- Diagnostico: el backend diferencia credenciales rechazadas por iRedAdmin de un subdominio `mail` que todavia responde el backend POS.
+2026-05-29: Fotos de usuarios en storage empresarial
+- Modulo: `Usuarios empresa`.
+- Cambio funcional: los usuarios creados por el administrador pueden tener foto de perfil desde `web/administrar_empresa/administrar_usuarios.html`.
+- Persistencia: `users.foto_url` guarda la URL publica de la imagen y el archivo se almacena en `/uploads/empresas/empresa_{id}_{slug}/imagenes/usuarios/`.
+- Seguridad: `/api/empresa/usuarios?action=foto` valida que el usuario pertenezca al mismo `empresa_id`, limita tamano y acepta solo PNG, JPG, GIF o WEBP.
+- Storage: `Storage Imagenes` de super administrador revisa la carpeta general `/imagenes/` de cada empresa, incluyendo Domotica y usuarios.
 
-2026-05-28: Diagnostico operativo de Email corporativo iRedMail
-- Modulo: `Email corporativo` en super administrador.
-- Pagina: `web/super/email_corporativo.html`.
-- API: `/super/api/email_corporativo` y accion `POST ?action=test_iredadmin`.
-- Funcionalidad: el super administrador ve si el modulo esta activo, si iRedAdmin-Pro tiene URL/admin/clave, si el webmail responde y cuantas cuentas estan activas, pendientes o con error. El boton `Probar iRedAdmin` valida las credenciales guardadas sin crear buzones.
-- Seguridad: las credenciales permanecen cifradas en configuracion; la UI no muestra secretos.
+2026-05-29: Domotica empresarial con fotos, sensores y reportes
+- Modulo visible: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Alcance: por empresa se configuran controladores, aparatos por estacion, fotos, consumo electrico, agendas, reglas de sensores, alarmas/eventos y reportes.
+- Integraciones: el sistema permite registrar equipos por GPIO/Raspberry, Home Assistant, HomeKit/Siri mediante bridge, Matter, Shelly RPC, Philips Hue, Tuya/Smart Life, Zigbee2MQTT, Z-Wave JS y HTTP generico. Los tokens se manejan como configuracion sensible y no se imprimen en UI.
+- Fotos: cada aparato acepta imagen y se almacena en la subcarpeta `/uploads/empresas/empresa_{id}_{slug}/imagenes/domotica/`, manteniendo aislamiento por `empresa_id`.
+- Super administrador: `web/super/domotica_storage.html` permite revisar carpetas empresariales, uso, numero de imagenes y tamano maximo permitido para cargas de Domotica.
+- QA: `backend/tools/seed_domotica_motel_calipso` crea datos demo para Motel Calipso cuando exista `DB_EMPRESAS_DSN`.
+
+2026-05-29: Domotica como modulo principal
+- Modulo visible: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Navegacion: el acceso sale de `Configuracion` y queda como boton principal en `web/administrar_empresa.html`, abriendo `web/administrar_empresa/modulo_menu.html?module=control_electrico`.
+- Subpaginas: el submenu concentra resumen, conexion GPIO, controladores, sensores Raspberry, estaciones/aparatos y bitacora.
+- Seguridad: se conservan permisos por `empresa_id` con `linkControlElectrico` y `linkConfiguracionSensoresRaspberry` agrupados bajo Domotica.
+
+2026-05-29: Domotica por estacion en carrito
+- Modulo visible: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Cambio funcional: el sistema mantiene las tablas y rutas existentes de control GPIO, pero la experiencia de usuario se renombra a Domotica para cubrir lamparas, motobombas, puertas, aires, jacuzzi y otros aparatos por estacion.
+- Carrito: al entrar a una estacion con carrito activo, si Domotica esta habilitada y hay aparatos activos para esa estacion, aparece automaticamente la tarjeta `Domotica`. Cada aparato se muestra como boton y abre una ventana con estado, encendido, apagado y programacion horaria.
+- Configuracion: `web/administrar_empresa/control_electrico.html` opera como pagina de Domotica; permite registrar controladores locales y aparatos por estacion con GPIO, tipo, nombre, imagen, agenda y bitacora.
+- Persistencia: se reutilizan `empresa_control_electrico_config`, `empresa_control_electrico_raspberry_pis`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos`, siempre filtradas por `empresa_id`.
+
+2026-05-29: Renovacion de licencias vencidas
+- Modulos afectados: `licencias`, `checkout_licencias`, `pagos`, `seleccion_empresas`.
+- Funcion: desde `Seleccionar empresa > Licencias`, el boton `Renovar licencia` puede abrir el checkout de una licencia vencida asignada a esa misma empresa, sin exponer planes ocultos ni licencias de otras empresas.
+- Regla comercial: las licencias gratis de prueba con valor cero, sean de 15 o 30 dias, no se renuevan; la UI ofrece elegir un plan comercial.
+- Endpoints: `/api/public/licencias/checkout_summary` y los flujos Wompi/Epayco/activar sin pago comparten la validacion de disponibilidad para checkout; `/api/public/licencias/payment_methods` responde de forma tolerante ante pasarelas incompletas.
+
+2026-05-29: Accesos IA y emisoras en menu flotante
+- Modulos afectados: `menu_flotante`, `chat_flotante`, `radio_online`, `frontend_ux`.
+- Cambio funcional: el menu flotante autenticado agrega botones `Robot / IA` y `Emisoras`.
+- UX: `Robot / IA` abre el avatar si el robot esta activo o la ventana del Asistente IA si no lo esta; `Emisoras` abre el panel de radio y permite activar el reproductor desde su propio switch sin encenderlo automaticamente por defecto.
+
+2026-05-29: Email corporativo Mailu
+- Modulo: `Email corporativo` y despliegue VPS.
+- Archivos: `deploy/docker-compose.platform.yml`, `deploy/scripts/vps-compose-sidecar-up.sh`, `deploy/scripts/vps-configure-mailu-host-nginx.sh`, `deploy/scripts/vps-provision-mailu-mailbox.sh`, `scripts/sync_to_vps.ps1`.
+- Cambio funcional: se elimina el proveedor anterior y se integra Mailu con SnappyMail en el perfil Docker `mail`.
+- Provision: el modo `mailu_direct` ejecuta el script directo contra `pcs-mailu-admin` y crea/actualiza buzones con `flask mailu user`.
+- Diagnostico: `/super/api/email_corporativo` expone `mailu_direct_enabled`, estado webmail, cuentas y accion `POST ?action=test_mailu`.
+- UX: la tarjeta `Bandeja de correo corporativo` del panel empresarial abre la bandeja automaticamente con un token temporal; el usuario no escribe la clave del buzon.
+- Seguridad: el backend firma autologin con HMAC, entra a SnappyMail por `/webmail/sso.php` usando cabeceras internas y el proxy publico limpia esas cabeceras antes de pasar trafico externo; la UI no muestra secretos.
 
 2026-05-28: Email corporativo para todas las empresas existentes
 - Modulos afectados: `email_corporativo`, `administrar_empresa`, `backend_db`, `frontend_ux`.
 - Cambio funcional: al iniciar el backend, si `email_corporativo.auto_create` esta activo, el sistema genera registros de correo corporativo para todas las empresas existentes que no tengan correo asignado.
-- UX: la tarjeta `Bandeja de correo corporativo` muestra diagnosticos de estado del buzon, estado del webmail y dominio, con avisos claros cuando falta provisionar iRedMail o iRedAdmin rechaza credenciales.
-- Alcance: no expone claves iniciales ni contrasenas; el buzon real sigue requiriendo provision correcta de iRedMail/iRedAdmin-Pro para leer mensajes.
+- UX: la tarjeta `Bandeja de correo corporativo` muestra diagnosticos de estado del buzon, estado del webmail y dominio, con avisos claros cuando falta provisionar Mailu.
+- Alcance: no expone claves iniciales ni contrasenas; el buzon real sigue requiriendo provision correcta de Mailu para leer mensajes.
 
 2026-05-28: Panel empresarial sin carga automatica de webmail
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
-- Cambio funcional: la tarjeta `Bandeja de correo corporativo` deja de cargar automaticamente `mail/?_task=mail&_mbox=INBOX` dentro de un iframe para evitar errores `401 Unauthorized` en el panel cuando Roundcube/iRedMail no tiene sesion iniciada.
+- Cambio funcional: la tarjeta `Bandeja de correo corporativo` deja de cargar automaticamente rutas internas del webmail dentro de un iframe cuando el buzon no esta provisionado.
 - UX: el panel conserva el estado del buzon y el boton `Abrir buzón`; el webmail se abre en su propia ventana segura para iniciar sesion y leer mensajes sin mezclar contrasenas o sesiones dentro del panel empresarial.
 
 2026-05-28: Bandeja de correo visible en panel empresarial
@@ -308,7 +343,7 @@
 2026-05-22: Index con resumen de modulos principales
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
 - Cambio funcional: la seccion de modulos del `index` deja de usar tarjetas individuales y presenta un unico parrafo comercial con las funciones principales.
-- Contenido visible: inventario profesional con bodegas, compras, datafonos, cajon monedero, cajas simultaneas, cortes de caja por usuario, pagos QR, facturacion offline, facturacion electronica, impuestos, modulo del contador, finanzas, nomina, IA, control electrico, sensores, reportes y verticales.
+- Contenido visible: inventario profesional con bodegas, compras, datafonos, cajon monedero, cajas simultaneas, cortes de caja por usuario, pagos QR, facturacion offline, facturacion electronica, impuestos, modulo del contador, finanzas, nomina, IA, domotica, sensores, reportes y verticales.
 - Alcance: cambio HTML/CSS sin backend, tablas, endpoints, permisos ni dependencias.
 
 2026-05-21: Impuestos dentro de Finanzas y cumplimiento
@@ -341,7 +376,7 @@
 2026-05-21: Botones configurables en acciones del carrito
 - Modulos afectados: `carritos`, `estaciones`, `configuracion_empresarial`, `frontend_ux`.
 - Cambio funcional: el panel de cliente y cada boton de la barra de acciones del carrito puede visualizarse u ocultarse desde la configuracion global del carrito o desde la configuracion propia de una estacion.
-- Botones cubiertos: `Descuentos`, `Cambiar tarifa`, `Control electrico`, `Cancelar carrito`, `Taxi`, `Clientes`, `Abonos` y `Vehiculo`. `QR de pago` conserva su configuracion especializada de pagos QR.
+- Botones cubiertos: `Descuentos`, `Cambiar tarifa`, `Domotica`, `Cancelar carrito`, `Taxi`, `Clientes`, `Abonos` y `Vehiculo`. `QR de pago` conserva su configuracion especializada de pagos QR.
 - Frontend: `web/administrar_empresa/carrito_de_compras.html` aplica las nuevas banderas de visibilidad y oculta la tarjeta de acciones si no queda ningun control visible.
 - Alcance: no cambia tablas, endpoints ni permisos; las preferencias se guardan dentro de `estaciones_config.carrito_ui_global` o en `estaciones[].carrito.configuracion`.
 
@@ -3311,9 +3346,10 @@ Captura inteligente de compras y gastos
 - UX: la pagina de descarga usa variables de apariencia del sistema y agrega el boton `Regresar a seleccionar empresas`, que vuelve al listado cuando esta embebida.
 - Backup: el selector de formato incluye `Backup completo (.json)` para descargar una copia integral exportable de la informacion de la empresa visible.
 
-2026-05-28: Email corporativo iRedMail
+2026-05-29: Email corporativo Mailu
 - Modulos afectados: `super_administrador`, `administrar_empresa`, `empresas`, `comunicaciones`, `VPS/Docker`.
-- Cambio funcional: el super administrador puede activar o desactivar el modulo de email corporativo, definir dominio, webmail, modo manual o `iRedAdmin-Pro API`, cuota y credenciales cifradas.
+- Cambio funcional: el super administrador puede activar o desactivar el modulo de email corporativo, definir dominio, webmail, modo manual o `mailu_direct`, cuota y credenciales cifradas.
 - Empresas: al registrar una empresa se genera automaticamente un correo unico basado en su nombre; si ya existe, se agrega un sufijo numerico. El fallo de provision no bloquea la creacion de la empresa.
 - UX: en administrar empresa aparece debajo de Favoritos una tarjeta para abrir el webmail cuando el modulo esta activo y la empresa tiene email generado.
-- Operacion: se agrega runbook en `deploy/iredmail/` y perfil `mail` en `deploy/docker-compose.platform.yml`; los secretos viven en `deploy/.env.platform`, se registran al arrancar el backend y se cifran en base con `CONFIG_ENC_KEY`.
+- Operacion: el perfil `mail` de `deploy/docker-compose.platform.yml` levanta Mailu/Roundcube; los secretos viven en `deploy/.env.platform`, se registran al arrancar el backend y se cifran en base con `CONFIG_ENC_KEY`.
+- Seguridad: el navegador no recibe la clave del buzon; el panel empresarial abre el webmail configurado cuando el buzon esta provisionado.

@@ -165,18 +165,19 @@ afecte dinero, documentos, licencias o seguridad.
 4. Un fallo SMTP no debe bloquear el flujo de negocio que disparo la alerta.
 5. Pruebas: guardar checks, enviar prueba, crear admin/empresa y revisar evento.
 
-## Email corporativo iRedMail
+## Email corporativo Mailu
 
 1. El super administrador configura `web/super/email_corporativo.html`.
 2. Si `auto_create` esta activo, cada empresa nueva recibe un correo unico basado
    en su nombre y dominio configurado.
 3. Si el modulo global esta desactivado, el correo queda generado pero pendiente.
-4. Si `iRedAdmin-Pro API` esta configurado, se intenta crear el buzon en iRedMail.
+4. Si `mailu_direct` esta activo, se intenta crear el buzon en Mailu mediante
+   `deploy/scripts/vps-provision-mailu-mailbox.sh`.
 5. La creacion de empresa no debe fallar por errores del servidor de correo.
 6. En el panel empresarial se muestra la tarjeta de webmail solo si el modulo esta
    activo y la empresa tiene cuenta.
-7. Si aparecen estados `error_login`, usar `Probar iRedAdmin` en super
-   administrador para validar URL, admin y clave guardados antes de reintentar
-   provision.
+7. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
+   validar el contenedor `pcs-mailu-admin` y el comando directo antes de
+   reintentar provision.
 8. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
    duplicada de nombre similar, comprobar sufijo unico y abrir webmail.

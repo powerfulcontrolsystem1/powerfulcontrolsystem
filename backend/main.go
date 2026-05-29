@@ -778,7 +778,7 @@ func main() {
 		}
 		startupTrace("after_empresa_email_corporativo_schema")
 		if err := handlers.EnsureCorporateEmailConfigFromEnv(dbSuper); err != nil {
-			log.Printf("warning: no se pudo registrar configuracion iRedMail desde entorno: %v", err)
+			log.Printf("warning: no se pudo registrar configuracion Mailu desde entorno: %v", err)
 		}
 		startupTrace("after_empresa_email_corporativo_env")
 		if created, err := handlers.EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmpresas, "sistema.arranque"); err != nil {
@@ -1072,6 +1072,7 @@ func main() {
 	http.HandleFunc("/super/api/empresas/compartidos", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/empresas/compartidos/aceptar", handlers.WithSuperAuditoria(dbSuper, "empresas_compartidas", handlers.EmpresaCompartidaAcceptHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/email_corporativo", handlers.WithSuperAuditoria(dbSuper, "super_email_corporativo", handlers.SuperEmailCorporativoHandler(dbSuper, dbEmpresas)))
+	http.HandleFunc("/api/internal/email_corporativo/autologin", handlers.EmpresaEmailCorporativoAutologinHandler(dbSuper))
 	// Endpoints para asesores comerciales y comisiones de licencias.
 	http.HandleFunc("/super/api/asesor_comercial", handlers.AsesorComercialSuperHandler(dbSuper))
 	http.HandleFunc("/api/asesor_comercial/aceptar", handlers.AsesorComercialAcceptHandler(dbSuper))
@@ -1260,7 +1261,7 @@ func main() {
 	http.HandleFunc("/api/public/sensor_puertas", handlers.PublicSensorPuertasHandler(dbEmpresas))
 	http.HandleFunc("/api/public/webrtc/signaling", handlers.SoporteRemotoSignalingHandler())
 	http.HandleFunc("/api/empresa/sensor_puertas/messages", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaSensorMessagesHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaControlElectricoPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/control_electrico", handlers.WithEmpresaControlElectricoPermissions(dbEmpresas, dbSuper, handlers.EmpresaControlElectricoHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/roles_de_usuario", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaRolesDeUsuarioHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_contexto", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosContextoHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/permisos_empresa", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPermisosFinosHandler(dbSuper)))
@@ -1368,6 +1369,7 @@ func main() {
 	http.HandleFunc("/super/api/postgres/performance", handlers.WithSuperAuditoria(dbSuper, "super_postgresql", handlers.PostgresPerformanceHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/super/api/explorador_archivos", handlers.WithSuperAuditoria(dbSuper, "super_explorador_archivos", handlers.SuperFileExplorerHandler(dbSuper)))
 	http.HandleFunc("/super/api/docker_portabilidad", handlers.WithSuperAuditoria(dbSuper, "super_docker_portabilidad", handlers.SuperDockerPortabilidadHandler(dbSuper)))
+	http.HandleFunc("/super/api/domotica_storage", handlers.WithSuperAuditoria(dbSuper, "super_domotica_storage", handlers.SuperDomoticaStorageHandler(dbSuper, dbEmpresas)))
 	// Endpoint de seguridad: escaneo de puertos
 	http.HandleFunc("/super/api/security/ports", handlers.WithSuperAuditoria(dbSuper, "super_seguridad_vps", handlers.SecurityPortsHandler(dbSuper)))
 	// Endpoint de seguridad: listado de procesos en memoria RAM

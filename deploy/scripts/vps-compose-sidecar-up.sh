@@ -44,21 +44,95 @@ cd "$PROJECT_DIR"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config >/dev/null
 
 email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
-iredmail_enabled="$(get_env_value "$ENV_FILE" IREDMAIL_ENABLED)"
+mailu_enabled="$(get_env_value "$ENV_FILE" MAILU_ENABLED)"
 compose_profiles=()
-if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$iredmail_enabled" = "1" ] || [ "$iredmail_enabled" = "true" ]; then
+if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ] || [ "$mailu_enabled" = "1" ] || [ "$mailu_enabled" = "true" ]; then
   compose_profiles+=(--profile mail)
-  echo "[sidecar] Perfil mail activo: se levanta iRedMail junto al stack."
-  if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_BIND)" ] || [ "$(get_env_value "$ENV_FILE" IREDMAIL_BIND)" = "0.0.0.0" ]; then
-    upsert_env "$ENV_FILE" IREDMAIL_BIND "127.0.0.1"
+  echo "[sidecar] Perfil mail activo: se levanta Mailu junto al stack."
+  if docker ps -a --format '{{.Names}}' | grep -qx 'pcs-iredmail'; then
+    echo "[sidecar] Eliminando contenedor antiguo de correo iRedMail."
+    docker rm -f pcs-iredmail >/dev/null 2>&1 || true
   fi
-  for pair in IREDMAIL_HTTP_PORT=8089 IREDMAIL_HTTPS_PORT=8449 IREDMAIL_SMTP_PORT=2525 IREDMAIL_POP3_PORT=8110 IREDMAIL_IMAP_PORT=8143 IREDMAIL_SMTPS_PORT=8465 IREDMAIL_SUBMISSION_PORT=8587 IREDMAIL_IMAPS_PORT=8993 IREDMAIL_POP3S_PORT=8995 IREDMAIL_SIEVE_PORT=8419; do
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_BIND)" ] || [ "$(get_env_value "$ENV_FILE" MAILU_BIND)" = "0.0.0.0" ]; then
+    upsert_env "$ENV_FILE" MAILU_BIND "127.0.0.1"
+  fi
+  for pair in MAILU_HTTP_PORT=8089 MAILU_WEBMAIL_PORT=8091 MAILU_HTTPS_PORT=8449 MAILU_SMTP_PORT=2525 MAILU_IMAP_PORT=8143 MAILU_SMTPS_PORT=8465 MAILU_SUBMISSION_PORT=8587 MAILU_IMAPS_PORT=8993; do
     key="${pair%%=*}"
     value="${pair#*=}"
     if [ -z "$(get_env_value "$ENV_FILE" "$key")" ]; then
       upsert_env "$ENV_FILE" "$key" "$value"
     fi
   done
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_RESOLVER_IP)" ]; then
+    upsert_env "$ENV_FILE" MAILU_RESOLVER_IP "192.168.203.254"
+  fi
+  for pair in MAILU_REDIS_IP=192.168.203.2 MAILU_SMTP_IP=192.168.203.3 MAILU_ANTISPAM_IP=192.168.203.4 MAILU_WEBMAIL_IP=192.168.203.5 MAILU_IMAP_IP=192.168.203.6 MAILU_ADMIN_IP=192.168.203.7 MAILU_FRONT_IP=192.168.203.8; do
+    key="${pair%%=*}"
+    value="${pair#*=}"
+    if [ -z "$(get_env_value "$ENV_FILE" "$key")" ]; then
+      upsert_env "$ENV_FILE" "$key" "$value"
+    fi
+  done
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_MESSAGE_SIZE_LIMIT)" ]; then
+    upsert_env "$ENV_FILE" MAILU_MESSAGE_SIZE_LIMIT "50000000"
+  fi
+  mailu_webmail="$(get_env_value "$ENV_FILE" MAILU_WEBMAIL)"
+  if [ -z "$mailu_webmail" ] || [ "$mailu_webmail" = "roundcube" ]; then
+    upsert_env "$ENV_FILE" MAILU_WEBMAIL "snappymail"
+  fi
+  provision_mode="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE)"
+  if [ -z "$provision_mode" ] || printf '%s' "$provision_mode" | grep -qi 'ired'; then
+    upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE "mailu_direct"
+  fi
+  provision_command="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND)"
+  if [ -z "$provision_command" ] || printf '%s' "$provision_command" | grep -qi 'ired'; then
+    upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND "/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh"
+  fi
+  webmail_url="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_WEBMAIL_URL)"
+  if [ -z "$webmail_url" ] || printf '%s' "$webmail_url" | grep -qi '/mail/\?$'; then
+    upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_WEBMAIL_URL "https://mail.powerfulcontrolsystem.com/webmail/"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_WEB_WEBMAIL)" ]; then
+    upsert_env "$ENV_FILE" MAILU_WEB_WEBMAIL "/webmail"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_WEB_ADMIN)" ]; then
+    upsert_env "$ENV_FILE" MAILU_WEB_ADMIN "/admin"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_WEBROOT_REDIRECT)" ]; then
+    upsert_env "$ENV_FILE" MAILU_WEBROOT_REDIRECT "/webmail"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL)" ]; then
+    upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL "http://mailu-webmail/"
+  fi
+  if [ "$(get_env_value "$ENV_FILE" MAILU_WEBMAIL_PORT)" = "8090" ]; then
+    upsert_env "$ENV_FILE" MAILU_WEBMAIL_PORT "8091"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_PROXY_AUTH_WHITELIST)" ]; then
+    upsert_env "$ENV_FILE" MAILU_PROXY_AUTH_WHITELIST "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_PROXY_AUTH_HEADER)" ]; then
+    upsert_env "$ENV_FILE" MAILU_PROXY_AUTH_HEADER "X-Auth-Email"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_PROXY_AUTH_CREATE)" ]; then
+    upsert_env "$ENV_FILE" MAILU_PROXY_AUTH_CREATE "false"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_REAL_IP_FROM)" ]; then
+    upsert_env "$ENV_FILE" MAILU_REAL_IP_FROM "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_AUTOLOGIN_SECRET)" ]; then
+    if command -v openssl >/dev/null 2>&1; then
+      upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_AUTOLOGIN_SECRET "$(openssl rand -hex 32)"
+    else
+      upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_AUTOLOGIN_SECRET "$(date +%s%N)-mail-autologin"
+    fi
+  fi
+  if [ -z "$(get_env_value "$ENV_FILE" MAILU_SECRET_KEY)" ]; then
+    if command -v openssl >/dev/null 2>&1; then
+      upsert_env "$ENV_FILE" MAILU_SECRET_KEY "$(openssl rand -hex 32)"
+    else
+      upsert_env "$ENV_FILE" MAILU_SECRET_KEY "$(date +%s%N)-mailu"
+    fi
+  fi
 fi
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "${compose_profiles[@]}" up -d --build
@@ -97,3 +171,31 @@ if [ "$ready" != "1" ]; then
 fi
 
 echo "[sidecar] OK. Docker esta arriba en paralelo; Nginx publico aun puede seguir apuntando al servicio actual."
+
+if [ "${#compose_profiles[@]}" -gt 0 ] && docker ps --format '{{.Names}}' | grep -qx 'pcs-mailu-webmail'; then
+  docker exec pcs-mailu-webmail sh -lc '
+set -eu
+config="/data/_data_/_default_/configs/application.ini"
+mkdir -p "$(dirname "$config")"
+touch "$config"
+set_ini_value() {
+  section="$1"
+  key="$2"
+  value="$3"
+  if grep -q "^[[:space:]]*$key[[:space:]]*=" "$config"; then
+    sed -i "s|^[[:space:]]*$key[[:space:]]*=.*|$key = $value|" "$config"
+    return
+  fi
+  if grep -q "^[[:space:]]*\\[$section\\][[:space:]]*$" "$config"; then
+    awk -v section="$section" -v key="$key" -v value="$value" '"'"'
+      $0 ~ "^[[:space:]]*\\[" section "\\][[:space:]]*$" { print; print key " = " value; next }
+      { print }
+    '"'"' "$config" > "$config.tmp" && mv "$config.tmp" "$config"
+  else
+    printf "\n[%s]\n%s = %s\n" "$section" "$key" "$value" >> "$config"
+  fi
+}
+set_ini_value "webmail" "popup_identity" "Off"
+set_ini_value "security" "secfetch_allow" "\"mode=navigate,dest=iframe,site=same-site\""
+' >/dev/null 2>&1 || true
+fi

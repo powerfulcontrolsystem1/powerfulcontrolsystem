@@ -17,6 +17,7 @@ import (
 	"net/smtp"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -306,6 +307,27 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodPost:
+			if strings.TrimSpace(r.URL.Query().Get("action")) == "foto" {
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				userID, photoURL, err := handleEmpresaUsuarioFotoUpload(r, dbEmp, dbSuper, empresaID)
+				if err != nil {
+					log.Printf("[usuarios_empresa] upload foto empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"ok":       true,
+					"id":       userID,
+					"foto_url": photoURL,
+				})
+				return
+			}
+
 			var payload struct {
 				EmpresaID          int64  `json:"empresa_id"`
 				Email              string `json:"email"`
@@ -1606,6 +1628,62 @@ func sendSuperGmailTestEmail(dbSuper *sql.DB, usuarioCreador string) error {
 		return err
 	}
 	return nil
+}
+
+func handleEmpresaUsuarioFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) (int64, string, error) {
+	if empresaID <= 0 {
+		return 0, "", fmt.Errorf("empresa_id requerido")
+	}
+	maxBytes := domoticaStorageMaxImageBytes(dbSuper, empresaID)
+	if err := r.ParseMultipartForm(maxBytes + (1 << 20)); err != nil {
+		return 0, "", fmt.Errorf("payload multipart invalido")
+	}
+	userID, err := parseInt64Form(r, "usuario_id")
+	if err != nil || userID <= 0 {
+		userID, err = parseInt64Form(r, "id")
+	}
+	if err != nil || userID <= 0 {
+		return 0, "", fmt.Errorf("usuario_id requerido")
+	}
+	if _, err := dbpkg.GetEmpresaUsuarioByID(dbEmp, empresaID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, "", fmt.Errorf("usuario no encontrado")
+		}
+		return 0, "", err
+	}
+	file, header, err := r.FormFile("foto")
+	if err != nil {
+		return 0, "", fmt.Errorf("foto requerida")
+	}
+	defer file.Close()
+	if header.Size > maxBytes {
+		return 0, "", fmt.Errorf("la imagen supera el tamano maximo permitido de %d KB", maxBytes/1024)
+	}
+	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(header.Filename)))
+	allowed := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
+	if !allowed[ext] {
+		return 0, "", fmt.Errorf("extension de imagen no permitida")
+	}
+	folder := domoticaEmpresaStorageFolder(dbEmp, empresaID)
+	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "usuarios")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return 0, "", fmt.Errorf("no se pudo preparar carpeta de imagenes")
+	}
+	fileName := fmt.Sprintf("usuario_%d_%d%s", userID, time.Now().UnixNano(), ext)
+	absPath := filepath.Join(dir, fileName)
+	out, err := os.Create(absPath)
+	if err != nil {
+		return 0, "", fmt.Errorf("no se pudo crear imagen")
+	}
+	defer out.Close()
+	if _, err := io.Copy(out, file); err != nil {
+		return 0, "", fmt.Errorf("no se pudo guardar imagen")
+	}
+	photoURL := "/uploads/empresas/" + folder + "/imagenes/usuarios/" + fileName
+	if err := dbpkg.UpdateEmpresaUsuarioFoto(dbEmp, empresaID, userID, photoURL); err != nil {
+		return 0, "", err
+	}
+	return userID, photoURL, nil
 }
 
 func validateEmpresaUsuarioPayload(empresaID int64, email, nombre string, rolUsuarioID int64) error {

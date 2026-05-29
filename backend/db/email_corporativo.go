@@ -43,7 +43,7 @@ func EnsureEmpresaEmailCorporativoSchema(dbConn *sql.DB) error {
 			domain TEXT,
 			webmail_url TEXT,
 			estado_provision TEXT DEFAULT 'pendiente',
-			provision_provider TEXT DEFAULT 'iredmail',
+			provision_provider TEXT DEFAULT 'mailu',
 			provision_attempts INTEGER DEFAULT 0,
 			fecha_provision TIMESTAMPTZ,
 			ultimo_error TEXT,
@@ -60,7 +60,7 @@ func EnsureEmpresaEmailCorporativoSchema(dbConn *sql.DB) error {
 		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS domain TEXT`,
 		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS webmail_url TEXT`,
 		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS estado_provision TEXT DEFAULT 'pendiente'`,
-		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS provision_provider TEXT DEFAULT 'iredmail'`,
+		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS provision_provider TEXT DEFAULT 'mailu'`,
 		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS provision_attempts INTEGER DEFAULT 0`,
 		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS fecha_provision TIMESTAMPTZ`,
 		`ALTER TABLE empresa_email_corporativo ADD COLUMN IF NOT EXISTS ultimo_error TEXT`,
@@ -144,7 +144,7 @@ func GetEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (*Empr
 		return nil, err
 	}
 	row := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(empresa_nombre, ''), COALESCE(email, ''), COALESCE(local_part, ''), COALESCE(domain, ''), COALESCE(webmail_url, ''),
-		COALESCE(estado_provision, 'pendiente'), COALESCE(provision_provider, 'iredmail'), COALESCE(provision_attempts, 0), COALESCE(CAST(fecha_provision AS TEXT), ''),
+		COALESCE(estado_provision, 'pendiente'), COALESCE(provision_provider, 'mailu'), COALESCE(provision_attempts, 0), COALESCE(CAST(fecha_provision AS TEXT), ''),
 		COALESCE(ultimo_error, ''), CASE WHEN trim(COALESCE(initial_password_enc, '')) <> '' THEN 1 ELSE 0 END,
 		COALESCE(CAST(fecha_creacion AS TEXT), ''), COALESCE(CAST(fecha_actualizacion AS TEXT), ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'), COALESCE(observaciones, '')
 		FROM empresa_email_corporativo
@@ -176,7 +176,7 @@ func ListEmpresaEmailCorporativo(dbConn *sql.DB) ([]EmpresaEmailCorporativo, err
 		return nil, err
 	}
 	rows, err := querySQLCompat(dbConn, `SELECT id, empresa_id, COALESCE(empresa_nombre, ''), COALESCE(email, ''), COALESCE(local_part, ''), COALESCE(domain, ''), COALESCE(webmail_url, ''),
-		COALESCE(estado_provision, 'pendiente'), COALESCE(provision_provider, 'iredmail'), COALESCE(provision_attempts, 0), COALESCE(CAST(fecha_provision AS TEXT), ''),
+		COALESCE(estado_provision, 'pendiente'), COALESCE(provision_provider, 'mailu'), COALESCE(provision_attempts, 0), COALESCE(CAST(fecha_provision AS TEXT), ''),
 		COALESCE(ultimo_error, ''), CASE WHEN trim(COALESCE(initial_password_enc, '')) <> '' THEN 1 ELSE 0 END,
 		COALESCE(CAST(fecha_creacion AS TEXT), ''), COALESCE(CAST(fecha_actualizacion AS TEXT), ''), COALESCE(usuario_creador, ''), COALESCE(estado, 'activo'), COALESCE(observaciones, '')
 		FROM empresa_email_corporativo
@@ -214,7 +214,7 @@ func UpsertEmpresaEmailCorporativo(dbConn *sql.DB, item EmpresaEmailCorporativo,
 		item.EstadoProvision = "pendiente"
 	}
 	if item.ProvisionProvider == "" {
-		item.ProvisionProvider = "iredmail"
+		item.ProvisionProvider = "mailu"
 	}
 	nowExpr := sqlNowExpr()
 	if encryptedPassword != "" {
@@ -263,8 +263,9 @@ func MarkEmpresaEmailProvisionResult(dbConn *sql.DB, empresaID int64, status, ms
 	}
 	_, err := execSQLCompat(dbConn, `UPDATE empresa_email_corporativo
 		SET estado_provision = ?, ultimo_error = ?, provision_attempts = COALESCE(provision_attempts, 0) + 1,
+			provision_provider = CASE WHEN ? THEN 'mailu' ELSE provision_provider END,
 			fecha_provision = `+fechaExpr+`, fecha_actualizacion = `+nowExpr+`
-		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'eliminado'`, status, strings.TrimSpace(msg), empresaID)
+		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'eliminado'`, status, strings.TrimSpace(msg), success, empresaID)
 	return err
 }
 
@@ -302,7 +303,7 @@ func EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp *sql.DB, domain, w
 			Domain:            strings.ToLower(strings.TrimSpace(domain)),
 			WebmailURL:        strings.TrimSpace(webmailURL),
 			EstadoProvision:   "pendiente",
-			ProvisionProvider: "iredmail",
+			ProvisionProvider: "mailu",
 			UsuarioCreador:    usuario,
 			Observaciones:     "Generado por sincronizacion de email corporativo",
 		}, "")

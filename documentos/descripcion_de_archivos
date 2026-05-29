@@ -1,3 +1,54 @@
+2026-05-29 - Fotos de usuarios en carpeta de imagenes empresarial
+- `backend/db/usuarios_empresa.go`:
+	- agrega `foto_url` al esquema `users`, lecturas JSON y funcion `UpdateEmpresaUsuarioFoto`.
+- `backend/handlers/usuarios_empresa.go`:
+	- agrega `POST /api/empresa/usuarios?action=foto` para subir fotos a la carpeta empresarial `imagenes/usuarios`, validando `empresa_id` + `usuario_id`.
+- `web/administrar_empresa/administrar_usuarios.html`:
+	- agrega selector de foto, vista previa y columna de foto en la tabla.
+- `backend/handlers/super_domotica_storage.go` y `web/super/domotica_storage.html`:
+	- el storage ahora cuenta toda la carpeta empresarial `/imagenes/`, incluyendo subcarpetas `domotica` y `usuarios`.
+
+2026-05-29 - Domotica empresarial con fotos y storage
+- `backend/db/control_electrico.go`:
+	- amplia el esquema con integraciones, monitoreo electrico, lecturas y reglas de sensores por `empresa_id`.
+- `backend/handlers/control_electrico.go`:
+	- agrega acciones `lecturas`, `reportes`, `regla`, `sensor_evento` y carga de fotos por carpeta empresarial.
+	- despacha comandos hacia GPIO/Raspberry, Home Assistant, bridge Siri/HomeKit, Matter, Shelly RPC y proveedores compatibles mediante gateway.
+- `backend/handlers/super_domotica_storage.go`:
+	- nueva API super para administrar limites de imagenes y revisar carpetas de Domotica por empresa.
+- `web/administrar_empresa/control_electrico.html`:
+	- agrega campos de integracion, foto del dispositivo, monitoreo de consumo, automatizaciones y reportes.
+- `web/super/domotica_storage.html`:
+	- nueva pagina super para limites de carga, uso de espacio y ruta publica por empresa.
+- `backend/tools/seed_domotica_motel_calipso/main.go`:
+	- herramienta QA para crear controladores, aparatos, lecturas, eventos, regla y fotos demo en Motel Calipso cuando exista DSN.
+
+2026-05-29 - Domotica como modulo principal
+- `web/administrar_empresa.html`:
+	- agrega el boton principal `Domotica`, que abre el submenu del modulo `control_electrico`.
+- `web/administrar_empresa/configuracion_menu.html` y `web/administrar_empresa/configuracion.html`:
+	- retiran los accesos de Domotica desde Configuracion para evitar duplicidad operativa.
+- `web/administrar_empresa/modulo_menu.html`:
+	- agrega `Sensores Raspberry` al submenu de Domotica.
+- `backend/handlers/empresa_permisos.go`:
+	- agrupa `linkControlElectrico` y `linkConfiguracionSensoresRaspberry` bajo Domotica.
+
+2026-05-29 - Email corporativo Mailu
+- `deploy/scripts/vps-provision-mailu-mailbox.sh`:
+	- script operativo de VPS que recibe `PCS_MAILU_EMAIL`, `PCS_MAILU_PASSWORD`, `PCS_MAILU_NAME` y `PCS_MAILU_DOMAIN`.
+	- crea o actualiza el buzon real en Mailu usando `flask mailu user` dentro de `pcs-mailu-admin`.
+- `deploy/scripts/vps-configure-mailu-host-nginx.sh`:
+	- publica `mail.powerfulcontrolsystem.com` hacia el contenedor `pcs-mailu-front` por Nginx del host.
+- `deploy/mailu/snappymail-application.ini`:
+	- template persistente montado en SnappyMail para desactivar el modal inicial de identidad y permitir el iframe `same-site` desde el panel empresarial.
+- `backend/handlers/email_corporativo_handlers.go`:
+	- agrega modo `mailu_direct`, elimina el SSO anterior y conserva comando `email_corporativo.direct_provision_command`.
+	- conserva las claves cifradas y no imprime secretos en errores ni logs.
+- `deploy/docker/backend.Dockerfile` y `deploy/docker-compose.platform.yml`:
+	- preparan el backend Docker con `docker-cli`, script ejecutable, socket Docker y perfil `mail` con Mailu/SnappyMail.
+- `documentos/email_corporativo_mailu.md`:
+	- documenta operacion, seguridad, variables y validaciones del nuevo proveedor.
+
 2026-05-28 - Asesor comercial en prueba de 15 dias
 - `web/elegir_licencia.html`:
 	- agrega campo `Codigo de asesor comercial` solo en tarjetas de licencia gratis de 15 dias.
@@ -10098,11 +10149,11 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `web/estilos.css`:
 	- Ajusta la pagina de descarga para usar variables de tema y verse consistente en apariencias claras y oscuras.
 
-2026-05-28 - Email corporativo iRedMail
+2026-05-29 - Email corporativo Mailu
 - `backend/db/email_corporativo.go`:
 	- Agrega la tabla `empresa_email_corporativo`, normalizacion de nombres de empresa a correos unicos y consultas de estado por empresa.
 - `backend/handlers/email_corporativo_handlers.go`:
-	- Nuevo handler super para activar/desactivar el modulo, guardar iRedAdmin-Pro API, sincronizar empresas y consultar el correo desde administrar empresa.
+	- Handler super para activar/desactivar el modulo, guardar configuracion Mailu, sincronizar empresas y consultar el correo desde administrar empresa.
 - `backend/handlers/system_empresas_handlers.go`:
 	- Al crear una empresa genera su email corporativo en modo best-effort, sin bloquear la empresa si el servidor de correo no esta listo.
 - `web/super/email_corporativo.html`:
@@ -10111,11 +10162,19 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Agrega el boton `Email corporativo` dentro de Comunicaciones.
 - `web/administrar_empresa/panel.html`:
 	- Muestra debajo de Favoritos una tarjeta para abrir el webmail de la empresa cuando el modulo esta activo.
-- `deploy/iredmail/README.md`, `deploy/iredmail/.env.example`, `deploy/iredmail/docker-compose.iredmail.yml`:
-	- Documentan y preparan el despliegue Docker aislado de iRedMail/iRedAdmin-Pro para la VPS.
 - `deploy/.env.platform.example`, `deploy/docker-compose.platform.yml`, `deploy/nginx/edge*.template`, `deploy/scripts/vps-docker-preflight.sh`:
-	- Integran variables `EMAIL_CORPORATIVO_*`, perfil Docker `mail`, proxy `mail.powerfulcontrolsystem.com` y generacion/validacion de secretos para portabilidad a otra VPS.
-- `deploy/scripts/vps-register-iredmail-secrets.sh`:
-	- Verifica en la VPS que los secretos privados de iRedMail esten presentes antes de reiniciar backend para registrarlos cifrados.
-- `documentos/email_corporativo_iredmail.md`:
+	- Integran variables `EMAIL_CORPORATIVO_*`/`MAILU_*`, perfil Docker `mail`, proxy `mail.powerfulcontrolsystem.com` y generacion/validacion de secretos para portabilidad a otra VPS.
+- `deploy/scripts/vps-provision-mailu-mailbox.sh`, `deploy/scripts/vps-configure-mailu-host-nginx.sh`:
+	- Crean buzones Mailu por CLI y publican el webmail en Nginx del host.
+- `documentos/email_corporativo_mailu.md`:
 	- Resume flujo, seguridad, configuraciones, tablas y checklist de despliegue VPS para el nuevo modulo.
+
+2026-05-29 - Retiro de SSO de correo corporativo
+- `backend/handlers/email_corporativo_handlers.go`:
+	- Retira enlaces temporales de correo y deja la apertura directa del webmail Mailu configurado.
+- `backend/handlers/email_corporativo_sso_test.go`:
+	- Archivo eliminado porque el flujo actual no usa tokens de correo.
+- `backend/main.go`:
+	- Elimina la ruta interna de validacion de correo.
+- `web/administrar_empresa/panel.html`:
+	- Abre la bandeja corporativa cuando el buzon esta provisionado y muestra estados claros cuando falta Mailu.

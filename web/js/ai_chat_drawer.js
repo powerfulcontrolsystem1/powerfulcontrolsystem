@@ -4646,6 +4646,36 @@
       sendPrompt: sendRobotPrompt
     };
 
+    window.PCSAIChatOpen = function (options) {
+      options = options || {};
+      if (!state.chatEnabled) {
+        openChatConfigPage();
+        var drawerDisabled = document.getElementById(DRAWER_ID);
+        var toggleDisabled = document.getElementById(TOGGLE_ID);
+        if (drawerDisabled && toggleDisabled) {
+          drawerDisabled.classList.remove('minimized');
+          drawerDisabled.classList.add('open');
+          toggleDisabled.classList.add('is-drawer-open');
+          toggleDisabled.setAttribute('aria-expanded', 'true');
+          document.body.classList.add('ai-chat-drawer-open');
+          setChatBackdropVisible(true);
+          setChatBodyScrollLock(true);
+        }
+        return true;
+      }
+      var toggleBtn = document.getElementById(TOGGLE_ID);
+      if (options.preferRobot && state.robotEnabled) {
+        setChatPersonalityMode(getChatPersonalityMode() === 'secretary' ? 'secretary' : 'robot');
+        closeChatDrawerFully();
+        ensureRobotInlineUI(toggleBtn);
+        showRobotAssistant(toggleBtn);
+        focusRobotInput();
+        return true;
+      }
+      openChatDrawerFromUser();
+      return true;
+    };
+
     window.dispatchEvent(new CustomEvent('pcs-ai-chat-robot-ready'));
 
     window.addEventListener('storage', function (event) {

@@ -74,6 +74,14 @@ botones, desde handlers estaticos del backend.
 - Licencia gratis: `web/pagar_licencia.html`, `/licencias/activar_sin_pago`.
 - Panel empresarial: `web/administrar_empresa.html`,
   `web/administrar_empresa/panel.html`.
+- Domotica: boton principal en `web/administrar_empresa.html`, submenu
+  `web/administrar_empresa/modulo_menu.html?module=control_electrico`,
+  consola `web/administrar_empresa/control_electrico.html`,
+  endpoint `/api/empresa/control_electrico` y storage super en
+  `web/super/domotica_storage.html` con `/super/api/domotica_storage`.
+  Conserva la clave tecnica `control_electrico`; la carpeta empresarial de
+  imagenes es `web/uploads/empresas/empresa_{id}_{slug}/imagenes/`, con
+  subcarpetas como `domotica` y `usuarios`.
 - Configuracion empresa: `web/administrar_empresa/configuracion_menu.html` y
   paginas bajo `web/administrar_empresa/configuracion/`.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
@@ -94,19 +102,29 @@ botones, desde handlers estaticos del backend.
   `backend/db/offline_ventas.go`.
 - Alertas sistema super administrador: `web/super/alertas_sistema.html`,
   `/super/api/alertas_sistema`.
-- Email corporativo iRedMail: `web/super/email_corporativo.html`,
+- Email corporativo Mailu: `web/super/email_corporativo.html`,
   `/super/api/email_corporativo`, `/api/empresa/email_corporativo`,
   `backend/handlers/email_corporativo_handlers.go`,
-  `backend/db/email_corporativo.go`, `deploy/iredmail/`.
-  El modulo genera email unico por empresa al crearla; la provision real por API
-  requiere iRedAdmin-Pro REST API y credenciales cifradas. En Docker portable,
-  `deploy/.env.platform` provee `EMAIL_CORPORATIVO_*` / `IREDMAIL_*` y el
-  backend las registra en `configuraciones` al arrancar. La pagina de super
-  administrador incluye diagnostico operativo y `Probar iRedAdmin` para validar
-  URL, usuario y clave sin exponer secretos ni crear buzones. En VPS con Nginx
-  del host, `vps-configure-iredmail-host-nginx.sh` publica
-  `mail.powerfulcontrolsystem.com` hacia iRedMail en `127.0.0.1:8089`; si ese
-  subdominio responde el POS, la provision no puede funcionar.
+  `backend/db/email_corporativo.go`,
+  `deploy/scripts/vps-provision-mailu-mailbox.sh` y
+  `deploy/scripts/vps-configure-mailu-host-nginx.sh`.
+  El modulo genera email unico por empresa al crearla. El proveedor activo es
+  Mailu con webmail SnappyMail en el perfil Docker `mail`. En la VPS se usa
+  `mailu_direct`, que ejecuta el script directo contra `pcs-mailu-admin` y crea
+  o actualiza buzones con `flask mailu user` y `flask mailu password`. El mismo
+  script crea la identidad principal en SnappyMail para evitar el modal inicial.
+  Los servicios Mailu tienen IPs fijas en `pcs_mailu_internal` para que IMAP,
+  SMTP y webmail se hablen por la red confiable de Mailu. El archivo
+  `deploy/mailu/snappymail-application.ini` conserva `secfetch_allow` para que
+  el webmail pueda abrir en iframe `same-site` dentro del panel empresarial. No imprimir claves: la clave
+  inicial del buzon se guarda cifrada con `CONFIG_ENC_KEY` cuando aplica. En
+  Docker portable, `deploy/.env.platform` provee `EMAIL_CORPORATIVO_*` /
+  `MAILU_*`; `EMAIL_CORPORATIVO_AUTOLOGIN_SECRET` firma tokens HMAC de 2
+  minutos para entrar al webmail sin exponer contrasenas. El proxy del host
+  limpia cabeceras publicas y solo el backend inyecta cabeceras SSO hacia
+  SnappyMail. La pagina de super administrador incluye diagnostico operativo y boton
+  `Probar Mailu`; el panel empresarial abre la bandeja automaticamente cuando el
+  buzon esta asignado.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.

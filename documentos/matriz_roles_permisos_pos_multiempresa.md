@@ -1713,11 +1713,13 @@ Regla de lectura comun (R):
 | `/api/empresa/finanzas/asientos_contables` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=procesar_asientos` validado por rol |
 | `/api/empresa/finanzas/cierres_caja` | `WithEmpresaFinanzasPermissions` | SA, AE, CT | SA, CT | `action=aprobar` restringido por permiso `A` |
 | `/api/empresa/usuarios` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/usuarios solo administracion empresa |
+| `/api/empresa/usuarios?action=foto` | `WithEmpresaSeguridadPermissions` | - | SA, AE | upload multipart de foto de usuario; valida `empresa_id` + `usuario_id` y guarda en carpeta empresarial `imagenes/usuarios` |
 | `/api/empresa/configuracion_avanzada` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | seguridad/configuracion sensible |
 | `/api/empresa/configuracion_avanzada/logo` | `WithEmpresaSeguridadPermissions` | - | SA, AE | carga multipart del logo empresarial; persiste `empresa_configuracion_avanzada.logo_url` y `mostrar_logo` por `empresa_id` |
 | `/api/empresa/impresoras` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | CRUD impresoras y acciones `predeterminada|activar|desactivar|funcionalidad|producto|producto_regla|receta`, con catalogo de productos/categorias por empresa |
 | `/api/empresa/impresoras/resolver` | `WithEmpresaVentasPermissions` | - | - | endpoint operativo de solo lectura para resolver impresora objetivo por `funcionalidad`, `producto_id` o `receta_id`, aplicando prioridad producto/categoria/todos |
-| `/api/empresa/control_electrico` | `WithEmpresaControlElectricoPermissions` | SA, AE, SS | SA, AE | configuracion Raspberry Pi, reles GPIO por estacion, pruebas manuales y sincronizacion electrica; acciones de prueba/sincronizacion requieren `A` |
+| `/api/empresa/control_electrico` | `WithEmpresaControlElectricoPermissions` | SA, AE, SS | SA, AE | configuracion Domotica por empresa: controladores, aparatos, fotos, lecturas, reglas de sensores, alarmas, reportes y sincronizacion; cambios y comandos requieren `A` |
+| `/super/api/domotica_storage` | `WithSuperAuditoria` + sesion super | SA | SA | limites de imagenes y revision de carpetas empresariales de Domotica; no expone secretos |
 | `/api/empresa/roles_de_usuario` | `WithEmpresaSeguridadPermissions` | SA, AE | SA, AE | consulta catalogo de roles con control de alcance |
 | `/api/empresa/permisos_contexto` | `WithEmpresaSeguridadPermissions` | - | - | endpoint `GET` para visualizar permisos efectivos por modulo/accion; `include_matrix=1` retorna matriz comparativa por rol |
 | `/api/empresa/auditoria/eventos` | `WithEmpresaAuditoriaPermissions` | SA, AE | SA, AE | consulta y retencion (`action=retener|purgar`); `action=conexion` registra perdida/restauracion de internet como accion de lectura operativa para usuarios con acceso a la empresa |

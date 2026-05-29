@@ -311,33 +311,32 @@ docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform
 
 5. Configurar Nginx del nuevo host para apuntar a `127.0.0.1:8081`.
 
-## Email corporativo iRedMail portable
+## Email corporativo Mailu portable
 
 El correo empresarial se integra al stack portable mediante variables en
 `deploy/.env.platform` y perfil Docker opcional `mail`.
 
-- El backend recibe `EMAIL_CORPORATIVO_*` e `IREDADMIN_*` desde el compose.
+- El backend recibe `EMAIL_CORPORATIVO_*` y `MAILU_*` desde el compose.
 - Al arrancar, registra esas variables en `pcs_superadministrador.configuraciones`.
-- La clave `EMAIL_CORPORATIVO_IREDADMIN_PASSWORD` se guarda cifrada usando
-  `CONFIG_ENC_KEY`; no se escribe en logs ni documentacion.
-- El perfil `mail` publica SMTP/IMAP/POP3 y deja el webmail disponible para el
-  edge Docker en `EDGE_MAIL_DOMAIN`.
-- `deploy/scripts/vps-configure-iredmail-host-nginx.sh` valida el certificado
-  del subdominio `mail`; si el certificado existente no lo cubre, usa certbot
-  con webroot en `/var/www/html` y luego recarga Nginx con el proxy HTTPS hacia
-  iRedMail.
+- Las claves de buzon y secretos Mailu se guardan cifrados usando
+  `CONFIG_ENC_KEY`; no se escriben en logs ni documentacion.
+- El perfil `mail` publica SMTP/IMAP y deja SnappyMail disponible para el proxy
+  publico del host en `mail.powerfulcontrolsystem.com/webmail/`.
+- `deploy/scripts/vps-configure-mailu-host-nginx.sh` valida el certificado del
+  subdominio `mail`, publica `/pcs-mail-autologin` hacia el backend y publica
+  `/webmail/` directo contra `pcs-mailu-webmail` en loopback.
 - Para llamadas desde el backend dentro de Docker, el compose define
-  `EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL=http://iredmail/iredadmin`
-  y `EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL=http://iredmail/mail/`; asi el
-  diagnostico interno no depende del certificado propio del contenedor iRedMail.
+  `EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL=http://mailu-webmail/` y usa el
+  comando directo `deploy/scripts/vps-provision-mailu-mailbox.sh`.
+- Mailu usa IPs fijas dentro de `pcs_mailu_internal` para que SnappyMail y front
+  entren a IMAP/SMTP por la red confiable `192.168.203.0/24`.
 - Antes de activar `--profile mail`, validar DNS A, MX, SPF, DKIM, DMARC, PTR,
-  TLS y que la imagen definida en `IREDMAIL_IMAGE` sea la aprobada para la VPS.
+  TLS y que las imagenes `ghcr.io/mailu/*` esten aprobadas para la VPS.
 
-Arranque futuro cuando el correo este listo:
+Arranque del perfil de correo:
 
 ```bash
-deploy/scripts/vps-register-iredmail-secrets.sh
-docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile mail up -d iredmail
-docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml --profile edge up -d edge
-docker compose --env-file deploy/.env.platform -f deploy/docker-compose.platform.yml up -d --build backend
+deploy/scripts/vps-docker-preflight.sh
+deploy/scripts/vps-compose-sidecar-up.sh
+deploy/scripts/vps-configure-mailu-host-nginx.sh
 ```

@@ -7,6 +7,24 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/vendor/qrcode.min.js"></script>
   <script src="/js/print_documents.js"></script>
+  <style>
+    .domotica-cart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+    .domotica-device-button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font:inherit;font-weight:800;text-align:left;cursor:pointer}
+    .domotica-device-button:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-soft))}
+    .domotica-device-name{display:flex;align-items:center;gap:8px;min-width:0}
+    .domotica-device-name span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .domotica-device-modal[hidden]{display:none!important}
+    .domotica-device-modal{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px}
+    .domotica-device-backdrop{position:absolute;inset:0;background:rgba(8,12,24,.56)}
+    .domotica-device-dialog{position:relative;width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);box-shadow:0 24px 70px rgba(0,0,0,.34)}
+    .domotica-device-head,.domotica-device-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border-bottom:1px solid var(--border);background:var(--surface-soft)}
+    .domotica-device-footer{border-top:1px solid var(--border);border-bottom:0;justify-content:flex-end;flex-wrap:wrap}
+    .domotica-device-body{padding:14px}
+    .domotica-device-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+    .domotica-device-meta span{display:block;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-soft);color:var(--muted)}
+    .domotica-device-meta strong{display:block;color:var(--text)}
+    .domotica-schedule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page" data-auto-estacion-labels="true">
   <div class="container">
@@ -216,7 +234,7 @@
         <div id="carritoActionToolbar" class="carrito-station-toolbar form-actions action-toolbar actions-wrap-gap-10">
           <button type="button" id="carritoBtnDescuentos" class="btn secondary">Descuentos</button>
           <button type="button" id="carritoBtnCambiarTarifa" class="btn secondary">Cambiar tarifa</button>
-          <button type="button" id="carritoBtnControlElectrico" class="btn secondary">Control electrico</button>
+          <button type="button" id="carritoBtnControlElectrico" class="btn secondary">Domotica</button>
           <button type="button" id="carritoBtnCancelarCarrito" class="btn secondary">Cancelar carrito</button>
           <label id="carritoAlertaTiempoControl" class="form-help inline-check carrito-alert10-check" hidden>
             <input type="checkbox" id="carritoAlerta10Enable">
@@ -285,14 +303,33 @@
         <div id="carritoControlElectricoPanel" class="empresa-section mt-10 is-hidden" hidden>
           <div class="empresa-section-header compact">
             <div>
-              <h3 class="section-heading">Automatización de habitación</h3>
-              <p class="form-help mt-0">Control manual de salidas eléctricas configuradas para esta estación.</p>
+              <h3 class="section-heading">Domotica</h3>
+              <p class="form-help mt-0">Aparatos asignados a esta estacion. Presiona un aparato para ver su estado, encender, apagar o programar horario.</p>
             </div>
           </div>
-          <div id="carritoControlElectricoContent" class="form-help">Cargando controles...</div>
+          <div id="carritoControlElectricoContent" class="form-help">Cargando domotica...</div>
           <div id="carritoControlElectricoMsg" class="form-help mt-6"></div>
         </div>
       </section>
+
+      <div id="domoticaDeviceModal" class="domotica-device-modal" hidden role="dialog" aria-modal="true" aria-labelledby="domoticaDeviceTitle">
+        <div class="domotica-device-backdrop" data-domotica-close></div>
+        <article class="domotica-device-dialog">
+          <header class="domotica-device-head">
+            <div>
+              <p class="form-help mt-0 mb-4">Aparato de domotica</p>
+              <h3 id="domoticaDeviceTitle" class="section-heading">Aparato</h3>
+            </div>
+            <button type="button" class="btn secondary" data-domotica-close>Cerrar</button>
+          </header>
+          <div id="domoticaDeviceBody" class="domotica-device-body"></div>
+          <footer class="domotica-device-footer">
+            <button type="button" id="domoticaDeviceOffBtn" class="btn secondary">Apagar</button>
+            <button type="button" id="domoticaDeviceOnBtn" class="btn add">Encender</button>
+            <button type="button" id="domoticaDeviceSaveScheduleBtn" class="btn primary">Guardar programacion</button>
+          </footer>
+        </article>
+      </div>
 
       <section id="stationOptionalSectionsControls" class="empresa-section carrito-optional-controls is-hidden mt-12" hidden>
         <div class="form-actions actions-wrap-gap-10">
@@ -663,6 +700,10 @@
       stationAlert10ControlKey: '',
       controlElectrico: {
         loaded: false,
+        loading: false,
+        loadedForStationID: 0,
+        loadedForCarritoID: 0,
+        selectedReleID: 0,
         config: null,
         reles: []
       },
@@ -1869,12 +1910,7 @@
       if (btnControlElectrico) {
         const showControlElectrico = Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito);
         if (!showControlElectrico) {
-          const panel = document.getElementById('carritoControlElectricoPanel');
-          if (panel) {
-            panel.hidden = true;
-            panel.classList.add('is-hidden');
-            panel.style.display = 'none';
-          }
+          hideCarritoDomoticaPanel(true);
         }
       }
       const btnPagoQR = document.getElementById('carritoBtnPagoQR');
@@ -4449,6 +4485,7 @@
           paymentQrCard.hidden = true;
           paymentQrCard.classList.add('is-hidden');
         }
+        hideCarritoDomoticaPanel(true);
         if (optionalControls) {
           optionalControls.style.display = 'none';
           optionalControls.hidden = true;
@@ -4488,6 +4525,7 @@
         actionsCard.hidden = !showActionsCard;
         actionsCard.style.display = showActionsCard ? '' : 'none';
       }
+      ensureCarritoDomoticaPanel();
       renderCarritoAbonosPanel();
       if (vipCard) {
         const showVipCard = state.stationMode && !state.directSaleMode && stationUI.mostrar_tarjeta_vip_cliente;
@@ -6777,10 +6815,58 @@
     function controlElectricoIcon(tipo) {
       const value = normalize(tipo).toLowerCase();
       if (value.indexOf('jacuzzi') !== -1) return '♨';
-      if (value.indexOf('luz') !== -1 || value.indexOf('luces') !== -1) return '☼';
+      if (value.indexOf('bomba') !== -1 || value.indexOf('motobomba') !== -1) return '⛲';
+      if (value.indexOf('luz') !== -1 || value.indexOf('luces') !== -1 || value.indexOf('lampara') !== -1) return '☼';
       if (value.indexOf('puerta') !== -1) return '▣';
       if (value.indexOf('ventil') !== -1 || value.indexOf('aire') !== -1) return '≋';
       return '⚡';
+    }
+
+    function findDomoticaRele(releID) {
+      const id = Number(releID || 0);
+      return (Array.isArray(state.controlElectrico.reles) ? state.controlElectrico.reles : []).find(function(rele) {
+        return Number(rele.id || 0) === id;
+      }) || null;
+    }
+
+    function domoticaDeviceLabel(rele) {
+      return normalize(rele && rele.relay_name) || normalize(rele && rele.tipo_carga) || normalize(rele && rele.salida_codigo) || 'Aparato';
+    }
+
+    function domoticaEstadoLabel(rele) {
+      const estado = normalize(rele && rele.ultimo_estado || 'desconocido').toLowerCase();
+      if (estado === 'on' || estado === 'encendido') return 'Encendido';
+      if (estado === 'off' || estado === 'apagado') return 'Apagado';
+      return 'Sin estado';
+    }
+
+    function domoticaIsOn(rele) {
+      const estado = normalize(rele && rele.ultimo_estado).toLowerCase();
+      return estado === 'on' || estado === 'encendido';
+    }
+
+    function hideCarritoDomoticaPanel(clearState) {
+      const panel = document.getElementById('carritoControlElectricoPanel');
+      if (panel) {
+        panel.hidden = true;
+        panel.classList.add('is-hidden');
+        panel.style.display = 'none';
+      }
+      if (clearState) {
+        state.controlElectrico.loaded = false;
+        state.controlElectrico.loadedForStationID = 0;
+        state.controlElectrico.loadedForCarritoID = 0;
+        state.controlElectrico.reles = [];
+        state.controlElectrico.config = null;
+      }
+    }
+
+    function showCarritoDomoticaPanel() {
+      const panel = document.getElementById('carritoControlElectricoPanel');
+      if (!panel) return;
+      panel.hidden = false;
+      panel.classList.remove('is-hidden');
+      panel.style.display = '';
     }
 
     function renderCarritoControlElectricoPanel() {
@@ -6789,31 +6875,21 @@
       const cfg = state.controlElectrico.config || {};
       const reles = Array.isArray(state.controlElectrico.reles) ? state.controlElectrico.reles : [];
       if (!cfg.habilitado) {
-        box.innerHTML = '<div class="alert">El módulo de control eléctrico no está activo para esta empresa.</div>';
+        hideCarritoDomoticaPanel(false);
         return;
       }
       if (!reles.length) {
-        box.innerHTML = '<div class="alert">Esta estación no tiene salidas eléctricas configuradas. Configúralas en Administrar empresa &gt; Control eléctrico.</div>';
+        hideCarritoDomoticaPanel(false);
         return;
       }
-      box.innerHTML = '<div class="control-electrico-cart-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">' +
+      showCarritoDomoticaPanel();
+      box.innerHTML = '<div class="domotica-cart-grid">' +
         reles.map(function(rele) {
-          const estado = normalize(rele.ultimo_estado || 'desconocido').toLowerCase();
-          const isOn = estado === 'on' || estado === 'encendido';
-          return '<div class="card" style="padding:12px;border-radius:8px;">' +
-            '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">' +
-              '<div><strong>' + escapeHtml(controlElectricoIcon(rele.tipo_carga) + ' ' + (rele.relay_name || rele.tipo_carga || 'Salida eléctrica')) + '</strong>' +
-              '<div class="form-help">GPIO ' + escapeHtml(rele.gpio_pin || '-') + ' · ' + escapeHtml(rele.tipo_carga || rele.salida_codigo || 'salida') + '</div></div>' +
-              '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' +
-                (isOn ? '<span class="electric-on-bolt" title="Aparato encendido" aria-label="Aparato encendido">⚡</span>' : '') +
-                '<span class="status-pill ' + (isOn ? 'success' : 'muted') + '">' + escapeHtml(isOn ? 'Encendido' : (estado === 'off' ? 'Apagado' : 'Sin estado')) + '</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="form-actions mt-10">' +
-              '<button type="button" class="btn secondary control-electrico-off" data-rele-id="' + escapeHtml(rele.id || 0) + '">Apagar</button>' +
-              '<button type="button" class="btn add control-electrico-on" data-rele-id="' + escapeHtml(rele.id || 0) + '">Encender</button>' +
-            '</div>' +
-          '</div>';
+          const isOn = domoticaIsOn(rele);
+          return '<button type="button" class="domotica-device-button" data-rele-id="' + escapeHtml(rele.id || 0) + '">' +
+            '<span class="domotica-device-name"><span aria-hidden="true">' + escapeHtml(controlElectricoIcon(rele.tipo_carga)) + '</span><span>' + escapeHtml(domoticaDeviceLabel(rele)) + '</span></span>' +
+            '<span class="status-pill ' + (isOn ? 'success' : 'muted') + '">' + escapeHtml(domoticaEstadoLabel(rele)) + '</span>' +
+          '</button>';
         }).join('') +
       '</div>';
     }
@@ -6826,7 +6902,7 @@
         if (box) box.innerHTML = '<div class="alert">No se pudo identificar la estación del carrito.</div>';
         return;
       }
-      if (box) box.textContent = 'Cargando controles eléctricos...';
+      if (box) box.textContent = 'Cargando domotica...';
       try {
         const url = new URL('/api/empresa/control_electrico', window.location.origin);
         url.searchParams.set('empresa_id', String(state.empresaID));
@@ -6836,13 +6912,41 @@
         await ensureOk(res);
         const payload = await res.json();
         state.controlElectrico.loaded = true;
+        state.controlElectrico.loadedForStationID = Number(stationID || 0);
+        state.controlElectrico.loadedForCarritoID = Number(selected && selected.id || 0);
         state.controlElectrico.config = payload.config || {};
         state.controlElectrico.reles = Array.isArray(payload.reles) ? payload.reles : [];
         renderCarritoControlElectricoPanel();
         setCarritoControlElectricoMessage('', false);
       } catch (err) {
-        if (box) box.innerHTML = '<div class="alert">' + escapeHtml(err.message || 'No se pudieron cargar controles eléctricos.') + '</div>';
-        setCarritoControlElectricoMessage(err.message || 'No se pudieron cargar controles eléctricos.', true);
+        if (box) box.innerHTML = '<div class="alert">' + escapeHtml(err.message || 'No se pudo cargar la domotica.') + '</div>';
+        setCarritoControlElectricoMessage(err.message || 'No se pudo cargar la domotica.', true);
+      }
+    }
+
+    async function ensureCarritoDomoticaPanel(options) {
+      options = options || {};
+      const selected = getSelectedCarrito();
+      const stationID = resolveCarritoEstacionID(selected);
+      const stationUI = getCurrentStationCartUIConfig();
+      if (!state.stationMode || state.directSaleMode || !stationUI.mostrar_control_electrico_carrito || !selected || !stationID || !isCarritoOperativoActivo(selected)) {
+        hideCarritoDomoticaPanel(true);
+        return;
+      }
+      const loadedForSame = state.controlElectrico.loaded &&
+        Number(state.controlElectrico.loadedForStationID || 0) === Number(stationID || 0) &&
+        Number(state.controlElectrico.loadedForCarritoID || 0) === Number(selected.id || 0);
+      if (loadedForSame && !options.force) {
+        renderCarritoControlElectricoPanel();
+        return;
+      }
+      if (state.controlElectrico.loading) return;
+      state.controlElectrico.loading = true;
+      if (options.reveal) showCarritoDomoticaPanel();
+      try {
+        await loadCarritoControlElectricoPanel();
+      } finally {
+        state.controlElectrico.loading = false;
       }
     }
 
@@ -6851,27 +6955,22 @@
       const stationID = resolveCarritoEstacionID(selected);
       const stationUI = getCurrentStationCartUIConfig();
       if (!stationUI.mostrar_control_electrico_carrito || !stationUI.mostrar_boton_control_electrico_carrito) {
-        setMessage('itemMsg', 'El boton Control electrico esta desactivado en la configuracion del carrito.', true);
+        setMessage('itemMsg', 'El boton Domotica esta desactivado en la configuracion del carrito.', true);
         return;
       }
       if (!selected || !stationID) {
-        setMessage('itemMsg', 'Selecciona un carrito de estación para abrir control eléctrico.', true);
+        setMessage('itemMsg', 'Selecciona un carrito de estacion para abrir Domotica.', true);
         return;
       }
-      const params = new URLSearchParams();
-      params.set('empresa_id', String(state.empresaID || 0));
-      params.set('estacion_id', String(stationID));
-      if (state.stationName) params.set('estacion_nombre', state.stationName);
-      params.set('carrito_id', String(selected.id || state.selectedCarritoID || 0));
-      if (selected.codigo || state.selectedCarritoCode) params.set('carrito_codigo', selected.codigo || state.selectedCarritoCode);
-      window.location.href = '/administrar_empresa/carrito_control_electrico.html?' + params.toString();
+      showCarritoDomoticaPanel();
+      ensureCarritoDomoticaPanel({ force: true, reveal: true });
     }
 
     async function sendCarritoControlElectricoCommand(releID, estado) {
       const selected = getSelectedCarrito();
       const stationID = resolveCarritoEstacionID(selected);
       if (!stationID || !releID) {
-        setCarritoControlElectricoMessage('Selecciona una salida eléctrica válida.', true);
+        setCarritoControlElectricoMessage('Selecciona un aparato de domotica valido.', true);
         return;
       }
       try {
@@ -6884,11 +6983,116 @@
           body: JSON.stringify({ estacion_id: stationID, rele_id: Number(releID), estado: estado })
         });
         await ensureOk(res);
-        setCarritoControlElectricoMessage(estado === 'on' ? 'Salida encendida.' : 'Salida apagada.', false);
+        setCarritoControlElectricoMessage(estado === 'on' ? 'Aparato encendido.' : 'Aparato apagado.', false);
         await loadCarritoControlElectricoPanel();
+        if (state.controlElectrico.selectedReleID) {
+          renderDomoticaDeviceModal();
+        }
       } catch (err) {
-        setCarritoControlElectricoMessage(err.message || 'No se pudo enviar el comando eléctrico.', true);
+        setCarritoControlElectricoMessage(err.message || 'No se pudo enviar el comando de domotica.', true);
       }
+    }
+
+    function domoticaRelePayloadFromModal(rele) {
+      return {
+        id: Number(rele.id || 0),
+        estacion_id: Number(rele.estacion_id || resolveCarritoEstacionID(getSelectedCarrito()) || 0),
+        estacion_codigo: normalize(rele.estacion_codigo),
+        estacion_nombre: normalize(rele.estacion_nombre || state.stationName),
+        salida_codigo: normalize(rele.salida_codigo) || 'principal',
+        tipo_carga: normalize(rele.tipo_carga) || 'otro',
+        raspberry_id: Number(rele.raspberry_id || 0),
+        gpio_pin: Number(rele.gpio_pin || 0),
+        relay_name: domoticaDeviceLabel(rele),
+        active_high: rele.active_high !== false,
+        pulso_ms: Number(rele.pulso_ms || 0),
+        modo: normalize(rele.modo) || 'seguimiento_estacion',
+        programacion_habilitada: !!(document.getElementById('domoticaScheduleEnabled') && document.getElementById('domoticaScheduleEnabled').checked),
+        hora_encendido: normalize(document.getElementById('domoticaScheduleOn') && document.getElementById('domoticaScheduleOn').value),
+        hora_apagado: normalize(document.getElementById('domoticaScheduleOff') && document.getElementById('domoticaScheduleOff').value),
+        programacion_dias: normalize(document.getElementById('domoticaScheduleDays') && document.getElementById('domoticaScheduleDays').value) || 'todos',
+        programacion_timezone: normalize(document.getElementById('domoticaScheduleTimezone') && document.getElementById('domoticaScheduleTimezone').value) || 'America/Bogota',
+        imagen_url: normalize(rele.imagen_url),
+        estado: normalize(rele.estado) || 'activo',
+        observaciones: normalize(rele.observaciones)
+      };
+    }
+
+    async function saveDomoticaDeviceSchedule() {
+      const rele = findDomoticaRele(state.controlElectrico.selectedReleID);
+      if (!rele) return;
+      const payload = domoticaRelePayloadFromModal(rele);
+      if (payload.programacion_habilitada && (!payload.hora_encendido || !payload.hora_apagado)) {
+        setCarritoControlElectricoMessage('Define hora de encendido y apagado para programar el aparato.', true);
+        return;
+      }
+      if (payload.programacion_habilitada && payload.hora_encendido === payload.hora_apagado) {
+        setCarritoControlElectricoMessage('La hora de encendido y apagado deben ser diferentes.', true);
+        return;
+      }
+      try {
+        const url = '/api/empresa/control_electrico?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=rele';
+        const res = await fetchWithTimeout(url, {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        setCarritoControlElectricoMessage('Programacion de domotica guardada.', false);
+        await loadCarritoControlElectricoPanel();
+        renderDomoticaDeviceModal();
+      } catch (err) {
+        setCarritoControlElectricoMessage(err.message || 'No se pudo guardar la programacion.', true);
+      }
+    }
+
+    function renderDomoticaDeviceModal() {
+      const modal = document.getElementById('domoticaDeviceModal');
+      const title = document.getElementById('domoticaDeviceTitle');
+      const body = document.getElementById('domoticaDeviceBody');
+      const rele = findDomoticaRele(state.controlElectrico.selectedReleID);
+      if (!modal || !title || !body || !rele) {
+        closeDomoticaDeviceModal();
+        return;
+      }
+      const isOn = domoticaIsOn(rele);
+      title.textContent = domoticaDeviceLabel(rele);
+      body.innerHTML = '' +
+        '<div class="domotica-device-meta">' +
+          '<span>Estado<strong>' + escapeHtml(domoticaEstadoLabel(rele)) + '</strong></span>' +
+          '<span>Estacion<strong>' + escapeHtml(normalize(rele.estacion_nombre || state.stationName) || '-') + '</strong></span>' +
+          '<span>Tipo<strong>' + escapeHtml(normalize(rele.tipo_carga || rele.salida_codigo) || '-') + '</strong></span>' +
+          '<span>GPIO<strong>' + escapeHtml(String(rele.gpio_pin || '-')) + '</strong></span>' +
+          '<span>Ultima sync<strong>' + escapeHtml(normalize(rele.ultima_sincronizacion) || '-') + '</strong></span>' +
+          '<span>Agenda<strong>' + escapeHtml(rele.programacion_habilitada ? 'Activa' : 'Inactiva') + '</strong></span>' +
+        '</div>' +
+        '<label class="form-help inline-check mb-10"><input type="checkbox" id="domoticaScheduleEnabled" ' + (rele.programacion_habilitada ? 'checked' : '') + '> Activar programacion horaria</label>' +
+        '<div class="domotica-schedule-grid">' +
+          '<div class="form-col"><label class="form-label" for="domoticaScheduleOn">Hora encendido</label><input id="domoticaScheduleOn" class="form-input" type="time" value="' + escapeHtml(normalize(rele.hora_encendido)) + '"></div>' +
+          '<div class="form-col"><label class="form-label" for="domoticaScheduleOff">Hora apagado</label><input id="domoticaScheduleOff" class="form-input" type="time" value="' + escapeHtml(normalize(rele.hora_apagado)) + '"></div>' +
+          '<div class="form-col"><label class="form-label" for="domoticaScheduleDays">Dias</label><select id="domoticaScheduleDays" class="form-input">' +
+            '<option value="todos"' + (normalize(rele.programacion_dias || 'todos') === 'todos' ? ' selected' : '') + '>Todos</option>' +
+            '<option value="lunes_viernes"' + (normalize(rele.programacion_dias) === 'lunes_viernes' ? ' selected' : '') + '>Lunes a viernes</option>' +
+            '<option value="sabado_domingo"' + (normalize(rele.programacion_dias) === 'sabado_domingo' ? ' selected' : '') + '>Sabado y domingo</option>' +
+          '</select></div>' +
+          '<div class="form-col"><label class="form-label" for="domoticaScheduleTimezone">Zona horaria</label><input id="domoticaScheduleTimezone" class="form-input" value="' + escapeHtml(normalize(rele.programacion_timezone) || 'America/Bogota') + '"></div>' +
+        '</div>' +
+        (rele.ultimo_error ? '<div class="alert error mt-10">' + escapeHtml(rele.ultimo_error) + '</div>' : '') +
+        (isOn ? '<p class="form-help mt-10">El aparato aparece encendido segun el ultimo comando registrado.</p>' : '<p class="form-help mt-10">El aparato no aparece encendido segun el ultimo comando registrado.</p>');
+      modal.hidden = false;
+      document.body.classList.add('modal-open');
+    }
+
+    function openDomoticaDeviceModal(releID) {
+      state.controlElectrico.selectedReleID = Number(releID || 0);
+      renderDomoticaDeviceModal();
+    }
+
+    function closeDomoticaDeviceModal() {
+      const modal = document.getElementById('domoticaDeviceModal');
+      if (modal) modal.hidden = true;
+      document.body.classList.remove('modal-open');
     }
 
     async function applyCarritoTarifaTiempo() {
@@ -7907,12 +8111,41 @@
     const carritoControlElectricoContent = document.getElementById('carritoControlElectricoContent');
     if (carritoControlElectricoContent) {
       carritoControlElectricoContent.addEventListener('click', function(ev) {
+        const deviceBtn = ev.target.closest('.domotica-device-button');
+        if (deviceBtn) {
+          openDomoticaDeviceModal(deviceBtn.getAttribute('data-rele-id'));
+          return;
+        }
         const onBtn = ev.target.closest('.control-electrico-on');
         const offBtn = ev.target.closest('.control-electrico-off');
         const btn = onBtn || offBtn;
         if (!btn) return;
         sendCarritoControlElectricoCommand(btn.getAttribute('data-rele-id'), onBtn ? 'on' : 'off');
       });
+    }
+    const domoticaDeviceModal = document.getElementById('domoticaDeviceModal');
+    if (domoticaDeviceModal) {
+      domoticaDeviceModal.addEventListener('click', function(ev) {
+        if (ev.target.closest('[data-domotica-close]')) {
+          closeDomoticaDeviceModal();
+        }
+      });
+    }
+    const domoticaDeviceOnBtn = document.getElementById('domoticaDeviceOnBtn');
+    if (domoticaDeviceOnBtn) {
+      domoticaDeviceOnBtn.addEventListener('click', function() {
+        sendCarritoControlElectricoCommand(state.controlElectrico.selectedReleID, 'on');
+      });
+    }
+    const domoticaDeviceOffBtn = document.getElementById('domoticaDeviceOffBtn');
+    if (domoticaDeviceOffBtn) {
+      domoticaDeviceOffBtn.addEventListener('click', function() {
+        sendCarritoControlElectricoCommand(state.controlElectrico.selectedReleID, 'off');
+      });
+    }
+    const domoticaDeviceSaveScheduleBtn = document.getElementById('domoticaDeviceSaveScheduleBtn');
+    if (domoticaDeviceSaveScheduleBtn) {
+      domoticaDeviceSaveScheduleBtn.addEventListener('click', saveDomoticaDeviceSchedule);
     }
     const carritoTarifaModo = document.getElementById('carritoTarifaModo');
     if (carritoTarifaModo) {

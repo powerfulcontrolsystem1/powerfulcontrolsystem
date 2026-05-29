@@ -1323,11 +1323,11 @@
               <div class="empresa-weather-label">Clima actual</div>
               <div id="weatherPlace" class="empresa-weather-place">Consultando...</div>
             </div>
-            <div id="weatherIcon" class="empresa-weather-icon" aria-hidden="true">☀</div>
+            <div id="weatherIcon" class="empresa-weather-icon" aria-hidden="true">&#9728;</div>
           </div>
 
           <div>
-            <p id="weatherTemp" class="empresa-weather-temp">--°</p>
+            <p id="weatherTemp" class="empresa-weather-temp">--&deg;</p>
             <p id="weatherDesc" class="empresa-weather-desc">Conectando con el servicio del clima.</p>
             <div class="empresa-weather-actions" aria-label="Ajustar ubicacion del clima">
               <button id="weatherGpsBtn" class="empresa-weather-control primary" type="button">Usar GPS</button>
@@ -1342,7 +1342,7 @@
 
           <div class="empresa-weather-grid">
             <div class="empresa-weather-stat">
-              <span>Sensación</span>
+              <span>Sensaci&oacute;n</span>
               <strong id="weatherFeels">--</strong>
             </div>
             <div class="empresa-weather-stat">
@@ -1372,13 +1372,13 @@
     <section class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
       <div class="empresa-favorites-head">
         <div>
-          <p class="empresa-favorites-kicker">Accesos rápidos</p>
+          <p class="empresa-favorites-kicker">Accesos r&aacute;pidos</p>
           <h2 id="empresaFavoritesTitle" class="empresa-favorites-title">Favoritos</h2>
         </div>
         <span id="empresaFavoritesCount" class="empresa-favorites-count">0</span>
       </div>
       <div id="empresaFavoritesList" class="empresa-favorites-grid" aria-live="polite">
-        <p class="empresa-favorites-empty">Marca cualquier página con la estrella para verla aquí.</p>
+        <p class="empresa-favorites-empty">Marca cualquier p&aacute;gina con la estrella para verla aqu&iacute;.</p>
       </div>
     </section>
 
@@ -1387,39 +1387,17 @@
         <div class="empresa-email-identity">
           <p class="empresa-email-kicker">Bandeja de correo corporativo</p>
           <h2 id="empresaEmailAddress" class="empresa-email-title">Correo de la empresa</h2>
-          <p id="empresaEmailMeta" class="empresa-email-meta">Buzon empresarial administrado por iRedMail.</p>
-        </div>
-        <div class="empresa-email-actions" aria-label="Acciones del correo corporativo">
-          <button id="empresaEmailReload" class="empresa-email-button secondary" type="button">
-            <img src="/img/analytics-color.svg" alt="" width="20" height="20"> Actualizar estado
-          </button>
-          <a id="empresaEmailLink" class="empresa-email-button" href="#" target="_blank" rel="noopener">
-            <img src="/img/network-color.svg" alt="" width="22" height="22"> Abrir buzón
-          </a>
-        </div>
-      </div>
-      <div class="empresa-email-diagnostics" aria-label="Estado del correo corporativo">
-        <div class="empresa-email-diagnostic">
-          <span>Estado del buzon</span>
-          <strong id="empresaEmailProvisionStatus">Consultando...</strong>
-        </div>
-        <div class="empresa-email-diagnostic">
-          <span>Webmail</span>
-          <strong id="empresaEmailWebmailStatus">Consultando...</strong>
-        </div>
-        <div class="empresa-email-diagnostic">
-          <span>Dominio</span>
-          <strong id="empresaEmailDomainStatus">powerfulcontrolsystem.com</strong>
+          <p id="empresaEmailMeta" class="empresa-email-meta">Buzon empresarial administrado por Mailu.</p>
         </div>
       </div>
       <p id="empresaEmailAlert" class="empresa-email-alert" hidden></p>
       <div class="empresa-email-embed">
         <div id="empresaEmailPlaceholder" class="empresa-email-placeholder">
-          Abre el buzon en una ventana segura del webmail para iniciar sesion y leer los mensajes de la empresa.
+          La bandeja se abrira automaticamente cuando el buzon este activo.
         </div>
         <iframe id="empresaEmailFrame" class="empresa-email-frame" title="Buzon de correo corporativo" loading="lazy" referrerpolicy="no-referrer"></iframe>
       </div>
-      <p class="empresa-email-frame-note">El webmail puede pedir inicio de sesion propio. Por seguridad no se cargan contrasenas ni sesiones dentro del panel.</p>
+      <p id="empresaEmailFrameNote" class="empresa-email-frame-note">El webmail se abre integrado en el panel cuando el buzon esta provisionado.</p>
     </section>
 
     <div class="empresa-home-footer">
@@ -1440,15 +1418,11 @@
       var empresaEmailPanelEl = document.getElementById("empresaEmailPanel");
       var empresaEmailAddressEl = document.getElementById("empresaEmailAddress");
       var empresaEmailMetaEl = document.getElementById("empresaEmailMeta");
-      var empresaEmailLinkEl = document.getElementById("empresaEmailLink");
       var empresaEmailFrameEl = document.getElementById("empresaEmailFrame");
       var empresaEmailEmbedEl = document.querySelector(".empresa-email-embed");
       var empresaEmailPlaceholderEl = document.getElementById("empresaEmailPlaceholder");
-      var empresaEmailProvisionStatusEl = document.getElementById("empresaEmailProvisionStatus");
-      var empresaEmailWebmailStatusEl = document.getElementById("empresaEmailWebmailStatus");
-      var empresaEmailDomainStatusEl = document.getElementById("empresaEmailDomainStatus");
       var empresaEmailAlertEl = document.getElementById("empresaEmailAlert");
-      var empresaEmailReloadEl = document.getElementById("empresaEmailReload");
+      var empresaEmailFrameNoteEl = document.getElementById("empresaEmailFrameNote");
       var weatherGpsBtn = document.getElementById("weatherGpsBtn");
       var weatherManualToggle = document.getElementById("weatherManualToggle");
       var weatherManualForm = document.getElementById("weatherManualForm");
@@ -1457,24 +1431,24 @@
       var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
       var detectedLocation = null;
       var weatherCodeMap = {
-        0: ["Soleado", "clear", "☀"],
-        1: ["Mayormente despejado", "clear", "☀"],
-        2: ["Parcialmente nublado", "cloudy", "☁"],
-        3: ["Nublado", "cloudy", "☁"],
-        45: ["Niebla", "cloudy", "☁"],
-        48: ["Niebla con escarcha", "cloudy", "☁"],
-        51: ["Llovizna ligera", "rain", "☂"],
-        53: ["Llovizna", "rain", "☂"],
-        55: ["Llovizna intensa", "rain", "☂"],
-        61: ["Lluvia ligera", "rain", "☂"],
-        63: ["Lluvia", "rain", "☂"],
-        65: ["Lluvia intensa", "rain", "☂"],
-        80: ["Lluvia pasajera", "rain", "☂"],
-        81: ["Chubascos", "rain", "☂"],
-        82: ["Chubascos fuertes", "rain", "☂"],
-        95: ["Tormenta", "storm", "⚡"],
-        96: ["Tormenta con granizo", "storm", "⚡"],
-        99: ["Tormenta fuerte", "storm", "⚡"]
+        0: ["Soleado", "clear", "\u2600"],
+        1: ["Mayormente despejado", "clear", "\u2600"],
+        2: ["Parcialmente nublado", "cloudy", "\u2601"],
+        3: ["Nublado", "cloudy", "\u2601"],
+        45: ["Niebla", "cloudy", "\u2601"],
+        48: ["Niebla con escarcha", "cloudy", "\u2601"],
+        51: ["Llovizna ligera", "rain", "\u2602"],
+        53: ["Llovizna", "rain", "\u2602"],
+        55: ["Llovizna intensa", "rain", "\u2602"],
+        61: ["Lluvia ligera", "rain", "\u2602"],
+        63: ["Lluvia", "rain", "\u2602"],
+        65: ["Lluvia intensa", "rain", "\u2602"],
+        80: ["Lluvia pasajera", "rain", "\u2602"],
+        81: ["Chubascos", "rain", "\u2602"],
+        82: ["Chubascos fuertes", "rain", "\u2602"],
+        95: ["Tormenta", "storm", "\u26a1"],
+        96: ["Tormenta con granizo", "storm", "\u26a1"],
+        99: ["Tormenta fuerte", "storm", "\u26a1"]
       };
 
       var countryCurrencyMap = {
@@ -1529,22 +1503,6 @@
           });
       }
 
-      function setEmpresaEmailLink(webmail, enabled) {
-        if (!empresaEmailLinkEl) return;
-        var href = text(webmail);
-        if (href && href !== "#") {
-          empresaEmailLinkEl.href = href;
-          empresaEmailLinkEl.classList.remove("is-disabled");
-          empresaEmailLinkEl.removeAttribute("aria-disabled");
-          empresaEmailLinkEl.title = "Abrir webmail de la empresa";
-          return;
-        }
-        empresaEmailLinkEl.href = "#";
-        empresaEmailLinkEl.classList.add("is-disabled");
-        empresaEmailLinkEl.setAttribute("aria-disabled", "true");
-        empresaEmailLinkEl.title = enabled ? "Webmail pendiente de configurar" : "Modulo de correo corporativo desactivado";
-      }
-
       function resetEmpresaEmailEmbed() {
         if (empresaEmailEmbedEl) empresaEmailEmbedEl.classList.remove("is-hidden");
         if (empresaEmailPlaceholderEl) empresaEmailPlaceholderEl.hidden = false;
@@ -1554,26 +1512,27 @@
         }
       }
 
-      function setEmpresaEmailDiagnostics(provisionText, webmailText, domainText, alertText) {
-        if (empresaEmailProvisionStatusEl) empresaEmailProvisionStatusEl.textContent = provisionText || "Sin consultar";
-        if (empresaEmailWebmailStatusEl) empresaEmailWebmailStatusEl.textContent = webmailText || "Sin consultar";
-        if (empresaEmailDomainStatusEl) empresaEmailDomainStatusEl.textContent = domainText || "Sin dominio";
+      function openEmpresaEmailEmbed(url) {
+        var href = text(url);
+        if (!href || !empresaEmailFrameEl) {
+          resetEmpresaEmailEmbed();
+          if (empresaEmailFrameNoteEl) empresaEmailFrameNoteEl.textContent = "La bandeja se abrira aqui cuando el buzon este activo.";
+          return;
+        }
+        if (empresaEmailPlaceholderEl) empresaEmailPlaceholderEl.hidden = true;
+        empresaEmailFrameEl.hidden = false;
+        empresaEmailFrameEl.src = href;
+        if (empresaEmailFrameNoteEl) {
+          empresaEmailFrameNoteEl.textContent = "Bandeja Mailu abierta automaticamente para la empresa.";
+        }
+      }
+
+      function setEmpresaEmailAlert(alertText) {
         if (empresaEmailAlertEl) {
           var alert = text(alertText);
           empresaEmailAlertEl.textContent = alert;
           empresaEmailAlertEl.hidden = !alert;
         }
-      }
-
-      function emailProvisionLabel(status) {
-        var raw = text(status).toLowerCase();
-        if (raw === "provisionado") return "Activo";
-        if (raw === "pendiente_provision" || raw === "pendiente" || raw === "pendiente_provision_manual") return "Pendiente";
-        if (raw === "pendiente_modulo_desactivado") return "Modulo desactivado";
-        if (raw === "pendiente_api") return "API pendiente";
-        if (raw === "pendiente_clave" || raw === "pendiente_cifrado") return "Clave pendiente";
-        if (raw.indexOf("error") === 0) return "Error de provision";
-        return raw ? raw.replace(/_/g, " ") : "Sin estado";
       }
 
       function emailProvisionAlert(account, enabled, webmailCheck) {
@@ -1586,18 +1545,15 @@
         }
         var lastError = text(account.ultimo_error).toLowerCase();
         if (lastError.indexOf("subdominio mail") >= 0 || lastError.indexOf("backend pos") >= 0) {
-          return "El correo ya fue asignado, pero el subdominio mail esta entrando al POS y no al webmail iRedMail. Revisa el proxy de Email corporativo en super administrador.";
-        }
-        if (lastError.indexOf("api no esta disponible") >= 0 || lastError.indexOf("iredadmin-pro api") >= 0 || lastError.indexOf("not found") >= 0) {
-          return "El correo ya fue asignado y el webmail esta disponible. La creacion automatica del buzon requiere iRedAdmin-Pro API; activa esa API o cambia el modulo a provision manual.";
+          return "El correo ya fue asignado, pero el subdominio mail esta entrando al POS y no al webmail Mailu. Revisa el proxy de Email corporativo en super administrador.";
         }
         if (lastError.indexOf("certificate") >= 0 || lastError.indexOf("x509") >= 0 || lastError.indexOf("tls") >= 0) {
-          return "El correo ya fue asignado y el webmail esta disponible. La provision automatica necesita revisar la URL interna de iRedAdmin en Super administrador.";
+          return "El correo ya fue asignado y el webmail esta disponible. La provision automatica necesita revisar la URL interna de Mailu en Super administrador.";
         }
-        if (status === "error_login") return "El correo ya fue asignado, pero no se pudo iniciar sesion contra iRedAdmin para crear el buzon real. Revisa URL, API y credenciales en Super administrador > Email corporativo.";
-        if (status === "error_provision") return "El correo ya fue asignado, pero iRedMail rechazo la creacion del buzon. Reintenta la provision desde super administrador.";
-        if (status === "pendiente_api") return "Falta configurar la URL, usuario o clave de iRedAdmin-Pro para crear el buzon real.";
-        if (status === "pendiente_provision_manual" || status === "pendiente_provision" || status === "pendiente") return "El correo ya esta generado y falta provisionar el buzon real en iRedMail.";
+        if (status === "error_login") return "El correo ya fue asignado, pero no se pudo validar Mailu para crear el buzon real. Revisa la configuracion en Super administrador > Email corporativo.";
+        if (status === "error_provision") return "El correo ya fue asignado, pero Mailu rechazo la creacion del buzon. Reintenta la provision desde super administrador.";
+        if (status === "pendiente_api") return "Falta configurar Mailu para crear el buzon real.";
+        if (status === "pendiente_provision_manual" || status === "pendiente_provision" || status === "pendiente") return "El correo ya esta generado y falta provisionar el buzon real en Mailu.";
         return "El correo esta generado, pero requiere revision de provision antes de leer mensajes.";
       }
 
@@ -1775,16 +1731,13 @@
           .then(function (data) {
             var account = data && data.account;
             var webmail = account && account.webmail_url ? account.webmail_url : (data && data.webmail ? data.webmail : "");
+            var webmailEntryURL = data && data.autologin_url ? data.autologin_url : webmail;
             var enabled = !!(data && data.enabled);
             var webmailCheck = data && data.webmail_check ? data.webmail_check : null;
-            var webmailStatus = webmailCheck && webmailCheck.checked
-              ? (webmailCheck.ok ? "Disponible" : (webmailCheck.message || "No disponible"))
-              : (webmail ? "Configurado" : "Sin configurar");
             if (!data || !data.ok) {
               empresaEmailAddressEl.textContent = "Correo corporativo";
-              empresaEmailMetaEl.textContent = "No se pudo consultar el estado del buzon. Presiona Actualizar estado para intentar nuevamente.";
-              setEmpresaEmailDiagnostics("Error", "Sin consultar", "", "No se pudo consultar el estado del correo corporativo.");
-              setEmpresaEmailLink("", false);
+              empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Intenta nuevamente.";
+              setEmpresaEmailAlert("No se pudo consultar el estado del correo corporativo.");
               resetEmpresaEmailEmbed();
               empresaEmailPanelEl.hidden = false;
               return;
@@ -1792,10 +1745,9 @@
             if (!account || !account.email) {
               empresaEmailAddressEl.textContent = "Correo corporativo pendiente";
               empresaEmailMetaEl.textContent = enabled
-                ? "El modulo esta activo, pero esta empresa aun no tiene buzon generado. Actualiza el estado o sincroniza las empresas desde Super administrador > Email corporativo."
+                ? "El modulo esta activo, pero esta empresa aun no tiene buzon generado. Sincroniza las empresas desde Super administrador > Email corporativo."
                 : "El modulo global de email corporativo esta desactivado. Activalo desde Super administrador > Email corporativo para crear y abrir buzones por empresa.";
-              setEmpresaEmailDiagnostics("Sin correo", webmailStatus, data.domain || "", emailProvisionAlert(null, enabled, webmailCheck));
-              setEmpresaEmailLink(webmail, enabled);
+              setEmpresaEmailAlert(emailProvisionAlert(null, enabled, webmailCheck));
               resetEmpresaEmailEmbed();
               empresaEmailPanelEl.hidden = false;
               return;
@@ -1804,31 +1756,27 @@
             if (!enabled) {
               empresaEmailMetaEl.textContent = "Correo generado, pero el modulo global esta desactivado. Activalo para usar la bandeja empresarial.";
             } else if (account.estado_provision === "provisionado") {
-              empresaEmailMetaEl.textContent = "Buzon activo. Aqui puedes revisar, abrir y leer los mensajes de la empresa.";
+              empresaEmailMetaEl.textContent = "Buzon activo. La bandeja se abre automaticamente sin escribir contrasena.";
             } else if (text(account.estado_provision).toLowerCase().indexOf("error") === 0) {
-              empresaEmailMetaEl.textContent = "Correo asignado. El buzon real necesita revisar la provision de iRedMail antes de leer mensajes.";
+              empresaEmailMetaEl.textContent = "Correo asignado. El buzon real necesita revisar la provision de Mailu antes de leer mensajes.";
             } else {
-              empresaEmailMetaEl.textContent = "Buzon generado, pendiente de provision en iRedMail. Cuando este activo, aqui se vera la bandeja.";
+              empresaEmailMetaEl.textContent = "Buzon generado, pendiente de provision en Mailu. Cuando este activo, aqui se vera la bandeja.";
             }
-            setEmpresaEmailDiagnostics(emailProvisionLabel(account.estado_provision), webmailStatus, account.domain || data.domain || "", emailProvisionAlert(account, enabled, webmailCheck));
-            setEmpresaEmailLink(webmail, enabled);
-            resetEmpresaEmailEmbed();
+            setEmpresaEmailAlert(emailProvisionAlert(account, enabled, webmailCheck));
+            if (enabled && (account.estado_provision === "provisionado" || text(data && data.autologin_url))) {
+              openEmpresaEmailEmbed(webmailEntryURL);
+            } else {
+              resetEmpresaEmailEmbed();
+            }
             empresaEmailPanelEl.hidden = false;
           })
           .catch(function () {
             empresaEmailAddressEl.textContent = "Correo corporativo";
-            empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Revisa la conexion o actualiza el estado.";
-            setEmpresaEmailDiagnostics("Error", "Sin consultar", "", "No se pudo cargar la informacion del correo corporativo.");
-            setEmpresaEmailLink("", false);
+            empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Revisa la conexion e intenta nuevamente.";
+            setEmpresaEmailAlert("No se pudo cargar la informacion del correo corporativo.");
             resetEmpresaEmailEmbed();
             empresaEmailPanelEl.hidden = false;
           });
-      }
-
-      if (empresaEmailReloadEl) {
-        empresaEmailReloadEl.addEventListener("click", function () {
-          loadEmpresaEmail();
-        });
       }
 
       function resolveWeatherLocation(admin) {
@@ -2320,9 +2268,9 @@
       }
 
       function weatherInfo(code, isDay) {
-        var item = weatherCodeMap[Number(code)] || ["Clima variable", "cloudy", "☁"];
+        var item = weatherCodeMap[Number(code)] || ["Clima variable", "cloudy", "\u2601"];
         if (!isDay && item[1] === "clear") {
-          return ["Noche despejada", "night", "☾"];
+          return ["Noche despejada", "night", "\u263e"];
         }
         if (!isDay && item[1] === "cloudy") {
           return [item[0], "night", item[2]];
@@ -2342,9 +2290,9 @@
         setHeroWeather(info[1]);
         document.getElementById("weatherPlace").textContent = place;
         document.getElementById("weatherIcon").textContent = info[2];
-        document.getElementById("weatherTemp").textContent = Math.round(Number(current.temperature_2m || 0)) + "°";
+        document.getElementById("weatherTemp").textContent = Math.round(Number(current.temperature_2m || 0)) + "\u00b0";
         document.getElementById("weatherDesc").textContent = info[0];
-        document.getElementById("weatherFeels").textContent = Math.round(Number(current.apparent_temperature || current.temperature_2m || 0)) + "°";
+        document.getElementById("weatherFeels").textContent = Math.round(Number(current.apparent_temperature || current.temperature_2m || 0)) + "\u00b0";
         document.getElementById("weatherHumidity").textContent = Number(current.relative_humidity_2m || 0) + "%";
         document.getElementById("weatherWind").textContent = Math.round(Number(current.wind_speed_10m || 0)) + " km/h";
         document.getElementById("weatherClouds").textContent = Number(current.cloud_cover || 0) + "%";

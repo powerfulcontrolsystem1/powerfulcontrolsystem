@@ -30,6 +30,45 @@ Actualizacion 2026-05-28 (apariencia de usuarios)
   `light` como apariencia efectiva para usuarios nuevos. Las preferencias ya
   guardadas se respetan.
 
+Actualizacion 2026-05-29 (domotica por estacion)
+- El modulo visible `Domotica` conserva y amplia las tablas tecnicas existentes:
+  `empresa_control_electrico_config`, `empresa_control_electrico_raspberry_pis`,
+  `empresa_control_electrico_reles` y `empresa_control_electrico_eventos`.
+- `empresa_control_electrico_reles` representa aparatos de domotica por
+  `empresa_id` + `estacion_id`, como lamparas, motobombas, puertas, aires,
+  jacuzzi u otros equipos. Conserva `salida_codigo`, `tipo_carga`,
+  `relay_name`, `gpio_pin`, estado runtime y programacion horaria.
+- El carrito lee los aparatos con `action=estacion_controls` y solo muestra la
+  tarjeta `Domotica` cuando la configuracion empresarial esta habilitada y la
+  estacion tiene aparatos activos.
+
+Actualizacion 2026-05-29 (domotica empresarial, lecturas y storage)
+- Nuevas tablas en `pcs_empresas`: `empresa_control_electrico_lecturas` y
+  `empresa_control_electrico_reglas`.
+- `empresa_control_electrico_lecturas`: guarda consumo, kWh, voltaje,
+  corriente, estado, origen, `empresa_id`, `estacion_id`, `rele_id`,
+  metadata y fecha de lectura para reportes de energia por aparato.
+- `empresa_control_electrico_reglas`: guarda automatizaciones por sensor con
+  condicion, valor esperado, accion, aparato objetivo, alarma, severidad,
+  mensaje, usuario creador y estado.
+- `empresa_control_electrico_raspberry_pis` agrega campos logicos de
+  controlador/proveedor/base URL para GPIO, Home Assistant, bridge HomeKit/Siri,
+  Matter, Shelly, Hue, Tuya, Zigbee2MQTT, Z-Wave JS o HTTP generico.
+- `empresa_control_electrico_reles` agrega integracion, fabricante, modelo,
+  entidad externa, comandos, monitoreo electrico y ultimas lecturas por aparato.
+- En `pcs_superadministrador`, las claves `domotica.storage.default_max_image_kb`
+  y `domotica.storage.empresa.{empresa_id}.max_image_kb` controlan el tamano
+  maximo de imagenes. Los archivos quedan fuera de BD en la carpeta empresarial
+  `web/uploads/empresas/empresa_{id}_{slug}/imagenes/`, con subcarpetas como
+  `domotica` y `usuarios`.
+
+Actualizacion 2026-05-29 (fotos de usuarios de empresa)
+- Tabla en `pcs_empresas`: `users`.
+- Campo nuevo: `foto_url TEXT`, usado para guardar la foto del usuario creado
+  por el administrador de empresa.
+- La URL apunta a `/uploads/empresas/empresa_{id}_{slug}/imagenes/usuarios/`.
+  El endpoint de carga valida `empresa_id` e `id` juntos antes de escribir.
+
 Actualizacion 2026-05-28 (auditoria global del selector)
 - Nueva tabla en `pcs_superadministrador`: `super_auditoria_eventos`.
 - Proposito: registrar movimientos del selector de empresas, modulos globales y
@@ -1648,7 +1687,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-05-19: `empresa_cierres_caja` cambia su unicidad operativa a `empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador`; en PostgreSQL se eliminan constraints e indices legacy sin usuario y se agrega `ux_empresa_cierres_caja_usuario_turno`, permitiendo que varios usuarios de la misma empresa manejen cajas/turnos independientes sin mezclar pagos, abonos, ingresos, egresos ni reportes.
 - 2026-05-19: `empresa_configuracion_general` agrega `cajas_simultaneas_habilitadas` y `max_cajas_simultaneas_empresa` para activar/desactivar varias cajas abiertas por empresa y limitar su cupo interno sin superar `licencias.max_cajas_simultaneas`. Los reportes de turno continuan aislados por `empresa_cierres_caja.id`/`cierre_caja_id`.
 - 2026-05-19: `empresa_impresoras` usa `POS_80MM` como codigo operativo predeterminado por empresa activa; `empresa_impresoras_funcionalidades` lo asigna a `general`, `corte_caja`, `turno_reporte` y `cajon_monedero` manteniendo indices unicos por `empresa_id`.
-- 2026-05-28: se agrega `empresa_email_corporativo` en `pcs_superadministrador` para mapear cada empresa a un email corporativo unico bajo el dominio configurado. Guarda `empresa_id`, nombre, correo, dominio, webmail, estado de provision iRedMail, intentos, ultimo error, clave inicial cifrada y trazabilidad. Tiene indices unicos activos por `empresa_id` y por `lower(email)` para evitar duplicados.
+- 2026-05-29: `empresa_email_corporativo` soporta provision directa `mailu_direct`; el backend conserva en `configuraciones.email_corporativo.direct_provision_command` la ruta del script operativo y marca `estado_provision='provisionado'` solo despues de crear/validar el buzon real en Mailu.
+- 2026-05-28: se agrega `empresa_email_corporativo` en `pcs_superadministrador` para mapear cada empresa a un email corporativo unico bajo el dominio configurado. Guarda `empresa_id`, nombre, correo, dominio, webmail, estado de provision Mailu, intentos, ultimo error, clave inicial cifrada y trazabilidad. Tiene indices unicos activos por `empresa_id` y por `lower(email)` para evitar duplicados.
 - 2026-05-13: el aseguramiento ligero de `carritos_compras`, `carrito_compra_items` y `empresa_ventas_estacion_metricas` valida y completa ahora todas las columnas usadas por el listado operativo antes de marcar el esquema como listo, con cache por base/esquema PostgreSQL. Esto evita 500 en `/api/empresa/carritos_compra` cuando una empresa conserva migraciones rezagadas; no crea tablas nuevas ni cambia relaciones.
 - 2026-05-13: `licencias` incorpora `max_cajas_simultaneas` para limitar cajas abiertas simultaneas por empresa segun licencia activa. El valor por defecto es 2 cajas; las licencias de 4000 documentos quedan en 4 cajas. `carritos_compras`, `empresa_ventas_estacion_metricas` y `empresa_finanzas_movimientos` enlazan operaciones con `cierre_caja_id`, `caja_codigo`, `caja_turno` y `caja_sucursal_id` para cierres separados por caja.
 - 2026-05-13: se agregan `super_correos_masivos` y `super_correos_masivos_destinatarios` en `pcs_superadministrador` para auditar comunicados globales enviados por super administrador. La campana registra codigo, categoria, alcance, asunto, totales, estado, modo prueba, usuario creador y fechas; cada destinatario guarda email, tipo (`administrador` o `usuario_empresa`), empresa asociada cuando aplique, rol, resultado y error resumido.

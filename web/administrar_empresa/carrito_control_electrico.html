@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Control electrico del carrito</title>
+  <title>Domotica del carrito</title>
   <link rel="stylesheet" href="/estilos.css">
   <style>
     :root {
@@ -227,7 +227,7 @@
   <main class="cart-electric-shell">
     <header class="cart-electric-header">
       <div>
-        <h1>Control electrico</h1>
+        <h1>Domotica</h1>
         <p id="cartElectricMeta" class="cart-electric-meta">Cargando estacion...</p>
       </div>
       <div class="cart-electric-actions">
@@ -352,11 +352,11 @@
       document.getElementById('cartElectricScheduledDevices').textContent = String(scheduled);
 
       if (!cfg.habilitado) {
-        grid.innerHTML = '<div class="alert">El modulo de control electrico no esta activo para esta empresa.</div>';
+        grid.innerHTML = '<div class="alert">El modulo de domotica no esta activo para esta empresa.</div>';
         return;
       }
       if (!reles.length) {
-        grid.innerHTML = '<div class="alert">Esta estacion no tiene aparatos configurados en Control electrico.</div>';
+        grid.innerHTML = '<div class="alert">Esta estacion no tiene aparatos configurados en Domotica.</div>';
         return;
       }
 

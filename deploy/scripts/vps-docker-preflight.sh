@@ -65,15 +65,13 @@ if [ ! -f "$ENV_FILE" ]; then
   upsert_env "$ENV_FILE" CONFIG_ENC_KEY "$(rand_secret)"
   upsert_env "$ENV_FILE" ONLYOFFICE_JWT_SECRET "$(rand_secret)"
   mail_admin_password="$(rand_secret)"
-  upsert_env "$ENV_FILE" IREDMAIL_ADMIN_PASSWORD "$mail_admin_password"
-  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD "$mail_admin_password"
-  upsert_env "$ENV_FILE" IREDMAIL_MLMMJADMIN_API_TOKEN "$(rand_secret)"
-  upsert_env "$ENV_FILE" IREDMAIL_ROUNDCUBE_DES_KEY "$(rand_secret)"
-  upsert_env "$ENV_FILE" IREDMAIL_MYSQL_ROOT_PASSWORD "$(rand_secret)"
+  upsert_env "$ENV_FILE" MAILU_ADMIN_PASSWORD "$mail_admin_password"
+  upsert_env "$ENV_FILE" MAILU_SECRET_KEY "$(rand_secret)"
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_MAILU_API_TOKEN "$(rand_secret)"
   echo "[preflight] Creado $ENV_FILE con secretos nuevos y permisos 600."
 fi
 
-for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL PUBLIC_BASE_URL GEMINI_API_KEY OPENAI_API_KEY GOOGLE_RECAPTCHA_SITE_KEY GOOGLE_RECAPTCHA_SECRET_KEY RECAPTCHA_PROVIDER RECAPTCHA_DEV_BYPASS EMAIL_CORPORATIVO_IREDADMIN_PASSWORD IREDMAIL_ADMIN_PASSWORD IREDMAIL_MLMMJADMIN_API_TOKEN IREDMAIL_ROUNDCUBE_DES_KEY IREDMAIL_MYSQL_ROOT_PASSWORD; do
+for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URL PUBLIC_BASE_URL GEMINI_API_KEY OPENAI_API_KEY GOOGLE_RECAPTCHA_SITE_KEY GOOGLE_RECAPTCHA_SECRET_KEY RECAPTCHA_PROVIDER RECAPTCHA_DEV_BYPASS EMAIL_CORPORATIVO_MAILU_API_TOKEN MAILU_ADMIN_PASSWORD MAILU_SECRET_KEY; do
   current="$(get_env_value "$ENV_FILE" "$key")"
   legacy="$(get_env_value "$BACKEND_ENV" "$key")"
   if [ -z "$current" ] && [ -n "$legacy" ]; then
@@ -90,42 +88,92 @@ if [ -f "$BACKEND_ENV" ]; then
   fi
 fi
 
-mail_admin_password="$(get_env_value "$ENV_FILE" IREDMAIL_ADMIN_PASSWORD)"
-corp_admin_password="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD)"
-if [ -n "$mail_admin_password" ] && [ -z "$corp_admin_password" ]; then
-  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD "$mail_admin_password"
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_ADMIN_PASSWORD)" ]; then
+  upsert_env "$ENV_FILE" MAILU_ADMIN_PASSWORD "$(rand_secret)"
 fi
-if [ -n "$corp_admin_password" ] && [ -z "$mail_admin_password" ]; then
-  upsert_env "$ENV_FILE" IREDMAIL_ADMIN_PASSWORD "$corp_admin_password"
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_SECRET_KEY)" ]; then
+  upsert_env "$ENV_FILE" MAILU_SECRET_KEY "$(rand_secret)"
 fi
-if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_MLMMJADMIN_API_TOKEN)" ]; then
-  upsert_env "$ENV_FILE" IREDMAIL_MLMMJADMIN_API_TOKEN "$(rand_secret)"
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_MAILU_API_TOKEN)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_MAILU_API_TOKEN "$(rand_secret)"
 fi
-if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_ROUNDCUBE_DES_KEY)" ]; then
-  upsert_env "$ENV_FILE" IREDMAIL_ROUNDCUBE_DES_KEY "$(rand_secret)"
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_AUTOLOGIN_SECRET)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_AUTOLOGIN_SECRET "$(rand_secret)"
 fi
-if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_MYSQL_ROOT_PASSWORD)" ]; then
-  upsert_env "$ENV_FILE" IREDMAIL_MYSQL_ROOT_PASSWORD "$(rand_secret)"
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_BIND)" ] || [ "$(get_env_value "$ENV_FILE" MAILU_BIND)" = "0.0.0.0" ]; then
+  upsert_env "$ENV_FILE" MAILU_BIND "127.0.0.1"
 fi
-if [ -z "$(get_env_value "$ENV_FILE" IREDMAIL_BIND)" ] || [ "$(get_env_value "$ENV_FILE" IREDMAIL_BIND)" = "0.0.0.0" ]; then
-  upsert_env "$ENV_FILE" IREDMAIL_BIND "127.0.0.1"
-fi
-for pair in IREDMAIL_HTTP_PORT=8089 IREDMAIL_HTTPS_PORT=8449 IREDMAIL_SMTP_PORT=2525 IREDMAIL_POP3_PORT=8110 IREDMAIL_IMAP_PORT=8143 IREDMAIL_SMTPS_PORT=8465 IREDMAIL_SUBMISSION_PORT=8587 IREDMAIL_IMAPS_PORT=8993 IREDMAIL_POP3S_PORT=8995 IREDMAIL_SIEVE_PORT=8419; do
+for pair in MAILU_HTTP_PORT=8089 MAILU_WEBMAIL_PORT=8091 MAILU_HTTPS_PORT=8449 MAILU_SMTP_PORT=2525 MAILU_IMAP_PORT=8143 MAILU_SMTPS_PORT=8465 MAILU_SUBMISSION_PORT=8587 MAILU_IMAPS_PORT=8993; do
   key="${pair%%=*}"
   value="${pair#*=}"
   if [ -z "$(get_env_value "$ENV_FILE" "$key")" ]; then
     upsert_env "$ENV_FILE" "$key" "$value"
   fi
 done
-if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL)" ]; then
-  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL "http://iredmail/iredadmin"
-elif [ "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL)" = "https://iredmail/iredadmin" ]; then
-  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL "http://iredmail/iredadmin"
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_RESOLVER_IP)" ]; then
+  upsert_env "$ENV_FILE" MAILU_RESOLVER_IP "192.168.203.254"
+fi
+for pair in MAILU_REDIS_IP=192.168.203.2 MAILU_SMTP_IP=192.168.203.3 MAILU_ANTISPAM_IP=192.168.203.4 MAILU_WEBMAIL_IP=192.168.203.5 MAILU_IMAP_IP=192.168.203.6 MAILU_ADMIN_IP=192.168.203.7 MAILU_FRONT_IP=192.168.203.8; do
+  key="${pair%%=*}"
+  value="${pair#*=}"
+  if [ -z "$(get_env_value "$ENV_FILE" "$key")" ]; then
+    upsert_env "$ENV_FILE" "$key" "$value"
+  fi
+done
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_MESSAGE_SIZE_LIMIT)" ]; then
+  upsert_env "$ENV_FILE" MAILU_MESSAGE_SIZE_LIMIT "50000000"
+fi
+mailu_webmail="$(get_env_value "$ENV_FILE" MAILU_WEBMAIL)"
+if [ -z "$mailu_webmail" ] || [ "$mailu_webmail" = "roundcube" ]; then
+  upsert_env "$ENV_FILE" MAILU_WEBMAIL "snappymail"
+fi
+provision_mode="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE)"
+if [ -z "$provision_mode" ] || printf '%s' "$provision_mode" | grep -qi 'ired'; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_PROVISION_MODE "mailu_direct"
+fi
+provision_command="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND)"
+if [ -z "$provision_command" ] || printf '%s' "$provision_command" | grep -qi 'ired'; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND "/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_WEB_WEBMAIL)" ]; then
+  upsert_env "$ENV_FILE" MAILU_WEB_WEBMAIL "/webmail"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_WEB_ADMIN)" ]; then
+  upsert_env "$ENV_FILE" MAILU_WEB_ADMIN "/admin"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_WEBROOT_REDIRECT)" ]; then
+  upsert_env "$ENV_FILE" MAILU_WEBROOT_REDIRECT "/webmail"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL "http://mailu-webmail/"
+fi
+if [ "$(get_env_value "$ENV_FILE" MAILU_WEBMAIL_PORT)" = "8090" ]; then
+  upsert_env "$ENV_FILE" MAILU_WEBMAIL_PORT "8091"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_PROXY_AUTH_WHITELIST)" ]; then
+  upsert_env "$ENV_FILE" MAILU_PROXY_AUTH_WHITELIST "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_PROXY_AUTH_HEADER)" ]; then
+  upsert_env "$ENV_FILE" MAILU_PROXY_AUTH_HEADER "X-Auth-Email"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_PROXY_AUTH_CREATE)" ]; then
+  upsert_env "$ENV_FILE" MAILU_PROXY_AUTH_CREATE "false"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" MAILU_REAL_IP_FROM)" ]; then
+  upsert_env "$ENV_FILE" MAILU_REAL_IP_FROM "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL "http://mailu-front/api"
 fi
 if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL)" ]; then
-  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL "http://iredmail/mail/"
-elif [ "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL)" = "https://iredmail/mail/" ]; then
-  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL "http://iredmail/mail/"
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL "http://mailu-front/webmail/"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND "/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh"
+fi
+webmail_url="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_WEBMAIL_URL)"
+if [ -z "$webmail_url" ] || printf '%s' "$webmail_url" | grep -qi '/mail/\?$'; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_WEBMAIL_URL "https://mail.powerfulcontrolsystem.com/webmail/"
 fi
 
 echo "[preflight] Variables requeridas presentes:"
@@ -138,16 +186,16 @@ for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET; do
   fi
 done
 
-echo "[preflight] Email corporativo/iRedMail:"
+echo "[preflight] Email corporativo/Mailu:"
 email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
-iredmail_image="$(get_env_value "$ENV_FILE" IREDMAIL_IMAGE)"
-iredmail_secret="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_IREDADMIN_PASSWORD)"
+mailu_version="$(get_env_value "$ENV_FILE" MAILU_VERSION)"
+mailu_secret="$(get_env_value "$ENV_FILE" MAILU_SECRET_KEY)"
 if [ "$email_enabled" = "1" ] || [ "$email_enabled" = "true" ]; then
-  [ -n "$iredmail_secret" ] && echo "  - secreto iRedAdmin: OK" || echo "  - secreto iRedAdmin: FALTA"
-  if [ -n "$iredmail_image" ]; then
-    echo "  - imagen iRedMail: OK"
+  [ -n "$mailu_secret" ] && echo "  - secreto Mailu: OK" || echo "  - secreto Mailu: FALTA"
+  if [ -n "$mailu_version" ]; then
+    echo "  - version Mailu: OK"
   else
-    echo "  - imagen iRedMail: FALTA"
+    echo "  - version Mailu: FALTA"
   fi
 else
   echo "  - modulo: desactivado; los secretos quedan listos para activacion posterior"

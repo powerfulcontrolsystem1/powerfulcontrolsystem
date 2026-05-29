@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"crypto/tls"
+	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -11,9 +13,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -28,13 +31,13 @@ const (
 	corporateEmailDomainKey        = "email_corporativo.domain"
 	corporateEmailWebmailURLKey    = "email_corporativo.webmail_url"
 	corporateEmailProvisionModeKey = "email_corporativo.provision_mode"
-	corporateEmailAPIBaseURLKey    = "email_corporativo.iredadmin_api_base_url"
-	corporateEmailAPIAdminKey      = "email_corporativo.iredadmin_admin"
-	corporateEmailAPIPasswordKey   = "email_corporativo.iredadmin_password"
+	corporateEmailAPIBaseURLKey    = "email_corporativo.mailu_api_base_url"
+	corporateEmailAPIAdminKey      = "email_corporativo.mailu_admin"
+	corporateEmailAPIPasswordKey   = "email_corporativo.mailu_api_token"
 	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
+	corporateEmailDirectCommandKey = "email_corporativo.direct_provision_command"
+	corporateEmailAutologinKey     = "email_corporativo.autologin_secret"
 )
-
-var errIredAdminAPINotAvailable = errors.New("iRedAdmin-Pro API no esta disponible en la URL configurada")
 
 type CorporateEmailConfig struct {
 	Enabled        bool   `json:"enabled"`
@@ -42,10 +45,11 @@ type CorporateEmailConfig struct {
 	Domain         string `json:"domain"`
 	WebmailURL     string `json:"webmail_url"`
 	ProvisionMode  string `json:"provision_mode"`
-	APIBaseURL     string `json:"iredadmin_api_base_url"`
-	APIAdmin       string `json:"iredadmin_admin"`
-	APIPasswordSet bool   `json:"iredadmin_password_set"`
+	APIBaseURL     string `json:"mailu_api_base_url"`
+	APIAdmin       string `json:"mailu_admin"`
+	APIPasswordSet bool   `json:"mailu_api_token_set"`
 	QuotaMB        int    `json:"quota_mb"`
+	DirectCommand  string `json:"direct_provision_command,omitempty"`
 }
 
 type corporateEmailProvisionResult struct {
@@ -53,6 +57,8 @@ type corporateEmailProvisionResult struct {
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`
 }
+
+var errCorporateEmailAutologinRejected = errors.New("credenciales del buzon no aceptadas por Mailu")
 
 type corporateWebmailCheck struct {
 	Checked bool   `json:"checked"`
@@ -62,17 +68,17 @@ type corporateWebmailCheck struct {
 }
 
 type corporateEmailDiagnostics struct {
-	Enabled              bool                  `json:"enabled"`
-	AutoCreate           bool                  `json:"auto_create"`
-	ProvisionMode        string                `json:"provision_mode"`
-	IredAdminAPIEnabled  bool                  `json:"iredadmin_api_enabled"`
-	IredAdminAPIURLSet   bool                  `json:"iredadmin_api_url_set"`
-	IredAdminAdminSet    bool                  `json:"iredadmin_admin_set"`
-	IredAdminPasswordSet bool                  `json:"iredadmin_password_set"`
-	EncryptionAvailable  bool                  `json:"encryption_available"`
-	Webmail              corporateWebmailCheck `json:"webmail"`
-	Accounts             map[string]int        `json:"accounts"`
-	RecommendedAction    string                `json:"recommended_action"`
+	Enabled             bool                  `json:"enabled"`
+	AutoCreate          bool                  `json:"auto_create"`
+	ProvisionMode       string                `json:"provision_mode"`
+	MailuDirectEnabled  bool                  `json:"mailu_direct_enabled"`
+	MailuAPIURLSet      bool                  `json:"mailu_api_url_set"`
+	MailuAdminSet       bool                  `json:"mailu_admin_set"`
+	MailuAPITokenSet    bool                  `json:"mailu_api_token_set"`
+	EncryptionAvailable bool                  `json:"encryption_available"`
+	Webmail             corporateWebmailCheck `json:"webmail"`
+	Accounts            map[string]int        `json:"accounts"`
+	RecommendedAction   string                `json:"recommended_action"`
 }
 
 func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
@@ -80,7 +86,7 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 		Enabled:       false,
 		AutoCreate:    true,
 		Domain:        "powerfulcontrolsystem.com",
-		WebmailURL:    "https://mail.powerfulcontrolsystem.com/mail/",
+		WebmailURL:    "https://mail.powerfulcontrolsystem.com/webmail/",
 		ProvisionMode: "manual",
 		QuotaMB:       1024,
 	}
@@ -113,6 +119,9 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 			cfg.QuotaMB = parsed
 		}
 	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailDirectCommandKey); err == nil {
+		cfg.DirectCommand = strings.TrimSpace(value)
+	}
 	if raw, _, err := dbpkg.GetConfigValue(dbSuper, corporateEmailAPIPasswordKey); err == nil && strings.TrimSpace(raw) != "" {
 		cfg.APIPasswordSet = true
 	}
@@ -144,7 +153,7 @@ func corporateEmailAPIAdminPassword(dbSuper *sql.DB) (string, error) {
 	if strings.TrimSpace(value) != "" {
 		return strings.TrimSpace(value), nil
 	}
-	return firstNonEmptyEnv("IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD", "EMAIL_CORPORATIVO_IREDADMIN_PASSWORD"), nil
+	return firstNonEmptyEnv("MAILU_API_TOKEN", "EMAIL_CORPORATIVO_MAILU_API_TOKEN"), nil
 }
 
 func corporateEmailInternalURL(rawURL string, envKeys ...string) string {
@@ -155,15 +164,15 @@ func corporateEmailInternalURL(rawURL string, envKeys ...string) string {
 		return rawURL
 	}
 	host := strings.ToLower(parsed.Hostname())
-	if strings.TrimSpace(internalURL) != "" && (host == "iredmail" || host == "mail.powerfulcontrolsystem.com" || strings.HasPrefix(host, "mail.")) {
+	if strings.TrimSpace(internalURL) != "" && (host == "mailu-front" || host == "mail.powerfulcontrolsystem.com" || strings.HasPrefix(host, "mail.")) {
 		internalURL = strings.TrimRight(strings.TrimSpace(internalURL), "/")
-		if internalParsed, parseErr := url.Parse(internalURL); parseErr == nil && strings.EqualFold(internalParsed.Hostname(), "iredmail") {
+		if internalParsed, parseErr := url.Parse(internalURL); parseErr == nil && strings.EqualFold(internalParsed.Hostname(), "mailu-front") {
 			internalParsed.Scheme = "http"
 			return strings.TrimRight(internalParsed.String(), "/")
 		}
 		return internalURL
 	}
-	if host == "iredmail" && parsed.Scheme == "https" {
+	if host == "mailu-front" && parsed.Scheme == "https" {
 		parsed.Scheme = "http"
 		return strings.TrimRight(parsed.String(), "/")
 	}
@@ -171,11 +180,11 @@ func corporateEmailInternalURL(rawURL string, envKeys ...string) string {
 }
 
 func corporateEmailEffectiveAPIBaseURL(rawURL string) string {
-	return corporateEmailInternalURL(rawURL, "EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL", "IREDADMIN_INTERNAL_API_BASE_URL")
+	return corporateEmailInternalURL(rawURL, "EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL", "MAILU_INTERNAL_API_BASE_URL")
 }
 
 func corporateEmailEffectiveWebmailURL(rawURL string) string {
-	internalURL := corporateEmailInternalURL(rawURL, "EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL", "IREDMAIL_INTERNAL_WEBMAIL_URL")
+	internalURL := corporateEmailInternalURL(rawURL, "EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL", "MAILU_INTERNAL_WEBMAIL_URL")
 	if internalURL == rawURL {
 		return rawURL
 	}
@@ -185,31 +194,38 @@ func corporateEmailEffectiveWebmailURL(rawURL string) string {
 	return internalURL
 }
 
-func corporateEmailHTTPClient(timeout time.Duration, jar http.CookieJar, endpoint string) *http.Client {
-	client := &http.Client{Timeout: timeout, Jar: jar}
-	parsed, err := url.Parse(endpoint)
-	if err == nil && strings.EqualFold(parsed.Hostname(), "iredmail") {
-		// El certificado interno del contenedor iRedMail es autofirmado/legacy.
-		// Esta excepcion solo aplica a la red Docker interna; el acceso publico conserva TLS valido.
-		client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+func corporateEmailIsLegacyWebmailURL(rawURL string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return false
 	}
-	return client
+	path := strings.ToLower(strings.Trim(parsed.Path, "/"))
+	return path == "mail"
 }
 
-// EnsureCorporateEmailConfigFromEnv registra en base la configuracion iRedMail
-// definida en variables de entorno de la VPS. No imprime secretos y guarda la
-// clave iRedAdmin cifrada si CONFIG_ENC_KEY esta disponible.
+func corporateEmailAccountWebmailURL(accountURL, configURL string) string {
+	accountURL = strings.TrimSpace(accountURL)
+	if accountURL != "" && !corporateEmailIsLegacyWebmailURL(accountURL) {
+		return accountURL
+	}
+	return strings.TrimSpace(configURL)
+}
+
+// EnsureCorporateEmailConfigFromEnv registra en base la configuracion Mailu
+// definida en variables de entorno de la VPS. No imprime secretos y guarda el
+// token API cifrado si CONFIG_ENC_KEY esta disponible.
 func EnsureCorporateEmailConfigFromEnv(dbSuper *sql.DB) error {
 	if dbSuper == nil {
 		return nil
 	}
 	envKeys := []string{
-		"EMAIL_CORPORATIVO_ENABLED", "IREDMAIL_ENABLED", "EMAIL_CORPORATIVO_AUTO_CREATE", "IREDMAIL_AUTO_CREATE",
-		"EMAIL_CORPORATIVO_DOMAIN", "IREDMAIL_DOMAIN", "EMAIL_CORPORATIVO_WEBMAIL_URL", "IREDMAIL_WEBMAIL_URL",
-		"EMAIL_CORPORATIVO_PROVISION_MODE", "IREDMAIL_PROVISION_MODE", "IREDADMIN_API_BASE_URL",
-		"EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL", "IREDADMIN_ADMIN", "IREDMAIL_ADMIN_EMAIL",
-		"EMAIL_CORPORATIVO_IREDADMIN_ADMIN", "IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD",
-		"EMAIL_CORPORATIVO_IREDADMIN_PASSWORD", "IREDMAIL_QUOTA_MB", "EMAIL_CORPORATIVO_QUOTA_MB",
+		"EMAIL_CORPORATIVO_ENABLED", "MAILU_ENABLED", "EMAIL_CORPORATIVO_AUTO_CREATE", "MAILU_AUTO_CREATE",
+		"EMAIL_CORPORATIVO_DOMAIN", "MAILU_DOMAIN", "EMAIL_CORPORATIVO_WEBMAIL_URL", "MAILU_WEBMAIL_URL",
+		"EMAIL_CORPORATIVO_PROVISION_MODE", "MAILU_PROVISION_MODE", "MAILU_API_BASE_URL",
+		"EMAIL_CORPORATIVO_MAILU_API_BASE_URL", "MAILU_ADMIN", "MAILU_POSTMASTER",
+		"EMAIL_CORPORATIVO_MAILU_ADMIN", "MAILU_API_TOKEN", "EMAIL_CORPORATIVO_MAILU_API_TOKEN",
+		"MAILU_QUOTA_MB", "EMAIL_CORPORATIVO_QUOTA_MB",
+		"EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND",
 	}
 	hasEnv := false
 	for _, key := range envKeys {
@@ -222,36 +238,42 @@ func EnsureCorporateEmailConfigFromEnv(dbSuper *sql.DB) error {
 		return nil
 	}
 	cfg := getCorporateEmailConfig(dbSuper)
-	cfg.Enabled = corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_ENABLED", "IREDMAIL_ENABLED"}, cfg.Enabled)
-	cfg.AutoCreate = corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_AUTO_CREATE", "IREDMAIL_AUTO_CREATE"}, cfg.AutoCreate)
-	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_DOMAIN", "IREDMAIL_DOMAIN"); value != "" {
+	cfg.Enabled = corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_ENABLED", "MAILU_ENABLED"}, cfg.Enabled)
+	cfg.AutoCreate = corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_AUTO_CREATE", "MAILU_AUTO_CREATE"}, cfg.AutoCreate)
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_DOMAIN", "MAILU_DOMAIN"); value != "" {
 		cfg.Domain = value
 	}
-	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_WEBMAIL_URL", "IREDMAIL_WEBMAIL_URL"); value != "" {
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_WEBMAIL_URL", "MAILU_WEBMAIL_URL"); value != "" {
 		cfg.WebmailURL = value
 	}
-	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_PROVISION_MODE", "IREDMAIL_PROVISION_MODE"); value != "" {
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_PROVISION_MODE", "MAILU_PROVISION_MODE"); value != "" {
 		cfg.ProvisionMode = value
 	}
-	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL", "IREDADMIN_API_BASE_URL"); value != "" {
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_MAILU_API_BASE_URL", "MAILU_API_BASE_URL"); value != "" {
 		cfg.APIBaseURL = value
 	}
-	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_IREDADMIN_ADMIN", "IREDADMIN_ADMIN", "IREDMAIL_ADMIN_EMAIL"); value != "" {
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_MAILU_ADMIN", "MAILU_ADMIN", "MAILU_POSTMASTER"); value != "" {
 		cfg.APIAdmin = value
 	}
-	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_QUOTA_MB", "IREDMAIL_QUOTA_MB"); value != "" {
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_QUOTA_MB", "MAILU_QUOTA_MB"); value != "" {
 		if parsed, err := strconv.Atoi(value); err == nil && parsed >= 0 {
 			cfg.QuotaMB = parsed
 		}
 	}
-	plainPassword := firstNonEmptyEnv("EMAIL_CORPORATIVO_IREDADMIN_PASSWORD", "IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD")
-	if cfg.ProvisionMode == "manual" && cfg.APIBaseURL != "" && cfg.APIAdmin != "" && plainPassword != "" {
-		cfg.ProvisionMode = "iredadmin_api"
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"); value != "" {
+		cfg.DirectCommand = value
+	}
+	plainPassword := firstNonEmptyEnv("EMAIL_CORPORATIVO_MAILU_API_TOKEN", "MAILU_API_TOKEN")
+	if cfg.ProvisionMode == "manual" && strings.TrimSpace(cfg.DirectCommand) != "" {
+		cfg.ProvisionMode = "mailu_direct"
 	}
 	if plainPassword != "" && !utils.EncryptionAvailable() {
-		return fmt.Errorf("CONFIG_ENC_KEY no esta disponible para registrar IREDADMIN_PASSWORD cifrado")
+		return fmt.Errorf("CONFIG_ENC_KEY no esta disponible para registrar MAILU_API_TOKEN cifrado")
 	}
-	return saveCorporateEmailConfig(dbSuper, cfg, plainPassword)
+	if err := saveCorporateEmailConfig(dbSuper, cfg, plainPassword); err != nil {
+		return err
+	}
+	return nil
 }
 
 func parseConfigBool(value string, fallback bool) bool {
@@ -278,8 +300,10 @@ func normalizeCorporateEmailDomain(value string) string {
 
 func normalizeCorporateEmailProvisionMode(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "iredadmin_api", "iredmail_api", "api":
-		return "iredadmin_api"
+	case "mailu_direct", "direct", "docker_direct", "cli", "direct_sql":
+		return "mailu_direct"
+	case "mailu_api", "api":
+		return "manual"
 	default:
 		return "manual"
 	}
@@ -293,6 +317,112 @@ func generateCorporateEmailPassword() (string, error) {
 	return strings.TrimRight(base64.URLEncoding.EncodeToString(buf), "=") + "Aa1!", nil
 }
 
+type corporateEmailAutologinToken struct {
+	EmpresaID int64  `json:"empresa_id"`
+	Email     string `json:"email"`
+	Exp       int64  `json:"exp"`
+	Nonce     string `json:"nonce"`
+}
+
+func corporateEmailAutologinSecret(dbSuper *sql.DB) (string, error) {
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_AUTOLOGIN_SECRET", "MAILU_AUTOLOGIN_SECRET"); strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value), nil
+	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailAutologinKey); err == nil && strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value), nil
+	} else if err != nil {
+		return "", err
+	}
+	if !utils.EncryptionAvailable() {
+		return "", fmt.Errorf("CONFIG_ENC_KEY no esta disponible para proteger autologin")
+	}
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	secret := base64.RawURLEncoding.EncodeToString(buf)
+	encrypted, err := utils.EncryptString(secret)
+	if err != nil {
+		return "", err
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, corporateEmailAutologinKey, encrypted, true); err != nil {
+		return "", err
+	}
+	return secret, nil
+}
+
+func signCorporateEmailAutologinPayload(payload []byte, secret string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write(payload)
+	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+}
+
+func createCorporateEmailAutologinToken(dbSuper *sql.DB, account dbpkg.EmpresaEmailCorporativo) (string, error) {
+	if account.EmpresaID <= 0 || strings.TrimSpace(account.Email) == "" {
+		return "", fmt.Errorf("cuenta corporativa invalida")
+	}
+	secret, err := corporateEmailAutologinSecret(dbSuper)
+	if err != nil {
+		return "", err
+	}
+	nonceBytes := make([]byte, 12)
+	if _, err := rand.Read(nonceBytes); err != nil {
+		return "", err
+	}
+	payload := corporateEmailAutologinToken{
+		EmpresaID: account.EmpresaID,
+		Email:     strings.ToLower(strings.TrimSpace(account.Email)),
+		Exp:       time.Now().Add(2 * time.Minute).Unix(),
+		Nonce:     base64.RawURLEncoding.EncodeToString(nonceBytes),
+	}
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+	payloadPart := base64.RawURLEncoding.EncodeToString(payloadJSON)
+	signature := signCorporateEmailAutologinPayload([]byte(payloadPart), secret)
+	return payloadPart + "." + signature, nil
+}
+
+func validateCorporateEmailAutologinToken(dbSuper *sql.DB, token string) (corporateEmailAutologinToken, error) {
+	var payload corporateEmailAutologinToken
+	token = strings.TrimSpace(token)
+	parts := strings.Split(token, ".")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return payload, fmt.Errorf("token invalido")
+	}
+	secret, err := corporateEmailAutologinSecret(dbSuper)
+	if err != nil {
+		return payload, err
+	}
+	expected := signCorporateEmailAutologinPayload([]byte(parts[0]), secret)
+	if !hmac.Equal([]byte(expected), []byte(parts[1])) {
+		return payload, fmt.Errorf("firma invalida")
+	}
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return payload, fmt.Errorf("payload invalido")
+	}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return payload, fmt.Errorf("payload invalido")
+	}
+	if payload.EmpresaID <= 0 || strings.TrimSpace(payload.Email) == "" || time.Now().Unix() > payload.Exp {
+		return payload, fmt.Errorf("token vencido o incompleto")
+	}
+	return payload, nil
+}
+
+func corporateEmailAutologinPublicURL(webmailURL, token string) string {
+	parsed, err := url.Parse(strings.TrimSpace(webmailURL))
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" || strings.TrimSpace(token) == "" {
+		return ""
+	}
+	parsed.Path = "/pcs-mail-autologin"
+	parsed.RawQuery = "token=" + url.QueryEscape(token)
+	parsed.Fragment = ""
+	return parsed.String()
+}
+
 func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPassword string) error {
 	if dbSuper == nil {
 		return fmt.Errorf("base super no disponible")
@@ -302,6 +432,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 	cfg.APIBaseURL = strings.TrimRight(strings.TrimSpace(cfg.APIBaseURL), "/")
 	cfg.APIAdmin = strings.TrimSpace(cfg.APIAdmin)
 	cfg.ProvisionMode = normalizeCorporateEmailProvisionMode(cfg.ProvisionMode)
+	cfg.DirectCommand = strings.TrimSpace(cfg.DirectCommand)
 	if cfg.QuotaMB < 0 {
 		cfg.QuotaMB = 0
 	}
@@ -318,6 +449,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 		{corporateEmailAPIBaseURLKey, cfg.APIBaseURL, false},
 		{corporateEmailAPIAdminKey, cfg.APIAdmin, false},
 		{corporateEmailQuotaMBKey, strconv.Itoa(cfg.QuotaMB), false},
+		{corporateEmailDirectCommandKey, cfg.DirectCommand, false},
 	}
 	for _, pair := range pairs {
 		if err := dbpkg.SetConfigValue(dbSuper, pair.key, pair.value, pair.enc); err != nil {
@@ -326,7 +458,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 	}
 	if strings.TrimSpace(plainPassword) != "" {
 		if !utils.EncryptionAvailable() {
-			return fmt.Errorf("CONFIG_ENC_KEY no esta disponible para cifrar la clave iRedAdmin")
+			return fmt.Errorf("CONFIG_ENC_KEY no esta disponible para cifrar el token Mailu")
 		}
 		enc, err := utils.EncryptString(strings.TrimSpace(plainPassword))
 		if err != nil {
@@ -370,7 +502,7 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 		if err != nil {
 			return nil, err
 		}
-	} else if cfg.Enabled && cfg.ProvisionMode == "iredadmin_api" {
+	} else if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" {
 		status = "pendiente_cifrado"
 	}
 	item, err := dbpkg.UpsertEmpresaEmailCorporativo(dbSuper, dbpkg.EmpresaEmailCorporativo{
@@ -381,14 +513,14 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 		Domain:            cfg.Domain,
 		WebmailURL:        cfg.WebmailURL,
 		EstadoProvision:   status,
-		ProvisionProvider: "iredmail",
+		ProvisionProvider: "mailu",
 		UsuarioCreador:    usuario,
 		Observaciones:     "Generado automaticamente al crear la empresa",
 	}, encryptedPassword)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Enabled && cfg.ProvisionMode == "iredadmin_api" && encryptedPassword != "" {
+	if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" && encryptedPassword != "" {
 		result := provisionEmpresaEmailAccount(dbSuper, cfg, *item, initialPassword)
 		if !result.OK {
 			log.Printf("email corporativo empresa_id=%d provision warning: %s", empresaID, result.Error)
@@ -414,96 +546,100 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_modulo_desactivado", "El modulo global esta desactivado", false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
 	}
-	if cfg.ProvisionMode != "iredadmin_api" {
-		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", "Modo manual: crear o validar la cuenta en iRedMail", false)
+	if cfg.ProvisionMode != "mailu_direct" {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", "Modo manual: crear o validar la cuenta en Mailu", false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
 	}
-	adminPassword, err := corporateEmailAPIAdminPassword(dbSuper)
-	if err != nil {
-		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error", "No se pudo descifrar la clave iRedAdmin", false)
-		return corporateEmailProvisionResult{OK: false, Status: "error", Error: err.Error()}
+	return provisionEmpresaEmailAccountDirect(dbSuper, cfg, account, password)
+}
+
+func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
+	commandPath := strings.TrimSpace(cfg.DirectCommand)
+	if commandPath == "" {
+		commandPath = strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"))
 	}
-	if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || strings.TrimSpace(adminPassword) == "" {
-		msg := "Faltan URL, usuario o clave de iRedAdmin-Pro"
-		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_api", msg, false)
-		return corporateEmailProvisionResult{OK: false, Status: "pendiente_api", Error: msg}
+	if commandPath == "" {
+		msg := "Falta EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND para crear el buzon directo en Mailu"
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_comando", msg, false)
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_comando", Error: msg}
 	}
 	if strings.TrimSpace(password) == "" {
 		msg := "La clave inicial de la cuenta no esta disponible para crear el buzon"
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_clave", msg, false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_clave", Error: msg}
 	}
-	apiBaseURL := corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL)
-	jar, _ := cookiejar.New(nil)
-	client := corporateEmailHTTPClient(20*time.Second, jar, apiBaseURL)
-	loginValues := url.Values{}
-	loginValues.Set("username", cfg.APIAdmin)
-	loginValues.Set("password", adminPassword)
-	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/login", loginValues); err != nil {
-		if errors.Is(err, errIredAdminAPINotAvailable) {
-			_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", errIredAdminAPINotAvailable.Error(), false)
-			return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: errIredAdminAPINotAvailable.Error()}
-		}
-		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_login", err.Error(), false)
-		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
+	if err := validateCorporateEmailAccountForProvision(account); err != nil {
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_validacion", err.Error(), false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_validacion", Error: err.Error()}
 	}
-	userValues := url.Values{}
-	userValues.Set("name", account.EmpresaNombre)
-	userValues.Set("password", password)
-	userValues.Set("language", "es_ES")
-	userValues.Set("accountStatus", "active")
-	userValues.Set("quota", strconv.Itoa(cfg.QuotaMB))
-	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/user/"+url.PathEscape(account.Email), userValues); err != nil {
-		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_provision", err.Error(), false)
-		return corporateEmailProvisionResult{OK: false, Status: "error_provision", Error: err.Error()}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, commandPath)
+	cmd.Env = append(os.Environ(),
+		"PCS_MAILU_EMAIL="+strings.ToLower(strings.TrimSpace(account.Email)),
+		"PCS_MAILU_PASSWORD="+password,
+		"PCS_MAILU_NAME="+strings.TrimSpace(account.EmpresaNombre),
+		"PCS_MAILU_DOMAIN="+normalizeCorporateEmailDomain(account.Domain),
+		"PCS_MAILU_QUOTA_MB="+strconv.Itoa(cfg.QuotaMB),
+	)
+	output, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		msg := "Tiempo agotado creando el buzon en Mailu"
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_timeout", msg, false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_timeout", Error: msg}
+	}
+	if err != nil {
+		msg := sanitizeProvisionCommandOutput(string(output))
+		if msg == "" {
+			msg = "El comando directo de Mailu fallo"
+		}
+		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_provision", msg, false)
+		return corporateEmailProvisionResult{OK: false, Status: "error_provision", Error: msg}
 	}
 	_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "provisionado", "", true)
 	return corporateEmailProvisionResult{OK: true, Status: "provisionado"}
 }
 
-func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Values) error {
-	req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(values.Encode()))
-	if err != nil {
-		return err
+func validateCorporateEmailAccountForProvision(account dbpkg.EmpresaEmailCorporativo) error {
+	email := strings.ToLower(strings.TrimSpace(account.Email))
+	if !regexp.MustCompile(`^[a-z0-9][a-z0-9._%+-]{0,126}@[a-z0-9.-]+\.[a-z]{2,}$`).MatchString(email) {
+		return fmt.Errorf("email corporativo invalido")
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	res, err := client.Do(req)
-	if err != nil {
-		return err
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return fmt.Errorf("email corporativo invalido")
 	}
-	defer res.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
-	var payload struct {
-		Success bool   `json:"_success"`
-		Msg     string `json:"_msg"`
-		Error   string `json:"error"`
-	}
-	_ = json.Unmarshal(body, &payload)
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		msg := strings.TrimSpace(payload.Msg)
-		if msg == "" {
-			msg = strings.TrimSpace(payload.Error)
-		}
-		if res.StatusCode == http.StatusUnauthorized && strings.EqualFold(msg, "unauthorized") && (res.Header.Get("X-Request-Id") != "" || strings.Contains(string(body), `"request_id"`)) {
-			return fmt.Errorf("iRedAdmin no esta publicado: el subdominio mail esta respondiendo el backend POS")
-		}
-		if res.StatusCode == http.StatusNotFound && strings.Contains(endpoint, "/api/login") {
-			return errIredAdminAPINotAvailable
-		}
-		if msg == "" {
-			msg = strings.TrimSpace(string(body))
-		}
-		return fmt.Errorf("iRedAdmin HTTP %d: %s", res.StatusCode, msg)
-	}
-	if strings.Contains(strings.TrimSpace(string(body)), "_success") && !payload.Success {
-		msg := strings.TrimSpace(payload.Msg)
-		if msg == "" {
-			msg = "iRedAdmin rechazo la operacion"
-		}
-		return errors.New(msg)
+	domain := normalizeCorporateEmailDomain(account.Domain)
+	if domain != "" && domain != parts[1] {
+		return fmt.Errorf("el dominio del email no coincide con la configuracion de la empresa")
 	}
 	return nil
+}
+
+func sanitizeProvisionCommandOutput(value string) string {
+	value = strings.ReplaceAll(value, "\r", "\n")
+	lines := strings.Split(value, "\n")
+	clean := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		lower := strings.ToLower(line)
+		if strings.Contains(lower, "password") || strings.Contains(lower, "secret") || strings.Contains(lower, "token") {
+			line = "detalle sensible oculto"
+		}
+		clean = append(clean, line)
+		if len(strings.Join(clean, " | ")) > 260 {
+			break
+		}
+	}
+	msg := strings.Join(clean, " | ")
+	if len(msg) > 320 {
+		msg = msg[:317] + "..."
+	}
+	return msg
 }
 
 func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
@@ -553,10 +689,13 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 	}
 }
 
-func corporateEmailResponse(cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool) map[string]interface{} {
+func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool) map[string]interface{} {
 	webmailURL := cfg.WebmailURL
-	if account != nil && strings.TrimSpace(account.WebmailURL) != "" {
-		webmailURL = account.WebmailURL
+	if account != nil {
+		webmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
+		if strings.TrimSpace(account.WebmailURL) != webmailURL {
+			account.WebmailURL = webmailURL
+		}
 	}
 	resp := map[string]interface{}{
 		"ok":          true,
@@ -571,6 +710,17 @@ func corporateEmailResponse(cfg CorporateEmailConfig, account *dbpkg.EmpresaEmai
 	}
 	if checkWebmail {
 		resp["webmail_check"] = checkCorporateWebmail(webmailURL)
+	}
+	accountCanAttemptAutologin := account != nil && (strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || (cfg.ProvisionMode == "mailu_direct" && account.InitialPasswordSet))
+	if cfg.Enabled && accountCanAttemptAutologin {
+		if token, err := createCorporateEmailAutologinToken(dbSuper, *account); err == nil {
+			if autologinURL := corporateEmailAutologinPublicURL(webmailURL, token); autologinURL != "" {
+				resp["autologin_url"] = autologinURL
+				resp["autologin_expires_seconds"] = 120
+			}
+		} else {
+			resp["autologin_error"] = "Autologin no disponible: " + err.Error()
+		}
 	}
 	return resp
 }
@@ -605,57 +755,43 @@ func corporateEmailDiagnosticsFor(cfg CorporateEmailConfig, accounts []dbpkg.Emp
 	recommended := "Configuracion lista para asignar correos por empresa."
 	if !cfg.Enabled {
 		recommended = "Activa el modulo para que las empresas puedan abrir su buzon corporativo."
-	} else if cfg.ProvisionMode != "iredadmin_api" {
-		recommended = "El modo manual asigna correos, pero el buzon real se debe crear en iRedMail fuera del sistema."
-	} else if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || !cfg.APIPasswordSet {
-		recommended = "Completa URL API, administrador y clave de iRedAdmin-Pro."
+	} else if cfg.ProvisionMode == "mailu_direct" && strings.TrimSpace(cfg.DirectCommand) == "" {
+		recommended = "Configura el comando directo de Mailu para crear buzones reales desde la VPS."
+	} else if cfg.ProvisionMode == "mailu_direct" {
+		recommended = "Provision directa activa: el sistema creara buzones reales en Mailu desde la VPS."
+	} else if cfg.ProvisionMode != "mailu_direct" {
+		recommended = "El modo manual asigna correos, pero el buzon real se debe crear en Mailu fuera del sistema."
 	} else if summary["error"] > 0 {
-		recommended = "Prueba iRedAdmin y luego reintenta provisionar las cuentas con error."
+		recommended = "Prueba Mailu y luego reintenta provisionar las cuentas con error."
 	} else if summary["pendiente"] > 0 {
 		recommended = "Provisiona las cuentas pendientes para crear los buzones reales."
 	}
 	return corporateEmailDiagnostics{
-		Enabled:              cfg.Enabled,
-		AutoCreate:           cfg.AutoCreate,
-		ProvisionMode:        cfg.ProvisionMode,
-		IredAdminAPIEnabled:  cfg.Enabled && cfg.ProvisionMode == "iredadmin_api",
-		IredAdminAPIURLSet:   strings.TrimSpace(cfg.APIBaseURL) != "",
-		IredAdminAdminSet:    strings.TrimSpace(cfg.APIAdmin) != "",
-		IredAdminPasswordSet: cfg.APIPasswordSet,
-		EncryptionAvailable:  utils.EncryptionAvailable(),
-		Webmail:              checkCorporateWebmail(cfg.WebmailURL),
-		Accounts:             summary,
-		RecommendedAction:    recommended,
+		Enabled:             cfg.Enabled,
+		AutoCreate:          cfg.AutoCreate,
+		ProvisionMode:       cfg.ProvisionMode,
+		MailuDirectEnabled:  cfg.Enabled && cfg.ProvisionMode == "mailu_direct",
+		MailuAPIURLSet:      strings.TrimSpace(cfg.APIBaseURL) != "",
+		MailuAdminSet:       strings.TrimSpace(cfg.APIAdmin) != "",
+		MailuAPITokenSet:    cfg.APIPasswordSet,
+		EncryptionAvailable: utils.EncryptionAvailable(),
+		Webmail:             checkCorporateWebmail(cfg.WebmailURL),
+		Accounts:            summary,
+		RecommendedAction:   recommended,
 	}
 }
 
-func testCorporateEmailIredAdminLogin(dbSuper *sql.DB, cfg CorporateEmailConfig) corporateEmailProvisionResult {
+func testCorporateEmailMailuProvision(cfg CorporateEmailConfig) corporateEmailProvisionResult {
 	if !cfg.Enabled {
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
 	}
-	if cfg.ProvisionMode != "iredadmin_api" {
+	if cfg.ProvisionMode != "mailu_direct" {
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
 	}
-	adminPassword, err := corporateEmailAPIAdminPassword(dbSuper)
-	if err != nil {
-		return corporateEmailProvisionResult{OK: false, Status: "error", Error: "No se pudo descifrar la clave iRedAdmin"}
+	if strings.TrimSpace(cfg.DirectCommand) == "" && firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND") == "" {
+		return corporateEmailProvisionResult{OK: false, Status: "pendiente_comando", Error: "Falta comando directo de Mailu"}
 	}
-	if cfg.APIBaseURL == "" || cfg.APIAdmin == "" || strings.TrimSpace(adminPassword) == "" {
-		return corporateEmailProvisionResult{OK: false, Status: "pendiente_api", Error: "Faltan URL, usuario o clave de iRedAdmin-Pro"}
-	}
-	apiBaseURL := corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL)
-	jar, _ := cookiejar.New(nil)
-	client := corporateEmailHTTPClient(20*time.Second, jar, apiBaseURL)
-	loginValues := url.Values{}
-	loginValues.Set("username", cfg.APIAdmin)
-	loginValues.Set("password", adminPassword)
-	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/login", loginValues); err != nil {
-		if errors.Is(err, errIredAdminAPINotAvailable) {
-			return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: errIredAdminAPINotAvailable.Error()}
-		}
-		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
-	}
-	return corporateEmailProvisionResult{OK: true, Status: "login_ok"}
+	return corporateEmailProvisionResult{OK: true, Status: "direct_ok"}
 }
 
 func corporateEmailInitialPasswordForProvision(dbSuper *sql.DB, account dbpkg.EmpresaEmailCorporativo) (string, error) {
@@ -681,7 +817,7 @@ func corporateEmailInitialPasswordForProvision(dbSuper *sql.DB, account dbpkg.Em
 		account.EstadoProvision = "pendiente_provision"
 	}
 	if strings.TrimSpace(account.ProvisionProvider) == "" {
-		account.ProvisionProvider = "iredmail"
+		account.ProvisionProvider = "mailu"
 	}
 	if strings.TrimSpace(account.Observaciones) == "" {
 		account.Observaciones = "Clave inicial generada al reintentar provision"
@@ -703,12 +839,12 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"ok":                    true,
-				"config":                cfg,
-				"accounts":              accounts,
-				"diagnostics":           corporateEmailDiagnosticsFor(cfg, accounts),
-				"encryption_available":  utils.EncryptionAvailable(),
-				"iredadmin_api_enabled": cfg.Enabled && cfg.ProvisionMode == "iredadmin_api",
+				"ok":                   true,
+				"config":               cfg,
+				"accounts":             accounts,
+				"diagnostics":          corporateEmailDiagnosticsFor(cfg, accounts),
+				"encryption_available": utils.EncryptionAvailable(),
+				"mailu_direct_enabled": cfg.Enabled && cfg.ProvisionMode == "mailu_direct",
 			})
 			return
 		case http.MethodPost, http.MethodPut:
@@ -723,8 +859,8 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "created": count})
 				return
 			}
-			if action == "test_iredadmin" {
-				result := testCorporateEmailIredAdminLogin(dbSuper, getCorporateEmailConfig(dbSuper))
+			if action == "test_mailu" {
+				result := testCorporateEmailMailuProvision(getCorporateEmailConfig(dbSuper))
 				writeJSON(w, http.StatusOK, result)
 				return
 			}
@@ -755,10 +891,11 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				Domain        string `json:"domain"`
 				WebmailURL    string `json:"webmail_url"`
 				ProvisionMode string `json:"provision_mode"`
-				APIBaseURL    string `json:"iredadmin_api_base_url"`
-				APIAdmin      string `json:"iredadmin_admin"`
-				APIPassword   string `json:"iredadmin_password"`
+				APIBaseURL    string `json:"mailu_api_base_url"`
+				APIAdmin      string `json:"mailu_admin"`
+				APIPassword   string `json:"mailu_api_token"`
 				QuotaMB       int    `json:"quota_mb"`
+				DirectCommand string `json:"direct_provision_command"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 				http.Error(w, "payload invalido: "+err.Error(), http.StatusBadRequest)
@@ -782,6 +919,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			}
 			cfg.APIBaseURL = payload.APIBaseURL
 			cfg.APIAdmin = payload.APIAdmin
+			cfg.DirectCommand = payload.DirectCommand
 			if payload.QuotaMB >= 0 {
 				cfg.QuotaMB = payload.QuotaMB
 			}
@@ -819,7 +957,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
 							account = created
 						} else {
-							writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, nil, "No se pudo generar el email corporativo", checkWebmail))
+							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail))
 							return
 						}
 					}
@@ -828,10 +966,10 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					if account.WebmailURL == "" {
 						account.WebmailURL = cfg.WebmailURL
 					}
-					writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, account, "Email corporativo generado", checkWebmail))
+					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail))
 					return
 				}
-				writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, nil, "Sin email corporativo generado", checkWebmail))
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail))
 				return
 			}
 			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)
@@ -839,7 +977,234 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		}
 		if account.WebmailURL == "" {
 			account.WebmailURL = cfg.WebmailURL
+		} else {
+			account.WebmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
 		}
-		writeJSON(w, http.StatusOK, corporateEmailResponse(cfg, account, "", checkWebmail))
+		writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "", checkWebmail))
 	}
+}
+
+func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		token, err := validateCorporateEmailAutologinToken(dbSuper, r.URL.Query().Get("token"))
+		if err != nil {
+			writeCorporateEmailAutologinError(w, http.StatusUnauthorized, "El acceso automatico al correo expiro. Vuelve al panel de administrar empresa y actualiza la bandeja.")
+			return
+		}
+		cfg := getCorporateEmailConfig(dbSuper)
+		if !cfg.Enabled {
+			writeCorporateEmailAutologinError(w, http.StatusForbidden, "El modulo de email corporativo esta desactivado.")
+			return
+		}
+		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, token.EmpresaID)
+		if err != nil || account == nil || !strings.EqualFold(strings.TrimSpace(account.Email), strings.TrimSpace(token.Email)) {
+			writeCorporateEmailAutologinError(w, http.StatusNotFound, "No se encontro el buzon corporativo de esta empresa.")
+			return
+		}
+		needsMailuProvision := cfg.ProvisionMode == "mailu_direct" && (corporateEmailWebmailEngine() == "snappymail" || !strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || !strings.EqualFold(strings.TrimSpace(account.ProvisionProvider), "mailu"))
+		if needsMailuProvision {
+			password, passErr := corporateEmailInitialPasswordForProvision(dbSuper, *account)
+			if passErr != nil {
+				writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon todavia no esta listo y no se pudo recuperar su clave cifrada para provisionarlo.")
+				return
+			}
+			if result := provisionEmpresaEmailAccount(dbSuper, cfg, *account, password); !result.OK {
+				writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon corporativo todavia no pudo provisionarse en Mailu: "+result.Error)
+				return
+			}
+			if refreshed, refreshErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, account.EmpresaID); refreshErr == nil && refreshed != nil {
+				account = refreshed
+			}
+		}
+		if !strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") {
+			writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon corporativo todavia no esta provisionado en Mailu.")
+			return
+		}
+		if strings.TrimSpace(account.WebmailURL) != "" {
+			cfg.WebmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
+		}
+		if corporateEmailWebmailEngine() == "snappymail" {
+			password, passErr := corporateEmailInitialPasswordForProvision(dbSuper, *account)
+			if passErr != nil {
+				writeCorporateEmailAutologinError(w, http.StatusConflict, "No se pudo preparar el acceso automatico al buzon corporativo.")
+				return
+			}
+			redirectURL, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password)
+			if redirectErr != nil {
+				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. "+redirectErr.Error())
+				return
+			}
+			http.Redirect(w, r, redirectURL, http.StatusFound)
+			return
+		}
+		err = mailuProxyAutologinAndSetCookies(w, cfg, account.Email)
+		if err != nil {
+			writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. "+err.Error())
+			return
+		}
+		http.Redirect(w, r, "/webmail/?_task=mail&_mbox=INBOX", http.StatusFound)
+	}
+}
+
+func writeCorporateEmailAutologinError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(status)
+	_, _ = fmt.Fprintf(w, `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Correo corporativo</title><style>body{font-family:Arial,sans-serif;margin:0;background:#f5f7fb;color:#172033;display:grid;min-height:100vh;place-items:center}.box{max-width:560px;background:#fff;border:1px solid #dbe3ef;border-radius:10px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,.08)}h1{font-size:22px;margin:0 0 10px}p{line-height:1.45;margin:0}</style></head><body><main class="box"><h1>Bandeja de correo corporativo</h1><p>%s</p></main></body></html>`, htmlEscapeMinimal(message))
+}
+
+func htmlEscapeMinimal(value string) string {
+	replacer := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&#39;")
+	return replacer.Replace(value)
+}
+
+func corporateEmailWebmailEngine() string {
+	value := strings.ToLower(strings.TrimSpace(firstNonEmptyEnv("MAILU_WEBMAIL", "EMAIL_CORPORATIVO_WEBMAIL_ENGINE")))
+	switch value {
+	case "roundcube":
+		return "roundcube"
+	default:
+		return "snappymail"
+	}
+}
+
+func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password string) (string, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	password = strings.TrimSpace(password)
+	if email == "" || password == "" {
+		return "", fmt.Errorf("buzon sin credenciales internas disponibles")
+	}
+	webmailURL := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL", "MAILU_INTERNAL_SNAPPYMAIL_URL"))
+	if webmailURL == "" {
+		webmailURL = "http://mailu-webmail/"
+	}
+	if !strings.HasSuffix(webmailURL, "/") {
+		webmailURL += "/"
+	}
+	internalURL, err := url.Parse(webmailURL)
+	if err != nil || internalURL.Scheme == "" || internalURL.Host == "" {
+		return "", fmt.Errorf("URL interna de SnappyMail invalida")
+	}
+	ssoURL := strings.TrimRight(internalURL.String(), "/") + "/sso.php"
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, err := http.NewRequest(http.MethodGet, ssoURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("no se pudo preparar autenticacion")
+	}
+	req.Header.Set("User-Agent", "PowerfulControlSystem-MailAutologin/1.0")
+	req.Header.Set("X-Remote-User", email)
+	req.Header.Set("X-Remote-User-Token", password)
+	res, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("SnappyMail rechazo la conexion")
+	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 32*1024))
+	_ = res.Body.Close()
+	location := strings.TrimSpace(res.Header.Get("Location"))
+	if res.StatusCode < 300 || res.StatusCode >= 400 || location == "" {
+		return "", errCorporateEmailAutologinRejected
+	}
+	return corporateEmailPublicWebmailRedirect(cfg.WebmailURL, location), nil
+}
+
+func corporateEmailPublicWebmailRedirect(publicWebmailURL, location string) string {
+	location = strings.TrimSpace(location)
+	if location == "" {
+		return "/webmail/"
+	}
+	parsedLocation, err := url.Parse(location)
+	if err == nil && parsedLocation.IsAbs() {
+		return parsedLocation.RequestURI()
+	}
+	if strings.HasPrefix(location, "/") {
+		return location
+	}
+	publicPath := "/webmail/"
+	if parsed, parseErr := url.Parse(strings.TrimSpace(publicWebmailURL)); parseErr == nil {
+		pathValue := strings.TrimSpace(parsed.Path)
+		if pathValue != "" && pathValue != "/" {
+			publicPath = strings.TrimRight(pathValue, "/") + "/"
+		}
+	}
+	return publicPath + location
+}
+
+func mailuProxyAutologinAndSetCookies(w http.ResponseWriter, cfg CorporateEmailConfig, email string) error {
+	webmailURL := corporateEmailEffectiveWebmailURL(cfg.WebmailURL)
+	webmailURL = strings.TrimSpace(webmailURL)
+	if webmailURL == "" {
+		return fmt.Errorf("webmail sin URL configurada")
+	}
+	if !strings.HasSuffix(webmailURL, "/") {
+		webmailURL += "/"
+	}
+	baseURL, err := url.Parse(webmailURL)
+	if err != nil || baseURL.Scheme == "" || baseURL.Host == "" {
+		return fmt.Errorf("URL de webmail invalida")
+	}
+	rootURL := *baseURL
+	rootURL.Path = ""
+	rootURL.RawQuery = ""
+	rootURL.Fragment = ""
+	ssoURL := strings.TrimRight(rootURL.String(), "/") + "/sso/login?url=/webmail/"
+	client := &http.Client{
+		Timeout: 20 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, err := http.NewRequest(http.MethodGet, ssoURL, nil)
+	if err != nil {
+		return fmt.Errorf("no se pudo preparar autenticacion")
+	}
+	req.Header.Set("User-Agent", "PowerfulControlSystem-MailAutologin/1.0")
+	req.Header.Set("X-Auth-Email", strings.ToLower(strings.TrimSpace(email)))
+	res, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Mailu rechazo la conexion")
+	}
+	resBody, _ := io.ReadAll(io.LimitReader(res.Body, 256*1024))
+	_ = res.Body.Close()
+	cookies := res.Cookies()
+	if !mailuSsoLoginLooksSuccessful(cookies, string(resBody), res.StatusCode) {
+		return errCorporateEmailAutologinRejected
+	}
+	for _, cookie := range cookies {
+		if strings.TrimSpace(cookie.Name) == "" || strings.TrimSpace(cookie.Value) == "" {
+			continue
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     cookie.Name,
+			Value:    cookie.Value,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+	return nil
+}
+
+func mailuSsoLoginLooksSuccessful(cookies []*http.Cookie, body string, status int) bool {
+	hasCookie := false
+	for _, cookie := range cookies {
+		if strings.TrimSpace(cookie.Name) != "" && strings.TrimSpace(cookie.Value) != "" {
+			hasCookie = true
+			break
+		}
+	}
+	lowerBody := strings.ToLower(body)
+	if strings.Contains(lowerBody, `name="pw"`) || strings.Contains(lowerBody, "submitadmin") || strings.Contains(lowerBody, "/sso/login") {
+		return false
+	}
+	return status >= 200 && status < 400 && hasCookie
 }

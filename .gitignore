@@ -27,6 +27,7 @@ deploy/.env.staging
 .gotmp/
 .codex-gocache/
 .codex-tmp-go/
+.codex-chrome*/
 juegos/roms/*
 !juegos/roms/README.md
 juegos/empresas/*

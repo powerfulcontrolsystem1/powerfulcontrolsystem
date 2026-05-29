@@ -615,7 +615,7 @@
         pendingCopy: "Activa la licencia para administrar ventas, catalogo, caja y operaciones de la pyme."
       },
       {
-        pattern: /(sensor|sensores|monitoreo|raspberry|iot|acceso|control electrico|puerta|alarma)/,
+        pattern: /(sensor|sensores|monitoreo|raspberry|iot|acceso|control electrico|domotica|puerta|alarma)/,
         tone: "sensor",
         icon: "/img/sensores-logo.svg",
         alt: "Logo de sensores y monitoreo",

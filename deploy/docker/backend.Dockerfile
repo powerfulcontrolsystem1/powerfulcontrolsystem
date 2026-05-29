@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-bac
 
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates curl openssh-client tzdata
+RUN apk add --no-cache bash ca-certificates curl docker-cli openssh-client tzdata
 WORKDIR /app/backend
 
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend
@@ -28,6 +28,7 @@ COPY .dockerignore AGENTS.md CHANGELOG.md /app/project_export/
 ENV PCS_PROJECT_EXPORT_ROOT=/app/project_export
 
 RUN mkdir -p /app/backend/logs /app/web/uploads /app/backup /app/descargas
+RUN chmod +x /app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh
 
 EXPOSE 8080
 CMD ["./pcs-backend"]

@@ -2022,6 +2022,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/internal/email_corporativo/autologin":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/internal/email_corporativo/autologin
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/internal/email_corporativo/autologin
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/onlyoffice/callback":
     get:
       tags: [publico]
@@ -3124,6 +3137,19 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/docker_portabilidad
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/domotica_storage":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/domotica_storage
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/domotica_storage
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

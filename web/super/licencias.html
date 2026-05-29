@@ -278,7 +278,7 @@
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="alquileres"><span class="lic-coverage-h">Alquiler universal</span><span class="lic-coverage-d">Activos, contratos, tarifas y mantenimiento.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="odontologia"><span class="lic-coverage-h">Odontología</span><span class="lic-coverage-d">Pacientes, agenda clínica y tratamientos.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="turnos_atencion"><span class="lic-coverage-h">Turnos de atención</span><span class="lic-coverage-d">Servicios, puestos, pantalla pública y fila.</span></label>
-              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="control_electrico"><span class="lic-coverage-h">Control eléctrico</span><span class="lic-coverage-d">Raspberry Pi, relés, estaciones e IoT.</span></label>
+              <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="control_electrico"><span class="lic-coverage-h">Domotica</span><span class="lic-coverage-d">Aparatos, controladores, estaciones e IoT.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="carnets"><span class="lic-coverage-h">Carnets empresariales</span><span class="lic-coverage-d">Emisión, diseño, QR, impresión y control de carnets.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="horarios_trabajadores"><span class="lic-coverage-h">Horarios laborales</span><span class="lic-coverage-d">Turnos de personal, calendarios, novedades y control de jornadas.</span></label>
               <label class="lic-coverage-item"><input type="checkbox" name="lic_modulo" value="asistencia_empleados"><span class="lic-coverage-h">Asistencia empleados</span><span class="lic-coverage-d">Marcaciones, ausencias, retardos, evidencias y reportes de asistencia.</span></label>
@@ -388,7 +388,7 @@
         alquileres: 'Alquiler universal',
         odontologia: 'Odontología',
         turnos_atencion: 'Turnos',
-        control_electrico: 'Control eléctrico',
+        control_electrico: 'Domotica',
         carnets: 'Carnets',
         horarios_trabajadores: 'Horarios laborales',
         asistencia_empleados: 'Asistencia empleados',
@@ -849,7 +849,10 @@
       }
 
       function isTrial15FreeLicense(item){
-        return Number(item && item.valor || 0) <= 0 && Number(item && item.duracion_dias || 0) === 15;
+        if (Number(item && item.valor || 0) > 0) return false;
+        const text = String((item && (item.nombre || item.descripcion || item.codigo_funcion)) || '').toLowerCase();
+        const days = Number(item && item.duracion_dias || 0);
+        return days <= 31 || text.includes('prueba') || text.includes('gratis') || text.includes('gratuita') || text.includes('trial');
       }
 
       function daysRemainingLabel(meta){
@@ -935,7 +938,7 @@
           actions.push('<a class="btn secondary" href="' + buildChangeURL(item) + '">Cambiar licencia</a>');
         }
         actions.push('<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(item.empresa_id) + '&empresa_id=' + encodeURIComponent(item.empresa_id) + '">Abrir empresa</a>');
-        const note = trial ? '<span class="lic-history-trial-note">La prueba gratis de 15 dias con valor cero no se puede renovar. Elige un plan comercial.</span>' : '';
+        const note = trial ? '<span class="lic-history-trial-note">La prueba gratis con valor cero no se puede renovar. Elige un plan comercial.</span>' : '';
         return '<div class="lic-history-actions-cell">' + actions.join('') + note + '</div>';
       }
 
@@ -955,7 +958,7 @@
             : '<a class="btn" href="' + buildRenewURL(item) + '">Renovar licencia</a><a class="btn secondary" href="' + buildChangeURL(item) + '">Cambiar licencia</a>') +
           (empresaID > 0 ? '<a class="btn secondary" href="/editar_empresa.html?id=' + encodeURIComponent(empresaID) + '&empresa_id=' + encodeURIComponent(empresaID) + '">Editar empresa</a>' : '') +
           (empresaID > 0 ? '<a class="btn secondary" href="/administrar_empresa.html?id=' + encodeURIComponent(empresaID) + '&empresa_id=' + encodeURIComponent(empresaID) + '">Abrir empresa</a>' : '') +
-          (isTrial15FreeLicense(item) ? '<span class="lic-history-trial-note">La prueba gratis de 15 dias con valor cero no se puede renovar. Elige un plan comercial.</span>' : '') +
+          (isTrial15FreeLicense(item) ? '<span class="lic-history-trial-note">La prueba gratis con valor cero no se puede renovar. Elige un plan comercial.</span>' : '') +
         '</div>';
       }
 

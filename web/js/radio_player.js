@@ -144,9 +144,6 @@
 
   function setDrawerOpen(open) {
     if (!drawer || !openBtn) return;
-    if (open && !state.enabled) {
-      open = false;
-    }
     drawer.classList.toggle("is-open", !!open);
     drawer.setAttribute("aria-hidden", open ? "false" : "true");
     openBtn.setAttribute("aria-expanded", open ? "true" : "false");
@@ -477,6 +474,16 @@
     if (!state.enabled) return;
     setDrawerOpen(true);
     playStation(id, true);
+  };
+
+  window.__pcsRadioPlayerOpenDrawer = function () {
+    if (openBtn) {
+      openBtn.hidden = false;
+      openBtn.setAttribute("aria-hidden", "false");
+    }
+    setDrawerOpen(true);
+    renderGrid();
+    updateCountryControls();
   };
 
   window.__pcsRadioPlayerSetEnabled = setRadioEnabled;

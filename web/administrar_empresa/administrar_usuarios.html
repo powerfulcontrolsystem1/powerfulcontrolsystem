@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administrar usuarios</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .usuario-photo-field{display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;align-items:center}
+    .usuario-photo{width:64px;height:64px;border-radius:8px;border:1px solid var(--border);background:var(--surface-soft);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--muted)}
+    .usuario-photo img{width:100%;height:100%;object-fit:cover}
+    .usuario-photo.small{width:42px;height:42px;font-size:.78rem}
+    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}}
+  </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -46,6 +53,19 @@
           <label class="form-label">Observaciones</label>
           <textarea id="observaciones" class="form-textarea" placeholder="Opcional"></textarea>
         </div>
+        <div class="form-col">
+          <label class="form-label">Foto del usuario</label>
+          <div class="usuario-photo-field">
+            <div id="fotoPreview" class="usuario-photo">Sin foto</div>
+            <div>
+              <input id="foto_usuario" type="file" class="form-input" accept="image/png,image/jpeg,image/gif,image/webp">
+              <div class="form-help">Se guarda en la carpeta de imagenes de esta empresa.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-col">
           <label class="form-label">Control de aseo</label>
           <label class="form-help" style="display:flex;align-items:center;gap:8px;margin-top:10px;">
@@ -117,12 +137,44 @@
       return fallback || 'N/A';
     }
 
+    function escapeHTML(value) {
+      return String(value || '').replace(/[&<>"']/g, function(ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+      });
+    }
+
+    function userInitials(item) {
+      const name = String((item && item.nombre) || (item && item.name) || '').trim();
+      const email = String((item && item.email) || '').trim();
+      const source = name || email || 'U';
+      return source.split(/\s+/).slice(0, 2).map(function(part) { return part.charAt(0).toUpperCase(); }).join('') || 'U';
+    }
+
+    function photoHTML(item, small) {
+      const url = String((item && item.foto_url) || '').trim();
+      const cls = 'usuario-photo' + (small ? ' small' : '');
+      if (!url) return '<div class="' + cls + '">' + escapeHTML(userInitials(item)) + '</div>';
+      return '<div class="' + cls + '"><img src="' + escapeHTML(url) + '" alt="Foto de usuario"></div>';
+    }
+
+    function setPhotoPreview(url, item) {
+      const box = document.getElementById('fotoPreview');
+      const value = String(url || '').trim();
+      if (!value) {
+        box.innerHTML = escapeHTML(userInitials(item));
+        return;
+      }
+      box.innerHTML = '<img src="' + escapeHTML(value) + '" alt="Foto de usuario">';
+    }
+
     function resetForm(hide) {
       document.getElementById('itemId').value = '';
       document.getElementById('email').value = '';
       document.getElementById('nombre').value = '';
       document.getElementById('documento_identidad').value = '';
       document.getElementById('observaciones').value = '';
+      document.getElementById('foto_usuario').value = '';
+      setPhotoPreview('', null);
       document.getElementById('control_aseo_estaciones').checked = false;
         document.getElementById('mensaje_invitacion').value = '';
       fillRolesSelect('');
@@ -141,6 +193,7 @@
       table.className = 'table';
       table.innerHTML = '<thead><tr>' +
         '<th>ID</th>' +
+        '<th>Foto</th>' +
         '<th>Correo</th>' +
         '<th>Nombre</th>' +
         '<th>Documento</th>' +
@@ -159,10 +212,11 @@
         const confirmado = Number(item.email_confirmado || 0) === 1;
 
         tr.innerHTML = '<td>' + item.id + '</td>' +
-          '<td>' + (item.email || '') + '</td>' +
-          '<td>' + (item.nombre || '') + '</td>' +
-          '<td>' + (item.documento_identidad || '') + '</td>' +
-          '<td>' + rolNombreById(item.rol_usuario_id, item.rol_nombre) + '</td>' +
+          '<td>' + photoHTML(item, true) + '</td>' +
+          '<td>' + escapeHTML(item.email || '') + '</td>' +
+          '<td>' + escapeHTML(item.nombre || '') + '</td>' +
+          '<td>' + escapeHTML(item.documento_identidad || '') + '</td>' +
+          '<td>' + escapeHTML(rolNombreById(item.rol_usuario_id, item.rol_nombre)) + '</td>' +
           '<td>' + (Number(item.control_aseo_estaciones || 0) === 1 ? 'Activo' : 'Inactivo') + '</td>' +
           '<td>' + (confirmado ? 'Confirmado' : 'Pendiente') + '</td>' +
           '<td>' + (item.estado || '') + '</td>' +
@@ -194,6 +248,8 @@
           document.getElementById('nombre').value = item.nombre || '';
           document.getElementById('documento_identidad').value = item.documento_identidad || '';
           document.getElementById('observaciones').value = item.observaciones || '';
+          document.getElementById('foto_usuario').value = '';
+          setPhotoPreview(item.foto_url || '', item);
           document.getElementById('control_aseo_estaciones').checked = Number(item.control_aseo_estaciones || 0) === 1;
           fillRolesSelect(item.rol_usuario_id);
 
@@ -282,6 +338,20 @@
       await Promise.all([loadRoles(), loadUsers()]);
     }
 
+    async function uploadUserPhoto(userId) {
+      const input = document.getElementById('foto_usuario');
+      if (!input.files || !input.files[0]) return null;
+      const form = new FormData();
+      form.append('usuario_id', String(userId));
+      form.append('foto', input.files[0]);
+      const res = await fetch('/api/empresa/usuarios?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=foto', {
+        method: 'POST',
+        body: form
+      });
+      await ensureOk(res);
+      return await res.json();
+    }
+
     document.getElementById('form').onsubmit = async function(e) {
       e.preventDefault();
 
@@ -315,6 +385,12 @@
 
         let body = null;
         try { body = await res.json(); } catch (_) {}
+        const savedID = isEdit ? Number(id) : Number((body && body.id) || 0);
+        let photoUploaded = false;
+        if (savedID > 0 && document.getElementById('foto_usuario').files && document.getElementById('foto_usuario').files[0]) {
+          const photoResult = await uploadUserPhoto(savedID);
+          photoUploaded = !!(photoResult && photoResult.foto_url);
+        }
 
         if (body && body.email_confirmation_required && body.email_sent === false) {
           setMessage('Usuario creado, pero no se pudo enviar correo: ' + (body.email_error || 'error desconocido'), true);
@@ -325,7 +401,7 @@
         } else if (body && body.email_reconfirmation_needed) {
           setMessage('Usuario actualizado y se envió nueva confirmación', false);
         } else {
-          setMessage(isEdit ? 'Usuario actualizado' : 'Usuario creado', false);
+          setMessage((isEdit ? 'Usuario actualizado' : 'Usuario creado') + (photoUploaded ? ' con foto' : ''), false);
         }
 
         resetForm(true);
@@ -345,6 +421,17 @@
     document.getElementById('cancelBtn').onclick = function() {
       resetForm(true);
     };
+
+    document.getElementById('foto_usuario').addEventListener('change', function() {
+      const input = document.getElementById('foto_usuario');
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        setPhotoPreview(String(ev.target && ev.target.result || ''), null);
+      };
+      reader.readAsDataURL(file);
+    });
 
     (async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || 0);

@@ -1,5 +1,38 @@
 name: powerful-control-system
 
+x-mailu-common-env: &mailu-common-env
+  SECRET_KEY: ${MAILU_SECRET_KEY:-}
+  SUBNET: ${MAILU_SUBNET:-192.168.203.0/24}
+  DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+  HOSTNAMES: ${MAILU_HOSTNAME:-mail.powerfulcontrolsystem.com}
+  POSTMASTER: ${MAILU_POSTMASTER:-postmaster}
+  MESSAGE_SIZE_LIMIT: ${MAILU_MESSAGE_SIZE_LIMIT:-50000000}
+  MESSAGE_RATELIMIT: ${MAILU_MESSAGE_RATELIMIT:-200/day}
+  ADMIN_ADDRESS: mailu-admin
+  FRONT_ADDRESS: mailu-front
+  IMAP_ADDRESS: mailu-imap
+  SMTP_ADDRESS: mailu-smtp
+  ANTISPAM_ADDRESS: mailu-antispam
+  WEBMAIL_ADDRESS: mailu-webmail
+  REDIS_ADDRESS: mailu-redis
+  RESOLVER: ${MAILU_RESOLVER_IP:-192.168.203.254}
+  WEB_WEBMAIL: ${MAILU_WEB_WEBMAIL:-/webmail}
+  WEB_ADMIN: ${MAILU_WEB_ADMIN:-/admin}
+  WEBROOT_REDIRECT: ${MAILU_WEBROOT_REDIRECT:-/webmail}
+  PROXY_AUTH_WHITELIST: ${MAILU_PROXY_AUTH_WHITELIST:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+  PROXY_AUTH_HEADER: ${MAILU_PROXY_AUTH_HEADER:-X-Auth-Email}
+  PROXY_AUTH_CREATE: ${MAILU_PROXY_AUTH_CREATE:-false}
+  REAL_IP_FROM: ${MAILU_REAL_IP_FROM:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+
+x-mailu-service-hosts: &mailu-service-hosts
+  - "mailu-redis:${MAILU_REDIS_IP:-192.168.203.2}"
+  - "mailu-smtp:${MAILU_SMTP_IP:-192.168.203.3}"
+  - "mailu-antispam:${MAILU_ANTISPAM_IP:-192.168.203.4}"
+  - "mailu-webmail:${MAILU_WEBMAIL_IP:-192.168.203.5}"
+  - "mailu-imap:${MAILU_IMAP_IP:-192.168.203.6}"
+  - "mailu-admin:${MAILU_ADMIN_IP:-192.168.203.7}"
+  - "mailu-front:${MAILU_FRONT_IP:-192.168.203.8}"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -50,14 +83,17 @@ services:
       EMAIL_CORPORATIVO_ENABLED: ${EMAIL_CORPORATIVO_ENABLED:-0}
       EMAIL_CORPORATIVO_AUTO_CREATE: ${EMAIL_CORPORATIVO_AUTO_CREATE:-1}
       EMAIL_CORPORATIVO_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
-      EMAIL_CORPORATIVO_WEBMAIL_URL: ${EMAIL_CORPORATIVO_WEBMAIL_URL:-https://mail.powerfulcontrolsystem.com/mail/}
+      EMAIL_CORPORATIVO_WEBMAIL_URL: ${EMAIL_CORPORATIVO_WEBMAIL_URL:-https://mail.powerfulcontrolsystem.com/webmail/}
       EMAIL_CORPORATIVO_PROVISION_MODE: ${EMAIL_CORPORATIVO_PROVISION_MODE:-manual}
-      EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL: ${EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL:-https://mail.powerfulcontrolsystem.com/iredadmin}
-      EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL: ${EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL:-http://iredmail/iredadmin}
-      EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL: ${EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL:-http://iredmail/mail/}
-      EMAIL_CORPORATIVO_IREDADMIN_ADMIN: ${EMAIL_CORPORATIVO_IREDADMIN_ADMIN:-postmaster@powerfulcontrolsystem.com}
-      EMAIL_CORPORATIVO_IREDADMIN_PASSWORD: ${EMAIL_CORPORATIVO_IREDADMIN_PASSWORD:-}
+      EMAIL_CORPORATIVO_MAILU_API_BASE_URL: ${EMAIL_CORPORATIVO_MAILU_API_BASE_URL:-https://mail.powerfulcontrolsystem.com/api}
+      EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL: ${EMAIL_CORPORATIVO_INTERNAL_MAILU_API_BASE_URL:-http://mailu-front/api}
+      EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL: ${EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL:-http://mailu-front/webmail/}
+      EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL: ${EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL:-http://mailu-webmail/}
+      EMAIL_CORPORATIVO_MAILU_ADMIN: ${EMAIL_CORPORATIVO_MAILU_ADMIN:-postmaster@powerfulcontrolsystem.com}
+      EMAIL_CORPORATIVO_MAILU_API_TOKEN: ${EMAIL_CORPORATIVO_MAILU_API_TOKEN:-}
+      EMAIL_CORPORATIVO_AUTOLOGIN_SECRET: ${EMAIL_CORPORATIVO_AUTOLOGIN_SECRET:-}
       EMAIL_CORPORATIVO_QUOTA_MB: ${EMAIL_CORPORATIVO_QUOTA_MB:-1024}
+      EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND: ${EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND:-/app/project_export/deploy/scripts/vps-provision-mailu-mailbox.sh}
       VOICE_STREAM_BASE_URL: ${VOICE_STREAM_BASE_URL:-http://voice-stream:8000}
       GOOGLE_RECAPTCHA_SITE_KEY: ${GOOGLE_RECAPTCHA_SITE_KEY:-}
       GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
@@ -69,6 +105,7 @@ services:
       - pcs_backups:/app/backup
       - pcs_downloads:/app/descargas
       - ../juegos:/app/juegos:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     expose:
       - "8080"
     healthcheck:
@@ -80,48 +117,184 @@ services:
     networks:
       - pcs_internal
 
-  iredmail:
+  mailu-redis:
     profiles: ["mail"]
-    image: ${IREDMAIL_IMAGE:-iredmail/mariadb:stable}
-    container_name: pcs-iredmail
-    hostname: ${IREDMAIL_HOSTNAME:-mail.powerfulcontrolsystem.com}
+    image: redis:7-alpine
+    container_name: pcs-mailu-redis
+    restart: unless-stopped
+    volumes:
+      - mailu_redis:/data
+    networks:
+      mailu_internal:
+        ipv4_address: ${MAILU_REDIS_IP:-192.168.203.2}
+
+  mailu-resolver:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/unbound:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-resolver
     restart: unless-stopped
     environment:
       TZ: ${TZ:-America/Bogota}
-      HOSTNAME: ${IREDMAIL_HOSTNAME:-mail.powerfulcontrolsystem.com}
-      FIRST_MAIL_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
-      FIRST_MAIL_DOMAIN_ADMIN_PASSWORD: ${IREDMAIL_ADMIN_PASSWORD:-}
-      MLMMJADMIN_API_TOKEN: ${IREDMAIL_MLMMJADMIN_API_TOKEN:-}
-      ROUNDCUBE_DES_KEY: ${IREDMAIL_ROUNDCUBE_DES_KEY:-}
-      MYSQL_ROOT_PASSWORD: ${IREDMAIL_MYSQL_ROOT_PASSWORD:-}
+      <<: *mailu-common-env
+    networks:
+      mailu_internal:
+        ipv4_address: ${MAILU_RESOLVER_IP:-192.168.203.254}
+
+  mailu-front:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/nginx:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-front
+    hostname: ${MAILU_HOSTNAME:-mail.powerfulcontrolsystem.com}
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      TLS_FLAVOR: ${MAILU_TLS_FLAVOR:-notls}
+      WEBMAIL: ${MAILU_WEBMAIL:-snappymail}
+      ADMIN: "true"
+      API: "true"
+      WEB_API: "/api"
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
     volumes:
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/backup-mysql:/var/vmail/backup/mysql
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mailboxes:/var/vmail/vmail1
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mlmmj:/var/vmail/mlmmj
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mlmmj-archive:/var/vmail/mlmmj-archive
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/imapsieve_copy:/var/vmail/imapsieve_copy
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/custom:/opt/iredmail/custom
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/ssl:/opt/iredmail/ssl
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/mysql:/var/lib/mysql
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/clamav:/var/lib/clamav
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/sa_rules:/var/lib/spamassassin
-      - ${IREDMAIL_DATA_DIR:-/opt/powerfulcontrolsystem/iredmail/data}/postfix_queue:/var/spool/postfix
-      - ${IREDMAIL_BACKUP_DIR:-/opt/powerfulcontrolsystem/iredmail/backups}:/var/backups
+      - mailu_certs:/certs
+      - mailu_overrides:/overrides
     ports:
-      - "${IREDMAIL_HTTP_BIND:-127.0.0.1}:${IREDMAIL_HTTP_PORT:-8089}:80"
-      - "${IREDMAIL_HTTP_BIND:-127.0.0.1}:${IREDMAIL_HTTPS_PORT:-8449}:443"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SMTP_PORT:-2525}:25"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_POP3_PORT:-8110}:110"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_IMAP_PORT:-8143}:143"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SMTPS_PORT:-8465}:465"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SUBMISSION_PORT:-8587}:587"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_IMAPS_PORT:-8993}:993"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_POP3S_PORT:-8995}:995"
-      - "${IREDMAIL_BIND:-127.0.0.1}:${IREDMAIL_SIEVE_PORT:-8419}:4190"
+      - "${MAILU_HTTP_BIND:-127.0.0.1}:${MAILU_HTTP_PORT:-8089}:80"
+      - "${MAILU_HTTPS_BIND:-127.0.0.1}:${MAILU_HTTPS_PORT:-8449}:443"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_SMTP_PORT:-2525}:25"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_IMAP_PORT:-8143}:143"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_SMTPS_PORT:-8465}:465"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_SUBMISSION_PORT:-8587}:587"
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_IMAPS_PORT:-8993}:993"
     expose:
       - "80"
+    depends_on:
+      - mailu-resolver
+      - mailu-admin
+      - mailu-imap
+      - mailu-smtp
+      - mailu-antispam
+      - mailu-webmail
     networks:
-      - pcs_internal
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_FRONT_IP:-192.168.203.8}
+
+  mailu-admin:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/admin:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-admin
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      WEBMAIL: ${MAILU_WEBMAIL:-snappymail}
+      ADMIN: "true"
+      API: "true"
+      WEB_API: "/api"
+      INITIAL_ADMIN_ACCOUNT: ${MAILU_INITIAL_ADMIN_ACCOUNT:-postmaster}
+      INITIAL_ADMIN_DOMAIN: ${EMAIL_CORPORATIVO_DOMAIN:-powerfulcontrolsystem.com}
+      INITIAL_ADMIN_PW: ${MAILU_ADMIN_PASSWORD:-}
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_data:/data
+      - mailu_dkim:/dkim
+    depends_on:
+      - mailu-redis
+      - mailu-resolver
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_ADMIN_IP:-192.168.203.7}
+
+  mailu-imap:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/dovecot:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-imap
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_mail:/mail
+      - mailu_overrides:/overrides
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_IMAP_IP:-192.168.203.6}
+
+  mailu-smtp:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/postfix:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-smtp
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_queue:/queue
+      - mailu_overrides:/overrides
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_SMTP_IP:-192.168.203.3}
+
+  mailu-antispam:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/rspamd:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-antispam
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_filter:/var/lib/rspamd
+      - mailu_overrides:/overrides
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_ANTISPAM_IP:-192.168.203.4}
+
+  mailu-webmail:
+    profiles: ["mail"]
+    image: ghcr.io/mailu/webmail:${MAILU_VERSION:-2024.06}
+    container_name: pcs-mailu-webmail
+    restart: unless-stopped
+    dns:
+      - ${MAILU_RESOLVER_IP:-192.168.203.254}
+    extra_hosts: *mailu-service-hosts
+    environment:
+      TZ: ${TZ:-America/Bogota}
+      <<: *mailu-common-env
+      WEBMAIL: ${MAILU_WEBMAIL:-snappymail}
+      LOG_LEVEL: ${MAILU_LOG_LEVEL:-WARNING}
+    volumes:
+      - mailu_webmail:/data
+      - ./mailu/snappymail-application.ini:/defaults/application.ini:ro
+    ports:
+      - "${MAILU_BIND:-127.0.0.1}:${MAILU_WEBMAIL_PORT:-8091}:80"
+    networks:
+      pcs_internal:
+      mailu_internal:
+        ipv4_address: ${MAILU_WEBMAIL_IP:-192.168.203.5}
 
   frontend:
     build:
@@ -258,6 +431,12 @@ networks:
   pcs_internal:
     name: pcs_internal
     driver: bridge
+  mailu_internal:
+    name: pcs_mailu_internal
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${MAILU_SUBNET:-192.168.203.0/24}
 
 volumes:
   pcs_postgres_data:
@@ -271,6 +450,15 @@ volumes:
   pcs_onlyoffice_logs:
   pcs_onlyoffice_lib:
   pcs_onlyoffice_db:
+  mailu_redis:
+  mailu_data:
+  mailu_dkim:
+  mailu_mail:
+  mailu_queue:
+  mailu_filter:
+  mailu_webmail:
+  mailu_certs:
+  mailu_overrides:
   pcs_voice_models:
   pcs_voice_cache:
   pcs_rustdesk_data:

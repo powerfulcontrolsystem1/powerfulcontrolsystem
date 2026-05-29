@@ -7,8 +7,12 @@ upstream pcs_frontend {
     server frontend:80;
 }
 
-upstream pcs_iredmail {
-    server iredmail:80;
+upstream pcs_mailu {
+    server mailu-front:80;
+}
+
+upstream pcs_mailu_webmail {
+    server mailu-webmail:80;
 }
 
 server {
@@ -105,16 +109,51 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
-    location / {
-        set $iredmail_upstream http://iredmail:80;
+    location = /pcs-mail-autologin {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host $host;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_pass http://backend:8080/api/internal/email_corporativo/autologin;
+    }
+
+    location = /webmail {
+        return 302 /webmail/;
+    }
+
+    location ^~ /webmail/ {
+        rewrite ^/webmail/?(.*)$ /$1 break;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Auth-Email "";
+        proxy_set_header X-Remote-User "";
+        proxy_set_header X-Remote-User-Token "";
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
-        proxy_pass $iredmail_upstream;
+        proxy_pass http://pcs_mailu_webmail;
+    }
+
+    location / {
+        set $mailu_upstream http://mailu-front:80;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Auth-Email "";
+        proxy_set_header X-Remote-User "";
+        proxy_set_header X-Remote-User-Token "";
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_pass $mailu_upstream;
     }
 }

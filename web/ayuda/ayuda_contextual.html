@@ -158,11 +158,11 @@
 
       var catalog = [
         {
-          match: ['carrito', 'control electrico', 'gpio', 'raspberry'],
-          purpose: 'Permite operar aparatos electricos vinculados a una estacion, como luces, jacuzzi, ventilacion o puertas, usando los reles configurados en Raspberry Pi.',
-          before: ['La empresa debe tener Control electrico habilitado.', 'La estacion debe tener aparatos/reles activos.', 'La Raspberry Pi debe estar encendida, con IP correcta y API disponible.'],
+          match: ['carrito', 'domotica', 'control electrico', 'gpio', 'raspberry'],
+          purpose: 'Permite operar aparatos de domotica vinculados a una estacion, como lamparas, motobombas, jacuzzi, ventilacion o puertas.',
+          before: ['La empresa debe tener Domotica habilitada.', 'La estacion debe tener aparatos activos.', 'El controlador local debe estar encendido, con IP correcta y API disponible.'],
           steps: ['Abre la tarjeta del aparato que quieres controlar.', 'Verifica el estado actual, GPIO y Raspberry asignada.', 'Usa Encender o Apagar y espera el mensaje de confirmacion.'],
-          troubleshooting: ['Si el comando se omite, revisa que el modulo este habilitado.', 'Si hay error de conexion, valida IP, puerto, token y red de la Raspberry.', 'Si el boton no aparece en carrito, activa el check Control electrico en la configuracion del carrito.']
+          troubleshooting: ['Si el comando se omite, revisa que el modulo este habilitado.', 'Si hay error de conexion, valida IP, puerto, token y red del controlador.', 'Si la tarjeta no aparece en carrito, activa el check Domotica en la configuracion del carrito.']
         },
         {
           match: ['producto', 'inventario', 'bodega', 'receta'],

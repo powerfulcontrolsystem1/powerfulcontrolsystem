@@ -1273,6 +1273,8 @@ function Get-SyncExcludePatterns {
     ".codex-gocache/*",
     ".codex-tmp-go",
     ".codex-tmp-go/*",
+    ".codex-chrome*",
+    ".codex-chrome*/*",
     ".agents",
     ".agents/*",
     ".cache",
@@ -1285,6 +1287,8 @@ function Get-SyncExcludePatterns {
     "*/.codex-gocache/*",
     "*/.codex-tmp-go",
     "*/.codex-tmp-go/*",
+    "*/.codex-chrome*",
+    "*/.codex-chrome*/*",
     "*/.gocache",
     "*/.gocache/*",
     "*/.gotmp",
@@ -1333,7 +1337,6 @@ function Get-SyncExcludePatterns {
     "backend/.env",
     "deploy/.env.platform",
     "deploy/.env.platform.*",
-    "deploy/iredmail/.env",
     "backend/server_linux_amd64",
     "backend/tools",
     "backend/tools/*",
@@ -1796,12 +1799,12 @@ rm -rf .codex-gocache .codex-tmp-go .gocache .gotmp tmp \
   backend/.tmp-go-test-* backend/tmp 2>/dev/null || true
 export HEALTH_TIMEOUT_SECONDS=$HealthTimeoutSeconds
 bash deploy/scripts/vps-compose-sidecar-up.sh
-echo "[INFO] Revisando proxy Nginx del host para iRedMail..."
-if ! bash deploy/scripts/vps-configure-iredmail-host-nginx.sh; then
-  echo "[WARN] No se pudo activar el proxy host de iRedMail. Ver deploy/scripts/vps-configure-iredmail-host-nginx.sh"
+echo "[INFO] Revisando proxy Nginx del host para Mailu..."
+if ! bash deploy/scripts/vps-configure-mailu-host-nginx.sh; then
+  echo "[WARN] No se pudo activar el proxy host de Mailu. Ver deploy/scripts/vps-configure-mailu-host-nginx.sh"
 fi
 echo "[INFO] Estado Docker despues del redeploy:"
-docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(backend|frontend|postgres|iredmail)|NAMES' || true
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'pcs-(backend|frontend|postgres|mailu)|NAMES' || true
 "@
   $command = "bash -lc " + (Convert-ToBashLiteral $remoteScript)
   Invoke-RemoteCommandSimple -RemoteUser $RemoteUser -RemoteHost $RemoteHost -Port $Port -IdentityContext $identityContext -Command $command

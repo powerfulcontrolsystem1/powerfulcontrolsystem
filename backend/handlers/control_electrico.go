@@ -48,12 +48,160 @@ type controlElectricoDispatchResult struct {
 	URL          string `json:"url,omitempty"`
 }
 
+func buildControlElectricoReporte(empresaID int64, reles []dbpkg.EmpresaControlElectricoRele, eventos []dbpkg.EmpresaControlElectricoEvento, lecturas []dbpkg.EmpresaControlElectricoLectura) map[string]interface{} {
+	total := len(reles)
+	activos := 0
+	encendidos := 0
+	monitoreados := 0
+	potenciaInstalada := 0.0
+	consumoW := 0.0
+	consumoKWh := 0.0
+	porProveedor := map[string]int{}
+	porTipo := map[string]int{}
+	for _, rele := range reles {
+		if strings.EqualFold(strings.TrimSpace(rele.Estado), "activo") {
+			activos++
+		}
+		if strings.EqualFold(strings.TrimSpace(rele.UltimoEstado), "on") || strings.EqualFold(strings.TrimSpace(rele.UltimoEstado), "encendido") {
+			encendidos++
+		}
+		if rele.MonitoreoHabilitado {
+			monitoreados++
+		}
+		if rele.PotenciaW > 0 {
+			potenciaInstalada += rele.PotenciaW
+			if strings.EqualFold(strings.TrimSpace(rele.UltimoEstado), "on") {
+				consumoW += rele.PotenciaW
+			}
+		}
+		if rele.UltimoConsumoW > 0 {
+			consumoW += rele.UltimoConsumoW
+		}
+		if rele.UltimoConsumoKWh > 0 {
+			consumoKWh += rele.UltimoConsumoKWh
+		}
+		proveedor := strings.TrimSpace(rele.RaspberryProveedor)
+		if proveedor == "" {
+			proveedor = strings.TrimSpace(rele.Fabricante)
+		}
+		if proveedor == "" {
+			proveedor = "sin_proveedor"
+		}
+		porProveedor[proveedor]++
+		tipo := strings.TrimSpace(rele.IntegracionTipo)
+		if tipo == "" {
+			tipo = "gpio"
+		}
+		porTipo[tipo]++
+	}
+	eventosOK := 0
+	eventosError := 0
+	for _, ev := range eventos {
+		if strings.EqualFold(strings.TrimSpace(ev.Resultado), "ok") {
+			eventosOK++
+		} else {
+			eventosError++
+		}
+	}
+	if consumoKWh == 0 {
+		for _, lectura := range lecturas {
+			consumoKWh += lectura.ConsumoKWh
+		}
+	}
+	return map[string]interface{}{
+		"empresa_id":            empresaID,
+		"generado_en":           time.Now().Format("2006-01-02 15:04:05"),
+		"aparatos_total":        total,
+		"aparatos_activos":      activos,
+		"aparatos_encendidos":   encendidos,
+		"aparatos_monitoreados": monitoreados,
+		"potencia_instalada_w":  potenciaInstalada,
+		"consumo_actual_w":      consumoW,
+		"consumo_kwh":           consumoKWh,
+		"eventos_ok":            eventosOK,
+		"eventos_error":         eventosError,
+		"por_proveedor":         porProveedor,
+		"por_tipo":              porTipo,
+		"ultimos_eventos":       eventos,
+		"ultimas_lecturas":      lecturas,
+	}
+}
+
+func evaluarControlElectricoReglas(dbEmp *sql.DB, empresaID int64, sensorCodigo, valor, actor, metadata string) ([]map[string]interface{}, error) {
+	sensorCodigo = strings.TrimSpace(sensorCodigo)
+	if empresaID <= 0 || sensorCodigo == "" {
+		return nil, fmt.Errorf("sensor_codigo es obligatorio")
+	}
+	reglas, err := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, false)
+	if err != nil {
+		return nil, err
+	}
+	results := []map[string]interface{}{}
+	for _, regla := range reglas {
+		if !strings.EqualFold(strings.TrimSpace(regla.SensorCodigo), sensorCodigo) || !controlElectricoReglaCumple(regla, valor) {
+			continue
+		}
+		item := map[string]interface{}{"regla_id": regla.ID, "nombre": regla.Nombre, "accion": regla.Accion, "alarma": regla.AlarmaHabilitada}
+		if regla.Accion == "encender" || regla.Accion == "apagar" {
+			target := regla.Accion == "encender"
+			result := controlElectricoDispatchManual(dbEmp, empresaID, regla.EstacionID, regla.ReleID, target, actor, "regla_sensor")
+			item["resultado"] = result
+		}
+		if regla.AlarmaHabilitada || regla.Accion == "alarma" {
+			_, _ = dbpkg.InsertEmpresaControlElectricoEvento(dbEmp, dbpkg.EmpresaControlElectricoEvento{
+				EmpresaID:      empresaID,
+				EstacionID:     regla.EstacionID,
+				ReleID:         regla.ReleID,
+				Comando:        "alarma_sensor",
+				EstadoObjetivo: regla.Accion,
+				Resultado:      "alarma",
+				Actor:          actor,
+				Origen:         "regla_sensor:" + regla.Severidad,
+				Error:          strings.TrimSpace(regla.Mensaje),
+				MetadataJSON:   metadata,
+			})
+		}
+		results = append(results, item)
+	}
+	if len(results) == 0 {
+		results = append(results, map[string]interface{}{"skipped": true, "message": "sin reglas aplicables"})
+	}
+	return results, nil
+}
+
+func controlElectricoReglaCumple(regla dbpkg.EmpresaControlElectricoRegla, valor string) bool {
+	got := strings.TrimSpace(valor)
+	want := strings.TrimSpace(regla.Valor)
+	switch regla.Condicion {
+	case "distinto":
+		return !strings.EqualFold(got, want)
+	case "mayor", "menor":
+		g, errG := strconv.ParseFloat(strings.ReplaceAll(got, ",", "."), 64)
+		w, errW := strconv.ParseFloat(strings.ReplaceAll(want, ",", "."), 64)
+		if errG != nil || errW != nil {
+			return false
+		}
+		if regla.Condicion == "mayor" {
+			return g > w
+		}
+		return g < w
+	case "contiene":
+		return strings.Contains(strings.ToLower(got), strings.ToLower(want))
+	default:
+		return strings.EqualFold(got, want)
+	}
+}
+
 // EmpresaControlElectricoHandler administra el modulo de control electrico por Raspberry Pi.
-func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaControlElectricoHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFunc {
+	var dbSuperConn *sql.DB
+	if len(dbSuper) > 0 {
+		dbSuperConn = dbSuper[0]
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := dbpkg.EnsureEmpresaControlElectricoSchema(dbEmp); err != nil {
 			log.Printf("[control_electrico] ensure schema error: %v", err)
-			http.Error(w, "No se pudo preparar control electrico", http.StatusInternalServerError)
+			http.Error(w, "No se pudo preparar domotica", http.StatusInternalServerError)
 			return
 		}
 		empresaID, err := parseEmpresaIDQuery(r)
@@ -70,7 +218,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, true)
 				if err != nil {
 					log.Printf("[control_electrico] get config empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudo cargar configuracion electrica", http.StatusInternalServerError)
+					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
 					return
 				}
 				if _, err := dbpkg.EnsureEmpresaControlElectricoPrimaryRaspberry(dbEmp, cfg); err != nil {
@@ -80,7 +228,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				estaciones, err := dbpkg.ListEmpresaControlElectricoEstaciones(dbEmp, empresaID)
 				if err != nil {
 					log.Printf("[control_electrico] list estaciones empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudieron cargar estaciones electricas", http.StatusInternalServerError)
+					http.Error(w, "No se pudieron cargar estaciones de domotica", http.StatusInternalServerError)
 					return
 				}
 				eventos, err := dbpkg.ListEmpresaControlElectricoEventos(dbEmp, empresaID, 25)
@@ -98,19 +246,31 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 					log.Printf("[control_electrico] list raspberry resumen empresa_id=%d error: %v", empresaID, err)
 					raspberries = []dbpkg.EmpresaControlElectricoRaspberry{}
 				}
+				lecturas, err := dbpkg.ListEmpresaControlElectricoLecturas(dbEmp, empresaID, 0, 50)
+				if err != nil {
+					log.Printf("[control_electrico] list lecturas resumen empresa_id=%d error: %v", empresaID, err)
+					lecturas = []dbpkg.EmpresaControlElectricoLectura{}
+				}
+				reglas, err := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, true)
+				if err != nil {
+					log.Printf("[control_electrico] list reglas resumen empresa_id=%d error: %v", empresaID, err)
+					reglas = []dbpkg.EmpresaControlElectricoRegla{}
+				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
 					"config":        cfg,
 					"raspberry_pis": raspberries,
 					"estaciones":    estaciones,
 					"reles":         reles,
 					"eventos":       eventos,
+					"lecturas":      lecturas,
+					"reglas":        reglas,
 				})
 				return
 			case "config":
 				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] get config empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudo cargar configuracion electrica", http.StatusInternalServerError)
+					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, cfg)
@@ -119,7 +279,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				reles, err := dbpkg.ListEmpresaControlElectricoReles(dbEmp, empresaID, controlElectricoIncludeInactive(r))
 				if err != nil {
 					log.Printf("[control_electrico] list reles empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudieron cargar reles", http.StatusInternalServerError)
+					http.Error(w, "No se pudieron cargar aparatos", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, reles)
@@ -142,13 +302,13 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				cfg, err := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
 				if err != nil {
 					log.Printf("[control_electrico] get station config empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
-					http.Error(w, "No se pudo cargar configuracion electrica", http.StatusInternalServerError)
+					http.Error(w, "No se pudo cargar configuracion de domotica", http.StatusInternalServerError)
 					return
 				}
 				reles, err := dbpkg.ListEmpresaControlElectricoRelesByEstacion(dbEmp, empresaID, estacionID, false)
 				if err != nil {
 					log.Printf("[control_electrico] list station reles empresa_id=%d estacion_id=%d error: %v", empresaID, estacionID, err)
-					http.Error(w, "No se pudieron cargar controles electricos de la estacion", http.StatusInternalServerError)
+					http.Error(w, "No se pudieron cargar aparatos de domotica de la estacion", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -162,10 +322,41 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				eventos, err := dbpkg.ListEmpresaControlElectricoEventos(dbEmp, empresaID, limit)
 				if err != nil {
 					log.Printf("[control_electrico] list eventos empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudieron cargar eventos electricos", http.StatusInternalServerError)
+					http.Error(w, "No se pudieron cargar eventos de domotica", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, eventos)
+				return
+			case "lecturas":
+				limit := controlElectricoParseLimit(r, 50)
+				releID, _ := parseInt64QueryOptional(r, "rele_id")
+				lecturas, err := dbpkg.ListEmpresaControlElectricoLecturas(dbEmp, empresaID, releID, limit)
+				if err != nil {
+					log.Printf("[control_electrico] list lecturas empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron cargar lecturas de domotica", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, lecturas)
+				return
+			case "reportes":
+				reles, err := dbpkg.ListEmpresaControlElectricoReles(dbEmp, empresaID, true)
+				if err != nil {
+					log.Printf("[control_electrico] report reles empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo generar reporte de aparatos", http.StatusInternalServerError)
+					return
+				}
+				eventos, _ := dbpkg.ListEmpresaControlElectricoEventos(dbEmp, empresaID, 200)
+				lecturas, _ := dbpkg.ListEmpresaControlElectricoLecturas(dbEmp, empresaID, 0, 200)
+				writeJSON(w, http.StatusOK, buildControlElectricoReporte(empresaID, reles, eventos, lecturas))
+				return
+			case "reglas":
+				reglas, err := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, controlElectricoIncludeInactive(r))
+				if err != nil {
+					log.Printf("[control_electrico] list reglas empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudieron cargar reglas de domotica", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, reglas)
 				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
@@ -185,7 +376,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				id, err := dbpkg.UpsertEmpresaControlElectricoConfig(dbEmp, &payload)
 				if err != nil {
 					log.Printf("[control_electrico] upsert config empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudo guardar configuracion electrica", http.StatusInternalServerError)
+					http.Error(w, "No se pudo guardar configuracion de domotica", http.StatusInternalServerError)
 					return
 				}
 				cfg, _ := dbpkg.GetEmpresaControlElectricoConfig(dbEmp, empresaID, false)
@@ -231,7 +422,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				return
 
 			case "rele_foto":
-				releID, imageURL, err := handleControlElectricoReleFotoUpload(r, dbEmp, empresaID)
+				releID, imageURL, err := handleControlElectricoReleFotoUpload(r, dbEmp, dbSuperConn, empresaID)
 				if err != nil {
 					log.Printf("[control_electrico] upload foto empresa_id=%d error: %v", empresaID, err)
 					http.Error(w, err.Error(), http.StatusBadRequest)
@@ -286,10 +477,71 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				executed, err := ejecutarControlElectricoProgramacionPendiente(dbEmp, time.Now(), empresaID)
 				if err != nil {
 					log.Printf("[control_electrico] ejecutar programacion empresa_id=%d error: %v", empresaID, err)
-					http.Error(w, "No se pudo evaluar la programacion electrica", http.StatusInternalServerError)
+					http.Error(w, "No se pudo evaluar la programacion de domotica", http.StatusInternalServerError)
 					return
 				}
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "comandos_ejecutados": executed})
+				return
+			case "lectura":
+				var payload dbpkg.EmpresaControlElectricoLectura
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				if payload.ReleID > 0 {
+					rele, err := dbpkg.GetEmpresaControlElectricoReleByID(dbEmp, empresaID, payload.ReleID)
+					if err != nil {
+						http.Error(w, "El aparato no pertenece a esta empresa", http.StatusBadRequest)
+						return
+					}
+					payload.EstacionID = rele.EstacionID
+				}
+				if strings.TrimSpace(payload.Origen) == "" {
+					payload.Origen = "api_domotica"
+				}
+				id, err := dbpkg.InsertEmpresaControlElectricoLectura(dbEmp, payload)
+				if err != nil {
+					log.Printf("[control_electrico] insert lectura empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo guardar lectura de domotica", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
+				return
+			case "regla":
+				var payload dbpkg.EmpresaControlElectricoRegla
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				payload.EmpresaID = empresaID
+				payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
+				id, err := dbpkg.UpsertEmpresaControlElectricoRegla(dbEmp, &payload)
+				if err != nil {
+					log.Printf("[control_electrico] upsert regla empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				reglas, _ := dbpkg.ListEmpresaControlElectricoReglas(dbEmp, empresaID, true)
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id, "reglas": reglas})
+				return
+			case "sensor_evento":
+				var payload struct {
+					SensorCodigo string `json:"sensor_codigo"`
+					Valor        string `json:"valor"`
+					Estado       string `json:"estado"`
+					MetadataJSON string `json:"metadata_json"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				results, err := evaluarControlElectricoReglas(dbEmp, empresaID, payload.SensorCodigo, firstNonEmpty(payload.Valor, payload.Estado), strings.TrimSpace(adminEmailFromRequest(r)), payload.MetadataJSON)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "resultados": results})
 				return
 			default:
 				http.Error(w, "action no soportada", http.StatusBadRequest)
@@ -311,6 +563,20 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
 				return
 			}
+			if action == "regla" {
+				reglaID, err := parseInt64QueryOptional(r, "id")
+				if err != nil || reglaID <= 0 {
+					http.Error(w, "id requerido", http.StatusBadRequest)
+					return
+				}
+				if err := dbpkg.SetEmpresaControlElectricoReglaEstado(dbEmp, empresaID, reglaID, "inactivo"); err != nil {
+					log.Printf("[control_electrico] delete regla empresa_id=%d id=%d error: %v", empresaID, reglaID, err)
+					http.Error(w, "No se pudo desactivar regla", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+				return
+			}
 			releID, err := parseInt64QueryOptional(r, "id")
 			if err != nil || releID <= 0 {
 				http.Error(w, "id requerido", http.StatusBadRequest)
@@ -318,7 +584,7 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if err := dbpkg.SetEmpresaControlElectricoReleEstado(dbEmp, empresaID, releID, "inactivo"); err != nil {
 				log.Printf("[control_electrico] delete rele empresa_id=%d id=%d error: %v", empresaID, releID, err)
-				http.Error(w, "No se pudo desactivar rele", http.StatusInternalServerError)
+				http.Error(w, "No se pudo desactivar aparato", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
@@ -328,8 +594,9 @@ func EmpresaControlElectricoHandler(dbEmp *sql.DB) http.HandlerFunc {
 	}
 }
 
-func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp *sql.DB, empresaID int64) (int64, string, error) {
-	if err := r.ParseMultipartForm(8 << 20); err != nil {
+func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64) (int64, string, error) {
+	maxBytes := domoticaStorageMaxImageBytes(dbSuper, empresaID)
+	if err := r.ParseMultipartForm(maxBytes + (1 << 20)); err != nil {
 		return 0, "", fmt.Errorf("payload multipart invalido")
 	}
 	releID, err := parseInt64Form(r, "rele_id")
@@ -347,13 +614,17 @@ func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp *sql.DB, empres
 		return 0, "", fmt.Errorf("foto requerida")
 	}
 	defer file.Close()
+	if header.Size > maxBytes {
+		return 0, "", fmt.Errorf("la imagen supera el tamano maximo permitido de %d KB", maxBytes/1024)
+	}
 	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(header.Filename)))
 	allowed := map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
 	if !allowed[ext] {
 		return 0, "", fmt.Errorf("extension de imagen no permitida")
 	}
 	webRoot := resolveWebRootDir()
-	dir := filepath.Join(webRoot, "uploads", "control_electrico", fmt.Sprintf("empresa_%d", empresaID))
+	folder := domoticaEmpresaStorageFolder(dbEmp, empresaID)
+	dir := filepath.Join(webRoot, "uploads", "empresas", folder, "imagenes", "domotica")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return 0, "", fmt.Errorf("no se pudo preparar carpeta de imagenes")
 	}
@@ -367,11 +638,100 @@ func handleControlElectricoReleFotoUpload(r *http.Request, dbEmp *sql.DB, empres
 	if _, err := io.Copy(out, file); err != nil {
 		return 0, "", fmt.Errorf("no se pudo guardar imagen")
 	}
-	imageURL := "/uploads/control_electrico/empresa_" + strconv.FormatInt(empresaID, 10) + "/" + fileName
+	imageURL := "/uploads/empresas/" + folder + "/imagenes/domotica/" + fileName
 	if err := dbpkg.UpdateEmpresaControlElectricoReleImagen(dbEmp, empresaID, releID, imageURL); err != nil {
 		return 0, "", err
 	}
 	return releID, imageURL, nil
+}
+
+func domoticaStorageMaxImageBytes(dbSuper *sql.DB, empresaID int64) int64 {
+	const defaultKB int64 = 2048
+	value := ""
+	if dbSuper != nil && empresaID > 0 {
+		if raw, _, err := dbpkg.GetConfigValue(dbSuper, fmt.Sprintf("domotica.storage.empresa.%d.max_image_kb", empresaID)); err == nil {
+			value = strings.TrimSpace(raw)
+		}
+		if value == "" {
+			if raw, _, err := dbpkg.GetConfigValue(dbSuper, "domotica.storage.default_max_image_kb"); err == nil {
+				value = strings.TrimSpace(raw)
+			}
+		}
+	}
+	kb, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || kb <= 0 {
+		kb = defaultKB
+	}
+	if kb < 128 {
+		kb = 128
+	}
+	if kb > 20480 {
+		kb = 20480
+	}
+	return kb * 1024
+}
+
+func domoticaEmpresaStorageFolder(dbEmp *sql.DB, empresaID int64) string {
+	name := ""
+	if dbEmp != nil && empresaID > 0 {
+		if empresa, err := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); err == nil && empresa != nil {
+			name = empresa.Nombre
+		}
+	}
+	slug := sanitizeDomoticaStorageSlug(name)
+	if slug == "" {
+		slug = "empresa"
+	}
+	return fmt.Sprintf("empresa_%d_%s", empresaID, slug)
+}
+
+func sanitizeDomoticaStorageSlug(raw string) string {
+	return sanitizeDomoticaASCII(raw)
+	value := strings.ToLower(strings.TrimSpace(raw))
+	replacer := strings.NewReplacer("á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n", " ", "_", "-", "_", ".", "_", "/", "_", "\\", "_")
+	value = replacer.Replace(value)
+	clean := make([]rune, 0, len(value))
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			clean = append(clean, r)
+		}
+	}
+	out := strings.Trim(string(clean), "_")
+	if len(out) > 60 {
+		out = strings.Trim(out[:60], "_")
+	}
+	return out
+}
+
+func sanitizeDomoticaASCII(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	clean := make([]rune, 0, len(value))
+	for _, r := range value {
+		switch r {
+		case 0x00e1, 0x00e0, 0x00e2, 0x00e3, 0x00e4:
+			r = 'a'
+		case 0x00e9, 0x00e8, 0x00ea, 0x00eb:
+			r = 'e'
+		case 0x00ed, 0x00ec, 0x00ee, 0x00ef:
+			r = 'i'
+		case 0x00f3, 0x00f2, 0x00f4, 0x00f5, 0x00f6:
+			r = 'o'
+		case 0x00fa, 0x00f9, 0x00fb, 0x00fc:
+			r = 'u'
+		case 0x00f1:
+			r = 'n'
+		case ' ', '-', '.', '/', '\\':
+			r = '_'
+		}
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' {
+			clean = append(clean, r)
+		}
+	}
+	out := strings.Trim(string(clean), "_")
+	if len(out) > 60 {
+		out = strings.Trim(out[:60], "_")
+	}
+	return out
 }
 
 // StartControlElectricoProgramacionWorker ejecuta horarios ON/OFF de relays programados.
@@ -514,7 +874,7 @@ func DispatchEmpresaControlElectricoEstacion(dbEmp *sql.DB, empresaID, estacionI
 		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
 	}
 	if cfg == nil || !cfg.Habilitado {
-		return controlElectricoDispatchResult{Skipped: true, Message: "control electrico no habilitado"}
+		return controlElectricoDispatchResult{Skipped: true, Message: "domotica no habilitada"}
 	}
 	if !cfg.AutoSyncEstaciones && !controlElectricoOrigenManual(origen) {
 		return controlElectricoDispatchResult{Skipped: true, Message: "sincronizacion automatica desactivada"}
@@ -524,7 +884,7 @@ func DispatchEmpresaControlElectricoEstacion(dbEmp *sql.DB, empresaID, estacionI
 		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
 	}
 	if len(reles) == 0 {
-		return controlElectricoDispatchResult{Skipped: true, Message: "estacion sin rele configurado"}
+		return controlElectricoDispatchResult{Skipped: true, Message: "estacion sin aparato configurado"}
 	}
 	targetState := "off"
 	if activa {
@@ -566,7 +926,7 @@ func controlElectricoDispatchManual(dbEmp *sql.DB, empresaID, estacionID, releID
 		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
 	}
 	if cfg == nil || !cfg.Habilitado {
-		return controlElectricoDispatchResult{Skipped: true, Message: "control electrico no habilitado"}
+		return controlElectricoDispatchResult{Skipped: true, Message: "domotica no habilitada"}
 	}
 	var rele *dbpkg.EmpresaControlElectricoRele
 	if releID > 0 {
@@ -576,7 +936,7 @@ func controlElectricoDispatchManual(dbEmp *sql.DB, empresaID, estacionID, releID
 	}
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return controlElectricoDispatchResult{Skipped: true, Message: "rele no configurado"}
+			return controlElectricoDispatchResult{Skipped: true, Message: "aparato no configurado"}
 		}
 		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
 	}
@@ -638,7 +998,7 @@ func dispatchControlElectricoRele(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectr
 
 func resolveControlElectricoDispatchConfig(dbEmp *sql.DB, cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele) (*dbpkg.EmpresaControlElectricoConfig, int64, error) {
 	if cfg == nil {
-		return nil, 0, fmt.Errorf("configuracion electrica no disponible")
+		return nil, 0, fmt.Errorf("configuracion de domotica no disponible")
 	}
 	if rele != nil && rele.RaspberryID > 0 {
 		pi, err := dbpkg.GetEmpresaControlElectricoRaspberryByID(dbEmp, cfg.EmpresaID, rele.RaspberryID, true)
@@ -651,7 +1011,7 @@ func resolveControlElectricoDispatchConfig(dbEmp *sql.DB, cfg *dbpkg.EmpresaCont
 		return controlElectricoConfigFromRaspberry(cfg, pi), pi.ID, nil
 	}
 	if strings.TrimSpace(cfg.RaspberryIP) == "" {
-		return nil, 0, fmt.Errorf("rele sin Raspberry Pi asignada y sin Raspberry principal")
+		return nil, 0, fmt.Errorf("aparato sin controlador asignado y sin controlador principal")
 	}
 	return cfg, 0, nil
 }
@@ -667,6 +1027,20 @@ func controlElectricoConfigFromRaspberry(base *dbpkg.EmpresaControlElectricoConf
 }
 
 func sendControlElectricoRelayCommand(cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele, estado, actor, origen string) controlElectricoDispatchResult {
+	integration := strings.ToLower(strings.TrimSpace(rele.IntegracionTipo))
+	controller := strings.ToLower(strings.TrimSpace(rele.RaspberryTipoControlador))
+	switch integration {
+	case "home_assistant", "homekit_siri", "matter_bridge", "philips_hue", "tuya", "zigbee2mqtt", "zwave_js":
+		return sendControlElectricoHomeAssistantCommand(cfg, rele, estado)
+	case "shelly_rpc":
+		return sendControlElectricoShellyRPCCommand(cfg, rele, estado)
+	}
+	switch controller {
+	case "home_assistant", "homekit_bridge", "matter_bridge", "philips_hue", "tuya", "zigbee2mqtt", "zwave_js":
+		return sendControlElectricoHomeAssistantCommand(cfg, rele, estado)
+	case "shelly_rpc", "shelly":
+		return sendControlElectricoShellyRPCCommand(cfg, rele, estado)
+	}
 	endpoint, err := buildControlElectricoEndpoint(cfg)
 	if err != nil {
 		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
@@ -721,6 +1095,112 @@ func sendControlElectricoRelayCommand(cfg *dbpkg.EmpresaControlElectricoConfig, 
 	}
 	if !result.OK {
 		result.Error = fmt.Sprintf("raspberry respondio HTTP %d", resp.StatusCode)
+	}
+	return result
+}
+
+func sendControlElectricoHomeAssistantCommand(cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele, estado string) controlElectricoDispatchResult {
+	base, err := buildControlElectricoBaseURL(cfg, rele)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	entityID := strings.TrimSpace(rele.EntityID)
+	if entityID == "" {
+		return controlElectricoDispatchResult{OK: false, Error: "entity_id de Home Assistant es obligatorio para este aparato", URL: base}
+	}
+	domain := "switch"
+	if dot := strings.Index(entityID, "."); dot > 0 {
+		domain = entityID[:dot]
+	}
+	service := "turn_off"
+	if strings.EqualFold(estado, "on") {
+		service = "turn_on"
+		if custom := strings.TrimSpace(rele.ComandoOn); custom != "" {
+			service = custom
+		}
+	} else if custom := strings.TrimSpace(rele.ComandoOff); custom != "" {
+		service = custom
+	}
+	if strings.Contains(service, ".") {
+		parts := strings.SplitN(service, ".", 2)
+		if strings.TrimSpace(parts[0]) != "" && strings.TrimSpace(parts[1]) != "" {
+			domain = strings.TrimSpace(parts[0])
+			service = strings.TrimSpace(parts[1])
+		}
+	}
+	endpoint := strings.TrimRight(base, "/") + "/api/services/" + url.PathEscape(domain) + "/" + url.PathEscape(service)
+	body, _ := json.Marshal(map[string]string{"entity_id": entityID})
+	return postControlElectricoJSON(endpoint, cfg.APIToken, body, cfg.TimeoutMS)
+}
+
+func sendControlElectricoShellyRPCCommand(cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele, estado string) controlElectricoDispatchResult {
+	base, err := buildControlElectricoBaseURL(cfg, rele)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error()}
+	}
+	channel := rele.GPIOPin
+	if parsed, err := strconv.Atoi(strings.TrimSpace(rele.DeviceID)); err == nil && parsed >= 0 {
+		channel = parsed
+	}
+	body, _ := json.Marshal(map[string]interface{}{"id": channel, "on": strings.EqualFold(estado, "on")})
+	return postControlElectricoJSON(strings.TrimRight(base, "/")+"/rpc/Switch.Set", cfg.APIToken, body, cfg.TimeoutMS)
+}
+
+func buildControlElectricoBaseURL(cfg *dbpkg.EmpresaControlElectricoConfig, rele *dbpkg.EmpresaControlElectricoRele) (string, error) {
+	raw := strings.TrimSpace(rele.RaspberryBaseURL)
+	if raw == "" {
+		raw = strings.TrimSpace(cfg.RaspberryIP)
+	}
+	if raw == "" {
+		raw = strings.TrimSpace(rele.RaspberryIP)
+	}
+	if raw == "" {
+		return "", fmt.Errorf("controlador sin URL o host configurado")
+	}
+	if !strings.Contains(raw, "://") {
+		port := cfg.RaspberryPort
+		if port <= 0 {
+			port = dbpkg.DefaultControlElectricoPort
+		}
+		if _, _, err := net.SplitHostPort(raw); err != nil {
+			raw = net.JoinHostPort(raw, strconv.Itoa(port))
+		}
+		raw = "http://" + raw
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	parsed.Path = strings.TrimRight(parsed.Path, "/")
+	parsed.RawQuery = ""
+	parsed.Fragment = ""
+	return parsed.String(), nil
+}
+
+func postControlElectricoJSON(endpoint, token string, body []byte, timeoutMS int) controlElectricoDispatchResult {
+	timeout := time.Duration(timeoutMS) * time.Millisecond
+	if timeout <= 0 {
+		timeout = time.Duration(dbpkg.DefaultControlElectricoTimeoutMS) * time.Millisecond
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error(), URL: endpoint}
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if token = strings.TrimSpace(token); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := (&http.Client{Timeout: timeout}).Do(req)
+	if err != nil {
+		return controlElectricoDispatchResult{OK: false, Error: err.Error(), URL: endpoint}
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	result := controlElectricoDispatchResult{OK: resp.StatusCode >= 200 && resp.StatusCode < 300, HTTPStatus: resp.StatusCode, ResponseBody: strings.TrimSpace(string(raw)), URL: endpoint}
+	if !result.OK {
+		result.Error = fmt.Sprintf("controlador respondio HTTP %d", resp.StatusCode)
 	}
 	return result
 }

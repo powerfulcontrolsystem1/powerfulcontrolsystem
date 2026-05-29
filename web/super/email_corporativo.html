@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Email corporativo iRedMail</title>
+  <title>Email corporativo Mailu</title>
   <link rel="stylesheet" href="/css/admin_theme.css">
   <style>
     body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--page-bg, #f5f7fb); color: var(--text, #172033); }
@@ -60,8 +60,8 @@
   <main class="page">
     <header class="hero">
       <div>
-        <h1>Email corporativo iRedMail</h1>
-        <p>Activa el correo empresarial por empresa, define el dominio y controla el aprovisionamiento. Si el API de iRedAdmin-Pro no esta lista, el sistema deja las cuentas en estado pendiente para crearlas luego sin bloquear el registro de empresas.</p>
+        <h1>Email corporativo Mailu</h1>
+        <p>Activa el correo empresarial por empresa, define el dominio y controla el aprovisionamiento con Mailu, un servidor de correo open source en Docker con webmail integrado.</p>
       </div>
       <a class="btn" href="/super_administrador.html">Panel super</a>
     </header>
@@ -73,14 +73,14 @@
       <p id="diagnosticAlert" class="alert">Cargando diagnostico...</p>
       <div class="diagnostics">
         <div class="metric"><span>Modulo</span><strong id="diagModulo">-</strong></div>
-        <div class="metric"><span>iRedAdmin</span><strong id="diagIredAdmin">-</strong></div>
+        <div class="metric"><span>Mailu</span><strong id="diagMailu">-</strong></div>
         <div class="metric"><span>Webmail</span><strong id="diagWebmail">-</strong></div>
         <div class="metric"><span>Cuentas</span><strong id="diagCuentas">-</strong></div>
       </div>
       <div class="actions">
-        <button id="testIredAdminBtn" type="button" class="secondary">Probar iRedAdmin</button>
+        <button id="testMailuBtn" type="button" class="secondary">Probar Mailu</button>
       </div>
-      <p class="hint">Esta prueba solo valida que el sistema pueda iniciar sesion en iRedAdmin-Pro con la configuracion guardada. No muestra ni imprime claves.</p>
+      <p class="hint">Esta prueba valida que el sistema tenga listo el comando directo de Mailu para crear buzones. No muestra ni imprime claves.</p>
     </section>
 
     <div class="grid">
@@ -100,32 +100,35 @@
               <input id="domain" placeholder="powerfulcontrolsystem.com" autocomplete="off">
             </label>
             <label>Webmail
-              <input id="webmailURL" placeholder="https://mail.powerfulcontrolsystem.com/mail/" autocomplete="off">
+              <input id="webmailURL" placeholder="https://mail.powerfulcontrolsystem.com/webmail/" autocomplete="off">
             </label>
             <label>Modo de provision
               <select id="provisionMode">
                 <option value="manual">Manual / pendiente</option>
-                <option value="iredadmin_api">iRedAdmin-Pro API</option>
+                <option value="mailu_direct">Mailu directo VPS</option>
               </select>
             </label>
             <label>Cuota por buzon (MB)
               <input id="quotaMB" type="number" min="0" step="50">
             </label>
-            <label>URL API iRedAdmin
-              <input id="apiBaseURL" placeholder="https://mail.powerfulcontrolsystem.com/iredadmin" autocomplete="off">
+            <label>URL API Mailu
+              <input id="apiBaseURL" placeholder="https://mail.powerfulcontrolsystem.com/api" autocomplete="off">
             </label>
-            <label>Admin iRedAdmin
+            <label>Administrador Mailu
               <input id="apiAdmin" placeholder="postmaster@powerfulcontrolsystem.com" autocomplete="off">
             </label>
-            <label>Clave iRedAdmin
+            <label>Token API Mailu
               <input id="apiPassword" type="password" placeholder="Dejar vacio para conservar" autocomplete="new-password">
+            </label>
+            <label>Comando directo Mailu
+              <input id="directCommand" placeholder="/root/powerfulcontrolsystem/deploy/scripts/vps-provision-mailu-mailbox.sh" autocomplete="off">
             </label>
           </div>
           <div class="actions">
             <button type="submit">Guardar configuracion</button>
             <button id="syncBtn" type="button" class="secondary">Sincronizar empresas existentes</button>
           </div>
-          <p class="hint">Para crear buzones automaticamente se requiere iRedAdmin-Pro con REST API habilitada. Sin esa API, el sistema genera el correo y lo deja pendiente para provision manual.</p>
+          <p class="hint">Para crear buzones automaticamente se usa el comando directo de VPS, que crea o actualiza el usuario en Mailu sin imprimir claves.</p>
         </form>
       </section>
 
@@ -157,7 +160,7 @@
       var accountsBody = document.getElementById("accountsBody");
       var diagnosticAlert = document.getElementById("diagnosticAlert");
       var diagModulo = document.getElementById("diagModulo");
-      var diagIredAdmin = document.getElementById("diagIredAdmin");
+      var diagMailu = document.getElementById("diagMailu");
       var diagWebmail = document.getElementById("diagWebmail");
       var diagCuentas = document.getElementById("diagCuentas");
       var apiProvisionEnabled = false;
@@ -170,7 +173,8 @@
         apiBaseURL: document.getElementById("apiBaseURL"),
         apiAdmin: document.getElementById("apiAdmin"),
         apiPassword: document.getElementById("apiPassword"),
-        quotaMB: document.getElementById("quotaMB")
+        quotaMB: document.getElementById("quotaMB"),
+        directCommand: document.getElementById("directCommand")
       };
 
       function setStatus(text, error) {
@@ -194,12 +198,13 @@
         fields.enabled.checked = !!config.enabled;
         fields.autoCreate.checked = config.auto_create !== false;
         fields.domain.value = config.domain || "powerfulcontrolsystem.com";
-        fields.webmailURL.value = config.webmail_url || "https://mail.powerfulcontrolsystem.com/mail/";
+        fields.webmailURL.value = config.webmail_url || "https://mail.powerfulcontrolsystem.com/webmail/";
         fields.provisionMode.value = config.provision_mode || "manual";
-        fields.apiBaseURL.value = config.iredadmin_api_base_url || "";
-        fields.apiAdmin.value = config.iredadmin_admin || "";
+        fields.apiBaseURL.value = config.mailu_api_base_url || "";
+        fields.apiAdmin.value = config.mailu_admin || "";
         fields.quotaMB.value = String(config.quota_mb || 1024);
-        fields.apiPassword.placeholder = config.iredadmin_password_set ? "Clave guardada, dejar vacio para conservar" : "Clave iRedAdmin";
+        fields.directCommand.value = config.direct_provision_command || "";
+        fields.apiPassword.placeholder = config.mailu_api_token_set ? "Token guardado, dejar vacio para conservar" : "Token API Mailu";
       }
 
       function badgeClass(status) {
@@ -230,17 +235,17 @@
         var diagnostics = data && data.diagnostics ? data.diagnostics : {};
         var webmail = diagnostics.webmail || {};
         var accounts = diagnostics.accounts || {};
-        var iredReady = diagnostics.iredadmin_api_enabled && diagnostics.iredadmin_api_url_set && diagnostics.iredadmin_admin_set && diagnostics.iredadmin_password_set;
+        var directReady = diagnostics.provision_mode === "mailu_direct" && apiProvisionEnabled;
         diagModulo.textContent = diagnostics.enabled ? "Activo" : "Desactivado";
-        diagIredAdmin.textContent = diagnostics.provision_mode === "iredadmin_api"
-          ? (iredReady ? "Configurado" : "Incompleto")
+        diagMailu.textContent = diagnostics.provision_mode === "mailu_direct"
+          ? (directReady ? "Directo VPS" : "Directo incompleto")
           : "Manual";
         diagWebmail.textContent = webmail.checked
           ? ((webmail.status ? ("HTTP " + webmail.status + " - ") : "") + (webmail.message || "Consultado"))
           : (webmail.message || "Sin verificar");
         diagCuentas.textContent = (accounts.total || 0) + " total, " + (accounts.provisionado || 0) + " activas, " + (accounts.error || 0) + " con error";
         diagnosticAlert.textContent = diagnostics.recommended_action || "Revisa la configuracion del servicio.";
-        diagnosticAlert.className = "alert" + (accounts.error > 0 || !iredReady && diagnostics.provision_mode === "iredadmin_api" ? " error" : (webmail.ok && diagnostics.enabled ? " ok" : ""));
+        diagnosticAlert.className = "alert" + (accounts.error > 0 || !directReady && diagnostics.provision_mode === "mailu_direct" ? " error" : (webmail.ok && diagnostics.enabled ? " ok" : ""));
       }
 
       function renderAccounts(accounts) {
@@ -276,7 +281,7 @@
           var provisionBtn = tr.querySelector("button");
           provisionBtn.disabled = !apiProvisionEnabled;
           provisionBtn.textContent = apiProvisionEnabled ? "Provisionar" : "Manual";
-          provisionBtn.title = apiProvisionEnabled ? "Crear o reintentar en iRedAdmin-Pro" : "Cambia el modo a iRedAdmin-Pro API para provisionar automaticamente";
+          provisionBtn.title = apiProvisionEnabled ? "Crear o reintentar el buzon real" : "Activa un modo de provision automatica para crear el buzon real";
           provisionBtn.addEventListener("click", function () {
             provision(item.empresa_id);
           });
@@ -289,7 +294,7 @@
         return requestJSON("/super/api/email_corporativo")
           .then(function (data) {
             renderConfig(data.config || {});
-            apiProvisionEnabled = !!data.iredadmin_api_enabled;
+            apiProvisionEnabled = !!data.mailu_direct_enabled;
             renderDiagnostics(data);
             renderAccounts(data.accounts || []);
             setStatus("");
@@ -308,10 +313,11 @@
           domain: fields.domain.value,
           webmail_url: fields.webmailURL.value,
           provision_mode: fields.provisionMode.value,
-          iredadmin_api_base_url: fields.apiBaseURL.value,
-          iredadmin_admin: fields.apiAdmin.value,
-          iredadmin_password: fields.apiPassword.value,
-          quota_mb: Number(fields.quotaMB.value || 0)
+          mailu_api_base_url: fields.apiBaseURL.value,
+          mailu_admin: fields.apiAdmin.value,
+          mailu_api_token: fields.apiPassword.value,
+          quota_mb: Number(fields.quotaMB.value || 0),
+          direct_provision_command: fields.directCommand.value
         };
         requestJSON("/super/api/email_corporativo", {
           method: "PUT",
@@ -336,21 +342,21 @@
           .catch(function (err) { setStatus(err.message || String(err), true); });
       }
 
-      function testIredAdmin() {
-        setStatus("Probando iRedAdmin...");
-        requestJSON("/super/api/email_corporativo?action=test_iredadmin", { method: "POST" })
+      function testMailu() {
+        setStatus("Probando Mailu...");
+        requestJSON("/super/api/email_corporativo?action=test_mailu", { method: "POST" })
           .then(function (data) {
             return load().then(function () {
               if (data && data.ok) {
-                setStatus("iRedAdmin acepto las credenciales guardadas.");
+                setStatus("Mailu esta listo para provision directa.");
               } else {
-                setStatus("iRedAdmin rechazo la configuracion: " + cleanProvisionError((data && data.error) || (data && data.status) || "validacion fallida"), true);
+                setStatus("Mailu no esta listo: " + cleanProvisionError((data && data.error) || (data && data.status) || "validacion fallida"), true);
               }
             });
           })
           .catch(function (err) {
             return load().then(function () {
-              setStatus("iRedAdmin rechazo la configuracion: " + (err.message || String(err)), true);
+              setStatus("Mailu no esta listo: " + (err.message || String(err)), true);
             });
           });
       }
@@ -376,7 +382,7 @@
 
       document.getElementById("configForm").addEventListener("submit", save);
       document.getElementById("syncBtn").addEventListener("click", sync);
-      document.getElementById("testIredAdminBtn").addEventListener("click", testIredAdmin);
+      document.getElementById("testMailuBtn").addEventListener("click", testMailu);
       load();
     })();
   </script>

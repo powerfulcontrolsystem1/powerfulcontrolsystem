@@ -1,42 +1,73 @@
-2026-05-28: TLS valido para subdominio de correo corporativo.
-- Modulos afectados: `email_corporativo`, `VPS/Docker`, `nginx`, `certbot`.
-- Motivo: `mail.powerfulcontrolsystem.com` ya apuntaba a iRedMail, pero el certificado entregado no cubria el subdominio y Go rechazaba la prueba de iRedAdmin por verificacion TLS.
-- Despliegue: `vps-configure-iredmail-host-nginx.sh` ahora valida que el certificado Let's Encrypt incluya `mail.powerfulcontrolsystem.com`; si no existe, prepara el challenge HTTP, emite un certificado especifico con certbot y luego publica el proxy HTTPS hacia iRedMail.
-- Backend/Docker: las comprobaciones internas de webmail y provision iRedAdmin pueden usar `EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL` y `EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL` para entrar por la red Docker (`http://iredmail/...`) sin resolver el dominio publico al certificado interno del contenedor.
-- UX: el panel empresarial ya no presenta todos los fallos de iRedAdmin como "credenciales rechazadas"; diferencia webmail disponible, API iRedAdmin-Pro no disponible, TLS interno y error real de login.
-- Backend: para llamadas internas exclusivamente contra el host Docker `iredmail`, el cliente HTTP acepta el certificado interno del contenedor; la URL publica `mail.powerfulcontrolsystem.com` sigue validando TLS normal con Let's Encrypt.
-- Backend: si la instalacion no expone iRedAdmin-Pro REST API, la cuenta pasa a `pendiente_provision_manual` en vez de quedar como error de credenciales.
-- Seguridad: no se desactiva la validacion TLS del backend ni se imprimen secretos; se corrige la publicacion del certificado en el borde Nginx.
+2026-05-29: Fotos de usuarios en carpeta de imagenes empresarial.
+- Modulos afectados: `usuarios_empresa`, `storage_empresarial`, `super_administrador`, `backend_db`, `frontend_ux`.
+- Cambio funcional: los usuarios creados por el administrador de empresa aceptan foto de perfil desde Administrar usuarios.
+- Storage: la foto se guarda bajo `web/uploads/empresas/empresa_{id}_{slug}/imagenes/usuarios/`, compartiendo la carpeta general `imagenes` de cada empresa con Domotica.
+- Backend: `users` agrega `foto_url` y `/api/empresa/usuarios?action=foto` carga la imagen por multipart.
+- Seguridad: el endpoint queda bajo `WithEmpresaSeguridadPermissions`, valida `empresa_id`, verifica que `usuario_id` pertenezca a esa empresa, limita extension y tamano, y no confia en rutas enviadas por el navegador.
+- Super administrador: `Storage Imagenes` calcula el uso de toda la carpeta `/imagenes/` por empresa para incluir subcarpetas actuales y futuras.
+- QA: `go test ./db ./handlers -run "Usuarios|EmpresaUsuario|Domotica|Storage|ControlElectrico" -count=1` y parseo de scripts inline de `administrar_usuarios.html`, `domotica_storage.html` y `super_administrador.html`.
 
-2026-05-28: Proxy real de iRedMail para Email corporativo.
-- Modulos afectados: `email_corporativo`, `VPS/Docker`, `nginx`, `frontend_ux`.
-- Motivo: el subdominio `mail.powerfulcontrolsystem.com` podia seguir entrando al POS y responder 401 desde el backend, lo que parecia un rechazo de credenciales iRedAdmin aunque el webmail real no estuviera publicado.
-- Despliegue: el perfil `mail` se levanta automaticamente cuando `EMAIL_CORPORATIVO_ENABLED` esta activo, iRedMail publica HTTP interno en `127.0.0.1:${IREDMAIL_HTTP_PORT:-8089}` y `vps-configure-iredmail-host-nginx.sh` crea el proxy host para el subdominio `mail`.
-- Proxy: el host publica tambien HTTPS interno de iRedMail en `127.0.0.1:${IREDMAIL_HTTPS_PORT:-8449}` y Nginx proxy hacia ese puerto para evitar redirecciones infinitas HTTP->HTTPS del contenedor.
-- Operacion: los puertos SMTP/IMAP de iRedMail quedan por defecto en loopback y puertos altos para no chocar con servicios de correo existentes del VPS; la exposicion publica de 25/587/993 se habilita solo con configuracion explicita.
-- Backend: la prueba de iRedAdmin detecta respuestas `unauthorized` con `X-Request-Id` del POS y reporta que el subdominio mail esta respondiendo el backend, no iRedAdmin.
-- Frontend: el panel empresarial muestra un aviso especifico cuando el problema es de proxy/ruteo del subdominio mail.
+2026-05-29: Domotica empresarial con fotos, sensores, alarmas y storage.
+- Modulos afectados: `control_electrico`, `domotica`, `super_administrador`, `storage_empresarial`, `frontend_ux`, `backend_db`.
+- Cambio funcional: Domotica permite configurar aparatos por estacion con integracion externa, foto, monitoreo de consumo, programacion horaria, reglas por sensor, alarmas/eventos y reportes.
+- Integraciones: se agregan opciones operativas para GPIO/Raspberry, Home Assistant, bridge Siri/HomeKit, Matter, Shelly RPC, Philips Hue, Tuya, Zigbee2MQTT, Z-Wave JS y HTTP generico. Siri se modela mediante gateway/bridge, no como API directa propietaria.
+- Storage: las fotos de aparatos se guardan en la subcarpeta `web/uploads/empresas/empresa_{id}_{slug}/imagenes/domotica/`; el super administrador consulta el uso de toda la carpeta `imagenes` y configura el limite maximo de imagen por empresa desde `web/super/domotica_storage.html`.
+- Seguridad: todas las consultas y cargas validan `empresa_id`; el upload verifica que el aparato pertenezca a la empresa antes de escribir la imagen; los limites viven en configuracion super sin exponer secretos.
+- QA: `go test ./db ./handlers ./tools/seed_domotica_motel_calipso -run "ControlElectrico|Domotica|Storage|^$" -count=1`; parseo de scripts inline con Node empaquetado. La prueba contra Motel Calipso quedo lista en tool, pero no se ejecuto localmente porque no hay `DB_EMPRESAS_DSN` ni Docker disponible en esta maquina.
 
-2026-05-28: Diagnostico de iRedAdmin en Email corporativo.
-- Modulos afectados: `super_administrador`, `email_corporativo`, `backend_db`, `frontend_ux`.
-- Motivo: cuando iRedAdmin rechaza las credenciales de provision, el panel empresarial debe explicar el bloqueo y super administrador debe poder probar la conexion real sin exponer secretos.
-- Backend: `/super/api/email_corporativo` ahora devuelve diagnostico de modulo, webmail, cuentas, cifrado y configuracion iRedAdmin; tambien agrega `action=test_iredadmin` para validar el login guardado contra iRedAdmin-Pro.
-- Backend: al reintentar provision de empresas antiguas sin clave inicial, se genera una clave cifrada antes de llamar iRedAdmin para evitar bloqueos posteriores.
-- Frontend: `web/super/email_corporativo.html` muestra la tarjeta `Diagnostico del servicio` con estado del modulo, iRedAdmin, webmail, cuentas y boton `Probar iRedAdmin`.
-- Seguridad: no se imprimen ni retornan claves; los errores se limitan al estado operativo necesario para corregir URL, usuario o clave.
+2026-05-29: Domotica como modulo principal de Administrar empresa.
+- Modulos afectados: `administrar_empresa`, `control_electrico`, `configuracion_empresa`, `permisos`.
+- Cambio funcional: `Domotica` sale del submenu de Configuracion y queda como boton principal del menu de Administrar empresa, abriendo `modulo_menu.html?module=control_electrico`.
+- Submenu: el grupo de Domotica concentra resumen operativo, conexion GPIO, controladores, sensores Raspberry, estaciones/aparatos y bitacora.
+- Permisos: `linkControlElectrico` y `linkConfiguracionSensoresRaspberry` quedan agrupados bajo `Domotica`, manteniendo la clave tecnica `control_electrico`.
+
+2026-05-29: Domotica por estacion en carrito.
+- Modulos afectados: `control_electrico`, `domotica`, `carritos`, `configuracion_empresa`, `frontend_ux`.
+- Cambio funcional: el modulo visible deja de llamarse `Control electrico` y pasa a mostrarse como `Domotica`, conservando internamente la clave tecnica `control_electrico` para compatibilidad de permisos, rutas y datos existentes.
+- Carrito: cuando una estacion tiene carrito activo, la empresa tiene Domotica habilitada y existen aparatos configurados para esa estacion, aparece automaticamente la tarjeta `Domotica` debajo de las acciones del carrito. Cada aparato abre una ventana con estado, encender, apagar y programacion horaria.
+- Configuracion: la pagina de Domotica permite agregar aparatos por estacion, como lamparas o motobombas, con controlador local, GPIO, agenda y auditoria por `empresa_id`.
+- Persistencia: se reutilizan `empresa_control_electrico_config`, `empresa_control_electrico_reles` y `empresa_control_electrico_eventos`, manteniendo aislamiento por empresa y estacion.
+
+2026-05-29: Simplificacion de tarjeta de correo en panel empresarial.
+- Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
+- Cambio funcional: la tarjeta `Bandeja de correo corporativo` conserva la bandeja embebida, pero ya no muestra los botones `Actualizar estado` ni `Abrir buzon`.
+- UX: se elimina el bloque visible de diagnostico `Estado del buzon`, `Webmail` y `Dominio` para que el panel sea mas limpio; los mensajes de alerta internos se mantienen solo cuando hay error o pendiente de provision.
+
+2026-05-29: Renovacion de licencias vencidas desde seleccionar empresa.
+- Modulos afectados: `licencias`, `checkout_licencias`, `seleccion_empresas`, `pagos`.
+- Backend: `/api/public/licencias/checkout_summary`, Wompi, Nequi, Epayco y activacion sin pago permiten renovar una licencia asignada vencida o inactiva solo cuando pertenece al mismo `empresa_id`.
+- Frontend: `web/super/licencias.html` trata como no renovables las licencias gratis de prueba con valor cero, aunque no sean exactamente de 15 dias; el boton muestra `Ver otras licencias`.
+- Seguridad: las licencias inactivas de catalogo o de otra empresa siguen ocultas para checkout, evitando cruces entre empresas.
+- Robustez: `/api/public/licencias/payment_methods` ya no tumba la pagina de pago si una credencial de pasarela esta incompleta o no se puede leer; el proveedor queda como no configurado.
+- QA: pruebas dirigidas en `backend/handlers` cubren renovacion de licencia asignada inactiva y bloqueo de acceso a otra empresa.
+
+2026-05-29: Menu flotante abre Robot / IA y Emisoras.
+- Modulos afectados: `menu_flotante`, `chat_flotante`, `radio_online`, `frontend_ux`.
+- Frontend: `web/menu.js` agrega accesos `Robot / IA` y `Emisoras` dentro del menu flotante autenticado. El acceso IA reutiliza el drawer o avatar existente; el acceso de emisoras abre el panel de radio sin activar automaticamente la preferencia empresarial.
+- Chat/Radio: `web/js/ai_chat_drawer.js` expone `window.PCSAIChatOpen` para abrir el robot/avatar o la ventana IA desde otras partes del sistema. `web/js/radio_player.js` expone `window.__pcsRadioPlayerOpenDrawer` y permite abrir el panel aun si la emisora esta apagada, dejando que el usuario la active con el switch del modulo.
+- UX: `web/estilos.css` agrega soporte de iconos compactos en items del menu flotante.
+
+2026-05-29: Reemplazo de email corporativo por Mailu.
+- Modulos afectados: `email_corporativo`, `administrar_empresa`, `VPS/Docker`, `nginx`, `frontend_ux`.
+- Backend: `/super/api/email_corporativo?action=provision` usa `email_corporativo.provision_mode=mailu_direct` y ejecuta un comando controlado para crear el buzon real sin imprimir claves.
+- Operacion: se agrega `deploy/scripts/vps-provision-mailu-mailbox.sh`; crea/actualiza buzones con `flask mailu user` dentro de `pcs-mailu-admin`.
+- Docker: el perfil `mail` de `deploy/docker-compose.platform.yml` levanta Mailu/Roundcube y `vps-compose-sidecar-up.sh` retira el contenedor antiguo si existe.
+- Proxy: `deploy/scripts/vps-configure-mailu-host-nginx.sh` publica `mail.powerfulcontrolsystem.com` hacia `pcs-mailu-front` y limpia la configuracion host anterior.
+- Frontend: `web/super/email_corporativo.html` muestra diagnostico Mailu y boton `Probar Mailu`; `web/administrar_empresa/panel.html` abre el webmail Mailu sin SSO ni rutas Roundcube.
+- Seguridad: se eliminan rutas internas de SSO de correo; el navegador no recibe claves iniciales ni tokens privados.
 
 2026-05-28: Generacion de correo corporativo para empresas existentes.
 - Modulos afectados: `email_corporativo`, `administrar_empresa`, `backend_db`, `frontend_ux`.
 - Motivo: en preproduccion se permite crear correo corporativo para todas las empresas existentes, no solo para empresas nuevas.
 - Backend: el arranque llama `EnsureCorporateEmailRowsForExistingCompanies`; si `email_corporativo.auto_create` esta activo, crea filas faltantes en `empresa_email_corporativo` usando dominio y webmail configurados.
-- Frontend: el panel empresarial muestra diagnostico de estado del buzon, webmail y dominio; diferencia correo asignado, buzon pendiente, error de provision iRedAdmin y modulo desactivado.
-- Seguridad: no se muestran claves, tokens ni contrasenas; los buzones reales siguen dependiendo de provision iRedMail/iRedAdmin-Pro valida.
+- Frontend: el panel empresarial muestra diagnostico de estado del buzon, webmail y dominio; diferencia correo asignado, buzon pendiente, error de provision Mailu y modulo desactivado.
+- Seguridad: no se muestran claves, tokens ni contrasenas; los buzones reales siguen dependiendo de provision Mailu valida.
 
 2026-05-28: Panel empresarial evita iframe automatico de webmail.
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`.
 - Motivo: cargar automaticamente `mail/?_task=mail&_mbox=INBOX` dentro del panel generaba `401 Unauthorized` cuando el webmail no tenia sesion propia activa, confundiendo el estado del panel empresarial.
 - Cambio funcional: la tarjeta conserva estado, correo y boton `Abrir buzón`, pero no asigna `src` al iframe ni dispara peticiones de webmail desde el panel.
-- Seguridad: el acceso a Roundcube/iRedMail queda en ventana propia; el panel no intenta transportar contrasenas, cookies ni sesiones de correo.
+- Seguridad: el acceso al webmail queda controlado por Mailu; el panel no transporta contrasenas, cookies ni sesiones de correo.
 
 2026-05-28: Bandeja de correo siempre visible en panel empresarial.
 - Modulos afectados: `administrar_empresa`, `email_corporativo`, `frontend_ux`, `backend_db`.
@@ -45,12 +76,12 @@
 - Backend: `/api/empresa/email_corporativo` puede crear la fila de correo para empresas existentes al consultar el panel si `email_corporativo.auto_create` esta activo.
 - Seguridad: no se exponen claves iniciales ni secretos del buzon; el acceso al endpoint mantiene validacion empresarial y `empresa_id`.
 
-2026-05-28: Email corporativo iRedMail por empresa.
+2026-05-29: Email corporativo Mailu por empresa.
 - Modulos afectados: `super_administrador`, `administrar_empresa`, `empresas`, `comunicaciones`, `VPS/Docker`.
-- Cambio funcional: se agrega el modulo `Email corporativo` en super administrador para activar/desactivar el servicio, configurar dominio, webmail, cuota, modo manual o iRedAdmin-Pro API y guardar credenciales cifradas.
-- Empresas: al registrar una empresa se genera automaticamente un email unico basado en su nombre; si el nombre ya existe, se agrega un sufijo numerico. La provision de iRedMail es best-effort y no bloquea la creacion de la empresa.
+- Cambio funcional: el modulo `Email corporativo` en super administrador permite activar/desactivar el servicio, configurar dominio, webmail, cuota, modo manual o Mailu directo y guardar credenciales cifradas.
+- Empresas: al registrar una empresa se genera automaticamente un email unico basado en su nombre; si el nombre ya existe, se agrega un sufijo numerico. La provision de Mailu es best-effort y no bloquea la creacion de la empresa.
 - UX: el panel de administrar empresa muestra debajo de Favoritos una tarjeta para abrir el webmail cuando el modulo esta activo.
-- Operacion: se agrega `deploy/iredmail/` con runbook y se integra el perfil Docker portable `mail` en `deploy/docker-compose.platform.yml`. El backend registra variables `EMAIL_CORPORATIVO_*` / `IREDMAIL_*` desde `deploy/.env.platform` y guarda la clave iRedAdmin cifrada con `CONFIG_ENC_KEY`.
+- Operacion: se integra el perfil Docker portable `mail` en `deploy/docker-compose.platform.yml`. El backend registra variables `EMAIL_CORPORATIVO_*` / `MAILU_*` desde `deploy/.env.platform` y guarda secretos cifrados con `CONFIG_ENC_KEY`.
 - QA: `go test ./db ./handlers -run "EmailCorporativo|CorporateEmail|^$" -count=1` (ok); scripts inline de `web/administrar_empresa/panel.html` y `web/super/email_corporativo.html` parseados con Node del runtime de Codex.
 
 2026-05-28: Codigo de asesor al elegir licencia de prueba.
@@ -28378,6 +28409,7 @@ Archivos modificados:
 - backend/db/email_corporativo.go
 - backend/db/usuario_config_schema.go
 - backend/handlers/email_corporativo_handlers.go
+- backend/db/email_corporativo.go
 - backend/handlers/system_empresas_handlers.go
 - backend/main.go
 - backend/tools/register_iredmail_secrets/main.go
@@ -28589,3 +28621,77 @@ PushStatus: OK
 Archivos modificados:
 - backend/handlers/email_corporativo_handlers.go
 - documentos/historial_de_cambios
+
+2026-05-29: SSO para correo corporativo Roundcube
+PushStatus: pendiente
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/email_corporativo_sso_test.go
+- backend/main.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-configure-iredmail-host-nginx.sh
+- deploy/scripts/vps-configure-roundcube-sso.sh
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/email_corporativo_iredmail.md
+- documentos/historial_de_cambios
+- scripts/sync_to_vps.ps1
+- web/administrar_empresa/panel.html
+
+2026-05-29: fix: autologin real para email corporativo Mailu
+PushStatus: pendiente
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/nginx/edge-http-only.conf.template
+- deploy/nginx/edge.conf.template
+- deploy/scripts/vps-compose-sidecar-up.sh
+- deploy/scripts/vps-configure-mailu-host-nginx.sh
+- deploy/scripts/vps-docker-preflight.sh
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/email_corporativo_mailu.md
+- documentos/historial_de_cambios
+Detalle:
+- El webmail activo pasa a SnappyMail porque su `sso.php` permite crear la sesion final con cabeceras internas sin exponer contrasenas al navegador.
+- El backend valida el token temporal, recupera la clave cifrada del buzon solo en servidor, pide a SnappyMail un hash SSO y redirige al INBOX.
+- Para SnappyMail, el backend reprovisiona idempotentemente la cuenta antes de generar el hash SSO, garantizando que la clave IMAP de Mailu coincida con la clave cifrada del sistema.
+- El script de provision limpia el cache de autenticacion de Dovecot despues de crear o cambiar la clave para que el webmail no reutilice intentos fallidos antiguos.
+- La provision directa ahora ejecuta siempre `flask mailu password` despues de asegurar el usuario, evitando que un usuario existente conserve una clave anterior.
+- El proxy de `mail.powerfulcontrolsystem.com` publica `/webmail/` directo al contenedor `pcs-mailu-webmail` en loopback para que el hash SSO no sea interceptado por `mailu-front`.
+- El proxy publico limpia `X-Auth-Email`, `X-Remote-User` y `X-Remote-User-Token` antes de entregar trafico externo a Mailu.
+- El secreto `EMAIL_CORPORATIVO_AUTOLOGIN_SECRET` queda administrado por el stack Docker y tiene prioridad sobre secretos legacy en base, manteniendo fallback cifrado en PostgreSQL si no existe variable.
+- La documentacion del modulo describe el flujo sin contrasenas visibles: token HMAC temporal, proxy del subdominio de correo y cabecera interna protegida.
+
+2026-05-29: fix: red interna confiable e identidad inicial para SnappyMail
+PushStatus: pendiente
+Archivos modificados:
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/scripts/vps-compose-sidecar-up.sh
+- deploy/scripts/vps-docker-preflight.sh
+- deploy/scripts/vps-provision-mailu-mailbox.sh
+- documentos/contexto_codex.md
+- documentos/email_corporativo_mailu.md
+- documentos/historial_de_cambios
+Detalle:
+- Se fijan IPs de Mailu en `pcs_mailu_internal` y se agregan `extra_hosts` para que SnappyMail, front, IMAP, SMTP y admin resuelvan por la red `192.168.203.0/24` que Mailu autoriza para autenticacion interna.
+- La prueba real en VPS confirmo login IMAP correcto para `motel.calipso@powerfulcontrolsystem.com` desde `192.168.203.5` y webmail HTTP 200 con cookies de SnappyMail.
+- La provision crea el archivo de identidad principal de SnappyMail por buzon para que el panel abra directo en Bandeja de Entrada sin pedir al usuario actualizar identidad.
+
+2026-05-29: fix: SnappyMail embebido en panel empresarial
+PushStatus: pendiente
+Archivos modificados:
+- deploy/docker-compose.platform.yml
+- deploy/mailu/snappymail-application.ini
+- deploy/scripts/vps-compose-sidecar-up.sh
+- documentos/descripcion_de_archivos
+- documentos/email_corporativo_mailu.md
+- documentos/historial_de_cambios
+Detalle:
+- Se agrega un template persistente para SnappyMail que conserva `popup_identity = Off` y `secfetch_allow = "mode=navigate,dest=iframe,site=same-site"` despues de reiniciar el contenedor.
+- Esto corrige el error visual `Access Denied / Disallowed Sec-Fetch Dest: iframe` al abrir la bandeja corporativa dentro del panel de administrar empresa.

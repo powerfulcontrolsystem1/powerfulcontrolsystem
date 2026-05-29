@@ -4298,6 +4298,8 @@ body.super-page{
 .floating-menu .fm-item{display:block;color:var(--text);text-decoration:none;padding:10px 12px;border-radius:8px;font-weight:600;word-break:break-word;touch-action:manipulation}
 .floating-menu button.fm-item{width:100%;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
 .floating-menu .fm-item:hover{background:var(--focus)}
+.floating-menu .fm-icon-item{display:flex;align-items:center;gap:8px}
+.floating-menu .fm-item-icon{width:18px;height:18px;object-fit:contain;flex:0 0 auto}
 .floating-menu .fm-submenu{position:relative}
 .floating-menu .fm-submenu-toggle{width:100%;background:transparent;border:0;text-align:left;font-family:inherit;cursor:pointer}
 .floating-menu .fm-submenu-popup{display:none;position:absolute;top:0;right:calc(100% + 8px);min-width:170px;padding:6px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 14px 30px rgba(4,11,21,0.42);z-index:2}

@@ -323,6 +323,18 @@ func TestLicenciaVisibleParaClientesRequiresActivo(t *testing.T) {
 	}
 }
 
+func TestLicenciaDisponibleParaCheckoutAllowsInactiveAssignedRenewal(t *testing.T) {
+	if !licenciaDisponibleParaCheckout(&dbpkg.Licencia{Activo: 0, EmpresaID: 20}, 20) {
+		t.Fatal("inactive assigned company license should remain renewable by its company")
+	}
+	if licenciaDisponibleParaCheckout(&dbpkg.Licencia{Activo: 0, EmpresaID: 20}, 21) {
+		t.Fatal("inactive assigned company license must not be renewable by another company")
+	}
+	if licenciaDisponibleParaCheckout(&dbpkg.Licencia{Activo: 0, EmpresaID: 0}, 20) {
+		t.Fatal("inactive catalog license must remain hidden from checkout")
+	}
+}
+
 func TestParseLicenciaDiscountSpecCapsAtOriginalValue(t *testing.T) {
 	amount, label, ok := parseLicenciaDiscountSpec("120000", 50000)
 	if !ok {

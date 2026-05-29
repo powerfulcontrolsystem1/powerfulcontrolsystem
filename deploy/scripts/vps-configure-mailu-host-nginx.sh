@@ -3,8 +3,8 @@ set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-/root/powerfulcontrolsystem}"
 ENV_FILE="${ENV_FILE:-$PROJECT_DIR/deploy/.env.platform}"
-SITE_AVAILABLE="${SITE_AVAILABLE:-/etc/nginx/sites-available/00-pcs-iredmail}"
-SITE_ENABLED="${SITE_ENABLED:-/etc/nginx/sites-enabled/00-pcs-iredmail}"
+SITE_AVAILABLE="${SITE_AVAILABLE:-/etc/nginx/sites-available/00-pcs-mailu}"
+SITE_ENABLED="${SITE_ENABLED:-/etc/nginx/sites-enabled/00-pcs-mailu}"
 ACME_ROOT="${ACME_ROOT:-/var/www/html}"
 
 get_env_value() {
@@ -18,7 +18,7 @@ get_env_value() {
       sub(/^[ \t]+/, "", line)
       if (index(line, key "=") == 1) {
         sub(/^[^=]*=/, "", line)
-        gsub(/^["'\'']|["'\'']$/, "", line)
+        gsub(/^["'\''"]|["'\''"]$/, "", line)
         sub(/\r$/, "", line)
         value=line
       }
@@ -31,10 +31,7 @@ cert_covers_domain() {
   local cert_file="$1"
   local domain="$2"
   [ -f "$cert_file" ] || return 1
-  if openssl x509 -in "$cert_file" -noout -ext subjectAltName 2>/dev/null | grep -Fq "DNS:$domain"; then
-    return 0
-  fi
-  return 1
+  openssl x509 -in "$cert_file" -noout -ext subjectAltName 2>/dev/null | grep -Fq "DNS:$domain"
 }
 
 write_http_challenge_site() {
@@ -53,7 +50,7 @@ server {
     }
 
     location / {
-        return 200 "iRedMail proxy preparing TLS for $domain\\n";
+        return 200 "Mailu proxy preparing TLS for $domain\\n";
         add_header Content-Type text/plain;
     }
 }
@@ -77,13 +74,12 @@ ensure_mail_certificate() {
     echo "$fallback_dir"
     return 0
   fi
-
   if ! command -v certbot >/dev/null 2>&1; then
-    echo "[iredmail-nginx] omitido: certbot no esta instalado y no hay certificado valido para $domain" >&2
+    echo "[mailu-nginx] omitido: certbot no esta instalado y no hay certificado valido para $domain" >&2
     return 1
   fi
 
-  echo "[iredmail-nginx] creando certificado Let's Encrypt para $domain" >&2
+  echo "[mailu-nginx] creando certificado Let's Encrypt para $domain" >&2
   write_http_challenge_site "$domain"
   if certbot certonly --webroot -w "$ACME_ROOT" -d "$domain" --agree-tos --non-interactive --register-unsafely-without-email --keep-until-expiring >&2; then
     if cert_covers_domain "$preferred_dir/fullchain.pem" "$domain"; then
@@ -92,32 +88,34 @@ ensure_mail_certificate() {
     fi
   fi
 
-  echo "[iredmail-nginx] omitido: no se pudo emitir certificado valido para $domain" >&2
+  echo "[mailu-nginx] omitido: no se pudo emitir certificado valido para $domain" >&2
   return 1
 }
 
-test -f "$ENV_FILE" || { echo "[iredmail-nginx] omitido: no existe $ENV_FILE"; exit 0; }
-command -v nginx >/dev/null 2>&1 || { echo "[iredmail-nginx] omitido: nginx del host no esta instalado"; exit 0; }
+test -f "$ENV_FILE" || { echo "[mailu-nginx] omitido: no existe $ENV_FILE"; exit 0; }
+command -v nginx >/dev/null 2>&1 || { echo "[mailu-nginx] omitido: nginx del host no esta instalado"; exit 0; }
 
 mail_domain="$(get_env_value "$ENV_FILE" EDGE_MAIL_DOMAIN)"
 cert_name="$(get_env_value "$ENV_FILE" EDGE_CERT_NAME)"
-http_port="$(get_env_value "$ENV_FILE" IREDMAIL_HTTP_PORT)"
-https_port="$(get_env_value "$ENV_FILE" IREDMAIL_HTTPS_PORT)"
+http_port="$(get_env_value "$ENV_FILE" MAILU_HTTP_PORT)"
+webmail_port="$(get_env_value "$ENV_FILE" MAILU_WEBMAIL_PORT)"
+app_http_port="$(get_env_value "$ENV_FILE" HTTP_PORT)"
 email_enabled="$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_ENABLED)"
 
 mail_domain="${mail_domain:-mail.powerfulcontrolsystem.com}"
 cert_name="${cert_name:-powerfulcontrolsystem.com}"
 http_port="${http_port:-8089}"
-https_port="${https_port:-8449}"
-wait_seconds="${IREDMAIL_PROXY_WAIT_SECONDS:-180}"
+webmail_port="${webmail_port:-8091}"
+app_http_port="${app_http_port:-8081}"
+wait_seconds="${MAILU_PROXY_WAIT_SECONDS:-180}"
 
 if [ "$email_enabled" != "1" ] && [ "$email_enabled" != "true" ]; then
-  echo "[iredmail-nginx] omitido: EMAIL_CORPORATIVO_ENABLED no esta activo"
+  echo "[mailu-nginx] omitido: EMAIL_CORPORATIVO_ENABLED no esta activo"
   exit 0
 fi
 
-if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-iredmail'; then
-  echo "[iredmail-nginx] omitido: contenedor pcs-iredmail no esta corriendo"
+if ! docker ps --format '{{.Names}}' | grep -qx 'pcs-mailu-front'; then
+  echo "[mailu-nginx] omitido: contenedor pcs-mailu-front no esta corriendo"
   exit 0
 fi
 
@@ -127,15 +125,15 @@ if [ "$attempts" -lt 6 ]; then
   attempts=6
 fi
 for attempt in $(seq 1 "$attempts"); do
-  if curl -kfsS "https://127.0.0.1:$https_port/" >/dev/null 2>&1; then
+  if curl -fsS "http://127.0.0.1:$http_port/" >/dev/null 2>&1; then
     ready=1
     break
   fi
-  echo "[iredmail-nginx] esperando iRedMail HTTPS 127.0.0.1:$https_port intento $attempt/$attempts"
+  echo "[mailu-nginx] esperando Mailu HTTP 127.0.0.1:$http_port intento $attempt/$attempts"
   sleep 5
 done
 if [ "$ready" != "1" ]; then
-  echo "[iredmail-nginx] omitido: iRedMail no responde en 127.0.0.1:$https_port"
+  echo "[mailu-nginx] omitido: Mailu no responde en 127.0.0.1:$http_port"
   exit 0
 fi
 
@@ -176,6 +174,41 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
+    location = /pcs-mail-autologin {
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_pass http://127.0.0.1:$app_http_port/api/internal/email_corporativo/autologin;
+    }
+
+    location = /webmail {
+        return 302 /webmail/;
+    }
+
+    location ^~ /webmail/ {
+        rewrite ^/webmail/?(.*)$ /\$1 break;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Auth-Email "";
+        proxy_set_header X-Remote-User "";
+        proxy_set_header X-Remote-User-Token "";
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header Content-Security-Policy;
+        add_header Content-Security-Policy "frame-ancestors 'self' https://powerfulcontrolsystem.com" always;
+        proxy_pass http://127.0.0.1:$webmail_port;
+    }
+
     location / {
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
@@ -183,16 +216,21 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Auth-Email "";
+        proxy_set_header X-Remote-User "";
+        proxy_set_header X-Remote-User-Token "";
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
-        proxy_ssl_verify off;
-        proxy_ssl_server_name on;
-        proxy_pass https://127.0.0.1:$https_port;
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header Content-Security-Policy;
+        add_header Content-Security-Policy "frame-ancestors 'self' https://powerfulcontrolsystem.com" always;
+        proxy_pass http://127.0.0.1:$http_port;
     }
 }
 NGINX
 
 ln -sf "$SITE_AVAILABLE" "$SITE_ENABLED"
+rm -f /etc/nginx/sites-enabled/00-pcs-iredmail 2>/dev/null || true
 nginx -t
 systemctl reload nginx
-echo "[iredmail-nginx] OK: $mail_domain proxy -> 127.0.0.1:$https_port"
+echo "[mailu-nginx] OK: $mail_domain proxy -> 127.0.0.1:$http_port"

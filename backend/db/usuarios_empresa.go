@@ -36,6 +36,7 @@ type EmpresaUsuario struct {
 	FechaAceptaContrato      string `json:"fecha_acepta_contrato,omitempty"`
 	RolUsuarioID             int64  `json:"rol_usuario_id"`
 	RolNombre                string `json:"rol_nombre,omitempty"`
+	FotoURL                  string `json:"foto_url,omitempty"`
 	ControlAseoEstaciones    int    `json:"control_aseo_estaciones,omitempty"`
 	EmailConfirmado          int    `json:"email_confirmado"`
 	EmailConfirmToken        string `json:"-"`
@@ -69,6 +70,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 			empresa_id BIGINT,
 			documento_identidad TEXT,
 			rol_usuario_id BIGINT,
+			foto_url TEXT,
 			control_aseo_estaciones INTEGER DEFAULT 0,
 			email_confirmado INTEGER DEFAULT 0,
 			email_confirm_token TEXT,
@@ -110,6 +112,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER,
 			documento_identidad TEXT,
 			rol_usuario_id INTEGER,
+			foto_url TEXT,
 			control_aseo_estaciones INTEGER DEFAULT 0,
 			email_confirmado INTEGER DEFAULT 0,
 			email_confirm_token TEXT,
@@ -150,6 +153,7 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 	}{
 		{name: "documento_identidad", def: "TEXT"},
 		{name: "rol_usuario_id", def: "INTEGER"},
+		{name: "foto_url", def: "TEXT"},
 		{name: "control_aseo_estaciones", def: "INTEGER DEFAULT 0"},
 		{name: "email_confirmado", def: "INTEGER DEFAULT 0"},
 		{name: "email_confirm_token", def: "TEXT"},
@@ -252,6 +256,7 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 		COALESCE(documento_identidad, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
 		COALESCE(control_aseo_estaciones, 0),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
@@ -291,6 +296,7 @@ func GetEmpresaUsuarios(dbConn *sql.DB, empresaID int64, incluirInactivos bool) 
 			&item.DocumentoIdentidad,
 			&item.RolUsuarioID,
 			&item.RolNombre,
+			&item.FotoURL,
 			&item.ControlAseoEstaciones,
 			&item.EmailConfirmado,
 			&item.EmailConfirmToken,
@@ -325,6 +331,7 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 		COALESCE(documento_identidad, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
 		COALESCE(control_aseo_estaciones, 0),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
@@ -351,6 +358,7 @@ func GetEmpresaUsuarioByID(dbConn *sql.DB, empresaID, id int64) (*EmpresaUsuario
 		&item.DocumentoIdentidad,
 		&item.RolUsuarioID,
 		&item.RolNombre,
+		&item.FotoURL,
 		&item.ControlAseoEstaciones,
 		&item.EmailConfirmado,
 		&item.EmailConfirmToken,
@@ -488,6 +496,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		COALESCE(password_reset_requested_en, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
 		COALESCE(control_aseo_estaciones, 0),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
@@ -531,6 +540,7 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		&item.PasswordResetRequestedEn,
 		&item.RolUsuarioID,
 		&item.RolNombre,
+		&item.FotoURL,
 		&item.ControlAseoEstaciones,
 		&item.EmailConfirmado,
 		&item.EmailConfirmToken,
@@ -573,6 +583,7 @@ func GetEmpresaUsuariosByEmail(dbConn *sql.DB, email string) ([]EmpresaUsuario, 
 		COALESCE(password_reset_requested_en, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
 		COALESCE(email_confirm_expira, ''),
@@ -614,6 +625,7 @@ func GetEmpresaUsuariosByEmail(dbConn *sql.DB, email string) ([]EmpresaUsuario, 
 			&item.PasswordResetRequestedEn,
 			&item.RolUsuarioID,
 			&item.RolNombre,
+			&item.FotoURL,
 			&item.EmailConfirmado,
 			&item.EmailConfirmToken,
 			&item.EmailConfirmExpira,
@@ -669,6 +681,7 @@ func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsua
 		COALESCE(password_reset_requested_en, ''),
 		COALESCE(rol_usuario_id, 0),
 		COALESCE(role, ''),
+		COALESCE(foto_url, ''),
 		COALESCE(email_confirmado, 0),
 		COALESCE(email_confirm_token, ''),
 		COALESCE(email_confirm_expira, ''),
@@ -704,6 +717,7 @@ func GetEmpresaUsuarioByConfirmToken(dbConn *sql.DB, token string) (*EmpresaUsua
 		&item.PasswordResetRequestedEn,
 		&item.RolUsuarioID,
 		&item.RolNombre,
+		&item.FotoURL,
 		&item.EmailConfirmado,
 		&item.EmailConfirmToken,
 		&item.EmailConfirmExpira,
@@ -979,6 +993,29 @@ func UpdateEmpresaUsuario(
 		empresaID,
 	)
 	return err
+}
+
+// UpdateEmpresaUsuarioFoto actualiza la foto de perfil de un usuario dentro de su empresa.
+func UpdateEmpresaUsuarioFoto(dbConn *sql.DB, empresaID, id int64, fotoURL string) error {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return err
+	}
+	res, err := dbConn.Exec(`UPDATE users
+		SET foto_url = ?,
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`,
+		strings.TrimSpace(fotoURL),
+		id,
+		empresaID,
+	)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err == nil && affected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 // DeleteEmpresaUsuario elimina un usuario de empresa.
