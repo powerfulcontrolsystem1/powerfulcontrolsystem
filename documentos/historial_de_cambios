@@ -1,3 +1,9 @@
+2026-05-29: Rediseño empresarial de informacion de contacto.
+- Modulos afectados: `portal_publico`, `frontend_ux`.
+- Cambio funcional: `web/Informacion_de_contacto.html` cambia a una vista comercial moderna con hero, canales de contacto, asesor de ventas y areas de atencion.
+- Frontend: `web/estilos.css` agrega layout responsive, tarjetas compactas y ajuste para correos largos en movil.
+- QA: validacion visual local en escritorio y movil con Playwright; `git diff --check` sin errores reales, solo advertencias CRLF.
+
 2026-05-29: Fotos de usuarios en carpeta de imagenes empresarial.
 - Modulos afectados: `usuarios_empresa`, `storage_empresarial`, `super_administrador`, `backend_db`, `frontend_ux`.
 - Cambio funcional: los usuarios creados por el administrador de empresa aceptan foto de perfil desde Administrar usuarios.

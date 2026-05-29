@@ -1,3 +1,8 @@
+## [2026-05-29] Rediseño empresarial de información de contacto
+- [Portal] `/Informacion_de_contacto.html` queda con hero comercial, canales directos, asesor de ventas y áreas de atención.
+- [Frontend] `web/estilos.css` moderniza la página con composición responsive, tarjetas compactas, botones claros y ajuste móvil para correos largos.
+- [QA] Validación visual local en escritorio y móvil mediante Playwright con rutas estáticas interceptadas.
+
 ## [2026-05-29] Fotos de usuarios en carpeta de imagenes empresariales
 - [Usuarios] `Administrar usuarios` permite cargar foto para usuarios creados por el administrador de empresa.
 - [Storage] Las fotos se guardan en `/uploads/empresas/empresa_{id}_{slug}/imagenes/usuarios/`, compartiendo la carpeta `imagenes` empresarial con Domotica.

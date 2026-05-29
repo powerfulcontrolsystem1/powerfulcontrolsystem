@@ -1,3 +1,9 @@
+2026-05-29: Portal publico - informacion de contacto empresarial
+- Modulo: `Portal publico`.
+- Cambio visual: `web/Informacion_de_contacto.html` adopta una pagina empresarial moderna con hero comercial, canales de contacto, asesor de ventas y areas de atencion.
+- UX: `web/estilos.css` agrega layout responsive, tarjetas compactas, botones claros y ajuste de textos largos en movil.
+- Seguridad: no cambia endpoints, permisos ni rutas protegidas; la pagina sigue siendo publica segun `AuthMiddleware`.
+
 2026-05-29: Fotos de usuarios en storage empresarial
 - Modulo: `Usuarios empresa`.
 - Cambio funcional: los usuarios creados por el administrador pueden tener foto de perfil desde `web/administrar_empresa/administrar_usuarios.html`.
