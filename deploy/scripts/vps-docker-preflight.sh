@@ -117,6 +117,12 @@ for pair in IREDMAIL_HTTP_PORT=8089 IREDMAIL_HTTPS_PORT=8449 IREDMAIL_SMTP_PORT=
     upsert_env "$ENV_FILE" "$key" "$value"
   fi
 done
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL "http://iredmail/iredadmin"
+fi
+if [ -z "$(get_env_value "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL)" ]; then
+  upsert_env "$ENV_FILE" EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL "http://iredmail/mail/"
+fi
 
 echo "[preflight] Variables requeridas presentes:"
 for key in POSTGRES_PASSWORD CONFIG_ENC_KEY ONLYOFFICE_JWT_SECRET; do

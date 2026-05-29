@@ -326,6 +326,10 @@ El correo empresarial se integra al stack portable mediante variables en
   del subdominio `mail`; si el certificado existente no lo cubre, usa certbot
   con webroot en `/var/www/html` y luego recarga Nginx con el proxy HTTPS hacia
   iRedMail.
+- Para llamadas desde el backend dentro de Docker, el compose define
+  `EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL=http://iredmail/iredadmin`
+  y `EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL=http://iredmail/mail/`; asi el
+  diagnostico interno no depende del certificado propio del contenedor iRedMail.
 - Antes de activar `--profile mail`, validar DNS A, MX, SPF, DKIM, DMARC, PTR,
   TLS y que la imagen definida en `IREDMAIL_IMAGE` sea la aprobada para la VPS.
 

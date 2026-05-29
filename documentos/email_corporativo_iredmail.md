@@ -63,6 +63,11 @@ challenge HTTP y emite un certificado especifico con certbot antes de activar el
 proxy HTTPS hacia iRedMail. Esto evita que el backend desactive la validacion
 TLS para probar iRedAdmin.
 
+Dentro del stack Docker, el backend puede usar URLs internas para diagnostico y
+provision: `http://iredmail/iredadmin` y `http://iredmail/mail/`. La URL publica
+del buzon sigue siendo `https://mail.powerfulcontrolsystem.com/mail/` para los
+usuarios.
+
 Variables principales en `deploy/.env.platform`:
 
 - `EMAIL_CORPORATIVO_ENABLED`
@@ -71,6 +76,8 @@ Variables principales en `deploy/.env.platform`:
 - `EMAIL_CORPORATIVO_WEBMAIL_URL`
 - `EMAIL_CORPORATIVO_PROVISION_MODE`
 - `EMAIL_CORPORATIVO_IREDADMIN_API_BASE_URL`
+- `EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL`
+- `EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL`
 - `EMAIL_CORPORATIVO_IREDADMIN_ADMIN`
 - `EMAIL_CORPORATIVO_IREDADMIN_PASSWORD`
 - `IREDMAIL_IMAGE`

@@ -144,6 +144,38 @@ func corporateEmailAPIAdminPassword(dbSuper *sql.DB) (string, error) {
 	return firstNonEmptyEnv("IREDADMIN_PASSWORD", "IREDMAIL_ADMIN_PASSWORD", "EMAIL_CORPORATIVO_IREDADMIN_PASSWORD"), nil
 }
 
+func corporateEmailInternalURL(rawURL string, envKeys ...string) string {
+	rawURL = strings.TrimSpace(rawURL)
+	internalURL := firstNonEmptyEnv(envKeys...)
+	if strings.TrimSpace(internalURL) == "" {
+		return rawURL
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Host == "" {
+		return rawURL
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if host == "mail.powerfulcontrolsystem.com" || strings.HasPrefix(host, "mail.") {
+		return strings.TrimRight(strings.TrimSpace(internalURL), "/")
+	}
+	return rawURL
+}
+
+func corporateEmailEffectiveAPIBaseURL(rawURL string) string {
+	return corporateEmailInternalURL(rawURL, "EMAIL_CORPORATIVO_INTERNAL_IREDADMIN_API_BASE_URL", "IREDADMIN_INTERNAL_API_BASE_URL")
+}
+
+func corporateEmailEffectiveWebmailURL(rawURL string) string {
+	internalURL := corporateEmailInternalURL(rawURL, "EMAIL_CORPORATIVO_INTERNAL_WEBMAIL_URL", "IREDMAIL_INTERNAL_WEBMAIL_URL")
+	if internalURL == rawURL {
+		return rawURL
+	}
+	if strings.HasSuffix(rawURL, "/") && !strings.HasSuffix(internalURL, "/") {
+		return internalURL + "/"
+	}
+	return internalURL
+}
+
 // EnsureCorporateEmailConfigFromEnv registra en base la configuracion iRedMail
 // definida en variables de entorno de la VPS. No imprime secretos y guarda la
 // clave iRedAdmin cifrada si CONFIG_ENC_KEY esta disponible.
@@ -383,10 +415,11 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 	}
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{Timeout: 20 * time.Second, Jar: jar}
+	apiBaseURL := corporateEmailEffectiveAPIBaseURL(cfg.APIBaseURL)
 	loginValues := url.Values{}
 	loginValues.Set("username", cfg.APIAdmin)
 	loginValues.Set("password", adminPassword)
-	if err := iredAdminAPIPostForm(client, cfg.APIBaseURL+"/api/login", loginValues); err != nil {
+	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/login", loginValues); err != nil {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_login", err.Error(), false)
 		return corporateEmailProvisionResult{OK: false, Status: "error_login", Error: err.Error()}
 	}
@@ -396,7 +429,7 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 	userValues.Set("language", "es_ES")
 	userValues.Set("accountStatus", "active")
 	userValues.Set("quota", strconv.Itoa(cfg.QuotaMB))
-	if err := iredAdminAPIPostForm(client, cfg.APIBaseURL+"/api/user/"+url.PathEscape(account.Email), userValues); err != nil {
+	if err := iredAdminAPIPostForm(client, apiBaseURL+"/api/user/"+url.PathEscape(account.Email), userValues); err != nil {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "error_provision", err.Error(), false)
 		return corporateEmailProvisionResult{OK: false, Status: "error_provision", Error: err.Error()}
 	}
@@ -431,6 +464,9 @@ func iredAdminAPIPostForm(client *http.Client, endpoint string, values url.Value
 		if res.StatusCode == http.StatusUnauthorized && strings.EqualFold(msg, "unauthorized") && (res.Header.Get("X-Request-Id") != "" || strings.Contains(string(body), `"request_id"`)) {
 			return fmt.Errorf("iRedAdmin no esta publicado: el subdominio mail esta respondiendo el backend POS")
 		}
+		if res.StatusCode == http.StatusNotFound && strings.Contains(endpoint, "/api/login") {
+			return fmt.Errorf("iRedAdmin-Pro API no esta disponible en la URL configurada")
+		}
 		if msg == "" {
 			msg = strings.TrimSpace(string(body))
 		}
@@ -455,8 +491,9 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		return corporateWebmailCheck{Checked: true, OK: false, Message: "URL de webmail invalida"}
 	}
+	requestURL := corporateEmailEffectiveWebmailURL(rawURL)
 	client := &http.Client{Timeout: 5 * time.Second}
-	req, err := http.NewRequest(http.MethodHead, rawURL, nil)
+	req, err := http.NewRequest(http.MethodHead, requestURL, nil)
 	if err != nil {
 		return corporateWebmailCheck{Checked: true, OK: false, Message: "No se pudo preparar la verificacion del webmail"}
 	}
@@ -468,7 +505,7 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 	defer res.Body.Close()
 	status := res.StatusCode
 	if status == http.StatusMethodNotAllowed {
-		reqGet, reqErr := http.NewRequest(http.MethodGet, rawURL, nil)
+		reqGet, reqErr := http.NewRequest(http.MethodGet, requestURL, nil)
 		if reqErr == nil {
 			reqGet.Header.Set("User-Agent", "PowerfulControlSystem-WebmailCheck/1.0")
 			if resGet, getErr := client.Do(reqGet); getErr == nil {
