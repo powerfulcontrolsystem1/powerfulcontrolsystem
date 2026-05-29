@@ -11350,3 +11350,10 @@ Archivos modificados:
 Archivos modificados:
 - deploy/scripts/vps-compose-sidecar-up.sh
 - deploy/scripts/vps-configure-iredmail-host-nginx.sh
+
+2026-05-28 19:29:48 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 854dea05; PushStatus: OK
+Archivos modificados:
+- deploy/scripts/vps-configure-iredmail-host-nginx.sh
+- documentos/docker_vps_operacion.md
+- documentos/email_corporativo_iredmail.md
+- documentos/historial_de_cambios
