@@ -59,8 +59,8 @@ server {
 }
 NGINX
   ln -sf "$SITE_AVAILABLE" "$SITE_ENABLED"
-  nginx -t
-  systemctl reload nginx
+  nginx -t >&2
+  systemctl reload nginx >&2
 }
 
 ensure_mail_certificate() {
@@ -85,7 +85,7 @@ ensure_mail_certificate() {
 
   echo "[iredmail-nginx] creando certificado Let's Encrypt para $domain" >&2
   write_http_challenge_site "$domain"
-  if certbot certonly --webroot -w "$ACME_ROOT" -d "$domain" --agree-tos --non-interactive --register-unsafely-without-email --keep-until-expiring; then
+  if certbot certonly --webroot -w "$ACME_ROOT" -d "$domain" --agree-tos --non-interactive --register-unsafely-without-email --keep-until-expiring >&2; then
     if cert_covers_domain "$preferred_dir/fullchain.pem" "$domain"; then
       echo "$preferred_dir"
       return 0
