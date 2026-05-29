@@ -11332,3 +11332,7 @@ Archivos modificados:
 - deploy/.env.platform.example
 - deploy/docker-compose.platform.yml
 - deploy/scripts/vps-docker-preflight.sh
+
+2026-05-28 19:17:45 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: e6f8dc92; PushStatus: OK
+Archivos modificados:
+- scripts/sync_to_vps.ps1
