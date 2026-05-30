@@ -1,3 +1,21 @@
+2026-05-30 - Licencias globales compartidas
+- `backend/db/licencias_globales.go`:
+	- nuevo catalogo canonico de cuatro planes globales aplicables a todos los tipos de empresa y rutina idempotente para ocultar licencias base heredadas por tipo.
+- `backend/db/licencias_globales_test.go`:
+	- prueba unitaria de cantidad, codigos, documentos, cajas y valor de los planes globales.
+- `backend/db/db.go`:
+	- asegura el catalogo global durante la regularizacion de licencias e incluye `GLOBAL`/`*` al filtrar por pais.
+- `backend/db/constructora_bootstrap.go`, `backend/db/alquileres_bootstrap.go`, `backend/db/drogueria_farmacia_bootstrap.go`, `backend/db/plantillas_nuevas_bootstrap.go`:
+	- dejan de crear licencias base repetidas por tipo y aseguran el catalogo global.
+- `backend/handlers/payments_handlers.go`:
+	- el CRUD/listado super incluye planes globales `tipo_id=0` cuando se filtra por tipo de empresa.
+- `web/elegir_licencia.html`:
+	- muestra planes globales para cualquier tipo de empresa y mantiene el bloqueo de prueba gratis ya usada.
+- `web/super/licencias.html`:
+	- agrega tarjeta de reglas comerciales y permite administrar planes `Todos los tipos de empresa`.
+- `web/super/plantillas_produccion_masiva.html`:
+	- reconoce el catalogo global como licencia base valida para plantillas en produccion.
+
 2026-05-30 - Informacion de contacto corporativa
 - `web/Informacion_de_contacto.html`:
 	- elimina el logo del hero y agrega contenido corporativo sobre proposito, vision, modulos, canales, asesor y acompanamiento empresarial.
@@ -10300,3 +10318,29 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-05-30 - Prueba de autologin SnappyMail
 - `backend/handlers/email_corporativo_handlers_test.go`:
 	- Verifica que la URL de autologin de SnappyMail conserve `index.php?sso&hash=...` al agregar parametros de tema, evitando que el webmail caiga en `/webmail/sso.php` con 403.
+
+2026-05-30 - Menu super Portal publico e index
+- `web/super_administrador.html`:
+	- Crea el grupo lateral `Portal publico e index` para concentrar edicion de tarjetas del index, modulos, descripcion de sistemas, WhatsApp del portal y vistas publicas.
+	- Retira esos accesos de `Gobierno` y `Comunicaciones` para que no queden dispersos.
+- `web/js/super_administrador.js`:
+	- Permite restaurar dentro del iframe la pagina `web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html`.
+- `documentos/contexto_codex.md` y `documentos/mapa_modulos.md`:
+	- Documentan la nueva ubicacion del grupo de portal publico.
+
+2026-05-30 - Menu super Mensajeria y alertas
+- `web/super_administrador.html`:
+	- Renombra el grupo `Comunicaciones` a `Mensajeria y alertas` y concentra alertas sistema, alertas licencia, formatos de email, mensajes masivos, mantenimiento, Gmail SMTP y email corporativo.
+- `web/js/super_administrador.js`:
+	- Registra `web/super/formato_para_emviar_email.html` como pagina permitida/restaurable dentro del iframe super.
+- `documentos/contexto_codex.md` y `documentos/mapa_modulos.md`:
+	- Documentan que los mensajes de compra/pago de licencia se editan desde `Formatos de email`.
+
+2026-05-30 - Menu super sin paginas huerfanas
+- `web/super_administrador.html`:
+	- Cambia el grupo `Licencias` a `Comercial y licencias` y coloca `Asesores de ventas` como primer boton.
+	- Agrega botones para reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
+- `web/js/super_administrador.js`:
+	- Agrega a `coreSuperPages` las paginas super enlazadas que faltaban para que el iframe pueda restaurarlas y marcarlas como navegacion valida.
+- `documentos/contexto_codex.md` y `documentos/mapa_modulos.md`:
+	- Registran el contrato de navegacion: cada pagina HTML activa bajo `web/super/` debe tener boton y permiso de restauracion.

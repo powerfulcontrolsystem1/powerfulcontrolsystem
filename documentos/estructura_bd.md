@@ -3,6 +3,12 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-05-30 (catalogo global de licencias)
+- `pcs_superadministrador.licencias`: el catalogo base comercial queda normalizado en cuatro planes globales con `tipo_id=0` y `pais_codigo='GLOBAL'`: prueba gratis 15 dias, 1000 documentos, 2000 documentos y 4000 documentos.
+- Las licencias base heredadas sin empresa asignada y que no correspondan a esos codigos globales se conservan pero quedan ocultas (`activo=0`, `estado='catalogo_oculto'`) para no exponer planes duplicados por tipo de empresa.
+- Las licencias ya asignadas a empresas no se eliminan; el historial y las renovaciones siguen usando `empresa_id`.
+- `licencias_activaciones_gratis` mantiene la regla de una sola prueba/gratis activa por empresa mediante el indice unico parcial por `empresa_id`.
+
 Este documento consolida la estructura relacional activa del proyecto.
 Nota de gobernanza documental:
 - `documentos/estructura_bd.md` es la fuente canonica del esquema fisico.

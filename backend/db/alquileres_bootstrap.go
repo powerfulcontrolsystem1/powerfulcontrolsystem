@@ -90,11 +90,9 @@ func EnsureAlquileresTipoEmpresaYLicencias(dbConn *sql.DB, usuario string) (tipo
 	if err != nil {
 		return 0, 0, err
 	}
-	for _, plan := range DefaultAlquileresLicenciaPlans() {
-		if err := ensureAlquileresLicenciaPlan(dbConn, tipoID, usuario, plan); err != nil {
-			return tipoID, licenciasAseguradas, err
-		}
-		licenciasAseguradas++
+	licenciasAseguradas, err = EnsureLicenciasCatalogoGlobal(dbConn, usuario)
+	if err != nil {
+		return tipoID, licenciasAseguradas, err
 	}
 	return tipoID, licenciasAseguradas, nil
 }

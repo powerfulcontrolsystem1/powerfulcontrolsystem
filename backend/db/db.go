@@ -288,6 +288,9 @@ func EnsureLicenciasSchema(dbConn *sql.DB) error {
 		SET max_cajas_simultaneas = 4
 		WHERE COALESCE(max_documentos_mensuales, 0) = 4000
 		  AND COALESCE(max_cajas_simultaneas, 0) <> 4`)
+	if _, err := ensureLicenciasCatalogoGlobalNoSchema(dbConn, "sistema.licencias_globales"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -551,7 +554,7 @@ func GetLicenciasFilteredByPais(dbConn *sql.DB, soloActivas bool, usuarioCreador
 		if code == "" {
 			code = "CO"
 		}
-		if code == pais {
+		if code == pais || code == "GLOBAL" || code == "*" {
 			out = append(out, item)
 		}
 	}

@@ -1975,3 +1975,19 @@
 - [Email corporativo] El autologin de SnappyMail preserva la redireccion `index.php?sso&hash=...` al agregar parametros de tema.
 - [Panel] La bandeja empresarial puede abrir embebida sin caer en 403 sobre `/webmail/sso.php`.
 - [QA] Validado con `go test ./handlers -run CorporateEmailAppendTheme -count=1` y prueba visual del panel empresarial.
+
+## [2026-05-30] Menu super Portal publico e index
+- [Super administrador] Nuevo grupo lateral `Portal publico e index` para concentrar edicion de tarjetas del index, modulos, descripcion de sistemas y WhatsApp del portal.
+- [Navegacion] Se retiran esos accesos de `Gobierno` y `Comunicaciones` para que la administracion del portal publico quede en un solo lugar.
+- [QA] Validacion de sintaxis de `web/js/super_administrador.js` y revision visual del menu.
+
+## [2026-05-30] Menu super Mensajeria y alertas
+- [Super administrador] El grupo lateral `Mensajeria y alertas` concentra alertas por correo, alertas de licencia, formatos de email, mensajes masivos, avisos de mantenimiento, Gmail SMTP y email corporativo.
+- [Licencias] Los formatos usados en compra/pago de licencias quedan accesibles desde el mismo menu de mensajeria.
+- [QA] Validacion de sintaxis de `web/js/super_administrador.js`, existencia de paginas e iconos.
+
+## [2026-05-30] Menu super sin paginas huerfanas
+- [Super administrador] `Asesores de ventas` pasa a ser el primer boton del grupo `Comercial y licencias`.
+- [Navegacion] Se enlazan las paginas super que no tenian boton directo: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
+- [QA] Validado cruce menu/paginas: 52 paginas HTML en `web/super`, 52 enlaces super en el menu y ningun enlace fuera de paginas permitidas.
+- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa, oculta planes heredados repetidos, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.

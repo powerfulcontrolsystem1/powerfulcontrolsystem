@@ -23,6 +23,12 @@
     .lic-admin-kpi small{display:block;margin-top:4px;color:var(--muted);font-size:.68rem;line-height:1.15}
     .lic-admin-toolbar{display:grid;grid-template-columns:minmax(210px,1.2fr) repeat(4,minmax(135px,.7fr));gap:8px;align-items:end;margin:10px 0;padding:10px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
     .lic-admin-toolbar .btn{min-height:38px}
+    .lic-admin-rules{display:grid;grid-template-columns:minmax(190px,.85fr) minmax(0,1.15fr);gap:12px;margin:10px 0 12px;padding:12px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+    .lic-admin-rules h3{margin:0;color:var(--text);font-size:1rem;line-height:1.18}
+    .lic-admin-rules p{margin:5px 0 0;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .lic-admin-rule-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0;list-style:none}
+    .lic-admin-rule-list li{position:relative;padding:9px 10px 9px 28px;border:1px solid color-mix(in srgb,var(--border) 78%,#0f766e 22%);border-radius:12px;background:color-mix(in srgb,var(--surface-soft) 88%,#0f766e 12%);color:var(--text);font-size:.78rem;line-height:1.32}
+    .lic-admin-rule-list li::before{content:"";position:absolute;left:11px;top:15px;width:8px;height:8px;border-radius:999px;background:#0f766e;box-shadow:0 0 0 3px rgba(15,118,110,.14)}
     .lic-admin-scroll-top{height:18px;margin:0 0 6px;overflow-x:auto;overflow-y:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface-soft)}
     .lic-admin-scroll-top-inner{height:1px}
     .lic-admin-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
@@ -87,7 +93,7 @@
     .lic-history-actions{gap:6px}
     .lic-history-actions .btn{min-height:30px;padding:5px 8px;font-size:.76rem}
     @media (max-width:1120px){.lic-admin-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar{grid-template-columns:1fr}.lic-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-history-focus-grid{grid-template-columns:1fr}}
+    @media (max-width:780px){.lic-admin-hero{grid-template-columns:1fr}.lic-admin-kpis,.lic-admin-health{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-admin-toolbar,.lic-admin-rules,.lic-admin-rule-list{grid-template-columns:1fr}.lic-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.lic-history-focus-grid{grid-template-columns:1fr}}
     @media (max-width:480px){.lic-admin-kpis,.lic-admin-health{grid-template-columns:1fr}}
   </style>
 </head>
@@ -156,6 +162,19 @@
         </div>
         <button id="clearFiltersBtn" class="btn secondary" type="button">Limpiar filtros</button>
       </div>
+      <section class="lic-admin-rules" aria-labelledby="licRulesTitle">
+        <div>
+          <p class="lic-admin-kicker">Reglas comerciales</p>
+          <h3 id="licRulesTitle">Reglas de uso de licencias</h3>
+          <p>Estas reglas se aplican al activar, renovar o cambiar licencia desde el portal de empresas.</p>
+        </div>
+        <ul class="lic-admin-rule-list">
+          <li>La licencia gratis de 15 dias solo se puede activar una vez por empresa.</li>
+          <li>Los planes base son globales y aplican para todos los tipos de empresa.</li>
+          <li>Las licencias vencidas se renuevan con planes comerciales, no con otra prueba gratis.</li>
+          <li>El codigo de asesor de ventas queda registrado durante la activacion cuando aplique.</li>
+        </ul>
+      </section>
     </section>
     <form id="form" class="form lic-form-shell">
       <div class="lic-form-title">
@@ -174,6 +193,7 @@
         <div class="form-col">
           <label class="form-label">País</label>
           <select id="pais_codigo" class="form-input" required>
+            <option value="GLOBAL">Global / todos los paises</option>
             <option value="CO">Colombia</option>
             <option value="PE">Perú</option>
             <option value="EC">Ecuador</option>
@@ -638,7 +658,14 @@
         const status = String(licStatusFilter.value || '');
         return crudState.licencias.filter(function(item){
           if (q && catalogSearchText(item).indexOf(q) === -1) return false;
-          if (type && String(item.tipo_id || '') !== type) return false;
+          if (type) {
+            const itemType = String(Number(item.tipo_id || 0));
+            if (type === '0') {
+              if (itemType !== '0') return false;
+            } else if (itemType !== '0' && itemType !== type) {
+              return false;
+            }
+          }
           if (country && String(item.pais_codigo || 'CO').toUpperCase() !== country) return false;
           if (klass === 'base' && isAddon(item)) return false;
           if (klass === 'addon' && !isAddon(item)) return false;
@@ -654,6 +681,7 @@
         const selectedType = licTypeFilter.value;
         const selectedCountry = licCountryFilter.value;
         const typeMap = new Map();
+        typeMap.set('0', 'Todos los tipos');
         crudState.tipos.forEach(function(t){ if (t && t.id) typeMap.set(String(t.id), t.nombre || ('Tipo #' + t.id)); });
         rows.forEach(function(item){ if (item.tipo_id) typeMap.set(String(item.tipo_id), item.tipo_nombre || typeMap.get(String(item.tipo_id)) || ('Tipo #' + item.tipo_id)); });
         licTypeFilter.innerHTML = '<option value="">Todos</option>' + Array.from(typeMap.entries())
@@ -702,8 +730,8 @@
         document.getElementById('duracion_dias').value='';
         document.getElementById('max_documentos_mensuales').value='';
         document.getElementById('max_cajas_simultaneas').value='2';
-        document.getElementById('tipo_id').value='';
-        document.getElementById('pais_codigo').value='CO';
+        document.getElementById('tipo_id').value='0';
+        document.getElementById('pais_codigo').value='GLOBAL';
         document.getElementById('licencia_activa').checked = true;
         document.getElementById('super_rol_habilitado').checked = false;
         document.getElementById('es_adicional').checked = false;
@@ -1231,7 +1259,7 @@
           const assigned = isAssigned(i);
           tr.innerHTML = '' +
             '<td><div class="lic-plan-name">#' + escapeHTML(i.id) + ' · ' + escapeHTML(i.nombre || 'Licencia') + '</div><div class="lic-plan-sub">' + escapeHTML(i.descripcion || 'Sin descripción comercial') + '</div></td>' +
-            '<td><span class="lic-badge">' + escapeHTML(i.tipo_nombre || 'Tipo general') + '</span><div class="lic-plan-sub">País: <strong>' + escapeHTML(i.pais_codigo || 'CO') + '</strong></div><div class="lic-plan-sub">' + escapeHTML(classLabel) + '</div></td>' +
+            '<td><span class="lic-badge">' + escapeHTML(Number(i.tipo_id || 0) === 0 ? 'Todos los tipos' : (i.tipo_nombre || 'Tipo general')) + '</span><div class="lic-plan-sub">País: <strong>' + escapeHTML(i.pais_codigo || 'CO') + '</strong></div><div class="lic-plan-sub">' + escapeHTML(classLabel) + '</div></td>' +
             '<td><strong>' + escapeHTML(renderMoney(i.valor)) + '</strong><div class="lic-plan-sub">' + escapeHTML(String(i.duracion_dias || 0)) + ' días de vigencia</div><div class="lic-plan-sub">Límite: ' + escapeHTML(renderDocumentLimit(i.max_documentos_mensuales)) + '</div><div class="lic-plan-sub">Cajas: ' + escapeHTML(renderCashRegisterLimit(i)) + '</div></td>' +
             '<td>' + moduleChips(i.modulos_habilitados || '') + '<div class="lic-plan-sub">Super rol: ' + (Number(i.super_rol_habilitado || 0) === 1 ? 'habilitado' : 'no') + '</div></td>' +
             '<td><span class="lic-badge ' + (assigned ? 'warn' : '') + '">' + (assigned ? 'Asignada' : 'Catálogo') + '</span><div class="lic-plan-sub">' + escapeHTML(i.empresa_nombre || (assigned ? ('Empresa #' + i.empresa_id) : 'Disponible para venta')) + '</div></td>' +
@@ -1252,7 +1280,7 @@
             form.style.display = '';
             addBtn.style.display = 'none';
             document.getElementById('itemId').value = item.id;
-            document.getElementById('tipo_id').value = item.tipo_id || '';
+            document.getElementById('tipo_id').value = String(Number(item.tipo_id || 0));
             document.getElementById('pais_codigo').value = (item.pais_codigo || 'CO');
             document.getElementById('nombre').value = item.nombre || '';
             document.getElementById('valor').value = fieldNumberValue(item.valor);
@@ -1307,7 +1335,7 @@
           const tipos = await fetchJSONOrThrow('/super/api/tipos_empresas');
           crudState.tipos = Array.isArray(tipos) ? tipos : [];
           const tipoSelect = document.getElementById('tipo_id');
-          tipoSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
+          tipoSelect.innerHTML = '<option value="0">Todos los tipos de empresa</option>';
           crudState.tipos.forEach(function(t){
             const opt = document.createElement('option');
             opt.value = t.id;

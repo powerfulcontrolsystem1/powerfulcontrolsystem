@@ -277,15 +277,13 @@ func EnsureNuevasPlantillasTipoEmpresaYLicencias(dbConn *sql.DB, usuario string)
 			return tiposAsegurados, licenciasAseguradas, err
 		}
 		tiposAsegurados++
-		for _, plan := range DefaultNuevoVerticalLicenciaPlans(item) {
-			if err := ensureNuevoVerticalLicenciaPlan(dbConn, tipoID, usuario, plan); err != nil {
-				return tiposAsegurados, licenciasAseguradas, err
-			}
-			licenciasAseguradas++
-		}
 		if _, err := UpsertTipoEmpresaPreconfiguracion(dbConn, defaultNuevoVerticalTipoEmpresaPreconfiguracion(tipoID, item, usuario)); err != nil {
 			return tiposAsegurados, licenciasAseguradas, err
 		}
+	}
+	licenciasAseguradas, err = EnsureLicenciasCatalogoGlobal(dbConn, usuario)
+	if err != nil {
+		return tiposAsegurados, 0, err
 	}
 	return tiposAsegurados, licenciasAseguradas, nil
 }
@@ -313,15 +311,13 @@ func EnsureNuevasPlantillasProduccionMasivaLicencias(dbConn *sql.DB, usuario str
 			return tiposAsegurados, licenciasAseguradas, err
 		}
 		tiposAsegurados++
-		for _, plan := range DefaultNuevoVerticalLicenciaPlans(item) {
-			if err := ensureNuevoVerticalLicenciaPlan(dbConn, tipoID, usuario, plan); err != nil {
-				return tiposAsegurados, licenciasAseguradas, err
-			}
-			licenciasAseguradas++
-		}
 		if _, err := UpsertTipoEmpresaPreconfiguracion(dbConn, defaultNuevoVerticalTipoEmpresaPreconfiguracion(tipoID, item, usuario)); err != nil {
 			return tiposAsegurados, licenciasAseguradas, err
 		}
+	}
+	licenciasAseguradas, err = EnsureLicenciasCatalogoGlobal(dbConn, usuario)
+	if err != nil {
+		return tiposAsegurados, 0, err
 	}
 	return tiposAsegurados, licenciasAseguradas, nil
 }

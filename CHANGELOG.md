@@ -4573,3 +4573,19 @@
 ## [2026-05-30] Bandeja de correo corporativo
 - El autologin de SnappyMail conserva la forma `index.php?sso&hash=...` al agregar el tema del sistema.
 - La bandeja de correo del panel empresarial deja de quedar bloqueada en `/webmail/sso.php` con 403.
+
+## [2026-05-30] Menu super Portal publico e index
+- [Super administrador] Se agrupan en un solo bloque las opciones que editan el portal publico: tarjetas del index, modulos del index, descripcion de sistemas y WhatsApp del portal.
+- [Navegacion] Gobierno queda solo para centro de mando y selector de empresas; el grupo de mensajeria queda separado del index.
+- [QA] Validacion de sintaxis del JS del panel super y revision visual del menu reorganizado.
+
+## [2026-05-30] Menu super Mensajeria y alertas
+- [Super administrador] Se concentra en `Mensajeria y alertas` la gestion de alertas por email, alertas de licencia, formatos de email, mensajes masivos, mantenimiento, Gmail SMTP y email corporativo.
+- [Licencias] El acceso `Formatos de email` queda visible para editar mensajes como confirmacion de cuenta y pago/compra de licencias.
+- [QA] Validacion de sintaxis del JS del panel super, existencia de paginas e iconos del nuevo bloque.
+
+## [2026-05-30] Menu super sin paginas huerfanas
+- [Super administrador] `Asesores de ventas` queda como primer acceso del bloque `Comercial y licencias`.
+- [Navegacion] Se agregan botones para paginas super que existian sin enlace: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
+- [QA] Cruce automatico: 52 paginas HTML bajo `web/super` y 52 enlaces en el menu; ningun enlace del menu queda fuera de paginas permitidas/restaurables.
+- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa, oculta planes heredados repetidos, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.

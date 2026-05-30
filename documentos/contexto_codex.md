@@ -71,7 +71,17 @@ botones, desde handlers estaticos del backend.
   `/super/api/auditoria?scope=super_panel`, reservado a roles super, para revisar
   navegacion, botones `Editar`, guardados/pruebas y endpoints sensibles del panel
   super. Nunca se deben guardar secretos en metadata.
-- Licencia gratis: `web/pagar_licencia.html`, `/licencias/activar_sin_pago`.
+- Licencias: `web/elegir_licencia.html`, `web/pagar_licencia.html`,
+  `web/super/licencias.html`, `/super/api/licencias` y
+  `/licencias/activar_sin_pago`. El catalogo base vigente es global para todos
+  los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con cuatro planes:
+  prueba gratis 15 dias, 1000 documentos, 2000 documentos y 4000 documentos. La
+  prueba gratis solo se puede activar una vez por empresa; las licencias base
+  antiguas por tipo quedan ocultas del catalogo comercial.
+- Menu super administrador: `web/super_administrador.html` debe enlazar toda
+  pagina HTML activa bajo `web/super/`; `web/js/super_administrador.js` debe
+  permitir restaurar cada enlace con `target="contentFrame"`. El acceso
+  `Asesores de ventas` vive al inicio de `Comercial y licencias`.
 - Panel empresarial: `web/administrar_empresa.html`,
   `web/administrar_empresa/panel.html`.
 - Domotica: boton principal en `web/administrar_empresa.html`, submenu
@@ -114,6 +124,12 @@ botones, desde handlers estaticos del backend.
   `backend/db/offline_ventas.go`.
 - Alertas sistema super administrador: `web/super/alertas_sistema.html`,
   `/super/api/alertas_sistema`.
+- Mensajeria y alertas en super administrador: el menu lateral agrupa
+  `web/super/alertas_sistema.html`, `web/super/configuracion/alertas_licencia.html`,
+  `web/super/formato_para_emviar_email.html`, `web/super/correos_masivos.html`,
+  `web/super/mantenimiento_sistema.html`, `web/super/configuracion/gmail_smtp.html`
+  y `web/super/email_corporativo.html`. Los mensajes de compra/pago de licencia
+  se editan desde `Formatos de email`.
 - Email corporativo Mailu: `web/super/email_corporativo.html`,
   `/super/api/email_corporativo`, `/api/empresa/email_corporativo`,
   `backend/handlers/email_corporativo_handlers.go`,
@@ -147,6 +163,13 @@ botones, desde handlers estaticos del backend.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.
+- Portal publico e index en super administrador: el menu lateral de
+  `web/super_administrador.html` agrupa tarjetas del index
+  (`web/super/pagina_principal.html`), modulos del index
+  (`web/super/informacion_de_modulos.html`), descripcion de sistemas para IA y
+  portal (`web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html`),
+  WhatsApp del portal (`web/super/configuracion/whatsapp_portal.html`) y accesos
+  de lectura a `web/index.html` y `web/descripcion_de_los_sistemas.html`.
 - Energia solar: `web/administrar_empresa/energia_solar.html`,
   `web/js/energia_solar.js`, `/api/empresa/energia_solar`,
   tablas `empresa_energia_solar_*`. El modulo es por empresa, usa permiso
@@ -177,9 +200,9 @@ cuando se registra un administrador, sin incluir contrasenas ni tokens.
 Desde `seleccionar_empresa.html`, el administrador crea una empresa eligiendo
 tipo. El backend crea la empresa, aplica preconfiguracion por tipo, prepara
 permisos/modulos y puede activar una licencia gratis de 15 dias si corresponde.
-La licencia gratis solo puede usarse una vez por empresa. La creacion de empresa
-puede disparar una alerta por correo al super administrador si el check esta
-activo.
+La licencia gratis solo puede usarse una vez por empresa y pertenece al catalogo
+global compartido por todos los tipos de empresa. La creacion de empresa puede
+disparar una alerta por correo al super administrador si el check esta activo.
 
 ## Flujo de administradores delegados
 

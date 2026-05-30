@@ -1,3 +1,10 @@
+2026-05-30: Licencias globales compartidas
+- Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`.
+- Cambio funcional: el catalogo base queda reducido a cuatro planes globales para todos los tipos de empresa: prueba gratis 15 dias, 1000 documentos, 2000 documentos y 4000 documentos.
+- Backend: `EnsureLicenciasSchema` asegura esos planes con `tipo_id=0` y `pais_codigo=GLOBAL`; los bootstraps de nuevos tipos y plantillas dejan de crear planes repetidos por tipo y ocultan licencias base heredadas no asignadas.
+- UX: `web/super/licencias.html` agrega una tarjeta de reglas comerciales donde se deja visible que la prueba de 15 dias solo se aplica una vez por empresa, y `web/elegir_licencia.html` muestra los planes globales para cualquier tipo.
+- Seguridad/datos: las licencias ya asignadas a empresas no se eliminan; solo se oculta el catalogo base legado. El bloqueo de prueba gratis por empresa sigue en `licencias_activaciones_gratis`.
+
 2026-05-30: Informacion de contacto corporativa
 - Modulo: `Portal publico`.
 - Alcance: `web/Informacion_de_contacto.html` se convierte en una pagina corporativa sin logo en el hero, con informacion ampliada sobre Powerful Control System, vision para pequenas empresas, canales de contacto, asesor y acompanamiento.
@@ -3410,3 +3417,21 @@ Captura inteligente de compras y gastos
 - Cambio funcional: al recuperar internet, el carrito muestra un aviso flotante visible indicando reconexion y sincronizacion de ventas offline, ademas del mensaje interno del panel de pago.
 - UX: el aviso offline permanece fijo mientras no hay conexion y el aviso online queda visible unos segundos aun si el carrito cambia a estado inactivo despues del pago.
 - QA: se comprobo visualmente en Motel Calipso con venta directa, corte de red simulado, venta provisional en cola local y sincronizacion posterior.
+
+2026-05-30: Menu super Portal publico e index
+- Modulos afectados: `super_administrador`, `portal_publico`, `pagina_principal`, `informacion_de_modulos`.
+- Cambio funcional: el panel super agrupa en un solo menu las herramientas de edicion del index y del portal publico: tarjetas de sistemas, modulos y caracteristicas, descripcion de sistemas e informacion para IA, y WhatsApp del portal.
+- UX: `Gobierno` queda enfocado en centro de mando y selector de empresas; la mensajeria queda separada del index para evitar duplicidad conceptual.
+- Permisos: sin cambios en endpoints ni tablas; la edicion sigue reservada a `super_administrador` y las paginas publicas se abren solo como vista de lectura.
+
+2026-05-30: Menu super Mensajeria y alertas
+- Modulos afectados: `super_administrador`, `alertas_sistema`, `licencias`, `correos_masivos`, `email_corporativo`.
+- Cambio funcional: la navegacion super concentra en `Mensajeria y alertas` todo lo relacionado con correos, avisos y mensajes automaticos: alertas del sistema, vencimientos de licencia, formatos de email, mensajes masivos, mantenimiento, SMTP y buzon corporativo.
+- Licencias: los textos enviados durante compra/pago de licencia quedan visibles desde `Formatos de email`, junto a confirmaciones de cuenta y plantillas recomendadas.
+- Permisos: sin cambios en wrappers, tablas ni endpoints; solo cambia la ubicacion del menu y se permite restaurar la pagina de formatos dentro del panel super.
+
+2026-05-30: Menu super sin paginas huerfanas
+- Modulos afectados: `super_administrador`, `licencias`, `reportes_globales`, `auditoria`, `IA`, `plataforma`, `configuracion`.
+- Cambio funcional: `Asesores de ventas` queda visible como primer boton de `Comercial y licencias`, y se agregan botones para todas las paginas super que existian sin enlace directo.
+- Navegacion: se enlazan reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA streaming, servidores, soporte remoto y configuracion avanzada.
+- QA: el cruce automatico confirma 52 paginas HTML bajo `web/super`, 52 enlaces del menu y ningun enlace sin permiso de restauracion en `coreSuperPages`.

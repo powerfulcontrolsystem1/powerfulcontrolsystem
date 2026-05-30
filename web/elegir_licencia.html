@@ -572,6 +572,8 @@
             try{
               if (Number(l.empresa_id || l.EmpresaID || 0) > 0) return false;
               if (Number(l.es_adicional || l.EsAdicional || 0) === 1) return false;
+              var licTipo = Number(l.tipo_id || l.TipoID || 0);
+              if (licTipo === 0) return true;
               if (tipoId && l.tipo_id != null) return String(l.tipo_id) === String(tipoId);
               if (tipoNombre && (l.tipo_nombre || l.tipoNombre)) return String((l.tipo_nombre||l.tipoNombre)).toLowerCase() === String(tipoNombre).toLowerCase();
               return false;

@@ -122,7 +122,7 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if tipoIDFiltro > 0 {
 				filtered := make([]dbpkg.Licencia, 0, len(licencias))
 				for _, lic := range licencias {
-					if lic.TipoID == tipoIDFiltro || lic.EsAdicional == 1 {
+					if lic.TipoID == 0 || lic.TipoID == tipoIDFiltro || lic.EsAdicional == 1 {
 						filtered = append(filtered, lic)
 					}
 				}

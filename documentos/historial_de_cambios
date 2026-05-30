@@ -1,3 +1,13 @@
+2026-05-30: Licencias globales compartidas.
+- Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`, `preconfiguracion_tipos_empresa`.
+- Cambio funcional: se reemplaza el catalogo base repetido por tipo de empresa por cuatro planes globales compartidos: prueba gratis 15 dias, plan 1000 documentos, plan 2000 documentos y plan 4000 documentos.
+- Backend/DB: `backend/db/licencias_globales.go` asegura el catalogo con `tipo_id=0` y `pais_codigo=GLOBAL`, y oculta licencias base heredadas no asignadas para que no sigan apareciendo mas de 160 planes repetidos.
+- Bootstraps: constructora, alquileres, drogueria/farmacia y plantillas nuevas dejan de crear licencias base por cada tipo; ahora solo aseguran el catalogo global.
+- Frontend: `web/elegir_licencia.html` acepta planes globales para cualquier tipo de empresa; `web/super/licencias.html` muestra `Todos los tipos de empresa` y agrega una tarjeta de reglas comerciales debajo de licencias.
+- Regla visible: la licencia gratis de 15 dias solo puede aplicarse una vez por empresa; las renovaciones deben continuar por planes comerciales.
+- Seguridad/datos: no se borran licencias ya asignadas a empresas; el control anti-reuso se mantiene en `licencias_activaciones_gratis` con aislamiento por `empresa_id`.
+- Validacion: `go test ./db -run "GlobalLicencia|Licencia|Constructora|Alquileres|Drogueria|NuevoVertical" -count=1`, parseo de scripts HTML y `git diff --check`.
+
 2026-05-30: Informacion de contacto corporativa.
 - Modulos afectados: `portal_publico`, `informacion_contacto`, `frontend_ux`.
 - Cambio funcional visible: `web/Informacion_de_contacto.html` deja de mostrar el logo en el hero y presenta la pagina como contacto corporativo de Powerful Control System.
@@ -29120,3 +29130,50 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/Informacion_de_contacto.html
 - web/estilos.css
+
+2026-05-30: Menu super de Portal publico e index
+Modulos afectados: super_administrador, portal_publico, pagina_principal, informacion_de_modulos.
+Cambio funcional: el panel de super administrador concentra en un solo grupo lateral las opciones para editar el index y su informacion publica: tarjetas de sistemas, modulos y caracteristicas, descripcion de sistemas y WhatsApp del portal. Se retiran esos accesos de Gobierno y Comunicaciones para evitar duplicidad conceptual.
+Permisos y datos: no cambia endpoints, tablas ni permisos; solo se habilita la restauracion de la pagina de descripcion de sistemas dentro del iframe super.
+Validacion: sintaxis de `web/js/super_administrador.js` con Node incluido; revision visual del menu reorganizado.
+Archivos modificados:
+- web/super_administrador.html
+- web/js/super_administrador.js
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/mapa_modulos.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+
+2026-05-30: Menu super de Mensajeria y alertas
+Modulos afectados: super_administrador, alertas_sistema, licencias, correos_masivos, email_corporativo.
+Cambio funcional: el panel super concentra en `Mensajeria y alertas` las pantallas de alertas por correo, vencimiento de licencia, formatos de email, mensajes masivos, mantenimiento, Gmail SMTP y email corporativo. El formato usado para compra/pago de licencia queda accesible desde ese mismo menu.
+Permisos y datos: no cambia endpoints, tablas ni reglas de acceso; se agrega `formato_para_emviar_email.html` a las paginas restaurables del iframe super.
+Validacion: sintaxis de `web/js/super_administrador.js`; comprobacion estatica de 7 opciones en el grupo, pagina de formatos existente e iconos presentes.
+Archivos modificados:
+- web/super_administrador.html
+- web/js/super_administrador.js
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/mapa_modulos.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+
+2026-05-30: Menu super sin paginas huerfanas
+Modulos afectados: super_administrador, licencias, reportes_globales, auditoria, IA, plataforma, configuracion.
+Cambio funcional: `Asesores de ventas` queda como primer boton del grupo `Comercial y licencias`. Se agregan accesos directos para paginas super que estaban sin boton: reportes globales, auditoria global, metricas de trafico, preconfiguracion de tipos, contrato, administradores Frecuencia FE, chat IA global, voz IA streaming, servidores, soporte remoto y configuracion avanzada.
+Permisos y datos: no cambia endpoints, tablas ni reglas de negocio; se completa `coreSuperPages` para que los nuevos botones carguen y se restauren dentro del iframe super.
+Validacion: cruce automatico de navegacion con 52 paginas HTML bajo `web/super`, 52 enlaces super en el menu y cero enlaces sin permiso de restauracion; sintaxis de `web/js/super_administrador.js`; iconos presentes.
+Archivos modificados:
+- web/super_administrador.html
+- web/js/super_administrador.js
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/mapa_modulos.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios

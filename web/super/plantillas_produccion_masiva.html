@@ -212,6 +212,8 @@
           if (!isActiveRecord(row)) continue;
           if (Number(row.empresa_id || 0) > 0) continue;
           var modules = splitCSV(row.modulos_habilitados || '');
+          var code = String(row.codigo_funcion || '').toUpperCase();
+          if (Number(row.tipo_id || 0) === 0 && modules.length === 0 && code.indexOf('PLAN_GLOBAL_') === 0) return row;
           if (modules.indexOf(moduleKey) >= 0) return row;
         }
         return null;
