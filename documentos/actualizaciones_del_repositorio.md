@@ -11722,3 +11722,12 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - tmp/licencias-visual/20-panel-post-fix.png
+
+2026-05-30 16:03:58 - Mensaje: validar llave publica wompi en checkout; Commit: e200ee6d; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/licencias-visual/21-panel-config-ok.png
