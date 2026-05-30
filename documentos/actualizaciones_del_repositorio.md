@@ -11714,3 +11714,11 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - tmp/licencias-visual/19-panel-sin-config-500.png
+
+2026-05-30 15:57:43 - Mensaje: corregir alta configuracion general empresas nuevas; Commit: 2e293a17; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresa_configuracion_general.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/licencias-visual/20-panel-post-fix.png

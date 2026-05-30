@@ -29269,3 +29269,12 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - tmp/licencias-visual/19-panel-sin-config-500.png
+
+2026-05-30: corregir alta configuracion general empresas nuevas
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresa_configuracion_general.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/licencias-visual/20-panel-post-fix.png
