@@ -1,3 +1,23 @@
+2026-05-30: Domotica en paginas separadas.
+- Modulos afectados: `domotica`, `control_electrico`, `administrar_empresa`, `frontend_ux`.
+- Cambio funcional: el submenu principal de Domotica abre cada vista con su parametro `pagina`, incluyendo resumen, conexion GPIO, controladores, sensores Raspberry, estaciones/aparatos, automatizaciones, reportes y bitacora.
+- Cambio visual: `web/administrar_empresa/control_electrico.html` elimina el submenu interno duplicado y muestra solo la seccion correspondiente a la vista abierta.
+- Seguridad/datos: no cambia endpoints, tablas ni permisos; se conserva `/api/empresa/control_electrico` y el aislamiento por `empresa_id`.
+- Validacion: parseo de scripts embebidos y Playwright local verificando URLs `pagina=*`, seccion visible correcta y cero enlaces duplicados internos.
+
+2026-05-30: Ayuda y APIs actualizadas.
+- Modulos afectados: `ayuda`, `apis`, `documentacion`, `carritos`, `seguridad_multiempresa`.
+- Cambio funcional visible: `web/ayuda/ayuda.html` agrega seccion `Ayuda de APIs`, enlace a `/ayuda/ayuda_apis.html`, actualiza el bloque de carrito/venta directa y reemplaza la redaccion obsoleta de operacion conectada por modo conectado con offline controlado.
+- Cambio contextual: `web/ayuda/ayuda_contextual.html` separa la ayuda de carrito de la ayuda de Domotica y agrega una respuesta para consultas sobre API, OpenAPI, endpoints e integraciones.
+- Cambio documental/API: se crea `documentos/api/ayuda_apis.md`, se crea `web/ayuda/ayuda_apis.html`, y `documentos/api/openapi.generated.yaml` enlaza la guia de consumo y seguridad.
+- Validacion: parseo de scripts embebidos de las paginas de ayuda y validacion de diff.
+
+2026-05-30: Documentacion del carrito unificado.
+- Modulos afectados: `documentacion`, `carritos`, `venta_directa`, `estaciones`, `frontend_ux`.
+- Cambio documental: se actualizan `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/decisiones_tecnicas.md`, `documentos/descripcion_del_proyecto`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/README.md`.
+- Contenido: queda canonico que venta directa usa carrito unificado, boton de pantalla completa, iframe con permiso `fullscreen`, apariencia plana sin sombras y fondo estructural mas oscuro que las tarjetas mediante `--carrito-page-bg`/`--carrito-card-bg`.
+- Validacion: documentacion revisada con busqueda `rg` y validacion de diff.
+
 2026-05-29: Fondo diferenciado en carrito.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `frontend_ux`, `apariencias`.
 - Cambio visual: `web/estilos.css` define `--carrito-page-bg` para el fondo estructural del carrito y mantiene las tarjetas reales en `--carrito-card-bg`, de modo que el fondo detras de las tarjetas queda mas oscuro en temas claros y oscuros.

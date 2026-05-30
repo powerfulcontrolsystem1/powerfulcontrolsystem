@@ -1,3 +1,6 @@
+- 2026-05-30: `Domotica en paginas separadas` cambia el submenu de Domotica para abrir vistas independientes por `pagina`, muestra solo la seccion elegida y elimina del resumen operativo los enlaces duplicados internos.
+- 2026-05-30: `Ayuda y APIs actualizadas` agrega pagina visible de ayuda de APIs, guia tecnica `documentos/api/ayuda_apis.md`, seccion de APIs en el centro de ayuda y corrige la ayuda contextual del carrito.
+- 2026-05-30: `Documentacion del carrito unificado` actualiza contexto, mapa, flujos, decisiones, descripcion del proyecto, estructura del codigo e indice documental con pantalla completa de venta directa y fondo diferenciado del carrito.
 - 2026-05-29: `Fondo diferenciado en carrito` hace que el fondo estructural del carrito sea mas oscuro que las tarjetas en todas las apariencias, sin recuperar sombras ni efecto 3D.
 - 2026-05-29: `Venta directa en pantalla completa` agrega en el carrito de venta directa un boton con icono para entrar/salir de pantalla completa y habilita `fullscreen` en el iframe de Administrar empresa.
 - 2026-05-29: `Panel empresarial sin titulo repetido` cambia el kicker del hero en `web/administrar_empresa/panel.html` de `Panel de empresa`/`Panel de {empresa}` a `Centro operativo`, conservando la descripcion con el nombre de la empresa debajo.

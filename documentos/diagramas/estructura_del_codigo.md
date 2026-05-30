@@ -1,3 +1,26 @@
+## Actualizacion 2026-05-30 (carrito plano, fondo diferenciado y pantalla completa)
+
+- `web/administrar_empresa/carrito_de_compras.html`:
+  - agrega el control `directSaleFullscreenBtn` en el encabezado operativo de
+    venta directa.
+  - usa la API nativa de fullscreen para alternar entre `Pantalla completa` y
+    `Salir`.
+  - mantiene el modo pantalla completa con el mismo fondo estructural del
+    carrito mediante `--carrito-page-bg`.
+- `web/administrar_empresa.html`:
+  - el iframe `contentFrame` conserva `allow="geolocation; fullscreen"` y
+    `allowfullscreen` para que las paginas embebidas puedan solicitar pantalla
+    completa desde un clic del usuario.
+- `web/estilos.css`:
+  - el bloque final `body.carrito-flat-page` sigue anulando sombras y relieves.
+  - `--carrito-page-bg` define el fondo estructural mas oscuro.
+  - `--carrito-card-bg` mantiene tarjetas reales en `surface`.
+  - la diferencia se aplica en venta directa y estaciones, para temas claros y
+    oscuros, sin cambiar HTML de cada tarjeta.
+- Flujo de capas: Administrar empresa -> Venta directa -> iframe con permiso de
+  fullscreen -> `carrito_de_compras.html?modo=venta_directa` -> boton fullscreen
+  -> CSS `carrito-flat-page` -> fondo estructural diferenciado sin sombras.
+
 ## Actualizacion 2026-05-28 (auditoria especial super administrador)
 
 - `web/super_administrador.html`: agrega `Auditoria super` dentro de Acceso.

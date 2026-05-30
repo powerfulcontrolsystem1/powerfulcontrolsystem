@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ayuda de APIs - Powerful Control System</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .api-help-page{display:grid;gap:14px;max-width:1180px;margin:0 auto}
+    .api-help-hero{display:grid;gap:10px;border:1px solid var(--border);border-radius:8px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));padding:18px}
+    .api-help-hero h1{margin:0;font-size:clamp(1.55rem,3vw,2.45rem);letter-spacing:0}
+    .api-help-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}
+    .api-help-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px}
+    .api-help-card h2,.api-help-card h3{margin:0 0 8px;letter-spacing:0}
+    .api-help-list{display:grid;gap:8px;margin:0;padding-left:20px}
+    .api-help-code{display:block;white-space:pre-wrap;word-break:break-word;border:1px solid var(--border);border-radius:8px;background:var(--input-bg,var(--surface-soft));padding:10px;color:var(--text)}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="container empresa-module">
+    <main class="api-help-page">
+      <section class="api-help-hero">
+        <p class="form-help m-0">Ayuda tecnica</p>
+        <h1>Ayuda de APIs</h1>
+        <p class="form-help">Guia para consumir, documentar y revisar las APIs de Powerful Control System sin romper seguridad multiempresa, permisos, licencias, auditoria ni reglas de negocio.</p>
+        <div class="form-actions">
+          <a class="btn secondary" href="/ayuda/ayuda.html#apis">Volver al centro de ayuda</a>
+          <a class="btn" href="/seleccionar_empresa.html">Seleccionar empresa</a>
+        </div>
+      </section>
+
+      <section class="api-help-grid">
+        <article class="api-help-card">
+          <h2>Familias de endpoints</h2>
+          <ul class="api-help-list form-help">
+            <li><code>/api/public/*</code>: lectura publica controlada, catalogos, portal, visitas, venta publica o documentos publicos con token.</li>
+            <li><code>/api/empresa/*</code>: datos operativos de una empresa. Requiere sesion, <code>empresa_id</code>, permisos efectivos y licencia cuando aplique.</li>
+            <li><code>/super/api/*</code>: configuracion global, licencias, empresas, auditoria, comunicaciones y diagnostico del super administrador.</li>
+          </ul>
+        </article>
+        <article class="api-help-card">
+          <h2>Regla multiempresa</h2>
+          <p class="form-help">El <code>empresa_id</code> puede venir por query, header o payload, pero el backend siempre debe validar que el usuario autenticado puede acceder a esa empresa. Conocer o editar un ID en URL no concede permisos.</p>
+        </article>
+        <article class="api-help-card">
+          <h2>Permisos y licencias</h2>
+          <p class="form-help">Las rutas empresariales usan wrappers como ventas, inventario, compras, clientes, finanzas, facturacion o seguridad. La licencia puede bloquear un modulo aunque el rol base tenga permiso.</p>
+        </article>
+        <article class="api-help-card">
+          <h2>Errores estandar</h2>
+          <ul class="api-help-list form-help">
+            <li><code>400</code>: faltan datos o hay payload invalido.</li>
+            <li><code>401</code>: falta sesion o credencial valida.</li>
+            <li><code>403</code>: sin alcance, permiso o licencia.</li>
+            <li><code>404</code>: recurso inexistente o fuera de la empresa.</li>
+            <li><code>500</code>: error interno; revisar <code>request_id</code> y logs.</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="api-help-card">
+        <h2>Carritos, estaciones y venta directa</h2>
+        <p class="form-help">El carrito unificado es la API central para venta directa y estaciones. Venta directa usa el carrito canonico <code>VENTA-DIRECTA-{empresa_id}-0</code>.</p>
+        <code class="api-help-code">GET /api/empresa/carritos_compra?empresa_id=7&amp;include_inactive=1&amp;modo=venta_directa&amp;perm_page=linkVentaDirecta
+GET /api/empresa/carritos_compra/items?empresa_id=7&amp;carrito_id=123&amp;include_inactive=1
+POST /api/empresa/carritos_compra/items
+POST /api/empresa/carritos_compra?action=pagar_estacion</code>
+        <p class="form-help mt-8">Para estaciones, enviar <code>estacion_id</code> cuando aplique. Para venta directa, usar <code>modo=venta_directa</code> y <code>perm_page=linkVentaDirecta</code>. El backend debe conservar caja, usuario, abonos, inventario y auditoria por <code>empresa_id</code>.</p>
+      </section>
+
+      <section class="api-help-card">
+        <h2>Checklist antes de exponer o cambiar una API</h2>
+        <ol class="api-help-list form-help">
+          <li>Confirmar wrapper de modulo y accion efectiva por metodo o <code>action</code>.</li>
+          <li>Validar <code>empresa_id</code> en backend y filtrar todas las consultas por empresa cuando la tabla sea empresarial.</li>
+          <li>No aceptar IDs cruzados: cliente, producto, carrito, bodega, caja, factura o usuario deben pertenecer a la misma empresa.</li>
+          <li>Aplicar idempotencia en altas, pagos, licencias, offline, backups o acciones que puedan repetirse por doble clic o red.</li>
+          <li>No registrar secretos, tokens, certificados, contrasenas ni payloads sensibles en logs, auditoria o documentacion.</li>
+          <li>Actualizar <code>documentos/api/ayuda_apis.md</code>, OpenAPI generado o contrato tecnico cuando cambie el comportamiento.</li>
+        </ol>
+      </section>
+
+      <section class="api-help-card">
+        <h2>Fuentes tecnicas</h2>
+        <ul class="api-help-list form-help">
+          <li><code>documentos/api/openapi.generated.yaml</code>: inventario automatico de rutas registradas.</li>
+          <li><code>documentos/api/ayuda_apis.md</code>: guia de consumo y seguridad para integradores.</li>
+          <li><code>documentos/checklist_seguridad_endpoint_multiempresa.md</code>: checklist obligatoria de seguridad.</li>
+          <li><code>documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md</code>: contrato de wrappers y permisos.</li>
+          <li><code>documentos/mapa_modulos.md</code>: pagina, API, tablas, permisos y pruebas por modulo.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

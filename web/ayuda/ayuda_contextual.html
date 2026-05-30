@@ -158,7 +158,21 @@
 
       var catalog = [
         {
-          match: ['carrito', 'domotica', 'control electrico', 'gpio', 'raspberry'],
+          match: ['venta directa', 'carrito de compras', 'carrito unificado', 'pagar carrito', 'buscar productos'],
+          purpose: 'Permite vender desde estaciones o venta directa usando el carrito unificado: agregar productos, asignar cliente, registrar abonos, cobrar, imprimir y cerrar la cuenta.',
+          before: ['Confirma empresa, usuario y caja abierta.', 'Verifica productos activos, stock, cliente obligatorio si aplica y configuracion del carrito.', 'En venta directa puedes usar el boton Pantalla completa para operar en modo POS.'],
+          steps: ['Busca o escanea productos y agrega cantidades.', 'Revisa cliente, abonos, medios de pago, valores mixtos y vuelto.', 'Presiona Pagar y cerrar carrito, imprime el comprobante y confirma que el turno/caja quede actualizado.'],
+          troubleshooting: ['Si no aparece Pagar, revisa permisos, licencia, caja abierta y checks de configuracion del carrito.', 'Si el carrito no carga, valida empresa_id, modo venta_directa o estacion_id y que el endpoint /api/empresa/carritos_compra responda.', 'Si la apariencia se ve plana pero sin contraste, revisa que body.carrito-flat-page cargue --carrito-page-bg y --carrito-card-bg desde estilos.css.']
+        },
+        {
+          match: ['api', 'apis', 'endpoint', 'openapi', 'integracion'],
+          purpose: 'Explica como consumir las APIs del sistema sin romper aislamiento multiempresa, permisos, licencias ni auditoria.',
+          before: ['Define si usaras /api/public, /api/empresa o /super/api.', 'Ten sesion valida o token/scope autorizado cuando aplique.', 'Nunca confies en empresa_id enviado por el navegador sin validacion backend.'],
+          steps: ['Consulta documentos/api/ayuda_apis.md y el OpenAPI generado.', 'Envia empresa_id y credenciales de sesion segun el flujo.', 'Maneja 400, 401, 403, 404 y 500 con mensajes claros para el usuario.'],
+          troubleshooting: ['Si recibes 403, revisa alcance de empresa, licencia y permisos efectivos.', 'Si una ruta no aparece en OpenAPI, revisa backend/main.go y contratos de gobernanza.', 'Si un integrador necesita mutar datos, aplica la checklist de seguridad endpoint multiempresa antes de exponerlo.']
+        },
+        {
+          match: ['domotica', 'control electrico', 'gpio', 'raspberry'],
           purpose: 'Permite operar aparatos de domotica vinculados a una estacion, como lamparas, motobombas, jacuzzi, ventilacion o puertas.',
           before: ['La empresa debe tener Domotica habilitada.', 'La estacion debe tener aparatos activos.', 'El controlador local debe estar encendido, con IP correcta y API disponible.'],
           steps: ['Abre la tarjeta del aparato que quieres controlar.', 'Verifica el estado actual, GPIO y Raspberry asignada.', 'Usa Encender o Apagar y espera el mensaje de confirmacion.'],

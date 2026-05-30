@@ -23,6 +23,11 @@ trazabilidad en `documentos/historial_de_cambios`.
   reportes e impresion.
 - Los botones deben tener iconos relacionados usando la infraestructura global
   existente, sin agregar dependencias.
+- El carrito de compras debe mantener apariencia plana: sin sombras, sin efecto
+  3D y sin separaciones visuales innecesarias entre tarjetas. Para que no se vea
+  todo del mismo bloque, el fondo estructural del carrito debe ser mas oscuro
+  que las tarjetas usando variables de tema (`--carrito-page-bg` y
+  `--carrito-card-bg`) y debe funcionar en apariencias claras y oscuras.
 
 ## Multiempresa y seguridad
 
@@ -82,6 +87,9 @@ trazabilidad en `documentos/historial_de_cambios`.
   cambios operativos.
 - Venta directa y estaciones deben compartir el mismo carrito unificado y las
   mismas reglas de configuracion.
+- Venta directa debe permitir abrir y salir de pantalla completa desde el propio
+  carrito. Cuando se abre dentro del panel empresarial, el iframe principal debe
+  permitir `fullscreen`.
 - Abonos, descuentos, pagos mixtos y cierres deben reflejarse en el pago final y
   en el reporte de turno.
 

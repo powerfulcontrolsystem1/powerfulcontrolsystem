@@ -76,7 +76,9 @@ botones, desde handlers estaticos del backend.
   `web/administrar_empresa/panel.html`.
 - Domotica: boton principal en `web/administrar_empresa.html`, submenu
   `web/administrar_empresa/modulo_menu.html?module=control_electrico`,
-  consola `web/administrar_empresa/control_electrico.html`,
+  consola `web/administrar_empresa/control_electrico.html` con vistas por
+  `pagina=resumen|conexion|raspberry|reles|automatizaciones|reportes|bitacora`
+  para que cada boton del submenu abra una pagina/vista independiente,
   endpoint `/api/empresa/control_electrico` y storage super en
   `web/super/domotica_storage.html` con `/super/api/domotica_storage`.
   Conserva la clave tecnica `control_electrico`; la carpeta empresarial de
@@ -92,6 +94,14 @@ botones, desde handlers estaticos del backend.
   `/api/empresa/carritos_compra`.
 - Carrito y venta directa: `web/administrar_empresa/carrito_de_compras.html`,
   `/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`.
+  Venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`,
+  comparte la UI unificada de estaciones y tiene boton de pantalla completa.
+  La apariencia plana del carrito se controla desde `web/estilos.css` con
+  `body.carrito-flat-page`: no debe recuperar sombras, relieves ni tarjetas con
+  apariencia 3D. El fondo estructural usa `--carrito-page-bg`, mas oscuro que
+  las tarjetas `--carrito-card-bg`, para diferenciar zonas en todas las
+  apariencias. Si se abre dentro de `web/administrar_empresa.html`, el iframe
+  debe conservar `allow="geolocation; fullscreen"` y `allowfullscreen`.
 - Caja y corte: `web/administrar_empresa/corte_de_caja.html`,
   `/api/empresa/corte_caja`, `/api/empresa/corte_caja/configuracion`.
 - Reportes de turnos: `web/administrar_empresa/reportes_turnos.html`,

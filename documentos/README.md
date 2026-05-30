@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
-Fecha: 2026-05-13
-Estado: vigente, actualizado con operacion conectada obligatoria, cajas simultaneas por licencia, tickets de ayuda propios, correos masivos, alertas de vencimiento de licencias, mantenimiento programado, login global de usuarios de empresa, OnlyOffice local editable, backups locales, retiro de Nextcloud, VPS portable Docker, seguridad SSH 49222, 30 plantillas canonicos, roles y permisos finos, modulos empresariales Colombia, suite contable Colombia avanzada, reportes, auditoria y QA transversal.
+Fecha: 2026-05-30
+Estado: vigente, actualizado con carrito unificado plano para venta directa/estaciones, pantalla completa en venta directa, fondo estructural diferenciado por apariencia, operacion conectada y offline de caja, cajas simultaneas por usuario, correo corporativo Mailu, domotica, energia solar, auditoria global/super, VPS portable Docker, seguridad multiempresa, roles y permisos finos, reportes, facturacion electronica por pais y QA transversal.
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -18,6 +18,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-30: Domotica queda organizada por vistas separadas del submenu empresarial (`pagina=resumen`, `conexion`, `raspberry`, `reles`, `automatizaciones`, `reportes`, `bitacora`) y el resumen operativo deja de duplicar enlaces internos.
+- 2026-05-30: carrito y venta directa documentados como UI unificada plana: `carrito-flat-page` conserva tarjetas sin sombra ni efecto 3D, usa fondo estructural mas oscuro que las tarjetas en todas las apariencias y permite abrir/salir de pantalla completa desde venta directa.
 - 2026-05-13: se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa rapido del estado vigente: reglas de producto, autenticacion, licencias/cajas, operacion conectada, soporte, comunicaciones, portal publico, VPS y validacion recomendada.
 - 2026-05-13: la ayuda principal `web/ayuda/ayuda.html` se actualiza con operacion conectada, cajas simultaneas, login por invitacion, soporte por tickets, documentos locales, backups, mantenimiento, correos globales y criterios de validacion.
 - 2026-05-13: licencias incorporan `max_cajas_simultaneas`; el default es 2 cajas por empresa y 4 cajas para licencias de 4000 documentos.
@@ -74,6 +76,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 
 - Vision funcional y alcance actual: `documentos/descripcion_del_proyecto`
 - Esquema fisico de base de datos: `documentos/estructura_bd.md`
+- Ayuda tecnica de APIs e integraciones: `documentos/api/ayuda_apis.md`
+- Inventario OpenAPI generado: `documentos/api/openapi.generated.yaml`
 - Diagrama entidad relacion vigente: `documentos/diagramas/diagrama_entidad_relacion.md`
 - Imagen del DER: `documentos/diagramas/diagrama_entidad_relacion.svg`
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`

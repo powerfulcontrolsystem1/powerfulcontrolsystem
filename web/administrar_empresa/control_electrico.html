@@ -76,39 +76,6 @@
       justify-content: flex-end;
     }
 
-    .electric-submenu {
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 8px;
-      margin-bottom: 14px;
-      border: 1px solid var(--electric-line);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--electric-panel) 92%, var(--electric-bg) 8%);
-      box-shadow: 0 8px 18px var(--electric-shadow);
-    }
-
-    .electric-submenu button {
-      border: 1px solid transparent;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--electric-muted);
-      min-height: 38px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-weight: 800;
-    }
-
-    .electric-submenu button:hover,
-    .electric-submenu button.is-active {
-      border-color: color-mix(in srgb, var(--electric-accent) 48%, var(--electric-line));
-      background: color-mix(in srgb, var(--electric-accent) 14%, var(--electric-panel));
-      color: var(--electric-accent);
-    }
-
     .electric-command {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
@@ -169,6 +136,10 @@
       grid-template-columns: minmax(320px, 410px) minmax(0, 1fr);
       gap: 14px;
       align-items: start;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     .electric-panel,
@@ -533,7 +504,7 @@
     <header class="electric-header">
       <div>
         <p class="electric-kicker">Automatizacion y aparatos por estacion</p>
-        <h1>Domotica</h1>
+        <h1 id="electricPageTitle">Domotica</h1>
         <p id="empresaInfo" class="electric-subtitle">Empresa: cargando...</p>
       </div>
       <div class="electric-actions">
@@ -545,16 +516,6 @@
 
     <div id="message" class="form-message" role="status" aria-live="polite"></div>
 
-    <nav class="electric-submenu" aria-label="Submenu de domotica">
-      <button class="is-active" data-electric-tab="resumen" type="button">Resumen</button>
-      <button data-electric-tab="conexion" type="button" aria-label="Conexion GPIO">Conexion GPIO</button>
-      <button data-electric-tab="raspberry" type="button" aria-label="Raspberry Pi">Raspberry Pi</button>
-      <button data-electric-tab="reles" type="button" aria-label="Estaciones y aparatos">Estaciones y aparatos</button>
-      <button data-electric-tab="automatizaciones" type="button" aria-label="Automatizaciones">Automatizaciones</button>
-      <button data-electric-tab="reportes" type="button" aria-label="Reportes">Reportes</button>
-      <button data-electric-tab="bitacora" type="button" aria-label="Bitacora">Bitacora</button>
-    </nav>
-
     <section id="electricResumen" class="electric-kpis" data-electric-section="resumen" aria-label="Indicadores de domotica">
       <article class="electric-kpi"><small>Modulo</small><strong id="kpiModulo">--</strong></article>
       <article class="electric-kpi"><small>Raspberry Pi</small><strong id="kpiRaspberry">0</strong></article>
@@ -564,17 +525,10 @@
       <article class="electric-kpi"><small>Ultimo evento</small><strong id="kpiEvento">--</strong></article>
     </section>
 
-    <section class="electric-command" aria-label="Centro operativo de domotica">
+    <section id="electricCommand" class="electric-command" data-electric-section="resumen" aria-label="Centro operativo de domotica">
       <article class="electric-command-card">
         <h2>Centro de domotica</h2>
         <p>Supervisa aparatos por estacion, agenda horaria y comandos enviados a controladores locales.</p>
-        <div class="electric-quick-grid">
-          <button class="btn secondary" data-electric-tab="conexion" type="button">Configurar conexion</button>
-          <button class="btn secondary" data-electric-tab="reles" type="button">Ver aparatos</button>
-          <button class="btn secondary" data-electric-tab="automatizaciones" type="button">Automatizaciones</button>
-          <button class="btn secondary" data-electric-tab="reportes" type="button">Reportes</button>
-          <button class="btn add" data-electric-tab="bitacora" type="button">Auditar eventos</button>
-        </div>
       </article>
       <aside class="electric-command-card">
         <h2>Preparacion operativa</h2>
@@ -587,51 +541,53 @@
       </aside>
     </section>
 
-    <section class="electric-grid">
-      <aside id="electricConexion" class="electric-panel" data-electric-section="conexion">
-        <h2>Domotica global y controladores</h2>
-        <p>Servidor GPIO principal y nodos adicionales para ampliar salidas por estacion.</p>
-        <div class="electric-form-grid">
-          <label class="electric-switch span-2" for="habilitado">
-            <span>Domotica activa</span>
-            <input id="habilitado" type="checkbox">
-          </label>
-          <div class="form-col">
-            <label class="form-label" for="raspberryIp">IP o host</label>
-            <input id="raspberryIp" class="form-input" placeholder="192.168.1.50">
+    <section id="electricGrid" class="electric-grid">
+      <aside id="electricConexion" class="electric-panel">
+        <div id="electricConexionForm" data-electric-section="conexion">
+          <h2>Domotica global y controladores</h2>
+          <p>Servidor GPIO principal y nodos adicionales para ampliar salidas por estacion.</p>
+          <div class="electric-form-grid">
+            <label class="electric-switch span-2" for="habilitado">
+              <span>Domotica activa</span>
+              <input id="habilitado" type="checkbox">
+            </label>
+            <div class="form-col">
+              <label class="form-label" for="raspberryIp">IP o host</label>
+              <input id="raspberryIp" class="form-input" placeholder="192.168.1.50">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="raspberryPort">Puerto</label>
+              <input id="raspberryPort" class="form-input" type="number" min="1" max="65535" step="1" value="8081">
+            </div>
+            <div class="form-col span-2">
+              <label class="form-label" for="apiPath">Ruta API</label>
+              <input id="apiPath" class="form-input" value="/api/gpio/relay">
+            </div>
+            <div class="form-col span-2">
+              <label class="form-label" for="apiToken">Token</label>
+              <input id="apiToken" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacio para conservar">
+              <p id="tokenState" class="form-help">Token: sin validar</p>
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="timeoutMs">Timeout ms</label>
+              <input id="timeoutMs" class="form-input" type="number" min="500" max="15000" step="100" value="2500">
+            </div>
+            <label class="electric-switch" for="autoSync">
+              <span>Auto sync</span>
+              <input id="autoSync" type="checkbox" checked>
+            </label>
+            <label class="electric-switch span-2" for="failSafe">
+              <span>Fail-safe ante error</span>
+              <input id="failSafe" type="checkbox">
+            </label>
+            <div class="form-col span-2">
+              <label class="form-label" for="observaciones">Observaciones</label>
+              <textarea id="observaciones" class="form-input" rows="3"></textarea>
+            </div>
           </div>
-          <div class="form-col">
-            <label class="form-label" for="raspberryPort">Puerto</label>
-            <input id="raspberryPort" class="form-input" type="number" min="1" max="65535" step="1" value="8081">
+          <div class="form-actions">
+            <button id="saveConfigBtn" class="btn add" type="button">Guardar conexion</button>
           </div>
-          <div class="form-col span-2">
-            <label class="form-label" for="apiPath">Ruta API</label>
-            <input id="apiPath" class="form-input" value="/api/gpio/relay">
-          </div>
-          <div class="form-col span-2">
-            <label class="form-label" for="apiToken">Token</label>
-            <input id="apiToken" class="form-input" type="password" autocomplete="new-password" placeholder="Dejar vacio para conservar">
-            <p id="tokenState" class="form-help">Token: sin validar</p>
-          </div>
-          <div class="form-col">
-            <label class="form-label" for="timeoutMs">Timeout ms</label>
-            <input id="timeoutMs" class="form-input" type="number" min="500" max="15000" step="100" value="2500">
-          </div>
-          <label class="electric-switch" for="autoSync">
-            <span>Auto sync</span>
-            <input id="autoSync" type="checkbox" checked>
-          </label>
-          <label class="electric-switch span-2" for="failSafe">
-            <span>Fail-safe ante error</span>
-            <input id="failSafe" type="checkbox">
-          </label>
-          <div class="form-col span-2">
-            <label class="form-label" for="observaciones">Observaciones</label>
-            <textarea id="observaciones" class="form-input" rows="3"></textarea>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button id="saveConfigBtn" class="btn add" type="button">Guardar conexion</button>
         </div>
 
         <div id="electricRaspberry" class="electric-subsection" data-electric-section="raspberry">
@@ -833,33 +789,49 @@
         box.className = 'form-message' + (type ? ' ' + type : '');
       }
 
+      var electricPages = {
+        resumen: { title: 'Resumen operativo', documentTitle: 'Resumen operativo - Domotica' },
+        conexion: { title: 'Conexion GPIO', documentTitle: 'Conexion GPIO - Domotica' },
+        raspberry: { title: 'Controladores', documentTitle: 'Controladores - Domotica' },
+        reles: { title: 'Estaciones y aparatos', documentTitle: 'Estaciones y aparatos - Domotica' },
+        automatizaciones: { title: 'Automatizaciones', documentTitle: 'Automatizaciones - Domotica' },
+        reportes: { title: 'Reportes', documentTitle: 'Reportes - Domotica' },
+        bitacora: { title: 'Bitacora de domotica', documentTitle: 'Bitacora de domotica - Domotica' }
+      };
+
       function requestedElectricTab() {
-        var tab = params.get('tab') || 'resumen';
+        var tab = params.get('pagina') || params.get('page') || params.get('tab') || 'resumen';
         return ['resumen', 'conexion', 'raspberry', 'reles', 'automatizaciones', 'reportes', 'bitacora'].indexOf(tab) >= 0 ? tab : 'resumen';
       }
 
       function setElectricTab(name, skipUrl) {
-        var sectionId = {
-          resumen: 'electricResumen',
-          conexion: 'electricConexion',
-          raspberry: 'electricRaspberry',
-          reles: 'electricReles',
-          automatizaciones: 'electricAutomatizaciones',
-          reportes: 'electricReportes',
-          bitacora: 'electricBitacora'
-        }[name] || 'electricResumen';
-        document.querySelectorAll('[data-electric-tab]').forEach(function (btn) {
-          btn.classList.toggle('is-active', btn.getAttribute('data-electric-tab') === name);
+        name = electricPages[name] ? name : 'resumen';
+        var pageMeta = electricPages[name] || electricPages.resumen;
+        var title = $('electricPageTitle');
+        if (title) title.textContent = pageMeta.title;
+        document.title = pageMeta.documentTitle || 'Domotica';
+        document.body.setAttribute('data-electric-page', name);
+
+        document.querySelectorAll('[data-electric-section]').forEach(function (section) {
+          section.hidden = section.getAttribute('data-electric-section') !== name;
         });
-        if (!skipUrl) {
+
+        var grid = $('electricGrid');
+        if (grid) grid.hidden = ['conexion', 'raspberry', 'reles'].indexOf(name) < 0;
+
+        var connectionPanel = $('electricConexion');
+        if (connectionPanel) connectionPanel.hidden = ['conexion', 'raspberry'].indexOf(name) < 0;
+
+        var relaysPanel = $('electricReles');
+        if (relaysPanel) relaysPanel.hidden = name !== 'reles';
+
+        if (!skipUrl && params.get('pagina') !== name) {
           var url = new URL(location.href);
-          url.searchParams.set('tab', name);
+          url.searchParams.set('pagina', name);
+          url.searchParams.delete('tab');
           history.replaceState(null, '', url.pathname + url.search + url.hash);
         }
-        var target = $(sectionId);
-        if (target && target.scrollIntoView) {
-          target.scrollIntoView({ behavior: skipUrl ? 'auto' : 'smooth', block: 'start' });
-        }
+        window.scrollTo({ top: 0, behavior: skipUrl ? 'auto' : 'smooth' });
       }
 
       async function requestJSON(url, options) {
@@ -1617,9 +1589,9 @@
         }
       });
 
+      setElectricTab(requestedElectricTab(), true);
       cargarEmpresa();
       loadAll();
-      setTimeout(function () { setElectricTab(requestedElectricTab(), true); }, 80);
     }());
   </script>
 </body>

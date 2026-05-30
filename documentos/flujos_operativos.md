@@ -105,8 +105,14 @@ afecte dinero, documentos, licencias o seguridad.
    del carrito.
 3. El cajero agrega productos/servicios/recetas, cliente opcional u obligatorio,
    abonos y pagos mixtos.
-4. Pruebas: agregar item, buscar producto, pagar, imprimir, validar inventario y
-   caja.
+4. La venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` y
+   puede abrirse en pantalla completa desde el boton de la parte superior; el
+   mismo boton cambia a `Salir` y vuelve a la vista normal.
+5. Visualmente debe conservar el modo plano del carrito: tarjetas sin sombras ni
+   apariencia 3D, pero con el fondo estructural mas oscuro que las tarjetas para
+   diferenciar zonas en cualquier apariencia.
+6. Pruebas: agregar item, buscar producto, pagar, imprimir, validar inventario y
+   caja, abrir/salir de pantalla completa y revisar contraste fondo/tarjetas.
 
 ## Estaciones y carrito
 
@@ -115,7 +121,11 @@ afecte dinero, documentos, licencias o seguridad.
 3. Si el check de primer clic esta activo, el primer clic solo activa; el segundo
    entra al carrito.
 4. El carrito de estacion comparte UI y reglas con venta directa.
-5. Pruebas: dos sesiones/usuarios, estado compartido, abrir carrito correcto.
+5. La apariencia del carrito de estacion tambien depende de `carrito-flat-page`:
+   fondo mas oscuro que tarjetas, sin sombras, con botones de accion visibles
+   como botones.
+6. Pruebas: dos sesiones/usuarios, estado compartido, abrir carrito correcto,
+   contraste visual y ausencia de relieves.
 
 ## Pagar e imprimir
 

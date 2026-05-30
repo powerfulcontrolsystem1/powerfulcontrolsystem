@@ -1,3 +1,18 @@
+## [2026-05-30] Domotica en paginas separadas
+- [Navegacion] `web/administrar_empresa/modulo_menu.html` abre Domotica por vistas `pagina=resumen|conexion|raspberry|reles|automatizaciones|reportes|bitacora`, manteniendo el contexto `empresa_id` y la clave tecnica `control_electrico`.
+- [UX] `web/administrar_empresa/control_electrico.html` ya no muestra el submenu interno duplicado dentro de `Resumen operativo`; cada vista renderiza solo su seccion funcional.
+- [QA] Parseo de scripts embebidos con Node y prueba visual local con Playwright: cada boton del submenu carga la vista esperada, sin enlaces duplicados internos.
+
+## [2026-05-30] Ayuda y APIs actualizadas
+- [Ayuda] `web/ayuda/ayuda.html` agrega seccion `Ayuda de APIs`, enlace directo a la nueva pagina de APIs y actualiza la ayuda de carrito/venta directa/offline.
+- [Ayuda contextual] `web/ayuda/ayuda_contextual.html` separa la ayuda de carrito de la ayuda de Domotica y agrega respuesta contextual para APIs/OpenAPI/endpoints.
+- [APIs] Nueva pagina `web/ayuda/ayuda_apis.html` y guia `documentos/api/ayuda_apis.md` con familias de endpoints, seguridad multiempresa, errores, carritos y checklist para integradores.
+- [Docs] `documentos/api/openapi.generated.yaml`, `README.md` y el contrato de wrappers enlazan la nueva ayuda tecnica.
+
+## [2026-05-30] Documentacion del carrito unificado
+- [Docs] Se actualizan `contexto_codex.md`, `mapa_modulos.md`, `flujos_operativos.md`, `decisiones_tecnicas.md`, `descripcion_del_proyecto`, `diagramas/estructura_del_codigo.md` y `README.md` para dejar canonico el flujo del carrito: venta directa en pantalla completa, iframe con permiso `fullscreen`, fondo estructural mas oscuro y tarjetas planas sin sombras.
+- [Alcance] No cambia codigo runtime, endpoints, tablas ni permisos; documenta el comportamiento ya desplegado por `rs`.
+
 ## [2026-05-29] Fondo diferenciado en carrito
 - [UX] `web/estilos.css` separa visualmente el fondo estructural del carrito y las tarjetas reales usando variables de tema: el fondo queda mas oscuro que `surface` sin reintroducir sombras ni relieve.
 - [Venta directa] `web/administrar_empresa/carrito_de_compras.html` usa el mismo fondo del carrito al entrar en pantalla completa.

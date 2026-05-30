@@ -1,3 +1,18 @@
+2026-05-30: Domotica en paginas separadas
+- Modulo: `Domotica`; clave tecnica conservada: `control_electrico`.
+- Navegacion: el submenu de `Administrar empresa > Domotica` abre vistas independientes mediante `pagina=resumen`, `pagina=conexion`, `pagina=raspberry`, `pagina=reles`, `pagina=automatizaciones`, `pagina=reportes` y `pagina=bitacora`; `Sensores Raspberry` conserva su pagina dedicada.
+- UX: la pagina operativa deja de mostrar enlaces internos duplicados en el resumen y cada vista presenta solo su tarjeta o seccion funcional, evitando que toda la configuracion quede apilada en una sola pantalla.
+
+2026-05-30: Ayuda y APIs actualizadas
+- Modulo: `Ayuda y documentacion tecnica`.
+- Alcance: centro de ayuda, ayuda contextual, pagina visible de APIs y guia Markdown para integradores.
+- Resultado: los operadores tienen ayuda actualizada para carrito/venta directa/offline, y los desarrolladores cuentan con una guia clara de familias de endpoints, seguridad multiempresa, errores y carritos.
+
+2026-05-30: Documentacion del carrito unificado
+- Modulo: `Documentacion operativa`.
+- Alcance: contexto, mapa, flujos, decisiones, descripcion del proyecto, estructura tecnica e indice documental quedan alineados con el carrito actual.
+- Resultado: las futuras tareas de carrito deben partir de venta directa/estaciones como una sola UI plana, con pantalla completa en venta directa y fondo estructural diferenciado.
+
 2026-05-29: Fondo diferenciado en carrito
 - Modulo: `Carrito y venta directa`.
 - UX: el fondo estructural del carrito queda mas oscuro que las tarjetas reales, usando variables de apariencia para temas claros, oscuros, negro absoluto y obsidiana.

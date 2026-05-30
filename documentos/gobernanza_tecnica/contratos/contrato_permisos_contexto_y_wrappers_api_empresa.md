@@ -215,5 +215,6 @@ Aplica solo al modulo `seguridad` cuando la accion efectiva es `C`, `U`, `D` o `
 
 ## Contratos relacionados
 
+- `documentos/api/ayuda_apis.md`
 - `documentos/gobernanza_tecnica/contratos/contrato_autenticacion_administrativa_y_usuarios_empresa.md`
 - `documentos/gobernanza_tecnica/contratos/contrato_venta_publica_empresarial_por_empresa.md`

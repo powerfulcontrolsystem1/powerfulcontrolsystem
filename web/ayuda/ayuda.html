@@ -128,7 +128,7 @@
     <section class="help-hero">
       <div>
         <h1>Centro de ayuda Powerful Control System</h1>
-        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-05-10 con modulos finos de roles, paginas nuevas y acceso privado desde el panel super.</p>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-05-30 con carrito unificado, ayuda de APIs, auditoria, permisos y acceso privado desde el panel super.</p>
       </div>
       <div class="help-search-row">
         <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
@@ -137,6 +137,7 @@
       <div class="help-chip-row">
         <a href="/ayuda/chat_ia.html">Ayuda Chat IA</a>
         <a href="/ayuda/login_administradores.html">Ayuda login</a>
+        <a href="/ayuda/ayuda_apis.html">Ayuda APIs</a>
         <a href="/administrar_empresa.html">Administrar empresa</a>
         <a href="/super_administrador.html">Super administrador</a>
       </div>
@@ -161,6 +162,7 @@
         <a href="#reportes">Reportes y auditoria <span>control</span></a>
         <a href="#soporte-comunicaciones">Soporte y avisos <span>tickets</span></a>
         <a href="#integraciones">Integraciones <span>servicios</span></a>
+        <a href="#apis">APIs <span>desarrollo</span></a>
         <a href="#estado-operativo">Estado operativo <span>calidad</span></a>
         <a href="#faq">Solucion de problemas <span>FAQ</span></a>
       </nav>
@@ -353,7 +355,11 @@
             </article>
             <article class="help-mini-card">
               <h3>Carrito</h3>
-              <p>Agrega productos por botones, lector de codigo de barras o busqueda. No se debe cerrar un carrito con total cero ni cancelar si tiene items sin devolver.</p>
+              <p>Agrega productos por botones, lector de codigo de barras o busqueda. Venta directa y estaciones usan el mismo carrito unificado, plano, sin sombras y con fondo estructural mas oscuro que las tarjetas.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Venta directa</h3>
+              <p>Usa el carrito canonico <code>VENTA-DIRECTA-{empresa_id}-0</code>. El boton <strong>Pantalla completa</strong> expande la venta y luego cambia a <strong>Salir</strong> para regresar.</p>
             </article>
             <article class="help-mini-card">
               <h3>Caja y corte</h3>
@@ -370,17 +376,21 @@
           </div>
         </section>
 
-        <section id="operacion-conectada" class="card empresa-section help-section" data-help="conexion obligatoria servidor online offline facturacion ventas pagos documentos">
-          <h2>Operacion conectada obligatoria</h2>
-          <p class="form-help">El sistema ya no permite operar ventas, cobros, documentos ni facturacion sin conexion activa con el servidor. Esto protege inventario, auditoria, caja, consecutivos fiscales y permisos por rol.</p>
+        <section id="operacion-conectada" class="card empresa-section help-section" data-help="conexion servidor online offline facturacion ventas pagos documentos">
+          <h2>Operacion conectada y modo offline controlado</h2>
+          <p class="form-help">El sistema prioriza la conexion activa con el servidor para proteger inventario, auditoria, caja, consecutivos fiscales y permisos por rol. Si una empresa activa modo offline del carrito, la caja puede vender e imprimir provisionalmente mientras sincroniza al volver internet.</p>
           <div class="help-grid">
             <article class="help-mini-card">
               <h3>Ventas y cobros</h3>
-              <p>Antes de cobrar, valida conexion, licencia activa, caja abierta, permisos del usuario, productos/servicios disponibles y metodo de pago habilitado.</p>
+              <p>Antes de cobrar, valida conexion, licencia activa, caja abierta, permisos del usuario, productos/servicios disponibles y metodo de pago habilitado. Si aparece modo sin internet, opera solo si el carrito tiene offline activo.</p>
             </article>
             <article class="help-mini-card">
               <h3>Facturacion electronica</h3>
-              <p>Si DIAN o el proveedor fiscal no responde, la emision se bloquea y queda trazabilidad para reintentar cuando vuelva la conexion.</p>
+              <p>Si DIAN o el proveedor fiscal no responde, la emision se debe manejar como contingencia o reintento segun pais y configuracion. La factura real requiere trazabilidad de envio, acuse y estado documental.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Mensajes de conectividad</h3>
+              <p>Cuando se pierde internet se muestra aviso visible. Al regresar, el sistema informa la reconexion, sincroniza ventas offline pendientes y registra el evento en auditoria cuando aplica.</p>
             </article>
             <article class="help-mini-card">
               <h3>Backups locales</h3>
@@ -512,6 +522,38 @@
             <article class="help-mini-card">
               <h3>Utilidades</h3>
               <p>El menu flotante incluye calculadora, juegos y emulador. Juegos muestra tarjetas uniformes con capturas reales, controles tactiles, sonido y records globales por jugador/empresa; el emulador incluye D-pad tactil para celular.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="apis" class="card empresa-section help-section" data-help="apis openapi endpoints integracion empresa_id seguridad carritos ventas super publicas">
+          <h2>Ayuda de APIs</h2>
+          <p class="form-help">Las APIs estan pensadas para integraciones empresariales, paneles internos y automatizaciones. Toda ruta empresarial debe validar sesion, permisos, licencia y aislamiento por <code>empresa_id</code>; nunca basta con ocultar botones en frontend.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Familias de rutas</h3>
+              <p><code>/api/public/*</code> es lectura publica controlada. <code>/super/api/*</code> es administracion global. <code>/api/empresa/*</code> opera datos de una empresa y exige alcance real del usuario.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Seguridad multiempresa</h3>
+              <p>Enviar <code>empresa_id</code> en query, header o payload no concede acceso. El backend resuelve el administrador autenticado y valida empresa, rol, licencia y permisos efectivos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Carritos y venta directa</h3>
+              <p>Los endpoints clave son <code>GET/POST/PUT/DELETE /api/empresa/carritos_compra</code> y <code>/api/empresa/carritos_compra/items</code>. Venta directa usa <code>modo=venta_directa</code> y <code>perm_page=linkVentaDirecta</code>.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>OpenAPI e inventario</h3>
+              <p>El inventario tecnico se genera en <code>documentos/api/openapi.generated.yaml</code>. Los contratos detallados por modulo viven en <code>documentos/gobernanza_tecnica/contratos</code>.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Errores esperados</h3>
+              <p><code>400</code> para datos incompletos, <code>401</code> sin sesion, <code>403</code> sin alcance/licencia/permiso, <code>404</code> si el recurso no pertenece a la empresa y <code>500</code> solo para fallos internos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Guia para integradores</h3>
+              <p>Antes de integrar, revisa la ayuda tecnica de APIs, la checklist multiempresa y el mapa de modulos.</p>
+              <span class="help-route">Documento: documentos/api/ayuda_apis.md</span>
             </article>
           </div>
         </section>

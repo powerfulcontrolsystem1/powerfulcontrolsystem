@@ -1,3 +1,39 @@
+2026-05-30 - Domotica en paginas separadas
+- `web/administrar_empresa/modulo_menu.html`:
+	- actualiza el submenu de Domotica para abrir vistas por `pagina` y agrega accesos separados a `Automatizaciones` y `Reportes`.
+- `web/administrar_empresa/control_electrico.html`:
+	- elimina el submenu interno duplicado del resumen operativo y renderiza solo la seccion solicitada por `pagina`.
+
+2026-05-30 - Ayuda y APIs actualizadas
+- `web/ayuda/ayuda.html`:
+	- agrega seccion `Ayuda de APIs`, enlace a la pagina especifica de APIs y actualiza los textos de carrito, venta directa y modo offline controlado.
+- `web/ayuda/ayuda_contextual.html`:
+	- separa la ayuda contextual de carrito y Domotica, y agrega ayuda para API/OpenAPI/endpoints.
+- `web/ayuda/ayuda_apis.html`:
+	- nueva pagina visible con familias de endpoints, seguridad multiempresa, errores, carritos y fuentes tecnicas.
+- `documentos/api/ayuda_apis.md`:
+	- nueva guia tecnica para integradores y mantenimiento de endpoints.
+- `documentos/api/openapi.generated.yaml`:
+	- enlaza la nueva guia de APIs desde la descripcion del inventario generado.
+- `documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md`:
+	- referencia la nueva ayuda tecnica como contrato relacionado.
+
+2026-05-30 - Documentacion del carrito unificado
+- `documentos/contexto_codex.md`:
+	- referencia rapida del carrito unificado, pantalla completa en venta directa y reglas visuales `carrito-flat-page`.
+- `documentos/mapa_modulos.md`:
+	- fila de Carrito y venta directa actualizada con estilos finales, iframe fullscreen y pruebas sugeridas.
+- `documentos/flujos_operativos.md`:
+	- pasos de venta directa y estaciones ampliados con fullscreen, fondo diferenciado y ausencia de sombras.
+- `documentos/decisiones_tecnicas.md`:
+	- regla permanente para conservar el carrito plano, sin efecto 3D, y con fondo estructural mas oscuro que las tarjetas.
+- `documentos/descripcion_del_proyecto`:
+	- revision funcional 2026-05-30 del carrito plano con pantalla completa.
+- `documentos/diagramas/estructura_del_codigo.md`:
+	- actualizacion tecnica de capas para venta directa fullscreen y CSS del carrito.
+- `documentos/README.md`:
+	- indice documental actualizado a 2026-05-30.
+
 2026-05-29 - Fondo diferenciado en carrito
 - `web/estilos.css`:
 	- agrega variables finales `--carrito-page-bg` y `--carrito-card-bg` para separar el fondo estructural del carrito de las tarjetas, respetando apariencias claras y oscuras.
