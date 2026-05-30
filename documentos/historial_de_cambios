@@ -29107,3 +29107,16 @@ Archivos modificados:
 - web/ayuda/ayuda.html
 - web/ayuda/ayuda_apis.html
 - web/ayuda/ayuda_contextual.html
+
+2026-05-30: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/historial_de_cambios
+- web/Informacion_de_contacto.html
+- web/estilos.css
