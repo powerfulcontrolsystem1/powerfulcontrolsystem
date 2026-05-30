@@ -323,13 +323,13 @@ Actualizacion 2026-05-12 (adaptacion del nucleo por plantilla)
 - Al aplicar una plantilla se guarda la preferencia `preconfiguracion_tipo_empresa_adaptacion_nucleo` en `empresa_estacion_prefs`.
 - `estaciones_config` agrega metadata JSON de recurso (`tipo_recurso`, `tipo_recurso_plural`, `representa_recurso_negocio`) para que la misma tabla de estaciones represente estaciones, apartamentos, puestos, vehiculos, bahias, aulas, consultorios u otros recursos.
 
-Actualizacion 2026-05-12 (matriz profesional de 30 verticales)
+Actualizacion 2026-05-12 (matriz profesional de 30 plantillas)
 - No se agregan tablas ni columnas fisicas.
-- La matriz `/api/*/verticales_integracion/catalogo` consume metadatos ya existentes de `tipo_empresa_preconfiguraciones.config_json`, `empresa_modulos_colombia_*` y catalogos de licencias/tipos para publicar preparacion profesional de 30 verticales canonicos exactos.
+- La matriz `/api/*/plantillas_integracion/catalogo` consume metadatos ya existentes de `tipo_empresa_preconfiguraciones.config_json`, `empresa_modulos_colombia_*` y catalogos de licencias/tipos para publicar preparacion profesional de 30 plantillas canonicos exactos.
 - `professional_ready`, `readiness_score`, `readiness_checks`, `configuration_scope`, `fused_modules`, `support_modules`, `similar_templates`, `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports` son campos de contrato API calculados; no se almacenan como columnas.
 - El amarre de ingresos/egresos usa las tablas existentes `carritos_compras`, `carrito_compra_items`, `empresa_finanzas_movimientos`, `empresa_finanzas_configuracion` y `empresa_finanzas_periodos`; no se crea una tabla financiera por vertical.
 - Los alias `consultorio_odontologico` y `taxi`, y los soportes `turnos_atencion`/`turnos`, no crean tablas nuevas ni filas de producto vertical; se resuelven por configuracion, permisos y plantilla canonica.
-- Los 20 verticales nuevos conservan sus datos operativos transversales en `empresa_modulos_colombia_*` por `empresa_id` y `modulo`; ventas, pagos, productos, clientes, facturacion y reportes siguen en las tablas centrales.
+- Los 20 plantillas nuevas conservan sus datos operativos transversales en `empresa_modulos_colombia_*` por `empresa_id` y `modulo`; ventas, pagos, productos, clientes, facturacion y reportes siguen en las tablas centrales.
 
 Actualizacion 2026-05-12 (visibilidad comercial de licencias)
 - No se agregan tablas ni columnas fisicas.
@@ -341,16 +341,16 @@ Actualizacion 2026-05-11 (2FA login global)
 - Se reutiliza `pcs_superadministrador.configuraciones` con la clave `security.admin_2fa.enabled` para activar/desactivar globalmente la exigencia de OTP en login de administradores.
 - Las credenciales TOTP por cuenta permanecen en `administradores.totp_enabled`, `administradores.totp_secret` y `administradores.totp_confirmado_en`.
 
-Actualizacion 2026-05-11 (integracion profesional de verticales)
+Actualizacion 2026-05-11 (integracion profesional de plantillas)
 - La primera tanda de matriz/visibilidad no agrego tablas ni columnas.
-- Los 20 verticales nuevos siguen usando las tablas compartidas `empresa_modulos_colombia_*` por `empresa_id` y `modulo`.
-- Los verticales clasicos con tablas propias solo pueden quedar visibles cuando sus datos cobrables migran o referencian el nucleo de clientes, productos/servicios, ventas y pagos.
+- Los 20 plantillas nuevas siguen usando las tablas compartidas `empresa_modulos_colombia_*` por `empresa_id` y `modulo`.
+- Los plantillas clasicos con tablas propias solo pueden quedar visibles cuando sus datos cobrables migran o referencian el nucleo de clientes, productos/servicios, ventas y pagos.
 
-Actualizacion 2026-05-11 (preconfiguraciones verticales produccion masiva)
+Actualizacion 2026-05-11 (preconfiguraciones plantillas produccion masiva)
 - No se agregan tablas ni columnas fisicas.
 - El JSON de `tipo_empresa_preconfiguraciones.config_json` puede incluir `integracion_vertical` para conectar la plantilla con la matriz extendida.
 - `integracion_vertical` registra `modulo`, `estado_integracion`, `decision`, `produccion_masiva`, `prioridad_produccion`, `motivo_decision`, `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
-- Los 20 verticales nuevos quedan marcados como produccion masiva en el JSON, con prioridad 1-20.
+- Los 20 plantillas nuevas quedan marcados como produccion masiva en el JSON, con prioridad 1-20.
 - La accion super `asegurar_20_licencias` reutiliza las tablas existentes `tipos_empresas`, `tipo_empresa_preconfiguraciones` y `licencias`; no introduce esquema nuevo. Se conserva `asegurar_v1_licencias` como alias compatible.
 
 Actualizacion 2026-05-11 (gimnasio integrado al nucleo)
@@ -421,7 +421,7 @@ Actualizacion 2026-05-11 (AIU construccion integrado al nucleo)
 - Las tablas AIU conservan la especialidad de construccion: capitulos, porcentajes AIU, base IVA, retenciones, anticipo, garantia, avance, riesgo y auditoria tecnica; el circuito cobrable queda reconciliable con `clientes`, `servicios`, `carritos_compras`, `carrito_compra_items` y `empresa_facturacion_documentos`.
 
 Actualizacion 2026-05-11 (catalogo API de integracion vertical)
-- Se agregan endpoints de solo lectura para exponer la matriz operativa de verticales clasicos: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
+- Se agregan endpoints de solo lectura para exponer la matriz operativa de plantillas clasicos: `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo`.
 - Las tablas listadas en `tables_touched` son declarativas para auditoria de integracion: documentan que tablas del vertical y del nucleo participan en el flujo, sin crear relaciones nuevas en esta fase.
 
 Actualizacion 2026-05-10 (alertas automaticas super)

@@ -608,6 +608,7 @@ func defaultEmpresaPreconfigCarritoUI() map[string]any {
 		"mostrar_tarjeta_cobro_estados":           false,
 		"mostrar_tarjeta_acciones_carrito":        true,
 		"mostrar_control_electrico_carrito":       true,
+		"mostrar_tarjeta_domotica_carrito":        true,
 		"mostrar_tarjeta_valores_pago":            true,
 		"mostrar_tarjeta_comision":                false,
 		"mostrar_tarjeta_vip_cliente":             true,

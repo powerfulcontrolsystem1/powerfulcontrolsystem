@@ -1,3 +1,37 @@
+## [2026-05-29] Super administrador en una columna
+- [Menu] `web/super_administrador.html` agrega `Asesor en ventas` dentro del grupo Licencias para abrir la configuracion comercial existente.
+- [Navegacion] `web/js/super_administrador.js` permite restaurar `/super/asesor_comercial.html` como pagina valida del frame.
+- [UX] `web/estilos.css` fuerza los grupos del panel super a una sola columna, incluyendo responsive, para evitar secciones una al lado de la otra.
+
+## [2026-05-29] Idempotencia al crear empresas
+- [Backend] `POST /super/api/empresas` usa creacion idempotente por administrador, tipo, nombre y NIT; doble clic o POST concurrente devuelve la empresa existente sin insertar otra.
+- [Frontend] El formulario de `seleccionar_empresa.html` bloquea el boton `Guardar` mientras se procesa la creacion.
+- [Seguridad] La checklist multiempresa y decisiones tecnicas dejan como norma que las altas/acciones criticas deben ser idempotentes en backend, no solo bloquear botones.
+- [QA] Pruebas enfocadas Go para normalizacion de clave idempotente y parseo JS del selector.
+
+## [2026-05-29] Plantillas empresariales
+- [Nomenclatura] El catalogo de soluciones empresariales queda nombrado como `Plantillas` en textos visibles, rutas nuevas, scripts, handlers y pruebas enfocadas.
+- [Rutas] Se crean/actualizan paginas y endpoints activos bajo `plantillas_nuevas` y `plantillas_integracion`, incluyendo menu empresarial, catalogo publico, super administrador y matriz de integracion.
+- [Compatibilidad] Se mantienen aliases o claves tecnicas heredadas solamente donde forman parte de contratos internos ya existentes, como alcance de licencia/configuracion.
+- [QA] Validacion Go enfocada en `db`, `handlers` y `utils`; parseo JS/HTML con Node empaquetado.
+
+## [2026-05-29] Tarjeta Domotica configurable en carrito
+- [Configuracion] `Configuracion > Carrito unificado` y `Configuracion > Estaciones` agregan el check `Mostrar tarjeta Domotica automaticamente`, guardado en `estaciones_config.carrito_ui_global.mostrar_tarjeta_domotica_carrito` o en la configuracion propia de la estacion.
+- [Carrito] La tarjeta `Domotica` aparece automaticamente al volver al carrito cuando la estacion tiene aparatos configurados y la vista de tarjeta esta activa; si no hay aparatos o el check esta apagado, permanece oculta.
+- [Datos] No cambia endpoints ni tablas; se reutiliza `/api/empresa/estacion_prefs` y el endpoint existente `/api/empresa/control_electrico` con aislamiento por `empresa_id`.
+
+## [2026-05-29] Email corporativo adaptado a apariencias del sistema
+- [Panel empresa] `web/administrar_empresa/panel.html` detecta tema claro/oscuro, adapta la tarjeta de correo y pasa la preferencia al autologin del webmail.
+- [UX] La tarjeta ya no muestra el correo de la empresa ni el texto de estado `Buzon activo...`; conserva solo la bandeja integrada y alertas cuando exista un problema.
+- [Configuracion] Nueva pagina `Configuracion > Email corporativo` para activar/desactivar apertura automatica del buzon y cambiar la contrasena interna del correo.
+- [Backend] `/api/empresa/email_corporativo` acepta `POST` seguro por `empresa_id`; guarda preferencia en `empresa_estacion_prefs` y cifra la nueva clave antes de reprovisionar Mailu.
+- [Mailu/SnappyMail] Se agregan temas `PCSLight` y `PCSDark` montados en Docker; SnappyMail queda con `PCSLight@custom` como base y el provisionamiento puede escribir preferencia por usuario.
+- [Deploy] El perfil `mail` copia los temas personalizados al contenedor `pcs-mailu-webmail` y conserva el iframe `same-site`.
+
+## [2026-05-29] Favoritos del panel empresarial como botones de menu
+- [Panel empresa] En `web/administrar_empresa/panel.html`, el encabezado de Favoritos muestra `Accesos rapidos / Favoritos` en una sola fila.
+- [UX] Los favoritos dejan la apariencia de tarjetas pequeñas y adoptan botones compactos alineados al estilo del menu principal de Administrar empresa.
+
 ## [2026-05-29] Rediseño empresarial de información de contacto
 - [Portal] `/Informacion_de_contacto.html` queda con hero comercial, canales directos, asesor de ventas y áreas de atención.
 - [Frontend] `web/estilos.css` moderniza la página con composición responsive, tarjetas compactas, botones claros y ajuste móvil para correos largos.
@@ -242,7 +276,7 @@
 - [Alcance] No cambia backend, endpoints, tablas, permisos, reCAPTCHA, Google OAuth ni dependencias externas.
 
 ## [2026-05-25] Portal y super admin con analitica compartida
-- [Portal] `web/index.html` muestra cada modulo principal con un icono mediano relacionado con inventario, POS, pagos, documentos electronicos, finanzas, estaciones, IA, control fisico, gestion y verticales.
+- [Portal] `web/index.html` muestra cada modulo principal con un icono mediano relacionado con inventario, POS, pagos, documentos electronicos, finanzas, estaciones, IA, control fisico, gestion y plantillas.
 - [Super administrador] `web/super_administrador.html` agrega en la parte baja el mismo contador de visitas por pais en modo lectura, usando el componente comun sin incrementar visitas desde el panel interno.
 - [Frontend] `web/js/portal_visits.js` soporta multiples widgets con atributos `data-portal-visits-*`, centraliza la consulta/registro, evita POST duplicados por pagina y agrega halos visuales a los marcadores del mapa.
 - [Alcance] No cambia backend, tablas, endpoint `/api/public/portal_visitas`, privacidad, permisos ni dependencias externas.
@@ -268,7 +302,7 @@
 
 ## [2026-05-22] Index con modulos principales en parrafo unico
 - [Portal] `web/index.html` simplifica la seccion publica de modulos a un solo parrafo con funciones principales del sistema.
-- [Contenido] El resumen incluye inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y verticales operativas.
+- [Contenido] El resumen incluye inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y plantillas operativas.
 - [Alcance] No cambia backend, endpoints, tablas, permisos ni dependencias externas.
 
 ## [2026-05-21] Contador de visitas por pais en index
@@ -554,7 +588,7 @@
 - [Alcance] No cambia backend, endpoints, permisos ni tablas.
 
 ## [2026-05-18] Reporte de turno en papel grande y POS
-- [Frontend] `corte_de_caja.html` compacta el modo POS 80mm para imprimir detalle de ventas como bloques verticales con etiquetas.
+- [Frontend] `corte_de_caja.html` compacta el modo POS 80mm para imprimir detalle de ventas como bloques plantillas con etiquetas.
 - [Frontend] `reportes_turnos.html` agrega selector de papel grande/POS para la vista imprimible historica.
 - [QA] Se valida que papel grande conserve ancho carta y que POS no genere desborde horizontal.
 
@@ -587,7 +621,7 @@
 - [QA] Se agrega regresion para impedir `LastInsertId()` en los guardados operativos de configuracion.
 
 ## [2026-05-18] Corte de caja: acciones y texto de estaciones
-- [Frontend] `corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` dentro de `Lectura rapida` como botones verticales.
+- [Frontend] `corte_de_caja.html` mueve `Generar corte`, `Ver reporte de mi turno`, `Corte automatico`, `Cerrar turno` e `Imprimir seleccion` dentro de `Lectura rapida` como botones plantillas.
 - [UX] `Ver reporte de mi turno` centra el reporte como hoja imprimible en pantalla y respeta el formato `Carta`, `Ejecutivo` o `POS`.
 - [Frontend/Backend] Los textos visibles del control por sensores usan `Estaciones ocupadas sin factura`; se actualizan etiquetas visibles de reportes, tarifas y preconfiguraciones.
 - [Fix] `Ver reporte de mi turno` limpia el cierre/caja automaticos previos antes de consultar el reporte del usuario actual.
@@ -1192,7 +1226,7 @@
 - [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
 
 ## [2026-05-12] Totales del carrito por tipo de empresa
-- [Frontend] `web/administrar_empresa/carrito_de_compras.html` adapta la tarjeta `Totales y detalles` con perfiles de negocio: estadia, gimnasio, clinico, pedido, transporte, parqueadero, alquiler, copropiedad, farmacia, belleza, orden de servicio, academico, obra y verticales nuevos.
+- [Frontend] `web/administrar_empresa/carrito_de_compras.html` adapta la tarjeta `Totales y detalles` con perfiles de negocio: estadia, gimnasio, clinico, pedido, transporte, parqueadero, alquiler, copropiedad, farmacia, belleza, orden de servicio, academico, obra y plantillas nuevas.
 - [Contexto] La pagina consulta `/api/empresa/permisos_contexto` para leer `vertical_scope` y usa configuracion general como respaldo; si el contexto no llega, conserva el perfil POS universal.
 - [UX] `web/estilos.css` agrega un indicador compacto de perfil sin cambiar el ancho de la tarjeta ni el flujo de pago.
 - [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
@@ -1212,8 +1246,8 @@
 - [Frontend] `web/super/tipos_empresas.html` agrega un scroll horizontal arriba de la tabla y lo sincroniza con el scroll inferior.
 - [Alcance] Sin cambios de API, permisos, backend, base de datos ni dependencias.
 
-## [2026-05-12] Verticales 20 actualizado
-- [Frontend] `web/super/verticales_produccion_masiva.html` muestra semaforo ejecutivo, brechas principales, tarjetas de foco comercial y KPIs de licencias/base/readiness.
+## [2026-05-12] Plantillas 20 actualizado
+- [Frontend] `web/super/plantillas_produccion_masiva.html` muestra semaforo ejecutivo, brechas principales, tarjetas de foco comercial y KPIs de licencias/base/readiness.
 - [Operacion] Se agregan filtros `Sin licencia` y `Sin preconfig` para priorizar tareas antes de publicar comercialmente un vertical.
 - [Contrato] El cruce de readiness acepta payloads con `items`, `licencias` o arreglos directos y valida catalogo, metadata, preconfiguracion activa y licencia base.
 - [Alcance] Sin endpoints, permisos, tablas ni dependencias nuevas.
@@ -1240,12 +1274,12 @@
 - [Super] `web/super/preconfiguracion_tipos_empresa.html` muestra la seccion `Nucleo configurable` y envia la metadata al guardar.
 - [Alcance] Sin tablas, columnas, permisos ni dependencias nuevas.
 
-## [2026-05-12] Matriz profesional de 30 verticales
-- [Backend] `/api/*/verticales_integracion/catalogo` publica exactamente 30 verticales canonicos: 10 clasicos reales y 20 nuevos. `consultorio_odontologico` se fusiona en `odontologia`, `taxi` en `taxi_system` y `turnos_atencion`/`turnos` quedan como soporte transversal.
+## [2026-05-12] Matriz profesional de 30 plantillas
+- [Backend] `/api/*/plantillas_integracion/catalogo` publica exactamente 30 plantillas canonicos: 10 clasicos reales y 20 nuevos. `consultorio_odontologico` se fusiona en `odontologia`, `taxi` en `taxi_system` y `turnos_atencion`/`turnos` quedan como soporte transversal.
 - [Contrato] Cada vertical calcula `professional_ready`, `readiness_score`, checks, alcance de configuracion, ingresos, egresos, tablas financieras y metadata de `fused_modules`, `support_modules` o `similar_templates` cuando aplica.
-- [Frontend] `web/administrar_empresa/verticales_integracion.html` muestra perfil activo por empresa, contrato, ventas/finanzas, reportes y configuracion; cada vertical queda marcado como `Profesional` o `Brecha`.
-- [Finanzas] Los 30 verticales quedan atados a `empresa_finanzas_movimientos` y a los modulos centrales de ventas, pagos, bancos/tesoreria y reportes para ingresos y egresos.
-- [Configuracion] El acceso conserva `linkVerticalesIntegracion` y permiso `seguridad:R`, pero se presenta como `Adaptacion por tipo`.
+- [Frontend] `web/administrar_empresa/plantillas_integracion.html` muestra perfil activo por empresa, contrato, ventas/finanzas, reportes y configuracion; cada vertical queda marcado como `Profesional` o `Brecha`.
+- [Finanzas] Los 30 plantillas quedan atados a `empresa_finanzas_movimientos` y a los modulos centrales de ventas, pagos, bancos/tesoreria y reportes para ingresos y egresos.
+- [Configuracion] El acceso conserva `linkPlantillasIntegracion` y permiso `seguridad:R`, pero se presenta como `Adaptacion por tipo`.
 - [Alcance] No hay tablas, endpoints de escritura, permisos ni dependencias nuevas.
 
 ## [2026-05-12] Licencias ocultables para clientes
@@ -1281,13 +1315,13 @@
 
 ## [2026-05-12] Centro de mando super reconstruido
 - [Frontend] `web/super/licencias_resumen.html` se reemplaza completo por una consola ejecutiva responsive con score operativo, KPIs de plataforma, PostgreSQL, seguridad, negocio SaaS, costos, SLO, riesgos, servicios e incidentes.
-- [Operacion] La vista agrega controles directos para actualizar, evaluar alertas y abrir gobierno de alertas, PostgreSQL, seguridad VPS, licencias, empresas, tipos de empresa, roles, verticales, IA, configuracion y reportes.
+- [Operacion] La vista agrega controles directos para actualizar, evaluar alertas y abrir gobierno de alertas, PostgreSQL, seguridad VPS, licencias, empresas, tipos de empresa, roles, plantillas, IA, configuracion y reportes.
 - [Alcance] Reutiliza APIs existentes del panel super; no agrega endpoints, permisos, tablas, dependencias ni cambios en `go.mod`.
 - [QA] Parseo de script inline con Node OK; `git diff --check -- web/super/licencias_resumen.html` sin errores.
 
 ## [2026-05-11] Matriz de integracion en configuracion empresarial
 - [Menu] `Matriz de integracion` sale de Soluciones por negocio y queda en Administrar empresa > Configuracion > Base empresarial.
-- [Permisos] `linkVerticalesIntegracion` conserva `seguridad:R`, ahora agrupado como Administracion y configuracion.
+- [Permisos] `linkPlantillasIntegracion` conserva `seguridad:R`, ahora agrupado como Administracion y configuracion.
 
 ## [2026-05-11] Emisora online por empresa
 - [Backend] `/api/chat_flotante/preferencias` acepta `empresa_id` y persiste `chat_flotante.*`, incluida `radio_online_enabled`, en `empresa_estacion_prefs`.
@@ -1295,7 +1329,7 @@
 - [QA] `node --check web/js/ai_chat_drawer.js`; `node --check web/js/radio_player.js`; `go test ./...` en `backend/`.
 
 ## [2026-05-11] Alcance vertical por licencia
-- [Backend] `/api/empresa/permisos_contexto` calcula `vertical_scope` desde tipo/preconfiguracion/licencia y desactiva acciones de verticales ajenos sin tocar el nucleo universal.
+- [Backend] `/api/empresa/permisos_contexto` calcula `vertical_scope` desde tipo/preconfiguracion/licencia y desactiva acciones de plantillas ajenos sin tocar el nucleo universal.
 - [Licencias] El checkout, activacion manual/gratuita y confirmaciones de pago validan que la licencia base corresponda al tipo de empresa elegido.
 - [Frontend] `elegir_licencia.html` consulta licencias filtradas por `tipo_id` y `editar_empresa.js` conserva `tipo_id/tipo_nombre` al renovar.
 - [QA] `go test ./handlers`; `go test ./db`.
@@ -1306,17 +1340,17 @@
 - [Frontend] `web/super/configuracion_avanzada.html` agrega la tarjeta `2FA login` para activar/desactivar la exigencia global sin tocar secretos por cuenta.
 - [QA] `go test ./handlers -run "TestAdminTOTPLoginRequiredForAdmin" -count=1`; `go test ./... -count=1`; validacion JS de `login.js` y scripts inline.
 
-## [2026-05-11] Catalogos publicos de verticales sin sesion
-- [Seguridad] `backend/utils/utils.go` agrega a la lista publica `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo`.
-- [Producto] La portada publica y las fichas comerciales pueden consultar el catalogo real de verticales sin depender de una sesion administrativa.
+## [2026-05-11] Catalogos publicos de plantillas sin sesion
+- [Seguridad] `backend/utils/utils.go` agrega a la lista publica `/api/public/plantillas_nuevas/catalogo` y `/api/public/plantillas_integracion/catalogo`.
+- [Producto] La portada publica y las fichas comerciales pueden consultar el catalogo real de plantillas sin depender de una sesion administrativa.
 - [QA] `backend/utils/auth_middleware_test.go` valida que ambas rutas pasen sin cookie y que las rutas privadas sigan protegidas.
 
-## [2026-05-11] Sincronizacion idempotente de pagos verticales
+## [2026-05-11] Sincronizacion idempotente de pagos plantillas
 - [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` reutilizan `carritos_compras.referencia_externa` antes de crear carritos desde pagos historicos.
 - [QA] Se agregan pruebas para fijar la llave historica de pagos en odontologia y gimnasio.
 - [Alcance] No hay tablas, endpoints, permisos ni dependencias nuevas.
 
-## [2026-05-11] Correccion de cargas parciales en verticales integrados
+## [2026-05-11] Correccion de cargas parciales en plantillas integrados
 - [Backend] `backend/db/odontologia.go` y `backend/db/gimnasio.go` crean indices de integracion solo despues de asegurar columnas nuevas en bases PostgreSQL existentes.
 - [Frontend] `web/js/consultorio_odontologico.js`, `web/js/gimnasio.js` y `web/js/alquileres.js` limpian el aviso de carga parcial cuando la recarga completa no devuelve errores.
 - [QA] Se agregan pruebas para impedir que los indices de `cliente_id`, `servicio_id` y `carrito_id` vuelvan a ejecutarse antes de las columnas.
@@ -1332,78 +1366,78 @@
 - [Seguridad] La ayuda privada no queda dentro de la lista limitada del rol `control_super_administrador`.
 - [QA] Alinea el contrato esperado por `TestSuperAdminPanelExposesPrivateHelpButton`.
 
-## [2026-05-11] 20 verticales nuevos reales
-- [Backend] `backend/db/nuevos_verticales_bootstrap.go` promueve los 20 verticales nuevos a produccion masiva con ranking 1-20.
-- [API] `/super/api/verticales_nuevos/catalogo` acepta `asegurar_20_licencias` y conserva `asegurar_v1_licencias` como alias compatible.
-- [Frontend] `web/js/nuevos_verticales_catalogo.js`, `web/index.html` y `web/super/verticales_produccion_masiva.html` publican y gobiernan las 20 plantillas reales.
-- [QA] Las pruebas actualizadas exigen 20 verticales masivos, metadata extendida y decision de produccion masiva en nuevos verticales.
+## [2026-05-11] 20 plantillas nuevas reales
+- [Backend] `backend/db/plantillas_nuevas_bootstrap.go` promueve los 20 plantillas nuevas a produccion masiva con ranking 1-20.
+- [API] `/super/api/plantillas_nuevas/catalogo` acepta `asegurar_20_licencias` y conserva `asegurar_v1_licencias` como alias compatible.
+- [Frontend] `web/js/plantillas_nuevas_catalogo.js`, `web/index.html` y `web/super/plantillas_produccion_masiva.html` publican y gobiernan las 20 plantillas reales.
+- [QA] Las pruebas actualizadas exigen 20 plantillas masivos, metadata extendida y decision de produccion masiva en nuevas plantillas.
 - [Alcance] No hay tablas, dependencias ni circuitos paralelos de clientes, productos, ventas o pagos.
 
 ## [2026-05-11] Portada index alineada a modulos reales
-- [Frontend] `web/index.html` y los defaults de `/api/public/pagina_principal` actualizan el texto de cobertura y las tarjetas publicas con nucleo unico, modulos reales y verticales clasificados.
-- [Producto] Los 20 verticales nuevos siguen en catalogo y quedan publicables como tarjetas operativas de `Probar gratis`.
-- [Catalogo] `web/js/nuevos_verticales_catalogo.js` agrega decision, ranking, metadata de plantilla, permisos, flujo de venta y reportes para sincronizar la portada con la matriz extendida.
+- [Frontend] `web/index.html` y los defaults de `/api/public/pagina_principal` actualizan el texto de cobertura y las tarjetas publicas con nucleo unico, modulos reales y plantillas clasificados.
+- [Producto] Los 20 plantillas nuevas siguen en catalogo y quedan publicables como tarjetas operativas de `Probar gratis`.
+- [Catalogo] `web/js/plantillas_nuevas_catalogo.js` agrega decision, ranking, metadata de plantilla, permisos, flujo de venta y reportes para sincronizar la portada con la matriz extendida.
 - [Alcance] No hay endpoints, tablas, permisos, dependencias ni cambios en `go.mod`.
 
-## [2026-05-11] Aseguramiento comercial de verticales
-- [Backend] `POST /super/api/verticales_nuevos/catalogoaction=asegurar_20_licencias` llama `EnsureNuevosVerticalesProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
-- [Producto] La accion asegura tipos de empresa, preconfiguraciones y cuatro planes recomendados para los 20 verticales.
-- [Frontend] `web/super/verticales_produccion_masiva.html` agrega `Asegurar 20` y refresca el semaforo despues de ejecutar.
+## [2026-05-11] Aseguramiento comercial de plantillas
+- [Backend] `POST /super/api/plantillas_nuevas/catalogoaction=asegurar_20_licencias` llama `EnsureNuevasPlantillasProduccionMasivaLicencias`; `asegurar_v1_licencias` queda como alias compatible.
+- [Producto] La accion asegura tipos de empresa, preconfiguraciones y cuatro planes recomendados para los 20 plantillas.
+- [Frontend] `web/super/plantillas_produccion_masiva.html` agrega `Asegurar 20` y refresca el semaforo despues de ejecutar.
 - [Alcance] No hay tablas, rutas nuevas, permisos nuevos ni dependencias.
 
-## [2026-05-11] Semaforo listo para venta en verticales
-- [Frontend] `web/super/verticales_produccion_masiva.html` cruza verticales, preconfiguraciones y licencias activas para marcar `Listo venta`.
+## [2026-05-11] Semaforo listo para venta en plantillas
+- [Frontend] `web/super/plantillas_produccion_masiva.html` cruza plantillas, preconfiguraciones y licencias activas para marcar `Listo venta`.
 - [Regla] Un vertical queda listo solo si tiene metadata completa, preconfiguracion activa con `integracion_vertical` y licencia activa que incluye el modulo.
 - [Alcance] No hay cambios de esquema, endpoints, permisos ni dependencias.
 
-## [2026-05-11] Acciones de gobierno para verticales 20
-- [Frontend] Cada fila de `web/super/verticales_produccion_masiva.html` enlaza a tipos, preconfiguraciones y licencias del vertical.
+## [2026-05-11] Acciones de gobierno para plantillas 20
+- [Frontend] Cada fila de `web/super/plantillas_produccion_masiva.html` enlaza a tipos, preconfiguraciones y licencias del vertical.
 - [UX] `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` aplican filtros iniciales desde `q`, `vertical` o `modulo`.
 - [Alcance] No se agregan endpoints, tablas, permisos ni dependencias.
 
-## [2026-05-11] Gobierno super de verticales de produccion masiva
-- [Frontend] Se agrega `web/super/verticales_produccion_masiva.html` con KPIs, filtros, ranking, decision, metadata extendida y exportacion CSV.
-- [Menu] `web/super_administrador.html` incorpora `Verticales 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar la pagina.
-- [Seguridad] Se reutiliza `/super/api/verticales_nuevos/catalogo`; no hay endpoints, permisos, esquemas ni dependencias nuevas.
+## [2026-05-11] Gobierno super de plantillas de produccion masiva
+- [Frontend] Se agrega `web/super/plantillas_produccion_masiva.html` con KPIs, filtros, ranking, decision, metadata extendida y exportacion CSV.
+- [Menu] `web/super_administrador.html` incorpora `Plantillas 20` dentro de Licencias y `web/js/super_administrador.js` permite restaurar la pagina.
+- [Seguridad] Se reutiliza `/super/api/plantillas_nuevas/catalogo`; no hay endpoints, permisos, esquemas ni dependencias nuevas.
 
-## [2026-05-11] Preconfiguraciones y verticales de produccion masiva
+## [2026-05-11] Preconfiguraciones y plantillas de produccion masiva
 - [Backend] `config_json` de tipos de empresa puede incluir `integracion_vertical` con decision, prioridad, permisos, flujo de venta, tablas y reportes.
-- [Catalogos] Los endpoints de verticales nuevos publican `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
-- [Producto] Se priorizan los 20 verticales nuevos para produccion masiva en `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
-- [QA] Las pruebas exigen metadata extendida y exactamente 20 verticales marcados como produccion masiva; no hay cambios de esquema ni dependencias.
+- [Catalogos] Los endpoints de plantillas nuevas publican `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`.
+- [Producto] Se priorizan los 20 plantillas nuevas para produccion masiva en `documentos/plan_plantillas_produccion_masiva_2026-05-11.md`.
+- [QA] Las pruebas exigen metadata extendida y exactamente 20 plantillas marcados como produccion masiva; no hay cambios de esquema ni dependencias.
 
-## [2026-05-11] Matriz extendida de plantillas verticales
+## [2026-05-11] Matriz extendida de plantillas plantillas
 - [Backend] El catalogo de integracion agrega `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
 - [Frontend] La matriz empresarial muestra modulos, plantilla, tablas, permisos, flujo de venta y reportes por vertical.
-- [QA] La prueba de contrato impide publicar verticales visibles sin metadata completa; no hay cambios de esquema ni dependencias.
+- [QA] La prueba de contrato impide publicar plantillas visibles sin metadata completa; no hay cambios de esquema ni dependencias.
 
 ## [2026-05-11] Sincronizacion segura de matriz vertical
 - [Frontend] La matriz consulta `/api/empresa/permisos_contexto`, calcula sincronizaciones permitidas, deshabilita botones sin permiso efectivo y confirma antes de ejecutar POST.
 - [Seguridad] El endpoint vertical conserva la autorizacion final por rol, licencia y `empresa_id`; no hay nuevas dependencias ni cambios de esquema.
 
 ## [2026-05-11] Sincronizacion desde matriz vertical
-- [Frontend] `web/administrar_empresa/verticales_integracion.html` agrega botones `Sincronizar` por vertical y muestra resultado/resumen de la accion.
+- [Frontend] `web/administrar_empresa/plantillas_integracion.html` agrega botones `Sincronizar` por vertical y muestra resultado/resumen de la accion.
 - [Seguridad] La vista conserva permiso `seguridad:R`; cada POST mantiene la autorizacion real del endpoint vertical correspondiente.
 
 ## [2026-05-11] Pantalla de matriz vertical en empresa
-- [Frontend] Se agrega `web/administrar_empresa/verticales_integracion.html` para consultar KPIs, estado, nucleo, especialidad y sincronizacion por vertical.
+- [Frontend] Se agrega `web/administrar_empresa/plantillas_integracion.html` para consultar KPIs, estado, nucleo, especialidad y sincronizacion por vertical.
 - [Menu] `web/administrar_empresa/configuracion_menu.html` incorpora `Matriz de integración` dentro de Configuracion > Base empresarial.
-- [Permisos] `linkVerticalesIntegracion` queda registrado con `seguridad:R` en backend y frontend.
+- [Permisos] `linkPlantillasIntegracion` queda registrado con `seguridad:R` en backend y frontend.
 
 ## [2026-05-11] Indicador de matriz vertical en panel empresa
 - [Frontend] `web/administrar_empresa.html` agrega un indicador compacto en el sidebar empresarial.
-- [JS] `web/js/administrar_empresa.js` lo alimenta con el resumen de `web/js/verticales_integracion_catalogo.js`.
-- [UX] El panel muestra fuente API/local y conteo de verticales visibles/ocultos sin cambiar permisos, licencias ni rutas.
+- [JS] `web/js/administrar_empresa.js` lo alimenta con el resumen de `web/js/plantillas_integracion_catalogo.js`.
+- [UX] El panel muestra fuente API/local y conteo de plantillas visibles/ocultos sin cambiar permisos, licencias ni rutas.
 
-## [2026-05-11] Frontend consume matriz API de verticales
-- [Frontend] `web/js/administrar_empresa.js` carga `/api/empresa/verticales_integracion/catalogo` antes de aplicar permisos/licencias del menu empresarial.
-- [Fallback] `web/js/verticales_integracion_catalogo.js` conserva el catalogo local y ahora permite fusionar items recibidos desde backend.
+## [2026-05-11] Frontend consume matriz API de plantillas
+- [Frontend] `web/js/administrar_empresa.js` carga `/api/empresa/plantillas_integracion/catalogo` antes de aplicar permisos/licencias del menu empresarial.
+- [Fallback] `web/js/plantillas_integracion_catalogo.js` conserva el catalogo local y ahora permite fusionar items recibidos desde backend.
 - [Gobernanza] El menu deja de depender solo de un archivo JS estatico para decidir si una vertical clasica puede mostrarse como operativa.
 
 ## [2026-05-11] Catalogo API de integracion vertical
-- [Backend] Se agrega `backend/handlers/empresa_verticales_integracion.go` para exponer la matriz de verticales clasicos.
-- [API] Nuevas rutas de solo lectura: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
-- [QA] `backend/handlers/empresa_verticales_integracion_test.go` bloquea verticales visibles con duplicados del nucleo.
+- [Backend] Se agrega `backend/handlers/empresa_plantillas_integracion.go` para exponer la matriz de plantillas clasicos.
+- [API] Nuevas rutas de solo lectura: `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo`.
+- [QA] `backend/handlers/empresa_plantillas_integracion_test.go` bloquea plantillas visibles con duplicados del nucleo.
 
 ## [2026-05-11] AIU construccion integrado al nucleo
 - [Backend] `aiu_construccion` enlaza clientes de obra con clientes centrales, contratos/conceptos con servicios y facturas AIU con ventas centrales en carritos.
@@ -1436,10 +1470,10 @@
 - [Frontend] El panel de domicilios incluye accion de sincronizacion y resumen de pedidos, servicios de menu, clientes y observaciones.
 - [Gobernanza] Domicilios queda visible como plantilla integrada; sus tablas propias se conservan para restaurantes, domiciliarios, ofertas, GPS, tracking y estados logisticos.
 
-## [2026-05-11] Fases de integracion profesional de verticales
-- [Gobernanza] Se agrega `documentos/matriz_integracion_verticales.md` como contrato para mantener clientes, productos/servicios, ventas, pagos, facturacion, reportes y permisos en el nucleo.
-- [Frontend] `web/js/verticales_integracion_catalogo.js` clasifica verticales clasicos y oculta del menu operativo los que siguen duplicando funciones centrales.
-- [Catalogo] `web/js/nuevos_verticales_catalogo.js` y los endpoints de verticales nuevos publican estado de integracion, visibilidad operativa, modulos base y duplicados detectados.
+## [2026-05-11] Fases de integracion profesional de plantillas
+- [Gobernanza] Se agrega `documentos/matriz_integracion_plantillas.md` como contrato para mantener clientes, productos/servicios, ventas, pagos, facturacion, reportes y permisos en el nucleo.
+- [Frontend] `web/js/plantillas_integracion_catalogo.js` clasifica plantillas clasicos y oculta del menu operativo los que siguen duplicando funciones centrales.
+- [Catalogo] `web/js/plantillas_nuevas_catalogo.js` y los endpoints de plantillas nuevas publican estado de integracion, visibilidad operativa, modulos base y duplicados detectados.
 
 ## [2026-05-11] Gimnasio integrado al nucleo
 - [Backend] `gimnasio` enlaza socios a clientes, planes a servicios y pagos a ventas centrales en carritos.
@@ -1509,7 +1543,7 @@
 
 ## [2026-05-11] Base profesional de QA, respaldo y auditoria
 - [QA] Se agrega `scripts/profesional_preflight.ps1` para validar sintaxis, Docker, auditoria de modulos/permisos y `git diff --check` antes de despliegues.
-- [Auditoria] Se agrega `tools/professional_audit.mjs` para revisar catalogo de 20 verticales, permisos backend, wrappers, portal publico y documentacion obligatoria.
+- [Auditoria] Se agrega `tools/professional_audit.mjs` para revisar catalogo de 20 plantillas, permisos backend, wrappers, portal publico y documentacion obligatoria.
 - [RS] `rs.ps1` ejecuta preflight por defecto antes de actualizar repositorio y sincronizar VPS; se puede omitir con `-SkipPreflight`.
 - [Backups] Se agrega `scripts/vps_backup_operacion.ps1` para crear dump PostgreSQL y tarballs de volumenes persistentes en la VPS con retencion.
 - [Docs] Se agrega `documentos/plan_profesionalizacion_plataforma.md` como guia de los siete frentes profesionales.
@@ -1528,14 +1562,14 @@
 - [Super] El boton `Ayuda super administrador` se mueve al grupo `Infraestructura y comunicaciones`, justo al lado de `Configuracion avanzada`.
 - [Seguridad] Se conserva la misma ruta privada `/ayuda/ayuda.html` y el mismo filtro de rol existente.
 
-## [2026-05-11] Portada publica con verticales completos
+## [2026-05-11] Portada publica con plantillas completos
 - [Index] Las 20 nuevas empresas del catalogo publico usan descripciones largas, similares a las tarjetas principales de la portada.
 - [Probar gratis] El enlace de cada tarjeta conserva contexto de titulo, descripcion, modulo/tipo de empresa y secciones para llegar a una ficha de detalle mas completa.
 - [Detalle publico] `descripcion_de_los_sistemas.ht` reutiliza el catalogo ampliado para mostrar informacion especifica de cada vertical antes del registro de prueba.
 
 ## [2026-05-10] Preconfiguraciones inteligentes y robot no automatico
 - [Preconfiguracion] La siembra por tipo de empresa completa faltantes reales por `tipo_empresa_id`, aunque existan plantillas antiguas o sobrantes.
-- [Verticales] Los 20 tipos nuevos usan su plantilla inteligente como default si aun no tienen preconfiguracion guardada.
+- [Plantillas] Los 20 tipos nuevos usan su plantilla inteligente como default si aun no tienen preconfiguracion guardada.
 - [UX] Se retira el acceso visible a `Configuracion guiada` del submenu de configuracion empresarial.
 - [Robot] Al crear una empresa ya no se pregunta ni se agenda el inicio automatico del robot de configuracion.
 
@@ -1603,7 +1637,7 @@
 - [Permisos/licencias] Nuevo modulo `activos_fijos_niif_fiscal` activable por licencia y roles.
 
 ## [2026-05-06] Propiedad horizontal y promocion por asesor
-- [Verticales] Nuevo modulo `propiedad_horizontal` para copropiedades, conjuntos, edificios y condominios.
+- [Plantillas] Nuevo modulo `propiedad_horizontal` para copropiedades, conjuntos, edificios y condominios.
 - [Backend] Nueva API `/api/empresa/propiedad_horizontal` con configuracion, unidades, personas, cargos, recaudos, PQR, asambleas, dashboard y datos demo.
 - [Permisos] Nueva clave de modulo/licencia `propiedad_horizontal`, pagina `linkPropiedadHorizontal` y wrapper `WithEmpresaPropiedadHorizontalPermissions`.
 - [Super] En `Asesor comercial` se agrega promocion activable/desactivable para descuento adicional por codigo de asesor, con porcentaje configurable.
@@ -1776,10 +1810,10 @@
 - [Seguridad] `AuthMiddleware` permite la carta publica sin sesion; la administracion conserva control por modulo `venta_publica`, rol, licencia y pagina `linkCartaProductosPublica`.
 - [Verificacion] `go test ./utils`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; validacion productiva HTTP 200 de venta publica, carta publica y red social.
 
-## [2026-05-05] Roles y licencias para modulos verticales
+## [2026-05-05] Roles y licencias para modulos plantillas
 - [Permisos] Se agregan modulos independientes para venta publica/carta, gimnasio, taxi system, domicilios, alquileres, odontologia, turnos de atencion y control electrico.
 - [Licencias] La pantalla de licencias permite activar/desactivar estos modulos desde `modulos_habilitados`, con presets actualizados.
-- [Backend] Los endpoints administrativos verticales usan wrappers dedicados para que licencia, rol y pagina del menu bloqueen con `403` cuando corresponda.
+- [Backend] Los endpoints administrativos plantillas usan wrappers dedicados para que licencia, rol y pagina del menu bloqueen con `403` cuando corresponda.
 - [Docs] Se actualiza la matriz de roles/permisos y la documentacion de domicilios.
 
 ## [2026-05-05] Modulo profesional de domicilios
@@ -1807,7 +1841,7 @@
 - [Gimnasio] Se agrega preconfiguracion operativa propia del modulo: sede principal, RFID/NFC/QR, planes base, clases iniciales y dispositivos de acceso, todo aplicable desde el dashboard del gimnasio.
 - [Impresoras] Se corrige el guardado de configuracion avanzada para que `modo_documento_venta` gobierne correctamente la activacion o desactivacion de facturacion electronica automatica.
 - [Impresoras] Se incorpora `cajon_monedero` como funcionalidad asignable de impresora dentro de `Configuracion > Impresora`, alineando la UI con la operacion real de caja.
-- [Docs] Se actualiza `RESUMEN_DEL_PROYECTO.md` para reflejar configuracion guiada por IA, impresion empresarial, horarios laborales y modulos verticales ya integrados como gimnasio, odontologia, taxi system, turnos de atencion y alquileres.
+- [Docs] Se actualiza `RESUMEN_DEL_PROYECTO.md` para reflejar configuracion guiada por IA, impresion empresarial, horarios laborales y modulos plantillas ya integrados como gimnasio, odontologia, taxi system, turnos de atencion y alquileres.
 
 ## [2026-04-30] Pagos, chat IA, empresas compartidas, hoja de vida operativa y documentos dinamicos
 - [Pagos/Epayco] Smart Checkout v2 conserva fallback clasico firmado por POST a `https://secure.payco.co/checkout.php`; se elimina la redireccion GET que producia XML `AccessDenied` y se documenta el requisito de `epayco.customer_id` para fallback.
@@ -1836,13 +1870,13 @@
 
 - **Declaraciones Tributarias y Motor de Impuestos Colombia**: nuevo modulo `declaraciones_tributarias` con API privada, dashboard, preliquidacion, calendario editable, saldos a pagar/favor, movimientos de conciliacion, permisos/licencia, pantalla administrativa y documentacion. Verificacion prevista: pruebas unitarias del motor, `go test ./... -count=1` y `git diff --check`.
 - 2026-05-06: implementados modulos empresariales Colombia `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones` y `calidad_procesos` con nucleo compartido, APIs privadas por empresa, paginas administrativas, permisos/licencias y documentacion.
-## [2026-05-11] Contrato universal de 30 verticales
-- [Backend] `backend/handlers/empresa_verticales_integracion.go` deja de publicar acciones de migracion manual antigua y declara las verticales clasicas como plantillas sobre nucleo comun.
+## [2026-05-11] Contrato universal de 30 plantillas
+- [Backend] `backend/handlers/empresa_plantillas_integracion.go` deja de publicar acciones de migracion manual antigua y declara las plantillas clasicas como plantillas sobre nucleo comun.
 - [Licencias] La activacion de licencia aplica la preconfiguracion idempotente del tipo de empresa sin ejecutar migraciones automaticas.
 - [Frontend] La matriz empresarial queda como auditoria de plantilla, nucleo, permisos, flujo de venta y reportes; los dashboards clasicos ya no muestran botones de migracion manual.
 - [QA] `go test ./...`; validacion JS de catalogos y pantallas empresariales tocadas.
 ## [2026-05-12] Menu empresarial ajustado
-- [Frontend] `web/administrar_empresa.html` elimina el cuadro de evidencia `Verticales · conteo · API/local` del encabezado del menu lateral.
+- [Frontend] `web/administrar_empresa.html` elimina el cuadro de evidencia `Plantillas · conteo · API/local` del encabezado del menu lateral.
 - [Navegacion] `Soluciones por negocio` queda reubicado en la parte baja del menu, inmediatamente encima de `Administracion`.
 - [Alcance] Sin cambios de API, permisos, base de datos ni dependencias.
 - Creditos diarios para ventas financiadas de motos.

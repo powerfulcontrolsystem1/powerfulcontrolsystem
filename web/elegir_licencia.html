@@ -253,7 +253,7 @@
     }
   </style>
   <script src="/menu.js"></script>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
 <body class="elegir-licencia-page">
   <div class="admin-layout">
@@ -290,7 +290,7 @@
         return value;
       }
 
-      var verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      var verticalCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
       var verticalByModule = {};
       verticalCatalog.forEach(function(item) {
         var module = String(item && item.module || '').trim().toLowerCase();
@@ -334,8 +334,8 @@
       }
 
       function getLicenciaIcon(licencia, tipoNombre) {
-        var vertical = getLicenciaModuloVertical(licencia, tipoNombre);
-        if (vertical && vertical.icon) return vertical.icon;
+        var plantilla = getLicenciaModuloVertical(licencia, tipoNombre);
+        if (plantilla && plantilla.icon) return plantilla.icon;
         var tipo = String((licencia && (licencia.tipo_nombre || licencia.tipoNombre)) || tipoNombre || '').toLowerCase();
         var nombre = String((licencia && (licencia.nombre || licencia.Nombre)) || '').toLowerCase();
         if (tipo.indexOf('hotel') >= 0 || nombre.indexOf('hotel') >= 0) return '/img/hotel-logo.svg';
@@ -356,10 +356,10 @@
       }
 
       function getLicenciaToneClass(licencia, tipoNombre, idx) {
-        var vertical = getLicenciaModuloVertical(licencia, tipoNombre);
-        if (vertical && vertical.module) {
+        var plantilla = getLicenciaModuloVertical(licencia, tipoNombre);
+        if (plantilla && plantilla.module) {
           var foundIndex = verticalCatalog.findIndex(function(item) {
-            return String(item.module || '').toLowerCase() === String(vertical.module || '').toLowerCase();
+            return String(item.module || '').toLowerCase() === String(plantilla.module || '').toLowerCase();
           });
           if (foundIndex >= 0) return 'license-tone-' + ((foundIndex % 8) + 1);
         }
@@ -367,8 +367,8 @@
       }
 
       function getLicenciaKicker(licencia, tipoNombre) {
-        var vertical = getLicenciaModuloVertical(licencia, tipoNombre);
-        return vertical ? 'Vertical' : 'Licencia';
+        var plantilla = getLicenciaModuloVertical(licencia, tipoNombre);
+        return plantilla ? 'Plantilla' : 'Licencia';
       }
 
       function resolveCurrencyByCountry(paisCodigo) {

@@ -80,7 +80,7 @@
 
   function findCatalogItem(moduleName) {
     var key = String(moduleName || "").trim();
-    var items = (window.PCS_NUEVOS_VERTICALES || []);
+    var items = (window.PCS_NUEVAS_PLANTILLAS || []);
     for (var i = 0; i < items.length; i += 1) {
       if (String(items[i].module || "") === key) return items[i];
     }
@@ -252,7 +252,7 @@
     var sections = moduleSections();
     return [
       { label: "Empresa detectada", ok: !!state.empresaId, detail: state.empresaId ? "empresa_id " + state.empresaId : "Falta contexto de empresa" },
-      { label: "Catalogo central", ok: !!state.catalogItem, detail: state.catalogItem ? "Solucion enlazada al catalogo" : "No se encontro en PCS_NUEVOS_VERTICALES" },
+      { label: "Catalogo central", ok: !!state.catalogItem, detail: state.catalogItem ? "Solucion enlazada al catalogo" : "No se encontro en PCS_NUEVAS_PLANTILLAS" },
       { label: "Ruta de trabajo", ok: sections.length >= 4, detail: sections.length + " secciones visibles" },
       { label: "Tipos y categorias", ok: (p.tipos || []).length >= 2 && (p.categorias || []).length >= 2, detail: (p.tipos || []).length + " tipos / " + (p.categorias || []).length + " categorias" },
       { label: "Estados y acciones", ok: (p.estados_flujo || []).length >= 3 && (p.acciones_sugeridas || []).length >= 3, detail: (p.estados_flujo || []).length + " estados / " + (p.acciones_sugeridas || []).length + " acciones" },

@@ -254,4 +254,4 @@ erDiagram
 - `users`, `clientes`, `productos`, `servicios`, `carritos_compras` y `empresa_finanzas_movimientos` representan el circuito central de operacion.
 - `licencias` vive en `pcs_superadministrador`, pero se relaciona con `empresas.id` para gobernar capacidades efectivas por compania.
 - `super_tickets_ayuda` y `super_correos_masivos_destinatarios` tambien enlazan con `empresa_id`, porque forman parte de la operacion SaaS transversal.
-- Las verticales empresariales reutilizan este nucleo y agregan tablas especializadas documentadas en `documentos/estructura_bd.md`.
+- Las plantillas empresariales reutilizan este nucleo y agregan tablas especializadas documentadas en `documentos/estructura_bd.md`.

@@ -311,7 +311,7 @@
 
   <!-- Menú flotante eliminado en páginas del panel /super -->
 
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
   <script>
     (function(){
       const currentParams = new URLSearchParams(window.location.search || '');
@@ -339,7 +339,7 @@
       const formSubtitle = document.getElementById('formSubtitle');
       const formModeBadge = document.getElementById('formModeBadge');
       const crudState = { licencias: [], tipos: [], filtersReady: false };
-      const initialLicenseQuery = String(currentParams.get('q') || currentParams.get('modulo') || currentParams.get('vertical') || '').trim();
+      const initialLicenseQuery = String(currentParams.get('q') || currentParams.get('modulo') || currentParams.get('plantilla') || currentParams.get('vertical') || '').trim();
       let cleanupCrudTableScroll = null;
       const moduleLabels = {
         ventas: 'Ventas universales',
@@ -396,23 +396,23 @@
         hoja_vida_operativa: 'Hoja de vida operativa',
         ubicacion_gps: 'Ubicación GPS'
       };
-      let nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
-      function nuevosVerticalesCSV(){
-        return nuevosVerticalesCatalog.map(function(item){ return item.module; }).filter(Boolean).join(',');
+      let nuevasPlantillasCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
+      function nuevasPlantillasCSV(){
+        return nuevasPlantillasCatalog.map(function(item){ return item.module; }).filter(Boolean).join(',');
       }
-      nuevosVerticalesCatalog.forEach(function(item){
+      nuevasPlantillasCatalog.forEach(function(item){
         moduleLabels[item.module] = item.fullTitle || item.title || item.module;
       });
       let modulePresets = buildModulePresets();
 
       function buildModulePresets(){
-        const verticalesCSV = nuevosVerticalesCSV();
+        const plantillasCSV = nuevasPlantillasCSV();
         return {
           all: '',
-          operativo: normalizeCSV('ventas,inventario,clientes,chat_tareas,gimnasio,turnos_atencion,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,calidad_procesos,' + verticalesCSV),
+          operativo: normalizeCSV('ventas,inventario,clientes,chat_tareas,gimnasio,turnos_atencion,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,gestion_documental,contratos_obligaciones,calidad_procesos,' + plantillasCSV),
           financiero: 'ventas,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,facturacion,nomina_sueldos,cobranza,reportes,portal_contador,aiu_construccion',
           comercial: 'ventas,venta_publica,clientes,crm_unificado,chat_tareas,reservas_hotel,compras,domicilios',
-          enterprise: normalizeCSV('ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,crm_unificado,compras,soportes_compras_ia,gestion_documental,contratos_obligaciones,facturacion,seguridad,auditoria,backups,documentos_onlyoffice,venta_publica,reservas_hotel,chat_tareas,gimnasio,taxi_system,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,aiu_construccion,nomina_sueldos,cobranza,reportes,portal_contador,' + verticalesCSV)
+          enterprise: normalizeCSV('ventas,inventario,finanzas,contabilidad_colombia,contabilidad_colombia_avanzada,centros_costo,cierre_fiscal,declaraciones_tributarias,activos_fijos_niif_fiscal,portal_terceros_certificados,tesoreria_presupuesto,bancos_pagos,cumplimiento_kyc,calidad_procesos,clientes,crm_unificado,compras,soportes_compras_ia,gestion_documental,contratos_obligaciones,facturacion,seguridad,auditoria,backups,documentos_onlyoffice,venta_publica,reservas_hotel,chat_tareas,gimnasio,taxi_system,domicilios,drogueria_farmacia,parqueadero,apartamentos_turisticos,propiedad_horizontal,alquileres,odontologia,turnos_atencion,control_electrico,carnets,horarios_trabajadores,asistencia_empleados,vehiculos_registro,hoja_vida_operativa,ubicacion_gps,produccion_mrp,logistica_wms,importaciones_costeo,aiu_construccion,nomina_sueldos,cobranza,reportes,portal_contador,' + plantillasCSV)
         };
       }
 
@@ -471,13 +471,13 @@
           .replace(/'/g, '&#39;');
       }
 
-      function renderNuevosVerticalesCoverage(){
+      function renderNuevasPlantillasCoverage(){
         const grid = document.querySelector('#modulosLicenciaBox .lic-coverage-grid');
-        if (!grid || !nuevosVerticalesCatalog.length) return;
+        if (!grid || !nuevasPlantillasCatalog.length) return;
         const existing = new Set(Array.from(grid.querySelectorAll('input[name="lic_modulo"]')).map(function(el){
           return String(el.value || '').trim().toLowerCase();
         }));
-        const pending = nuevosVerticalesCatalog.filter(function(item){
+        const pending = nuevasPlantillasCatalog.filter(function(item){
           const module = String(item.module || '').trim().toLowerCase();
           return module && !existing.has(module);
         });
@@ -486,14 +486,14 @@
           return '<label class="lic-coverage-item lic-coverage-item-vertical">' +
             '<input type="checkbox" name="lic_modulo" value="' + escapeHTML(item.module) + '">' +
             '<span class="lic-coverage-h">' + escapeHTML(item.fullTitle || item.title || item.module) + '</span>' +
-            '<span class="lic-coverage-d">' + escapeHTML(item.summary || item.lead || 'Modulo vertical empresarial.') + '</span>' +
+            '<span class="lic-coverage-d">' + escapeHTML(item.summary || item.lead || 'Modulo plantilla empresarial.') + '</span>' +
             '</label>';
         }).join(''));
       }
-      renderNuevosVerticalesCoverage();
+      renderNuevasPlantillasCoverage();
 
-      function refreshNuevosVerticalesCoverageLabels(){
-        nuevosVerticalesCatalog.forEach(function(item){
+      function refreshNuevasPlantillasCoverageLabels(){
+        nuevasPlantillasCatalog.forEach(function(item){
           const module = String(item.module || '').trim().toLowerCase();
           if (!module) return;
           const input = Array.from(document.querySelectorAll('#modulosLicenciaBox input[name="lic_modulo"]')).find(function(el){
@@ -505,7 +505,7 @@
           const title = label.querySelector('.lic-coverage-h');
           const desc = label.querySelector('.lic-coverage-d');
           if (title) title.textContent = item.fullTitle || item.title || item.module;
-          if (desc) desc.textContent = item.summary || item.lead || 'Modulo vertical empresarial.';
+          if (desc) desc.textContent = item.summary || item.lead || 'Modulo plantilla empresarial.';
         });
       }
 
@@ -529,20 +529,20 @@
         const rows = normalizeBackendVerticalCatalog(catalog);
         if (!rows.length) return;
         const localByModule = {};
-        nuevosVerticalesCatalog.forEach(function(item){ localByModule[item.module] = item; });
-        nuevosVerticalesCatalog = rows.map(function(row){
+        nuevasPlantillasCatalog.forEach(function(item){ localByModule[item.module] = item; });
+        nuevasPlantillasCatalog = rows.map(function(row){
           const local = localByModule[row.module] || {};
           return Object.assign({}, local, row);
         });
-        nuevosVerticalesCatalog.forEach(function(item){
+        nuevasPlantillasCatalog.forEach(function(item){
           moduleLabels[item.module] = item.fullTitle || item.title || item.module;
         });
         modulePresets = buildModulePresets();
-        renderNuevosVerticalesCoverage();
-        refreshNuevosVerticalesCoverageLabels();
+        renderNuevasPlantillasCoverage();
+        refreshNuevasPlantillasCoverageLabels();
       }
 
-      fetch('/super/api/verticales_nuevos/catalogo', { credentials: 'same-origin' })
+      fetch('/super/api/plantillas_nuevas/catalogo', { credentials: 'same-origin' })
         .then(function(resp){ return resp.ok ? resp.json() : null; })
         .then(applyBackendVerticalCatalog)
         .catch(function(){});

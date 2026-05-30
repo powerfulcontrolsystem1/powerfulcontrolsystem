@@ -6,9 +6,9 @@ import (
 )
 
 func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
-	catalog := NuevosVerticalesTipoEmpresaCatalog()
+	catalog := NuevasPlantillasTipoEmpresaCatalog()
 	if len(catalog) != 20 {
-		t.Fatalf("expected 20 nuevos verticales, got %d", len(catalog))
+		t.Fatalf("expected 20 nuevas plantillas, got %d", len(catalog))
 	}
 	for _, item := range catalog {
 		t.Run(item.Modulo, func(t *testing.T) {
@@ -36,8 +36,8 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 	}
 }
 
-func TestNuevosVerticalesProduccionMasivaLicenciasRecomendadas(t *testing.T) {
-	selected := NuevosVerticalesProduccionMasivaSeleccionados()
+func TestNuevasPlantillasProduccionMasivaLicenciasRecomendadas(t *testing.T) {
+	selected := NuevasPlantillasProduccionMasivaSeleccionados()
 	if len(selected) != 20 {
 		t.Fatalf("seleccion produccion len=%d want 20", len(selected))
 	}
@@ -45,7 +45,7 @@ func TestNuevosVerticalesProduccionMasivaLicenciasRecomendadas(t *testing.T) {
 		t.Run(modulo, func(t *testing.T) {
 			item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
 			if !ok {
-				t.Fatalf("vertical %s no existe en catalogo", modulo)
+				t.Fatalf("plantilla %s no existe en catalogo", modulo)
 			}
 			plans := DefaultNuevoVerticalLicenciaPlans(item)
 			if len(plans) != 4 {
@@ -68,7 +68,7 @@ func TestNuevosVerticalesProduccionMasivaLicenciasRecomendadas(t *testing.T) {
 }
 
 func TestDefaultNuevoVerticalTipoEmpresaPreconfigTemplate(t *testing.T) {
-	for _, item := range NuevosVerticalesTipoEmpresaCatalog() {
+	for _, item := range NuevasPlantillasTipoEmpresaCatalog() {
 		t.Run(item.Modulo, func(t *testing.T) {
 			template, ok := defaultNuevoVerticalTipoEmpresaPreconfigTemplate(item.Nombre)
 			if !ok {

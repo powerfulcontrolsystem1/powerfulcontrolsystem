@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>20 verticales empresariales</title>
+  <title>20 plantillas empresariales</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
-  <script src="/js/verticales_integracion_catalogo.js"></script>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_integracion_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
-<body class="verticales-launch-page">
-  <main class="verticales-launch-shell">
-    <header class="verticales-launch-head">
+<body class="plantillas-launch-page">
+  <main class="plantillas-launch-shell">
+    <header class="plantillas-launch-head">
       <p>Soluciones por negocio</p>
-      <h1>20 verticales empresariales</h1>
+      <h1>20 plantillas empresariales</h1>
       <span>Cada modulo abre su propio submenu operativo, configuracion, registros, agenda, aprobaciones, evidencias, SLA, riesgo y reportes.</span>
     </header>
-    <section class="verticales-launch-grid" id="verticalesLaunchGrid" aria-label="Modulos verticales"></section>
+    <section class="plantillas-launch-grid" id="plantillasLaunchGrid" aria-label="Modulos plantillas"></section>
   </main>
 
   <script>
     (function () {
-      var modules = (window.PCS_NUEVOS_VERTICALES || []).map(function (item) {
+      var modules = (window.PCS_NUEVAS_PLANTILLAS || []).map(function (item) {
         return [item.id, item.module, item.title, item.summary || item.lead, item.icon || "/img/company-briefcase-color.svg"];
       });
 
@@ -36,13 +36,13 @@
       }
 
       function renderModules(items) {
-        var grid = document.getElementById("verticalesLaunchGrid");
+        var grid = document.getElementById("plantillasLaunchGrid");
         if (!items.length) {
-          grid.innerHTML = '<div class="verticales-launch-empty">No hay verticales habilitados para esta empresa o rol. Revisa la licencia y los permisos por rol en el panel de super administrador.</div>';
+          grid.innerHTML = '<div class="plantillas-launch-empty">No hay plantillas habilitados para esta empresa o rol. Revisa la licencia y los permisos por rol en el panel de super administrador.</div>';
           return;
         }
         grid.innerHTML = items.map(function (item, idx) {
-        return '<a id="' + esc(item[0]) + '" class="verticales-launch-card tone-' + ((idx % 6) + 1) + '" href="' + esc(href(item[1])) + '">' +
+        return '<a id="' + esc(item[0]) + '" class="plantillas-launch-card tone-' + ((idx % 6) + 1) + '" href="' + esc(href(item[1])) + '">' +
           '<img class="icon" src="' + esc(item[4]) + '" alt="">' +
           '<strong>' + esc(item[2]) + '</strong>' +
           '<span>' + esc(item[3]) + '</span>' +
@@ -92,7 +92,7 @@
 
       function fetchBackendCatalog(empresaId) {
         if (!empresaId) return Promise.resolve(null);
-        return fetch("/api/empresa/verticales_nuevos/catalogo?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
+        return fetch("/api/empresa/plantillas_nuevas/catalogo?empresa_id=" + encodeURIComponent(empresaId), { credentials: "same-origin" })
           .then(function (resp) { return resp.ok ? resp.json() : null; })
           .catch(function () { return null; });
       }

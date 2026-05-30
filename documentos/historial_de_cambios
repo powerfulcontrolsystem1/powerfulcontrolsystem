@@ -1,3 +1,46 @@
+2026-05-29: Super administrador en una columna.
+- Modulos afectados: `super_administrador`, `licencias`, `asesor_comercial`, `frontend_ux`.
+- Cambio funcional: el panel super muestra el acceso `Asesor en ventas` dentro del grupo Licencias y la ruta `/super/asesor_comercial.html` queda registrada como pagina valida del iframe.
+- UX: el menu agrupado del super administrador queda forzado a una sola columna en escritorio y movil para que cada seccion quede debajo de la anterior.
+- Seguridad/datos: no cambia endpoints, tablas ni permisos; reutiliza el modulo existente de asesor comercial.
+
+2026-05-29: Idempotencia al crear empresas.
+- Modulos afectados: `seleccionar_empresa`, `empresas`, `seguridad_multiempresa`, `frontend_ux`.
+- Cambio funcional: `POST /super/api/empresas` ahora usa `CreateEmpresaIdempotente`, que serializa la creacion por administrador/tipo/nombre/NIT y devuelve la empresa existente cuando llega un doble clic o reintento identico.
+- Backend: la defensa vive en `backend/db/db.go` con bloqueo en memoria por proceso y advisory lock PostgreSQL por transaccion; el handler evita repetir la alerta de empresa nueva cuando la respuesta fue idempotente.
+- Frontend: `web/js/seleccionar_empresa.js` bloquea el boton `Guardar` y muestra estado `Creando...` mientras termina el POST.
+- Seguridad: `documentos/checklist_seguridad_endpoint_multiempresa.md` y `documentos/decisiones_tecnicas.md` quedan actualizados para exigir idempotencia backend en altas y acciones criticas.
+- Validacion: `go test ./db ./handlers -run "EmpresaCreate|Empresas|^$" -count=1`; parseo JS de `web/js/seleccionar_empresa.js`.
+
+2026-05-29: Plantillas empresariales.
+- Modulos afectados: `plantillas_nuevas`, `plantillas_integracion`, `licencias`, `seleccionar_empresa`, `super_administrador`, `portal_publico`.
+- Cambio funcional: se consolida el concepto operativo como `Plantillas` en textos visibles, rutas activas, paginas HTML, catalogos JS, handlers Go y pruebas enfocadas.
+- Archivos clave: `web/js/plantillas_nuevas_catalogo.js`, `web/js/plantillas_integracion_catalogo.js`, `web/administrar_empresa/plantillas_nuevas_menu.html`, `web/administrar_empresa/plantillas_integracion.html`, `web/super/plantillas_produccion_masiva.html`, `backend/handlers/empresa_plantillas_nuevas.go`, `backend/handlers/empresa_plantillas_integracion.go`, `backend/db/plantillas_nuevas_bootstrap.go`.
+- Compatibilidad: se conservan claves tecnicas heredadas donde aun son contrato interno de configuracion/licencias, evitando romper datos existentes.
+- Validacion: `go test ./db ./handlers ./utils -run "Plantillas|Plantilla|^$" -count=1`; parseo JS/HTML con Node empaquetado.
+
+2026-05-29: Tarjeta Domotica configurable en carrito.
+- Modulos afectados: `carritos`, `domotica`, `control_electrico`, `configuracion_empresa`, `frontend_ux`.
+- Cambio funcional: se separa la activacion del modulo Domotica, la visibilidad del boton de acciones y la visibilidad automatica de la tarjeta Domotica dentro del carrito.
+- Configuracion: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` y `web/administrar_empresa/configuracion_de_estaciones.html` guardan `mostrar_tarjeta_domotica_carrito` en `estaciones_config.carrito_ui_global` o en la configuracion propia de la estacion.
+- Carrito: `web/administrar_empresa/carrito_de_compras.html` refresca Domotica al volver a la ventana y muestra la tarjeta automaticamente si la estacion tiene aparatos configurados; si la preferencia esta apagada, oculta la tarjeta aunque el modulo siga activo.
+- Seguridad/alcance: no se crean endpoints, tablas ni dependencias; se reutilizan `/api/empresa/estacion_prefs` y `/api/empresa/control_electrico`, ambos con contexto empresarial.
+
+2026-05-29: Email corporativo con apariencia clara/oscura
+- Modulos afectados: `email_corporativo`, `administrar_empresa`, `deploy_vps`, `frontend_ux`.
+- Cambio funcional: la tarjeta de correo del panel empresarial detecta el tema activo y solicita el webmail con preferencia `light` o `dark`.
+- UX: la tarjeta oculta el email corporativo y el texto de estado activo para dejar visible solo la bandeja integrada; mantiene alertas cuando hay error o provision pendiente.
+- Configuracion: se agrega `web/administrar_empresa/configuracion/email_corporativo.html` y acceso en Configuracion empresarial para controlar la apertura automatica y cambiar la clave del buzon.
+- Backend: `/api/empresa/email_corporativo` y `/pcs-mail-autologin` aceptan `theme`, propagan `mail_theme` y ejecutan provision directa con `PCS_MAILU_THEME_MODE`/`PCS_MAILU_THEME`.
+- Seguridad: el `POST /api/empresa/email_corporativo` queda bajo `WithEmpresaSeguridadPermissions`, guarda la preferencia por `empresa_id` en `empresa_estacion_prefs` y cifra la nueva clave con `CONFIG_ENC_KEY`; no devuelve contrasenas.
+- Deploy: Mailu/SnappyMail monta `deploy/mailu/themes` y el arranque copia `PCSLight`/`PCSDark` al contenedor webmail.
+- Alcance: no cambia tablas, claves ni permisos multiempresa; el autologin conserva token HMAC temporal y no expone credenciales.
+
+2026-05-29: Favoritos del panel empresarial como botones de menu.
+- Modulos afectados: `administrar_empresa`, `panel_empresa`, `frontend_ux`.
+- Cambio funcional: en `web/administrar_empresa/panel.html`, `Accesos rapidos` y `Favoritos` quedan en una sola fila y los accesos favoritos adoptan el estilo visual de botones del menu principal.
+- Alcance: cambio HTML/CSS local del panel; no altera endpoints, permisos, tablas ni persistencia.
+
 2026-05-29: Rediseño empresarial de informacion de contacto.
 - Modulos afectados: `portal_publico`, `frontend_ux`.
 - Cambio funcional: `web/Informacion_de_contacto.html` cambia a una vista comercial moderna con hero, canales de contacto, asesor de ventas y areas de atencion.
@@ -394,7 +437,7 @@
 2026-05-22: Index con modulos principales en parrafo unico.
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
 - Cambio funcional: la seccion de modulos de `web/index.html` deja de usar grilla de tarjetas y queda como un solo parrafo con las funciones principales.
-- Contenido: inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y verticales operativas.
+- Contenido: inventario, compras, bodegas, datafonos, cajon monedero, cajas simultaneas, caja por usuario, pagos QR, factura electronica, impuestos, modulo del contador, finanzas, IA, control electrico, sensores, reportes y plantillas operativas.
 - Alcance: frontend estatico; sin cambios en backend, base de datos, permisos, endpoints, licencias ni dependencias.
 
 2026-05-21: Contador publico de visitas por pais en el index.
@@ -959,9 +1002,9 @@
 
 2026-05-17: Administrar empresa simplifica Operacion y ventas
 - Modulos afectados: `administrar_empresa`, `ventas`, `estaciones`, `venta_publica`, `crm_unificado`, `permisos`.
-- Cambio UX: el grupo principal `Operacion y ventas` queda solo con `Venta directa` y `Estaciones`, para que la operacion diaria no mezcle canales, colaboracion ni verticales.
+- Cambio UX: el grupo principal `Operacion y ventas` queda solo con `Venta directa` y `Estaciones`, para que la operacion diaria no mezcle canales, colaboracion ni plantillas.
 - Reubicacion: `Venta publica`, `Red social empresarial`, `Codigos de descuento` y `Chat y tareas` pasan al nuevo grupo `Canales digitales y colaboracion`.
-- Reubicacion: `Reservas` pasa a `Soluciones por negocio`, junto a las verticales operativas.
+- Reubicacion: `Reservas` pasa a `Soluciones por negocio`, junto a las plantillas operativas.
 - Permisos base: `Punto de venta / TPV` queda en `Permisos base de ventas`, sin aparecer como acceso operativo principal.
 - Permisos: el catalogo de paginas administrables usa los mismos grupos nuevos sin cambiar rutas, acciones, endpoints ni aislamiento por `empresa_id`.
 - Alcance tecnico: no modifica tablas, dependencias, contratos de API ni permisos efectivos; solo cambia ubicacion visual y clasificacion administrativa.
@@ -1214,7 +1257,7 @@
 2026-05-13: carrito plano reforzado al final del CSS
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
 - Problema: en escritorio todavia podian verse sombras o separaciones porque reglas posteriores de tema, modo tactil o estilos legacy ganaban sobre el primer ajuste.
-- Estilos: se agrega un override absoluto al final de `web/estilos.css` para `body.carrito-flat-page`, anulando sombras, radios, margenes laterales/verticales, gaps y pseudo-barras de formularios.
+- Estilos: se agrega un override absoluto al final de `web/estilos.css` para `body.carrito-flat-page`, anulando sombras, radios, margenes laterales/plantillas, gaps y pseudo-barras de formularios.
 - Validacion: parseo de scripts inline con Node y prueba visual Playwright revisando 15 tarjetas/formularios del carrito con `box-shadow: none`, `border-radius: 0px`, `margin-top/bottom/left/right: 0px`.
 - Alcance: sin backend, permisos, tablas ni dependencias nuevas.
 
@@ -1228,7 +1271,7 @@
 
 2026-05-13: carrito de compras compacta tarjetas pegadas sin separaciones
 - Modulos afectados: `carritos`, `estaciones`, `ventas_simple`.
-- Estilos: `web/estilos.css` refuerza `carrito-flat-page` para quitar gaps, margenes verticales, radios y sombras en tarjetas/contenedores del carrito.
+- Estilos: `web/estilos.css` refuerza `carrito-flat-page` para quitar gaps, margenes plantillas, radios y sombras en tarjetas/contenedores del carrito.
 - UX: el modulo queda con apariencia plana y continua, similar a la tabla de items donde se ven columnas como ID, descripcion, cantidad, precio, descuentos, impuestos, total y acciones.
 - Validacion: parseo de scripts inline con Node y prueba visual Playwright con servidor mock confirmando `gap: 0`, `margin: 0`, `border-radius: 0` y `box-shadow: none` en contenedores clave del carrito.
 - Alcance: sin backend, permisos, tablas ni dependencias nuevas.
@@ -1632,14 +1675,14 @@ Archivos modificados:
 - Validacion: `node --check` de `web/js/crm_comercial.js`, parseo de scripts inline HTML y `git diff --check` sobre archivos tocados.
 
 2026-05-12: Tarjeta de totales del carrito adaptable por tipo de empresa
-- Modulos afectados: `carritos`, `ventas`, `verticales_integracion`, `administrar_empresa`.
+- Modulos afectados: `carritos`, `ventas`, `plantillas_integracion`, `administrar_empresa`.
 - Cambio funcional: la tarjeta `Totales y detalles` cambia titulo, etiquetas y contexto segun el tipo de empresa/vertical activo, manteniendo el mismo carrito, items, pagos, impuestos, descuentos y saldos del nucleo universal.
-- Frontend: `web/administrar_empresa/carrito_de_compras.html` consulta `/api/empresa/permisos_contexto`, lee `vertical_scope`/configuracion general y aplica perfiles de negocio para estadia, gimnasio, clinico, pedidos, transporte, parqueadero, alquileres, copropiedad, farmacia, belleza, ordenes, educacion, obra y verticales nuevos; `web/estilos.css` agrega el indicador compacto del perfil.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` consulta `/api/empresa/permisos_contexto`, lee `vertical_scope`/configuracion general y aplica perfiles de negocio para estadia, gimnasio, clinico, pedidos, transporte, parqueadero, alquileres, copropiedad, farmacia, belleza, ordenes, educacion, obra y plantillas nuevas; `web/estilos.css` agrega el indicador compacto del perfil.
 - Seguridad y datos: no se exponen secretos, no cambia aislamiento por `empresa_id`, no se crean endpoints, permisos, tablas, ventas ni pagos paralelos.
 - Validacion: parseo de scripts inline con Node y `git diff --check` sobre archivos frontend tocados.
 
 2026-05-12: Gimnasio elevado a modulo empresarial
-- Modulos afectados: `gimnasio`, `administrar_empresa`, `verticales_integracion`.
+- Modulos afectados: `gimnasio`, `administrar_empresa`, `plantillas_integracion`.
 - Cambio funcional: el dashboard de gimnasio incorpora salud operativa, alertas ejecutivas y acciones rapidas calculadas desde socios, planes, clases, pagos, dispositivos y eventos de acceso existentes.
 - Frontend: `web/administrar_empresa/gimnasio.html` agrega logo del vertical, buscador/filtro global y bloque de mando ejecutivo; `web/js/gimnasio.js` agrega filtros, badges de estado y lectura de riesgos; `web/administrar_empresa/gimnasio_menu.html` organiza la navegacion en grupos empresariales.
 - Alcance: no cambian endpoints, permisos, backend, base de datos ni dependencias; se reutiliza `/api/empresa/gimnasio`.
@@ -1658,9 +1701,9 @@ Archivos modificados:
 - Alcance: no cambian endpoints, permisos, backend, base de datos ni dependencias.
 - Validacion prevista: sintaxis de scripts inline, `git diff --check`, preflight profesional y verificacion publica tras despliegue.
 
-2026-05-12: Actualizacion de pagina super Verticales 20
-- Modulos afectados: `super_administrador`, `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`.
-- Cambio funcional: `web/super/verticales_produccion_masiva.html` se actualiza como consola ejecutiva con semaforo comercial, brechas principales, tarjetas de foco, KPIs ampliados y filtros por `Sin licencia` y `Sin preconfig`.
+2026-05-12: Actualizacion de pagina super Plantillas 20
+- Modulos afectados: `super_administrador`, `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`.
+- Cambio funcional: `web/super/plantillas_produccion_masiva.html` se actualiza como consola ejecutiva con semaforo comercial, brechas principales, tarjetas de foco, KPIs ampliados y filtros por `Sin licencia` y `Sin preconfig`.
 - Frontend: el readiness cruza catalogo, metadata extendida, preconfiguracion activa e licencia base; tambien tolera respuestas API con arreglo directo, `items`, `licencias` o `data`.
 - Alcance: no cambian backend, endpoints, permisos, base de datos ni dependencias.
 - Validacion prevista: sintaxis del script inline, `git diff --check`, preflight profesional y verificacion publica tras despliegue.
@@ -1703,17 +1746,17 @@ Archivos modificados:
 - Estaciones: `estaciones_config` incluye `tipo_recurso`, `tipo_recurso_plural` y `representa_recurso_negocio`, permitiendo que una estacion represente estacion, apartamento, puesto, bahia, carro/vehiculo, aula, consultorio u oficina segun plantilla.
 - Frontend super: la pantalla de preconfiguraciones muestra la seccion `Nucleo configurable` y envia la metadata al guardar.
 - Base de datos: no hay tablas ni columnas nuevas; se reutiliza JSON en `tipo_empresa_preconfiguraciones.config_json` y `empresa_estacion_prefs`.
-- Validacion: `go test ./db -run "TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes|TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog|TestNuevosVerticalesProduccionMasivaSeleccionaVeinte|TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1" -count=1`, `go test ./handlers -run "TestEmpresaVerticalesIntegracionCatalogoContrato|TestPublicVerticalesIntegracionCatalogoHandler|TestLicenciaVisibleParaClientes" -count=1`, parser inline de `web/super/preconfiguracion_tipos_empresa.html`.
+- Validacion: `go test ./db -run "TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes|TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog|TestNuevasPlantillasProduccionMasivaSeleccionaVeinte|TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1" -count=1`, `go test ./handlers -run "TestEmpresaPlantillasIntegracionCatalogoContrato|TestPublicPlantillasIntegracionCatalogoHandler|TestLicenciaVisibleParaClientes" -count=1`, parser inline de `web/super/preconfiguracion_tipos_empresa.html`.
 
-2026-05-12: Matriz profesional de 30 verticales
-- Modulos afectados: verticales_integracion, verticales_nuevos, preconfiguracion_tipos_empresa, administrar_empresa, roles/licencias, reportes.
-- Cambio funcional: el catalogo `/api/*/verticales_integracion/catalogo` publica exactamente 30 verticales canonicos, fusionando alias historicos y dejando soportes transversales fuera del conteo comercial.
-- Backend: cada vertical visible publica preparacion profesional (`professional_ready`, `readiness_score`, checks y alcance de configuracion), fusiones/soportes, nucleo financiero, flujo de ingresos, flujo de egresos, tablas financieras y reportes financieros cuando aplica; la prueba de contrato impide publicar verticales visibles incompletos o alias como verticales separados.
+2026-05-12: Matriz profesional de 30 plantillas
+- Modulos afectados: plantillas_integracion, plantillas_nuevas, preconfiguracion_tipos_empresa, administrar_empresa, roles/licencias, reportes.
+- Cambio funcional: el catalogo `/api/*/plantillas_integracion/catalogo` publica exactamente 30 plantillas canonicos, fusionando alias historicos y dejando soportes transversales fuera del conteo comercial.
+- Backend: cada vertical visible publica preparacion profesional (`professional_ready`, `readiness_score`, checks y alcance de configuracion), fusiones/soportes, nucleo financiero, flujo de ingresos, flujo de egresos, tablas financieras y reportes financieros cuando aplica; la prueba de contrato impide publicar plantillas visibles incompletos o alias como plantillas separados.
 - Frontend: Configuracion empresarial muestra `Adaptacion por tipo`, perfil activo desde `/api/empresa/permisos_contexto`, KPIs de contrato/ventas-finanzas/reportes/configuracion y estado `Profesional` o `Brecha` por vertical.
 - Base de datos: sin cambios de esquema; los 20 nuevos siguen usando `empresa_modulos_colombia_*` y el nucleo central mantiene clientes, productos, ventas, pagos, facturacion y reportes.
-- Finanzas: los 30 verticales declaran ingresos y egresos atados a ventas/pagos, `empresa_finanzas_movimientos`, conciliacion/tesoreria y reportes financieros consolidados.
+- Finanzas: los 30 plantillas declaran ingresos y egresos atados a ventas/pagos, `empresa_finanzas_movimientos`, conciliacion/tesoreria y reportes financieros consolidados.
 - Fusion: `consultorio_odontologico` queda dentro de `odontologia`, `taxi` dentro de `taxi_system`, y `turnos_atencion`/`turnos` quedan como soporte transversal reutilizable.
-- Validacion: `go test ./handlers -run "TestEmpresaVerticalesIntegracionCatalogoContrato|TestPublicVerticalesIntegracionCatalogoHandler" -count=1`, `node --check web/js/verticales_integracion_catalogo.js`, parser inline de `web/administrar_empresa/verticales_integracion.html` y conteo local exacto 30.
+- Validacion: `go test ./handlers -run "TestEmpresaPlantillasIntegracionCatalogoContrato|TestPublicPlantillasIntegracionCatalogoHandler" -count=1`, `node --check web/js/plantillas_integracion_catalogo.js`, parser inline de `web/administrar_empresa/plantillas_integracion.html` y conteo local exacto 30.
 
 2026-05-12: Licencias ocultables para clientes
 - Modulos afectados: `licencias`, `checkout_publico`, `pagos`.
@@ -1750,9 +1793,9 @@ Archivos modificados:
 - Verificacion: parseo de script inline con Node OK; `git diff --check -- web/super/licencias_resumen.html` sin errores.
 
 2026-05-11: Matriz de integracion movida a configuracion empresarial
-- Modulos afectados: administrar empresa, verticales_integracion, roles/permisos.
+- Modulos afectados: administrar empresa, plantillas_integracion, roles/permisos.
 - Cambio funcional: el acceso Matriz de integracion se retira de Soluciones por negocio y queda en Administrar empresa > Configuracion > Base empresarial.
-- Permisos: linkVerticalesIntegracion conserva seguridad:R y se agrupa como Administracion y configuracion en el catalogo backend.
+- Permisos: linkPlantillasIntegracion conserva seguridad:R y se agrupa como Administracion y configuracion en el catalogo backend.
 - Archivos: web/administrar_empresa.html, web/administrar_empresa/configuracion_menu.html, backend/handlers/empresa_permisos.go.
 2026-05-11: Emisora online configurable por empresa
 - Modulos afectados: administrar empresa, chat IA flotante, radio online.
@@ -1760,7 +1803,7 @@ Archivos modificados:
 - Backend: /api/chat_flotante/preferencias acepta empresa_id y guarda chat_flotante.radio_online_enabled y demas preferencias chat_flotante.* por empresa en empresa_estacion_prefs.
 - Frontend: web/js/radio_player.js carga y persiste la preferencia empresarial; web/js/ai_chat_drawer.js sincroniza la vista compacta con el reproductor.
 - Verificacion: node --check web/js/ai_chat_drawer.js; node --check web/js/radio_player.js; go test ./... en backend/.
-2026-05-11: Correccion de cargas parciales en verticales integrados
+2026-05-11: Correccion de cargas parciales en plantillas integrados
 - Modulos afectados: odontologia, gimnasio, lquileres, clientes, servicios, carritos, entas, pagos.
 - Causa tecnica: en bases PostgreSQL existentes, odontologia y gimnasio podian crear indices sobre columnas de integracion antes de asegurar esas columnas, provocando errores parciales en consultas del dashboard.
 - Backend: ackend/db/odontologia.go y ackend/db/gimnasio.go crean indices de integracion despues de ensureColumnIfMissing; se agregan pruebas de contrato en sus tests de integracion.
@@ -1770,76 +1813,76 @@ Archivos modificados:
 - Modulo afectado: super_administrador.
 - Cambio: web/js/super_administrador.js permite restaurar /ayuda/ayuda.html para super administrador mediante validacion explicita, sin agregarla al allowlist limitado de control_super_administrador.
 - Verificacion: cubierto por TestSuperAdminPanelExposesPrivateHelpButton dentro de go test ./... -count=1.
-2026-05-11: 20 verticales nuevos reales
-- Modulos afectados: `verticales_nuevos`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
-- Cambio funcional: los 20 verticales nuevos quedan en produccion masiva; el ranking de nuevos verticales ahora va de 1 a 20.
-- Backend: `backend/db/nuevos_verticales_bootstrap.go` asegura tipos de empresa, preconfiguraciones y licencias recomendadas para los 20 verticales; `backend/handlers/empresa_verticales_nuevos.go` acepta `asegurar_20_licencias` y conserva alias compatible.
-- Frontend: `web/js/nuevos_verticales_catalogo.js`, `web/index.html`, `web/super/verticales_produccion_masiva.html` y `web/super_administrador.html` publican/gobiernan las 20 plantillas reales.
-- Gobernanza: no se crean ventas, clientes, productos ni pagos paralelos; todos los verticales usan el nucleo y conservan solo especialidad en `empresa_modulos_colombia_*`.
+2026-05-11: 20 plantillas nuevas reales
+- Modulos afectados: `plantillas_nuevas`, `preconfiguracion_tipos_empresa`, `licencias`, `index_publico`, `super_administrador`, `clientes`, `inventario`, `ventas`, `pagos`, `facturacion`, `reportes`, `roles/licencias`.
+- Cambio funcional: los 20 plantillas nuevas quedan en produccion masiva; el ranking de nuevas plantillas ahora va de 1 a 20.
+- Backend: `backend/db/plantillas_nuevas_bootstrap.go` asegura tipos de empresa, preconfiguraciones y licencias recomendadas para los 20 plantillas; `backend/handlers/empresa_plantillas_nuevas.go` acepta `asegurar_20_licencias` y conserva alias compatible.
+- Frontend: `web/js/plantillas_nuevas_catalogo.js`, `web/index.html`, `web/super/plantillas_produccion_masiva.html` y `web/super_administrador.html` publican/gobiernan las 20 plantillas reales.
+- Gobernanza: no se crean ventas, clientes, productos ni pagos paralelos; todos los plantillas usan el nucleo y conservan solo especialidad en `empresa_modulos_colombia_*`.
 2026-05-11: Fix arranque PostgreSQL parqueadero
 - Modulo afectado: `parqueadero`.
 - Causa tecnica: el despliegue VPS fallaba en `EnsureEmpresaParqueaderoSchema` porque intentaba crear el indice `ix_parqueadero_ticket_empresa_carrito` antes de asegurar la columna `carrito_id` en tablas ya existentes.
 - Cambio: `backend/db/parqueadero.go` asegura `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id` antes de crear el indice por carrito.
 - Alcance: no agrega tablas, endpoints, permisos ni dependencias; solo corrige orden de migracion ligera PostgreSQL.
-2026-05-11: Portada index alineada a modulos y verticales reales
-- Modulos afectados: `index_publico`, `verticales_nuevos`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `tickets_ayuda`, `calidad_procesos`, `facturacion`.
-- Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` presentan los 20 verticales nuevos como ofertas operativas cuando el catalogo los marca en produccion masiva.
-- Catalogo: `web/js/nuevos_verticales_catalogo.js` agrega decision de produccion, ranking, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica.
+2026-05-11: Portada index alineada a modulos y plantillas reales
+- Modulos afectados: `index_publico`, `plantillas_nuevas`, `crm_unificado`, `drogueria_farmacia`, `alquileres`, `logistica_wms`, `bancos_pagos`, `gestion_documental`, `tickets_ayuda`, `calidad_procesos`, `facturacion`.
+- Cambio funcional: `web/index.html` y los defaults de `/api/public/pagina_principal` presentan los 20 plantillas nuevas como ofertas operativas cuando el catalogo los marca en produccion masiva.
+- Catalogo: `web/js/plantillas_nuevas_catalogo.js` agrega decision de produccion, ranking, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica.
 - Backend publico: `backend/handlers/pagina_principal_handlers.go` actualiza las tarjetas por defecto que entrega el endpoint publico cuando no hay configuracion guardada.
 - UX publica: se agregan tarjetas para modulos reales del nucleo y transversales como CRM, drogueria/farmacia, alquileres, WMS, bancos/pagos, gestion documental, tickets de ayuda/calidad y facturacion electronica Colombia.
 - Gobernanza: las 20 plantillas nuevas se ofrecen como boton operativo de `Probar gratis` y siguen usando el nucleo unico.
-- Verificacion: `node --check web/js/nuevos_verticales_catalogo.js`, validacion de scripts inline de `web/index.html` y conteo de catalogo 20 total / 20 publicables.
-2026-05-11: Aseguramiento comercial de verticales 20
-- POST /super/api/verticales_nuevos/catalogoaction=asegurar_20_licencias asegura tipos, preconfiguraciones y licencias recomendadas de los 20 verticales.
-- web/super/verticales_produccion_masiva.html agrega boton Asegurar 20 y refresca el semaforo Listo venta.
+- Verificacion: `node --check web/js/plantillas_nuevas_catalogo.js`, validacion de scripts inline de `web/index.html` y conteo de catalogo 20 total / 20 publicables.
+2026-05-11: Aseguramiento comercial de plantillas 20
+- POST /super/api/plantillas_nuevas/catalogoaction=asegurar_20_licencias asegura tipos, preconfiguraciones y licencias recomendadas de los 20 plantillas.
+- web/super/plantillas_produccion_masiva.html agrega boton Asegurar 20 y refresca el semaforo Listo venta.
 - No se agregan rutas nuevas, permisos nuevos, tablas ni dependencias.
 
-2026-05-11: Semaforo listo para venta en verticales 20
-- web/super/verticales_produccion_masiva.html cruza catalogo de verticales, preconfiguraciones y licencias activas.
+2026-05-11: Semaforo listo para venta en plantillas 20
+- web/super/plantillas_produccion_masiva.html cruza catalogo de plantillas, preconfiguraciones y licencias activas.
 - Un vertical queda Listo venta solo si esta en produccion masiva, tiene metadata completa, preconfiguracion activa con integracion_vertical y licencia activa que incluye el modulo.
 - No se agregan endpoints, permisos, tablas ni dependencias.
 
-2026-05-11: Acciones de gobierno para verticales 20
-- La vista super Verticales 20 enlaza cada vertical con Tipos de empresa, Preconfiguraciones y Licencias.
+2026-05-11: Acciones de gobierno para plantillas 20
+- La vista super Plantillas 20 enlaza cada vertical con Tipos de empresa, Preconfiguraciones y Licencias.
 - Las paginas web/super/tipos_empresas.html, web/super/preconfiguracion_tipos_empresa.html y web/super/licencias.html aceptan filtros iniciales q, vertical o modulo.
 - No se agregan endpoints, permisos, tablas ni dependencias.
 
-2026-05-11: Gobierno super de verticales produccion masiva
-- Se agrega web/super/verticales_produccion_masiva.html con KPIs, filtros, ranking, metadata extendida y exportacion CSV.
-- El panel super enlaza Verticales 20 desde Licencias y permite restaurar la pagina en web/js/super_administrador.js.
-- La vista reutiliza /super/api/verticales_nuevos/catalogo; no agrega endpoints, permisos, tablas ni dependencias.
+2026-05-11: Gobierno super de plantillas produccion masiva
+- Se agrega web/super/plantillas_produccion_masiva.html con KPIs, filtros, ranking, metadata extendida y exportacion CSV.
+- El panel super enlaza Plantillas 20 desde Licencias y permite restaurar la pagina en web/js/super_administrador.js.
+- La vista reutiliza /super/api/plantillas_nuevas/catalogo; no agrega endpoints, permisos, tablas ni dependencias.
 
 2026-05-11: Preconfiguraciones conectadas a matriz vertical y produccion masiva 20
 - Se agrega integracion_vertical al JSON de preconfiguracion por tipo de empresa.
-- Los catalogos de verticales nuevos exponen integracion_preconfig, produccion_masiva, prioridad_produccion y decision_preconfig.
-- Se priorizan 20 verticales nuevos para produccion masiva con motivo documentado en documentos/plan_verticales_produccion_masiva_2026-05-11.md.
-- Verificacion enfocada: go test ./db -run TipoEmpresaPreconfig|NuevosVerticalesProduccion -count=1; go test ./handlers -run VerticalesNuevos -count=1.
+- Los catalogos de plantillas nuevas exponen integracion_preconfig, produccion_masiva, prioridad_produccion y decision_preconfig.
+- Se priorizan 20 plantillas nuevas para produccion masiva con motivo documentado en documentos/plan_plantillas_produccion_masiva_2026-05-11.md.
+- Verificacion enfocada: go test ./db -run TipoEmpresaPreconfig|NuevasPlantillasProduccion -count=1; go test ./handlers -run PlantillasNuevos -count=1.
 
-- 2026-05-11: matriz extendida de plantillas verticales. El catalogo /api/*/verticales_integracion/catalogo publica template_activates, tables_touched, required_permissions, sale_flow y reports_produced; la pantalla empresarial muestra esos datos por vertical y la prueba de contrato bloquea verticales visibles sin metadata completa. No hay cambios de esquema ni dependencias nuevas.
-- 2026-05-11: sincronizacion segura desde matriz vertical. web/administrar_empresa/verticales_integracion.html ahora carga /api/empresa/permisos_contexto, calcula sincronizaciones permitidas, deshabilita botones sin permiso efectivo, exige confirmacion humana antes del POST y mantiene la autorizacion final en cada endpoint vertical por rol, licencia y empresa_id.
+- 2026-05-11: matriz extendida de plantillas plantillas. El catalogo /api/*/plantillas_integracion/catalogo publica template_activates, tables_touched, required_permissions, sale_flow y reports_produced; la pantalla empresarial muestra esos datos por vertical y la prueba de contrato bloquea plantillas visibles sin metadata completa. No hay cambios de esquema ni dependencias nuevas.
+- 2026-05-11: sincronizacion segura desde matriz vertical. web/administrar_empresa/plantillas_integracion.html ahora carga /api/empresa/permisos_contexto, calcula sincronizaciones permitidas, deshabilita botones sin permiso efectivo, exige confirmacion humana antes del POST y mantiene la autorizacion final en cada endpoint vertical por rol, licencia y empresa_id.
 2026-05-11 - Sincronizacion desde matriz vertical
-- `web/administrar_empresa/verticales_integracion.html` agrega botones `Sincronizar` por vertical y muestra resultado de la accion.
+- `web/administrar_empresa/plantillas_integracion.html` agrega botones `Sincronizar` por vertical y muestra resultado de la accion.
 - La pantalla conserva permiso `seguridad:R`; cada POST mantiene la autorizacion propia del endpoint vertical correspondiente.
-- Pruebas: `go test ./handlers -run VerticalesIntegracion -count=1` y parser inline de `verticales_integracion.html`.
+- Pruebas: `go test ./handlers -run PlantillasIntegracion -count=1` y parser inline de `plantillas_integracion.html`.
 2026-05-11 - Pantalla de matriz vertical en empresa
-- Se agrega `web/administrar_empresa/verticales_integracion.html` para consultar la matriz completa de integracion por vertical.
+- Se agrega `web/administrar_empresa/plantillas_integracion.html` para consultar la matriz completa de integracion por vertical.
 - `web/administrar_empresa.html` incorpora el enlace `Matriz de integracion` dentro de Soluciones por negocio.
-- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js` registran `linkVerticalesIntegracion` con permiso `seguridad:R`.
-- Pruebas: `node --check web/js/administrar_empresa.js`, parser inline de `verticales_integracion.html` y `go test ./handlers -run Verticales -count=1`.
+- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js` registran `linkPlantillasIntegracion` con permiso `seguridad:R`.
+- Pruebas: `node --check web/js/administrar_empresa.js`, parser inline de `plantillas_integracion.html` y `go test ./handlers -run Plantillas -count=1`.
 2026-05-11 - Indicador de matriz vertical en panel empresa
 - `web/administrar_empresa.html` agrega un indicador compacto de integracion vertical en el sidebar empresarial.
-- `web/js/administrar_empresa.js` alimenta el indicador con el resumen de `web/js/verticales_integracion_catalogo.js`, mostrando fuente API/local y conteo visible/total.
+- `web/js/administrar_empresa.js` alimenta el indicador con el resumen de `web/js/plantillas_integracion_catalogo.js`, mostrando fuente API/local y conteo visible/total.
 - `web/estilos.css` agrega estilos discretos para el estado de matriz sin cambiar permisos, licencias ni rutas.
-- Pruebas: `node --check web/js/administrar_empresa.js`, `node --check web/js/verticales_integracion_catalogo.js` y prueba inline de resumen dinamico con `node -e`.
+- Pruebas: `node --check web/js/administrar_empresa.js`, `node --check web/js/plantillas_integracion_catalogo.js` y prueba inline de resumen dinamico con `node -e`.
 2026-05-11 - Frontend consume catalogo API de integracion vertical
-- `web/js/administrar_empresa.js` carga `/api/empresa/verticales_integracion/catalogo` antes de aplicar permisos/licencias del menu empresarial.
-- `web/js/verticales_integracion_catalogo.js` permite fusionar los items del backend sobre el catalogo local para mantener fallback si la API falla.
-- Objetivo: evitar que el menu muestre verticales no integradas por desalineacion entre backend, frontend y documentacion.
-- Pruebas: `node --check web/js/administrar_empresa.js`, `node --check web/js/verticales_integracion_catalogo.js` y prueba inline de fusion dinamica con `node -e`.
+- `web/js/administrar_empresa.js` carga `/api/empresa/plantillas_integracion/catalogo` antes de aplicar permisos/licencias del menu empresarial.
+- `web/js/plantillas_integracion_catalogo.js` permite fusionar los items del backend sobre el catalogo local para mantener fallback si la API falla.
+- Objetivo: evitar que el menu muestre plantillas no integradas por desalineacion entre backend, frontend y documentacion.
+- Pruebas: `node --check web/js/administrar_empresa.js`, `node --check web/js/plantillas_integracion_catalogo.js` y prueba inline de fusion dinamica con `node -e`.
 2026-05-11 - Catalogo API de integracion vertical
-- Se agrega `backend/handlers/empresa_verticales_integracion.go` para exponer por API la matriz de verticales clasicos.
-- Nuevas rutas de solo lectura: `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
-- Pruebas: `go test ./handlers -run Verticales -count=1` en `backend`.
+- Se agrega `backend/handlers/empresa_plantillas_integracion.go` para exponer por API la matriz de plantillas clasicos.
+- Nuevas rutas de solo lectura: `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo`.
+- Pruebas: `go test ./handlers -run Plantillas -count=1` en `backend`.
 2026-05-11 - AIU construccion integrado al nucleo operativo
 - Se enlazan clientes de obra con `clientes`, contratos y conceptos con `servicios`, y facturas AIU con `carritos_compras`/`carrito_compra_items`.
 - Pruebas: `go test ./db -run AIU -count=1` en `backend`.
@@ -1859,36 +1902,36 @@ Archivos modificados:
 2026-05-11: Apartamentos turisticos integrado al nucleo
 - Modulos afectados: `apartamentos_turisticos`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
 - Cambio funcional: unidades se enlazan a servicios centrales; huespedes se enlazan a clientes centrales; checkout de reservas genera carrito, item de alojamiento, limpieza e impuesto calculado por carrito con pago central normalizado.
-- Validacion: `go test ./db ./handlers -count=1`, sintaxis inline de `web/administrar_empresa/apartamentos_turisticos.html` y `node --check web/js/verticales_integracion_catalogo.js`.
+- Validacion: `go test ./db ./handlers -count=1`, sintaxis inline de `web/administrar_empresa/apartamentos_turisticos.html` y `node --check web/js/plantillas_integracion_catalogo.js`.
 2026-05-11: Domicilios integrado al nucleo
 - Modulos afectados: `domicilios`, `clientes`, `servicios`, `carritos`, `ventas`, `pagos`, `administrar_empresa`.
 - Cambio funcional: productos de menu se enlazan a servicios centrales; pedidos nuevos se enlazan a clientes centrales; pedidos entregados generan carrito, items, tarifa/propina y pago central normalizado.
-- Validacion: `go test ./db ./handlers -count=1`, `node --check web/js/domicilios.js` y `node --check web/js/verticales_integracion_catalogo.js`.
+- Validacion: `go test ./db ./handlers -count=1`, `node --check web/js/domicilios.js` y `node --check web/js/plantillas_integracion_catalogo.js`.
 2026-05-11 - Taxi system integrado al nucleo operativo
 - Se enlazan clientes registrados/invitados y viajes completados con clientes centrales, servicios vendibles y carritos/items centrales.
 - Al completar un viaje con tarifa, se genera venta central y pago normalizado; taxi conserva conductores, GPS, ofertas, despacho y rutas como especialidad operativa.
-- El catalogo de verticales marca taxi_system/taxi como plantilla visible integrada y mantiene domicilios y demas verticales pendientes ocultos.
-- Validacion: go test ./db -run "Test.*Taxi|TestTaxi" -count=1; go test ./handlers -run "Test.*Taxi" -count=1; node --check taxi_system.js y verticales_integracion_catalogo.js.
+- El catalogo de plantillas marca taxi_system/taxi como plantilla visible integrada y mantiene domicilios y demas plantillas pendientes ocultos.
+- Validacion: go test ./db -run "Test.*Taxi|TestTaxi" -count=1; go test ./handlers -run "Test.*Taxi" -count=1; node --check taxi_system.js y plantillas_integracion_catalogo.js.
 2026-05-11 - Parqueadero integrado al nucleo operativo
 - Se enlazan tickets cobrados de parqueadero con clientes opcionales, servicios vendibles y carritos/items centrales.
 - El cierre de salida crea venta central, item de servicio y pago con referencia del ticket; la tabla propia conserva placa, QR, entrada/salida, minutos, tarifas y anulaciones.
-- El catalogo de verticales marca parqueadero como plantilla visible integrada y mantiene ocultos taxi, domicilios y demas verticales pendientes.
-- Validacion: go test ./db -run "Test.*Parqueadero|TestParqueadero" -count=1; go test ./handlers -run "Test.*Parqueadero" -count=1; node --check verticales_integracion_catalogo.js.
+- El catalogo de plantillas marca parqueadero como plantilla visible integrada y mantiene ocultos taxi, domicilios y demas plantillas pendientes.
+- Validacion: go test ./db -run "Test.*Parqueadero|TestParqueadero" -count=1; go test ./handlers -run "Test.*Parqueadero" -count=1; node --check plantillas_integracion_catalogo.js.
 2026-05-11 - Odontologia integrada al nucleo operativo
 - Se enlazan pacientes odontologicos con clientes centrales, tratamientos con servicios vendibles y pagos con carritos/items centrales.
-- El catalogo de verticales marca odontologia y consultorio_odontologico como plantillas visibles integradas, manteniendo ocultos los demas verticales pendientes.
-- Validacion: go test ./db -run "Test.*Odonto|Test.*Odontologia" -count=1; go test ./handlers -run "Test.*Odontologia|TestNuevosVerticales|TestEmpresaVerticalesNuevos" -count=1; node --check consultorio/catalogo/administrar.
+- El catalogo de plantillas marca odontologia y consultorio_odontologico como plantillas visibles integradas, manteniendo ocultos los demas plantillas pendientes.
+- Validacion: go test ./db -run "Test.*Odonto|Test.*Odontologia" -count=1; go test ./handlers -run "Test.*Odontologia|TestNuevasPlantillas|TestEmpresaPlantillasNuevos" -count=1; node --check consultorio/catalogo/administrar.
 2026-05-11 - Gimnasio integrado al nucleo operativo
-- Archivos: backend/db/gimnasio.go, backend/handlers/gimnasio.go, backend/db/gimnasio_integracion_test.go, web/administrar_empresa/gimnasio.html, web/js/gimnasio.js, web/js/verticales_integracion_catalogo.js, documentos base y changelogs.
+- Archivos: backend/db/gimnasio.go, backend/handlers/gimnasio.go, backend/db/gimnasio_integracion_test.go, web/administrar_empresa/gimnasio.html, web/js/gimnasio.js, web/js/plantillas_integracion_catalogo.js, documentos base y changelogs.
 - Descripcion: se migra gimnasio hacia el contrato de nucleo unico. Los socios se enlazan con clientes, los planes con servicios vendibles y los pagos pagados generan venta central en carritos_compras con item de servicio y referencia de pago.
-- Gobernanza: gimnasio vuelve a estar visible como plantilla integrada; odontologia, parqueadero y demas verticales con cobros paralelos siguen ocultos hasta su oleada.
-- Verificacion: go test ./db -run "TestGimnasio|Test.*Gimnasio|Test.*Carrito|Test.*Cliente|Test.*Producto" -count=1, go test ./handlers -run "Test.*Gimnasio|TestNuevosVerticales|TestEmpresaVerticalesNuevos" -count=1 y node --check en gimnasio/verticales/administrar_empresa.
-2026-05-11 - Fases de integracion profesional de verticales
-- Archivos: documentos/matriz_integracion_verticales.md, web/js/verticales_integracion_catalogo.js, web/js/administrar_empresa.js, web/js/nuevos_verticales_catalogo.js, web/administrar_empresa.html, web/administrar_empresa/verticales_nuevos_menu.html, backend/handlers/empresa_verticales_nuevos.go, backend/handlers/empresa_verticales_nuevos_test.go y documentacion base.
-- Descripcion: se inicia la implementacion por fases con una matriz que mantiene clientes, productos/servicios, ventas, pagos, facturacion, reportes y permisos como fuente unica. Los 20 verticales nuevos quedan como plantillas visibles sobre el motor compartido y los verticales clasicos con duplicados reales se ocultan del menu operativo.
-- Integracion: el frontend aplica visibleOperativo antes de permisos/licencias y el backend expone metadata de integracion para catalogos de verticales nuevos.
-- Gobernanza: no se borran verticales por existir; solo se ocultan los pendientes y se documenta la migracion por oleadas para eliminar o fusionar duplicados reales.
-- Verificacion: node --check web/js/verticales_integracion_catalogo.js web/js/nuevos_verticales_catalogo.js web/js/administrar_empresa.js y go test ./handlers -run "TestNuevosVerticales|TestEmpresaVerticalesNuevos|TestPublicVerticalesNuevos|TestLinkNuevosVerticales" -count=1.
+- Gobernanza: gimnasio vuelve a estar visible como plantilla integrada; odontologia, parqueadero y demas plantillas con cobros paralelos siguen ocultos hasta su oleada.
+- Verificacion: go test ./db -run "TestGimnasio|Test.*Gimnasio|Test.*Carrito|Test.*Cliente|Test.*Producto" -count=1, go test ./handlers -run "Test.*Gimnasio|TestNuevasPlantillas|TestEmpresaPlantillasNuevos" -count=1 y node --check en gimnasio/plantillas/administrar_empresa.
+2026-05-11 - Fases de integracion profesional de plantillas
+- Archivos: documentos/matriz_integracion_plantillas.md, web/js/plantillas_integracion_catalogo.js, web/js/administrar_empresa.js, web/js/plantillas_nuevas_catalogo.js, web/administrar_empresa.html, web/administrar_empresa/plantillas_nuevas_menu.html, backend/handlers/empresa_plantillas_nuevas.go, backend/handlers/empresa_plantillas_nuevas_test.go y documentacion base.
+- Descripcion: se inicia la implementacion por fases con una matriz que mantiene clientes, productos/servicios, ventas, pagos, facturacion, reportes y permisos como fuente unica. Los 20 plantillas nuevas quedan como plantillas visibles sobre el motor compartido y los plantillas clasicos con duplicados reales se ocultan del menu operativo.
+- Integracion: el frontend aplica visibleOperativo antes de permisos/licencias y el backend expone metadata de integracion para catalogos de plantillas nuevas.
+- Gobernanza: no se borran plantillas por existir; solo se ocultan los pendientes y se documenta la migracion por oleadas para eliminar o fusionar duplicados reales.
+- Verificacion: node --check web/js/plantillas_integracion_catalogo.js web/js/plantillas_nuevas_catalogo.js web/js/administrar_empresa.js y go test ./handlers -run "TestNuevasPlantillas|TestEmpresaPlantillasNuevos|TestPublicPlantillasNuevos|TestLinkNuevasPlantillas" -count=1.
 2026-05-11 - Panel super profesional
 - Archivos: web/super_administrador.html, web/js/super_administrador.js, web/estilos.css, documentos base y changelogs.
 - Descripcion: se reduce el panel principal del super administrador a una consola ejecutiva con gobierno, licencias, acceso, IA esencial y plataforma. Se retiran accesos secundarios del menu visible sin eliminar rutas ni endpoints.
@@ -1948,7 +1991,7 @@ Archivos modificados:
 - Descripcion: se mueve el boton Ayuda super administrador desde Operacion global hacia Infraestructura y comunicaciones, justo despues de Configuracion avanzada, conservando ruta privada y comportamiento dentro del iframe del panel.
 - Verificacion: validacion estatica de HTML/JS y git diff --check.
 2026-05-11 - Portada publica con informacion ampliada de nuevas empresas
-- Archivos: web/index.html, web/descripcion_de_los_sistemas.ht, web/js/nuevos_verticales_catalogo.js, documentacion central.
+- Archivos: web/index.html, web/descripcion_de_los_sistemas.ht, web/js/plantillas_nuevas_catalogo.js, documentacion central.
 - Descripcion: se amplian las descripciones de las 20 nuevas empresas en la portada publica y el flujo del boton Probar Gratis conserva modulo, tipo de empresa, titulo, descripcion y secciones para mostrar una ficha detallada antes del registro.
 - Verificacion: validacion estatica de JavaScript/HTML, revision visual local y git diff --check.
 2026-05-10 - Modo tactil para carritos y agregador de productos
@@ -2007,7 +2050,7 @@ Archivos modificados:
 
 - 2026-05-05: documentacion integral del proyecto, portal index y publicacion Motel Calipso.
     - Archivos: `web/index.html`, `backend/utils/utils.go`, `backend/utils/auth_middleware_test.go`, `backend/tmp_tools/seed_motel_calipso_publicacion/main.go`, `documentos/README.md`, `RESUMEN_DEL_PROYECTO.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/descripcion_de_archivos`, `documentos/carta_publica_productos.md`, `documentos/domicilios_profesional.md`, `documentos/taxi_system_profesional.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`.
-    - Descripcion: se actualiza la documentacion central para reflejar las descripciones nuevas del portal publico, los modulos verticales recientes, la carta publica con QR, la publicacion operativa de Motel Calipso, red social comercial y la liberacion de `visualizar_productos_y_precios_publico.html` como vista publica de solo lectura.
+    - Descripcion: se actualiza la documentacion central para reflejar las descripciones nuevas del portal publico, los modulos plantillas recientes, la carta publica con QR, la publicacion operativa de Motel Calipso, red social comercial y la liberacion de `visualizar_productos_y_precios_publico.html` como vista publica de solo lectura.
     - Verificacion: `go test ./utils`; `go test ./ ./auth ./db ./handlers ./metrics ./utils -run '^$' -count=1`; HTTP 200 productivo para venta publica, carta publica y red social.
 
 - 2026-05-04: asesor comercial - transferencias y pagos de comisiones.
@@ -24632,19 +24675,19 @@ Archivos modificados:
 - web/js/super_administrador.js
 - web/super_administrador.html
 
-2026-05-10: Implementacion plan 20 verticales empresariales
+2026-05-10: Implementacion plan 20 plantillas empresariales
 PushStatus: OK
 Archivos modificados:
 - backend/db/modulos_empresariales_colombia.go
 - backend/db/modulos_empresariales_colombia_test.go
-- backend/db/modulos_verticales_nuevos.go
-- backend/db/modulos_verticales_nuevos_test.go
-- backend/db/nuevos_verticales_bootstrap.go
-- backend/db/nuevos_verticales_bootstrap_test.go
+- backend/db/modulos_plantillas_nuevas.go
+- backend/db/modulos_plantillas_nuevas_test.go
+- backend/db/plantillas_nuevas_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap_test.go
 - backend/db/tipo_empresa_preconfiguracion.go
 - backend/handlers/empresa_permisos.go
-- backend/handlers/empresa_verticales_nuevos.go
-- backend/handlers/empresa_verticales_nuevos_test.go
+- backend/handlers/empresa_plantillas_nuevas.go
+- backend/handlers/empresa_plantillas_nuevas_test.go
 - backend/handlers/modulos_empresariales_colombia.go
 - backend/handlers/payments_handlers.go
 - backend/handlers/super_portal_chat_ia_info.go
@@ -24653,57 +24696,57 @@ Archivos modificados:
 - backend/main_empresa_routes_security_test.go
 - documentos/README.md
 - documentos/arquitectura_modulos_universales.md
-- documentos/evidencias_qa/20_verticales_2026-05-10/agencia_viajes_modulo.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/ayuda_verticales_2026.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/ayuda_verticales_2026_full.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/ayuda_verticales_2026_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/configuracion_permisos_fila_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/configuracion_permisos_verticales_agrupados.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/descripcion_vertical_agencia_viajes_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/elegir_licencia_vertical_agencia_viajes.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_catalogo_publico_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_catalogo_publico_backend_final.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_catalogo_publico_backend_scrolled.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_dinamicos.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_dinamicos_largo.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_merge_backend_custom_cards.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/licencias_catalogo_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/licencias_catalogo_verticales_formulario.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_configuracion_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_configuracion_operativa.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_contexto_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_contexto_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_contexto_seccion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_diagnostico_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_diagnostico_configuracion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_diagnostico_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_ruta_trabajo.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_ruta_trabajo_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_secciones_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_secciones_backend_final.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/pagar_licencia_vertical_agencia_viajes.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/permisos_rol_fila_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/permisos_rol_verticales_agrupados.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/seleccionar_empresa_preview_tipo_vertical.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/seleccionar_empresa_tarjeta_vertical_agencia.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/submenu_agencia_viajes_centralizado.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_licencias_catalogo_backend_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_licencias_verticales_backend_cobertura.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_licencias_verticales_backend_fullpage.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_preconfiguracion_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_tipos_empresas_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_catalogo_backend_endpoint.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_catalogo_centralizado.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_filtrado_permisos.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_menu_filtrado_mock.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_nuevos_menu.png
-- documentos/evidencias_qa/index_verticales_2026-05-10/index_20_tipos_empresa.png
-- documentos/plan_20_modulos_verticales_2026-05-10.md
+- documentos/evidencias_qa/20_plantillas_2026-05-10/agencia_viajes_modulo.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/ayuda_plantillas_2026.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/ayuda_plantillas_2026_full.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/ayuda_plantillas_2026_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/configuracion_permisos_fila_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/configuracion_permisos_plantillas_agrupados.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/descripcion_vertical_agencia_viajes_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/elegir_licencia_vertical_agencia_viajes.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_catalogo_publico_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_catalogo_publico_backend_final.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_catalogo_publico_backend_scrolled.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_dinamicos.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_dinamicos_largo.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_merge_backend_custom_cards.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/licencias_catalogo_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/licencias_catalogo_plantillas_formulario.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_configuracion_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_configuracion_operativa.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_contexto_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_contexto_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_contexto_seccion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_diagnostico_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_diagnostico_configuracion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_diagnostico_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_ruta_trabajo.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_ruta_trabajo_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_secciones_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_secciones_backend_final.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/pagar_licencia_vertical_agencia_viajes.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/permisos_rol_fila_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/permisos_rol_plantillas_agrupados.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/seleccionar_empresa_preview_tipo_vertical.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/seleccionar_empresa_tarjeta_vertical_agencia.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/submenu_agencia_viajes_centralizado.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_licencias_catalogo_backend_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_licencias_plantillas_backend_cobertura.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_licencias_plantillas_backend_fullpage.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_preconfiguracion_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_tipos_empresas_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_catalogo_backend_endpoint.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_catalogo_centralizado.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_filtrado_permisos.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_menu_filtrado_mock.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_nuevas_menu.png
+- documentos/evidencias_qa/index_plantillas_2026-05-10/index_20_tipos_empresa.png
+- documentos/plan_20_modulos_plantillas_2026-05-10.md
 - web/administrar_empresa.html
 - web/administrar_empresa/configuracion_permisos.html
 - web/administrar_empresa/modulo_colombia.html
 - web/administrar_empresa/modulo_menu.html
-- web/administrar_empresa/verticales_nuevos_menu.html
+- web/administrar_empresa/plantillas_nuevas_menu.html
 - web/ayuda/ayuda.html
 - web/descripcion_de_los_sistemas.ht
 - web/elegir_licencia.html
@@ -24712,7 +24755,7 @@ Archivos modificados:
 - web/js/administrar_empresa.js
 - web/js/empresa_submenu_shell.js
 - web/js/modulo_colombia_admin.js
-- web/js/nuevos_verticales_catalogo.js
+- web/js/plantillas_nuevas_catalogo.js
 - web/js/seleccionar_empresa.js
 - web/pagar_licencia.html
 - web/seleccionar_empresa.html
@@ -24725,11 +24768,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - documentos/arquitectura_modulos_universales.md
-- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_botones_integrados.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_directos.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_sin_cuadros_superiores.png
-- documentos/plan_20_modulos_verticales_2026-05-10.md
+- documentos/evidencias_qa/20_plantillas_2026-05-10/administrar_empresa_soluciones_20_botones_integrados.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/administrar_empresa_soluciones_20_plantillas_directos.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/administrar_empresa_soluciones_20_plantillas_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_sin_cuadros_superiores.png
+- documentos/plan_20_modulos_plantillas_2026-05-10.md
 - web/administrar_empresa.html
 - web/ayuda/ayuda.html
 - web/estilos.css
@@ -24740,57 +24783,57 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/db/modulos_empresariales_colombia.go
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_01_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_03_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_04_aprobacion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_05_aprobacion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_06_evidencia.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_seguimiento_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/03_eventos_boleteria_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/04_salon_spa_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/04_salon_spa_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/08_colegio_academia_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/08_colegio_academia_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/16_club_deportivo_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/16_club_deportivo_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/submenu_agencia_viajes.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/visual_qa_resultados.json
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_01_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_03_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_04_aprobacion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_05_aprobacion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_06_evidencia.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_seguimiento_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/03_eventos_boleteria_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/04_salon_spa_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/04_salon_spa_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/08_colegio_academia_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/08_colegio_academia_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/16_club_deportivo_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/16_club_deportivo_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/submenu_agencia_viajes.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/visual_qa_resultados.json
 - documentos/evidencias_qa/motel_calipso_modulos_2026-05-10/capturas_submenus/001_agencia_viajes_menu.png
 - documentos/evidencias_qa/motel_calipso_modulos_2026-05-10/capturas_submenus/002_agencia_viajes_dashboard_comercial.png
 - documentos/evidencias_qa/motel_calipso_modulos_2026-05-10/capturas_submenus/003_agencia_viajes_paquetes_y_cotizaciones.png
@@ -25077,13 +25120,13 @@ Archivos modificados:
 
 2026-05-10 - Preconfiguraciones inteligentes y configuracion guiada no automatica
 - Archivos: backend/db/tipo_empresa_preconfiguracion.go, backend/db/tipo_empresa_preconfiguracion_test.go, web/js/seleccionar_empresa.js, web/js/administrar_empresa.js, web/js/ai_chat_drawer.js, web/administrar_empresa/configuracion_menu.html, documentacion central.
-- Descripcion: la siembra de preconfiguraciones ahora detecta faltantes por tipo activo y no se salta casos por conteo global. Los verticales nuevos usan plantilla inteligente por defecto cuando no existe una guardada. Se retira el boton visible de configuracion guiada del submenu empresarial y se elimina el inicio automatico del robot al crear/entrar a la empresa.
+- Descripcion: la siembra de preconfiguraciones ahora detecta faltantes por tipo activo y no se salta casos por conteo global. Los plantillas nuevas usan plantilla inteligente por defecto cuando no existe una guardada. Se retira el boton visible de configuracion guiada del submenu empresarial y se elimina el inicio automatico del robot al crear/entrar a la empresa.
 - Verificacion: go test ./... en backend; validacion de sintaxis JS.
 
 2026-05-11: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
-- backend/db/nuevos_verticales_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap.go
 - backend/db/tipo_empresa_preconfiguracion.go
 - backend/db/tipo_empresa_preconfiguracion_test.go
 - documentos/CHANGELOG.md
@@ -25100,7 +25143,7 @@ Archivos modificados:
 - web/index.html
 - web/js/administrar_empresa.js
 - web/js/ai_chat_drawer.js
-- web/js/nuevos_verticales_catalogo.js
+- web/js/plantillas_nuevas_catalogo.js
 - web/js/seleccionar_empresa.js
 - web/super_administrador.html
 
@@ -25300,7 +25343,7 @@ Archivos modificados:
 - web/super/seguridad_2fa.js
 - web/super_administrador.html
 
-2026-05-11: Actualizar tarjetas index con verticales y modulos reales
+2026-05-11: Actualizar tarjetas index con plantillas y modulos reales
 PushStatus: OK
 Archivos modificados:
 - CHANGELOG.md
@@ -25315,8 +25358,8 @@ Archivos modificados:
 - backend/db/gimnasio.go
 - backend/db/gimnasio_integracion_test.go
 - backend/db/modulos_empresariales_colombia_test.go
-- backend/db/nuevos_verticales_bootstrap.go
-- backend/db/nuevos_verticales_bootstrap_test.go
+- backend/db/plantillas_nuevas_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap_test.go
 - backend/db/odontologia.go
 - backend/db/odontologia_integracion_test.go
 - backend/db/parqueadero.go
@@ -25332,10 +25375,10 @@ Archivos modificados:
 - backend/handlers/apartamentos_turisticos.go
 - backend/handlers/domicilios.go
 - backend/handlers/empresa_permisos.go
-- backend/handlers/empresa_verticales_integracion.go
-- backend/handlers/empresa_verticales_integracion_test.go
-- backend/handlers/empresa_verticales_nuevos.go
-- backend/handlers/empresa_verticales_nuevos_test.go
+- backend/handlers/empresa_plantillas_integracion.go
+- backend/handlers/empresa_plantillas_integracion_test.go
+- backend/handlers/empresa_plantillas_nuevas.go
+- backend/handlers/empresa_plantillas_nuevas_test.go
 - backend/handlers/gimnasio.go
 - backend/handlers/odontologia.go
 - backend/handlers/pagina_principal_handlers.go
@@ -25356,10 +25399,10 @@ Archivos modificados:
 - documentos/drogueria_farmacia.md
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - documentos/parqueadero_tickets_qr.md
-- documentos/plan_verticales_produccion_masiva_2026-05-11.md
+- documentos/plan_plantillas_produccion_masiva_2026-05-11.md
 - documentos/propiedad_horizontal.md
 - documentos/taxi_system_profesional.md
 - web/administrar_empresa.html
@@ -25373,8 +25416,8 @@ Archivos modificados:
 - web/administrar_empresa/parqueadero.html
 - web/administrar_empresa/propiedad_horizontal.html
 - web/administrar_empresa/taxi_system.html
-- web/administrar_empresa/verticales_integracion.html
-- web/administrar_empresa/verticales_nuevos_menu.html
+- web/administrar_empresa/plantillas_integracion.html
+- web/administrar_empresa/plantillas_nuevas_menu.html
 - web/estilos.css
 - web/index.html
 - web/js/administrar_empresa.js
@@ -25382,14 +25425,14 @@ Archivos modificados:
 - web/js/consultorio_odontologico.js
 - web/js/domicilios.js
 - web/js/gimnasio.js
-- web/js/nuevos_verticales_catalogo.js
+- web/js/plantillas_nuevas_catalogo.js
 - web/js/super_administrador.js
 - web/js/taxi_system.js
-- web/js/verticales_integracion_catalogo.js
+- web/js/plantillas_integracion_catalogo.js
 - web/super/licencias.html
 - web/super/preconfiguracion_tipos_empresa.html
 - web/super/tipos_empresas.html
-- web/super/verticales_produccion_masiva.html
+- web/super/plantillas_produccion_masiva.html
 - web/super_administrador.html
 
 2026-05-11: Corregir arranque PostgreSQL parqueadero
@@ -25404,11 +25447,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - CHANGELOG.md
-- backend/db/nuevos_verticales_bootstrap.go
-- backend/db/nuevos_verticales_bootstrap_test.go
+- backend/db/plantillas_nuevas_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap_test.go
 - backend/db/tipo_empresa_preconfiguracion_test.go
-- backend/handlers/empresa_verticales_nuevos.go
-- backend/handlers/empresa_verticales_nuevos_test.go
+- backend/handlers/empresa_plantillas_nuevas.go
+- backend/handlers/empresa_plantillas_nuevas_test.go
 - documentos/CHANGELOG.md
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
@@ -25416,13 +25459,13 @@ Archivos modificados:
 - documentos/diagramas/estructura_del_codigo.md
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
-- documentos/plan_verticales_produccion_masiva_2026-05-11.md
+- documentos/plan_plantillas_produccion_masiva_2026-05-11.md
 - web/index.html
-- web/js/nuevos_verticales_catalogo.js
+- web/js/plantillas_nuevas_catalogo.js
 - web/js/super_administrador.js
-- web/super/verticales_produccion_masiva.html
+- web/super/plantillas_produccion_masiva.html
 - web/super_administrador.html
 
 2026-05-11: rs: actualizar repositorio y sincronizar VPS
@@ -25457,7 +25500,7 @@ Archivos modificados:
 - documentos/diagramas/estructura_del_codigo.md
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 
 2026-05-11: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
@@ -25472,9 +25515,9 @@ Archivos modificados:
 - documentos/diagramas/estructura_del_codigo.md
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 
-2026-05-11: Catalogos publicos de verticales sin sesion
+2026-05-11: Catalogos publicos de plantillas sin sesion
 PushStatus: pendiente
 Archivos modificados:
 - CHANGELOG.md
@@ -25489,7 +25532,7 @@ Validacion:
 - go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1
 - go test ./... -count=1
 Motivo:
-- Las rutas publicas de catalogos verticales estaban registradas en main.go, pero el middleware exigia sesion y producia 401 en portada/matriz comercial.
+- Las rutas publicas de catalogos plantillas estaban registradas en main.go, pero el middleware exigia sesion y producia 401 en portada/matriz comercial.
 2026-05-11: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
@@ -25552,11 +25595,11 @@ Archivos modificados:
 - web/super/configuracion_avanzada.html
 
 2026-05-11: Alcance vertical por licencia y tipo de empresa
-- Modulos afectados: `licencias`, `roles/licencias`, `preconfiguracion_tipos_empresa`, `administrar_empresa`, `verticales_integracion`, verticales clasicos integrados al nucleo.
+- Modulos afectados: `licencias`, `roles/licencias`, `preconfiguracion_tipos_empresa`, `administrar_empresa`, `plantillas_integracion`, plantillas clasicos integrados al nucleo.
 - Cambio funcional: al comprar o activar licencia se valida que el plan base corresponda al tipo de empresa elegido; la activacion aplica la plantilla del tipo de forma idempotente y sincroniza el vertical con el nucleo cuando existe accion `Sync...Nucleo`.
-- Permisos: `/api/empresa/permisos_contexto` publica `vertical_scope` y deshabilita acciones/paginas de verticales ajenos al tipo activo, manteniendo disponibles los modulos universales de estaciones, ventas, productos, clientes, finanzas, pagos, facturacion y reportes segun licencia/rol.
+- Permisos: `/api/empresa/permisos_contexto` publica `vertical_scope` y deshabilita acciones/paginas de plantillas ajenos al tipo activo, manteniendo disponibles los modulos universales de estaciones, ventas, productos, clientes, finanzas, pagos, facturacion y reportes segun licencia/rol.
 - Frontend: `elegir_licencia.html` solicita licencias filtradas por `tipo_id` y `editar_empresa.js` conserva `tipo_id/tipo_nombre` al abrir renovacion.
-- Seguridad: los endpoints verticales tambien se bloquean si el modulo no corresponde al alcance vertical de la empresa; no queda solo como ocultacion visual.
+- Seguridad: los endpoints plantillas tambien se bloquean si el modulo no corresponde al alcance vertical de la empresa; no queda solo como ocultacion visual.
 - QA: `go test ./handlers` y `go test ./db` desde `backend/`.
 2026-05-11: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
@@ -25570,7 +25613,7 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/descripcion_del_proyecto
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/elegir_licencia.html
 - web/js/editar_empresa.js
@@ -25591,9 +25634,9 @@ Archivos modificados:
 - web/administrar_empresa/configuracion_chat_flotante.html
 - web/js/ai_chat_drawer.js
 - web/js/radio_player.js
-2026-05-11: Contrato universal de 30 verticales como plantillas
-- Modulos afectados: verticales_integracion, preconfiguracion_tipos_empresa, licencias, administrar_empresa, gimnasio, odontologia, parqueadero, taxi_system, domicilios, apartamentos_turisticos, propiedad_horizontal, alquileres, drogueria_farmacia, aiu_construccion.
-- Cambio funcional: se retira el contrato publico de sincronizacion historica y las acciones visibles de migracion manual; todas las verticales quedan tratadas como plantillas sobre el nucleo unico.
+2026-05-11: Contrato universal de 30 plantillas como plantillas
+- Modulos afectados: plantillas_integracion, preconfiguracion_tipos_empresa, licencias, administrar_empresa, gimnasio, odontologia, parqueadero, taxi_system, domicilios, apartamentos_turisticos, propiedad_horizontal, alquileres, drogueria_farmacia, aiu_construccion.
+- Cambio funcional: se retira el contrato publico de sincronizacion historica y las acciones visibles de migracion manual; todas las plantillas quedan tratadas como plantillas sobre el nucleo unico.
 - Backend: la activacion por licencia aplica preconfiguracion del tipo de empresa sin ejecutar migraciones automaticas; la matriz ya no publica rutas de sincronizacion.
 - Frontend: la matriz muestra plantilla, tablas, permisos, flujo de venta y reportes; los dashboards clasicos ya no presentan botones de sincronizacion manual.
 - Verificacion: go test ./... en backend; validacion JS de catalogos y scripts inline de pantallas empresariales tocadas.
@@ -25617,8 +25660,8 @@ Archivos modificados:
 - backend/handlers/domicilios.go
 - backend/handlers/empresa_permisos.go
 - backend/handlers/empresa_preconfiguracion.go
-- backend/handlers/empresa_verticales_integracion.go
-- backend/handlers/empresa_verticales_integracion_test.go
+- backend/handlers/empresa_plantillas_integracion.go
+- backend/handlers/empresa_plantillas_integracion_test.go
 - backend/handlers/gimnasio.go
 - backend/handlers/odontologia.go
 - backend/handlers/parqueadero.go
@@ -25636,7 +25679,7 @@ Archivos modificados:
 - documentos/estructura_bd.md
 - documentos/gobernanza_tecnica/adr/ADR-0002-postgresql-runtime-canonico-vps.md
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - documentos/parqueadero_tickets_qr.md
 - documentos/propiedad_horizontal.md
@@ -25652,13 +25695,13 @@ Archivos modificados:
 - web/administrar_empresa/parqueadero.html
 - web/administrar_empresa/propiedad_horizontal.html
 - web/administrar_empresa/taxi_system.html
-- web/administrar_empresa/verticales_integracion.html
+- web/administrar_empresa/plantillas_integracion.html
 - web/js/alquileres.js
 - web/js/consultorio_odontologico.js
 - web/js/domicilios.js
 - web/js/gimnasio.js
 - web/js/taxi_system.js
-- web/js/verticales_integracion_catalogo.js
+- web/js/plantillas_integracion_catalogo.js
 - web/super/licencias_resumen.html
 
 2026-05-11: rs: actualizar repositorio y sincronizar VPS
@@ -25687,13 +25730,13 @@ Archivos modificados:
 - CHANGELOG.md
 - backend/db/db.go
 - backend/db/licencias_adicionales.go
-- backend/db/nuevos_verticales_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap.go
 - backend/db/tipo_empresa_preconfiguracion.go
 - backend/db/tipo_empresa_preconfiguracion_test.go
 - backend/handlers/configuracion_guiada.go
 - backend/handlers/empresa_preconfiguracion.go
-- backend/handlers/empresa_verticales_integracion.go
-- backend/handlers/empresa_verticales_integracion_test.go
+- backend/handlers/empresa_plantillas_integracion.go
+- backend/handlers/empresa_plantillas_integracion_test.go
 - backend/handlers/payments_handlers.go
 - backend/handlers/payments_handlers_test.go
 - documentos/CHANGELOG.md
@@ -25702,13 +25745,13 @@ Archivos modificados:
 - documentos/diagramas/estructura_del_codigo.md
 - documentos/estructura_bd.md
 - documentos/historial_de_cambios
-- documentos/matriz_integracion_verticales.md
+- documentos/matriz_integracion_plantillas.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/administrar_empresa/configuracion_menu.html
 - web/administrar_empresa/panel.html
-- web/administrar_empresa/verticales_integracion.html
+- web/administrar_empresa/plantillas_integracion.html
 - web/estilos.css
-- web/js/verticales_integracion_catalogo.js
+- web/js/plantillas_integracion_catalogo.js
 - web/super/licencias.html
 - web/super/preconfiguracion_tipos_empresa.html
 
@@ -25749,10 +25792,10 @@ Archivos modificados:
 - web/pantalla_turnos.html
 - web/super/configuracion_avanzada.html
 - web/super/licencias.html
-- web/super/verticales_produccion_masiva.html
+- web/super/plantillas_produccion_masiva.html
 2026-05-12: Menu empresarial ajustado
-- Modulos afectados: `administrar_empresa`, `verticales_integracion`.
-- Cambio funcional: se retira del encabezado lateral el cuadro informativo `Verticales · conteo · API/local` y `Soluciones por negocio` se mueve a la parte baja del menu, arriba de `Administracion`.
+- Modulos afectados: `administrar_empresa`, `plantillas_integracion`.
+- Cambio funcional: se retira del encabezado lateral el cuadro informativo `Plantillas · conteo · API/local` y `Soluciones por negocio` se mueve a la parte baja del menu, arriba de `Administracion`.
 - Frontend: `web/administrar_empresa.html` elimina el contenedor visual del indicador y reordena el bloque de navegacion sin alterar ids de enlaces, permisos ni rutas.
 - Alcance: no hay cambios de backend, base de datos, APIs, permisos ni dependencias.
 - Validacion prevista: parseo HTML/JS y busqueda de texto visible retirado.
@@ -25798,7 +25841,7 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/descripcion_del_proyecto
 - documentos/historial_de_cambios
-- web/super/verticales_produccion_masiva.html
+- web/super/plantillas_produccion_masiva.html
 
 2026-05-12: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
@@ -25986,7 +26029,7 @@ Archivos modificados:
 - RESUMEN_DEL_PROYECTO.md
 - backend/db/modulos_empresariales_colombia.go
 - backend/db/modulos_empresariales_colombia_test.go
-- backend/db/nuevos_verticales_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap.go
 - backend/db/tickets_ayuda.go
 - backend/handlers/empresa_permisos.go
 - backend/handlers/super_tickets_ayuda.go
@@ -26005,7 +26048,7 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - documentos/modulos_empresariales_colombia.md
-- documentos/plan_20_modulos_verticales_2026-05-10.md
+- documentos/plan_20_modulos_plantillas_2026-05-10.md
 - documentos/plan_modulos_faltantes_colombia_2026-05-06.md
 - web/administrar_empresa.html
 - web/administrar_empresa/configuracion.html
@@ -26061,7 +26104,7 @@ Archivos modificados:
 - backend/db/finanzas.go
 - backend/db/gimnasio.go
 - backend/db/licencias_vencimiento_notificaciones.go
-- backend/db/nuevos_verticales_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap.go
 - backend/db/odontologia.go
 - backend/db/parqueadero.go
 - backend/db/propiedad_horizontal.go
@@ -26444,7 +26487,7 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - CHANGELOG.md
-- backend/db/nuevos_verticales_bootstrap.go
+- backend/db/plantillas_nuevas_bootstrap.go
 - backend/db/tipo_empresa_preconfiguracion.go
 - backend/handlers/empresa_permisos.go
 - backend/handlers/empresa_preconfiguracion.go
@@ -26465,106 +26508,106 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/descripcion_del_proyecto
 - documentos/diagramas/estructura_del_codigo.md
-- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_botones_integrados.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_directos.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/administrar_empresa_soluciones_20_verticales_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/agencia_viajes_modulo.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/ayuda_verticales_2026.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/ayuda_verticales_2026_full.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/ayuda_verticales_2026_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/configuracion_permisos_fila_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/configuracion_permisos_verticales_agrupados.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/descripcion_vertical_agencia_viajes_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/elegir_licencia_vertical_agencia_viajes.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_catalogo_publico_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_catalogo_publico_backend_final.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_catalogo_publico_backend_scrolled.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_dinamicos.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_dinamicos_largo.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/index_verticales_merge_backend_custom_cards.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/licencias_catalogo_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/licencias_catalogo_verticales_formulario.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_configuracion_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_configuracion_operativa.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_contexto_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_contexto_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_contexto_seccion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_diagnostico_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_diagnostico_configuracion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_diagnostico_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_ruta_trabajo.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_ruta_trabajo_mobile.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_secciones_backend.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_secciones_backend_final.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/modulo_vertical_sin_cuadros_superiores.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/pagar_licencia_vertical_agencia_viajes.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_01_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_03_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_04_aprobacion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_05_aprobacion.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_06_evidencia.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/02_operador_turistico_seguimiento_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/03_eventos_boleteria_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/04_salon_spa_02_registros.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/04_salon_spa_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/08_colegio_academia_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/08_colegio_academia_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/16_club_deportivo_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/16_club_deportivo_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard_recheck.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/submenu_agencia_viajes.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/paginas_submenu/visual_qa_resultados.json
-- documentos/evidencias_qa/20_verticales_2026-05-10/permisos_rol_fila_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/permisos_rol_verticales_agrupados.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/seleccionar_empresa_preview_tipo_vertical.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/seleccionar_empresa_tarjeta_vertical_agencia.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/submenu_agencia_viajes_centralizado.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_licencias_catalogo_backend_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_licencias_verticales_backend_cobertura.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_licencias_verticales_backend_fullpage.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_preconfiguracion_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/super_tipos_empresas_verticales.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_catalogo_backend_endpoint.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_catalogo_centralizado.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_filtrado_permisos.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_menu_filtrado_mock.png
-- documentos/evidencias_qa/20_verticales_2026-05-10/verticales_nuevos_menu.png
-- documentos/evidencias_qa/index_verticales_2026-05-10/index_20_tipos_empresa.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/administrar_empresa_soluciones_20_botones_integrados.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/administrar_empresa_soluciones_20_plantillas_directos.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/administrar_empresa_soluciones_20_plantillas_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/agencia_viajes_modulo.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/ayuda_plantillas_2026.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/ayuda_plantillas_2026_full.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/ayuda_plantillas_2026_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/configuracion_permisos_fila_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/configuracion_permisos_plantillas_agrupados.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/descripcion_vertical_agencia_viajes_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/elegir_licencia_vertical_agencia_viajes.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_catalogo_publico_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_catalogo_publico_backend_final.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_catalogo_publico_backend_scrolled.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_dinamicos.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_dinamicos_largo.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/index_plantillas_merge_backend_custom_cards.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/licencias_catalogo_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/licencias_catalogo_plantillas_formulario.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_configuracion_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_configuracion_operativa.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_contexto_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_contexto_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_contexto_seccion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_diagnostico_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_diagnostico_configuracion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_diagnostico_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_ruta_trabajo.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_ruta_trabajo_mobile.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_secciones_backend.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_secciones_backend_final.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/modulo_vertical_sin_cuadros_superiores.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/pagar_licencia_vertical_agencia_viajes.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_01_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_03_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_04_aprobacion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_05_aprobacion.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_06_evidencia.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/01_agencia_viajes_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/02_operador_turistico_seguimiento_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/03_eventos_boleteria_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/03_eventos_boleteria_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/04_salon_spa_02_registros.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/04_salon_spa_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/05_veterinaria_petshop_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/06_clinica_consultorios_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/07_laboratorio_clinico_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/08_colegio_academia_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/08_colegio_academia_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/09_guarderia_infantil_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/10_lavanderia_tintoreria_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/11_taller_mecanico_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/12_transporte_carga_tms_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/13_servicios_tecnicos_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/14_inmobiliaria_comercial_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/15_seguridad_privada_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/16_club_deportivo_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/16_club_deportivo_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/17_funeraria_exequial_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/18_parque_recreativo_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/19_cooperativa_fondo_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/20_capacitacion_empresarial_dashboard_recheck.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/submenu_agencia_viajes.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/paginas_submenu/visual_qa_resultados.json
+- documentos/evidencias_qa/20_plantillas_2026-05-10/permisos_rol_fila_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/permisos_rol_plantillas_agrupados.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/seleccionar_empresa_preview_tipo_vertical.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/seleccionar_empresa_tarjeta_vertical_agencia.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/submenu_agencia_viajes_centralizado.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_licencias_catalogo_backend_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_licencias_plantillas_backend_cobertura.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_licencias_plantillas_backend_fullpage.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_preconfiguracion_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/super_tipos_empresas_plantillas.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_catalogo_backend_endpoint.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_catalogo_centralizado.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_filtrado_permisos.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_menu_filtrado_mock.png
+- documentos/evidencias_qa/20_plantillas_2026-05-10/plantillas_nuevas_menu.png
+- documentos/evidencias_qa/index_plantillas_2026-05-10/index_20_tipos_empresa.png
 - documentos/evidencias_qa/motel_calipso_modulos_2026-05-10/capturas_submenus/001_agencia_viajes_menu.png
 - documentos/evidencias_qa/motel_calipso_modulos_2026-05-10/capturas_submenus/002_agencia_viajes_dashboard_comercial.png
 - documentos/evidencias_qa/motel_calipso_modulos_2026-05-10/capturas_submenus/003_agencia_viajes_paquetes_y_cotizaciones.png

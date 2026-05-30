@@ -64,7 +64,7 @@ Probar directamente en navegador las funciones criticas del sistema usando Motel
 - Portal terceros/certificados.
 - Portal contador.
 
-5. Verticales
+5. Plantillas
 - Domicilios.
 - Taxi System.
 - Parqueadero.
@@ -119,7 +119,7 @@ Probar directamente en navegador las funciones criticas del sistema usando Motel
 2. Smoke test de nuevos modulos: WMS, declaraciones, activos, portal terceros, centros de costo, cierre fiscal, propiedad horizontal.
 3. Prueba funcional de POS/hotel/motel.
 4. Prueba financiera/contable.
-5. Prueba de verticales.
+5. Prueba de plantillas.
 6. Prueba publica sin sesion.
 7. Reporte de defectos y correcciones.
 

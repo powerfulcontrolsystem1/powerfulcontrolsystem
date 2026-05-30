@@ -6,7 +6,7 @@
   <title>Modulo - Menu</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
 <body class="admin-empresa-shell empresa-submenu-shell">
   <div class="admin-layout">
@@ -370,9 +370,9 @@
         }
       };
 
-      var verticalesNuevos = {};
-      (window.PCS_NUEVOS_VERTICALES || []).forEach(function (item) {
-        verticalesNuevos[item.module] = [
+      var plantillasNuevos = {};
+      (window.PCS_NUEVAS_PLANTILLAS || []).forEach(function (item) {
+        plantillasNuevos[item.module] = [
           item.fullTitle || item.title,
           item.lead || item.summary || "",
           item.sections || ["Dashboard", "Configuracion", "Registros", "Seguimiento", "Aprobaciones", "Evidencias"]
@@ -415,8 +415,8 @@
           "&view=" + encodeURIComponent(view);
       }
 
-      Object.keys(verticalesNuevos).forEach(function (module) {
-        var row = verticalesNuevos[module];
+      Object.keys(plantillasNuevos).forEach(function (module) {
+        var row = plantillasNuevos[module];
         var title = row[0];
         var summary = row[1];
         var labels = row[2];

@@ -5,7 +5,7 @@ Estado: actualizacion documental posterior a reparaciones operativas y despliegu
 
 ## Resumen ejecutivo
 
-El proyecto queda documentado como plataforma SaaS ERP/POS multiempresa con verticales empresariales, licenciamiento modular, estaciones operativas, carrito de compras, facturacion electronica configurable, reportes, IA, integraciones documentales y modulos sectoriales. En la ultima revision se reparo el flujo de estacion hacia carrito, se ajusto el cierre por pago para regresar a estaciones, se agrego el tamano de tarjeta `Se adapta al texto`, y se fijo `USD / COP` como primer indicador del panel empresarial.
+El proyecto queda documentado como plataforma SaaS ERP/POS multiempresa con plantillas empresariales, licenciamiento modular, estaciones operativas, carrito de compras, facturacion electronica configurable, reportes, IA, integraciones documentales y modulos sectoriales. En la ultima revision se reparo el flujo de estacion hacia carrito, se ajusto el cierre por pago para regresar a estaciones, se agrego el tamano de tarjeta `Se adapta al texto`, y se fijo `USD / COP` como primer indicador del panel empresarial.
 
 ## Cambios operativos recientes
 
@@ -65,7 +65,7 @@ El proyecto queda documentado como plataforma SaaS ERP/POS multiempresa con vert
 
 ## Respuesta honesta sobre terminacion y errores
 
-No es correcto afirmar que todos los modulos estan 100% terminados y sin errores absolutos. El sistema tiene muchos modulos implementados u operativos, y los flujos criticos reparados recientemente fueron verificados de forma puntual. Sin embargo, por el tamano del proyecto y la cantidad de verticales, siempre deben considerarse pendientes de certificacion integral los modulos que dependen de proveedores externos, hardware real, credenciales, regulaciones por pais o datos productivos.
+No es correcto afirmar que todos los modulos estan 100% terminados y sin errores absolutos. El sistema tiene muchos modulos implementados u operativos, y los flujos criticos reparados recientemente fueron verificados de forma puntual. Sin embargo, por el tamano del proyecto y la cantidad de plantillas, siempre deben considerarse pendientes de certificacion integral los modulos que dependen de proveedores externos, hardware real, credenciales, regulaciones por pais o datos productivos.
 
 ## Modulos que requieren validacion continua
 

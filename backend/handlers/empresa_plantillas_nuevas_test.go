@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-func TestNuevosVerticalesPermisosDerivadosDelCatalogo(t *testing.T) {
-	modules := NuevosVerticalesEmpresaModules()
+func TestNuevasPlantillasPermisosDerivadosDelCatalogo(t *testing.T) {
+	modules := NuevasPlantillasEmpresaModules()
 	if len(modules) != 20 {
-		t.Fatalf("NuevosVerticalesEmpresaModules() len = %d, want 20", len(modules))
+		t.Fatalf("NuevasPlantillasEmpresaModules() len = %d, want 20", len(modules))
 	}
 
 	seen := map[string]bool{}
@@ -38,10 +38,10 @@ func TestNuevosVerticalesPermisosDerivadosDelCatalogo(t *testing.T) {
 	}
 }
 
-func TestEmpresaVerticalesNuevosCatalogoContrato(t *testing.T) {
-	items := buildEmpresaVerticalesNuevosCatalogo()
+func TestEmpresaPlantillasNuevosCatalogoContrato(t *testing.T) {
+	items := buildEmpresaPlantillasNuevosCatalogo()
 	if len(items) != 20 {
-		t.Fatalf("catalogo verticales len=%d, want 20", len(items))
+		t.Fatalf("catalogo plantillas len=%d, want 20", len(items))
 	}
 	seen := map[string]bool{}
 	for _, item := range items {
@@ -86,8 +86,8 @@ func TestEmpresaVerticalesNuevosCatalogoContrato(t *testing.T) {
 	}
 }
 
-func TestEmpresaVerticalesNuevosCatalogoProduccionMasiva(t *testing.T) {
-	items := buildEmpresaVerticalesNuevosCatalogo()
+func TestEmpresaPlantillasNuevosCatalogoProduccionMasiva(t *testing.T) {
+	items := buildEmpresaPlantillasNuevosCatalogo()
 	masivos := 0
 	for _, item := range items {
 		if item.ProduccionMasiva {
@@ -103,14 +103,14 @@ func TestEmpresaVerticalesNuevosCatalogoProduccionMasiva(t *testing.T) {
 		t.Fatalf("%s debe estar marcado como produccion masiva", item.Modulo)
 	}
 	if masivos != 20 {
-		t.Fatalf("verticales masivos=%d, want 20", masivos)
+		t.Fatalf("plantillas masivos=%d, want 20", masivos)
 	}
 }
 
-func TestPublicVerticalesNuevosCatalogoHandler(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/public/verticales_nuevos/catalogo", nil)
+func TestPublicPlantillasNuevosCatalogoHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/public/plantillas_nuevas/catalogo", nil)
 	rr := httptest.NewRecorder()
-	PublicVerticalesNuevosCatalogoHandler().ServeHTTP(rr, req)
+	PublicPlantillasNuevosCatalogoHandler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
@@ -127,25 +127,25 @@ func TestPublicVerticalesNuevosCatalogoHandler(t *testing.T) {
 	}
 }
 
-func TestSuperVerticalesNuevosCatalogoPostRequiereDB(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/super/api/verticales_nuevos/catalogo?action=asegurar_v1_licencias", nil)
+func TestSuperPlantillasNuevosCatalogoPostRequiereDB(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/super/api/plantillas_nuevas/catalogo?action=asegurar_v1_licencias", nil)
 	rr := httptest.NewRecorder()
-	SuperVerticalesNuevosCatalogoHandler().ServeHTTP(rr, req)
+	SuperPlantillasNuevosCatalogoHandler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusInternalServerError {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
 }
 
-func TestSuperVerticalesNuevosCatalogoPostAccionInvalida(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/super/api/verticales_nuevos/catalogo?action=borrar", nil)
+func TestSuperPlantillasNuevosCatalogoPostAccionInvalida(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/super/api/plantillas_nuevas/catalogo?action=borrar", nil)
 	rr := httptest.NewRecorder()
-	SuperVerticalesNuevosCatalogoHandler().ServeHTTP(rr, req)
+	SuperPlantillasNuevosCatalogoHandler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}
 }
 
-func TestLinkNuevosVerticalesRequiereAlgunVerticalPermitido(t *testing.T) {
+func TestLinkNuevasPlantillasRequiereAlgunVerticalPermitido(t *testing.T) {
 	actionsOff := map[string]bool{
 		permActionRead:    false,
 		permActionCreate:  false,
@@ -165,13 +165,13 @@ func TestLinkNuevosVerticalesRequiereAlgunVerticalPermitido(t *testing.T) {
 		{Modulo: "agencia_viajes", Acciones: actionsOff},
 	}
 	pages := buildPermissionPagesMapFromModuleRows(rows, nil)
-	if pages["linkNuevosVerticales"] {
-		t.Fatal("linkNuevosVerticales permitido sin verticales habilitados")
+	if pages["linkNuevasPlantillas"] {
+		t.Fatal("linkNuevasPlantillas permitido sin plantillas habilitados")
 	}
 
 	rows = append(rows, permissionModuleMatrixRow{Modulo: "operador_turistico", Acciones: actionsOn})
 	pages = buildPermissionPagesMapFromModuleRows(rows, nil)
-	if !pages["linkNuevosVerticales"] {
-		t.Fatal("linkNuevosVerticales deberia permitirse con al menos un vertical habilitado")
+	if !pages["linkNuevasPlantillas"] {
+		t.Fatal("linkNuevasPlantillas deberia permitirse con al menos una plantilla habilitado")
 	}
 }

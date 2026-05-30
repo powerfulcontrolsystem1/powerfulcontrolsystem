@@ -23,7 +23,7 @@
     .tipo-vertical-name{display:grid;gap:3px}
     .tipo-vertical-name strong{color:var(--text)}
     .tipo-vertical-chip{display:inline-flex;align-items:center;width:max-content;min-height:24px;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
-    .tipo-row-vertical td{background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%)}
+    .tipo-row-plantilla td{background:color-mix(in srgb,var(--surface) 94%,var(--accent) 6%)}
     .tipos-table-scroll-top,
     .tipos-table-scroll-body{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
     .tipos-table-scroll-top{height:18px;margin:0 0 6px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
@@ -31,7 +31,7 @@
     .tipos-table-scroll-body .table{margin-top:0}
     @media (max-width:760px){.tipos-vertical-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.tipo-vertical-cell{align-items:flex-start}}
   </style>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -64,19 +64,19 @@
       <div class="tipos-vertical-summary" aria-label="Resumen de tipos de empresa">
         <div class="tipos-vertical-stat"><strong id="statTiposTotal">0</strong><span>Tipos registrados</span></div>
         <div class="tipos-vertical-stat"><strong id="statTiposActivos">0</strong><span>Activos</span></div>
-        <div class="tipos-vertical-stat"><strong id="statTiposVerticales">0</strong><span>Verticales 2026</span></div>
+        <div class="tipos-vertical-stat"><strong id="statTiposPlantillas">0</strong><span>Plantillas 2026</span></div>
         <div class="tipos-vertical-stat"><strong id="statTiposInactivos">0</strong><span>Inactivos</span></div>
       </div>
-      <input id="tipoSearch" class="form-input tipos-vertical-search" type="search" placeholder="Buscar tipo, vertical u observacion">
+      <input id="tipoSearch" class="form-input tipos-vertical-search" type="search" placeholder="Buscar tipo, plantilla u observacion">
     </div>
     <div id="list">Cargando...</div>
   </div>
 
 
   <script>
-    const verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+    const verticalCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
     const initialParams = new URLSearchParams(window.location.search || '');
-    const initialQuery = String(initialParams.get('q') || initialParams.get('vertical') || initialParams.get('modulo') || '').trim();
+    const initialQuery = String(initialParams.get('q') || initialParams.get('plantilla') || initialParams.get('vertical') || initialParams.get('modulo') || '').trim();
     function escapeHTML(value){
       return String(value == null ? '' : value).replace(/[&<>"']/g, function(match){
         return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match];
@@ -104,25 +104,25 @@
     function updateStats(data){
       var total = Array.isArray(data) ? data.length : 0;
       var activos = 0;
-      var verticales = 0;
+      var plantillas = 0;
       (data || []).forEach(function(item){
         if (item.estado === 'activo' || item.activo == 1) activos += 1;
-        if (getVerticalByName(item.nombre)) verticales += 1;
+        if (getVerticalByName(item.nombre)) plantillas += 1;
       });
       document.getElementById('statTiposTotal').textContent = total;
       document.getElementById('statTiposActivos').textContent = activos;
-      document.getElementById('statTiposVerticales').textContent = verticales;
+      document.getElementById('statTiposPlantillas').textContent = plantillas;
       document.getElementById('statTiposInactivos').textContent = Math.max(0, total - activos);
     }
     function renderTypeNameCell(item){
-      var vertical = getVerticalByName(item.nombre);
-      if (!vertical) return '<strong>' + escapeHTML(item.nombre || '') + '</strong>';
+      var plantilla = getVerticalByName(item.nombre);
+      if (!plantilla) return '<strong>' + escapeHTML(item.nombre || '') + '</strong>';
       return '' +
         '<div class="tipo-vertical-cell">' +
-        '  <span class="tipo-vertical-icon"><img src="' + escapeHTML(vertical.icon || '/img/company-briefcase-color.svg') + '" alt=""></span>' +
+        '  <span class="tipo-vertical-icon"><img src="' + escapeHTML(plantilla.icon || '/img/company-briefcase-color.svg') + '" alt=""></span>' +
         '  <span class="tipo-vertical-name">' +
-        '    <strong>' + escapeHTML(item.nombre || vertical.fullTitle || vertical.title || '') + '</strong>' +
-        '    <span class="tipo-vertical-chip">Vertical</span>' +
+        '    <strong>' + escapeHTML(item.nombre || plantilla.fullTitle || plantilla.title || '') + '</strong>' +
+        '    <span class="tipo-vertical-chip">Plantilla</span>' +
         '  </span>' +
         '</div>';
     }
@@ -166,8 +166,8 @@
       const query = normalizeText(document.getElementById('tipoSearch') && document.getElementById('tipoSearch').value);
       const rows = (Array.isArray(data) ? data : []).filter(function(i){
         if (!query) return true;
-        const vertical = getVerticalByName(i.nombre);
-        return normalizeText([i.nombre, i.observaciones, vertical && vertical.fullTitle, vertical && vertical.module].join(' ')).indexOf(query) >= 0;
+        const plantilla = getVerticalByName(i.nombre);
+        return normalizeText([i.nombre, i.observaciones, plantilla && plantilla.fullTitle, plantilla && plantilla.module].join(' ')).indexOf(query) >= 0;
       });
       const table = document.createElement('table');
       table.className = 'table';

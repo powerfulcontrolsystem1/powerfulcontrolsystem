@@ -5,7 +5,7 @@ Alcance: actualizacion documental completa posterior a portal index, carta publi
 
 ## Resumen ejecutivo
 
-El proyecto queda documentado como plataforma POS/ERP multiempresa con modulos verticales activables por licencia y permisos: hotel, motel, gimnasio, odontologia, turnos, domicilios tipo Rappi, Taxi System tipo Uber, venta publica, carta QR, red social comercial, control electrico, hoja de vida de vehiculos/activos, inventario, finanzas, nomina, facturacion, CRM, auditoria e IA.
+El proyecto queda documentado como plataforma POS/ERP multiempresa con modulos plantillas activables por licencia y permisos: hotel, motel, gimnasio, odontologia, turnos, domicilios tipo Rappi, Taxi System tipo Uber, venta publica, carta QR, red social comercial, control electrico, hoja de vida de vehiculos/activos, inventario, finanzas, nomina, facturacion, CRM, auditoria e IA.
 
 La pagina principal `web/index.html` fue actualizada para mostrar descripciones comerciales completas de los modulos y mantener fallback local cuando no cargan datos dinamicos.
 

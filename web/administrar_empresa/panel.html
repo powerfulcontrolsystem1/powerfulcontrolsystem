@@ -481,18 +481,33 @@
 
     .empresa-favorites-head {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
       gap: 14px;
       margin-bottom: 14px;
     }
 
+    .empresa-favorites-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
     .empresa-favorites-kicker {
-      margin: 0 0 5px;
+      margin: 0;
       color: var(--muted);
       font-size: .76rem;
       font-weight: 900;
       text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .empresa-favorites-kicker::after {
+      content: "/";
+      margin-left: 8px;
+      color: color-mix(in srgb, var(--muted) 58%, transparent);
     }
 
     .empresa-favorites-title {
@@ -518,38 +533,40 @@
 
     .empresa-favorites-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
     }
 
     .empresa-favorite-card {
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: flex-start;
-      gap: 10px;
-      min-height: 54px;
-      padding: 11px 14px;
-      border-radius: 8px;
-      border: 1px solid color-mix(in srgb, var(--accent-yellow, #facc15) 46%, var(--border));
-      background: color-mix(in srgb, var(--accent-yellow, #facc15) 18%, var(--surface) 82%);
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--surface-soft), var(--surface));
       color: var(--text);
       font: inherit;
-      font-weight: 800;
+      font-weight: 700;
       text-decoration: none;
       box-sizing: border-box;
       min-width: 0;
       cursor: pointer;
       user-select: none;
-      transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+      box-shadow: none;
+      transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
     }
 
     .empresa-favorite-card:hover,
     .empresa-favorite-card:focus-visible {
-      border-color: var(--accent-yellow, #facc15);
-      background: color-mix(in srgb, var(--accent-yellow, #facc15) 30%, var(--surface) 70%);
+      border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+      background: linear-gradient(180deg, var(--focus), var(--surface));
       color: var(--text);
-      outline: 2px solid color-mix(in srgb, var(--accent-yellow, #facc15) 35%, transparent);
+      outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
       outline-offset: 2px;
+      box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 14%, transparent);
     }
 
     .empresa-favorite-card:active {
@@ -561,14 +578,16 @@
       align-items: center;
       justify-content: center;
       flex: 0 0 auto;
-      width: 34px;
-      height: 34px;
+      width: 28px;
+      height: 28px;
       border-radius: 8px;
-      border: 1px solid color-mix(in srgb, var(--accent-yellow, #facc15) 52%, var(--border));
-      background: color-mix(in srgb, var(--accent-yellow, #facc15) 32%, var(--surface) 68%);
-      color: var(--text);
-      font-size: 1rem;
+      border: 1px solid color-mix(in srgb, var(--accent-yellow, #facc15) 44%, var(--border));
+      background: color-mix(in srgb, var(--accent-yellow, #facc15) 20%, var(--surface) 80%);
+      color: color-mix(in srgb, var(--accent-yellow, #facc15) 86%, var(--text) 14%);
+      font-size: .95rem;
+      font-weight: 950;
       line-height: 1;
+      box-shadow: 0 8px 16px rgba(15,23,42,.12);
     }
 
     .empresa-favorite-text {
@@ -589,7 +608,7 @@
       display: block;
       margin-top: 3px;
       color: var(--muted);
-      font-size: .78rem;
+      font-size: .74rem;
       line-height: 1.25;
       white-space: nowrap;
       overflow: hidden;
@@ -619,6 +638,13 @@
       background: var(--card);
       color: var(--text);
       box-shadow: 0 14px 30px var(--panel-card-shadow);
+      color-scheme: light;
+    }
+
+    .empresa-email-panel[data-mail-theme="dark"] {
+      color-scheme: dark;
+      background: color-mix(in srgb, var(--card) 90%, #020617 10%);
+      border-color: color-mix(in srgb, var(--border) 72%, #38bdf8 28%);
     }
 
     .empresa-email-panel[hidden] {
@@ -750,6 +776,11 @@
       background: color-mix(in srgb, var(--surface) 88%, var(--bg) 12%);
     }
 
+    .empresa-email-panel[data-mail-theme="dark"] .empresa-email-embed {
+      background: #07111f;
+      border-color: color-mix(in srgb, var(--border) 68%, #38bdf8 32%);
+    }
+
     .empresa-email-embed.is-hidden {
       display: none;
     }
@@ -775,7 +806,11 @@
       width: 100%;
       height: 520px;
       border: 0;
-      background: #fff;
+      background: #f8fafc;
+    }
+
+    .empresa-email-panel[data-mail-theme="dark"] .empresa-email-frame {
+      background: #07111f;
     }
 
     .empresa-email-frame-note {
@@ -1075,13 +1110,25 @@
         margin-bottom: 6px;
       }
 
+      .empresa-favorites-heading {
+        gap: 5px;
+        flex-wrap: nowrap;
+      }
+
       .empresa-favorites-kicker {
-        display: none;
+        display: inline-flex;
+        font-size: .66rem;
+        line-height: 1.08;
+      }
+
+      .empresa-favorites-kicker::after {
+        margin-left: 5px;
       }
 
       .empresa-favorites-title {
-        font-size: .94rem;
+        font-size: .9rem;
         line-height: 1.08;
+        white-space: nowrap;
       }
 
       .empresa-favorites-count {
@@ -1092,26 +1139,26 @@
       }
 
       .empresa-favorites-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 4px;
+        grid-template-columns: 1fr;
+        gap: 6px;
       }
 
       .empresa-favorite-card {
         min-height: 42px;
-        padding: 6px 7px;
-        gap: 5px;
-        border-radius: 6px;
+        padding: 9px 12px;
+        gap: 8px;
+        border-radius: 9px;
       }
 
       .empresa-favorite-icon {
-        width: 24px;
-        height: 24px;
-        font-size: .78rem;
+        width: 26px;
+        height: 26px;
+        font-size: .82rem;
       }
 
       .empresa-favorite-text strong {
-        font-size: .72rem;
-        line-height: 1.08;
+        font-size: .86rem;
+        line-height: 1.12;
       }
 
       .empresa-favorite-text span {
@@ -1371,7 +1418,7 @@
     </section>
     <section class="empresa-favorites-panel" aria-labelledby="empresaFavoritesTitle">
       <div class="empresa-favorites-head">
-        <div>
+        <div class="empresa-favorites-heading">
           <p class="empresa-favorites-kicker">Accesos r&aacute;pidos</p>
           <h2 id="empresaFavoritesTitle" class="empresa-favorites-title">Favoritos</h2>
         </div>
@@ -1386,8 +1433,8 @@
       <div class="empresa-email-head">
         <div class="empresa-email-identity">
           <p class="empresa-email-kicker">Bandeja de correo corporativo</p>
-          <h2 id="empresaEmailAddress" class="empresa-email-title">Correo de la empresa</h2>
-          <p id="empresaEmailMeta" class="empresa-email-meta">Buzon empresarial administrado por Mailu.</p>
+          <h2 id="empresaEmailAddress" class="empresa-email-title" hidden></h2>
+          <p id="empresaEmailMeta" class="empresa-email-meta" hidden></p>
         </div>
       </div>
       <p id="empresaEmailAlert" class="empresa-email-alert" hidden></p>
@@ -1430,6 +1477,7 @@
       var weatherLocationHint = document.getElementById("weatherLocationHint");
       var empresaId = getQueryParam("empresa_id") || getQueryParam("id") || readEmpresaId();
       var detectedLocation = null;
+      var lastEmpresaEmailURL = "";
       var weatherCodeMap = {
         0: ["Soleado", "clear", "\u2600"],
         1: ["Mayormente despejado", "clear", "\u2600"],
@@ -1503,9 +1551,53 @@
           });
       }
 
+      function currentEmailThemeMode() {
+        var theme = "";
+        try {
+          theme = document.documentElement.getAttribute("data-theme") || "";
+        } catch (e) {}
+        theme = text(theme).toLowerCase();
+        return theme.indexOf("dark") === 0 ? "dark" : "light";
+      }
+
+      function currentEmailThemeName() {
+        return (currentEmailThemeMode() === "dark" ? "PCSDark" : "PCSLight") + "@custom";
+      }
+
+      function decorateEmpresaEmailURL(url) {
+        var raw = text(url);
+        if (!raw) return "";
+        try {
+          var parsed = new URL(raw, window.location.origin);
+          parsed.searchParams.set("theme", currentEmailThemeMode());
+          parsed.searchParams.set("mail_theme", currentEmailThemeName());
+          parsed.searchParams.set("pcs_theme", currentEmailThemeName());
+          if (parsed.origin === window.location.origin) {
+            return parsed.pathname + parsed.search + parsed.hash;
+          }
+          return parsed.toString();
+        } catch (e) {
+          return raw;
+        }
+      }
+
+      function applyEmpresaEmailTheme() {
+        if (!empresaEmailPanelEl) return;
+        var mode = currentEmailThemeMode();
+        empresaEmailPanelEl.setAttribute("data-mail-theme", mode);
+        if (empresaEmailFrameEl) {
+          empresaEmailFrameEl.style.colorScheme = mode;
+        }
+      }
+
       function resetEmpresaEmailEmbed() {
+        lastEmpresaEmailURL = "";
+        applyEmpresaEmailTheme();
         if (empresaEmailEmbedEl) empresaEmailEmbedEl.classList.remove("is-hidden");
-        if (empresaEmailPlaceholderEl) empresaEmailPlaceholderEl.hidden = false;
+        if (empresaEmailPlaceholderEl) {
+          empresaEmailPlaceholderEl.textContent = "La bandeja se abrira automaticamente cuando el buzon este activo.";
+          empresaEmailPlaceholderEl.hidden = false;
+        }
         if (empresaEmailFrameEl) {
           empresaEmailFrameEl.hidden = true;
           empresaEmailFrameEl.src = "about:blank";
@@ -1513,12 +1605,14 @@
       }
 
       function openEmpresaEmailEmbed(url) {
-        var href = text(url);
+        var href = decorateEmpresaEmailURL(url);
         if (!href || !empresaEmailFrameEl) {
           resetEmpresaEmailEmbed();
           if (empresaEmailFrameNoteEl) empresaEmailFrameNoteEl.textContent = "La bandeja se abrira aqui cuando el buzon este activo.";
           return;
         }
+        lastEmpresaEmailURL = text(url);
+        applyEmpresaEmailTheme();
         if (empresaEmailPlaceholderEl) empresaEmailPlaceholderEl.hidden = true;
         empresaEmailFrameEl.hidden = false;
         empresaEmailFrameEl.src = href;
@@ -1532,6 +1626,24 @@
           var alert = text(alertText);
           empresaEmailAlertEl.textContent = alert;
           empresaEmailAlertEl.hidden = !alert;
+        }
+      }
+
+      function setEmpresaEmailHiddenStatus(title, meta) {
+        if (empresaEmailAddressEl) {
+          empresaEmailAddressEl.textContent = text(title);
+          empresaEmailAddressEl.hidden = true;
+        }
+        if (empresaEmailMetaEl) {
+          empresaEmailMetaEl.textContent = text(meta);
+          empresaEmailMetaEl.hidden = true;
+        }
+      }
+
+      function refreshEmpresaEmailTheme() {
+        applyEmpresaEmailTheme();
+        if (empresaEmailFrameEl && !empresaEmailFrameEl.hidden && text(lastEmpresaEmailURL)) {
+          empresaEmailFrameEl.src = decorateEmpresaEmailURL(lastEmpresaEmailURL);
         }
       }
 
@@ -1727,52 +1839,56 @@
 
       function loadEmpresaEmail() {
         if (!empresaEmailPanelEl || !empresaId) return;
-        fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) + "&check_webmail=1")
+        applyEmpresaEmailTheme();
+        fetchJSON("/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId) + "&check_webmail=1&theme=" + encodeURIComponent(currentEmailThemeMode()))
           .then(function (data) {
             var account = data && data.account;
             var webmail = account && account.webmail_url ? account.webmail_url : (data && data.webmail ? data.webmail : "");
             var webmailEntryURL = data && data.autologin_url ? data.autologin_url : webmail;
             var enabled = !!(data && data.enabled);
             var webmailCheck = data && data.webmail_check ? data.webmail_check : null;
+            var preferences = data && data.preferences ? data.preferences : {};
+            var autoOpenEmail = preferences.auto_open !== false;
             if (!data || !data.ok) {
-              empresaEmailAddressEl.textContent = "Correo corporativo";
-              empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Intenta nuevamente.";
+              setEmpresaEmailHiddenStatus("Correo corporativo", "No se pudo cargar la bandeja de correo. Intenta nuevamente.");
               setEmpresaEmailAlert("No se pudo consultar el estado del correo corporativo.");
               resetEmpresaEmailEmbed();
               empresaEmailPanelEl.hidden = false;
               return;
             }
             if (!account || !account.email) {
-              empresaEmailAddressEl.textContent = "Correo corporativo pendiente";
-              empresaEmailMetaEl.textContent = enabled
+              setEmpresaEmailHiddenStatus("Correo corporativo pendiente", enabled
                 ? "El modulo esta activo, pero esta empresa aun no tiene buzon generado. Sincroniza las empresas desde Super administrador > Email corporativo."
-                : "El modulo global de email corporativo esta desactivado. Activalo desde Super administrador > Email corporativo para crear y abrir buzones por empresa.";
+                : "El modulo global de email corporativo esta desactivado. Activalo desde Super administrador > Email corporativo para crear y abrir buzones por empresa.");
               setEmpresaEmailAlert(emailProvisionAlert(null, enabled, webmailCheck));
               resetEmpresaEmailEmbed();
               empresaEmailPanelEl.hidden = false;
               return;
             }
-            empresaEmailAddressEl.textContent = account.email;
+            var metaText = "";
             if (!enabled) {
-              empresaEmailMetaEl.textContent = "Correo generado, pero el modulo global esta desactivado. Activalo para usar la bandeja empresarial.";
+              metaText = "Correo generado, pero el modulo global esta desactivado. Activalo para usar la bandeja empresarial.";
             } else if (account.estado_provision === "provisionado") {
-              empresaEmailMetaEl.textContent = "Buzon activo. La bandeja se abre automaticamente sin escribir contrasena.";
+              metaText = "Buzon activo. La bandeja se abre automaticamente sin escribir contrasena.";
             } else if (text(account.estado_provision).toLowerCase().indexOf("error") === 0) {
-              empresaEmailMetaEl.textContent = "Correo asignado. El buzon real necesita revisar la provision de Mailu antes de leer mensajes.";
+              metaText = "Correo asignado. El buzon real necesita revisar la provision de Mailu antes de leer mensajes.";
             } else {
-              empresaEmailMetaEl.textContent = "Buzon generado, pendiente de provision en Mailu. Cuando este activo, aqui se vera la bandeja.";
+              metaText = "Buzon generado, pendiente de provision en Mailu. Cuando este activo, aqui se vera la bandeja.";
             }
+            setEmpresaEmailHiddenStatus(account.email, metaText);
             setEmpresaEmailAlert(emailProvisionAlert(account, enabled, webmailCheck));
-            if (enabled && (account.estado_provision === "provisionado" || text(data && data.autologin_url))) {
+            if (enabled && autoOpenEmail && (account.estado_provision === "provisionado" || text(data && data.autologin_url))) {
               openEmpresaEmailEmbed(webmailEntryURL);
             } else {
               resetEmpresaEmailEmbed();
+              if (enabled && !autoOpenEmail && empresaEmailPlaceholderEl) {
+                empresaEmailPlaceholderEl.textContent = "La apertura automatica del buzon esta desactivada desde Configuracion > Email corporativo.";
+              }
             }
             empresaEmailPanelEl.hidden = false;
           })
           .catch(function () {
-            empresaEmailAddressEl.textContent = "Correo corporativo";
-            empresaEmailMetaEl.textContent = "No se pudo cargar la bandeja de correo. Revisa la conexion e intenta nuevamente.";
+            setEmpresaEmailHiddenStatus("Correo corporativo", "No se pudo cargar la bandeja de correo. Revisa la conexion e intenta nuevamente.");
             setEmpresaEmailAlert("No se pudo cargar la informacion del correo corporativo.");
             resetEmpresaEmailEmbed();
             empresaEmailPanelEl.hidden = false;
@@ -2498,6 +2614,17 @@
           renderFavorites();
         }
       });
+
+      try {
+        new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i += 1) {
+            if (mutations[i].attributeName === "data-theme") {
+              refreshEmpresaEmailTheme();
+              break;
+            }
+          }
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      } catch (e) {}
 
       init();
     })();

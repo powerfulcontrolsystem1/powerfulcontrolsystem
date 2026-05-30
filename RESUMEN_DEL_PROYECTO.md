@@ -82,7 +82,7 @@ Asistencia registra entrada, salida, estado, novedades, horas trabajadas y cierr
 
 El sistema tambien incluye un modulo profesional de horarios laborales para programar turnos de trabajadores por sede, area, cargo y recurrencia, con reglas de jornada, publicacion, conflictos y cobertura pendiente.
 
-## Modulos verticales especializados
+## Modulos plantillas especializados
 
 ### Gimnasios
 

@@ -85,7 +85,9 @@ botones, desde handlers estaticos del backend.
 - Configuracion empresa: `web/administrar_empresa/configuracion_menu.html` y
   paginas bajo `web/administrar_empresa/configuracion/`.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
-  `/api/empresa/estacion_prefs`.
+  `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
+  Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de
+  `carrito_ui_global` o del override por estacion.
 - Estaciones: `web/administrar_empresa/estaciones.html`,
   `/api/empresa/carritos_compra`.
 - Carrito y venta directa: `web/administrar_empresa/carrito_de_compras.html`,
@@ -116,7 +118,10 @@ botones, desde handlers estaticos del backend.
   Los servicios Mailu tienen IPs fijas en `pcs_mailu_internal` para que IMAP,
   SMTP y webmail se hablen por la red confiable de Mailu. El archivo
   `deploy/mailu/snappymail-application.ini` conserva `secfetch_allow` para que
-  el webmail pueda abrir en iframe `same-site` dentro del panel empresarial. No imprimir claves: la clave
+  el webmail pueda abrir en iframe `same-site` dentro del panel empresarial y
+  usa `PCSLight@custom` como tema base. Los temas `PCSLight@custom` y
+  `PCSDark@custom` se montan desde `deploy/mailu/themes`; el panel envia
+  `theme=light|dark` al endpoint empresarial y al autologin. No imprimir claves: la clave
   inicial del buzon se guarda cifrada con `CONFIG_ENC_KEY` cuando aplica. En
   Docker portable, `deploy/.env.platform` provee `EMAIL_CORPORATIVO_*` /
   `MAILU_*`; `EMAIL_CORPORATIVO_AUTOLOGIN_SECRET` firma tokens HMAC de 2
@@ -124,7 +129,11 @@ botones, desde handlers estaticos del backend.
   limpia cabeceras publicas y solo el backend inyecta cabeceras SSO hacia
   SnappyMail. La pagina de super administrador incluye diagnostico operativo y boton
   `Probar Mailu`; el panel empresarial abre la bandeja automaticamente cuando el
-  buzon esta asignado.
+  buzon esta asignado, salvo que `empresa_estacion_prefs` tenga
+  `email_corporativo_config.auto_open=false`. La pagina
+  `web/administrar_empresa/configuracion/email_corporativo.html` permite cambiar
+  esa preferencia y actualizar la contrasena interna del buzon; la clave siempre
+  se guarda cifrada y no se muestra al usuario.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.

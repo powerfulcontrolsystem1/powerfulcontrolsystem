@@ -1,11 +1,14 @@
 package db
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 var (
@@ -20,7 +23,15 @@ var (
 	empresaByScopeCacheMu  sync.Mutex
 	empresaByScopeCache    = map[int64]cachedEmpresaByScope{}
 	empresaByScopeCacheTTL = 60 * time.Second
+
+	empresaCreateLocksMu sync.Mutex
+	empresaCreateLocks   = map[string]*empresaCreateLockRef{}
 )
+
+type empresaCreateLockRef struct {
+	mu   sync.Mutex
+	refs int
+}
 
 type cachedLicenciaPermisoPolicy struct {
 	Policy   *LicenciaPermisoPolicy
@@ -1511,25 +1522,145 @@ type Empresa struct {
 
 // CreateEmpresa inserta una nueva empresa en la base PostgreSQL operativa.
 func CreateEmpresa(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, error) {
+	id, _, err := CreateEmpresaIdempotente(dbConn, tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
+	return id, err
+}
+
+// CreateEmpresaIdempotente crea una empresa una sola vez para el mismo
+// administrador, tipo, nombre y NIT. Es la defensa backend contra doble clic,
+// reintentos del navegador o solicitudes concurrentes iguales.
+func CreateEmpresaIdempotente(dbConn *sql.DB, tipoID int64, tipoNombre, nombre, nit, observaciones, usuarioCreador string) (int64, bool, error) {
+	key := empresaCreateDedupKey(tipoID, tipoNombre, nombre, nit, usuarioCreador)
+	unlock := lockEmpresaCreate(key)
+	defer unlock()
+
 	tx, err := dbConn.Begin()
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	defer tx.Rollback()
 	nowExpr := sqlNowExpr()
 
+	if err := acquireEmpresaCreateDedupLockTx(tx, key); err != nil {
+		return 0, false, err
+	}
+	if existingID, found, err := findDuplicateEmpresaCreateTx(tx, tipoID, tipoNombre, nombre, nit, usuarioCreador); err != nil {
+		return 0, false, err
+	} else if found {
+		if err := tx.Commit(); err != nil {
+			return 0, false, err
+		}
+		_, _ = EnsureEmpresaPOS80Defaults(dbConn, existingID, usuarioCreador)
+		return existingID, false, nil
+	}
+
 	id, err := insertTxSQLCompat(tx, "INSERT INTO empresas (tipo_id, tipo_nombre, nombre, nit, observaciones, usuario_creador, fecha_creacion, estado) VALUES (?, ?, ?, ?, ?, ?, "+nowExpr+", 'activo')", tipoID, tipoNombre, nombre, nit, observaciones, usuarioCreador)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	if _, err := execTxSQLCompat(tx, "UPDATE empresas SET empresa_id = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ? AND (empresa_id IS NULL OR empresa_id <= 0)", id, id); err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	if err := tx.Commit(); err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	_, _ = EnsureEmpresaPOS80Defaults(dbConn, id, usuarioCreador)
-	return id, nil
+	return id, true, nil
+}
+
+func lockEmpresaCreate(key string) func() {
+	if strings.TrimSpace(key) == "" {
+		key = "empresa:create:empty"
+	}
+	empresaCreateLocksMu.Lock()
+	ref := empresaCreateLocks[key]
+	if ref == nil {
+		ref = &empresaCreateLockRef{}
+		empresaCreateLocks[key] = ref
+	}
+	ref.refs++
+	empresaCreateLocksMu.Unlock()
+
+	ref.mu.Lock()
+	return func() {
+		ref.mu.Unlock()
+		empresaCreateLocksMu.Lock()
+		ref.refs--
+		if ref.refs <= 0 {
+			delete(empresaCreateLocks, key)
+		}
+		empresaCreateLocksMu.Unlock()
+	}
+}
+
+func acquireEmpresaCreateDedupLockTx(tx *sql.Tx, key string) error {
+	if tx == nil || !isPostgresDialect() {
+		return nil
+	}
+	lockID := empresaCreateAdvisoryLockID(key)
+	_, err := execTxSQLCompat(tx, `SELECT pg_advisory_xact_lock(?)`, lockID)
+	return err
+}
+
+func findDuplicateEmpresaCreateTx(tx *sql.Tx, tipoID int64, tipoNombre, nombre, nit, usuarioCreador string) (int64, bool, error) {
+	if tx == nil {
+		return 0, false, sql.ErrConnDone
+	}
+	nombreKey := normalizeEmpresaCreateText(nombre)
+	nitKey := normalizeEmpresaCreateNit(nit)
+	tipoNombreKey := normalizeEmpresaCreateText(tipoNombre)
+	usuarioKey := normalizeEmpresaCreateText(usuarioCreador)
+	var id int64
+	err := queryRowTxSQLCompat(tx, `
+		SELECT id
+		FROM empresas
+		WHERE LOWER(TRIM(COALESCE(nombre, ''))) = ?
+		  AND REPLACE(REPLACE(REPLACE(LOWER(TRIM(COALESCE(nit, ''))), '.', ''), '-', ''), ' ', '') = ?
+		  AND COALESCE(tipo_id, 0) = ?
+		  AND LOWER(TRIM(COALESCE(tipo_nombre, ''))) = ?
+		  AND LOWER(TRIM(COALESCE(usuario_creador, ''))) = ?
+		  AND LOWER(TRIM(COALESCE(estado, 'activo'))) <> 'eliminada'
+		ORDER BY id ASC
+		LIMIT 1
+	`, nombreKey, nitKey, tipoID, tipoNombreKey, usuarioKey).Scan(&id)
+	if err == nil {
+		return id, true, nil
+	}
+	if err == sql.ErrNoRows {
+		return 0, false, nil
+	}
+	return 0, false, err
+}
+
+func empresaCreateDedupKey(tipoID int64, tipoNombre, nombre, nit, usuarioCreador string) string {
+	parts := []string{
+		fmt.Sprintf("tipo_id=%d", tipoID),
+		"tipo=" + normalizeEmpresaCreateText(tipoNombre),
+		"nombre=" + normalizeEmpresaCreateText(nombre),
+		"nit=" + normalizeEmpresaCreateNit(nit),
+		"usuario=" + normalizeEmpresaCreateText(usuarioCreador),
+	}
+	return strings.Join(parts, "|")
+}
+
+func empresaCreateAdvisoryLockID(key string) int64 {
+	sum := sha256.Sum256([]byte(key))
+	return int64(binary.BigEndian.Uint64(sum[:8]) & 0x7fffffffffffffff)
+}
+
+func normalizeEmpresaCreateText(value string) string {
+	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(value))), " ")
+}
+
+func normalizeEmpresaCreateNit(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	var b strings.Builder
+	for _, r := range value {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // GetEmpresas obtiene todas las empresas

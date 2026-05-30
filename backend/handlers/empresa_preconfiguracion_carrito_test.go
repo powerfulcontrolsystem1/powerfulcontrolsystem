@@ -26,6 +26,7 @@ func TestDefaultEmpresaPreconfigCarritoUISimplificado(t *testing.T) {
 		"mostrar_tarjeta_totales_detalles",
 		"mostrar_tarjeta_acciones_carrito",
 		"mostrar_control_electrico_carrito",
+		"mostrar_tarjeta_domotica_carrito",
 		"mostrar_tarjeta_valores_pago",
 		"mostrar_tarjeta_vip_cliente",
 		"mostrar_boton_descuentos_carrito",

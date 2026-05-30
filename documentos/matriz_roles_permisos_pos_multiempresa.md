@@ -179,7 +179,7 @@
 - El grupo `Operacion y ventas` de `web/administrar_empresa.html` queda reservado a los accesos de operacion diaria directa: `linkVentaDirecta` y `linkEstaciones`.
 - `linkVentas` se conserva como permiso base del TPV bajo `Permisos base de ventas`, no como boton operativo principal.
 - `linkVentaPublica`, `linkRedSocialComercial`, `linkCodigosDescuento` y `linkChatTareas` se agrupan administrativamente como `Canales digitales y colaboracion`.
-- `linkReservasHotel` se agrupa como `Verticales de negocio` y se muestra en `Soluciones por negocio`.
+- `linkReservasHotel` se agrupa como `Plantillas de negocio` y se muestra en `Soluciones por negocio`.
 - Impacto de matriz: no cambian acciones, wrappers, rutas, endpoints ni permisos efectivos; solo cambia la ubicacion visual y el grupo de catalogo.
 
 2026-05-15: Nota de navegacion para menu empresarial
@@ -236,7 +236,7 @@
 - No se agregan permisos, wrappers ni roles nuevos; solo se alinea la UX del frontend con el control de sesion que ya aplicaba el backend.
 
 2026-05-13: Auditoria y compartido documental del nucleo
-- `auditoria` no agrega permisos nuevos, pero sus filtros visibles y contexto IA ahora cubren modulos recientes: `carritos`, `venta_publica`, `crm_unificado`, `reportes`, `backups`, `documentos_onlyoffice`, `tickets_ayuda`, `mantenimiento_programado`, `propinas`, `comisiones`, verticales operativos y `control_electrico`.
+- `auditoria` no agrega permisos nuevos, pero sus filtros visibles y contexto IA ahora cubren modulos recientes: `carritos`, `venta_publica`, `crm_unificado`, `reportes`, `backups`, `documentos_onlyoffice`, `tickets_ayuda`, `mantenimiento_programado`, `propinas`, `comisiones`, plantillas operativos y `control_electrico`.
 - Las opciones de compartir por WhatsApp/correo en ventas, facturas, reportes, ingresos, egresos y menu flotante no conceden acceso nuevo: comparten texto/enlace de la pantalla o documento activo y el receptor sigue necesitando permisos/sesion cuando el recurso no es publico.
 - Los backups automaticos locales siguen bajo `linkBackups`/modulo `backups`; la descarga al equipo depende de sesion activa y `empresa_id`, y no sustituye los permisos de snapshot/restauracion.
 
@@ -304,10 +304,10 @@
 - Los flujos publicos de pago o activacion (`checkout_summary`, Wompi, Nequi, Epayco y activacion sin pago) rechazan licencias ocultas antes de iniciar la compra.
 
 2026-05-12: Nota operativa para adaptacion profesional por tipo de empresa
-- `linkVerticalesIntegracion` se muestra como `Adaptacion por tipo` en Configuracion empresarial y conserva el permiso `seguridad:R`; ver la matriz no concede operacion sobre verticales.
+- `linkPlantillasIntegracion` se muestra como `Adaptacion por tipo` en Configuracion empresarial y conserva el permiso `seguridad:R`; ver la matriz no concede operacion sobre plantillas.
 - `/api/empresa/permisos_contexto` sigue siendo la fuente efectiva de rol, licencia, reglas finas y `vertical_scope`; la pantalla solo lo usa para mostrar el perfil activo y no para saltarse wrappers de API.
-- `/api/*/verticales_integracion/catalogo` ahora cubre exactamente 30 verticales canonicos como contrato unico y publica `professional_ready`/`readiness_score` para auditar que cada vertical visible tenga nucleo, permisos, flujo y reportes declarados.
-- Los alias `consultorio_odontologico` y `taxi` se fusionan en `odontologia` y `taxi_system`; `turnos_atencion`/`turnos` son soporte transversal y no amplian permisos como verticales comerciales independientes.
+- `/api/*/plantillas_integracion/catalogo` ahora cubre exactamente 30 plantillas canonicos como contrato unico y publica `professional_ready`/`readiness_score` para auditar que cada vertical visible tenga nucleo, permisos, flujo y reportes declarados.
+- Los alias `consultorio_odontologico` y `taxi` se fusionan en `odontologia` y `taxi_system`; `turnos_atencion`/`turnos` son soporte transversal y no amplian permisos como plantillas comerciales independientes.
 - La misma matriz exige `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports`: ver o configurar un vertical no concede permisos financieros, pero todo ingreso/egreso operativo debe terminar en los modulos centrales `ventas`, `pagos`, `finanzas`, `bancos_pagos`, `tesoreria_presupuesto` y `reportes` segun licencia/rol.
 - Un vertical puede aparecer como profesional solo si no duplica clientes, productos, ventas ni pagos y declara alcance de configuracion, tablas, permisos, flujo y reportes; la prueba backend bloquea regresiones.
 
@@ -335,22 +335,22 @@
 
 2026-05-11: Nota operativa para alcance vertical por licencia
 - El permiso efectivo de una empresa combina rol, licencia activa, reglas finas de empresa y `vertical_scope`.
-- `vertical_scope` se resuelve desde el tipo/preconfiguracion de empresa o, si no hay preconfiguracion, desde la licencia cuando declara un solo vertical. Solo restringe verticales de negocio; el nucleo universal de ventas, estaciones, productos, clientes, finanzas, pagos, facturacion, reportes y seguridad sigue gobernado por licencia y rol.
-- Ejemplo: una empresa tipo `gimnasio` puede ver y operar `gimnasio` si su rol/licencia lo permiten, pero `odontologia`, `parqueadero`, `domicilios`, `taxi_system`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `drogueria_farmacia`, `aiu_construccion`, `reservas_hotel` y los 20 verticales nuevos quedan ocultos/bloqueados salvo que correspondan al tipo activo.
-- Los endpoints verticales tambien quedan protegidos por esta regla; no basta ocultar el enlace del menu.
+- `vertical_scope` se resuelve desde el tipo/preconfiguracion de empresa o, si no hay preconfiguracion, desde la licencia cuando declara un solo vertical. Solo restringe plantillas de negocio; el nucleo universal de ventas, estaciones, productos, clientes, finanzas, pagos, facturacion, reportes y seguridad sigue gobernado por licencia y rol.
+- Ejemplo: una empresa tipo `gimnasio` puede ver y operar `gimnasio` si su rol/licencia lo permiten, pero `odontologia`, `parqueadero`, `domicilios`, `taxi_system`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `drogueria_farmacia`, `aiu_construccion`, `reservas_hotel` y los 20 plantillas nuevas quedan ocultos/bloqueados salvo que correspondan al tipo activo.
+- Los endpoints plantillas tambien quedan protegidos por esta regla; no basta ocultar el enlace del menu.
 - El checkout de licencias valida que la licencia base coincida con el tipo de empresa antes de crear pago, activar sin pago o procesar confirmaciones.
 
-2026-05-11: Nota operativa para integracion de verticales
-- `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo` son rutas publicas de solo lectura para portada, tarjetas y matriz comercial. No conceden operacion sobre verticales, no exponen datos de empresas y no reemplazan los endpoints autenticados de `/api/empresa/...` o `/super/api/...`.
+2026-05-11: Nota operativa para integracion de plantillas
+- `/api/public/plantillas_nuevas/catalogo` y `/api/public/plantillas_integracion/catalogo` son rutas publicas de solo lectura para portada, tarjetas y matriz comercial. No conceden operacion sobre plantillas, no exponen datos de empresas y no reemplazan los endpoints autenticados de `/api/empresa/...` o `/super/api/...`.
 - Los permisos/licencias siguen siendo necesarios, pero no son suficientes para mostrar un vertical: ademas debe estar marcado como visible operativo en la matriz de integracion.
-- Los 20 verticales nuevos permanecen visibles como `plantilla_integrada_nucleo` porque usan el motor comun y no duplican clientes, productos/servicios, ventas ni pagos.
-- Para version masiva, la preconfiguracion marca los 20 verticales nuevos como `produccion_masiva` con prioridad 1-20.
-- Los 20 verticales nuevos quedan como plantillas reales sobre el nucleo unico, con decision de produccion masiva y prioridad 1-20.
-- `web/super/verticales_produccion_masiva.html` queda como vista de gobierno para `super_administrador`; consume `/super/api/verticales_nuevos/catalogo` y no crea permisos nuevos. El rol `control_super_administrador` no recibe este acceso en su navegacion limitada.
+- Los 20 plantillas nuevas permanecen visibles como `plantilla_integrada_nucleo` porque usan el motor comun y no duplican clientes, productos/servicios, ventas ni pagos.
+- Para version masiva, la preconfiguracion marca los 20 plantillas nuevas como `produccion_masiva` con prioridad 1-20.
+- Los 20 plantillas nuevas quedan como plantillas reales sobre el nucleo unico, con decision de produccion masiva y prioridad 1-20.
+- `web/super/plantillas_produccion_masiva.html` queda como vista de gobierno para `super_administrador`; consume `/super/api/plantillas_nuevas/catalogo` y no crea permisos nuevos. El rol `control_super_administrador` no recibe este acceso en su navegacion limitada.
 - La accion `Asegurar 20` usa el mismo endpoint super con POST y requiere alcance de super administrador; no concede permisos empresariales ni activa modulos por rol, solo asegura catalogo comercial/preconfiguracion/licencias.
 - Gimnasio, odontologia, parqueadero, taxi system, domicilios, apartamentos turisticos, propiedad horizontal, alquileres, drogueria/farmacia y AIU construccion quedan visibles como `plantilla_integrada_nucleo` al enlazar sus personas/servicios/tickets/viajes/pedidos/reservas/cargos/recaudos/contratos/facturas o expedientes sanitarios con clientes, servicios, inventario, ventas, pagos y facturacion centrales.
 - La ocultacion por matriz sigue aplicando a cualquier vertical futuro que no tenga integracion real; no concede ni retira permisos de API, solo evita prometer al usuario un modulo operativo antes de su migracion al nucleo.
-- `linkVerticalesIntegracion` queda protegido por `seguridad:R`; permite consultar la matriz operativa desde Administrar empresa > Configuracion sin conceder permisos de operacion sobre cada vertical.
+- `linkPlantillasIntegracion` queda protegido por `seguridad:R`; permite consultar la matriz operativa desde Administrar empresa > Configuracion sin conceder permisos de operacion sobre cada vertical.
 - Los botones `Sincronizar` dentro de esa matriz tambien consultan `/api/empresa/permisos_contexto`; se habilitan solo cuando la pagina del vertical esta permitida o el modulo tiene accion de creacion efectiva. Cada endpoint vertical mantiene su propio wrapper de autorizacion y `empresa_id`.
 - El catalogo de la matriz declara `required_permissions` por vertical para auditoria; esa metadata no concede permisos por si sola, solo documenta el rol/modulo/accion que debe existir para operar la plantilla.
 
@@ -361,7 +361,7 @@
 
 2026-05-10: Nota operativa para preconfiguraciones y configuracion guiada
 - Las preconfiguraciones por tipo de empresa se aseguran por `tipo_empresa_id`, no por conteo global; si un tipo activo no tiene plantilla, el arranque o `seed_defaults` crea una plantilla inicial sin sobrescribir personalizaciones.
-- Los 20 verticales nuevos conservan plantilla inteligente propia para estaciones, productos/servicios, usuarios guia, roles y tareas iniciales.
+- Los 20 plantillas nuevas conservan plantilla inteligente propia para estaciones, productos/servicios, usuarios guia, roles y tareas iniciales.
 - La pagina/API interna de configuracion guiada conserva control por modulo `seguridad`, pero el boton visible del submenu empresarial fue retirado y el robot no se inicia automaticamente al entrar a una empresa nueva.
 - La preconfiguracion aplicada al crear empresa sigue respetando `empresa_id` y solo crea datos guia de esa empresa; el usuario decide conservar o eliminar esos datos guia.
 
@@ -430,7 +430,7 @@
 - Se agrega clave independiente `propiedad_horizontal`, activable por licencia mediante `licencias.modulos_habilitados`.
 - La pagina `linkPropiedadHorizontal` queda registrada en el catalogo de paginas y se muestra en Administrar empresa.
 - El endpoint `/api/empresa/propiedad_horizontal` usa `WithEmpresaPropiedadHorizontalPermissions`; no abre rutas publicas.
-- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal` y roles operativos autorizados por verticales.
+- Roles base: lectura para roles operativos; crear/actualizar/aprobar para `admin_empresa`, `supervisor_sucursal` y roles operativos autorizados por plantillas.
 - Todas las tablas nuevas incluyen `empresa_id`; unidades, residentes, cargos, recaudos, PQR y asambleas no se mezclan entre empresas.
 
 2026-05-06: Nota operativa para promocion de licencias por asesor
@@ -528,8 +528,8 @@
 
 2026-05-05: Auditoria de enlaces por empresa y no duplicidad de modulos
 - El menu principal de `web/administrar_empresa.html` queda alineado con `permissionPagesCatalogOrdered` y `web/js/administrar_empresa.js`: no hay enlaces visibles sin regla de pagina ni sin regla frontend.
-- Las claves de modulo del backend (`empresa_permisos.go`), licencias (`web/super/licencias.html`) y menu empresa (`web/js/administrar_empresa.js`) coinciden para modulos base y verticales.
-- No se duplican wrappers ni funciones para resolver permisos: los nuevos verticales reutilizan `withEmpresaRolePermissions` y solo declaran wrappers finos cuando necesitan una clave de modulo independiente.
+- Las claves de modulo del backend (`empresa_permisos.go`), licencias (`web/super/licencias.html`) y menu empresa (`web/js/administrar_empresa.js`) coinciden para modulos base y plantillas.
+- No se duplican wrappers ni funciones para resolver permisos: los nuevas plantillas reutilizan `withEmpresaRolePermissions` y solo declaran wrappers finos cuando necesitan una clave de modulo independiente.
 - Auditoria estatica ejecutada: sin rutas `/api/empresa` duplicadas, sin claves de modulo duplicadas y todas las rutas empresariales registradas con `WithEmpresa*` o `WithEmpresaPublicScope`.
 
 2026-05-05: Modulo `carnets` para empleados y usuarios
@@ -553,7 +553,7 @@
 - La administracion de la carta sigue protegida: `administrar_empresa/carta_productos_publica.html` usa modulo `venta_publica`, `linkCartaProductosPublica`, licencia activa y permisos por rol.
 - La publicacion operativa de Motel Calipso (`empresa_id=7`, slug `motel-calipso`) no cambia permisos globales; solo crea/actualiza datos de venta publica, paginas, items y publicaciones de red social dentro de esa empresa.
 
-2026-05-05: Nota operativa para `modulos verticales`, roles y licencias
+2026-05-05: Nota operativa para `modulos plantillas`, roles y licencias
 - Se agregan claves de modulo independientes para `venta_publica`, `gimnasio`, `taxi_system`, `domicilios`, `alquileres`, `odontologia`, `turnos_atencion` y `control_electrico`.
 - Cada clave entra al catalogo central de permisos por rol (R/C/U/D/A), al catalogo de paginas `link*` del panel empresa y a `licencias.modulos_habilitados`, permitiendo activar o desactivar el acceso tanto por licencia como por usuario/rol.
 - Los endpoints protegidos principales dejan de depender del modulo generico `ventas` o `seguridad` cuando existe modulo vertical propio: `WithEmpresaDomiciliosPermissions`, `WithEmpresaTaxiSystemPermissions`, `WithEmpresaGimnasioPermissions`, `WithEmpresaAlquileresPermissions`, `WithEmpresaOdontologiaPermissions`, `WithEmpresaTurnosAtencionPermissions`, `WithEmpresaVentaPublicaPermissions` y `WithEmpresaControlElectricoPermissions`.

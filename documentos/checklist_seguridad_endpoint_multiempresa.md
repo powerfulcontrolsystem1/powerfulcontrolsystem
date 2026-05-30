@@ -90,6 +90,9 @@ usuario pueda enviar o alterar `empresa_id`.
   estado auditable.
 - [ ] Los endpoints idempotentes documentan su clave de idempotencia o criterio
   de reintento.
+- [ ] Todo endpoint de creacion o accion critica que pueda ejecutarse por doble
+  clic, reintento de red o concurrencia debe ser idempotente en backend; el
+  bloqueo visual del frontend nunca sustituye esta garantia.
 
 ## 8. Auditoria y trazabilidad
 
@@ -125,6 +128,9 @@ usuario pueda enviar o alterar `empresa_id`.
 - [ ] Caso de payload invalido: IDs, fechas, montos, textos o archivos.
 - [ ] Caso de concurrencia o doble clic cuando pueda duplicar ventas, pagos,
   abonos, licencias, documentos o sincronizaciones.
+- [ ] Caso de doble submit para altas administrativas como empresas, usuarios,
+  clientes, productos, proveedores, creditos o configuraciones con efectos
+  persistentes.
 - [ ] Para reportes/exportaciones: verificar que no aparezcan datos de otra
   empresa.
 - [ ] Para frontend: comprobar que ocultar botones no sustituye la validacion del
@@ -148,4 +154,3 @@ Al cerrar una tarea que toque endpoint multiempresa, el resumen debe indicar:
   `super_administrador` validado en backend y sin exponer secretos.
 - Jobs internos deben registrar alcance, origen y filtros por empresa aunque no
   reciban `empresa_id` desde HTTP.
-

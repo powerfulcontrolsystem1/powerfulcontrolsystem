@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Email corporativo - Configuracion</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body,Arial,sans-serif)}
+    .email-config-page{min-height:100vh;padding:18px;box-sizing:border-box}
+    .email-config-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+    .email-config-header h1{margin:0;font-size:1.35rem;color:var(--text)}
+    .email-config-header p{margin:4px 0 0;color:var(--muted);font-size:.88rem;line-height:1.4;max-width:760px}
+    .email-config-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:14px;align-items:start}
+    .email-config-card{border:1px solid var(--border);border-radius:8px;background:var(--card);padding:16px;box-shadow:none}
+    .email-config-card h2{margin:0 0 10px;font-size:1rem;color:var(--text)}
+    .email-config-muted{color:var(--muted);font-size:.84rem;line-height:1.45;margin:0 0 12px}
+    .email-config-status{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+    .email-config-status li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent);padding:7px 0;font-size:.86rem}
+    .email-config-status span{color:var(--muted)}
+    .email-config-status strong{color:var(--text);text-align:right;overflow-wrap:anywhere}
+    .email-config-form{display:grid;gap:14px}
+    .email-config-switch{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .email-config-switch input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent,#2563eb)}
+    .email-config-switch strong{display:block;color:var(--text);font-size:.94rem}
+    .email-config-switch span{display:block;color:var(--muted);font-size:.8rem;line-height:1.35;margin-top:3px}
+    .email-config-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .email-config-field{display:grid;gap:5px}
+    .email-config-field label{font-size:.78rem;font-weight:900;text-transform:uppercase;color:var(--muted)}
+    .email-config-field input{min-height:40px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:8px 10px;font:inherit;box-sizing:border-box;width:100%}
+    .email-config-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+    .email-config-alert{margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.86rem;line-height:1.4}
+    .email-config-alert.ok{border-color:color-mix(in srgb,#16a34a 44%,var(--border));background:color-mix(in srgb,#16a34a 10%,var(--surface))}
+    .email-config-alert.error{border-color:color-mix(in srgb,#dc2626 44%,var(--border));background:color-mix(in srgb,#dc2626 10%,var(--surface))}
+    @media(max-width:840px){.email-config-page{padding:12px}.email-config-grid,.email-config-fields{grid-template-columns:1fr}.email-config-actions .btn{width:100%;justify-content:center}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="email-config-page">
+    <header class="email-config-header">
+      <div>
+        <h1>Email corporativo</h1>
+        <p>Controla si la bandeja se abre sola en el panel de empresa y actualiza la contrasena interna del buzon cuando sea necesario.</p>
+      </div>
+    </header>
+
+    <section class="email-config-grid">
+      <form id="emailConfigForm" class="email-config-card email-config-form">
+        <h2>Apertura y acceso</h2>
+        <label class="email-config-switch">
+          <input id="autoOpenEmail" type="checkbox" checked>
+          <span>
+            <strong>Abrir bandeja automaticamente en el panel</strong>
+            <span>Por defecto esta activo. Si lo desactivas, el panel no cargara el webmail al entrar.</span>
+          </span>
+        </label>
+
+        <div class="email-config-fields">
+          <div class="email-config-field">
+            <label for="emailPassword">Nueva contrasena del correo</label>
+            <input id="emailPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Dejar vacio para no cambiar">
+          </div>
+          <div class="email-config-field">
+            <label for="emailPasswordConfirm">Confirmar contrasena</label>
+            <input id="emailPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Repite la nueva contrasena">
+          </div>
+        </div>
+
+        <p id="emailConfigAlert" class="email-config-alert" hidden></p>
+        <div class="email-config-actions">
+          <button id="saveEmailConfig" class="btn primary" type="submit">Guardar cambios</button>
+        </div>
+      </form>
+
+      <aside class="email-config-card">
+        <h2>Estado del buzon</h2>
+        <p class="email-config-muted">La contrasena no se muestra por seguridad. Al cambiarla, el sistema guarda la clave cifrada y actualiza Mailu si la provision directa esta activa.</p>
+        <ul class="email-config-status">
+          <li><span>Correo</span><strong id="emailAddress">Cargando...</strong></li>
+          <li><span>Provision</span><strong id="emailProvision">--</strong></li>
+          <li><span>Webmail</span><strong id="emailWebmail">--</strong></li>
+          <li><span>Apertura</span><strong id="emailAutoOpenStatus">Automatica</strong></li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var empresaId = resolveEmpresaId();
+      var form = document.getElementById("emailConfigForm");
+      var autoOpenEl = document.getElementById("autoOpenEmail");
+      var passEl = document.getElementById("emailPassword");
+      var confirmEl = document.getElementById("emailPasswordConfirm");
+      var saveBtn = document.getElementById("saveEmailConfig");
+      var alertEl = document.getElementById("emailConfigAlert");
+      var emailAddressEl = document.getElementById("emailAddress");
+      var emailProvisionEl = document.getElementById("emailProvision");
+      var emailWebmailEl = document.getElementById("emailWebmail");
+      var emailAutoOpenStatusEl = document.getElementById("emailAutoOpenStatus");
+
+      function text(value){ return String(value == null ? "" : value).trim(); }
+
+      function resolveEmpresaId(){
+        try {
+          var params = new URLSearchParams(window.location.search || "");
+          var direct = text(params.get("empresa_id") || params.get("id"));
+          if (/^[1-9]\d*$/.test(direct)) return direct;
+        } catch(e) {}
+        try {
+          if (window.parent && window.parent !== window) {
+            var parentParams = new URLSearchParams(window.parent.location.search || "");
+            var parentId = text(parentParams.get("empresa_id") || parentParams.get("id"));
+            if (/^[1-9]\d*$/.test(parentId)) return parentId;
+          }
+        } catch(e) {}
+        var stores = [];
+        try { stores.push(window.sessionStorage); } catch(e) {}
+        try { stores.push(window.localStorage); } catch(e) {}
+        for (var i = 0; i < stores.length; i += 1) {
+          var store = stores[i];
+          if (!store) continue;
+          var keys = ["active_empresa_id", "empresa_id", "admin_empresa_id"];
+          for (var k = 0; k < keys.length; k += 1) {
+            var value = "";
+            try { value = store.getItem(keys[k]) || ""; } catch(e) {}
+            if (/^[1-9]\d*$/.test(value)) return value;
+          }
+        }
+        return "";
+      }
+
+      function setAlert(message, type){
+        if (!alertEl) return;
+        alertEl.textContent = text(message);
+        alertEl.hidden = !text(message);
+        alertEl.classList.toggle("ok", type === "ok");
+        alertEl.classList.toggle("error", type === "error");
+      }
+
+      function setBusy(busy){
+        if (saveBtn) saveBtn.disabled = !!busy;
+      }
+
+      function endpoint(){
+        return "/api/empresa/email_corporativo?empresa_id=" + encodeURIComponent(empresaId || "");
+      }
+
+      function render(data){
+        var account = data && data.account ? data.account : null;
+        var prefs = data && data.preferences ? data.preferences : {};
+        var autoOpen = prefs.auto_open !== false;
+        if (autoOpenEl) autoOpenEl.checked = autoOpen;
+        if (emailAddressEl) emailAddressEl.textContent = account && account.email ? account.email : "Sin buzon asignado";
+        if (emailProvisionEl) emailProvisionEl.textContent = account && account.estado_provision ? account.estado_provision : "--";
+        if (emailWebmailEl) emailWebmailEl.textContent = data && data.webmail ? data.webmail : "--";
+        if (emailAutoOpenStatusEl) emailAutoOpenStatusEl.textContent = autoOpen ? "Automatica" : "Desactivada";
+      }
+
+      function load(){
+        if (!empresaId) {
+          setAlert("No se encontro empresa activa para cargar esta configuracion.", "error");
+          setBusy(true);
+          return;
+        }
+        fetch(endpoint(), { credentials: "same-origin" })
+          .then(function(res){
+            return res.text().then(function(txt){
+              var data = {};
+              try { data = txt ? JSON.parse(txt) : {}; } catch(e) {}
+              if (!res.ok) throw new Error(text(data.error || txt) || "No se pudo cargar el email corporativo");
+              return data;
+            });
+          })
+          .then(function(data){
+            render(data);
+            setAlert("", "");
+          })
+          .catch(function(err){
+            setAlert(err.message || "No se pudo cargar la configuracion.", "error");
+          });
+      }
+
+      if (form) {
+        form.addEventListener("submit", function(event){
+          event.preventDefault();
+          var password = text(passEl && passEl.value);
+          var confirm = text(confirmEl && confirmEl.value);
+          if ((password || confirm) && password !== confirm) {
+            setAlert("La confirmacion de la contrasena no coincide.", "error");
+            return;
+          }
+          if (password && password.length < 10) {
+            setAlert("La contrasena debe tener minimo 10 caracteres.", "error");
+            return;
+          }
+          setBusy(true);
+          setAlert("Guardando configuracion...", "");
+          fetch(endpoint(), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              auto_open: !!(autoOpenEl && autoOpenEl.checked),
+              new_password: password,
+              confirm_password: confirm
+            })
+          })
+            .then(function(res){
+              return res.text().then(function(txt){
+                var data = {};
+                try { data = txt ? JSON.parse(txt) : {}; } catch(e) {}
+                if (!res.ok) throw new Error(text(data.error || txt) || "No se pudo guardar la configuracion");
+                return data;
+              });
+            })
+            .then(function(data){
+              render(data);
+              if (passEl) passEl.value = "";
+              if (confirmEl) confirmEl.value = "";
+              var warning = text(data && data.provision_warning);
+              setAlert(warning || "Configuracion de correo guardada correctamente.", warning ? "error" : "ok");
+            })
+            .catch(function(err){
+              setAlert(err.message || "No se pudo guardar la configuracion.", "error");
+            })
+            .finally(function(){
+              setBusy(false);
+            });
+        });
+      }
+
+      load();
+    })();
+  </script>
+</body>
+</html>

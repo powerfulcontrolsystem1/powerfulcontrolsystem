@@ -1114,7 +1114,7 @@
             <li><img class="portal-module-icon" src="/img/solar-energy.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Energía solar:</strong><ul class="portal-module-feature-list"><li>Monitoreo de paneles</li><li>Controladoras Victron</li><li>SMA Sunny Portal</li><li>SolarEdge Monitoring</li><li>Baterías Powerwall, BYD, Pylontech y Enphase</li><li>Alertas por correo</li><li>Lecturas por gateway local</li><li>BMS y estado de salud</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/sensor.png" alt="" loading="lazy"><div class="portal-module-text"><strong>Domotica y control fisico:</strong><ul class="portal-module-feature-list"><li>Domotica por estacion</li><li>Manejo de sensores</li><li>Puertas</li><li>Aparatos</li><li>Permanencia</li><li>Acceso</li><li>Vehiculos</li><li>Parqueaderos</li><li>Trazabilidad operativa</li></ul></div></li>
             <li><img class="portal-module-icon" src="/img/company-briefcase-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Gestion empresarial:</strong><ul class="portal-module-feature-list"><li>Clientes</li><li>CRM</li><li>Usuarios</li><li>Roles</li><li>Permisos</li><li>Licencias</li><li>Auditoria</li><li>Backups</li><li>Comunicaciones</li><li>Soporte</li><li>Chat y tareas</li></ul></div></li>
-            <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Verticales listas:</strong><ul class="portal-module-feature-list"><li>Hotel</li><li>Motel</li><li>Restaurante</li><li>Gimnasio</li><li>Odontologia</li><li>Propiedad horizontal</li><li>Domicilios</li><li>Taxi</li><li>Carta QR</li><li>Venta publica</li><li>Red social comercial</li></ul></div></li>
+            <li><img class="portal-module-icon" src="/img/analytics-color.svg" alt="" loading="lazy"><div class="portal-module-text"><strong>Plantillas listas:</strong><ul class="portal-module-feature-list"><li>Hotel</li><li>Motel</li><li>Restaurante</li><li>Gimnasio</li><li>Odontologia</li><li>Propiedad horizontal</li><li>Domicilios</li><li>Taxi</li><li>Carta QR</li><li>Venta publica</li><li>Red social comercial</li></ul></div></li>
           </ul>
         </div>
       </section>
@@ -1136,7 +1136,7 @@
     <span class="whatsapp-floating-text">Chat Soporte</span>
   </a>
 
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
   <script src="/js/portal_visits.js?v=20260525-portal-visitas-compartido"></script>
   <script>
     window.__pcsAutoInjectChatShell = true;
@@ -1411,7 +1411,7 @@
         }
       ];
 
-      var allLocalVerticalCatalog = window.PCS_NUEVOS_VERTICALES || [];
+      var allLocalVerticalCatalog = window.PCS_NUEVAS_PLANTILLAS || [];
       var localVerticalCatalog = allLocalVerticalCatalog.filter(isVerticalPublicOperational);
       var localVerticalVisualsByModule = {};
       allLocalVerticalCatalog.forEach(function(item) {
@@ -1436,7 +1436,7 @@
         var productionRank = parseInt(rankRaw, 10) || 0;
         var productionMass = !!(item && (item.productionMass || item.production_mass || item.produccion_masiva || productionRank > 0));
         var status = (item && (item.portalStatus || item.portal_status || item.estado_portal || item.decisionLabel || item.decision_label)) || (productionMass ? ('Produccion #' + productionRank) : 'No productivo');
-        var description = (item && (item.portalDescription || item.portal_description || item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
+        var description = (item && (item.portalDescription || item.portal_description || item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || 'Modulo plantilla empresarial con configuracion, operacion, permisos y reportes.';
         if (status && description.indexOf(status) !== 0) {
           description = status + '. ' + description;
         }
@@ -1679,7 +1679,7 @@
 
       async function refreshFallbackVerticalCards() {
         try {
-          var response = await fetch('/api/public/verticales_nuevos/catalogo', { credentials: 'same-origin' });
+          var response = await fetch('/api/public/plantillas_nuevas/catalogo', { credentials: 'same-origin' });
           if (!response.ok) return;
           var payload = await response.json();
           var rows = payload && Array.isArray(payload.items) ? payload.items : [];

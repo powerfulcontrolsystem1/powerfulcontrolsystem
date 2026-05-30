@@ -20,9 +20,15 @@ afecte dinero, documentos, licencias o seguridad.
 2. Presiona agregar empresa, elige tipo y completa datos.
 3. Backend crea empresa en `pcs_empresas`, aplica preconfiguracion por tipo,
    permisos y modulos.
-4. Si esta activo el aviso de empresa nueva, se notifica al super administrador.
-5. Pruebas: empresa creada, aparece en selector, entra a panel y conserva
+4. La creacion debe ser idempotente: doble clic, reintento o solicitud
+   concurrente con el mismo administrador, tipo, nombre y NIT debe devolver la
+   empresa ya creada sin insertar otra ni repetir avisos.
+5. Si esta activo el aviso de empresa nueva, se notifica al super administrador
+   solo cuando realmente se inserta una empresa nueva.
+6. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
    `empresa_id` correcto.
+7. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
+   deben crear empresas duplicadas.
 
 ## Administradores delegados
 
@@ -176,8 +182,16 @@ afecte dinero, documentos, licencias o seguridad.
 5. La creacion de empresa no debe fallar por errores del servidor de correo.
 6. En el panel empresarial se muestra la tarjeta de webmail solo si el modulo esta
    activo y la empresa tiene cuenta.
-7. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
+7. La tarjeta detecta la apariencia activa y envia `theme=light|dark` para usar
+   `PCSLight@custom` o `PCSDark@custom` en SnappyMail.
+8. En `Configuracion > Email corporativo`, la empresa puede desactivar la
+   apertura automatica del buzon; por defecto queda activa.
+9. Desde la misma pagina se puede cambiar la contrasena interna del buzon. El
+   backend cifra la clave, no la devuelve al navegador y actualiza Mailu si
+   `mailu_direct` esta disponible.
+10. Si aparecen estados de error, usar `Probar Mailu` en super administrador para
    validar el contenedor `pcs-mailu-admin` y el comando directo antes de
    reintentar provision.
-8. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
-   duplicada de nombre similar, comprobar sufijo unico y abrir webmail.
+11. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
+   duplicada de nombre similar, comprobar sufijo unico, abrir webmail, desactivar
+   autoapertura y cambiar clave sin exponerla.

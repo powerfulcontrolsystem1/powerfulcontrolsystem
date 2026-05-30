@@ -171,36 +171,36 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 }
 
 func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.T) {
-	for _, item := range NuevosVerticalesTipoEmpresaCatalog() {
+	for _, item := range NuevasPlantillasTipoEmpresaCatalog() {
 		t.Run(item.Modulo, func(t *testing.T) {
 			preconfig := DefaultTipoEmpresaPreconfiguracion(456, item.Nombre)
 			if !preconfig.Enabled {
-				t.Fatalf("preconfiguracion vertical no quedo habilitada")
+				t.Fatalf("preconfiguracion plantilla no quedo habilitada")
 			}
 			template, err := ParseTipoEmpresaPreconfigTemplate(preconfig.ConfigJSON)
 			if err != nil {
-				t.Fatalf("config vertical invalida: %v", err)
+				t.Fatalf("config plantilla invalida: %v", err)
 			}
 			if template.Operacion.TipoNegocio != item.Modulo {
-				t.Fatalf("tipo_negocio vertical incorrecto: got %q want %q", template.Operacion.TipoNegocio, item.Modulo)
+				t.Fatalf("tipo_negocio plantilla incorrecto: got %q want %q", template.Operacion.TipoNegocio, item.Modulo)
 			}
 			if template.Estaciones.Cantidad < 3 {
-				t.Fatalf("vertical debe tener estaciones guia: got %d", template.Estaciones.Cantidad)
+				t.Fatalf("plantilla debe tener estaciones guia: got %d", template.Estaciones.Cantidad)
 			}
 			if len(template.Productos) < 3 {
-				t.Fatalf("vertical debe tener productos/servicios guia: got %d", len(template.Productos))
+				t.Fatalf("plantilla debe tener productos/servicios guia: got %d", len(template.Productos))
 			}
 			if len(template.Usuarios) < 3 {
-				t.Fatalf("vertical debe tener usuarios guia: got %d", len(template.Usuarios))
+				t.Fatalf("plantilla debe tener usuarios guia: got %d", len(template.Usuarios))
 			}
 			if len(template.TareasGuia) < 4 {
-				t.Fatalf("vertical debe tener tareas guia profesionales: got %d", len(template.TareasGuia))
+				t.Fatalf("plantilla debe tener tareas guia profesionales: got %d", len(template.TareasGuia))
 			}
 			if !template.AdaptacionNucleo.FuenteUnica ||
 				!template.AdaptacionNucleo.UsuariosDesdeNucleo ||
 				!template.AdaptacionNucleo.ProductosServiciosDesdeNucleo ||
 				!template.AdaptacionNucleo.EstacionesComoRecursosConfigurados {
-				t.Fatalf("vertical debe adaptar usuarios/productos/estaciones al nucleo: %+v", template.AdaptacionNucleo)
+				t.Fatalf("plantilla debe adaptar usuarios/productos/estaciones al nucleo: %+v", template.AdaptacionNucleo)
 			}
 			if template.AdaptacionNucleo.EntidadEstacionSingular != item.StationPrefix {
 				t.Fatalf("entidad estacion=%q want %q", template.AdaptacionNucleo.EntidadEstacionSingular, item.StationPrefix)
@@ -209,7 +209,7 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 				t.Fatalf("roles operativos no cubiertos por adaptacion: %+v", template.AdaptacionNucleo)
 			}
 			if template.IntegracionVertical == nil {
-				t.Fatalf("vertical debe quedar conectado a la matriz extendida de integracion")
+				t.Fatalf("plantilla debe quedar conectado a la matriz extendida de integracion")
 			}
 			if template.IntegracionVertical.Modulo != item.Modulo {
 				t.Fatalf("integracion modulo=%q want %q", template.IntegracionVertical.Modulo, item.Modulo)
@@ -233,10 +233,10 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverNewVerticalCatalog(t *testing.
 	}
 }
 
-func TestNuevosVerticalesProduccionMasivaSeleccionaVeinte(t *testing.T) {
-	selected := NuevosVerticalesProduccionMasivaSeleccionados()
+func TestNuevasPlantillasProduccionMasivaSeleccionaVeinte(t *testing.T) {
+	selected := NuevasPlantillasProduccionMasivaSeleccionados()
 	if len(selected) != 20 {
-		t.Fatalf("verticales produccion masiva len=%d, want 20: %v", len(selected), selected)
+		t.Fatalf("plantillas produccion masiva len=%d, want 20: %v", len(selected), selected)
 	}
 
 	seen := map[string]bool{}
@@ -266,7 +266,7 @@ func TestNuevosVerticalesProduccionMasivaSeleccionaVeinte(t *testing.T) {
 	}
 
 	masivos := 0
-	for _, item := range NuevosVerticalesTipoEmpresaCatalog() {
+	for _, item := range NuevasPlantillasTipoEmpresaCatalog() {
 		integracion := BuildTipoEmpresaPreconfigIntegracionVertical(item.Modulo)
 		if integracion == nil {
 			t.Fatalf("sin integracion para %s", item.Modulo)
@@ -283,7 +283,7 @@ func TestNuevosVerticalesProduccionMasivaSeleccionaVeinte(t *testing.T) {
 		masivos++
 	}
 	if masivos != 20 {
-		t.Fatalf("verticales masivos=%d, want 20", masivos)
+		t.Fatalf("plantillas masivos=%d, want 20", masivos)
 	}
 }
 
@@ -298,7 +298,7 @@ func TestIntegracionVerticalClasicaNoSeMarcaComoDiferidaV1(t *testing.T) {
 				t.Fatalf("%s decision=%q, want mantener_como_plantilla", modulo, integracion.Decision)
 			}
 			if integracion.ProduccionMasiva {
-				t.Fatalf("%s no debe entrar en ranking de nuevos verticales masivos", modulo)
+				t.Fatalf("%s no debe entrar en ranking de nuevas plantillas masivos", modulo)
 			}
 			if len(integracion.IncomeFlow) == 0 || len(integracion.ExpenseFlow) == 0 || len(integracion.FinancialTables) == 0 {
 				t.Fatalf("%s debe declarar ingresos/egresos del nucleo financiero: %+v", modulo, integracion)

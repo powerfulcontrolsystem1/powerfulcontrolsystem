@@ -146,7 +146,7 @@
           : [];
         if (anyModules.length) {
           return {
-            title: 'Cualquiera de ' + String(anyModules.length) + ' verticales',
+            title: 'Cualquiera de ' + String(anyModules.length) + ' plantillas',
             detail: anyModules.map(moduleTitle).join(', ')
           };
         }
@@ -158,7 +158,7 @@
         if (item.always_visible) return 'Visible por defecto; override puede restringir';
         const action = item.accion ? actionLabelShort(item.accion) : '—';
         const anyModules = Array.isArray(item.any_modules) ? item.any_modules.filter(Boolean) : [];
-        if (anyModules.length) return action + ' en al menos un vertical permitido';
+        if (anyModules.length) return action + ' en al menos una plantilla permitida';
         return action;
       }
 

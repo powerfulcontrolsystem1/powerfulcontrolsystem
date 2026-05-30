@@ -196,6 +196,34 @@ set_ini_value() {
   fi
 }
 set_ini_value "webmail" "popup_identity" "Off"
+set_ini_value "webmail" "theme" "\"PCSLight@custom\""
+set_ini_value "defaults" "theme" "\"PCSLight@custom\""
 set_ini_value "security" "secfetch_allow" "\"mode=navigate,dest=iframe,site=same-site\""
+theme_source="/pcs-themes"
+if [ -d "$theme_source" ]; then
+  copied=0
+  for candidate in \
+    /app/themes \
+    /app/snappymail/themes \
+    /app/snappymail/v/0.0.0/themes \
+    /var/www/html/themes \
+    /var/www/html/snappymail/themes \
+    /var/www/html/snappymail/v/0.0.0/themes \
+    /snappymail/themes \
+    /snappymail/v/0.0.0/themes
+  do
+    if [ -d "$candidate" ]; then
+      cp -R "$theme_source"/PCS* "$candidate"/ 2>/dev/null || true
+      chown -R mailu:mailu "$candidate"/PCS* 2>/dev/null || true
+      copied=1
+    fi
+  done
+  if [ "$copied" = "0" ]; then
+    for candidate in $(find / -maxdepth 6 -type d \( -path "*/snappymail/v/0.0.0/themes" -o -path "*/snappymail/themes" -o -path "*/html/themes" \) 2>/dev/null | head -n 6); do
+      cp -R "$theme_source"/PCS* "$candidate"/ 2>/dev/null || true
+      chown -R mailu:mailu "$candidate"/PCS* 2>/dev/null || true
+    done
+  fi
+fi
 ' >/dev/null 2>&1 || true
 fi

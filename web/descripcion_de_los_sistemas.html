@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="/img/punto_venta.png">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <script src="/menu.js"></script>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
 <body>
   <div class="portal systems-page">
@@ -158,7 +158,7 @@
         }
       ];
 
-      var localVerticalCatalog = window.PCS_NUEVOS_VERTICALES || [];
+      var localVerticalCatalog = window.PCS_NUEVAS_PLANTILLAS || [];
       var localVerticalVisualsByModule = {};
       localVerticalCatalog.forEach(function(item) {
         if (item && item.module) localVerticalVisualsByModule[item.module] = item;
@@ -180,31 +180,31 @@
         var module = String((item && (item.module || item.modulo)) || '').trim().toLowerCase();
         var local = localVerticalVisualsByModule[module] || {};
         var title = (item && (item.full_title || item.fullTitle || item.title || item.titulo)) || local.fullTitle || local.title || module;
-        var summary = (item && (item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || local.description || local.lead || 'Modulo vertical empresarial con configuracion, operacion, permisos y reportes.';
+        var summary = (item && (item.description || item.descripcion_larga || item.descripcion || item.lead || item.summary || item.resumen)) || local.description || local.lead || 'Modulo plantilla empresarial con configuracion, operacion, permisos y reportes.';
         var sections = verticalSectionsFromCatalogItem(item);
         var firstSections = sections.slice(0, 5);
         var points = firstSections.map(function(section) {
           return 'Flujo operativo: ' + section + '.';
         });
-        points.push('Permisos por rol, licencia y empresa usando el motor comun de verticales.');
+        points.push('Permisos por rol, licencia y empresa usando el motor comun de plantillas.');
         points.push('Configuracion inicial con tipos, estados, acciones sugeridas, diagnostico y exportacion.');
         return {
           __verticalModule: module,
           module: module,
           full_title: title,
           sections: sections,
-          detalle_id: 'vertical-' + module,
+          detalle_id: 'plantilla-' + module,
           titulo: title,
           descripcion: summary,
           imagen_url: local.icon || (item && item.icon) || '/img/company-briefcase-color.svg',
           imagen_secundaria_url: local.secondaryIcon || (item && (item.secondaryIcon || item.secondary_icon)) || '/img/report.svg',
           enlace: '/administrar_empresa.html?module=' + encodeURIComponent(module),
-          detalle_etiqueta: 'Vertical empresarial',
+          detalle_etiqueta: 'Plantilla empresarial',
           detalle_titular: 'Activa ' + title + ' con roles, licencia, configuracion y operacion lista para trabajar.',
           detalle_parrafo_uno: summary + ' Trabaja sobre el motor empresarial comun de Powerful Control System, por eso puede compartir usuarios, roles, licencias, auditoria, reportes, evidencias y configuracion inicial sin duplicar tecnologia ni aislar la informacion del negocio.',
           detalle_parrafo_dos: sections.length
             ? ('La ruta de trabajo incluye ' + sections.join(', ') + '. Esa estructura permite arrancar con un negocio real, mantener control por permisos y crecer hacia reportes, SLA, evidencias y configuraciones avanzadas sin cambiar de plataforma.')
-            : 'La ruta de trabajo se alimenta desde el catalogo backend del vertical, de modo que la portada, licencias, roles y pantalla operativa usan el mismo contrato funcional.',
+            : 'La ruta de trabajo se alimenta desde el catalogo backend de la plantilla, de modo que la portada, licencias, roles y pantalla operativa usan el mismo contrato funcional.',
           detalle_puntos: points
         };
       }
@@ -359,7 +359,7 @@
 
       async function refreshFallbackVerticalCards() {
         try {
-          var response = await fetch('/api/public/verticales_nuevos/catalogo', { credentials: 'same-origin' });
+          var response = await fetch('/api/public/plantillas_nuevas/catalogo', { credentials: 'same-origin' });
           if (!response.ok) return;
           var payload = await response.json();
           var rows = payload && Array.isArray(payload.items) ? payload.items : [];

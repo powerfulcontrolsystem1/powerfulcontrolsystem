@@ -1489,6 +1489,32 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/plantillas_integracion/catalogo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/plantillas_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/plantillas_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/plantillas_nuevas/catalogo":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/plantillas_nuevas/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/plantillas_nuevas/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/portal_contador":
     get:
       tags: [empresa]
@@ -1996,32 +2022,6 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/verticales_integracion/catalogo":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/verticales_integracion/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/verticales_integracion/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/empresa/verticales_nuevos/catalogo":
-    get:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/verticales_nuevos/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [empresa]
-      summary: Ruta inventariada /api/empresa/verticales_nuevos/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
   "/api/internal/email_corporativo/autologin":
     get:
       tags: [publico]
@@ -2269,6 +2269,32 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/plantillas_integracion/catalogo":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/plantillas_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/plantillas_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/api/public/plantillas_nuevas/catalogo":
+    get:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/plantillas_nuevas/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [publico]
+      summary: Ruta inventariada /api/public/plantillas_nuevas/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/public/portal_visitas":
     get:
       tags: [publico]
@@ -2383,32 +2409,6 @@ paths:
     post:
       tags: [publico]
       summary: Ruta inventariada /api/public/venta_publica
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/public/verticales_integracion/catalogo":
-    get:
-      tags: [publico]
-      summary: Ruta inventariada /api/public/verticales_integracion/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [publico]
-      summary: Ruta inventariada /api/public/verticales_integracion/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/api/public/verticales_nuevos/catalogo":
-    get:
-      tags: [publico]
-      summary: Ruta inventariada /api/public/verticales_nuevos/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [publico]
-      summary: Ruta inventariada /api/public/verticales_nuevos/catalogo
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
@@ -3322,6 +3322,32 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/plantillas_integracion/catalogo":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/plantillas_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/plantillas_integracion/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/plantillas_nuevas/catalogo":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/plantillas_nuevas/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/plantillas_nuevas/catalogo
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/postgres/performance":
     get:
       tags: [super-administrador]
@@ -3579,32 +3605,6 @@ paths:
     post:
       tags: [super-administrador]
       summary: Ruta inventariada /super/api/venta_digital
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/super/api/verticales_integracion/catalogo":
-    get:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/verticales_integracion/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/verticales_integracion/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-  "/super/api/verticales_nuevos/catalogo":
-    get:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/verticales_nuevos/catalogo
-      responses:
-        "200":
-          description: Respuesta exitosa o manejada por el handler real.
-    post:
-      tags: [super-administrador]
-      summary: Ruta inventariada /super/api/verticales_nuevos/catalogo
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.

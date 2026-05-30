@@ -9,10 +9,10 @@ import (
 	dbpkg "github.com/you/pos-backend/db"
 )
 
-func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
-	items := buildEmpresaVerticalesIntegracionCatalogo()
+func TestEmpresaPlantillasIntegracionCatalogoContrato(t *testing.T) {
+	items := buildEmpresaPlantillasIntegracionCatalogo()
 	if len(items) != 30 {
-		t.Fatalf("catalogo universal debe publicar 30 verticales canonicos exactos, obtuvo %d", len(items))
+		t.Fatalf("catalogo universal debe publicar 30 plantillas canonicos exactos, obtuvo %d", len(items))
 	}
 	seen := map[string]bool{}
 	forbidden := map[string]string{
@@ -41,87 +41,87 @@ func TestEmpresaVerticalesIntegracionCatalogoContrato(t *testing.T) {
 			t.Fatalf("modulo duplicado: %s", item.Modulo)
 		}
 		if reason, ok := forbidden[item.Modulo]; ok {
-			t.Fatalf("modulo no canonico publicado como vertical: %s (%s)", item.Modulo, reason)
+			t.Fatalf("modulo no canonico publicado como plantilla: %s (%s)", item.Modulo, reason)
 		}
 		seen[item.Modulo] = true
 		if _, ok := required[item.Modulo]; ok {
 			required[item.Modulo] = true
 		}
 		if item.AliasDe != "" {
-			t.Fatalf("alias publicado como vertical canonico: %+v", item)
+			t.Fatalf("alias publicado como plantilla canonica: %+v", item)
 		}
 		if item.OperationalVisible && len(item.DuplicatesCore) != 0 {
-			t.Fatalf("vertical visible con duplicados del nucleo: %+v", item)
+			t.Fatalf("plantilla visible con duplicados del nucleo: %+v", item)
 		}
 		if item.OperationalVisible && item.IntegrationStatus != "plantilla_integrada_nucleo" {
 			t.Fatalf("estado visible invalido para %s: %s", item.Modulo, item.IntegrationStatus)
 		}
 		if len(item.OwnFlowAllowed) == 0 {
-			t.Fatalf("vertical sin flujo especializado declarado: %+v", item)
+			t.Fatalf("plantilla sin flujo especializado declarado: %+v", item)
 		}
 		if item.OperationalVisible && len(item.TemplateActivates) == 0 {
-			t.Fatalf("vertical visible sin plantilla declarada: %+v", item)
+			t.Fatalf("plantilla visible sin plantilla declarada: %+v", item)
 		}
 		if item.OperationalVisible && len(item.TablesTouched) == 0 {
-			t.Fatalf("vertical visible sin tablas declaradas: %+v", item)
+			t.Fatalf("plantilla visible sin tablas declaradas: %+v", item)
 		}
 		if item.OperationalVisible && len(item.RequiredPermissions) == 0 {
-			t.Fatalf("vertical visible sin permisos declarados: %+v", item)
+			t.Fatalf("plantilla visible sin permisos declarados: %+v", item)
 		}
 		if item.OperationalVisible && len(item.SaleFlow) == 0 {
-			t.Fatalf("vertical visible sin flujo de venta declarado: %+v", item)
+			t.Fatalf("plantilla visible sin flujo de venta declarado: %+v", item)
 		}
 		if item.OperationalVisible && len(item.ReportsProduced) == 0 {
-			t.Fatalf("vertical visible sin reportes declarados: %+v", item)
+			t.Fatalf("plantilla visible sin reportes declarados: %+v", item)
 		}
 		if item.OperationalVisible && !hasAllStringValues(item.FinancialCoreModules, []string{"ventas", "pagos", "finanzas", "reportes"}) {
-			t.Fatalf("vertical visible sin nucleo financiero declarado: %+v", item)
+			t.Fatalf("plantilla visible sin nucleo financiero declarado: %+v", item)
 		}
 		if item.OperationalVisible && len(item.IncomeFlow) == 0 {
-			t.Fatalf("vertical visible sin flujo de ingresos del nucleo: %+v", item)
+			t.Fatalf("plantilla visible sin flujo de ingresos del nucleo: %+v", item)
 		}
 		if item.OperationalVisible && len(item.ExpenseFlow) == 0 {
-			t.Fatalf("vertical visible sin flujo de egresos del nucleo: %+v", item)
+			t.Fatalf("plantilla visible sin flujo de egresos del nucleo: %+v", item)
 		}
 		if item.OperationalVisible && !hasAllStringValues(item.FinancialTables, []string{"empresa_finanzas_movimientos"}) {
-			t.Fatalf("vertical visible sin tablas financieras del nucleo: %+v", item)
+			t.Fatalf("plantilla visible sin tablas financieras del nucleo: %+v", item)
 		}
 		if item.OperationalVisible && len(item.FinancialReports) == 0 {
-			t.Fatalf("vertical visible sin reportes financieros del nucleo: %+v", item)
+			t.Fatalf("plantilla visible sin reportes financieros del nucleo: %+v", item)
 		}
 		if item.OperationalVisible && !item.ProfessionalReady {
-			t.Fatalf("vertical visible sin preparacion profesional completa: %+v", item)
+			t.Fatalf("plantilla visible sin preparacion profesional completa: %+v", item)
 		}
 		if item.OperationalVisible && item.ReadinessScore != 100 {
-			t.Fatalf("vertical visible con readiness score invalido: %+v", item)
+			t.Fatalf("plantilla visible con readiness score invalido: %+v", item)
 		}
 		if item.OperationalVisible && len(item.ConfigurationScope) == 0 {
-			t.Fatalf("vertical visible sin alcance de configuracion: %+v", item)
+			t.Fatalf("plantilla visible sin alcance de configuracion: %+v", item)
 		}
 		payload, err := json.Marshal(item)
 		if err != nil {
 			t.Fatalf("marshal item: %v", err)
 		}
 		if item.OperationalVisible && (jsonContainsKey(payload, "sync_action") || jsonContainsKey(payload, "sync_path") || jsonContainsKey(payload, "sync_action_name")) {
-			t.Fatalf("vertical visible publica contrato viejo de sincronizacion: %s", string(payload))
+			t.Fatalf("plantilla visible publica contrato viejo de sincronizacion: %s", string(payload))
 		}
 	}
 	for module, ok := range required {
 		if !ok {
-			t.Fatalf("vertical requerido faltante en catalogo: %s", module)
+			t.Fatalf("plantilla requerida faltante en catalogo: %s", module)
 		}
 	}
-	for _, nuevo := range dbpkg.NuevosVerticalesTipoEmpresaCatalog() {
+	for _, nuevo := range dbpkg.NuevasPlantillasTipoEmpresaCatalog() {
 		module := dbpkg.NormalizeEmpresaModuloColombia(nuevo.Modulo)
 		if module == "" {
 			continue
 		}
 		if !seen[module] {
-			t.Fatalf("nuevo vertical faltante en matriz universal: %s", module)
+			t.Fatalf("nueva plantilla faltante en matriz universal: %s", module)
 		}
 	}
-	if len(items)-len(dbpkg.NuevosVerticalesTipoEmpresaCatalog()) != 10 {
-		t.Fatalf("la matriz debe conservar 10 verticales clasicos canonicos y 20 nuevos: total=%d nuevos=%d", len(items), len(dbpkg.NuevosVerticalesTipoEmpresaCatalog()))
+	if len(items)-len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()) != 10 {
+		t.Fatalf("la matriz debe conservar 10 plantillas clasicos canonicos y 20 nuevos: total=%d nuevos=%d", len(items), len(dbpkg.NuevasPlantillasTipoEmpresaCatalog()))
 	}
 	if !hasAllStringValues(findVerticalForTest(items, "odontologia").FusedModules, []string{"consultorio_odontologico"}) {
 		t.Fatalf("odontologia debe declarar fusion de consultorio_odontologico")
@@ -149,10 +149,10 @@ func jsonContainsKey(payload []byte, key string) bool {
 	return ok
 }
 
-func TestPublicVerticalesIntegracionCatalogoHandler(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/public/verticales_integracion/catalogo", nil)
+func TestPublicPlantillasIntegracionCatalogoHandler(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/public/plantillas_integracion/catalogo", nil)
 	rr := httptest.NewRecorder()
-	PublicVerticalesIntegracionCatalogoHandler().ServeHTTP(rr, req)
+	PublicPlantillasIntegracionCatalogoHandler().ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rr.Code, rr.Body.String())
 	}

@@ -1,10 +1,10 @@
-# Plan de verticales para produccion masiva
+# Plan de plantillas para produccion masiva
 
 Fecha: 2026-05-11
 
 ## Decision
 
-La version masiva queda cerrada con los 20 verticales nuevos como plantillas reales. La regla profesional se mantiene: ninguna plantilla puede duplicar clientes, productos/servicios, ventas, pagos, facturacion, reportes ni permisos; cada vertical agrega solo su especialidad operativa sobre `empresa_modulos_colombia_*` y el nucleo central.
+La version masiva queda cerrada con los 20 plantillas nuevas como plantillas reales. La regla profesional se mantiene: ninguna plantilla puede duplicar clientes, productos/servicios, ventas, pagos, facturacion, reportes ni permisos; cada vertical agrega solo su especialidad operativa sobre `empresa_modulos_colombia_*` y el nucleo central.
 
 La decision usa tres criterios:
 
@@ -55,12 +55,12 @@ Cada preconfiguracion de tipo de empresa debe incluir `integracion_vertical` den
 - `sale_flow`
 - `reports_produced`
 
-El catalogo de nuevos verticales expone la misma decision como `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`. Asi el panel, super administrador, portal publico y seed de preconfiguraciones leen una sola matriz.
+El catalogo de nuevas plantillas expone la misma decision como `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion` y `decision_preconfig`. Asi el panel, super administrador, portal publico y seed de preconfiguraciones leen una sola matriz.
 
 ## Plan para version apta para produccion masiva
 
 1. Congelar contrato de plantilla: no publicar vertical sin `integracion_preconfig` completa.
-2. Activar comercialmente los 20 verticales nuevos como plantillas reales de produccion masiva.
+2. Activar comercialmente los 20 plantillas nuevas como plantillas reales de produccion masiva.
 3. Validar demo de datos iniciales, roles, permisos, menu, estaciones, servicios guia, tareas guia y reportes para cada vertical.
 4. Ejecutar QA por rol: super administrador, administrador empresa, cajero/operador y soporte.
 5. Verificar que toda venta/pago llegue al nucleo central y no a tablas paralelas.
@@ -70,11 +70,11 @@ El catalogo de nuevos verticales expone la misma decision como `integracion_prec
 ## Estado actual
 
 - Implementado: conexion de preconfiguracion con matriz extendida.
-- Implementado: seleccion de 20 verticales para produccion masiva.
-- Implementado: contrato API para que el catalogo de verticales nuevos exponga la decision.
-- Implementado: pruebas que bloquean catalogos sin metadata extendida y que exigen exactamente 20 verticales masivos.
-- Implementado: pantalla `web/super/verticales_produccion_masiva.html` en super administrador para KPIs, filtros, ranking, metadata extendida y exportacion CSV.
+- Implementado: seleccion de 20 plantillas para produccion masiva.
+- Implementado: contrato API para que el catalogo de plantillas nuevas exponga la decision.
+- Implementado: pruebas que bloquean catalogos sin metadata extendida y que exigen exactamente 20 plantillas masivos.
+- Implementado: pantalla `web/super/plantillas_produccion_masiva.html` en super administrador para KPIs, filtros, ranking, metadata extendida y exportacion CSV.
 - Implementado: acciones desde cada vertical hacia `Tipos de empresa`, `Preconfiguraciones` y `Licencias`, con filtros iniciales por `q`, `vertical` o `modulo`.
 - Implementado: semaforo `Listo venta` que cruza produccion masiva, metadata completa, preconfiguracion activa y licencia activa por modulo.
-- Implementado: accion `Asegurar 20` para crear/actualizar tipos, preconfiguraciones y licencias recomendadas de los 20 verticales.
-- Estado: los 20 verticales nuevos quedan reales en el catalogo; la validacion automatizada confirma metadata, ranking y exposicion publica de los 20.
+- Implementado: accion `Asegurar 20` para crear/actualizar tipos, preconfiguraciones y licencias recomendadas de los 20 plantillas.
+- Estado: los 20 plantillas nuevas quedan reales en el catalogo; la validacion automatizada confirma metadata, ranking y exposicion publica de los 20.

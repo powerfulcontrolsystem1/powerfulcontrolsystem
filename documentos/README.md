@@ -1,7 +1,7 @@
 # Indice documental del proyecto
 
 Fecha: 2026-05-13
-Estado: vigente, actualizado con operacion conectada obligatoria, cajas simultaneas por licencia, tickets de ayuda propios, correos masivos, alertas de vencimiento de licencias, mantenimiento programado, login global de usuarios de empresa, OnlyOffice local editable, backups locales, retiro de Nextcloud, VPS portable Docker, seguridad SSH 49222, 30 verticales canonicos, roles y permisos finos, modulos empresariales Colombia, suite contable Colombia avanzada, reportes, auditoria y QA transversal.
+Estado: vigente, actualizado con operacion conectada obligatoria, cajas simultaneas por licencia, tickets de ayuda propios, correos masivos, alertas de vencimiento de licencias, mantenimiento programado, login global de usuarios de empresa, OnlyOffice local editable, backups locales, retiro de Nextcloud, VPS portable Docker, seguridad SSH 49222, 30 plantillas canonicos, roles y permisos finos, modulos empresariales Colombia, suite contable Colombia avanzada, reportes, auditoria y QA transversal.
 
 Este archivo organiza la lectura tecnica y funcional del repositorio para desarrollo, soporte y trabajo asistido por Copilot.
 
@@ -23,7 +23,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - 2026-05-13: licencias incorporan `max_cajas_simultaneas`; el default es 2 cajas por empresa y 4 cajas para licencias de 4000 documentos.
 - 2026-05-13: se retira la operacion/facturacion offline para clientes; ventas, cobros, documentos y facturacion requieren servidor activo.
 - 2026-05-13: `login_usuario.html` queda como acceso global de usuarios operativos y `login.html` mantiene acceso administrativo con presentacion visual profesional.
-- 2026-05-10: implementados y documentados los 20 verticales empresariales 2026 sobre el motor comun `empresa_modulos_colombia_*`, con catalogo backend/frontend, licencias por tipo, preconfiguracion, selector de empresas, portada publica, checkout, permisos, ayuda administrativa e IA. Ver `documentos/plan_20_modulos_verticales_2026-05-10.md` y `documentos/arquitectura_modulos_universales.md`.
+- 2026-05-10: implementados y documentados los 20 plantillas empresariales 2026 sobre el motor comun `empresa_modulos_colombia_*`, con catalogo backend/frontend, licencias por tipo, preconfiguracion, selector de empresas, portada publica, checkout, permisos, ayuda administrativa e IA. Ver `documentos/plan_20_modulos_plantillas_2026-05-10.md` y `documentos/arquitectura_modulos_universales.md`.
 - 2026-05-10: actualizado el sistema documental de roles/permisos con modulos finos (`crm_unificado`, `reservas_hotel`, `chat_tareas`, `horarios_trabajadores`, `asistencia_empleados`, `vehiculos_registro`, `hoja_vida_operativa`, `ubicacion_gps`, `nomina_sueldos`, `reportes`, `auditoria`, `backups`, `documentos_onlyoffice`, `nextcloud`), wrappers API especificos y compatibilidad de licencias amplias. Ver `documentos/reporte_roles_ayuda_super_2026-05-10.md`.
 - 2026-05-10: la ayuda administrativa completa `/ayuda/ayuda.html` se mantiene exclusiva para `super_administrador` y se abre desde el boton `Ayuda super administrador` en `web/super_administrador.html`; el rol `control_super_administrador` no ve ese acceso.
 - 2026-05-06: implementados `bancos_pagos`, `gestion_documental`, `cumplimiento_kyc`, `contratos_obligaciones` y `calidad_procesos` sobre un nucleo compartido por `empresa_id`, con APIs privadas, pantallas administrativas, permisos/licencias, datos demo, exportacion CSV y documento `documentos/modulos_empresariales_colombia.md`.
@@ -56,7 +56,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - 2026-05-05: publicada y documentada la operacion real de Motel Calipso: venta publica, carta publica de productos/precios, QR exportable desde administracion y publicaciones en red social comercial.
 - 2026-05-05: corregida y documentada la exposicion publica de `visualizar_productos_y_precios_publico.html`; la ruta directa y la ruta `/{empresa_slug}/visualizar_productos_y_precios_publico.html` quedan sin login y validadas en produccion.
 - 2026-05-05: documentado `Domicilios` profesional en `documentos/domicilios_profesional.md`, con central, restaurantes, domiciliarios, cliente publico, tracking GPS, codigo de entrega, endpoints, datos demo y control independiente por roles/licencias.
-- 2026-05-05: actualizada la matriz de roles/licencias para modulos verticales (`venta_publica`, `gimnasio`, `taxi_system`, `domicilios`, `alquileres`, `odontologia`, `turnos_atencion`, `control_electrico`) con wrappers dedicados y activacion por licencia.
+- 2026-05-05: actualizada la matriz de roles/licencias para modulos plantillas (`venta_publica`, `gimnasio`, `taxi_system`, `domicilios`, `alquileres`, `odontologia`, `turnos_atencion`, `control_electrico`) con wrappers dedicados y activacion por licencia.
 - 2026-05-05: documentado `Taxi System` profesional en `documentos/taxi_system_profesional.md`, con mapa operativo, filtros, GPS por tipo/protocolo, asociacion de dispositivos a conductores y endpoints privados.
 - 2026-05-05: documentada la carta publica de productos en `documentos/carta_publica_productos.md`, con modulo administrativo, pagina publica `visualizar_productos_y_precios_publico.html`, rutas por slug/subdominio, permisos y pruebas.
 - 2026-05-03: estado de modulos actualizado en `documentos/reporte_estado_modulos_2026-05-03.md`; se documentan reparaciones de estaciones/carrito, retorno a estaciones al pagar, tarjetas adaptables al texto, `USD / COP` como primer indicador y despliegue VPS correcto.
@@ -79,8 +79,8 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 - Arquitectura tecnica y mapa de archivos: `documentos/diagramas/estructura_del_codigo.md`
 - Evolucion funcional por modulo: `documentos/descripcion_de_modulos`
 - Matriz de roles, visibilidad y wrappers: `documentos/matriz_roles_permisos_pos_multiempresa.md`
-- Plan de 20 verticales empresariales 2026: `documentos/plan_20_modulos_verticales_2026-05-10.md`
-- Arquitectura de modulos universales y verticales: `documentos/arquitectura_modulos_universales.md`
+- Plan de 20 plantillas empresariales 2026: `documentos/plan_20_modulos_plantillas_2026-05-10.md`
+- Arquitectura de modulos universales y plantillas: `documentos/arquitectura_modulos_universales.md`
 - Roles, permisos finos y ayuda privada super: `documentos/reporte_roles_ayuda_super_2026-05-10.md`
 - Carta publica de productos y precios: `documentos/carta_publica_productos.md`
 - Suite contable Colombia avanzada: `documentos/contabilidad_colombia_avanzada.md`

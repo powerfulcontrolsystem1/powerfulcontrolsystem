@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Matriz de integracion vertical</title>
+  <title>Matriz de integracion de plantillas</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
-  <script src="/js/verticales_integracion_catalogo.js"></script>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_integracion_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
-<body class="verticales-integration-page">
-  <main class="verticales-integration-shell">
-    <header class="verticales-integration-head">
+<body class="plantillas-integration-page">
+  <main class="plantillas-integration-shell">
+    <header class="plantillas-integration-head">
       <p>Gobierno de soluciones por negocio</p>
-      <h1>Matriz de integracion vertical</h1>
+      <h1>Matriz de integracion de plantillas</h1>
       <span id="matrixSource">Cargando contrato de plantillas...</span>
     </header>
 
-    <section class="verticales-integration-kpis" aria-label="Resumen de integracion">
+    <section class="plantillas-integration-kpis" aria-label="Resumen de integracion">
       <div><span>Total</span><strong id="kpiTotal">0</strong></div>
       <div><span>Visibles</span><strong id="kpiVisible">0</strong></div>
       <div><span>Ocultos</span><strong id="kpiHidden">0</strong></div>
@@ -25,13 +25,13 @@
       <div><span>Listos 100%</span><strong id="kpiReady">0</strong></div>
     </section>
 
-    <section class="verticales-integration-readiness" aria-label="Perfil profesional">
-      <div class="verticales-integration-readiness-main">
+    <section class="plantillas-integration-readiness" aria-label="Perfil profesional">
+      <div class="plantillas-integration-readiness-main">
         <span>Perfil activo</span>
         <strong id="activeVerticalLabel">Detectando empresa...</strong>
         <small id="activeVerticalScope">Sin contexto de permisos cargado.</small>
       </div>
-      <div class="verticales-integration-readiness-grid">
+      <div class="plantillas-integration-readiness-grid">
         <div><span>Contrato</span><strong id="readinessContract">0%</strong></div>
         <div><span>Ventas y finanzas</span><strong id="readinessSales">0/0</strong></div>
         <div><span>Reportes</span><strong id="readinessReports">0/0</strong></div>
@@ -39,11 +39,11 @@
       </div>
     </section>
 
-    <section class="verticales-integration-table-wrap" aria-label="Verticales">
-      <table class="verticales-integration-table">
+    <section class="plantillas-integration-table-wrap" aria-label="Plantillas">
+      <table class="plantillas-integration-table">
         <thead>
           <tr>
-            <th>Vertical</th>
+            <th>Plantilla</th>
             <th>Estado</th>
             <th>Nucleo</th>
             <th>Especialidad permitida</th>
@@ -72,7 +72,7 @@
       var DEFAULT_INCOME_FLOW = ["venta central", "pago central", "ingreso en finanzas"];
       var DEFAULT_EXPENSE_FLOW = ["gasto/compra central", "egreso en finanzas", "conciliacion"];
       var DEFAULT_FINANCIAL_TABLES = ["carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"];
-      var DEFAULT_FINANCIAL_REPORTS = ["ingresos por vertical", "egresos por vertical", "margen operativo"];
+      var DEFAULT_FINANCIAL_REPORTS = ["ingresos por plantilla", "egresos por plantilla", "margen operativo"];
 
       function el(id) {
         return document.getElementById(id);
@@ -131,8 +131,8 @@
             reason: x.motivo || ""
           });
         });
-        if (Array.isArray(window.PCS_NUEVOS_VERTICALES)) {
-          window.PCS_NUEVOS_VERTICALES.forEach(function (x) {
+        if (Array.isArray(window.PCS_NUEVAS_PLANTILLAS)) {
+          window.PCS_NUEVAS_PLANTILLAS.forEach(function (x) {
             if (!x || !x.module) return;
             pushItem({
               id: x.id || "",
@@ -170,8 +170,8 @@
 
       function fetchCatalog(empresaId) {
         var url = empresaId
-          ? "/api/empresa/verticales_integracion/catalogo?empresa_id=" + encodeURIComponent(empresaId)
-          : "/api/public/verticales_integracion/catalogo";
+          ? "/api/empresa/plantillas_integracion/catalogo?empresa_id=" + encodeURIComponent(empresaId)
+          : "/api/public/plantillas_integracion/catalogo";
         return fetch(url, { credentials: "same-origin" })
           .then(function (resp) {
             if (!resp.ok) throw new Error("No se pudo consultar la matriz");
@@ -258,12 +258,12 @@
         } else if (allowed.length) {
           label = allowed.join(", ");
         } else {
-          label = "Empresa sin vertical restringido";
+          label = "Empresa sin plantilla restringida";
         }
         el("activeVerticalLabel").textContent = label;
         el("activeVerticalScope").textContent = scope
           ? "Fuente: " + (scope.fuente || "alcance_vertical") + " | tipo: " + (scope.tipo_empresa_nombre || scope.tipo_empresa_id || "sin nombre")
-          : "Se muestran todos los verticales disponibles para auditoria.";
+          : "Se muestran todos los plantillas disponibles para auditoria.";
       }
 
       function renderReadiness(items, context) {
@@ -300,7 +300,7 @@
         renderReadiness(items, context);
 
         if (!items.length) {
-          el("matrixRows").innerHTML = '<tr><td colspan="6">No hay datos de integracion vertical disponibles.</td></tr>';
+          el("matrixRows").innerHTML = '<tr><td colspan="6">No hay datos de integracion de plantillas disponibles.</td></tr>';
           return;
         }
         el("matrixRows").innerHTML = items.map(function (item, idx) {

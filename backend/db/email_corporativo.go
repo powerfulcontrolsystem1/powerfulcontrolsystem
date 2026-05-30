@@ -171,6 +171,37 @@ func GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbConn *sql.DB, empresaI
 	return encrypted, err
 }
 
+func UpdateEmpresaEmailCorporativoInitialPassword(dbConn *sql.DB, empresaID int64, encryptedPassword, usuario string) error {
+	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+		return err
+	}
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id invalido")
+	}
+	encryptedPassword = strings.TrimSpace(encryptedPassword)
+	if encryptedPassword == "" {
+		return fmt.Errorf("clave cifrada requerida")
+	}
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, `UPDATE empresa_email_corporativo
+		SET initial_password_enc = ?, initial_password_encrypted = 1,
+			usuario_creador = CASE WHEN trim(?) <> '' THEN ? ELSE usuario_creador END,
+			observaciones = CASE
+				WHEN trim(COALESCE(observaciones, '')) = '' THEN 'Clave corporativa actualizada desde configuracion de empresa'
+				ELSE observaciones
+			END,
+			fecha_actualizacion = `+nowExpr+`
+		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'eliminado'`,
+		encryptedPassword, strings.TrimSpace(usuario), strings.TrimSpace(usuario), empresaID)
+	if err != nil {
+		return err
+	}
+	if rows, rowsErr := res.RowsAffected(); rowsErr == nil && rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func ListEmpresaEmailCorporativo(dbConn *sql.DB) ([]EmpresaEmailCorporativo, error) {
 	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
 		return nil, err

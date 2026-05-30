@@ -15,13 +15,13 @@
     .preconfig-list { display:grid; gap:8px; }
     .preconfig-type { width:100%; text-align:left; border:1px solid var(--content-soft-border); border-radius:8px; background:var(--content-soft-bg); color:var(--text); padding:12px; cursor:pointer; }
     .preconfig-type.active { border-color:var(--primary); box-shadow:0 0 0 1px var(--primary); }
-    .preconfig-type.preconfig-type-vertical { border-color:color-mix(in srgb,var(--primary) 42%,var(--content-soft-border)); background:linear-gradient(145deg,color-mix(in srgb,var(--content-soft-bg) 88%,var(--primary) 12%),var(--content-soft-bg)); }
+    .preconfig-type.preconfig-type-plantilla { border-color:color-mix(in srgb,var(--primary) 42%,var(--content-soft-border)); background:linear-gradient(145deg,color-mix(in srgb,var(--content-soft-bg) 88%,var(--primary) 12%),var(--content-soft-bg)); }
     .preconfig-type:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
     .preconfig-type strong { display:block; }
     .preconfig-type span { display:block; color:var(--muted); font-size:.9rem; margin-top:4px; }
     .preconfig-badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .preconfig-badge { border:1px solid var(--content-soft-border); border-radius:999px; padding:3px 8px; color:var(--muted); font-size:.78rem; }
-    .preconfig-badge-vertical { border-color:color-mix(in srgb,var(--primary) 40%,var(--content-soft-border)); color:var(--primary); font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+    .preconfig-badge-plantilla { border-color:color-mix(in srgb,var(--primary) 40%,var(--content-soft-border)); color:var(--primary); font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
     .preconfig-vertical-flow { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
     .preconfig-vertical-flow span { border:1px solid color-mix(in srgb,var(--primary) 24%,var(--content-soft-border)); border-radius:999px; padding:3px 8px; color:var(--muted); font-size:.75rem; background:color-mix(in srgb,var(--content-soft-bg) 84%,var(--primary) 16%); }
     .preconfig-editor { display:grid; gap:14px; }
@@ -47,7 +47,7 @@
       .preconfig-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
   </style>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -265,9 +265,9 @@
       var typeSearch = document.getElementById('typeSearch');
       var adaptacionPreview = document.getElementById('adaptacionPreview');
       var saveBtn = form.querySelector('button[type="submit"]');
-      var verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      var verticalCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
       var initialParams = new URLSearchParams(window.location.search || '');
-      var initialQuery = String(initialParams.get('q') || initialParams.get('vertical') || initialParams.get('modulo') || '').trim();
+      var initialQuery = String(initialParams.get('q') || initialParams.get('plantilla') || initialParams.get('vertical') || initialParams.get('modulo') || '').trim();
 
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (match) {
@@ -582,8 +582,8 @@
           if (!query) return true;
           var tipo = entry.item.tipo_empresa || {};
           var preconfig = entry.item.preconfig || {};
-          var vertical = getVerticalByTypeName(tipo.nombre || '');
-          return normalizeText((tipo.nombre || '') + ' ' + (preconfig.nombre || '') + ' ' + (preconfig.descripcion || '') + ' ' + (vertical && vertical.fullTitle || '') + ' ' + (vertical && vertical.module || '')).indexOf(query) >= 0;
+          var plantilla = getVerticalByTypeName(tipo.nombre || '');
+          return normalizeText((tipo.nombre || '') + ' ' + (preconfig.nombre || '') + ' ' + (preconfig.descripcion || '') + ' ' + (plantilla && vertical.fullTitle || '') + ' ' + (plantilla && vertical.module || '')).indexOf(query) >= 0;
         });
         if (!filtered.length) {
           listEl.innerHTML = '<div class="preconfig-empty">No hay tipos que coincidan con la busqueda.</div>';
@@ -599,16 +599,16 @@
           var products = Array.isArray(template.productos) ? template.productos : [];
           var usuarios = Array.isArray(template.usuarios) ? template.usuarios : [];
           var tareas = Array.isArray(template.tareas_guia) ? template.tareas_guia : [];
-          var vertical = getVerticalByTypeName(tipo.nombre || '');
+          var plantilla = getVerticalByTypeName(tipo.nombre || '');
           var verticalSections = getVerticalSections(vertical).slice(0, 4);
           var active = selected && selected.tipo_empresa && Number(selected.tipo_empresa.id) === Number(tipo.id);
           var status = preconfig.enabled ? 'Activa' : 'Inactiva';
           if (item.config_error) status = 'Requiere guardar';
-          return '<button type="button" class="preconfig-type' + (active ? ' active' : '') + (vertical ? ' preconfig-type-vertical' : '') + '" data-index="' + idx + '">' +
+          return '<button type="button" class="preconfig-type' + (active ? ' active' : '') + (plantilla ? ' preconfig-type-vertical' : '') + '" data-index="' + idx + '">' +
             '<strong>' + escapeHtml(tipo.nombre || ('Tipo #' + tipo.id)) + '</strong>' +
             '<span>' + escapeHtml(status + (item.es_default ? ' - sugerida' : ' - guardada')) + '</span>' +
             '<div class="preconfig-badges">' +
-              (vertical ? '<span class="preconfig-badge preconfig-badge-vertical">Vertical</span>' : '') +
+              (plantilla ? '<span class="preconfig-badge preconfig-badge-vertical">Plantilla</span>' : '') +
               '<span class="preconfig-badge">' + Number(estaciones.cantidad || 0) + ' estaciones</span>' +
               '<span class="preconfig-badge">' + escapeHtml((template.operacion && template.operacion.nombre_estacion_plural) || 'Estaciones') + '</span>' +
               '<span class="preconfig-badge">' + ((template.operacion && template.operacion.venta_directa_enabled) ? 'Venta directa' : 'Sin venta directa') + '</span>' +
@@ -638,14 +638,14 @@
             var tipo = item && item.tipo_empresa ? item.tipo_empresa : {};
             var preconfig = item && item.preconfig ? item.preconfig : {};
             var template = getTemplate(item);
-            var vertical = getVerticalByTypeName(tipo.nombre || '');
+            var plantilla = getVerticalByTypeName(tipo.nombre || '');
             return normalizeText([
               tipo.nombre,
               preconfig.nombre,
               preconfig.descripcion,
               template.operacion && template.operacion.tipo_negocio,
-              vertical && vertical.module,
-              vertical && vertical.fullTitle
+              plantilla && vertical.module,
+              plantilla && vertical.fullTitle
             ].join(' ')).indexOf(initialNormalized) >= 0;
           }) : null;
           next = next || items.find(function (item) {

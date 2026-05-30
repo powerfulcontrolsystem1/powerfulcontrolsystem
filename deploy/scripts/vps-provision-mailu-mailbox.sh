@@ -6,6 +6,8 @@ email="$(printf '%s' "${PCS_MAILU_EMAIL:-}" | tr '[:upper:]' '[:lower:]' | tr -d
 password="${PCS_MAILU_PASSWORD:-}"
 name="$(printf '%s' "${PCS_MAILU_NAME:-}" | tr '\r\n\t' '   ' | cut -c1-255)"
 domain="$(printf '%s' "${PCS_MAILU_DOMAIN:-}" | tr '[:upper:]' '[:lower:]' | tr -d '\r\n\t ')"
+theme_mode="$(printf '%s' "${PCS_MAILU_THEME_MODE:-light}" | tr '[:upper:]' '[:lower:]' | tr -d '\r\n\t ')"
+theme_name="$(printf '%s' "${PCS_MAILU_THEME:-}" | tr -d '\r\n\t ')"
 
 if [ -z "$email" ] || [ -z "$password" ]; then
   echo "email y clave son obligatorios para provisionar Mailu" >&2
@@ -21,6 +23,10 @@ if [ "$domain" != "$email_domain" ] || [ -z "$local_part" ] || [ -z "$email_doma
   echo "email corporativo invalido para el dominio configurado" >&2
   exit 2
 fi
+case "$theme_mode" in
+  dark|oscuro) theme_mode="dark"; theme_name="${theme_name:-PCSDark}" ;;
+  *) theme_mode="light"; theme_name="${theme_name:-PCSLight}" ;;
+esac
 
 if ! docker ps --format '{{.Names}}' | grep -qx "$container"; then
   echo "contenedor Mailu admin no esta activo" >&2
@@ -76,11 +82,23 @@ if docker ps --format '{{.Names}}' | grep -qx "$webmail_container"; then
   docker exec \
     -e PCS_MAILU_EMAIL="$email" \
     -e PCS_MAILU_NAME="$name" \
+    -e PCS_MAILU_THEME_MODE="$theme_mode" \
+    -e PCS_MAILU_THEME="$theme_name" \
     "$webmail_container" sh -lc '
 set -eu
 email="$(printf "%s" "$PCS_MAILU_EMAIL" | tr "[:upper:]" "[:lower:]" | tr -d "\r\n\t ")"
 local_part="${email%@*}"
 domain="${email#*@}"
+theme_mode="$(printf "%s" "${PCS_MAILU_THEME_MODE:-light}" | tr "[:upper:]" "[:lower:]" | tr -d "\r\n\t ")"
+theme_name="$(printf "%s" "${PCS_MAILU_THEME:-}" | tr -d "\r\n\t ")"
+case "$theme_mode" in
+  dark|oscuro) theme_mode="dark"; theme_name="${theme_name:-PCSDark}" ;;
+  *) theme_mode="light"; theme_name="${theme_name:-PCSLight}" ;;
+esac
+case "$theme_name" in
+  PCSLight|PCSDark) ;;
+  *) theme_name="PCSLight" ;;
+esac
 case "$email" in
   *@*) ;;
   *) exit 0 ;;
@@ -94,8 +112,14 @@ display_name="$(printf "%s" "${PCS_MAILU_NAME:-}" | tr "\r\n\t" "   " | tr "\\\"
 path="/data/_data_/_default_/storage/$safe_domain/$safe_local"
 mkdir -p "$path"
 printf "[{\"Id\":\"\",\"Label\":\"\",\"Email\":\"%s\",\"Name\":\"%s\",\"ReplyTo\":\"\",\"Bcc\":\"\",\"Signature\":\"\",\"SignatureInsertBefore\":false,\"sentFolder\":\"\",\"pgpEncrypt\":false,\"pgpSign\":false,\"smimeKey\":\"\",\"smimeCertificate\":\"\"}]\n" "$email" "$display_name" > "$path/identities"
-chown mailu:mailu "$path" "$path/identities" 2>/dev/null || true
+settings_dir="$path/settings"
+mkdir -p "$settings_dir"
+printf "[webmail]\ntheme = \"%s@custom\"\n\n[defaults]\ntheme = \"%s@custom\"\n" "$theme_name" "$theme_name" > "$settings_dir/settings_local"
+printf "{\"theme\":\"%s@custom\",\"mode\":\"%s\"}\n" "$theme_name" "$theme_mode" > "$settings_dir/pcs-theme.json"
+chown -R mailu:mailu "$path" 2>/dev/null || true
 chmod 700 "$path" 2>/dev/null || true
 chmod 600 "$path/identities" 2>/dev/null || true
+chmod 700 "$settings_dir" 2>/dev/null || true
+chmod 600 "$settings_dir/settings_local" "$settings_dir/pcs-theme.json" 2>/dev/null || true
 ' >/dev/null 2>&1 || true
 fi

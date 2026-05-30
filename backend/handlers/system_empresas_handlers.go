@@ -565,7 +565,7 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if principalEmail != "" {
 				payload.UsuarioCreador = principalEmail
 			}
-			id, err := dbpkg.CreateEmpresa(dbEmp, payload.TipoID, payload.TipoNombre, payload.Nombre, payload.Nit, payload.Observaciones, payload.UsuarioCreador)
+			id, created, err := dbpkg.CreateEmpresaIdempotente(dbEmp, payload.TipoID, payload.TipoNombre, payload.Nombre, payload.Nit, payload.Observaciones, payload.UsuarioCreador)
 			if err != nil {
 				log.Println("POST /super/api/empresas error:", err)
 				http.Error(w, "failed to create empresa: "+err.Error(), http.StatusInternalServerError)
@@ -589,10 +589,14 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			if preconfigErr != nil {
 				preconfigErrText = preconfigErr.Error()
 			}
-			NotifySuperAdminEmpresaNueva(dbSuper, id, payload.TipoID, payload.Nombre, payload.Nit, payload.TipoNombre, payload.UsuarioCreador, preconfigResult != nil && preconfigResult.Aplicada, preconfigErrText)
+			if created {
+				NotifySuperAdminEmpresaNueva(dbSuper, id, payload.TipoID, payload.Nombre, payload.Nit, payload.TipoNombre, payload.UsuarioCreador, preconfigResult != nil && preconfigResult.Aplicada, preconfigErrText)
+			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":                        id,
+				"creada":                    created,
+				"idempotente":               !created,
 				"preconfiguracion_aplicada": preconfigResult != nil && preconfigResult.Aplicada,
 				"preconfiguracion":          preconfigResult,
 				"preconfiguracion_error":    preconfigErrText,

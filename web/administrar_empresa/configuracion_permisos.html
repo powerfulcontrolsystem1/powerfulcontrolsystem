@@ -136,7 +136,7 @@
         var modules = Array.isArray(item && item.any_modules) ? item.any_modules.map(function(mod){ return String(mod || '').trim(); }).filter(Boolean) : [];
         if (!modules.length) return escapeHtml(labelMódulo(item && item.modulo));
         var detalle = modules.map(labelMódulo).join(', ');
-        return '<strong>Cualquiera de ' + modules.length + ' verticales</strong><br><span class="permisos-rule-detail">' + escapeHtml(detalle) + '</span>';
+        return '<strong>Cualquiera de ' + modules.length + ' plantillas</strong><br><span class="permisos-rule-detail">' + escapeHtml(detalle) + '</span>';
       }
       function fillContext(data){
         var body = document.getElementById('permisosContextBody');

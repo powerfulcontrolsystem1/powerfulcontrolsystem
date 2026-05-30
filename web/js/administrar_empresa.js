@@ -105,14 +105,14 @@ try {
   var companySelectorLink = document.querySelector("a.select-company");
   var permsEvidence = document.getElementById("menuPermsEvidence");
   var verticalIntegrationEvidence = document.getElementById("verticalIntegrationEvidence");
-  var nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES)
-    ? window.PCS_NUEVOS_VERTICALES.slice()
+  var nuevasPlantillasCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS)
+    ? window.PCS_NUEVAS_PLANTILLAS.slice()
     : [];
   var verticalIntegration = window.PCS_VERTICAL_INTEGRATION || null;
-  var nuevosVerticalesModules = Array.isArray(window.PCS_NUEVOS_VERTICALES_MODULES)
-    ? window.PCS_NUEVOS_VERTICALES_MODULES.slice()
-    : nuevosVerticalesCatalog.map(function (item) { return [item.id, item.module]; });
-  var nuevosVerticalesMenuLinks = renderNuevosVerticalesMenuLinks();
+  var nuevasPlantillasModules = Array.isArray(window.PCS_NUEVAS_PLANTILLAS_MODULES)
+    ? window.PCS_NUEVAS_PLANTILLAS_MODULES.slice()
+    : nuevasPlantillasCatalog.map(function (item) { return [item.id, item.module]; });
+  var nuevasPlantillasMenuLinks = renderNuevasPlantillasMenuLinks();
   var storage = null;
   try {
     storage = window.sessionStorage;
@@ -131,7 +131,7 @@ try {
     document.getElementById("linkImportacionesCosteo"),
     document.getElementById("linkProduccionMRP"),
     document.getElementById("linkLogisticaWMS"),
-    document.getElementById("linkVerticalesIntegracion"),
+    document.getElementById("linkPlantillasIntegracion"),
     document.getElementById("linkGimnasio"),
     document.getElementById("linkTaxiSystem"),
     document.getElementById("linkParqueadero"),
@@ -242,7 +242,7 @@ try {
     document.getElementById("linkTarifasPorMinutos"),
     document.getElementById("linkTarifasPorDia"),
     document.getElementById("linkFrecuenciaFE"),
-  ].concat(nuevosVerticalesMenuLinks);
+  ].concat(nuevasPlantillasMenuLinks);
   var frameLinks = [];
 
   var permActionRead = "R";
@@ -322,7 +322,7 @@ try {
     linkChatTareas: { module: permModuleChatTareas, action: permActionCreate },
     linkConfiguracionChatFlotante: { module: permModuleChatTareas, action: permActionUpdate },
     linkTurnosAtencion: { module: permModuleTurnos, action: permActionCreate },
-    linkVerticalesIntegracion: { module: permModuleSeguridad, action: permActionRead },
+    linkPlantillasIntegracion: { module: permModuleSeguridad, action: permActionRead },
 
     linkProductos: { module: permModuleInventario, action: permActionCreate },
     linkProductosMain: { module: permModuleInventario, action: permActionCreate },
@@ -465,13 +465,13 @@ try {
     linkEstaciones: { alwaysVisible: true },
     linkPanelEmpresa: { alwaysVisible: true }
   };
-  nuevosVerticalesModules.forEach(function (item) {
+  nuevasPlantillasModules.forEach(function (item) {
     menuPermissionCatalog[item[0]] = { module: item[1], action: permActionCreate };
   });
 
   function isNuevoVerticalModule(module) {
     var normalized = String(module || "").trim().toLowerCase();
-    return nuevosVerticalesModules.some(function (item) { return item[1] === normalized; });
+    return nuevasPlantillasModules.some(function (item) { return item[1] === normalized; });
   }
 
   function verticalIsOperationalVisible(module) {
@@ -499,15 +499,15 @@ try {
     });
   }
 
-  function renderNuevosVerticalesMenuLinks() {
+  function renderNuevasPlantillasMenuLinks() {
     var mount = document.getElementById("adminBusinessVerticalsMount");
-    if (!mount || !nuevosVerticalesCatalog.length) {
+    if (!mount || !nuevasPlantillasCatalog.length) {
       return [];
     }
     Array.prototype.slice.call(document.querySelectorAll(".admin-business-vertical-item")).forEach(function (item) {
       if (item && item.parentElement) item.parentElement.removeChild(item);
     });
-    var html = nuevosVerticalesCatalog.filter(function (item) {
+    var html = nuevasPlantillasCatalog.filter(function (item) {
       if (item && item.operationalVisible === false) return false;
       return verticalIsOperationalVisible(item && item.module);
     }).map(function (item) {
@@ -1325,8 +1325,8 @@ try {
       return Promise.resolve(null);
     }
     var url = empresaId
-      ? "/api/empresa/verticales_integracion/catalogo?empresa_id=" + encodeURIComponent(empresaId)
-      : "/api/public/verticales_integracion/catalogo";
+      ? "/api/empresa/plantillas_integracion/catalogo?empresa_id=" + encodeURIComponent(empresaId)
+      : "/api/public/plantillas_integracion/catalogo";
     return fetch(url, { credentials: "same-origin" })
       .then(function (resp) {
         if (!resp.ok) return null;
@@ -1352,7 +1352,7 @@ try {
       return;
     }
     var source = result && result.source ? "API" : "local";
-    var parts = ["Verticales", String(s.visible) + "/" + String(s.total), source];
+    var parts = ["Plantillas", String(s.visible) + "/" + String(s.total), source];
     if (s.hidden) parts.push(String(s.hidden) + " ocultos");
     if (s.pending) parts.push(String(s.pending) + " pendientes");
     verticalIntegrationEvidence.textContent = parts.join(" · ");
@@ -1417,7 +1417,7 @@ try {
   }
 
   function refreshMenuGroups() {
-    refreshNuevosVerticalesMenuVisibility();
+    refreshNuevasPlantillasMenuVisibility();
     var groups = Array.prototype.slice.call(document.querySelectorAll(".admin-sidebar .admin-nav-group"));
     groups.forEach(function (group) {
       var items = Array.prototype.slice.call(group.querySelectorAll(".admin-nav-sublist > li"));
@@ -1432,7 +1432,7 @@ try {
     });
   }
 
-  function refreshNuevosVerticalesMenuVisibility() {
+  function refreshNuevasPlantillasMenuVisibility() {
     var mount = document.getElementById("adminBusinessVerticalsMount");
     if (mount) mount.style.display = "none";
   }

@@ -23,7 +23,7 @@ El sistema queda en estado operativo con reparacion puntual del carrito de compr
 | Login administradores | Operativo | Maneja contrato interno, correo/password y flujos de confirmacion/recuperacion. |
 | Super administrador | Operativo | Gestiona empresas, licencias, administradores, contrato, configuracion global, correo, IA, errores y reportes globales. |
 | Licencias base y adicionales | Implementado | Permite sumar licencias por empresa, agrupar valor periodico y controlar activacion/desactivacion. |
-| Administrar empresa | Operativo | Panel empresarial multiempresa con accesos a ventas, inventario, finanzas, usuarios, reportes, configuracion y verticales. |
+| Administrar empresa | Operativo | Panel empresarial multiempresa con accesos a ventas, inventario, finanzas, usuarios, reportes, configuracion y plantillas. |
 | Configuracion guiada IA | Implementado | Asistente de preconfiguracion por tipo de negocio para estaciones, mesas, impresion, cobro y reglas base. |
 | Configuracion impresora | Operativo con seguimiento | Separada en Configuracion > Impresora. Conviene seguir probando guardado por impresora/equipo en VPS. |
 | Carrito de compras | Reparado | Flujo Caja/venta directa y estaciones ajustado. Venta directa ya no queda en carga por modo estacion incorrecto. |

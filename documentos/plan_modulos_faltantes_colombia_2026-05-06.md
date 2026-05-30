@@ -5,7 +5,7 @@ Estado: implementado como nucleo compartido inicial
 
 ## Criterio
 
-El sistema ya cubre POS, inventario, compras, produccion/MRP, logistica WMS, contabilidad Colombia, declaraciones tributarias, activos fijos, tesoreria/presupuesto, cobranza, portal contador, certificados tributarios, AIU, propiedad horizontal y verticales operativas. Los faltantes siguientes son modulos empresariales de alto impacto que suelen complementar suites tipo ERP/contable en Colombia.
+El sistema ya cubre POS, inventario, compras, produccion/MRP, logistica WMS, contabilidad Colombia, declaraciones tributarias, activos fijos, tesoreria/presupuesto, cobranza, portal contador, certificados tributarios, AIU, propiedad horizontal y plantillas operativas. Los faltantes siguientes son modulos empresariales de alto impacto que suelen complementar suites tipo ERP/contable en Colombia.
 
 ## Modulos propuestos
 

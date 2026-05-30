@@ -1,3 +1,37 @@
+2026-05-29 - Idempotencia al crear empresas
+- `backend/db/db.go`:
+	- agrega `CreateEmpresaIdempotente`, normalizacion de clave y bloqueo contra doble clic/concurrencia al crear empresas.
+- `backend/handlers/system_empresas_handlers.go`:
+	- `POST /super/api/empresas` responde con `creada` e `idempotente`, y no repite avisos de empresa nueva cuando devuelve una existente.
+- `backend/db/empresas_idempotencia_test.go`:
+	- pruebas de normalizacion de la clave idempotente por nombre/NIT y alcance por administrador.
+- `web/js/seleccionar_empresa.js`:
+	- bloquea el submit de alta de empresa mientras la solicitud esta en curso.
+
+2026-05-29 - Plantillas empresariales
+- `web/js/plantillas_nuevas_catalogo.js`:
+	- catalogo frontend de plantillas empresariales publicas y de produccion masiva.
+- `web/js/plantillas_integracion_catalogo.js`:
+	- catalogo frontend de integracion de plantillas con el nucleo empresarial.
+- `web/administrar_empresa/plantillas_nuevas_menu.html`:
+	- menu empresarial para abrir las plantillas nuevas disponibles por licencia y permisos.
+- `web/administrar_empresa/plantillas_integracion.html`:
+	- matriz visual de integracion de plantillas, reportes y alcance operativo.
+- `web/super/plantillas_produccion_masiva.html`:
+	- tablero super administrador para asegurar tipos/licencias de plantillas en produccion masiva.
+- `backend/handlers/empresa_plantillas_nuevas.go` y `backend/handlers/empresa_plantillas_integracion.go`:
+	- handlers del catalogo de plantillas, endpoints publicos/empresariales/super y matriz de integracion.
+- `backend/db/plantillas_nuevas_bootstrap.go` y `backend/db/modulos_plantillas_nuevas.go`:
+	- catalogo, bootstrap y preconfiguracion de plantillas empresariales.
+
+2026-05-29 - Temas SnappyMail del email corporativo
+- `web/administrar_empresa/configuracion/email_corporativo.html`:
+	- nueva pagina de configuracion empresarial para apertura automatica del buzon y cambio de contrasena cifrada del correo corporativo.
+- `deploy/mailu/themes/PCSLight/styles.css`:
+	- tema claro personalizado para SnappyMail, alineado con Blanco corporativo y apariencias claras del sistema.
+- `deploy/mailu/themes/PCSDark/styles.css`:
+	- tema oscuro personalizado para SnappyMail, alineado con apariencias oscuras profesionales del sistema.
+
 2026-05-29 - Fotos de usuarios en carpeta de imagenes empresarial
 - `backend/db/usuarios_empresa.go`:
 	- agrega `foto_url` al esquema `users`, lecturas JSON y funcion `UpdateEmpresaUsuarioFoto`.
@@ -367,7 +401,7 @@
 
 2026-05-18 - Reporte de turno en papel grande y POS
 - `web/administrar_empresa/corte_de_caja.html`:
-	- refuerza el modo de impresion POS 80mm con tabla transformada a bloques verticales y estilos de ticket.
+	- refuerza el modo de impresion POS 80mm con tabla transformada a bloques plantillas y estilos de ticket.
 - `web/administrar_empresa/reportes_turnos.html`:
 	- agrega selector de papel para alternar vista imprimible entre papel grande y POS 80mm.
 	- aplica clases y `@page` dinamico para impresion carta o rollo.
@@ -666,7 +700,7 @@
 	- reduce el submenu a Centro de reportes y Asistente IA.
 - `backend/handlers/graficos_estadisticas.go`, `web/administrar_empresa/graficos_estadisticas.html`, `web/administrar_empresa/reportes.html`, `web/administrar_empresa/reportes_inventario.html`, `web/administrar_empresa/reportes_finanzas.html`:
 	- eliminados por consolidacion preproduccion; sus funciones se integran al centro unico de reportes.
-- `backend/db/tipo_empresa_preconfiguracion.go`, `backend/db/nuevos_verticales_bootstrap.go`, `web/super/preconfiguracion_tipos_empresa.html`:
+- `backend/db/tipo_empresa_preconfiguracion.go`, `backend/db/plantillas_nuevas_bootstrap.go`, `web/super/preconfiguracion_tipos_empresa.html`:
 	- normalizan plantillas iniciales para usar codigos `BASE-*` en vez de `DEMO-*`.
 - `backup/empresas/7` y `documentos/evidencias_qa`:
 	- evidencias y backups locales antiguos retirados antes de produccion.
@@ -922,66 +956,66 @@
 	- `web/super/configuracion_avanzada.html` : agrega la tarjeta `2FA login` con activar/desactivar y enlace a la gestion del secreto.
 	- Verificacion: `go test ./handlers -run "TestAdminTOTPLoginRequiredForAdmin" -count=1`; `go test ./... -count=1`; `node --check web/js/login.js`; validacion de scripts inline de configuracion avanzada.
 
-- Actualizacion 2026-05-11: catalogos publicos de verticales sin sesion
-	- `backend/utils/utils.go` : declara como publicos de solo lectura `/api/public/verticales_nuevos/catalogo` y `/api/public/verticales_integracion/catalogo`.
+- Actualizacion 2026-05-11: catalogos publicos de plantillas sin sesion
+	- `backend/utils/utils.go` : declara como publicos de solo lectura `/api/public/plantillas_nuevas/catalogo` y `/api/public/plantillas_integracion/catalogo`.
 	- `backend/utils/auth_middleware_test.go` : valida que ambos catalogos puedan consultarse sin sesion y que las rutas protegidas sigan exigiendo autenticacion.
 	- `documentos/diagramas/estructura_del_codigo.md` : registra el contrato publico de lectura para portada, tarjetas y matriz comercial.
 	- `documentos/matriz_roles_permisos_pos_multiempresa.md` : aclara que estos catalogos publicos no conceden operacion ni permisos empresariales.
 	- Verificacion: `go test ./utils -run TestAuthMiddlewarePublicAndProtectedSuperRoutes -count=1`; `go test ./... -count=1`.
 
-- Actualizacion 2026-05-11: los 20 verticales nuevos quedan reales
-	- `backend/db/nuevos_verticales_bootstrap.go` : promueve los 20 verticales nuevos a produccion masiva con prioridad 1-20 y asegura tipos, preconfiguraciones y licencias para todos.
-	- `backend/handlers/empresa_verticales_nuevos.go` : acepta la accion super `asegurar_20_licencias` y conserva `asegurar_v1_licencias` como alias compatible.
-	- `web/js/nuevos_verticales_catalogo.js` : marca las 20 plantillas como publicables y elimina el estado operativo diferido para los nuevos verticales.
-	- `web/index.html` : actualiza textos y tarjetas para publicar los 20 verticales reales.
-	- `web/super/verticales_produccion_masiva.html` y `web/super_administrador.html` : cambian la vista de gobierno a `Verticales 20`, con accion `Asegurar 20` y semaforo de listos/no listos.
-	- `backend/db/nuevos_verticales_bootstrap_test.go`, `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_verticales_nuevos_test.go` : actualizan el contrato esperado de 10 a 20 verticales en produccion.
+- Actualizacion 2026-05-11: los 20 plantillas nuevas quedan reales
+	- `backend/db/plantillas_nuevas_bootstrap.go` : promueve los 20 plantillas nuevas a produccion masiva con prioridad 1-20 y asegura tipos, preconfiguraciones y licencias para todos.
+	- `backend/handlers/empresa_plantillas_nuevas.go` : acepta la accion super `asegurar_20_licencias` y conserva `asegurar_v1_licencias` como alias compatible.
+	- `web/js/plantillas_nuevas_catalogo.js` : marca las 20 plantillas como publicables y elimina el estado operativo diferido para los nuevas plantillas.
+	- `web/index.html` : actualiza textos y tarjetas para publicar los 20 plantillas reales.
+	- `web/super/plantillas_produccion_masiva.html` y `web/super_administrador.html` : cambian la vista de gobierno a `Plantillas 20`, con accion `Asegurar 20` y semaforo de listos/no listos.
+	- `backend/db/plantillas_nuevas_bootstrap_test.go`, `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_plantillas_nuevas_test.go` : actualizan el contrato esperado de 10 a 20 plantillas en produccion.
 
 - Actualizacion 2026-05-11: consistencia del panel super
 	- `web/js/super_administrador.js` : conserva la ayuda privada como pagina restaurable para `super_administrador`, pero fuera de la lista limitada de `control_super_administrador`.
 	- `CHANGELOG.md` y `documentos/CHANGELOG.md` : registran el ajuste de contrato frontend validado por pruebas.
 
-- Actualizacion 2026-05-11: correccion de cargas parciales en verticales integrados
+- Actualizacion 2026-05-11: correccion de cargas parciales en plantillas integrados
 	- `backend/db/odontologia.go` : crea indices de integracion solo despues de asegurar `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`, evitando errores PostgreSQL en bases existentes.
 	- `backend/db/gimnasio.go` : aplica el mismo orden seguro para indices de `servicio_id`, `cliente_id` y `carrito_id`.
 	- `backend/db/odontologia_integracion_test.go` y `backend/db/gimnasio_integracion_test.go` : agregan pruebas de contrato para que los indices de integracion no vuelvan a adelantarse a las columnas.
 	- `web/js/consultorio_odontologico.js`, `web/js/gimnasio.js` y `web/js/alquileres.js` : limpian el aviso de carga parcial cuando no hay errores y normalizan el mensaje.
 
-- Actualizacion 2026-05-11: portada index alineada a modulos y verticales reales
-	- `web/index.html` : actualiza la seccion de modulos y las tarjetas publicas para reflejar nucleo unico, modulos reales y 20 verticales nuevos reales.
-	- `web/js/nuevos_verticales_catalogo.js` : agrega decision local `productionMass`, `productionRank`, `decisionPreconfig`, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica para los 20 verticales.
+- Actualizacion 2026-05-11: portada index alineada a modulos y plantillas reales
+	- `web/index.html` : actualiza la seccion de modulos y las tarjetas publicas para reflejar nucleo unico, modulos reales y 20 plantillas nuevas reales.
+	- `web/js/plantillas_nuevas_catalogo.js` : agrega decision local `productionMass`, `productionRank`, `decisionPreconfig`, metadata de plantilla, tablas, permisos, flujo de venta, reportes y visibilidad publica para los 20 plantillas.
 	- `backend/handlers/pagina_principal_handlers.go` : actualiza las tarjetas por defecto del endpoint `/api/public/pagina_principal` para que el index no dependa solo del fallback HTML cuando no exista configuracion guardada.
 	- `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md`, `CHANGELOG.md`, `documentos/CHANGELOG.md` y `documentos/historial_de_cambios` : documentan el cambio de portada y trazabilidad.
 
 - Actualizacion 2026-05-11: preconfiguraciones conectadas a matriz vertical y produccion masiva 20
 	- `backend/db/tipo_empresa_preconfiguracion.go` : agrega `integracion_vertical` al template normalizado de preconfiguracion por tipo de empresa.
-	- `backend/db/nuevos_verticales_bootstrap.go` : selecciona los 20 verticales nuevos para produccion masiva y agrega `EnsureNuevosVerticalesProduccionMasivaLicencias`.
-	- `backend/handlers/empresa_verticales_nuevos.go` : expone `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion`, `decision_preconfig` y la accion POST `asegurar_20_licencias`, conservando `asegurar_v1_licencias` como alias compatible.
-	- `web/super/verticales_produccion_masiva.html` : nueva vista super para auditar ranking de produccion masiva, permisos, flujos, reportes y exportar CSV.
-	- `web/super/verticales_produccion_masiva.html` : calcula `Listo venta` cruzando verticales, preconfiguraciones y licencias activas, y muestra pendientes por fila.
-	- `web/super/verticales_produccion_masiva.html` : agrega boton `Asegurar 20` para asegurar tipos, preconfiguraciones y licencias recomendadas de los 20 verticales.
-	- `web/super_administrador.html` y `web/js/super_administrador.js` : agregan acceso `Verticales 20` y restauracion permitida en la consola super.
-	- `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` : aceptan parametros iniciales `q`, `vertical` o `modulo` para abrir filtradas desde la vista de verticales 20.
-	- `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_verticales_nuevos_test.go` : validan metadata extendida y seleccion exacta de 20 verticales masivos.
-	- `documentos/plan_verticales_produccion_masiva_2026-05-11.md` : registra decision y plan para version apta para produccion masiva.
+	- `backend/db/plantillas_nuevas_bootstrap.go` : selecciona los 20 plantillas nuevas para produccion masiva y agrega `EnsureNuevasPlantillasProduccionMasivaLicencias`.
+	- `backend/handlers/empresa_plantillas_nuevas.go` : expone `integracion_preconfig`, `produccion_masiva`, `prioridad_produccion`, `decision_preconfig` y la accion POST `asegurar_20_licencias`, conservando `asegurar_v1_licencias` como alias compatible.
+	- `web/super/plantillas_produccion_masiva.html` : nueva vista super para auditar ranking de produccion masiva, permisos, flujos, reportes y exportar CSV.
+	- `web/super/plantillas_produccion_masiva.html` : calcula `Listo venta` cruzando plantillas, preconfiguraciones y licencias activas, y muestra pendientes por fila.
+	- `web/super/plantillas_produccion_masiva.html` : agrega boton `Asegurar 20` para asegurar tipos, preconfiguraciones y licencias recomendadas de los 20 plantillas.
+	- `web/super_administrador.html` y `web/js/super_administrador.js` : agregan acceso `Plantillas 20` y restauracion permitida en la consola super.
+	- `web/super/tipos_empresas.html`, `web/super/preconfiguracion_tipos_empresa.html` y `web/super/licencias.html` : aceptan parametros iniciales `q`, `vertical` o `modulo` para abrir filtradas desde la vista de plantillas 20.
+	- `backend/db/tipo_empresa_preconfiguracion_test.go` y `backend/handlers/empresa_plantillas_nuevas_test.go` : validan metadata extendida y seleccion exacta de 20 plantillas masivos.
+	- `documentos/plan_plantillas_produccion_masiva_2026-05-11.md` : registra decision y plan para version apta para produccion masiva.
 
 - Actualizacion 2026-05-11: sincronizacion segura desde matriz vertical
-	- `web/administrar_empresa/verticales_integracion.html` : consulta catalogo y contexto de permisos, agrega KPI de sincronizaciones permitidas, deshabilita acciones no autorizadas y confirma antes de ejecutar POST.
+	- `web/administrar_empresa/plantillas_integracion.html` : consulta catalogo y contexto de permisos, agrega KPI de sincronizaciones permitidas, deshabilita acciones no autorizadas y confirma antes de ejecutar POST.
 	- `web/estilos.css` : ajusta KPIs de la matriz a cinco columnas.
-	- `documentos/matriz_integracion_verticales.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/matriz_roles_permisos_pos_multiempresa.md` : documentan el contrato de sincronizacion segura.
+	- `documentos/matriz_integracion_plantillas.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/diagramas/estructura_del_codigo.md` y `documentos/matriz_roles_permisos_pos_multiempresa.md` : documentan el contrato de sincronizacion segura.
 
-- Actualizacion 2026-05-11: matriz extendida de plantillas verticales
-	- `backend/handlers/empresa_verticales_integracion.go` : agrega metadata `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
-	- `backend/handlers/empresa_verticales_integracion_test.go` : valida que todo vertical visible tenga metadata completa de plantilla, tablas, permisos, flujo y reportes.
-	- `web/administrar_empresa/verticales_integracion.html` : muestra la matriz extendida por vertical.
-	- `web/js/verticales_integracion_catalogo.js` : conserva la metadata extendida cuando el catalogo backend se fusiona con el respaldo local.
+- Actualizacion 2026-05-11: matriz extendida de plantillas plantillas
+	- `backend/handlers/empresa_plantillas_integracion.go` : agrega metadata `template_activates`, `tables_touched`, `required_permissions`, `sale_flow` y `reports_produced`.
+	- `backend/handlers/empresa_plantillas_integracion_test.go` : valida que todo vertical visible tenga metadata completa de plantilla, tablas, permisos, flujo y reportes.
+	- `web/administrar_empresa/plantillas_integracion.html` : muestra la matriz extendida por vertical.
+	- `web/js/plantillas_integracion_catalogo.js` : conserva la metadata extendida cuando el catalogo backend se fusiona con el respaldo local.
 
-- Actualizacion 2026-05-11: integracion profesional de verticales
-	- `documentos/matriz_integracion_verticales.md` : matriz de estado por vertical, contrato tecnico de nucleo unico y oleadas de implementacion.
-	- `web/js/verticales_integracion_catalogo.js` : catalogo frontend de visibilidad operativa para ocultar verticales clasicos pendientes de integracion al nucleo.
-	- `web/js/administrar_empresa.js` : aplica la visibilidad de integracion antes de permisos/licencias y filtra el bloque de 20 nuevos verticales.
-	- `web/js/nuevos_verticales_catalogo.js` : marca los 20 verticales nuevos como plantillas integradas al nucleo.
-	- `backend/handlers/empresa_verticales_nuevos.go` y `backend/handlers/empresa_verticales_nuevos_test.go` : exponen y validan el contrato `integration_status`, `operational_visible`, `core_modules` y `duplicates_core`.
+- Actualizacion 2026-05-11: integracion profesional de plantillas
+	- `documentos/matriz_integracion_plantillas.md` : matriz de estado por vertical, contrato tecnico de nucleo unico y oleadas de implementacion.
+	- `web/js/plantillas_integracion_catalogo.js` : catalogo frontend de visibilidad operativa para ocultar plantillas clasicos pendientes de integracion al nucleo.
+	- `web/js/administrar_empresa.js` : aplica la visibilidad de integracion antes de permisos/licencias y filtra el bloque de 20 nuevas plantillas.
+	- `web/js/plantillas_nuevas_catalogo.js` : marca los 20 plantillas nuevas como plantillas integradas al nucleo.
+	- `backend/handlers/empresa_plantillas_nuevas.go` y `backend/handlers/empresa_plantillas_nuevas_test.go` : exponen y validan el contrato `integration_status`, `operational_visible`, `core_modules` y `duplicates_core`.
 
 - Actualizacion 2026-05-11: gimnasio integrado al nucleo
 	- `backend/db/gimnasio.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza socios, planes y pagos con clientes, servicios y carritos centrales.
@@ -1025,7 +1059,7 @@
 	- `documentos/alquileres.md` : documenta alcance funcional, seguridad, tablas e integracion de alquileres con el nucleo comercial.
 
 - Actualizacion 2026-05-11: drogueria/farmacia validada al nucleo
-	- `web/js/verticales_integracion_catalogo.js` : marca `drogueria_farmacia` como plantilla integrada visible y sin duplicados de nucleo.
+	- `web/js/plantillas_integracion_catalogo.js` : marca `drogueria_farmacia` como plantilla integrada visible y sin duplicados de nucleo.
 	- `web/administrar_empresa/drogueria_farmacia.html` : declara que la gestion sanitaria opera sobre productos, inventario, ventas y facturacion centrales.
 	- `backend/db/modulos_empresariales_colombia_test.go` : refuerza que la plantilla de farmacia es expediente sanitario y no inventario paralelo.
 	- `documentos/drogueria_farmacia.md` : documenta alcance funcional, seguridad, tablas compartidas e integracion con el nucleo.
@@ -1034,16 +1068,16 @@
 	- `backend/db/aiu_construccion.go` : agrega referencias `cliente_id`, `servicio_id`, `carrito_id` y `carrito_item_id`; sincroniza contratos, conceptos y facturas AIU con clientes, servicios y carritos centrales.
 	- `backend/db/aiu_construccion_test.go` : valida normalizacion de codigo de integracion y referencia externa estable para facturas AIU.
 	- `web/administrar_empresa/aiu_construccion.html` : agrega accion de sincronizacion con el nucleo y resumen operativo.
-	- `web/js/verticales_integracion_catalogo.js` : marca `aiu_construccion` como plantilla integrada visible y sin duplicados del nucleo.
+	- `web/js/plantillas_integracion_catalogo.js` : marca `aiu_construccion` como plantilla integrada visible y sin duplicados del nucleo.
 
 - Actualizacion 2026-05-11: catalogo API de integracion vertical
-	- `backend/handlers/empresa_verticales_integracion.go` : nuevo catalogo de verticales clasicos con estado de integracion, visibilidad, modulos de nucleo, duplicados, flujo propio y accion de sincronizacion.
-	- `backend/handlers/empresa_verticales_integracion_test.go` : valida el contrato de catalogo y el endpoint publico.
-	- `backend/main.go` : registra `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo`.
-	- `web/js/verticales_integracion_catalogo.js` : permite fusionar el contrato de backend sobre el catalogo local.
+	- `backend/handlers/empresa_plantillas_integracion.go` : nuevo catalogo de plantillas clasicos con estado de integracion, visibilidad, modulos de nucleo, duplicados, flujo propio y accion de sincronizacion.
+	- `backend/handlers/empresa_plantillas_integracion_test.go` : valida el contrato de catalogo y el endpoint publico.
+	- `backend/main.go` : registra `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo`.
+	- `web/js/plantillas_integracion_catalogo.js` : permite fusionar el contrato de backend sobre el catalogo local.
 	- `web/js/administrar_empresa.js` : carga el catalogo de empresa antes de aplicar permisos del menu y conserva fallback local.
 	- `web/administrar_empresa.html` y `web/estilos.css` : agregan indicador compacto de matriz activa en el sidebar empresarial.
-	- `backend/handlers/empresa_permisos.go` : registra `linkVerticalesIntegracion` con permiso `seguridad:R`.
+	- `backend/handlers/empresa_permisos.go` : registra `linkPlantillasIntegracion` con permiso `seguridad:R`.
 	- `web/administrar_empresa/configuracion_menu.html` : aloja el acceso `Matriz de integracion` dentro de Base empresarial.
 
 - Actualizacion 2026-05-11: panel super profesional
@@ -9939,11 +9973,11 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `backend/handlers/modulos_empresariales_colombia.go`: handler parametrizado para las seis APIs privadas por empresa.
 - `web/js/modulo_colombia_admin.js`: UI compartida de dashboard, formulario, tabla, bitacora, datos demo y exportacion CSV.
 - `web/administrar_empresa/bancos_pagos.html`, `gestion_documental.html`, `cumplimiento_kyc.html`, `contratos_obligaciones.html`, `helpdesk.html`, `calidad_procesos.html`: paginas livianas que reutilizan el mismo nucleo frontend.
-- Actualizacion 2026-05-11: contrato universal de 30 verticales como plantillas
-	- `backend/handlers/empresa_verticales_integracion.go` : publica la matriz como auditoria de plantillas sobre nucleo comun, sin acciones publicas de migracion manual.
+- Actualizacion 2026-05-11: contrato universal de 30 plantillas como plantillas
+	- `backend/handlers/empresa_plantillas_integracion.go` : publica la matriz como auditoria de plantillas sobre nucleo comun, sin acciones publicas de migracion manual.
 	- `backend/handlers/empresa_preconfiguracion.go` : aplica preconfiguraciones de tipo por licencia sin ejecutar migraciones automaticas de vertical.
-	- `web/administrar_empresa/verticales_integracion.html` : muestra KPIs de nucleo comun y plantillas, con flujo de venta y reportes por vertical.
-	- `web/js/verticales_integracion_catalogo.js` : alinea los 10 verticales clasicos con el mismo lenguaje de plantilla universal usado por los 20 nuevos.
+	- `web/administrar_empresa/plantillas_integracion.html` : muestra KPIs de nucleo comun y plantillas, con flujo de venta y reportes por vertical.
+	- `web/js/plantillas_integracion_catalogo.js` : alinea los 10 plantillas clasicos con el mismo lenguaje de plantilla universal usado por los 20 nuevos.
 	- Dashboards clasicos (`gimnasio`, `odontologia`, `parqueadero`, `taxi_system`, `domicilios`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `aiu_construccion`) : retiran acciones visibles de migracion manual.
 2026-05-19 - Facturacion electronica Panama
 - `web/administrar_empresa/facturacion_electronica_panama.html`:
@@ -10118,6 +10152,16 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-05-28 - Apariencias oscuras profesionales
 - `web/menu.js`:
 	- Agrega al selector de apariencias los temas `Negro Absoluto` y `Obsidiana Profesional`, persistidos como `dark-absolute` y `dark-obsidian`.
+2026-05-29 - Super administrador en una columna
+- `web/super_administrador.html`:
+	- Agrega el boton `Asesor en ventas` dentro del grupo Licencias.
+- `web/js/super_administrador.js`:
+	- Registra `/super/asesor_comercial.html` como pagina permitida/restaurable del frame principal.
+- `web/estilos.css`:
+	- Fuerza el menu agrupado del panel super a una sola columna, sin afectar rutas ni endpoints.
+- `documentos/mapa_modulos.md`:
+	- Documenta la ubicacion rapida del modulo `Asesor en ventas`.
+
 - `web/estilos.css`:
 	- Define variables completas para ambos temas: negro puro sin luz ambiental y negro obsidiana con acentos azul acero.
 - `web/js/empresa_submenu_context.js` y paginas internas de `web/administrar_empresa/`:

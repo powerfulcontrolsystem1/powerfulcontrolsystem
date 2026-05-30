@@ -1,4 +1,4 @@
-# Matriz de integracion de verticales
+# Matriz de integracion de plantillas
 
 Actualizacion: 2026-05-12
 
@@ -6,7 +6,7 @@ Actualizacion: 2026-05-12
 
 Las preconfiguraciones de tipo de empresa quedan conectadas directamente con esta matriz extendida mediante el bloque JSON `integracion_vertical`. Ese bloque declara modulo, estado de integracion, decision comercial, prioridad de produccion masiva, modulos activados, tablas tocadas, permisos requeridos, flujo de venta y reportes producidos.
 
-Para produccion masiva se publican exactamente 30 verticales canonicos: 10 clasicos reales y 20 nuevos con ranking 1-20. Los alias historicos no inflan el conteo: `consultorio_odontologico` queda fusionado en `odontologia`, `taxi` queda fusionado en `taxi_system`, y `turnos_atencion`/`turnos` quedan como capacidad de soporte transversal para plantillas que requieran fila, agenda o puestos. El detalle de decision y plan esta en `documentos/plan_verticales_produccion_masiva_2026-05-11.md`.
+Para produccion masiva se publican exactamente 30 plantillas canonicos: 10 clasicos reales y 20 nuevos con ranking 1-20. Los alias historicos no inflan el conteo: `consultorio_odontologico` queda fusionado en `odontologia`, `taxi` queda fusionado en `taxi_system`, y `turnos_atencion`/`turnos` quedan como capacidad de soporte transversal para plantillas que requieran fila, agenda o puestos. El detalle de decision y plan esta en `documentos/plan_plantillas_produccion_masiva_2026-05-11.md`.
 
 ## Regla profesional
 
@@ -14,7 +14,7 @@ El sistema debe mantener un solo nucleo operativo. Ningun vertical puede crear u
 
 Desde 2026-05-11, la activacion de licencia tambien gobierna el alcance vertical de la empresa. La licencia base debe coincidir con el tipo de empresa, aplica la preconfiguracion de ese tipo de forma idempotente y deja un `vertical_scope` efectivo para que el menu y los endpoints solo permitan el vertical elegido mas los modulos del nucleo universal. Una empresa gimnasio no ve odontologia; una empresa odontologia no ve gimnasio; ambas comparten ventas, productos, clientes, finanzas, pagos, facturacion y reportes centrales.
 
-Desde 2026-05-12, los 30 verticales canonicos tambien deben quedar atados a ingresos y egresos del nucleo. Cada vertical visible declara `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports`. Los ingresos pasan por venta/carrito, pago central y movimiento tipo ingreso en `empresa_finanzas_movimientos`; los egresos pasan por compras/gastos/soportes centrales y movimiento tipo egreso en la misma tabla financiera.
+Desde 2026-05-12, los 30 plantillas canonicos tambien deben quedar atados a ingresos y egresos del nucleo. Cada vertical visible declara `financial_core_modules`, `income_flow`, `expense_flow`, `financial_tables` y `financial_reports`. Los ingresos pasan por venta/carrito, pago central y movimiento tipo ingreso en `empresa_finanzas_movimientos`; los egresos pasan por compras/gastos/soportes centrales y movimiento tipo egreso en la misma tabla financiera.
 
 Nucleo obligatorio:
 
@@ -27,7 +27,7 @@ Nucleo obligatorio:
 - `reportes`
 - `seguridad` / usuarios / roles / permisos
 
-Los verticales son plantillas o especializaciones. Pueden tener tablas propias solo para datos especificos del negocio: historia clinica, control de acceso, turnos, rutas, tickets, habitaciones, evidencias, agenda especializada o trazabilidad tecnica.
+Los plantillas son plantillas o especializaciones. Pueden tener tablas propias solo para datos especificos del negocio: historia clinica, control de acceso, turnos, rutas, tickets, habitaciones, evidencias, agenda especializada o trazabilidad tecnica.
 
 ## Estados
 
@@ -41,7 +41,7 @@ Los verticales son plantillas o especializaciones. Pueden tener tablas propias s
 
 | Vertical | Estado | Visible en operacion | Usa nucleo requerido | Tablas/flujo propio permitido | Duplicado a resolver | Decision |
 |---|---|---:|---|---|---|---|
-| 20 nuevos verticales (`agencia_viajes`, `salon_spa`, `taller_mecanico`, etc.) | `plantilla_integrada_nucleo` | Si | clientes, productos/servicios, ventas, pagos, facturacion, reportes, permisos | `empresa_modulos_colombia_*` para seguimiento, agenda, evidencias, aprobaciones y riesgo | Ninguno critico detectado en esta fase | Mantener visible como plantilla |
+| 20 nuevas plantillas (`agencia_viajes`, `salon_spa`, `taller_mecanico`, etc.) | `plantilla_integrada_nucleo` | Si | clientes, productos/servicios, ventas, pagos, facturacion, reportes, permisos | `empresa_modulos_colombia_*` para seguimiento, agenda, evidencias, aprobaciones y riesgo | Ninguno critico detectado en esta fase | Mantener visible como plantilla |
 | Gimnasio | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Socios, planes, acceso, credenciales, clases, asistencias y dispositivos | Ninguno publico; opera como plantilla fitness | Mantener visible |
 | Odontologia | `plantilla_integrada_nucleo` | Si | clientes, servicios vendibles, ventas/carritos, pagos y reportes | Historia clinica, odontograma, profesionales, consultorios y citas clinicas | Ninguno publico; opera como plantilla clinica | Mantener visible |
 | Parqueadero | `plantilla_integrada_nucleo` | Si | servicios vendibles, ventas/carritos, pagos y reportes | Ticket QR, placa, entrada/salida, tiempos y reglas tarifarias | Ninguno publico; opera como plantilla de parking | Mantener visible |
@@ -57,8 +57,8 @@ Fusiones canonicas:
 
 - `odontologia` absorbe el alias operativo `consultorio_odontologico`.
 - `taxi_system` absorbe el alias operativo `taxi`.
-- `turnos_atencion` y `turnos` son soporte reutilizable, no verticales comerciales independientes.
-- Verticales con logica parecida, como `gimnasio`/`club_deportivo`, `odontologia`/`clinica_consultorios` y `taxi_system`/`transporte_carga_tms`, permanecen separados solo cuando el flujo de negocio, permisos, reportes y datos especializados justifican una plantilla propia; comparten siempre clientes, productos/servicios, ventas, pagos, facturacion y reportes.
+- `turnos_atencion` y `turnos` son soporte reutilizable, no plantillas comerciales independientes.
+- Plantillas con logica parecida, como `gimnasio`/`club_deportivo`, `odontologia`/`clinica_consultorios` y `taxi_system`/`transporte_carga_tms`, permanecen separados solo cuando el flujo de negocio, permisos, reportes y datos especializados justifican una plantilla propia; comparten siempre clientes, productos/servicios, ventas, pagos, facturacion y reportes.
 
 ## Contrato tecnico obligatorio
 
@@ -77,22 +77,22 @@ Fusiones canonicas:
 ## Oleadas de implementacion
 
 1. Normalizacion visible: ocultar pendientes y publicar matriz.
-2. Igualdad de contrato: 10 verticales clasicos canonicos y 20 verticales nuevos se declaran como plantillas reales sobre nucleo comun.
+2. Igualdad de contrato: 10 plantillas clasicos canonicos y 20 plantillas nuevas se declaran como plantillas reales sobre nucleo comun.
 3. Alcance por licencia: cada tipo de empresa activa solo su vertical y conserva el nucleo universal compartido.
 4. Auditoria: cada vertical visible declara modulos activados, tablas tocadas, permisos, flujo de venta, ingresos, egresos y reportes.
 
 ## Implementacion actual
 
-- `web/js/verticales_integracion_catalogo.js` define el respaldo local de los 10 verticales clasicos canonicos y fusiona alias/soportes fuera del conteo de producto.
-- `web/js/administrar_empresa.js` refresca ese catalogo desde `/api/empresa/verticales_integracion/catalogo` cuando hay contexto de empresa y conserva el JS local como respaldo si la API no responde; luego aplica permisos/licencias.
-- El shell de `web/administrar_empresa.html` muestra un resumen operativo compacto de la matriz activa para distinguir fuente API/local y conteo de verticales visibles u ocultos.
-- La matriz completa ahora expone por cada uno de los 30 verticales canonicos los modulos/plantilla que activa, tablas tocadas, permisos requeridos, flujo de venta, ingresos, egresos y reportes producidos; esto convierte cada solucion en una plantilla gobernada y no en un circuito duplicado.
-- `/api/public/verticales_integracion/catalogo`, `/api/empresa/verticales_integracion/catalogo` y `/super/api/verticales_integracion/catalogo` exponen la misma matriz operativa para auditoria, super y empresa.
-- `web/js/nuevos_verticales_catalogo.js` marca los 20 verticales nuevos como `plantilla_integrada_nucleo`.
-- La prueba de contrato exige que `/api/*/verticales_integracion/catalogo` devuelva exactamente 30 items, sin alias ni soportes publicados como verticales, y con ingresos/egresos financieros del nucleo declarados.
-- `/api/empresa/verticales_nuevos/catalogo`, `/super/api/verticales_nuevos/catalogo` y `/api/public/verticales_nuevos/catalogo` exponen estado de integracion para los nuevos verticales.
-- `web/super/verticales_produccion_masiva.html` usa `/super/api/verticales_nuevos/catalogo` para auditar los 20 verticales de produccion masiva, metadata extendida y exportacion CSV desde el panel super.
+- `web/js/plantillas_integracion_catalogo.js` define el respaldo local de los 10 plantillas clasicos canonicos y fusiona alias/soportes fuera del conteo de producto.
+- `web/js/administrar_empresa.js` refresca ese catalogo desde `/api/empresa/plantillas_integracion/catalogo` cuando hay contexto de empresa y conserva el JS local como respaldo si la API no responde; luego aplica permisos/licencias.
+- El shell de `web/administrar_empresa.html` muestra un resumen operativo compacto de la matriz activa para distinguir fuente API/local y conteo de plantillas visibles u ocultos.
+- La matriz completa ahora expone por cada uno de los 30 plantillas canonicos los modulos/plantilla que activa, tablas tocadas, permisos requeridos, flujo de venta, ingresos, egresos y reportes producidos; esto convierte cada solucion en una plantilla gobernada y no en un circuito duplicado.
+- `/api/public/plantillas_integracion/catalogo`, `/api/empresa/plantillas_integracion/catalogo` y `/super/api/plantillas_integracion/catalogo` exponen la misma matriz operativa para auditoria, super y empresa.
+- `web/js/plantillas_nuevas_catalogo.js` marca los 20 plantillas nuevas como `plantilla_integrada_nucleo`.
+- La prueba de contrato exige que `/api/*/plantillas_integracion/catalogo` devuelva exactamente 30 items, sin alias ni soportes publicados como plantillas, y con ingresos/egresos financieros del nucleo declarados.
+- `/api/empresa/plantillas_nuevas/catalogo`, `/super/api/plantillas_nuevas/catalogo` y `/api/public/plantillas_nuevas/catalogo` exponen estado de integracion para los nuevas plantillas.
+- `web/super/plantillas_produccion_masiva.html` usa `/super/api/plantillas_nuevas/catalogo` para auditar los 20 plantillas de produccion masiva, metadata extendida y exportacion CSV desde el panel super.
 - Desde esa vista super, cada vertical abre sus pantallas relacionadas con filtro inicial: `Tipos de empresa`, `Preconfiguraciones` y `Licencias`.
 - La senal `Listo venta` exige metadata extendida completa, preconfiguracion activa con `integracion_vertical` y licencia activa de catalogo que incluya el modulo.
-- La accion `Asegurar 20` asegura tipos, preconfiguraciones y licencias recomendadas para los 20 verticales nuevos.
+- La accion `Asegurar 20` asegura tipos, preconfiguraciones y licencias recomendadas para los 20 plantillas nuevas.
 - Drogueria/farmacia queda visible como plantilla integrada porque no crea tablas paralelas de producto, inventario, venta ni pago: usa `empresa_modulos_colombia_*` para expediente sanitario y exige los modulos centrales de productos, inventario, compras, ventas, clientes y facturacion en sus licencias/preconfiguracion.

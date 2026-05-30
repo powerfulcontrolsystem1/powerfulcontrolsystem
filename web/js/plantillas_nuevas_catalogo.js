@@ -313,7 +313,7 @@
     ]));
     item.requiredPermissions = uniqueList(item.requiredPermissions || ["ver", "crear", "editar", "reportar", "cobrar"]);
     item.saleFlow = item.saleFlow || "Cotizacion o venta directa usando clientes, productos/servicios, carritos, pagos y facturacion centrales.";
-    item.reportsProduced = uniqueList(item.reportsProduced || ["Ventas por empresa", "Caja y pagos", "Clientes", "Servicios/productos", "Reporte operativo del vertical"]);
+    item.reportsProduced = uniqueList(item.reportsProduced || ["Ventas por empresa", "Caja y pagos", "Clientes", "Servicios/productos", "Reporte operativo de la plantilla"]);
     item.portalStatus = isProductionMass ? ("Produccion #" + rank) : "No productivo";
     item.portalDescription = (isProductionMass
       ? ("Plantilla real de produccion masiva. Activa " + item.templateActivates.slice(0, 6).join(", ") + " sobre el nucleo unico. ")
@@ -321,16 +321,16 @@
       + item.description;
   });
 
-  window.PCS_NUEVOS_VERTICALES = modules;
-  window.PCS_NUEVOS_VERTICALES_PRODUCCION_MASIVA = modules
+  window.PCS_NUEVAS_PLANTILLAS = modules;
+  window.PCS_NUEVAS_PLANTILLAS_PRODUCCION_MASIVA = modules
     .filter(function (item) { return item.productionMass; })
     .sort(function (a, b) { return a.productionRank - b.productionRank; });
-  window.PCS_NUEVOS_VERTICALES_DIFERIDOS = modules.filter(function (item) { return !item.productionMass; });
-  window.PCS_NUEVOS_VERTICALES_MODULES = modules.map(function (item) {
+  window.PCS_NUEVAS_PLANTILLAS_DIFERIDAS = modules.filter(function (item) { return !item.productionMass; });
+  window.PCS_NUEVAS_PLANTILLAS_MODULES = modules.map(function (item) {
     return [item.id, item.module];
   });
-  window.PCS_NUEVOS_VERTICALES_KEYS = modules.map(function (item) {
+  window.PCS_NUEVAS_PLANTILLAS_KEYS = modules.map(function (item) {
     return item.module;
   });
-  window.PCS_NUEVOS_VERTICALES_CSV = window.PCS_NUEVOS_VERTICALES_KEYS.join(",");
+  window.PCS_NUEVAS_PLANTILLAS_CSV = window.PCS_NUEVAS_PLANTILLAS_KEYS.join(",");
 })();

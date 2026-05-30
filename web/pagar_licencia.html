@@ -6,7 +6,7 @@
   <title>Pagar Licencia</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
-  <script src="/js/nuevos_verticales_catalogo.js"></script>
+  <script src="/js/plantillas_nuevas_catalogo.js"></script>
 </head>
 <body class="checkout-licencia-page">
   <div class="admin-layout">
@@ -42,7 +42,7 @@
         if (!value || value.indexOf('/img/') !== 0 || value.indexOf('..') >= 0) return '/img/shield-license-color.svg';
         return value;
       }
-      const verticalCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
+      const verticalCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
       const verticalByModule = {};
       verticalCatalog.forEach(function(item){
         const module = String(item && item.module || '').trim().toLowerCase();
@@ -76,11 +76,11 @@
         return null;
       }
       function resolveLicenseVisual(lic, tipoNombre) {
-        const vertical = resolveLicenseVertical(lic, tipoNombre);
+        const plantilla = resolveLicenseVertical(lic, tipoNombre);
         return {
-          vertical: vertical,
-          icon: normalizeImage((vertical && vertical.icon) || '/img/shield-license-color.svg'),
-          label: vertical ? (vertical.fullTitle || vertical.title || vertical.module) : ''
+          plantilla: plantilla,
+          icon: normalizeImage((plantilla && plantilla.icon) || '/img/shield-license-color.svg'),
+          label: plantilla ? (plantilla.fullTitle || plantilla.title || plantilla.module) : ''
         };
       }
       function formatCurrency(value){
@@ -609,7 +609,7 @@
                   '<div class="checkout-meta-list">'+
                     (empresaNombre ? '<span class="checkout-meta-pill">Empresa: ' + escapeHtml(empresaNombre) + '</span>' : '')+
                     (tipoNombre ? '<span class="checkout-meta-pill">Tipo: ' + escapeHtml(tipoNombre) + '</span>' : '')+
-                    (licenciaVisual.label ? '<span class="checkout-meta-pill">Vertical: ' + escapeHtml(licenciaVisual.label) + '</span>' : '')+
+                    (licenciaVisual.label ? '<span class="checkout-meta-pill">Plantilla: ' + escapeHtml(licenciaVisual.label) + '</span>' : '')+
                     (licenciaDuracion ? '<span class="checkout-meta-pill">Duración: ' + escapeHtml(licenciaDuracion) + ' días</span>' : '')+
                     (licenciaMaxDocs ? '<span class="checkout-meta-pill">Documentos: ' + escapeHtml(licenciaMaxDocs) + '/mes</span>' : '')+
                   '</div>'+

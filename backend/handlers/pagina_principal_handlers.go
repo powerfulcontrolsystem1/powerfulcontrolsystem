@@ -299,7 +299,7 @@ func informacionModulosDefaultConfig() informacionModulosConfig {
 			{Titulo: "Energia solar", IconoURL: "/img/solar-energy.svg", Caracteristicas: []string{"Monitoreo de paneles", "Controladoras Victron", "SMA Sunny Portal", "SolarEdge Monitoring", "Baterias Powerwall, BYD, Pylontech y Enphase", "Alertas por correo", "Lecturas por gateway local", "BMS y estado de salud"}},
 			{Titulo: "Domotica y control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Domotica por estacion", "Manejo de sensores", "Puertas", "Aparatos", "Permanencia", "Acceso", "Vehiculos", "Parqueaderos", "Trazabilidad operativa"}},
 			{Titulo: "Gestion empresarial", IconoURL: "/img/company-briefcase-color.svg", Caracteristicas: []string{"Clientes", "CRM", "Usuarios", "Roles", "Permisos", "Licencias", "Auditoria", "Backups", "Comunicaciones", "Soporte", "Chat y tareas"}},
-			{Titulo: "Verticales listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Gimnasio", "Odontologia", "Propiedad horizontal", "Domicilios", "Taxi", "Carta QR", "Venta publica", "Red social comercial"}},
+			{Titulo: "Plantillas listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Gimnasio", "Odontologia", "Propiedad horizontal", "Domicilios", "Taxi", "Carta QR", "Venta publica", "Red social comercial"}},
 		},
 	}
 }

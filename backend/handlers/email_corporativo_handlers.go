@@ -37,6 +37,7 @@ const (
 	corporateEmailQuotaMBKey       = "email_corporativo.quota_mb"
 	corporateEmailDirectCommandKey = "email_corporativo.direct_provision_command"
 	corporateEmailAutologinKey     = "email_corporativo.autologin_secret"
+	corporateEmailEmpresaPrefsKey  = "email_corporativo_config"
 )
 
 type CorporateEmailConfig struct {
@@ -56,6 +57,10 @@ type corporateEmailProvisionResult struct {
 	OK     bool   `json:"ok"`
 	Status string `json:"status"`
 	Error  string `json:"error,omitempty"`
+}
+
+type corporateEmailEmpresaPrefs struct {
+	AutoOpen bool `json:"auto_open"`
 }
 
 var errCorporateEmailAutologinRejected = errors.New("credenciales del buzon no aceptadas por Mailu")
@@ -287,6 +292,86 @@ func parseConfigBool(value string, fallback bool) bool {
 	}
 }
 
+func normalizeCorporateEmailTheme(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "dark", "oscuro", "nocturno", "negro", "dark-corporate", "dark-neon", "dark-absolute", "negro-absoluto", "dark-obsidian", "super-oscuro":
+		return "dark"
+	default:
+		return "light"
+	}
+}
+
+func corporateEmailThemeName(value string) string {
+	if normalizeCorporateEmailTheme(value) == "dark" {
+		return "PCSDark"
+	}
+	return "PCSLight"
+}
+
+func corporateEmailSnappyMailTheme(value string) string {
+	return corporateEmailThemeName(value) + "@custom"
+}
+
+func getCorporateEmailEmpresaPrefs(dbEmp *sql.DB, empresaID int64) corporateEmailEmpresaPrefs {
+	prefs := corporateEmailEmpresaPrefs{AutoOpen: true}
+	if dbEmp == nil || empresaID <= 0 {
+		return prefs
+	}
+	item, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, corporateEmailEmpresaPrefsKey)
+	if err != nil || item == nil || strings.TrimSpace(item.Valor) == "" {
+		return prefs
+	}
+	var stored corporateEmailEmpresaPrefs
+	if err := json.Unmarshal([]byte(item.Valor), &stored); err != nil {
+		return prefs
+	}
+	prefs.AutoOpen = stored.AutoOpen
+	return prefs
+}
+
+func saveCorporateEmailEmpresaPrefs(dbEmp *sql.DB, empresaID int64, prefs corporateEmailEmpresaPrefs, usuario string) error {
+	if dbEmp == nil {
+		return fmt.Errorf("base empresarial no disponible")
+	}
+	if empresaID <= 0 {
+		return fmt.Errorf("empresa_id invalido")
+	}
+	payload, err := json.Marshal(prefs)
+	if err != nil {
+		return err
+	}
+	_, err = dbpkg.UpsertEmpresaEstacionPref(dbEmp, dbpkg.EmpresaEstacionPref{
+		EmpresaID:      empresaID,
+		EstacionID:     0,
+		Clave:          corporateEmailEmpresaPrefsKey,
+		Valor:          string(payload),
+		UsuarioCreador: strings.TrimSpace(usuario),
+		Estado:         "activo",
+		Observaciones:  "Preferencias de bandeja de email corporativo por empresa",
+	})
+	return err
+}
+
+func validateCorporateEmailNewPassword(password, confirm string) (string, error) {
+	password = strings.TrimSpace(password)
+	confirm = strings.TrimSpace(confirm)
+	if password == "" {
+		return "", nil
+	}
+	if password != confirm {
+		return "", fmt.Errorf("la confirmacion de la contrasena no coincide")
+	}
+	if len(password) < 10 || len(password) > 128 {
+		return "", fmt.Errorf("la contrasena debe tener entre 10 y 128 caracteres")
+	}
+	for _, r := range password {
+		if r < 32 || r == 127 {
+			return "", fmt.Errorf("la contrasena contiene caracteres no permitidos")
+		}
+	}
+	return password, nil
+}
+
 func normalizeCorporateEmailDomain(value string) string {
 	value = strings.ToLower(strings.TrimSpace(value))
 	value = strings.TrimPrefix(value, "http://")
@@ -412,13 +497,17 @@ func validateCorporateEmailAutologinToken(dbSuper *sql.DB, token string) (corpor
 	return payload, nil
 }
 
-func corporateEmailAutologinPublicURL(webmailURL, token string) string {
+func corporateEmailAutologinPublicURL(webmailURL, token, theme string) string {
 	parsed, err := url.Parse(strings.TrimSpace(webmailURL))
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" || strings.TrimSpace(token) == "" {
 		return ""
 	}
 	parsed.Path = "/pcs-mail-autologin"
-	parsed.RawQuery = "token=" + url.QueryEscape(token)
+	query := parsed.Query()
+	query.Set("token", token)
+	query.Set("theme", normalizeCorporateEmailTheme(theme))
+	query.Set("mail_theme", corporateEmailSnappyMailTheme(theme))
+	parsed.RawQuery = query.Encode()
 	parsed.Fragment = ""
 	return parsed.String()
 }
@@ -542,6 +631,10 @@ func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuari
 }
 
 func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
+	return provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, account, password, "")
+}
+
+func provisionEmpresaEmailAccountWithTheme(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
 	if !cfg.Enabled {
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_modulo_desactivado", "El modulo global esta desactivado", false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_modulo_desactivado", Error: "modulo desactivado"}
@@ -550,10 +643,10 @@ func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, acc
 		_ = dbpkg.MarkEmpresaEmailProvisionResult(dbSuper, account.EmpresaID, "pendiente_provision_manual", "Modo manual: crear o validar la cuenta en Mailu", false)
 		return corporateEmailProvisionResult{OK: false, Status: "pendiente_provision_manual", Error: "modo manual"}
 	}
-	return provisionEmpresaEmailAccountDirect(dbSuper, cfg, account, password)
+	return provisionEmpresaEmailAccountDirect(dbSuper, cfg, account, password, theme)
 }
 
-func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
+func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password, theme string) corporateEmailProvisionResult {
 	commandPath := strings.TrimSpace(cfg.DirectCommand)
 	if commandPath == "" {
 		commandPath = strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"))
@@ -582,6 +675,8 @@ func provisionEmpresaEmailAccountDirect(dbSuper *sql.DB, cfg CorporateEmailConfi
 		"PCS_MAILU_NAME="+strings.TrimSpace(account.EmpresaNombre),
 		"PCS_MAILU_DOMAIN="+normalizeCorporateEmailDomain(account.Domain),
 		"PCS_MAILU_QUOTA_MB="+strconv.Itoa(cfg.QuotaMB),
+		"PCS_MAILU_THEME_MODE="+normalizeCorporateEmailTheme(theme),
+		"PCS_MAILU_THEME="+corporateEmailThemeName(theme),
 	)
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
@@ -689,8 +784,9 @@ func checkCorporateWebmail(rawURL string) corporateWebmailCheck {
 	}
 }
 
-func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool) map[string]interface{} {
+func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *dbpkg.EmpresaEmailCorporativo, message string, checkWebmail bool, theme string, prefs corporateEmailEmpresaPrefs) map[string]interface{} {
 	webmailURL := cfg.WebmailURL
+	theme = normalizeCorporateEmailTheme(theme)
 	if account != nil {
 		webmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
 		if strings.TrimSpace(account.WebmailURL) != webmailURL {
@@ -704,6 +800,9 @@ func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *
 		"account":     account,
 		"webmail":     webmailURL,
 		"domain":      cfg.Domain,
+		"theme":       theme,
+		"mail_theme":  corporateEmailSnappyMailTheme(theme),
+		"preferences": prefs,
 	}
 	if strings.TrimSpace(message) != "" {
 		resp["message"] = strings.TrimSpace(message)
@@ -714,7 +813,7 @@ func corporateEmailResponse(dbSuper *sql.DB, cfg CorporateEmailConfig, account *
 	accountCanAttemptAutologin := account != nil && (strings.EqualFold(strings.TrimSpace(account.EstadoProvision), "provisionado") || (cfg.ProvisionMode == "mailu_direct" && account.InitialPasswordSet))
 	if cfg.Enabled && accountCanAttemptAutologin {
 		if token, err := createCorporateEmailAutologinToken(dbSuper, *account); err == nil {
-			if autologinURL := corporateEmailAutologinPublicURL(webmailURL, token); autologinURL != "" {
+			if autologinURL := corporateEmailAutologinPublicURL(webmailURL, token, theme); autologinURL != "" {
 				resp["autologin_url"] = autologinURL
 				resp["autologin_expires_seconds"] = 120
 			}
@@ -938,10 +1037,6 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 
 func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
 		empresaID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("empresa_id")), 10, 64)
 		if empresaID <= 0 {
 			http.Error(w, "empresa_id requerido", http.StatusBadRequest)
@@ -949,6 +1044,108 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		}
 		cfg := getCorporateEmailConfig(dbSuper)
 		checkWebmail := parseConfigBool(r.URL.Query().Get("check_webmail"), false)
+		theme := normalizeCorporateEmailTheme(r.URL.Query().Get("theme"))
+		prefs := getCorporateEmailEmpresaPrefs(dbEmp, empresaID)
+		if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			var payload struct {
+				AutoOpen        *bool  `json:"auto_open"`
+				NoAutoOpen      *bool  `json:"no_auto_open"`
+				Password        string `json:"password"`
+				NewPassword     string `json:"new_password"`
+				ConfirmPassword string `json:"confirm_password"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "payload invalido", http.StatusBadRequest)
+				return
+			}
+			if payload.AutoOpen != nil {
+				prefs.AutoOpen = *payload.AutoOpen
+			}
+			if payload.NoAutoOpen != nil {
+				prefs.AutoOpen = !*payload.NoAutoOpen
+			}
+			passwordValue := strings.TrimSpace(payload.NewPassword)
+			if passwordValue == "" {
+				passwordValue = strings.TrimSpace(payload.Password)
+			}
+			validatedPassword := ""
+			if passwordValue != "" || strings.TrimSpace(payload.ConfirmPassword) != "" {
+				newPassword, passErr := validateCorporateEmailNewPassword(passwordValue, payload.ConfirmPassword)
+				if passErr != nil {
+					http.Error(w, passErr.Error(), http.StatusBadRequest)
+					return
+				}
+				validatedPassword = newPassword
+			}
+			if err := saveCorporateEmailEmpresaPrefs(dbEmp, empresaID, prefs, adminEmailFromRequest(r)); err != nil {
+				http.Error(w, "No se pudo guardar la configuracion del correo corporativo", http.StatusInternalServerError)
+				return
+			}
+			passwordChanged := false
+			provisionStatus := ""
+			if validatedPassword != "" {
+				account, accountErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
+				if accountErr != nil || account == nil {
+					http.Error(w, "No se encontro el buzon corporativo de esta empresa", http.StatusNotFound)
+					return
+				}
+				if !utils.EncryptionAvailable() {
+					http.Error(w, "CONFIG_ENC_KEY no esta disponible para guardar la clave cifrada", http.StatusInternalServerError)
+					return
+				}
+				encryptedPassword, encErr := utils.EncryptString(validatedPassword)
+				if encErr != nil {
+					http.Error(w, "No se pudo cifrar la nueva clave", http.StatusInternalServerError)
+					return
+				}
+				if err := dbpkg.UpdateEmpresaEmailCorporativoInitialPassword(dbSuper, empresaID, encryptedPassword, adminEmailFromRequest(r)); err != nil {
+					http.Error(w, "No se pudo guardar la nueva clave del buzon", http.StatusInternalServerError)
+					return
+				}
+				passwordChanged = true
+				provisionStatus = "clave_guardada"
+				if cfg.Enabled && cfg.ProvisionMode == "mailu_direct" {
+					result := provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, *account, validatedPassword, theme)
+					provisionStatus = result.Status
+					if !result.OK {
+						account.WebmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
+						writeJSON(w, http.StatusOK, map[string]interface{}{
+							"ok":                true,
+							"preferences":       prefs,
+							"account":           account,
+							"enabled":           cfg.Enabled,
+							"webmail":           account.WebmailURL,
+							"password_changed":  true,
+							"provision_status":  result.Status,
+							"provision_warning": "La clave quedo guardada cifrada, pero Mailu no pudo actualizar el buzon real en este momento.",
+							"provision_error":   result.Error,
+						})
+						return
+					}
+				}
+			}
+			var accountResp interface{} = nil
+			webmailResp := cfg.WebmailURL
+			if account, accountErr := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); accountErr == nil && account != nil {
+				account.WebmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
+				webmailResp = account.WebmailURL
+				accountResp = account
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":               true,
+				"preferences":      prefs,
+				"account":          accountResp,
+				"enabled":          cfg.Enabled,
+				"webmail":          webmailResp,
+				"password_changed": passwordChanged,
+				"provision_status": provisionStatus,
+			})
+			return
+		}
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
 		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -957,7 +1154,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 						if created, createErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, empresa.EmpresaID, empresa.Nombre, adminEmailFromRequest(r)); createErr == nil {
 							account = created
 						} else {
-							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail))
+							writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "No se pudo generar el email corporativo", checkWebmail, theme, prefs))
 							return
 						}
 					}
@@ -966,10 +1163,10 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 					if account.WebmailURL == "" {
 						account.WebmailURL = cfg.WebmailURL
 					}
-					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail))
+					writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "Email corporativo generado", checkWebmail, theme, prefs))
 					return
 				}
-				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail))
+				writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, nil, "Sin email corporativo generado", checkWebmail, theme, prefs))
 				return
 			}
 			http.Error(w, "No se pudo consultar email corporativo: "+err.Error(), http.StatusInternalServerError)
@@ -980,7 +1177,7 @@ func EmpresaEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 		} else {
 			account.WebmailURL = corporateEmailAccountWebmailURL(account.WebmailURL, cfg.WebmailURL)
 		}
-		writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "", checkWebmail))
+		writeJSON(w, http.StatusOK, corporateEmailResponse(dbSuper, cfg, account, "", checkWebmail, theme, prefs))
 	}
 }
 
@@ -1000,6 +1197,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 			writeCorporateEmailAutologinError(w, http.StatusForbidden, "El modulo de email corporativo esta desactivado.")
 			return
 		}
+		theme := normalizeCorporateEmailTheme(r.URL.Query().Get("theme"))
 		account, err := dbpkg.GetEmpresaEmailCorporativoByEmpresa(dbSuper, token.EmpresaID)
 		if err != nil || account == nil || !strings.EqualFold(strings.TrimSpace(account.Email), strings.TrimSpace(token.Email)) {
 			writeCorporateEmailAutologinError(w, http.StatusNotFound, "No se encontro el buzon corporativo de esta empresa.")
@@ -1012,7 +1210,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon todavia no esta listo y no se pudo recuperar su clave cifrada para provisionarlo.")
 				return
 			}
-			if result := provisionEmpresaEmailAccount(dbSuper, cfg, *account, password); !result.OK {
+			if result := provisionEmpresaEmailAccountWithTheme(dbSuper, cfg, *account, password, theme); !result.OK {
 				writeCorporateEmailAutologinError(w, http.StatusConflict, "El buzon corporativo todavia no pudo provisionarse en Mailu: "+result.Error)
 				return
 			}
@@ -1033,7 +1231,7 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeCorporateEmailAutologinError(w, http.StatusConflict, "No se pudo preparar el acceso automatico al buzon corporativo.")
 				return
 			}
-			redirectURL, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password)
+			redirectURL, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password, theme)
 			if redirectErr != nil {
 				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. "+redirectErr.Error())
 				return
@@ -1072,7 +1270,7 @@ func corporateEmailWebmailEngine() string {
 	}
 }
 
-func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password string) (string, error) {
+func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, theme string) (string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	password = strings.TrimSpace(password)
 	if email == "" || password == "" {
@@ -1113,7 +1311,24 @@ func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password st
 	if res.StatusCode < 300 || res.StatusCode >= 400 || location == "" {
 		return "", errCorporateEmailAutologinRejected
 	}
-	return corporateEmailPublicWebmailRedirect(cfg.WebmailURL, location), nil
+	return corporateEmailAppendThemeToURI(corporateEmailPublicWebmailRedirect(cfg.WebmailURL, location), theme), nil
+}
+
+func corporateEmailAppendThemeToURI(rawURI, theme string) string {
+	rawURI = strings.TrimSpace(rawURI)
+	if rawURI == "" {
+		rawURI = "/webmail/"
+	}
+	parsed, err := url.Parse(rawURI)
+	if err != nil {
+		return rawURI
+	}
+	query := parsed.Query()
+	query.Set("theme", normalizeCorporateEmailTheme(theme))
+	query.Set("mail_theme", corporateEmailSnappyMailTheme(theme))
+	query.Set("pcs_theme", corporateEmailSnappyMailTheme(theme))
+	parsed.RawQuery = query.Encode()
+	return parsed.String()
 }
 
 func corporateEmailPublicWebmailRedirect(publicWebmailURL, location string) string {

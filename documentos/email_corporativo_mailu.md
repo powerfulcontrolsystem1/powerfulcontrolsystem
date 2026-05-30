@@ -51,12 +51,27 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
 14. `deploy/mailu/snappymail-application.ini` se monta sobre
     `/defaults/application.ini` para conservar esa configuracion tras reinicios
     y permitir el iframe `same-site` del panel con `secfetch_allow`.
+15. El panel empresarial envia `theme=light|dark` al consultar el buzon y al
+    abrir `/pcs-mail-autologin`. El backend propaga esa preferencia hacia el
+    script de provision con `PCS_MAILU_THEME_MODE` y `PCS_MAILU_THEME`.
+16. Los temas `PCSLight@custom` y `PCSDark@custom` viven en
+    `deploy/mailu/themes` y se copian al contenedor SnappyMail durante el
+    arranque del perfil `mail`.
+17. `Configuracion > Email corporativo` guarda `auto_open` en
+    `empresa_estacion_prefs` con clave `email_corporativo_config`. El valor por
+    defecto es `true`.
+18. La misma pagina permite cambiar la contrasena interna del buzon. El backend
+    valida longitud, cifra la clave con `CONFIG_ENC_KEY`, actualiza
+    `empresa_email_corporativo.initial_password_enc` y reprovisiona Mailu cuando
+    el modo directo esta activo.
 
 ## Seguridad
 
 - La clave inicial del buzon se guarda cifrada si `CONFIG_ENC_KEY` esta
   disponible.
 - El navegador no recibe claves ni tokens privados de correo.
+- La pagina empresarial de configuracion puede enviar una nueva contrasena, pero
+  el backend nunca la devuelve y no la registra en logs ni documentacion.
 - El token de autologin dura 2 minutos, va firmado con HMAC SHA-256 y se usa una
   sola vez desde el subdominio de correo.
 - SnappyMail solo permite el iframe desde el mismo sitio (`same-site`), que cubre
@@ -76,6 +91,20 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
   y el front resuelven `mailu-front`, `mailu-imap` y demas servicios hacia
   `192.168.203.x`; asi Dovecot recibe los accesos desde la red que Mailu marca
   como confiable y no desde la red general `pcs_internal`.
+
+## Apariencia
+
+- SnappyMail permite temas personalizados por CSS en una carpeta `themes`.
+- El sistema instala dos temas propios: `PCSLight@custom` para apariencias
+  claras y `PCSDark@custom` para apariencias oscuras.
+- `web/administrar_empresa/panel.html` detecta el `data-theme` activo del
+  sistema; si empieza por `dark`, usa el tema oscuro del correo, de lo contrario
+  usa el tema claro.
+- `deploy/scripts/vps-compose-sidecar-up.sh` deja `PCSLight@custom` como tema
+  global base para buzones nuevos y copia ambos temas al contenedor
+  `pcs-mailu-webmail`.
+- `deploy/scripts/vps-provision-mailu-mailbox.sh` escribe una preferencia local
+  por buzon en `settings/settings_local` cuando recibe `PCS_MAILU_THEME_MODE`.
 
 ## Tablas y configuracion
 

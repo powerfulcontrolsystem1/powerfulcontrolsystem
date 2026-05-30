@@ -701,6 +701,7 @@
       controlElectrico: {
         loaded: false,
         loading: false,
+        loadedAt: 0,
         loadedForStationID: 0,
         loadedForCarritoID: 0,
         selectedReleID: 0,
@@ -1290,6 +1291,7 @@
         mostrar_tarjeta_cobro_estados: false,
         mostrar_tarjeta_acciones_carrito: true,
         mostrar_control_electrico_carrito: true,
+        mostrar_tarjeta_domotica_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
         mostrar_tarjeta_vip_cliente: true,
@@ -1395,6 +1397,9 @@
         mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : Boolean(src.mostrar_tarjeta_cobro_estados),
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : Boolean(src.mostrar_tarjeta_acciones_carrito),
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : Boolean(src.mostrar_control_electrico_carrito),
+        mostrar_tarjeta_domotica_carrito: src.mostrar_tarjeta_domotica_carrito === undefined
+          ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_tarjeta_domotica_carrito : Boolean(src.mostrar_control_electrico_carrito))
+          : Boolean(src.mostrar_tarjeta_domotica_carrito),
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : Boolean(src.mostrar_tarjeta_valores_pago),
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : Boolean(src.mostrar_tarjeta_comision),
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : Boolean(src.mostrar_tarjeta_vip_cliente),
@@ -1661,6 +1666,9 @@
           if (rawStationCartConfig.mostrar_qr_factura_electronica === undefined && rawStationCartConfig.qr_factura_electronica === undefined) {
             stationCartConfig.mostrar_qr_factura_electronica = globalCfg.mostrar_qr_factura_electronica;
           }
+          if (rawStationCartConfig.mostrar_tarjeta_domotica_carrito === undefined) {
+            stationCartConfig.mostrar_tarjeta_domotica_carrito = globalCfg.mostrar_tarjeta_domotica_carrito;
+          }
           cfg = Object.assign({}, globalCfg, stationCartConfig);
         }
       }
@@ -1909,7 +1917,7 @@
       const btnControlElectrico = document.getElementById('carritoBtnControlElectrico');
       if (btnControlElectrico) {
         const showControlElectrico = Boolean(ui.mostrar_control_electrico_carrito && ui.mostrar_boton_control_electrico_carrito);
-        if (!showControlElectrico) {
+        if (!showControlElectrico || !ui.mostrar_tarjeta_domotica_carrito) {
           hideCarritoDomoticaPanel(true);
         }
       }
@@ -6854,6 +6862,7 @@
       }
       if (clearState) {
         state.controlElectrico.loaded = false;
+        state.controlElectrico.loadedAt = 0;
         state.controlElectrico.loadedForStationID = 0;
         state.controlElectrico.loadedForCarritoID = 0;
         state.controlElectrico.reles = [];
@@ -6874,6 +6883,11 @@
       if (!box) return;
       const cfg = state.controlElectrico.config || {};
       const reles = Array.isArray(state.controlElectrico.reles) ? state.controlElectrico.reles : [];
+      const stationUI = getCurrentStationCartUIConfig();
+      if (!stationUI.mostrar_control_electrico_carrito || !stationUI.mostrar_tarjeta_domotica_carrito) {
+        hideCarritoDomoticaPanel(false);
+        return;
+      }
       if (!cfg.habilitado) {
         hideCarritoDomoticaPanel(false);
         return;
@@ -6912,6 +6926,7 @@
         await ensureOk(res);
         const payload = await res.json();
         state.controlElectrico.loaded = true;
+        state.controlElectrico.loadedAt = Date.now();
         state.controlElectrico.loadedForStationID = Number(stationID || 0);
         state.controlElectrico.loadedForCarritoID = Number(selected && selected.id || 0);
         state.controlElectrico.config = payload.config || {};
@@ -6929,14 +6944,16 @@
       const selected = getSelectedCarrito();
       const stationID = resolveCarritoEstacionID(selected);
       const stationUI = getCurrentStationCartUIConfig();
-      if (!state.stationMode || state.directSaleMode || !stationUI.mostrar_control_electrico_carrito || !selected || !stationID || !isCarritoOperativoActivo(selected)) {
+      if (!state.stationMode || state.directSaleMode || !stationUI.mostrar_control_electrico_carrito || !stationUI.mostrar_tarjeta_domotica_carrito || !selected || !stationID || !isCarritoOperativoActivo(selected)) {
         hideCarritoDomoticaPanel(true);
         return;
       }
       const loadedForSame = state.controlElectrico.loaded &&
         Number(state.controlElectrico.loadedForStationID || 0) === Number(stationID || 0) &&
         Number(state.controlElectrico.loadedForCarritoID || 0) === Number(selected.id || 0);
-      if (loadedForSame && !options.force) {
+      const hasLoadedDevices = Array.isArray(state.controlElectrico.reles) && state.controlElectrico.reles.length > 0;
+      const recentlyCheckedEmpty = !hasLoadedDevices && state.controlElectrico.loadedAt && (Date.now() - state.controlElectrico.loadedAt < 15000);
+      if (loadedForSame && !options.force && (hasLoadedDevices || recentlyCheckedEmpty)) {
         renderCarritoControlElectricoPanel();
         return;
       }
@@ -6956,6 +6973,10 @@
       const stationUI = getCurrentStationCartUIConfig();
       if (!stationUI.mostrar_control_electrico_carrito || !stationUI.mostrar_boton_control_electrico_carrito) {
         setMessage('itemMsg', 'El boton Domotica esta desactivado en la configuracion del carrito.', true);
+        return;
+      }
+      if (!stationUI.mostrar_tarjeta_domotica_carrito) {
+        setMessage('itemMsg', 'La tarjeta Domotica esta desactivada en la configuracion del carrito.', true);
         return;
       }
       if (!selected || !stationID) {
@@ -8123,6 +8144,12 @@
         sendCarritoControlElectricoCommand(btn.getAttribute('data-rele-id'), onBtn ? 'on' : 'off');
       });
     }
+    window.addEventListener('focus', function() {
+      const selected = getSelectedCarrito();
+      if (state.stationMode && !state.directSaleMode && selected) {
+        ensureCarritoDomoticaPanel({ force: true });
+      }
+    });
     const domoticaDeviceModal = document.getElementById('domoticaDeviceModal');
     if (domoticaDeviceModal) {
       domoticaDeviceModal.addEventListener('click', function(ev) {

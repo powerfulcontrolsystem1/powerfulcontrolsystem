@@ -1,7 +1,7 @@
 package db
 
 func init() {
-	for modulo, plantilla := range empresaModuloColombiaPlantillasVerticales {
+	for modulo, plantilla := range empresaModuloColombiaPlantillasPlantillas {
 		empresaModuloColombiaTitulos[modulo] = plantilla.Titulo
 	}
 }
@@ -19,7 +19,7 @@ func buildVerticalPlantilla(titulo string, tipos, categorias, estados, acciones 
 	}
 }
 
-var empresaModuloColombiaPlantillasVerticales = map[string]EmpresaModuloColombiaPlantilla{
+var empresaModuloColombiaPlantillasPlantillas = map[string]EmpresaModuloColombiaPlantilla{
 	"agencia_viajes": buildVerticalPlantilla(
 		"Agencia de viajes y planes turisticos",
 		[]string{"paquete", "reserva", "itinerario", "cotizacion", "voucher", "comision"},
@@ -222,7 +222,7 @@ var empresaModuloColombiaPlantillasVerticales = map[string]EmpresaModuloColombia
 	),
 }
 
-var empresaModuloColombiaSeccionesVerticales = map[string][]string{
+var empresaModuloColombiaSeccionesPlantillas = map[string][]string{
 	"agencia_viajes":           {"Dashboard comercial", "Paquetes y cotizaciones", "Reservas y vouchers", "Pagos y comisiones", "Aprobaciones", "Evidencias"},
 	"operador_turistico":       {"Dashboard operativo", "Tours y rutas", "Guias y cupos", "Check-in", "Evidencias", "Cierre"},
 	"eventos_boleteria":        {"Dashboard", "Eventos", "Boletas QR", "Aforo", "Validacion", "Reportes"},
@@ -247,7 +247,7 @@ var empresaModuloColombiaSeccionesVerticales = map[string][]string{
 
 func GetEmpresaModuloColombiaSeccionesFlujo(modulo string) []string {
 	modulo = NormalizeEmpresaModuloColombia(modulo)
-	if rows, ok := empresaModuloColombiaSeccionesVerticales[modulo]; ok {
+	if rows, ok := empresaModuloColombiaSeccionesPlantillas[modulo]; ok {
 		return append([]string{}, rows...)
 	}
 	return []string{"Dashboard", "Configuracion", "Registros", "Seguimiento", "Aprobaciones", "Evidencias"}

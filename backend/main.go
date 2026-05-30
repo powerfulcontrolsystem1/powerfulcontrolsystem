@@ -513,7 +513,7 @@ func noCacheAdminStaticHandler(next http.Handler) http.Handler {
 			path == "/administrar_empresa.html" ||
 			path == "/seleccionar_empresa.html" ||
 			path == "/js/administrar_empresa.js" ||
-			path == "/js/nuevos_verticales_catalogo.js" ||
+			path == "/js/plantillas_nuevas_catalogo.js" ||
 			path == "/menu.js" ||
 			strings.HasSuffix(path, ".html") {
 			w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
@@ -819,12 +819,12 @@ func main() {
 			log.Printf("INFO: tipo alquileres verificado: tipo_id=%d licencias=%d", tipoID, licencias)
 		}
 		startupTrace("after_ensure_alquileres_tipo_licencias")
-		if tipos, licencias, err := dbpkg.EnsureNuevosVerticalesTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
-			log.Printf("warning: no se pudieron asegurar nuevos verticales/licencias: %v", err)
+		if tipos, licencias, err := dbpkg.EnsureNuevasPlantillasTipoEmpresaYLicencias(dbSuper, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudieron asegurar nuevas plantillas/licencias: %v", err)
 		} else {
-			log.Printf("INFO: nuevos verticales verificados: tipos=%d licencias=%d", tipos, licencias)
+			log.Printf("INFO: nuevas plantillas verificados: tipos=%d licencias=%d", tipos, licencias)
 		}
-		startupTrace("after_ensure_nuevos_verticales_tipo_licencias")
+		startupTrace("after_ensure_plantillas_nuevas_tipo_licencias")
 		if err := dbpkg.DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
 			log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
 		}
@@ -1063,8 +1063,8 @@ func main() {
 	http.HandleFunc("/super/api/servidores/toggle", handlers.SuperServidoresToggleHandler(dbSuper))
 	http.HandleFunc("/super/api/servidores/probar", handlers.SuperServidoresProbeHandler(dbSuper))
 	http.HandleFunc("/super/api/vps/procesos", handlers.SuperVPSProcessesHandler(dbSuper))
-	http.HandleFunc("/super/api/verticales_nuevos/catalogo", handlers.SuperVerticalesNuevosCatalogoHandler(dbSuper))
-	http.HandleFunc("/super/api/verticales_integracion/catalogo", handlers.SuperVerticalesIntegracionCatalogoHandler())
+	http.HandleFunc("/super/api/plantillas_nuevas/catalogo", handlers.SuperPlantillasNuevosCatalogoHandler(dbSuper))
+	http.HandleFunc("/super/api/plantillas_integracion/catalogo", handlers.SuperPlantillasIntegracionCatalogoHandler())
 	http.HandleFunc("/super/api/roles_de_usuario", handlers.RolesDeUsuarioHandler(dbSuper))
 	http.HandleFunc("/super/api/roles_de_usuario/permisos", handlers.RolesDeUsuarioPermisosHandler(dbSuper))
 	// Endpoint CRUD para empresas (persistidas en pcs_empresas PostgreSQL)
@@ -1168,8 +1168,8 @@ func main() {
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
 	http.HandleFunc("/api/public/informacion_de_modulos", handlers.PublicInformacionModulosHandler(dbSuper))
 	http.HandleFunc("/api/public/portal_visitas", handlers.PublicPortalVisitasHandler(dbSuper))
-	http.HandleFunc("/api/public/verticales_nuevos/catalogo", handlers.PublicVerticalesNuevosCatalogoHandler())
-	http.HandleFunc("/api/public/verticales_integracion/catalogo", handlers.PublicVerticalesIntegracionCatalogoHandler())
+	http.HandleFunc("/api/public/plantillas_nuevas/catalogo", handlers.PublicPlantillasNuevosCatalogoHandler())
+	http.HandleFunc("/api/public/plantillas_integracion/catalogo", handlers.PublicPlantillasIntegracionCatalogoHandler())
 	http.HandleFunc("/api/public/contrato", handlers.PublicContratoHandler(dbSuper))
 	http.HandleFunc("/api/public/juegos/records", handlers.PublicJuegosRecordsHandler(dbSuper))
 	http.HandleFunc("/api/public/geo", handlers.PublicGeoHandler())
@@ -1226,12 +1226,12 @@ func main() {
 	http.HandleFunc("/api/empresa/cierre_fiscal", handlers.WithEmpresaCierreFiscalPermissions(dbEmpresas, dbSuper, handlers.EmpresaCierreFiscalHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/declaraciones_tributarias", handlers.WithEmpresaDeclaracionesTributariasPermissions(dbEmpresas, dbSuper, handlers.EmpresaDeclaracionesTributariasHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/tesoreria_presupuesto", handlers.WithEmpresaTesoreriaPresupuestoPermissions(dbEmpresas, dbSuper, handlers.EmpresaTesoreriaPresupuestoHandler(dbEmpresas)))
-	http.HandleFunc("/api/empresa/verticales_nuevos/catalogo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVerticalesNuevosCatalogoHandler()))
-	http.HandleFunc("/api/empresa/verticales_integracion/catalogo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaVerticalesIntegracionCatalogoHandler()))
+	http.HandleFunc("/api/empresa/plantillas_nuevas/catalogo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPlantillasNuevosCatalogoHandler()))
+	http.HandleFunc("/api/empresa/plantillas_integracion/catalogo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaPlantillasIntegracionCatalogoHandler()))
 	http.HandleFunc("/api/empresa/bancos_pagos", handlers.WithEmpresaBancosPagosPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "bancos_pagos")))
 	http.HandleFunc("/api/empresa/cumplimiento_kyc", handlers.WithEmpresaCumplimientoKYCPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "cumplimiento_kyc")))
 	http.HandleFunc("/api/empresa/calidad_procesos", handlers.WithEmpresaCalidadProcesosPermissions(dbEmpresas, dbSuper, handlers.EmpresaModuloColombiaHandler(dbEmpresas, "calidad_procesos")))
-	for _, moduloVertical := range handlers.NuevosVerticalesEmpresaModules() {
+	for _, moduloVertical := range handlers.NuevasPlantillasEmpresaModules() {
 		moduloVertical := moduloVertical
 		http.HandleFunc("/api/empresa/"+moduloVertical, handlers.WithEmpresaModuloVerticalPermissions(dbEmpresas, dbSuper, moduloVertical, handlers.EmpresaModuloColombiaHandler(dbEmpresas, moduloVertical)))
 	}

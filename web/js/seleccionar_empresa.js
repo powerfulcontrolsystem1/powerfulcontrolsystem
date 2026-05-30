@@ -9,11 +9,11 @@
   var currentActiveByEmpresa = {};
   var shareNoticeEl = document.getElementById("selectorShareNotice");
   var shareInvitesPanel = null;
-  var nuevosVerticalesCatalog = Array.isArray(window.PCS_NUEVOS_VERTICALES) ? window.PCS_NUEVOS_VERTICALES.slice() : [];
-  var nuevosVerticalesByModule = {};
-  nuevosVerticalesCatalog.forEach(function (item) {
+  var nuevasPlantillasCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
+  var nuevasPlantillasByModule = {};
+  nuevasPlantillasCatalog.forEach(function (item) {
     var module = String(item && item.module ? item.module : "").trim().toLowerCase();
-    if (module) nuevosVerticalesByModule[module] = item;
+    if (module) nuevasPlantillasByModule[module] = item;
   });
   var empresaShareModuleCatalog = [
     ["ventas", "Ventas"],
@@ -485,8 +485,8 @@
   function getVerticalByTypeName(tipoNombre) {
     var normalized = normalizeCompanyTypeName(tipoNombre);
     if (!normalized) return null;
-    for (var i = 0; i < nuevosVerticalesCatalog.length; i += 1) {
-      var item = nuevosVerticalesCatalog[i];
+    for (var i = 0; i < nuevasPlantillasCatalog.length; i += 1) {
+      var item = nuevasPlantillasCatalog[i];
       var moduleText = normalizeCompanyTypeName(String(item && item.module ? item.module : "").replace(/_/g, " "));
       var titleText = normalizeCompanyTypeName([
         item && item.title,
@@ -513,7 +513,7 @@
     if (!preview || !select) return;
     var option = select.options ? select.options[select.selectedIndex] : null;
     var tipoNombre = option ? String(option.text || "").trim() : "";
-    var vertical = getVerticalByTypeName(tipoNombre);
+    var plantilla = getVerticalByTypeName(tipoNombre);
     if (!vertical) {
       preview.hidden = true;
       preview.innerHTML = "";
@@ -526,7 +526,7 @@
       '<img src="' + escapeHtml(vertical.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
       "</div>" +
       '<div class="selector-type-preview__body">' +
-      '<div class="selector-type-preview__kicker">Vertical profesional</div>' +
+      '<div class="selector-type-preview__kicker">Plantilla profesional</div>' +
       '<strong>' + escapeHtml(vertical.fullTitle || vertical.title || tipoNombre) + "</strong>" +
       '<p>' + escapeHtml(vertical.lead || vertical.summary || "Tipo de empresa con preconfiguracion, licencias y modulo operativo propio.") + "</p>" +
       (sections.length ? '<div class="selector-type-preview__chips">' + sections.map(function (section) {
@@ -537,16 +537,16 @@
 
   function getEmpresaTypeVisual(empresa) {
     var tipoNombre = String(empresa && empresa.tipo_nombre ? empresa.tipo_nombre : "").trim();
-    var vertical = getVerticalByTypeName(tipoNombre);
+    var plantilla = getVerticalByTypeName(tipoNombre);
     if (vertical) {
       return {
         tone: getVerticalTone(vertical),
         icon: vertical.icon || "/img/company-briefcase-color.svg",
-        alt: "Icono de " + (vertical.title || "vertical empresarial"),
-        eyebrow: "Vertical profesional",
-        activeCopy: "Empresa lista para operar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con flujo, roles, permisos, licencias y reportes del motor vertical.",
-        pendingCopy: "Activa una licencia vertical para habilitar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con configuracion inicial, roles y ruta de trabajo.",
-        label: vertical.fullTitle || vertical.title || tipoNombre || "Vertical"
+        alt: "Icono de " + (vertical.title || "plantilla empresarial"),
+        eyebrow: "Plantilla profesional",
+        activeCopy: "Empresa lista para operar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con flujo, roles, permisos, licencias y reportes del motor de plantilla.",
+        pendingCopy: "Activa una licencia de plantilla para habilitar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con configuracion inicial, roles y ruta de trabajo.",
+        label: vertical.fullTitle || vertical.title || tipoNombre || "Plantilla"
       };
     }
     var normalized = normalizeCompanyTypeName(tipoNombre);
@@ -1590,7 +1590,7 @@
           opt.value = t.nombre;
           opt.text = t.nombre;
           opt.dataset.id = t.id;
-          var vertical = getVerticalByTypeName(t.nombre);
+          var plantilla = getVerticalByTypeName(t.nombre);
           if (vertical) {
             opt.dataset.verticalModule = vertical.module || "";
             opt.dataset.verticalTitle = vertical.fullTitle || vertical.title || "";
@@ -1872,9 +1872,15 @@
 
     var form = document.getElementById("form");
     if (!form) return;
+    var createEmpresaSubmitting = false;
 
     form.onsubmit = async function (e) {
       e.preventDefault();
+      if (createEmpresaSubmitting) {
+        var currentMsg = document.getElementById("msg");
+        if (currentMsg) currentMsg.innerText = "La empresa se esta creando. Espera un momento.";
+        return;
+      }
       var tipoSelect = document.getElementById("tipo_id");
       var selectedOption = tipoSelect && tipoSelect.options ? tipoSelect.options[tipoSelect.selectedIndex] : null;
       var tipoID = 0;
@@ -1891,7 +1897,15 @@
         observaciones: document.getElementById("observaciones").value.trim(),
         usuario_creador: "",
       };
+      var saveBtn = document.getElementById("saveBtn");
+      var originalSaveText = saveBtn ? saveBtn.textContent : "";
       try {
+        createEmpresaSubmitting = true;
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.setAttribute("aria-busy", "true");
+          saveBtn.textContent = "Creando...";
+        }
         var meRes = await fetch("/me");
         if (meRes.ok) {
           var me = await meRes.json();
@@ -1930,6 +1944,13 @@
         await render();
       } catch (err) {
         document.getElementById("msg").innerText = err.message;
+      } finally {
+        createEmpresaSubmitting = false;
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.removeAttribute("aria-busy");
+          saveBtn.textContent = originalSaveText || "Guardar";
+        }
       }
     };
 

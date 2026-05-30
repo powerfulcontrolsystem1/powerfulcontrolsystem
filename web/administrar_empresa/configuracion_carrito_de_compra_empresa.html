@@ -179,6 +179,12 @@
               Habilitar modulo Domotica
             </label>
           </div>
+          <div class="form-col">
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+              <input id="carritoCfgTarjetaDomotica" type="checkbox" checked>
+              Mostrar tarjeta Domotica automaticamente
+            </label>
+          </div>
         </div>
 
         <div class="empresa-section mt-12">
@@ -501,6 +507,7 @@
         mostrar_tarjeta_cobro_estados: false,
         mostrar_tarjeta_acciones_carrito: true,
         mostrar_control_electrico_carrito: true,
+        mostrar_tarjeta_domotica_carrito: true,
         mostrar_tarjeta_valores_pago: true,
         mostrar_tarjeta_comision: false,
         mostrar_tarjeta_vip_cliente: true,
@@ -557,6 +564,9 @@
         mostrar_tarjeta_cobro_estados: src.mostrar_tarjeta_cobro_estados === undefined ? base.mostrar_tarjeta_cobro_estados : !!src.mostrar_tarjeta_cobro_estados,
         mostrar_tarjeta_acciones_carrito: src.mostrar_tarjeta_acciones_carrito === undefined ? base.mostrar_tarjeta_acciones_carrito : !!src.mostrar_tarjeta_acciones_carrito,
         mostrar_control_electrico_carrito: src.mostrar_control_electrico_carrito === undefined ? base.mostrar_control_electrico_carrito : !!src.mostrar_control_electrico_carrito,
+        mostrar_tarjeta_domotica_carrito: src.mostrar_tarjeta_domotica_carrito === undefined
+          ? (src.mostrar_control_electrico_carrito === undefined ? base.mostrar_tarjeta_domotica_carrito : !!src.mostrar_control_electrico_carrito)
+          : !!src.mostrar_tarjeta_domotica_carrito,
         mostrar_tarjeta_valores_pago: src.mostrar_tarjeta_valores_pago === undefined ? base.mostrar_tarjeta_valores_pago : !!src.mostrar_tarjeta_valores_pago,
         mostrar_tarjeta_comision: src.mostrar_tarjeta_comision === undefined ? base.mostrar_tarjeta_comision : !!src.mostrar_tarjeta_comision,
         mostrar_tarjeta_vip_cliente: src.mostrar_tarjeta_vip_cliente === undefined ? base.mostrar_tarjeta_vip_cliente : !!src.mostrar_tarjeta_vip_cliente,
@@ -805,6 +815,7 @@
       document.getElementById('carritoCfgTarjetaComision').checked = !!normalized.mostrar_tarjeta_comision;
       document.getElementById('carritoCfgTarjetaVip').checked = !!normalized.mostrar_tarjeta_vip_cliente;
       document.getElementById('carritoCfgControlElectrico').checked = !!normalized.mostrar_control_electrico_carrito;
+      document.getElementById('carritoCfgTarjetaDomotica').checked = !!normalized.mostrar_tarjeta_domotica_carrito;
       document.getElementById('carritoCfgBotonDescuentos').checked = !!normalized.mostrar_boton_descuentos_carrito;
       document.getElementById('carritoCfgBotonCambiarTarifa').checked = !!normalized.mostrar_boton_cambiar_tarifa_carrito;
       document.getElementById('carritoCfgBotonControlElectrico').checked = !!normalized.mostrar_boton_control_electrico_carrito;
@@ -858,6 +869,7 @@
           'carritoCfgTarjetaComision',
           'carritoCfgTarjetaVip',
           'carritoCfgControlElectrico',
+          'carritoCfgTarjetaDomotica',
           'carritoCfgBotonDescuentos',
           'carritoCfgBotonCambiarTarifa',
           'carritoCfgBotonControlElectrico',
@@ -920,6 +932,7 @@
           mostrar_tarjeta_comision: document.getElementById('carritoCfgTarjetaComision').checked,
           mostrar_tarjeta_vip_cliente: document.getElementById('carritoCfgTarjetaVip').checked,
           mostrar_control_electrico_carrito: document.getElementById('carritoCfgControlElectrico').checked,
+          mostrar_tarjeta_domotica_carrito: document.getElementById('carritoCfgTarjetaDomotica').checked,
           mostrar_boton_descuentos_carrito: document.getElementById('carritoCfgBotonDescuentos').checked,
           mostrar_boton_cambiar_tarifa_carrito: document.getElementById('carritoCfgBotonCambiarTarifa').checked,
           mostrar_boton_control_electrico_carrito: document.getElementById('carritoCfgBotonControlElectrico').checked,

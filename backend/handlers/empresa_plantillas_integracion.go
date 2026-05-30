@@ -39,7 +39,7 @@ type empresaVerticalIntegracionItem struct {
 	ConfigurationScope   []string `json:"configuration_scope,omitempty"`
 }
 
-var empresaVerticalesCoreModules = []string{"clientes", "inventario", "ventas", "pagos", "finanzas", "facturacion", "reportes", "seguridad"}
+var empresaPlantillasCoreModules = []string{"clientes", "inventario", "ventas", "pagos", "finanzas", "facturacion", "reportes", "seguridad"}
 
 type empresaVerticalIntegracionDetalle struct {
 	TemplateActivates    []string
@@ -54,13 +54,13 @@ type empresaVerticalIntegracionDetalle struct {
 	FinancialReports     []string
 }
 
-func EmpresaVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
+func EmpresaPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		items := buildEmpresaVerticalesIntegracionCatalogo()
+		items := buildEmpresaPlantillasIntegracionCatalogo()
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"total": len(items),
 			"items": items,
@@ -68,13 +68,13 @@ func EmpresaVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func SuperVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
+func SuperPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		items := buildEmpresaVerticalesIntegracionCatalogo()
+		items := buildEmpresaPlantillasIntegracionCatalogo()
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"total": len(items),
 			"items": items,
@@ -82,13 +82,13 @@ func SuperVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func PublicVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
+func PublicPlantillasIntegracionCatalogoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		items := buildEmpresaVerticalesIntegracionCatalogo()
+		items := buildEmpresaPlantillasIntegracionCatalogo()
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":    true,
 			"total": len(items),
@@ -97,7 +97,7 @@ func PublicVerticalesIntegracionCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func buildEmpresaVerticalesIntegracionCatalogo() []empresaVerticalIntegracionItem {
+func buildEmpresaPlantillasIntegracionCatalogo() []empresaVerticalIntegracionItem {
 	items := []empresaVerticalIntegracionItem{
 		withVerticalFusion(classicVertical("gimnasio", "linkGimnasio", "Gimnasio", "Socios, planes, acceso, clases, asistencias y dispositivos", "Plantilla fitness conectada al nucleo comun: socios, planes y pagos operan desde clientes, servicios, ventas y pagos centrales."), nil, []string{"estaciones", "turnos_atencion"}, []string{"club_deportivo"}),
 		withVerticalFusion(classicVertical("odontologia", "linkConsultorioOdontologico", "Odontologia", "Historia clinica, odontograma, profesionales, consultorios y citas clinicas", "Plantilla clinica conectada al nucleo comun: pacientes, tratamientos y recaudos usan clientes, servicios, ventas y pagos centrales."), []string{"consultorio_odontologico"}, []string{"turnos_atencion", "estaciones"}, []string{"clinica_consultorios"}),
@@ -110,7 +110,7 @@ func buildEmpresaVerticalesIntegracionCatalogo() []empresaVerticalIntegracionIte
 		classicVertical("drogueria_farmacia", "linkDrogueriaFarmacia", "Drogueria / farmacia", "Expediente sanitario, lotes, INVIMA, formulas, controlados y farmacovigilancia", "Plantilla sanitaria conectada al nucleo comun: productos, inventario, compras, clientes, ventas y facturacion siguen en modulos centrales."),
 		classicVertical("aiu_construccion", "linkAIUConstruccion", "Construccion / AIU", "Capitulos, AIU, presupuestos de obra, retenciones, anticipo, garantia y auditoria tecnica", "Plantilla de construccion conectada al nucleo comun: clientes, contratos, conceptos, ventas, impuestos y reportes se enlazan sin duplicar documentos comerciales."),
 	}
-	items = append(items, nuevosVerticalesIntegracionItems()...)
+	items = append(items, nuevasPlantillasIntegracionItems()...)
 	for idx := range items {
 		items[idx] = enrichEmpresaVerticalReadiness(items[idx])
 	}
@@ -147,7 +147,7 @@ func classicVertical(module, page, title, ownFlow, reason string) empresaVertica
 		Titulo:               strings.TrimSpace(title),
 		IntegrationStatus:    "plantilla_integrada_nucleo",
 		OperationalVisible:   true,
-		CoreModules:          append([]string{}, empresaVerticalesCoreModules...),
+		CoreModules:          append([]string{}, empresaPlantillasCoreModules...),
 		TemplateActivates:    copyStringSlice(detail.TemplateActivates),
 		TablesTouched:        copyStringSlice(detail.TablesTouched),
 		RequiredPermissions:  copyStringSlice(detail.RequiredPermissions),
@@ -165,8 +165,8 @@ func classicVertical(module, page, title, ownFlow, reason string) empresaVertica
 	}
 }
 
-func nuevosVerticalesIntegracionItems() []empresaVerticalIntegracionItem {
-	catalog := dbpkg.NuevosVerticalesTipoEmpresaCatalog()
+func nuevasPlantillasIntegracionItems() []empresaVerticalIntegracionItem {
+	catalog := dbpkg.NuevasPlantillasTipoEmpresaCatalog()
 	out := make([]empresaVerticalIntegracionItem, 0, len(catalog))
 	for _, item := range catalog {
 		modulo := strings.ToLower(strings.TrimSpace(item.Modulo))
@@ -182,7 +182,7 @@ func nuevosVerticalesIntegracionItems() []empresaVerticalIntegracionItem {
 		title := strings.TrimSpace(firstNonEmptyString(item.Nombre, plantilla.Titulo, modulo))
 		reason := strings.TrimSpace(integracion.MotivoDecision)
 		if reason == "" {
-			reason = "Plantilla vertical real conectada al nucleo comun sin duplicar clientes, productos, ventas, pagos ni reportes."
+			reason = "Plantilla real conectada al nucleo comun sin duplicar clientes, productos, ventas, pagos ni reportes."
 		}
 		out = append(out, empresaVerticalIntegracionItem{
 			ID:                   page,
@@ -191,7 +191,7 @@ func nuevosVerticalesIntegracionItems() []empresaVerticalIntegracionItem {
 			Titulo:               title,
 			IntegrationStatus:    strings.TrimSpace(integracion.EstadoIntegracion),
 			OperationalVisible:   true,
-			CoreModules:          append([]string{}, empresaVerticalesCoreModules...),
+			CoreModules:          append([]string{}, empresaPlantillasCoreModules...),
 			TemplateActivates:    copyStringSlice(integracion.TemplateActivates),
 			TablesTouched:        copyStringSlice(integracion.TablesTouched),
 			RequiredPermissions:  copyStringSlice(integracion.RequiredPermissions),
@@ -276,7 +276,7 @@ func classicVerticalIntegrationDetail(module, page string) empresaVerticalIntegr
 	module = strings.ToLower(strings.TrimSpace(module))
 	page = strings.TrimSpace(page)
 	baseTables := []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"}
-	baseReports := []string{"reporte operativo del vertical", "ventas por servicio", "ingresos por periodo", "egresos por periodo", "auditoria por empresa"}
+	baseReports := []string{"reporte operativo de la plantilla", "ventas por servicio", "ingresos por periodo", "egresos por periodo", "auditoria por empresa"}
 	basePermissions := []string{
 		"seguridad:R",
 		module + ":R",
@@ -295,10 +295,10 @@ func classicVerticalIntegrationDetail(module, page string) empresaVerticalIntegr
 		ReportsProduced:      baseReports,
 		SaleFlow:             []string{"registro especializado", "cliente/servicio central", "carrito central", "pago o factura central", "ingreso conciliable en finanzas", "reporte consolidado"},
 		FinancialCoreModules: []string{"ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"},
-		IncomeFlow:           []string{"servicio/producto vendible del vertical", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
-		ExpenseFlow:          []string{"compra/gasto operativo del vertical", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
+		IncomeFlow:           []string{"servicio/producto vendible de la plantilla", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
+		ExpenseFlow:          []string{"compra/gasto operativo de la plantilla", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
 		FinancialTables:      []string{"carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"},
-		FinancialReports:     []string{"ingresos por vertical", "egresos por vertical", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
+		FinancialReports:     []string{"ingresos por plantilla", "egresos por plantilla", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
 	}
 	switch module {
 	case "gimnasio":

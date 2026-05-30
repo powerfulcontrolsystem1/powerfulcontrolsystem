@@ -332,7 +332,7 @@ func GetEmpresaModuloColombiaPlantilla(modulo string) EmpresaModuloColombiaPlant
 		EtiquetaReferencia: "Referencia",
 		MetadataEjemplo:    `{"nota":"detalle operativo"}`,
 	}
-	if plantilla, ok := empresaModuloColombiaPlantillasVerticales[modulo]; ok {
+	if plantilla, ok := empresaModuloColombiaPlantillasPlantillas[modulo]; ok {
 		base.Titulo = plantilla.Titulo
 		base.SeccionesFlujo = append([]string{}, GetEmpresaModuloColombiaSeccionesFlujo(modulo)...)
 		base.Tipos = append([]string{}, plantilla.Tipos...)
@@ -2074,7 +2074,7 @@ func normalizeModuloColombiaEvento(v string) string {
 
 func NormalizeEmpresaModuloColombia(v string) string {
 	clean := strings.ToLower(strings.TrimSpace(v))
-	if _, ok := empresaModuloColombiaPlantillasVerticales[clean]; ok {
+	if _, ok := empresaModuloColombiaPlantillasPlantillas[clean]; ok {
 		return clean
 	}
 	switch clean {

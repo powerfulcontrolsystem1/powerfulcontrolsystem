@@ -32,7 +32,7 @@ type nuevoVerticalBootstrapMeta struct {
 	Roles         []string
 }
 
-var nuevosVerticalesBootstrapMeta = []nuevoVerticalBootstrapMeta{
+var nuevasPlantillasBootstrapMeta = []nuevoVerticalBootstrapMeta{
 	{"agencia_viajes", "Asesor", 3, []string{"asesor_viajes", "operacion", "caja"}},
 	{"operador_turistico", "Ruta", 4, []string{"coordinador_tours", "guia", "caja"}},
 	{"eventos_boleteria", "Taquilla", 4, []string{"productor_eventos", "taquilla", "control_acceso", "caja"}},
@@ -55,9 +55,9 @@ var nuevosVerticalesBootstrapMeta = []nuevoVerticalBootstrapMeta{
 	{"capacitacion_empresarial", "Aula", 5, []string{"coordinador_capacitacion", "instructor", "caja"}},
 }
 
-var nuevosVerticalesTipoEmpresaCatalog = buildNuevosVerticalesTipoEmpresaCatalog()
+var nuevasPlantillasTipoEmpresaCatalog = buildNuevasPlantillasTipoEmpresaCatalog()
 
-var nuevosVerticalesProduccionMasiva = map[string]int{
+var nuevasPlantillasProduccionMasiva = map[string]int{
 	"salon_spa":                1,
 	"veterinaria_petshop":      2,
 	"clinica_consultorios":     3,
@@ -80,9 +80,9 @@ var nuevosVerticalesProduccionMasiva = map[string]int{
 	"capacitacion_empresarial": 20,
 }
 
-func buildNuevosVerticalesTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
-	out := make([]NuevoVerticalTipoEmpresa, 0, len(nuevosVerticalesBootstrapMeta))
-	for _, meta := range nuevosVerticalesBootstrapMeta {
+func buildNuevasPlantillasTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
+	out := make([]NuevoVerticalTipoEmpresa, 0, len(nuevasPlantillasBootstrapMeta))
+	for _, meta := range nuevasPlantillasBootstrapMeta {
 		modulo := NormalizeEmpresaModuloColombia(meta.Modulo)
 		plantilla := GetEmpresaModuloColombiaPlantilla(modulo)
 		if modulo == "" || strings.TrimSpace(plantilla.Titulo) == "" {
@@ -112,24 +112,24 @@ func nuevoVerticalObservaciones(plantilla EmpresaModuloColombiaPlantilla) string
 	return "Gestion profesional de " + tipos + " con categorias de " + categorias + "."
 }
 
-func NuevosVerticalesTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
-	out := make([]NuevoVerticalTipoEmpresa, len(nuevosVerticalesTipoEmpresaCatalog))
-	for i, item := range nuevosVerticalesTipoEmpresaCatalog {
+func NuevasPlantillasTipoEmpresaCatalog() []NuevoVerticalTipoEmpresa {
+	out := make([]NuevoVerticalTipoEmpresa, len(nuevasPlantillasTipoEmpresaCatalog))
+	for i, item := range nuevasPlantillasTipoEmpresaCatalog {
 		out[i] = item
 		out[i].Roles = append([]string{}, item.Roles...)
 	}
 	return out
 }
 
-func NuevosVerticalesProduccionMasivaSeleccionados() []string {
+func NuevasPlantillasProduccionMasivaSeleccionados() []string {
 	maxRank := 0
-	for _, rank := range nuevosVerticalesProduccionMasiva {
+	for _, rank := range nuevasPlantillasProduccionMasiva {
 		if rank > maxRank {
 			maxRank = rank
 		}
 	}
 	out := make([]string, maxRank)
-	for modulo, rank := range nuevosVerticalesProduccionMasiva {
+	for modulo, rank := range nuevasPlantillasProduccionMasiva {
 		if rank >= 1 && rank <= len(out) {
 			out[rank-1] = modulo
 		}
@@ -139,7 +139,7 @@ func NuevosVerticalesProduccionMasivaSeleccionados() []string {
 
 func NuevoVerticalProduccionMasivaRank(modulo string) int {
 	modulo = NormalizeEmpresaModuloColombia(modulo)
-	return nuevosVerticalesProduccionMasiva[modulo]
+	return nuevasPlantillasProduccionMasiva[modulo]
 }
 
 func BuildTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPreconfigIntegracionVertical {
@@ -157,10 +157,10 @@ func BuildTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPre
 	if strings.TrimSpace(plantilla.Titulo) == "" {
 		return buildClassicTipoEmpresaPreconfigIntegracionVertical(clean)
 	}
-	rank := nuevosVerticalesProduccionMasiva[clean]
+	rank := nuevasPlantillasProduccionMasiva[clean]
 	produccion := rank > 0
 	decision := "integrar_v1_produccion_masiva"
-	motivo := "Plantilla real de produccion masiva: opera sobre clientes, servicios, ventas, pagos, facturacion, reportes y seguridad centrales, conservando solo la especialidad del vertical en empresa_modulos_colombia."
+	motivo := "Plantilla real de produccion masiva: opera sobre clientes, servicios, ventas, pagos, facturacion, reportes y seguridad centrales, conservando solo la especialidad de la plantilla en empresa_modulos_colombia."
 	if produccion {
 		decision = "integrar_v1_produccion_masiva"
 	}
@@ -177,19 +177,19 @@ func BuildTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmpresaPre
 		TemplateActivates:    []string{clean, "clientes", "inventario/servicios", "ventas", "pagos", "facturacion", "reportes", "seguridad", "empresa_modulos_colombia"},
 		TablesTouched:        []string{"empresa_modulos_colombia_registros", "empresa_modulos_colombia_eventos", "empresa_modulos_colombia_evidencias", "empresa_modulos_colombia_aprobaciones", "empresa_modulos_colombia_tareas", "clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"},
 		RequiredPermissions:  []string{"seguridad:R", clean + ":R", clean + ":C", "clientes:R/C", "inventario:R/C servicios", "ventas:C", "pagos:C", "finanzas:R/C", "reportes:R"},
-		SaleFlow:             []string{"registro del vertical", "cliente y servicio central", "cotizacion o venta central", "pago/facturacion central", "ingreso conciliable en finanzas", "seguimiento y cierre por empresa_modulos_colombia"},
-		ReportsProduced:      []string{"dashboard del vertical", "agenda y SLA", "responsables", "riesgo operativo", "ventas centrales", "ingresos y egresos del nucleo", "auditoria por empresa"},
+		SaleFlow:             []string{"registro de la plantilla", "cliente y servicio central", "cotizacion o venta central", "pago/facturacion central", "ingreso conciliable en finanzas", "seguimiento y cierre por empresa_modulos_colombia"},
+		ReportsProduced:      []string{"dashboard de la plantilla", "agenda y SLA", "responsables", "riesgo operativo", "ventas centrales", "ingresos y egresos del nucleo", "auditoria por empresa"},
 		FinancialCoreModules: []string{"ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"},
-		IncomeFlow:           []string{"servicio/producto vendible del vertical", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
-		ExpenseFlow:          []string{"compra/gasto operativo del vertical", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
+		IncomeFlow:           []string{"servicio/producto vendible de la plantilla", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
+		ExpenseFlow:          []string{"compra/gasto operativo de la plantilla", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
 		FinancialTables:      []string{"carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"},
-		FinancialReports:     []string{"ingresos por vertical", "egresos por vertical", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
+		FinancialReports:     []string{"ingresos por plantilla", "egresos por plantilla", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
 	}
 }
 
 func isNuevoVerticalTipoEmpresaModulo(modulo string) bool {
 	modulo = NormalizeEmpresaModuloColombia(modulo)
-	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+	for _, item := range nuevasPlantillasTipoEmpresaCatalog {
 		if item.Modulo == modulo {
 			return true
 		}
@@ -205,17 +205,17 @@ func buildClassicTipoEmpresaPreconfigIntegracionVertical(modulo string) *TipoEmp
 			EstadoIntegracion:    "plantilla_integrada_nucleo",
 			Decision:             "mantener_como_plantilla",
 			ProduccionMasiva:     false,
-			MotivoDecision:       "Vertical clasico conectado a preconfiguracion; la produccion masiva de nuevos verticales se gobierna en el catalogo de 20 plantillas nuevas.",
+			MotivoDecision:       "Plantilla clasico conectado a preconfiguracion; la produccion masiva de nuevas plantillas se gobierna en el catalogo de 20 plantillas nuevas.",
 			TemplateActivates:    []string{modulo, "clientes", "inventario/servicios", "ventas", "pagos", "reportes", "seguridad"},
 			TablesTouched:        []string{"clientes", "servicios", "carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos"},
 			RequiredPermissions:  []string{"seguridad:R", modulo + ":R", modulo + ":C", "ventas:C", "pagos:C", "finanzas:R/C", "reportes:R"},
 			SaleFlow:             []string{"registro especializado", "cliente/servicio central", "carrito central", "pago o factura central", "ingreso conciliable en finanzas", "reporte consolidado"},
 			ReportsProduced:      []string{"reporte operativo", "ventas centrales", "ingresos y egresos del nucleo", "auditoria por empresa"},
 			FinancialCoreModules: []string{"ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"},
-			IncomeFlow:           []string{"servicio/producto vendible del vertical", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
-			ExpenseFlow:          []string{"compra/gasto operativo del vertical", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
+			IncomeFlow:           []string{"servicio/producto vendible de la plantilla", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"},
+			ExpenseFlow:          []string{"compra/gasto operativo de la plantilla", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"},
 			FinancialTables:      []string{"carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"},
-			FinancialReports:     []string{"ingresos por vertical", "egresos por vertical", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
+			FinancialReports:     []string{"ingresos por plantilla", "egresos por plantilla", "margen operativo", "flujo de caja", "estado de resultados por empresa"},
 		}
 	default:
 		return nil
@@ -258,7 +258,7 @@ func DefaultNuevoVerticalLicenciaPlans(item NuevoVerticalTipoEmpresa) []NuevoVer
 	}
 }
 
-func EnsureNuevosVerticalesTipoEmpresaYLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {
+func EnsureNuevasPlantillasTipoEmpresaYLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {
 	if dbConn == nil {
 		return 0, 0, errors.New("db connection is nil")
 	}
@@ -271,7 +271,7 @@ func EnsureNuevosVerticalesTipoEmpresaYLicencias(dbConn *sql.DB, usuario string)
 	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
 		return 0, 0, err
 	}
-	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+	for _, item := range nuevasPlantillasTipoEmpresaCatalog {
 		tipoID, err := ensureNuevoVerticalTipoEmpresa(dbConn, item)
 		if err != nil {
 			return tiposAsegurados, licenciasAseguradas, err
@@ -290,7 +290,7 @@ func EnsureNuevosVerticalesTipoEmpresaYLicencias(dbConn *sql.DB, usuario string)
 	return tiposAsegurados, licenciasAseguradas, nil
 }
 
-func EnsureNuevosVerticalesProduccionMasivaLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {
+func EnsureNuevasPlantillasProduccionMasivaLicencias(dbConn *sql.DB, usuario string) (tiposAsegurados, licenciasAseguradas int, err error) {
 	if dbConn == nil {
 		return 0, 0, errors.New("db connection is nil")
 	}
@@ -303,10 +303,10 @@ func EnsureNuevosVerticalesProduccionMasivaLicencias(dbConn *sql.DB, usuario str
 	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
 		return 0, 0, err
 	}
-	for _, modulo := range NuevosVerticalesProduccionMasivaSeleccionados() {
+	for _, modulo := range NuevasPlantillasProduccionMasivaSeleccionados() {
 		item, ok := getNuevoVerticalTipoEmpresaByModulo(modulo)
 		if !ok {
-			return tiposAsegurados, licenciasAseguradas, fmt.Errorf("vertical de produccion no encontrado: %s", modulo)
+			return tiposAsegurados, licenciasAseguradas, fmt.Errorf("plantilla de produccion no encontrado: %s", modulo)
 		}
 		tipoID, err := ensureNuevoVerticalTipoEmpresa(dbConn, item)
 		if err != nil {
@@ -328,7 +328,7 @@ func EnsureNuevosVerticalesProduccionMasivaLicencias(dbConn *sql.DB, usuario str
 
 func getNuevoVerticalTipoEmpresaByModulo(modulo string) (NuevoVerticalTipoEmpresa, bool) {
 	modulo = NormalizeEmpresaModuloColombia(modulo)
-	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+	for _, item := range nuevasPlantillasTipoEmpresaCatalog {
 		if item.Modulo == modulo {
 			return item, true
 		}
@@ -359,11 +359,11 @@ func ensureNuevoVerticalTipoEmpresa(dbConn *sql.DB, item NuevoVerticalTipoEmpres
 
 func ensureNuevoVerticalLicenciaPlan(dbConn *sql.DB, tipoID int64, usuario string, plan NuevoVerticalLicenciaPlan) error {
 	if tipoID <= 0 {
-		return fmt.Errorf("tipo_id nuevo vertical invalido")
+		return fmt.Errorf("tipo_id nuevo plantilla invalido")
 	}
 	usuario = strings.TrimSpace(usuario)
 	if usuario == "" {
-		usuario = "sistema.verticales"
+		usuario = "sistema.plantillas"
 	}
 	nowExpr := sqlNowExpr()
 	var existingID int64
@@ -429,7 +429,7 @@ func defaultNuevoVerticalTipoEmpresaPreconfigTemplate(tipoNombre string) (TipoEm
 	categoriaSecundaria := nthString(plantilla.Categorias, 1, "administracion")
 	prefix := strings.ToUpper(strings.ReplaceAll(item.Modulo, "_", "-"))
 	template := withPreconfigOperacion(newDefaultTipoEmpresaPreconfigTemplate(prefix, item.StationPrefix, item.StationCount, []TipoEmpresaPreconfigProducto{
-		productoPreconfig("BASE-"+prefix+"-001", plantilla.Titulo+" - "+strings.ReplaceAll(tipoPrincipal, "_", " "), categoriaPrincipal, "Producto o servicio guia para iniciar operacion del vertical.", 0, 85000, 0),
+		productoPreconfig("BASE-"+prefix+"-001", plantilla.Titulo+" - "+strings.ReplaceAll(tipoPrincipal, "_", " "), categoriaPrincipal, "Producto o servicio guia para iniciar operacion de la plantilla.", 0, 85000, 0),
 		productoPreconfig("BASE-"+prefix+"-002", plantilla.Titulo+" - "+strings.ReplaceAll(tipoSecundario, "_", " "), categoriaSecundaria, "Concepto guia para seguimiento, aprobacion o control documental.", 0, 120000, 0),
 		productoPreconfig("BASE-"+prefix+"-003", "Paquete operativo "+plantilla.Titulo, "Paquetes", "Paquete operativo para venta, agenda, seguimiento y reporte.", 0, 250000, 0),
 	}, defaultNuevoVerticalUsuarios(item), "Asistente para "+strings.ToLower(plantilla.Titulo)+": configuracion, registros, agenda, SLA, evidencias, aprobaciones, reportes y seguimiento comercial."), operacionPreconfig(item.Modulo, item.StationPrefix, pluralizeTipoEmpresaStationName(item.StationPrefix), item.StationCount > 0, true, true, firstString(item.Roles, "operacion"), "servicio", 15, item.Roles))
@@ -455,7 +455,7 @@ func defaultNuevoVerticalUsuarios(item NuevoVerticalTipoEmpresa) []TipoEmpresaPr
 }
 
 func matchNuevoVerticalTipoEmpresa(tipoNombre string) (NuevoVerticalTipoEmpresa, bool) {
-	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+	for _, item := range nuevasPlantillasTipoEmpresaCatalog {
 		if nuevoVerticalTipoEmpresaMatches(tipoNombre, item) {
 			return item, true
 		}
@@ -465,7 +465,7 @@ func matchNuevoVerticalTipoEmpresa(tipoNombre string) (NuevoVerticalTipoEmpresa,
 
 func matchNuevoVerticalTipoEmpresaTitulo(tipoNombre string) (NuevoVerticalTipoEmpresa, bool) {
 	clean := normalizeTipoEmpresaName(tipoNombre)
-	for _, item := range nuevosVerticalesTipoEmpresaCatalog {
+	for _, item := range nuevasPlantillasTipoEmpresaCatalog {
 		if clean == normalizeTipoEmpresaName(item.Nombre) {
 			return item, true
 		}

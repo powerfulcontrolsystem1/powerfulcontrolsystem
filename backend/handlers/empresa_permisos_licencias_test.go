@@ -187,10 +187,10 @@ func TestEmpresaVerticalScopeKeepsCoreAndOnlyChosenVertical(t *testing.T) {
 	filtered := applyEmpresaVerticalScopeToModuleRows(rows, scope)
 
 	if !filtered[0].Acciones[permActionRead] || !filtered[1].Acciones[permActionCreate] {
-		t.Fatal("expected core modules to remain enabled under vertical scope")
+		t.Fatal("expected core modules to remain enabled under plantilla scope")
 	}
 	if !filtered[2].Acciones[permActionCreate] {
-		t.Fatal("expected selected gimnasio vertical to remain enabled")
+		t.Fatal("expected selected gimnasio plantilla to remain enabled")
 	}
 	for _, action := range permissionActionsCatalogOrdered {
 		if filtered[3].Acciones[action] {
@@ -305,7 +305,7 @@ func TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups(t *testing.T) 
 	legacyGroups := map[string]bool{
 		"Operación diaria y ventas":                true,
 		"Operación y venta":                        true,
-		"Verticales de negocio":                    true,
+		"Plantillas de negocio":                    true,
 		"Inventario y compras":                     true,
 		"Inventario y catálogo":                    true,
 		"Compras":                                  true,

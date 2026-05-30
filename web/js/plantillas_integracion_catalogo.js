@@ -3,10 +3,10 @@
 
   var CORE_MODULES = ["clientes", "inventario", "ventas", "pagos", "finanzas", "facturacion", "reportes", "seguridad"];
   var FINANCIAL_CORE_MODULES = ["ventas", "pagos", "finanzas", "bancos_pagos", "tesoreria_presupuesto", "reportes"];
-  var DEFAULT_INCOME_FLOW = ["servicio/producto vendible del vertical", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"];
-  var DEFAULT_EXPENSE_FLOW = ["compra/gasto operativo del vertical", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"];
+  var DEFAULT_INCOME_FLOW = ["servicio/producto vendible de la plantilla", "carrito o venta central", "pago central", "movimiento ingreso en empresa_finanzas_movimientos", "reporte financiero consolidado"];
+  var DEFAULT_EXPENSE_FLOW = ["compra/gasto operativo de la plantilla", "soporte o documento central", "movimiento egreso en empresa_finanzas_movimientos", "conciliacion bancaria/tesoreria", "reporte financiero consolidado"];
   var DEFAULT_FINANCIAL_TABLES = ["carritos_compras", "carrito_compra_items", "empresa_finanzas_movimientos", "empresa_finanzas_configuracion", "empresa_finanzas_periodos"];
-  var DEFAULT_FINANCIAL_REPORTS = ["ingresos por vertical", "egresos por vertical", "margen operativo", "flujo de caja", "estado de resultados por empresa"];
+  var DEFAULT_FINANCIAL_REPORTS = ["ingresos por plantilla", "egresos por plantilla", "margen operativo", "flujo de caja", "estado de resultados por empresa"];
 
   function applyFinancialDefaults(meta) {
     meta.coreModules = Array.isArray(meta.coreModules) && meta.coreModules.length ? meta.coreModules : CORE_MODULES.slice();
@@ -186,8 +186,8 @@
   }
 
   function ensureNewVerticalFallback() {
-    if (ensureNewVerticalFallback.done || !Array.isArray(window.PCS_NUEVOS_VERTICALES)) return;
-    window.PCS_NUEVOS_VERTICALES.forEach(function (item) {
+    if (ensureNewVerticalFallback.done || !Array.isArray(window.PCS_NUEVAS_PLANTILLAS)) return;
+    window.PCS_NUEVAS_PLANTILLAS.forEach(function (item) {
       if (!item || !item.module) return;
       var module = normalizeModule(item.module);
       if (!module || catalog[module]) return;

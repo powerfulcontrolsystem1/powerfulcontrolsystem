@@ -33,8 +33,8 @@ type empresaVerticalNuevoCatalogoItem struct {
 	Plantilla            dbpkg.EmpresaModuloColombiaPlantilla           `json:"plantilla"`
 }
 
-func empresaVerticalesNuevosPermisos() []empresaVerticalNuevoPermiso {
-	catalog := dbpkg.NuevosVerticalesTipoEmpresaCatalog()
+func empresaPlantillasNuevosPermisos() []empresaVerticalNuevoPermiso {
+	catalog := dbpkg.NuevasPlantillasTipoEmpresaCatalog()
 	out := make([]empresaVerticalNuevoPermiso, 0, len(catalog))
 	for _, item := range catalog {
 		out = append(out, empresaVerticalNuevoPermiso{
@@ -46,13 +46,13 @@ func empresaVerticalesNuevosPermisos() []empresaVerticalNuevoPermiso {
 	return out
 }
 
-func EmpresaVerticalesNuevosCatalogoHandler() http.HandlerFunc {
+func EmpresaPlantillasNuevosCatalogoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		items := buildEmpresaVerticalesNuevosCatalogo()
+		items := buildEmpresaPlantillasNuevosCatalogo()
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"total": len(items),
 			"items": items,
@@ -60,7 +60,7 @@ func EmpresaVerticalesNuevosCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
+func SuperPlantillasNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
@@ -72,12 +72,12 @@ func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 				http.Error(w, "db super no disponible", http.StatusInternalServerError)
 				return
 			}
-			tipos, licencias, err := dbpkg.EnsureNuevosVerticalesProduccionMasivaLicencias(dbSuper[0], "super.verticales_20")
+			tipos, licencias, err := dbpkg.EnsureNuevasPlantillasProduccionMasivaLicencias(dbSuper[0], "super.plantillas_20")
 			if err != nil {
-				http.Error(w, "no se pudieron asegurar verticales de produccion: "+err.Error(), http.StatusInternalServerError)
+				http.Error(w, "no se pudieron asegurar plantillas de produccion: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			items := buildEmpresaVerticalesNuevosCatalogo()
+			items := buildEmpresaPlantillasNuevosCatalogo()
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"ok":                   true,
 				"tipos_asegurados":     tipos,
@@ -91,7 +91,7 @@ func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		items := buildEmpresaVerticalesNuevosCatalogo()
+		items := buildEmpresaPlantillasNuevosCatalogo()
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"total": len(items),
 			"items": items,
@@ -99,13 +99,13 @@ func SuperVerticalesNuevosCatalogoHandler(dbSuper ...*sql.DB) http.HandlerFunc {
 	}
 }
 
-func PublicVerticalesNuevosCatalogoHandler() http.HandlerFunc {
+func PublicPlantillasNuevosCatalogoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "metodo no permitido", http.StatusMethodNotAllowed)
 			return
 		}
-		items := buildEmpresaVerticalesNuevosCatalogo()
+		items := buildEmpresaPlantillasNuevosCatalogo()
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":    true,
 			"total": len(items),
@@ -114,8 +114,8 @@ func PublicVerticalesNuevosCatalogoHandler() http.HandlerFunc {
 	}
 }
 
-func buildEmpresaVerticalesNuevosCatalogo() []empresaVerticalNuevoCatalogoItem {
-	catalog := dbpkg.NuevosVerticalesTipoEmpresaCatalog()
+func buildEmpresaPlantillasNuevosCatalogo() []empresaVerticalNuevoCatalogoItem {
+	catalog := dbpkg.NuevasPlantillasTipoEmpresaCatalog()
 	out := make([]empresaVerticalNuevoCatalogoItem, 0, len(catalog))
 	for _, item := range catalog {
 		modulo := strings.ToLower(strings.TrimSpace(item.Modulo))
@@ -154,8 +154,8 @@ func integrationDecision(integracion *dbpkg.TipoEmpresaPreconfigIntegracionVerti
 	return strings.TrimSpace(integracion.Decision)
 }
 
-var empresaVerticalesNuevosModuloSet = func() map[string]bool {
-	permisos := empresaVerticalesNuevosPermisos()
+var empresaPlantillasNuevosModuloSet = func() map[string]bool {
+	permisos := empresaPlantillasNuevosPermisos()
 	out := make(map[string]bool, len(permisos))
 	for _, item := range permisos {
 		out[item.Modulo] = true
@@ -163,8 +163,8 @@ var empresaVerticalesNuevosModuloSet = func() map[string]bool {
 	return out
 }()
 
-var empresaVerticalesNuevosPageByAPIPath = func() map[string]string {
-	permisos := empresaVerticalesNuevosPermisos()
+var empresaPlantillasNuevosPageByAPIPath = func() map[string]string {
+	permisos := empresaPlantillasNuevosPermisos()
 	out := make(map[string]string, len(permisos))
 	for _, item := range permisos {
 		out["/api/empresa/"+item.Modulo] = item.Page
@@ -173,15 +173,15 @@ var empresaVerticalesNuevosPageByAPIPath = func() map[string]string {
 }()
 
 func init() {
-	modulos := NuevosVerticalesEmpresaModules()
+	modulos := NuevasPlantillasEmpresaModules()
 	permissionPagesCatalogOrdered = append(permissionPagesCatalogOrdered, permissionPageRule{
-		PaginaClave: "linkNuevosVerticales",
+		PaginaClave: "linkNuevasPlantillas",
 		AnyModules:  modulos,
 		Accion:      permActionCreate,
-		Titulo:      "20 nuevos verticales empresariales",
-		Grupo:       "Verticales de negocio",
+		Titulo:      "20 nuevas plantillas empresariales",
+		Grupo:       "Plantillas de negocio",
 	})
-	for _, item := range empresaVerticalesNuevosPermisos() {
+	for _, item := range empresaPlantillasNuevosPermisos() {
 		permissionModulesCatalogOrdered = append(permissionModulesCatalogOrdered, item.Modulo)
 		permissionModuleDisplayNames[item.Modulo] = item.Titulo
 		permissionPagesCatalogOrdered = append(permissionPagesCatalogOrdered, permissionPageRule{
@@ -189,13 +189,13 @@ func init() {
 			Modulo:      item.Modulo,
 			Accion:      permActionCreate,
 			Titulo:      item.Titulo,
-			Grupo:       "Verticales de negocio",
+			Grupo:       "Plantillas de negocio",
 		})
 	}
 }
 
-func NuevosVerticalesEmpresaModules() []string {
-	permisos := empresaVerticalesNuevosPermisos()
+func NuevasPlantillasEmpresaModules() []string {
+	permisos := empresaPlantillasNuevosPermisos()
 	out := make([]string, 0, len(permisos))
 	for _, item := range permisos {
 		out = append(out, item.Modulo)
@@ -204,11 +204,11 @@ func NuevosVerticalesEmpresaModules() []string {
 }
 
 func isPermModuleNuevoVertical(module string) bool {
-	return empresaVerticalesNuevosModuloSet[strings.ToLower(strings.TrimSpace(module))]
+	return empresaPlantillasNuevosModuloSet[strings.ToLower(strings.TrimSpace(module))]
 }
 
 func permissionPageForNuevoVerticalAPIPath(path string) (string, bool) {
-	page, ok := empresaVerticalesNuevosPageByAPIPath[strings.ToLower(strings.TrimSpace(path))]
+	page, ok := empresaPlantillasNuevosPageByAPIPath[strings.ToLower(strings.TrimSpace(path))]
 	return page, ok
 }
 
@@ -216,7 +216,7 @@ func WithEmpresaModuloVerticalPermissions(dbEmp, dbSuper *sql.DB, modulo string,
 	clean := strings.ToLower(strings.TrimSpace(modulo))
 	if !isPermModuleNuevoVertical(clean) {
 		return func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "modulo vertical no soportado", http.StatusBadRequest)
+			http.Error(w, "modulo de plantilla no soportado", http.StatusBadRequest)
 		}
 	}
 	return withEmpresaRolePermissions(dbEmp, dbSuper, clean, resolveVerticalPermissionAction, next)

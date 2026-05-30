@@ -15,7 +15,7 @@
     { re: /correo|email|mail|gmail|smtp|enviar|invitacion|invitación/i, symbol: "@", tone: "purple" },
     { re: /whatsapp|compartir|share|publicar|red social|canales|digital|colaboracion|colaboración/i, symbol: "↗", tone: "teal" },
     { re: /cliente|usuario|empleado|asesor|administrador|\brol\b|permiso|vip|perfil|login|entrar|sesion|sesión/i, symbol: "ID", tone: "purple" },
-    { re: /producto|item|servicio|receta|inventario|bodega|stock|pedido|orden|soluciones|negocio|verticales/i, symbol: "■", tone: "teal" },
+    { re: /producto|item|servicio|receta|inventario|bodega|stock|pedido|orden|soluciones|negocio|plantillas/i, symbol: "■", tone: "teal" },
     { re: /reporte|informe|historial|movimiento|auditoria|auditoría|dashboard|panel|vista previa|analisis|análisis|control/i, symbol: "R", tone: "info" },
     { re: /caja|turno|corte|egreso|ingreso|finanza|banco|impuesto|saldo|operacion|operación|venta|ventas/i, symbol: "$", tone: "success" },
     { re: /personas|activos|nomina|nómina|empleados/i, symbol: "ID", tone: "purple" },

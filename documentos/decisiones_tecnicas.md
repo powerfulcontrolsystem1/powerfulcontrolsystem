@@ -37,6 +37,10 @@ trazabilidad en `documentos/historial_de_cambios`.
   privados en consola, documentacion o commits.
 - Operaciones criticas deben tener auditoria o historial razonable: caja, pagos,
   licencias, facturacion, usuarios, backups, conectividad y configuraciones.
+- Las altas y acciones criticas deben ser idempotentes en backend cuando puedan
+  duplicarse por doble clic, reintento de red, service worker, modo offline o
+  concurrencia. La UI puede bloquear botones, pero la garantia real debe vivir
+  en la capa de datos/handler.
 
 ## Configuracion empresarial
 

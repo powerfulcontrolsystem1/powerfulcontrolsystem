@@ -2,10 +2,10 @@ package db
 
 import "testing"
 
-func TestNuevosVerticalesTienenPlantillaYDemo(t *testing.T) {
-	catalog := NuevosVerticalesTipoEmpresaCatalog()
-	if len(catalog) != len(empresaModuloColombiaPlantillasVerticales) {
-		t.Fatalf("catalogo tipos=%d plantillas=%d", len(catalog), len(empresaModuloColombiaPlantillasVerticales))
+func TestNuevasPlantillasTienenPlantillaYDemo(t *testing.T) {
+	catalog := NuevasPlantillasTipoEmpresaCatalog()
+	if len(catalog) != len(empresaModuloColombiaPlantillasPlantillas) {
+		t.Fatalf("catalogo tipos=%d plantillas=%d", len(catalog), len(empresaModuloColombiaPlantillasPlantillas))
 	}
 	for _, item := range catalog {
 		modulo := item.Modulo
