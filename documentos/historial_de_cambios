@@ -29225,3 +29225,21 @@ Archivos modificados:
 - tmp/licencias-visual/10-prueba-activada.png
 - tmp/licencias-visual/11-despues-prueba-solo-comerciales.png
 - tmp/licencias-visual/12-checkout-plan-comercial.png
+
+2026-05-30: corregir configuracion general postgres
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresa_configuracion_general.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/licencias-visual/13-basico-checkout-antes-descuento.png
+- tmp/licencias-visual/16-basico-activada.png
+- tmp/licencias-visual/16-basico-checkout-antes-descuento.png
+- tmp/licencias-visual/16-basico-checkout-total-cero.png
+- tmp/licencias-visual/17-profesional-activada.png
+- tmp/licencias-visual/17-profesional-checkout-antes-descuento.png
+- tmp/licencias-visual/17-profesional-checkout-total-cero.png
+- tmp/licencias-visual/18-empresarial-activada.png
+- tmp/licencias-visual/18-empresarial-checkout-antes-descuento.png
+- tmp/licencias-visual/18-empresarial-checkout-total-cero.png
