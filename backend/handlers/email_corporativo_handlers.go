@@ -1231,10 +1231,15 @@ func EmpresaEmailCorporativoAutologinHandler(dbSuper *sql.DB) http.HandlerFunc {
 				writeCorporateEmailAutologinError(w, http.StatusConflict, "No se pudo preparar el acceso automatico al buzon corporativo.")
 				return
 			}
-			redirectURL, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password, theme)
+			redirectURL, setCookies, redirectErr := snappyMailAutologinRedirectURL(cfg, account.Email, password, theme)
 			if redirectErr != nil {
 				writeCorporateEmailAutologinError(w, http.StatusBadGateway, "No se pudo iniciar sesion automaticamente en la bandeja de correo. "+redirectErr.Error())
 				return
+			}
+			for _, cookieHeader := range setCookies {
+				if strings.TrimSpace(cookieHeader) != "" {
+					w.Header().Add("Set-Cookie", cookieHeader)
+				}
 			}
 			http.Redirect(w, r, redirectURL, http.StatusFound)
 			return
@@ -1270,11 +1275,11 @@ func corporateEmailWebmailEngine() string {
 	}
 }
 
-func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, theme string) (string, error) {
+func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, theme string) (string, []string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	password = strings.TrimSpace(password)
 	if email == "" || password == "" {
-		return "", fmt.Errorf("buzon sin credenciales internas disponibles")
+		return "", nil, fmt.Errorf("buzon sin credenciales internas disponibles")
 	}
 	webmailURL := strings.TrimSpace(firstNonEmptyEnv("EMAIL_CORPORATIVO_INTERNAL_SNAPPYMAIL_URL", "MAILU_INTERNAL_SNAPPYMAIL_URL"))
 	if webmailURL == "" {
@@ -1285,7 +1290,7 @@ func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, t
 	}
 	internalURL, err := url.Parse(webmailURL)
 	if err != nil || internalURL.Scheme == "" || internalURL.Host == "" {
-		return "", fmt.Errorf("URL interna de SnappyMail invalida")
+		return "", nil, fmt.Errorf("URL interna de SnappyMail invalida")
 	}
 	ssoURL := strings.TrimRight(internalURL.String(), "/") + "/sso.php"
 	client := &http.Client{
@@ -1296,22 +1301,22 @@ func snappyMailAutologinRedirectURL(cfg CorporateEmailConfig, email, password, t
 	}
 	req, err := http.NewRequest(http.MethodGet, ssoURL, nil)
 	if err != nil {
-		return "", fmt.Errorf("no se pudo preparar autenticacion")
+		return "", nil, fmt.Errorf("no se pudo preparar autenticacion")
 	}
 	req.Header.Set("User-Agent", "PowerfulControlSystem-MailAutologin/1.0")
 	req.Header.Set("X-Remote-User", email)
 	req.Header.Set("X-Remote-User-Token", password)
 	res, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("SnappyMail rechazo la conexion")
+		return "", nil, fmt.Errorf("SnappyMail rechazo la conexion")
 	}
 	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 32*1024))
 	_ = res.Body.Close()
 	location := strings.TrimSpace(res.Header.Get("Location"))
 	if res.StatusCode < 300 || res.StatusCode >= 400 || location == "" {
-		return "", errCorporateEmailAutologinRejected
+		return "", nil, errCorporateEmailAutologinRejected
 	}
-	return corporateEmailAppendThemeToURI(corporateEmailPublicWebmailRedirect(cfg.WebmailURL, location), theme), nil
+	return corporateEmailAppendThemeToURI(corporateEmailPublicWebmailRedirect(cfg.WebmailURL, location), theme), res.Header.Values("Set-Cookie"), nil
 }
 
 func corporateEmailAppendThemeToURI(rawURI, theme string) string {
@@ -1319,16 +1324,40 @@ func corporateEmailAppendThemeToURI(rawURI, theme string) string {
 	if rawURI == "" {
 		rawURI = "/webmail/"
 	}
+	theme = normalizeCorporateEmailTheme(theme)
 	parsed, err := url.Parse(rawURI)
 	if err != nil {
 		return rawURI
 	}
+	if corporateEmailIsSnappyMailSSORedirect(parsed) {
+		extra := url.Values{}
+		extra.Set("theme", theme)
+		extra.Set("mail_theme", corporateEmailSnappyMailTheme(theme))
+		extra.Set("pcs_theme", corporateEmailSnappyMailTheme(theme))
+		separator := "&"
+		if parsed.RawQuery == "" {
+			separator = "?"
+		}
+		if strings.HasSuffix(rawURI, "?") || strings.HasSuffix(rawURI, "&") {
+			separator = ""
+		}
+		return rawURI + separator + extra.Encode()
+	}
 	query := parsed.Query()
-	query.Set("theme", normalizeCorporateEmailTheme(theme))
+	query.Set("theme", theme)
 	query.Set("mail_theme", corporateEmailSnappyMailTheme(theme))
 	query.Set("pcs_theme", corporateEmailSnappyMailTheme(theme))
 	parsed.RawQuery = query.Encode()
 	return parsed.String()
+}
+
+func corporateEmailIsSnappyMailSSORedirect(parsed *url.URL) bool {
+	if parsed == nil {
+		return false
+	}
+	path := strings.ToLower(strings.TrimSpace(parsed.Path))
+	rawQuery := strings.TrimSpace(parsed.RawQuery)
+	return strings.HasSuffix(path, "/index.php") && (rawQuery == "sso" || strings.HasPrefix(rawQuery, "sso&") || strings.HasPrefix(rawQuery, "sso="))
 }
 
 func corporateEmailPublicWebmailRedirect(publicWebmailURL, location string) string {

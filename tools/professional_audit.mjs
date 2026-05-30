@@ -58,12 +58,12 @@ function extractRegexAll(text, regex, group = 1) {
   return [...text.matchAll(regex)].map((m) => String(m[group] || "").trim()).filter(Boolean);
 }
 
-function loadVerticalCatalog() {
-  const source = read("web/js/nuevos_verticales_catalogo.js");
+function loadPlantillasCatalog() {
+  const source = read("web/js/plantillas_nuevas_catalogo.js");
   const ctx = { window: {} };
   vm.createContext(ctx);
-  vm.runInContext(source, ctx, { filename: "nuevos_verticales_catalogo.js" });
-  return Array.isArray(ctx.window.PCS_NUEVOS_VERTICALES) ? ctx.window.PCS_NUEVOS_VERTICALES : [];
+  vm.runInContext(source, ctx, { filename: "plantillas_nuevas_catalogo.js" });
+  return Array.isArray(ctx.window.PCS_NUEVAS_PLANTILLAS) ? ctx.window.PCS_NUEVAS_PLANTILLAS : [];
 }
 
 function validateInlineScripts() {
@@ -90,18 +90,18 @@ function validateInlineScripts() {
   });
 }
 
-function auditVerticalCatalog() {
-  const verticals = loadVerticalCatalog();
-  const missing = verticals.filter((item) => {
+function auditPlantillasCatalog() {
+  const plantillas = loadPlantillasCatalog();
+  const missing = plantillas.filter((item) => {
     return !item.module || !item.title || !item.fullTitle || !item.description || wordCount(item.description) < 25 || !Array.isArray(item.sections) || item.sections.length < 5;
   }).map((item) => item.module || item.id || item.title || "sin_clave");
-  const duplicateModules = [...new Set(verticals.map((x) => x.module).filter((x, i, arr) => x && arr.indexOf(x) !== i))];
-  addCheck("verticales_nuevos_catalogo", verticals.length === 20 && missing.length === 0 && duplicateModules.length === 0, {
-    total: verticals.length,
+  const duplicateModules = [...new Set(plantillas.map((x) => x.module).filter((x, i, arr) => x && arr.indexOf(x) !== i))];
+  addCheck("plantillas_nuevas_catalogo", plantillas.length === 20 && missing.length === 0 && duplicateModules.length === 0, {
+    total: plantillas.length,
     missing_or_incomplete: missing,
     duplicate_modules: duplicateModules,
   });
-  report.summary.verticales_nuevos = verticals.map((item) => item.module);
+  report.summary.plantillas_nuevas = plantillas.map((item) => item.module);
 }
 
 function auditPermissionsAndMenu() {
@@ -167,7 +167,7 @@ function auditCriticalScripts() {
 }
 
 validateInlineScripts();
-auditVerticalCatalog();
+auditPlantillasCatalog();
 auditPermissionsAndMenu();
 auditPublicCommercialFlow();
 auditOperationsDocs();

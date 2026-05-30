@@ -1173,6 +1173,16 @@
       window.PCSEstacionLabels.apply(root || document.body, normalizeStationLabels(cfg || current || {}));
     }
 
+    function normalizeStationAccessConfig(raw) {
+      var src = raw && typeof raw === 'object' ? raw : {};
+      var users = src.usuarios && typeof src.usuarios === 'object' ? src.usuarios : {};
+      return {
+        habilitado: !!src.habilitado,
+        caja_por_cajero: src.caja_por_cajero === undefined ? true : !!src.caja_por_cajero,
+        usuarios: Object.assign({}, users)
+      };
+    }
+
     function normalizeConfig(cfg) {
       var stationLabels = normalizeStationLabels(cfg || {});
       var cantidad = Math.max(1, Math.min(500, Number(cfg && cfg.cantidad ? cfg.cantidad : 1)));
@@ -1236,7 +1246,8 @@
         ia_pedidos_enabled: ia_pedidos_enabled,
         ia_pedidos_placement: ia_pedidos_placement,
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global)),
-        station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {}
+        station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {},
+        acceso_estaciones_cajeros: normalizeStationAccessConfig(cfg && (cfg.acceso_estaciones_cajeros || cfg.acceso_estaciones_por_cajero))
       };
     }
 

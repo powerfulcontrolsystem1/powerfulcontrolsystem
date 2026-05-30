@@ -1,3 +1,7 @@
+- 2026-05-29: `Fondo diferenciado en carrito` hace que el fondo estructural del carrito sea mas oscuro que las tarjetas en todas las apariencias, sin recuperar sombras ni efecto 3D.
+- 2026-05-29: `Venta directa en pantalla completa` agrega en el carrito de venta directa un boton con icono para entrar/salir de pantalla completa y habilita `fullscreen` en el iframe de Administrar empresa.
+- 2026-05-29: `Panel empresarial sin titulo repetido` cambia el kicker del hero en `web/administrar_empresa/panel.html` de `Panel de empresa`/`Panel de {empresa}` a `Centro operativo`, conservando la descripcion con el nombre de la empresa debajo.
+- 2026-05-29: `Auditoria profesional de Plantillas` actualiza `tools/professional_audit.mjs` para leer `web/js/plantillas_nuevas_catalogo.js` y el global `PCS_NUEVAS_PLANTILLAS`, eliminando el error por ruta antigua `nuevos_verticales_catalogo.js`.
 - 2026-05-29: `Seleccionar empresa con Plantillas` corrige referencias JS heredadas a `vertical` en `seleccionar_empresa.js` y preconfiguraciones super para que el selector cargue empresas sin el error `vertical is not defined`.
 - 2026-05-29: `Centro de mando super apilado` cambia `web/super/licencias_resumen.html` para que resumen, KPIs, prioridades y accesos clave queden en una sola columna, una tarjeta debajo de la otra.
 - 2026-05-29: `Super administrador en una columna` agrega el acceso visible `Asesor en ventas` dentro de Licencias, registra `/super/asesor_comercial.html` como pagina valida del frame y fuerza el menu agrupado del panel super a mostrarse en una sola columna.
@@ -4553,3 +4557,15 @@
 - [Temas] Se agregan `Negro Absoluto` (`dark-absolute`) y `Obsidiana Profesional` (`dark-obsidian`) al menu flotante.
 - [Frontend] Los nuevos temas tienen variables completas de fondo, superficies, texto, bordes, acentos, formularios y estados.
 - [QA] Prueba visual seleccionando ambos temas desde el menu flotante y verificando persistencia.
+## [2026-05-29] Cajeros simultaneos por estaciones
+- Se agrega control por cajero para asignar estaciones visibles/operables desde `Administrar usuarios`.
+- Los endpoints de carritos e items validan la asignacion en backend para evitar acceso por URL/API a estaciones no permitidas.
+- Los totales de la tarjeta Caja se calculan para el usuario autenticado, manteniendo caja y reporte de turno independientes en cajas simultaneas.
+
+## [2026-05-29] Favoritos con icono original
+- Los favoritos del panel empresarial usan el icono original del boton del menu principal en lugar de la estrella.
+- Los favoritos nuevos guardan el icono de origen para reutilizarlo al volver al panel.
+
+## [2026-05-30] Bandeja de correo corporativo
+- El autologin de SnappyMail conserva la forma `index.php?sso&hash=...` al agregar el tema del sistema.
+- La bandeja de correo del panel empresarial deja de quedar bloqueada en `/webmail/sso.php` con 403.

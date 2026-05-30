@@ -1,3 +1,15 @@
+2026-05-29 - Fondo diferenciado en carrito
+- `web/estilos.css`:
+	- agrega variables finales `--carrito-page-bg` y `--carrito-card-bg` para separar el fondo estructural del carrito de las tarjetas, respetando apariencias claras y oscuras.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- el modo pantalla completa reutiliza `--carrito-page-bg` para conservar el mismo contraste visual.
+
+2026-05-29 - Venta directa en pantalla completa
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- agrega el boton `Pantalla completa` para `modo=venta_directa`, alterna a `Salir` mientras el navegador esta en fullscreen y mantiene la fila visible sin mostrar controles de estaciones que no aplican.
+- `web/administrar_empresa.html`:
+	- habilita `allowfullscreen` y `allow="geolocation; fullscreen"` en el iframe principal de Administrar empresa.
+
 2026-05-29 - Idempotencia al crear empresas
 - `backend/db/db.go`:
 	- agrega `CreateEmpresaIdempotente`, normalizacion de clave y bloqueo contra doble clic/concurrencia al crear empresas.
@@ -10152,6 +10164,14 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-05-28 - Apariencias oscuras profesionales
 - `web/menu.js`:
 	- Agrega al selector de apariencias los temas `Negro Absoluto` y `Obsidiana Profesional`, persistidos como `dark-absolute` y `dark-obsidian`.
+2026-05-29 - Panel empresarial sin titulo repetido
+- `web/administrar_empresa/panel.html`:
+	- Cambia el kicker del hero a `Centro operativo` para evitar repetir el nombre de la empresa encima de la descripcion.
+
+2026-05-29 - Auditoria profesional de Plantillas
+- `tools/professional_audit.mjs`:
+	- Actualiza la auditoria profesional para validar el catalogo activo de Plantillas y no la ruta antigua de verticales.
+
 2026-05-29 - Seleccionar empresa con Plantillas
 - `web/js/seleccionar_empresa.js`:
 	- Reemplaza referencias heredadas a `vertical` por `plantilla` en el preview de tipo de empresa, visual de tarjetas y metadata del selector.
@@ -10234,3 +10254,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Elimina la ruta interna de validacion de correo.
 - `web/administrar_empresa/panel.html`:
 	- Abre la bandeja corporativa cuando el buzon esta provisionado y muestra estados claros cuando falta Mailu.
+
+2026-05-30 - Prueba de autologin SnappyMail
+- `backend/handlers/email_corporativo_handlers_test.go`:
+	- Verifica que la URL de autologin de SnappyMail conserve `index.php?sso&hash=...` al agregar parametros de tema, evitando que el webmail caiga en `/webmail/sso.php` con 403.

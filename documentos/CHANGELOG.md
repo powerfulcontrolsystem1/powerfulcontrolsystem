@@ -1,3 +1,22 @@
+## [2026-05-29] Fondo diferenciado en carrito
+- [UX] `web/estilos.css` separa visualmente el fondo estructural del carrito y las tarjetas reales usando variables de tema: el fondo queda mas oscuro que `surface` sin reintroducir sombras ni relieve.
+- [Venta directa] `web/administrar_empresa/carrito_de_compras.html` usa el mismo fondo del carrito al entrar en pantalla completa.
+- [QA] Validacion visual local con Playwright en escritorio y comprobacion de temas claro/oscuro: tarjetas con fondo `surface`, estructura con `--carrito-page-bg` y sombras desactivadas.
+
+## [2026-05-29] Venta directa en pantalla completa
+- [UX] `web/administrar_empresa/carrito_de_compras.html` agrega un boton con icono para abrir la venta directa en pantalla completa y regresar a la vista normal.
+- [Integracion] `web/administrar_empresa.html` permite `fullscreen` en el iframe del panel para que la accion funcione tambien cuando venta directa se abre dentro de Administrar empresa.
+- [QA] Validacion de sintaxis JS embebida y prueba visual local con Playwright: boton visible, entrada a fullscreen, texto `Salir` y retorno a vista normal.
+
+## [2026-05-29] Panel empresarial sin titulo repetido
+- [UX] `web/administrar_empresa/panel.html` cambia el encabezado superior del hero a `Centro operativo` para evitar repetir `Panel de {empresa}` encima de la descripcion.
+- [Datos] No cambia endpoints, permisos, tablas ni configuracion.
+
+## [2026-05-29] Auditoria profesional de Plantillas
+- [QA] `tools/professional_audit.mjs` deja de leer la ruta antigua `web/js/nuevos_verticales_catalogo.js` y valida el catalogo activo `web/js/plantillas_nuevas_catalogo.js`.
+- [Nomenclatura] El check cambia a `plantillas_nuevas_catalogo` y el resumen reporta `plantillas_nuevas`.
+- [Verificacion] La auditoria profesional vuelve a terminar con `status: ok`.
+
 ## [2026-05-29] Seleccionar empresa con Plantillas
 - [Frontend] `web/js/seleccionar_empresa.js` corrige referencias heredadas a la variable `vertical` y usa la variable `plantilla` al renderizar preview, tarjetas y opciones de tipo de empresa.
 - [Super] `web/super/preconfiguracion_tipos_empresa.html` corrige el mismo caso en busquedas, secciones y filtros iniciales de plantillas.
@@ -1913,3 +1932,26 @@
 - [Temas] El selector del menu flotante incorpora `Negro Absoluto` y `Obsidiana Profesional`.
 - [Frontend] Los iframes y subpaginas internas reconocen `dark-absolute` y `dark-obsidian` al heredar la apariencia.
 - [QA] Se comprobo visualmente el cambio de tema y guardado de preferencia.
+
+## [2026-05-29] Facturacion offline en carrito
+- [Carrito] El aviso flotante de conectividad ahora tambien confirma cuando internet vuelve y cuando las ventas offline quedan sincronizadas.
+- [UX] El mensaje online permanece visible aunque el pago deje el carrito inactivo y el panel interno cambie de estado.
+- [QA] Se comprobo visualmente con Motel Calipso: venta directa, corte de internet simulado, venta provisional offline, cola local pendiente y sincronizacion al restaurar conexion.
+
+## [2026-05-29] Panel empresarial
+- [UX] La tarjeta de clima del panel de administrar empresa queda aproximadamente 20% mas compacta verticalmente en escritorio y movil.
+
+## [2026-05-29] Cajeros simultaneos por estaciones
+- [Backend] Los endpoints de carritos e items validan `estaciones_config.acceso_estaciones_cajeros` para impedir operar estaciones no asignadas por URL/API.
+- [Frontend] `Administrar usuarios` permite activar el control, marcar estaciones por cajero y definir si ve la estacion Caja.
+- [Caja] Los totales de la tarjeta Caja se consultan por usuario autenticado, manteniendo cuentas y corte de turno independientes para varias cajas simultaneas.
+- [Docs] Se documenta el flujo operativo y el mapa de modulos para estaciones, usuarios y caja.
+
+## [2026-05-29] Favoritos con icono original
+- [Panel] Los favoritos del panel empresarial muestran el icono real del boton original del menu, no la estrella de favorito.
+- [Navegacion] Al marcar un favorito nuevo se guarda tambien su icono de origen para conservarlo en la tarjeta.
+
+## [2026-05-30] Bandeja de correo corporativo
+- [Email corporativo] El autologin de SnappyMail preserva la redireccion `index.php?sso&hash=...` al agregar parametros de tema.
+- [Panel] La bandeja empresarial puede abrir embebida sin caer en 403 sobre `/webmail/sso.php`.
+- [QA] Validado con `go test ./handlers -run CorporateEmailAppendTheme -count=1` y prueba visual del panel empresarial.

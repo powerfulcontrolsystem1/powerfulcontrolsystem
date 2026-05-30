@@ -1,3 +1,26 @@
+2026-05-29: Fondo diferenciado en carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `frontend_ux`, `apariencias`.
+- Cambio visual: `web/estilos.css` define `--carrito-page-bg` para el fondo estructural del carrito y mantiene las tarjetas reales en `--carrito-card-bg`, de modo que el fondo detras de las tarjetas queda mas oscuro en temas claros y oscuros.
+- Venta directa: el modo pantalla completa de `web/administrar_empresa/carrito_de_compras.html` toma `--carrito-page-bg` para no cambiar de tono al expandirse.
+- Validacion: `git diff --check`; parseo de scripts embebidos; Playwright local confirma fondos distintos y `box-shadow: none`.
+
+2026-05-29: Venta directa en pantalla completa.
+- Modulos afectados: `venta_directa`, `carritos`, `administrar_empresa`, `frontend_ux`.
+- Cambio funcional: la pagina de venta directa muestra un boton con icono para abrir el carrito en pantalla completa y el mismo control permite regresar con el texto `Salir`.
+- Integracion: `web/administrar_empresa.html` habilita `fullscreen` en el iframe del panel para permitir la accion cuando la venta directa se abre dentro de Administrar empresa.
+- Validacion: parseo de scripts embebidos de `web/administrar_empresa/carrito_de_compras.html`; prueba visual local con Playwright confirmando boton visible, entrada a fullscreen y salida correcta.
+
+2026-05-29: Panel empresarial sin titulo repetido.
+- Modulos afectados: `administrar_empresa`, `panel_empresa`, `frontend_ux`.
+- Cambio funcional: el hero del panel empresarial deja de mostrar `Panel de {empresa}` como kicker repetido y usa `Centro operativo`.
+- Validacion: parseo de scripts embebidos de `web/administrar_empresa/panel.html`.
+
+2026-05-29: Auditoria profesional de Plantillas.
+- Modulos afectados: `qa_operacion`, `preflight`, `plantillas`, `portal_publico`.
+- Cambio funcional: `tools/professional_audit.mjs` usa la ruta vigente `web/js/plantillas_nuevas_catalogo.js` y el global `PCS_NUEVAS_PLANTILLAS`.
+- Causa tecnica: el preflight aun buscaba `web/js/nuevos_verticales_catalogo.js`, archivo retirado tras renombrar verticales a Plantillas, y Node fallaba con `ENOENT`.
+- Validacion: `node --check tools/professional_audit.mjs`; `node tools/professional_audit.mjs --out documentos\\reportes_profesionales` devuelve `status: ok`.
+
 2026-05-29: Seleccionar empresa con Plantillas.
 - Modulos afectados: `seleccionar_empresa`, `plantillas`, `preconfiguracion_tipos_empresa`, `frontend_ux`.
 - Cambio funcional: se corrigen referencias heredadas a una variable `vertical` ya no declarada despues del renombre a Plantillas.
@@ -28954,3 +28977,57 @@ Archivos modificados:
 - web/js/seleccionar_empresa.js
 - web/super/licencias_resumen.html
 - web/super/preconfiguracion_tipos_empresa.html
+
+2026-05-29: Prueba visual y aviso de reconexion en modo offline
+Modulos afectados: carritos, venta directa, facturacion offline.
+Cambio funcional: el carrito muestra un aviso flotante verde al recuperar internet y al terminar de sincronizar ventas offline, evitando que el mensaje quede oculto cuando el carrito se marca inactivo tras el pago.
+Validacion: prueba visual en Motel Calipso con Chrome/Playwright; se agrego un servicio de prueba, se simulo corte de internet, se guardo una venta offline pendiente y al restaurar conexion la cola local quedo en cero.
+Archivos modificados:
+- web/administrar_empresa/carrito_de_compras.html
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+
+2026-05-29: Compactacion vertical de tarjeta del clima
+Modulos afectados: panel de administrar empresa, frontend_ux.
+Cambio funcional: la tarjeta de clima del panel empresarial reduce aproximadamente 20% su altura mediante menor padding, gaps, icono, temperatura, controles y metricas internas.
+Archivos modificados:
+- web/administrar_empresa/panel.html
+- documentos/historial_de_cambios
+
+2026-05-29: Cajeros simultaneos con estaciones asignadas
+Modulos afectados: estaciones, carritos, usuarios empresa, caja/corte de turno.
+Cambio funcional: se agrega configuracion por cajero para marcar por check que estaciones puede ver y operar cada usuario; el tablero filtra la vista y los endpoints de carritos/items bloquean operaciones sobre estaciones no asignadas. La tarjeta Caja conserva cuentas por usuario y sus totales se calculan para el usuario autenticado.
+Validacion: `go test ./handlers -run TestNonExistent -count=1` y validacion sintactica JS de `administrar_usuarios.html`, `estaciones.html` y `configuracion_de_estaciones.html`.
+Archivos modificados:
+- backend/handlers/carritos_compras.go
+- backend/handlers/corte_caja.go
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- documentos/CHANGELOG.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+
+2026-05-29: Iconos originales en favoritos del panel empresarial
+Modulos afectados: panel de administrar empresa, favoritos, navegacion.
+Cambio funcional: los botones de favoritos del panel ya no muestran la estrella como icono; ahora resuelven el icono original del boton del menu principal, incluyendo simbolos como `$` en Venta directa e imagenes como `/img/door.svg` en Estaciones. Los favoritos nuevos guardan el icono de origen para reutilizarlo.
+Validacion: sintaxis JS de `panel.html` y `administrar_empresa.js`; prueba visual con Chromium simulando favoritos de Venta directa y Estaciones.
+Archivos modificados:
+- web/administrar_empresa/panel.html
+- web/js/administrar_empresa.js
+- documentos/historial_de_cambios
+
+2026-05-30: Apertura automatica de bandeja de correo corporativo
+Modulos afectados: email corporativo, panel de administrar empresa, Mailu/SnappyMail.
+Causa tecnica: el autologin interno de SnappyMail generaba la redireccion `index.php?sso&hash=...`, pero al agregar los parametros de tema el backend reordenaba la query como `hash=...&sso=...`; SnappyMail no entraba al flujo SSO y terminaba devolviendo 403 en `/webmail/sso.php`.
+Cambio funcional: el endpoint interno `/api/internal/email_corporativo/autologin` preserva el marcador `sso` al inicio de la redireccion y, si SnappyMail entrega cookies de sesion, tambien las traslada al navegador antes de redirigir al webmail embebido.
+Validacion: `go test ./handlers -run CorporateEmailAppendTheme -count=1`; prueba visual con Chromium en `administrar_empresa.html?id=7&empresa_id=7` verificando que el iframe del panel carga la bandeja empresarial.
+Archivos modificados:
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/email_corporativo_handlers_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/email_corporativo_mailu.md
+- documentos/historial_de_cambios

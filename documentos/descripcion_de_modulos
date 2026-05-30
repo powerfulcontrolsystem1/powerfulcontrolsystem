@@ -1,3 +1,14 @@
+2026-05-29: Fondo diferenciado en carrito
+- Modulo: `Carrito y venta directa`.
+- UX: el fondo estructural del carrito queda mas oscuro que las tarjetas reales, usando variables de apariencia para temas claros, oscuros, negro absoluto y obsidiana.
+- Restriccion visual: se conserva la apariencia plana, sin sombras ni efecto 3D.
+
+2026-05-29: Venta directa en pantalla completa
+- Modulo: `Venta directa`.
+- UX: el carrito directo incluye un boton con icono para abrir la pantalla completa y volver a la vista normal sin salir de la operacion.
+- Integracion: cuando venta directa se abre embebida en `administrar_empresa.html`, el iframe permite la accion fullscreen del navegador.
+- Seguridad/datos: no cambia endpoints, tablas, permisos ni configuraciones por empresa.
+
 2026-05-29: Email corporativo con temas del sistema
 - Modulo: `Email corporativo Mailu`.
 - Apariencia: el panel empresarial aplica modo claro/oscuro a la tarjeta y envia la preferencia al autologin de SnappyMail.
@@ -3373,3 +3384,9 @@ Captura inteligente de compras y gastos
 - UX: en administrar empresa aparece debajo de Favoritos una tarjeta para abrir el webmail cuando el modulo esta activo y la empresa tiene email generado.
 - Operacion: el perfil `mail` de `deploy/docker-compose.platform.yml` levanta Mailu/Roundcube; los secretos viven en `deploy/.env.platform`, se registran al arrancar el backend y se cifran en base con `CONFIG_ENC_KEY`.
 - Seguridad: el navegador no recibe la clave del buzon; el panel empresarial abre el webmail configurado cuando el buzon esta provisionado.
+
+2026-05-29: Facturacion offline desde carrito
+- Modulos afectados: `carritos`, `venta_directa`, `facturacion_offline`.
+- Cambio funcional: al recuperar internet, el carrito muestra un aviso flotante visible indicando reconexion y sincronizacion de ventas offline, ademas del mensaje interno del panel de pago.
+- UX: el aviso offline permanece fijo mientras no hay conexion y el aviso online queda visible unos segundos aun si el carrito cambia a estado inactivo despues del pago.
+- QA: se comprobo visualmente en Motel Calipso con venta directa, corte de red simulado, venta provisional en cola local y sincronizacion posterior.

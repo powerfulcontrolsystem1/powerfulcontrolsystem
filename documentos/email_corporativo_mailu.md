@@ -40,8 +40,9 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
     entra a SnappyMail por `/webmail/sso.php` con las cabeceras internas
     `X-Remote-User` y `X-Remote-User-Token`.
 11. SnappyMail devuelve un hash temporal de inicio de sesion; el backend
-    redirige al navegador a `/webmail/index.php?sso&hash=...`. El usuario no ve
-    ni escribe contrasenas del buzon.
+    preserva la forma `/webmail/index.php?sso&hash=...` al agregar parametros de
+    tema y, si el webmail entrega cookies de sesion, las traslada al navegador.
+    El usuario no ve ni escribe contrasenas del buzon.
 12. En la VPS, Nginx publica `/webmail/` contra el contenedor
     `pcs-mailu-webmail` en loopback y deja el resto de rutas de correo contra
     `pcs-mailu-front`.
@@ -70,6 +71,8 @@ admin, IMAP, SMTP, antispam, webmail SnappyMail y Redis. El proxy publico lo adm
 - La clave inicial del buzon se guarda cifrada si `CONFIG_ENC_KEY` esta
   disponible.
 - El navegador no recibe claves ni tokens privados de correo.
+- El navegador puede recibir cookies de sesion emitidas por SnappyMail para
+  abrir la bandeja, pero no recibe la contrasena interna del buzon.
 - La pagina empresarial de configuracion puede enviar una nueva contrasena, pero
   el backend nunca la devuelve y no la registra en logs ni documentacion.
 - El token de autologin dura 2 minutos, va firmado con HMAC SHA-256 y se usa una

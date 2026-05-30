@@ -172,6 +172,10 @@ func EmpresaCorteCajaHandler(dbEmp *sql.DB, dbSuper ...*sql.DB) http.HandlerFunc
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		if err := ensureCarritoStationCajaAccess(dbEmp, empresaID, adminEmailFromRequest(r)); err != nil {
+			writeCarritoStationAccessError(w, err)
+			return
+		}
 
 		now := time.Now()
 		desde := normalizeCorteCajaDateTime(r.URL.Query().Get("desde"), time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()))

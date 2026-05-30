@@ -252,10 +252,10 @@
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       align-items: start;
       justify-content: stretch;
-      gap: 7px;
+      gap: 5px 6px;
       min-width: 0;
       max-width: 100%;
-      padding: 10px;
+      padding: 8px;
       border-radius: 8px;
       border: 1px solid var(--panel-glass-border);
       background: var(--panel-glass-bg);
@@ -279,7 +279,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 7px;
+      gap: 6px;
       min-width: 0;
     }
 
@@ -289,17 +289,17 @@
 
     .empresa-weather-label {
       color: var(--panel-kicker);
-      font-size: .72rem;
+      font-size: .68rem;
       font-weight: 900;
       text-transform: uppercase;
     }
 
     .empresa-weather-place {
-      margin-top: 2px;
+      margin-top: 1px;
       color: var(--panel-text);
       font-weight: 800;
-      font-size: .86rem;
-      line-height: 1.2;
+      font-size: .82rem;
+      line-height: 1.12;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -310,13 +310,13 @@
       display: grid;
       place-items: center;
       flex: 0 0 auto;
-      width: 42px;
-      height: 42px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: var(--panel-icon-bg);
       border: 1px solid var(--panel-icon-border);
       color: var(--panel-icon-text);
-      font-size: 1.45rem;
+      font-size: 1.2rem;
       line-height: 1;
       box-shadow: 0 12px 30px var(--panel-card-shadow);
     }
@@ -325,7 +325,7 @@
       margin: 0;
       color: var(--panel-text);
       max-width: 100%;
-      font-size: clamp(1.5rem, 3vw, 2.05rem);
+      font-size: clamp(1.26rem, 2.5vw, 1.65rem);
       line-height: 1;
       font-weight: 900;
       letter-spacing: 0;
@@ -335,11 +335,11 @@
     }
 
     .empresa-weather-desc {
-      margin: 2px 0 0;
+      margin: 1px 0 0;
       color: var(--panel-muted);
       font-weight: 700;
-      font-size: .84rem;
-      line-height: 1.15;
+      font-size: .78rem;
+      line-height: 1.08;
       max-width: 100%;
       overflow-wrap: anywhere;
     }
@@ -347,8 +347,8 @@
     .empresa-weather-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 4px;
+      gap: 5px;
+      margin-top: 3px;
       min-width: 0;
     }
 
@@ -360,11 +360,11 @@
       color: var(--panel-text);
       cursor: pointer;
       font: inherit;
-      font-size: .78rem;
+      font-size: .74rem;
       font-weight: 850;
       line-height: 1.1;
-      min-height: 28px;
-      padding: 5px 8px;
+      min-height: 24px;
+      padding: 4px 7px;
       transition: border-color .18s ease, transform .18s ease, background .18s ease;
     }
 
@@ -390,8 +390,8 @@
     .empresa-weather-location-form {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 6px;
-      margin-top: 6px;
+      gap: 5px;
+      margin-top: 4px;
       min-width: 0;
     }
 
@@ -407,9 +407,9 @@
       background: color-mix(in srgb, var(--panel-glass-bg) 82%, var(--panel-text) 5%);
       color: var(--panel-text);
       font: inherit;
-      font-size: .86rem;
-      min-height: 32px;
-      padding: 6px 9px;
+      font-size: .78rem;
+      min-height: 26px;
+      padding: 4px 8px;
       outline: none;
     }
 
@@ -439,11 +439,11 @@
       grid-column: 2;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 4px;
+      gap: 3px;
     }
 
     .empresa-weather-stat {
-      padding: 5px;
+      padding: 4px;
       border-radius: 8px;
       background: var(--panel-stat-bg);
       border: 1px solid var(--panel-glass-border);
@@ -454,16 +454,16 @@
     .empresa-weather-stat span {
       display: block;
       color: var(--panel-kicker);
-      font-size: .62rem;
+      font-size: .58rem;
       font-weight: 800;
       text-transform: uppercase;
     }
 
     .empresa-weather-stat strong {
       display: block;
-      margin-top: 2px;
+      margin-top: 1px;
       color: var(--panel-text);
-      font-size: .78rem;
+      font-size: .72rem;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -581,13 +581,26 @@
       width: 28px;
       height: 28px;
       border-radius: 8px;
-      border: 1px solid color-mix(in srgb, var(--accent-yellow, #facc15) 44%, var(--border));
-      background: color-mix(in srgb, var(--accent-yellow, #facc15) 20%, var(--surface) 80%);
-      color: color-mix(in srgb, var(--accent-yellow, #facc15) 86%, var(--text) 14%);
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+      background: color-mix(in srgb, var(--surface-soft) 78%, var(--surface) 22%);
+      color: var(--text);
       font-size: .95rem;
       font-weight: 950;
       line-height: 1;
       box-shadow: 0 8px 16px rgba(15,23,42,.12);
+    }
+
+    .empresa-favorite-icon img {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .empresa-favorite-symbol {
+      font-size: 1rem;
+      font-weight: 950;
+      line-height: 1;
     }
 
     .empresa-favorite-text {
@@ -1023,24 +1036,24 @@
       .empresa-weather-panel {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(64px, auto);
-        gap: 5px 7px;
-        padding: 7px;
+        gap: 4px 6px;
+        padding: 6px;
         border-radius: 7px;
         overflow: hidden;
       }
 
       .empresa-weather-head {
-        gap: 6px;
+        gap: 5px;
         overflow: hidden;
       }
 
       .empresa-weather-label {
-        font-size: .68rem;
+        font-size: .64rem;
       }
 
       .empresa-weather-place {
-        margin-top: 2px;
-        font-size: .82rem;
+        margin-top: 1px;
+        font-size: .78rem;
         line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
@@ -1049,21 +1062,21 @@
       }
 
       .empresa-weather-icon {
-        width: 34px;
-        height: 34px;
-        font-size: 1.18rem;
+        width: 30px;
+        height: 30px;
+        font-size: 1.05rem;
       }
 
       .empresa-weather-temp {
-        font-size: clamp(1rem, 5.4vw, 1.48rem);
+        font-size: clamp(.96rem, 4.7vw, 1.34rem);
         text-align: right;
         max-width: 30vw;
       }
 
       .empresa-weather-desc {
-        margin-top: 2px;
-        font-size: clamp(.68rem, 3vw, .78rem);
-        line-height: 1.1;
+        margin-top: 1px;
+        font-size: clamp(.64rem, 2.7vw, .72rem);
+        line-height: 1.05;
         text-align: right;
         max-width: 30vw;
         white-space: nowrap;
@@ -1074,22 +1087,22 @@
       .empresa-weather-grid {
         grid-column: 1 / -1;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 3px;
+        gap: 2px;
       }
 
       .empresa-weather-stat {
-        padding: 4px 3px;
+        padding: 3px;
         border-radius: 6px;
       }
 
       .empresa-weather-stat span {
-        font-size: .62rem;
+        font-size: .56rem;
         line-height: 1;
       }
 
       .empresa-weather-stat strong {
-        margin-top: 2px;
-        font-size: clamp(.68rem, 3vw, .8rem);
+        margin-top: 1px;
+        font-size: clamp(.64rem, 2.7vw, .74rem);
         line-height: 1.05;
         white-space: nowrap;
         overflow: hidden;
@@ -1359,7 +1372,7 @@
           <div id="empresaLogoPanelWrap" class="empresa-home-brand" hidden>
             <img id="empresaLogoPanel" alt="Logo de la empresa">
           </div>
-          <p id="homeKicker" class="empresa-home-kicker">Panel de empresa</p>
+          <p id="homeKicker" class="empresa-home-kicker">Centro operativo</p>
           <h1 id="homeTitle" class="empresa-home-title">Bienvenido</h1>
           <p id="homeSubtitle" class="empresa-home-subtitle">Preparando el contexto de la empresa y el clima actual.</p>
         </div>
@@ -1795,6 +1808,91 @@
         }
       }
 
+      function stripEmpresaParam(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          url.searchParams.delete("empresa_id");
+          url.searchParams.delete("id");
+          return url.pathname + url.search;
+        } catch (e) {
+          return String(href || "").split("?")[0];
+        }
+      }
+
+      function menuMatchHref(href) {
+        try {
+          var url = new URL(href || "", window.location.origin);
+          url.searchParams.delete("empresa_id");
+          url.searchParams.delete("id");
+          var params = [];
+          url.searchParams.forEach(function (value, key) {
+            params.push([key, value]);
+          });
+          params.sort(function (a, b) {
+            if (a[0] === b[0]) return a[1] < b[1] ? -1 : (a[1] > b[1] ? 1 : 0);
+            return a[0] < b[0] ? -1 : 1;
+          });
+          var query = params.map(function (pair) {
+            return encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]);
+          }).join("&");
+          return url.pathname + (query ? "?" + query : "");
+        } catch (e) {
+          return stripEmpresaParam(href);
+        }
+      }
+
+      function resolveFavoriteMenuLink(href) {
+        var target = menuMatchHref(href);
+        if (!target) return null;
+        try {
+          var parentDoc = window.parent && window.parent !== window ? window.parent.document : null;
+          if (!parentDoc) return null;
+          var links = parentDoc.querySelectorAll('a[href*="/administrar_empresa/"]');
+          for (var i = 0; i < links.length; i += 1) {
+            var link = links[i];
+            if (menuMatchHref(link.getAttribute("href") || "") === target) {
+              return link;
+            }
+          }
+        } catch (e) {}
+        return null;
+      }
+
+      function favoriteIconData(favorite, href) {
+        var stored = favorite && favorite.icon && typeof favorite.icon === "object" ? favorite.icon : null;
+        if (stored && (stored.src || stored.symbol)) {
+          return stored;
+        }
+        var link = resolveFavoriteMenuLink(href);
+        if (link) {
+          var img = link.querySelector("img.icon");
+          if (img && img.getAttribute("src")) {
+            return { type: "img", src: img.getAttribute("src") };
+          }
+          var symbol = link.querySelector(".menu-symbol-icon,.icon");
+          if (symbol && String(symbol.textContent || "").trim()) {
+            return { type: "symbol", symbol: String(symbol.textContent || "").trim() };
+          }
+        }
+        return { type: "img", src: "/img/analytics-color.svg" };
+      }
+
+      function renderFavoriteIcon(container, favorite, href) {
+        var icon = favoriteIconData(favorite, href);
+        container.textContent = "";
+        if (icon && icon.src) {
+          var img = document.createElement("img");
+          img.src = icon.src;
+          img.alt = "";
+          container.appendChild(img);
+          return;
+        }
+        var span = document.createElement("span");
+        span.className = "empresa-favorite-symbol";
+        span.textContent = icon && icon.symbol ? icon.symbol : "•";
+        container.appendChild(span);
+      }
+
       function readFavorites() {
         try {
           var raw = window.localStorage.getItem(favoritesStorageKey()) || "[]";
@@ -1825,8 +1923,9 @@
           link.className = "empresa-favorite-card";
           link.href = href;
           link.innerHTML =
-            '<span class="empresa-favorite-icon" aria-hidden="true">&#9733;</span>' +
+            '<span class="empresa-favorite-icon" aria-hidden="true"></span>' +
             '<span class="empresa-favorite-text"><strong></strong><span></span></span>';
+          renderFavoriteIcon(link.querySelector(".empresa-favorite-icon"), favorite, href);
           link.querySelector("strong").textContent = text(favorite.title) || favoritePageName(href);
           link.querySelector(".empresa-favorite-text span").textContent = favoritePageName(href);
           link.addEventListener("click", function (ev) {
@@ -2478,7 +2577,7 @@
         var empresaName = text(empresa && (empresa.nombre || empresa.Nombre)) || "tu empresa";
         var tipo = text(empresa && (empresa.tipo_nombre || empresa.TipoNombre));
         document.getElementById("homeTitle").textContent = greetingByHour() + ", " + adminName + ".";
-        document.getElementById("homeKicker").textContent = "Panel de " + empresaName;
+        document.getElementById("homeKicker").textContent = "Centro operativo";
         document.getElementById("homeSubtitle").textContent = tipo
           ? "Bienvenido al centro operativo de " + empresaName + "."
           : "Bienvenido al centro operativo de " + empresaName + ".";

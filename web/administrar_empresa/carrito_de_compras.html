@@ -24,6 +24,14 @@
     .domotica-device-meta span{display:block;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-soft);color:var(--muted)}
     .domotica-device-meta strong{display:block;color:var(--text)}
     .domotica-schedule-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+    .carrito-direct-sale-tools{align-items:center;justify-content:flex-end;gap:8px}
+    .carrito-direct-sale-tools button[hidden]{display:none!important}
+    .carrito-fullscreen-btn{min-width:44px;padding:8px 10px}
+    .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
+    body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
+    body.carrito-direct-fullscreen .container{max-width:none;width:100%;min-height:100vh;padding:8px}
+    body.carrito-direct-fullscreen #buscarProductosActions{position:sticky;top:0;z-index:120;background:var(--carrito-page-bg,var(--bg));padding:6px 0}
+    @media(max-width:760px){.carrito-direct-sale-tools{justify-content:flex-end}.carrito-fullscreen-btn{width:auto!important}}
   </style>
 </head>
 <body class="super-page form-bg-dark carrito-flat-page" data-auto-estacion-labels="true">
@@ -121,8 +129,12 @@
 
       <div class="carrito-primary-layout">
         <div class="carrito-primary-main">
-      <div id="buscarProductosActions" class="form-actions mt-10">
+      <div id="buscarProductosActions" class="form-actions mt-10 carrito-direct-sale-tools">
         <button id="backToStationsHeaderBtn" class="btn secondary" type="button" hidden>Regresar a estaciones</button>
+        <button id="directSaleFullscreenBtn" class="btn secondary carrito-fullscreen-btn" type="button" hidden title="Pantalla completa" aria-label="Abrir venta directa en pantalla completa">
+          <span class="cart-btn-icon cart-btn-icon-info" aria-hidden="true">⛶</span>
+          <span id="directSaleFullscreenText">Pantalla completa</span>
+        </button>
       </div>
 
       <div id="scannerPanel" class="card empresa-section mt-12">
@@ -784,7 +796,8 @@
       },
       offlineVentas: {
         lastOnline: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
-        syncing: false
+        syncing: false,
+        noticeTimer: null
       }
     };
 
@@ -1905,7 +1918,10 @@
       const searchActions = document.getElementById('buscarProductosActions');
       if (searchActions) {
         const backToStationsBtn = document.getElementById('backToStationsHeaderBtn');
-        const showSearchActions = Boolean(backToStationsBtn && !backToStationsBtn.hidden && backToStationsBtn.style.display !== 'none');
+        const directSaleFullscreenBtn = document.getElementById('directSaleFullscreenBtn');
+        const showBackToStations = Boolean(backToStationsBtn && !backToStationsBtn.hidden && backToStationsBtn.style.display !== 'none');
+        const showDirectSaleFullscreen = Boolean(directSaleFullscreenBtn && !directSaleFullscreenBtn.hidden && directSaleFullscreenBtn.style.display !== 'none');
+        const showSearchActions = showBackToStations || showDirectSaleFullscreen;
         searchActions.style.display = showSearchActions ? '' : 'none';
       }
 
@@ -4068,10 +4084,8 @@
       return ctx;
     }
 
-    function updateOfflineFloatingNotice() {
-      publishConnectivityContext();
+    function ensureOfflineFloatingNotice() {
       let box = document.getElementById('offlineFloatingNotice');
-      const show = isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false;
       if (!box) {
         box = document.createElement('div');
         box.id = 'offlineFloatingNotice';
@@ -4092,9 +4106,50 @@
         box.style.borderRadius = '6px';
         document.body.appendChild(box);
       }
+      return box;
+    }
+
+    function styleConnectivityFloatingNotice(box, mode) {
+      if (!box) return;
+      const online = mode === 'online';
+      box.style.border = online ? '1px solid #047857' : '1px solid #111';
+      box.style.background = online ? '#ecfdf5' : '#fff';
+      box.style.color = online ? '#064e3b' : '#111';
+      box.style.boxShadow = online ? '0 10px 22px rgba(4,120,87,.20)' : '0 10px 22px rgba(0,0,0,.20)';
+    }
+
+    function updateOfflineFloatingNotice() {
+      publishConnectivityContext();
+      const box = ensureOfflineFloatingNotice();
+      const show = isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (show && state.offlineVentas.noticeTimer) {
+        window.clearTimeout(state.offlineVentas.noticeTimer);
+        state.offlineVentas.noticeTimer = null;
+      }
       box.textContent = 'Modo sin internet activo: las ventas se imprimen provisionalmente y se sincronizan al volver la conexion.';
+      styleConnectivityFloatingNotice(box, 'offline');
       box.hidden = !show;
       box.style.display = show ? 'block' : 'none';
+    }
+
+    function showOnlineFloatingNotice(text) {
+      const box = ensureOfflineFloatingNotice();
+      if (state.offlineVentas.noticeTimer) {
+        window.clearTimeout(state.offlineVentas.noticeTimer);
+      }
+      box.textContent = normalize(text) || 'Internet restablecido.';
+      styleConnectivityFloatingNotice(box, 'online');
+      box.hidden = false;
+      box.style.display = 'block';
+      state.offlineVentas.noticeTimer = window.setTimeout(function() {
+        state.offlineVentas.noticeTimer = null;
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          updateOfflineFloatingNotice();
+          return;
+        }
+        box.hidden = true;
+        box.style.display = 'none';
+      }, 9000);
     }
 
     function isLikelyNetworkError(err) {
@@ -4114,6 +4169,7 @@
 
     function notifyOnlineModeRestored() {
       updateOfflineFloatingNotice();
+      showOnlineFloatingNotice('Internet restablecido. Sincronizando ventas offline pendientes...');
       setStationPaymentPersistentMessage('Internet restablecido. Sincronizando ventas offline pendientes...', false);
     }
 
@@ -4274,7 +4330,9 @@
         const remaining = pending.filter(function(row) { return row.estado_local !== 'sincronizado'; });
         saveOfflineQueue(remaining);
         if (synced > 0) {
-          setStationPaymentPersistentMessage('Internet restablecido. Se sincronizaron ' + synced + ' venta(s) offline; inventario, caja y documentos quedaron actualizados.', false);
+          const syncedMessage = 'Internet restablecido. Se sincronizaron ' + synced + ' venta(s) offline; inventario, caja y documentos quedaron actualizados.';
+          setStationPaymentPersistentMessage(syncedMessage, false);
+          showOnlineFloatingNotice(syncedMessage);
           try {
             await Promise.all([loadCarritos(), loadItems(), loadActiveCashRegisters()]);
           } catch (_) {}
@@ -7701,6 +7759,60 @@
       }
     }
 
+    function getFullscreenElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+    }
+
+    function isDirectSaleFullscreenActive() {
+      const active = getFullscreenElement();
+      return active === document.documentElement || active === document.body;
+    }
+
+    function updateDirectSaleFullscreenButton() {
+      const btn = document.getElementById('directSaleFullscreenBtn');
+      const textEl = document.getElementById('directSaleFullscreenText');
+      if (!btn) return;
+
+      const supported = Boolean(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen || document.documentElement.msRequestFullscreen);
+      const visible = Boolean(state.directSaleMode && supported);
+      btn.hidden = !visible;
+      btn.style.display = visible ? '' : 'none';
+      if (!visible) {
+        document.body.classList.remove('carrito-direct-fullscreen');
+        return;
+      }
+
+      const active = isDirectSaleFullscreenActive();
+      const icon = btn.querySelector('.cart-btn-icon');
+      if (icon) icon.textContent = active ? '↙' : '⛶';
+      if (textEl) textEl.textContent = active ? 'Salir' : 'Pantalla completa';
+      btn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa';
+      btn.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Abrir venta directa en pantalla completa');
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      document.body.classList.toggle('carrito-direct-fullscreen', active);
+    }
+
+    async function toggleDirectSaleFullscreen() {
+      const active = isDirectSaleFullscreenActive();
+      try {
+        if (active) {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          else if (document.msExitFullscreen) document.msExitFullscreen();
+        } else {
+          const target = document.documentElement;
+          if (target.requestFullscreen) await target.requestFullscreen();
+          else if (target.webkitRequestFullscreen) target.webkitRequestFullscreen();
+          else if (target.msRequestFullscreen) target.msRequestFullscreen();
+          else throw new Error('fullscreen unsupported');
+        }
+      } catch (err) {
+        setMessage('scannerMsg', active ? 'No se pudo salir de pantalla completa.' : 'El navegador no permitio abrir pantalla completa desde venta directa.', true);
+      } finally {
+        updateDirectSaleFullscreenButton();
+      }
+    }
+
     function applyStationModeUI() {
       const stationMode = state.stationMode;
       const focusedSaleMode = state.stationMode || state.directSaleMode;
@@ -7723,6 +7835,7 @@
         backToStationsHeaderBtn.hidden = !showBackToStations;
         backToStationsHeaderBtn.style.display = showBackToStations ? '' : 'none';
       }
+      updateDirectSaleFullscreenButton();
       const moduleHelp = document.getElementById('moduleHelp');
       if (moduleHelp) {
         moduleHelp.textContent = '';
@@ -8465,6 +8578,14 @@
       }
 
       await activateStationSession(false, 'recuperar_interrumpido');
+    });
+
+    const directSaleFullscreenBtn = document.getElementById('directSaleFullscreenBtn');
+    if (directSaleFullscreenBtn) {
+      directSaleFullscreenBtn.addEventListener('click', toggleDirectSaleFullscreen);
+    }
+    ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function(eventName) {
+      document.addEventListener(eventName, updateDirectSaleFullscreenButton);
     });
 
     (async function init() {

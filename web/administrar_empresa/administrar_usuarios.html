@@ -10,7 +10,11 @@
     .usuario-photo{width:64px;height:64px;border-radius:8px;border:1px solid var(--border);background:var(--surface-soft);display:grid;place-items:center;overflow:hidden;font-weight:800;color:var(--muted)}
     .usuario-photo img{width:100%;height:100%;object-fit:cover}
     .usuario-photo.small{width:42px;height:42px;font-size:.78rem}
-    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}}
+    .station-access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-top:10px}
+    .station-access-check{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-soft)}
+    .station-access-check input{width:18px;height:18px}
+    .station-access-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -89,13 +93,53 @@
     </form>
 
     <div id="list">Cargando...</div>
+
+    <section class="card empresa-section" id="stationAccessPanel" style="margin-top:16px;">
+      <h2>Acceso a estaciones por cajero</h2>
+      <p class="form-help">Activa esta regla cuando tengas dos o mas cajeros en simultaneo y quieras que cada usuario vea y opere solo sus estaciones asignadas. Caja y corte siguen siendo independientes por usuario.</p>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationAccessEnabled" type="checkbox">
+            Activar control de estaciones por cajero
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-label" for="stationAccessUser">Usuario cajero</label>
+          <select id="stationAccessUser" class="form-input"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationAccessLimit" type="checkbox">
+            Este usuario solo puede ver las estaciones marcadas
+          </label>
+        </div>
+        <div class="form-col">
+          <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+            <input id="stationAccessCaja" type="checkbox">
+            Ver estacion Caja y corte de turno
+          </label>
+        </div>
+      </div>
+      <div id="stationAccessChecks" class="station-access-grid"></div>
+      <div class="station-access-actions">
+        <button type="button" id="stationAccessAll" class="btn secondary">Marcar todas</button>
+        <button type="button" id="stationAccessNone" class="btn secondary">Quitar todas</button>
+        <button type="button" id="stationAccessSave" class="btn">Guardar acceso</button>
+      </div>
+      <div id="stationAccessMsg" class="form-help"></div>
+    </section>
   </div>
 
   <script>
     const state = {
       empresaID: 0,
       roles: [],
-      users: []
+      users: [],
+      stationConfig: null,
+      stationAccess: { habilitado: false, caja_por_cajero: true, usuarios: {} }
     };
 
     function getQueryParam(name) {
@@ -155,6 +199,136 @@
       const cls = 'usuario-photo' + (small ? ' small' : '');
       if (!url) return '<div class="' + cls + '">' + escapeHTML(userInitials(item)) + '</div>';
       return '<div class="' + cls + '"><img src="' + escapeHTML(url) + '" alt="Foto de usuario"></div>';
+    }
+
+    function setStationAccessMessage(text, isError) {
+      const el = document.getElementById('stationAccessMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) el.classList.add('value-negative');
+    }
+
+    function parseStationConfigValue(raw) {
+      let current = raw;
+      for (let i = 0; i < 8; i += 1) {
+        if (typeof current !== 'string') break;
+        const trimmed = current.trim();
+        if (!trimmed) return null;
+        try { current = JSON.parse(trimmed); } catch (_) { return null; }
+      }
+      return current && typeof current === 'object' ? current : null;
+    }
+
+    function normalizeStationAccess(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const users = src.usuarios && typeof src.usuarios === 'object' ? src.usuarios : {};
+      return {
+        habilitado: !!src.habilitado,
+        caja_por_cajero: src.caja_por_cajero === undefined ? true : !!src.caja_por_cajero,
+        usuarios: Object.assign({}, users)
+      };
+    }
+
+    function stationRowsFromConfig() {
+      const cfg = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
+      const cantidad = Math.max(1, Math.min(500, Number(cfg.cantidad || (Array.isArray(cfg.estaciones) ? cfg.estaciones.length : 1) || 1)));
+      const rows = [];
+      const estaciones = Array.isArray(cfg.estaciones) ? cfg.estaciones : [];
+      for (let i = 0; i < cantidad; i += 1) {
+        const item = estaciones[i] || {};
+        rows.push({ id: i + 1, nombre: String(item.nombre || ('Estacion ' + (i + 1))).trim() });
+      }
+      return rows;
+    }
+
+    async function loadStationAccessConfig() {
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID));
+      await ensureOk(res);
+      const data = await res.json();
+      const prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+      const pref = prefs.find(function(p) { return p && Number(p.estacion_id || 0) === 0 && String(p.clave || '') === 'estaciones_config'; });
+      const parsed = pref && pref.valor ? parseStationConfigValue(pref.valor) : null;
+      state.stationConfig = parsed || { cantidad: 1, estaciones: [{ id: 1, nombre: 'Estacion 1' }] };
+      state.stationAccess = normalizeStationAccess(state.stationConfig.acceso_estaciones_cajeros || state.stationConfig.acceso_estaciones_por_cajero);
+      renderStationAccessPanel();
+    }
+
+    async function saveStationAccessConfig() {
+      const cfg = state.stationConfig && typeof state.stationConfig === 'object' ? state.stationConfig : {};
+      cfg.acceso_estaciones_cajeros = normalizeStationAccess(state.stationAccess);
+      delete cfg.acceso_estaciones_por_cajero;
+      const res = await fetch('/api/empresa/estacion_prefs?empresa_id=' + encodeURIComponent(state.empresaID), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estacion_id: 0, clave: 'estaciones_config', valor: JSON.stringify(cfg) })
+      });
+      await ensureOk(res);
+      state.stationConfig = cfg;
+    }
+
+    function selectedStationAccessUserEmail() {
+      const select = document.getElementById('stationAccessUser');
+      return String(select && select.value || '').trim().toLowerCase();
+    }
+
+    function currentStationAccessEntry() {
+      const email = selectedStationAccessUserEmail();
+      if (!email) return { limitar_estaciones: false, estaciones: [], ver_caja: true };
+      const users = state.stationAccess.usuarios || {};
+      const entry = users[email] && typeof users[email] === 'object' ? users[email] : {};
+      return {
+        limitar_estaciones: !!entry.limitar_estaciones,
+        estaciones: Array.isArray(entry.estaciones) ? entry.estaciones.map(Number).filter(Boolean) : [],
+        ver_caja: entry.ver_caja === undefined ? true : !!entry.ver_caja
+      };
+    }
+
+    function renderStationAccessPanel() {
+      const enabled = document.getElementById('stationAccessEnabled');
+      const select = document.getElementById('stationAccessUser');
+      const limit = document.getElementById('stationAccessLimit');
+      const caja = document.getElementById('stationAccessCaja');
+      const checks = document.getElementById('stationAccessChecks');
+      if (!enabled || !select || !limit || !caja || !checks) return;
+
+      enabled.checked = !!state.stationAccess.habilitado;
+      const previous = select.value;
+      select.innerHTML = '<option value="">-- Seleccionar usuario --</option>';
+      state.users.forEach(function(user) {
+        const email = String(user.email || '').trim();
+        if (!email || user.estado === 'inactivo') return;
+        const opt = document.createElement('option');
+        opt.value = email.toLowerCase();
+        opt.textContent = (user.nombre ? user.nombre + ' - ' : '') + email;
+        select.appendChild(opt);
+      });
+      if (previous) select.value = previous;
+
+      const entry = currentStationAccessEntry();
+      limit.checked = !!entry.limitar_estaciones;
+      caja.checked = !!entry.ver_caja;
+      const allowed = new Set(entry.estaciones.map(String));
+      checks.innerHTML = stationRowsFromConfig().map(function(st) {
+        const id = String(st.id);
+        return '<label class="station-access-check"><input type="checkbox" class="stationAccessStation" value="' + id + '"' + (allowed.has(id) ? ' checked' : '') + '> <span>' + escapeHTML(st.nombre) + '</span></label>';
+      }).join('');
+    }
+
+    function collectStationAccessForm() {
+      const email = selectedStationAccessUserEmail();
+      if (!email) throw new Error('Selecciona un usuario');
+      const stations = Array.from(document.querySelectorAll('.stationAccessStation:checked')).map(function(input) {
+        return Number(input.value || 0);
+      }).filter(Boolean);
+      return {
+        email: email,
+        entry: {
+          limitar_estaciones: !!document.getElementById('stationAccessLimit').checked,
+          estaciones: stations,
+          ver_caja: !!document.getElementById('stationAccessCaja').checked
+        }
+      };
     }
 
     function setPhotoPreview(url, item) {
@@ -336,6 +510,11 @@
 
     async function loadData() {
       await Promise.all([loadRoles(), loadUsers()]);
+      try {
+        await loadStationAccessConfig();
+      } catch (err) {
+        setStationAccessMessage(err.message || 'No se pudo cargar acceso por estaciones', true);
+      }
     }
 
     async function uploadUserPhoto(userId) {
@@ -431,6 +610,33 @@
         setPhotoPreview(String(ev.target && ev.target.result || ''), null);
       };
       reader.readAsDataURL(file);
+    });
+
+    document.getElementById('stationAccessUser').addEventListener('change', function() {
+      renderStationAccessPanel();
+    });
+
+    document.getElementById('stationAccessAll').addEventListener('click', function() {
+      document.querySelectorAll('.stationAccessStation').forEach(function(input) { input.checked = true; });
+    });
+
+    document.getElementById('stationAccessNone').addEventListener('click', function() {
+      document.querySelectorAll('.stationAccessStation').forEach(function(input) { input.checked = false; });
+    });
+
+    document.getElementById('stationAccessSave').addEventListener('click', async function() {
+      try {
+        const access = collectStationAccessForm();
+        state.stationAccess.habilitado = !!document.getElementById('stationAccessEnabled').checked;
+        if (!state.stationAccess.usuarios || typeof state.stationAccess.usuarios !== 'object') {
+          state.stationAccess.usuarios = {};
+        }
+        state.stationAccess.usuarios[access.email] = access.entry;
+        await saveStationAccessConfig();
+        setStationAccessMessage('Acceso de estaciones guardado para el usuario seleccionado', false);
+      } catch (err) {
+        setStationAccessMessage(err.message || 'No se pudo guardar acceso por estaciones', true);
+      }
     });
 
     (async function init() {

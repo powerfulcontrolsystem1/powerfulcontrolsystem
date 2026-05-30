@@ -699,6 +699,21 @@ try {
     }
   }
 
+  function favoriteIconFromMenu(href) {
+    var link = findMenuLinkByHref(href);
+    if (link) {
+      var img = link.querySelector("img.icon");
+      if (img && img.getAttribute("src")) {
+        return { type: "img", src: img.getAttribute("src") };
+      }
+      var symbol = link.querySelector(".menu-symbol-icon,.icon");
+      if (symbol && String(symbol.textContent || "").trim()) {
+        return { type: "symbol", symbol: String(symbol.textContent || "").trim() };
+      }
+    }
+    return { type: "img", src: "/img/analytics-color.svg" };
+  }
+
   function isFavoriteHref(href, empresaId) {
     var current = stripEmpresaParam(href);
     if (!current) return false;
@@ -750,6 +765,7 @@ try {
       favorites.unshift({
         href: href,
         title: favoriteTitleFromFrame(href),
+        icon: favoriteIconFromMenu(href),
         updatedAt: new Date().toISOString()
       });
     }

@@ -52,10 +52,17 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
+				usuarioActual := strings.TrimSpace(adminEmailFromRequest(r))
 				estacionID, err := parseOptionalInt64CarritoQuery(r, "estacion_id")
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
+				}
+				if estacionID > 0 {
+					if err := ensureCarritoStationAccessForStation(dbEmp, empresaID, usuarioActual, estacionID); err != nil {
+						writeCarritoStationAccessError(w, err)
+						return
+					}
 				}
 				days, err := parseOptionalIntCarritoQuery(r, "days")
 				if err != nil {
@@ -73,6 +80,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						AND evento_operacion = 'venta_pagada'
 						AND datetime(COALESCE(fecha_evento, fecha_creacion, datetime('now','localtime'))) >= datetime('now','localtime', ?)`
 				args := []interface{}{empresaID, fmt.Sprintf("-%d day", days)}
+				if usuarioActual != "" {
+					query += " AND LOWER(COALESCE(usuario_creador,'')) = LOWER(?)"
+					args = append(args, usuarioActual)
+				}
 				if estacionID > 0 {
 					query += " AND estacion_id = ?"
 					args = append(args, estacionID)
@@ -289,6 +300,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo consultar el carrito", http.StatusInternalServerError)
 					return
 				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				writeJSON(w, http.StatusOK, carrito)
 				return
 			}
@@ -308,6 +323,12 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 				rows = filtered
+			}
+			var accessErr error
+			rows, accessErr = filterCarritosByStationAccess(dbEmp, empresaID, adminEmailFromRequest(r), rows)
+			if accessErr != nil {
+				writeCarritoStationAccessError(w, accessErr)
+				return
 			}
 			attachCarritoStationRuntimeSummaries(dbEmp, rows)
 			writeJSON(w, http.StatusOK, rows)
@@ -364,6 +385,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 					log.Printf("[carritos] get for abono empresa_id=%d carrito_id=%d error: %v", empresaID, carritoID, errCarrito)
 					http.Error(w, "No se pudo validar el carrito para abono", http.StatusInternalServerError)
+					return
+				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
 					return
 				}
 				if !isCarritoOperativoActivo(carrito) {
@@ -465,6 +490,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if err := ensureCarritoStationAccessForCarrito(dbEmp, payload.EmpresaID, adminEmailFromRequest(r), &payload); err != nil {
+				writeCarritoStationAccessError(w, err)
+				return
+			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 
 			id, err := dbpkg.CreateCarritoCompra(dbEmp, payload)
@@ -519,6 +548,19 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				id, errID := parseInt64Query(r, "id")
 				if errID != nil {
 					http.Error(w, errID.Error(), http.StatusBadRequest)
+					return
+				}
+				carritoPrevio, errCarritoPrevio := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+				if errCarritoPrevio != nil {
+					if errors.Is(errCarritoPrevio, sql.ErrNoRows) {
+						http.Error(w, "carrito no encontrado", http.StatusNotFound)
+						return
+					}
+					http.Error(w, "No se pudo validar el carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carritoPrevio); err != nil {
+					writeCarritoStationAccessError(w, err)
 					return
 				}
 				var payload struct {
@@ -594,6 +636,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo obtener carrito", http.StatusInternalServerError)
 					return
 				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(carrito)
 				if estacionID <= 0 {
 					http.Error(w, "este carrito no es de estación", http.StatusBadRequest)
@@ -646,6 +692,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 					log.Printf("[carritos] get for activar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
 					return
 				}
 				if isCarritoVentaPagada(carrito) && !resetItems {
@@ -718,6 +768,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 					log.Printf("[carritos] get for pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
 					return
 				}
 				log.Printf("[carritos] debug intentar %s empresa_id=%d id=%d estado=%q estado_carrito=%q pagado_en=%q", action, empresaID, id, carrito.Estado, carrito.EstadoCarrito, carrito.PagadoEn)
@@ -1260,6 +1314,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
 					return
 				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				if isCarritoVentaPagada(carrito) {
 					http.Error(w, "la venta ya fue pagada; para iniciar una nueva sesion use activar_estacion con reset_items=1", http.StatusConflict)
 					return
@@ -1346,6 +1404,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 					log.Printf("[carritos] get for anular_venta empresa_id=%d id=%d error: %v", empresaID, id, errCarrito)
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
+					return
+				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
 					return
 				}
 				if strings.EqualFold(strings.TrimSpace(carrito.EstadoCarrito), "anulado") {
@@ -1477,6 +1539,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
 					return
 				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				if !isCarritoVentaPagada(carrito) {
 					http.Error(w, "solo se puede anular parcialmente una venta pagada", http.StatusConflict)
 					return
@@ -1599,6 +1665,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
 					return
 				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
@@ -1650,6 +1720,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudo validar estado del carrito", http.StatusInternalServerError)
 					return
 				}
+				if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				if err := validateCarritoTransitionForAction(carrito, action); err != nil {
 					http.Error(w, err.Error(), http.StatusConflict)
 					return
@@ -1693,6 +1767,19 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			carritoActual, errCarritoActual := dbpkg.GetCarritoCompraByID(dbEmp, payload.EmpresaID, payload.ID)
+			if errCarritoActual != nil {
+				if errors.Is(errCarritoActual, sql.ErrNoRows) {
+					http.Error(w, "carrito no encontrado", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "No se pudo validar el carrito", http.StatusInternalServerError)
+				return
+			}
+			if err := ensureCarritoStationAccessForCarrito(dbEmp, payload.EmpresaID, adminEmailFromRequest(r), carritoActual); err != nil {
+				writeCarritoStationAccessError(w, err)
+				return
+			}
 			if err := dbpkg.UpdateCarritoCompra(dbEmp, payload); err != nil {
 				log.Printf("[carritos] update empresa_id=%d id=%d error: %v", payload.EmpresaID, payload.ID, err)
 				http.Error(w, "No se pudo actualizar el carrito", http.StatusBadRequest)
@@ -1713,6 +1800,19 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			id, errID := parseInt64Query(r, "id")
 			if errID != nil {
 				http.Error(w, errID.Error(), http.StatusBadRequest)
+				return
+			}
+			carrito, errCarrito := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+			if errCarrito != nil {
+				if errors.Is(errCarrito, sql.ErrNoRows) {
+					http.Error(w, "carrito no encontrado", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "No se pudo validar el carrito", http.StatusInternalServerError)
+				return
+			}
+			if err := ensureCarritoStationAccessForCarrito(dbEmp, empresaID, adminEmailFromRequest(r), carrito); err != nil {
+				writeCarritoStationAccessError(w, err)
 				return
 			}
 			if err := dbpkg.DeleteCarritoCompra(dbEmp, empresaID, id); err != nil {
@@ -1743,6 +1843,10 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "carrito_id es obligatorio", http.StatusBadRequest)
 				return
 			}
+			if err := ensureCarritoStationAccessByID(dbEmp, empresaID, carritoID, adminEmailFromRequest(r)); err != nil {
+				writeCarritoStationAccessError(w, err)
+				return
+			}
 			includeInactive := strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "1") ||
 				strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("include_inactive")), "true")
 			rows, err := dbpkg.GetCarritoCompraItems(dbEmp, empresaID, carritoID, includeInactive)
@@ -1762,6 +1866,10 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 			if err := validateCarritoItemPayload(payload); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if err := ensureCarritoStationAccessByID(dbEmp, payload.EmpresaID, payload.CarritoID, adminEmailFromRequest(r)); err != nil {
+				writeCarritoStationAccessError(w, err)
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
@@ -1813,6 +1921,10 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 					http.Error(w, errID.Error(), http.StatusBadRequest)
 					return
 				}
+				if err := ensureCarritoStationAccessByID(dbEmp, empresaID, carritoID, adminEmailFromRequest(r)); err != nil {
+					writeCarritoStationAccessError(w, err)
+					return
+				}
 				estado := "activo"
 				if action == "desactivar" {
 					estado = "inactivo"
@@ -1843,6 +1955,10 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if err := ensureCarritoStationAccessByID(dbEmp, payload.EmpresaID, payload.CarritoID, adminEmailFromRequest(r)); err != nil {
+				writeCarritoStationAccessError(w, err)
+				return
+			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			if err := dbpkg.UpdateCarritoCompraItem(dbEmp, payload); err != nil {
 				log.Printf("[carritos_items] update empresa_id=%d carrito_id=%d id=%d error: %v", payload.EmpresaID, payload.CarritoID, payload.ID, err)
@@ -1870,6 +1986,10 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 			id, errID := parseInt64Query(r, "id")
 			if errID != nil {
 				http.Error(w, errID.Error(), http.StatusBadRequest)
+				return
+			}
+			if err := ensureCarritoStationAccessByID(dbEmp, empresaID, carritoID, adminEmailFromRequest(r)); err != nil {
+				writeCarritoStationAccessError(w, err)
 				return
 			}
 			if err := dbpkg.DeleteCarritoCompraItem(dbEmp, empresaID, carritoID, id); err != nil {
@@ -1940,6 +2060,212 @@ func carritoParseConfigJSON(raw string) map[string]interface{} {
 		return cfg
 	}
 	return nil
+}
+
+var errCarritoStationAccessDenied = errors.New("usuario sin acceso a esta estacion")
+
+type carritoStationAccessPolicy struct {
+	Enabled       bool
+	LimitStations bool
+	AllowCaja     bool
+	Stations      map[int64]bool
+}
+
+func loadCarritoStationAccessPolicy(dbEmp *sql.DB, empresaID int64, usuario string) (carritoStationAccessPolicy, error) {
+	policy := carritoStationAccessPolicy{AllowCaja: true, Stations: map[int64]bool{}}
+	if dbEmp == nil || empresaID <= 0 {
+		return policy, nil
+	}
+	pref, err := dbpkg.GetEmpresaEstacionPref(dbEmp, empresaID, 0, "estaciones_config")
+	if err != nil {
+		return policy, err
+	}
+	if pref == nil || strings.TrimSpace(pref.Valor) == "" {
+		return policy, nil
+	}
+	root := carritoParseConfigJSON(pref.Valor)
+	if root == nil {
+		return policy, nil
+	}
+	access := carritoMapFromConfig(root["acceso_estaciones_cajeros"])
+	if access == nil {
+		access = carritoMapFromConfig(root["acceso_estaciones_por_cajero"])
+	}
+	if access == nil {
+		return policy, nil
+	}
+	policy.Enabled = carritoBoolFromConfigValue(access["habilitado"]) || carritoBoolFromConfigValue(access["enabled"])
+	if !policy.Enabled {
+		return policy, nil
+	}
+	email := strings.ToLower(strings.TrimSpace(usuario))
+	users := carritoMapFromConfig(access["usuarios"])
+	if users == nil || email == "" {
+		return policy, nil
+	}
+	entry := carritoMapFromConfig(users[email])
+	if entry == nil {
+		return policy, nil
+	}
+	policy.AllowCaja = true
+	if _, exists := entry["ver_caja"]; exists {
+		policy.AllowCaja = carritoBoolFromConfigValue(entry["ver_caja"])
+	}
+	if _, exists := entry["caja"]; exists {
+		policy.AllowCaja = carritoBoolFromConfigValue(entry["caja"])
+	}
+	policy.LimitStations = carritoBoolFromConfigValue(entry["limitar_estaciones"])
+	if _, exists := entry["restringir_estaciones"]; exists {
+		policy.LimitStations = carritoBoolFromConfigValue(entry["restringir_estaciones"])
+	}
+	stationIDs := carritoInt64SliceFromConfig(entry["estaciones"])
+	if len(stationIDs) == 0 {
+		stationIDs = carritoInt64SliceFromConfig(entry["station_ids"])
+	}
+	if _, hasExplicitLimit := entry["limitar_estaciones"]; len(stationIDs) > 0 && !hasExplicitLimit {
+		policy.LimitStations = true
+	}
+	for _, id := range stationIDs {
+		if id > 0 {
+			policy.Stations[id] = true
+		}
+	}
+	return policy, nil
+}
+
+func carritoMapFromConfig(value interface{}) map[string]interface{} {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		return v
+	default:
+		return nil
+	}
+}
+
+func carritoInt64SliceFromConfig(value interface{}) []int64 {
+	out := make([]int64, 0)
+	switch v := value.(type) {
+	case []interface{}:
+		for _, item := range v {
+			if n := carritoInt64FromConfig(item); n > 0 {
+				out = append(out, n)
+			}
+		}
+	case []int64:
+		out = append(out, v...)
+	case []int:
+		for _, item := range v {
+			if item > 0 {
+				out = append(out, int64(item))
+			}
+		}
+	case string:
+		parts := strings.FieldsFunc(v, func(r rune) bool {
+			return r == ',' || r == ';' || r == ' '
+		})
+		for _, part := range parts {
+			if n, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64); err == nil && n > 0 {
+				out = append(out, n)
+			}
+		}
+	}
+	return out
+}
+
+func carritoInt64FromConfig(value interface{}) int64 {
+	switch v := value.(type) {
+	case float64:
+		return int64(v)
+	case int:
+		return int64(v)
+	case int64:
+		return v
+	case json.Number:
+		n, _ := v.Int64()
+		return n
+	case string:
+		n, _ := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+		return n
+	default:
+		return 0
+	}
+}
+
+func ensureCarritoStationAccessForStation(dbEmp *sql.DB, empresaID int64, usuario string, estacionID int64) error {
+	if estacionID <= 0 {
+		return nil
+	}
+	policy, err := loadCarritoStationAccessPolicy(dbEmp, empresaID, usuario)
+	if err != nil {
+		return err
+	}
+	if !policy.Enabled || !policy.LimitStations {
+		return nil
+	}
+	if policy.Stations[estacionID] {
+		return nil
+	}
+	return errCarritoStationAccessDenied
+}
+
+func ensureCarritoStationAccessForCarrito(dbEmp *sql.DB, empresaID int64, usuario string, carrito *dbpkg.CarritoCompra) error {
+	estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(carrito)
+	return ensureCarritoStationAccessForStation(dbEmp, empresaID, usuario, estacionID)
+}
+
+func ensureCarritoStationCajaAccess(dbEmp *sql.DB, empresaID int64, usuario string) error {
+	policy, err := loadCarritoStationAccessPolicy(dbEmp, empresaID, usuario)
+	if err != nil {
+		return err
+	}
+	if !policy.Enabled {
+		return nil
+	}
+	if policy.AllowCaja {
+		return nil
+	}
+	return errCarritoStationAccessDenied
+}
+
+func ensureCarritoStationAccessByID(dbEmp *sql.DB, empresaID, carritoID int64, usuario string) error {
+	carrito, err := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, carritoID)
+	if err != nil {
+		return err
+	}
+	return ensureCarritoStationAccessForCarrito(dbEmp, empresaID, usuario, carrito)
+}
+
+func filterCarritosByStationAccess(dbEmp *sql.DB, empresaID int64, usuario string, rows []dbpkg.CarritoCompra) ([]dbpkg.CarritoCompra, error) {
+	policy, err := loadCarritoStationAccessPolicy(dbEmp, empresaID, usuario)
+	if err != nil {
+		return rows, err
+	}
+	if !policy.Enabled || !policy.LimitStations {
+		return rows, nil
+	}
+	filtered := make([]dbpkg.CarritoCompra, 0, len(rows))
+	for _, row := range rows {
+		estacionID, _, _ := dbpkg.ResolveCarritoStationIdentity(&row)
+		if estacionID <= 0 || policy.Stations[estacionID] {
+			filtered = append(filtered, row)
+		}
+	}
+	return filtered, nil
+}
+
+func writeCarritoStationAccessError(w http.ResponseWriter, err error) {
+	if err == nil {
+		return
+	}
+	if errors.Is(err, errCarritoStationAccessDenied) {
+		http.Error(w, "No tienes acceso operativo a esta estacion", http.StatusForbidden)
+		return
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "Carrito no encontrado", http.StatusNotFound)
+		return
+	}
+	http.Error(w, "No se pudo validar el acceso a estaciones", http.StatusInternalServerError)
 }
 
 func carritoClienteObligatorioParaPago(dbEmp *sql.DB, empresaID int64) bool {

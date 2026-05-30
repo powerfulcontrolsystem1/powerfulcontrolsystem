@@ -162,6 +162,25 @@ afecte dinero, documentos, licencias o seguridad.
 5. Pruebas: turno con ventas, descuento, tarjeta, ingreso, egreso, anulacion,
    exportar/imprimir.
 
+## Cajeros simultaneos y estaciones asignadas
+
+1. El administrador crea los usuarios de la empresa en
+   `Administrar usuarios`.
+2. En la seccion `Acceso a estaciones por cajero` activa el control y elige el
+   usuario cajero.
+3. Marca por check las estaciones que ese usuario puede ver y operar. Si el
+   check `Ver estacion Caja y corte de turno` queda apagado, la tarjeta Caja no
+   se muestra para ese usuario.
+4. El tablero de estaciones filtra la vista por usuario autenticado. Los
+   endpoints de carritos e items validan la misma regla en backend, por lo que
+   editar URL, cache o consola no permite operar estaciones no asignadas.
+5. La estacion Caja, los totales de caja, caja abierta y reporte de turno se
+   mantienen independientes por `usuario_creador`; varios cajeros pueden operar
+   la misma empresa al mismo tiempo con reportes separados.
+6. Pruebas: dos usuarios cajeros en la misma empresa, estaciones diferentes,
+   estados visibles compartidos, bloqueo 403 al intentar abrir/agregar/pagar una
+   estacion no asignada y corte de turno independiente.
+
 ## Alertas super administrador
 
 1. `web/super/alertas_sistema.html` concentra alertas y notificaciones.

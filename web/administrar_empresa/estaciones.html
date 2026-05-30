@@ -98,7 +98,8 @@
       },
       dirtyByEstacion: {},
       aseoControlEnabled: false,
-      canViewAseoReport: false
+      canViewAseoReport: false,
+      currentUserEmail: ''
     };
 
     function sanitize(v) {
@@ -163,6 +164,49 @@
       if (window.PCSEstacionLabels && typeof window.PCSEstacionLabels.apply === 'function') {
         window.PCSEstacionLabels.apply(root || document.body, normalizeStationLabels(cfg || stationConfig || {}));
       }
+    }
+
+    async function loadCurrentAccount() {
+      try {
+        const res = await fetch('/me', { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json();
+        state.currentUserEmail = String((data && (data.email || data.admin_email || data.user_email || data.usuario)) || '').trim().toLowerCase();
+      } catch (_) {
+        state.currentUserEmail = '';
+      }
+    }
+
+    function normalizeStationAccessConfig(raw) {
+      const src = raw && typeof raw === 'object' ? raw : {};
+      const users = src.usuarios && typeof src.usuarios === 'object' ? src.usuarios : {};
+      return {
+        habilitado: !!src.habilitado,
+        caja_por_cajero: src.caja_por_cajero === undefined ? true : !!src.caja_por_cajero,
+        usuarios: Object.assign({}, users)
+      };
+    }
+
+    function buildVisibleConfigForCurrentUser(cfg) {
+      const source = cfg && typeof cfg === 'object' ? cfg : {};
+      const access = normalizeStationAccessConfig(source.acceso_estaciones_cajeros || source.acceso_estaciones_por_cajero);
+      if (!access.habilitado) return source;
+      const email = String(state.currentUserEmail || '').trim().toLowerCase();
+      const entry = email && access.usuarios ? access.usuarios[email] : null;
+      if (!entry || typeof entry !== 'object') return source;
+      const visible = Object.assign({}, source);
+      if (entry.ver_caja === false) {
+        visible.caja_enabled = false;
+      }
+      if (entry.limitar_estaciones) {
+        const allowed = new Set((Array.isArray(entry.estaciones) ? entry.estaciones : []).map(function(id) {
+          return String(Number(id || 0));
+        }));
+        visible.estaciones = Array.isArray(source.estaciones)
+          ? source.estaciones.filter(function(est) { return allowed.has(String(Number(est && est.id || 0))); })
+          : [];
+      }
+      return visible;
     }
 
     function normalizeConfig(cfg) {
@@ -272,7 +316,8 @@
         ia_pedidos_enabled,
         ia_pedidos_placement,
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global)),
-        station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {}
+        station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {},
+        acceso_estaciones_cajeros: normalizeStationAccessConfig(cfg && (cfg.acceso_estaciones_cajeros || cfg.acceso_estaciones_por_cajero))
       };
     }
 
@@ -1892,8 +1937,10 @@
     }
 
     function renderEstaciones(cfg) {
+      const baseConfig = cfg || stationConfig || {};
+      cfg = buildVisibleConfigForCurrentUser(baseConfig);
       const grid = document.getElementById('estacionesGrid');
-      const labels = normalizeStationLabels(cfg || stationConfig || {});
+      const labels = normalizeStationLabels(baseConfig);
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
         if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.ia_pedidos_enabled)) {
           grid.innerHTML = '<p class="form-help">No hay ' + sanitize(labels.pluralLower) + ' configuradas. Ve a Configuración de ' + sanitize(labels.pluralLower) + ' para crearlas.</p>';
@@ -2350,6 +2397,7 @@
           window.clearTimeout(window.__pcsStationAutoTextResizeTimer);
           window.__pcsStationAutoTextResizeTimer = window.setTimeout(syncAutoTextCardHeight, 120);
         });
+        await loadCurrentAccount();
         await Promise.all([
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),

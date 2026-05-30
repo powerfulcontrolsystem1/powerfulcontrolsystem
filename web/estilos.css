@@ -19321,6 +19321,56 @@ body.carrito-flat-page .actions .cart-btn-icon{
   font-size:.72em !important;
 }
 
+body.carrito-flat-page{
+  --carrito-page-bg:color-mix(in srgb,var(--bg) 78%,#000 22%);
+  --carrito-card-bg:var(--surface);
+  background:var(--carrito-page-bg) !important;
+}
+
+html[data-theme^="light"] body.carrito-flat-page{
+  --carrito-page-bg:color-mix(in srgb,var(--bg) 86%,#000 14%);
+}
+
+body.carrito-flat-page .container,
+body.carrito-flat-page .carrito-workspace-card,
+body.carrito-flat-page .carrito-primary-layout,
+body.carrito-flat-page .carrito-primary-main,
+body.carrito-flat-page .carrito-side-column,
+body.carrito-flat-page .carrito-grid,
+body.carrito-flat-page .carrito-grid-main,
+body.carrito-flat-page .carrito-station-split,
+body.carrito-flat-page .carrito-station-split-main,
+body.carrito-flat-page .carrito-station-toolbar,
+body.carrito-flat-page #buscarProductosActions{
+  background:var(--carrito-page-bg) !important;
+}
+
+body.carrito-flat-page .form:not(.carrito-workspace-card),
+body.carrito-flat-page .card,
+body.carrito-flat-page .advanced-card,
+body.carrito-flat-page .empresa-section,
+body.carrito-flat-page .carrito-summary-card,
+body.carrito-flat-page .carrito-item-card,
+body.carrito-flat-page .carrito-payment-section-card,
+body.carrito-flat-page .carrito-actions-card,
+body.carrito-flat-page .carrito-worker-card,
+body.carrito-flat-page .carrito-vip-card,
+body.carrito-flat-page .carrito-payment-amounts-card,
+body.carrito-flat-page .carrito-payment-qr-card,
+body.carrito-flat-page #scannerPanel,
+body.carrito-flat-page #stationCheckoutPanel,
+body.carrito-flat-page #stationCartActionsCard,
+body.carrito-flat-page #stationPaymentAmountsCard,
+body.carrito-flat-page #stationPaymentQrCard,
+body.carrito-flat-page #stationWorkerCommissionCard,
+body.carrito-flat-page #stationVipAccessCard,
+body.carrito-flat-page #carritoTotalsPanel,
+body.carrito-flat-page #carritoSearchBlock,
+body.carrito-flat-page #carritosList{
+  background:var(--carrito-card-bg) !important;
+  border-color:color-mix(in srgb,var(--border) 82%,var(--carrito-page-bg) 18%) !important;
+}
+
 @media (max-width:900px){
   body.carrito-flat-page .carrito-workspace-card{
     display:flex !important;
