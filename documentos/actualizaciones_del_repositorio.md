@@ -11586,3 +11586,27 @@ Archivos modificados:
 - web/js/seleccionar_empresa.js
 - web/super/licencias_resumen.html
 - web/super/preconfiguracion_tipos_empresa.html
+
+2026-05-29 23:55:14 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: d54f41b6; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/carritos_compras.go
+- backend/handlers/corte_caja.go
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/email_corporativo_handlers_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/email_corporativo_mailu.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- tools/professional_audit.mjs
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/estaciones.html
+- web/administrar_empresa/panel.html
+- web/estilos.css
+- web/js/administrar_empresa.js
