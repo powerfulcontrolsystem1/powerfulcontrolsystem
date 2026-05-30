@@ -1991,4 +1991,5 @@
 - [Navegacion] Se enlazan las paginas super que no tenian boton directo: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
 - [QA] Validado cruce menu/paginas: 52 paginas HTML en `web/super`, 52 enlaces super en el menu y ningun enlace fuera de paginas permitidas.
 - 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa, oculta planes heredados repetidos, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
+- 2026-05-30: `Configuracion general PostgreSQL` corrige el esquema y consultas de `empresa_configuracion_general` para usar `BIGSERIAL`, fecha compatible y placeholders traducidos, evitando 500 al entrar al panel de empresas nuevas.
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.

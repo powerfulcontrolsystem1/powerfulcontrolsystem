@@ -8,6 +8,7 @@
 - Seguridad/datos: no se borran licencias ya asignadas a empresas; el control anti-reuso se mantiene en `licencias_activaciones_gratis` con aislamiento por `empresa_id`.
 - Validacion: `go test ./db -run "GlobalLicencia|Licencia|Constructora|Alquileres|Drogueria|NuevoVertical" -count=1`, parseo de scripts HTML y `git diff --check`.
 - QA visual: se creo la empresa `Prueba Licencias Globales 202605302021`, se activo la prueba gratis de 15 dias y al reabrir selector se confirmo que solo aparecen los planes comerciales. Durante la prueba se ajusto Wompi para consultar terminos del comercio sin cabecera `Authorization`, segun el contrato publico de merchants.
+- Correccion adicional: `empresa_configuracion_general` usaba DDL y consultas con sintaxis SQLite (`AUTOINCREMENT`, `datetime`, placeholders `?` directos) dentro de un runtime PostgreSQL; se cambio a definicion compatible y helpers SQL para evitar 500 al abrir el panel de empresas nuevas.
 
 2026-05-30: Informacion de contacto corporativa.
 - Modulos afectados: `portal_publico`, `informacion_contacto`, `frontend_ux`.

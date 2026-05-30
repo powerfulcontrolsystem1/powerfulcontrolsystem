@@ -54,9 +54,18 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 		return errors.New("db connection is nil")
 	}
 
+	idDefinition := "INTEGER PRIMARY KEY AUTOINCREMENT"
+	createdDefault := "datetime('now','localtime')"
+	updatedDefault := "datetime('now','localtime')"
+	if isPostgresDialect() {
+		idDefinition = "BIGSERIAL PRIMARY KEY"
+		createdDefault = "CURRENT_TIMESTAMP"
+		updatedDefault = "CURRENT_TIMESTAMP"
+	}
+
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS empresa_configuracion_general (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id ` + idDefinition + `,
 			empresa_id INTEGER NOT NULL UNIQUE,
 			imprimir_orden_servicio INTEGER DEFAULT 0,
 			area_despacho TEXT,
@@ -91,8 +100,8 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 			clima_longitud REAL DEFAULT 0,
 			clima_nombre TEXT,
 			clima_fuente TEXT,
-			fecha_creacion TEXT DEFAULT (datetime('now','localtime')),
-			fecha_actualizacion TEXT DEFAULT (datetime('now','localtime')),
+			fecha_creacion TEXT DEFAULT (` + createdDefault + `),
+			fecha_actualizacion TEXT DEFAULT (` + updatedDefault + `),
 			usuario_creador TEXT,
 			estado TEXT DEFAULT 'activo',
 			observaciones TEXT
@@ -232,7 +241,7 @@ func GetEmpresaConfiguracionGeneral(dbConn *sql.DB, empresaID int64) (*EmpresaCo
 		return nil, err
 	}
 
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(imprimir_orden_servicio, 0),
@@ -378,12 +387,13 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 	cfg = normalizeEmpresaConfiguracionGeneral(cfg)
 
 	var existingID int64
-	err := dbConn.QueryRow("SELECT id FROM empresa_configuracion_general WHERE empresa_id = ? LIMIT 1", cfg.EmpresaID).Scan(&existingID)
+	err := queryRowSQLCompat(dbConn, "SELECT id FROM empresa_configuracion_general WHERE empresa_id = ? LIMIT 1", cfg.EmpresaID).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
 	if err == sql.ErrNoRows {
+		nowExpr := sqlNowExpr()
 		insertedID, insertErr := insertSQLCompat(dbConn, `INSERT INTO empresa_configuracion_general (
 			empresa_id,
 			imprimir_orden_servicio,
@@ -428,8 +438,8 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?, ?, ?, ?, ?,
-			datetime('now','localtime'),
-			datetime('now','localtime'),
+			`+nowExpr+`,
+			`+nowExpr+`,
 			?, ?, ?
 		)`,
 			cfg.EmpresaID,
@@ -476,7 +486,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		return insertedID, nil
 	}
 
-	_, updateErr := dbConn.Exec(`UPDATE empresa_configuracion_general SET
+	_, updateErr := execSQLCompat(dbConn, `UPDATE empresa_configuracion_general SET
 		imprimir_orden_servicio = ?,
 		area_despacho = ?,
 		copias_orden_servicio = ?,
@@ -510,7 +520,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		clima_longitud = ?,
 		clima_nombre = ?,
 		clima_fuente = ?,
-		fecha_actualizacion = datetime('now','localtime'),
+		fecha_actualizacion = `+sqlNowExpr()+`,
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?
