@@ -11644,3 +11644,32 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/Informacion_de_contacto.html
 - web/estilos.css
+
+2026-05-30 15:16:50 - Mensaje: licencias globales y reglas comerciales; Commit: 879ab530; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/alquileres_bootstrap.go
+- backend/db/constructora_bootstrap.go
+- backend/db/db.go
+- backend/db/drogueria_farmacia_bootstrap.go
+- backend/db/licencias_globales.go
+- backend/db/licencias_globales_test.go
+- backend/db/plantillas_nuevas_bootstrap.go
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- tmp/licencias-visual/01-login.png
+- tmp/licencias-visual/02-post-login.png
+- tmp/licencias-visual/03-seleccionar-empresa.png
+- tmp/licencias-visual/04-super-licencias.png
+- web/elegir_licencia.html
+- web/js/super_administrador.js
+- web/super/licencias.html
+- web/super/plantillas_produccion_masiva.html
+- web/super_administrador.html
