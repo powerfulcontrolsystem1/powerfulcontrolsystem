@@ -1,3 +1,8 @@
+## [2026-05-30] Configuracion general PostgreSQL reforzada
+- [Backend] `EnsureEmpresaConfiguracionGeneralSchema` asegura la columna `fecha_creacion` en tablas existentes y repara la secuencia/default de `id` con `ensurePostgresTableIDSequence`.
+- [Compatibilidad] Las fechas de auditoria de `empresa_configuracion_general` se guardan como texto con `CAST(CURRENT_TIMESTAMP AS TEXT)` para no depender de conversiones implicitas de PostgreSQL.
+- [QA] Pruebas enfocadas en `db` y `handlers` para configuracion general y checkout/licencias.
+
 ## [2026-05-30] Informacion de contacto corporativa
 - [Portal] `web/Informacion_de_contacto.html` elimina el logo del hero y cambia el contenido hacia una presentacion corporativa de Powerful Control System.
 - [Contenido] La pagina agrega vision: dar a pequenas empresas acceso a herramientas tecnologicas para desarrollarse, progresar y competir con mas orden y control.

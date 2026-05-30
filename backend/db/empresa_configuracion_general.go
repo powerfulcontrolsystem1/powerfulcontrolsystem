@@ -59,8 +59,8 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 	updatedDefault := "datetime('now','localtime')"
 	if isPostgresDialect() {
 		idDefinition = "BIGSERIAL PRIMARY KEY"
-		createdDefault = "CURRENT_TIMESTAMP"
-		updatedDefault = "CURRENT_TIMESTAMP"
+		createdDefault = "CAST(CURRENT_TIMESTAMP AS TEXT)"
+		updatedDefault = "CAST(CURRENT_TIMESTAMP AS TEXT)"
 	}
 
 	stmts := []string{
@@ -113,6 +113,10 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 		if _, err := dbConn.Exec(stmt); err != nil {
 			return err
 		}
+	}
+
+	if err := ensurePostgresTableIDSequence(dbConn, "empresa_configuracion_general"); err != nil {
+		return err
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "imprimir_orden_servicio", "INTEGER DEFAULT 0"); err != nil {
@@ -212,6 +216,9 @@ func EnsureEmpresaConfiguracionGeneralSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "clima_fuente", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "fecha_creacion", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_general", "fecha_actualizacion", "TEXT"); err != nil {
@@ -393,7 +400,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 	}
 
 	if err == sql.ErrNoRows {
-		nowExpr := sqlNowExpr()
+		nowExpr := sqlNowTextExpr()
 		insertedID, insertErr := insertSQLCompat(dbConn, `INSERT INTO empresa_configuracion_general (
 			empresa_id,
 			imprimir_orden_servicio,
@@ -520,7 +527,7 @@ func UpsertEmpresaConfiguracionGeneral(dbConn *sql.DB, cfg EmpresaConfiguracionG
 		clima_longitud = ?,
 		clima_nombre = ?,
 		clima_fuente = ?,
-		fecha_actualizacion = `+sqlNowExpr()+`,
+		fecha_actualizacion = `+sqlNowTextExpr()+`,
 		usuario_creador = ?,
 		estado = ?,
 		observaciones = ?

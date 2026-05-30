@@ -500,6 +500,10 @@ func sqlNowExpr() string {
 	return "CURRENT_TIMESTAMP"
 }
 
+func sqlNowTextExpr() string {
+	return "CAST(CURRENT_TIMESTAMP AS TEXT)"
+}
+
 func sqlPlusHoursExpr(hours int) string {
 	return "(CURRENT_TIMESTAMP + interval '" + strconv.Itoa(hours) + " hour')"
 }
