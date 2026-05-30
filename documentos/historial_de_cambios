@@ -29208,3 +29208,19 @@ Archivos modificados:
 - web/super/licencias.html
 - web/super/plantillas_produccion_masiva.html
 - web/super_administrador.html
+
+2026-05-30: ajustar terminos wompi licencias
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/licencias-visual/05-super-licencias-actualizado.png
+- tmp/licencias-visual/06-agregar-empresa-modal.png
+- tmp/licencias-visual/07-empresa-creada.png
+- tmp/licencias-visual/08-licencias-disponibles.png
+- tmp/licencias-visual/09-checkout-prueba.png
+- tmp/licencias-visual/10-prueba-activada.png
+- tmp/licencias-visual/11-despues-prueba-solo-comerciales.png
+- tmp/licencias-visual/12-checkout-plan-comercial.png
