@@ -11575,3 +11575,14 @@ Archivos modificados:
 - web/super/preconfiguracion_tipos_empresa.html
 - web/super/tipos_empresas.html
 - web/super_administrador.html
+
+2026-05-29 22:18:57 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 47ff3f2f; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/js/seleccionar_empresa.js
+- web/super/licencias_resumen.html
+- web/super/preconfiguracion_tipos_empresa.html
