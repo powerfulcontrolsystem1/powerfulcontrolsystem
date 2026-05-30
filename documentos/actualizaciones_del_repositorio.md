@@ -11610,3 +11610,25 @@ Archivos modificados:
 - web/administrar_empresa/panel.html
 - web/estilos.css
 - web/js/administrar_empresa.js
+
+2026-05-30 00:31:48 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: bf1d8f5d; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/README.md
+- documentos/api/ayuda_apis.md
+- documentos/contexto_codex.md
+- documentos/decisiones_tecnicas.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/control_electrico.html
+- web/administrar_empresa/modulo_menu.html
+- web/ayuda/ayuda.html
+- web/ayuda/ayuda_apis.html
+- web/ayuda/ayuda_contextual.html
