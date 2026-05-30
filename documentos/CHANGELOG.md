@@ -1,6 +1,7 @@
 ## [2026-05-30] Configuracion general PostgreSQL reforzada
 - [Backend] `EnsureEmpresaConfiguracionGeneralSchema` asegura la columna `fecha_creacion` en tablas existentes y repara la secuencia/default de `id` con `ensurePostgresTableIDSequence`.
 - [Compatibilidad] Las fechas de auditoria de `empresa_configuracion_general` se guardan como texto con `CAST(CURRENT_TIMESTAMP AS TEXT)` para no depender de conversiones implicitas de PostgreSQL.
+- [Bugfix] El alta automatica de configuracion por defecto incluye el valor de `clima_fuente`, evitando que empresas nuevas fallen por diferencia entre columnas y valores del `INSERT`.
 - [QA] Pruebas enfocadas en `db` y `handlers` para configuracion general y checkout/licencias.
 
 ## [2026-05-30] Informacion de contacto corporativa

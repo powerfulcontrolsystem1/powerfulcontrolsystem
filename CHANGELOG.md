@@ -4592,3 +4592,4 @@
 - 2026-05-30: `Configuracion general PostgreSQL` corrige el esquema y consultas de `empresa_configuracion_general` para usar `BIGSERIAL`, fecha compatible y placeholders traducidos, evitando 500 al entrar al panel de empresas nuevas.
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
 - 2026-05-30: `Configuracion general PostgreSQL reforzada` asegura columna `fecha_creacion`, secuencia `id` y fechas texto en `empresa_configuracion_general` para evitar 500 al cargar paneles de empresas nuevas o antiguas en la VPS.
+- 2026-05-30: `Configuracion general en empresas nuevas` corrige el alta automatica de la configuracion por defecto agregando el valor faltante de `clima_fuente` en el INSERT.

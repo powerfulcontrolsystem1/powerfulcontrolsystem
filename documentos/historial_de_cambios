@@ -29175,6 +29175,7 @@ Detalle:
 - Se asegura `fecha_creacion` para instalaciones con tabla antigua de `empresa_configuracion_general`.
 - Se repara el default/secuencia de `id` en PostgreSQL para que el alta automatica de configuracion por empresa no falle.
 - Se guardan fechas de auditoria como texto explicito con `CAST(CURRENT_TIMESTAMP AS TEXT)`.
+- Se corrige el `INSERT` de configuracion por defecto para incluir el valor de `clima_fuente`, alineando columnas, placeholders y argumentos.
 Validacion:
 - `go test ./db -run "EmpresaConfiguracionGeneral|ConfiguracionGeneral" -count=1`
 - `go test ./handlers -run "Licencia|Checkout|PaymentMethods|Configuracion" -count=1`
