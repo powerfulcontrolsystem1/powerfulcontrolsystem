@@ -2048,7 +2048,6 @@ func fetchWompiAcceptanceInfo(baseURL, publicKey string) (string, string, string
 	if err != nil {
 		return "", "", "", "", err
 	}
-	req.Header.Set("Authorization", "Bearer "+publicKey)
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {

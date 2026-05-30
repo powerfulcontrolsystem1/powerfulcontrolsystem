@@ -4589,3 +4589,4 @@
 - [Navegacion] Se agregan botones para paginas super que existian sin enlace: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
 - [QA] Cruce automatico: 52 paginas HTML bajo `web/super` y 52 enlaces en el menu; ningun enlace del menu queda fuera de paginas permitidas/restaurables.
 - 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa, oculta planes heredados repetidos, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
+- 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
