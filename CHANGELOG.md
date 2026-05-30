@@ -4593,3 +4593,4 @@
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
 - 2026-05-30: `Configuracion general PostgreSQL reforzada` asegura columna `fecha_creacion`, secuencia `id` y fechas texto en `empresa_configuracion_general` para evitar 500 al cargar paneles de empresas nuevas o antiguas en la VPS.
 - 2026-05-30: `Configuracion general en empresas nuevas` corrige el alta automatica de la configuracion por defecto agregando el valor faltante de `clima_fuente` en el INSERT.
+- 2026-05-30: `Checkout licencias Wompi` valida que `wompi.public_key` tenga formato `pub_test_` o `pub_prod_` antes de publicar Wompi como medio disponible, evitando 502 por llaves placeholder.

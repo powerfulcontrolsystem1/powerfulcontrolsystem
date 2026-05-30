@@ -29176,6 +29176,7 @@ Detalle:
 - Se repara el default/secuencia de `id` en PostgreSQL para que el alta automatica de configuracion por empresa no falle.
 - Se guardan fechas de auditoria como texto explicito con `CAST(CURRENT_TIMESTAMP AS TEXT)`.
 - Se corrige el `INSERT` de configuracion por defecto para incluir el valor de `clima_fuente`, alineando columnas, placeholders y argumentos.
+- Se valida el formato de `wompi.public_key` antes de publicar Wompi como medio de pago disponible en checkout de licencias, evitando que llaves placeholder generen 502 al cargar terminos.
 Validacion:
 - `go test ./db -run "EmpresaConfiguracionGeneral|ConfiguracionGeneral" -count=1`
 - `go test ./handlers -run "Licencia|Checkout|PaymentMethods|Configuracion" -count=1`

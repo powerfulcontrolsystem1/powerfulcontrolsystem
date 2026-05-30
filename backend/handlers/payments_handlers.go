@@ -2011,13 +2011,20 @@ func normalizeWompiMode(raw string) string {
 }
 
 func wompiModeFromKeys(publicKey, privateKey string) string {
+	publicKey = strings.TrimSpace(publicKey)
+	privateKey = strings.TrimSpace(privateKey)
 	if strings.HasPrefix(privateKey, "prv_test_") || strings.HasPrefix(publicKey, "pub_test_") {
 		return "sandbox"
 	}
-	if strings.TrimSpace(publicKey) != "" || strings.TrimSpace(privateKey) != "" {
+	if strings.HasPrefix(privateKey, "prv_prod_") || strings.HasPrefix(publicKey, "pub_prod_") {
 		return "production"
 	}
 	return ""
+}
+
+func looksLikeWompiPublicKey(publicKey string) bool {
+	publicKey = strings.TrimSpace(publicKey)
+	return strings.HasPrefix(publicKey, "pub_test_") || strings.HasPrefix(publicKey, "pub_prod_")
 }
 
 func resolveWompiMode(dbSuper *sql.DB, publicKey, privateKey string) (string, string) {
@@ -2377,7 +2384,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 		log.Printf("warning: failed to read wompi.integrity_key for public payment methods: %v", err)
 		wompiIntegrityKey = ""
 	}
-	wompiWebCheckoutConfigured := wompiPublicKey != "" && wompiIntegrityKey != ""
+	wompiWebCheckoutConfigured := looksLikeWompiPublicKey(wompiPublicKey) && wompiIntegrityKey != ""
 	wompiConfigured := wompiWebCheckoutConfigured
 	wompiEnabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", wompiConfigured)
 	if err != nil {

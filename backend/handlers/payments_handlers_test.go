@@ -261,6 +261,22 @@ func TestBuildWompiWebCheckoutFormUsesOfficialFields(t *testing.T) {
 	}
 }
 
+func TestLooksLikeWompiPublicKey(t *testing.T) {
+	valid := []string{"pub_test_123", "pub_prod_456", " pub_test_abc "}
+	for _, key := range valid {
+		if !looksLikeWompiPublicKey(key) {
+			t.Fatalf("expected %q to be accepted as Wompi public key", key)
+		}
+	}
+
+	invalid := []string{"", "PUBLIC_KEY", "prv_test_123", "test_integrity_secret", "pk_test_123"}
+	for _, key := range invalid {
+		if looksLikeWompiPublicKey(key) {
+			t.Fatalf("expected %q to be rejected as Wompi public key", key)
+		}
+	}
+}
+
 func TestVerifyEpaycoConfirmationSignatureUsesOfficialSha256Formula(t *testing.T) {
 	payload := map[string]interface{}{
 		"x_ref_payco":      "123456789",
