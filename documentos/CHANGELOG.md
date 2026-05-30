@@ -1,3 +1,8 @@
+## [2026-05-30] Informacion de contacto corporativa
+- [Portal] `web/Informacion_de_contacto.html` elimina el logo del hero y cambia el contenido hacia una presentacion corporativa de Powerful Control System.
+- [Contenido] La pagina agrega vision: dar a pequenas empresas acceso a herramientas tecnologicas para desarrollarse, progresar y competir con mas orden y control.
+- [UX] `web/estilos.css` agrega layout de proposito, areas del sistema, vision, que hacemos, canales, asesor, acompanamiento y cierre comercial, validado en escritorio y movil.
+
 ## [2026-05-30] Domotica en paginas separadas
 - [Navegacion] `web/administrar_empresa/modulo_menu.html` abre Domotica por vistas `pagina=resumen|conexion|raspberry|reles|automatizaciones|reportes|bitacora`, manteniendo el contexto `empresa_id` y la clave tecnica `control_electrico`.
 - [UX] `web/administrar_empresa/control_electrico.html` ya no muestra el submenu interno duplicado dentro de `Resumen operativo`; cada vista renderiza solo su seccion funcional.

@@ -18,6 +18,7 @@ Este archivo organiza la lectura tecnica y funcional del repositorio para desarr
 9. `CHANGELOG.md`
 
 ## Estado documental reciente
+- 2026-05-30: la pagina publica `Informacion_de_contacto.html` queda redisenada sin logo en el hero y con vision corporativa orientada a pequenas empresas.
 - 2026-05-30: Domotica queda organizada por vistas separadas del submenu empresarial (`pagina=resumen`, `conexion`, `raspberry`, `reles`, `automatizaciones`, `reportes`, `bitacora`) y el resumen operativo deja de duplicar enlaces internos.
 - 2026-05-30: carrito y venta directa documentados como UI unificada plana: `carrito-flat-page` conserva tarjetas sin sombra ni efecto 3D, usa fondo estructural mas oscuro que las tarjetas en todas las apariencias y permite abrir/salir de pantalla completa desde venta directa.
 - 2026-05-13: se agrega `documentos/estado_documentacion_2026-05-13.md` como mapa rapido del estado vigente: reglas de producto, autenticacion, licencias/cajas, operacion conectada, soporte, comunicaciones, portal publico, VPS y validacion recomendada.

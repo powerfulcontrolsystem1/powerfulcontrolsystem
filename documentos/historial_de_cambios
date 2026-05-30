@@ -1,3 +1,11 @@
+2026-05-30: Informacion de contacto corporativa.
+- Modulos afectados: `portal_publico`, `informacion_contacto`, `frontend_ux`.
+- Cambio funcional visible: `web/Informacion_de_contacto.html` deja de mostrar el logo en el hero y presenta la pagina como contacto corporativo de Powerful Control System.
+- Contenido: se agrega la vision de hacer que las pequenas empresas tengan acceso a herramientas tecnologicas que les permitan desarrollarse, progresar y competir con mas orden, informacion y control operativo.
+- UX: `web/estilos.css` agrega secciones de proposito, areas del sistema, que hacemos, canales, asesor, acompanamiento e invitacion final.
+- Seguridad/datos: no cambia endpoints, tablas, permisos ni dependencias.
+- Validacion: parseo de script embebido, busqueda de logo retirado y prueba visual local en escritorio/movil sin desborde horizontal.
+
 2026-05-30: Domotica en paginas separadas.
 - Modulos afectados: `domotica`, `control_electrico`, `administrar_empresa`, `frontend_ux`.
 - Cambio funcional: el submenu principal de Domotica abre cada vista con su parametro `pagina`, incluyendo resumen, conexion GPIO, controladores, sensores Raspberry, estaciones/aparatos, automatizaciones, reportes y bitacora.

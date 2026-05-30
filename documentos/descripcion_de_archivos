@@ -1,3 +1,9 @@
+2026-05-30 - Informacion de contacto corporativa
+- `web/Informacion_de_contacto.html`:
+	- elimina el logo del hero y agrega contenido corporativo sobre proposito, vision, modulos, canales, asesor y acompanamiento empresarial.
+- `web/estilos.css`:
+	- rediseña la pagina publica de contacto con bloques de vision, informacion de empresa, metricas del sistema, ruta de implementacion y cierre comercial responsive.
+
 2026-05-30 - Domotica en paginas separadas
 - `web/administrar_empresa/modulo_menu.html`:
 	- actualiza el submenu de Domotica para abrir vistas por `pagina` y agrega accesos separados a `Automatizaciones` y `Reportes`.

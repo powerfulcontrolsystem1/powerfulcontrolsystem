@@ -2962,27 +2962,27 @@ body.theme-dark .login-page{
 .contact-page-shell{
   min-height:100vh;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 34%),
-    linear-gradient(225deg, color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 30%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent), transparent 30%),
+    linear-gradient(225deg, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 30%),
     linear-gradient(180deg, var(--bg-alt), var(--bg));
 }
 .contact-page-main{
-  max-width:1120px;
+  max-width:1180px;
   margin:0 auto;
   padding:clamp(16px, 3vw, 32px) 16px 34px;
 }
 .contact-hero-card{
   display:grid;
-  grid-template-columns:minmax(0, 1.35fr) minmax(260px, .65fr);
+  grid-template-columns:minmax(0, 1.2fr) minmax(300px, .8fr);
   gap:24px;
   align-items:stretch;
   margin:0 auto 18px auto;
-  padding:clamp(22px, 3vw, 34px);
+  padding:clamp(24px, 4vw, 42px);
   border:1px solid var(--public-panel-border);
   border-radius:8px;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--surface-soft) 90%, white 10%), color-mix(in srgb, var(--surface) 94%, var(--accent) 6%));
-  box-shadow:0 18px 36px var(--public-panel-shadow);
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-soft) 92%, white 8%), color-mix(in srgb, var(--surface) 94%, var(--accent) 6%));
+  box-shadow:0 18px 34px var(--public-panel-shadow);
 }
 .contact-hero-copy{
   display:grid;
@@ -3007,12 +3007,12 @@ body.theme-dark .login-page{
   margin:0;
   color:var(--text);
   font-family:'Segoe UI', Roboto, Arial, sans-serif;
-  font-size:clamp(2rem, 4vw, 3.15rem);
+  font-size:clamp(2.15rem, 4.8vw, 4rem);
   line-height:1.02;
   letter-spacing:0;
 }
 .contact-hero-card p{
-  max-width:720px;
+  max-width:760px;
   margin:0;
   color:var(--muted);
   font-size:clamp(1rem, 1.6vw, 1.14rem);
@@ -3034,20 +3034,14 @@ body.theme-dark .login-page{
   padding:18px;
   border-radius:8px;
   border:1px solid var(--public-panel-soft-border);
-  background:color-mix(in srgb, var(--surface) 82%, var(--accent) 7%);
-}
-.contact-brand-image{
-  display:block;
-  width:min(100%, 260px);
-  height:auto;
-  margin:0 auto;
-  object-fit:contain;
-  filter:drop-shadow(0 10px 16px rgba(0,0,0,.18));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 8%), var(--public-panel-soft-bg));
 }
 .contact-response-box{
   display:grid;
   gap:4px;
-  padding:12px;
+  padding:16px;
+  border-radius:8px;
   border-left:4px solid var(--accent);
   background:var(--public-panel-soft-bg);
   color:var(--text);
@@ -3058,6 +3052,104 @@ body.theme-dark .login-page{
   font-weight:900;
   letter-spacing:.08em;
   text-transform:uppercase;
+}
+.contact-response-box strong{
+  font-size:1.08rem;
+  line-height:1.38;
+}
+.contact-metric-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.contact-metric-grid span{
+  display:grid;
+  gap:4px;
+  min-height:86px;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid var(--public-panel-soft-border);
+  background:color-mix(in srgb, var(--public-panel-soft-bg) 86%, var(--accent) 5%);
+}
+.contact-metric-grid strong{
+  color:var(--text);
+  font-size:1.08rem;
+}
+.contact-metric-grid small{
+  color:var(--muted);
+  line-height:1.35;
+}
+.contact-info-layout{
+  display:grid;
+  grid-template-columns:minmax(0, 1.05fr) minmax(0, .95fr);
+  gap:16px;
+  margin-bottom:16px;
+}
+.contact-vision-card,
+.contact-company-card,
+.contact-closing-panel,
+.contact-feature-card{
+  border:1px solid var(--public-panel-border);
+  border-radius:8px;
+  background:var(--public-panel-bg);
+  box-shadow:0 14px 28px var(--public-panel-shadow);
+}
+.contact-vision-card,
+.contact-company-card{
+  padding:22px;
+}
+.contact-section-kicker{
+  display:block;
+  margin-bottom:8px;
+  color:var(--public-panel-accent);
+  font-size:.78rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.contact-vision-card h2,
+.contact-company-card h2,
+.contact-feature-card h2,
+.contact-closing-panel h2{
+  margin:0 0 10px;
+  color:var(--public-panel-text);
+  font-size:clamp(1.25rem, 2vw, 1.65rem);
+  line-height:1.2;
+  letter-spacing:0;
+}
+.contact-vision-card p,
+.contact-company-card p,
+.contact-feature-card p,
+.contact-closing-panel p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.58;
+}
+.contact-vision-card p + p{
+  margin-top:10px;
+}
+.contact-bullet-list{
+  display:grid;
+  gap:8px;
+  margin:14px 0 0;
+  padding:0;
+  list-style:none;
+}
+.contact-bullet-list li{
+  position:relative;
+  padding-left:18px;
+  color:var(--public-panel-text);
+  line-height:1.45;
+}
+.contact-bullet-list li::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:.62em;
+  width:7px;
+  height:7px;
+  border-radius:999px;
+  background:var(--accent);
 }
 .contact-grid{
   display:grid;
@@ -3169,18 +3261,47 @@ body.theme-dark .login-page{
   color:var(--muted);
   line-height:1.45;
 }
+.contact-feature-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:16px;
+}
+.contact-feature-card{
+  padding:18px;
+}
+.contact-feature-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:42px;
+  margin-bottom:12px;
+  border-radius:8px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-2));
+  color:var(--btn-primary-text);
+  font-weight:900;
+}
+.contact-closing-panel{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:16px;
+  align-items:center;
+  margin-top:16px;
+  padding:22px;
+}
 
 @media (max-width:860px){
   .contact-hero-card,
+  .contact-info-layout,
   .contact-grid,
-  .contact-service-strip{
+  .contact-service-strip,
+  .contact-feature-grid,
+  .contact-closing-panel{
     grid-template-columns:1fr;
   }
   .contact-hero-panel{
-    order:-1;
-  }
-  .contact-brand-image{
-    max-width:220px;
+    order:0;
   }
 }
 
@@ -3191,7 +3312,11 @@ body.theme-dark .login-page{
   }
   .contact-hero-card,
   .contact-card,
-  .contact-service-strip article{
+  .contact-service-strip article,
+  .contact-vision-card,
+  .contact-company-card,
+  .contact-feature-card,
+  .contact-closing-panel{
     padding:16px;
   }
   .contact-hero-actions,
@@ -3214,6 +3339,9 @@ body.theme-dark .login-page{
   }
   .contact-channel strong{
     font-size:.9rem;
+  }
+  .contact-metric-grid{
+    grid-template-columns:1fr;
   }
 }
 

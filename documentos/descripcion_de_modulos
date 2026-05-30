@@ -1,3 +1,8 @@
+2026-05-30: Informacion de contacto corporativa
+- Modulo: `Portal publico`.
+- Alcance: `web/Informacion_de_contacto.html` se convierte en una pagina corporativa sin logo en el hero, con informacion ampliada sobre Powerful Control System, vision para pequenas empresas, canales de contacto, asesor y acompanamiento.
+- Resultado: la pagina comunica mejor el proposito del sistema: acercar herramientas empresariales profesionales a negocios pequenos y medianos para que puedan desarrollarse, progresar y operar con mas control.
+
 2026-05-30: Domotica en paginas separadas
 - Modulo: `Domotica`; clave tecnica conservada: `control_electrico`.
 - Navegacion: el submenu de `Administrar empresa > Domotica` abre vistas independientes mediante `pagina=resumen`, `pagina=conexion`, `pagina=raspberry`, `pagina=reles`, `pagina=automatizaciones`, `pagina=reportes` y `pagina=bitacora`; `Sensores Raspberry` conserva su pagina dedicada.
