@@ -11731,3 +11731,12 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
 - tmp/licencias-visual/21-panel-config-ok.png
+
+2026-05-30 16:10:09 - Mensaje: corregir modo wompi por prefijo de llave; Commit: f4cacf8c; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/licencias-visual/22-checkout-wompi-invalid-hidden.png
