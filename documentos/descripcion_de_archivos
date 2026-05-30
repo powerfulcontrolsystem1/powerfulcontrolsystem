@@ -10152,6 +10152,18 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 2026-05-28 - Apariencias oscuras profesionales
 - `web/menu.js`:
 	- Agrega al selector de apariencias los temas `Negro Absoluto` y `Obsidiana Profesional`, persistidos como `dark-absolute` y `dark-obsidian`.
+2026-05-29 - Seleccionar empresa con Plantillas
+- `web/js/seleccionar_empresa.js`:
+	- Reemplaza referencias heredadas a `vertical` por `plantilla` en el preview de tipo de empresa, visual de tarjetas y metadata del selector.
+- `web/super/preconfiguracion_tipos_empresa.html`:
+	- Corrige busqueda, secciones visibles y filtro inicial para usar la variable `plantilla`.
+
+2026-05-29 - Centro de mando super apilado
+- `web/super/licencias_resumen.html`:
+	- Ajusta el panel ejecutivo del super administrador para que todas sus tarjetas y bloques principales se lean en una sola columna.
+- `documentos/mapa_modulos.md`:
+	- Agrega ubicacion rapida del Centro de mando super y su prueba visual sugerida.
+
 2026-05-29 - Super administrador en una columna
 - `web/super_administrador.html`:
 	- Agrega el boton `Asesor en ventas` dentro del grupo Licencias.

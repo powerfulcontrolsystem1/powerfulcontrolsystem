@@ -1,3 +1,5 @@
+- 2026-05-29: `Seleccionar empresa con Plantillas` corrige referencias JS heredadas a `vertical` en `seleccionar_empresa.js` y preconfiguraciones super para que el selector cargue empresas sin el error `vertical is not defined`.
+- 2026-05-29: `Centro de mando super apilado` cambia `web/super/licencias_resumen.html` para que resumen, KPIs, prioridades y accesos clave queden en una sola columna, una tarjeta debajo de la otra.
 - 2026-05-29: `Super administrador en una columna` agrega el acceso visible `Asesor en ventas` dentro de Licencias, registra `/super/asesor_comercial.html` como pagina valida del frame y fuerza el menu agrupado del panel super a mostrarse en una sola columna.
 - 2026-05-29: `Idempotencia al crear empresas` evita duplicados por doble clic o POST concurrente en `/super/api/empresas`, bloquea visualmente el formulario mientras procesa y documenta la norma backend para altas/acciones criticas.
 - 2026-05-29: `Plantillas empresariales` renombra el modulo de soluciones empresariales a Plantillas en rutas, paginas, JS, handlers, pruebas y documentacion activa; conserva aliases tecnicos internos solo donde son contrato de datos o compatibilidad.

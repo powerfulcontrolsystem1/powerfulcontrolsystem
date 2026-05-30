@@ -1,3 +1,15 @@
+2026-05-29: Seleccionar empresa con Plantillas.
+- Modulos afectados: `seleccionar_empresa`, `plantillas`, `preconfiguracion_tipos_empresa`, `frontend_ux`.
+- Cambio funcional: se corrigen referencias heredadas a una variable `vertical` ya no declarada despues del renombre a Plantillas.
+- Frontend: `web/js/seleccionar_empresa.js` usa `plantilla` para preview, visual de empresa y metadata del selector; `web/super/preconfiguracion_tipos_empresa.html` usa `plantilla` para busqueda, secciones y filtro inicial.
+- Validacion: `node --check web/js/seleccionar_empresa.js`; parseo de script embebido en `web/super/preconfiguracion_tipos_empresa.html`; busqueda de referencias `vertical.` colgantes.
+
+2026-05-29: Centro de mando super apilado.
+- Modulos afectados: `super_administrador`, `licencias_resumen`, `frontend_ux`.
+- Cambio funcional: el Centro de mando inicial del super administrador cambia su composicion a una sola columna para que cada tarjeta quede debajo de la anterior.
+- UX: `cmd-layout`, `cmd-summary`, `cmd-kpis` y `cmd-quick-grid` usan una unica columna y el ancho del panel se centra para lectura vertical.
+- Seguridad/datos: no se modifican endpoints, tablas, permisos ni dependencias.
+
 2026-05-29: Super administrador en una columna.
 - Modulos afectados: `super_administrador`, `licencias`, `asesor_comercial`, `frontend_ux`.
 - Cambio funcional: el panel super muestra el acceso `Asesor en ventas` dentro del grupo Licencias y la ruta `/super/asesor_comercial.html` queda registrada como pagina valida del iframe.

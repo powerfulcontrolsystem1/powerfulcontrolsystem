@@ -583,7 +583,7 @@
           var tipo = entry.item.tipo_empresa || {};
           var preconfig = entry.item.preconfig || {};
           var plantilla = getVerticalByTypeName(tipo.nombre || '');
-          return normalizeText((tipo.nombre || '') + ' ' + (preconfig.nombre || '') + ' ' + (preconfig.descripcion || '') + ' ' + (plantilla && vertical.fullTitle || '') + ' ' + (plantilla && vertical.module || '')).indexOf(query) >= 0;
+          return normalizeText((tipo.nombre || '') + ' ' + (preconfig.nombre || '') + ' ' + (preconfig.descripcion || '') + ' ' + (plantilla && plantilla.fullTitle || '') + ' ' + (plantilla && plantilla.module || '')).indexOf(query) >= 0;
         });
         if (!filtered.length) {
           listEl.innerHTML = '<div class="preconfig-empty">No hay tipos que coincidan con la busqueda.</div>';
@@ -600,7 +600,7 @@
           var usuarios = Array.isArray(template.usuarios) ? template.usuarios : [];
           var tareas = Array.isArray(template.tareas_guia) ? template.tareas_guia : [];
           var plantilla = getVerticalByTypeName(tipo.nombre || '');
-          var verticalSections = getVerticalSections(vertical).slice(0, 4);
+          var verticalSections = getVerticalSections(plantilla).slice(0, 4);
           var active = selected && selected.tipo_empresa && Number(selected.tipo_empresa.id) === Number(tipo.id);
           var status = preconfig.enabled ? 'Activa' : 'Inactiva';
           if (item.config_error) status = 'Requiere guardar';
@@ -644,8 +644,8 @@
               preconfig.nombre,
               preconfig.descripcion,
               template.operacion && template.operacion.tipo_negocio,
-              plantilla && vertical.module,
-              plantilla && vertical.fullTitle
+              plantilla && plantilla.module,
+              plantilla && plantilla.fullTitle
             ].join(' ')).indexOf(initialNormalized) >= 0;
           }) : null;
           next = next || items.find(function (item) {

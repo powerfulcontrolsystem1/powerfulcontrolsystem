@@ -1,3 +1,13 @@
+## [2026-05-29] Seleccionar empresa con Plantillas
+- [Frontend] `web/js/seleccionar_empresa.js` corrige referencias heredadas a la variable `vertical` y usa la variable `plantilla` al renderizar preview, tarjetas y opciones de tipo de empresa.
+- [Super] `web/super/preconfiguracion_tipos_empresa.html` corrige el mismo caso en busquedas, secciones y filtros iniciales de plantillas.
+- [QA] Validacion de sintaxis JS externa y scripts embebidos; busqueda de referencias `vertical.` sin declarar.
+
+## [2026-05-29] Centro de mando super apilado
+- [UX] `web/super/licencias_resumen.html` cambia el panel ejecutivo a una sola columna: layout principal, resumen, KPIs y accesos clave quedan apilados.
+- [Responsive] Se elimina la redistribucion lateral en escritorio/tablet para mantener una lectura vertical consistente.
+- [Datos] No cambia endpoints, permisos, tablas ni dependencias.
+
 ## [2026-05-29] Super administrador en una columna
 - [Menu] `web/super_administrador.html` agrega `Asesor en ventas` dentro del grupo Licencias para abrir la configuracion comercial existente.
 - [Navegacion] `web/js/super_administrador.js` permite restaurar `/super/asesor_comercial.html` como pagina valida del frame.

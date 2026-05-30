@@ -514,21 +514,21 @@
     var option = select.options ? select.options[select.selectedIndex] : null;
     var tipoNombre = option ? String(option.text || "").trim() : "";
     var plantilla = getVerticalByTypeName(tipoNombre);
-    if (!vertical) {
+    if (!plantilla) {
       preview.hidden = true;
       preview.innerHTML = "";
       return;
     }
-    var sections = getVerticalSections(vertical).slice(0, 4);
+    var sections = getVerticalSections(plantilla).slice(0, 4);
     preview.hidden = false;
     preview.innerHTML =
       '<div class="selector-type-preview__media">' +
-      '<img src="' + escapeHtml(vertical.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
+      '<img src="' + escapeHtml(plantilla.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
       "</div>" +
       '<div class="selector-type-preview__body">' +
       '<div class="selector-type-preview__kicker">Plantilla profesional</div>' +
-      '<strong>' + escapeHtml(vertical.fullTitle || vertical.title || tipoNombre) + "</strong>" +
-      '<p>' + escapeHtml(vertical.lead || vertical.summary || "Tipo de empresa con preconfiguracion, licencias y modulo operativo propio.") + "</p>" +
+      '<strong>' + escapeHtml(plantilla.fullTitle || plantilla.title || tipoNombre) + "</strong>" +
+      '<p>' + escapeHtml(plantilla.lead || plantilla.summary || "Tipo de empresa con preconfiguracion, licencias y modulo operativo propio.") + "</p>" +
       (sections.length ? '<div class="selector-type-preview__chips">' + sections.map(function (section) {
         return '<span>' + escapeHtml(section) + '</span>';
       }).join("") + "</div>" : "") +
@@ -538,15 +538,15 @@
   function getEmpresaTypeVisual(empresa) {
     var tipoNombre = String(empresa && empresa.tipo_nombre ? empresa.tipo_nombre : "").trim();
     var plantilla = getVerticalByTypeName(tipoNombre);
-    if (vertical) {
+    if (plantilla) {
       return {
-        tone: getVerticalTone(vertical),
-        icon: vertical.icon || "/img/company-briefcase-color.svg",
-        alt: "Icono de " + (vertical.title || "plantilla empresarial"),
+        tone: getVerticalTone(plantilla),
+        icon: plantilla.icon || "/img/company-briefcase-color.svg",
+        alt: "Icono de " + (plantilla.title || "plantilla empresarial"),
         eyebrow: "Plantilla profesional",
-        activeCopy: "Empresa lista para operar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con flujo, roles, permisos, licencias y reportes del motor de plantilla.",
-        pendingCopy: "Activa una licencia de plantilla para habilitar " + (vertical.fullTitle || vertical.title || tipoNombre) + " con configuracion inicial, roles y ruta de trabajo.",
-        label: vertical.fullTitle || vertical.title || tipoNombre || "Plantilla"
+        activeCopy: "Empresa lista para operar " + (plantilla.fullTitle || plantilla.title || tipoNombre) + " con flujo, roles, permisos, licencias y reportes del motor de plantilla.",
+        pendingCopy: "Activa una licencia de plantilla para habilitar " + (plantilla.fullTitle || plantilla.title || tipoNombre) + " con configuracion inicial, roles y ruta de trabajo.",
+        label: plantilla.fullTitle || plantilla.title || tipoNombre || "Plantilla"
       };
     }
     var normalized = normalizeCompanyTypeName(tipoNombre);
@@ -1591,9 +1591,9 @@
           opt.text = t.nombre;
           opt.dataset.id = t.id;
           var plantilla = getVerticalByTypeName(t.nombre);
-          if (vertical) {
-            opt.dataset.verticalModule = vertical.module || "";
-            opt.dataset.verticalTitle = vertical.fullTitle || vertical.title || "";
+          if (plantilla) {
+            opt.dataset.verticalModule = plantilla.module || "";
+            opt.dataset.verticalTitle = plantilla.fullTitle || plantilla.title || "";
           }
           tipoSelect.appendChild(opt);
         });
