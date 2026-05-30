@@ -3,6 +3,7 @@
 - [Compatibilidad] Las fechas de auditoria de `empresa_configuracion_general` se guardan como texto con `CAST(CURRENT_TIMESTAMP AS TEXT)` para no depender de conversiones implicitas de PostgreSQL.
 - [Bugfix] El alta automatica de configuracion por defecto incluye el valor de `clima_fuente`, evitando que empresas nuevas fallen por diferencia entre columnas y valores del `INSERT`.
 - [Pagos] El checkout de licencias solo publica Wompi cuando `wompi.public_key` tiene formato `pub_test_` o `pub_prod_`; una llave placeholder queda marcada como configuracion incompleta y no dispara `/wompi/terms`.
+- [Pagos] Si `wompi.mode` manual contradice el prefijo real de la llave, el runtime usa el modo inferido por la llave para evitar consultar sandbox con llave `pub_prod_` o produccion con llave `pub_test_`.
 - [QA] Pruebas enfocadas en `db` y `handlers` para configuracion general y checkout/licencias.
 
 ## [2026-05-30] Informacion de contacto corporativa

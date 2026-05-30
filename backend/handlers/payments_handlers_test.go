@@ -277,6 +277,18 @@ func TestLooksLikeWompiPublicKey(t *testing.T) {
 	}
 }
 
+func TestWompiModeFromKeysDoesNotAssumeProductionForPlaceholders(t *testing.T) {
+	if got := wompiModeFromKeys("PUBLIC_KEY", ""); got != "" {
+		t.Fatalf("expected placeholder key to have no inferred mode, got %q", got)
+	}
+	if got := wompiModeFromKeys("pub_prod_123", ""); got != "production" {
+		t.Fatalf("expected prod public key to infer production, got %q", got)
+	}
+	if got := wompiModeFromKeys("pub_test_123", ""); got != "sandbox" {
+		t.Fatalf("expected test public key to infer sandbox, got %q", got)
+	}
+}
+
 func TestVerifyEpaycoConfirmationSignatureUsesOfficialSha256Formula(t *testing.T) {
 	payload := map[string]interface{}{
 		"x_ref_payco":      "123456789",

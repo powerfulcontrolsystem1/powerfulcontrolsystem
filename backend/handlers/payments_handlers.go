@@ -2028,12 +2028,16 @@ func looksLikeWompiPublicKey(publicKey string) bool {
 }
 
 func resolveWompiMode(dbSuper *sql.DB, publicKey, privateKey string) (string, string) {
+	inferred := wompiModeFromKeys(publicKey, privateKey)
 	if configuredMode, _, err := dbpkg.GetConfigValue(dbSuper, "wompi.mode"); err == nil {
 		if normalized := normalizeWompiMode(configuredMode); normalized != "" {
+			if inferred != "" && normalized != inferred {
+				return inferred, "keys_conflict_override"
+			}
 			return normalized, "manual"
 		}
 	}
-	if inferred := wompiModeFromKeys(publicKey, privateKey); inferred != "" {
+	if inferred != "" {
 		return inferred, "keys"
 	}
 	return "sandbox", "default"

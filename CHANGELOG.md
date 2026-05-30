@@ -4594,3 +4594,4 @@
 - 2026-05-30: `Configuracion general PostgreSQL reforzada` asegura columna `fecha_creacion`, secuencia `id` y fechas texto en `empresa_configuracion_general` para evitar 500 al cargar paneles de empresas nuevas o antiguas en la VPS.
 - 2026-05-30: `Configuracion general en empresas nuevas` corrige el alta automatica de la configuracion por defecto agregando el valor faltante de `clima_fuente` en el INSERT.
 - 2026-05-30: `Checkout licencias Wompi` valida que `wompi.public_key` tenga formato `pub_test_` o `pub_prod_` antes de publicar Wompi como medio disponible, evitando 502 por llaves placeholder.
+- 2026-05-30: `Modo Wompi por llave` cuando `wompi.mode` manual contradice la llave (`pub_prod_` vs sandbox o `pub_test_` vs production), el backend usa el modo inferido por la llave para consultar el endpoint correcto.
