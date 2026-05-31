@@ -44,7 +44,6 @@ const filesToClean = [
   "web/super/contrato.html",
   "web/super/errores.html",
   "web/super/formato_para_emviar_email.html",
-  "web/super/metricas_de_trafico_general.html",
   "web/super/permisos_rol.html",
   "web/super/roles_de_usuario.html",
   "web/super/seguridad.html",

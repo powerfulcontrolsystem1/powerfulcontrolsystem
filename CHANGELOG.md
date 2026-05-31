@@ -4598,4 +4598,5 @@
 - 2026-05-31: `Clima en centro de mando super` agrega la tarjeta de clima al inicio del panel super, deja favoritos debajo y mueve Estado general al tercer bloque visual.
 - 2026-05-31: `Favoritos de super administrador` agrega favoritos en el centro de mando super, boton estrella global para paginas del iframe, compacta Estado general e Incidentes recientes y elimina la tarjeta Accesos clave.
 - 2026-05-31: `Centro de mando super simplificado` quita la tarjeta superior `Super administrador / Panel ejecutivo` y elimina la tarjeta de clima del panel super.
+- 2026-05-31: `Super administrador simplificado` quita del menu super los accesos a Reportes globales y Metricas de trafico; Reportes globales se conserva solo desde Seleccionar empresa y se elimina la pagina puente de metricas de trafico.
 - 2026-05-31: `Licencias fijas globales` deja el catalogo comercial en 4 planes para todas las empresas: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000; elimina del catalogo sin empresa asignada las licencias sobrantes y bloquea crear/eliminar/ocultar esos planes desde la pagina de licencias.

@@ -1,3 +1,10 @@
+2026-05-31: Super administrador sin paginas de metricas y reportes globales
+- Modulo: `super_administrador`.
+- Cambio funcional: el menu principal del panel super ya no muestra `Reportes globales` ni `Metricas de trafico` dentro de Gobierno.
+- Navegacion: `web/js/super_administrador.js` deja de restaurar o marcar como favoritas esas rutas desde el panel super; si estaban guardadas en `localStorage`, se filtran automaticamente.
+- Alcance conservado: `web/super/reportes_globales.html` continua disponible desde `seleccionar_empresa.html`, porque alli se usa para consolidar solo las empresas visibles del administrador autenticado.
+- Limpieza: `web/super/metricas_de_trafico_general.html` se elimina como pagina independiente; las metricas permanecen en `Centro de mando`.
+
 2026-05-30: Licencias globales compartidas
 - Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`.
 - Cambio funcional: el catalogo base queda reducido a cuatro planes globales para todos los tipos de empresa: prueba gratis 15 dias, 1000 documentos, 2000 documentos y 4000 documentos.

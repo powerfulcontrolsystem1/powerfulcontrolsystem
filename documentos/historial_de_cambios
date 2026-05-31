@@ -1,3 +1,11 @@
+2026-05-31: Super administrador sin metricas de trafico ni reportes globales.
+- Modulos afectados: `super_administrador`, `navegacion_super`, `reportes_globales`, `frontend_ux`.
+- Cambio funcional: el grupo `Gobierno` del panel super deja de mostrar los botones `Reportes globales` y `Metricas de trafico`.
+- Implementacion: `web/super_administrador.html` elimina los accesos y `web/js/super_administrador.js` deja de permitir esas rutas como paginas restaurables/favoritas del panel super.
+- Limpieza: se elimina `web/super/metricas_de_trafico_general.html`, que era una pagina puente hacia el centro de mando.
+- Alcance conservado: `web/super/reportes_globales.html` se mantiene para `seleccionar_empresa.html`, donde sigue funcionando como reporte global por alcance de empresas visibles.
+- Seguridad: el rol `control_super_administrador` ya no recibe permiso especial para `/super/reportes_globales.html` ni `/super/api/reportes_globales` desde el allowlist del panel super.
+
 2026-05-31: Licencias sobrantes eliminadas del catalogo.
 - Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `backend_db`.
 - Cambio funcional: el catalogo visible queda limitado a 4 licencias globales para todas las empresas: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.

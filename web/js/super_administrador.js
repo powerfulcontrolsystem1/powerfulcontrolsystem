@@ -33,9 +33,7 @@
 
   var coreSuperPages = {
     "/super/licencias_resumen.html": true,
-    "/super/reportes_globales.html": true,
     "/super/auditoria_global.html": true,
-    "/super/metricas_de_trafico_general.html": true,
     "/super/pagina_principal.html": true,
     "/super/informacion_de_modulos.html": true,
     "/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html": true,

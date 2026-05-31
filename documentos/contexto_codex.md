@@ -79,10 +79,13 @@ botones, desde handlers estaticos del backend.
   prueba gratis solo se puede activar una vez por empresa; las licencias base
   antiguas por tipo y addons de catalogo sin empresa asignada se eliminan del
   catalogo comercial.
-- Menu super administrador: `web/super_administrador.html` debe enlazar toda
-  pagina HTML activa bajo `web/super/`; `web/js/super_administrador.js` debe
-  permitir restaurar cada enlace con `target="contentFrame"`. El acceso
-  `Asesores de ventas` vive al inicio de `Comercial y licencias`.
+- Menu super administrador: `web/super_administrador.html` debe enlazar solo
+  las paginas activas del panel super; `web/js/super_administrador.js` debe
+  permitir restaurar cada enlace con `target="contentFrame"`. `Reportes globales`
+  no va en el menu super y se conserva como vista del selector de empresas.
+  `Metricas de trafico` no existe como pagina independiente; sus datos viven en
+  `Centro de mando`. El acceso `Asesores de ventas` vive al inicio de
+  `Comercial y licencias`.
 - Panel empresarial: `web/administrar_empresa.html`,
   `web/administrar_empresa/panel.html`.
 - Domotica: boton principal en `web/administrar_empresa.html`, submenu

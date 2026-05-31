@@ -1,3 +1,9 @@
+## [2026-05-31] Super administrador simplificado
+- [UX] `web/super_administrador.html` elimina del grupo Gobierno los accesos `Reportes globales` y `Metricas de trafico`.
+- [Navegacion] `web/js/super_administrador.js` deja de permitir esas rutas como paginas favoritas o restaurables del panel super.
+- [Limpieza] Se elimina `web/super/metricas_de_trafico_general.html`; las metricas siguen consolidadas en `Centro de mando`.
+- [Alcance] `Reportes globales` se conserva para abrirse desde `seleccionar_empresa.html`, con el mismo alcance de empresas visibles.
+
 ## [2026-05-31] Licencias fijas globales
 - [Backend] `backend/db/licencias_globales.go` asegura solo cuatro planes globales: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
 - [Datos] La limpieza de catalogo elimina licencias sobrantes sin empresa asignada, incluidos addons antiguos y duplicados de catalogo; las licencias asignadas a empresas se conservan para historial y pagos.

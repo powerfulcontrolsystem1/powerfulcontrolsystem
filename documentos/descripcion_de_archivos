@@ -1,3 +1,13 @@
+2026-05-31 - Super administrador simplificado
+- `web/super_administrador.html`:
+	- elimina del grupo Gobierno los botones `Reportes globales` y `Metricas de trafico`.
+- `web/js/super_administrador.js`:
+	- quita esas rutas de `coreSuperPages` para que no se restauren ni se agreguen a favoritos del panel super.
+- `web/super/metricas_de_trafico_general.html`:
+	- eliminado; las metricas permanecen integradas en `web/super/licencias_resumen.html`.
+- `web/super/reportes_globales.html`:
+	- se conserva como pagina abierta desde `web/seleccionar_empresa.html`, fuera del menu super.
+
 2026-05-30 - Licencias globales compartidas
 - `backend/db/licencias_globales.go`:
 	- nuevo catalogo canonico de cuatro planes globales aplicables a todos los tipos de empresa y rutina idempotente para ocultar licencias base heredadas por tipo.
