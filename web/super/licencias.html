@@ -104,7 +104,7 @@
         <h1 id="pageTitle">Licencias</h1>
         <p id="pageLead" class="form-help page-header-lead"></p>
       </div>
-      <button id="addBtn" class="btn add">Agregar</button>
+      <button id="addBtn" class="btn add" style="display:none">Agregar</button>
     </div>
     <section id="historyToolbar" class="lic-history-toolbar" hidden>
       <div class="lic-history-toolbar-main">
@@ -117,9 +117,9 @@
       <div class="lic-admin-hero">
         <div>
           <p class="lic-admin-kicker">Gobierno comercial de licencias</p>
-          <h2>Planes, addons, cobertura y riesgo operativo en una sola vista</h2>
-          <p>Administra el catálogo con control por país, tipo de empresa, módulos habilitados, funciones adicionales y señales de vencimiento para tomar decisiones más rápidas.</p>
-          <div class="lic-admin-hero-actions">
+          <h2>Cuatro licencias globales para todas las empresas</h2>
+          <p>El catálogo queda fijo con prueba gratis de 15 días y tres planes comerciales de COP 60000, COP 100000 y COP 150000. Estos planes aplican a cualquier tipo de empresa.</p>
+          <div class="lic-admin-hero-actions" style="display:none">
             <button id="quickBaseBtn" class="btn secondary" type="button">Nuevo plan base</button>
             <button id="quickAddonBtn" class="btn secondary" type="button">Nuevo addon</button>
           </div>
@@ -176,11 +176,11 @@
         </ul>
       </section>
     </section>
-    <form id="form" class="form lic-form-shell">
+    <form id="form" class="form lic-form-shell" style="display:none">
       <div class="lic-form-title">
         <div>
           <h2 id="formTitle">Nueva licencia</h2>
-          <p id="formSubtitle">Define precio, duración, país, cobertura modular y si el plan funciona como addon.</p>
+          <p id="formSubtitle">El catálogo comercial es fijo: prueba gratis de 15 días y planes COP 60000, COP 100000 y COP 150000.</p>
         </div>
         <span class="lic-badge" id="formModeBadge">Catálogo</span>
       </div>
@@ -224,7 +224,7 @@
         <div class="form-col">
           <label class="form-label">Cajas simultáneas</label>
           <input id="max_cajas_simultaneas" type="number" min="1" step="1" class="form-input" placeholder="2 por defecto" />
-          <p class="form-help">Cantidad máxima de cajas abiertas al mismo tiempo por empresa. Usa 4 para planes de 4000 documentos.</p>
+          <p class="form-help">Cantidad máxima de cajas abiertas al mismo tiempo por empresa, según el plan global.</p>
         </div>
         <div class="form-col">
           <label class="form-label">Visibilidad comercial</label>
@@ -697,27 +697,27 @@
       function renderCrudInsights(rows){
         const total = rows.length;
         const active = rows.filter(isActiveLic).length;
-        const addons = rows.filter(isAddon).length;
-        const assigned = rows.filter(isAssigned).length;
-        const openCatalog = rows.filter(function(item){ return !isAssigned(item); }).length;
-        const unrestricted = rows.filter(function(item){ return !normalizeCSV(item.modulos_habilitados || ''); }).length;
+        const trial = rows.filter(function(item){ return Number(item.valor || 0) <= 0 && Number(item.duracion_dias || 0) === 15; }).length;
+        const paid = rows.filter(function(item){ return Number(item.valor || 0) > 0; }).length;
+        const global = rows.filter(function(item){ return String(item.pais_codigo || '').toUpperCase() === 'GLOBAL' && Number(item.tipo_id || 0) === 0; }).length;
         const avg = averageValue(rows);
         licKpiGrid.innerHTML = [
-          '<div class="lic-admin-kpi"><span>Total catálogo</span><strong>' + total + '</strong><small>Planes base, addons y licencias asignadas.</small></div>',
-          '<div class="lic-admin-kpi"><span>Visibles</span><strong>' + active + '</strong><small>' + (total ? Math.round(active * 100 / total) : 0) + '% visible para clientes.</small></div>',
-          '<div class="lic-admin-kpi"><span>Licencias addon</span><strong>' + addons + '</strong><small>Ampliaciones modulares o funcionales.</small></div>',
-          '<div class="lic-admin-kpi"><span>Asignadas</span><strong>' + assigned + '</strong><small>' + openCatalog + ' registros de catálogo sin empresa.</small></div>',
-          '<div class="lic-admin-kpi"><span>Ticket promedio</span><strong>' + escapeHTML(renderMoney(avg)) + '</strong><small>' + unrestricted + ' planes sin techo modular.</small></div>'
+          '<div class="lic-admin-kpi"><span>Total catálogo</span><strong>' + total + '</strong><small>Solo 4 planes globales canónicos.</small></div>',
+          '<div class="lic-admin-kpi"><span>Visibles</span><strong>' + active + '</strong><small>' + (total ? Math.round(active * 100 / total) : 0) + '% disponible para clientes.</small></div>',
+          '<div class="lic-admin-kpi"><span>Prueba gratis</span><strong>' + trial + '</strong><small>15 días, una vez por empresa.</small></div>',
+          '<div class="lic-admin-kpi"><span>Planes pagos</span><strong>' + paid + '</strong><small>COP 60000, COP 100000 y COP 150000.</small></div>',
+          '<div class="lic-admin-kpi"><span>Ticket promedio</span><strong>' + escapeHTML(renderMoney(avg)) + '</strong><small>Promedio del catálogo fijo.</small></div>'
         ].join('');
 
         const riskItems = [];
-        if (rows.some(function(item){ return isAddon(item) && !normalizeCSV(item.modulos_habilitados || ''); })) riskItems.push(['Addons sin módulo', 'Un addon debe declarar cobertura para evitar ampliaciones ambiguas.']);
-        if (rows.some(function(item){ return Number(item.valor || 0) <= 0 && !String(item.nombre || '').toLowerCase().includes('prueba'); })) riskItems.push(['Planes en cero', 'Revisa si son cortesías controladas o errores de tarifa.']);
+        if (total !== 4) riskItems.push(['Catálogo incompleto', 'Deben existir exactamente 4 licencias globales.']);
+        if (global !== total) riskItems.push(['Alcance no global', 'Todos los planes deben aplicar a todos los tipos de empresa.']);
+        if (rows.some(function(item){ return Number(item.valor || 0) <= 0 && Number(item.duracion_dias || 0) !== 15; })) riskItems.push(['Plan en cero', 'Solo la prueba gratis debe tener valor cero.']);
         if (rows.some(function(item){ return isActiveLic(item) && Number(item.duracion_dias || 0) <= 0; })) riskItems.push(['Duración pendiente', 'Hay licencias visibles sin duración comercial definida.']);
         licHealthCards.innerHTML = [
           '<div class="lic-admin-health-card"><span>Salud comercial</span><strong>' + (riskItems.length ? 'Revisar' : 'Estable') + '</strong></div>',
-          '<div class="lic-admin-health-card"><span>Países</span><strong>' + new Set(rows.map(function(i){ return String(i.pais_codigo || 'CO').toUpperCase(); })).size + '</strong></div>',
-          '<div class="lic-admin-health-card"><span>Sin restricción</span><strong>' + unrestricted + '</strong></div>',
+          '<div class="lic-admin-health-card"><span>Alcance</span><strong>Global</strong></div>',
+          '<div class="lic-admin-health-card"><span>Planes pagos</span><strong>' + paid + '</strong></div>',
           '<div class="lic-admin-health-card"><span>Valor catálogo</span><strong>' + escapeHTML(renderMoney(rows.reduce(function(sum, i){ return sum + Number(i.valor || 0); }, 0))) + '</strong></div>'
         ].join('') + (riskItems.length ? '<div class="lic-risk-list" style="grid-column:1/-1">' + riskItems.slice(0, 3).map(function(item){ return '<div class="lic-risk-item"><span>' + escapeHTML(item[1]) + '</span><strong>' + escapeHTML(item[0]) + '</strong></div>'; }).join('') + '</div>' : '');
       }
@@ -1252,7 +1252,6 @@
         data.forEach(function(i){
           const tr = document.createElement('tr');
           const activo = isActiveLic(i) ? 1 : 0;
-          const toggleLabel = activo ? 'Ocultar' : 'Mostrar';
           const statusClass = activo ? 'ok' : 'danger';
           const statusLabel = activo ? 'Visible a clientes' : 'Oculta a clientes';
           const classLabel = licenseClassLabel(i);
@@ -1264,7 +1263,7 @@
             '<td>' + moduleChips(i.modulos_habilitados || '') + '<div class="lic-plan-sub">Super rol: ' + (Number(i.super_rol_habilitado || 0) === 1 ? 'habilitado' : 'no') + '</div></td>' +
             '<td><span class="lic-badge ' + (assigned ? 'warn' : '') + '">' + (assigned ? 'Asignada' : 'Catálogo') + '</span><div class="lic-plan-sub">' + escapeHTML(i.empresa_nombre || (assigned ? ('Empresa #' + i.empresa_id) : 'Disponible para venta')) + '</div></td>' +
             '<td><span class="lic-badge ' + statusClass + '">' + statusLabel + '</span><div class="lic-plan-sub">Creada: ' + escapeHTML(formatDate(i.fecha_creacion)) + '</div></td>' +
-            '<td class="actions"><button data-id="' + escapeHTML(i.id) + '" class="edit btn secondary">Editar</button> <button data-id="' + escapeHTML(i.id) + '" class="del btn danger">Eliminar</button> <button data-id="' + escapeHTML(i.id) + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button></td>';
+            '<td class="actions"><span class="lic-badge ok">Plan global fijo</span></td>';
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
@@ -1327,7 +1326,9 @@
 
       async function loadCrud(){
         pageTitle.textContent = 'Licencias';
-        pageLead.textContent = 'Catálogo comercial, licencias adicionales y control de cobertura por módulos.';
+        pageLead.textContent = 'Catálogo fijo de 4 licencias globales para todos los tipos de empresa.';
+        addBtn.style.display = 'none';
+        form.style.display = 'none';
         crudExecutivePanel.hidden = false;
         historyToolbar.hidden = true;
 
@@ -1436,7 +1437,7 @@
           }
           resetLicenciaForm();
           form.style.display = 'none';
-          addBtn.style.display = '';
+          addBtn.style.display = 'none';
           await loadCrud();
         } catch(err) {
           document.getElementById('msg').innerText = err.message;
@@ -1446,7 +1447,7 @@
       document.getElementById('cancelBtn').onclick = function(){
         resetLicenciaForm();
         form.style.display='none';
-        addBtn.style.display='';
+        addBtn.style.display='none';
       };
 
       addBtn.onclick = function(){
@@ -1462,7 +1463,7 @@
       });
 
       form.style.display='none';
-      addBtn.style.display = isHistoryMode ? 'none' : '';
+      addBtn.style.display = 'none';
 
       (isHistoryMode ? loadHistory() : loadCrud()).catch(function(err){
         list.innerHTML = '<div class="lic-history-empty">' + escapeHTML(err.message || 'No fue posible cargar la vista de licencias.') + '</div>';

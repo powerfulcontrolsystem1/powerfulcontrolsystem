@@ -1,3 +1,18 @@
+2026-05-31: Licencias sobrantes eliminadas del catalogo.
+- Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `backend_db`.
+- Cambio funcional: el catalogo visible queda limitado a 4 licencias globales para todas las empresas: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
+- Backend/DB: `backend/db/licencias_globales.go` actualiza nombres comerciales por valor y elimina registros de catalogo sin empresa asignada que no correspondan a los cuatro codigos canonicos, incluidos addons antiguos y duplicados canonicos sobrantes.
+- Seguridad/datos: no se eliminan licencias ya asignadas a empresas (`empresa_id > 0`) para conservar historial, pagos, activaciones y trazabilidad.
+- Frontend: `web/super/licencias.html` deja de mostrar acciones para agregar, eliminar u ocultar licencias y presenta los cuatro planes como catalogo fijo.
+- Validacion parcial: `go test ./db -run "GlobalLicencia|LicenciaCatalog" -count=1` y `go test ./handlers -run TestLicencia -count=1`.
+
+2026-05-31: Centro de mando super simplificado.
+- Modulos afectados: `super_administrador`, `centro_mando_super`, `frontend_ux`.
+- Cambio funcional visible: se elimina la tarjeta superior `Super administrador / Panel ejecutivo` y se quita la tarjeta de clima del panel super.
+- Interaccion: los controles `Actualizar` y `Evaluar alertas` se mueven a la cabecera de `Estado general` para no perder acciones operativas.
+- Orden visual vigente: `Favoritos`, `Estado general`, `Incidentes recientes` y `Prioridades`.
+- Seguridad/datos: no cambia backend, tablas, permisos, endpoints ni dependencias.
+
 2026-05-31: Clima en centro de mando super.
 - Modulos afectados: `super_administrador`, `centro_mando_super`, `frontend_ux`.
 - Cambio funcional visible: el centro de mando super agrega una tarjeta de clima actual arriba de favoritos, con temperatura, sensacion, humedad, viento y nubosidad.
@@ -16,8 +31,8 @@
 
 2026-05-30: Licencias globales compartidas.
 - Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`, `preconfiguracion_tipos_empresa`.
-- Cambio funcional: se reemplaza el catalogo base repetido por tipo de empresa por cuatro planes globales compartidos: prueba gratis 15 dias, plan 1000 documentos, plan 2000 documentos y plan 4000 documentos.
-- Backend/DB: `backend/db/licencias_globales.go` asegura el catalogo con `tipo_id=0` y `pais_codigo=GLOBAL`, y oculta licencias base heredadas no asignadas para que no sigan apareciendo mas de 160 planes repetidos.
+- Cambio funcional: se reemplaza el catalogo base repetido por tipo de empresa por cuatro planes globales compartidos: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
+- Backend/DB: `backend/db/licencias_globales.go` asegura el catalogo con `tipo_id=0` y `pais_codigo=GLOBAL`; desde 2026-05-31 elimina licencias sobrantes sin empresa asignada para que no sigan existiendo mas de 160 planes repetidos.
 - Bootstraps: constructora, alquileres, drogueria/farmacia y plantillas nuevas dejan de crear licencias base por cada tipo; ahora solo aseguran el catalogo global.
 - Frontend: `web/elegir_licencia.html` acepta planes globales para cualquier tipo de empresa; `web/super/licencias.html` muestra `Todos los tipos de empresa` y agrega una tarjeta de reglas comerciales debajo de licencias.
 - Regla visible: la licencia gratis de 15 dias solo puede aplicarse una vez por empresa; las renovaciones deben continuar por planes comerciales.

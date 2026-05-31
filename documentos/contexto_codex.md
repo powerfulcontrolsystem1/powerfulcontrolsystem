@@ -75,9 +75,10 @@ botones, desde handlers estaticos del backend.
   `web/super/licencias.html`, `/super/api/licencias` y
   `/licencias/activar_sin_pago`. El catalogo base vigente es global para todos
   los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con cuatro planes:
-  prueba gratis 15 dias, 1000 documentos, 2000 documentos y 4000 documentos. La
+  prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000. La
   prueba gratis solo se puede activar una vez por empresa; las licencias base
-  antiguas por tipo quedan ocultas del catalogo comercial.
+  antiguas por tipo y addons de catalogo sin empresa asignada se eliminan del
+  catalogo comercial.
 - Menu super administrador: `web/super_administrador.html` debe enlazar toda
   pagina HTML activa bajo `web/super/`; `web/js/super_administrador.js` debe
   permitir restaurar cada enlace con `target="contentFrame"`. El acceso

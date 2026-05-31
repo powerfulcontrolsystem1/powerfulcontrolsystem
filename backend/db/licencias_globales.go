@@ -36,8 +36,8 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 		},
 		{
 			Codigo:                 LicenciaCodigoBasicoGlobal,
-			Nombre:                 "Plan Basico mensual - 1000 documentos",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa con hasta 1000 documentos o ventas.",
+			Nombre:                 "Plan mensual COP 60000",
+			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 60000.",
 			Valor:                  60000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 1000,
@@ -45,8 +45,8 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 		},
 		{
 			Codigo:                 LicenciaCodigoProfesionalGlobal,
-			Nombre:                 "Plan Profesional mensual - 2000 documentos",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa con hasta 2000 documentos o ventas.",
+			Nombre:                 "Plan mensual COP 100000",
+			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 100000.",
 			Valor:                  100000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 2000,
@@ -54,8 +54,8 @@ func DefaultGlobalLicenciaPlans() []GlobalLicenciaPlan {
 		},
 		{
 			Codigo:                 LicenciaCodigoEmpresarialGlobal,
-			Nombre:                 "Plan Empresarial mensual - 4000 documentos",
-			Descripcion:            "Plan mensual global para cualquier tipo de empresa con hasta 4000 documentos o ventas.",
+			Nombre:                 "Plan mensual COP 150000",
+			Descripcion:            "Plan mensual global para cualquier tipo de empresa por COP 150000.",
 			Valor:                  150000,
 			DuracionDias:           30,
 			MaxDocumentosMensuales: 4000,
@@ -69,6 +69,46 @@ func globalLicenciaPlanCodes() []string {
 	out := make([]string, 0, len(plans))
 	for _, plan := range plans {
 		out = append(out, strings.TrimSpace(plan.Codigo))
+	}
+	return out
+}
+
+func IsGlobalLicenciaPlanCode(code string) bool {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if code == "" {
+		return false
+	}
+	for _, allowed := range globalLicenciaPlanCodes() {
+		if strings.ToUpper(strings.TrimSpace(allowed)) == code {
+			return true
+		}
+	}
+	return false
+}
+
+func IsGlobalLicenciaCatalogItem(lic Licencia) bool {
+	if lic.EmpresaID > 0 || lic.EsAdicional == 1 {
+		return false
+	}
+	pais := strings.ToUpper(strings.TrimSpace(lic.PaisCodigo))
+	if pais == "" {
+		pais = "GLOBAL"
+	}
+	if pais != "GLOBAL" && pais != "*" {
+		return false
+	}
+	if lic.TipoID != 0 {
+		return false
+	}
+	return IsGlobalLicenciaPlanCode(lic.CodigoFuncion)
+}
+
+func FilterGlobalLicenciaCatalog(rows []Licencia) []Licencia {
+	out := make([]Licencia, 0, len(DefaultGlobalLicenciaPlans()))
+	for _, item := range rows {
+		if IsGlobalLicenciaCatalogItem(item) {
+			out = append(out, item)
+		}
 	}
 	return out
 }
@@ -99,7 +139,7 @@ func ensureLicenciasCatalogoGlobalNoSchema(dbConn *sql.DB, usuario string) (int,
 		}
 		count++
 	}
-	if err := hideLegacyCatalogLicenciasNoSchema(dbConn); err != nil {
+	if err := deleteExtraCatalogLicenciasNoSchema(dbConn); err != nil {
 		return count, err
 	}
 	return count, nil
@@ -182,7 +222,7 @@ func upsertGlobalLicenciaPlan(dbConn *sql.DB, usuario string, plan GlobalLicenci
 	return err
 }
 
-func hideLegacyCatalogLicenciasNoSchema(dbConn *sql.DB) error {
+func deleteExtraCatalogLicenciasNoSchema(dbConn *sql.DB) error {
 	codes := globalLicenciaPlanCodes()
 	if len(codes) == 0 {
 		return nil
@@ -192,17 +232,27 @@ func hideLegacyCatalogLicenciasNoSchema(dbConn *sql.DB) error {
 	for _, code := range codes {
 		args = append(args, strings.ToUpper(strings.TrimSpace(code)))
 	}
-	query := fmt.Sprintf(`UPDATE licencias
-		SET activo = 0,
-			estado = CASE
-				WHEN LOWER(COALESCE(estado, '')) = 'eliminada' THEN estado
-				ELSE 'catalogo_oculto'
-			END,
-			observaciones = COALESCE(NULLIF(TRIM(observaciones), ''), 'Oculta por migracion a catalogo global de 4 planes.'),
-			fecha_actualizacion = `+sqlNowExpr()+`
+	deleteNonCanonical := fmt.Sprintf(`DELETE FROM licencias
 		WHERE COALESCE(empresa_id, 0) = 0
-			AND COALESCE(es_adicional, 0) = 0
 			AND UPPER(TRIM(COALESCE(codigo_funcion, ''))) NOT IN (%s)`, placeholders)
-	_, err := execSQLCompat(dbConn, query, args...)
+	if _, err := execSQLCompat(dbConn, deleteNonCanonical, args...); err != nil {
+		return err
+	}
+	duplicateArgs := make([]interface{}, 0, len(args)*2)
+	duplicateArgs = append(duplicateArgs, args...)
+	duplicateArgs = append(duplicateArgs, args...)
+	deleteDuplicates := fmt.Sprintf(`DELETE FROM licencias
+		WHERE COALESCE(empresa_id, 0) = 0
+			AND UPPER(TRIM(COALESCE(codigo_funcion, ''))) IN (%s)
+			AND id NOT IN (
+				SELECT keep_id FROM (
+					SELECT MIN(id) AS keep_id
+					FROM licencias
+					WHERE COALESCE(empresa_id, 0) = 0
+						AND UPPER(TRIM(COALESCE(codigo_funcion, ''))) IN (%s)
+					GROUP BY UPPER(TRIM(COALESCE(codigo_funcion, '')))
+				) canonical_keep
+			)`, placeholders, placeholders)
+	_, err := execSQLCompat(dbConn, deleteDuplicates, duplicateArgs...)
 	return err
 }

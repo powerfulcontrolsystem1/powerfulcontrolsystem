@@ -24,34 +24,10 @@
     html.theme-dark,html[data-theme^="dark"]{color-scheme:dark;--cmd-bg:var(--bg,#0c1420);--cmd-panel:color-mix(in srgb,var(--surface,#16253a) 94%,#000 6%);--cmd-soft:color-mix(in srgb,var(--surface-soft,#1d2f48) 86%,#000 14%);--cmd-line:color-mix(in srgb,var(--border,rgba(152,176,206,.26)) 78%,var(--text,#e8f0fb) 8%);--cmd-green:#4ade80;--cmd-amber:#fbbf24;--cmd-red:#f87171}
     body.super-page{margin:0;background:var(--cmd-bg);color:var(--cmd-text);font-family:Inter,Segoe UI,Arial,sans-serif}
     .cmd-shell{width:min(1120px,calc(100vw - 28px));margin:0 auto;padding:12px 0 20px}
-    .cmd-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px;padding:11px 13px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
-    .cmd-kicker{margin:0 0 4px;color:var(--cmd-muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
-    .cmd-title{margin:0;color:var(--cmd-text);font-size:1.36rem;line-height:1.1}
-    .cmd-subtitle{margin:5px 0 0;color:var(--cmd-muted);font-size:.82rem;line-height:1.35}
-    .cmd-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
     .cmd-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:8px 11px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);font-weight:850;font-size:.8rem;text-decoration:none;cursor:pointer}
     .cmd-btn.primary{background:var(--cmd-blue);border-color:var(--cmd-blue);color:#fff}
     .cmd-btn.danger{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 36%,var(--cmd-line));color:var(--cmd-red)}
     .cmd-btn:hover{filter:brightness(.98)}
-    .cmd-weather-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px;padding:10px 12px;border:1px solid var(--cmd-line);border-radius:8px;background:linear-gradient(135deg,var(--cmd-panel),var(--cmd-soft))}
-    .cmd-weather-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;min-width:0}
-    .cmd-weather-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-panel);color:var(--cmd-blue);font-size:1.25rem;font-weight:900}
-    .cmd-weather-label{margin:0 0 2px;color:var(--cmd-muted);font-size:.68rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
-    .cmd-weather-place{margin:0;color:var(--cmd-text);font-size:.94rem;font-weight:900;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .cmd-weather-desc{margin:3px 0 0;color:var(--cmd-muted);font-size:.74rem;line-height:1.2}
-    .cmd-weather-temp{margin:0;color:var(--cmd-text);font-size:1.85rem;font-weight:950;line-height:1;white-space:nowrap;text-align:right}
-    .cmd-weather-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;min-width:360px}
-    .cmd-weather-stat{padding:5px 7px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);min-width:0}
-    .cmd-weather-stat span{display:block;color:var(--cmd-muted);font-size:.58rem;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cmd-weather-stat strong{display:block;margin-top:2px;color:var(--cmd-text);font-size:.78rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .cmd-weather-actions{grid-column:1 / -1;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-    .cmd-weather-control{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:5px 9px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);font-size:.72rem;font-weight:850;cursor:pointer}
-    .cmd-weather-control.primary{background:var(--cmd-info-bg);border-color:color-mix(in srgb,var(--cmd-blue) 32%,var(--cmd-line));color:var(--cmd-blue)}
-    .cmd-weather-control:disabled{opacity:.7;cursor:wait}
-    .cmd-weather-form{display:grid;grid-template-columns:minmax(160px,1fr) auto;gap:6px;min-width:min(100%,320px)}
-    .cmd-weather-form[hidden]{display:none}
-    .cmd-weather-form input{min-width:0;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);padding:5px 8px;font-size:.74rem}
-    .cmd-weather-hint{margin:0;color:var(--cmd-muted);font-size:.68rem;font-weight:700}
     .cmd-favorites-panel{margin-bottom:10px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
     .cmd-favorites-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
     .cmd-favorites-heading{display:flex;align-items:baseline;gap:8px;min-width:0}
@@ -72,6 +48,7 @@
     .cmd-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--cmd-line)}
     .cmd-panel-head h2{margin:0;color:var(--cmd-text);font-size:.98rem;line-height:1.15}
     .cmd-panel-head p{margin:4px 0 0;color:var(--cmd-muted);font-size:.76rem;line-height:1.25}
+    .cmd-panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
     .cmd-pill{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:5px 8px;border-radius:999px;font-size:.68rem;font-weight:900;text-transform:uppercase;border:1px solid var(--cmd-line);background:var(--cmd-soft);color:var(--cmd-muted);white-space:nowrap}
     .cmd-pill.ok{background:var(--cmd-ok-bg);border-color:color-mix(in srgb,var(--cmd-green) 32%,var(--cmd-line));color:var(--cmd-green)}
     .cmd-pill.warn{background:var(--cmd-warn-bg);border-color:color-mix(in srgb,var(--cmd-amber) 34%,var(--cmd-line));color:var(--cmd-amber)}
@@ -104,53 +81,12 @@
     .cmd-toast{position:fixed;right:14px;bottom:14px;z-index:20;display:none;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-text);color:var(--cmd-panel);font-size:.82rem}
     .cmd-toast.show{display:block}
     @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}}
-    @media(max-width:860px){.cmd-topbar{grid-template-columns:1fr}.cmd-actions{justify-content:flex-start}.cmd-weather-panel{grid-template-columns:1fr}.cmd-weather-temp{text-align:left}.cmd-weather-meta{min-width:0}.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-favorites-grid,.cmd-weather-meta{grid-template-columns:1fr}.cmd-actions .cmd-btn{flex:1 1 calc(50% - 8px)}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
+    @media(max-width:860px){.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-favorites-grid{grid-template-columns:1fr}.cmd-panel-head{display:grid}.cmd-panel-actions{justify-content:flex-start}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
   </style>
 </head>
 <body class="super-page">
   <main class="cmd-shell">
-    <header class="cmd-topbar">
-      <div>
-        <p class="cmd-kicker">Super administrador</p>
-        <h1 class="cmd-title">Panel ejecutivo</h1>
-        <p class="cmd-subtitle">Vista limpia de salud, licencias, empresas, alertas y continuidad operativa.</p>
-      </div>
-      <nav class="cmd-actions" aria-label="Controles principales">
-        <button id="cmdRefresh" class="cmd-btn primary" type="button">Actualizar</button>
-        <button id="cmdRunAlerts" class="cmd-btn danger" type="button">Evaluar alertas</button>
-        <a class="cmd-btn" href="/super/licencias.html">Licencias</a>
-        <a class="cmd-btn" href="/super/alertas_sistema.html">Alertas</a>
-      </nav>
-    </header>
-
-    <section class="cmd-weather-panel" aria-label="Clima actual">
-      <div class="cmd-weather-main">
-        <div id="weatherIcon" class="cmd-weather-icon" aria-hidden="true">&#9728;</div>
-        <div>
-          <p class="cmd-weather-label">Clima actual</p>
-          <p id="weatherPlace" class="cmd-weather-place">Consultando ubicacion...</p>
-          <p id="weatherDesc" class="cmd-weather-desc">Conectando con el servicio del clima.</p>
-        </div>
-      </div>
-      <p id="weatherTemp" class="cmd-weather-temp">--&deg;</p>
-      <div class="cmd-weather-meta" aria-label="Detalles del clima">
-        <div class="cmd-weather-stat"><span>Sensacion</span><strong id="weatherFeels">--</strong></div>
-        <div class="cmd-weather-stat"><span>Humedad</span><strong id="weatherHumidity">--</strong></div>
-        <div class="cmd-weather-stat"><span>Viento</span><strong id="weatherWind">--</strong></div>
-        <div class="cmd-weather-stat"><span>Nubes</span><strong id="weatherClouds">--</strong></div>
-      </div>
-      <div class="cmd-weather-actions" aria-label="Ajustar ubicacion del clima">
-        <button id="weatherGpsBtn" class="cmd-weather-control primary" type="button">Usar GPS</button>
-        <button id="weatherManualToggle" class="cmd-weather-control" type="button">Cambiar ciudad</button>
-        <form id="weatherManualForm" class="cmd-weather-form" hidden>
-          <input id="weatherManualInput" type="text" autocomplete="address-level2" placeholder="Ciudad, pais">
-          <button class="cmd-weather-control" type="submit">Aplicar</button>
-        </form>
-        <p id="weatherLocationHint" class="cmd-weather-hint">Si la ciudad no coincide, activa GPS o escribe tu ciudad.</p>
-      </div>
-    </section>
-
     <section class="cmd-favorites-panel" aria-labelledby="superFavoritesTitle">
       <div class="cmd-favorites-head">
         <div class="cmd-favorites-heading">
@@ -172,7 +108,11 @@
               <h2>Estado general</h2>
               <p id="cmdLastUpdate">Sin lectura reciente</p>
             </div>
-            <span id="cmdMode" class="cmd-pill info">Normal</span>
+            <div class="cmd-panel-actions" aria-label="Controles de estado general">
+              <span id="cmdMode" class="cmd-pill info">Normal</span>
+              <button id="cmdRefresh" class="cmd-btn primary" type="button">Actualizar</button>
+              <button id="cmdRunAlerts" class="cmd-btn danger" type="button">Evaluar alertas</button>
+            </div>
           </div>
           <div class="cmd-summary">
             <div class="cmd-score">
@@ -256,13 +196,6 @@
       var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[] };
       var $ = function(id){ return document.getElementById(id); };
       var favoritesKey = "super_admin:favorites";
-      var weatherKey = "super_admin:weather_location";
-      var weatherCodeMap = {
-        0:["Despejado","clear","\u2600"],1:["Mayormente despejado","clear","\u2600"],2:["Parcialmente nublado","cloudy","\u26c5"],3:["Nublado","cloudy","\u2601"],
-        45:["Niebla","cloudy","\u2601"],48:["Niebla","cloudy","\u2601"],51:["Llovizna ligera","rain","\u2614"],53:["Llovizna","rain","\u2614"],55:["Llovizna fuerte","rain","\u2614"],
-        61:["Lluvia ligera","rain","\u2614"],63:["Lluvia","rain","\u2614"],65:["Lluvia fuerte","rain","\u2614"],80:["Chubascos","rain","\u2614"],81:["Chubascos","rain","\u2614"],82:["Chubascos fuertes","rain","\u2614"],
-        95:["Tormenta","storm","\u26a1"],96:["Tormenta con granizo","storm","\u26a1"],99:["Tormenta fuerte","storm","\u26a1"]
-      };
       function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
       function pct(v){ return Math.max(0, Math.min(100, num(v))); }
       function text(id, value){ var el = $(id); if(el) el.textContent = value; }
@@ -353,133 +286,6 @@
         var res = await fetch(url, { method:"POST", credentials:"same-origin" });
         if(!res.ok) throw new Error(await res.text() || ("HTTP " + res.status));
         return res.json().catch(function(){ return {}; });
-      }
-      function setWeatherHint(message){
-        var el = $("weatherLocationHint");
-        if(el) el.textContent = message || "";
-      }
-      function setWeatherGPSBusy(isBusy){
-        var btn = $("weatherGpsBtn");
-        if(!btn) return;
-        btn.disabled = !!isBusy;
-        btn.textContent = isBusy ? "Solicitando GPS..." : "Usar GPS";
-      }
-      function superDefaultLocation(){
-        var tz = "";
-        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e) {}
-        if(String(tz).toLowerCase().indexOf("panama") >= 0) return { displayName:"Ciudad de Panama, Panama", city:"Ciudad de Panama", country:"Panama", latitude:8.9833, longitude:-79.5167, source:"navegador" };
-        if(String(tz).toLowerCase().indexOf("guayaquil") >= 0) return { displayName:"Guayaquil, Ecuador", city:"Guayaquil", country:"Ecuador", latitude:-2.1962, longitude:-79.8862, source:"navegador" };
-        return { displayName:"Bogota, Colombia", city:"Bogota", country:"Colombia", latitude:4.711, longitude:-74.0721, source:"navegador" };
-      }
-      function readWeatherLocation(){
-        try {
-          var parsed = JSON.parse(window.localStorage.getItem(weatherKey) || "null");
-          if(parsed && (parsed.displayName || parsed.city || (Number(parsed.latitude) && Number(parsed.longitude)))) return parsed;
-        } catch(e) {}
-        return superDefaultLocation();
-      }
-      function saveWeatherLocation(location){
-        try { window.localStorage.setItem(weatherKey, JSON.stringify(location || {})); } catch(e) {}
-      }
-      function weatherInfo(code, isDay){
-        var item = weatherCodeMap[Number(code)] || ["Clima variable","cloudy","\u2601"];
-        if(!isDay && (item[1] === "clear" || item[1] === "cloudy")) return [item[0] === "Despejado" ? "Noche despejada" : item[0], "night", "\u263e"];
-        return item;
-      }
-      function renderWeather(place, forecast){
-        var current = forecast && forecast.current ? forecast.current : {};
-        var info = weatherInfo(current.weather_code, Number(current.is_day) !== 0);
-        text("weatherPlace", place || "Ubicacion actual");
-        text("weatherIcon", info[2]);
-        text("weatherTemp", Math.round(Number(current.temperature_2m || 0)) + "\u00b0");
-        text("weatherDesc", info[0]);
-        text("weatherFeels", Math.round(Number(current.apparent_temperature || current.temperature_2m || 0)) + "\u00b0");
-        text("weatherHumidity", Number(current.relative_humidity_2m || 0) + "%");
-        text("weatherWind", Math.round(Number(current.wind_speed_10m || 0)) + " km/h");
-        text("weatherClouds", Number(current.cloud_cover || 0) + "%");
-        setWeatherHint("Clima actualizado desde internet con Open-Meteo.");
-      }
-      async function geocodeWeatherLocation(location){
-        var name = location.displayName || [location.city, location.country].filter(Boolean).join(", ") || "Bogota, Colombia";
-        var url = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(name) + "&count=1&language=es&format=json";
-        var data = await getJSON(url, null);
-        var item = data && data.results && data.results[0];
-        if(!item) throw new Error("sin-geocodificacion");
-        return {
-          displayName: [item.name, item.admin1, item.country].filter(Boolean).join(", "),
-          city: item.name,
-          country: item.country,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          source: location.source || "manual"
-        };
-      }
-      async function loadWeather(location){
-        var loc = location || readWeatherLocation();
-        try {
-          if(!Number(loc.latitude) || !Number(loc.longitude)) loc = await geocodeWeatherLocation(loc);
-          var place = loc.displayName || [loc.city, loc.country].filter(Boolean).join(", ") || "Ubicacion actual";
-          text("weatherPlace", place);
-          var forecastURL = "https://api.open-meteo.com/v1/forecast?latitude=" +
-            encodeURIComponent(loc.latitude) + "&longitude=" + encodeURIComponent(loc.longitude) +
-            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto";
-          var forecast = await getJSON(forecastURL, null);
-          if(!forecast) throw new Error("sin-clima");
-          saveWeatherLocation(loc);
-          renderWeather(place, forecast);
-        } catch(e) {
-          text("weatherDesc", "No se pudo consultar el clima en este momento.");
-          setWeatherHint("La pagina sigue disponible; intenta cambiar ciudad o usar GPS.");
-        }
-      }
-      function requestGPSWeather(){
-        if(!navigator.geolocation){
-          setWeatherHint("Este navegador no permite leer GPS.");
-          return;
-        }
-        setWeatherGPSBusy(true);
-        setWeatherHint("Acepta el permiso de ubicacion del navegador.");
-        navigator.geolocation.getCurrentPosition(function(pos){
-          var loc = {
-            displayName: "Ubicacion GPS",
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            source: "gps"
-          };
-          saveWeatherLocation(loc);
-          loadWeather(loc).then(function(){ setWeatherGPSBusy(false); });
-        }, function(){
-          setWeatherGPSBusy(false);
-          setWeatherHint("No se pudo leer el GPS. Escribe la ciudad manualmente.");
-        }, { enableHighAccuracy:false, timeout:9000, maximumAge:300000 });
-      }
-      function setupWeatherControls(){
-        var gpsBtn = $("weatherGpsBtn");
-        var toggle = $("weatherManualToggle");
-        var form = $("weatherManualForm");
-        var input = $("weatherManualInput");
-        if(gpsBtn) gpsBtn.addEventListener("click", requestGPSWeather);
-        if(toggle && form) {
-          toggle.addEventListener("click", function(){
-            var show = !!form.hidden;
-            form.hidden = !show;
-            toggle.textContent = show ? "Ocultar ciudad" : "Cambiar ciudad";
-            if(show && input) input.focus();
-          });
-        }
-        if(form) {
-          form.addEventListener("submit", function(event){
-            event.preventDefault();
-            var raw = String((input && input.value) || "").trim();
-            if(!raw) {
-              setWeatherHint("Escribe ciudad y pais para mejorar la precision.");
-              return;
-            }
-            var loc = { displayName: raw, city: raw.split(",")[0], source: "manual" };
-            setWeatherHint("Actualizando clima para " + raw + ".");
-            loadWeather(loc);
-          });
-        }
       }
       function alertCandidates(){
         var a = state.alerts || {};
@@ -625,8 +431,6 @@
       });
       window.addEventListener("pcs-super-favorites-changed", renderFavorites);
       renderFavorites();
-      setupWeatherControls();
-      loadWeather();
       loadAll();
     })();
   </script>

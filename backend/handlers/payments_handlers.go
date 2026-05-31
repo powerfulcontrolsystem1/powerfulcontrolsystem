@@ -110,6 +110,9 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "failed to query licencias: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+			if !conEmpresa {
+				licencias = dbpkg.FilterGlobalLicenciaCatalog(licencias)
+			}
 			if allowedEmpresaIDs != nil {
 				filtered := make([]dbpkg.Licencia, 0, len(licencias))
 				for _, lic := range licencias {
@@ -299,6 +302,8 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
+			http.Error(w, "catalogo fijo: solo existen 4 licencias globales para todas las empresas", http.StatusConflict)
+			return
 
 			log.Printf("POST /super/api/licencias payload: TipoID=%d Nombre=%q", payload.TipoID, payload.Nombre)
 			if payload.Nombre == "" {
@@ -348,6 +353,11 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			}
 			// soporte para acciÃ³n de activar/desactivar vÃ­a query param
 			if q.Get("action") == "activar" {
+				existing, err := dbpkg.GetLicenciaByID(dbSuper, id)
+				if err != nil {
+					http.Error(w, "licencia no encontrada", http.StatusNotFound)
+					return
+				}
 				activoStr := q.Get("activo")
 				if activoStr == "" {
 					http.Error(w, "activo required (0 or 1)", http.StatusBadRequest)
@@ -356,6 +366,10 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 				act, err := strconv.Atoi(activoStr)
 				if err != nil || (act != 0 && act != 1) {
 					http.Error(w, "invalid activo value", http.StatusBadRequest)
+					return
+				}
+				if dbpkg.IsGlobalLicenciaCatalogItem(*existing) && act == 0 {
+					http.Error(w, "las 4 licencias globales no se pueden ocultar desde la API", http.StatusConflict)
 					return
 				}
 				if err := dbpkg.SetLicenciaActivo(dbSuper, id, act); err != nil {
@@ -420,6 +434,15 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 			id, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
 				http.Error(w, "invalid id", http.StatusBadRequest)
+				return
+			}
+			existing, err := dbpkg.GetLicenciaByID(dbSuper, id)
+			if err != nil {
+				http.Error(w, "licencia no encontrada", http.StatusNotFound)
+				return
+			}
+			if dbpkg.IsGlobalLicenciaCatalogItem(*existing) {
+				http.Error(w, "las 4 licencias globales no se pueden eliminar", http.StatusConflict)
 				return
 			}
 			if err := dbpkg.DeleteLicencia(dbSuper, id); err != nil {

@@ -65,9 +65,9 @@ afecte dinero, documentos, licencias o seguridad.
 ## Licencia gratis 15 dias
 
 1. El catalogo base de licencias es global para todos los tipos de empresa:
-   prueba gratis 15 dias, plan 1000 documentos, plan 2000 documentos y plan 4000
-   documentos. Las licencias base antiguas por tipo quedan ocultas del flujo
-   comercial.
+   prueba gratis 15 dias, plan COP 60000, plan COP 100000 y plan COP 150000.
+   Las licencias base antiguas por tipo y addons de catalogo se eliminan del
+   catalogo sin empresa asignada.
 2. Desde el checkout de licencia se obtiene resumen publico.
 3. Si el total es cero o prueba permitida, `POST /licencias/activar_sin_pago`
    activa la licencia.

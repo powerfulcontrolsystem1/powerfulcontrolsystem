@@ -252,9 +252,9 @@ func DefaultNuevoVerticalLicenciaPlans(item NuevoVerticalTipoEmpresa) []NuevoVer
 	descripcion := "Licencia para " + strings.ToLower(nombre) + ": " + strings.TrimSpace(item.Observaciones)
 	return []NuevoVerticalLicenciaPlan{
 		{Nombre: nombre + " prueba 15 dias", Descripcion: descripcion, Valor: 0, DuracionDias: 15, MaxDocumentosMensuales: 250, ModulosHabilitados: modules},
-		{Nombre: nombre + " 30 dias - 1000 documentos", Descripcion: descripcion, Valor: 60000, DuracionDias: 30, MaxDocumentosMensuales: 1000, ModulosHabilitados: modules},
-		{Nombre: nombre + " 30 dias - 2000 documentos", Descripcion: descripcion, Valor: 100000, DuracionDias: 30, MaxDocumentosMensuales: 2000, ModulosHabilitados: modules},
-		{Nombre: nombre + " 30 dias - 4000 documentos", Descripcion: descripcion, Valor: 150000, DuracionDias: 30, MaxDocumentosMensuales: 4000, ModulosHabilitados: modules},
+		{Nombre: "Plan mensual COP 60000", Descripcion: descripcion, Valor: 60000, DuracionDias: 30, MaxDocumentosMensuales: 1000, ModulosHabilitados: modules},
+		{Nombre: "Plan mensual COP 100000", Descripcion: descripcion, Valor: 100000, DuracionDias: 30, MaxDocumentosMensuales: 2000, ModulosHabilitados: modules},
+		{Nombre: "Plan mensual COP 150000", Descripcion: descripcion, Valor: 150000, DuracionDias: 30, MaxDocumentosMensuales: 4000, ModulosHabilitados: modules},
 	}
 }
 

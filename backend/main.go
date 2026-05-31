@@ -757,6 +757,12 @@ func main() {
 			log.Fatalf("failed to ensure licencias schema in superadministrador db: %v", err)
 		}
 		startupTrace("after_ensure_licencias_schema")
+		if ensured, err := dbpkg.EnsureLicenciasCatalogoGlobal(dbSuper, "sistema.arranque"); err != nil {
+			log.Printf("warning: no se pudo asegurar catalogo global de licencias: %v", err)
+		} else {
+			log.Printf("INFO: catalogo global de licencias verificado: planes=%d", ensured)
+		}
+		startupTrace("after_ensure_licencias_catalogo_global")
 		if err := dbpkg.EnsureSuperAuditoriaSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure super auditoria schema in superadministrador db: %v", err)
 		}

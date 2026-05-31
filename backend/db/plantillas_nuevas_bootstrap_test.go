@@ -29,8 +29,8 @@ func TestDefaultNuevoVerticalLicenciaPlans(t *testing.T) {
 			if !strings.Contains(plans[0].ModulosHabilitados, item.Modulo) {
 				t.Fatalf("modules %q missing %s", plans[0].ModulosHabilitados, item.Modulo)
 			}
-			if !strings.Contains(plans[3].Nombre, "4000 documentos") || plans[3].MaxDocumentosMensuales != 4000 {
-				t.Fatalf("4000-doc plan mismatch: %+v", plans[3])
+			if plans[3].Nombre != "Plan mensual COP 150000" || plans[3].MaxDocumentosMensuales != 4000 || plans[3].Valor != 150000 {
+				t.Fatalf("plan COP 150000 mismatch: %+v", plans[3])
 			}
 		})
 	}

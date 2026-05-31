@@ -1,3 +1,14 @@
+## [2026-05-31] Licencias fijas globales
+- [Backend] `backend/db/licencias_globales.go` asegura solo cuatro planes globales: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
+- [Datos] La limpieza de catalogo elimina licencias sobrantes sin empresa asignada, incluidos addons antiguos y duplicados de catalogo; las licencias asignadas a empresas se conservan para historial y pagos.
+- [Super] `web/super/licencias.html` muestra el catalogo como fijo y retira acciones de agregar, eliminar u ocultar licencias.
+- [QA] `go test ./db -run "GlobalLicencia|LicenciaCatalog" -count=1` y `go test ./handlers -run TestLicencia -count=1`.
+
+## [2026-05-31] Centro de mando super simplificado
+- [UX] `web/super/licencias_resumen.html` quita la tarjeta superior `Super administrador / Panel ejecutivo` y elimina la tarjeta de clima del panel super.
+- [Interaccion] Los botones `Actualizar` y `Evaluar alertas` se conservan dentro de `Estado general`, evitando que la pagina pierda controles operativos.
+- [Orden visual] La primera tarjeta visible ahora es `Favoritos`, seguida por `Estado general`, `Incidentes recientes` y `Prioridades`.
+
 ## [2026-05-31] Clima en centro de mando super
 - [UX] `web/super/licencias_resumen.html` agrega una tarjeta de clima actual en la parte alta del panel super, antes de favoritos y Estado general.
 - [Interaccion] La tarjeta permite usar GPS o escribir ciudad manualmente; guarda la ubicacion en `localStorage:super_admin:weather_location` y consulta Open-Meteo sin agregar dependencias.
@@ -1119,7 +1130,7 @@
 - [Ayuda] `web/ayuda/ayuda.html` suma secciones de acceso de usuarios, operacion conectada, cajas simultaneas, soporte/comunicaciones, documentos locales y backups.
 
 ## [2026-05-13] Cajas simultaneas por licencia
-- [Licencias] Se agrega `max_cajas_simultaneas` con default 2 y default 4 para planes de 4000 documentos.
+- [Licencias] Se agrega `max_cajas_simultaneas` con default 2 y cupo mayor para el plan global superior.
 - [Finanzas] Apertura y reapertura de cajas validan el cupo contra la licencia activa de la empresa.
 - [Ventas] Cada pago de carrito se enlaza a una caja abierta para mantener cierres y arqueos separados.
 - [Super] La pantalla de licencias permite configurar el maximo de cajas simultaneas.
@@ -2010,6 +2021,6 @@
 - [Super administrador] `Asesores de ventas` pasa a ser el primer boton del grupo `Comercial y licencias`.
 - [Navegacion] Se enlazan las paginas super que no tenian boton directo: reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA, servidores, soporte remoto y configuracion avanzada.
 - [QA] Validado cruce menu/paginas: 52 paginas HTML en `web/super`, 52 enlaces super en el menu y ningun enlace fuera de paginas permitidas.
-- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa, oculta planes heredados repetidos, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
+- 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa; desde 2026-05-31 elimina planes heredados repetidos sin empresa asignada, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
 - 2026-05-30: `Configuracion general PostgreSQL` corrige el esquema y consultas de `empresa_configuracion_general` para usar `BIGSERIAL`, fecha compatible y placeholders traducidos, evitando 500 al entrar al panel de empresas nuevas.
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
