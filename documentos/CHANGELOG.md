@@ -1,3 +1,8 @@
+## [2026-05-31] Instalacion PWA del login administrativo
+- [PWA] `web/login.html` actualiza la version del instalador para evitar cache antiguo en el boton `Instalar app`.
+- [UX] `web/js/pwa_install.js` muestra estado inmediato al abrir la instalacion y conserva un mensaje de respaldo si el navegador no entrega el dialogo nativo.
+- [QA] Validado con sintaxis JS y prueba visual local simulando el evento `beforeinstallprompt`.
+
 ## [2026-05-31] Login usuario con Google por invitacion
 - [Auth] `login_usuario.html` agrega `Iniciar sesión con Google` para usuarios operativos, usando `/auth/google/usuario/login` y el callback canonico `/auth/google/callback`.
 - [Seguridad] El callback de usuario no crea cuentas publicas: solo abre sesion si el correo verificado por Google coincide con una invitacion vigente o un usuario empresarial ya confirmado, y redirige a `administrar_empresa.html?id={empresa_id}`.

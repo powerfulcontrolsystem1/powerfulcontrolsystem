@@ -14,7 +14,7 @@
   }
 
   function isStandalone() {
-    return window.matchMedia && window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
   }
 
   function isiOS() {
@@ -73,7 +73,27 @@
         return;
       }
       if (installPromptEvent) {
-        installPromptEvent.prompt();
+        var promptResult = null;
+        setMessage("Abriendo instalacion de la app...", false);
+        try {
+          promptResult = installPromptEvent.prompt();
+        } catch (error) {
+          setMessage("No se pudo abrir la instalacion. Usa el menu del navegador para instalar la app.", true);
+          installPromptEvent = null;
+          syncInstallButton();
+          return;
+        }
+        Promise.resolve(promptResult).catch(function () {
+          setMessage("No se pudo abrir la instalacion. Usa el menu del navegador para instalar la app.", true);
+          installPromptEvent = null;
+          syncInstallButton();
+        });
+        if (!installPromptEvent || !installPromptEvent.userChoice) {
+          setMessage("Si no aparece la ventana, usa el menu del navegador y elige Instalar app o Agregar a pantalla de inicio.", false);
+          installPromptEvent = null;
+          syncInstallButton();
+          return;
+        }
         installPromptEvent.userChoice.then(function (choice) {
           if (choice && choice.outcome === "accepted") {
             setMessage("Instalacion iniciada.", false);

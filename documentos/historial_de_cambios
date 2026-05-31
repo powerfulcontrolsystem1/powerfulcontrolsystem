@@ -1,3 +1,10 @@
+2026-05-31: Instalacion PWA del login administrativo.
+- Modulos afectados: `login`, `pwa`, `frontend_ux`.
+- Cambio funcional visible: el boton `Instalar app` de `login.html` carga una version nueva del instalador y muestra respuesta inmediata cuando se abre la instalacion.
+- Implementacion: `web/js/pwa_install.js` informa `Abriendo instalacion de la app...` antes de invocar el prompt nativo y deja un mensaje de respaldo cuando el navegador no permite mostrarlo.
+- Seguridad/datos: no cambia backend, endpoints, permisos, datos empresariales ni dependencias.
+- Validacion: sintaxis JS, `git diff --check` y prueba visual local simulando `beforeinstallprompt`.
+
 2026-05-31: Login usuario con Google por invitacion.
 - Modulos afectados: `login_usuario`, `usuarios_empresa`, `autenticacion`, `frontend_ux`, `pwa`.
 - Cambio funcional: `login_usuario.html` agrega boton `Iniciar sesion con Google` para usuarios operativos y boton `Instalar app` con icono; elimina el texto contextual de empresa detectada.
