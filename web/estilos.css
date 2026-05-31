@@ -2487,12 +2487,12 @@ ul{padding-left:18px}
 }
 
 /* Estilos específicos para la página de login centrada */
-.login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;gap:12px;position:relative;overflow:hidden}
+.login-page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 10px;gap:18px;position:relative;overflow:hidden}
 .login-page .container{max-width:420px;margin:0}
 .login-page .card{text-align:center;padding:28px}
-.login-executive-visual-wrap{display:none}
-.login-executive-visual{display:block;width:100%;height:100%;object-fit:cover;border-radius:28px;box-shadow:0 18px 34px color-mix(in srgb,#020617 14%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 44%,transparent);filter:drop-shadow(0 12px 22px color-mix(in srgb,var(--login-visual-shadow, #020617) 18%,transparent))}
-.login-executive-caption{position:absolute;left:18px;right:18px;bottom:18px;z-index:2;margin:0;padding:12px 14px;border-radius:8px;background:color-mix(in srgb,#020617 72%,transparent);color:#fff;font-family:'Playfair Display', Georgia, 'Segoe UI', Roboto, Arial, sans-serif;font-size:clamp(1.05rem,1.65vw,1.55rem);font-weight:900;line-height:1.12;text-align:left;text-shadow:0 2px 10px rgba(0,0,0,.45);box-shadow:0 10px 22px rgba(2,6,23,.18);overflow-wrap:anywhere}
+.login-executive-visual-wrap{display:block;width:min(320px,calc(100vw - 40px));margin:0 auto 6px;position:relative;z-index:2;text-align:center}
+.login-executive-visual{display:block;width:clamp(158px,32vw,224px);height:clamp(88px,18vw,126px);object-fit:cover;border-radius:22px;box-shadow:0 14px 26px color-mix(in srgb,#020617 16%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 46%,transparent);margin:0 auto}
+.login-executive-caption{display:block;margin:12px auto 0;padding:0;color:var(--login-title-color);font-family:'Arial Black','Segoe UI Semibold','Segoe UI',Arial,sans-serif;font-size:clamp(1.12rem,2.7vw,1.48rem);font-weight:900;line-height:1.12;text-align:center;letter-spacing:0;overflow-wrap:anywhere}
 .login-page{
   --login-visual-shadow:#0f172a;
   --login-visual-glow-primary:color-mix(in srgb,#ffffff 70%,transparent);
@@ -2580,53 +2580,13 @@ body.theme-dark .login-page{
   }
 
   .login-executive-visual-wrap {
-    display: block;
-    position: fixed;
-    right: clamp(-10px, 2vw, 28px);
-    bottom: clamp(10px, 3vw, 48px);
-    width: clamp(232px, 25vw, 408px);
-    max-height: min(56vh, 430px);
-    pointer-events: none;
-    user-select: none;
-    opacity: .96;
-    z-index: 1;
-    isolation: isolate;
-  }
-
-  .login-executive-visual-wrap::before,
-  .login-executive-visual-wrap::after{
-    content:"";
-    position:absolute;
-    inset:auto;
-    border-radius:999px;
-    pointer-events:none;
-    z-index:-1;
-    filter:blur(26px);
-    opacity:.95;
-  }
-
-  .login-executive-visual-wrap::before{
-    width:58%;
-    height:42%;
-    left:8%;
-    bottom:8%;
-    background:radial-gradient(circle, var(--login-visual-glow-secondary) 0%, transparent 74%);
-  }
-
-  .login-executive-visual-wrap::after{
-    width:48%;
-    height:36%;
-    right:6%;
-    top:10%;
-    background:radial-gradient(circle, var(--login-visual-glow-primary) 0%, transparent 72%);
+    width:min(320px,calc(100vw - 40px));
   }
 }
 
 @media (min-width: 980px) and (max-width: 1240px) {
   .login-executive-visual-wrap {
-    right: -34px;
-    width: clamp(204px, 22vw, 318px);
-    opacity: .62;
+    width:min(320px,calc(100vw - 40px));
   }
 }
 .register-admin-page .container{max-width:640px}
@@ -2717,12 +2677,12 @@ body.theme-dark .login-page{
 
 .login-usuario-body{min-height:100vh;background:var(--bg);color:var(--text)}
 .login-usuario-page{position:relative;min-height:100vh;padding:24px 14px;background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent-yellow) 18%, transparent), transparent 38%),radial-gradient(circle at right 10%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 30%),linear-gradient(180deg, var(--bg-alt), var(--bg));color:var(--text);transition:background .2s ease,color .2s ease;overflow:hidden}
-.login-usuario-hero-visual{position:fixed;right:clamp(-10px,2vw,28px);bottom:clamp(10px,3vw,48px);top:auto;width:clamp(232px,25vw,408px);max-height:min(56vh,430px);aspect-ratio:32/21;margin:0;z-index:1;pointer-events:none;user-select:none;opacity:.96;isolation:isolate}
+.login-usuario-hero-visual{position:relative;width:clamp(158px,32vw,224px);margin:0 auto 2px;z-index:2;pointer-events:none;user-select:none;opacity:1;isolation:isolate}
 .login-usuario-hero-visual::before,
-.login-usuario-hero-visual::after{content:"";position:absolute;border-radius:999px;pointer-events:none;z-index:-1;filter:blur(22px)}
+.login-usuario-hero-visual::after{display:none}
 .login-usuario-hero-visual::before{width:62%;height:42%;left:6%;bottom:10%;background:radial-gradient(circle, var(--login-visual-glow-secondary) 0%, transparent 74%);opacity:.92}
 .login-usuario-hero-visual::after{width:48%;height:38%;right:4%;top:12%;background:radial-gradient(circle, var(--login-visual-glow-tertiary) 0%, transparent 72%);opacity:.88}
-.login-usuario-hero-visual img{display:block;width:100%;height:100%;object-fit:cover;border-radius:24px;box-shadow:0 16px 30px color-mix(in srgb,#020617 14%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 44%,transparent);filter:drop-shadow(0 10px 18px color-mix(in srgb,var(--login-visual-shadow, #020617) 18%,transparent))}
+.login-usuario-hero-visual img{display:block;width:100%;height:clamp(88px,18vw,126px);object-fit:cover;border-radius:22px;box-shadow:0 14px 26px color-mix(in srgb,#020617 16%,transparent),0 0 0 1px color-mix(in srgb,var(--border) 46%,transparent)}
 .login-usuario-page .login-header,.login-usuario-page .container{position:relative;z-index:2}
 .login-usuario-page .login-header{display:flex;justify-content:center;text-align:center}
 .login-usuario-page .login-title{width:100%;text-align:center;white-space:normal!important;overflow-wrap:anywhere!important}
@@ -2779,15 +2739,13 @@ body.theme-dark .login-page{
 
 @media (min-width: 980px) and (max-width: 1240px){
   .login-usuario-hero-visual{
-    right:-34px;
-    width:clamp(204px,22vw,318px);
-    opacity:.62;
+    width:clamp(168px,18vw,210px);
   }
 }
 
 @media (max-width:960px){
   .login-usuario-page{overflow:visible}
-  .login-usuario-hero-visual{position:static;width:min(188px,56vw);margin:0 auto 8px}
+  .login-usuario-hero-visual{width:min(188px,56vw);margin:0 auto 8px}
   .login-usuario-grid{grid-template-columns:1fr}
   .login-usuario-highlights{grid-template-columns:1fr}
 }

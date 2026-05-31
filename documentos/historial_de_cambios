@@ -29437,6 +29437,12 @@ Archivos modificados:
 - web/estilos.css
 - web/js/login_usuario.js
 - web/login_usuario.html
+2026-05-31: Encabezado visual compacto en login administrador y operativo
+- Alcance: frontend de autenticacion `login.html` y `login_usuario.html`.
+- Cambio funcional: las fotos propias de cada login pasan a mostrarse arriba como imagen compacta en PC y celular. En el login administrador se quita el titulo `Powerful Control System` y queda `Acceso de administradores` como texto de acceso bajo la foto.
+- Validacion: revision visual local en escritorio y movil para confirmar imagen pequena, texto legible, sin solapes con la tarjeta de inicio de sesion y sin desborde horizontal.
+- Archivos: `web/login.html`, `web/estilos.css`, `documentos/CHANGELOG.md`, `documentos/historial_de_cambios`.
+
 2026-05-31: Pago idempotente e inventario en cajas simultaneas
 - Alcance: carritos, estaciones, caja, inventario y operacion multi-cajero.
 - Cambio funcional: `PayCarritoStationSession` ahora usa una transicion atomica para cerrar un carrito solo si sigue abierto, activo y sin pago previo. Si llega otro pago concurrente para el mismo carrito, el handler responde como idempotente cuando la venta ya quedo pagada y evita duplicar caja, documento o metricas.

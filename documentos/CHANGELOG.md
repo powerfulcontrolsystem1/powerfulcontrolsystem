@@ -2046,6 +2046,11 @@
 - 2026-05-30: `Licencias globales compartidas` reduce el catalogo base a cuatro planes globales para todos los tipos de empresa; desde 2026-05-31 elimina planes heredados repetidos sin empresa asignada, mantiene la prueba gratis de 15 dias una sola vez por empresa y agrega una tarjeta visible de reglas en Super administrador > Licencias.
 - 2026-05-30: `Configuracion general PostgreSQL` corrige el esquema y consultas de `empresa_configuracion_general` para usar `BIGSERIAL`, fecha compatible y placeholders traducidos, evitando 500 al entrar al panel de empresas nuevas.
 - 2026-05-30: `Checkout Wompi de licencias` ajusta la consulta publica de terminos del comercio para no enviar cabecera `Authorization` al endpoint merchants de Wompi y desbloquear la prueba visual de planes comerciales.
+## [2026-05-31] Encabezado visual compacto en logins
+- [UX] `login.html` y `login_usuario.html` muestran su foto propia en la parte superior como encabezado compacto, tanto en escritorio como en celular.
+- [Login] Se elimina el titulo textual `Powerful Control System` del login administrador y se conserva `Acceso de administradores` bajo la foto.
+- [QA] Validacion visual local con navegador en escritorio y movil: imagen superior pequena, sin solapes y sin desborde horizontal.
+
 ## [2026-05-31] Pago idempotente y stock en cajas simultaneas
 - [Backend] `PayCarritoStationSession` ahora cierra el carrito con una transicion atomica que exige carrito abierto, activo y sin `pagado_en`; los reintentos concurrentes no duplican documento, caja, metricas ni venta.
 - [Inventario] Se documenta que productos y recetas reservan/descuentan stock al agregarse al carrito, para que varias cajas vean el inventario disponible en tiempo real antes del pago.
