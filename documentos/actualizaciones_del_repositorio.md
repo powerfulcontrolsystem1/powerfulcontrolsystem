@@ -11782,3 +11782,20 @@ Archivos modificados:
 - web/ayuda/ayuda.html
 - web/js/pwa_install.js
 - web/login.html
+
+2026-05-31 14:48:56 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2963b71b; PushStatus: OK
+Archivos modificados:
+- backend/db/usuarios_empresa.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/usuarios_empresa.go
+- backend/main.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/estilos.css
+- web/js/login_usuario.js
+- web/login_usuario.html
