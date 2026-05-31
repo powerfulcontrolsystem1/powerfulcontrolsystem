@@ -76,9 +76,10 @@ botones, desde handlers estaticos del backend.
   `/licencias/activar_sin_pago`. El catalogo base vigente es global para todos
   los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con cuatro planes:
   prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000. La
-  prueba gratis solo se puede activar una vez por empresa; las licencias base
-  antiguas por tipo y addons de catalogo sin empresa asignada se eliminan del
-  catalogo comercial.
+  prueba gratis solo se puede activar una vez por empresa, incluso cuando la
+  prueba anterior ya vencio, quedo inactiva o viene de datos antiguos; las
+  licencias base antiguas por tipo y addons de catalogo sin empresa asignada se
+  eliminan del catalogo comercial.
 - Menu super administrador: `web/super_administrador.html` debe enlazar solo
   las paginas activas del panel super; `web/js/super_administrador.js` debe
   permitir restaurar cada enlace con `target="contentFrame"`. `Reportes globales`
@@ -205,8 +206,10 @@ Desde `seleccionar_empresa.html`, el administrador crea una empresa eligiendo
 tipo. El backend crea la empresa, aplica preconfiguracion por tipo, prepara
 permisos/modulos y puede activar una licencia gratis de 15 dias si corresponde.
 La licencia gratis solo puede usarse una vez por empresa y pertenece al catalogo
-global compartido por todos los tipos de empresa. La creacion de empresa puede
-disparar una alerta por correo al super administrador si el check esta activo.
+global compartido por todos los tipos de empresa. El bloqueo usa historial de
+activaciones y licencias gratis antiguas, no solo licencias vigentes. La
+creacion de empresa puede disparar una alerta por correo al super administrador
+si el check esta activo.
 
 ## Flujo de administradores delegados
 

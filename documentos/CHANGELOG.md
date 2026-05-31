@@ -1,3 +1,13 @@
+## [2026-05-31] Login con titulo texto e iconos PWA
+- [UX] `web/login.html` reemplaza el logo imagen del encabezado por el texto `Powerful Control System`.
+- [PWA] Los botones `Instalar app` e `Ir al inicio` muestran iconos propios y el instalador conserva el icono cuando cambia el texto del estado.
+- [QA] Validado con Chrome/Playwright en escritorio y movil: iconos visibles, sin desborde movil y click de instalacion simulada con mensaje `Instalacion iniciada`.
+
+## [2026-05-31] Licencia de prueba historica bloqueada
+- [Backend] `backend/db/licencias_gratis.go` valida la prueba gratis por historial de empresa, no por vigencia actual, para impedir que una empresa vuelva a activar la prueba de 15 dias despues de vencida o inactiva.
+- [Compatibilidad] El fallback detecta licencias gratis antiguas por valor cero, duracion 15 dias o textos `prueba`/`gratis`/`trial`, aunque no exista una marca nueva en `licencias_activaciones_gratis`.
+- [QA] `go test ./db ./handlers -run "LicenciasGratis|LicenciaGratis|LicenciaPrueba|CheckoutSummary|ActivateLicenciaSinPago|IsLicenciaPrueba15DiasCatalogo" -count=1`.
+
 ## [2026-05-31] Super administrador simplificado
 - [UX] `web/super_administrador.html` elimina del grupo Gobierno los accesos `Reportes globales` y `Metricas de trafico`.
 - [Navegacion] `web/js/super_administrador.js` deja de permitir esas rutas como paginas favoritas o restaurables del panel super.

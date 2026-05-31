@@ -71,15 +71,17 @@ afecte dinero, documentos, licencias o seguridad.
 2. Desde el checkout de licencia se obtiene resumen publico.
 3. Si el total es cero o prueba permitida, `POST /licencias/activar_sin_pago`
    activa la licencia.
-4. El backend valida que esa empresa no haya usado antes la licencia gratis.
+4. El backend valida que esa empresa no haya usado antes la licencia gratis,
+   mirando historial completo de activaciones y licencias gratis antiguas,
+   aunque la licencia anterior ya este vencida o inactiva.
 5. La activacion debe ser idempotente si el primer intento ya dejo la licencia
    vigente.
 6. Una licencia de prueba de 15 dias con valor cero no se renueva desde el
    historial; si el administrador necesita continuar, debe escoger una licencia
    comercial desde el cambio de plan.
-7. Pruebas: activar una vez, reintentar sin duplicar, bloquear segundo uso real
-   y comprobar que el historial muestra otras licencias cuando la prueba no es
-   renovable.
+7. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
+   bloquear segundo uso real despues del vencimiento y comprobar que el
+   historial muestra otras licencias cuando la prueba no es renovable.
 
 ## Configurar empresa
 

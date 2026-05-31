@@ -1,3 +1,15 @@
+2026-05-31: Login con titulo texto e iconos PWA
+- Modulo: `autenticacion administrador`.
+- Cambio funcional/UX: el encabezado del login vuelve a texto `Powerful Control System`, y los botones inferiores `Instalar app` e `Ir al inicio` quedan con iconos visuales propios.
+- PWA: `pwa_install.js` conserva el icono al cambiar el texto del boton por estados de instalacion, evitando que el DOM pierda la marca visual.
+- QA: verificado en Chrome/Playwright con viewport escritorio y movil, incluyendo click sobre el instalador PWA simulado.
+
+2026-05-31: Licencia de prueba historica bloqueada
+- Modulos afectados: `licencias`, `checkout_licencias`.
+- Cambio funcional: una empresa no puede activar por segunda vez la prueba gratis de 15 dias aunque la primera prueba ya este vencida, inactiva o provenga de datos antiguos.
+- Backend: `licencias_activaciones_gratis` se consulta como historial permanente por `empresa_id`; el fallback revisa licencias asignadas antiguas de valor cero con duracion 15 dias o textos de prueba/gratis/trial.
+- Impacto de permisos: sin cambios; `/licencias/activar_sin_pago` conserva el flujo publico de checkout, pero la validacion de reutilizacion queda en backend antes de insertar o activar.
+
 2026-05-31: Super administrador sin paginas de metricas y reportes globales
 - Modulo: `super_administrador`.
 - Cambio funcional: el menu principal del panel super ya no muestra `Reportes globales` ni `Metricas de trafico` dentro de Gobierno.

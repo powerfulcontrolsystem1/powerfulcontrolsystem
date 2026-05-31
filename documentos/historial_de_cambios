@@ -29301,6 +29301,32 @@ Archivos modificados:
 - tmp/licencias-visual/18-empresarial-checkout-antes-descuento.png
 - tmp/licencias-visual/18-empresarial-checkout-total-cero.png
 
+2026-05-31: login con titulo texto e iconos PWA
+PushStatus: pendiente
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/js/pwa_install.js
+- web/login.html
+
+2026-05-31: bloquear reutilizacion historica de prueba gratis 15 dias
+PushStatus: pendiente
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/licencias_gratis.go
+- backend/db/licencias_gratis_postgres_test.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/ayuda/ayuda.html
+
 2026-05-30: reforzar configuracion general postgres
 PushStatus: OK
 Archivos modificados:

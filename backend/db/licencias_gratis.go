@@ -78,8 +78,7 @@ func HasAnyLicenciaGratisActivationForEmpresa(dbConn *sql.DB, empresaID int64) (
 	var count int
 	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
 		FROM licencias_activaciones_gratis
-		WHERE empresa_id = ?
-			AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&count); err != nil {
+		WHERE empresa_id = ?`, empresaID).Scan(&count); err != nil {
 		return false, err
 	}
 	if count > 0 {
@@ -92,9 +91,18 @@ func HasAnyLicenciaGratisActivationForEmpresa(dbConn *sql.DB, empresaID int64) (
 	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
 		FROM licencias
 		WHERE empresa_id = ?
-			AND COALESCE(activo, 1) = 1
 			AND COALESCE(valor, 0) <= 0
-			AND trim(COALESCE(fecha_inicio, '')) <> ''`, empresaID).Scan(&count); err != nil {
+			AND trim(COALESCE(fecha_inicio, '')) <> ''
+			AND (
+				COALESCE(duracion_dias, 0) = 15
+				OR LOWER(COALESCE(nombre, '')) LIKE '%prueba%'
+				OR LOWER(COALESCE(nombre, '')) LIKE '%gratis%'
+				OR LOWER(COALESCE(nombre, '')) LIKE '%trial%'
+				OR LOWER(COALESCE(descripcion, '')) LIKE '%prueba%'
+				OR LOWER(COALESCE(descripcion, '')) LIKE '%gratis%'
+				OR LOWER(COALESCE(descripcion, '')) LIKE '%trial%'
+				OR LOWER(COALESCE(codigo_funcion, '')) LIKE '%trial%'
+			)`, empresaID).Scan(&count); err != nil {
 		if isMissingTableError(err) || isMissingColumnError(err) {
 			return false, nil
 		}
@@ -293,8 +301,7 @@ func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int6
 	} else {
 		if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 			FROM licencias_activaciones_gratis
-			WHERE empresa_id = ?
-				AND COALESCE(estado, 'activo') = 'activo'`, empresaID).Scan(&count); err != nil {
+			WHERE empresa_id = ?`, empresaID).Scan(&count); err != nil {
 			return err
 		}
 		if count > 0 {
@@ -303,9 +310,18 @@ func ActivateLicenciaGratisForEmpresa(dbConn *sql.DB, licenciaID, empresaID int6
 		if err := queryRowTxSQLCompat(tx, `SELECT COUNT(1)
 			FROM licencias
 			WHERE empresa_id = ?
-				AND COALESCE(activo, 1) = 1
 				AND COALESCE(valor, 0) <= 0
-				AND trim(COALESCE(fecha_inicio, '')) <> ''`, empresaID).Scan(&count); err != nil {
+				AND trim(COALESCE(fecha_inicio, '')) <> ''
+				AND (
+					COALESCE(duracion_dias, 0) = 15
+					OR LOWER(COALESCE(nombre, '')) LIKE '%prueba%'
+					OR LOWER(COALESCE(nombre, '')) LIKE '%gratis%'
+					OR LOWER(COALESCE(nombre, '')) LIKE '%trial%'
+					OR LOWER(COALESCE(descripcion, '')) LIKE '%prueba%'
+					OR LOWER(COALESCE(descripcion, '')) LIKE '%gratis%'
+					OR LOWER(COALESCE(descripcion, '')) LIKE '%trial%'
+					OR LOWER(COALESCE(codigo_funcion, '')) LIKE '%trial%'
+				)`, empresaID).Scan(&count); err != nil {
 			if !isMissingTableError(err) && !isMissingColumnError(err) {
 				return err
 			}

@@ -1,3 +1,16 @@
+2026-05-31 - Login con titulo texto e iconos PWA
+- `web/login.html`:
+	- reemplaza la imagen del titulo por texto `Powerful Control System` y agrega iconos explicitos a `Instalar app` e `Ir al inicio`.
+- `web/js/pwa_install.js`:
+	- actualiza solo la etiqueta interna del boton de instalacion para no borrar el icono cuando el estado cambia a `Instalar app` o `App instalada`.
+
+2026-05-31 - Licencia de prueba historica bloqueada
+- `backend/db/licencias_gratis.go`:
+	- `HasAnyLicenciaGratisActivationForEmpresa` y `ActivateLicenciaGratisForEmpresa` consultan historial completo de activaciones gratis por empresa, sin depender de estado activo o vigencia actual.
+	- el fallback por licencias antiguas detecta pruebas gratis ya usadas por valor cero, duracion 15 dias o textos `prueba`, `gratis` o `trial`.
+- `backend/db/licencias_gratis_postgres_test.go`:
+	- agrega regresion estatica para impedir que el bloqueo de prueba gratis vuelva a depender de licencias activas/vigentes.
+
 2026-05-31 - Super administrador simplificado
 - `web/super_administrador.html`:
 	- elimina del grupo Gobierno los botones `Reportes globales` y `Metricas de trafico`.

@@ -2,6 +2,7 @@
   var installPromptEvent = null;
   var installButton = document.getElementById("installPwaBtn");
   var messageBox = document.getElementById("installPwaMessage");
+  var installButtonLabel = installButton ? installButton.querySelector(".pwa-install-label") : null;
 
   function setMessage(text, isError) {
     if (!messageBox) {
@@ -26,12 +27,20 @@
     }
     if (isStandalone()) {
       installButton.disabled = true;
-      installButton.textContent = "App instalada";
+      setInstallButtonLabel("App instalada");
       setMessage("", false);
       return;
     }
     installButton.disabled = false;
-    installButton.textContent = "Instalar app";
+    setInstallButtonLabel("Instalar app");
+  }
+
+  function setInstallButtonLabel(text) {
+    if (installButtonLabel) {
+      installButtonLabel.textContent = text;
+      return;
+    }
+    installButton.textContent = text;
   }
 
   if ("serviceWorker" in navigator) {

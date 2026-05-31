@@ -21,9 +21,7 @@
       <figcaption class="login-executive-caption">Acceso de administradores</figcaption>
     </figure>
     <div class="login-header">
-      <h1 class="login-title login-title-image">
-        <img class="login-brand-image" src="/img/titulo-powerful-control-system-login.png" alt="Powerful Control System" width="900" height="330">
-      </h1>
+      <h1 class="login-title">Powerful Control System</h1>
     </div>
     <div class="container">
       <div class="card">
@@ -128,8 +126,14 @@
         <p class="footer login-card-note">Si tienes problemas con el acceso, revisa la ayuda o contacta al soporte.</p>
       </div>
       <div class="login-bottom-actions">
-        <button id="installPwaBtn" class="btn secondary pwa-install-btn" type="button">Instalar app</button>
-        <a class="btn secondary admin-link-btn" href="/index.html">Ir al inicio</a>
+        <button id="installPwaBtn" class="btn secondary pwa-install-btn pcs-btn-with-icon" type="button">
+          <span class="pcs-btn-icon pcs-btn-icon-teal" aria-hidden="true">&#8595;</span>
+          <span class="pwa-install-label">Instalar app</span>
+        </button>
+        <a class="btn secondary admin-link-btn pcs-btn-with-icon" href="/index.html">
+          <span class="pcs-btn-icon pcs-btn-icon-info" aria-hidden="true">&#8962;</span>
+          <span>Ir al inicio</span>
+        </a>
       </div>
       <div id="installPwaMessage" class="form-help pwa-install-message" aria-live="polite"></div>
     </div>
