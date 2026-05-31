@@ -23,8 +23,8 @@
     :root{color-scheme:light dark;--cmd-bg:var(--bg,#f4f7fb);--cmd-panel:var(--surface,#fff);--cmd-soft:var(--surface-soft,#f7f9fc);--cmd-line:var(--border,rgba(15,35,64,.16));--cmd-text:var(--text,#10243f);--cmd-muted:var(--muted,#52627a);--cmd-blue:var(--accent,#0f6fcb);--cmd-green:#15803d;--cmd-amber:#b45309;--cmd-red:#b91c1c;--cmd-ok-bg:color-mix(in srgb,var(--cmd-green) 10%,var(--cmd-panel));--cmd-warn-bg:color-mix(in srgb,var(--cmd-amber) 12%,var(--cmd-panel));--cmd-crit-bg:color-mix(in srgb,var(--cmd-red) 10%,var(--cmd-panel));--cmd-info-bg:color-mix(in srgb,var(--cmd-blue) 9%,var(--cmd-panel))}
     html.theme-dark,html[data-theme^="dark"]{color-scheme:dark;--cmd-bg:var(--bg,#0c1420);--cmd-panel:color-mix(in srgb,var(--surface,#16253a) 94%,#000 6%);--cmd-soft:color-mix(in srgb,var(--surface-soft,#1d2f48) 86%,#000 14%);--cmd-line:color-mix(in srgb,var(--border,rgba(152,176,206,.26)) 78%,var(--text,#e8f0fb) 8%);--cmd-green:#4ade80;--cmd-amber:#fbbf24;--cmd-red:#f87171}
     body.super-page{margin:0;background:var(--cmd-bg);color:var(--cmd-text);font-family:Inter,Segoe UI,Arial,sans-serif}
-    .cmd-shell{width:min(980px,calc(100vw - 28px));margin:0 auto;padding:14px 0 22px}
-    .cmd-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin-bottom:12px;padding:13px 14px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-shell{width:min(1120px,calc(100vw - 28px));margin:0 auto;padding:12px 0 20px}
+    .cmd-topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px;padding:11px 13px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
     .cmd-kicker{margin:0 0 4px;color:var(--cmd-muted);font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
     .cmd-title{margin:0;color:var(--cmd-text);font-size:1.36rem;line-height:1.1}
     .cmd-subtitle{margin:5px 0 0;color:var(--cmd-muted);font-size:.82rem;line-height:1.35}
@@ -33,10 +33,43 @@
     .cmd-btn.primary{background:var(--cmd-blue);border-color:var(--cmd-blue);color:#fff}
     .cmd-btn.danger{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 36%,var(--cmd-line));color:var(--cmd-red)}
     .cmd-btn:hover{filter:brightness(.98)}
-    .cmd-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+    .cmd-weather-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:10px;padding:10px 12px;border:1px solid var(--cmd-line);border-radius:8px;background:linear-gradient(135deg,var(--cmd-panel),var(--cmd-soft))}
+    .cmd-weather-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;min-width:0}
+    .cmd-weather-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-panel);color:var(--cmd-blue);font-size:1.25rem;font-weight:900}
+    .cmd-weather-label{margin:0 0 2px;color:var(--cmd-muted);font-size:.68rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
+    .cmd-weather-place{margin:0;color:var(--cmd-text);font-size:.94rem;font-weight:900;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cmd-weather-desc{margin:3px 0 0;color:var(--cmd-muted);font-size:.74rem;line-height:1.2}
+    .cmd-weather-temp{margin:0;color:var(--cmd-text);font-size:1.85rem;font-weight:950;line-height:1;white-space:nowrap;text-align:right}
+    .cmd-weather-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;min-width:360px}
+    .cmd-weather-stat{padding:5px 7px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);min-width:0}
+    .cmd-weather-stat span{display:block;color:var(--cmd-muted);font-size:.58rem;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cmd-weather-stat strong{display:block;margin-top:2px;color:var(--cmd-text);font-size:.78rem;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cmd-weather-actions{grid-column:1 / -1;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .cmd-weather-control{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:5px 9px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);font-size:.72rem;font-weight:850;cursor:pointer}
+    .cmd-weather-control.primary{background:var(--cmd-info-bg);border-color:color-mix(in srgb,var(--cmd-blue) 32%,var(--cmd-line));color:var(--cmd-blue)}
+    .cmd-weather-control:disabled{opacity:.7;cursor:wait}
+    .cmd-weather-form{display:grid;grid-template-columns:minmax(160px,1fr) auto;gap:6px;min-width:min(100%,320px)}
+    .cmd-weather-form[hidden]{display:none}
+    .cmd-weather-form input{min-width:0;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel);color:var(--cmd-text);padding:5px 8px;font-size:.74rem}
+    .cmd-weather-hint{margin:0;color:var(--cmd-muted);font-size:.68rem;font-weight:700}
+    .cmd-favorites-panel{margin-bottom:10px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
+    .cmd-favorites-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .cmd-favorites-heading{display:flex;align-items:baseline;gap:8px;min-width:0}
+    .cmd-favorites-kicker{margin:0;color:var(--cmd-muted);font-size:.7rem;font-weight:900;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+    .cmd-favorites-kicker::after{content:"/";margin-left:8px;color:color-mix(in srgb,var(--cmd-muted) 52%,transparent)}
+    .cmd-favorites-title{margin:0;color:var(--cmd-text);font-size:1rem;line-height:1.15;white-space:nowrap}
+    .cmd-favorites-count{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 8px;border-radius:999px;background:var(--cmd-info-bg);color:var(--cmd-blue);font-size:.76rem;font-weight:900}
+    .cmd-favorites-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:7px}
+    .cmd-favorite-card{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;align-items:center;min-height:46px;padding:7px 9px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft);color:var(--cmd-text);font-size:.78rem;font-weight:850;text-decoration:none}
+    .cmd-favorite-card:hover{border-color:color-mix(in srgb,var(--cmd-blue) 42%,var(--cmd-line));background:var(--cmd-info-bg)}
+    .cmd-favorite-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--cmd-panel);border:1px solid var(--cmd-line);color:var(--cmd-blue);font-weight:900}
+    .cmd-favorite-icon img{width:20px;height:20px;object-fit:contain}
+    .cmd-favorite-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cmd-favorites-empty{margin:0;padding:9px;border:1px dashed var(--cmd-line);border-radius:8px;color:var(--cmd-muted);font-size:.78rem}
+    .cmd-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:start}
     .cmd-panel{border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-panel)}
     .cmd-panel+.cmd-panel{margin-top:12px}
-    .cmd-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 13px;border-bottom:1px solid var(--cmd-line)}
+    .cmd-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--cmd-line)}
     .cmd-panel-head h2{margin:0;color:var(--cmd-text);font-size:.98rem;line-height:1.15}
     .cmd-panel-head p{margin:4px 0 0;color:var(--cmd-muted);font-size:.76rem;line-height:1.25}
     .cmd-pill{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:5px 8px;border-radius:999px;font-size:.68rem;font-weight:900;text-transform:uppercase;border:1px solid var(--cmd-line);background:var(--cmd-soft);color:var(--cmd-muted);white-space:nowrap}
@@ -44,40 +77,35 @@
     .cmd-pill.warn{background:var(--cmd-warn-bg);border-color:color-mix(in srgb,var(--cmd-amber) 34%,var(--cmd-line));color:var(--cmd-amber)}
     .cmd-pill.crit{background:var(--cmd-crit-bg);border-color:color-mix(in srgb,var(--cmd-red) 34%,var(--cmd-line));color:var(--cmd-red)}
     .cmd-pill.info{background:var(--cmd-info-bg);border-color:color-mix(in srgb,var(--cmd-blue) 28%,var(--cmd-line));color:var(--cmd-blue)}
-    .cmd-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}
-    .cmd-score{display:grid;place-items:center;align-content:center;min-height:190px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
-    .cmd-score-ring{width:138px;height:138px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--cmd-green) 0deg,var(--cmd-green) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) 360deg)}
-    .cmd-score-ring>div{width:104px;height:104px;border-radius:50%;display:grid;place-items:center;background:var(--cmd-panel)}
-    .cmd-score strong{font-size:2rem;line-height:1;color:var(--cmd-text)}
-    .cmd-score-label{margin-top:9px;font-size:.84rem;font-weight:900}
+    .cmd-summary{display:grid;grid-template-columns:minmax(128px,160px) minmax(0,1fr);gap:8px;padding:8px}
+    .cmd-score{display:grid;place-items:center;align-content:center;min-height:132px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-score-ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--cmd-green) 0deg,var(--cmd-green) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) var(--score-deg,0deg),color-mix(in srgb,var(--cmd-muted) 22%,transparent) 360deg)}
+    .cmd-score-ring>div{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:var(--cmd-panel)}
+    .cmd-score strong{font-size:1.45rem;line-height:1;color:var(--cmd-text)}
+    .cmd-score-label{margin-top:6px;font-size:.78rem;font-weight:900}
     .cmd-score small{display:block;margin-top:4px;color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase}
-    .cmd-kpis{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-    .cmd-kpi{min-height:104px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
+    .cmd-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+    .cmd-kpi{min-height:76px;padding:8px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
     .cmd-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--cmd-muted);font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
     .cmd-dot{width:10px;height:10px;border-radius:50%;background:var(--cmd-blue);flex:0 0 auto}
     .ok .cmd-dot,.cmd-dot.ok{background:var(--cmd-green)}.warn .cmd-dot,.cmd-dot.warn{background:var(--cmd-amber)}.crit .cmd-dot,.cmd-dot.crit{background:var(--cmd-red)}.info .cmd-dot,.cmd-dot.info{background:var(--cmd-blue)}
-    .cmd-kpi-value{margin-top:10px;color:var(--cmd-text);font-size:1.04rem;font-weight:900;line-height:1.14;overflow-wrap:anywhere}
-    .cmd-kpi-sub{margin-top:5px;color:var(--cmd-muted);font-size:.73rem;line-height:1.2}
-    .cmd-spark{height:74px;padding:0 12px 12px}
+    .cmd-kpi-value{margin-top:7px;color:var(--cmd-text);font-size:.95rem;font-weight:900;line-height:1.12;overflow-wrap:anywhere}
+    .cmd-kpi-sub{margin-top:4px;color:var(--cmd-muted);font-size:.7rem;line-height:1.18}
+    .cmd-spark{height:50px;padding:0 8px 8px}
     .cmd-spark svg{display:block;width:100%;height:100%}
     .cmd-list{display:grid;gap:8px;padding:12px}
     .cmd-alert{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px;align-items:flex-start;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
     .cmd-alert strong{display:block;color:var(--cmd-text);font-size:.82rem;line-height:1.2}
     .cmd-alert span{display:block;margin-top:3px;color:var(--cmd-muted);font-size:.72rem;line-height:1.25;overflow-wrap:anywhere}
-    .cmd-quick-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:12px}
-    .cmd-control{display:grid;gap:8px;align-content:space-between;min-height:105px;padding:10px;border:1px solid var(--cmd-line);border-radius:8px;background:var(--cmd-soft)}
-    .cmd-control strong{font-size:.84rem;color:var(--cmd-text)}
-    .cmd-control span{font-size:.72rem;line-height:1.25;color:var(--cmd-muted)}
-    .cmd-control .cmd-btn{width:100%;min-height:32px}
-    .cmd-table-wrap{overflow:auto;padding:0 12px 12px}
+    .cmd-table-wrap{overflow:auto;padding:0 8px 8px}
     .cmd-table{width:100%;min-width:540px;border-collapse:separate;border-spacing:0}
-    .cmd-table th,.cmd-table td{padding:9px 10px;border-bottom:1px solid var(--cmd-line);text-align:left;vertical-align:top;font-size:.78rem}
+    .cmd-table th,.cmd-table td{padding:6px 8px;border-bottom:1px solid var(--cmd-line);text-align:left;vertical-align:top;font-size:.74rem}
     .cmd-table th{color:var(--cmd-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
     .cmd-toast{position:fixed;right:14px;bottom:14px;z-index:20;display:none;max-width:420px;padding:10px 12px;border-radius:8px;border:1px solid var(--cmd-line);background:var(--cmd-text);color:var(--cmd-panel);font-size:.82rem}
     .cmd-toast.show{display:block}
-    @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}.cmd-quick-grid{grid-template-columns:1fr}}
-    @media(max-width:860px){.cmd-topbar{grid-template-columns:1fr}.cmd-actions{justify-content:flex-start}.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:1fr}.cmd-quick-grid{grid-template-columns:1fr}}
-    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-quick-grid{grid-template-columns:1fr}.cmd-actions .cmd-btn{flex:1 1 calc(50% - 8px)}}
+    @media(max-width:1120px){.cmd-layout{grid-template-columns:1fr}}
+    @media(max-width:860px){.cmd-topbar{grid-template-columns:1fr}.cmd-actions{justify-content:flex-start}.cmd-weather-panel{grid-template-columns:1fr}.cmd-weather-temp{text-align:left}.cmd-weather-meta{min-width:0}.cmd-summary{grid-template-columns:1fr}.cmd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:560px){.cmd-shell{width:min(100vw - 16px,1320px);padding-top:8px}.cmd-kpis,.cmd-favorites-grid,.cmd-weather-meta{grid-template-columns:1fr}.cmd-actions .cmd-btn{flex:1 1 calc(50% - 8px)}.cmd-favorites-heading{gap:5px}.cmd-favorites-title{font-size:.9rem}.cmd-favorites-kicker{font-size:.64rem}}
   </style>
 </head>
 <body class="super-page">
@@ -95,6 +123,46 @@
         <a class="cmd-btn" href="/super/alertas_sistema.html">Alertas</a>
       </nav>
     </header>
+
+    <section class="cmd-weather-panel" aria-label="Clima actual">
+      <div class="cmd-weather-main">
+        <div id="weatherIcon" class="cmd-weather-icon" aria-hidden="true">&#9728;</div>
+        <div>
+          <p class="cmd-weather-label">Clima actual</p>
+          <p id="weatherPlace" class="cmd-weather-place">Consultando ubicacion...</p>
+          <p id="weatherDesc" class="cmd-weather-desc">Conectando con el servicio del clima.</p>
+        </div>
+      </div>
+      <p id="weatherTemp" class="cmd-weather-temp">--&deg;</p>
+      <div class="cmd-weather-meta" aria-label="Detalles del clima">
+        <div class="cmd-weather-stat"><span>Sensacion</span><strong id="weatherFeels">--</strong></div>
+        <div class="cmd-weather-stat"><span>Humedad</span><strong id="weatherHumidity">--</strong></div>
+        <div class="cmd-weather-stat"><span>Viento</span><strong id="weatherWind">--</strong></div>
+        <div class="cmd-weather-stat"><span>Nubes</span><strong id="weatherClouds">--</strong></div>
+      </div>
+      <div class="cmd-weather-actions" aria-label="Ajustar ubicacion del clima">
+        <button id="weatherGpsBtn" class="cmd-weather-control primary" type="button">Usar GPS</button>
+        <button id="weatherManualToggle" class="cmd-weather-control" type="button">Cambiar ciudad</button>
+        <form id="weatherManualForm" class="cmd-weather-form" hidden>
+          <input id="weatherManualInput" type="text" autocomplete="address-level2" placeholder="Ciudad, pais">
+          <button class="cmd-weather-control" type="submit">Aplicar</button>
+        </form>
+        <p id="weatherLocationHint" class="cmd-weather-hint">Si la ciudad no coincide, activa GPS o escribe tu ciudad.</p>
+      </div>
+    </section>
+
+    <section class="cmd-favorites-panel" aria-labelledby="superFavoritesTitle">
+      <div class="cmd-favorites-head">
+        <div class="cmd-favorites-heading">
+          <p class="cmd-favorites-kicker">Accesos rapidos</p>
+          <h2 id="superFavoritesTitle" class="cmd-favorites-title">Favoritos</h2>
+        </div>
+        <span id="superFavoritesCount" class="cmd-favorites-count">0</span>
+      </div>
+      <div id="superFavoritesList" class="cmd-favorites-grid" aria-live="polite">
+        <p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>
+      </div>
+    </section>
 
     <section class="cmd-layout">
       <div>
@@ -177,19 +245,6 @@
           </div>
         </section>
 
-        <section class="cmd-panel">
-          <div class="cmd-panel-head">
-            <div><h2>Accesos clave</h2><p>Modulo principal para administrar la plataforma.</p></div>
-          </div>
-          <div class="cmd-quick-grid">
-            <div class="cmd-control"><strong>Licencias</strong><span>Planes, renovaciones, pagos y activaciones.</span><a class="cmd-btn" href="/super/licencias.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Empresas</strong><span>Alta, edicion e ingreso operativo.</span><a class="cmd-btn" href="/seleccionar_empresa.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Alertas</strong><span>Reglas, historial y notificaciones del sistema.</span><a class="cmd-btn" href="/super/alertas_sistema.html">Abrir</a></div>
-            <div class="cmd-control"><strong>PostgreSQL</strong><span>Rendimiento y salud de base de datos.</span><a class="cmd-btn" href="/super/administrar_base_de_datos.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Roles</strong><span>Permisos y gobierno de acceso.</span><a class="cmd-btn" href="/super/roles_de_usuario.html">Abrir</a></div>
-            <div class="cmd-control"><strong>Comunicaciones</strong><span>Mantenimiento, emails y mensajes globales.</span><a class="cmd-btn" href="/super/mantenimiento_sistema.html">Abrir</a></div>
-          </div>
-        </section>
       </aside>
     </section>
   </main>
@@ -200,11 +255,69 @@
       "use strict";
       var state = { metric:null, history:[], postgres:null, alerts:null, errors:null, services:[], licenses:[], companies:[] };
       var $ = function(id){ return document.getElementById(id); };
+      var favoritesKey = "super_admin:favorites";
+      var weatherKey = "super_admin:weather_location";
+      var weatherCodeMap = {
+        0:["Despejado","clear","\u2600"],1:["Mayormente despejado","clear","\u2600"],2:["Parcialmente nublado","cloudy","\u26c5"],3:["Nublado","cloudy","\u2601"],
+        45:["Niebla","cloudy","\u2601"],48:["Niebla","cloudy","\u2601"],51:["Llovizna ligera","rain","\u2614"],53:["Llovizna","rain","\u2614"],55:["Llovizna fuerte","rain","\u2614"],
+        61:["Lluvia ligera","rain","\u2614"],63:["Lluvia","rain","\u2614"],65:["Lluvia fuerte","rain","\u2614"],80:["Chubascos","rain","\u2614"],81:["Chubascos","rain","\u2614"],82:["Chubascos fuertes","rain","\u2614"],
+        95:["Tormenta","storm","\u26a1"],96:["Tormenta con granizo","storm","\u26a1"],99:["Tormenta fuerte","storm","\u26a1"]
+      };
       function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
       function pct(v){ return Math.max(0, Math.min(100, num(v))); }
       function text(id, value){ var el = $(id); if(el) el.textContent = value; }
       function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
       function toast(msg){ var el = $("cmdToast"); if(!el) return; el.textContent = msg; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.remove("show"); }, 3200); }
+      function normalizeHref(href){
+        try {
+          var u = new URL(String(href || ""), window.location.origin);
+          return u.pathname + u.search;
+        } catch(e) {
+          return "";
+        }
+      }
+      function isAllowedFavoriteHref(href){
+        var path = normalizeHref(href).split("?")[0];
+        return path === "/ayuda/ayuda.html" || path.indexOf("/super/") === 0;
+      }
+      function readFavorites(){
+        try {
+          var parsed = JSON.parse(window.localStorage.getItem(favoritesKey) || "[]");
+          return Array.isArray(parsed) ? parsed.filter(function(item){
+            return item && isAllowedFavoriteHref(item.href);
+          }) : [];
+        } catch(e) {
+          return [];
+        }
+      }
+      function renderFavoriteIcon(favorite){
+        var icon = favorite && favorite.icon;
+        if(icon && icon.type === "img" && icon.src){
+          return '<span class="cmd-favorite-icon"><img src="'+esc(icon.src)+'" alt=""></span>';
+        }
+        return '<span class="cmd-favorite-icon">'+esc((icon && icon.value) || "*")+'</span>';
+      }
+      function renderFavorites(){
+        var list = $("superFavoritesList");
+        var count = $("superFavoritesCount");
+        if(!list) return;
+        var favorites = readFavorites().slice(0,8);
+        if(count) count.textContent = String(favorites.length);
+        list.innerHTML = "";
+        if(!favorites.length){
+          list.innerHTML = '<p class="cmd-favorites-empty">Marca cualquier pagina con la estrella para verla aqui.</p>';
+          return;
+        }
+        favorites.forEach(function(favorite){
+          var href = normalizeHref(favorite.href);
+          var title = favorite.title || "Pagina de super administrador";
+          var link = document.createElement("a");
+          link.className = "cmd-favorite-card";
+          link.href = href;
+          link.innerHTML = renderFavoriteIcon(favorite) + '<span class="cmd-favorite-text">'+esc(title)+'</span>';
+          list.appendChild(link);
+        });
+      }
       function fmtPct(v){ return pct(v).toFixed(pct(v) >= 10 ? 0 : 1) + "%"; }
       function statusByPercent(v, warn, crit){ v = pct(v); return v >= crit ? "crit" : (v >= warn ? "warn" : "ok"); }
       function serviceStatus(raw){
@@ -240,6 +353,133 @@
         var res = await fetch(url, { method:"POST", credentials:"same-origin" });
         if(!res.ok) throw new Error(await res.text() || ("HTTP " + res.status));
         return res.json().catch(function(){ return {}; });
+      }
+      function setWeatherHint(message){
+        var el = $("weatherLocationHint");
+        if(el) el.textContent = message || "";
+      }
+      function setWeatherGPSBusy(isBusy){
+        var btn = $("weatherGpsBtn");
+        if(!btn) return;
+        btn.disabled = !!isBusy;
+        btn.textContent = isBusy ? "Solicitando GPS..." : "Usar GPS";
+      }
+      function superDefaultLocation(){
+        var tz = "";
+        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e) {}
+        if(String(tz).toLowerCase().indexOf("panama") >= 0) return { displayName:"Ciudad de Panama, Panama", city:"Ciudad de Panama", country:"Panama", latitude:8.9833, longitude:-79.5167, source:"navegador" };
+        if(String(tz).toLowerCase().indexOf("guayaquil") >= 0) return { displayName:"Guayaquil, Ecuador", city:"Guayaquil", country:"Ecuador", latitude:-2.1962, longitude:-79.8862, source:"navegador" };
+        return { displayName:"Bogota, Colombia", city:"Bogota", country:"Colombia", latitude:4.711, longitude:-74.0721, source:"navegador" };
+      }
+      function readWeatherLocation(){
+        try {
+          var parsed = JSON.parse(window.localStorage.getItem(weatherKey) || "null");
+          if(parsed && (parsed.displayName || parsed.city || (Number(parsed.latitude) && Number(parsed.longitude)))) return parsed;
+        } catch(e) {}
+        return superDefaultLocation();
+      }
+      function saveWeatherLocation(location){
+        try { window.localStorage.setItem(weatherKey, JSON.stringify(location || {})); } catch(e) {}
+      }
+      function weatherInfo(code, isDay){
+        var item = weatherCodeMap[Number(code)] || ["Clima variable","cloudy","\u2601"];
+        if(!isDay && (item[1] === "clear" || item[1] === "cloudy")) return [item[0] === "Despejado" ? "Noche despejada" : item[0], "night", "\u263e"];
+        return item;
+      }
+      function renderWeather(place, forecast){
+        var current = forecast && forecast.current ? forecast.current : {};
+        var info = weatherInfo(current.weather_code, Number(current.is_day) !== 0);
+        text("weatherPlace", place || "Ubicacion actual");
+        text("weatherIcon", info[2]);
+        text("weatherTemp", Math.round(Number(current.temperature_2m || 0)) + "\u00b0");
+        text("weatherDesc", info[0]);
+        text("weatherFeels", Math.round(Number(current.apparent_temperature || current.temperature_2m || 0)) + "\u00b0");
+        text("weatherHumidity", Number(current.relative_humidity_2m || 0) + "%");
+        text("weatherWind", Math.round(Number(current.wind_speed_10m || 0)) + " km/h");
+        text("weatherClouds", Number(current.cloud_cover || 0) + "%");
+        setWeatherHint("Clima actualizado desde internet con Open-Meteo.");
+      }
+      async function geocodeWeatherLocation(location){
+        var name = location.displayName || [location.city, location.country].filter(Boolean).join(", ") || "Bogota, Colombia";
+        var url = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(name) + "&count=1&language=es&format=json";
+        var data = await getJSON(url, null);
+        var item = data && data.results && data.results[0];
+        if(!item) throw new Error("sin-geocodificacion");
+        return {
+          displayName: [item.name, item.admin1, item.country].filter(Boolean).join(", "),
+          city: item.name,
+          country: item.country,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          source: location.source || "manual"
+        };
+      }
+      async function loadWeather(location){
+        var loc = location || readWeatherLocation();
+        try {
+          if(!Number(loc.latitude) || !Number(loc.longitude)) loc = await geocodeWeatherLocation(loc);
+          var place = loc.displayName || [loc.city, loc.country].filter(Boolean).join(", ") || "Ubicacion actual";
+          text("weatherPlace", place);
+          var forecastURL = "https://api.open-meteo.com/v1/forecast?latitude=" +
+            encodeURIComponent(loc.latitude) + "&longitude=" + encodeURIComponent(loc.longitude) +
+            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,is_day&timezone=auto";
+          var forecast = await getJSON(forecastURL, null);
+          if(!forecast) throw new Error("sin-clima");
+          saveWeatherLocation(loc);
+          renderWeather(place, forecast);
+        } catch(e) {
+          text("weatherDesc", "No se pudo consultar el clima en este momento.");
+          setWeatherHint("La pagina sigue disponible; intenta cambiar ciudad o usar GPS.");
+        }
+      }
+      function requestGPSWeather(){
+        if(!navigator.geolocation){
+          setWeatherHint("Este navegador no permite leer GPS.");
+          return;
+        }
+        setWeatherGPSBusy(true);
+        setWeatherHint("Acepta el permiso de ubicacion del navegador.");
+        navigator.geolocation.getCurrentPosition(function(pos){
+          var loc = {
+            displayName: "Ubicacion GPS",
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            source: "gps"
+          };
+          saveWeatherLocation(loc);
+          loadWeather(loc).then(function(){ setWeatherGPSBusy(false); });
+        }, function(){
+          setWeatherGPSBusy(false);
+          setWeatherHint("No se pudo leer el GPS. Escribe la ciudad manualmente.");
+        }, { enableHighAccuracy:false, timeout:9000, maximumAge:300000 });
+      }
+      function setupWeatherControls(){
+        var gpsBtn = $("weatherGpsBtn");
+        var toggle = $("weatherManualToggle");
+        var form = $("weatherManualForm");
+        var input = $("weatherManualInput");
+        if(gpsBtn) gpsBtn.addEventListener("click", requestGPSWeather);
+        if(toggle && form) {
+          toggle.addEventListener("click", function(){
+            var show = !!form.hidden;
+            form.hidden = !show;
+            toggle.textContent = show ? "Ocultar ciudad" : "Cambiar ciudad";
+            if(show && input) input.focus();
+          });
+        }
+        if(form) {
+          form.addEventListener("submit", function(event){
+            event.preventDefault();
+            var raw = String((input && input.value) || "").trim();
+            if(!raw) {
+              setWeatherHint("Escribe ciudad y pais para mejorar la precision.");
+              return;
+            }
+            var loc = { displayName: raw, city: raw.split(",")[0], source: "manual" };
+            setWeatherHint("Actualizando clima para " + raw + ".");
+            loadWeather(loc);
+          });
+        }
       }
       function alertCandidates(){
         var a = state.alerts || {};
@@ -330,14 +570,14 @@
       }
       function renderErrors(){
         var items = (state.errors && (state.errors.items || state.errors.errores || state.errors.rows)) || [];
-        $("errorRows").innerHTML = items.length ? items.slice(0,6).map(function(e){
+        $("errorRows").innerHTML = items.length ? items.slice(0,4).map(function(e){
           var st = severityStatus(e.nivel || e.level || e.severidad);
           var msg = e.mensaje || e.message || e.error || e.detalle || "Evento";
           var date = e.fecha_creacion || e.created_at || e.fecha || "";
           return '<tr><td><span class="cmd-pill '+st+'">'+esc(e.nivel || e.level || e.severidad || "info")+'</span></td><td>'+esc(msg)+'</td><td>'+esc(date)+'</td></tr>';
         }).join("") : '<tr><td colspan="3">Sin errores recientes.</td></tr>';
       }
-      function renderAll(){ renderTop(); renderCards(); renderRisks(); renderErrors(); renderSpark(); }
+      function renderAll(){ renderFavorites(); renderTop(); renderCards(); renderRisks(); renderErrors(); renderSpark(); }
       async function loadAll(){
         $("cmdRefresh").disabled = true;
         text("cmdLastUpdate","Actualizando...");
@@ -376,6 +616,17 @@
           $("cmdRunAlerts").disabled = false;
         }
       });
+      window.addEventListener("storage", function(event){
+        if(event && event.key === favoritesKey) renderFavorites();
+      });
+      window.addEventListener("message", function(event){
+        if(event.origin !== window.location.origin) return;
+        if(event.data && event.data.type === "pcs-super-favorites-changed") renderFavorites();
+      });
+      window.addEventListener("pcs-super-favorites-changed", renderFavorites);
+      renderFavorites();
+      setupWeatherControls();
+      loadWeather();
       loadAll();
     })();
   </script>

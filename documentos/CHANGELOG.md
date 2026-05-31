@@ -1,3 +1,15 @@
+## [2026-05-31] Clima en centro de mando super
+- [UX] `web/super/licencias_resumen.html` agrega una tarjeta de clima actual en la parte alta del panel super, antes de favoritos y Estado general.
+- [Interaccion] La tarjeta permite usar GPS o escribir ciudad manualmente; guarda la ubicacion en `localStorage:super_admin:weather_location` y consulta Open-Meteo sin agregar dependencias.
+- [Orden visual] La pagina queda en secuencia: encabezado, clima, favoritos, Estado general, Incidentes recientes y Prioridades.
+- [QA] Parseo de scripts embebidos y prueba visual local con Playwright validando clima, favoritos y orden vertical.
+
+## [2026-05-31] Favoritos de super administrador
+- [UX] `web/super_administrador.html` agrega un boton estrella global para marcar o quitar de favoritos cualquier pagina valida del modulo super que se abra en el iframe.
+- [Panel] `web/super/licencias_resumen.html` muestra arriba una seccion de favoritos con el icono original del menu, compacta Estado general e Incidentes recientes y elimina la tarjeta Accesos clave.
+- [Integracion] `web/js/super_administrador.js` guarda los favoritos en `localStorage` bajo `super_admin:favorites`, refresca el centro de mando por `postMessage` y registra eventos UI en auditoria super.
+- [QA] Validacion de sintaxis JS, `git diff --check` y prueba visual local con Playwright: marcar Centro de mando y Alertas sistema, ver dos favoritos, confirmar que Accesos clave no aparece.
+
 ## [2026-05-30] Configuracion general PostgreSQL reforzada
 - [Backend] `EnsureEmpresaConfiguracionGeneralSchema` asegura la columna `fecha_creacion` en tablas existentes y repara la secuencia/default de `id` con `ensurePostgresTableIDSequence`.
 - [Compatibilidad] Las fechas de auditoria de `empresa_configuracion_general` se guardan como texto con `CAST(CURRENT_TIMESTAMP AS TEXT)` para no depender de conversiones implicitas de PostgreSQL.

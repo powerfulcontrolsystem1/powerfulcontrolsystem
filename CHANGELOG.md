@@ -4595,3 +4595,5 @@
 - 2026-05-30: `Configuracion general en empresas nuevas` corrige el alta automatica de la configuracion por defecto agregando el valor faltante de `clima_fuente` en el INSERT.
 - 2026-05-30: `Checkout licencias Wompi` valida que `wompi.public_key` tenga formato `pub_test_` o `pub_prod_` antes de publicar Wompi como medio disponible, evitando 502 por llaves placeholder.
 - 2026-05-30: `Modo Wompi por llave` cuando `wompi.mode` manual contradice la llave (`pub_prod_` vs sandbox o `pub_test_` vs production), el backend usa el modo inferido por la llave para consultar el endpoint correcto.
+- 2026-05-31: `Clima en centro de mando super` agrega la tarjeta de clima al inicio del panel super, deja favoritos debajo y mueve Estado general al tercer bloque visual.
+- 2026-05-31: `Favoritos de super administrador` agrega favoritos en el centro de mando super, boton estrella global para paginas del iframe, compacta Estado general e Incidentes recientes y elimina la tarjeta Accesos clave.

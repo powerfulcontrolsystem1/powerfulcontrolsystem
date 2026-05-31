@@ -2,13 +2,22 @@
   var sidebar = document.querySelector(".admin-sidebar .nav");
   var links = sidebar ? Array.from(sidebar.querySelectorAll("a")) : [];
   var iframe = document.getElementById("contentFrame");
+  var favoriteBtn = document.getElementById("superFavoriteBtn");
   var storage = null;
+  var localStore = null;
   var lastPageKey = "super_admin:last_page";
+  var favoritesKey = "super_admin:favorites";
 
   try {
     storage = window.sessionStorage;
   } catch (e) {
     storage = null;
+  }
+
+  try {
+    localStore = window.localStorage;
+  } catch (e) {
+    localStore = null;
   }
 
   function normalizeHref(href) {
@@ -103,6 +112,142 @@
     return !!coreSuperPages[normalized];
   }
 
+  function findMenuLinkByHref(href) {
+    var current = normalizeHref(href);
+    var currentPath = current.split("?")[0];
+    return links.find(function (a) {
+      var linkHref = normalizeHref(a.getAttribute("href"));
+      if (!linkHref) return false;
+      if (linkHref === current) return true;
+      return linkHref.split("?")[0] === currentPath;
+    }) || null;
+  }
+
+  function getCurrentFrameHref() {
+    if (!iframe) return "";
+    try {
+      return iframe.contentWindow.location.pathname + iframe.contentWindow.location.search;
+    } catch (e) {
+      return iframe.getAttribute("src") || "";
+    }
+  }
+
+  function readFavorites() {
+    if (!localStore) return [];
+    try {
+      var raw = localStore.getItem(favoritesKey) || "[]";
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter(function (item) {
+        return item && isAllowedSuperHref(item.href);
+      }) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeFavorites(favorites) {
+    if (!localStore) return;
+    try {
+      localStore.setItem(favoritesKey, JSON.stringify(favorites.slice(0, 24)));
+    } catch (e) {}
+  }
+
+  function favoriteTitleFromFrame(href) {
+    var link = findMenuLinkByHref(href);
+    var menuText = link ? String(link.textContent || "").trim() : "";
+    if (menuText) return menuText;
+    try {
+      var doc = iframe && iframe.contentDocument;
+      var h1 = doc && doc.querySelector("h1");
+      var title = h1 ? String(h1.textContent || "").trim() : "";
+      if (title) return title;
+      title = doc && doc.title ? String(doc.title || "").trim() : "";
+      if (title) return title;
+    } catch (e) {}
+    var normalized = normalizeHref(href).split("?")[0].split("/").pop() || "Pagina";
+    return normalized.replace(/\.html$/i, "").replace(/[_-]+/g, " ").replace(/\b\w/g, function (c) {
+      return c.toUpperCase();
+    });
+  }
+
+  function favoriteIconFromMenu(href) {
+    var link = findMenuLinkByHref(href);
+    var img = link ? link.querySelector("img.icon") : null;
+    if (img && img.getAttribute("src")) {
+      return { type: "img", src: img.getAttribute("src") };
+    }
+    return { type: "text", value: "*" };
+  }
+
+  function isFavoriteHref(href) {
+    var normalized = normalizeHref(href);
+    if (!normalized) return false;
+    return readFavorites().some(function (item) {
+      return normalizeHref(item.href) === normalized;
+    });
+  }
+
+  function notifyFavoritesChanged() {
+    try {
+      window.dispatchEvent(new CustomEvent("pcs-super-favorites-changed"));
+    } catch (e) {}
+    try {
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: "pcs-super-favorites-changed" }, window.location.origin);
+      }
+    } catch (e) {}
+  }
+
+  function updateFavoriteButton(href) {
+    if (!favoriteBtn) return;
+    var normalized = normalizeHref(href || getCurrentFrameHref());
+    var available = !!normalized && isAllowedSuperHref(normalized);
+    favoriteBtn.hidden = !available;
+    favoriteBtn.disabled = !available;
+    if (!available) {
+      favoriteBtn.setAttribute("aria-pressed", "false");
+      return;
+    }
+    var active = isFavoriteHref(normalized);
+    favoriteBtn.setAttribute("aria-pressed", active ? "true" : "false");
+    favoriteBtn.title = active ? "Quitar de favoritos" : "Agregar a favoritos";
+    favoriteBtn.setAttribute("aria-label", active ? "Quitar pagina de super administrador de favoritos" : "Agregar pagina de super administrador a favoritos");
+  }
+
+  function toggleCurrentFavorite() {
+    var href = normalizeHref(getCurrentFrameHref());
+    if (!href || !isAllowedSuperHref(href)) return;
+    var favorites = readFavorites();
+    var exists = favorites.some(function (item) {
+      return normalizeHref(item.href) === href;
+    });
+    if (exists) {
+      favorites = favorites.filter(function (item) {
+        return normalizeHref(item.href) !== href;
+      });
+      auditSuperPanelEvent("favorito_super_quitar", {
+        recurso: href.split("?")[0],
+        endpoint: href,
+        metadata: { href: href }
+      });
+    } else {
+      favorites.unshift({
+        href: href,
+        title: favoriteTitleFromFrame(href),
+        icon: favoriteIconFromMenu(href),
+        added_at: new Date().toISOString()
+      });
+      auditSuperPanelEvent("favorito_super_agregar", {
+        recurso: href.split("?")[0],
+        endpoint: href,
+        metadata: { href: href }
+      });
+    }
+    writeFavorites(favorites);
+    updateFavoriteButton(href);
+    notifyFavoritesChanged();
+  }
+
   function persistLastPage(href) {
     if (!storage) return;
     var normalized = normalizeHref(href);
@@ -193,6 +338,7 @@
       found.classList.add("active");
       openMenuGroupForLink(found);
     }
+    updateFavoriteButton(current);
   }
 
   function applySuperRoleNavigation(role) {
@@ -252,6 +398,7 @@
       if (iframe) {
         iframe.setAttribute("src", href);
         persistLastPage(href);
+        updateFavoriteButton(href);
         auditSuperPanelEvent("abrir_modulo_super", {
           recurso: normalizeHref(href).split("?")[0] || "modulo_super",
           endpoint: href,
@@ -271,6 +418,13 @@
     var initialIframeSrc = restoreLastPage(defaultIframeSrc);
     iframe.setAttribute("src", initialIframeSrc);
     setActiveByHref(initialIframeSrc);
+    updateFavoriteButton(initialIframeSrc);
+  }
+
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener("click", function () {
+      toggleCurrentFavorite();
+    });
   }
 
   if (iframe) {
@@ -279,10 +433,12 @@
         var src = iframe.contentWindow.location.pathname + iframe.contentWindow.location.search;
         persistLastPage(src);
         setActiveByHref(src);
+        updateFavoriteButton(src);
       } catch (e) {
         var src2 = iframe.getAttribute("src");
         persistLastPage(src2);
         setActiveByHref(src2);
+        updateFavoriteButton(src2);
       }
     });
   }

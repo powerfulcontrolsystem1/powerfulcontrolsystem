@@ -1,3 +1,19 @@
+2026-05-31: Clima en centro de mando super.
+- Modulos afectados: `super_administrador`, `centro_mando_super`, `frontend_ux`.
+- Cambio funcional visible: el centro de mando super agrega una tarjeta de clima actual arriba de favoritos, con temperatura, sensacion, humedad, viento y nubosidad.
+- Interaccion: permite usar GPS o escribir ciudad manualmente; la ubicacion elegida se guarda en `localStorage` con la clave `super_admin:weather_location`.
+- Integracion: usa Open-Meteo como el panel empresarial, sin cambios de backend, tablas, permisos ni dependencias.
+- Orden visual: encabezado, clima, favoritos, Estado general, Incidentes recientes y Prioridades.
+- Validacion: parseo de scripts embebidos y Playwright local con respuestas simuladas de Open-Meteo confirmando orden vertical y datos de clima.
+
+2026-05-31: Favoritos de super administrador.
+- Modulos afectados: `super_administrador`, `centro_mando_super`, `frontend_ux`, `auditoria_super`.
+- Cambio funcional: el panel super ahora tiene un boton estrella global para agregar o quitar de favoritos la pagina abierta en el iframe; el centro de mando muestra los favoritos en la parte alta con el icono original del menu.
+- Cambio visual: `Estado general` e `Incidentes recientes` quedan mas compactos y se elimina la tarjeta `Accesos clave` para evitar duplicidad con favoritos y menu principal.
+- Persistencia: los favoritos se guardan por navegador en `localStorage` con la clave `super_admin:favorites`; no cambia base de datos, endpoints, permisos ni dependencias.
+- Auditoria: agregar o quitar favoritos emite evento UI hacia `/super/api/auditoria?action=ui_event&scope=super_panel`.
+- Validacion: `node --check web/js/super_administrador.js`, parseo de scripts embebidos de `web/super/licencias_resumen.html`, `git diff --check` y Playwright local confirmando dos favoritos visibles y ausencia de `Accesos clave`.
+
 2026-05-30: Licencias globales compartidas.
 - Modulos afectados: `licencias`, `checkout_licencias`, `super_administrador`, `plantillas`, `preconfiguracion_tipos_empresa`.
 - Cambio funcional: se reemplaza el catalogo base repetido por tipo de empresa por cuatro planes globales compartidos: prueba gratis 15 dias, plan 1000 documentos, plan 2000 documentos y plan 4000 documentos.
