@@ -11820,3 +11820,10 @@ Archivos modificados:
 2026-05-31 15:36:04 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: d2de650a; PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-05-31 15:47:10 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2c1f9019; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/js/pwa_install.js
+- web/login.html

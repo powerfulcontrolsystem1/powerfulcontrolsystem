@@ -29480,3 +29480,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/estilos.css
+
+2026-05-31: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/js/pwa_install.js
+- web/login.html
