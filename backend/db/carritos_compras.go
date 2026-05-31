@@ -17,6 +17,8 @@ var (
 	empresaCarritosSchemaReadyKey string
 )
 
+var ErrCarritoYaPagado = fmt.Errorf("carrito ya pagado o cerrado")
+
 var legacyUserVisibleTextReplacer = strings.NewReplacer(
 	"Estaci\u00c3\u00b3n", "Estaci\u00f3n",
 	"Estaci\u00c3\u0192\u00c2\u00b3n", "Estaci\u00f3n",
@@ -2230,13 +2232,7 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	}
 	defer tx.Rollback()
 
-	if codigoDescuentoID > 0 {
-		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID, carritoID, descuentoValor, usuarioCreador, strings.TrimSpace(referenciaPago)); err != nil {
-			return err
-		}
-	}
-
-	_, err = execTxSQLCompat(tx, `UPDATE carritos_compras SET
+	res, err := execTxSQLCompat(tx, `UPDATE carritos_compras SET
 		estado = 'inactivo',
 		estado_carrito = 'cerrado',
 		pagado_en = `+sqlNowExpr()+`,
@@ -2253,7 +2249,10 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 		caja_turno = ?,
 		caja_sucursal_id = ?,
 		fecha_actualizacion = `+sqlNowExpr()+`
-	WHERE empresa_id = ? AND id = ?`,
+	WHERE empresa_id = ? AND id = ?
+		AND COALESCE(estado, 'activo') = 'activo'
+		AND lower(COALESCE(estado_carrito, 'abierto')) NOT IN ('cerrado', 'pagado', 'finalizado', 'anulado', 'anulada')
+		AND COALESCE(pagado_en, '') = ''`,
 		metodoPago,
 		strings.TrimSpace(referenciaPago),
 		strings.TrimSpace(descuentoTipo),
@@ -2271,6 +2270,16 @@ func PayCarritoStationSession(dbConn *sql.DB, empresaID, carritoID int64, metodo
 	)
 	if err != nil {
 		return err
+	}
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return ErrCarritoYaPagado
+	}
+
+	if codigoDescuentoID > 0 {
+		if err := markCodigoDescuentoUsoTx(tx, empresaID, codigoDescuentoID, carritoID, descuentoValor, usuarioCreador, strings.TrimSpace(referenciaPago)); err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit()

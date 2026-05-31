@@ -157,11 +157,20 @@ afecte dinero, documentos, licencias o seguridad.
 1. El usuario presiona pagar en el carrito.
 2. Backend valida caja, items, totales, abonos, cliente obligatorio si aplica,
    descuentos, inventario y permisos.
-3. Se registra venta/pago, se actualiza inventario y se genera documento.
-4. La impresion debe salir en blanco y negro como papel real, POS 80mm por
+3. El inventario de productos y recetas ya debe estar reservado/descontado desde
+   que se agrego el item al carrito. Esto permite multiples cajas simultaneas
+   sin sobrevender stock.
+4. El backend cierra el carrito con una transicion atomica: solo una solicitud
+   puede cambiarlo de abierto a pagado. Reintentos, doble clic o concurrencia
+   reciben respuesta idempotente y no duplican caja, documento, metricas ni
+   movimientos de inventario.
+5. Se registra venta/pago y se genera documento.
+6. La impresion debe salir en blanco y negro como papel real, POS 80mm por
    defecto, sin tema claro/oscuro.
-5. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
-6. Pruebas: efectivo, debito, credito, otro, pago mixto, vuelto, abono, descuento.
+7. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
+8. Pruebas: efectivo, debito, credito, otro, pago mixto, vuelto, abono,
+   descuento, dos cajeros simultaneos y doble solicitud de pago sobre el mismo
+   carrito.
 
 ## Facturacion electronica
 

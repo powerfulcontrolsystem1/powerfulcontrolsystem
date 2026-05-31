@@ -1061,6 +1061,22 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					usuarioOperacion,
 				); err != nil {
 					log.Printf("[carritos] pagar_estacion empresa_id=%d id=%d error: %v", empresaID, id, err)
+					if errors.Is(err, dbpkg.ErrCarritoYaPagado) {
+						carritoActual, errActual := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
+						if errActual == nil && isCarritoVentaPagada(carritoActual) {
+							writeJSON(w, http.StatusOK, map[string]interface{}{
+								"ok":             true,
+								"idempotente":    true,
+								"estado":         "inactivo",
+								"estado_carrito": "cerrado",
+								"estado_venta":   "venta_pagada",
+								"mensaje":        "El carrito ya habia sido pagado; no se duplico la venta.",
+							})
+							return
+						}
+						http.Error(w, err.Error(), http.StatusConflict)
+						return
+					}
 					lower := strings.ToLower(strings.TrimSpace(err.Error()))
 					if strings.Contains(lower, "metodo_pago") ||
 						strings.Contains(lower, "codigo de descuento") ||

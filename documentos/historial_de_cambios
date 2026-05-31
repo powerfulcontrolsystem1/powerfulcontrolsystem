@@ -29437,3 +29437,9 @@ Archivos modificados:
 - web/estilos.css
 - web/js/login_usuario.js
 - web/login_usuario.html
+2026-05-31: Pago idempotente e inventario en cajas simultaneas
+- Alcance: carritos, estaciones, caja, inventario y operacion multi-cajero.
+- Cambio funcional: `PayCarritoStationSession` ahora usa una transicion atomica para cerrar un carrito solo si sigue abierto, activo y sin pago previo. Si llega otro pago concurrente para el mismo carrito, el handler responde como idempotente cuando la venta ya quedo pagada y evita duplicar caja, documento o metricas.
+- Inventario: se confirma y documenta que el stock de productos y recetas se descuenta/reserva al agregar el item al carrito, de modo que varias cajas vean disponibilidad en tiempo real antes del cierre.
+- Archivos: `backend/db/carritos_compras.go`, `backend/handlers/carritos_compras.go`, `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/CHANGELOG.md`, `documentos/historial_de_cambios`.
+- Validacion inicial: `go test ./db -run "Carritos|Productos|Inventario" -count=1` y `go test ./handlers -run "Carritos|Productos|Inventario|EmpresaPermisos" -count=1`.

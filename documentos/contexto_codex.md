@@ -111,6 +111,11 @@ botones, desde handlers estaticos del backend.
   `/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`.
   Venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`,
   comparte la UI unificada de estaciones y tiene boton de pantalla completa.
+  Los productos y recetas descuentan/reservan inventario en tiempo real al
+  agregarse al carrito mediante `carrito_compra_items`; el pago no debe volver a
+  descontar stock. El cierre `action=pagar_estacion` debe ser idempotente en
+  backend: solo una solicitud puede pasar el carrito de abierto a cerrado, y los
+  reintentos concurrentes no duplican documento, caja, metricas ni kardex.
   La apariencia plana del carrito se controla desde `web/estilos.css` con
   `body.carrito-flat-page`: no debe recuperar sombras, relieves ni tarjetas con
   apariencia 3D. El fondo estructural usa `--carrito-page-bg`, mas oscuro que
