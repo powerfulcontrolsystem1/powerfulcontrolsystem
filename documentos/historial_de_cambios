@@ -29524,3 +29524,17 @@ Detalle:
 - `estaciones.html` muestra la lista en la estacion Caja y abre corte con `caja_codigo`, `caja_nombre` y descripcion.
 - `carrito_de_compras.html` usa el catalogo para etiquetar cajas abiertas y seleccionar codigo predeterminado.
 - `corte_de_caja.html` muestra el nombre operativo de la caja en pantalla, reporte y auditoria visual.
+
+2026-05-31: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
