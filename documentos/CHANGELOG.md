@@ -1,3 +1,9 @@
+## [2026-05-31] Login usuario con Google por invitacion
+- [Auth] `login_usuario.html` agrega `Iniciar sesión con Google` para usuarios operativos, usando `/auth/google/usuario/login` y el callback canonico `/auth/google/callback`.
+- [Seguridad] El callback de usuario no crea cuentas publicas: solo abre sesion si el correo verificado por Google coincide con una invitacion vigente o un usuario empresarial ya confirmado, y redirige a `administrar_empresa.html?id={empresa_id}`.
+- [UX/PWA] La pagina conserva apariencia clara/oscura del login de usuario, centra `Acceso de usuarios operativos`, elimina el texto contextual de empresa y agrega boton `Instalar app` con icono.
+- [QA] `node --check web/js/login_usuario.js`, `go test ./handlers ./db ./utils -run "Google|Usuario|Auth|Middleware|EmpresaUsuario|LicenciasGratis" -count=1`, `go test ./... -run "^$" -count=1` y validacion visual local con CSS real en movil.
+
 ## [2026-05-31] Login con titulo texto e iconos PWA
 - [UX] `web/login.html` reemplaza el logo imagen del encabezado por el texto `Powerful Control System`.
 - [PWA] Los botones `Instalar app` e `Ir al inicio` muestran iconos propios y el instalador conserva el icono cuando cambia el texto del estado.

@@ -22,6 +22,10 @@ import (
 )
 
 const googleOAuthRedirectCookieName = "oauth_redirect_url"
+const googleOAuthUsuarioFlowCookieName = "oauth_usuario_flow"
+const googleOAuthUsuarioEmpresaCookieName = "oauth_usuario_empresa_id"
+const googleOAuthUsuarioInvitationCookieName = "oauth_usuario_invitation_token"
+const googleOAuthUsuarioAcceptContractCookieName = "oauth_usuario_accept_contract"
 const browserSessionStateCookieName = "browser_session_active"
 const minAdminPasswordLength = 8
 const googlePasswordSetupPagePath = "/registrar_contrasena_usuario_de_google.html"
@@ -1070,6 +1074,46 @@ func isValidOAuthRedirectURL(raw string) bool {
 	return parsed.Path == "/auth/google/callback"
 }
 
+func setGoogleUsuarioFlowCookie(w http.ResponseWriter, r *http.Request, name, value string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		Path:     "/auth/google",
+		HttpOnly: true,
+		MaxAge:   maxAge,
+		Secure:   SessionCookieSecure(r),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+func clearGoogleUsuarioFlowCookies(w http.ResponseWriter, r *http.Request) {
+	for _, name := range []string{
+		googleOAuthUsuarioFlowCookieName,
+		googleOAuthUsuarioEmpresaCookieName,
+		googleOAuthUsuarioInvitationCookieName,
+		googleOAuthUsuarioAcceptContractCookieName,
+	} {
+		setGoogleUsuarioFlowCookie(w, r, name, "", -1)
+	}
+}
+
+func googleUsuarioFlowActive(r *http.Request) bool {
+	ck, err := r.Cookie(googleOAuthUsuarioFlowCookieName)
+	return err == nil && strings.TrimSpace(ck.Value) == "1"
+}
+
+func googleUsuarioCookieValue(r *http.Request, name string) string {
+	ck, err := r.Cookie(name)
+	if err != nil {
+		return ""
+	}
+	decoded, err := url.QueryUnescape(strings.TrimSpace(ck.Value))
+	if err != nil {
+		return strings.TrimSpace(ck.Value)
+	}
+	return strings.TrimSpace(decoded)
+}
+
 // HandleGoogleLogin devuelve un http.HandlerFunc configurado con clientID y redirectURL
 func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -1079,6 +1123,7 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 			return
 		}
 		log.Printf("handleGoogleLogin: oauth redirect requested (client configured=%t)", clientID != "")
+		clearGoogleUsuarioFlowCookies(w, r)
 		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
 		vals := url.Values{
 			"client_id":              {clientID},
@@ -1102,6 +1147,64 @@ func HandleGoogleLogin(clientID, redirectURL string) http.HandlerFunc {
 		})
 		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
 		log.Printf("handleGoogleLogin: redirecting to OAuth provider")
+		http.Redirect(w, r, authURL, http.StatusFound)
+	}
+}
+
+// HandleGoogleUsuarioLogin inicia OAuth para usuarios operativos ya invitados por una empresa.
+func HandleGoogleUsuarioLogin(clientID, redirectURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		state := "state-token-usuario"
+		if clientID == "" {
+			http.Error(w, "Acceso bloqueado: configuracion incompleta (GOOGLE_CLIENT_ID no definido)", http.StatusInternalServerError)
+			return
+		}
+		effectiveRedirectURL := resolveOAuthRedirectURL(r, redirectURL)
+		vals := url.Values{
+			"client_id":              {clientID},
+			"redirect_uri":           {effectiveRedirectURL},
+			"response_type":          {"code"},
+			"scope":                  {"openid email profile"},
+			"include_granted_scopes": {"true"},
+			"access_type":            {"offline"},
+			"state":                  {state},
+			"prompt":                 {"select_account"},
+		}
+
+		setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioFlowCookieName, "1", 600)
+		if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioEmpresaCookieName, strconv.FormatInt(empresaID, 10), 600)
+		} else {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioEmpresaCookieName, "", -1)
+		}
+		invitationToken := strings.TrimSpace(r.URL.Query().Get("token_invitacion"))
+		if invitationToken == "" {
+			invitationToken = strings.TrimSpace(r.URL.Query().Get("invitation_token"))
+		}
+		if invitationToken == "" {
+			invitationToken = strings.TrimSpace(r.URL.Query().Get("token_confirmacion"))
+		}
+		if invitationToken != "" {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioInvitationCookieName, url.QueryEscape(invitationToken), 600)
+		} else {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioInvitationCookieName, "", -1)
+		}
+		if strings.TrimSpace(r.URL.Query().Get("accept_contract")) == "1" {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioAcceptContractCookieName, "1", 600)
+		} else {
+			setGoogleUsuarioFlowCookie(w, r, googleOAuthUsuarioAcceptContractCookieName, "", -1)
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     googleOAuthRedirectCookieName,
+			Value:    url.QueryEscape(effectiveRedirectURL),
+			Path:     "/auth/google",
+			HttpOnly: true,
+			MaxAge:   600,
+			Secure:   SessionCookieSecure(r),
+			SameSite: http.SameSiteLaxMode,
+		})
+		authURL := "https://accounts.google.com/o/oauth2/v2/auth?" + vals.Encode()
+		log.Printf("handleGoogleUsuarioLogin: redirecting invited user to OAuth provider")
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}
 }
@@ -1148,6 +1251,12 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 		if err != nil {
 			log.Println("fetch userinfo error:", err)
 			http.Error(w, "failed to fetch userinfo", http.StatusInternalServerError)
+			return
+		}
+
+		if googleUsuarioFlowActive(r) {
+			clearGoogleUsuarioFlowCookies(w, r)
+			handleGoogleUsuarioCallback(w, r, dbEmpresas, dbSuper, userinfo)
 			return
 		}
 
@@ -1251,6 +1360,142 @@ func HandleGoogleCallback(dbEmpresas *sql.DB, dbSuper *sql.DB, clientID, clientS
 		}
 		return
 	}
+}
+
+func redirectGoogleUsuarioError(w http.ResponseWriter, r *http.Request, code, email string, empresaID int64, invitationToken string) {
+	target := "/login_usuario.html"
+	q := url.Values{}
+	if code != "" {
+		q.Set("google_error", code)
+	}
+	if email != "" {
+		q.Set("email", email)
+	}
+	if empresaID > 0 {
+		q.Set("empresa_id", strconv.FormatInt(empresaID, 10))
+	}
+	if strings.TrimSpace(invitationToken) != "" {
+		q.Set("token_invitacion", strings.TrimSpace(invitationToken))
+		q.Set("modo", "registro")
+	}
+	if encoded := q.Encode(); encoded != "" {
+		target += "?" + encoded
+	}
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+func resolveGoogleUsuarioFromCookies(r *http.Request, dbEmpresas *sql.DB, email string) (*dbpkg.EmpresaUsuario, int64, string, bool, error) {
+	empresaID := int64(0)
+	if rawEmpresaID := googleUsuarioCookieValue(r, googleOAuthUsuarioEmpresaCookieName); rawEmpresaID != "" {
+		if parsed, err := strconv.ParseInt(rawEmpresaID, 10, 64); err == nil && parsed > 0 {
+			empresaID = parsed
+		}
+	}
+	invitationToken := googleUsuarioCookieValue(r, googleOAuthUsuarioInvitationCookieName)
+	consumeInvitation := false
+
+	if invitationToken != "" {
+		item, err := dbpkg.GetEmpresaUsuarioByConfirmToken(dbEmpresas, invitationToken)
+		if err != nil {
+			return nil, empresaID, invitationToken, false, err
+		}
+		if empresaID > 0 && item.EmpresaID != empresaID {
+			return nil, empresaID, invitationToken, false, fmt.Errorf("invitacion invalida para la empresa indicada")
+		}
+		if !strings.EqualFold(strings.TrimSpace(item.Email), strings.TrimSpace(email)) {
+			return nil, empresaID, invitationToken, false, errors.New("invitacion invalida para el correo de Google")
+		}
+		if status, msg := validateEmpresaUsuarioInvitationToken(item, invitationToken, time.Now()); status != http.StatusOK {
+			return nil, empresaID, invitationToken, false, errors.New(msg)
+		}
+		return item, item.EmpresaID, invitationToken, true, nil
+	}
+
+	item, err := resolveUniqueEmpresaUsuarioByEmail(dbEmpresas, email, empresaID)
+	if err != nil {
+		return nil, empresaID, invitationToken, false, err
+	}
+	if item.EmailConfirmado != 1 {
+		return item, item.EmpresaID, invitationToken, false, errors.New("invitacion pendiente")
+	}
+	return item, item.EmpresaID, invitationToken, consumeInvitation, nil
+}
+
+func handleGoogleUsuarioCallback(w http.ResponseWriter, r *http.Request, dbEmpresas *sql.DB, dbSuper *sql.DB, userinfo *auth.UserInfo) {
+	if userinfo == nil || strings.TrimSpace(userinfo.Email) == "" {
+		redirectGoogleUsuarioError(w, r, "google_sin_email", "", 0, "")
+		return
+	}
+	email := strings.TrimSpace(userinfo.Email)
+	if !userinfo.EmailVerified {
+		redirectGoogleUsuarioError(w, r, "email_no_verificado", email, 0, "")
+		return
+	}
+
+	item, empresaID, invitationToken, consumeInvitation, err := resolveGoogleUsuarioFromCookies(r, dbEmpresas, email)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			redirectGoogleUsuarioError(w, r, "sin_invitacion", email, empresaID, invitationToken)
+		case errors.Is(err, errEmpresaUsuarioEmailAmbiguo):
+			redirectGoogleUsuarioError(w, r, "correo_ambiguo", email, empresaID, invitationToken)
+		case strings.Contains(strings.ToLower(err.Error()), "contrato"):
+			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, empresaID, invitationToken)
+		case strings.Contains(strings.ToLower(err.Error()), "pendiente"):
+			redirectGoogleUsuarioError(w, r, "invitacion_pendiente", email, empresaID, invitationToken)
+		default:
+			log.Printf("[usuarios_empresa] google login denied email=%s empresa_id=%d error=%v", email, empresaID, err)
+			redirectGoogleUsuarioError(w, r, "acceso_denegado", email, empresaID, invitationToken)
+		}
+		return
+	}
+	if item == nil {
+		redirectGoogleUsuarioError(w, r, "sin_invitacion", email, empresaID, invitationToken)
+		return
+	}
+	if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+		redirectGoogleUsuarioError(w, r, "usuario_inactivo", email, item.EmpresaID, invitationToken)
+		return
+	}
+
+	if consumeInvitation {
+		acceptContract := googleUsuarioCookieValue(r, googleOAuthUsuarioAcceptContractCookieName) == "1"
+		contract, accepted, err := ensureEmpresaUsuarioCurrentContractAccepted(dbEmpresas, dbSuper, item, acceptContract)
+		if err != nil {
+			log.Printf("[usuarios_empresa] google login contract check failed empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+			redirectGoogleUsuarioError(w, r, "contrato_error", email, item.EmpresaID, invitationToken)
+			return
+		}
+		if !accepted {
+			_ = contract
+			redirectGoogleUsuarioError(w, r, "contrato_requerido", email, item.EmpresaID, invitationToken)
+			return
+		}
+	}
+
+	if consumeInvitation {
+		if err := dbpkg.CompleteEmpresaUsuarioInvitationGoogle(dbEmpresas, item.EmpresaID, item.ID); err != nil {
+			log.Printf("[usuarios_empresa] google invitation completion failed empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+			redirectGoogleUsuarioError(w, r, "invitacion_error", email, item.EmpresaID, invitationToken)
+			return
+		}
+		item.EmailConfirmado = 1
+		item.EmailConfirmadoEn = time.Now().Format("2006-01-02 15:04:05")
+		item.EmailConfirmToken = ""
+		item.EmailConfirmExpira = ""
+	}
+
+	if err := dbpkg.ClearEmpresaUsuarioLoginFailures(dbEmpresas, item.EmpresaID, item.ID); err != nil {
+		log.Printf("[usuarios_empresa] failed to clear failures after google login empresa_id=%d id=%d email=%s error=%v", item.EmpresaID, item.ID, item.Email, err)
+	}
+	sessionResult, err := createEmpresaUsuarioSession(w, r, dbSuper, item)
+	if err != nil {
+		log.Printf("[usuarios_empresa] failed to create session (google usuario) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)
+		redirectGoogleUsuarioError(w, r, "sesion_error", email, item.EmpresaID, "")
+		return
+	}
+	warmEmpresaPermissionSnapshot(dbEmpresas, dbSuper, item)
+	http.Redirect(w, r, sessionResult.RedirectURL, http.StatusFound)
 }
 
 // ListAdministradoresHandler devuelve JSON con la lista de administradores (super DB)

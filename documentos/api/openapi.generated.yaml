@@ -2516,6 +2516,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/auth/google/usuario/login":
+    get:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/google/usuario/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [autenticacion]
+      summary: Ruta inventariada /auth/google/usuario/login
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/auth/logout":
     get:
       tags: [autenticacion]

@@ -41,6 +41,7 @@
   var contractDialogSummary = document.getElementById("contractDialogSummary");
   var contractDialogContent = document.getElementById("contractDialogContent");
   var contractDialogClose = document.getElementById("contractDialogClose");
+  var googleUsuarioBtn = document.getElementById("googleUsuarioBtn");
   var recaptchaManagers = {
     login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaLoginRecaptcha", action: "empresa_login" }) : null,
     setup: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaSetupRecaptcha", action: "empresa_setup_password" }) : null,
@@ -105,11 +106,13 @@
     var parsed = parsePositiveInt(empresaInput && empresaInput.value);
     if (!parsed) {
       updateEmpresaContextHint();
+      updateGoogleUsuarioHref();
       return;
     }
     state.empresaID = persistEmpresaID(parsed);
     clearMessages();
     updateEmpresaContextHint();
+    updateGoogleUsuarioHref();
   }
 
   function clearMessages() {
@@ -152,6 +155,7 @@
     state.invitationToken = String(token || "").trim();
     var input = document.getElementById("setupInvitationToken");
     if (input) input.value = state.invitationToken;
+    updateGoogleUsuarioHref();
   }
 
   function invitationRequiredMessage() {
@@ -161,6 +165,46 @@
   function showInvitationRequiredOnLogin() {
     showForm("login", { email: document.getElementById("email").value || getQueryParam("email") });
     setMessage("login", invitationRequiredMessage(), true);
+  }
+
+  function googleErrorMessage(code) {
+    switch (String(code || "").trim()) {
+      case "sin_invitacion":
+        return "Este correo de Google no tiene una invitacion activa de una empresa. Pide al administrador que cree tu usuario y te envie la invitacion.";
+      case "invitacion_pendiente":
+        return "Tu usuario existe, pero debes abrir la invitacion enviada por el administrador para completar el primer acceso.";
+      case "correo_ambiguo":
+        return "Este correo esta asociado a mas de una empresa. Abre el enlace de invitacion de la empresa correcta para entrar con Google.";
+      case "contrato_requerido":
+        return "Para entrar con Google desde la invitacion primero debes aceptar el contrato vigente en esta pantalla.";
+      case "usuario_inactivo":
+        return "Tu usuario esta inactivo. Solicita al administrador que revise tu acceso.";
+      case "email_no_verificado":
+        return "Google no confirmo que ese correo este verificado. Usa una cuenta de Google verificada.";
+      case "sesion_error":
+        return "Google valido tu correo, pero no fue posible abrir la sesion. Intenta nuevamente.";
+      default:
+        return "No se pudo iniciar con Google. Verifica que hayas recibido una invitacion de la empresa.";
+    }
+  }
+
+  function updateGoogleUsuarioHref() {
+    if (!googleUsuarioBtn) return;
+    try {
+      var target = new URL("/auth/google/usuario/login", window.location.origin);
+      if (state.empresaID > 0) {
+        target.searchParams.set("empresa_id", String(state.empresaID));
+      }
+      if (state.invitationToken) {
+        target.searchParams.set("token_invitacion", state.invitationToken);
+      }
+      if (contractCheckbox && contractCheckbox.checked) {
+        target.searchParams.set("accept_contract", "1");
+      }
+      googleUsuarioBtn.href = target.pathname + target.search;
+    } catch (error) {
+      googleUsuarioBtn.href = "/auth/google/usuario/login";
+    }
   }
 
   function formatContractContent(content) {
@@ -691,6 +735,23 @@
         setContractPanelAttention(false);
         setContractStatus("La aceptación se registrará cuando completes tu registro.", false);
       }
+      updateGoogleUsuarioHref();
+    });
+  }
+
+  if (googleUsuarioBtn) {
+    googleUsuarioBtn.addEventListener("click", function (event) {
+      updateGoogleUsuarioHref();
+      if (state.invitationToken && contractCheckbox && !contractCheckbox.checked) {
+        event.preventDefault();
+        showForm("setup", {
+          email: document.getElementById("email").value || urlEmail,
+          invitationToken: state.invitationToken
+        });
+        setContractPanelAttention(true);
+        setContractStatus("Acepta el contrato para continuar con Google.", true);
+        setMessage("setup", googleErrorMessage("contrato_requerido"), true);
+      }
     });
   }
 
@@ -791,5 +852,16 @@
     });
   } else {
     showForm("login", { email: urlEmail });
+  }
+  updateGoogleUsuarioHref();
+
+  var googleError = String(getQueryParam("google_error") || "").trim();
+  if (googleError) {
+    if (googleError === "contrato_requerido" && state.invitationToken) {
+      showForm("setup", { email: urlEmail, invitationToken: state.invitationToken });
+      setContractPanelAttention(true);
+      setContractStatus("Acepta el contrato para continuar con Google.", true);
+    }
+    setMessage(getActiveFormKey(), googleErrorMessage(googleError), true);
   }
 })();

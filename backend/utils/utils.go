@@ -663,6 +663,7 @@ func AuthMiddleware(dbSuper *sql.DB, next http.Handler) http.Handler {
 			"/super/api/empresas/compartidos/aceptar":               {},
 			"/api/asesor_comercial/aceptar":                         {},
 			"/auth/google/login":                                    {},
+			"/auth/google/usuario/login":                            {},
 			"/auth/google/callback":                                 {},
 			"/auth/confirmar_correo":                                {},
 			"/auth/confirmar_admin":                                 {},

@@ -2303,13 +2303,25 @@ func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sq
 	return resetHintURL, nil
 }
 
-func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) error {
+type empresaUsuarioSessionResult struct {
+	EmpresaID   int64
+	UsuarioID   int64
+	Rol         string
+	RedirectURL string
+	Apariencia  string
+}
+
+func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) (empresaUsuarioSessionResult, error) {
+	var result empresaUsuarioSessionResult
+	if item == nil {
+		return result, fmt.Errorf("usuario de empresa requerido")
+	}
 	sessionRole := normalizePermissionRole(item.RolNombre)
 	if sessionRole == "" || sessionRole == "sin_rol" {
 		sessionRole = "admin_empresa"
 	}
 	if err := dbpkg.UpsertAdministrador(dbSuper, item.Email, item.Nombre, sessionRole, ""); err != nil {
-		return fmt.Errorf("failed to upsert admin: %w", err)
+		return result, fmt.Errorf("failed to upsert admin: %w", err)
 	}
 	if _, err := dbpkg.UpsertAdminEmpresaCompartidaAcceso(dbSuper, dbpkg.AdminEmpresaCompartidaAcceso{
 		EmpresaID:          item.EmpresaID,
@@ -2320,15 +2332,15 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 		Estado:             "activo",
 		Observaciones:      "Acceso operativo para usuario de empresa.",
 	}); err != nil {
-		return fmt.Errorf("failed to upsert company access: %w", err)
+		return result, fmt.Errorf("failed to upsert company access: %w", err)
 	}
 
 	token, err := utils.GenerateSecureToken(32)
 	if err != nil {
-		return fmt.Errorf("failed to generate session token: %w", err)
+		return result, fmt.Errorf("failed to generate session token: %w", err)
 	}
 	if err := dbpkg.CreateSession(dbSuper, item.Email, r.RemoteAddr, r.UserAgent(), token); err != nil {
-		return fmt.Errorf("failed to create session: %w", err)
+		return result, fmt.Errorf("failed to create session: %w", err)
 	}
 
 	cookie := &http.Cookie{
@@ -2349,14 +2361,29 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 		log.Println("createEmpresaUsuarioSessionAndRespond get appearance error:", appearanceErr)
 		apariencia = ""
 	}
+	result = empresaUsuarioSessionResult{
+		EmpresaID:   item.EmpresaID,
+		UsuarioID:   item.ID,
+		Rol:         sessionRole,
+		RedirectURL: redirectURL,
+		Apariencia:  apariencia,
+	}
+	return result, nil
+}
+
+func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Request, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario) error {
+	result, err := createEmpresaUsuarioSession(w, r, dbSuper, item)
+	if err != nil {
+		return err
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ok":           true,
-		"empresa_id":   item.EmpresaID,
-		"usuario_id":   item.ID,
-		"rol":          sessionRole,
-		"redirect_url": redirectURL,
-		"apariencia":   apariencia,
+		"empresa_id":   result.EmpresaID,
+		"usuario_id":   result.UsuarioID,
+		"rol":          result.Rol,
+		"redirect_url": result.RedirectURL,
+		"apariencia":   result.Apariencia,
 	})
 	return nil
 }

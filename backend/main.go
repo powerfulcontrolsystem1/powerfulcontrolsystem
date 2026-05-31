@@ -1048,6 +1048,7 @@ func main() {
 	startupTrace("after_vps_security_service")
 
 	http.HandleFunc("/auth/google/login", handlers.HandleGoogleLogin(clientID, redirectURL))
+	http.HandleFunc("/auth/google/usuario/login", handlers.HandleGoogleUsuarioLogin(clientID, redirectURL))
 	// Pasar la conexión de la base `empresas` al callback para persistir usuarios y empresas
 	// Pasar tanto la conexión de empresas como la de superadministrador al callback
 	http.HandleFunc("/auth/google/callback", handlers.HandleGoogleCallback(dbEmpresas, dbSuper, clientID, clientSecret, redirectURL))

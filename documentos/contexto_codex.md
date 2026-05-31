@@ -200,6 +200,16 @@ la pagina de registro y crea cuentas administrativas con confirmacion segun la
 configuracion vigente. Las alertas super administrador pueden enviar correo
 cuando se registra un administrador, sin incluir contrasenas ni tokens.
 
+Los usuarios operativos entran por `login_usuario.html`. El acceso por correo,
+contrasena o Google siempre debe resolver un usuario ya creado/invitado por una
+empresa; no existe alta publica operativa. Para Google se usa
+`/auth/google/usuario/login`, que marca el flujo como usuario y vuelve por el
+callback canonico `/auth/google/callback`; el callback solo abre sesion si el
+correo verificado por Google coincide con una invitacion vigente o con un
+usuario empresarial ya confirmado. La sesion redirige a
+`administrar_empresa.html?id={empresa_id}` para que el panel cargue roles y
+permisos efectivos de esa empresa.
+
 ## Flujo de creacion de empresa
 
 Desde `seleccionar_empresa.html`, el administrador crea una empresa eligiendo

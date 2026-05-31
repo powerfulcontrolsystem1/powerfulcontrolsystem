@@ -783,6 +783,29 @@ func CompleteEmpresaUsuarioInvitationPassword(dbConn *sql.DB, empresaID, id int6
 	return err
 }
 
+// CompleteEmpresaUsuarioInvitationGoogle consume la invitacion cuando el usuario
+// valida su correo con Google y decide entrar sin crear contrasena local.
+func CompleteEmpresaUsuarioInvitationGoogle(dbConn *sql.DB, empresaID, id int64) error {
+	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {
+		return err
+	}
+	_, err := dbConn.Exec(`UPDATE users
+		SET email_confirmado = 1,
+			email_confirmado_en = CASE WHEN COALESCE(email_confirmado_en, '') = '' THEN datetime('now','localtime') ELSE email_confirmado_en END,
+			email_confirm_token = '',
+			email_confirm_expira = '',
+			password_reset_token = '',
+			password_reset_expira = '',
+			password_reset_requested_en = '',
+			login_failed_attempts = 0,
+			login_failed_last_at = '',
+			login_locked_until = '',
+			estado = 'activo',
+			fecha_actualizacion = datetime('now','localtime')
+		WHERE id = ? AND empresa_id = ?`, id, empresaID)
+	return err
+}
+
 // SetEmpresaUsuarioPasswordResetToken registra un token temporal para recuperacion de contrasena.
 func SetEmpresaUsuarioPasswordResetToken(dbConn *sql.DB, empresaID, id int64, token, expira string) error {
 	if err := EnsureEmpresaUsuariosAuthSchema(dbConn); err != nil {

@@ -92,6 +92,25 @@ afecte dinero, documentos, licencias o seguridad.
    `empresa_estacion_prefs.estaciones_config`.
 4. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio.
 
+## Login usuarios operativos
+
+1. El administrador de una empresa crea el usuario desde `Administrar usuarios`;
+   el sistema envia invitacion por correo y guarda token temporal en `users`.
+2. El usuario abre `login_usuario.html` desde la invitacion para completar
+   registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
+   no hay alta publica.
+3. `Iniciar sesion con Google` usa `/auth/google/usuario/login`, conserva
+   `empresa_id` y token de invitacion en cookies tecnicas de corta vida y vuelve
+   por `/auth/google/callback`.
+4. El callback solo abre sesion si Google confirma el correo y este coincide con
+   una invitacion vigente o con un usuario de empresa ya confirmado. Si falta
+   contrato vigente, vuelve al formulario para aceptarlo.
+5. La sesion redirige siempre a `administrar_empresa.html?id={empresa_id}`; el
+   panel carga rol, permisos y estaciones asignadas de esa empresa.
+6. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
+   consumir token y entrar, correo ambiguo exige enlace de empresa, tema claro u
+   oscuro se conserva y el boton `Instalar app` permanece visible.
+
 ## Abrir, usar y cerrar caja
 
 1. El usuario entra a caja desde `Corte de Caja` o desde la estacion Caja.

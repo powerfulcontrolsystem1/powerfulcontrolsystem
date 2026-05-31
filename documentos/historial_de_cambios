@@ -1,3 +1,12 @@
+2026-05-31: Login usuario con Google por invitacion.
+- Modulos afectados: `login_usuario`, `usuarios_empresa`, `autenticacion`, `frontend_ux`, `pwa`.
+- Cambio funcional: `login_usuario.html` agrega boton `Iniciar sesion con Google` para usuarios operativos y boton `Instalar app` con icono; elimina el texto contextual de empresa detectada.
+- Seguridad: el flujo Google de usuarios usa `/auth/google/usuario/login`, vuelve por `/auth/google/callback` y solo abre sesion si el correo verificado por Google coincide con una invitacion vigente o con un usuario empresarial confirmado. No crea usuarios operativos publicos.
+- Backend: se registra la ruta publica controlada, se distingue el flujo de usuarios con cookies tecnicas de corta vida y se consume la invitacion validada por Google sin obligar a crear contrasena local.
+- UX: el titulo `Acceso de usuarios operativos` queda centrado y se adapta en movil sin cortarse; se conservan las apariencias clara y oscura del login de usuario.
+- Documentacion: se actualizan `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md` y `documentos/CHANGELOG.md`.
+- Validacion: `node --check web/js/login_usuario.js`, `go test ./handlers ./db ./utils -run "Google|Usuario|Auth|Middleware|EmpresaUsuario|LicenciasGratis" -count=1`, `go test ./... -run "^$" -count=1` y prueba visual local movil con CSS real.
+
 2026-05-31: Super administrador sin metricas de trafico ni reportes globales.
 - Modulos afectados: `super_administrador`, `navegacion_super`, `reportes_globales`, `frontend_ux`.
 - Cambio funcional: el grupo `Gobierno` del panel super deja de mostrar los botones `Reportes globales` y `Metricas de trafico`.
