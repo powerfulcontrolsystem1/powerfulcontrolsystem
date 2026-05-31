@@ -11827,3 +11827,13 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/js/pwa_install.js
 - web/login.html
+
+2026-05-31 16:04:51 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 12fe6063; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_carrito_de_compra_empresa.html
