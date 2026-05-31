@@ -21,6 +21,45 @@
       <div class="form" >
         <p class="form-help" >El sistema usará una sola página de carrito para todas las estaciones. Aquí defines qué bloques estarán activos por defecto para toda la empresa; luego puedes sobrescribirlos por estación desde Configuración de estaciones.</p>
 
+        <div class="empresa-section mt-12">
+          <div class="empresa-section-header compact">
+            <div>
+              <h3 class="section-heading">Respuesta de botones del carrito</h3>
+              <p class="form-help mt-0">Define si los botones del carrito emiten confirmacion sonora o vibracion visual/fisica al tocarlos.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPitidoPc" type="checkbox">
+                Emitir pitido en PC
+              </label>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgPitidoMovil" type="checkbox">
+                Emitir pitido en celular
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgVibracionPc" type="checkbox">
+                Vibrar botones en PC
+              </label>
+              <div class="form-help">En PC se aplica como vibracion visual breve del boton.</div>
+            </div>
+            <div class="form-col">
+              <label class="form-help" style="display:flex;align-items:center;gap:8px;">
+                <input id="carritoCfgVibracionMovil" type="checkbox">
+                Vibrar botones en celular
+              </label>
+              <div class="form-help">En celulares compatibles usa vibracion fisica y tambien una respuesta visual corta.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-col">
             <label class="form-help" style="display:flex;align-items:center;gap:8px;">
@@ -531,7 +570,11 @@
         pago_qr_comercio: '',
         pago_qr_payload_oficial: '',
         pago_qr_instrucciones: '',
-        pago_qr_cuentas: []
+        pago_qr_cuentas: [],
+        botones_pitido_pc: false,
+        botones_pitido_movil: false,
+        botones_vibracion_pc: false,
+        botones_vibracion_movil: false
       };
     }
 
@@ -599,7 +642,11 @@
         pago_qr_comercio: normalizeText(src.pago_qr_comercio || ''),
         pago_qr_payload_oficial: normalizeText(src.pago_qr_payload_oficial || ''),
         pago_qr_instrucciones: normalizeText(src.pago_qr_instrucciones || ''),
-        pago_qr_cuentas: normalizeQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src)
+        pago_qr_cuentas: normalizeQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src),
+        botones_pitido_pc: src.botones_pitido_pc === undefined ? base.botones_pitido_pc : !!src.botones_pitido_pc,
+        botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : !!src.botones_pitido_movil,
+        botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : !!src.botones_vibracion_pc,
+        botones_vibracion_movil: src.botones_vibracion_movil === undefined ? base.botones_vibracion_movil : !!src.botones_vibracion_movil
       };
     }
 
@@ -794,6 +841,10 @@
     function applyConfig(cfg) {
       const normalized = normalizeUnifiedCartConfig(cfg);
       document.getElementById('carritoCfgModoTactil').checked = !!normalized.modo_pantalla_tactil;
+      document.getElementById('carritoCfgPitidoPc').checked = !!normalized.botones_pitido_pc;
+      document.getElementById('carritoCfgPitidoMovil').checked = !!normalized.botones_pitido_movil;
+      document.getElementById('carritoCfgVibracionPc').checked = !!normalized.botones_vibracion_pc;
+      document.getElementById('carritoCfgVibracionMovil').checked = !!normalized.botones_vibracion_movil;
       document.getElementById('carritoCfgBuscarProductos').checked = !!normalized.mostrar_boton_buscar_productos;
       document.getElementById('carritoCfgBusquedaCatalogo').checked = !!normalized.mostrar_busqueda_catalogo;
       document.getElementById('carritoCfgCodigoManual').checked = !!normalized.mostrar_codigo_manual_item;
@@ -849,6 +900,10 @@
         [
           'carritoCfgBuscarProductos',
           'carritoCfgModoTactil',
+          'carritoCfgPitidoPc',
+          'carritoCfgPitidoMovil',
+          'carritoCfgVibracionPc',
+          'carritoCfgVibracionMovil',
           'carritoCfgBusquedaCatalogo',
           'carritoCfgCodigoManual',
           'carritoCfgObservaciones',
@@ -911,6 +966,10 @@
       try {
         const cfg = normalizeUnifiedCartConfig({
           modo_pantalla_tactil: document.getElementById('carritoCfgModoTactil').checked,
+          botones_pitido_pc: document.getElementById('carritoCfgPitidoPc').checked,
+          botones_pitido_movil: document.getElementById('carritoCfgPitidoMovil').checked,
+          botones_vibracion_pc: document.getElementById('carritoCfgVibracionPc').checked,
+          botones_vibracion_movil: document.getElementById('carritoCfgVibracionMovil').checked,
           mostrar_boton_buscar_productos: document.getElementById('carritoCfgBuscarProductos').checked,
           mostrar_busqueda_catalogo: document.getElementById('carritoCfgBusquedaCatalogo').checked,
           mostrar_codigo_manual_item: document.getElementById('carritoCfgCodigoManual').checked,

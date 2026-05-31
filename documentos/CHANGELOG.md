@@ -1,3 +1,8 @@
+## [2026-05-31] Feedback sonoro y tactil del carrito
+- [Configuracion] `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega checks independientes para pitido y vibracion de botones en PC y celular.
+- [Carrito] `web/administrar_empresa/carrito_de_compras.html` aplica pitido con Web Audio y vibracion visual/fisica segun la configuracion `carrito_ui_global`.
+- [QA] Validado con parseo de scripts, `git diff --check` y prueba visual local guardando los checks y simulando clics en PC/celular.
+
 ## [2026-05-31] Instalacion PWA del login administrativo
 - [PWA] `web/login.html` actualiza la version del instalador para evitar cache antiguo en el boton `Instalar app`.
 - [UX] `web/js/pwa_install.js` muestra estado inmediato al abrir la instalacion y conserva un mensaje de respaldo si el navegador no entrega el dialogo nativo.

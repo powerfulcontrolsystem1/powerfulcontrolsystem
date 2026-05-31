@@ -1,3 +1,9 @@
+2026-05-31: Feedback sonoro y tactil del carrito
+- Modulo: `Configuracion carrito` y `Carrito y venta directa`.
+- Configuracion: `carrito_ui_global` agrega checks por empresa para pitido y vibracion separados entre PC y celular.
+- UX: el carrito emite un pitido breve si esta activo y aplica vibracion visual; en celulares compatibles tambien llama a `navigator.vibrate`.
+- Alcance: no cambia backend ni tablas nuevas; se reutiliza `empresa_estacion_prefs` y el endpoint empresarial existente.
+
 2026-05-31: Login con titulo texto e iconos PWA
 - Modulo: `autenticacion administrador`.
 - Cambio funcional/UX: el encabezado del login vuelve a texto `Powerful Control System`, y los botones inferiores `Instalar app` e `Ir al inicio` quedan con iconos visuales propios.

@@ -28,6 +28,8 @@
     .carrito-direct-sale-tools button[hidden]{display:none!important}
     .carrito-fullscreen-btn{min-width:44px;padding:8px 10px}
     .carrito-fullscreen-btn .cart-btn-icon{font-size:1rem}
+    .cart-button-feedback-vibrate{animation:cartButtonFeedbackVibrate 130ms linear 1}
+    @keyframes cartButtonFeedbackVibrate{0%,100%{transform:translateX(0)}25%{transform:translateX(-1px)}50%{transform:translateX(1px)}75%{transform:translateX(-1px)}}
     body.carrito-direct-fullscreen{background:var(--carrito-page-bg,var(--bg))}
     body.carrito-direct-fullscreen .container{max-width:none;width:100%;min-height:100vh;padding:8px}
     body.carrito-direct-fullscreen #buscarProductosActions{position:sticky;top:0;z-index:120;background:var(--carrito-page-bg,var(--bg));padding:6px 0}
@@ -706,6 +708,8 @@
       stationConfig: null,
       tarifaMinutosConfig: null,
       stationCartUI: null,
+      buttonFeedbackAudioContext: null,
+      buttonFeedbackLastAt: 0,
       stationUpdateInterval: null,
       stationAlert10Interval: null,
       stationAlert10IntervalKey: '',
@@ -1328,7 +1332,11 @@
         pago_qr_comercio: '',
         pago_qr_payload_oficial: '',
         pago_qr_instrucciones: '',
-        pago_qr_cuentas: []
+        pago_qr_cuentas: [],
+        botones_pitido_pc: false,
+        botones_pitido_movil: false,
+        botones_vibracion_pc: false,
+        botones_vibracion_movil: false
       };
     }
 
@@ -1445,7 +1453,11 @@
         pago_qr_comercio: normalize(src.pago_qr_comercio || ''),
         pago_qr_payload_oficial: normalize(src.pago_qr_payload_oficial || ''),
         pago_qr_instrucciones: normalize(src.pago_qr_instrucciones || ''),
-        pago_qr_cuentas: normalizePaymentQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src)
+        pago_qr_cuentas: normalizePaymentQrAccounts(src.pago_qr_cuentas || src.cuentas_qr || src.qr_accounts, src),
+        botones_pitido_pc: src.botones_pitido_pc === undefined ? base.botones_pitido_pc : Boolean(src.botones_pitido_pc),
+        botones_pitido_movil: src.botones_pitido_movil === undefined ? base.botones_pitido_movil : Boolean(src.botones_pitido_movil),
+        botones_vibracion_pc: src.botones_vibracion_pc === undefined ? base.botones_vibracion_pc : Boolean(src.botones_vibracion_pc),
+        botones_vibracion_movil: src.botones_vibracion_movil === undefined ? base.botones_vibracion_movil : Boolean(src.botones_vibracion_movil)
       };
     }
 
@@ -1702,6 +1714,83 @@
     function configuredGeneralCustomerName() {
       const ui = normalizeUnifiedCartUIConfig(getCurrentStationCartUIConfig());
       return normalize(ui.cliente_general_nombre) || 'Cliente General';
+    }
+
+    function isMobileCartInteractionDevice() {
+      try {
+        if (window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches)) {
+          return true;
+        }
+      } catch (_) {}
+      return window.innerWidth <= 760;
+    }
+
+    function getCartButtonFeedbackConfig() {
+      return normalizeUnifiedCartUIConfig(state.stationCartUI || getCurrentStationCartUIConfig());
+    }
+
+    function shouldPlayCartButtonBeep() {
+      const cfg = getCartButtonFeedbackConfig();
+      return isMobileCartInteractionDevice() ? Boolean(cfg.botones_pitido_movil) : Boolean(cfg.botones_pitido_pc);
+    }
+
+    function shouldVibrateCartButton() {
+      const cfg = getCartButtonFeedbackConfig();
+      return isMobileCartInteractionDevice() ? Boolean(cfg.botones_vibracion_movil) : Boolean(cfg.botones_vibracion_pc);
+    }
+
+    function playCartButtonBeep() {
+      if (!shouldPlayCartButtonBeep()) return;
+      const now = Date.now();
+      if (now - Number(state.buttonFeedbackLastAt || 0) < 80) return;
+      state.buttonFeedbackLastAt = now;
+      try {
+        const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextCtor) return;
+        const ctx = state.buttonFeedbackAudioContext || new AudioContextCtor();
+        state.buttonFeedbackAudioContext = ctx;
+        if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+          ctx.resume().catch(function() {});
+        }
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.045, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.07);
+      } catch (_) {}
+    }
+
+    function vibrateCartButton(button) {
+      if (!shouldVibrateCartButton() || !button) return;
+      const mobileDevice = isMobileCartInteractionDevice();
+      try {
+        if (mobileDevice && navigator.vibrate) {
+          navigator.vibrate(18);
+        }
+      } catch (_) {}
+      button.classList.remove('cart-button-feedback-vibrate');
+      void button.offsetWidth;
+      button.classList.add('cart-button-feedback-vibrate');
+      window.setTimeout(function() {
+        button.classList.remove('cart-button-feedback-vibrate');
+      }, 160);
+    }
+
+    function handleCartButtonFeedback(event) {
+      const target = event && event.target && event.target.closest ? event.target.closest('button, a.btn, [role="button"]') : null;
+      if (!target || !document.body.contains(target)) return;
+      if (target.disabled || target.getAttribute('aria-disabled') === 'true') return;
+      if (target.closest('.no-cart-button-feedback')) return;
+      const isCartButton = target.tagName === 'BUTTON' || target.classList.contains('btn') || target.getAttribute('role') === 'button';
+      if (!isCartButton) return;
+      playCartButtonBeep();
+      vibrateCartButton(target);
     }
 
     function carritoCustomerDisplayName(carrito) {
@@ -8587,6 +8676,8 @@
     ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function(eventName) {
       document.addEventListener(eventName, updateDirectSaleFullscreenButton);
     });
+
+    document.addEventListener('click', handleCartButtonFeedback, true);
 
     (async function init() {
       const empresaID = Number(getQueryParam('empresa_id') || 0);

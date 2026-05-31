@@ -1,3 +1,10 @@
+2026-05-31: Feedback sonoro y tactil del carrito.
+- Modulos afectados: `configuracion_carrito`, `carrito`, `venta_directa`, `estaciones`, `frontend_ux`.
+- Cambio funcional visible: configuracion de carrito agrega cuatro checks independientes para emitir pitido en PC, emitir pitido en celular, vibrar botones en PC y vibrar botones en celular.
+- Implementacion: las opciones se guardan en `empresa_estacion_prefs.estaciones_config.carrito_ui_global` y `carrito_de_compras.html` aplica Web Audio para el pitido, vibracion fisica cuando el navegador lo permite y vibracion visual breve del boton.
+- Seguridad/datos: no se crean endpoints ni tablas nuevas; se reutiliza `/api/empresa/estacion_prefs` con el aislamiento y permisos existentes por `empresa_id`.
+- Validacion: parseo de scripts embebidos, `git diff --check`, prueba visual de la configuracion y prueba simulada de clic en PC/celular.
+
 2026-05-31: Instalacion PWA del login administrativo.
 - Modulos afectados: `login`, `pwa`, `frontend_ux`.
 - Cambio funcional visible: el boton `Instalar app` de `login.html` carga una version nueva del instalador y muestra respuesta inmediata cuando se abre la instalacion.

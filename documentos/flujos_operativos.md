@@ -90,7 +90,9 @@ afecte dinero, documentos, licencias o seguridad.
    resto de configuracion.
 3. Las preferencias flexibles de estaciones/carrito usan
    `empresa_estacion_prefs.estaciones_config`.
-4. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio.
+4. La configuracion del carrito permite activar pitido y vibracion de botones por
+   separado para PC y celular desde `carrito_ui_global`.
+5. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio.
 
 ## Login usuarios operativos
 
