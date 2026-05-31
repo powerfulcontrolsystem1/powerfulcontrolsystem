@@ -861,6 +861,72 @@
       return normalizedCode(v).replace(/\s+/g, '_').replace(/[^A-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
     }
 
+    function parseCajaBool(v, fallback) {
+      if (v === undefined || v === null) return !!fallback;
+      if (typeof v === 'boolean') return v;
+      if (typeof v === 'number') return v === 1;
+      const raw = normalize(v).toLowerCase();
+      if (!raw) return !!fallback;
+      return raw === '1' || raw === 'true' || raw === 'si' || raw === 'sí';
+    }
+
+    function defaultCajaConfigRow(index) {
+      const pos = Math.max(1, Number(index || 1));
+      return {
+        id: 'caja_' + pos,
+        codigo: 'CAJA-' + pos,
+        nombre: pos === 1 ? 'Caja principal' : ('Caja ' + pos),
+        descripcion: pos === 1 ? 'Caja principal' : '',
+        activa: true
+      };
+    }
+
+    function normalizeCajasConfig(raw) {
+      const rows = Array.isArray(raw) ? raw : [];
+      const out = [];
+      const seen = {};
+      rows.forEach(function(item, index) {
+        if (!item || typeof item !== 'object') return;
+        const fallback = defaultCajaConfigRow(index + 1);
+        const codigo = normalizeCashCode(item.codigo || item.caja_codigo || item.code || fallback.codigo) || fallback.codigo;
+        if (seen[codigo]) return;
+        seen[codigo] = true;
+        const nombre = normalize(item.nombre || item.caja_nombre || item.name || fallback.nombre);
+        const descripcion = normalize(item.descripcion || item.caja_descripcion || item.description || '');
+        out.push({
+          id: normalize(item.id || item.uid || codigo.toLowerCase().replace(/[^a-z0-9_-]/g, '_')),
+          codigo,
+          nombre: nombre || fallback.nombre,
+          descripcion,
+          activa: parseCajaBool(item.activa !== undefined ? item.activa : item.active, true)
+        });
+      });
+      if (!out.length) out.push(defaultCajaConfigRow(1));
+      return out.slice(0, 50);
+    }
+
+    function activeCajasConfig() {
+      const cfg = state.stationConfig || {};
+      return normalizeCajasConfig(cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo).filter(function(caja) {
+        return caja.activa !== false;
+      });
+    }
+
+    function findCajaCatalogEntry(code) {
+      const wanted = normalizeCashCode(code || '');
+      if (!wanted) return null;
+      return activeCajasConfig().find(function(caja) {
+        return normalizeCashCode(caja.codigo) === wanted;
+      }) || null;
+    }
+
+    function cajaDisplayLabelFromCatalog(code) {
+      const match = findCajaCatalogEntry(code);
+      const codigo = normalizeCashCode((match && match.codigo) || code || 'CAJA');
+      const nombre = normalize(match && match.nombre);
+      return (codigo + (nombre ? (' - ' + nombre) : '')).trim();
+    }
+
     function parseMoneyInputValue(value) {
       let text = normalize(value);
       if (!text) return 0;
@@ -884,10 +950,11 @@
     function cashRegisterLabel(caja) {
       if (!caja) return '';
       const code = normalize(caja.caja_codigo) || 'CAJA';
+      const cajaLabel = cajaDisplayLabelFromCatalog(code);
       const turno = normalize(caja.turno) || 'general';
       const apertura = normalize(caja.fecha_apertura);
       const teorica = formatAmount(Number(caja.caja_teorica || 0), caja.moneda || 'COP');
-      return code + ' · turno ' + turno + ' · esperado ' + teorica + (apertura ? (' · abierta ' + apertura) : '');
+      return cajaLabel + ' · turno ' + turno + ' · esperado ' + teorica + (apertura ? (' · abierta ' + apertura) : '');
     }
 
     function getSelectedCashRegister() {
@@ -962,6 +1029,8 @@
     }
 
     function defaultPaymentCashRegisterCode() {
+      const cajas = activeCajasConfig();
+      if (cajas.length && normalizeCashCode(cajas[0].codigo)) return normalizeCashCode(cajas[0].codigo);
       const drawer = getCashDrawerConfig();
       return normalizeCashCode((drawer && drawer.code) || 'CAJA-1') || 'CAJA-1';
     }
@@ -996,7 +1065,7 @@
       }
       const selected = getSelectedCashRegister();
       if (selected) {
-        setStationPaymentMessage('Caja ' + normalizeCashCode(selected.caja_codigo) + ' abierta para el cobro. Registrando pago...', false);
+        setStationPaymentMessage(cajaDisplayLabelFromCatalog(selected.caja_codigo) + ' abierta para el cobro. Registrando pago...', false);
       }
       return selected;
     }
@@ -1550,6 +1619,7 @@
             carrito: normalizeStationCarritoConfig(current && (current.carrito || current.carrito_ui))
           };
         }),
+        cajas_config: normalizeCajasConfig(src.cajas_config || src.cajas_fisicas || src.cajas || src.caja_catalogo),
         carrito_ui_global: normalizeUnifiedCartUIConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global),
         station_card_ui: src.station_card_ui && typeof src.station_card_ui === 'object' ? src.station_card_ui : {}
       };

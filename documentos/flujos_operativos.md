@@ -116,13 +116,19 @@ afecte dinero, documentos, licencias o seguridad.
 ## Abrir, usar y cerrar caja
 
 1. El usuario entra a caja desde `Corte de Caja` o desde la estacion Caja.
-2. La caja puede abrirse manual o automaticamente segun flujo vigente.
-3. Cada usuario/caja mantiene turno, pagos, ingresos, egresos y reporte
+2. La empresa puede configurar varias cajas fisicas en
+   `estaciones_config.cajas_config`, cada una con codigo, nombre, descripcion y
+   estado activo. La estacion Caja muestra esos nombres, por ejemplo
+   `CAJA-1 - FRUTERA`.
+3. Al hacer clic en una caja configurada, `corte_de_caja.html` recibe
+   `caja_codigo`, `caja_nombre` y descripcion para abrir el corte de esa caja.
+4. La caja puede abrirse manual o automaticamente segun flujo vigente.
+5. Cada usuario/caja mantiene turno, pagos, ingresos, egresos y reporte
    independiente.
-4. `Corte automatico` calcula desde apertura hasta el momento actual sin pedir
+6. `Corte automatico` calcula desde apertura hasta el momento actual sin pedir
    fechas.
-5. `Cerrar turno e imprimir reporte` imprime y luego cierra sesion.
-6. Pruebas: abrir caja con dos usuarios, registrar movimientos, cerrar una caja
+7. `Cerrar turno e imprimir reporte` imprime y luego cierra sesion.
+8. Pruebas: abrir caja con dos usuarios, registrar movimientos, cerrar una caja
    sin afectar la otra.
 
 ## Venta directa

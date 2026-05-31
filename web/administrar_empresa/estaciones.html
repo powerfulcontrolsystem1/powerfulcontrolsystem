@@ -303,6 +303,7 @@
         card_size,
         caja_enabled,
         caja_placement,
+        cajas_config: normalizeCajasConfig(cfg && (cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)),
         youtube_enabled,
         youtube_placement,
         youtube_query,
@@ -792,6 +793,63 @@
       }
       return 'EST-' + empresaId + '-' + stationID;
     }
+
+    function normalizeCashCode(v) {
+      return String(v == null ? '' : v)
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^A-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function defaultCajaConfigRow(index) {
+      const pos = Math.max(1, Number(index || 1));
+      return {
+        id: 'caja_' + pos,
+        codigo: 'CAJA-' + pos,
+        nombre: pos === 1 ? 'Caja principal' : ('Caja ' + pos),
+        descripcion: pos === 1 ? 'Caja principal' : '',
+        activa: true
+      };
+    }
+
+    function normalizeCajasConfig(raw) {
+      const rows = Array.isArray(raw) ? raw : [];
+      const out = [];
+      const seen = {};
+      rows.forEach((item, index) => {
+        if (!item || typeof item !== 'object') return;
+        const fallback = defaultCajaConfigRow(index + 1);
+        const codigo = normalizeCashCode(item.codigo || item.caja_codigo || item.code || fallback.codigo) || fallback.codigo;
+        if (seen[codigo]) return;
+        seen[codigo] = true;
+        const nombre = String(item.nombre || item.caja_nombre || item.name || fallback.nombre).trim();
+        const descripcion = String(item.descripcion || item.caja_descripcion || item.description || '').trim();
+        out.push({
+          id: String(item.id || item.uid || codigo.toLowerCase().replace(/[^a-z0-9_-]/g, '_')).trim(),
+          codigo,
+          nombre: nombre || fallback.nombre,
+          descripcion,
+          activa: item.activa === undefined && item.active === undefined ? true : toBool(item.activa !== undefined ? item.activa : item.active)
+        });
+      });
+      if (!out.length) out.push(defaultCajaConfigRow(1));
+      return out.slice(0, 50);
+    }
+
+    function activeCajasConfig(cfg) {
+      return normalizeCajasConfig(cfg && (cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)).filter(caja => caja.activa !== false);
+    }
+
+    function cajaDisplayLabel(caja) {
+      if (!caja) return 'Caja';
+      const codigo = normalizeCashCode(caja.codigo || caja.caja_codigo || caja.code || 'CAJA');
+      const nombre = String(caja.nombre || caja.caja_nombre || caja.name || '').trim();
+      return (codigo + (nombre ? (' - ' + nombre) : '')).trim();
+    }
+
     function openStationCarrito(stationID, stationName, directSaleMode) {
       if (!empresaId || stationID == null) return;
       const directMode = !!directSaleMode;
@@ -803,7 +861,7 @@
         (directMode ? '&modo=venta_directa' : '');
       window.location.href = url;
     }
-    function openCajaClosePage(stationName) {
+    function openCajaClosePage(stationName, cajaCodigo, cajaDescripcion) {
       if (!empresaId) return;
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
@@ -811,6 +869,8 @@
       params.set('return_to', 'estaciones');
       params.set('auto_generar', '1');
       params.set('caja_nombre', String(stationName || 'Caja').trim() || 'Caja');
+      if (cajaCodigo) params.set('caja_codigo', normalizeCashCode(cajaCodigo));
+      if (cajaDescripcion) params.set('caja_descripcion', String(cajaDescripcion || '').trim());
       window.location.href = '/administrar_empresa/corte_de_caja.html?' + params.toString();
     }
     function buildUltimosMovimientosCajaURL() {
@@ -1244,7 +1304,7 @@
           ev.preventDefault();
           ev.stopPropagation();
         }
-        openCajaClosePage(stationName || 'Caja');
+        openCajaClosePage(stationName || 'Caja', card && card.getAttribute('data-caja-codigo') || '');
         return;
       }
 
@@ -1277,7 +1337,7 @@
           ev.preventDefault();
           ev.stopPropagation();
         }
-        openCajaClosePage(stationName || 'Caja');
+        openCajaClosePage(stationName || 'Caja', card && card.getAttribute('data-caja-codigo') || '');
         return;
       }
       if (state.stationCardUI && state.stationCardUI.marcar_sucia_al_pagar && state.dirtyByEstacion && state.dirtyByEstacion[stationID]) {
@@ -1373,9 +1433,20 @@
 
     function generateCajaCardHtml() {
       const cajaColor = sanitize(state.colores.disponible || state.colores.inactivo || '#fff9ef');
-      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" style="--station-state-bg:' + cajaColor + ';" data-estacion-id="0" data-estacion-nombre="Caja" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
+      const cajas = activeCajasConfig(stationConfig || {});
+      const firstCaja = cajas[0] || defaultCajaConfigRow(1);
+      const cajaListHtml = cajas.map(caja => {
+        const label = cajaDisplayLabel(caja);
+        const desc = String(caja.descripcion || '').trim();
+        return '<button type="button" class="caja-register-item" data-caja-codigo="' + sanitize(caja.codigo) + '" data-caja-nombre="' + sanitize(label) + '" data-caja-descripcion="' + sanitize(desc) + '">' +
+          '<span>' + sanitize(label) + '</span>' +
+          (desc ? '<small>' + sanitize(desc) + '</small>' : '') +
+        '</button>';
+      }).join('');
+      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" style="--station-state-bg:' + cajaColor + ';" data-estacion-id="0" data-estacion-nombre="' + sanitize(cajaDisplayLabel(firstCaja)) + '" data-caja-codigo="' + sanitize(firstCaja.codigo) + '" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
         '<div class="station-sensor-indicator"></div>' +
         '<h3 class="caja-title">Caja</h3>' +
+        '<div class="caja-register-list">' + cajaListHtml + '</div>' +
         '<div class="caja-totals">' +
           '<div class="caja-row"><span class="caja-label">Efectivo</span><span class="caja-value" id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
           '<div class="caja-row"><span class="caja-label">Débito</span><span class="caja-value" id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +
@@ -2055,13 +2126,18 @@
           cajaEl.addEventListener('click', ev => {
             ev.preventDefault();
             ev.stopPropagation();
-            openCajaClosePage('Caja');
+            const selectedCaja = ev.target && ev.target.closest ? ev.target.closest('.caja-register-item') : null;
+            if (selectedCaja) {
+              openCajaClosePage(selectedCaja.getAttribute('data-caja-nombre') || 'Caja', selectedCaja.getAttribute('data-caja-codigo') || '', selectedCaja.getAttribute('data-caja-descripcion') || '');
+              return;
+            }
+            openCajaClosePage(cajaEl.getAttribute('data-estacion-nombre') || 'Caja', cajaEl.getAttribute('data-caja-codigo') || '');
           });
           cajaEl.addEventListener('keydown', ev => {
             if (ev.key === 'Enter' || ev.key === ' ') {
               ev.preventDefault();
               ev.stopPropagation();
-              openCajaClosePage('Caja');
+              openCajaClosePage(cajaEl.getAttribute('data-estacion-nombre') || 'Caja', cajaEl.getAttribute('data-caja-codigo') || '');
             }
           });
           try {

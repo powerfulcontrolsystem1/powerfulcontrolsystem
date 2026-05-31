@@ -247,6 +247,10 @@ real vive en backend y en `CanAdminAccessEmpresaIA`.
   pagos mixtos y medio de pago.
 - Cada usuario/caja debe operar de forma independiente dentro de la misma
   empresa.
+- Las cajas fisicas configurables de la empresa se guardan en
+  `empresa_estacion_prefs.estaciones_config.cajas_config` con `codigo`,
+  `nombre`, `descripcion` y `activa`; la estacion Caja y el carrito muestran el
+  nombre operativo, por ejemplo `CAJA-1 - FRUTERA`.
 - El pago cierra el carrito, actualiza inventario/caja, genera documento
   imprimible y, si aplica, documento electronico.
 - Caja y corte usan `corte_de_caja.html`; el reporte de turno se calcula por
@@ -267,6 +271,8 @@ real vive en backend y en `CanAdminAccessEmpresaIA`.
   `empresa_estacion_prefs.estaciones_config.estaciones[].carrito.configuracion`.
 - Configuracion de estaciones y nombres singular/plural:
   `empresa_estacion_prefs.estaciones_config`.
+- Catalogo de cajas fisicas simultaneas:
+  `empresa_estacion_prefs.estaciones_config.cajas_config`.
 - Configuracion de corte/reporte de caja:
   `empresa_corte_caja_configuracion`.
 - Impresoras por empresa y POS 80mm:

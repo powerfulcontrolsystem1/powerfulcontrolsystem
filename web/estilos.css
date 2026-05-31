@@ -4252,6 +4252,10 @@ html[data-theme="dark-neon"] .login-usuario-modal .modal__panel{
 .caja-card .caja-totals .caja-row .caja-label{ font-weight:700; color:var(--portal-card-solid-text); margin-right:6px; }
 .caja-card .caja-totals .caja-row .caja-value{ font-weight:900; color:var(--portal-card-solid-text); }
 .caja-card .caja-title { text-align: center; margin-bottom: 2px; color: var(--portal-card-solid-text); font-weight:800; }
+.caja-card .caja-register-list{ display:flex; flex-direction:column; gap:4px; width:100%; margin:2px 0 4px; }
+.caja-card .caja-register-item{ width:100%; border:1px solid rgba(15,23,42,0.16); background:rgba(255,255,255,0.72); color:var(--portal-card-solid-text); border-radius:6px; padding:5px 7px; display:flex; flex-direction:column; align-items:flex-start; gap:1px; text-align:left; font-weight:900; cursor:pointer; }
+.caja-card .caja-register-item small{ font-size:.72rem; font-weight:700; opacity:.82; line-height:1.1; }
+.caja-card .caja-register-item:hover,.caja-card .caja-register-item:focus{ outline:2px solid rgba(37,99,235,0.32); background:rgba(255,255,255,0.9); }
 .caja-card .caja-actions{ margin-top:4px; display:flex; width:100%; min-width:0; }
 .caja-card .caja-actions .btn{
   width:100%;

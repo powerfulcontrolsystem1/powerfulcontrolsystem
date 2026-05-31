@@ -2065,3 +2065,8 @@
 - [Backend] `PayCarritoStationSession` ahora cierra el carrito con una transicion atomica que exige carrito abierto, activo y sin `pagado_en`; los reintentos concurrentes no duplican documento, caja, metricas ni venta.
 - [Inventario] Se documenta que productos y recetas reservan/descuentan stock al agregarse al carrito, para que varias cajas vean el inventario disponible en tiempo real antes del pago.
 - [Seguridad] `pagar_estacion` responde de forma idempotente si el carrito ya quedo pagado por una solicitud anterior.
+
+## [2026-05-31] Cajas fisicas con nombre y descripcion
+- [Configuracion] `Configuracion de estaciones` permite administrar varias cajas fisicas por empresa con codigo, nombre, descripcion y estado activo.
+- [Estaciones] La tarjeta Caja muestra las cajas configuradas, por ejemplo `CAJA-1 - FRUTERA`, y abre el corte con el codigo/nombre elegido.
+- [Carrito/Corte] Los selectores y reportes muestran el nombre operativo de la caja cuando existe en `estaciones_config.cajas_config`.

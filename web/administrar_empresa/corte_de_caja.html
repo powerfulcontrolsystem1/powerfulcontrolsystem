@@ -278,6 +278,7 @@
               <div class="form-col">
                 <label class="form-label" for="cajaCodigo">Caja</label>
                 <input id="cajaCodigo" class="form-input" value="CAJA-PRINCIPAL">
+                <p id="cajaNombreDisplay" class="form-help">Caja principal</p>
               </div>
               <div class="form-col">
                 <label class="form-label" for="turno">Turno</label>
@@ -482,6 +483,7 @@
       autoGenerar: String(params.get('auto_generar') || '').trim() === '1',
       cajaNombre: String(params.get('caja_nombre') || '').trim(),
       cajaCodigo: String(params.get('caja_codigo') || '').trim(),
+      cajaDescripcion: String(params.get('caja_descripcion') || '').trim(),
       cierreCajaID: Number(params.get('cierre_caja_id') || 0),
       sucursalID: Number(params.get('sucursal_id') || 0),
       usuario: String(params.get('usuario') || '').trim(),
@@ -493,6 +495,34 @@
 
   function escapeHtml(v) {
     return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function normalizeCashCode(v) {
+    return String(v == null ? '' : v)
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Z0-9_-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
+  function cajaDisplayName(codigo, nombre) {
+    var code = normalizeCashCode(codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL') || 'CAJA-PRINCIPAL';
+    var name = String(nombre || pageContext.cajaNombre || '').trim();
+    if (name && name.toUpperCase().indexOf(code) === 0) return name;
+    return code + (name ? (' - ' + name) : '');
+  }
+
+  function setCajaDisplay(codigo, nombre, descripcion) {
+    var label = cajaDisplayName(codigo, nombre);
+    var help = document.getElementById('cajaNombreDisplay');
+    if (help) {
+      var desc = String(descripcion || pageContext.cajaDescripcion || '').trim();
+      help.textContent = label + (desc ? (' | ' + desc) : '');
+    }
+    var title = document.getElementById('pageTitle');
+    if (title) title.textContent = 'Cierre de turno y corte de caja - ' + label;
   }
 
   function money(value, currency) {
@@ -646,8 +676,8 @@
     var closeBtn = document.getElementById('btnCerrar');
     var backBtn = document.getElementById('btnVolverEstaciones');
 
-    if (pageContext.cajaNombre) {
-      title.textContent = 'Cierre de turno y corte de caja - ' + pageContext.cajaNombre;
+    if (pageContext.cajaNombre || pageContext.cajaCodigo) {
+      setCajaDisplay(pageContext.cajaCodigo, pageContext.cajaNombre, pageContext.cajaDescripcion);
       subtitle.textContent = 'Desde esta caja puedes generar el corte, cerrar turno e imprimir el reporte completo del cajero.';
     }
     if (pageContext.source === 'estaciones' && closeBtn) {
@@ -665,6 +695,7 @@
     }
     if (pageContext.cajaCodigo) {
       document.getElementById('cajaCodigo').value = pageContext.cajaCodigo;
+      setCajaDisplay(pageContext.cajaCodigo, pageContext.cajaNombre, pageContext.cajaDescripcion);
     }
     if (pageContext.cierreCajaID > 0) {
       automaticCierreCajaID = pageContext.cierreCajaID;
@@ -695,7 +726,9 @@
         cajaCodigoInput.value = cajaCodigo;
       }
       if (cajaNombre && !pageContext.cajaNombre) {
-        document.getElementById('pageTitle').textContent = 'Cierre de turno y corte de caja - ' + cajaNombre;
+        setCajaDisplay(cajaCodigoInput ? cajaCodigoInput.value : cajaCodigo, cajaNombre, '');
+      } else if (pageContext.cajaNombre || pageContext.cajaCodigo) {
+        setCajaDisplay(cajaCodigoInput ? cajaCodigoInput.value : pageContext.cajaCodigo, pageContext.cajaNombre, pageContext.cajaDescripcion);
       }
     } catch (_) {}
   }
@@ -749,7 +782,7 @@
     var meta = [];
     if (cfg.mostrar_fecha_hora) meta.push(['Fecha y hora', formatDateTime(payload.generado_en || resumen.hasta)]);
     if (cfg.mostrar_usuario_reporte) meta.push(['Usuario', resumen.usuario_filtro || (payload.caja_actual && payload.caja_actual.usuario) || 'Todos']);
-    meta.push(['Caja', (caja.caja_codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL')]);
+    meta.push(['Caja', cajaDisplayName(caja.caja_codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL', pageContext.cajaNombre)]);
     if (cfg.mostrar_consecutivo) meta.push(['Consecutivo', reportConsecutivo(payload)]);
     var metaHtml = meta.length ? '<section class="turno-report-panel"><h3>Datos del turno</h3><div class="turno-report-meta">' + meta.map(function(row) {
       return '<div><span>' + escapeHtml(row[0]) + '</span><strong>' + escapeHtml(row[1]) + '</strong></div>';
@@ -866,7 +899,7 @@
       { label:'Estacion', value:function(r){ return r.estacion_nombre || ('Estacion ' + r.estacion_id); } }, { label:'Sensor', key:'device_id' }, { label:'Estado', key:'estado_sensor' }, { label:'Ultima lectura', value:function(r){ return formatDateTime(r.ultima_lectura); } }, { label:'Observacion', key:'motivo' }
     ], payload.sensores_sin_factura || [], 'No hay estaciones ocupadas por sensor sin factura en este corte.');
 
-    document.getElementById('auditCaja').textContent = document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL';
+    document.getElementById('auditCaja').textContent = cajaDisplayName(document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL', pageContext.cajaNombre);
     document.getElementById('auditTurno').textContent = document.getElementById('turno').value || 'general';
     document.getElementById('auditUsuario').textContent = document.getElementById('usuario').value || 'Todos';
     document.getElementById('auditObs').textContent = document.getElementById('observaciones').value || 'Sin observaciones.';
@@ -913,6 +946,7 @@
     if (hasta) document.getElementById('hasta').value = hasta;
     if (caja.usuario || resumen.usuario_filtro) document.getElementById('usuario').value = caja.usuario || resumen.usuario_filtro;
     if (caja.caja_codigo) document.getElementById('cajaCodigo').value = caja.caja_codigo;
+    setCajaDisplay(caja.caja_codigo || document.getElementById('cajaCodigo').value, pageContext.cajaNombre, pageContext.cajaDescripcion);
     if (caja.turno) document.getElementById('turno').value = caja.turno;
     if (typeof resumen.apertura_efectivo !== 'undefined') document.getElementById('apertura').value = String(Number(resumen.apertura_efectivo || 0));
   }
@@ -1098,6 +1132,7 @@
     document.getElementById('btnCerrar').addEventListener('click', cerrarCorte);
     document.getElementById('btnCerrarImprimirSesion').addEventListener('click', function() { cerrarCorte({ logoutAfterPrint:true }); });
     document.getElementById('btnImprimir').addEventListener('click', function() { if (lastReport) { applyPrintFormat(document.getElementById('modoVista').value); renderReport(lastReport); window.print(); } });
+    document.getElementById('cajaCodigo').addEventListener('input', function() { setCajaDisplay(this.value, pageContext.cajaNombre, pageContext.cajaDescripcion); });
     document.getElementById('modoVista').addEventListener('change', function() { applyPrintFormat(this.value); reporteConfig.formato_impresion = normalizePrintFormat(this.value); if (lastReport) renderReport(lastReport); });
     document.getElementById('cajaFisica').addEventListener('input', function() { if (lastReport) updateQuickKpis(lastReport.resumen || {}); });
     document.querySelectorAll('[data-config-key]').forEach(function(box) {
