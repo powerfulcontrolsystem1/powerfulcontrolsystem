@@ -1,3 +1,8 @@
+## [2026-06-01] Nombre real de caja en estaciones
+- [UX] La tarjeta especial de Caja en `estaciones.html` ya no muestra el titulo generico `Caja`; usa el codigo y nombre configurado de la caja activa, por ejemplo `CAJA-1 - Caja principal`.
+- [UX] Si solo hay una caja activa, se oculta la lista redundante para no repetir `Caja principal`; si hay varias, se conserva la lista de seleccion.
+- [QA] Validacion sintactica del script embebido y prueba visual local con caja configurada `CAJA-1 / Caja principal`.
+
 ## [2026-06-01] Renovaciones anticipadas de licencias
 - [Licencias] Una licencia comercial pagada antes del vencimiento se agenda desde el vencimiento acumulado de la empresa y suma su duracion sin reemplazar la licencia actual.
 - [Pagos] Epayco y Wompi guardan estado de activacion por referencia para que webhooks o consultas repetidas no dupliquen dias.

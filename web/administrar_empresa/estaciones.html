@@ -848,7 +848,7 @@
         id: 'caja_' + pos,
         codigo: 'CAJA-' + pos,
         nombre: pos === 1 ? 'Caja principal' : ('Caja ' + pos),
-        descripcion: pos === 1 ? 'Caja principal' : '',
+        descripcion: '',
         activa: true
       };
     }
@@ -886,6 +886,16 @@
       const codigo = normalizeCashCode(caja.codigo || caja.caja_codigo || caja.code || 'CAJA');
       const nombre = String(caja.nombre || caja.caja_nombre || caja.name || '').trim();
       return (codigo + (nombre ? (' - ' + nombre) : '')).trim();
+    }
+
+    function cajaVisibleDescription(caja, label) {
+      const desc = String(caja && (caja.descripcion || caja.caja_descripcion || caja.description) || '').trim();
+      if (!desc) return '';
+      const normalizedDesc = desc.toLocaleLowerCase();
+      const normalizedName = String(caja && (caja.nombre || caja.caja_nombre || caja.name) || '').trim().toLocaleLowerCase();
+      const normalizedLabel = String(label || '').trim().toLocaleLowerCase();
+      if (normalizedDesc === normalizedName || normalizedLabel.includes(normalizedDesc)) return '';
+      return desc;
     }
 
     function openStationCarrito(stationID, stationName, directSaleMode) {
@@ -1490,18 +1500,20 @@
       const cajaColor = sanitize(state.colores.disponible || state.colores.inactivo || '#fff9ef');
       const cajas = activeCajasConfig(stationConfig || {});
       const firstCaja = cajas[0] || defaultCajaConfigRow(1);
+      const title = cajaDisplayLabel(firstCaja);
+      const showCajaList = cajas.length > 1;
       const cajaListHtml = cajas.map(caja => {
         const label = cajaDisplayLabel(caja);
-        const desc = String(caja.descripcion || '').trim();
+        const desc = cajaVisibleDescription(caja, label);
         return '<button type="button" class="caja-register-item" data-caja-codigo="' + sanitize(caja.codigo) + '" data-caja-nombre="' + sanitize(label) + '" data-caja-descripcion="' + sanitize(desc) + '">' +
           '<span>' + sanitize(label) + '</span>' +
           (desc ? '<small>' + sanitize(desc) + '</small>' : '') +
         '</button>';
       }).join('');
-      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" style="--station-state-bg:' + cajaColor + ';" data-estacion-id="0" data-estacion-nombre="' + sanitize(cajaDisplayLabel(firstCaja)) + '" data-caja-codigo="' + sanitize(firstCaja.codigo) + '" data-venta-simple="1" tabindex="0" role="button" aria-label="Caja">' +
+      return '<article class="portal-card station-card-inactive caja-card" id="cajaCard" style="--station-state-bg:' + cajaColor + ';" data-estacion-id="0" data-estacion-nombre="' + sanitize(title) + '" data-caja-codigo="' + sanitize(firstCaja.codigo) + '" data-venta-simple="1" tabindex="0" role="button" aria-label="' + sanitize(title) + '">' +
         '<div class="station-sensor-indicator"></div>' +
-        '<h3 class="caja-title">Caja</h3>' +
-        '<div class="caja-register-list">' + cajaListHtml + '</div>' +
+        '<h3 class="caja-title">' + sanitize(title) + '</h3>' +
+        (showCajaList ? '<div class="caja-register-list">' + cajaListHtml + '</div>' : '') +
         '<div class="caja-totals">' +
           '<div class="caja-row"><span class="caja-label">Efectivo</span><span class="caja-value" id="cajaEfectivoVal">' + formatMoney(0) + '</span></div>' +
           '<div class="caja-row"><span class="caja-label">Débito</span><span class="caja-value" id="cajaDebitoVal">' + formatMoney(0) + '</span></div>' +

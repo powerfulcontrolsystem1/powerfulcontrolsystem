@@ -1,3 +1,14 @@
+2026-06-01: nombre real de la caja en estaciones.
+- Modulos afectados: `estaciones`, `caja`, `frontend_ux`.
+- Cambio funcional: la tarjeta especial de Caja muestra el codigo y nombre de la
+  caja configurada, como `CAJA-1 - Caja principal`, en lugar del titulo generico
+  `Caja`.
+- UX: cuando solo hay una caja activa se oculta la lista de seleccion redundante,
+  evitando repetir `Caja principal`; con varias cajas la lista se mantiene para
+  escoger la caja correcta.
+- Validacion: parseo del script embebido de `web/administrar_empresa/estaciones.html`
+  y prueba visual local con configuracion simulada de `CAJA-1 / Caja principal`.
+
 2026-06-01: renovaciones anticipadas de licencias comerciales.
 - Modulos afectados: `licencias`, `pagos`, `checkout`, `epayco`, `wompi`.
 - Cambio funcional: cuando una empresa paga una licencia comercial antes del
