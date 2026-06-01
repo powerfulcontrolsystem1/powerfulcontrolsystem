@@ -11989,3 +11989,31 @@ Archivos modificados:
 - backend/handlers/usuarios_empresa.go
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+
+2026-06-01 15:46:00 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 60b97a35; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/grafologia.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/grafologia.go
+- backend/internal/grafologia/analyzer.go
+- backend/internal/grafologia/analyzer_test.go
+- backend/internal/grafologia/report.go
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- documentos/api/ayuda_apis.md
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/grafologix_arquitectura.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/grafologia.html
+- web/js/administrar_empresa.js
+- web/js/grafologia.js
