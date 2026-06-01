@@ -4608,3 +4608,4 @@
 - 2026-06-01: `Espaciado vertical de estaciones` separa el espacio horizontal y vertical de la grilla de estaciones para que las tarjetas pequenas/miniatura mantengan aire entre filas.
 - 2026-06-01: `Cliente general con mayusculas/minusculas` conserva el texto escrito en `Nombre para ventas sin cliente` al normalizar configuracion de estaciones y carrito.
 - 2026-06-01: `Usuarios operativos sin aprobacion extra` corrige `/api/empresa/usuarios` para que crear, editar, activar, reenviar invitacion o eliminar usuarios use permisos normales `seguridad:C/U/D` y auditoria, sin exigir `aprobado_por` ni `codigo_aprobacion`; la aprobacion trazable se conserva para `/api/empresa/roles_de_usuario` y `/api/empresa/permisos_empresa`.
+- 2026-06-01: `Alta de usuario tolerante a correo` ajusta `/api/empresa/usuarios` para conservar el usuario pendiente cuando falla el envio de invitacion y responder `email_sent=false`, permitiendo reenviar confirmacion sin perder el alta.

@@ -384,13 +384,14 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 			confirmURL, mailErr := sendEmpresaUsuarioConfirmationEmail(r, dbEmp, dbSuper, payload.EmpresaID, strings.TrimSpace(payload.Email), strings.TrimSpace(payload.Nombre), token, strings.TrimSpace(payload.MensajeInvitacion))
 			if mailErr != nil {
-				// Regla de negocio: si no se envía correo, no se registra usuario.
-				rollbackErr := dbpkg.DeleteEmpresaUsuario(dbEmp, payload.EmpresaID, id)
-				if rollbackErr != nil {
-					http.Error(w, "no se pudo enviar el correo de validación y tampoco revertir el usuario: "+rollbackErr.Error(), http.StatusInternalServerError)
-					return
-				}
-				http.Error(w, "no se pudo enviar el correo de validación; el usuario no fue registrado: "+mailErr.Error()+" | enlace: "+confirmURL, http.StatusBadGateway)
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"id":                          id,
+					"email_confirmation_required": true,
+					"email_sent":                  false,
+					"email_error":                 mailErr.Error(),
+					"confirm_url_preview":         confirmURL,
+				})
 				return
 			}
 

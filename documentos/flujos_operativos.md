@@ -153,6 +153,8 @@ afecte dinero, documentos, licencias o seguridad.
    Este alta operativa usa permisos `seguridad:C/U/D` y auditoria por
    `empresa_id`; no debe pedir `aprobado_por` ni `codigo_aprobacion`. Esos
    campos se reservan para cambios de roles o matriz fina de permisos.
+   Si el correo no se puede entregar, el usuario queda pendiente y la pantalla
+   debe permitir reintentar o reenviar confirmacion sin crear duplicados.
 2. El usuario abre `login_usuario.html` desde la invitacion para completar
    registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
    no hay alta publica.

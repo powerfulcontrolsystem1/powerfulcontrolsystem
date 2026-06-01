@@ -30017,3 +30017,13 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/configuracion_de_estaciones.html
 - web/estilos.css
+2026-06-01: alta de usuario tolerante a correo
+- Modulos afectados: `usuarios_empresa`, `seguridad`, `correo`.
+- Cambio funcional: si falla el envio de invitacion al crear un usuario, el
+  backend conserva el usuario pendiente y responde `email_sent=false` con el
+  detalle para que la UI muestre advertencia y permita reenviar confirmacion.
+- Seguridad/datos: el usuario no queda activo ni puede iniciar sesion hasta
+  confirmar correo o completar el flujo de invitacion; se mantiene aislamiento
+  por `empresa_id`.
+- Validacion: pendiente de prueba visual completa despues de sincronizar el
+  backend con este segundo ajuste.
