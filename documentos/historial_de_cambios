@@ -29850,3 +29850,30 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/estaciones.html
 - web/estilos.css
+
+2026-06-01: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/empresa_admin_compartida.go
+- backend/handlers/empresa_compartida_handlers.go
+- backend/handlers/empresa_compartida_handlers_test.go
+- backend/handlers/licencias_codigos_descuento.go
+- backend/handlers/licencias_codigos_descuento_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/selector_admin_scope_test.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/empresas_compartidas.html
+- web/js/editar_empresa.js
+- web/js/seleccionar_empresa.js
+- web/js/super_administrador.js
+- web/pagar_licencia.html
+- web/super/licencias_codigos_descuento.html
+- web/super_administrador.html
