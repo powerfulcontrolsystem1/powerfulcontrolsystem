@@ -489,8 +489,10 @@
             <input id="productoPrecio" class="form-input" type="number" step="0.01" min="0" value="0">
           </div>
           <div class="form-col">
-            <label class="form-label" for="productoImpuesto">Impuesto %</label>
-            <input id="productoImpuesto" class="form-input" type="number" step="0.01" min="0" value="0">
+            <label class="form-label" for="productoImpuesto">Impuesto</label>
+            <select id="productoImpuesto" class="form-input">
+              <option value="0">Sin impuesto / exento (0%)</option>
+            </select>
           </div>
         </div>
 
@@ -1246,6 +1248,8 @@
       proveedores: [],
       proveedoresLoaded: false,
       categoriasProductos: [],
+      impuestos: [],
+      impuestosLoaded: false,
       servicios: [],
       alertasInventario: [],
       inventarioConfiguracion: null,
@@ -1321,6 +1325,81 @@
     function num(v) {
       const n = Number(v);
       return Number.isFinite(n) ? n : 0;
+    }
+
+    function formatProductoTaxPercent(value) {
+      const n = num(value);
+      try {
+        return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n) + '%';
+      } catch (_) {
+        return String(n) + '%';
+      }
+    }
+
+    function productoTaxKey(value) {
+      return num(value).toFixed(4);
+    }
+
+    function normalizeProductoImpuestoItem(item) {
+      const tasa = num(item && (item.tasa_porcentaje != null ? item.tasa_porcentaje : item.porcentaje));
+      return {
+        codigo: String(item && item.codigo || '').toUpperCase().trim(),
+        nombre: String(item && item.nombre || '').trim(),
+        tipo: String(item && item.tipo || 'impuesto').toLowerCase().trim(),
+        aplica_en: String(item && item.aplica_en || 'ventas').toLowerCase().trim(),
+        estado: String(item && item.estado || 'activo').toLowerCase().trim(),
+        habilitado: Number((item && item.habilitado != null) ? item.habilitado : 1),
+        tasa_porcentaje: tasa
+      };
+    }
+
+    function isProductoImpuestoSeleccionable(item) {
+      const imp = normalizeProductoImpuestoItem(item);
+      const aplica = imp.aplica_en || 'ventas';
+      return imp.tipo === 'impuesto'
+        && imp.estado !== 'inactivo'
+        && imp.habilitado === 1
+        && (aplica === 'ventas' || aplica === 'ambos');
+    }
+
+    function mergeProductoImpuestos(configurados, catalogoBase) {
+      const source = Array.isArray(configurados) && configurados.length ? configurados : (catalogoBase || []);
+      const byRate = {};
+      source
+        .filter(isProductoImpuestoSeleccionable)
+        .map(normalizeProductoImpuestoItem)
+        .forEach(item => {
+          const key = productoTaxKey(item.tasa_porcentaje);
+          if (!byRate[key]) byRate[key] = item;
+        });
+      return Object.keys(byRate)
+        .map(key => byRate[key])
+        .sort((a, b) => num(a.tasa_porcentaje) - num(b.tasa_porcentaje));
+    }
+
+    function refreshProductoImpuestoSelector(selectedValue) {
+      const select = document.getElementById('productoImpuesto');
+      if (!select) return;
+      const selected = num(selectedValue);
+      const options = [
+        { codigo: 'SIN_IMPUESTO', nombre: 'Sin impuesto / exento', tasa_porcentaje: 0 }
+      ];
+      (state.impuestos || []).forEach(item => {
+        const exists = options.some(opt => productoTaxKey(opt.tasa_porcentaje) === productoTaxKey(item.tasa_porcentaje));
+        if (!exists) options.push(item);
+      });
+      const selectedExists = options.some(opt => productoTaxKey(opt.tasa_porcentaje) === productoTaxKey(selected));
+      if (!selectedExists) {
+        options.push({ codigo: 'GUARDADO', nombre: 'Impuesto guardado', tasa_porcentaje: selected });
+      }
+      select.innerHTML = options.map(item => {
+        const tasa = num(item.tasa_porcentaje);
+        const isSelected = productoTaxKey(tasa) === productoTaxKey(selected) ? ' selected' : '';
+        const code = item.codigo ? (String(item.codigo).toUpperCase().trim() + ' - ') : '';
+        const label = code + (item.nombre || 'Impuesto') + ' (' + formatProductoTaxPercent(tasa) + ')';
+        return '<option value="' + sanitize(tasa) + '"' + isSelected + '>' + sanitize(label) + '</option>';
+      }).join('');
+      select.value = String(selected);
     }
 
     function normalizeProductoCamposObligatorios(raw) {
@@ -1640,6 +1719,9 @@
       } catch (err) {
         reportOpenFormError('No se pudo limpiar el formulario de producto', err);
       }
+      loadProductoImpuestos(false).catch(function(err) {
+        try { console.warn('No se pudieron refrescar impuestos antes de abrir producto:', err); } catch (_) {}
+      });
       const title = document.getElementById('productoFormTitle');
       if (title) title.textContent = 'Nuevo producto';
       openCRUDForm('productoForm', 'productoNombre');
@@ -1692,6 +1774,22 @@
       } catch (e) {
         document.getElementById('empresaInfo').textContent = 'Empresa no disponible';
       }
+    }
+
+    async function loadProductoImpuestos(force) {
+      if (!empresaId) return [];
+      if (state.impuestosLoaded && !force) return state.impuestos;
+      try {
+        const data = await requestJSON('/api/empresa/impuestos?action=context&empresa_id=' + encodeURIComponent(empresaId));
+        state.impuestos = mergeProductoImpuestos(data && data.configurados, data && data.catalogo_base);
+        state.impuestosLoaded = true;
+      } catch (err) {
+        state.impuestos = [];
+        state.impuestosLoaded = true;
+        try { console.warn('No se pudieron cargar impuestos configurados para productos:', err); } catch (_) {}
+      }
+      refreshProductoImpuestoSelector(Number(document.getElementById('productoImpuesto')?.value || 0));
+      return state.impuestos;
     }
 
     async function loadBodegas() {
@@ -2278,7 +2376,7 @@
       document.getElementById('productoUnidad').value = p ? (p.unidad_medida || '') : '';
       document.getElementById('productoCosto').value = p ? num(p.costo) : 0;
       document.getElementById('productoPrecio').value = p ? num(p.precio) : 0;
-      document.getElementById('productoImpuesto').value = p ? num(p.impuesto_porcentaje) : 0;
+      refreshProductoImpuestoSelector(p ? num(p.impuesto_porcentaje) : 0);
       document.getElementById('productoStockMin').value = p ? num(p.stock_minimo) : 0;
       document.getElementById('productoStockMax').value = p ? num(p.stock_maximo) : 0;
       document.getElementById('productoStockInicial').value = 0;
@@ -2436,6 +2534,7 @@
     async function accionProducto(action, id, activo) {
       if (action === 'edit-producto') {
         const p = state.productos.find(x => Number(x.id) === Number(id));
+        await loadProductoImpuestos(false);
         fillProductoForm(p || null);
         const title = document.getElementById('productoFormTitle');
         if (title) title.textContent = 'Editar Producto';
@@ -3891,6 +3990,7 @@
       await loadBodegas();
       await loadCategoriasProductos();
       if (viewMode === 'productos') {
+        await loadProductoImpuestos();
         await loadInventarioConfiguracion();
         await loadProductos();
         await loadServicios();

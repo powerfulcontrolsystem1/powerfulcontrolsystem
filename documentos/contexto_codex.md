@@ -57,6 +57,9 @@ botones, desde handlers estaticos del backend.
   Si el correo no existe se registra por invitacion con token; si ya existe y
   esta confirmado se usa `admin_principal_delegaciones` para que vea sus empresas
   propias mas las empresas compartidas, sin cambiar `usuario_creador`.
+  Desde el panel global de super administrador, intentar agregar un correo ya
+  confirmado no debe fallar con 409: responde OK, evita duplicar la cuenta y solo
+  actualiza nombre/rol cuando el actor tiene permisos super suficientes.
   El selector de empresas debe resolver alcance efectivo por cuatro caminos:
   propietario por `usuario_creador`, delegado del principal, empresa compartida
   con el administrador y empresa que el administrador compartio con otro usuario;
@@ -132,7 +135,11 @@ botones, desde handlers estaticos del backend.
   paginas bajo `web/administrar_empresa/configuracion/`. La configuracion de
   `Campos obligatorios para productos` vive en Configuracion > Productos y
   pedidos y guarda en `/api/empresa/inventario/configuracion`; el modulo de
-  productos solo la consume para validar y marcar campos del formulario.
+  productos solo la consume para validar y marcar campos del formulario. El
+  impuesto del formulario de productos se elige desde un selector construido con
+  `/api/empresa/impuestos?action=context`; solo muestra impuestos habilitados
+  para ventas/ambos de la empresa y guarda el porcentaje en
+  `productos.impuesto_porcentaje`.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
   `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
   Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de
@@ -143,6 +150,9 @@ botones, desde handlers estaticos del backend.
   `/api/empresa/carritos_compra`, `/api/empresa/carritos_compra/items`.
   Venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0`,
   comparte la UI unificada de estaciones y tiene boton de pantalla completa.
+  Las cantidades de items en carrito son numeros naturales positivos: el
+  frontend usa `min=1`/`step=1` y el backend rechaza cero, negativos, decimales o
+  valores no finitos antes de tocar inventario.
   Los productos y recetas descuentan/reservan inventario en tiempo real al
   agregarse al carrito mediante `carrito_compra_items`; el pago no debe volver a
   descontar stock. El cierre `action=pagar_estacion` debe ser idempotente en

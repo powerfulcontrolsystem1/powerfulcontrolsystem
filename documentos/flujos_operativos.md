@@ -190,6 +190,9 @@ afecte dinero, documentos, licencias o seguridad.
    del carrito.
 3. El cajero agrega productos/servicios/recetas, cliente opcional u obligatorio,
    abonos y pagos mixtos.
+   Las cantidades de items deben ser numeros naturales positivos (`1, 2, 3...`);
+   el backend rechaza decimales, cero y negativos aunque se manipule el
+   navegador o la API.
 4. La venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` y
    puede abrirse en pantalla completa desde el boton de la parte superior; el
    mismo boton cambia a `Salir` y vuelve a la vista normal.

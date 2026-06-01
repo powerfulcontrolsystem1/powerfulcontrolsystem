@@ -1,3 +1,35 @@
+2026-06-01: cantidades naturales positivas en carrito.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`,
+  `inventario`.
+- Cambio funcional: los campos de cantidad del carrito manual y del lector de
+  codigo de barras ahora usan enteros positivos (`min=1`, `step=1`) y el
+  frontend valida que solo se envien numeros naturales.
+- Backend: `/api/empresa/carritos_compra/items` rechaza cantidades cero,
+  negativas, decimales, infinitas o invalidas; `CreateCarritoCompraItem` y
+  `UpdateCarritoCompraItem` refuerzan la misma regla para flujos internos y modo
+  offline.
+- Seguridad/datos: se mantiene aislamiento por `empresa_id`; la validacion no
+  depende del navegador y protege inventario, kardex y reservas concurrentes.
+- Validacion: `go test ./handlers -run "TestValidateCarritoItemPayloadRequiresNaturalPositiveQuantity|TestEmpresaCarritos|TestCarrito" -count=1`,
+  `go test ./db -run "Test.*Carrito" -count=1`, parseo de scripts embebidos del
+  carrito y `git diff --check`.
+
+2026-06-01: invitacion de administrador existente en panel super.
+- Modulos afectados: `super_administrador`, `administradores_delegados`,
+  `autenticacion_admin`.
+- Cambio funcional: `/super/api/administradores` ya no responde 409 cuando el
+  panel super intenta invitar un correo que ya existe y ya confirmo su cuenta;
+  devuelve `ok=true` con mensaje claro, y si un super administrador asigna un rol
+  diferente desde esa misma accion, actualiza el rol con validaciones de rol
+  super.
+- Seguridad: un contralor super no puede asignar roles super ni modificar
+  contralores; el super administrador principal conserva proteccion de rol.
+- UX: `web/super/administradores.html` interpreta errores JSON y muestra el
+  texto humano en vez del objeto crudo.
+- Validacion: `go test ./handlers -run "TestAdministradoresEffectivePrincipalScopeForScopedSuperRequest|TestFilterAdministradoresForPrincipalScopeExcludesPrincipal|TestValidatePendingAdminInvitationToken" -count=1`,
+  parseo de script embebido de `web/super/administradores.html` y
+  `git diff --check`.
+
 2026-06-01: campos obligatorios de productos movidos a configuracion.
 - Modulos afectados: `configuracion_empresa`, `inventario_productos`.
 - Cambio funcional: la tarjeta `Campos obligatorios para productos` se retira de
@@ -29903,3 +29935,22 @@ Archivos modificados:
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/configuracion.html
 - web/administrar_empresa/configuracion/productos_pedidos.html
+
+2026-06-01: productos usan selector de impuestos configurados
+Archivos modificados:
+- web/administrar_empresa/administrar_productos.html
+- documentos/contexto_codex.md
+- documentos/mapa_modulos.md
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- CHANGELOG.md
+Detalle:
+- El campo `Impuesto` del formulario de productos cambia de numero libre a selector.
+- El selector consume `/api/empresa/impuestos?action=context` con `empresa_id`, toma impuestos activos aplicables a ventas/ambos y conserva el guardado existente en `impuesto_porcentaje`.
+- Si no hay impuestos configurados o el producto trae una tasa historica no listada, el formulario mantiene una opcion segura para no perder el valor.
+Validacion:
+- Parseo de scripts embebidos de `web/administrar_empresa/administrar_productos.html`.
+- `go test ./handlers -run "Test.*Impuestos|Test.*Producto" -count=1` desde `backend`.
+- `go test ./db -run "Test.*Impuesto|Test.*Producto" -count=1` desde `backend`.
+- `git diff --check`.
+- Intento visual en `http://127.0.0.1:8896/administrar_empresa/administrar_productos.html?empresa_id=7&view=productos`; el servidor local sirvio la pantalla de login para esa ruta protegida, por lo que la comprobacion visual autenticada quedo pendiente.

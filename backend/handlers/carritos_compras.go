@@ -2684,8 +2684,8 @@ func validateCarritoItemPayload(payload dbpkg.CarritoCompraItem) error {
 	if strings.TrimSpace(payload.Descripcion) == "" {
 		return fmt.Errorf("descripcion es obligatoria")
 	}
-	if payload.Cantidad <= 0 {
-		return fmt.Errorf("cantidad debe ser mayor a cero")
+	if !isNaturalCarritoQuantity(payload.Cantidad) {
+		return fmt.Errorf("cantidad debe ser un numero natural positivo")
 	}
 	if payload.PrecioUnitario < 0 {
 		return fmt.Errorf("precio_unitario invalido")
@@ -2695,6 +2695,10 @@ func validateCarritoItemPayload(payload dbpkg.CarritoCompraItem) error {
 		return fmt.Errorf("referencia_id es obligatoria para tipo_item receta")
 	}
 	return nil
+}
+
+func isNaturalCarritoQuantity(value float64) bool {
+	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= 1 && math.Trunc(value) == value
 }
 
 func roundMoneyCarritoHandler(v float64) float64 {

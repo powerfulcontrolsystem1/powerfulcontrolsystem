@@ -19,6 +19,13 @@ var (
 
 var ErrCarritoYaPagado = fmt.Errorf("carrito ya pagado o cerrado")
 
+func validateCarritoCompraItemCantidadNatural(cantidad float64) error {
+	if math.IsNaN(cantidad) || math.IsInf(cantidad, 0) || cantidad < 1 || math.Trunc(cantidad) != cantidad {
+		return fmt.Errorf("cantidad debe ser un numero natural positivo")
+	}
+	return nil
+}
+
 var legacyUserVisibleTextReplacer = strings.NewReplacer(
 	"Estaci\u00c3\u00b3n", "Estaci\u00f3n",
 	"Estaci\u00c3\u0192\u00c2\u00b3n", "Estaci\u00f3n",
@@ -2486,6 +2493,9 @@ func ListCarritoStationMetricSummary(dbConn *sql.DB, empresaID, estacionID int64
 
 // CreateCarritoCompraItem crea un item y recalcula totales del carrito.
 func CreateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) (int64, error) {
+	if err := validateCarritoCompraItemCantidadNatural(payload.Cantidad); err != nil {
+		return 0, err
+	}
 	payload.TipoItem = defaultTipoItem(payload.TipoItem)
 	payload.UnidadMedida = defaultUnidadCarrito(payload.UnidadMedida)
 	payload.ImpuestoCodigo = defaultImpuestoCodigo(payload.ImpuestoCodigo)
@@ -2654,6 +2664,9 @@ func GetCarritoCompraItems(dbConn *sql.DB, empresaID, carritoID int64, includeIn
 
 // UpdateCarritoCompraItem actualiza un item del carrito y recalcula totales.
 func UpdateCarritoCompraItem(dbConn *sql.DB, payload CarritoCompraItem) error {
+	if err := validateCarritoCompraItemCantidadNatural(payload.Cantidad); err != nil {
+		return err
+	}
 	payload.TipoItem = defaultTipoItem(payload.TipoItem)
 	payload.UnidadMedida = defaultUnidadCarrito(payload.UnidadMedida)
 	payload.ImpuestoCodigo = defaultImpuestoCodigo(payload.ImpuestoCodigo)

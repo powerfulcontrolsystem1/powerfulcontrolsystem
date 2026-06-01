@@ -1,3 +1,15 @@
+2026-06-01: Cantidades naturales positivas en carrito
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `inventario` y `modo_offline`.
+- Cambio funcional: los campos de cantidad del carrito solo aceptan enteros positivos, evitando cantidades decimales, negativas o en cero.
+- Backend: `/api/empresa/carritos_compra/items` valida la regla antes de crear o actualizar y la capa `db` la repite para flujos internos/offline.
+- Impacto: inventario, reservas, kardex y totales quedan calculados con unidades naturales.
+
+2026-06-01: Invitacion de administrador existente en panel super
+- Modulos afectados: `super_administrador`, `administradores_delegados` y `autenticacion_admin`.
+- Cambio funcional: desde `web/super/administradores.html`, si se intenta agregar un correo que ya existe y tiene cuenta confirmada, `/super/api/administradores` responde OK con mensaje claro en vez de 409.
+- Roles: si el actor es super administrador y selecciona un rol distinto, se actualiza el rol del administrador existente con protecciones para roles super y contralores.
+- UX: la pagina muestra errores JSON como texto legible, evitando presentar el objeto tecnico completo al usuario.
+
 2026-05-31: Licencia del sistema descargable por empresa
 - Modulos afectados: `licencias`, `administrar_empresa`, `permisos_empresa` y `mensajeria_super`.
 - Cambio funcional: Administrar empresa incorpora el grupo principal `Licencia` con la pagina `Licencia del sistema`.
@@ -238,6 +250,12 @@
 - Funciones: nueva tarjeta de checks para SKU, codigo de barras, categoria, marca, unidad, costo, precio, impuesto, stocks, bodega, proveedor, imagen, descripcion, observaciones, vencimiento, dias de alerta y lote. El nombre sigue siendo obligatorio fijo.
 - Backend: `/api/empresa/inventario/configuracion` persiste `producto_campos_obligatorios` en `empresa_inventario_configuracion.producto_campos_obligatorios_json`; `POST/PUT /api/empresa/productos` valida la regla por `empresa_id` antes de guardar.
 - Seguridad: se conserva permiso `inventario`, aislamiento por `empresa_id` y validacion tambien del lado servidor para que la regla no dependa solo del formulario.
+
+2026-06-01: Selector de impuesto configurado en productos
+- Proposito: al crear o editar un producto, el impuesto ya no se escribe manualmente sino que se elige desde la configuracion tributaria de la empresa.
+- Frontend: `web/administrar_empresa/administrar_productos.html` carga `/api/empresa/impuestos?action=context&empresa_id=...`, filtra impuestos activos de tipo `impuesto` aplicables a ventas o ambos, y muestra un selector con `Sin impuesto / exento`.
+- Persistencia: se mantiene el contrato existente de productos guardando `impuesto_porcentaje`, sin agregar columnas ni dependencias; si un producto antiguo tiene una tasa no configurada, el formulario conserva esa tasa como `Impuesto guardado`.
+- Seguridad: la lista se obtiene por `empresa_id` y reutiliza el endpoint protegido de impuestos, manteniendo aislamiento multiempresa.
 
 2026-05-28: Auditoria especial del panel super administrador
 - Proposito: registrar acciones de usuarios super administradores dentro de `super_administrador.html` y sus paginas internas criticas.

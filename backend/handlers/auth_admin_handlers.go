@@ -1718,8 +1718,8 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, "rol invalido", http.StatusBadRequest)
 				return
 			}
-			if payload.Role == utils.SuperControlRole && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
-				http.Error(w, "solo un super administrador puede crear contralores super", http.StatusForbidden)
+			if (payload.Role == "super_administrador" || payload.Role == utils.SuperControlRole) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+				http.Error(w, "solo un super administrador puede asignar roles super", http.StatusForbidden)
 				return
 			}
 			var existingAdmin *dbpkg.Admin
@@ -1731,7 +1731,46 @@ func AdministradoresHandler(dbSuper *sql.DB) http.HandlerFunc {
 			} else if existing != nil && existing.ID > 0 {
 				if existing.EmailConfirmado == 1 {
 					if principalEmail == "" {
-						http.Error(w, "el administrador ya existe y ya confirmo su cuenta", http.StatusConflict)
+						roleChanged := !strings.EqualFold(strings.TrimSpace(existing.Role), payload.Role)
+						nameForUpdate := strings.TrimSpace(existing.Name)
+						if payload.Name != "" {
+							nameForUpdate = payload.Name
+						}
+						nameChanged := payload.Name != "" && !strings.EqualFold(strings.TrimSpace(existing.Name), payload.Name)
+						if roleChanged || nameChanged {
+							if utils.AdminShouldUseSuperRole(existing.Email) && !utils.AdminShouldUseSuperRole(requesterAdmin.Email) {
+								http.Error(w, "no se permite cambiar el rol del super administrador principal", http.StatusForbidden)
+								return
+							}
+							if utils.IsSuperControlRole(existing.Role) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+								http.Error(w, "solo un super administrador puede cambiar contralores super", http.StatusForbidden)
+								return
+							}
+							if (payload.Role == "super_administrador" || payload.Role == utils.SuperControlRole) && !utils.IsSuperAdministradorRole(requesterAdmin.Role) {
+								http.Error(w, "solo un super administrador puede asignar roles super", http.StatusForbidden)
+								return
+							}
+							if err := dbpkg.UpdateAdministrador(dbSuper, existing.ID, nameForUpdate, payload.Role); err != nil {
+								http.Error(w, "failed to update existing administrador: "+err.Error(), http.StatusInternalServerError)
+								return
+							}
+						}
+						message := "El administrador ya existe y su cuenta esta confirmada. No se envio una nueva invitacion."
+						if roleChanged {
+							message = "El administrador ya existe y su cuenta esta confirmada. Se actualizo su rol dentro del panel super administrador."
+						} else if nameChanged {
+							message = "El administrador ya existe y su cuenta esta confirmada. Se actualizo su nombre."
+						}
+						resp := map[string]interface{}{
+							"ok":                true,
+							"admin_exists":      true,
+							"already_confirmed": true,
+							"role_changed":      roleChanged,
+							"name_changed":      nameChanged,
+							"message":           message,
+						}
+						w.Header().Set("Content-Type", "application/json")
+						json.NewEncoder(w).Encode(resp)
 						return
 					}
 					if _, err := dbpkg.UpsertAdminPrincipalDelegacionActiva(dbSuper, existing.Email, principalEmail, strings.TrimSpace(requesterAdmin.Email)); err != nil {

@@ -150,7 +150,7 @@
           </div>
           <div class="form-col maxw-180">
             <label class="form-label" for="scannerCantidad">Cantidad</label>
-            <input id="scannerCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1">
+            <input id="scannerCantidad" type="number" min="1" step="1" inputmode="numeric" pattern="[0-9]*" class="form-input" value="1">
           </div>
           <div class="form-col maxw-180 flex-end">
             <button type="button" id="scannerAgregarBtn" class="btn secondary w-full">Agregar</button>
@@ -635,7 +635,7 @@
         <div class="form-row">
           <div class="form-col">
             <label class="form-label">Cantidad</label>
-            <input id="itemCantidad" type="number" min="0.01" step="0.01" class="form-input" value="1" required>
+            <input id="itemCantidad" type="number" min="1" step="1" inputmode="numeric" pattern="[0-9]*" class="form-input" value="1" required>
           </div>
           <div class="form-col">
             <label class="form-label">Precio unitario</label>
@@ -847,6 +847,24 @@
       const n = Number(val);
       if (!Number.isFinite(n)) return fallback;
       return n;
+    }
+
+    function isNaturalQuantityValue(val) {
+      const n = Number(val);
+      return Number.isFinite(n) && Number.isInteger(n) && n >= 1;
+    }
+
+    function toNaturalQuantity(val, fallback) {
+      const n = Number(val);
+      if (!Number.isFinite(n)) return fallback;
+      const qty = Math.trunc(n);
+      return qty >= 1 ? qty : fallback;
+    }
+
+    function enforceNaturalQuantityInput(input) {
+      if (!input || input.value === '') return;
+      const qty = toNaturalQuantity(input.value, 1);
+      input.value = String(qty);
     }
 
     function normalize(v) {
@@ -5703,13 +5721,14 @@
 
       const codeRaw = document.getElementById('scannerCodigo').value;
       const scanCode = normalizeScanCode(codeRaw);
-      const qty = toNumber(document.getElementById('scannerCantidad').value, 1);
+      const qtyRaw = document.getElementById('scannerCantidad').value;
+      const qty = toNaturalQuantity(qtyRaw, 0);
       if (!scanCode) {
         setScannerMessage('Escanea o digita un código de barras o SKU válido.', true);
         return;
       }
-      if (qty <= 0) {
-        setScannerMessage('La cantidad debe ser mayor que cero.', true);
+      if (!isNaturalQuantityValue(qtyRaw)) {
+        setScannerMessage('La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
         return;
       }
 
@@ -5728,7 +5747,7 @@
           codigo_item: normalize(producto.codigo_barras) || normalize(producto.sku),
           descripcion: normalize(producto.nombre) || 'Producto',
           unidad_medida: normalize(producto.unidad_medida) || 'unidad',
-          cantidad: Number(qty),
+          cantidad: qty,
           precio_unitario: Number(producto.precio || 0),
           descuento_porcentaje: 0,
           impuesto_porcentaje: Number(producto.impuesto_porcentaje || 0),
@@ -5738,7 +5757,7 @@
 
         const shouldAccumulate = caps.accumulate && !!existing;
         if (shouldAccumulate) {
-          payload.cantidad = Number(existing.cantidad || 0) + Number(qty);
+          payload.cantidad = toNaturalQuantity(existing.cantidad || 0, 0) + qty;
           payload.precio_unitario = Number(existing.precio_unitario || payload.precio_unitario);
           payload.descuento_porcentaje = Number(existing.descuento_porcentaje || 0);
           payload.impuesto_porcentaje = Number(existing.impuesto_porcentaje || payload.impuesto_porcentaje);
@@ -7827,7 +7846,7 @@
           document.getElementById('itemCodigo').value = normalize(item.codigo_item);
           document.getElementById('itemDescripcion').value = normalize(item.descripcion);
           document.getElementById('itemUnidad').value = normalize(item.unidad_medida) || 'unidad';
-          document.getElementById('itemCantidad').value = Number(item.cantidad || 1);
+          document.getElementById('itemCantidad').value = String(toNaturalQuantity(item.cantidad || 1, 1));
           document.getElementById('itemPrecio').value = Number(item.precio_unitario || 0);
           document.getElementById('itemDescuentoPct').value = Number(item.descuento_porcentaje || 0);
           document.getElementById('itemImpuestoPct').value = Number(item.impuesto_porcentaje || 0);
@@ -8314,6 +8333,12 @@
         return;
       }
 
+      const cantidadRaw = document.getElementById('itemCantidad').value;
+      if (!isNaturalQuantityValue(cantidadRaw)) {
+        setMessage('itemMsg', 'La cantidad debe ser un número natural positivo: 1, 2, 3...', true);
+        return;
+      }
+
       const id = Number(document.getElementById('itemId').value || 0);
       const payload = {
         id: id,
@@ -8324,7 +8349,7 @@
         codigo_item: normalize(document.getElementById('itemCodigo').value),
         descripcion: normalize(document.getElementById('itemDescripcion').value),
         unidad_medida: normalize(document.getElementById('itemUnidad').value) || 'unidad',
-        cantidad: toNumber(document.getElementById('itemCantidad').value, 1),
+        cantidad: toNaturalQuantity(cantidadRaw, 1),
         precio_unitario: toNumber(document.getElementById('itemPrecio').value, 0),
         descuento_porcentaje: toNumber(document.getElementById('itemDescuentoPct').value, 0),
         impuesto_porcentaje: toNumber(document.getElementById('itemImpuestoPct').value, 0),
@@ -8332,8 +8357,8 @@
         observaciones: normalize(document.getElementById('itemObservaciones').value)
       };
 
-      if (!payload.descripcion || payload.cantidad <= 0 || payload.precio_unitario < 0) {
-        setMessage('itemMsg', 'Descripción, cantidad y precio deben ser válidos', true);
+      if (!payload.descripcion || payload.precio_unitario < 0) {
+        setMessage('itemMsg', 'Descripción y precio deben ser válidos', true);
         return;
       }
 
@@ -8686,6 +8711,19 @@
       if (e.key !== 'Enter') return;
       e.preventDefault();
       processScannerInput();
+    });
+
+    ['scannerCantidad', 'itemCantidad'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function() {
+        enforceNaturalQuantityInput(el);
+      });
+      el.addEventListener('blur', function() {
+        if (!isNaturalQuantityValue(el.value)) {
+          el.value = '1';
+        }
+      });
     });
 
     ['discountType', 'discountValue', 'discountCode', 'devolucionMonto', 'paymentMethod', 'paymentReference', 'activeCashRegister', 'applyTipCheckbox', 'commissionWorker'].forEach(function(id) {
