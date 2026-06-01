@@ -30027,3 +30027,11 @@ Archivos modificados:
   por `empresa_id`.
 - Validacion: pendiente de prueba visual completa despues de sincronizar el
   backend con este segundo ajuste.
+
+2026-06-01: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios

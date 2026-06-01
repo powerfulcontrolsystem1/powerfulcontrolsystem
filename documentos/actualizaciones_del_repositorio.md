@@ -11982,3 +11982,10 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/configuracion_de_estaciones.html
 - web/estilos.css
+
+2026-06-01 15:07:14 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ad5d6789; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
