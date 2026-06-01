@@ -23,7 +23,7 @@
       <section class="api-help-hero">
         <p class="form-help m-0">Ayuda tecnica</p>
         <h1>Ayuda de APIs</h1>
-        <p class="form-help">Guia para consumir, documentar y revisar las APIs de Powerful Control System sin romper seguridad multiempresa, permisos, licencias, auditoria ni reglas de negocio.</p>
+        <p class="form-help">Guia para consumir, documentar y revisar las APIs de Powerful Control System sin romper seguridad multiempresa, permisos, licencias, auditoria ni reglas de negocio. Actualizada el 2026-06-01 con energia solar, roles por modulo y checkout de licencias.</p>
         <div class="form-actions">
           <a class="btn secondary" href="/ayuda/ayuda.html#apis">Volver al centro de ayuda</a>
           <a class="btn" href="/seleccionar_empresa.html">Seleccionar empresa</a>
@@ -67,6 +67,22 @@ GET /api/empresa/carritos_compra/items?empresa_id=7&amp;carrito_id=123&amp;inclu
 POST /api/empresa/carritos_compra/items
 POST /api/empresa/carritos_compra?action=pagar_estacion</code>
         <p class="form-help mt-8">Para estaciones, enviar <code>estacion_id</code> cuando aplique. Para venta directa, usar <code>modo=venta_directa</code> y <code>perm_page=linkVentaDirecta</code>. El backend debe conservar caja, usuario, abonos, inventario y auditoria por <code>empresa_id</code>.</p>
+      </section>
+
+      <section class="api-help-card">
+        <h2>Energia solar</h2>
+        <p class="form-help">Modulo empresarial independiente para sistemas solares, baterias, BMS, inversores, alertas y eventos. Usa permisos <code>energia_solar</code>, pagina <code>linkEnergiaSolar</code> y wrapper empresarial.</p>
+        <code class="api-help-code">GET /api/empresa/energia_solar?empresa_id=7&amp;action=dashboard
+GET /api/empresa/energia_solar?empresa_id=7&amp;action=catalogo
+GET /api/empresa/energia_solar?empresa_id=7&amp;action=sistemas
+GET /api/empresa/energia_solar?empresa_id=7&amp;action=alertas&amp;sistema_id=1
+GET /api/empresa/energia_solar?empresa_id=7&amp;action=lecturas&amp;sistema_id=1&amp;limit=120
+GET /api/empresa/energia_solar?empresa_id=7&amp;action=eventos&amp;sistema_id=1&amp;limit=80
+POST /api/empresa/energia_solar?empresa_id=7&amp;action=sistema
+POST /api/empresa/energia_solar?empresa_id=7&amp;action=alerta
+POST /api/empresa/energia_solar?empresa_id=7&amp;action=lectura
+POST /api/empresa/energia_solar?empresa_id=7&amp;action=probar_alerta&amp;sistema_id=1</code>
+        <p class="form-help mt-8">El rol <code>tecnico_solar</code> solo consulta. Los proveedores base son Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y gateway local; las llaves reales se referencian como <code>env:VARIABLE</code>.</p>
       </section>
 
       <section class="api-help-card">

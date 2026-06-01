@@ -3,6 +3,29 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-01 (energia solar en preconfiguraciones y permisos)
+- `tipo_empresa_preconfiguraciones.config_json` incluye `modulos.energia_solar`
+  como bloque opcional apagado por defecto para empresas nuevas y
+  preconfiguraciones existentes.
+- El bloque solar guarda catalogo guia de proveedores, baterias, alertas,
+  intervalo de lectura y roles relacionados; no crea tablas super nuevas.
+- `roles_de_usuario` conserva `tecnico_solar` como rol base y
+  `roles_de_usuario_permisos` le asigna `energia_solar:R`.
+- Las licencias nuevas deben usar clave de modulo `energia_solar`; el fallback
+  a `control_electrico` o `seguridad` queda solo para compatibilidad de
+  licencias antiguas.
+
+Actualizacion 2026-06-01 (renovaciones anticipadas de licencias)
+- `pcs_superadministrador.licencias`: una renovacion comercial pagada antes del
+  vencimiento se almacena como nueva fila activa programada con `fecha_inicio`
+  igual al vencimiento acumulado mas lejano de la empresa y `fecha_fin` sumando
+  la duracion del plan comprado. La licencia actual no se reemplaza ni se acorta.
+- `pcs_superadministrador.pagos_epayco` y `pcs_superadministrador.pagos_wompi`
+  agregan `licencia_activation_status`, `licencia_activada_id` y
+  `licencia_activada_en` para idempotencia de activacion. Una misma referencia
+  aprobada no puede sumar dias dos veces si el usuario consulta varias veces o
+  la pasarela reenvia el webhook.
+
 Actualizacion 2026-05-31 (catalogo global de licencias)
 - `pcs_superadministrador.licencias`: el catalogo base comercial queda normalizado en cuatro planes globales con `tipo_id=0` y `pais_codigo='GLOBAL'`: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.
 - Las licencias heredadas sin empresa asignada, incluidos addons de catalogo, que no correspondan a esos codigos globales se eliminan del catalogo para no exponer ni conservar planes duplicados por tipo de empresa.
@@ -121,6 +144,12 @@ Actualizacion 2026-05-27 (informacion editable de modulos del index)
 - Se reutiliza `pcs_superadministrador.configuraciones` con las claves `super.informacion_modulos.v1` y `super.informacion_modulos.v1.updated_by`.
 - El valor principal guarda JSON editorial con `titulo`, `modulos[].titulo`, `modulos[].icono_url` y `modulos[].caracteristicas`.
 - La API publica solo lee la configuracion normalizada y el super administrador es el unico rol que puede guardar cambios.
+
+Actualizacion 2026-05-31 (noticias del portal)
+- No se agregan tablas ni columnas fisicas.
+- Se reutiliza `pcs_superadministrador.configuraciones` con las claves `super.noticias_portal.v1` y `super.noticias_portal.v1.updated_by`.
+- El JSON guarda `titulo`, `subtitulo`, `portada_url`, `perfil_url`, `nombre_pagina`, `usuario`, `descripcion` y `noticias[]` con titulo, resumen, contenido, categoria, fecha, imagen, fuente, etiquetas, destacada y activa.
+- `/api/public/noticias` expone solo noticias activas; `/super/api/noticias` exige rol super administrador para guardar.
 
 Actualizacion 2026-05-27 (alertas de registros administrativos y empresas nuevas)
 - `super_alertas_config`: se agregan `admin_register_enabled INTEGER DEFAULT 1` y `empresa_nueva_enabled INTEGER DEFAULT 1`.

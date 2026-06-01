@@ -19,6 +19,8 @@ type offlineVentaSyncRequest struct {
 	SyncKey        string                `json:"sync_key"`
 	Ventas         []offlineVentaPayload `json:"ventas"`
 	FechaOffline   string                `json:"fecha_offline"`
+	UsuarioEmail   string                `json:"usuario_email"`
+	UsuarioRol     string                `json:"usuario_rol"`
 	CarritoID      int64                 `json:"carrito_id"`
 	CarritoCodigo  string                `json:"carrito_codigo"`
 	EstacionID     int64                 `json:"estacion_id"`
@@ -33,6 +35,8 @@ type offlineVentaPayload struct {
 	EmpresaID      int64                 `json:"empresa_id"`
 	SyncKey        string                `json:"sync_key"`
 	FechaOffline   string                `json:"fecha_offline"`
+	UsuarioEmail   string                `json:"usuario_email"`
+	UsuarioRol     string                `json:"usuario_rol"`
 	CarritoID      int64                 `json:"carrito_id"`
 	CarritoCodigo  string                `json:"carrito_codigo"`
 	EstacionID     int64                 `json:"estacion_id"`
@@ -130,6 +134,8 @@ func EmpresaOfflineVentasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					EmpresaID:      input.EmpresaID,
 					SyncKey:        input.SyncKey,
 					FechaOffline:   input.FechaOffline,
+					UsuarioEmail:   input.UsuarioEmail,
+					UsuarioRol:     input.UsuarioRol,
 					CarritoID:      input.CarritoID,
 					CarritoCodigo:  input.CarritoCodigo,
 					EstacionID:     input.EstacionID,
@@ -190,6 +196,14 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 			"documento_codigo": existing.DocumentoCodigo,
 			"estado_sync":      existing.EstadoSync,
 		}, nil
+	}
+	if err := validateOfflineVentaSessionOwner(venta, usuario); err != nil {
+		_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", 0, "", "", err.Error())
+		return nil, err
+	}
+	if err := validateOfflineVentaCaja(venta.Pago); err != nil {
+		_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", 0, "", "", err.Error())
+		return nil, err
 	}
 
 	carrito, err := resolveOfflineCarrito(dbEmp, empresaID, venta, syncKey, usuario, existing)
@@ -278,6 +292,21 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 	}
 
 	if err := dbpkg.PayCarritoStationSession(dbEmp, empresaID, carrito.ID, metodoPago, referenciaPago, descuentoTipo, descuentoCodigo, descuentoValor, devolucionTotal, totalPagado, codigoDescuentoID, caja.ID, caja.CajaCodigo, caja.Turno, caja.SucursalID, usuario); err != nil {
+		if errors.Is(err, dbpkg.ErrCarritoYaPagado) {
+			if carritoActual, errActual := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, carrito.ID); errActual == nil && carritoActual != nil && offlineCarritoEstaPagado(carritoActual) {
+				result := map[string]interface{}{
+					"ok":          true,
+					"sync_key":    syncKey,
+					"idempotente": true,
+					"carrito_id":  carritoActual.ID,
+					"estado_sync": "sincronizado",
+					"message":     "carrito ya estaba pagado; no se duplico la venta offline",
+				}
+				resultBytes, _ := json.Marshal(result)
+				_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "sincronizado", carritoActual.ID, "", string(resultBytes), "")
+				return result, nil
+			}
+		}
 		_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", carrito.ID, "", "", err.Error())
 		return nil, err
 	}
@@ -347,6 +376,35 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 	resultBytes, _ := json.Marshal(result)
 	_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "sincronizado", carritoPagado.ID, documentoCodigo, string(resultBytes), "")
 	return result, nil
+}
+
+func validateOfflineVentaSessionOwner(venta offlineVentaPayload, sessionEmail string) error {
+	claimed := strings.ToLower(strings.TrimSpace(venta.UsuarioEmail))
+	session := strings.ToLower(strings.TrimSpace(sessionEmail))
+	if claimed == "" || session == "" || session == "sistema" {
+		return nil
+	}
+	if claimed != session {
+		return fmt.Errorf("esta venta offline pertenece al cajero %s; inicia sesion con ese usuario para sincronizarla", claimed)
+	}
+	return nil
+}
+
+func validateOfflineVentaCaja(pago offlinePagoPayload) error {
+	if strings.TrimSpace(pago.CajaCodigo) == "" {
+		return fmt.Errorf("la venta offline debe indicar el codigo de la caja abierta del cajero antes de sincronizar")
+	}
+	return nil
+}
+
+func offlineCarritoEstaPagado(carrito *dbpkg.CarritoCompra) bool {
+	if carrito == nil {
+		return false
+	}
+	return strings.TrimSpace(carrito.PagadoEn) != "" ||
+		strings.EqualFold(carrito.EstadoCarrito, "cerrado") ||
+		strings.EqualFold(carrito.EstadoCarrito, "pagado") ||
+		strings.EqualFold(carrito.Estado, "inactivo")
 }
 
 func resolveOfflineCarrito(dbEmp *sql.DB, empresaID int64, venta offlineVentaPayload, syncKey, usuario string, existing *dbpkg.EmpresaVentaOfflineSync) (*dbpkg.CarritoCompra, error) {

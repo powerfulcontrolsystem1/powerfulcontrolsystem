@@ -1,6 +1,6 @@
 # Ayuda de APIs
 
-Fecha: 2026-05-30
+Fecha: 2026-06-01
 Estado: vigente
 
 Esta guia resume como consumir y mantener las APIs de Powerful Control System
@@ -78,6 +78,33 @@ Reglas:
 - acciones de pago deben ser idempotentes frente a doble clic o reintento;
 - modo offline solo aplica si la empresa lo activo y el carrito lo soporta.
 
+## Energia solar
+
+Endpoint empresarial:
+
+```http
+GET /api/empresa/energia_solar?empresa_id={id}&action=dashboard
+GET /api/empresa/energia_solar?empresa_id={id}&action=catalogo
+GET /api/empresa/energia_solar?empresa_id={id}&action=sistemas
+GET /api/empresa/energia_solar?empresa_id={id}&action=alertas&sistema_id={id}
+GET /api/empresa/energia_solar?empresa_id={id}&action=lecturas&sistema_id={id}&limit=120
+GET /api/empresa/energia_solar?empresa_id={id}&action=eventos&sistema_id={id}&limit=80
+POST /api/empresa/energia_solar?empresa_id={id}&action=sistema
+POST /api/empresa/energia_solar?empresa_id={id}&action=alerta
+POST /api/empresa/energia_solar?empresa_id={id}&action=lectura
+POST /api/empresa/energia_solar?empresa_id={id}&action=probar_alerta&sistema_id={id}
+```
+
+Reglas:
+
+- modulo independiente `energia_solar`, pagina `linkEnergiaSolar`;
+- preconfiguracion disponible por tipo de empresa, apagada por defecto;
+- rol `tecnico_solar` solo consulta dashboard, lecturas, eventos y alertas;
+- proveedores catalogo: Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y
+  gateway local;
+- las llaves reales deben viajar como referencias `env:*`, no como secretos en
+  texto plano.
+
 ## Checklist para crear o cambiar una API empresarial
 
 1. Ubicar modulo, pagina, handler, tablas y permisos en `documentos/mapa_modulos.md`.
@@ -100,4 +127,3 @@ Reglas:
 - `documentos/mapa_modulos.md`: mapa de modulo, pagina, API, tablas, permisos y pruebas.
 - `documentos/flujos_operativos.md`: flujos de usuario y QA.
 - `backend/main.go`: registro real de rutas.
-

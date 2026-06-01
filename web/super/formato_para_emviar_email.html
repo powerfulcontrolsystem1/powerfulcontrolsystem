@@ -172,6 +172,43 @@
           </div>
         </div>
       </article>
+      <article class="card form mp-card email-template-card" data-template-key="licencia_software_pdf">
+        <h2>PDF de licencia del software</h2>
+        <p class="form-help">Este texto se convierte en el PDF adjunto que recibe el cliente cuando la licencia queda activa.</p>
+        <div class="email-template-vars">
+          <span>{{company_name}}</span>
+          <span>{{company_nit}}</span>
+          <span>{{license_name}}</span>
+          <span>{{license_code}}</span>
+          <span>{{provider}}</span>
+          <span>{{reference}}</span>
+          <span>{{issue_date}}</span>
+          <span>{{start_date}}</span>
+          <span>{{end_date}}</span>
+          <span>{{amount_paid}}</span>
+          <span>{{system_name}}</span>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Titulo del PDF</label>
+            <input class="form-input" data-field="subject" type="text">
+          </div>
+          <div class="form-col">
+            <label class="form-label">Ultima actualizacion</label>
+            <div class="form-help" data-field="updated_at">--</div>
+          </div>
+        </div>
+        <div class="email-template-grid">
+          <div class="form-col">
+            <label class="form-label">Texto del PDF</label>
+            <textarea class="form-input email-template-textarea" data-field="body_text"></textarea>
+          </div>
+          <div class="form-col">
+            <label class="form-label">HTML opcional</label>
+            <textarea class="form-input email-template-html" data-field="body_html" placeholder="No se usa para generar el PDF; puedes dejarlo vacio."></textarea>
+          </div>
+        </div>
+      </article>
     </section>
 
     <section id="panel-recomendadas" class="email-template-panel" hidden>

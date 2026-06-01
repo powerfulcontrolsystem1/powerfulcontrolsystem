@@ -1,3 +1,40 @@
+2026-05-31: Licencia del sistema descargable por empresa
+- Modulos afectados: `licencias`, `administrar_empresa`, `permisos_empresa` y `mensajeria_super`.
+- Cambio funcional: Administrar empresa incorpora el grupo principal `Licencia` con la pagina `Licencia del sistema`.
+- Descarga: el boton `Descargar licencia PDF` usa `/api/empresa/licencia_sistema/pdf` y genera el documento con la licencia activa de esa empresa.
+- Configuracion: el contenido legal del PDF se edita desde Super administrador > Formatos de email, plantilla `licencia_software_pdf`, compartida con el PDF adjunto al correo de activacion.
+- Seguridad: el endpoint queda asociado a `linkLicenciaSistema` y al alcance efectivo de `empresa_id`.
+
+2026-05-31: Catalogo base de roles empresariales comunes
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `inventario`, `energia_solar`, `recursos_humanos` y `frontend_ux`.
+- Roles agregados o formalizados: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `recursos_humanos` y `tecnico_solar`.
+- Alcance: `tecnico_solar` consulta energia solar; `jefe_bodega` administra bodega/inventario sin eliminar ni vender; `recursos_humanos` gestiona horarios, asistencia y nomina operativa.
+- UX: los roles especializados reciben menus reducidos para que cada usuario vea solo el area que debe operar.
+
+2026-05-31: Rol Servicio de limpieza para estaciones
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `estaciones`, `control_aseo` y `carritos`.
+- Cambio funcional: se agrega el rol `servicio_limpieza`, orientado a personal de aseo que solo debe ver estaciones y reportar como limpias las estaciones marcadas como sucias.
+- Permisos: el rol recibe solo `R` en `ventas` para cargar el tablero de estaciones; no recibe aprobacion, creacion, edicion, eliminacion, reportes ni configuracion.
+- UX: el menu empresarial solo muestra `Estaciones`; el clic en estacion sucia finaliza el evento de aseo y el clic en estacion limpia no activa ni abre carrito.
+
+2026-05-31: Rol empresario para resultados y reportes
+- Modulos afectados: `usuarios_empresa`, `roles_permisos` y `reportes`.
+- Cambio funcional: se agrega el rol `empresario`, orientado a propietarios o directivos que solo deben consultar resultados y reportes ejecutivos de la empresa.
+- Permisos: el rol recibe solo `R` en `reportes`; las paginas permitidas se reducen a `linkReportes` y `linkReportesEjecutivos`.
+- UX: el menu principal y el submenu de reportes ocultan accesos operativos y reportes de turnos/caja para mantener una vista ejecutiva.
+
+2026-05-31: Rol contador para finanzas e impuestos
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `finanzas`, `impuestos` y `facturacion`.
+- Cambio funcional: se agrega el rol `contador`, orientado a usuarios que solo deben consultar finanzas empresariales e impuestos.
+- Permisos: el rol recibe solo `R` en `finanzas` y `facturacion`; las paginas permitidas se reducen a `linkFinanzas`, `linkFinanzasMain` y `linkImpuestos`.
+- UX: el menu principal y el centro financiero ocultan accesos no autorizados; las APIs mantienen bloqueo de escritura por backend.
+
+2026-05-31: Rol portero para estaciones
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `estaciones` y `carritos`.
+- Cambio funcional: se agrega el rol `portero`, orientado a personal que solo debe ver estaciones y activarlas sin entrar al carrito.
+- Permisos: el rol recibe `ventas:R` y `ventas:A` solo para el flujo `activar_estacion`; la visibilidad de paginas se reduce a `linkEstaciones` y las APIs de items/cobro quedan bloqueadas en backend.
+- UX: en el menu empresarial solo aparece `Estaciones`; el clic sobre una estacion activa la estacion y nunca abre carrito para este rol.
+
 2026-05-31: Feedback sonoro y tactil del carrito
 - Modulo: `Configuracion carrito` y `Carrito y venta directa`.
 - Configuracion: `carrito_ui_global` agrega checks por empresa para pitido y vibracion separados entre PC y celular.
@@ -44,6 +81,12 @@
 - Modulo: `Ayuda y documentacion tecnica`.
 - Alcance: centro de ayuda, ayuda contextual, pagina visible de APIs y guia Markdown para integradores.
 - Resultado: los operadores tienen ayuda actualizada para carrito/venta directa/offline, y los desarrolladores cuentan con una guia clara de familias de endpoints, seguridad multiempresa, errores y carritos.
+
+2026-05-31: Refuerzo multi-caja del modo offline.
+- Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `caja`, `facturacion_offline`.
+- Frontend: `web/administrar_empresa/carrito_de_compras.html` separa la cola local por empresa y cajero, agrega el correo/rol del operador al payload offline y exige una caja abierta cargada antes de guardar una venta sin internet.
+- Backend: `/api/empresa/offline_ventas` valida que la venta offline pertenezca al usuario autenticado, rechaza payloads sin `caja_codigo` y convierte el reintento sobre carrito ya pagado en respuesta idempotente.
+- Alcance operativo: varias cajas de una misma empresa pueden seguir vendiendo sin internet sin mezclar colas, caja esperada ni sincronizaciones.
 
 2026-05-30: Documentacion del carrito unificado
 - Modulo: `Documentacion operativa`.
@@ -3297,6 +3340,7 @@ Criterio de esta guia:
 - `web/pagar_licencia.html` permite seleccionar pasarela para pago de licencia y mantiene trazabilidad por transaccion/referencia.
 - Wompi opera por API (`create_transaction_nequi`, `transaction_status`, `webhook`) con activacion automatica de licencia al aprobar.
 - Epayco opera con checkout hospedado, confirmacion por `webhook` y consulta por referencia para activar licencia y registrar estado en `pagos_epayco`.
+- 2026-06-01: el checkout publica Epayco y Wompi por defecto cuando cada proveedor tiene credenciales completas; los toggles `*.enabled` se conservan como apagado explicito. La tarjeta visual de pago centra y agranda las marcas bancarias Davivienda/Bancolombia.
 2026-04-29: IA contextual por auditoria en tiempo real
 - Modulos afectados: `chat IA`, `auditoria empresarial`, `seguridad y permisos`
 - Cambio funcional: la auditoria empresarial registra tambien acciones de lectura de los wrappers protegidos y pasa a alimentar el contexto de los chats IA con actividad reciente por empresa y a nivel global super. El contexto incluye resumen por modulo/accion, usuarios activos, errores HTTP, endpoints y ultimas operaciones, sin inyectar metadata sensible.
@@ -3460,3 +3504,15 @@ Captura inteligente de compras y gastos
 - Cambio funcional: `Asesores de ventas` queda visible como primer boton de `Comercial y licencias`, y se agregan botones para todas las paginas super que existian sin enlace directo.
 - Navegacion: se enlazan reportes globales, auditoria global, metricas de trafico, preconfiguracion, contrato, administradores Frecuencia FE, chat IA global, voz IA streaming, servidores, soporte remoto y configuracion avanzada.
 - QA: el cruce automatico confirma 52 paginas HTML bajo `web/super`, 52 enlaces del menu y ningun enlace sin permiso de restauracion en `coreSuperPages`.
+
+2026-05-31: Noticias del portal
+- Modulos afectados: `portal_publico`, `super_administrador`, `menu_flotante`, `facturacion_electronica`.
+- Cambio funcional: se agrega una pagina publica `/noticias.html` con apariencia tipo red social: portada, foto de perfil, descripcion y feed de publicaciones.
+- Super administrador: `web/super/noticias.html` permite editar perfil, portada, publicaciones, fuentes, etiquetas y estado publicado/destacado.
+- Contenido inicial: se publica informacion DIAN relacionada con facturacion electronica y controles de facturacion, con enlace a fuente oficial.
+- Persistencia: se reutiliza `pcs_superadministrador.configuraciones`; no se agregan tablas nuevas.
+2026-06-01: Documentacion, APIs y preconfiguracion de Energia solar
+- Modulos afectados: `energia_solar`, `preconfiguracion_tipos_empresa`, `roles_de_usuario`, `licencias`, `ayuda`, `api`.
+- Cambio funcional: `tipo_empresa_preconfiguraciones.config_json` incorpora `modulos.energia_solar` como bloque opcional apagado por defecto, con proveedores Victron, SMA, SolarEdge y gateway local, baterias comunes y alertas base.
+- Roles/licencias: `tecnico_solar` conserva solo `energia_solar:R`; las licencias nuevas deben habilitar `energia_solar` como modulo independiente y el fallback desde `control_electrico`/`seguridad` queda como compatibilidad de licencias antiguas.
+- Documentacion: se actualizan ayuda general, ayuda de APIs, mapa de modulos, flujos, matriz de roles, estructura BD y documento del modulo solar.

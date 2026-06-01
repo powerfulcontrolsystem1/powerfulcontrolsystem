@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Noticias - Powerful Control System</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <style>
+    .news-page {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 32%),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg) 94%, var(--surface) 6%), var(--bg));
+      color: var(--text);
+      padding: 18px 12px 44px;
+    }
+    .news-shell {
+      width: min(100%, 1060px);
+      margin: 0 auto;
+    }
+    .news-cover-card,
+    .news-post {
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 8px;
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+    .news-cover {
+      position: relative;
+      min-height: clamp(160px, 28vw, 290px);
+      background: color-mix(in srgb, var(--surface) 86%, var(--accent) 14%);
+    }
+    .news-cover img {
+      width: 100%;
+      height: clamp(160px, 28vw, 290px);
+      object-fit: cover;
+      display: block;
+    }
+    .news-profile-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: end;
+      padding: 0 18px 18px;
+      margin-top: -44px;
+      position: relative;
+      z-index: 2;
+    }
+    .news-avatar {
+      width: 104px;
+      height: 104px;
+      border-radius: 999px;
+      border: 5px solid var(--card);
+      background: var(--surface);
+      object-fit: cover;
+      box-shadow: 0 10px 24px color-mix(in srgb, #020617 20%, transparent);
+    }
+    .news-identity {
+      min-width: 0;
+      padding-top: 42px;
+    }
+    .news-identity h1 {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(1.45rem, 4vw, 2.4rem);
+      line-height: 1.05;
+    }
+    .news-handle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .news-follow-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--border));
+      background: color-mix(in srgb, var(--accent) 18%, var(--surface) 82%);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .news-bio {
+      border-top: 1px solid var(--border);
+      padding: 14px 18px 18px;
+      color: var(--muted);
+      font-size: .98rem;
+      line-height: 1.5;
+    }
+    .news-layout {
+      display: grid;
+      grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+      align-items: start;
+    }
+    .news-side {
+      display: grid;
+      gap: 12px;
+      position: sticky;
+      top: 14px;
+    }
+    .news-info-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      padding: 15px;
+      box-shadow: var(--shadow-soft);
+    }
+    .news-info-card h2 {
+      margin: 0 0 8px;
+      font-size: 1.08rem;
+      color: var(--text);
+    }
+    .news-info-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .news-feed {
+      display: grid;
+      gap: 14px;
+    }
+    .news-post {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .news-post-head {
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+    .news-post-head img {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      object-fit: cover;
+      background: var(--surface);
+    }
+    .news-post-meta strong {
+      display: block;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .news-post-meta span {
+      color: var(--muted);
+      font-size: .84rem;
+    }
+    .news-post-image {
+      width: 100%;
+      height: min(260px, 42vw);
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 92%, var(--bg) 8%);
+    }
+    .news-post h2 {
+      margin: 0;
+      font-size: clamp(1.2rem, 3vw, 1.65rem);
+      line-height: 1.18;
+      color: var(--text);
+    }
+    .news-summary {
+      margin: 0;
+      color: var(--text);
+      line-height: 1.5;
+      font-weight: 700;
+    }
+    .news-content {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.58;
+      white-space: pre-line;
+    }
+    .news-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .news-tags li {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 78%, var(--accent) 22%);
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 800;
+    }
+    .news-source {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+    .news-source a {
+      color: var(--accent);
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .news-source a:hover {
+      text-decoration: underline;
+    }
+    .news-empty {
+      padding: 18px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      background: var(--card);
+    }
+    @media (max-width: 760px) {
+      .news-page {
+        padding: 8px 8px 28px;
+      }
+      .news-profile-row {
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: end;
+        padding: 0 12px 14px;
+      }
+      .news-avatar {
+        width: 82px;
+        height: 82px;
+        border-width: 4px;
+      }
+      .news-identity {
+        padding-top: 38px;
+      }
+      .news-follow-btn {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+      .news-layout {
+        grid-template-columns: 1fr;
+      }
+      .news-side {
+        position: static;
+      }
+      .news-post {
+        padding: 13px;
+      }
+      .news-post-image {
+        height: 220px;
+      }
+      .news-source {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="news-page">
+    <section class="news-shell">
+      <article class="news-cover-card">
+        <div class="news-cover">
+          <img id="newsCover" src="/img/sistema punto de venta.png" alt="Portada de noticias">
+        </div>
+        <div class="news-profile-row">
+          <img id="newsProfile" class="news-avatar" src="/img/pwa-icon-192.png" alt="Perfil de noticias">
+          <div class="news-identity">
+            <h1 id="newsPageName">Powerful Control System Noticias</h1>
+            <p id="newsHandle" class="news-handle">@powerfulcontrolsystem</p>
+          </div>
+          <a class="news-follow-btn" href="/index.html">Ver portal</a>
+        </div>
+        <div class="news-bio" id="newsBio">Actualidad tributaria, facturacion electronica y novedades empresariales.</div>
+      </article>
+
+      <section class="news-layout">
+        <aside class="news-side">
+          <div class="news-info-card">
+            <h2 id="newsTitle">Noticias</h2>
+            <p id="newsSubtitle">Actualidad tributaria y operativa.</p>
+          </div>
+          <div class="news-info-card">
+            <h2>Fuentes</h2>
+            <p>Las noticias tributarias se publican con enlace a la fuente oficial para que puedas verificar cada novedad.</p>
+          </div>
+        </aside>
+        <section id="newsFeed" class="news-feed" aria-live="polite">
+          <p class="news-empty">Cargando noticias...</p>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var fallback = {
+        titulo: 'Noticias',
+        subtitulo: 'Actualidad tributaria, facturacion electronica y novedades de Powerful Control System.',
+        portada_url: '/img/sistema punto de venta.png',
+        perfil_url: '/img/pwa-icon-192.png',
+        nombre_pagina: 'Powerful Control System Noticias',
+        usuario: '@powerfulcontrolsystem',
+        descripcion: 'Pagina informativa para seguir cambios de facturacion electronica, impuestos, tecnologia POS y operacion empresarial.',
+        noticias: []
+      };
+      var feed = document.getElementById('newsFeed');
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+      function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = String(value || '');
+      }
+      function setImage(id, value) {
+        var el = document.getElementById(id);
+        if (el && value) el.src = value;
+      }
+      function formatDate(value) {
+        if (!value) return '';
+        try {
+          var d = new Date(value + 'T00:00:00');
+          return d.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+        } catch (_) {
+          return value;
+        }
+      }
+      function render(config) {
+        var cfg = Object.assign({}, fallback, config || {});
+        setImage('newsCover', cfg.portada_url || fallback.portada_url);
+        setImage('newsProfile', cfg.perfil_url || fallback.perfil_url);
+        setText('newsPageName', cfg.nombre_pagina || fallback.nombre_pagina);
+        setText('newsHandle', cfg.usuario || fallback.usuario);
+        setText('newsBio', cfg.descripcion || fallback.descripcion);
+        setText('newsTitle', cfg.titulo || fallback.titulo);
+        setText('newsSubtitle', cfg.subtitulo || fallback.subtitulo);
+        var news = Array.isArray(cfg.noticias) ? cfg.noticias.filter(function (item) { return item && item.activa !== false; }) : [];
+        if (!news.length) {
+          feed.innerHTML = '<p class="news-empty">Todavia no hay noticias publicadas.</p>';
+          return;
+        }
+        feed.innerHTML = news.map(function (item) {
+          var tags = Array.isArray(item.etiquetas) ? item.etiquetas : [];
+          return '' +
+            '<article class="news-post">' +
+            '  <header class="news-post-head">' +
+            '    <img src="' + esc(cfg.perfil_url || fallback.perfil_url) + '" alt="">' +
+            '    <div class="news-post-meta"><strong>' + esc(cfg.nombre_pagina || fallback.nombre_pagina) + '</strong><span>' + esc(item.categoria || 'Noticia') + (item.fecha ? ' · ' + esc(formatDate(item.fecha)) : '') + '</span></div>' +
+            '  </header>' +
+            (item.imagen_url ? '  <img class="news-post-image" src="' + esc(item.imagen_url) + '" alt="">' : '') +
+            '  <h2>' + esc(item.titulo || 'Noticia') + '</h2>' +
+            '  <p class="news-summary">' + esc(item.resumen || '') + '</p>' +
+            '  <p class="news-content">' + esc(item.contenido || '') + '</p>' +
+            (tags.length ? '  <ul class="news-tags">' + tags.map(function (tag) { return '<li>' + esc(tag) + '</li>'; }).join('') + '</ul>' : '') +
+            '  <footer class="news-source"><span>' + esc(item.fuente_nombre || 'Fuente') + '</span>' +
+            (item.fuente_url ? '<a href="' + esc(item.fuente_url) + '" target="_blank" rel="noopener">Ver fuente oficial</a>' : '') +
+            '  </footer>' +
+            '</article>';
+        }).join('');
+      }
+      fetch('/api/public/noticias', { credentials: 'same-origin' })
+        .then(function (response) { return response.ok ? response.json() : Promise.reject(new Error('HTTP ' + response.status)); })
+        .then(function (payload) { render(payload && payload.config); })
+        .catch(function () { render(fallback); });
+    })();
+  </script>
+</body>
+</html>

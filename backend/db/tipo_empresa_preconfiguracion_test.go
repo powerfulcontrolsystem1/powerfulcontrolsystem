@@ -2,6 +2,91 @@ package db
 
 import "testing"
 
+func TestDefaultTipoEmpresaPreconfigIncludesPorteroRole(t *testing.T) {
+	template := TipoEmpresaPreconfigTemplate{}
+	roles := rolesFromTipoEmpresaPreconfigTemplate(template)
+	if !stringSliceContainsForTest(roles, "portero") {
+		t.Fatalf("roles por defecto deben incluir portero, got %v", roles)
+	}
+	if !stringSliceContainsForTest(roles, "contador") {
+		t.Fatalf("roles por defecto deben incluir contador, got %v", roles)
+	}
+	if !stringSliceContainsForTest(roles, "empresario") {
+		t.Fatalf("roles por defecto deben incluir empresario, got %v", roles)
+	}
+	if !stringSliceContainsForTest(roles, "servicio_limpieza") {
+		t.Fatalf("roles por defecto deben incluir servicio_limpieza, got %v", roles)
+	}
+	for _, expected := range []string{"supervisor_sucursal", "vendedor", "recepcion", "jefe_bodega", "recursos_humanos", "tecnico_solar"} {
+		if !stringSliceContainsForTest(roles, expected) {
+			t.Fatalf("roles por defecto deben incluir %s, got %v", expected, roles)
+		}
+	}
+
+	permisos := permisosModuloPreconfigRol(77, "portero")
+	if !rolPermisoModuloAllowedForTest(permisos, "ventas", "R") || !rolPermisoModuloAllowedForTest(permisos, "ventas", "A") {
+		t.Fatalf("portero debe tener permisos R y A en ventas, got %+v", permisos)
+	}
+	for _, accion := range []string{"C", "U", "D"} {
+		if rolPermisoModuloAllowedForTest(permisos, "ventas", accion) {
+			t.Fatalf("portero no debe tener permiso %s en ventas", accion)
+		}
+	}
+
+	permisosContador := permisosModuloPreconfigRol(88, "contador")
+	if !rolPermisoModuloAllowedForTest(permisosContador, "finanzas", "R") || !rolPermisoModuloAllowedForTest(permisosContador, "facturacion", "R") {
+		t.Fatalf("contador debe tener solo lectura en finanzas y facturacion, got %+v", permisosContador)
+	}
+	for _, item := range permisosContador {
+		if item.Accion != "R" {
+			t.Fatalf("contador no debe tener accion %s en modulo %s", item.Accion, item.Modulo)
+		}
+	}
+
+	permisosEmpresario := permisosModuloPreconfigRol(99, "empresario")
+	if len(permisosEmpresario) != 1 || !rolPermisoModuloAllowedForTest(permisosEmpresario, "reportes", "R") {
+		t.Fatalf("empresario debe tener solo lectura de reportes, got %+v", permisosEmpresario)
+	}
+
+	permisosLimpieza := permisosModuloPreconfigRol(100, "servicio_limpieza")
+	if len(permisosLimpieza) != 1 || !rolPermisoModuloAllowedForTest(permisosLimpieza, "ventas", "R") {
+		t.Fatalf("servicio_limpieza debe tener solo lectura de ventas/estaciones, got %+v", permisosLimpieza)
+	}
+
+	permisosSolar := permisosModuloPreconfigRol(101, "tecnico_solar")
+	if len(permisosSolar) != 1 || !rolPermisoModuloAllowedForTest(permisosSolar, "energia_solar", "R") {
+		t.Fatalf("tecnico_solar debe tener solo lectura de energia_solar, got %+v", permisosSolar)
+	}
+
+	permisosBodega := permisosModuloPreconfigRol(102, "jefe_bodega")
+	for _, accion := range []string{"R", "C", "U", "A"} {
+		if !rolPermisoModuloAllowedForTest(permisosBodega, "inventario", accion) {
+			t.Fatalf("jefe_bodega debe tener inventario:%s, got %+v", accion, permisosBodega)
+		}
+	}
+	if rolPermisoModuloAllowedForTest(permisosBodega, "inventario", "D") {
+		t.Fatalf("jefe_bodega no debe tener inventario:D, got %+v", permisosBodega)
+	}
+}
+
+func stringSliceContainsForTest(items []string, expected string) bool {
+	for _, item := range items {
+		if item == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func rolPermisoModuloAllowedForTest(items []RolPermisoModulo, modulo, accion string) bool {
+	for _, item := range items {
+		if item.Modulo == modulo && item.Accion == accion && item.Permitido {
+			return true
+		}
+	}
+	return false
+}
+
 func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.T) {
 	tipos := []struct {
 		nombre             string
@@ -76,6 +161,15 @@ func TestDefaultTipoEmpresaPreconfigTemplatesCoverKnownBusinessTypes(t *testing.
 			}
 			if len(template.TareasGuia) == 0 {
 				t.Fatalf("sin tareas guia")
+			}
+			if template.Modulos.EnergiaSolar == nil {
+				t.Fatalf("preconfiguracion debe incluir energia solar como modulo opcional")
+			}
+			if template.Modulos.EnergiaSolar.Habilitado {
+				t.Fatalf("energia solar debe quedar desactivada por defecto")
+			}
+			if len(template.Modulos.EnergiaSolar.Proveedores) < 4 || len(template.Modulos.EnergiaSolar.Baterias) < 5 {
+				t.Fatalf("catalogo solar insuficiente: %+v", template.Modulos.EnergiaSolar)
 			}
 			if !template.AdaptacionNucleo.FuenteUnica ||
 				!template.AdaptacionNucleo.UsuariosDesdeNucleo ||

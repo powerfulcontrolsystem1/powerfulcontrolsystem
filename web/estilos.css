@@ -2572,6 +2572,79 @@ body.theme-dark .login-page{
 .pwa-install-btn{font-weight:900}
 .pwa-install-message{max-width:420px;margin:8px auto 0;text-align:center;color:var(--muted)}
 
+@media (min-width: 701px) {
+  body.admin-login-body .login-page {
+    min-height: 100dvh;
+    padding: 10px;
+    gap: 9px;
+  }
+
+  body.admin-login-body .login-page .container {
+    max-width: 390px;
+  }
+
+  body.admin-login-body .login-page .card {
+    padding: 18px 22px;
+  }
+
+  body.admin-login-body .login-executive-visual-wrap {
+    width: min(260px, calc(100vw - 40px));
+    margin-bottom: 0;
+  }
+
+  body.admin-login-body .login-executive-visual {
+    width: clamp(128px, 18vw, 170px);
+    height: clamp(72px, 10vw, 96px);
+    border-radius: 18px;
+  }
+
+  body.admin-login-body .login-executive-caption {
+    margin-top: 7px;
+    font-size: clamp(1rem, 1.8vw, 1.24rem);
+  }
+
+  body.admin-login-body .login-page h2 {
+    font-size: 1.24rem;
+    margin: 0 0 4px;
+  }
+
+  body.admin-login-body .login-page .email-login,
+  body.admin-login-body .login-page .auth-alt-form {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  body.admin-login-body .login-page .email-login h3,
+  body.admin-login-body .login-page .auth-alt-form h3 {
+    margin-bottom: 9px;
+  }
+
+  body.admin-login-body .login-page .form-row {
+    margin-bottom: 10px;
+  }
+
+  body.admin-login-body .login-page .form-label {
+    margin-bottom: 4px;
+  }
+
+  body.admin-login-body .login-page .form-input {
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  body.admin-login-body .login-page .remember-row {
+    margin-top: -2px;
+  }
+
+  body.admin-login-body .login-inline-links {
+    margin-top: 8px;
+  }
+
+  body.admin-login-body .login-bottom-actions {
+    margin-top: 8px;
+  }
+}
+
 @media (min-width: 980px) {
   .login-page .login-header,
   .login-page .container {
@@ -7494,8 +7567,13 @@ html[data-theme^="dark"] .checkout-payment-hub{
 .payment-method-card-licenses{
   display:flex;
   flex-direction:column;
-  gap:6px;
-  min-height:172px;
+  align-items:center;
+  gap:8px;
+  min-height:188px;
+  text-align:center;
+}
+.payment-method-card-licenses .payment-method-badge{
+  align-self:center;
 }
 .payment-method-card:hover{transform:translateY(-1px)}
 .payment-method-badge{
@@ -7520,18 +7598,19 @@ html[data-theme^="dark"] .checkout-payment-hub{
   width:140px;
   max-width:100%;
   height:auto;
-  margin:4px 0 8px;
+  margin:4px auto 8px;
   object-fit:contain;
   filter:drop-shadow(0 8px 18px rgba(8,18,38,0.22));
 }
 .payment-bank-brand{
   display:flex;
   flex-direction:column;
-  align-items:flex-start;
-  gap:6px;
-  width:min(100%, 250px);
-  margin:2px 0 8px;
-  padding:10px 12px;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:min(100%, 280px);
+  margin:4px auto 10px;
+  padding:12px 14px;
   border-radius:12px;
   background:rgba(255,255,255,0.9);
   border:1px solid rgba(255,255,255,0.72);
@@ -7541,17 +7620,18 @@ html[data-theme^="dark"] .checkout-payment-hub{
 }
 .payment-bank-logo{
   display:block;
-  width:190px;
+  width:230px;
   max-width:100%;
-  height:48px;
+  height:64px;
   object-fit:contain;
-  object-position:left center;
+  object-position:center center;
 }
 .payment-bank-brand span{
   color:#1f2937;
-  font-size:.82rem;
+  font-size:.86rem;
   font-weight:900;
   letter-spacing:.03em;
+  text-align:center;
 }
 .payment-method-wompi .payment-bank-brand{
   background:linear-gradient(180deg,#ffffff,#fff9c2);

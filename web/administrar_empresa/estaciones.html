@@ -99,7 +99,9 @@
       dirtyByEstacion: {},
       aseoControlEnabled: false,
       canViewAseoReport: false,
-      currentUserEmail: ''
+      currentUserEmail: '',
+      currentUserRole: '',
+      isPortero: false
     };
 
     function sanitize(v) {
@@ -172,8 +174,36 @@
         if (!res.ok) return;
         const data = await res.json();
         state.currentUserEmail = String((data && (data.email || data.admin_email || data.user_email || data.usuario)) || '').trim().toLowerCase();
+        state.currentUserRole = normalizeOperationalRole((data && (data.role || data.rol || data.admin_role)) || state.currentUserRole || '');
       } catch (_) {
         state.currentUserEmail = '';
+      }
+    }
+
+    function normalizeOperationalRole(raw) {
+      const value = String(raw || '').trim().toLowerCase();
+      if (['portero', 'porter', 'guardia', 'porteria', 'vigilante'].includes(value)) return 'portero';
+      if (['servicio_limpieza', 'servicio de limpieza', 'limpieza', 'aseadora', 'aseo', 'housekeeping'].includes(value)) return 'servicio_limpieza';
+      if (['administrador', 'admin', 'admin_empresa'].includes(value)) return 'admin_empresa';
+      if (['supervisor', 'supervisor_sucursal'].includes(value)) return 'supervisor_sucursal';
+      return value;
+    }
+
+    async function loadPermissionContext() {
+      state.isPortero = normalizeOperationalRole(state.currentUserRole) === 'portero';
+      state.isServicioLimpieza = normalizeOperationalRole(state.currentUserRole) === 'servicio_limpieza';
+      if (!empresaId) return;
+      try {
+        const data = await requestJSON('/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(empresaId));
+        const role = normalizeOperationalRole((data && (data.rol || data.role)) || '');
+        if (role) {
+          state.currentUserRole = role;
+          state.isPortero = role === 'portero';
+          state.isServicioLimpieza = role === 'servicio_limpieza';
+        }
+      } catch (_) {
+        state.isPortero = normalizeOperationalRole(state.currentUserRole) === 'portero';
+        state.isServicioLimpieza = normalizeOperationalRole(state.currentUserRole) === 'servicio_limpieza';
       }
     }
 
@@ -189,6 +219,14 @@
 
     function buildVisibleConfigForCurrentUser(cfg) {
       const source = cfg && typeof cfg === 'object' ? cfg : {};
+      if (state.isPortero || state.isServicioLimpieza) {
+        const visibleForPortero = Object.assign({}, source);
+        visibleForPortero.caja_enabled = false;
+        visibleForPortero.youtube_enabled = false;
+        visibleForPortero.notas_enabled = false;
+        visibleForPortero.ia_pedidos_enabled = false;
+        return visibleForPortero;
+      }
       const access = normalizeStationAccessConfig(source.acceso_estaciones_cajeros || source.acceso_estaciones_por_cajero);
       if (!access.habilitado) return source;
       const email = String(state.currentUserEmail || '').trim().toLowerCase();
@@ -1213,6 +1251,7 @@
     }
 
     function shouldOpenCartWhenStationClicked(stationID) {
+      if (state.isPortero) return false;
       const firstClickOnly = !!(state.stationCardUI && (state.stationCardUI.solo_activar_primer_clic || state.stationCardUI.abrir_carrito_al_activar === false));
       if (!firstClickOnly) return true;
       const info = findStationCarritoInfo(stationID);
@@ -1304,6 +1343,10 @@
           ev.preventDefault();
           ev.stopPropagation();
         }
+        if (state.isPortero || state.isServicioLimpieza) {
+          setStatus(state.isServicioLimpieza ? 'El rol Servicio de limpieza solo puede reportar estaciones sucias como limpias.' : 'El rol portero solo puede activar estaciones.');
+          return;
+        }
         openCajaClosePage(stationName || 'Caja', card && card.getAttribute('data-caja-codigo') || '');
         return;
       }
@@ -1336,6 +1379,10 @@
         if (ev) {
           ev.preventDefault();
           ev.stopPropagation();
+        }
+        if (state.isPortero || state.isServicioLimpieza) {
+          setStatus(state.isServicioLimpieza ? 'El rol Servicio de limpieza solo puede reportar estaciones sucias como limpias.' : 'El rol portero solo puede activar estaciones.');
+          return;
         }
         openCajaClosePage(stationName || 'Caja', card && card.getAttribute('data-caja-codigo') || '');
         return;
@@ -1371,6 +1418,14 @@
           return;
         }
         card.removeAttribute('aria-busy');
+      }
+      if (state.isServicioLimpieza) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        setStatus((stationName || ('estacion ' + stationID)) + ' no esta marcada como sucia.');
+        return;
       }
       continueStationCardActivation(ev, card, stationID, stationName);
     }
@@ -2474,6 +2529,7 @@
           window.__pcsStationAutoTextResizeTimer = window.setTimeout(syncAutoTextCardHeight, 120);
         });
         await loadCurrentAccount();
+        await loadPermissionContext();
         await Promise.all([
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),

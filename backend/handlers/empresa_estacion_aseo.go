@@ -20,7 +20,8 @@ func EmpresaEstacionAseoHandler(dbEmp *sql.DB) http.HandlerFunc {
 			return
 		}
 		usuario, role := resolveEmpresaAseoUsuarioActual(dbEmp, r, empresaID)
-		controlHabilitado := usuario != nil && usuario.ControlAseoEstaciones == 1
+		puedeFinalizarAseo := empresaAseoRoleCanClean(role)
+		controlHabilitado := (usuario != nil && usuario.ControlAseoEstaciones == 1) || puedeFinalizarAseo
 		puedeGestionar := empresaAseoRoleCanManage(role)
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 		if action == "" {
@@ -168,6 +169,10 @@ func empresaAseoRoleCanManage(role string) bool {
 		return true
 	}
 	return strings.Contains(role, "admin") || strings.Contains(role, "gerente") || strings.Contains(role, "supervisor")
+}
+
+func empresaAseoRoleCanClean(role string) bool {
+	return normalizePermissionRole(role) == "servicio_limpieza"
 }
 
 func parseInt64QueryOptionalDefault(r *http.Request, key string, fallback int64) int64 {

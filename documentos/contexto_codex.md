@@ -72,14 +72,31 @@ botones, desde handlers estaticos del backend.
   navegacion, botones `Editar`, guardados/pruebas y endpoints sensibles del panel
   super. Nunca se deben guardar secretos en metadata.
 - Licencias: `web/elegir_licencia.html`, `web/pagar_licencia.html`,
-  `web/super/licencias.html`, `/super/api/licencias` y
-  `/licencias/activar_sin_pago`. El catalogo base vigente es global para todos
+  `web/super/licencias.html`, `web/super/formato_para_emviar_email.html`,
+  `web/administrar_empresa/licencia_sistema.html`, `/super/api/licencias`,
+  `/licencias/activar_sin_pago` y `/api/empresa/licencia_sistema/pdf`.
+  El catalogo base vigente es global para todos
   los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con cuatro planes:
   prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000. La
   prueba gratis solo se puede activar una vez por empresa, incluso cuando la
   prueba anterior ya vencio, quedo inactiva o viene de datos antiguos; las
   licencias base antiguas por tipo y addons de catalogo sin empresa asignada se
-  eliminan del catalogo comercial.
+  eliminan del catalogo comercial. Al activarse una licencia por pago o por
+  flujo de valor cero permitido, `backend/handlers/payments_handlers.go` envia
+  correo al administrador de la empresa y adjunta un PDF de licencia de software
+  generado en Go puro. Ese mismo PDF se descarga desde Administrar empresa >
+  Licencia > Licencia del sistema y su texto se edita con la plantilla
+  `licencia_software_pdf` de Super administrador > Formatos de email.
+  Si una empresa paga una licencia comercial antes de que venza la licencia
+  actual, la nueva vigencia no reemplaza ni acorta la anterior: se programa
+  desde el vencimiento acumulado mas lejano de esa empresa y queda lista para
+  iniciar automaticamente al terminar la licencia vigente. Las tablas
+  `pagos_epayco` y `pagos_wompi` guardan `licencia_activation_status`,
+  `licencia_activada_id` y `licencia_activada_en` para que una consulta o
+  webhook repetido no sume dias dos veces.
+  El checkout publico de licencia debe mostrar Epayco y Wompi cuando sus
+  credenciales reales estan configuradas; `*.enabled` solo se usa como override
+  explicito para apagar una pasarela lista.
 - Menu super administrador: `web/super_administrador.html` debe enlazar solo
   las paginas activas del panel super; `web/js/super_administrador.js` debe
   permitir restaurar cada enlace con `target="contentFrame"`. `Reportes globales`
@@ -131,7 +148,10 @@ botones, desde handlers estaticos del backend.
   `/api/empresa/facturacion_electronica/panama`,
   `/api/empresa/facturacion_electronica/ecuador`.
 - Facturacion offline: `/api/empresa/offline_ventas`,
-  `backend/db/offline_ventas.go`.
+  `backend/db/offline_ventas.go`. El carrito guarda la cola local por
+  `empresa_id + usuario/cajero`, exige caja abierta cargada antes de vender sin
+  internet y sincroniza con `sync_key` idempotente que incluye empresa, cajero,
+  caja y carrito.
 - Alertas sistema super administrador: `web/super/alertas_sistema.html`,
   `/super/api/alertas_sistema`.
 - Mensajeria y alertas en super administrador: el menu lateral agrupa
@@ -139,7 +159,10 @@ botones, desde handlers estaticos del backend.
   `web/super/formato_para_emviar_email.html`, `web/super/correos_masivos.html`,
   `web/super/mantenimiento_sistema.html`, `web/super/configuracion/gmail_smtp.html`
   y `web/super/email_corporativo.html`. Los mensajes de compra/pago de licencia
-  se editan desde `Formatos de email`.
+  se editan desde `Formatos de email`; en esa misma pagina tambien se configura
+  el texto del PDF `licencia_software_pdf` que se adjunta al correo de licencia
+  activada y que cada empresa puede descargar desde Administrar empresa >
+  Licencia > Licencia del sistema.
 - Email corporativo Mailu: `web/super/email_corporativo.html`,
   `/super/api/email_corporativo`, `/api/empresa/email_corporativo`,
   `backend/handlers/email_corporativo_handlers.go`,
@@ -169,22 +192,34 @@ botones, desde handlers estaticos del backend.
   `email_corporativo_config.auto_open=false`. La pagina
   `web/administrar_empresa/configuracion/email_corporativo.html` permite cambiar
   esa preferencia y actualizar la contrasena interna del buzon; la clave siempre
-  se guarda cifrada y no se muestra al usuario.
+  se guarda cifrada y no se muestra al usuario. La configuracion global del
+  servidor de email define tambien `max_accounts_per_empresa`, con default 5,
+  para limitar desde backend cuantas cuentas corporativas puede tener una misma
+  empresa.
 - Informacion de modulos del index: `web/super/informacion_de_modulos.html`,
   `/super/api/informacion_de_modulos`,
   `/api/public/informacion_de_modulos`.
+- Noticias del portal: `web/noticias.html`, editor
+  `web/super/noticias.html`, `/super/api/noticias` y
+  `/api/public/noticias`. Se guarda en
+  `pcs_superadministrador.configuraciones` con la clave
+  `super.noticias_portal.v1`; la pagina publica se abre desde el menu flotante
+  y tiene portada, foto de perfil y publicaciones tipo red social.
 - Portal publico e index en super administrador: el menu lateral de
   `web/super_administrador.html` agrupa tarjetas del index
   (`web/super/pagina_principal.html`), modulos del index
-  (`web/super/informacion_de_modulos.html`), descripcion de sistemas para IA y
-  portal (`web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html`),
+  (`web/super/informacion_de_modulos.html`), noticias
+  (`web/super/noticias.html`), descripcion de sistemas para IA y portal
+  (`web/super/informacion_de_la_empresa_y_de_los_sistemas_para_ia.html`),
   WhatsApp del portal (`web/super/configuracion/whatsapp_portal.html`) y accesos
   de lectura a `web/index.html` y `web/descripcion_de_los_sistemas.html`.
 - Energia solar: `web/administrar_empresa/energia_solar.html`,
   `web/js/energia_solar.js`, `/api/empresa/energia_solar`,
   tablas `empresa_energia_solar_*`. El modulo es por empresa, usa permiso
   `energia_solar`, soporta Victron/SMA/SolarEdge/gateway local y alerta por
-  correo usando SMTP configurado.
+  correo usando SMTP configurado. Las preconfiguraciones por tipo incluyen
+  `modulos.energia_solar` apagado por defecto, con catalogo de proveedores,
+  baterias y alertas; el rol `tecnico_solar` solo recibe lectura.
 - Analitica publica por pais: `/api/public/portal_visitas`,
   `web/js/portal_visits.js`.
 - Chat/robot/emisora flotante: `web/js/ai_chat_drawer.js`,

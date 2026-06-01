@@ -417,6 +417,7 @@
       '<div class="fm-panel" role="menu">' +
         '<a class="fm-item" href="/index.html">Portal</a>' +
         '<a class="fm-item" href="/red_social_comercial.html" target="_blank" rel="noopener">Red social comercial</a>' +
+        '<a class="fm-item fm-icon-item" href="/noticias.html"><img class="fm-item-icon" src="/img/report.svg" alt="">Noticias</a>' +
         '<button id="createHelpTicketLink" class="fm-item fm-action-item" type="button">Crear ticket de ayuda</button>' +
         '<button id="openFloatingAILink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/gpt.svg" alt="">Robot / IA</button>' +
         '<button id="openFloatingRadioLink" class="fm-item fm-action-item fm-icon-item" type="button"><img class="fm-item-icon" src="/img/play.svg" alt="">Emisoras</button>' +

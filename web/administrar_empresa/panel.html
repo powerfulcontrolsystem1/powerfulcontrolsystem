@@ -933,7 +933,7 @@
       .empresa-email-embed,
       .empresa-email-frame {
         min-height: 96px;
-        height: auto;
+        height: 540px;
       }
     }
 
@@ -998,6 +998,9 @@
         margin-top: 0;
         padding: 10px;
         gap: 9px;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
 
       .empresa-email-title {
@@ -1019,8 +1022,17 @@
 
       .empresa-email-embed,
       .empresa-email-frame {
-        min-height: 96px;
-        height: auto;
+        min-height: min(520px, 70dvh);
+        height: min(620px, 72dvh);
+      }
+
+      .empresa-email-embed {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .empresa-email-frame {
+        min-width: 320px;
       }
 
       .empresa-home-subtitle {
@@ -1189,11 +1201,21 @@
         gap: 8px;
         padding: 10px;
         margin-top: 8px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
 
       .empresa-email-button {
         width: 100%;
         box-sizing: border-box;
+      }
+
+      .empresa-email-embed,
+      .empresa-email-frame {
+        min-height: min(500px, 68dvh);
+        height: min(600px, 70dvh);
       }
 
       .empresa-home-actions {

@@ -40,8 +40,9 @@ Aplica al checkout publico de licencias sobre Epayco y Wompi.
 8. si el comercio no es reconocido, revisar en la respuesta de `/epayco/create_transaction` que `mode=production`, `mode_source=classic_credentials` y `checkout_form.fields.p_test_request=FALSE` cuando se usan credenciales reales.
 9. confirmar que `epayco.private_key` sea la llave API de Smart Checkout que inicia por `prv_`. La `P_KEY` del checkout estandar debe guardarse en `epayco.checkout_key` o `epayco.p_key`, no en `epayco.private_key`.
 10. confirmar que `epayco.checkout_key`/`epayco.p_key` sea la P_KEY real del dashboard de Epayco, no la contrasena de acceso a la cuenta. Si el backend reporta `checkout_key_format_valid=false`, el checkout clasico no debe habilitarse.
-11. si Wompi no aparece, confirmar que `wompi.public_key` y `wompi.integrity_key` existan y que `wompi.enabled` y el override por pais esten activos.
-12. si Wompi abre pero no retorna, confirmar que `/wompi/create_checkout` haya guardado una fila `pagos_wompi` con `reference` y estado `PENDING`, y que la URL de retorno apunte a `pagar_licencia.html`.
+11. si Epayco no aparece, confirmar que exista configuracion Smart Checkout o checkout clasico lista y que no haya un override explicito `epayco.enabled=0`; cuando las credenciales estan completas, la pasarela queda habilitada por defecto.
+12. si Wompi no aparece, confirmar que `wompi.public_key` y `wompi.integrity_key` existan y que no haya un override explicito `wompi.enabled=0`; cuando las credenciales estan completas, la pasarela queda habilitada por defecto.
+13. si Wompi abre pero no retorna, confirmar que `/wompi/create_checkout` haya guardado una fila `pagos_wompi` con `reference` y estado `PENDING`, y que la URL de retorno apunte a `pagar_licencia.html`.
 
 ## Causas probables
 
@@ -89,6 +90,7 @@ Aplica al checkout publico de licencias sobre Epayco y Wompi.
 - los webhooks con `x_signature` se validan con SHA256 usando `p_cust_id_cliente^p_key^x_ref_payco^x_transaction_id^x_amount^x_currency_code`; si la firma es invalida, se rechaza la confirmacion.
 - Wompi abre en `https://checkout.wompi.co/p/` con formulario GET y campos `public-key`, `currency=COP`, `amount-in-cents`, `reference`, `signature:integrity` y `redirect-url`.
 - al regresar de Wompi, el polling puede resolver la licencia por `reference` aunque Wompi devuelva tambien `id` de transaccion.
+- en `/api/public/licencias/payment_methods`, Epayco y Wompi aparecen juntas si ambas tienen credenciales listas; un `*.enabled=0` explicito las mantiene ocultas.
 
 ## Contrato relacionado
 

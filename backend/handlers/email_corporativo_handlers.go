@@ -38,6 +38,8 @@ const (
 	corporateEmailDirectCommandKey = "email_corporativo.direct_provision_command"
 	corporateEmailAutologinKey     = "email_corporativo.autologin_secret"
 	corporateEmailEmpresaPrefsKey  = "email_corporativo_config"
+	corporateEmailMaxAccountsKey   = "email_corporativo.max_accounts_per_empresa"
+	corporateEmailDefaultMax       = 5
 )
 
 type CorporateEmailConfig struct {
@@ -50,6 +52,7 @@ type CorporateEmailConfig struct {
 	APIAdmin       string `json:"mailu_admin"`
 	APIPasswordSet bool   `json:"mailu_api_token_set"`
 	QuotaMB        int    `json:"quota_mb"`
+	MaxAccounts    int    `json:"max_accounts_per_empresa"`
 	DirectCommand  string `json:"direct_provision_command,omitempty"`
 }
 
@@ -94,6 +97,7 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 		WebmailURL:    "https://mail.powerfulcontrolsystem.com/webmail/",
 		ProvisionMode: "manual",
 		QuotaMB:       1024,
+		MaxAccounts:   corporateEmailDefaultMax,
 	}
 	if dbSuper == nil {
 		return cfg
@@ -124,6 +128,11 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 			cfg.QuotaMB = parsed
 		}
 	}
+	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailMaxAccountsKey); err == nil && strings.TrimSpace(value) != "" {
+		if parsed, parseErr := strconv.Atoi(strings.TrimSpace(value)); parseErr == nil {
+			cfg.MaxAccounts = normalizeCorporateEmailMaxAccounts(parsed)
+		}
+	}
 	if value, err := getDecryptedConfigValue(dbSuper, corporateEmailDirectCommandKey); err == nil {
 		cfg.DirectCommand = strings.TrimSpace(value)
 	}
@@ -131,6 +140,16 @@ func getCorporateEmailConfig(dbSuper *sql.DB) CorporateEmailConfig {
 		cfg.APIPasswordSet = true
 	}
 	return cfg
+}
+
+func normalizeCorporateEmailMaxAccounts(value int) int {
+	if value <= 0 {
+		return corporateEmailDefaultMax
+	}
+	if value > 500 {
+		return 500
+	}
+	return value
 }
 
 func firstNonEmptyEnv(keys ...string) string {
@@ -230,6 +249,7 @@ func EnsureCorporateEmailConfigFromEnv(dbSuper *sql.DB) error {
 		"EMAIL_CORPORATIVO_MAILU_API_BASE_URL", "MAILU_ADMIN", "MAILU_POSTMASTER",
 		"EMAIL_CORPORATIVO_MAILU_ADMIN", "MAILU_API_TOKEN", "EMAIL_CORPORATIVO_MAILU_API_TOKEN",
 		"MAILU_QUOTA_MB", "EMAIL_CORPORATIVO_QUOTA_MB",
+		"EMAIL_CORPORATIVO_MAX_ACCOUNTS_PER_EMPRESA", "MAILU_MAX_ACCOUNTS_PER_EMPRESA",
 		"EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND",
 	}
 	hasEnv := false
@@ -263,6 +283,11 @@ func EnsureCorporateEmailConfigFromEnv(dbSuper *sql.DB) error {
 	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_QUOTA_MB", "MAILU_QUOTA_MB"); value != "" {
 		if parsed, err := strconv.Atoi(value); err == nil && parsed >= 0 {
 			cfg.QuotaMB = parsed
+		}
+	}
+	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_MAX_ACCOUNTS_PER_EMPRESA", "MAILU_MAX_ACCOUNTS_PER_EMPRESA"); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			cfg.MaxAccounts = normalizeCorporateEmailMaxAccounts(parsed)
 		}
 	}
 	if value := firstNonEmptyEnv("EMAIL_CORPORATIVO_DIRECT_PROVISION_COMMAND", "MAILU_DIRECT_PROVISION_COMMAND"); value != "" {
@@ -525,6 +550,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 	if cfg.QuotaMB < 0 {
 		cfg.QuotaMB = 0
 	}
+	cfg.MaxAccounts = normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts)
 	pairs := []struct {
 		key   string
 		value string
@@ -538,6 +564,7 @@ func saveCorporateEmailConfig(dbSuper *sql.DB, cfg CorporateEmailConfig, plainPa
 		{corporateEmailAPIBaseURLKey, cfg.APIBaseURL, false},
 		{corporateEmailAPIAdminKey, cfg.APIAdmin, false},
 		{corporateEmailQuotaMBKey, strconv.Itoa(cfg.QuotaMB), false},
+		{corporateEmailMaxAccountsKey, strconv.Itoa(cfg.MaxAccounts), false},
 		{corporateEmailDirectCommandKey, cfg.DirectCommand, false},
 	}
 	for _, pair := range pairs {
@@ -572,6 +599,11 @@ func EnsureEmpresaCorporateEmailAfterCreate(dbSuper *sql.DB, empresaID int64, em
 		return existing, nil
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
+	}
+	if count, err := dbpkg.CountEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); err != nil {
+		return nil, err
+	} else if count >= normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts) {
+		return nil, fmt.Errorf("la empresa ya alcanzo el limite de %d cuentas de correo corporativo", normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 	}
 	email, local, err := dbpkg.ResolveUniqueCorporateEmail(dbSuper, empresaID, empresaNombre, cfg.Domain)
 	if err != nil {
@@ -627,7 +659,7 @@ func EnsureCorporateEmailRowsForExistingCompanies(dbSuper, dbEmp *sql.DB, usuari
 	if !cfg.AutoCreate {
 		return 0, nil
 	}
-	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario)
+	return dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, usuario, normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 }
 
 func provisionEmpresaEmailAccount(dbSuper *sql.DB, cfg CorporateEmailConfig, account dbpkg.EmpresaEmailCorporativo, password string) corporateEmailProvisionResult {
@@ -950,7 +982,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 			if action == "sync" {
 				cfg := getCorporateEmailConfig(dbSuper)
-				count, err := dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r))
+				count, err := dbpkg.EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp, cfg.Domain, cfg.WebmailURL, adminEmailFromRequest(r), normalizeCorporateEmailMaxAccounts(cfg.MaxAccounts))
 				if err != nil {
 					http.Error(w, "No se pudo sincronizar empresas: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -994,6 +1026,7 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 				APIAdmin      string `json:"mailu_admin"`
 				APIPassword   string `json:"mailu_api_token"`
 				QuotaMB       int    `json:"quota_mb"`
+				MaxAccounts   int    `json:"max_accounts_per_empresa"`
 				DirectCommand string `json:"direct_provision_command"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -1021,6 +1054,9 @@ func SuperEmailCorporativoHandler(dbSuper, dbEmp *sql.DB) http.HandlerFunc {
 			cfg.DirectCommand = payload.DirectCommand
 			if payload.QuotaMB >= 0 {
 				cfg.QuotaMB = payload.QuotaMB
+			}
+			if payload.MaxAccounts > 0 {
+				cfg.MaxAccounts = normalizeCorporateEmailMaxAccounts(payload.MaxAccounts)
 			}
 			if err := saveCorporateEmailConfig(dbSuper, cfg, payload.APIPassword); err != nil {
 				http.Error(w, "No se pudo guardar configuracion: "+err.Error(), http.StatusInternalServerError)

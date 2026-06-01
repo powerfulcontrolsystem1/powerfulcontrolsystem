@@ -22,9 +22,12 @@ const (
 	paginaPrincipalConfigUpdatedByKey = "super.pagina_principal.cards.v1.updated_by"
 	informacionModulosConfigKey       = "super.informacion_modulos.v1"
 	informacionModulosUpdatedByKey    = "super.informacion_modulos.v1.updated_by"
+	noticiasPortalConfigKey           = "super.noticias_portal.v1"
+	noticiasPortalUpdatedByKey        = "super.noticias_portal.v1.updated_by"
 	paginaPrincipalDefaultCardLimit   = 12
 	informacionModulosDefaultLimit    = 24
 	informacionModulosFeatureLimit    = 32
+	noticiasPortalDefaultLimit        = 40
 )
 
 const (
@@ -80,6 +83,31 @@ type informacionModuloItem struct {
 type informacionModulosConfig struct {
 	Titulo  string                  `json:"titulo"`
 	Modulos []informacionModuloItem `json:"modulos"`
+}
+
+type noticiaPortalItem struct {
+	Titulo       string   `json:"titulo"`
+	Resumen      string   `json:"resumen"`
+	Contenido    string   `json:"contenido"`
+	Categoria    string   `json:"categoria"`
+	Fecha        string   `json:"fecha"`
+	ImagenURL    string   `json:"imagen_url"`
+	FuenteNombre string   `json:"fuente_nombre"`
+	FuenteURL    string   `json:"fuente_url"`
+	Etiquetas    []string `json:"etiquetas"`
+	Destacada    bool     `json:"destacada"`
+	Activa       bool     `json:"activa"`
+}
+
+type noticiasPortalConfig struct {
+	Titulo       string              `json:"titulo"`
+	Subtitulo    string              `json:"subtitulo"`
+	PortadaURL   string              `json:"portada_url"`
+	PerfilURL    string              `json:"perfil_url"`
+	NombrePagina string              `json:"nombre_pagina"`
+	Usuario      string              `json:"usuario"`
+	Descripcion  string              `json:"descripcion"`
+	Noticias     []noticiaPortalItem `json:"noticias"`
 }
 
 func paginaPrincipalDefaultWhatsAppContactNumber() string {
@@ -300,6 +328,46 @@ func informacionModulosDefaultConfig() informacionModulosConfig {
 			{Titulo: "Domotica y control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Domotica por estacion", "Manejo de sensores", "Puertas", "Aparatos", "Permanencia", "Acceso", "Vehiculos", "Parqueaderos", "Trazabilidad operativa"}},
 			{Titulo: "Gestion empresarial", IconoURL: "/img/company-briefcase-color.svg", Caracteristicas: []string{"Clientes", "CRM", "Usuarios", "Roles", "Permisos", "Licencias", "Auditoria", "Backups", "Comunicaciones", "Soporte", "Chat y tareas"}},
 			{Titulo: "Plantillas listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Gimnasio", "Odontologia", "Propiedad horizontal", "Domicilios", "Taxi", "Carta QR", "Venta publica", "Red social comercial"}},
+		},
+	}
+}
+
+func noticiasPortalDefaultConfig() noticiasPortalConfig {
+	return noticiasPortalConfig{
+		Titulo:       "Noticias",
+		Subtitulo:    "Actualidad tributaria, facturacion electronica y novedades de Powerful Control System.",
+		PortadaURL:   "/img/sistema punto de venta.png",
+		PerfilURL:    "/img/pwa-icon-192.png",
+		NombrePagina: "Powerful Control System Noticias",
+		Usuario:      "@powerfulcontrolsystem",
+		Descripcion:  "Pagina informativa para seguir cambios de facturacion electronica, impuestos, tecnologia POS y operacion empresarial.",
+		Noticias: []noticiaPortalItem{
+			{
+				Titulo:       "DIAN publica doctrina 2026 sobre obligacion de facturar y documentos equivalentes",
+				Resumen:      "La DIAN reitero en doctrina reciente que la obligacion formal de facturar aplica cuando se venden bienes o se prestan servicios, aun cuando existan situaciones especiales sobre la calidad tributaria del sujeto.",
+				Contenido:    "El Concepto 005716 int. 514 de 2026 recuerda que la factura electronica de venta con validacion previa hace parte del sistema de facturacion colombiano y que la obligacion de expedir factura o documento equivalente debe revisarse frente a las reglas vigentes de la DIAN. Para empresas que operan POS, esta noticia refuerza la importancia de conservar configuracion de numeracion, cliente, impuestos, documentos electronicos y soportes al dia.",
+				Categoria:    "DIAN / Facturacion electronica",
+				Fecha:        "2026-04-14",
+				ImagenURL:    "/img/invoice.svg",
+				FuenteNombre: "DIAN - Concepto 005716 int. 514 de 2026",
+				FuenteURL:    "https://www.dian.gov.co/Contribuyentes-Plus/Documents/21-CONCEPTO-005716-int-514-14042026.pdf",
+				Etiquetas:    []string{"DIAN", "Factura electronica", "Documento equivalente", "Colombia"},
+				Destacada:    true,
+				Activa:       true,
+			},
+			{
+				Titulo:       "DIAN fortalece controles sobre expedicion de factura electronica",
+				Resumen:      "La entidad anuncio seguimiento a establecimientos con irregularidades en facturacion electronica y revision de soportes operativos.",
+				Contenido:    "La DIAN informo una estrategia de verificacion y seguimiento a obligados a facturar electronicamente. Para los negocios, esto confirma la necesidad de operar con trazabilidad de ventas, egresos, proveedores, soportes e informes por turno, especialmente cuando hay varias cajas y usuarios simultaneos.",
+				Categoria:    "DIAN / Control fiscal",
+				Fecha:        "2025-02-13",
+				ImagenURL:    "/img/shield-license-color.svg",
+				FuenteNombre: "DIAN - Comunicado de Prensa No. 014",
+				FuenteURL:    "https://www.dian.gov.co/scripts/HPublishing?id=3813&type=NewsPdf",
+				Etiquetas:    []string{"Control", "Facturacion electronica", "Soportes", "Fiscalizacion"},
+				Destacada:    false,
+				Activa:       true,
+			},
 		},
 	}
 }
@@ -615,6 +683,213 @@ func informacionModulosSaveConfig(dbSuper *sql.DB, cfg informacionModulosConfig,
 	return normalized, nil
 }
 
+func noticiasPortalNormalizeText(raw string, fallback string, max int) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		value = strings.TrimSpace(fallback)
+	}
+	value = strings.Join(strings.Fields(value), " ")
+	if max > 0 && len([]rune(value)) > max {
+		runes := []rune(value)
+		value = strings.TrimSpace(string(runes[:max]))
+	}
+	return value
+}
+
+func noticiasPortalNormalizeMultiline(raw string, fallback string, max int) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		value = strings.TrimSpace(fallback)
+	}
+	value = strings.ReplaceAll(value, "\r\n", "\n")
+	value = strings.ReplaceAll(value, "\r", "\n")
+	lines := strings.Split(value, "\n")
+	out := make([]string, 0, len(lines))
+	for _, line := range lines {
+		clean := strings.Join(strings.Fields(line), " ")
+		if clean != "" {
+			out = append(out, clean)
+		}
+	}
+	value = strings.Join(out, "\n\n")
+	if max > 0 && len([]rune(value)) > max {
+		runes := []rune(value)
+		value = strings.TrimSpace(string(runes[:max]))
+	}
+	return value
+}
+
+func noticiasPortalNormalizeURL(raw string, fallback string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		value = strings.TrimSpace(fallback)
+	}
+	if value == "" {
+		return ""
+	}
+	if strings.HasPrefix(value, "/") {
+		if strings.Contains(value, "..") || strings.Contains(value, "\\") {
+			return strings.TrimSpace(fallback)
+		}
+		return value
+	}
+	parsed, err := urlParseForNoticias(value)
+	if err != nil || parsed == "" {
+		return strings.TrimSpace(fallback)
+	}
+	return parsed
+}
+
+func urlParseForNoticias(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", nil
+	}
+	if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
+		return trimmed, nil
+	}
+	return "", fmt.Errorf("url invalida")
+}
+
+func noticiasPortalNormalizeDate(raw string, fallback string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		value = strings.TrimSpace(fallback)
+	}
+	if value == "" {
+		return time.Now().Format("2006-01-02")
+	}
+	if _, err := time.Parse("2006-01-02", value); err == nil {
+		return value
+	}
+	if parsed, err := time.Parse(time.RFC3339, value); err == nil {
+		return parsed.Format("2006-01-02")
+	}
+	return strings.TrimSpace(fallback)
+}
+
+func noticiasPortalNormalizeTags(raw []string, fallback []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(raw))
+	for _, item := range raw {
+		value := noticiasPortalNormalizeText(item, "", 42)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, value)
+		if len(out) >= 8 {
+			break
+		}
+	}
+	if len(out) > 0 {
+		return out
+	}
+	for _, item := range fallback {
+		value := noticiasPortalNormalizeText(item, "", 42)
+		if value == "" {
+			continue
+		}
+		out = append(out, value)
+		if len(out) >= 8 {
+			break
+		}
+	}
+	if len(out) == 0 {
+		out = []string{"Noticia"}
+	}
+	return out
+}
+
+func noticiasPortalNormalizeConfig(cfg noticiasPortalConfig) noticiasPortalConfig {
+	defaults := noticiasPortalDefaultConfig()
+	source := cfg.Noticias
+	if len(source) == 0 {
+		source = defaults.Noticias
+	}
+	if len(source) > noticiasPortalDefaultLimit {
+		source = source[:noticiasPortalDefaultLimit]
+	}
+	items := make([]noticiaPortalItem, 0, len(source))
+	for i, item := range source {
+		base := defaults.Noticias[i%len(defaults.Noticias)]
+		active := item.Activa
+		if !active && strings.TrimSpace(item.Titulo) == "" && strings.TrimSpace(item.Contenido) == "" {
+			active = base.Activa
+		}
+		items = append(items, noticiaPortalItem{
+			Titulo:       noticiasPortalNormalizeText(item.Titulo, base.Titulo, 180),
+			Resumen:      noticiasPortalNormalizeText(item.Resumen, base.Resumen, 360),
+			Contenido:    noticiasPortalNormalizeMultiline(item.Contenido, base.Contenido, 4000),
+			Categoria:    noticiasPortalNormalizeText(item.Categoria, base.Categoria, 80),
+			Fecha:        noticiasPortalNormalizeDate(item.Fecha, base.Fecha),
+			ImagenURL:    noticiasPortalNormalizeURL(item.ImagenURL, base.ImagenURL),
+			FuenteNombre: noticiasPortalNormalizeText(item.FuenteNombre, base.FuenteNombre, 120),
+			FuenteURL:    noticiasPortalNormalizeURL(item.FuenteURL, base.FuenteURL),
+			Etiquetas:    noticiasPortalNormalizeTags(item.Etiquetas, base.Etiquetas),
+			Destacada:    item.Destacada,
+			Activa:       active,
+		})
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].Destacada != items[j].Destacada {
+			return items[i].Destacada
+		}
+		return items[i].Fecha > items[j].Fecha
+	})
+	return noticiasPortalConfig{
+		Titulo:       noticiasPortalNormalizeText(cfg.Titulo, defaults.Titulo, 90),
+		Subtitulo:    noticiasPortalNormalizeText(cfg.Subtitulo, defaults.Subtitulo, 220),
+		PortadaURL:   noticiasPortalNormalizeURL(cfg.PortadaURL, defaults.PortadaURL),
+		PerfilURL:    noticiasPortalNormalizeURL(cfg.PerfilURL, defaults.PerfilURL),
+		NombrePagina: noticiasPortalNormalizeText(cfg.NombrePagina, defaults.NombrePagina, 90),
+		Usuario:      noticiasPortalNormalizeText(cfg.Usuario, defaults.Usuario, 60),
+		Descripcion:  noticiasPortalNormalizeText(cfg.Descripcion, defaults.Descripcion, 260),
+		Noticias:     items,
+	}
+}
+
+func noticiasPortalLoadConfig(dbSuper *sql.DB) (noticiasPortalConfig, string, string, error) {
+	cfg := noticiasPortalDefaultConfig()
+	stored, _, _, updatedAt, err := dbpkg.GetConfigEntry(dbSuper, noticiasPortalConfigKey)
+	if err != nil {
+		return cfg, "", "", err
+	}
+	updatedBy, _, _, _, _ := dbpkg.GetConfigEntry(dbSuper, noticiasPortalUpdatedByKey)
+	if strings.TrimSpace(stored) == "" {
+		return cfg, "", strings.TrimSpace(updatedBy), nil
+	}
+	var decoded noticiasPortalConfig
+	if err := json.Unmarshal([]byte(stored), &decoded); err != nil {
+		log.Printf("[noticias_portal] invalid config JSON, fallback defaults: %v", err)
+		return cfg, strings.TrimSpace(updatedAt), strings.TrimSpace(updatedBy), nil
+	}
+	return noticiasPortalNormalizeConfig(decoded), strings.TrimSpace(updatedAt), strings.TrimSpace(updatedBy), nil
+}
+
+func noticiasPortalSaveConfig(dbSuper *sql.DB, cfg noticiasPortalConfig, updatedBy string) (noticiasPortalConfig, error) {
+	normalized := noticiasPortalNormalizeConfig(cfg)
+	encoded, err := json.Marshal(normalized)
+	if err != nil {
+		return normalized, err
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, noticiasPortalConfigKey, string(encoded), false); err != nil {
+		return normalized, err
+	}
+	actor := strings.TrimSpace(updatedBy)
+	if actor == "" {
+		actor = "sistema"
+	}
+	if err := dbpkg.SetConfigValue(dbSuper, noticiasPortalUpdatedByKey, actor, false); err != nil {
+		return normalized, err
+	}
+	return normalized, nil
+}
+
 func paginaPrincipalLoadConfig(dbSuper *sql.DB) (paginaPrincipalConfig, string, string, error) {
 	cfg := paginaPrincipalDefaultConfig()
 	stored, _, _, updatedAt, err := dbpkg.GetConfigEntry(dbSuper, paginaPrincipalConfigKey)
@@ -882,6 +1157,113 @@ func PublicInformacionModulosHandler(dbSuper *sql.DB) http.HandlerFunc {
 			"ok":         true,
 			"titulo":     cfg.Titulo,
 			"modulos":    cfg.Modulos,
+			"updated_at": updatedAt,
+		})
+	}
+}
+
+// SuperNoticiasPortalHandler administra la pagina publica de noticias.
+func SuperNoticiasPortalHandler(dbSuper *sql.DB, webDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		adminEmail, ok := paginaPrincipalRequireSuperAdmin(w, r, dbSuper)
+		if !ok {
+			return
+		}
+		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+		if action == "" {
+			action = "config"
+		}
+		switch r.Method {
+		case http.MethodGet:
+			switch action {
+			case "config", "get", "listar":
+				cfg, updatedAt, updatedBy, err := noticiasPortalLoadConfig(dbSuper)
+				if err != nil {
+					http.Error(w, "failed to read noticias: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":          true,
+					"config":      cfg,
+					"updated_at":  updatedAt,
+					"updated_by":  updatedBy,
+					"admin_email": adminEmail,
+				})
+				return
+			case "defaults", "predeterminados":
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "config": noticiasPortalDefaultConfig()})
+				return
+			case "imagenes", "images", "listar_imagenes":
+				images, err := paginaPrincipalListImageURLs(webDir)
+				if err != nil {
+					http.Error(w, "failed to list images: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "imagenes": images, "total": len(images)})
+				return
+			default:
+				http.Error(w, "action not supported", http.StatusBadRequest)
+				return
+			}
+		case http.MethodPut, http.MethodPost:
+			if action == "upload_image" || action == "subir_imagen" {
+				if r.Method != http.MethodPost {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+				paginaPrincipalUploadImage(w, r, webDir)
+				return
+			}
+			if action != "config" && action != "save" && action != "guardar" {
+				http.Error(w, "action not supported", http.StatusBadRequest)
+				return
+			}
+			var payload noticiasPortalConfig
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload: "+err.Error(), http.StatusBadRequest)
+				return
+			}
+			normalized, err := noticiasPortalSaveConfig(dbSuper, payload, adminEmail)
+			if err != nil {
+				http.Error(w, "failed to save noticias: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":         true,
+				"saved":      true,
+				"config":     normalized,
+				"updated_by": adminEmail,
+			})
+			return
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+}
+
+// PublicNoticiasPortalHandler expone la pagina de noticias para el menu flotante.
+func PublicNoticiasPortalHandler(dbSuper *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		cfg, updatedAt, _, err := noticiasPortalLoadConfig(dbSuper)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "failed to read noticias: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		publicNews := make([]noticiaPortalItem, 0, len(cfg.Noticias))
+		for _, item := range cfg.Noticias {
+			if item.Activa {
+				publicNews = append(publicNews, item)
+			}
+		}
+		cfg.Noticias = publicNews
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":         true,
+			"config":     cfg,
 			"updated_at": updatedAt,
 		})
 	}

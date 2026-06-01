@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -25,5 +27,44 @@ func TestCorporateEmailAppendThemeRegularURL(t *testing.T) {
 	}
 	if !strings.Contains(got, "theme=light") {
 		t.Fatalf("expected light theme parameter in %q", got)
+	}
+}
+
+func TestCorporateEmailMaxAccountsDefaultAndBounds(t *testing.T) {
+	if got := getCorporateEmailConfig(nil).MaxAccounts; got != corporateEmailDefaultMax {
+		t.Fatalf("default max accounts per empresa = %d, want %d", got, corporateEmailDefaultMax)
+	}
+	cases := []struct {
+		in   int
+		want int
+	}{
+		{0, corporateEmailDefaultMax},
+		{-3, corporateEmailDefaultMax},
+		{5, 5},
+		{12, 12},
+		{501, 500},
+	}
+	for _, tc := range cases {
+		if got := normalizeCorporateEmailMaxAccounts(tc.in); got != tc.want {
+			t.Fatalf("normalizeCorporateEmailMaxAccounts(%d)=%d, want %d", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestCorporateEmailSuperPageIncludesMaxAccountsField(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "web", "super", "email_corporativo.html"))
+	if err != nil {
+		t.Fatalf("read email_corporativo.html: %v", err)
+	}
+	html := string(raw)
+	required := []string{
+		`id="maxAccountsPerEmpresa"`,
+		`config.max_accounts_per_empresa || 5`,
+		`max_accounts_per_empresa: Number(fields.maxAccountsPerEmpresa.value || 5)`,
+	}
+	for _, expected := range required {
+		if !strings.Contains(html, expected) {
+			t.Fatalf("email_corporativo.html debe exponer y guardar el cupo de cuentas por empresa; falta %q", expected)
+		}
 	}
 }

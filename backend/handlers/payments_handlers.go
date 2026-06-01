@@ -15,6 +15,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"mime"
 	"net"
 	"net/http"
 	"net/mail"
@@ -1046,10 +1047,19 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	}
 
 	empresaNombre := ""
+	empresaNit := ""
 	if empresaID > 0 {
-		empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+		var empresa *dbpkg.Empresa
+		var err error
+		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+			empresa, err = dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
+		}
+		if empresa == nil {
+			empresa, err = dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+		}
 		if err == nil && empresa != nil {
 			empresaNombre = strings.TrimSpace(empresa.Nombre)
+			empresaNit = strings.TrimSpace(empresa.Nit)
 		}
 	}
 	safeEmpresa := strings.TrimSpace(empresaNombre)
@@ -1068,6 +1078,9 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	if totalValue == "" || totalValue == "<nil>" {
 		totalValue = strings.TrimSpace(fmt.Sprint(payload["valor_pagado"]))
 	}
+	if totalValue == "" || totalValue == "<nil>" {
+		totalValue = fmt.Sprintf("%.0f", lic.Valor)
+	}
 	discountCode := ""
 	if payRec.DiscountCode.Valid {
 		discountCode = strings.ToUpper(strings.TrimSpace(payRec.DiscountCode.String))
@@ -1083,16 +1096,16 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 		asesorID = strings.ToUpper(strings.TrimSpace(fmt.Sprint(payload["asesor_id"])))
 	}
 	amountPaidLine := templateLine("Valor pagado: ", totalValue)
-	discountCodeLine := templateLine("CÃ³digo de descuento: ", discountCode)
+	discountCodeLine := templateLine("Codigo de descuento: ", discountCode)
 	discountValueLine := templateLine("Descuento aplicado: ", discountValue)
 	originalValueLine := templateLine("Valor original: ", originalValue)
-	asesorIDLine := templateLine("CÃ³digo asesor comercial: ", asesorID)
+	asesorIDLine := templateLine("Codigo asesor comercial: ", asesorID)
 
 	amountPaidLineHTML := templateLineHTML("Valor pagado: ", totalValue)
-	discountCodeLineHTML := templateLineHTML("CÃ³digo de descuento: ", discountCode)
+	discountCodeLineHTML := templateLineHTML("Codigo de descuento: ", discountCode)
 	discountValueLineHTML := templateLineHTML("Descuento aplicado: ", discountValue)
 	originalValueLineHTML := templateLineHTML("Valor original: ", originalValue)
-	asesorIDLineHTML := templateLineHTML("CÃ³digo asesor comercial: ", asesorID)
+	asesorIDLineHTML := templateLineHTML("Codigo asesor comercial: ", asesorID)
 	asunto, cuerpo, _, err := applySuperEmailTemplate(dbSuper, superEmailTemplateKeyLicenciaActivation, map[string]string{
 		"company_name":             safeEmpresa,
 		"license_name":             strings.TrimSpace(lic.Nombre),
@@ -1116,7 +1129,20 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	if err != nil {
 		return err
 	}
-	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue)
+	issueDate := time.Now()
+	empresaPDF := &dbpkg.Empresa{ID: empresaID, EmpresaID: empresaID, Nombre: safeEmpresa, Nit: empresaNit}
+	if empresaID > 0 {
+		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+			if empresa, empresaErr := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); empresaErr == nil && empresa != nil {
+				empresaPDF = empresa
+			}
+		}
+	}
+	pdfBytes, pdfName, err := buildLicenciaSoftwarePDFForEmpresa(dbSuper, empresaPDF, lic, safeProvider, strings.TrimSpace(reference), totalValue, issueDate)
+	if err != nil {
+		return err
+	}
+	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q,"license_pdf_filename":%q,"license_pdf_bytes":%d}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue, pdfName, len(pdfBytes))
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
 		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_activada_pago", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
@@ -1160,13 +1186,48 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	}
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
 	addr := net.JoinHostPort(smtpHost, smtpPort)
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
-		"To: " + toEmail + "\r\n" +
-		"Subject: " + asunto + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		cuerpo
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg))
+	msg := buildLicenciaActivationEmailMessage(fromName, smtpEmail, toEmail, asunto, cuerpo, pdfName, pdfBytes)
+	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, msg)
+}
+
+func buildLicenciaActivationEmailMessage(fromName, fromEmail, toEmail, subject, bodyText, attachmentName string, attachment []byte) []byte {
+	from := (&mail.Address{Name: strings.TrimSpace(fromName), Address: strings.TrimSpace(fromEmail)}).String()
+	to := (&mail.Address{Address: strings.TrimSpace(toEmail)}).String()
+	boundary := "pcs-licencia-" + fmt.Sprint(time.Now().UnixNano())
+	if strings.TrimSpace(bodyText) == "" {
+		bodyText = "Adjunto encontraras la licencia del software Powerful Control System."
+	}
+	attachmentName = strings.ReplaceAll(strings.TrimSpace(attachmentName), `"`, "")
+	if attachmentName == "" {
+		attachmentName = "licencia-powerful-control-system.pdf"
+	}
+
+	var msg bytes.Buffer
+	msg.WriteString("From: " + from + "\r\n")
+	msg.WriteString("To: " + to + "\r\n")
+	msg.WriteString("Subject: " + mime.QEncoding.Encode("utf-8", sanitizeEmailHeader(subject)) + "\r\n")
+	msg.WriteString("MIME-Version: 1.0\r\n")
+	msg.WriteString("Content-Type: multipart/mixed; boundary=\"" + boundary + "\"\r\n\r\n")
+
+	msg.WriteString("--" + boundary + "\r\n")
+	msg.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
+	msg.WriteString("Content-Transfer-Encoding: 8bit\r\n\r\n")
+	msg.WriteString(bodyText + "\r\n\r\n")
+
+	msg.WriteString("--" + boundary + "\r\n")
+	msg.WriteString("Content-Type: application/pdf\r\n")
+	msg.WriteString("Content-Transfer-Encoding: base64\r\n")
+	msg.WriteString("Content-Disposition: attachment; filename=\"" + attachmentName + "\"\r\n\r\n")
+	encoded := base64.StdEncoding.EncodeToString(attachment)
+	for i := 0; i < len(encoded); i += 76 {
+		end := i + 76
+		if end > len(encoded) {
+			end = len(encoded)
+		}
+		msg.WriteString(encoded[i:end] + "\r\n")
+	}
+	msg.WriteString("\r\n--" + boundary + "--\r\n")
+	return msg.Bytes()
 }
 
 func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, error) {
@@ -1180,12 +1241,10 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	if lic == nil {
 		return false, nil
 	}
-	if lic.EmpresaID == empresaID && lic.Activo == 1 {
-		if fechaFin, ok := parsePaymentTime(lic.FechaFin); ok && fechaFin.After(time.Now().Add(-1*time.Minute)) {
-			return false, nil
-		}
-	}
 	now := time.Now()
+	if lic.DuracionDias <= 0 {
+		lic.DuracionDias = 30
+	}
 	fechaInicio := now.Format("2006-01-02 15:04:05")
 	fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
 	if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
@@ -1201,6 +1260,21 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	lic.FechaInicio = fechaInicio
 	lic.FechaFin = fechaFin
 	return true, nil
+}
+
+func activateLicenciaCheckoutContextForPayment(dbSuper, dbEmp *sql.DB, provider, transactionID, reference string, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, error) {
+	canActivate, guardErr := dbpkg.TryBeginLicenciaPaymentActivation(dbSuper, provider, transactionID, reference)
+	if guardErr != nil {
+		return false, guardErr
+	}
+	if !canActivate {
+		return false, nil
+	}
+	activated, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmp, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+	if finishErr := dbpkg.FinishLicenciaPaymentActivation(dbSuper, provider, transactionID, reference, licenciaID, actErr); finishErr != nil && actErr == nil {
+		actErr = finishErr
+	}
+	return activated, actErr
 }
 
 func finalizeEmpresaAfterLicenciaActivation(dbEmp, dbSuper *sql.DB, empresaID, licenciaID int64, origen string) error {
@@ -2335,6 +2409,10 @@ func resolveEnabledConfigValue(dbSuper *sql.DB, key string, defaultValue bool) (
 	return parseBoolConfigValue(raw), nil
 }
 
+func defaultLicenciaPaymentProviderEnabled(configured bool) bool {
+	return configured
+}
+
 type licenciaPaymentMethodStatus struct {
 	ID          string `json:"id"`
 	Nombre      string `json:"nombre"`
@@ -2396,7 +2474,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 	epaycoSmartConfigured := epaycoSmartCheckoutReady(epaycoCreds.PublicKey, epaycoCreds.PrivateKey)
 	epaycoClassicConfigured := epaycoCustomCheckoutReady(epaycoCreds.PublicKey, epaycoCreds.CustomerID, epaycoCreds.CheckoutKey)
 	epaycoConfigured := epaycoSmartConfigured || epaycoClassicConfigured
-	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", false)
+	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", defaultLicenciaPaymentProviderEnabled(epaycoConfigured))
 	if err != nil {
 		return nil, err
 	}
@@ -2413,7 +2491,7 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 	}
 	wompiWebCheckoutConfigured := looksLikeWompiPublicKey(wompiPublicKey) && wompiIntegrityKey != ""
 	wompiConfigured := wompiWebCheckoutConfigured
-	wompiEnabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", wompiConfigured)
+	wompiEnabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", defaultLicenciaPaymentProviderEnabled(wompiConfigured))
 	if err != nil {
 		return nil, err
 	}
@@ -4598,7 +4676,7 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					if payRec != nil && payRec.RawPayload.Valid {
 						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(payRec.RawPayload.String)
 					}
-					act, actErr := activateLicenciaCheckoutContext(dbSuper, nil, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+					act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, nil, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 					if actErr != nil {
 						log.Println("warning: failed to activate licencia from Wompi:", actErr)
 					} else {
@@ -4759,7 +4837,7 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if len(dbEmp) > 0 {
 					dbEmpConn = dbEmp[0]
 				}
-				act, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpConn, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 				} else {
@@ -5495,7 +5573,7 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if rec != nil && rec.RawPayload.Valid {
 					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(rec.RawPayload.String)
 				}
-				act, actErr := activateLicenciaCheckoutContext(dbSuper, nil, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, nil, "epayco", firstNonEmptyString(recordTransactionID, transactionID, originalTransactionID), firstNonEmptyString(recordReference, invoiceReference, reference, originalReference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 				} else {
@@ -5698,7 +5776,7 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if len(dbEmp) > 0 {
 					dbEmpConn = dbEmp[0]
 				}
-				act, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpConn, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 				} else {

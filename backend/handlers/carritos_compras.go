@@ -40,12 +40,65 @@ type carritoBusinessPrerequisite struct {
 	Actions      []map[string]interface{} `json:"actions,omitempty"`
 }
 
+func effectiveAdminRoleFromRequest(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if v := r.Context().Value("adminRoleEfectivo"); v != nil {
+		if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+			return strings.TrimSpace(s)
+		}
+	}
+	if h := strings.TrimSpace(r.Header.Get("X-Admin-Role-Efectivo")); h != "" {
+		return h
+	}
+	return strings.TrimSpace(adminRoleFromRequest(r))
+}
+
+func isPorteroCarritoRequest(r *http.Request) bool {
+	return normalizePermissionRole(effectiveAdminRoleFromRequest(r)) == "portero"
+}
+
+func isServicioLimpiezaCarritoRequest(r *http.Request) bool {
+	return normalizePermissionRole(effectiveAdminRoleFromRequest(r)) == "servicio_limpieza"
+}
+
+func isStationBoardOnlyCarritoRequest(r *http.Request) bool {
+	role := normalizePermissionRole(effectiveAdminRoleFromRequest(r))
+	return role == "portero" || role == "servicio_limpieza"
+}
+
+func isPorteroRestrictedCarritoRequest(r *http.Request, action string) bool {
+	if !isPorteroCarritoRequest(r) {
+		return false
+	}
+	if r.Method == http.MethodGet {
+		return strings.TrimSpace(action) != ""
+	}
+	return !(r.Method == http.MethodPut && strings.EqualFold(strings.TrimSpace(action), "activar_estacion"))
+}
+
+func isServicioLimpiezaRestrictedCarritoRequest(r *http.Request, action string) bool {
+	if !isServicioLimpiezaCarritoRequest(r) {
+		return false
+	}
+	return !(r.Method == http.MethodGet && strings.TrimSpace(action) == "")
+}
+
 // EmpresaCarritosCompraHandler gestiona CRUD de carritos por empresa.
 func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if isPorteroRestrictedCarritoRequest(r, action) {
+				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
+				return
+			}
+			if isServicioLimpiezaRestrictedCarritoRequest(r, action) {
+				http.Error(w, "forbidden: el rol Servicio de limpieza solo puede ver estaciones y reportar aseo", http.StatusForbidden)
+				return
+			}
 			if action == "totales_pago" {
 				empresaID, err := parseEmpresaIDQuery(r)
 				if err != nil {
@@ -289,6 +342,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if isStationBoardOnlyCarritoRequest(r) && id > 0 {
+				http.Error(w, "forbidden: este rol solo puede consultar el tablero de estaciones", http.StatusForbidden)
+				return
+			}
 			if id > 0 {
 				carrito, err := dbpkg.GetCarritoCompraByID(dbEmp, empresaID, id)
 				if err != nil {
@@ -324,6 +381,16 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				}
 				rows = filtered
 			}
+			if isStationBoardOnlyCarritoRequest(r) {
+				filtered := make([]dbpkg.CarritoCompra, 0, len(rows))
+				for _, row := range rows {
+					currentStationID, _, _ := dbpkg.ResolveCarritoStationIdentity(&row)
+					if currentStationID > 0 {
+						filtered = append(filtered, row)
+					}
+				}
+				rows = filtered
+			}
 			var accessErr error
 			rows, accessErr = filterCarritosByStationAccess(dbEmp, empresaID, adminEmailFromRequest(r), rows)
 			if accessErr != nil {
@@ -336,6 +403,14 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if isPorteroRestrictedCarritoRequest(r, action) {
+				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
+				return
+			}
+			if isServicioLimpiezaRestrictedCarritoRequest(r, action) {
+				http.Error(w, "forbidden: el rol Servicio de limpieza solo puede ver estaciones y reportar aseo", http.StatusForbidden)
+				return
+			}
 			if action == "abono" || action == "registrar_abono" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
@@ -507,6 +582,14 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
+			if isPorteroRestrictedCarritoRequest(r, action) {
+				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
+				return
+			}
+			if isServicioLimpiezaRestrictedCarritoRequest(r, action) {
+				http.Error(w, "forbidden: el rol Servicio de limpieza solo puede ver estaciones y reportar aseo", http.StatusForbidden)
+				return
+			}
 			if action == "abrir_caja_cobro" || action == "abrir_caja_para_cobro" {
 				empresaID, errEmp := parseEmpresaIDQuery(r)
 				if errEmp != nil {
@@ -1808,6 +1891,14 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 
 		case http.MethodDelete:
+			if isPorteroRestrictedCarritoRequest(r, "") {
+				http.Error(w, "forbidden: el rol portero solo puede ver y activar estaciones", http.StatusForbidden)
+				return
+			}
+			if isServicioLimpiezaRestrictedCarritoRequest(r, "") {
+				http.Error(w, "forbidden: el rol Servicio de limpieza solo puede ver estaciones y reportar aseo", http.StatusForbidden)
+				return
+			}
 			empresaID, errEmp := parseEmpresaIDQuery(r)
 			if errEmp != nil {
 				http.Error(w, errEmp.Error(), http.StatusBadRequest)
@@ -1847,6 +1938,10 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 // EmpresaCarritoItemsHandler gestiona CRUD de items dentro de un carrito.
 func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if isStationBoardOnlyCarritoRequest(r) {
+			http.Error(w, "forbidden: este rol no puede consultar ni modificar items del carrito", http.StatusForbidden)
+			return
+		}
 		switch r.Method {
 		case http.MethodGet:
 			empresaID, err := parseEmpresaIDQuery(r)

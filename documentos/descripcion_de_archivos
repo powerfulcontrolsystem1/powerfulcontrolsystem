@@ -1,3 +1,88 @@
+2026-06-01 - Renovaciones anticipadas de licencias
+- `backend/db/db.go`:
+	- agrega calculo de vigencia acumulada para que las licencias comerciales pagadas antes del vencimiento se programen desde la fecha fin acumulada de la empresa.
+	- agrega columnas de idempotencia en `pagos_epayco` y `pagos_wompi`: `licencia_activation_status`, `licencia_activada_id` y `licencia_activada_en`.
+	- agrega helpers para reservar/finalizar la activacion por pago y evitar que una misma referencia sume dias mas de una vez.
+- `backend/handlers/payments_handlers.go`:
+	- usa la reserva idempotente antes de activar licencias desde consultas o webhooks de Epayco y Wompi.
+- `backend/db/licencias_renovacion_test.go`:
+	- cubre el caso de pago anticipado que inicia despues del vencimiento vigente y un segundo pago acumulado.
+
+2026-05-31 - Descarga PDF de licencia desde administrar empresa
+- `backend/handlers/licencias_pdf.go`:
+	- agrega `EmpresaLicenciaSistemaPDFHandler` para descargar la licencia activa de una empresa como PDF usando el formato editable `licencia_software_pdf`.
+	- centraliza `buildLicenciaSoftwarePDFForEmpresa` para reutilizar el mismo documento en correos y descarga manual.
+- `backend/handlers/payments_handlers.go`:
+	- reutiliza el generador central de PDF para adjuntar la licencia al correo de activacion.
+- `backend/handlers/empresa_permisos.go`:
+	- asigna la descarga PDF a `linkLicenciaSistema` y mueve el permiso al grupo `Licencia`.
+- `backend/main.go`:
+	- registra `/api/empresa/licencia_sistema/pdf` con `WithEmpresaSeguridadPermissions`.
+- `web/administrar_empresa.html`:
+	- agrega el grupo principal `Licencia` en el menu empresarial.
+- `web/administrar_empresa/licencia_sistema.html`:
+	- muestra el enlace `Descargar licencia PDF` contra el endpoint empresarial y conserva vista imprimible.
+- `backend/handlers/licencias_pdf_test.go`:
+	- agrega regresiones para generacion de PDF empresarial y rechazo de metodos no permitidos.
+
+2026-05-31 - Catalogo base de roles empresariales comunes
+- `backend/db/tipo_empresa_preconfiguracion.go`:
+	- agrega roles universales a las preconfiguraciones de tipos de empresa: supervisor, vendedor, recepcion, jefe de bodega, recursos humanos y tecnico solar, con descripciones claras.
+- `backend/handlers/empresa_permisos.go`:
+	- normaliza alias, expone descripciones de roles en la matriz y limita permisos/paginas de `tecnico_solar`, `jefe_bodega` y `recursos_humanos`.
+- `web/js/administrar_empresa.js`:
+	- reconoce los nuevos roles y reduce el menu visible para energia solar, bodega e RRHH.
+- `backend/handlers/portero_permissions_test.go` y `backend/db/tipo_empresa_preconfiguracion_test.go`:
+	- agregan regresiones para confirmar que tecnico solar solo lee energia solar, jefe de bodega administra inventario sin ventas/caja y RRHH no cruza a ventas.
+
+2026-05-31 - Rol Servicio de limpieza para estaciones
+- `backend/db/tipo_empresa_preconfiguracion.go`:
+	- agrega `servicio_limpieza` como rol base de cada tipo de empresa y le asigna solo lectura de `ventas`; mejora la descripcion para que el rol sea claro al configurar usuarios.
+- `backend/handlers/empresa_permisos.go`:
+	- normaliza alias de Servicio de limpieza, restringe sus paginas a `linkEstaciones` y permite lectura de preferencias de estaciones sin abrir configuracion.
+- `backend/handlers/carritos_compras.go`:
+	- bloquea para `servicio_limpieza` activaciones, items, pagos, totales, carrito por ID, creacion, edicion y borrado; solo deja consultar el tablero.
+- `backend/handlers/empresa_estacion_aseo.go`:
+	- permite que el rol finalice aseo de estaciones sucias sin activar reportes gerenciales.
+- `web/administrar_empresa/estaciones.html` y `web/js/administrar_empresa.js`:
+	- limitan el menu a Estaciones y hacen que el clic solo reporte limpieza cuando la estacion esta sucia.
+- `backend/handlers/portero_permissions_test.go` y `backend/db/tipo_empresa_preconfiguracion_test.go`:
+	- agregan regresiones de permisos, paginas y restricciones del nuevo rol.
+
+2026-05-31 - Rol empresario para resultados y reportes
+- `backend/db/tipo_empresa_preconfiguracion.go`:
+	- agrega `empresario` como rol base de cada tipo de empresa y le asigna solo lectura de `reportes`.
+- `backend/handlers/empresa_permisos.go`:
+	- normaliza alias de propietario/empresario, incluye el rol en el catalogo y restringe sus paginas a `linkReportes` y `linkReportesEjecutivos`.
+- `web/js/administrar_empresa.js`:
+	- reconoce el rol `empresario` y en contexto o fallback local solo muestra reportes ejecutivos.
+- `backend/handlers/portero_permissions_test.go` y `backend/db/tipo_empresa_preconfiguracion_test.go`:
+	- agregan regresiones para confirmar que `empresario` solo lee reportes y no accede a turnos, caja, ventas ni configuracion.
+
+2026-05-31 - Rol contador para finanzas e impuestos
+- `backend/db/tipo_empresa_preconfiguracion.go`:
+	- agrega `contador` como rol base de cada tipo de empresa y le asigna solo lectura de `finanzas` y `facturacion`.
+- `backend/handlers/empresa_permisos.go`:
+	- separa `contador` de `contabilidad`, restringe sus modulos/paginas y reaplica el limite despues de overrides empresariales.
+- `web/js/administrar_empresa.js`:
+	- reconoce el rol `contador` y en fallback local solo muestra Finanzas e Impuestos.
+- `web/administrar_empresa/finanzas_menu.html`:
+	- agrega metadatos de permisos a los accesos rapidos y oculta chips no permitidos por `permisos_contexto`.
+- `backend/handlers/portero_permissions_test.go` y `backend/db/tipo_empresa_preconfiguracion_test.go`:
+	- agregan regresiones para confirmar que `contador` solo lee finanzas/impuestos.
+
+2026-05-31 - Rol portero para estaciones
+- `backend/db/tipo_empresa_preconfiguracion.go`:
+	- agrega `portero` como rol base de cada tipo de empresa y le asigna solo `ventas:R/A`.
+- `backend/handlers/empresa_permisos.go`:
+	- normaliza alias de portero/guardia/vigilante, incluye el rol en el catalogo y restringe sus paginas a `linkEstaciones`.
+- `backend/handlers/carritos_compras.go`:
+	- bloquea para `portero` cualquier accion de carrito que no sea consultar estado o `activar_estacion`; los items quedan en 403.
+- `web/administrar_empresa/estaciones.html` y `web/js/administrar_empresa.js`:
+	- ocultan caja/especiales/menu completo para `portero` y hacen que el clic active la estacion sin abrir carrito.
+- `backend/handlers/portero_permissions_test.go` y `backend/db/tipo_empresa_preconfiguracion_test.go`:
+	- agregan regresiones de permisos, paginas y restricciones del rol.
+
 2026-05-31 - Login con titulo texto e iconos PWA
 - `web/login.html`:
 	- reemplaza la imagen del titulo por texto `Powerful Control System` y agrega iconos explicitos a `Instalar app` e `Ir al inicio`.
@@ -52,6 +137,16 @@
 	- elimina el submenu interno duplicado del resumen operativo y renderiza solo la seccion solicitada por `pagina`.
 
 2026-05-30 - Ayuda y APIs actualizadas
+2026-05-31 - Modo offline multi-caja
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- separa la cola offline por empresa y cajero, agrega identidad del operador al payload y bloquea la venta offline si no hay caja abierta cargada para ese cajero.
+- `backend/handlers/offline_ventas.go`:
+	- valida propietario de la venta offline, exige `caja_codigo` explicito y trata como idempotente el reintento de sincronizacion de un carrito ya pagado.
+- `backend/handlers/offline_ventas_test.go`:
+	- agrega pruebas unitarias de propietario de cajero, caja obligatoria y normalizacion de `sync_key`.
+- `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`:
+	- documentan el flujo offline con caja abierta por cajero y colas separadas.
+
 - `web/ayuda/ayuda.html`:
 	- agrega seccion `Ayuda de APIs`, enlace a la pagina especifica de APIs y actualiza los textos de carrito, venta directa y modo offline controlado.
 - `web/ayuda/ayuda_contextual.html`:
@@ -10367,3 +10462,36 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Agrega a `coreSuperPages` las paginas super enlazadas que faltaban para que el iframe pueda restaurarlas y marcarlas como navegacion valida.
 - `documentos/contexto_codex.md` y `documentos/mapa_modulos.md`:
 	- Registran el contrato de navegacion: cada pagina HTML activa bajo `web/super/` debe tener boton y permiso de restauracion.
+
+2026-05-31 - Email corporativo movil en panel empresarial
+- `web/administrar_empresa/panel.html`:
+	- Ajusta la tarjeta `Bandeja de correo corporativo` para celular: ancho completo, iframe con alto util y contenedor con scroll tactil interno cuando el webmail lo requiera.
+	- Evita que el iframe quede en `height:auto` en responsive, que podia hacerlo invisible o demasiado pequeno en pantallas moviles.
+
+2026-05-31 - Pagina Noticias del portal
+- `web/noticias.html`:
+	- Nueva pagina publica tipo red social con portada, foto de perfil, biografia, feed de publicaciones y enlaces a fuentes oficiales.
+- `web/super/noticias.html`:
+	- Editor para super administrador con configuracion de portada, perfil, descripcion y CRUD visual de publicaciones.
+- `backend/handlers/pagina_principal_handlers.go`:
+	- Agrega contratos `PublicNoticiasPortalHandler` y `SuperNoticiasPortalHandler`, con persistencia en `pcs_superadministrador.configuraciones`.
+- `web/menu.js`, `web/super_administrador.html`, `web/js/super_administrador.js`:
+	- Enlazan Noticias desde el menu flotante y desde el grupo `Portal publico e index`.
+
+2026-05-31 - PDF automatico de licencia de software
+- `backend/handlers/licencias_pdf.go`:
+	- Genera en Go puro un PDF simple de licencia de software con marca Powerful Control System, datos de empresa, plan, codigo y texto configurable.
+- `backend/handlers/licencias_pdf_test.go`:
+	- Valida que el PDF tenga cabecera/cierre valido y que el correo de licencia incluya el adjunto PDF en MIME multipart.
+2026-06-01: Checkout de licencias con Epayco y Wompi visibles
+- `backend/handlers/payments_handlers.go`: `payment_methods` habilita por defecto las pasarelas de licencia que ya tienen credenciales completas, respetando apagado explicito `*.enabled=0`.
+- `backend/handlers/payments_handlers_test.go`: cobertura del default de disponibilidad por proveedor configurado.
+- `web/estilos.css`: centra las tarjetas de pago de licencias y agranda los logos bancarios Davivienda/Bancolombia.
+2026-06-01: Documentacion, APIs y preconfiguracion de Energia solar
+- `backend/db/tipo_empresa_preconfiguracion.go`: agrega `modulos.energia_solar` al JSON de preconfiguraciones, catalogo guia y migracion para preconfiguraciones existentes.
+- `backend/main.go`: ejecuta la normalizacion de preconfiguraciones solares durante el arranque.
+- `backend/db/tipo_empresa_preconfiguracion_test.go`: valida que las preconfiguraciones incluyan Energia solar apagada por defecto.
+- `documentos/energia_solar.md`: actualiza flujo, API, roles, preconfiguracion y licencias.
+- `documentos/api/ayuda_apis.md` y `web/ayuda/ayuda_apis.html`: agregan endpoints y reglas del modulo solar.
+- `web/ayuda/ayuda.html`: agrega seccion de Energia solar y actualiza fecha/alcance de la ayuda.
+- `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/estructura_bd.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios` y `documentos/CHANGELOG.md`: trazabilidad documental del cambio.

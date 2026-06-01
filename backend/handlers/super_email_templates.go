@@ -19,6 +19,7 @@ const (
 	superEmailTemplateKeyEmpresaConfirmation     = "empresa_user_confirmation"
 	superEmailTemplateKeyEmpresaAdminShareInvite = "empresa_admin_share_invitation"
 	superEmailTemplateKeyLicenciaActivation      = "licencia_activation_payment"
+	superEmailTemplateKeyLicenciaSoftwarePDF     = "licencia_software_pdf"
 	superEmailTemplateKeyLicenciaPaymentRejected = "licencia_payment_rejected"
 	superEmailTemplateKeyLicenciaExpiryWarning   = "licencia_expiry_warning"
 	superEmailTemplateKeyAdminPasswordRecovery   = "admin_password_recovery"
@@ -111,6 +112,16 @@ var superEmailTemplateDefinitions = []superEmailTemplateDefinition{
 		DefaultSubject:  "Tu licencia ya quedó activa",
 		DefaultBodyText: "Hola,\n\nTu pago fue confirmado correctamente y la licencia ya quedó activa en Powerful Control System.\n\nEmpresa: {{company_name}}\n{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}Pasarela: {{provider}}\n{{amount_paid_line}}{{discount_code_line}}{{discount_value_line}}{{original_value_line}}{{asesor_id_line}}\n\nYa puedes ingresar al sistema y continuar con la operación normal de tu empresa.\n\nSi no reconoces este movimiento o necesitas ayuda, responde este correo.\n\nPowerful Control System\n",
 		DefaultBodyHTML: "<html><body><p>Hola,</p><p>Tu pago fue confirmado correctamente y la licencia ya quedó activa en <strong>Powerful Control System</strong>.</p><p><strong>Empresa:</strong> {{company_name}}<br/>{{license_name_line}}{{start_date_line}}{{end_date_line}}{{reference_line}}<strong>Pasarela:</strong> {{provider}}<br/>{{amount_paid_line_html}}{{discount_code_line_html}}{{discount_value_line_html}}{{original_value_line_html}}{{asesor_id_line_html}}</p><p>Ya puedes ingresar al sistema y continuar con la operación normal de tu empresa.</p><p>Si no reconoces este movimiento o necesitas ayuda, responde este correo.</p><p>Powerful Control System</p></body></html>",
+	},
+	{
+		Key:             superEmailTemplateKeyLicenciaSoftwarePDF,
+		Label:           "PDF de licencia del software",
+		Category:        "licencias",
+		Description:     "Texto legal y operativo que se adjunta en PDF cuando una licencia queda activa.",
+		Variables:       []string{"company_name", "company_nit", "license_name", "license_code", "provider", "reference", "issue_date", "start_date", "end_date", "amount_paid", "system_name"},
+		DefaultSubject:  "Licencia de software Powerful Control System - {{company_name}}",
+		DefaultBodyText: "LICENCIA DE USO DEL SOFTWARE {{system_name}}\n\nPowerful Control System concede a {{company_name}} una licencia de uso del sistema {{system_name}} bajo modalidad SaaS multiempresa, para operar los modulos contratados segun el plan activo.\n\nDatos de la licencia\nEmpresa: {{company_name}}\nNIT/Documento: {{company_nit}}\nPlan: {{license_name}}\nCodigo de licencia: {{license_code}}\nFecha de emision: {{issue_date}}\nVigencia: {{start_date}} hasta {{end_date}}\nReferencia de pago: {{reference}}\nPasarela: {{provider}}\nValor pagado: {{amount_paid}}\n\nCondiciones principales\n1. La licencia es personal para la empresa indicada, no exclusiva y no transferible sin autorizacion de Powerful Control System.\n2. El uso del software queda sujeto al plan contratado, a la vigencia pagada y a las politicas de seguridad, respaldo y soporte del sistema.\n3. La empresa usuaria es responsable de la veracidad de su informacion, de sus usuarios internos y del cumplimiento legal de sus operaciones.\n4. Powerful Control System podra suspender accesos ante uso indebido, fraude, incumplimiento de pago o riesgos de seguridad.\n5. Este documento sirve como constancia de activacion de la licencia del software.\n\nPowerful Control System\nSistema de facturacion electronica con domotica integrada\n",
+		DefaultBodyHTML: "",
 	},
 	{
 		Key:             superEmailTemplateKeyLicenciaPaymentRejected,

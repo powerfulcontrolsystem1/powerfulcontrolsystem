@@ -187,6 +187,7 @@ type TipoEmpresaPreconfigModulos struct {
 	Odontologia      *TipoEmpresaPreconfigOdontologia      `json:"odontologia,omitempty"`
 	Vehiculos        *TipoEmpresaPreconfigVehiculos        `json:"vehiculos,omitempty"`
 	ControlElectrico *TipoEmpresaPreconfigControlElectrico `json:"control_electrico,omitempty"`
+	EnergiaSolar     *TipoEmpresaPreconfigEnergiaSolar     `json:"energia_solar,omitempty"`
 	HojaVida         []TipoEmpresaPreconfigHojaVida        `json:"hoja_vida,omitempty"`
 }
 
@@ -374,6 +375,40 @@ type TipoEmpresaPreconfigControlElectricoRele struct {
 	ProgramacionTimezone   string `json:"programacion_timezone,omitempty"`
 	ImagenURL              string `json:"imagen_url,omitempty"`
 	Observaciones          string `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigEnergiaSolar struct {
+	Habilitado        bool                                        `json:"habilitado"`
+	IntervaloSegundos int                                         `json:"intervalo_segundos,omitempty"`
+	Proveedores       []TipoEmpresaPreconfigEnergiaSolarProveedor `json:"proveedores,omitempty"`
+	Baterias          []TipoEmpresaPreconfigEnergiaSolarBateria   `json:"baterias,omitempty"`
+	Alertas           []TipoEmpresaPreconfigEnergiaSolarAlerta    `json:"alertas,omitempty"`
+	Roles             []string                                    `json:"roles,omitempty"`
+	Observaciones     string                                      `json:"observaciones,omitempty"`
+}
+
+type TipoEmpresaPreconfigEnergiaSolarProveedor struct {
+	Codigo          string   `json:"codigo"`
+	Nombre          string   `json:"nombre"`
+	Plataforma      string   `json:"plataforma,omitempty"`
+	Modelos         []string `json:"modelos,omitempty"`
+	ApiBaseSugerida string   `json:"api_base_sugerida,omitempty"`
+	Nota            string   `json:"nota,omitempty"`
+}
+
+type TipoEmpresaPreconfigEnergiaSolarBateria struct {
+	Marca        string   `json:"marca"`
+	Modelos      []string `json:"modelos,omitempty"`
+	ProtocoloBMS string   `json:"protocolo_bms,omitempty"`
+}
+
+type TipoEmpresaPreconfigEnergiaSolarAlerta struct {
+	Tipo        string  `json:"tipo"`
+	Nombre      string  `json:"nombre"`
+	Operador    string  `json:"operador,omitempty"`
+	Umbral      float64 `json:"umbral,omitempty"`
+	Severidad   string  `json:"severidad,omitempty"`
+	EnviarEmail bool    `json:"enviar_email"`
 }
 
 type TipoEmpresaPreconfigHojaVida struct {
@@ -1138,6 +1173,9 @@ func newDefaultTipoEmpresaPreconfigTemplate(prefix, stationPrefix string, statio
 		Operacion: operacionPreconfig(strings.ToLower(prefix), stationPrefix, pluralizeTipoEmpresaStationName(stationPrefix), stationCount > 0, false, false, "", "", 0, nil),
 		Productos: productos,
 		Usuarios:  usuarios,
+		Modulos: TipoEmpresaPreconfigModulos{
+			EnergiaSolar: defaultEnergiaSolarPreconfig(),
+		},
 		Asistente: TipoEmpresaPreconfigAsistenteIA{
 			Enabled: true,
 			Rol:     iaRol,
@@ -1270,6 +1308,62 @@ func defaultControlElectricoPreconfig(contexto string) *TipoEmpresaPreconfigCont
 		{RaspberryCodigo: "principal", EstacionNumero: 2, SalidaCodigo: "aire", TipoCarga: "aire_acondicionado", GPIOPin: 5, RelayName: "Aire estacion 2", ActiveHigh: true, Modo: "seguimiento_estacion", Observaciones: "Aparato guia para aire acondicionado."},
 	}
 	return cfg
+}
+
+func defaultEnergiaSolarPreconfig() *TipoEmpresaPreconfigEnergiaSolar {
+	return &TipoEmpresaPreconfigEnergiaSolar{
+		Habilitado:        false,
+		IntervaloSegundos: 300,
+		Roles:             []string{"tecnico_solar", "administrador"},
+		Observaciones:     "Modulo opcional por empresa para monitorear energia solar, baterias, BMS, inversores, eventos y correos de alerta.",
+		Proveedores: []TipoEmpresaPreconfigEnergiaSolarProveedor{
+			{
+				Codigo:          EnergiaSolarProviderVictron,
+				Nombre:          "Victron Energy",
+				Plataforma:      "VRM Portal / Venus OS / Cerbo GX",
+				Modelos:         []string{"SmartSolar MPPT", "MultiPlus-II", "Quattro", "Cerbo GX"},
+				ApiBaseSugerida: "https://vrmapi.victronenergy.com",
+				Nota:            "Usar api_key_ref en formato env:NOMBRE_VARIABLE; no guardar tokens en texto plano.",
+			},
+			{
+				Codigo:          EnergiaSolarProviderSMA,
+				Nombre:          "SMA",
+				Plataforma:      "Sunny Portal powered by ennexOS",
+				Modelos:         []string{"Sunny Boy", "Sunny Tripower", "Sunny Island", "Data Manager M"},
+				ApiBaseSugerida: "https://ennexos.sunnyportal.com",
+				Nota:            "Integracion parametrizada por empresa; validar instalacion_ref antes de consumir datos.",
+			},
+			{
+				Codigo:          EnergiaSolarProviderSolarEdge,
+				Nombre:          "SolarEdge",
+				Plataforma:      "Monitoring Platform",
+				Modelos:         []string{"Home Hub", "HD-Wave", "Inversor trifasico", "Power Optimizer"},
+				ApiBaseSugerida: "https://monitoringapi.solaredge.com",
+				Nota:            "Separar site id, llave y ambiente por empresa.",
+			},
+			{
+				Codigo:     EnergiaSolarProviderLocal,
+				Nombre:     "Gateway local",
+				Plataforma: "Modbus / CAN-bus / RS485 / MQTT / API local",
+				Modelos:    []string{"Raspberry Pi Gateway", "ESP32 Gateway", "BMS local", "Controlador local"},
+				Nota:       "Usar gateway en red privada y registrar solo URL local o referencia de secreto.",
+			},
+		},
+		Baterias: []TipoEmpresaPreconfigEnergiaSolarBateria{
+			{Marca: "Tesla", Modelos: []string{"Powerwall"}, ProtocoloBMS: "propietario/API"},
+			{Marca: "BYD", Modelos: []string{"Battery-Box Premium HVS", "Battery-Box Premium HVM"}, ProtocoloBMS: "CAN-bus"},
+			{Marca: "Pylontech", Modelos: []string{"US5000", "US3000C"}, ProtocoloBMS: "CAN-bus/RS485"},
+			{Marca: "Enphase", Modelos: []string{"IQ Battery 3T", "IQ Battery 10T"}, ProtocoloBMS: "Enphase Enlighten"},
+			{Marca: "Victron", Modelos: []string{"Lithium NG", "Smart Lithium"}, ProtocoloBMS: "VE.Bus/BMS"},
+		},
+		Alertas: []TipoEmpresaPreconfigEnergiaSolarAlerta{
+			{Tipo: "soc_bajo", Nombre: "Bateria baja", Operador: "<", Umbral: 25, Severidad: "alta", EnviarEmail: true},
+			{Tipo: "soh_bajo", Nombre: "Salud de bateria baja", Operador: "<", Umbral: 80, Severidad: "media", EnviarEmail: true},
+			{Tipo: "temperatura_alta", Nombre: "Temperatura alta", Operador: ">", Umbral: 45, Severidad: "alta", EnviarEmail: true},
+			{Tipo: "paneles_sin_produccion", Nombre: "Paneles sin produccion", Operador: "<=", Umbral: 0, Severidad: "media", EnviarEmail: true},
+			{Tipo: "inversor_error", Nombre: "Inversor en error", Operador: "estado", Severidad: "alta", EnviarEmail: true},
+		},
+	}
 }
 
 func defaultLavaderoTarifasPorMinutosPreconfig() []TipoEmpresaPreconfigTarifaPorMinutos {
@@ -1523,6 +1617,16 @@ func rolesFromTipoEmpresaPreconfigTemplate(template TipoEmpresaPreconfigTemplate
 		roles = append(roles, value)
 	}
 	add("administrador")
+	add("supervisor_sucursal")
+	add("vendedor")
+	add("recepcion")
+	add("portero")
+	add("contador")
+	add("empresario")
+	add("servicio_limpieza")
+	add("jefe_bodega")
+	add("recursos_humanos")
+	add("tecnico_solar")
 	for _, usuario := range template.Usuarios {
 		add(usuario.Rol)
 	}
@@ -1548,7 +1652,7 @@ func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModul
 		}
 	}
 	switch rol {
-	case "administrador", "admin", "admin_empresa", "supervisor":
+	case "administrador", "admin", "admin_empresa", "supervisor", "supervisor_sucursal":
 		for _, modulo := range []string{"ventas", "inventario", "finanzas", "clientes", "compras", "facturacion", "seguridad"} {
 			add(modulo, allActions)
 		}
@@ -1558,6 +1662,24 @@ func permisosModuloPreconfigRol(rolID int64, rolNombre string) []RolPermisoModul
 		add("clientes", readCreateUpdate)
 		add("facturacion", readCreate)
 		add("inventario", readOnly)
+	case "portero":
+		add("ventas", []string{"R", "A"})
+	case "contador":
+		add("finanzas", readOnly)
+		add("facturacion", readOnly)
+	case "empresario":
+		add("reportes", readOnly)
+	case "servicio_limpieza", "servicio de limpieza", "limpieza", "aseadora", "aseo":
+		add("ventas", readOnly)
+	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero":
+		add("inventario", []string{"R", "C", "U", "A"})
+		add("compras", readOnly)
+	case "recursos_humanos", "rrhh", "talento_humano":
+		add("horarios_trabajadores", readCreateUpdate)
+		add("asistencia_empleados", readCreateUpdate)
+		add("nomina_sueldos", readCreateUpdate)
+	case "tecnico_solar", "tecnico solar", "solar":
+		add("energia_solar", readOnly)
 	case "recepcion":
 		add("ventas", readCreateUpdate)
 		add("clientes", readCreateUpdate)
@@ -1643,14 +1765,30 @@ func descripcionRolPreconfig(rolNombre, tipoEmpresaNombre string) string {
 		return "Rol administrador para configurar " + tipo + ", usuarios, permisos, reportes e integraciones."
 	case "caja", "cajero":
 		return "Rol de caja para ventas, cobros, cierres, descuentos y comprobantes."
+	case "supervisor", "supervisor_sucursal":
+		return "Rol de supervisor para coordinar la operacion diaria, revisar ventas, estaciones, caja, inventario y reportes operativos."
+	case "vendedor":
+		return "Rol de vendedor para atender clientes, cotizar, registrar ventas y consultar inventario disponible sin administrar configuracion."
 	case "recepcion":
-		return "Rol de recepcion para atender clientes, turnos, reservas, ingresos y salidas."
+		return "Rol de recepcion para atender clientes, gestionar estaciones, reservas, ingresos, salidas y ventas operativas."
+	case "portero":
+		return "Rol de portero para ver estaciones y activar estaciones sin entrar al carrito ni cobrar."
+	case "contador":
+		return "Rol de contador para consultar finanzas e impuestos sin modificar operacion, caja ni ventas."
+	case "empresario":
+		return "Rol de empresario para consultar resultados y reportes ejecutivos sin operar ventas, caja ni configuracion."
+	case "servicio_limpieza", "servicio de limpieza", "limpieza", "aseadora", "aseo":
+		return "Rol de Servicio de limpieza para ver estaciones y reportar estaciones sucias como limpias, sin abrir carrito, cobrar, activar estaciones ni cambiar configuracion."
+	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero":
+		return "Rol de jefe de bodega para administrar inventario, bodegas, existencias, traslados y control de stock sin operar caja ni ventas."
+	case "recursos_humanos", "rrhh", "talento_humano":
+		return "Rol de recursos humanos para gestionar asistencia, horarios, novedades y nomina operativa del personal autorizado."
+	case "tecnico_solar", "tecnico solar", "solar":
+		return "Rol de Tecnico solar para consultar el estado, lecturas, eventos y alertas del sistema de energia solar sin modificar configuracion."
 	case "mesero":
 		return "Rol de mesero para tomar pedidos, gestionar mesas y entregar cuentas."
 	case "barra":
 		return "Rol de barra para preparar productos, controlar bebidas e inventario operativo."
-	case "vendedor":
-		return "Rol vendedor para atender clientes, cotizar y registrar ventas."
 	case "operacion":
 		return "Rol operativo para ejecutar servicios, actualizar estados y apoyar la atencion diaria."
 	case "tecnico":
@@ -1791,6 +1929,62 @@ func DisableRobotRadioInTipoEmpresaPreconfiguraciones(dbConn *sql.DB) error {
 			if _, err := execSQLCompat(tx, `
 				UPDATE tipo_empresa_preconfiguraciones
 				SET config_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = 'sistema.preproduccion'
+				WHERE id = ?
+			`, nextRaw, row.id); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones(dbConn *sql.DB) error {
+	if dbConn == nil {
+		return nil
+	}
+	if err := EnsureTipoEmpresaPreconfiguracionSchema(dbConn); err != nil {
+		return err
+	}
+	return ApplySchemaMigration(dbConn, "super", "20260601_preconfig_energia_solar_catalog", "Agrega energia solar como modulo opcional en preconfiguraciones", func(tx *sql.DB) error {
+		rows, err := querySQLCompat(tx, `SELECT id, COALESCE(config_json, '') FROM tipo_empresa_preconfiguraciones`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		type item struct {
+			id   int64
+			json string
+		}
+		items := []item{}
+		for rows.Next() {
+			var row item
+			if err := rows.Scan(&row.id, &row.json); err != nil {
+				return err
+			}
+			items = append(items, row)
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for _, row := range items {
+			template, err := ParseTipoEmpresaPreconfigTemplate(row.json)
+			if err != nil {
+				continue
+			}
+			if template.Modulos.EnergiaSolar == nil {
+				template.Modulos.EnergiaSolar = defaultEnergiaSolarPreconfig()
+			}
+			template.Modulos.EnergiaSolar.Habilitado = false
+			nextRaw, err := MarshalTipoEmpresaPreconfigTemplate(template)
+			if err != nil {
+				return err
+			}
+			if strings.TrimSpace(nextRaw) == strings.TrimSpace(row.json) {
+				continue
+			}
+			if _, err := execSQLCompat(tx, `
+				UPDATE tipo_empresa_preconfiguraciones
+				SET config_json = ?, fecha_actualizacion = CURRENT_TIMESTAMP, usuario_creador = 'sistema.preconfiguracion'
 				WHERE id = ?
 			`, nextRaw, row.id); err != nil {
 				return err
@@ -2367,6 +2561,76 @@ func normalizeTipoEmpresaPreconfigModulos(modulos TipoEmpresaPreconfigModulos) T
 		}
 		cfg.Reles = reles
 		modulos.ControlElectrico = &cfg
+	}
+	if modulos.EnergiaSolar != nil {
+		cfg := *modulos.EnergiaSolar
+		if cfg.IntervaloSegundos <= 0 {
+			cfg.IntervaloSegundos = 300
+		}
+		if cfg.IntervaloSegundos < 60 {
+			cfg.IntervaloSegundos = 60
+		}
+		cfg.Observaciones = strings.TrimSpace(cfg.Observaciones)
+		proveedores := make([]TipoEmpresaPreconfigEnergiaSolarProveedor, 0, len(cfg.Proveedores))
+		seenProvider := map[string]bool{}
+		for _, item := range cfg.Proveedores {
+			item.Codigo = NormalizeEnergiaSolarProvider(item.Codigo)
+			if item.Codigo == "" {
+				item.Codigo = NormalizeEnergiaSolarProvider(item.Nombre)
+			}
+			if item.Codigo == "" || seenProvider[item.Codigo] {
+				continue
+			}
+			seenProvider[item.Codigo] = true
+			item.Nombre = strings.TrimSpace(item.Nombre)
+			if item.Nombre == "" {
+				item.Nombre = item.Codigo
+			}
+			item.Plataforma = strings.TrimSpace(item.Plataforma)
+			item.ApiBaseSugerida = strings.TrimSpace(item.ApiBaseSugerida)
+			item.Nota = strings.TrimSpace(item.Nota)
+			item.Modelos = uniqueTrimmedStrings(item.Modelos, false)
+			proveedores = append(proveedores, item)
+		}
+		cfg.Proveedores = proveedores
+		baterias := make([]TipoEmpresaPreconfigEnergiaSolarBateria, 0, len(cfg.Baterias))
+		seenBattery := map[string]bool{}
+		for _, item := range cfg.Baterias {
+			item.Marca = strings.TrimSpace(item.Marca)
+			if item.Marca == "" || seenBattery[strings.ToLower(item.Marca)] {
+				continue
+			}
+			seenBattery[strings.ToLower(item.Marca)] = true
+			item.Modelos = uniqueTrimmedStrings(item.Modelos, false)
+			item.ProtocoloBMS = strings.TrimSpace(item.ProtocoloBMS)
+			baterias = append(baterias, item)
+		}
+		cfg.Baterias = baterias
+		alertas := make([]TipoEmpresaPreconfigEnergiaSolarAlerta, 0, len(cfg.Alertas))
+		seenAlert := map[string]bool{}
+		for _, item := range cfg.Alertas {
+			item.Tipo = strings.ToLower(strings.TrimSpace(item.Tipo))
+			if item.Tipo == "" || seenAlert[item.Tipo] {
+				continue
+			}
+			seenAlert[item.Tipo] = true
+			item.Nombre = strings.TrimSpace(item.Nombre)
+			if item.Nombre == "" {
+				item.Nombre = item.Tipo
+			}
+			item.Operador = strings.TrimSpace(item.Operador)
+			if item.Operador == "" {
+				item.Operador = "<"
+			}
+			item.Severidad = strings.ToLower(strings.TrimSpace(item.Severidad))
+			if item.Severidad == "" {
+				item.Severidad = "media"
+			}
+			alertas = append(alertas, item)
+		}
+		cfg.Alertas = alertas
+		cfg.Roles = uniqueTrimmedStrings(append(cfg.Roles, "tecnico_solar"), true)
+		modulos.EnergiaSolar = &cfg
 	}
 	hojas := make([]TipoEmpresaPreconfigHojaVida, 0, len(modulos.HojaVida))
 	for _, item := range modulos.HojaVida {

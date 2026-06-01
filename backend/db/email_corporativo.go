@@ -159,6 +159,20 @@ func GetEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (*Empr
 	return &item, nil
 }
 
+func CountEmpresaEmailCorporativoByEmpresa(dbConn *sql.DB, empresaID int64) (int, error) {
+	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
+		return 0, err
+	}
+	if empresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id invalido")
+	}
+	var count int
+	err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
+		FROM empresa_email_corporativo
+		WHERE empresa_id = ? AND COALESCE(estado, 'activo') <> 'eliminado'`, empresaID).Scan(&count)
+	return count, err
+}
+
 func GetEmpresaEmailCorporativoInitialPasswordEncrypted(dbConn *sql.DB, empresaID int64) (string, error) {
 	if err := EnsureEmpresaEmailCorporativoSchema(dbConn); err != nil {
 		return "", err
@@ -300,9 +314,12 @@ func MarkEmpresaEmailProvisionResult(dbConn *sql.DB, empresaID int64, status, ms
 	return err
 }
 
-func EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp *sql.DB, domain, webmailURL, usuario string) (int, error) {
+func EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp *sql.DB, domain, webmailURL, usuario string, maxAccountsPerEmpresa int) (int, error) {
 	if err := EnsureEmpresaEmailCorporativoSchema(dbSuper); err != nil {
 		return 0, err
+	}
+	if maxAccountsPerEmpresa <= 0 {
+		maxAccountsPerEmpresa = 5
 	}
 	empresas, err := GetEmpresas(dbEmp)
 	if err != nil {
@@ -315,6 +332,11 @@ func EnsureEmpresaEmailRowsForExistingEmpresas(dbSuper, dbEmp *sql.DB, domain, w
 			empresaID = empresa.ID
 		}
 		if empresaID <= 0 {
+			continue
+		}
+		if count, err := CountEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); err != nil {
+			return total, err
+		} else if count >= maxAccountsPerEmpresa {
 			continue
 		}
 		if _, err := GetEmpresaEmailCorporativoByEmpresa(dbSuper, empresaID); err == nil {

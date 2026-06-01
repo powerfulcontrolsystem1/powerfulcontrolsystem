@@ -1,3 +1,42 @@
+2026-06-01: Nota de preconfiguracion solar y licencias por modulo
+- Las preconfiguraciones de tipos de empresa incluyen `modulos.energia_solar` como modulo opcional apagado por defecto.
+- El catalogo solar base contiene proveedores Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y gateway local, baterias comunes y alertas recomendadas.
+- El rol `tecnico_solar` se mantiene con `energia_solar:R` y pagina `linkEnergiaSolar`; no obtiene permisos de configuracion, ventas, caja, inventario ni facturacion.
+- Licencias nuevas deben habilitar `energia_solar` como clave independiente cuando el plan incluya monitoreo solar; licencias antiguas pueden conservar fallback desde `control_electrico` o `seguridad` para no cortar empresas ya configuradas.
+
+2026-05-31: Nota de catalogo base de roles empresariales comunes
+- Las preconfiguraciones de tipos de empresa incluyen roles comunes para asignacion directa desde usuarios empresariales: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `recursos_humanos` y `tecnico_solar`.
+- `tecnico_solar`: `energia_solar:R`, pagina `linkEnergiaSolar`, sin permisos de configuracion, domotica, inventario, ventas ni reportes.
+- `jefe_bodega`: `inventario:R/C/U/A` y `compras:R`; puede ver paginas de inventario, bodegas, categorias, recetas, historial y codigos de barras, pero no ventas, caja ni configuracion. No recibe `D` para eliminar inventario.
+- `recursos_humanos`: `horarios_trabajadores:R/C/U`, `asistencia_empleados:R/C/U` y `nomina_sueldos:R/C/U`; sin ventas, caja ni permisos generales de seguridad.
+- `vendedor` y `recepcion`: orientados a ventas/clientes con consulta de inventario, sin administracion global.
+- Defensa backend: las restricciones de roles especializados se reaplican despues de licencia, vertical, empresa y acceso compartido.
+
+2026-05-31: Nota de rol Servicio de limpieza para estaciones
+- Se agrega el rol `servicio_limpieza` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.
+- Matriz efectiva: `ventas:R` solo para cargar el tablero de estaciones; no tiene `ventas:A`, `C/U/D`, caja, carrito, inventario, reportes ni configuracion.
+- Visibilidad: `permisos_contexto` restringe el rol a `linkEstaciones`; el menu empresarial oculta el resto de paginas.
+- Defensa backend: `carritos_compra` permite al rol solo `GET` del tablero y `carritos_compra/items` responde 403. El cambio de sucia a limpia se realiza por `/api/empresa/estacion_aseo?action=finalizar`, con registro de duracion y usuario.
+- Reportes de aseo: el rol puede reportar aseo terminado, pero no obtiene permiso gerencial para consultar reportes historicos salvo que un rol superior lo autorice.
+
+2026-05-31: Nota de rol empresario para resultados y reportes
+- Se agrega el rol `empresario` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.
+- Matriz efectiva: `reportes:R` para consultar resultados y reportes ejecutivos; no tiene `C/U/D/A` ni acceso a ventas, estaciones, carritos, caja, creditos, inventario, finanzas, impuestos, usuarios o configuracion.
+- Visibilidad: `permisos_contexto` restringe el rol a `linkReportes` y `linkReportesEjecutivos`; el submenu de reportes oculta `linkReportesTurnos` para no mezclar vista ejecutiva con caja/turnos.
+- Defensa backend: las restricciones por rol se reaplican despues de overrides de empresa/compartidos para que un check de configuracion no amplie accidentalmente el alcance de `empresario`.
+
+2026-05-31: Nota de rol operativo contador
+- Se agrega el rol `contador` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.
+- Matriz efectiva: `finanzas:R` y `facturacion:R` para consultar centro financiero e impuestos; no tiene `C/U/D/A` ni acceso a ventas, estaciones, carritos, caja, creditos, inventario, usuarios o configuracion.
+- Visibilidad: `permisos_contexto` restringe el rol a `linkFinanzas`, `linkFinanzasMain` y `linkImpuestos`; el submenu financiero tambien oculta accesos rapidos no autorizados.
+- Defensa backend: las restricciones por rol se reaplican despues de overrides de empresa/compartidos para que un check de configuracion no amplie accidentalmente el alcance de `contador`.
+
+2026-05-31: Nota de rol operativo portero
+- Se agrega el rol `portero` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.
+- Matriz efectiva: `ventas:R` para consultar el tablero de estaciones y `ventas:A` exclusivamente para `action=activar_estacion`; no tiene `C/U/D`, inventario, finanzas, clientes ni facturacion.
+- Visibilidad: `permisos_contexto` restringe el rol a `linkEstaciones`; el menu empresarial oculta panel, caja, corte, venta directa, carritos y configuracion.
+- Defensa backend: `carritos_compra` permite al portero solo `GET` operativo y `PUT action=activar_estacion`; `carritos_compra/items` devuelve 403 aunque se intente desde consola o URL.
+
 2026-05-28: Nota de auditoria especial super administrador
 - `super_administrador.html > Acceso > Auditoria super` queda reservado para roles super y consulta `/super/api/auditoria?scope=super_panel`.
 - El backend rechaza `scope=super_panel` para administradores que no sean roles de super panel, aunque intenten modificar la URL o llamar la API manualmente.

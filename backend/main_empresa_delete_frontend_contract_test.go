@@ -33,6 +33,9 @@ func TestEditarEmpresaDeleteButtonRequiresSafeConfirmation(t *testing.T) {
 	js := string(jsRaw)
 	requiredJS := []string{
 		"function getDeleteValidationState()",
+		"function confirmDownloadBeforeEmpresaDelete()",
+		"Antes de eliminar esta empresa, deseas descargar toda su informacion?",
+		"if (!confirmDownloadBeforeEmpresaDelete())",
 		"ready: nameOk && phraseOk && riskOk && !isSharedEmpresa()",
 		"btn.disabled = state.deleting || !validation.ready",
 		"if (!busy) {\n      updateDeleteChecklist();\n    }",
@@ -50,5 +53,24 @@ func TestEditarEmpresaDeleteButtonRequiresSafeConfirmation(t *testing.T) {
 	html := string(htmlRaw)
 	if !strings.Contains(html, `id="empresaDeleteBtn"`) || !strings.Contains(html, `id="empresaDeleteBtn" type="button" class="btn danger" disabled`) {
 		t.Fatalf("editar_empresa.html debe cargar el boton de eliminacion deshabilitado hasta completar las validaciones")
+	}
+}
+
+func TestSeleccionarEmpresaDeleteAsksDownloadBeforeDelete(t *testing.T) {
+	jsRaw, err := os.ReadFile(filepath.Join("..", "web", "js", "seleccionar_empresa.js"))
+	if err != nil {
+		t.Fatalf("read seleccionar_empresa.js: %v", err)
+	}
+	js := string(jsRaw)
+	requiredJS := []string{
+		"function confirmSelectorDownloadBeforeDelete(empresa)",
+		"Antes de eliminar esta empresa, deseas descargar toda su informacion?",
+		"if (!confirmSelectorDownloadBeforeDelete(empresa))",
+		"descarga_ofrecida: !!deleteModalState.descargaOfrecida",
+	}
+	for _, expected := range requiredJS {
+		if !strings.Contains(js, expected) {
+			t.Fatalf("seleccionar_empresa.js debe preguntar por descarga antes de eliminar; falta %q", expected)
+		}
 	}
 }

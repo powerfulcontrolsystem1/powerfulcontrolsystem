@@ -1,3 +1,64 @@
+2026-06-01: renovaciones anticipadas de licencias comerciales.
+- Modulos afectados: `licencias`, `pagos`, `checkout`, `epayco`, `wompi`.
+- Cambio funcional: cuando una empresa paga una licencia comercial antes del
+  vencimiento actual, la nueva licencia se programa desde el vencimiento
+  acumulado mas lejano y suma su duracion sin reemplazar la licencia vigente.
+- Seguridad/idempotencia: `pagos_epayco` y `pagos_wompi` reservan la activacion
+  con `licencia_activation_status` y guardan `licencia_activada_id` /
+  `licencia_activada_en` para que un webhook o consulta repetida no duplique
+  dias.
+- Validacion: `go test ./db -run "Licencia|Renovacion|Payment" -count=1` y
+  `go test ./handlers -run "Licencia|Payment|Wompi|Epayco" -count=1`.
+
+2026-05-31: modo offline profesional para varias cajas simultaneas.
+- Modulos afectados: `carritos`, `estaciones`, `venta_directa`, `caja`, `facturacion_offline`.
+- Cambio funcional: la cola local del carrito queda separada por empresa y cajero; cada venta offline incluye operador, rol, caja y `sync_key` con empresa/cajero/caja/carrito para evitar mezcla entre cajas simultaneas.
+- Seguridad operativa: el backend rechaza sincronizaciones de otro cajero o sin `caja_codigo` explicito, y trata el reintento de un carrito ya pagado como idempotente para no duplicar ventas, documentos, caja ni inventario.
+- Validacion: `go test ./handlers -run "OfflineVenta|Offline|Carrito" -count=1`, `go test ./db -run "Carrito|CierreCaja|Offline" -count=1` y parseo de scripts embebidos de `web/administrar_empresa/carrito_de_compras.html`.
+
+2026-05-31: Descarga PDF de licencia desde administrar empresa.
+- Modulos afectados: `licencias`, `administrar_empresa`, `permisos_empresa`, `mensajeria_super`, `frontend_ux`.
+- Cambio funcional visible: Administrar empresa ahora tiene un grupo principal `Licencia`; dentro, `Licencia del sistema` permite descargar el PDF oficial de la licencia de esa empresa.
+- Backend: se registra `/api/empresa/licencia_sistema/pdf` con `WithEmpresaSeguridadPermissions`; el handler resuelve `empresa_id`, valida empresa/licencia activa y devuelve `application/pdf` con `Cache-Control: no-store`.
+- Formato: el PDF usa la misma plantilla `licencia_software_pdf` editable desde Super administrador > Formatos de email; el correo de activacion reutiliza el generador central para evitar divergencias.
+- Seguridad: el endpoint queda asociado a `linkLicenciaSistema`, con permiso de lectura y alcance empresarial, evitando descargas por URL de empresas fuera del contexto permitido.
+- Validacion: `go test ./handlers -run "LicenciaSoftwarePDF|LicenciaActivationEmailMessage|LicenciaSistemaPDF|Licencia" -count=1`, `go test . -run TestNoExiste -count=1`, validacion de scripts inline con Node empaquetado. La verificacion visual completa quedo limitada porque el puerto local estaba rechazando conexion y Browser bloquea `file://`.
+
+2026-05-31: Catalogo base de roles empresariales comunes.
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `inventario`, `energia_solar`, `recursos_humanos`, `frontend_ux`.
+- Cambio funcional visible: los administradores de empresa tienen un catalogo mas completo para asignar usuarios comunes: supervisor, vendedor, recepcion, jefe de bodega, recursos humanos y tecnico solar.
+- Backend: `tecnico_solar` queda limitado a `energia_solar:R`; `jefe_bodega` a `inventario:R/C/U/A` y `compras:R`; `recursos_humanos` a `horarios_trabajadores`, `asistencia_empleados` y `nomina_sueldos` con `R/C/U`.
+- Seguridad: los roles especializados se restringen por paginas y modulos despues de overrides para evitar que un check los amplie accidentalmente a caja, ventas o configuracion.
+- Validacion: pruebas unitarias de matriz de permisos por rol, preconfiguraciones y sintaxis de menu.
+
+2026-05-31: Rol Servicio de limpieza para estaciones.
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `estaciones`, `control_aseo`, `carritos`, `frontend_ux`.
+- Cambio funcional visible: al usuario con rol `servicio_limpieza` solo se le muestra `Estaciones`; al hacer clic sobre una estacion sucia reporta el aseo terminado y queda disponible.
+- Backend: el catalogo de permisos normaliza `Servicio de limpieza`, `limpieza`, `aseadora` y `aseo` como `servicio_limpieza`, limita su matriz a `ventas:R` y restringe paginas a `linkEstaciones`.
+- Seguridad: `carritos_compra` permite al rol solo `GET` del tablero de estaciones; bloquea activaciones, items, pagos, caja y acciones de carrito. El endpoint de aseo permite finalizar limpieza sin conceder reportes ni configuracion.
+- Validacion: pruebas unitarias de permisos y restricciones de carrito, sintaxis JS, parseo de estaciones y validacion visual local del menu/flujo.
+
+2026-05-31: Rol empresario para resultados y reportes.
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `reportes`, `frontend_ux`.
+- Cambio funcional visible: al usuario con rol `empresario` solo se le muestra el acceso de reportes ejecutivos de la empresa; no ve operaciones, caja, estaciones, inventario, finanzas, impuestos, usuarios ni configuracion.
+- Backend: el catalogo de permisos agrega `empresario`, normaliza alias como `propietario`, limita su matriz a `reportes:R` y restringe paginas a `linkReportes` y `linkReportesEjecutivos`.
+- Seguridad: el limite se reaplica despues de overrides de empresa/compartidos para impedir ampliaciones accidentales por configuracion; las APIs de otros modulos siguen rechazando llamadas directas por permisos.
+- Validacion: `go test ./handlers -run 'Portero|Contador|Empresario' -count=1`, `go test ./db -run 'Portero|Contador|Empresario' -count=1`, `node --check web/js/administrar_empresa.js`, parseo del script inline de `reportes_menu.html`, `git diff --check` y validacion visual local.
+
+2026-05-31: Rol operativo contador para finanzas e impuestos.
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `finanzas`, `impuestos`, `facturacion`, `frontend_ux`.
+- Cambio funcional visible: al usuario con rol `contador` solo se le muestra `Centro financiero y contable` e `Impuestos`; dentro del centro financiero se ocultan chips y accesos no permitidos.
+- Backend: el catalogo de permisos mantiene `contador` como rol independiente de `contabilidad`, lo limita a `finanzas:R` y `facturacion:R`, y restringe paginas a `linkFinanzas`, `linkFinanzasMain` y `linkImpuestos`.
+- Seguridad: las restricciones de `contador` se reaplican despues de overrides de empresa y compartidos; las mutaciones financieras o fiscales quedan bloqueadas por wrapper de permisos.
+- Validacion: `go test ./handlers -run 'Portero|Contador' -count=1`, `go test ./db -run 'Portero|Contador' -count=1`, `node --check web/js/administrar_empresa.js`, parseo del script inline de `finanzas_menu.html` y `git diff --check`.
+
+2026-05-31: Rol operativo portero para estaciones.
+- Modulos afectados: `usuarios_empresa`, `roles_permisos`, `estaciones`, `carritos`, `frontend_ux`.
+- Cambio funcional visible: al usuario con rol `portero` solo se le muestra `Estaciones`; al hacer clic en una estacion disponible la activa sin abrir carrito.
+- Backend: el catalogo de permisos normaliza `portero/guardia/vigilante`, las preconfiguraciones crean el rol por tipo de empresa y el snapshot de permisos limita paginas a `linkEstaciones`.
+- Seguridad: aunque se edite URL o consola, `carritos_compra` permite al portero solo `GET` de estado y `PUT action=activar_estacion`; `carritos_compra/items` responde 403.
+- Validacion: `go test ./handlers -run Portero -count=1`, `go test ./db -run Portero -count=1`, `node --check web/js/administrar_empresa.js` con Node empaquetado y parseo del script inline de `estaciones.html`.
+
 2026-05-31: Feedback sonoro y tactil del carrito.
 - Modulos afectados: `configuracion_carrito`, `carrito`, `venta_directa`, `estaciones`, `frontend_ux`.
 - Cambio funcional visible: configuracion de carrito agrega cuatro checks independientes para emitir pitido en PC, emitir pitido en celular, vibrar botones en PC y vibrar botones en celular.
@@ -29538,3 +29599,124 @@ Archivos modificados:
 - web/administrar_empresa/corte_de_caja.html
 - web/administrar_empresa/estaciones.html
 - web/estilos.css
+
+2026-05-31: Bandeja de correo empresarial responsive en movil
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/panel.html
+Detalle:
+- La tarjeta `Bandeja de correo corporativo` del panel empresarial conserva alto visible en celulares y evita desbordes horizontales del iframe del webmail.
+- Se valida visualmente en viewport movil con buzon simulado, comprobando panel visible, iframe con alto util y sin scroll horizontal de pagina.
+
+2026-05-31: Pagina Noticias tipo red social
+Archivos modificados:
+- backend/handlers/pagina_principal_handlers.go
+- backend/main.go
+- backend/utils/auth_middleware_test.go
+- backend/utils/utils.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/js/super_administrador.js
+- web/menu.js
+- web/noticias.html
+- web/super/noticias.html
+- web/super_administrador.html
+Detalle:
+- Se crea `/noticias.html` con portada, foto de perfil, biografia, feed de noticias y fuente oficial por publicacion.
+- Se crea `/super/noticias.html` para editar la pagina desde Super administrador, dentro del grupo `Portal publico e index`.
+- La configuracion se guarda en `pcs_superadministrador.configuraciones` con clave `super.noticias_portal.v1`.
+- Se agrega contenido inicial con noticias DIAN sobre facturacion electronica y controles de facturacion, enlazando fuentes oficiales.
+
+2026-05-31: Descarga previa obligatoriamente preguntada antes de eliminar empresa
+Archivos modificados:
+- backend/main_empresa_delete_frontend_contract_test.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/js/editar_empresa.js
+- web/js/seleccionar_empresa.js
+Detalle:
+- El ultimo paso de eliminacion total de empresa ahora pregunta si se desea descargar toda la informacion antes de borrar.
+- Si el usuario acepta, se abre la pagina de descarga en una nueva pestana y luego continua el borrado; si cancela, el borrado sigue sin descarga.
+- Se conserva la confirmacion fuerte por nombre exacto, frase `ELIMINAR` y aceptacion de riesgo.
+
+2026-05-31: Cupo configurable de cuentas de email corporativo por empresa
+Archivos modificados:
+- backend/db/email_corporativo.go
+- backend/handlers/email_corporativo_handlers.go
+- backend/handlers/email_corporativo_handlers_test.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/super/email_corporativo.html
+Detalle:
+- La configuracion de super administrador del servidor de email agrega `Maximo cuentas por empresa`.
+- El backend guarda `email_corporativo.max_accounts_per_empresa`, usa default 5 y normaliza valores fuera de rango.
+- La creacion automatica y sincronizacion de emails corporativos validan el cupo activo por `empresa_id` antes de crear nuevas cuentas.
+
+2026-05-31: PDF automatico al activar licencia
+Archivos modificados:
+- backend/handlers/licencias_pdf.go
+- backend/handlers/licencias_pdf_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/super_email_templates.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/super/formato_para_emviar_email.html
+Detalle:
+- Al activarse una licencia por pago o flujo de valor cero permitido, el correo de licencia aprobada adjunta un PDF de licencia de software.
+- El texto del PDF se configura desde Super administrador en `Formatos de email`, plantilla `licencia_software_pdf`.
+- El PDF se genera en Go puro, sin dependencias externas, con marca Powerful Control System, empresa, plan, codigo, fechas y referencia.
+2026-06-01: Checkout de licencias muestra Epayco y Wompi configurados
+Archivos modificados:
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- web/estilos.css
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_checkout_licencias_publico.md
+- documentos/gobernanza_tecnica/runbooks/runbook_checkout_licencias.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+Detalle:
+- El endpoint publico de metodos de pago de licencias habilita por defecto Epayco y Wompi cuando sus credenciales estan completas.
+- Los flags `epayco.enabled` y `wompi.enabled` siguen funcionando como apagado explicito desde super administrador.
+- La pantalla de pago centra y agranda las marcas Davivienda/Bancolombia en las tarjetas de metodo.
+- Se valido visualmente el checkout con ambos proveedores usando endpoints simulados de pago y polling en estado `PENDING`.
+2026-06-01: Documentacion, APIs y preconfiguracion solar actualizadas
+Archivos modificados:
+- backend/db/tipo_empresa_preconfiguracion.go
+- backend/db/tipo_empresa_preconfiguracion_test.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/ayuda_apis.md
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/energia_solar.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/ayuda/ayuda.html
+- web/ayuda/ayuda_apis.html
+Detalle:
+- Se agrega `modulos.energia_solar` a las preconfiguraciones de tipos de empresa como modulo opcional apagado por defecto.
+- El catalogo guia solar incluye proveedores Victron, SMA, SolarEdge y gateway local, baterias comunes, alertas base e intervalo de lectura.
+- Se documenta que `tecnico_solar` tiene solo lectura y que licencias nuevas deben usar la clave independiente `energia_solar`.
+- Se actualiza ayuda general, ayuda de APIs, mapa de modulos, flujos operativos, estructura BD, matriz de roles/permisos y OpenAPI generado.

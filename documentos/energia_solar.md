@@ -1,6 +1,6 @@
 # Modulo energia solar
 
-Fecha: 2026-05-28
+Fecha: 2026-06-01
 
 ## Objetivo
 
@@ -42,6 +42,40 @@ temperatura y diferencia entre celdas.
    inversor o error BMS.
 5. Registrar lecturas desde API/gateway o manualmente durante pruebas.
 6. El backend evalua alertas, registra eventos y envia correo si corresponde.
+
+## Preconfiguracion y licencias
+
+- Las preconfiguraciones de tipos de empresa incluyen `modulos.energia_solar`
+  como modulo opcional, apagado por defecto.
+- El catalogo base de preconfiguracion registra proveedores Victron, SMA,
+  SolarEdge y `gateway_local`, baterias comunes y alertas minimas.
+- El rol `tecnico_solar` se crea por defecto y recibe solo
+  `energia_solar:R`.
+- Los administradores y supervisores pueden configurar sistemas, alertas y
+  lecturas segun permisos efectivos de la empresa.
+- En licencias nuevas el modulo debe habilitarse como `energia_solar`; para
+  licencias antiguas se mantiene compatibilidad por fallback desde
+  `control_electrico` o `seguridad`.
+
+## API
+
+Endpoint empresarial protegido:
+
+```http
+GET  /api/empresa/energia_solar?empresa_id={id}&action=dashboard
+GET  /api/empresa/energia_solar?empresa_id={id}&action=catalogo
+GET  /api/empresa/energia_solar?empresa_id={id}&action=sistemas
+GET  /api/empresa/energia_solar?empresa_id={id}&action=alertas&sistema_id={id}
+GET  /api/empresa/energia_solar?empresa_id={id}&action=lecturas&sistema_id={id}&limit=120
+GET  /api/empresa/energia_solar?empresa_id={id}&action=eventos&sistema_id={id}&limit=80
+POST /api/empresa/energia_solar?empresa_id={id}&action=sistema
+POST /api/empresa/energia_solar?empresa_id={id}&action=alerta
+POST /api/empresa/energia_solar?empresa_id={id}&action=lectura
+POST /api/empresa/energia_solar?empresa_id={id}&action=probar_alerta&sistema_id={id}
+```
+
+Todas las acciones validan `empresa_id`, permisos efectivos, licencia y
+pertenencia del `sistema_id` a la empresa.
 
 ## Seguridad
 

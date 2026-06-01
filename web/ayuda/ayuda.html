@@ -128,7 +128,7 @@
     <section class="help-hero">
       <div>
         <h1>Centro de ayuda Powerful Control System</h1>
-        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-05-30 con carrito unificado, ayuda de APIs, auditoria, permisos y acceso privado desde el panel super.</p>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-06-01 con energia solar, preconfiguraciones, roles/licencias, APIs y ayuda operativa.</p>
       </div>
       <div class="help-search-row">
         <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
@@ -162,6 +162,7 @@
         <a href="#reportes">Reportes y auditoria <span>control</span></a>
         <a href="#soporte-comunicaciones">Soporte y avisos <span>tickets</span></a>
         <a href="#integraciones">Integraciones <span>servicios</span></a>
+        <a href="#energia-solar">Energia solar <span>monitoreo</span></a>
         <a href="#apis">APIs <span>desarrollo</span></a>
         <a href="#estado-operativo">Estado operativo <span>calidad</span></a>
         <a href="#faq">Solucion de problemas <span>FAQ</span></a>
@@ -520,8 +521,36 @@
               <p>Se configura dentro de cada empresa. Puede activar estaciones, reportar ocupacion y alimentar cortes de caja.</p>
             </article>
             <article class="help-mini-card">
+              <h3>Energia solar</h3>
+              <p>Monitorea Victron, SMA, SolarEdge o gateways locales por empresa, con baterias, BMS, lecturas, eventos y alertas por correo.</p>
+              <span class="help-route">Ruta: /administrar_empresa/energia_solar.html</span>
+            </article>
+            <article class="help-mini-card">
               <h3>Utilidades</h3>
               <p>El menu flotante incluye calculadora, juegos y emulador. Juegos muestra tarjetas uniformes con capturas reales, controles tactiles, sonido y records globales por jugador/empresa; el emulador incluye D-pad tactil para celular.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="energia-solar" class="card empresa-section help-section" data-help="energia solar victron sma solaredge baterias bms tecnico_solar alertas">
+          <h2>Energia solar</h2>
+          <p class="form-help">Modulo opcional por empresa para monitorear sistemas solares, baterias, BMS, inversores y alertas. Las preconfiguraciones lo incluyen apagado por defecto para que el administrador lo active cuando la empresa tenga equipos reales.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Proveedores base</h3>
+              <p>Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y gateway local para Modbus, CAN-bus, RS485, MQTT o API privada.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Baterias</h3>
+              <p>Tesla Powerwall, BYD Battery-Box, Pylontech, Enphase IQ Battery y Victron Lithium quedan en el catalogo guia de preconfiguracion.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Roles</h3>
+              <p><code>tecnico_solar</code> consulta estado, lecturas, eventos y alertas. Administradores y supervisores configuran sistemas y reglas segun licencia y permisos efectivos.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>API</h3>
+              <p>Usa <code>/api/empresa/energia_solar</code> con acciones <code>dashboard</code>, <code>catalogo</code>, <code>sistemas</code>, <code>alertas</code>, <code>lecturas</code>, <code>eventos</code> y <code>probar_alerta</code>.</p>
             </article>
           </div>
         </section>

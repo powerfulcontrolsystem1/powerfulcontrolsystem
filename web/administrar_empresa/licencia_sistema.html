@@ -37,9 +37,8 @@
         <p>Documento de uso de Powerful Control System para esta empresa, con alcance de modulos, permisos y condiciones generales de operacion SaaS.</p>
       </div>
       <div class="license-actions">
-        <button id="downloadTxtBtn" class="btn primary" type="button">Descargar TXT</button>
-        <button id="downloadHtmlBtn" class="btn secondary" type="button">Descargar HTML</button>
-        <button id="printLicenseBtn" class="btn secondary" type="button">Imprimir / PDF</button>
+        <a id="downloadPdfLink" class="btn primary" href="#" download>Descargar licencia PDF</a>
+        <button id="printLicenseBtn" class="btn secondary" type="button">Vista imprimible</button>
       </div>
     </section>
 
@@ -195,37 +194,25 @@
           "<h3>Modulos habilitados</h3>" +
           (modules.length ? "<div class=\"license-module-list\">" + modules.map(function(item){ return "<span class=\"license-module-pill\">" + escapeHTML(item) + "</span>"; }).join("") + "</div>" : "<p>No se encontraron modulos habilitados en el contexto actual.</p>") +
           "<h3>Descarga</h3>" +
-          "<p>Use los botones superiores para descargar el documento en TXT, guardar una copia HTML o imprimirlo como PDF.</p>";
+          "<p>Use el boton superior para descargar el PDF oficial de esta empresa. El formato se administra desde super administrador.</p>";
       }
 
-      function download(filename, content, type){
-        var blob = new Blob([content], { type: type || "text/plain;charset=utf-8" });
-        var url = URL.createObjectURL(blob);
-        var link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-      }
-
-      function safeFilename(value){
-        return String(value || "empresa").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "empresa";
-      }
-
-      function downloadText(){
-        download("licencia-sistema-" + safeFilename(state.empresaNombre) + ".txt", plainDocument(), "text/plain;charset=utf-8");
-      }
-
-      function downloadHTML(){
-        var content = "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Licencia del sistema</title><style>body{font-family:Arial,sans-serif;line-height:1.45;color:#111;margin:28px;max-width:900px}h1,h2,h3{color:#111}.pill{display:inline-block;border:1px solid #777;border-radius:999px;padding:4px 8px;margin:3px}</style></head><body><pre style=\"white-space:pre-wrap;font-family:Arial,sans-serif\">" + escapeHTML(plainDocument()) + "</pre></body></html>";
-        download("licencia-sistema-" + safeFilename(state.empresaNombre) + ".html", content, "text/html;charset=utf-8");
+      function updatePdfLink(){
+        var link = byId("downloadPdfLink");
+        if (!link) return;
+        if (!state.empresaId) {
+          link.href = "#";
+          link.setAttribute("aria-disabled", "true");
+          return;
+        }
+        link.href = "/api/empresa/licencia_sistema/pdf?empresa_id=" + encodeURIComponent(state.empresaId);
+        link.removeAttribute("aria-disabled");
       }
 
       async function load(){
         state.empresaId = resolveEmpresaId();
         state.empresaNombre = resolveCompanyName();
+        updatePdfLink();
         byId("companyName").textContent = state.empresaNombre;
         if (!state.empresaId) {
           byId("licenseStatus").textContent = "No se pudo detectar empresa_id para cargar la licencia.";
@@ -242,8 +229,12 @@
         }
       }
 
-      byId("downloadTxtBtn").addEventListener("click", downloadText);
-      byId("downloadHtmlBtn").addEventListener("click", downloadHTML);
+      byId("downloadPdfLink").addEventListener("click", function(ev){
+        if (!state.empresaId) {
+          ev.preventDefault();
+          byId("licenseStatus").textContent = "No se pudo detectar empresa_id para descargar la licencia.";
+        }
+      });
       byId("printLicenseBtn").addEventListener("click", function(){ window.print(); });
       load();
     })();

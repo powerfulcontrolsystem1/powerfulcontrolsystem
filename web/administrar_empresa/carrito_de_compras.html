@@ -4332,13 +4332,39 @@
       setStationPaymentPersistentMessage('Internet restablecido. Sincronizando ventas offline pendientes...', false);
     }
 
-    function offlineQueueKey() {
+    function currentOfflineOperatorEmail() {
+      const ctx = state.empresaPermissionsContext && typeof state.empresaPermissionsContext === 'object' ? state.empresaPermissionsContext : {};
+      return normalize(ctx.admin_email || ctx.adminEmail || ctx.email || '');
+    }
+
+    function currentOfflineOperatorRole() {
+      const ctx = state.empresaPermissionsContext && typeof state.empresaPermissionsContext === 'object' ? state.empresaPermissionsContext : {};
+      return normalize(ctx.rol_efectivo || ctx.rolEfectivo || ctx.rol || '');
+    }
+
+    function currentOfflineOperatorKey() {
+      const base = (currentOfflineOperatorEmail() || 'sin_usuario').toLowerCase();
+      const safe = base.replace(/[^a-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+      return (safe || 'sin_usuario').slice(0, 80);
+    }
+
+    function offlineLegacyQueueKey() {
       return 'pcs_offline_ventas_' + String(state.empresaID || 0);
     }
 
-    function loadOfflineQueue() {
+    function offlineQueueKey() {
+      return offlineLegacyQueueKey() + '_' + currentOfflineOperatorKey();
+    }
+
+    function offlineRowBelongsToCurrentOperator(row) {
+      const currentEmail = currentOfflineOperatorEmail().toLowerCase();
+      const rowEmail = normalize(row && (row.usuario_email || row.usuarioEmail || row.cajero_email || row.cajeroEmail)).toLowerCase();
+      return !currentEmail || !rowEmail || currentEmail === rowEmail;
+    }
+
+    function readOfflineQueueKey(key) {
       try {
-        const raw = localStorage.getItem(offlineQueueKey());
+        const raw = localStorage.getItem(key);
         const rows = raw ? JSON.parse(raw) : [];
         return Array.isArray(rows) ? rows : [];
       } catch (_) {
@@ -4346,15 +4372,65 @@
       }
     }
 
-    function saveOfflineQueue(rows) {
+    function writeOfflineQueueKey(key, rows) {
       try {
-        localStorage.setItem(offlineQueueKey(), JSON.stringify(Array.isArray(rows) ? rows : []));
+        const safeRows = Array.isArray(rows) ? rows : [];
+        if (safeRows.length) {
+          localStorage.setItem(key, JSON.stringify(safeRows));
+        } else {
+          localStorage.removeItem(key);
+        }
       } catch (_) {}
     }
 
-    function createOfflineSyncKey(carrito) {
-      const code = normalize(carrito && carrito.codigo).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase();
-      return 'OFF-' + String(state.empresaID || 0) + '-' + (code || ('CRT' + String(carrito && carrito.id || 0))) + '-' + String(Date.now());
+    function loadOfflineQueue() {
+      const keys = [offlineQueueKey()];
+      const legacy = offlineLegacyQueueKey();
+      if (keys.indexOf(legacy) === -1) keys.push(legacy);
+      const seen = {};
+      const out = [];
+      keys.forEach(function(key) {
+        readOfflineQueueKey(key).forEach(function(row) {
+          if (!row || !offlineRowBelongsToCurrentOperator(row)) return;
+          const syncKey = normalize(row.sync_key || row.syncKey);
+          const dedupeKey = syncKey || JSON.stringify([row.carrito_id, row.carrito_codigo, row.fecha_offline]);
+          if (seen[dedupeKey]) return;
+          seen[dedupeKey] = true;
+          out.push(row);
+        });
+      });
+      return out;
+    }
+
+    function saveOfflineQueue(rows) {
+      const currentRows = (Array.isArray(rows) ? rows : []).filter(offlineRowBelongsToCurrentOperator);
+      writeOfflineQueueKey(offlineQueueKey(), currentRows);
+      const legacy = offlineLegacyQueueKey();
+      if (legacy !== offlineQueueKey()) {
+        const legacyRows = readOfflineQueueKey(legacy).filter(function(row) {
+          return !offlineRowBelongsToCurrentOperator(row);
+        });
+        writeOfflineQueueKey(legacy, legacyRows);
+      }
+    }
+
+    function createOfflineSyncKey(carrito, caja) {
+      const code = normalize(carrito && carrito.codigo).replace(/[^A-Za-z0-9_-]/g, '').toUpperCase().slice(0, 24);
+      const cajaCode = (normalizeCashCode(caja && caja.caja_codigo).replace(/[^A-Z0-9_-]/g, '') || 'CAJA').slice(0, 18);
+      const operator = currentOfflineOperatorKey().toUpperCase().slice(0, 28);
+      const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+      return 'OFF-' + String(state.empresaID || 0) + '-' + operator + '-' + cajaCode + '-' + (code || ('CRT' + String(carrito && carrito.id || 0))) + '-' + String(Date.now()) + '-' + random;
+    }
+
+    function validateOfflineCashRegisterForPayment(cashForPayment, printTargets) {
+      const cajaID = Number(cashForPayment && cashForPayment.id || 0);
+      const cajaCode = normalizeCashCode(cashForPayment && cashForPayment.caja_codigo);
+      if (cajaID > 0 && cajaCode) return true;
+      closeUnusedPaymentPrintTargets(printTargets);
+      const message = 'Modo sin internet activo, pero este cajero no tiene una caja abierta cargada. Conecta internet, abre o selecciona tu caja y vuelve a intentar.';
+      setStationPaymentPersistentMessage(message, true);
+      renderStationPaymentPanel(getSelectedCarrito());
+      return false;
     }
 
     function findPendingOfflineSaleForCarrito(carrito) {
@@ -4381,7 +4457,9 @@
       const stationLabel = normalize(state.stationName) || (state.stationID > 0 ? ('Estacion ' + state.stationID) : (state.directSaleMode ? 'Venta directa' : ''));
       return {
         empresa_id: Number(state.empresaID || 0),
-        sync_key: createOfflineSyncKey(carrito),
+        sync_key: createOfflineSyncKey(carrito, caja),
+        usuario_email: currentOfflineOperatorEmail(),
+        usuario_rol: currentOfflineOperatorRole(),
         fecha_offline: new Date().toISOString(),
         carrito_id: Number(carrito && carrito.id || 0),
         carrito_codigo: normalize(carrito && carrito.codigo),
@@ -5105,6 +5183,7 @@
       let cashForPayment = selectedCash;
       const itemsSnapshot = Array.isArray(state.items) ? state.items.slice() : [];
       if (isOfflineBillingEnabled() && typeof navigator !== 'undefined' && navigator.onLine === false) {
+        if (!validateOfflineCashRegisterForPayment(cashForPayment, printTargets)) return;
         await storeAndPrintOfflineSale(selected, pay, itemsSnapshot, printTargets, cashForPayment);
         return;
       }
@@ -5237,7 +5316,9 @@
       } catch (err) {
         closeUnusedPaymentPrintTargets(printTargets);
         if (isOfflineBillingEnabled() && isLikelyNetworkError(err)) {
-          await storeAndPrintOfflineSale(selected, pay, itemsSnapshot, preparePaymentPrintTargets(), cashForPayment);
+          const offlinePrintTargets = preparePaymentPrintTargets();
+          if (!validateOfflineCashRegisterForPayment(cashForPayment, offlinePrintTargets)) return;
+          await storeAndPrintOfflineSale(selected, pay, itemsSnapshot, offlinePrintTargets, cashForPayment);
         } else if (!handleBusinessPrerequisiteError(err, 'No se pudo cerrar el carrito por pago.')) {
           setStationPaymentMessage(err.message || 'No se pudo cerrar el carrito por pago.', true);
         }

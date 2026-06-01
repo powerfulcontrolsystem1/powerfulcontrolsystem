@@ -1,3 +1,57 @@
+## [2026-06-01] Renovaciones anticipadas de licencias
+- [Licencias] Una licencia comercial pagada antes del vencimiento se agenda desde el vencimiento acumulado de la empresa y suma su duracion sin reemplazar la licencia actual.
+- [Pagos] Epayco y Wompi guardan estado de activacion por referencia para que webhooks o consultas repetidas no dupliquen dias.
+- [QA] `go test ./db -run "Licencia|Renovacion|Payment" -count=1` y `go test ./handlers -run "Licencia|Payment|Wompi|Epayco" -count=1`.
+
+## [2026-06-01] Checkout de licencias con Epayco y Wompi
+- [Pagos] `/api/public/licencias/payment_methods` publica Epayco y Wompi por defecto cuando cada proveedor tiene credenciales completas; los `*.enabled=0` siguen apagando explicitamente una pasarela.
+- [UX] `web/pagar_licencia.html` conserva ambos metodos visibles y `web/estilos.css` centra/agranda los logos Davivienda y Bancolombia en las tarjetas de pago.
+- [QA] Prueba visual del flujo seleccionando Epayco y Wompi, aceptando terminos y llegando a verificacion `PENDING`; prueba Go enfocada para disponibilidad de pasarelas.
+
+## [2026-05-31] Descarga PDF de licencia desde empresa
+- [Menu] `web/administrar_empresa.html` agrega el grupo principal `Licencia` y deja alli `Licencia del sistema`.
+- [Licencias] `web/administrar_empresa/licencia_sistema.html` reemplaza descargas TXT/HTML por un enlace directo para descargar el PDF oficial de la licencia de la empresa.
+- [Backend] `/api/empresa/licencia_sistema/pdf` genera el PDF con el formato `licencia_software_pdf` editable desde Super administrador y queda protegido por permisos `linkLicenciaSistema`.
+- [QA] `go test ./handlers -run "LicenciaSoftwarePDF|LicenciaActivationEmailMessage|LicenciaSistemaPDF|Licencia" -count=1`, `go test . -run TestNoExiste -count=1` y validacion sintactica de scripts inline.
+
+## [2026-05-31] PDF de licencia de software por correo
+- [Licencias] El correo de licencia activada ahora adjunta automaticamente un PDF de licencia de software cuando el pago queda aprobado o la activacion sin pago permitida queda vigente.
+- [Super] `web/super/formato_para_emviar_email.html` agrega la plantilla `licencia_software_pdf` para editar el texto del PDF desde Super administrador.
+- [Backend] `backend/handlers/licencias_pdf.go` genera el documento en Go puro, sin dependencias nuevas, y `payments_handlers.go` lo adjunta en MIME multipart.
+- [QA] `go test ./handlers -run "LicenciaSoftwarePDF|LicenciaActivationEmailMessage|Licencia" -count=1`.
+
+## [2026-05-31] Catalogo base de roles empresariales
+- [Roles] Se agregan roles universales para usuarios de empresa: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `recursos_humanos` y `tecnico_solar`, ademas de los roles ya existentes.
+- [Solar] `tecnico_solar` solo puede consultar estado, lecturas, eventos y alertas de energia solar.
+- [Bodega] `jefe_bodega` administra inventario, bodegas, existencias y traslados sin eliminar inventario ni operar ventas/caja.
+- [RRHH] `recursos_humanos` gestiona horarios, asistencia y nomina operativa sin entrar a ventas, caja ni configuracion general.
+- [UX/Seguridad] Los roles especializados reciben menus reducidos y las restricciones se aplican tambien en backend despues de overrides.
+
+## [2026-05-31] Rol Servicio de limpieza para estaciones sucias
+- [Roles] Las preconfiguraciones de tipos de empresa agregan `servicio_limpieza` con descripcion operativa clara.
+- [Permisos] `servicio_limpieza` queda limitado a `ventas:R` para ver estaciones; no puede activar estaciones, abrir carrito, ver items, caja, ventas directas, inventario, reportes ni configuracion.
+- [Aseo] El rol puede finalizar el aseo de estaciones marcadas como sucias mediante `/api/empresa/estacion_aseo?action=finalizar`, registrando usuario, duracion y cambio a limpia.
+- [UX] En Administrar empresa solo ve `Estaciones`; al hacer clic en una estacion sucia la reporta limpia, y en estaciones limpias solo muestra aviso sin operar.
+- [QA] Pruebas enfocadas de permisos, restricciones de carrito y flujo visual de estaciones.
+
+## [2026-05-31] Rol empresario para resultados y reportes
+- [Roles] Las preconfiguraciones de tipos de empresa agregan `empresario` como rol base.
+- [Permisos] `empresario` queda limitado a `reportes:R`; no tiene ventas, caja, inventario, finanzas, facturacion, usuarios ni configuracion.
+- [UX] El menu empresarial muestra solo `Reportes ejecutivos` y el submenu de reportes deja visible el centro de reportes, ocultando reportes de turnos/caja.
+- [QA] `go test ./handlers -run 'Portero|Contador|Empresario' -count=1`, `go test ./db -run 'Portero|Contador|Empresario' -count=1`, sintaxis JS, parseo de `reportes_menu.html`, `git diff --check` y validacion visual local.
+
+## [2026-05-31] Rol operativo contador
+- [Roles] Las preconfiguraciones de tipos de empresa agregan `contador` como rol base.
+- [Permisos] `contador` queda limitado a lectura de `finanzas` y `facturacion` para consultar finanzas e impuestos, sin acciones de creacion, edicion, eliminacion o aprobacion.
+- [UX] El menu empresarial muestra solo `Centro financiero y contable` e `Impuestos`; el submenu financiero oculta accesos rapidos fuera de alcance.
+- [QA] `go test ./handlers -run 'Portero|Contador' -count=1`, `go test ./db -run 'Portero|Contador' -count=1`, sintaxis JS del menu y parseo de `finanzas_menu.html`.
+
+## [2026-05-31] Rol operativo portero
+- [Roles] Las preconfiguraciones de tipos de empresa agregan `portero` como rol base.
+- [Permisos] `portero` queda limitado a ver estaciones y ejecutar `activar_estacion`; no puede abrir carrito, items, pagos, caja, corte, venta directa ni configuraciones.
+- [UX] En Administrar empresa el menu de `portero` muestra solo `Estaciones`, y la pantalla de estaciones activa sin abrir carrito.
+- [QA] `go test ./handlers -run Portero -count=1`, `go test ./db -run Portero -count=1`, validacion de sintaxis JS del menu y parseo del script inline de estaciones.
+
 ## [2026-05-31] Feedback sonoro y tactil del carrito
 - [Configuracion] `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html` agrega checks independientes para pitido y vibracion de botones en PC y celular.
 - [Carrito] `web/administrar_empresa/carrito_de_compras.html` aplica pitido con Web Audio y vibracion visual/fisica segun la configuracion `carrito_ui_global`.
@@ -70,6 +124,11 @@
 - [Navegacion] `web/administrar_empresa/modulo_menu.html` abre Domotica por vistas `pagina=resumen|conexion|raspberry|reles|automatizaciones|reportes|bitacora`, manteniendo el contexto `empresa_id` y la clave tecnica `control_electrico`.
 - [UX] `web/administrar_empresa/control_electrico.html` ya no muestra el submenu interno duplicado dentro de `Resumen operativo`; cada vista renderiza solo su seccion funcional.
 - [QA] Parseo de scripts embebidos con Node y prueba visual local con Playwright: cada boton del submenu carga la vista esperada, sin enlaces duplicados internos.
+
+## [2026-05-31] Modo offline multi-caja
+- [Carritos] La cola local de ventas offline ahora se separa por empresa y cajero.
+- [Caja] La venta offline exige una caja abierta cargada para el cajero; ya no cae en una caja por defecto.
+- [Backend] `/api/empresa/offline_ventas` valida propietario, `caja_codigo` e idempotencia de carritos ya pagados para evitar duplicados en cajas simultaneas.
 
 ## [2026-05-30] Ayuda y APIs actualizadas
 - [Ayuda] `web/ayuda/ayuda.html` agrega seccion `Ayuda de APIs`, enlace directo a la nueva pagina de APIs y actualiza la ayuda de carrito/venta directa/offline.
@@ -2070,3 +2129,26 @@
 - [Configuracion] `Configuracion de estaciones` permite administrar varias cajas fisicas por empresa con codigo, nombre, descripcion y estado activo.
 - [Estaciones] La tarjeta Caja muestra las cajas configuradas, por ejemplo `CAJA-1 - FRUTERA`, y abre el corte con el codigo/nombre elegido.
 - [Carrito/Corte] Los selectores y reportes muestran el nombre operativo de la caja cuando existe en `estaciones_config.cajas_config`.
+
+## [2026-05-31] Email corporativo visible en celular
+- [Panel] La bandeja de correo corporativo del panel empresarial conserva un alto util en movil y ya no se colapsa por `height:auto`.
+- [UX] El iframe del webmail usa ancho completo, scroll tactil interno y evita desbordes horizontales en pantallas pequenas.
+
+## [2026-05-31] Pagina Noticias
+- [Portal] Se agrega `/noticias.html`, una pagina publica tipo red social con portada, foto de perfil, biografia y feed de publicaciones.
+- [Super administrador] Se agrega `Noticias` en `Portal publico e index` para editar portada, perfil y publicaciones.
+- [DIAN] El contenido predeterminado incluye una noticia sobre doctrina DIAN 2026 de facturacion electronica y otra sobre controles de facturacion, ambas con enlace a fuente oficial.
+
+## [2026-05-31] Eliminacion de empresa con descarga previa
+- [Selector] Antes de eliminar definitivamente una empresa se pregunta si desea descargar toda la informacion; si acepta, se abre la descarga y luego continua el borrado.
+- [Editar empresa] El mismo paso previo se aplica desde `editar_empresa.html`, conservando la confirmacion por nombre, frase `ELIMINAR` y aceptacion de riesgo.
+- [Seguridad] Se mantiene el endpoint destructivo actual y se registra en el payload si la descarga fue ofrecida.
+
+## [2026-05-31] Cupo de cuentas de email por empresa
+- [Super administrador] `Email corporativo Mailu` agrega el campo `Maximo cuentas por empresa`.
+- [Backend] La configuracion global guarda `email_corporativo.max_accounts_per_empresa`, con default 5 por empresa, y normaliza el valor en servidor.
+- [Seguridad] La creacion/sincronizacion de buzones valida el cupo por `empresa_id` antes de crear nuevas cuentas.
+## [2026-06-01] Documentacion, APIs y preconfiguracion solar
+- [Preconfiguracion] `tipo_empresa_preconfiguraciones.config_json` incluye `modulos.energia_solar` apagado por defecto con catalogo de proveedores, baterias y alertas.
+- [Roles/Licencias] `tecnico_solar` queda como solo lectura; las licencias nuevas deben habilitar `energia_solar` como clave independiente y el fallback legacy queda documentado.
+- [Ayuda/API] Se actualizan ayuda general, ayuda de APIs, OpenAPI generado, mapa de modulos, flujos, matriz de roles y estructura BD.

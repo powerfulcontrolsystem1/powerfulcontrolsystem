@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Noticias - Super administrador</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    (function () {
+      try {
+        var c = (document.cookie || "").match(/(?:^|;)\s*pcs_theme=([^;]+)/);
+        var t = "";
+        try { t = window.localStorage.getItem("theme") || ""; } catch (e) {}
+        if (!t && c) { try { t = decodeURIComponent(c[1]); } catch (e2) { t = c[1]; } }
+        t = String(t || "").trim().toLowerCase();
+        var ok = { dark: 1, "dark-violet": 1, "dark-emerald": 1, "dark-corporate": 1, "dark-absolute": 1, "dark-obsidian": 1, "dark-neon": 1, light: 1, "light-rose": 1, "light-gold": 1, "light-wood": 1 };
+        if (!ok[t]) t = "dark";
+        document.documentElement.setAttribute("data-theme", t);
+        document.documentElement.classList.toggle("theme-light", t.indexOf("light") === 0);
+        document.documentElement.classList.toggle("theme-dark", t.indexOf("light") !== 0);
+      } catch (err) {}
+    })();
+  </script>
+  <style>
+    .news-admin-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .news-admin-stack,
+    .news-editor-list {
+      display: grid;
+      gap: 12px;
+    }
+    .news-editor-card {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+    .news-editor-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .news-editor-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      color: var(--text);
+      font-weight: 900;
+    }
+    .news-editor-title img {
+      width: 38px;
+      height: 38px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+    }
+    .news-admin-preview {
+      position: sticky;
+      top: 12px;
+    }
+    .news-admin-cover {
+      height: 150px;
+      border-radius: 8px 8px 0 0;
+      overflow: hidden;
+      background: var(--surface-soft);
+    }
+    .news-admin-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .news-admin-profile {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 10px;
+      padding: 0 12px 12px;
+      margin-top: -28px;
+      align-items: end;
+    }
+    .news-admin-profile img {
+      width: 74px;
+      height: 74px;
+      border-radius: 999px;
+      border: 4px solid var(--card);
+      background: var(--surface);
+      object-fit: cover;
+    }
+    .news-admin-profile h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      color: var(--text);
+    }
+    .news-admin-profile p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: .82rem;
+      overflow-wrap: anywhere;
+    }
+    .news-preview-feed {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+    .news-preview-post {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      background: color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+    }
+    .news-preview-post strong {
+      display: block;
+      color: var(--accent);
+      font-weight: 900;
+    }
+    .news-preview-post p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.4;
+    }
+    .news-check-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .news-check-row label {
+      display: inline-flex;
+      gap: 7px;
+      align-items: center;
+      min-height: 34px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .news-check-row input {
+      width: 18px;
+      height: 18px;
+    }
+    @media (max-width: 980px) {
+      .news-admin-layout { grid-template-columns: 1fr; }
+      .news-admin-preview { position: static; }
+    }
+  </style>
+</head>
+<body class="super-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>Noticias</h1>
+      <p class="form-help">Administra la pagina publica tipo red social que se abre desde el menu flotante. Puedes cambiar portada, foto de perfil y publicar noticias con fuente verificable.</p>
+      <div class="form-actions">
+        <a href="/noticias.html" class="btn secondary" target="_blank" rel="noopener">Ver pagina publica</a>
+        <button id="btnReload" class="btn secondary" type="button">Recargar</button>
+        <button id="btnDefaults" class="btn secondary" type="button">Cargar predeterminado</button>
+        <button id="btnAddNews" class="btn" type="button">Agregar noticia</button>
+        <button id="btnSave" class="btn primary" type="button">Guardar cambios</button>
+      </div>
+      <div id="pageMessage" class="form-help" aria-live="polite"></div>
+    </div>
+
+    <section class="news-admin-layout">
+      <div class="news-admin-stack">
+        <section class="card form">
+          <h2>Perfil de la pagina</h2>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="pageTitle">Titulo de seccion</label>
+              <input id="pageTitle" class="form-input" type="text" maxlength="90">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="pageSubtitle">Subtitulo</label>
+              <input id="pageSubtitle" class="form-input" type="text" maxlength="220">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="profileName">Nombre de pagina</label>
+              <input id="profileName" class="form-input" type="text" maxlength="90">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="profileUser">Usuario visible</label>
+              <input id="profileUser" class="form-input" type="text" maxlength="60">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="coverUrl">Portada</label>
+              <input id="coverUrl" class="form-input" list="imageOptions" type="text">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="profileUrl">Foto de perfil</label>
+              <input id="profileUrl" class="form-input" list="imageOptions" type="text">
+            </div>
+          </div>
+          <label class="form-label" for="pageDescription">Descripcion</label>
+          <textarea id="pageDescription" class="form-input" rows="3" maxlength="260"></textarea>
+        </section>
+
+        <section class="card form">
+          <h2>Publicaciones</h2>
+          <div id="newsEditor" class="news-editor-list"></div>
+        </section>
+      </div>
+
+      <aside class="card news-admin-preview">
+        <div class="news-admin-cover"><img id="previewCover" src="/img/sistema punto de venta.png" alt=""></div>
+        <div class="news-admin-profile">
+          <img id="previewProfile" src="/img/pwa-icon-192.png" alt="">
+          <div>
+            <h2 id="previewName">Powerful Control System Noticias</h2>
+            <p id="previewUser">@powerfulcontrolsystem</p>
+          </div>
+        </div>
+        <div class="news-preview-feed" id="newsPreview"></div>
+        <p id="metaInfo" class="form-help" style="padding:0 12px 12px;margin:0;"></p>
+      </aside>
+    </section>
+  </div>
+
+  <datalist id="imageOptions"></datalist>
+
+  <script>
+    (function () {
+      var fallback = {
+        titulo: 'Noticias',
+        subtitulo: 'Actualidad tributaria, facturacion electronica y novedades de Powerful Control System.',
+        portada_url: '/img/sistema punto de venta.png',
+        perfil_url: '/img/pwa-icon-192.png',
+        nombre_pagina: 'Powerful Control System Noticias',
+        usuario: '@powerfulcontrolsystem',
+        descripcion: 'Pagina informativa para seguir cambios de facturacion electronica, impuestos, tecnologia POS y operacion empresarial.',
+        noticias: []
+      };
+      var state = { images: [], config: fallback };
+      var fields = {
+        titulo: document.getElementById('pageTitle'),
+        subtitulo: document.getElementById('pageSubtitle'),
+        portada_url: document.getElementById('coverUrl'),
+        perfil_url: document.getElementById('profileUrl'),
+        nombre_pagina: document.getElementById('profileName'),
+        usuario: document.getElementById('profileUser'),
+        descripcion: document.getElementById('pageDescription')
+      };
+      var editor = document.getElementById('newsEditor');
+      var preview = document.getElementById('newsPreview');
+      var msg = document.getElementById('pageMessage');
+      var meta = document.getElementById('metaInfo');
+      var imageOptions = document.getElementById('imageOptions');
+
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+      function text(value, fallbackValue) {
+        var out = String(value == null ? '' : value).trim();
+        return out || String(fallbackValue || '');
+      }
+      function splitLines(value) {
+        return String(value || '').split(/\r?\n|,/).map(function (item) { return item.trim(); }).filter(Boolean);
+      }
+      function setMessage(value, type) {
+        msg.textContent = value || '';
+        msg.classList.remove('error', 'success');
+        if (type) msg.classList.add(type);
+      }
+      function normalizeNews(item, index) {
+        item = item || {};
+        return {
+          titulo: text(item.titulo, 'Nueva noticia'),
+          resumen: text(item.resumen, 'Resumen de la noticia.'),
+          contenido: text(item.contenido, 'Contenido de la noticia.'),
+          categoria: text(item.categoria, 'Actualidad'),
+          fecha: text(item.fecha, new Date().toISOString().slice(0, 10)),
+          imagen_url: text(item.imagen_url, '/img/invoice.svg'),
+          fuente_nombre: text(item.fuente_nombre, 'Fuente oficial'),
+          fuente_url: text(item.fuente_url, ''),
+          etiquetas: Array.isArray(item.etiquetas) ? item.etiquetas : splitLines(item.etiquetas),
+          destacada: !!item.destacada,
+          activa: item.activa !== false,
+          _index: index
+        };
+      }
+      function normalizeConfig(raw) {
+        raw = raw && typeof raw === 'object' ? raw : {};
+        var news = Array.isArray(raw.noticias) ? raw.noticias : [];
+        return {
+          titulo: text(raw.titulo, fallback.titulo),
+          subtitulo: text(raw.subtitulo, fallback.subtitulo),
+          portada_url: text(raw.portada_url, fallback.portada_url),
+          perfil_url: text(raw.perfil_url, fallback.perfil_url),
+          nombre_pagina: text(raw.nombre_pagina, fallback.nombre_pagina),
+          usuario: text(raw.usuario, fallback.usuario),
+          descripcion: text(raw.descripcion, fallback.descripcion),
+          noticias: news.map(normalizeNews)
+        };
+      }
+      function collect() {
+        var news = [];
+        Array.prototype.slice.call(editor.querySelectorAll('[data-news-card]')).forEach(function (card, index) {
+          news.push(normalizeNews({
+            titulo: card.querySelector('[data-field="titulo"]').value,
+            resumen: card.querySelector('[data-field="resumen"]').value,
+            contenido: card.querySelector('[data-field="contenido"]').value,
+            categoria: card.querySelector('[data-field="categoria"]').value,
+            fecha: card.querySelector('[data-field="fecha"]').value,
+            imagen_url: card.querySelector('[data-field="imagen_url"]').value,
+            fuente_nombre: card.querySelector('[data-field="fuente_nombre"]').value,
+            fuente_url: card.querySelector('[data-field="fuente_url"]').value,
+            etiquetas: splitLines(card.querySelector('[data-field="etiquetas"]').value),
+            destacada: card.querySelector('[data-field="destacada"]').checked,
+            activa: card.querySelector('[data-field="activa"]').checked
+          }, index));
+        });
+        state.config = normalizeConfig({
+          titulo: fields.titulo.value,
+          subtitulo: fields.subtitulo.value,
+          portada_url: fields.portada_url.value,
+          perfil_url: fields.perfil_url.value,
+          nombre_pagina: fields.nombre_pagina.value,
+          usuario: fields.usuario.value,
+          descripcion: fields.descripcion.value,
+          noticias: news
+        });
+      }
+      function renderImages() {
+        imageOptions.innerHTML = state.images.map(function (url) {
+          return '<option value="' + esc(url) + '"></option>';
+        }).join('');
+      }
+      function renderProfile() {
+        Object.keys(fields).forEach(function (key) {
+          fields[key].value = state.config[key] || '';
+        });
+        document.getElementById('previewCover').src = state.config.portada_url || fallback.portada_url;
+        document.getElementById('previewProfile').src = state.config.perfil_url || fallback.perfil_url;
+        document.getElementById('previewName').textContent = state.config.nombre_pagina || fallback.nombre_pagina;
+        document.getElementById('previewUser').textContent = state.config.usuario || fallback.usuario;
+      }
+      function renderEditor() {
+        renderProfile();
+        editor.innerHTML = state.config.noticias.map(function (item, index) {
+          return '' +
+            '<article class="news-editor-card" data-news-card data-index="' + index + '">' +
+            '  <div class="news-editor-head">' +
+            '    <div class="news-editor-title"><img src="' + esc(item.imagen_url) + '" alt=""><span>' + esc(item.titulo) + '</span></div>' +
+            '    <button type="button" class="btn danger small" data-action="remove">Eliminar</button>' +
+            '  </div>' +
+            '  <div class="news-check-row">' +
+            '    <label><input type="checkbox" data-field="activa" ' + (item.activa ? 'checked' : '') + '> Publicada</label>' +
+            '    <label><input type="checkbox" data-field="destacada" ' + (item.destacada ? 'checked' : '') + '> Destacada</label>' +
+            '  </div>' +
+            '  <div class="form-row">' +
+            '    <div class="form-col"><label class="form-label">Titulo</label><input class="form-input" data-field="titulo" type="text" value="' + esc(item.titulo) + '"></div>' +
+            '    <div class="form-col"><label class="form-label">Categoria</label><input class="form-input" data-field="categoria" type="text" value="' + esc(item.categoria) + '"></div>' +
+            '  </div>' +
+            '  <div class="form-row">' +
+            '    <div class="form-col"><label class="form-label">Fecha</label><input class="form-input" data-field="fecha" type="date" value="' + esc(item.fecha) + '"></div>' +
+            '    <div class="form-col"><label class="form-label">Imagen</label><input class="form-input" data-field="imagen_url" list="imageOptions" type="text" value="' + esc(item.imagen_url) + '"></div>' +
+            '  </div>' +
+            '  <label class="form-label">Resumen</label><textarea class="form-input" data-field="resumen" rows="2">' + esc(item.resumen) + '</textarea>' +
+            '  <label class="form-label">Contenido</label><textarea class="form-input" data-field="contenido" rows="6">' + esc(item.contenido) + '</textarea>' +
+            '  <div class="form-row">' +
+            '    <div class="form-col"><label class="form-label">Fuente nombre</label><input class="form-input" data-field="fuente_nombre" type="text" value="' + esc(item.fuente_nombre) + '"></div>' +
+            '    <div class="form-col"><label class="form-label">Fuente URL</label><input class="form-input" data-field="fuente_url" type="url" value="' + esc(item.fuente_url) + '"></div>' +
+            '  </div>' +
+            '  <label class="form-label">Etiquetas</label><textarea class="form-input" data-field="etiquetas" rows="2" placeholder="Una etiqueta por linea">' + esc((item.etiquetas || []).join('\n')) + '</textarea>' +
+            '</article>';
+        }).join('');
+        renderPreview();
+      }
+      function renderPreview() {
+        renderProfile();
+        var news = state.config.noticias || [];
+        preview.innerHTML = news.slice(0, 4).map(function (item) {
+          return '<article class="news-preview-post"><strong>' + esc(item.titulo) + '</strong><p>' + esc(item.resumen) + '</p></article>';
+        }).join('') || '<p class="form-help">Sin noticias para vista previa.</p>';
+      }
+      async function fetchJSON(url, options) {
+        var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+        var payload = null;
+        try { payload = await response.json(); } catch (_) {}
+        if (!response.ok) throw new Error((payload && (payload.error || payload.message)) || ('HTTP ' + response.status));
+        return payload || {};
+      }
+      async function loadImages() {
+        try {
+          var payload = await fetchJSON('/super/api/noticias?action=imagenes');
+          state.images = Array.isArray(payload.imagenes) ? payload.imagenes : [];
+          renderImages();
+        } catch (_) {
+          state.images = [];
+        }
+      }
+      async function loadConfig() {
+        setMessage('Cargando noticias...', '');
+        var payload = await fetchJSON('/super/api/noticias');
+        state.config = normalizeConfig(payload.config);
+        meta.textContent = payload.updated_at ? ('Ultima actualizacion: ' + payload.updated_at + (payload.updated_by ? ' por ' + payload.updated_by : '')) : 'Usando contenido predeterminado.';
+        renderEditor();
+        setMessage('', '');
+      }
+      async function loadDefaults() {
+        var payload = await fetchJSON('/super/api/noticias?action=defaults');
+        state.config = normalizeConfig(payload.config);
+        renderEditor();
+        setMessage('Contenido predeterminado cargado. Presiona Guardar cambios para publicarlo.', 'success');
+      }
+      async function saveConfig() {
+        collect();
+        if (!state.config.noticias.length) {
+          setMessage('Agrega al menos una noticia.', 'error');
+          return;
+        }
+        setMessage('Guardando noticias...', '');
+        var payload = await fetchJSON('/super/api/noticias?action=guardar', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(state.config)
+        });
+        state.config = normalizeConfig(payload.config);
+        renderEditor();
+        setMessage('Noticias guardadas correctamente.', 'success');
+      }
+      Object.keys(fields).forEach(function (key) {
+        fields[key].addEventListener('input', function () { collect(); renderPreview(); });
+      });
+      editor.addEventListener('input', function () { collect(); renderPreview(); });
+      editor.addEventListener('change', function () { collect(); renderPreview(); });
+      editor.addEventListener('click', function (event) {
+        var btn = event.target.closest && event.target.closest('[data-action="remove"]');
+        if (!btn) return;
+        collect();
+        var card = btn.closest('[data-news-card]');
+        var index = Number(card && card.dataset.index);
+        if (Number.isFinite(index)) {
+          state.config.noticias.splice(index, 1);
+          renderEditor();
+        }
+      });
+      document.getElementById('btnReload').addEventListener('click', function () {
+        loadConfig().catch(function (err) { setMessage('No se pudo recargar: ' + err.message, 'error'); });
+      });
+      document.getElementById('btnDefaults').addEventListener('click', function () {
+        loadDefaults().catch(function (err) { setMessage('No se pudo cargar predeterminado: ' + err.message, 'error'); });
+      });
+      document.getElementById('btnAddNews').addEventListener('click', function () {
+        collect();
+        state.config.noticias.unshift(normalizeNews({
+          titulo: 'Nueva noticia',
+          resumen: 'Resumen breve de la noticia.',
+          contenido: 'Escribe aqui el contenido de la noticia.',
+          categoria: 'Actualidad',
+          fecha: new Date().toISOString().slice(0, 10),
+          imagen_url: '/img/report.svg',
+          fuente_nombre: 'Fuente oficial',
+          fuente_url: '',
+          etiquetas: ['Noticia'],
+          destacada: false,
+          activa: true
+        }, 0));
+        renderEditor();
+      });
+      document.getElementById('btnSave').addEventListener('click', function () {
+        saveConfig().catch(function (err) { setMessage('No se pudo guardar: ' + err.message, 'error'); });
+      });
+      Promise.all([loadImages(), loadConfig()]).catch(function (err) {
+        setMessage('No se pudo cargar la pagina: ' + err.message, 'error');
+      });
+    })();
+  </script>
+</body>
+</html>

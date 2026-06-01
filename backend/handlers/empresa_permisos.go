@@ -408,9 +408,18 @@ var permissionRolesCatalogOrdered = []string{
 	"admin_empresa",
 	"supervisor_sucursal",
 	"cajero",
+	"vendedor",
+	"recepcion",
+	"portero",
+	"servicio_limpieza",
+	"jefe_bodega",
 	"inventario",
 	"compras",
+	"recursos_humanos",
+	"tecnico_solar",
 	"contabilidad",
+	"contador",
+	"empresario",
 	"auditor",
 }
 
@@ -532,6 +541,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkFrecuenciaFE", Modulo: permModuleFacturacion, Accion: permActionApprove, Titulo: "Frecuencia FE", Grupo: "Administracion y configuracion"},
 
 	{PaginaClave: "linkReportes", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro de reportes", Grupo: "Analisis y control"},
+	{PaginaClave: "linkReportesEjecutivos", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro de reportes", Grupo: "Analisis y control"},
 	{PaginaClave: "linkReportesTurnos", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Reportes de turnos", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalculadora", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Calculadora financiera", Grupo: "Centro financiero y contable"},
 
@@ -556,7 +566,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkSoporteRemoto", Modulo: permModuleSeguridad, Accion: permActionApprove, Titulo: "Soporte remoto", Grupo: "Documentos, nube y soporte"},
 
 	{PaginaClave: "linkConfiguracion", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Configuracion de empresa", Grupo: "Administracion y configuracion"},
-	{PaginaClave: "linkLicenciaSistema", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Licencia del sistema", Grupo: "Administracion y configuracion"},
+	{PaginaClave: "linkLicenciaSistema", Modulo: permModuleSeguridad, Accion: permActionRead, Titulo: "Licencia del sistema", Grupo: "Licencia"},
 	{PaginaClave: "linkConfiguracionMain", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Productos y pedidos", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionIdentidadVisual", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Identidad visual", Grupo: "Administracion y configuracion"},
 	{PaginaClave: "linkConfiguracionCobroOperativo", Modulo: permModuleSeguridad, Accion: permActionUpdate, Titulo: "Cobro operativo", Grupo: "Administracion y configuracion"},
@@ -612,9 +622,10 @@ type permissionSummary struct {
 }
 
 type empresaPermisosRolMatriz struct {
-	Rol     string                      `json:"rol"`
-	Modulos []permissionModuleMatrixRow `json:"modulos"`
-	Resumen permissionSummary           `json:"resumen"`
+	Rol         string                      `json:"rol"`
+	Descripcion string                      `json:"descripcion,omitempty"`
+	Modulos     []permissionModuleMatrixRow `json:"modulos"`
+	Resumen     permissionSummary           `json:"resumen"`
 }
 
 type empresaPermisosContextResponse struct {
@@ -734,9 +745,11 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		if sharedAccessErr == nil {
 			modulos = applyAdminEmpresaCompartidaScopeToModuleRows(modulos, sharedAccess)
 		}
+		modulos = restrictPermissionModuleRowsForOperationalRole(effectiveRole, modulos)
 		shareCtx := adminEmpresaCompartidaScopeContext(sharedAccess)
 		paginas := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, modulos)
 		paginas = applyEmpresaPageRestrictionsToMap(paginas, empresaPageOverrides)
+		paginas = restrictPermissionPagesForOperationalRole(effectiveRole, paginas)
 
 		var licenciaCtx *empresaPermisosLicenciaCtx
 		if licenciaPolicy != nil {
@@ -773,10 +786,12 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 				rows = applyLicenciaRestriccionesToModuleRows(rows, allowedModules)
 				rows = applyEmpresaVerticalScopeToModuleRows(rows, verticalScope)
 				rows = applyEmpresaRestriccionesToModuleRows(rows, empresaModuleOverrides)
+				rows = restrictPermissionModuleRowsForOperationalRole(catalogRole, rows)
 				resp.MatrizRoles = append(resp.MatrizRoles, empresaPermisosRolMatriz{
-					Rol:     catalogRole,
-					Modulos: rows,
-					Resumen: summarizePermissionModules(rows),
+					Rol:         catalogRole,
+					Descripcion: permissionRoleDescription(catalogRole),
+					Modulos:     rows,
+					Resumen:     summarizePermissionModules(rows),
 				})
 			}
 		}
@@ -1395,7 +1410,10 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 
 		requestPath := strings.TrimSpace(r.URL.Path)
 		effectiveRole := snapshot.EffectiveRole
-		skipRoleModuloCheck := (module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")) || isFacturacionPaisDetectado
+		isReadOnlyStationPrefsRequest := module == permModuleSeguridad &&
+			strings.EqualFold(requestPath, "/api/empresa/estacion_prefs") &&
+			strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet)
+		skipRoleModuloCheck := (module == permModuleSeguridad && strings.HasPrefix(requestPath, "/api/empresa/permisos_contexto")) || isReadOnlyStationPrefsRequest || isFacturacionPaisDetectado
 		if !skipRoleModuloCheck && !snapshot.RoleModuleActions[permissionModuleActionKey(module, action)] {
 			http.Error(w, "forbidden: rol sin permiso para la accion solicitada", http.StatusForbidden)
 			registrarAuditoriaOperacionNoBloqueante(dbEmp, r, empresaID, module, action, http.StatusForbidden, 0)
@@ -2143,16 +2161,77 @@ func normalizePermissionRole(raw string) string {
 		return "supervisor_sucursal"
 	case "cajero":
 		return "cajero"
+	case "vendedor", "ventas":
+		return "vendedor"
+	case "recepcion", "recepcionista":
+		return "recepcion"
+	case "portero", "porter", "guardia", "porteria", "vigilante":
+		return "portero"
+	case "servicio_limpieza", "servicio de limpieza", "limpieza", "aseadora", "aseo", "housekeeping":
+		return "servicio_limpieza"
 	case "inventario":
 		return "inventario"
+	case "jefe_bodega", "jefe de bodega", "bodega", "bodeguero", "almacenista":
+		return "jefe_bodega"
 	case "compras":
 		return "compras"
-	case "contabilidad", "contador":
+	case "recursos_humanos", "rrhh", "talento_humano", "talento humano":
+		return "recursos_humanos"
+	case "tecnico_solar", "tecnico solar", "técnico solar", "solar":
+		return "tecnico_solar"
+	case "contabilidad":
 		return "contabilidad"
+	case "contador":
+		return "contador"
+	case "empresario", "dueno", "dueño", "propietario", "gerente_propietario":
+		return "empresario"
 	case "auditor":
 		return "auditor"
 	default:
 		return strings.ToLower(strings.TrimSpace(raw))
+	}
+}
+
+func permissionRoleDescription(role string) string {
+	switch normalizePermissionRole(role) {
+	case "super_administrador":
+		return "Administra la plataforma completa, configuracion global, licencias, seguridad, auditoria y soporte tecnico."
+	case "administrador_total":
+		return "Acceso empresarial total sobre las empresas autorizadas, con permisos de supervision, configuracion y operacion."
+	case "admin_empresa":
+		return "Administra la empresa, usuarios, permisos, configuracion, ventas, caja, inventario, reportes e integraciones."
+	case "supervisor_sucursal":
+		return "Supervisa la operacion diaria, estaciones, ventas, caja, personal y reportes sin administrar la plataforma global."
+	case "cajero":
+		return "Opera ventas, carritos, cobros, facturacion operativa, caja y cierre de turno de su usuario."
+	case "vendedor":
+		return "Atiende clientes, cotiza, registra ventas operativas y consulta inventario disponible sin administrar caja ni configuracion."
+	case "recepcion":
+		return "Atiende clientes, estaciones, reservas, ingresos y salidas, con operacion de venta segun la empresa."
+	case "portero":
+		return "Ve estaciones y puede activar estaciones disponibles sin entrar al carrito, cobrar ni cambiar configuracion."
+	case "servicio_limpieza":
+		return "Ve estaciones y reporta estaciones sucias como limpias, registrando tiempo de aseo sin abrir carrito ni activar ventas."
+	case "jefe_bodega":
+		return "Administra bodegas, existencias, traslados, inventario y control de stock sin operar caja ni ventas."
+	case "inventario":
+		return "Gestiona productos, servicios, bodegas, traslados, existencias y procesos de inventario autorizados."
+	case "compras":
+		return "Gestiona proveedores, compras, recepcion de mercancia y soporte operativo de abastecimiento."
+	case "recursos_humanos":
+		return "Gestiona horarios, asistencia, novedades y nomina operativa del personal autorizado."
+	case "tecnico_solar":
+		return "Consulta estado, lecturas, eventos y alertas del sistema de energia solar sin modificar configuracion."
+	case "contabilidad":
+		return "Gestiona procesos contables, financieros, tributarios y reportes con permisos de escritura segun el modulo."
+	case "contador":
+		return "Consulta finanzas e impuestos de la empresa en modo lectura, sin modificar ventas, caja ni configuracion."
+	case "empresario":
+		return "Consulta resultados y reportes ejecutivos de la empresa sin operar ventas, caja, inventario ni configuracion."
+	case "auditor":
+		return "Consulta trazabilidad, auditoria, reportes y cumplimiento sin ejecutar operacion diaria."
+	default:
+		return "Rol operativo configurable por empresa; sus permisos efectivos dependen de la matriz de modulos y paginas."
 	}
 }
 
@@ -2180,9 +2259,11 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleVentas:
 		switch action {
 		case permActionRead:
-			return roleIn(role, allReadRoles...)
-		case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
-			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
+			return roleIn(role, append(allReadRoles, "vendedor", "recepcion", "portero", "servicio_limpieza")...)
+		case permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero", "portero")
+		case permActionCreate, permActionUpdate, permActionDelete:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero", "vendedor", "recepcion")
 		}
 
 	case permModuleVentaPublica, permModuleReservasHotel, permModuleChatTareas, permModuleGimnasio, permModuleTaxiSystem, permModuleDomicilios, permModuleParqueadero, permModuleApartTuristicos, permModulePropiedadHorizontal, permModuleAlquileres, permModuleOdontologia, permModuleDrogueriaFarmacia, permModuleTurnos, permModuleCarnets:
@@ -2198,8 +2279,10 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleInventario:
 		switch action {
 		case permActionRead:
-			return roleIn(role, allReadRoles...)
-		case permActionCreate, permActionUpdate, permActionDelete, permActionApprove:
+			return roleIn(role, append(allReadRoles, "vendedor", "recepcion", "jefe_bodega")...)
+		case permActionCreate, permActionUpdate, permActionApprove:
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario", "jefe_bodega")
+		case permActionDelete:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "inventario")
 		}
 
@@ -2214,8 +2297,20 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleFinanzas, permModuleContabilidadCO, permModuleContabilidadCOAv, permModuleCentrosCosto, permModuleCierreFiscal, permModuleActivosFijosNIIF, permModuleDeclaracionesTrib, permModuleTesoreria, permModuleNominaSueldos, permModuleCobranza, permModulePortalContador, permModulePortalTerceros:
 		switch action {
 		case permActionRead:
+			if module == permModuleFinanzas {
+				return roleIn(role, append(allReadRoles, "contador")...)
+			}
+			if module == permModuleNominaSueldos {
+				return roleIn(role, append(allReadRoles, "recursos_humanos")...)
+			}
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate, permActionApprove:
+			if module == permModuleNominaSueldos {
+				if action == permActionApprove {
+					return roleIn(role, "admin_empresa", "contabilidad")
+				}
+				return roleIn(role, "admin_empresa", "contabilidad", "recursos_humanos")
+			}
 			return roleIn(role, "admin_empresa", "contabilidad")
 		case permActionDelete:
 			return roleIn(role, "contabilidad")
@@ -2224,6 +2319,9 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleEnergiaSolar, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
 		switch action {
 		case permActionRead:
+			if module == permModuleEnergiaSolar {
+				return roleIn(role, append(allReadRoles, "tecnico_solar")...)
+			}
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "contabilidad", "auditor")
@@ -2234,9 +2332,9 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleClientes, permModuleCRMUnificado:
 		switch action {
 		case permActionRead:
-			return roleIn(role, allReadRoles...)
+			return roleIn(role, append(allReadRoles, "vendedor", "recepcion")...)
 		case permActionCreate, permActionUpdate, permActionApprove:
-			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero")
+			return roleIn(role, "admin_empresa", "supervisor_sucursal", "cajero", "vendedor", "recepcion")
 		case permActionDelete:
 			return false
 		}
@@ -2244,7 +2342,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleCompras:
 		switch action {
 		case permActionRead:
-			return roleIn(role, allReadRoles...)
+			return roleIn(role, append(allReadRoles, "jefe_bodega")...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "compras")
 		case permActionDelete:
@@ -2264,6 +2362,9 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleFacturacion, permModuleFacturacionEcuador, permModuleFacturacionPanama:
 		switch action {
 		case permActionRead:
+			if module == permModuleFacturacion {
+				return roleIn(role, append(allReadRoles, "contador")...)
+			}
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "cajero")
@@ -2302,8 +2403,14 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleHorariosTrab, permModuleAsistenciaEmpleados, permModuleVehiculosRegistro, permModuleHojaVidaOperativa, permModuleUbicacionGPS:
 		switch action {
 		case permActionRead:
+			if module == permModuleHorariosTrab || module == permModuleAsistenciaEmpleados {
+				return roleIn(role, append(allReadRoles, "recursos_humanos")...)
+			}
 			return roleIn(role, allReadRoles...)
 		case permActionCreate, permActionUpdate:
+			if module == permModuleHorariosTrab || module == permModuleAsistenciaEmpleados {
+				return roleIn(role, "admin_empresa", "supervisor_sucursal", "recursos_humanos")
+			}
 			return roleIn(role, "admin_empresa", "supervisor_sucursal")
 		case permActionDelete, permActionApprove:
 			return roleIn(role, "admin_empresa")
@@ -2312,7 +2419,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 	case permModuleReportes:
 		switch action {
 		case permActionRead:
-			return roleIn(role, allReadRoles...)
+			return roleIn(role, append(allReadRoles, "empresario")...)
 		case permActionCreate, permActionUpdate, permActionApprove:
 			return roleIn(role, "admin_empresa", "supervisor_sucursal", "contabilidad", "auditor")
 		case permActionDelete:
@@ -2684,7 +2791,8 @@ func buildPermissionPagesMapForRoleDynamic(dbSuper *sql.DB, role string, modulos
 		log.Printf("[authz] load page overrides role=%s error: %v", role, err)
 		pageOverrides = map[string]bool{}
 	}
-	return buildPermissionPagesMapFromModuleRows(modulos, pageOverrides)
+	pages := buildPermissionPagesMapFromModuleRows(modulos, pageOverrides)
+	return restrictPermissionPagesForOperationalRole(role, pages)
 }
 
 func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, modulos []permissionModuleMatrixRow) []permissionPageAccessRow {
@@ -2693,7 +2801,169 @@ func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, mod
 		log.Printf("[authz] load page catalog overrides role=%s error: %v", role, err)
 		pageOverrides = map[string]bool{}
 	}
-	return buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
+	rows := buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
+	if normalizePermissionRole(role) == "portero" {
+		for idx := range rows {
+			rows[idx].Permitido = rows[idx].PaginaClave == "linkEstaciones"
+		}
+		return rows
+	}
+	if normalizePermissionRole(role) == "contador" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("contador", rows[idx].PaginaClave)
+		}
+	}
+	if normalizePermissionRole(role) == "empresario" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("empresario", rows[idx].PaginaClave)
+		}
+	}
+	if normalizePermissionRole(role) == "servicio_limpieza" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("servicio_limpieza", rows[idx].PaginaClave)
+		}
+	}
+	if normalizePermissionRole(role) == "tecnico_solar" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("tecnico_solar", rows[idx].PaginaClave)
+		}
+	}
+	if normalizePermissionRole(role) == "jefe_bodega" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("jefe_bodega", rows[idx].PaginaClave)
+		}
+	}
+	if normalizePermissionRole(role) == "recursos_humanos" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("recursos_humanos", rows[idx].PaginaClave)
+		}
+	}
+	return rows
+}
+
+func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissionModuleMatrixRow) []permissionModuleMatrixRow {
+	normalizedRole := normalizePermissionRole(role)
+	if normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
+		return rows
+	}
+	out := clonePermissionModuleRows(rows)
+	for idx := range out {
+		row := &out[idx]
+		for _, action := range permissionActionsCatalogOrdered {
+			allowed := false
+			if normalizedRole == "portero" && row.Modulo == permModuleVentas {
+				allowed = action == permActionRead || action == permActionApprove
+			}
+			if normalizedRole == "contador" && (row.Modulo == permModuleFinanzas || row.Modulo == permModuleFacturacion) {
+				allowed = action == permActionRead
+			}
+			if normalizedRole == "empresario" && row.Modulo == permModuleReportes {
+				allowed = action == permActionRead
+			}
+			if normalizedRole == "servicio_limpieza" && row.Modulo == permModuleVentas {
+				allowed = action == permActionRead
+			}
+			if normalizedRole == "tecnico_solar" && row.Modulo == permModuleEnergiaSolar {
+				allowed = action == permActionRead
+			}
+			if normalizedRole == "jefe_bodega" {
+				if row.Modulo == permModuleInventario {
+					allowed = action == permActionRead || action == permActionCreate || action == permActionUpdate || action == permActionApprove
+				}
+				if row.Modulo == permModuleCompras {
+					allowed = action == permActionRead
+				}
+			}
+			if normalizedRole == "recursos_humanos" && (row.Modulo == permModuleHorariosTrab || row.Modulo == permModuleAsistenciaEmpleados || row.Modulo == permModuleNominaSueldos) {
+				allowed = action == permActionRead || action == permActionCreate || action == permActionUpdate
+			}
+			setPermissionActionOnModuleRow(row, action, allowed)
+		}
+	}
+	return out
+}
+
+func isAllowedPageForOperationalRole(role, pageKey string) bool {
+	switch normalizePermissionRole(role) {
+	case "portero":
+		return pageKey == "linkEstaciones"
+	case "servicio_limpieza":
+		return pageKey == "linkEstaciones"
+	case "tecnico_solar":
+		return pageKey == "linkEnergiaSolar"
+	case "jefe_bodega":
+		switch pageKey {
+		case "linkProductos", "linkProductosMain", "linkInventarioAvanzado", "linkRecetasProductos", "linkPreciosHistorial", "linkBodegas", "linkCategorias", "linkGeneradorCodigosBarras":
+			return true
+		default:
+			return false
+		}
+	case "recursos_humanos":
+		switch pageKey {
+		case "linkHorariosTrabajadores", "linkAsistenciaEmpleados", "linkNominaSueldos", "linkNominaMenu", "linkMiHorario":
+			return true
+		default:
+			return false
+		}
+	case "contador":
+		switch pageKey {
+		case "linkFinanzas", "linkFinanzasMain", "linkImpuestos":
+			return true
+		default:
+			return false
+		}
+	case "empresario":
+		switch pageKey {
+		case "linkReportes", "linkReportesEjecutivos":
+			return true
+		default:
+			return false
+		}
+	default:
+		return true
+	}
+}
+
+func restrictPermissionPagesForOperationalRole(role string, pages map[string]bool) map[string]bool {
+	normalizedRole := normalizePermissionRole(role)
+	if normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
+		return pages
+	}
+	if pages == nil {
+		pages = map[string]bool{}
+	}
+	for key := range pages {
+		pages[key] = isAllowedPageForOperationalRole(normalizedRole, key)
+	}
+	switch normalizedRole {
+	case "portero", "servicio_limpieza":
+		pages["linkEstaciones"] = true
+	case "tecnico_solar":
+		pages["linkEnergiaSolar"] = true
+	case "jefe_bodega":
+		pages["linkProductos"] = true
+		pages["linkProductosMain"] = true
+		pages["linkInventarioAvanzado"] = true
+		pages["linkRecetasProductos"] = true
+		pages["linkPreciosHistorial"] = true
+		pages["linkBodegas"] = true
+		pages["linkCategorias"] = true
+		pages["linkGeneradorCodigosBarras"] = true
+	case "recursos_humanos":
+		pages["linkHorariosTrabajadores"] = true
+		pages["linkAsistenciaEmpleados"] = true
+		pages["linkNominaSueldos"] = true
+		pages["linkNominaMenu"] = true
+		pages["linkMiHorario"] = true
+	case "contador":
+		pages["linkFinanzas"] = true
+		pages["linkFinanzasMain"] = true
+		pages["linkImpuestos"] = true
+	case "empresario":
+		pages["linkReportes"] = true
+		pages["linkReportesEjecutivos"] = true
+	}
+	return pages
 }
 
 func buildPermissionPagesMapFromModuleRows(modulos []permissionModuleMatrixRow, pageOverrides map[string]bool) map[string]bool {
@@ -3199,6 +3469,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkChatTareas"
 	case strings.HasPrefix(path, "/api/empresa/chat_con_inteligencia_artificial"):
 		return "linkChatIA"
+	case path == "/api/empresa/licencia_sistema/pdf":
+		return "linkLicenciaSistema"
 	case path == "/api/empresa/impuestos":
 		return "linkImpuestos"
 	case path == "/api/empresa/facturacion_electronica/pais_detectado":
@@ -3471,10 +3743,12 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	moduleRows = applyEmpresaVerticalScopeToModuleRows(moduleRows, verticalScope)
 	moduleRows = applyEmpresaRestriccionesToModuleRows(moduleRows, empresaModuleOverrides)
 	moduleRows = applyAdminEmpresaCompartidaScopeToModuleRows(moduleRows, sharedAccess)
+	moduleRows = restrictPermissionModuleRowsForOperationalRole(effectiveRole, moduleRows)
 	stepStarted = time.Now()
 	allowedPages := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, moduleRows)
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
 	allowedPages = applyEmpresaPageRestrictionsToMap(allowedPages, empresaPageOverrides)
+	allowedPages = restrictPermissionPagesForOperationalRole(effectiveRole, allowedPages)
 
 	roleModuleActions := map[string]bool{}
 	for _, row := range moduleRows {

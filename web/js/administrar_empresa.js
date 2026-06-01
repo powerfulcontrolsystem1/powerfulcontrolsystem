@@ -188,6 +188,7 @@ try {
     document.getElementById("linkDrogueriaFarmacia"),
     document.getElementById("linkDomicilios"),
     document.getElementById("linkReportes"),
+    document.getElementById("linkReportesEjecutivos"),
     document.getElementById("linkReportesTurnos"),
     document.getElementById("linkUsuarios"),
     document.getElementById("linkPortalUsuarios"),
@@ -956,13 +957,55 @@ try {
         return "supervisor_sucursal";
       case "cajero":
         return "cajero";
+      case "vendedor":
+      case "ventas":
+        return "vendedor";
+      case "recepcion":
+      case "recepcionista":
+        return "recepcion";
+      case "portero":
+      case "porter":
+      case "guardia":
+      case "porteria":
+      case "vigilante":
+        return "portero";
+      case "servicio_limpieza":
+      case "servicio de limpieza":
+      case "limpieza":
+      case "aseadora":
+      case "aseo":
+      case "housekeeping":
+        return "servicio_limpieza";
       case "inventario":
         return "inventario";
+      case "jefe_bodega":
+      case "jefe de bodega":
+      case "bodega":
+      case "bodeguero":
+      case "almacenista":
+        return "jefe_bodega";
       case "compras":
         return "compras";
+      case "recursos_humanos":
+      case "rrhh":
+      case "talento_humano":
+      case "talento humano":
+        return "recursos_humanos";
+      case "tecnico_solar":
+      case "tecnico solar":
+      case "técnico solar":
+      case "solar":
+        return "tecnico_solar";
       case "contabilidad":
-      case "contador":
         return "contabilidad";
+      case "contador":
+        return "contador";
+      case "empresario":
+      case "dueno":
+      case "dueño":
+      case "propietario":
+      case "gerente_propietario":
+        return "empresario";
       case "auditor":
         return "auditor";
       default:
@@ -1009,21 +1052,27 @@ try {
 
     switch (normalizedModule) {
       case permModuleVentas:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
-        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
-          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero"]);
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["vendedor", "recepcion", "portero", "servicio_limpieza"]));
+        if (normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero", "portero"]);
+        }
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D") {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero", "vendedor", "recepcion"]);
         }
         break;
 
       case permModuleInventario:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
-        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["vendedor", "recepcion", "jefe_bodega"]));
+        if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario", "jefe_bodega"]);
+        }
+        if (normalizedAction === "D") {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "inventario"]);
         }
         break;
 
       case permModuleCompras:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["jefe_bodega"]));
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === "D" || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "compras"]);
         }
@@ -1051,8 +1100,16 @@ try {
       case permModuleCobranza:
       case permModulePortalContador:
       case permModulePortalTerceros:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) {
+          if (normalizedModule === permModuleFinanzas) return roleIn(normalizedRole, allReadRoles.concat(["contador"]));
+          if (normalizedModule === permModuleNominaSueldos) return roleIn(normalizedRole, allReadRoles.concat(["recursos_humanos"]));
+          return roleIn(normalizedRole, allReadRoles);
+        }
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
+          if (normalizedModule === permModuleNominaSueldos) {
+            if (normalizedAction === permActionApprove) return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
+            return roleIn(normalizedRole, ["admin_empresa", "contabilidad", "recursos_humanos"]);
+          }
           return roleIn(normalizedRole, ["admin_empresa", "contabilidad"]);
         }
         if (normalizedAction === "D") {
@@ -1069,7 +1126,10 @@ try {
       case permModuleAuditoria:
       case permModuleBackups:
       case permModuleDocumentosOnlyOffice:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) {
+          if (normalizedModule === permModuleEnergiaSolar) return roleIn(normalizedRole, allReadRoles.concat(["tecnico_solar"]));
+          return roleIn(normalizedRole, allReadRoles);
+        }
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "contabilidad", "auditor"]);
         }
@@ -1080,9 +1140,9 @@ try {
 
       case permModuleClientes:
       case permModuleCRMUnificado:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["vendedor", "recepcion"]));
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
-          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero"]);
+          return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "cajero", "vendedor", "recepcion"]);
         }
         if (normalizedAction === "D") {
           return false;
@@ -1092,7 +1152,10 @@ try {
       case permModuleFacturacion:
       case permModuleFacturacionEcuador:
       case permModuleFacturacionPanama:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) {
+          if (normalizedModule === permModuleFacturacion) return roleIn(normalizedRole, allReadRoles.concat(["contador"]));
+          return roleIn(normalizedRole, allReadRoles);
+        }
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "cajero"]);
         }
@@ -1155,8 +1218,12 @@ try {
       case permModuleVehiculosRegistro:
       case permModuleHojaVidaOperativa:
       case permModuleUbicacionGPS:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) {
+          if (normalizedModule === permModuleHorariosTrab || normalizedModule === permModuleAsistenciaEmpleados) return roleIn(normalizedRole, allReadRoles.concat(["recursos_humanos"]));
+          return roleIn(normalizedRole, allReadRoles);
+        }
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate) {
+          if (normalizedModule === permModuleHorariosTrab || normalizedModule === permModuleAsistenciaEmpleados) return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "recursos_humanos"]);
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal"]);
         }
         if (normalizedAction === "D" || normalizedAction === permActionApprove) {
@@ -1165,7 +1232,7 @@ try {
         break;
 
       case permModuleReportes:
-        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles);
+        if (normalizedAction === permActionRead) return roleIn(normalizedRole, allReadRoles.concat(["empresario"]));
         if (normalizedAction === permActionCreate || normalizedAction === permActionUpdate || normalizedAction === permActionApprove) {
           return roleIn(normalizedRole, ["admin_empresa", "supervisor_sucursal", "contabilidad", "auditor"]);
         }
@@ -1281,6 +1348,64 @@ try {
     });
     if (!permissionContext) {
       setSecondaryMenuVisibility(true);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "portero") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && link.id === "linkEstaciones");
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "servicio_limpieza") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && link.id === "linkEstaciones");
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "contador") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkImpuestos"].indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "empresario") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && ["linkReportes", "linkReportesEjecutivos"].indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "tecnico_solar") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && link.id === "linkEnergiaSolar");
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "jefe_bodega") {
+      var bodegaLinks = ["linkProductos", "linkProductosMain", "linkInventarioAvanzado", "linkRecetasProductos", "linkPreciosHistorial", "linkBodegas", "linkCategorias", "linkGeneradorCodigosBarras"];
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && bodegaLinks.indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "recursos_humanos") {
+      var rrhhLinks = ["linkHorariosTrabajadores", "linkAsistenciaEmpleados", "linkNominaSueldos", "linkNominaMenu", "linkMiHorario"];
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && rrhhLinks.indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
       refreshMenuGroups();
       return;
     }
@@ -1479,6 +1604,64 @@ try {
     });
     if (!normalizedRole) {
       setSecondaryMenuVisibility(true);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "portero") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && link.id === "linkEstaciones");
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "servicio_limpieza") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && link.id === "linkEstaciones");
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "contador") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkImpuestos"].indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "empresario") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && ["linkReportes", "linkReportesEjecutivos"].indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "tecnico_solar") {
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && link.id === "linkEnergiaSolar");
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "jefe_bodega") {
+      var bodegaLinks = ["linkProductos", "linkProductosMain", "linkInventarioAvanzado", "linkRecetasProductos", "linkPreciosHistorial", "linkBodegas", "linkCategorias", "linkGeneradorCodigosBarras"];
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && bodegaLinks.indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "recursos_humanos") {
+      var rrhhLinks = ["linkHorariosTrabajadores", "linkAsistenciaEmpleados", "linkNominaSueldos", "linkNominaMenu", "linkMiHorario"];
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && rrhhLinks.indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
       refreshMenuGroups();
       return;
     }

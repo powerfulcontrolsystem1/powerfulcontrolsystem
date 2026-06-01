@@ -456,6 +456,15 @@ func TestEpaycoCheckoutCredentialReadinessSeparatesSmartAndClassicKeys(t *testin
 	}
 }
 
+func TestDefaultLicenciaPaymentProviderEnabledFollowsConfigurationReadiness(t *testing.T) {
+	if !defaultLicenciaPaymentProviderEnabled(true) {
+		t.Fatal("configured license payment providers should be enabled by default")
+	}
+	if defaultLicenciaPaymentProviderEnabled(false) {
+		t.Fatal("unconfigured license payment providers should remain unavailable by default")
+	}
+}
+
 func TestSanitizeEpaycoClassicCheckoutFormMasksPrivateKey(t *testing.T) {
 	form := epaycoClassicCheckoutForm{
 		Method: "POST",

@@ -88,6 +88,7 @@ El frontend debe crear un formulario temporal y enviarlo por POST. No debe abrir
 10. Smart Checkout solo se considera listo cuando existe `public_key` y una `private_key` API valida. El checkout estandar solo se considera listo cuando existe `customer_id` y `checkout_key`/`p_key`.
 11. Wompi Web Checkout solo se considera listo cuando existen `wompi.public_key` y `wompi.integrity_key`; `wompi.private_key` queda reservada para API directa o consultas que la requieran.
 12. El frontend no debe pedir celular Nequi en el checkout publico de licencia; Wompi debe abrirse como checkout hospedado para que el cliente seleccione el medio de pago.
+13. Una pasarela de licencias con credenciales completas queda habilitada por defecto; `epayco.enabled=0` o `wompi.enabled=0` solo actuan como apagado explicito desde super administrador.
 
 ## Side effects
 

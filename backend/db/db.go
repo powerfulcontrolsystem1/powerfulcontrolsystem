@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -160,6 +161,9 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
 		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
 		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activation_status TEXT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activada_id BIGINT`,
+		`ALTER TABLE pagos_wompi ADD COLUMN IF NOT EXISTS licencia_activada_en TEXT`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_transaction_id ON pagos_wompi (transaction_id)`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_wompi_reference ON pagos_wompi (reference)`,
 		`CREATE TABLE IF NOT EXISTS pagos_epayco (
@@ -184,6 +188,9 @@ func EnsurePaymentGatewaySchema(dbConn *sql.DB) error {
 		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS usuario_creador TEXT`,
 		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'activo'`,
 		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS observaciones TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activation_status TEXT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activada_id BIGINT`,
+		`ALTER TABLE pagos_epayco ADD COLUMN IF NOT EXISTS licencia_activada_en TEXT`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_transaction_id ON pagos_epayco (transaction_id)`,
 		`CREATE INDEX IF NOT EXISTS ix_pagos_epayco_reference ON pagos_epayco (reference)`,
 	}
@@ -2376,6 +2383,152 @@ func GetWompiPaymentContext(dbConn *sql.DB, transactionID, reference string) (in
 	return read()
 }
 
+func licenciaPaymentTable(provider string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "wompi":
+		return "pagos_wompi", true
+	case "epayco":
+		return "pagos_epayco", true
+	default:
+		return "", false
+	}
+}
+
+func getLicenciaPaymentRowID(dbConn *sql.DB, table, transactionID, reference string) (int64, bool, error) {
+	transactionID = strings.TrimSpace(transactionID)
+	reference = strings.TrimSpace(reference)
+	if table == "" || (transactionID == "" && reference == "") {
+		return 0, false, nil
+	}
+	row := queryRowSQLCompat(dbConn, fmt.Sprintf(`SELECT id
+		FROM %s
+		WHERE (transaction_id = ? AND ? <> '') OR (reference = ? AND ? <> '')
+		ORDER BY id DESC
+		LIMIT 1`, table), transactionID, transactionID, reference, reference)
+	var id int64
+	if err := row.Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, false, nil
+		}
+		return 0, false, err
+	}
+	return id, true, nil
+}
+
+// TryBeginLicenciaPaymentActivation reserva una transaccion de pasarela para
+// que un webhook o consulta repetida no vuelva a sumar dias a la licencia.
+func TryBeginLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, reference string) (bool, error) {
+	table, ok := licenciaPaymentTable(provider)
+	if !ok {
+		return true, nil
+	}
+	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
+		return false, err
+	}
+	id, found, err := getLicenciaPaymentRowID(dbConn, table, transactionID, reference)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return true, nil
+	}
+	nowExpr := sqlNowExpr()
+	res, err := execSQLCompat(dbConn, fmt.Sprintf(`UPDATE %s
+		SET licencia_activation_status = 'processing',
+			fecha_actualizacion = %s
+		WHERE id = ?
+			AND COALESCE(licencia_activation_status, '') NOT IN ('processing', 'done')`, table, nowExpr), id)
+	if err != nil {
+		return false, err
+	}
+	affected, _ := res.RowsAffected()
+	return affected > 0, nil
+}
+
+func FinishLicenciaPaymentActivation(dbConn *sql.DB, provider, transactionID, reference string, activatedLicenciaID int64, activationErr error) error {
+	table, ok := licenciaPaymentTable(provider)
+	if !ok {
+		return nil
+	}
+	if err := EnsurePaymentGatewaySchema(dbConn); err != nil {
+		return err
+	}
+	id, found, err := getLicenciaPaymentRowID(dbConn, table, transactionID, reference)
+	if err != nil || !found {
+		return err
+	}
+	nowExpr := sqlNowExpr()
+	status := "done"
+	if activationErr != nil {
+		status = "failed"
+	}
+	_, err = execSQLCompat(dbConn, fmt.Sprintf(`UPDATE %s
+		SET licencia_activation_status = ?,
+			licencia_activada_id = CASE WHEN ? > 0 THEN ? ELSE licencia_activada_id END,
+			licencia_activada_en = CASE WHEN ? = 'done' THEN %s ELSE licencia_activada_en END,
+			fecha_actualizacion = %s
+		WHERE id = ?`, table, nowExpr, nowExpr), status, activatedLicenciaID, activatedLicenciaID, status, id)
+	return err
+}
+
+func licenciaEmpresaStackAnchorTx(tx *sql.Tx, empresaID int64, now time.Time) (time.Time, error) {
+	anchor := now
+	rows, err := queryTxSQLCompat(tx, `SELECT COALESCE(fecha_fin, '')
+		FROM licencias
+		WHERE empresa_id = ?
+			AND COALESCE(activo, 1) = 1
+			AND COALESCE(es_adicional, 0) = 0`, empresaID)
+	if err != nil {
+		return anchor, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return anchor, err
+		}
+		if parsed, ok := parseMaybeTime(raw); ok && parsed.After(anchor) {
+			anchor = parsed
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return anchor, err
+	}
+	return anchor, nil
+}
+
+func resolveLicenciaDurationDays(duracionDias sql.NullInt64, fechaInicio, fechaFin string) int {
+	if duracionDias.Valid && duracionDias.Int64 > 0 {
+		return int(duracionDias.Int64)
+	}
+	if start, ok := parseMaybeTime(fechaInicio); ok {
+		if end, ok := parseMaybeTime(fechaFin); ok && end.After(start) {
+			days := int(math.Ceil(end.Sub(start).Hours() / 24))
+			if days > 0 {
+				return days
+			}
+		}
+	}
+	return 30
+}
+
+func buildLicenciaStackWindow(now, anchor time.Time, requestedStart, requestedEnd string, durationDays int) (string, string) {
+	if durationDays <= 0 {
+		durationDays = 30
+	}
+	start := anchor.Format("2006-01-02 15:04:05")
+	end := anchor.AddDate(0, 0, durationDays).Format("2006-01-02 15:04:05")
+	if !anchor.After(now.Add(1 * time.Minute)) {
+		if requestedStart = strings.TrimSpace(requestedStart); requestedStart != "" {
+			start = requestedStart
+		}
+		if requestedEnd = strings.TrimSpace(requestedEnd); requestedEnd != "" {
+			end = requestedEnd
+		}
+	}
+	return start, end
+}
+
 func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fechaInicio, fechaFin string) (int64, error) {
 	if licenciaID <= 0 || empresaID <= 0 {
 		return 0, fmt.Errorf("licencia_id y empresa_id son obligatorios")
@@ -2393,6 +2546,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 	var superRol sql.NullInt64
 	var usuarioCreador sql.NullString
 	var observaciones sql.NullString
+	var currentFechaInicio sql.NullString
+	var currentFechaFin sql.NullString
 	if err := queryRowTxSQLCompat(tx, `SELECT
 		empresa_id,
 		tipo_id,
@@ -2406,7 +2561,9 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		COALESCE(modulos_habilitados, ''),
 		COALESCE(super_rol_habilitado, 0),
 		COALESCE(usuario_creador, ''),
-		COALESCE(observaciones, '')
+		COALESCE(observaciones, ''),
+		COALESCE(fecha_inicio, ''),
+		COALESCE(fecha_fin, '')
 	FROM licencias
 	WHERE id = ?
 	LIMIT 1`, licenciaID).Scan(
@@ -2423,57 +2580,41 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		&superRol,
 		&usuarioCreador,
 		&observaciones,
+		&currentFechaInicio,
+		&currentFechaFin,
 	); err != nil {
 		return 0, err
 	}
 
 	nowExpr := sqlNowExpr()
-	if currentEmpresa.Valid && currentEmpresa.Int64 == empresaID {
-		if _, err := execTxSQLCompat(tx, "UPDATE licencias SET activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", fechaInicio, fechaFin, licenciaID); err != nil {
-			return 0, err
-		}
-		return licenciaID, nil
-	}
-
-	activePlanQuery := `SELECT id
-	FROM licencias
-	WHERE empresa_id = ?
-		AND COALESCE(activo, 1) = 1
-		AND COALESCE(tipo_id, 0) = ?
-		AND COALESCE(nombre, '') = ?
-		AND ABS(COALESCE(valor, 0) - ?) < 0.0001
-		AND COALESCE(duracion_dias, 0) = ?
-		AND (COALESCE(fecha_inicio, '') = '' OR datetime(fecha_inicio) <= datetime('now','localtime'))
-		AND (COALESCE(fecha_fin, '') = '' OR datetime(fecha_fin) >= datetime('now','localtime'))
-	ORDER BY
-		CASE WHEN COALESCE(fecha_fin, '') = '' THEN 1 ELSE 0 END DESC,
-		datetime(COALESCE(fecha_fin, '9999-12-31 23:59:59')) DESC,
-		id DESC
-	LIMIT 1`
-	if isPostgresDialect() {
-		activePlanQuery = `SELECT id
-		FROM licencias
-		WHERE empresa_id = ?
-			AND COALESCE(activo, 1) = 1
-			AND COALESCE(tipo_id, 0) = ?
-			AND COALESCE(nombre, '') = ?
-			AND ABS(COALESCE(valor, 0) - ?) < 0.0001
-			AND COALESCE(duracion_dias, 0) = ?
-			AND (COALESCE(CAST(fecha_inicio AS TEXT), '') = '' OR CAST(fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)
-			AND (COALESCE(CAST(fecha_fin AS TEXT), '') = '' OR CAST(fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)
-		ORDER BY
-			CASE WHEN COALESCE(CAST(fecha_fin AS TEXT), '') = '' THEN 1 ELSE 0 END DESC,
-			COALESCE(CAST(fecha_fin AS TIMESTAMP), TIMESTAMP '9999-12-31 23:59:59') DESC,
-			id DESC
-		LIMIT 1`
-	}
-	var existingActivePlanID int64
-	err := queryRowTxSQLCompat(tx, activePlanQuery, empresaID, tipoID.Int64, nombre.String, valor.Float64, int(duracionDias.Int64)).Scan(&existingActivePlanID)
-	if err == nil && existingActivePlanID > 0 {
-		return existingActivePlanID, nil
-	}
-	if err != nil && err != sql.ErrNoRows {
+	now := time.Now()
+	durationDays := resolveLicenciaDurationDays(duracionDias, fechaInicio, fechaFin)
+	anchor, err := licenciaEmpresaStackAnchorTx(tx, empresaID, now)
+	if err != nil {
 		return 0, err
+	}
+	stackedInicio, stackedFin := buildLicenciaStackWindow(now, anchor, fechaInicio, fechaFin, durationDays)
+	if currentEmpresa.Valid && currentEmpresa.Int64 == empresaID {
+		if existingEnd, ok := parseMaybeTime(currentFechaFin.String); ok && existingEnd.Before(now) {
+			start := strings.TrimSpace(fechaInicio)
+			if start == "" {
+				start = now.Format("2006-01-02 15:04:05")
+			}
+			end := now.AddDate(0, 0, durationDays).Format("2006-01-02 15:04:05")
+			if strings.TrimSpace(fechaFin) != "" {
+				end = strings.TrimSpace(fechaFin)
+			}
+			if _, err := execTxSQLCompat(tx, "UPDATE licencias SET activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", start, end, licenciaID); err != nil {
+				return 0, err
+			}
+			return licenciaID, nil
+		}
+		if strings.TrimSpace(currentFechaInicio.String) == "" && !anchor.After(now.Add(1*time.Minute)) {
+			if _, err := execTxSQLCompat(tx, "UPDATE licencias SET activo = 1, fecha_inicio = ?, fecha_fin = ?, fecha_actualizacion = "+nowExpr+" WHERE id = ?", stackedInicio, stackedFin, licenciaID); err != nil {
+				return 0, err
+			}
+			return licenciaID, nil
+		}
 	}
 
 	newID, err := insertTxSQLCompat(tx, `INSERT INTO licencias (
@@ -2508,8 +2649,8 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 		int(maxCajasSimultaneas.Int64),
 		modulosHabilitados.String,
 		int(superRol.Int64),
-		fechaInicio,
-		fechaFin,
+		stackedInicio,
+		stackedFin,
 		usuarioCreador.String,
 		observaciones.String,
 	)
@@ -2519,28 +2660,36 @@ func activateLicenciaForEmpresaTx(tx *sql.Tx, licenciaID, empresaID int64, fecha
 	return newID, nil
 }
 
-// ActivateLicenciaForEmpresa asigna y activa una licencia para una empresa, estableciendo fechas de inicio y fin.
+// ActivateLicenciaForEmpresaAsignada asigna y activa una licencia para una empresa,
+// estableciendo fechas acumuladas y devolviendo el ID de la fila empresarial creada o actualizada.
 // Si la licencia base ya pertenece a otra empresa, crea una copia activa para no mover ni desactivar la licencia anterior.
-func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
+func ActivateLicenciaForEmpresaAsignada(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) (int64, error) {
 	if dbConn == nil {
 		dbConn = GetDB()
 	}
 	if err := EnsureLicenciasSchema(dbConn); err != nil {
-		return err
+		return 0, err
 	}
 	tx, err := dbConn.Begin()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback()
-	if _, err := activateLicenciaForEmpresaTx(tx, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
-		return err
+	assignedID, err := activateLicenciaForEmpresaTx(tx, licenciaID, empresaID, fechaInicio, fechaFin)
+	if err != nil {
+		return 0, err
 	}
 	if err := tx.Commit(); err != nil {
-		return err
+		return 0, err
 	}
 	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
-	return nil
+	return assignedID, nil
+}
+
+// ActivateLicenciaForEmpresa conserva el contrato historico de solo error.
+func ActivateLicenciaForEmpresa(dbConn *sql.DB, licenciaID, empresaID int64, fechaInicio, fechaFin string) error {
+	_, err := ActivateLicenciaForEmpresaAsignada(dbConn, licenciaID, empresaID, fechaInicio, fechaFin)
+	return err
 }
 
 // SetConfigValue inserta o actualiza una configuración en la tabla configuraciones

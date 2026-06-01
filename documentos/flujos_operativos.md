@@ -30,6 +30,23 @@ afecte dinero, documentos, licencias o seguridad.
 7. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
    deben crear empresas duplicadas.
 
+## Eliminar empresa
+
+1. Solo el administrador propietario puede iniciar la eliminacion total desde el
+   selector de empresas o desde `editar_empresa.html`.
+2. Antes del borrado debe validar impacto, escribir el nombre exacto de la
+   empresa, escribir `ELIMINAR` y aceptar el riesgo irreversible.
+3. Justo antes de enviar el DELETE, el frontend pregunta si desea descargar toda
+   la informacion de la empresa. Si acepta, abre
+   `descargar_informacion_de_la_empresa.html` en una nueva pestana y luego
+   continua; si cancela, continua sin descarga.
+4. El endpoint destructivo recibe `descarga_ofrecida` para auditoria y mantiene
+   las validaciones backend de propietario, confirmacion y aislamiento por
+   empresa.
+5. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
+   eliminar solo la empresa indicada y volver al selector sin filtrar datos de
+   otra empresa.
+
 ## Administradores delegados
 
 1. El administrador principal entra a `seleccionar_empresa.html` y abre
@@ -76,12 +93,37 @@ afecte dinero, documentos, licencias o seguridad.
    aunque la licencia anterior ya este vencida o inactiva.
 5. La activacion debe ser idempotente si el primer intento ya dejo la licencia
    vigente.
-6. Una licencia de prueba de 15 dias con valor cero no se renueva desde el
+6. Al quedar activa, el sistema envia correo al administrador de la empresa con
+   el mensaje `licencia_activation_payment` y adjunta un PDF de licencia de
+   software generado desde la plantilla `licencia_software_pdf`, ambas
+   configurables en `web/super/formato_para_emviar_email.html`.
+7. La empresa puede descargar el mismo documento desde Administrar empresa >
+   Licencia > Licencia del sistema; el endpoint
+   `/api/empresa/licencia_sistema/pdf` debe quedar protegido por permisos de
+   empresa y aislamiento `empresa_id`.
+8. Una licencia de prueba de 15 dias con valor cero no se renueva desde el
    historial; si el administrador necesita continuar, debe escoger una licencia
    comercial desde el cambio de plan.
-7. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
+9. En licencias pagadas, `pagar_licencia.html` consulta
+   `/api/public/licencias/payment_methods`; Epayco y Wompi deben aparecer si
+   estan configurados, salvo que el super administrador los apague de forma
+   explicita con `epayco.enabled=0` o `wompi.enabled=0`.
+10. Si una licencia comercial se paga antes del vencimiento actual, la nueva
+   vigencia se agenda desde la fecha fin acumulada mas lejana de la empresa.
+   Ejemplo: si vence el 10 de junio y paga 30 dias el 1 de junio, la licencia
+   pagada inicia el 10 de junio y vence el 10 de julio; un segundo pago
+   anticipado inicia desde el 10 de julio. Los webhooks/consultas repetidos de
+   la misma referencia quedan idempotentes con `licencia_activation_status`.
+11. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
    bloquear segundo uso real despues del vencimiento y comprobar que el
-   historial muestra otras licencias cuando la prueba no es renovable.
+   historial muestra otras licencias cuando la prueba no es renovable, ademas
+   de validar que el correo capturado o enviado incluya el PDF adjunto y que la
+   descarga empresarial devuelva `application/pdf`; para pago, seleccionar
+   Epayco y Wompi, aceptar terminos y comprobar que cada proveedor pasa a
+   verificacion con referencia propia. Para renovaciones comerciales, simular
+   pago anticipado con licencia vigente y validar que `fecha_inicio` queda en el
+   vencimiento anterior, que `fecha_fin` suma la duracion comprada y que repetir
+   la misma referencia no vuelve a extender.
 
 ## Configurar empresa
 
@@ -194,13 +236,36 @@ afecte dinero, documentos, licencias o seguridad.
 ## Modo offline
 
 1. La empresa activa modo offline y marca de documento offline si corresponde.
-2. Si se pierde internet en caja/carrito con offline activo, aparece aviso
-   persistente y se permite vender e imprimir provisionalmente.
-3. Si se pierde internet en modulo sin soporte offline, el aviso debe pedir
+2. Cada cajero debe haber iniciado sesion y tener una caja abierta/cargada antes
+   de perder internet. La venta offline queda ligada a `empresa_id`, usuario,
+   codigo de caja, estacion/carrito y `sync_key` unico.
+3. Si se pierde internet en caja/carrito con offline activo, aparece aviso
+   persistente y se permite vender e imprimir provisionalmente solo para la caja
+   abierta de ese cajero.
+4. Si se pierde internet en modulo sin soporte offline, el aviso debe pedir
    esperar reconexion.
-4. Al volver internet, se muestra aviso, se registra auditoria y se sincroniza la
-   cola por `/api/empresa/offline_ventas`.
-5. Pruebas: cortar red, vender, imprimir, restaurar red, sincronizar una sola vez.
+5. Al volver internet, se muestra aviso, se registra auditoria y se sincroniza la
+   cola por `/api/empresa/offline_ventas`. El backend rechaza ventas de otro
+   cajero o sin caja explicita y trata reintentos sobre carritos ya pagados como
+   idempotentes para no duplicar caja, inventario ni documentos.
+6. Pruebas: cortar red, vender, imprimir, restaurar red, sincronizar una sola
+   vez, y repetir con dos cajeros/cajas para validar colas separadas.
+
+## Energia solar
+
+1. La empresa entra por Administrar empresa > Energia solar si la licencia y el
+   rol permiten `energia_solar`.
+2. Las preconfiguraciones incluyen el modulo apagado por defecto; al activarlo,
+   la empresa registra proveedor, modelo, instalacion, bateria, BMS y correo de
+   alertas.
+3. El tecnico solar solo consulta dashboard, lecturas, eventos y alertas.
+4. Administrador o supervisor configura sistemas, alertas y lecturas manuales o
+   recibidas desde gateway/API.
+5. Las lecturas disparan eventos por umbral o estado y pueden enviar correo si
+   el sistema lo tiene activo.
+6. Pruebas: crear sistema Victron/SMA/SolarEdge/gateway, registrar lectura con
+   SOC bajo, validar evento/correo, intentar leer con `tecnico_solar` y guardar
+   con `tecnico_solar` esperando bloqueo.
 
 ## Reportes de turno
 
@@ -232,6 +297,85 @@ afecte dinero, documentos, licencias o seguridad.
 6. Pruebas: dos usuarios cajeros en la misma empresa, estaciones diferentes,
    estados visibles compartidos, bloqueo 403 al intentar abrir/agregar/pagar una
    estacion no asignada y corte de turno independiente.
+
+## Rol portero
+
+1. El rol `portero` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Estaciones`.
+3. En `Estaciones`, el portero puede ver el estado de las estaciones y activar
+   una estacion disponible, pero no debe abrir carrito, Caja, corte, items,
+   venta directa, pagos, abonos ni configuracion.
+4. Backend mantiene la restriccion aunque el usuario intente llamar la API:
+   `carritos_compra` permite al portero solo `GET` de estado y `PUT
+   action=activar_estacion`; `carritos_compra/items` queda bloqueado.
+5. Pruebas: usuario operativo con rol `portero`, entrar por `login_usuario`,
+   confirmar menu con solo Estaciones, activar una estacion, intentar abrir
+   carrito/items/pagar por URL o consola y recibir 403.
+
+## Rol Servicio de limpieza
+
+1. El rol `servicio_limpieza` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Estaciones`.
+3. En `Estaciones`, el usuario puede ver el estado de cada estacion. Si la
+   estacion esta marcada como sucia, al hacer clic reporta aseo terminado y el
+   sistema cambia la estacion a limpia/disponible.
+4. Si la estacion no esta sucia, el clic solo muestra un aviso; no abre carrito,
+   no activa estacion, no entra a Caja ni ejecuta ventas.
+5. Backend mantiene la restriccion aunque el usuario intente llamar la API:
+   `carritos_compra` permite solo `GET` del tablero, `carritos_compra/items`
+   queda bloqueado y el cambio sucia->limpia pasa por
+   `/api/empresa/estacion_aseo?action=finalizar`.
+6. Pruebas: usuario operativo con rol `servicio_limpieza`, entrar por
+   `login_usuario`, confirmar menu con solo Estaciones, marcar una estacion
+   sucia como limpia, intentar activar estacion limpia, abrir carrito/items/caja
+   por URL o consola y recibir bloqueo.
+
+## Roles empresariales comunes
+
+1. Las empresas cuentan con roles base para asignar usuarios sin crear permisos
+   desde cero: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`,
+   `recursos_humanos`, `tecnico_solar`, `cajero`, `portero`,
+   `servicio_limpieza`, `contador`, `empresario`, `compras`, `inventario`,
+   `contabilidad` y `auditor`.
+2. `tecnico_solar` solo consulta el estado de energia solar: dashboard,
+   lecturas, eventos y alertas. No puede modificar sistemas ni configuracion.
+3. `jefe_bodega` administra inventario y bodegas: existencias, traslados,
+   categorias, recetas y codigos; no puede operar ventas, caja ni eliminar
+   inventario.
+4. `recursos_humanos` gestiona horarios, asistencia y nomina operativa; no abre
+   ventas, caja ni configuracion general.
+5. Pruebas: crear usuarios con esos roles, iniciar por `login_usuario`, validar
+   menu visible y probar llamadas directas a endpoints fuera del alcance con
+   respuesta 403.
+
+## Rol contador
+
+1. El rol `contador` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Centro financiero y
+   contable` e `Impuestos`.
+3. Dentro del centro financiero, los accesos rapidos y el submenu deben ocultar
+   contabilidad avanzada, creditos, caja, cobranza, tesoreria, portal contador y
+   demas paginas no permitidas.
+4. Backend conserva el control efectivo: `contador` solo tiene `R` en
+   `finanzas` y `facturacion` para consultar finanzas e impuestos. Cualquier
+   `POST`, `PUT`, `PATCH`, `DELETE` o accion de aprobacion debe devolver 403.
+5. Pruebas: usuario operativo con rol `contador`, entrar por `login_usuario`,
+   confirmar menu limitado, abrir finanzas e impuestos, intentar guardar un
+   impuesto o crear movimiento financiero y recibir 403.
+
+## Rol empresario
+
+1. El rol `empresario` se crea como rol base de cada tipo de empresa.
+2. En el menu empresarial solo debe quedar visible `Reportes ejecutivos`.
+3. Dentro del centro de reportes, el usuario debe abrir la vista ejecutiva de
+   resultados y no debe ver reportes de turnos/caja.
+4. Backend conserva el control efectivo: `empresario` solo tiene `R` en
+   `reportes`. Cualquier intento de operar ventas, caja, inventario, finanzas,
+   usuarios, configuracion o acciones `C/U/D/A` debe devolver 403.
+5. Pruebas: usuario operativo con rol `empresario`, entrar por `login_usuario`,
+   confirmar menu limitado, abrir centro de reportes, exportar o previsualizar
+   un reporte permitido e intentar abrir turnos/caja/ventas por URL recibiendo
+   bloqueo.
 
 ## Alertas super administrador
 

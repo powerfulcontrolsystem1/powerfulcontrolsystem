@@ -41,15 +41,45 @@
     return "/descargar_informacion_de_la_empresa.html?empresa_id=" + encodeURIComponent(empresaId);
   }
 
-  function openEmpresaDownload() {
+  function openEmpresaDownload(options) {
+    var opts = options && typeof options === "object" ? options : {};
+    var sameWindowFallback = opts.sameWindowFallback !== false;
+    var showMessage = opts.showMessage !== false;
     state.deleteDownloadOffered = true;
     var url = buildEmpresaDownloadUrl();
+    var opened = false;
     try {
-      window.open(url, "_blank", "noopener");
+      var popup = window.open(url, "_blank");
+      if (popup) {
+        try { popup.opener = null; } catch (openerError) {}
+        opened = true;
+      }
     } catch (e) {
-      window.location.href = url;
+      opened = false;
     }
-    setMessage("empresaDeleteMessage", "Se abrio la pagina de descarga. Cuando termines, vuelve aqui y confirma la eliminacion si deseas continuar.", false);
+    if (!opened && sameWindowFallback) {
+      window.location.href = url;
+      return true;
+    }
+    if (showMessage) {
+      setMessage("empresaDeleteMessage", "Se abrio la pagina de descarga. Cuando termines, vuelve aqui y confirma la eliminacion si deseas continuar.", false);
+    }
+    return opened;
+  }
+
+  function confirmDownloadBeforeEmpresaDelete() {
+    var wantsDownload = window.confirm(
+      "Antes de eliminar esta empresa, deseas descargar toda su informacion?\n\n" +
+      "Aceptar: abre la descarga en una nueva pestana y luego continua la eliminacion.\n" +
+      "Cancelar: continua la eliminacion sin descargar ahora."
+    );
+    if (!wantsDownload) return true;
+    if (!openEmpresaDownload({ sameWindowFallback: false, showMessage: false })) {
+      setMessage("empresaDeleteMessage", "No se pudo abrir la descarga automaticamente. Usa el boton Descargar informacion antes de eliminar y vuelve a confirmar.", true);
+      return false;
+    }
+    setMessage("empresaDeleteMessage", "Se abrio la descarga. Conserva el archivo; la eliminacion continuara.", false);
+    return true;
   }
 
   async function fetchJSON(url, options) {
@@ -661,6 +691,9 @@
     }
     if (!riskAccepted) {
       setMessage("empresaDeleteMessage", "Marca la aceptacion de riesgo antes de eliminar la empresa.", true);
+      return;
+    }
+    if (!confirmDownloadBeforeEmpresaDelete()) {
       return;
     }
     try {

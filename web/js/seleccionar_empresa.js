@@ -809,6 +809,42 @@
     return "/descargar_informacion_de_la_empresa.html?" + params.toString();
   }
 
+  function openSelectorDeleteDownload(empresa, allowSameWindowFallback) {
+    if (!empresa) return false;
+    deleteModalState.descargaOfrecida = true;
+    var url = buildEmpresaDownloadURL(empresa);
+    var opened = false;
+    try {
+      var popup = window.open(url, "_blank");
+      if (popup) {
+        try { popup.opener = null; } catch (openerError) {}
+        opened = true;
+      }
+    } catch (e) {
+      opened = false;
+    }
+    if (!opened && allowSameWindowFallback) {
+      window.location.href = url;
+      return true;
+    }
+    return opened;
+  }
+
+  function confirmSelectorDownloadBeforeDelete(empresa) {
+    var wantsDownload = window.confirm(
+      "Antes de eliminar esta empresa, deseas descargar toda su informacion?\n\n" +
+      "Aceptar: abre la descarga en una nueva pestana y luego continua la eliminacion.\n" +
+      "Cancelar: continua la eliminacion sin descargar ahora."
+    );
+    if (!wantsDownload) return true;
+    if (!openSelectorDeleteDownload(empresa, false)) {
+      setSelectorDeleteMessage("No se pudo abrir la descarga automaticamente. Usa el boton Descargar informacion antes de eliminar y vuelve a confirmar.", true);
+      return false;
+    }
+    setSelectorDeleteMessage("Se abrio la descarga. Conserva el archivo; la eliminacion continuara.", false);
+    return true;
+  }
+
   function buildLicenciasEmpresaURL(empresa) {
     var params = new URLSearchParams();
     if (empresa && empresa.id) {
@@ -1275,14 +1311,9 @@
     if (downloadBtn) {
       downloadBtn.addEventListener("click", function () {
         if (!deleteModalState.empresa) return;
-        deleteModalState.descargaOfrecida = true;
+        openSelectorDeleteDownload(deleteModalState.empresa, true);
         setSelectorDeleteMessage("Se abrio la descarga. Conserva el archivo antes de continuar si lo necesitas.", false);
         updateSelectorDeleteChecklist();
-        var url = buildEmpresaDownloadURL(deleteModalState.empresa);
-        var popup = window.open(url, "_blank", "noopener");
-        if (!popup) {
-          window.location.href = url;
-        }
       });
     }
     var confirmBtn = document.getElementById("selectorDeleteConfirmBtn");
@@ -1418,6 +1449,9 @@
     }
     if (!riskOk) {
       setSelectorDeleteMessage("Marca la aceptacion de riesgo antes de eliminar la empresa.", true);
+      return;
+    }
+    if (!confirmSelectorDownloadBeforeDelete(empresa)) {
       return;
     }
     try {

@@ -835,6 +835,10 @@ func main() {
 			log.Printf("warning: no se pudieron apagar robot/emisora en preconfiguraciones: %v", err)
 		}
 		startupTrace("after_preconfig_robot_radio_defaults")
+		if err := dbpkg.EnsureEnergiaSolarInTipoEmpresaPreconfiguraciones(dbSuper); err != nil {
+			log.Printf("warning: no se pudo agregar energia solar a preconfiguraciones: %v", err)
+		}
+		startupTrace("after_preconfig_energia_solar")
 		if err := dbpkg.DropTiposDeUsuarioTable(dbSuper); err != nil {
 			log.Printf("warning: no se pudo eliminar tabla legada tipos_de_usuario: %v", err)
 		}
@@ -1174,6 +1178,7 @@ func main() {
 	http.HandleFunc("/api/public/venta_digital", handlers.PublicVentaDigitalHandler(dbSuper))
 	http.HandleFunc("/api/public/pagina_principal", handlers.PublicPaginaPrincipalHandler(dbSuper))
 	http.HandleFunc("/api/public/informacion_de_modulos", handlers.PublicInformacionModulosHandler(dbSuper))
+	http.HandleFunc("/api/public/noticias", handlers.PublicNoticiasPortalHandler(dbSuper))
 	http.HandleFunc("/api/public/portal_visitas", handlers.PublicPortalVisitasHandler(dbSuper))
 	http.HandleFunc("/api/public/plantillas_nuevas/catalogo", handlers.PublicPlantillasNuevosCatalogoHandler())
 	http.HandleFunc("/api/public/plantillas_integracion/catalogo", handlers.PublicPlantillasIntegracionCatalogoHandler())
@@ -1194,6 +1199,7 @@ func main() {
 	http.HandleFunc("/api/empresa/configuracion_avanzada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_avanzada/logo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionAvanzadaLogoUploadHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/configuracion_guiada", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaConfiguracionGuiadaHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/licencia_sistema/pdf", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaLicenciaSistemaPDFHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/email_corporativo", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaEmailCorporativoHandler(dbSuper, dbEmpresas)))
 	http.HandleFunc("/api/empresa/db_admin", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaDBAdminHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/impresoras", handlers.WithEmpresaSeguridadPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpresorasHandler(dbEmpresas)))
@@ -1354,6 +1360,7 @@ func main() {
 	// Endpoint super para administrar tarjetas dinamicas de la pagina principal (index)
 	http.HandleFunc("/super/api/pagina_principal", handlers.WithSuperAuditoria(dbSuper, "super_pagina_principal", handlers.SuperPaginaPrincipalHandler(dbSuper, webDir)))
 	http.HandleFunc("/super/api/informacion_de_modulos", handlers.WithSuperAuditoria(dbSuper, "super_informacion_modulos", handlers.SuperInformacionModulosHandler(dbSuper, webDir)))
+	http.HandleFunc("/super/api/noticias", handlers.WithSuperAuditoria(dbSuper, "super_noticias", handlers.SuperNoticiasPortalHandler(dbSuper, webDir)))
 	// Endpoints Wompi (Nequi): crear transacción y consultar estado
 	http.HandleFunc("/wompi/terms", handlers.WompiTermsHandler(dbSuper))
 	http.HandleFunc("/wompi/create_checkout", handlers.WompiCreateCheckoutHandler(dbSuper))
