@@ -12017,3 +12017,23 @@ Archivos modificados:
 - web/administrar_empresa/grafologia.html
 - web/js/administrar_empresa.js
 - web/js/grafologia.js
+
+2026-06-01 16:16:39 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ff8a617c; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/grafologia.go
+- backend/handlers/grafologia.go
+- backend/internal/grafologia/analyzer.go
+- backend/internal/grafologia/analyzer_test.go
+- backend/internal/grafologia/preprocess.go
+- backend/internal/grafologia/report.go
+- documentos/api/ayuda_apis.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/grafologix_arquitectura.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/grafologia.html
+- web/js/grafologia.js
