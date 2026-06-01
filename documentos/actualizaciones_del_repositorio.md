@@ -11945,3 +11945,13 @@ Archivos modificados:
 - web/pagar_licencia.html
 - web/super/licencias_codigos_descuento.html
 - web/super_administrador.html
+
+2026-06-01 12:46:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: c420f834; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/configuracion.html
+- web/administrar_empresa/configuracion/productos_pedidos.html
