@@ -45,6 +45,27 @@ func RenderHTMLReport(title string, result AnalysisResult) string {
 		b.WriteString(`</span></div>`)
 	}
 	b.WriteString(`</div></section>`)
+	if result.Preprocess != nil {
+		b.WriteString(`<section class="section"><h2>Calidad de imagen</h2><div class="grid">`)
+		qualityRows := [][2]string{
+			{"Contraste", formatPercent(result.Preprocess.Quality.Contrast)},
+			{"Densidad de tinta", formatPercent(result.Preprocess.Quality.InkDensity * 100)},
+			{"Nitidez estimada", formatPercent(result.Preprocess.Quality.Sharpness)},
+			{"Umbral Otsu", intString(result.Preprocess.Threshold)},
+			{"Sugerencia de recorte", yesNo(result.Preprocess.Quality.CropSuggested)},
+			{"Advertencia de iluminación", yesNo(result.Preprocess.Quality.LightingWarning)},
+			{"Advertencia de resolución", yesNo(result.Preprocess.Quality.ResolutionWarning)},
+			{"Caja de tinta", intString(result.Preprocess.InkBox.MinX) + "," + intString(result.Preprocess.InkBox.MinY) + " - " + intString(result.Preprocess.InkBox.MaxX) + "," + intString(result.Preprocess.InkBox.MaxY)},
+		}
+		for _, row := range qualityRows {
+			b.WriteString(`<div class="row"><strong>`)
+			b.WriteString(html.EscapeString(row[0]))
+			b.WriteString(`</strong><span>`)
+			b.WriteString(html.EscapeString(row[1]))
+			b.WriteString(`</span></div>`)
+		}
+		b.WriteString(`</div></section>`)
+	}
 	b.WriteString(`<section class="section"><h2>Tabla de métricas</h2>`)
 	for _, m := range result.Metrics {
 		b.WriteString(`<div class="row"><div><strong>`)
@@ -58,6 +79,21 @@ func RenderHTMLReport(title string, result AnalysisResult) string {
 		b.WriteString(`</span></div>`)
 	}
 	b.WriteString(`</section>`)
+	if result.Preprocess != nil && len(result.Preprocess.ImageURLs) > 0 {
+		b.WriteString(`<section class="section"><h2>Preprocesamiento visual</h2><div class="grid">`)
+		for _, key := range []string{"grayscale", "binary", "edges", "lines"} {
+			if url := strings.TrimSpace(result.Preprocess.ImageURLs[key]); url != "" {
+				b.WriteString(`<div><strong>`)
+				b.WriteString(html.EscapeString(preprocessLabel(key)))
+				b.WriteString(`</strong><br><img alt="`)
+				b.WriteString(html.EscapeString(preprocessLabel(key)))
+				b.WriteString(`" src="`)
+				b.WriteString(html.EscapeString(url))
+				b.WriteString(`" style="width:100%;max-height:230px;object-fit:contain;border:1px solid #ddd;margin-top:6px"></div>`)
+			}
+		}
+		b.WriteString(`</div></section>`)
+	}
 	b.WriteString(`<section class="section"><h2>Interpretación orientativa</h2>`)
 	for _, t := range result.Traits {
 		b.WriteString(`<div class="row"><div style="flex:1;padding-right:14px"><strong>`)
@@ -81,6 +117,59 @@ func RenderHTMLReport(title string, result AnalysisResult) string {
 		b.WriteString(`</p>`)
 	}
 	b.WriteString(`</section></main></body></html>`)
+	return b.String()
+}
+
+func RenderWordReport(title string, result AnalysisResult) []byte {
+	htmlDoc := RenderHTMLReport(title, result)
+	htmlDoc = strings.Replace(htmlDoc, `<!doctype html><html`, `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"`, 1)
+	return []byte(htmlDoc)
+}
+
+func RenderTextReport(title string, result AnalysisResult) string {
+	if strings.TrimSpace(title) == "" {
+		title = "Informe grafologico GRAFOLOGIX"
+	}
+	var b strings.Builder
+	b.WriteString(cleanPDFText(title) + "\n")
+	b.WriteString("Generado por GRAFOLOGIX\n")
+	b.WriteString("Fecha: " + result.GeneratedAt + "\n")
+	b.WriteString("Confianza global: " + formatPercent(result.GlobalTrust) + "\n\n")
+	b.WriteString("RESUMEN GENERAL\n")
+	b.WriteString(cleanPDFText(result.Summary) + "\n\n")
+	b.WriteString("METRICAS\n")
+	for _, m := range result.Metrics {
+		b.WriteString("- " + cleanPDFText(m.Name) + ": " + cleanPDFText(m.Value) + " | Confianza " + formatPercent(m.Confidence) + "\n")
+		b.WriteString("  " + cleanPDFText(m.Explanation) + "\n")
+	}
+	b.WriteString("\nINTERPRETACION ORIENTATIVA\n")
+	for _, t := range result.Traits {
+		b.WriteString("- " + cleanPDFText(t.Name) + ": " + formatPercent(t.Percent) + " | " + cleanPDFText(t.Level) + "\n")
+		b.WriteString("  " + cleanPDFText(t.Explanation) + "\n")
+	}
+	if result.Preprocess != nil {
+		b.WriteString("\nCALIDAD DE IMAGEN\n")
+		b.WriteString("- Contraste: " + formatPercent(result.Preprocess.Quality.Contrast) + "\n")
+		b.WriteString("- Densidad de tinta: " + formatPercent(result.Preprocess.Quality.InkDensity*100) + "\n")
+		b.WriteString("- Nitidez estimada: " + formatPercent(result.Preprocess.Quality.Sharpness) + "\n")
+		b.WriteString("- Umbral Otsu: " + intString(result.Preprocess.Threshold) + "\n")
+	}
+	b.WriteString("\nOBSERVACIONES TECNICAS\n")
+	for _, note := range result.TechnicalNotes {
+		b.WriteString("- " + cleanPDFText(note) + "\n")
+	}
+	return b.String()
+}
+
+func RenderCSVReport(result AnalysisResult) string {
+	var b strings.Builder
+	b.WriteString("tipo,clave,nombre,valor,nivel_o_categoria,puntaje,confianza,explicacion\n")
+	for _, m := range result.Metrics {
+		writeCSVRow(&b, []string{"metrica", m.Key, m.Name, m.Value, m.Category, sprintf2(m.Score), sprintf2(m.Confidence), m.Explanation})
+	}
+	for _, t := range result.Traits {
+		writeCSVRow(&b, []string{"interpretacion", t.Key, t.Name, sprintf2(t.Percent), t.Level, sprintf2(t.Percent), sprintf2(t.Confidence), t.Explanation})
+	}
 	return b.String()
 }
 
@@ -147,6 +236,25 @@ func RenderPDFReport(title string, result AnalysisResult) []byte {
 	}
 	pdf.WriteString(fmt.Sprintf("trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref))
 	return pdf.Bytes()
+}
+
+func writeCSVRow(b *strings.Builder, values []string) {
+	for i, value := range values {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteByte('"')
+		b.WriteString(strings.ReplaceAll(cleanPDFText(value), `"`, `""`))
+		b.WriteByte('"')
+	}
+	b.WriteByte('\n')
+}
+
+func yesNo(value bool) string {
+	if value {
+		return "Si"
+	}
+	return "No"
 }
 
 func conclusion(result AnalysisResult) string {
@@ -249,4 +357,19 @@ func escapePDFString(value string) string {
 	value = strings.ReplaceAll(value, "(", "\\(")
 	value = strings.ReplaceAll(value, ")", "\\)")
 	return value
+}
+
+func preprocessLabel(key string) string {
+	switch key {
+	case "grayscale":
+		return "Escala de grises"
+	case "binary":
+		return "Binarización"
+	case "edges":
+		return "Bordes"
+	case "lines":
+		return "Líneas y márgenes"
+	default:
+		return key
+	}
 }

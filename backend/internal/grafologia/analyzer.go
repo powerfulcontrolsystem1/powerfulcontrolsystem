@@ -17,16 +17,17 @@ import (
 const EngineVersion = "grafologix-go-1.0"
 
 type AnalysisResult struct {
-	Version        string          `json:"version"`
-	GeneratedAt    string          `json:"generated_at"`
-	Summary        string          `json:"summary"`
-	GlobalTrust    float64         `json:"global_trust"`
-	Image          ImageSummary    `json:"image"`
-	Metrics        []Metric        `json:"metrics"`
-	Traits         []Trait         `json:"traits"`
-	TechnicalNotes []string        `json:"technical_notes"`
-	OCRText        string          `json:"ocr_text,omitempty"`
-	Raw            json.RawMessage `json:"raw,omitempty"`
+	Version        string            `json:"version"`
+	GeneratedAt    string            `json:"generated_at"`
+	Summary        string            `json:"summary"`
+	GlobalTrust    float64           `json:"global_trust"`
+	Image          ImageSummary      `json:"image"`
+	Metrics        []Metric          `json:"metrics"`
+	Traits         []Trait           `json:"traits"`
+	Preprocess     *PreprocessResult `json:"preprocess,omitempty"`
+	TechnicalNotes []string          `json:"technical_notes"`
+	OCRText        string            `json:"ocr_text,omitempty"`
+	Raw            json.RawMessage   `json:"raw,omitempty"`
 }
 
 type ImageSummary struct {

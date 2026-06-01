@@ -7,25 +7,27 @@ import (
 )
 
 type EmpresaGrafologiaAnalisis struct {
-	ID                 int64   `json:"id"`
-	EmpresaID          int64   `json:"empresa_id"`
-	Titulo             string  `json:"titulo"`
-	ArchivoNombre      string  `json:"archivo_nombre"`
-	ImagenURL          string  `json:"imagen_url"`
-	ImagenMime         string  `json:"imagen_mime"`
-	OCRTexto           string  `json:"ocr_texto,omitempty"`
-	OCRMotor           string  `json:"ocr_motor"`
-	Estado             string  `json:"estado"`
-	Resumen            string  `json:"resumen"`
-	MetricasJSON       string  `json:"-"`
-	InterpretacionJSON string  `json:"-"`
-	Metricas           any     `json:"metricas,omitempty"`
-	Interpretacion     any     `json:"interpretacion,omitempty"`
-	ReporteHTML        string  `json:"reporte_html,omitempty"`
-	ConfianzaGlobal    float64 `json:"confianza_global"`
-	UsuarioCreador     string  `json:"usuario_creador,omitempty"`
-	FechaCreacion      string  `json:"fecha_creacion,omitempty"`
-	FechaActualizacion string  `json:"fecha_actualizacion,omitempty"`
+	ID                   int64   `json:"id"`
+	EmpresaID            int64   `json:"empresa_id"`
+	Titulo               string  `json:"titulo"`
+	ArchivoNombre        string  `json:"archivo_nombre"`
+	ImagenURL            string  `json:"imagen_url"`
+	ImagenMime           string  `json:"imagen_mime"`
+	OCRTexto             string  `json:"ocr_texto,omitempty"`
+	OCRMotor             string  `json:"ocr_motor"`
+	Estado               string  `json:"estado"`
+	Resumen              string  `json:"resumen"`
+	MetricasJSON         string  `json:"-"`
+	InterpretacionJSON   string  `json:"-"`
+	PreprocesamientoJSON string  `json:"-"`
+	Metricas             any     `json:"metricas,omitempty"`
+	Interpretacion       any     `json:"interpretacion,omitempty"`
+	Preprocesamiento     any     `json:"preprocesamiento,omitempty"`
+	ReporteHTML          string  `json:"reporte_html,omitempty"`
+	ConfianzaGlobal      float64 `json:"confianza_global"`
+	UsuarioCreador       string  `json:"usuario_creador,omitempty"`
+	FechaCreacion        string  `json:"fecha_creacion,omitempty"`
+	FechaActualizacion   string  `json:"fecha_actualizacion,omitempty"`
 }
 
 func EnsureEmpresaGrafologiaSchema(dbConn *sql.DB) error {
@@ -46,6 +48,7 @@ func EnsureEmpresaGrafologiaSchema(dbConn *sql.DB) error {
 			resumen TEXT,
 			metricas_json TEXT,
 			interpretacion_json TEXT,
+			preprocesamiento_json TEXT,
 			reporte_html TEXT,
 			confianza_global REAL DEFAULT 0,
 			usuario_creador TEXT,
@@ -67,6 +70,7 @@ func EnsureEmpresaGrafologiaSchema(dbConn *sql.DB) error {
 	}{
 		{"empresa_grafologia_analisis", "ocr_motor", "TEXT DEFAULT 'go_heuristico'"},
 		{"empresa_grafologia_analisis", "reporte_html", "TEXT"},
+		{"empresa_grafologia_analisis", "preprocesamiento_json", "TEXT"},
 		{"empresa_grafologia_analisis", "confianza_global", "REAL DEFAULT 0"},
 		{"empresa_grafologia_analisis", "fecha_actualizacion", "TEXT DEFAULT (CAST(CURRENT_TIMESTAMP AS TEXT))"},
 	}
@@ -94,10 +98,10 @@ func InsertEmpresaGrafologiaAnalisis(dbConn *sql.DB, item EmpresaGrafologiaAnali
 	var id int64
 	err := queryRowSQLCompat(dbConn, `INSERT INTO empresa_grafologia_analisis (
 		empresa_id, titulo, archivo_nombre, imagen_url, imagen_mime, ocr_texto, ocr_motor,
-		estado, resumen, metricas_json, interpretacion_json, reporte_html, confianza_global, usuario_creador
-	) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
+		estado, resumen, metricas_json, interpretacion_json, preprocesamiento_json, reporte_html, confianza_global, usuario_creador
+	) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
 		item.EmpresaID, item.Titulo, item.ArchivoNombre, item.ImagenURL, item.ImagenMime, item.OCRTexto, item.OCRMotor,
-		item.Estado, item.Resumen, item.MetricasJSON, item.InterpretacionJSON, item.ReporteHTML, item.ConfianzaGlobal, item.UsuarioCreador,
+		item.Estado, item.Resumen, item.MetricasJSON, item.InterpretacionJSON, item.PreprocesamientoJSON, item.ReporteHTML, item.ConfianzaGlobal, item.UsuarioCreador,
 	).Scan(&id)
 	if err != nil {
 		return 0, err
@@ -135,11 +139,11 @@ func ListEmpresaGrafologiaAnalisis(dbConn *sql.DB, empresaID int64, limit int) (
 func GetEmpresaGrafologiaAnalisis(dbConn *sql.DB, empresaID, id int64) (EmpresaGrafologiaAnalisis, error) {
 	var item EmpresaGrafologiaAnalisis
 	err := queryRowSQLCompat(dbConn, `SELECT id, empresa_id, titulo, archivo_nombre, imagen_url, imagen_mime, ocr_texto, ocr_motor,
-		estado, resumen, metricas_json, interpretacion_json, reporte_html, confianza_global, usuario_creador, fecha_creacion, fecha_actualizacion
+		estado, resumen, metricas_json, interpretacion_json, COALESCE(preprocesamiento_json,''), reporte_html, confianza_global, usuario_creador, fecha_creacion, fecha_actualizacion
 		FROM empresa_grafologia_analisis
 		WHERE empresa_id = $1 AND id = $2 AND COALESCE(estado,'') <> 'eliminado'`, empresaID, id).Scan(
 		&item.ID, &item.EmpresaID, &item.Titulo, &item.ArchivoNombre, &item.ImagenURL, &item.ImagenMime, &item.OCRTexto, &item.OCRMotor,
-		&item.Estado, &item.Resumen, &item.MetricasJSON, &item.InterpretacionJSON, &item.ReporteHTML, &item.ConfianzaGlobal, &item.UsuarioCreador, &item.FechaCreacion, &item.FechaActualizacion,
+		&item.Estado, &item.Resumen, &item.MetricasJSON, &item.InterpretacionJSON, &item.PreprocesamientoJSON, &item.ReporteHTML, &item.ConfianzaGlobal, &item.UsuarioCreador, &item.FechaCreacion, &item.FechaActualizacion,
 	)
 	if err != nil {
 		return EmpresaGrafologiaAnalisis{}, err

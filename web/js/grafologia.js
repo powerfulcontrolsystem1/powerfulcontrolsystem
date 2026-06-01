@@ -71,7 +71,10 @@
     $("grafologiaBrightness")?.addEventListener("input", renderCanvas);
     $("grafologiaContrast")?.addEventListener("input", renderCanvas);
     $("btnGrafologiaHTML")?.addEventListener("click", function () { openReport("html"); });
+    $("btnGrafologiaDOC")?.addEventListener("click", function () { openReport("doc"); });
     $("btnGrafologiaJSON")?.addEventListener("click", function () { openReport("json"); });
+    $("btnGrafologiaCSV")?.addEventListener("click", function () { openReport("csv"); });
+    $("btnGrafologiaTXT")?.addEventListener("click", function () { openReport("txt"); });
     $("btnGrafologiaPDF")?.addEventListener("click", function () { openReport("pdf"); });
   }
 
@@ -278,6 +281,7 @@
       tr.children[2].textContent = fmtPct(m.confidence || 0);
       metrics.appendChild(tr);
     });
+    renderPreprocess(result.preprocess || null);
     var traits = $("grafologiaTraits");
     traits.innerHTML = "";
     (result.traits || []).forEach(function (t) {
@@ -292,6 +296,59 @@
     });
   }
 
+  function renderPreprocess(preprocess) {
+    var box = $("grafologiaPreprocess");
+    renderQuality(preprocess);
+    if (!box) return;
+    box.innerHTML = "";
+    var urls = preprocess && preprocess.image_urls ? preprocess.image_urls : {};
+    var labels = {
+      grayscale: "Escala de grises",
+      binary: "Binarización",
+      edges: "Bordes",
+      lines: "Líneas y márgenes"
+    };
+    var keys = ["grayscale", "binary", "edges", "lines"];
+    var hasAny = keys.some(function (key) { return !!urls[key]; });
+    if (!hasAny) {
+      box.innerHTML = '<p class="grafologia-warning">El preprocesamiento visual se mostrará en los nuevos análisis.</p>';
+      return;
+    }
+    keys.forEach(function (key) {
+      if (!urls[key]) return;
+      var item = document.createElement("div");
+      item.className = "grafologia-preprocess-item";
+      item.innerHTML = "<strong></strong><img alt=\"\">";
+      item.querySelector("strong").textContent = labels[key] || key;
+      item.querySelector("img").src = urls[key];
+      item.querySelector("img").alt = labels[key] || key;
+      box.appendChild(item);
+    });
+  }
+
+  function renderQuality(preprocess) {
+    var box = $("grafologiaQuality");
+    if (!box) return;
+    box.innerHTML = "";
+    if (!preprocess || !preprocess.quality) return;
+    var q = preprocess.quality;
+    var items = [
+      ["Contraste", fmtPct(q.contrast || 0), q.lighting_warning ? "Revisar iluminación" : "Correcto"],
+      ["Densidad de tinta", fmtPct((q.ink_density || 0) * 100), "Tinta detectada"],
+      ["Nitidez estimada", fmtPct(q.sharpness || 0), q.resolution_warning ? "Mejorar resolución" : "Aceptable"],
+      ["Umbral Otsu", String(preprocess.threshold || 0), q.crop_suggested ? "Recorte recomendado" : "Encuadre correcto"]
+    ];
+    items.forEach(function (row) {
+      var div = document.createElement("div");
+      div.className = "grafologia-bar";
+      div.innerHTML = '<div class="grafologia-bar-head"><span></span><strong></strong></div><p class="grafologia-warning"></p>';
+      div.querySelector("span").textContent = row[0];
+      div.querySelector("strong").textContent = row[1];
+      div.querySelector("p").textContent = row[2];
+      box.appendChild(div);
+    });
+  }
+
   function renderHistory(items) {
     var box = $("grafologiaHistory");
     if (!box) return;
@@ -303,13 +360,16 @@
     items.forEach(function (item) {
       var div = document.createElement("div");
       div.className = "grafologia-history-item";
-      div.innerHTML = '<strong></strong><p></p><div class="grafologia-export"><button class="btn secondary" type="button">Ver</button><button class="btn secondary" type="button">JSON</button><button class="btn primary" type="button">PDF / imprimir</button></div>';
+      div.innerHTML = '<strong></strong><p></p><div class="grafologia-export"><button class="btn secondary" type="button">HTML</button><button class="btn secondary" type="button">Word</button><button class="btn secondary" type="button">JSON</button><button class="btn secondary" type="button">CSV</button><button class="btn secondary" type="button">TXT</button><button class="btn primary" type="button">PDF</button></div>';
       div.querySelector("strong").textContent = item.titulo || "Informe GRAFOLOGIX";
       div.querySelector("p").textContent = (item.fecha_creacion || "") + " · Confianza " + fmtPct(item.confianza_global || 0);
       var buttons = div.querySelectorAll("button");
       buttons[0].addEventListener("click", function () { window.open(reportUrl(item.id, "html"), "_blank", "noopener"); });
-      buttons[1].addEventListener("click", function () { window.open(reportUrl(item.id, "json"), "_blank", "noopener"); });
-      buttons[2].addEventListener("click", function () { window.open(reportUrl(item.id, "pdf"), "_blank", "noopener"); });
+      buttons[1].addEventListener("click", function () { window.open(reportUrl(item.id, "doc"), "_blank", "noopener"); });
+      buttons[2].addEventListener("click", function () { window.open(reportUrl(item.id, "json"), "_blank", "noopener"); });
+      buttons[3].addEventListener("click", function () { window.open(reportUrl(item.id, "csv"), "_blank", "noopener"); });
+      buttons[4].addEventListener("click", function () { window.open(reportUrl(item.id, "txt"), "_blank", "noopener"); });
+      buttons[5].addEventListener("click", function () { window.open(reportUrl(item.id, "pdf"), "_blank", "noopener"); });
       box.appendChild(div);
     });
   }

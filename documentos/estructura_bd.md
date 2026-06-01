@@ -9,12 +9,15 @@ Actualizacion 2026-06-01 (GRAFOLOGIX grafologia OCR)
   siempre por `empresa_id + id`.
 - Campos principales: `titulo`, `archivo_nombre`, `imagen_url`, `imagen_mime`,
   `ocr_texto`, `ocr_motor`, `estado`, `resumen`, `metricas_json`,
-  `interpretacion_json`, `reporte_html`, `confianza_global`, `usuario_creador`,
-  `fecha_creacion` y `fecha_actualizacion`.
+  `interpretacion_json`, `preprocesamiento_json`, `reporte_html`,
+  `confianza_global`, `usuario_creador`, `fecha_creacion` y
+  `fecha_actualizacion`.
 - Indices `ix_grafologia_analisis_empresa(empresa_id, fecha_creacion DESC)` y
   `ix_grafologia_analisis_estado(empresa_id, estado)`.
 - Las imagenes se almacenan en
   `web/uploads/empresas/empresa_{empresa_id}/imagenes/grafologia/`.
+- Los artefactos procesados se almacenan en
+  `web/uploads/empresas/empresa_{empresa_id}/imagenes/grafologia/procesado/`.
 - El modulo no agrega dependencias ni motores de base de datos adicionales.
 
 Actualizacion 2026-06-01 (energia solar en preconfiguraciones y permisos)

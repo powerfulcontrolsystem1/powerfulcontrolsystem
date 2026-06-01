@@ -2,8 +2,9 @@
 - Modulo afectado: `grafologia`.
 - Cambio funcional: Administrar empresa incorpora `Analisis y control > GRAFOLOGIX` para cargar o tomar una fotografia de texto manuscrito, ajustar brillo/contraste/recorte y generar un informe grafológico orientativo.
 - Backend: `backend/internal/grafologia` usa Go puro para escala de grises, umbral Otsu, segmentacion por proyecciones, metricas graficas e interpretacion heuristica; `/api/empresa/grafologia` maneja dashboard, catalogo, upload multipart, analisis y reportes.
-- Persistencia: `empresa_grafologia_analisis` guarda imagen, resumen, metricas JSON, interpretacion JSON, reporte HTML y confianza por `empresa_id`.
-- Exportaciones: HTML imprimible blanco y negro, JSON y PDF real generado por Go estandar.
+- Preprocesamiento visual: cada analisis genera PNG de escala de grises, binarizacion, bordes y lineas/margenes para auditar lo que leyo el motor.
+- Persistencia: `empresa_grafologia_analisis` guarda imagen, resumen, metricas JSON, interpretacion JSON, preprocesamiento JSON, reporte HTML y confianza por `empresa_id`.
+- Exportaciones: HTML imprimible blanco y negro, PDF real generado por Go estandar, Word compatible, JSON, CSV y TXT.
 - OCR: Tesseract queda disponible como CLI opcional en VPS sin agregar dependencias Go.
 - Seguridad: endpoint protegido por `WithEmpresaGrafologiaPermissions`, permiso `grafologia` y consultas aisladas por empresa.
 

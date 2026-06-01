@@ -88,6 +88,7 @@ func handleEmpresaGrafologiaGET(w http.ResponseWriter, r *http.Request, dbEmp *s
 		}
 		item.Metricas = decodeJSONList(item.MetricasJSON)
 		item.Interpretacion = decodeJSONList(item.InterpretacionJSON)
+		item.Preprocesamiento = decodeJSONList(item.PreprocesamientoJSON)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "item": item})
 	case "reporte":
 		id, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("id")), 10, 64)
@@ -104,14 +105,34 @@ func handleEmpresaGrafologiaGET(w http.ResponseWriter, r *http.Request, dbEmp *s
 		if format == "json" {
 			item.Metricas = decodeJSONList(item.MetricasJSON)
 			item.Interpretacion = decodeJSONList(item.InterpretacionJSON)
+			item.Preprocesamiento = decodeJSONList(item.PreprocesamientoJSON)
 			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "item": item})
 			return
 		}
+		result := buildGrafologiaResultFromItem(item)
 		if format == "pdf" {
-			pdf := grafologix.RenderPDFReport(item.Titulo, buildGrafologiaResultFromItem(item))
+			pdf := grafologix.RenderPDFReport(item.Titulo, result)
 			w.Header().Set("Content-Type", "application/pdf")
 			w.Header().Set("Content-Disposition", "inline; filename=grafologix_reporte.pdf")
 			_, _ = w.Write(pdf)
+			return
+		}
+		if format == "doc" || format == "word" {
+			w.Header().Set("Content-Type", "application/msword; charset=utf-8")
+			w.Header().Set("Content-Disposition", "attachment; filename=grafologix_reporte.doc")
+			_, _ = w.Write(grafologix.RenderWordReport(item.Titulo, result))
+			return
+		}
+		if format == "csv" {
+			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+			w.Header().Set("Content-Disposition", "attachment; filename=grafologix_resultados.csv")
+			_, _ = w.Write([]byte(grafologix.RenderCSVReport(result)))
+			return
+		}
+		if format == "txt" {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.Header().Set("Content-Disposition", "attachment; filename=grafologix_reporte.txt")
+			_, _ = w.Write([]byte(grafologix.RenderTextReport(item.Titulo, result)))
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -166,28 +187,38 @@ func handleEmpresaGrafologiaPOST(w http.ResponseWriter, r *http.Request, dbEmp *
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		preprocess, err := grafologix.GeneratePreprocessArtifacts(data)
+		if err != nil {
+			log.Printf("[grafologia] preprocess empresa_id=%d error: %v", empresaID, err)
+		} else {
+			preprocess.ImageURLs = saveEmpresaGrafologiaArtifacts(preprocess.ImageBytes, empresaID, fileName)
+			preprocess.ImageBytes = nil
+			result.Preprocess = &preprocess
+		}
 		metricsJSON, _ := json.Marshal(result.Metrics)
 		traitsJSON, _ := json.Marshal(result.Traits)
+		preprocessJSON, _ := json.Marshal(result.Preprocess)
 		title := strings.TrimSpace(r.FormValue("titulo"))
 		if title == "" {
 			title = "Informe grafológico GRAFOLOGIX"
 		}
 		htmlReport := grafologix.RenderHTMLReport(title, result)
 		item := dbpkg.EmpresaGrafologiaAnalisis{
-			EmpresaID:          empresaID,
-			Titulo:             title,
-			ArchivoNombre:      fileName,
-			ImagenURL:          imageURL,
-			ImagenMime:         mimeType,
-			OCRTexto:           ocrTexto,
-			OCRMotor:           ocrMotor,
-			Estado:             "completado",
-			Resumen:            result.Summary,
-			MetricasJSON:       string(metricsJSON),
-			InterpretacionJSON: string(traitsJSON),
-			ReporteHTML:        htmlReport,
-			ConfianzaGlobal:    result.GlobalTrust,
-			UsuarioCreador:     adminEmailFromRequest(r),
+			EmpresaID:            empresaID,
+			Titulo:               title,
+			ArchivoNombre:        fileName,
+			ImagenURL:            imageURL,
+			ImagenMime:           mimeType,
+			OCRTexto:             ocrTexto,
+			OCRMotor:             ocrMotor,
+			Estado:               "completado",
+			Resumen:              result.Summary,
+			MetricasJSON:         string(metricsJSON),
+			InterpretacionJSON:   string(traitsJSON),
+			PreprocesamientoJSON: string(preprocessJSON),
+			ReporteHTML:          htmlReport,
+			ConfianzaGlobal:      result.GlobalTrust,
+			UsuarioCreador:       adminEmailFromRequest(r),
 		}
 		id, err := dbpkg.InsertEmpresaGrafologiaAnalisis(dbEmp, item)
 		if err != nil {
@@ -218,7 +249,7 @@ func buildGrafologiaCatalogo() grafologiaCatalogo {
 			"Organizacion", "Extroversion", "Introversion", "Impulsividad", "Estabilidad emocional",
 			"Creatividad", "Disciplina", "Sociabilidad", "Concentracion", "Seguridad personal", "Liderazgo", "Adaptabilidad",
 		},
-		Exportaciones: []string{"HTML imprimible", "JSON", "PDF desde impresion del navegador"},
+		Exportaciones: []string{"HTML imprimible", "PDF real", "Word compatible", "JSON", "CSV", "TXT"},
 		OCR: map[string]string{
 			"go":        "Analisis geometrico integrado en Go puro.",
 			"tesseract": "OCR libre opcional por CLI cuando GRAFOLOGIA_TESSERACT_ENABLED=1.",
@@ -243,9 +274,11 @@ func decodeJSONList(raw string) interface{} {
 func buildGrafologiaResultFromItem(item dbpkg.EmpresaGrafologiaAnalisis) grafologix.AnalysisResult {
 	var metrics []grafologix.Metric
 	var traits []grafologix.Trait
+	var preprocess grafologix.PreprocessResult
 	_ = json.Unmarshal([]byte(strings.TrimSpace(item.MetricasJSON)), &metrics)
 	_ = json.Unmarshal([]byte(strings.TrimSpace(item.InterpretacionJSON)), &traits)
-	return grafologix.AnalysisResult{
+	hasPreprocess := json.Unmarshal([]byte(strings.TrimSpace(item.PreprocesamientoJSON)), &preprocess) == nil && preprocess.Width > 0
+	result := grafologix.AnalysisResult{
 		Version:     grafologix.EngineVersion,
 		GeneratedAt: item.FechaCreacion,
 		Summary:     item.Resumen,
@@ -257,6 +290,10 @@ func buildGrafologiaResultFromItem(item dbpkg.EmpresaGrafologiaAnalisis) grafolo
 			"El PDF resume el informe; la vista HTML conserva el detalle completo y las barras visuales.",
 		},
 	}
+	if hasPreprocess {
+		result.Preprocess = &preprocess
+	}
+	return result
 }
 
 func detectGrafologiaMime(data []byte, original string) string {
@@ -292,6 +329,38 @@ func saveEmpresaGrafologiaImage(data []byte, originalFilename string, empresaID 
 	}
 	publicURL := "/uploads/empresas/" + folder + "/imagenes/grafologia/" + fileName
 	return publicURL, fileName, absPath, nil
+}
+
+func saveEmpresaGrafologiaArtifacts(artifacts map[string][]byte, empresaID int64, baseFileName string) map[string]string {
+	if len(artifacts) == 0 {
+		return map[string]string{}
+	}
+	folder := fmt.Sprintf("empresa_%d", empresaID)
+	dir := filepath.Join(resolveWebRootDir(), "uploads", "empresas", folder, "imagenes", "grafologia", "procesado")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		log.Printf("[grafologia] no se pudo crear carpeta de artefactos empresa_id=%d: %v", empresaID, err)
+		return map[string]string{}
+	}
+	base := strings.TrimSuffix(filepath.Base(baseFileName), filepath.Ext(baseFileName))
+	base = sanitizeGrafologiaFilename(base)
+	if base == "" {
+		base = "analisis"
+	}
+	out := map[string]string{}
+	for key, data := range artifacts {
+		cleanKey := sanitizeGrafologiaFilename(key)
+		if cleanKey == "" || len(data) == 0 {
+			continue
+		}
+		name := base + "_" + cleanKey + ".png"
+		abs := filepath.Join(dir, name)
+		if err := os.WriteFile(abs, data, 0o644); err != nil {
+			log.Printf("[grafologia] no se pudo guardar artefacto %s empresa_id=%d: %v", cleanKey, empresaID, err)
+			continue
+		}
+		out[cleanKey] = "/uploads/empresas/" + folder + "/imagenes/grafologia/procesado/" + name
+	}
+	return out
 }
 
 func sanitizeGrafologiaFilename(value string) string {

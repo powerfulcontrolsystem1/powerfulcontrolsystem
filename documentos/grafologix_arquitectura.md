@@ -1,14 +1,14 @@
 # GRAFOLOGIX - Arquitectura Fase 1
 
 Fecha: 2026-06-01
-Estado: implementado como modulo empresarial inicial
+Estado: Fase 1 y Fase 2 implementadas
 
 ## Objetivo
 
 GRAFOLOGIX permite a una empresa subir o capturar una fotografia de texto
 manuscrito, ajustar la imagen en navegador y generar un informe grafológico
 heuristico con metricas visuales, interpretacion orientativa y exportacion HTML
-imprimible/JSON.
+imprimible, PDF, Word compatible, JSON, CSV y TXT.
 
 El modulo no debe usarse como diagnostico psicologico, medico, juridico ni como
 decision automatizada de seleccion de personal. La interpretacion es una lectura
@@ -19,6 +19,7 @@ heuristica sobre rasgos graficos.
 ```text
 backend/internal/grafologia/
   analyzer.go        motor matematico en Go puro
+  preprocess.go      artefactos de preprocesamiento visual
   report.go          informe HTML imprimible blanco y negro
   analyzer_test.go   prueba con manuscrito sintetico
 backend/db/grafologia.go
@@ -62,6 +63,7 @@ empresa_grafologia_analisis (
   resumen TEXT,
   metricas_json TEXT,
   interpretacion_json TEXT,
+  preprocesamiento_json TEXT,
   reporte_html TEXT,
   confianza_global REAL DEFAULT 0,
   usuario_creador TEXT,
@@ -92,6 +94,9 @@ GET  /api/empresa/grafologia?empresa_id={id}&action=analisis&id={analisis_id}
 GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=html
 GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=json
 GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=pdf
+GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=doc
+GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=csv
+GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=txt
 POST /api/empresa/grafologia?empresa_id={id}&action=analizar
 ```
 
@@ -110,9 +115,13 @@ POST /api/empresa/grafologia?empresa_id={id}&action=analizar
 5. El backend guarda la imagen aislada por `empresa_id`.
 6. Si `GRAFOLOGIA_TESSERACT_ENABLED=1`, intenta OCR con Tesseract CLI.
 7. El motor Go calcula metricas de imagen y rasgos heurísticos.
-8. Se guarda el resultado en PostgreSQL.
-9. La UI muestra metricas, barras de interpretacion e historial.
-10. El informe se abre en HTML imprimible, JSON o PDF real generado por Go.
+8. El preprocesador genera escala de grises, binarizacion, bordes y overlay de
+   lineas/margenes.
+9. Se guarda el resultado en PostgreSQL.
+10. La UI muestra metricas, barras de interpretacion, preprocesamiento visual e
+    historial.
+11. El informe se abre en HTML imprimible, PDF real, Word compatible, JSON,
+    CSV o TXT.
 
 ## Algoritmos Fase 1
 
@@ -133,6 +142,24 @@ El motor usa Go puro y libreria estandar:
 - margenes por caja envolvente;
 - regularidad por variacion de alturas y espacios;
 - forma de letras por vecindad de pixeles y cambios angulosos.
+
+## Preprocesamiento Fase 2
+
+El backend genera artefactos PNG por analisis:
+
+- `grayscale`: imagen normalizada a escala de grises.
+- `binary`: tinta/fondo por umbral Otsu.
+- `edges`: bordes por gradiente tipo Sobel.
+- `lines`: imagen original con bandas de lineas y caja envolvente de tinta.
+
+Los archivos se guardan en:
+
+```text
+web/uploads/empresas/empresa_{empresa_id}/imagenes/grafologia/procesado/
+```
+
+El JSON `preprocesamiento_json` guarda URLs, calidad visual, umbral, lineas y
+caja de tinta.
 
 ## OCR y OpenCV
 
@@ -172,7 +199,7 @@ node --check web/js/grafologia.js
 
 - Dockerfile/VPS con paquetes opcionales `tesseract-ocr`, `tesseract-ocr-spa` y
   utilidades OpenCV CLI si se decide instalar en imagen.
-- PDF avanzado multipagina con logo, graficas y estilos completos. La Fase 1 ya
+- PDF avanzado multipagina con logo, graficas y estilos completos. La Fase actual ya
   entrega PDF real resumido con Go estandar y conserva HTML para el detalle visual.
 - Correccion de perspectiva completa por cuadrilateros.
 - Panel administrativo super para activar/desactivar el modulo por licencia.

@@ -48,7 +48,7 @@ Endpoint empresarial:
 GET  /api/empresa/grafologia?empresa_id={id}&action=dashboard
 GET  /api/empresa/grafologia?empresa_id={id}&action=catalogo
 GET  /api/empresa/grafologia?empresa_id={id}&action=analisis&id={analisis_id}
-GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=html|json|pdf
+GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=html|json|pdf|doc|csv|txt
 POST /api/empresa/grafologia?empresa_id={id}&action=analizar
 ```
 
@@ -64,6 +64,8 @@ Reglas:
 - todo `id` de analisis se consulta con `empresa_id`;
 - solo acepta archivos `image/*`;
 - las imagenes se guardan bajo carpeta propia de la empresa;
+- los nuevos analisis devuelven `resultado.preprocess` con URLs de escala de
+  grises, binarizacion, bordes y lineas/margenes;
 - el resultado es heuristico y orientativo, no diagnostico.
 
 ## Carritos, estaciones y venta directa

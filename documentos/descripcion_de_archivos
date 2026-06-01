@@ -1,12 +1,14 @@
 2026-06-01 - GRAFOLOGIX grafologia OCR
 - `backend/internal/grafologia/analyzer.go`:
 	- motor heuristico en Go puro para analizar imagenes manuscritas con umbral Otsu, segmentacion de lineas, metricas graficas e interpretacion orientativa.
+- `backend/internal/grafologia/preprocess.go`:
+	- genera artefactos visuales de preprocesamiento: escala de grises, binarizacion Otsu, bordes tipo Sobel y overlay de lineas/margenes.
 - `backend/internal/grafologia/report.go`:
 	- genera reporte HTML imprimible en blanco y negro para ver/guardar como PDF desde navegador.
 - `backend/internal/grafologia/analyzer_test.go`:
 	- prueba unitaria con manuscrito sintetico en PNG.
 - `backend/db/grafologia.go`:
-	- crea y consulta `empresa_grafologia_analisis` filtrando siempre por `empresa_id`.
+	- crea y consulta `empresa_grafologia_analisis` filtrando siempre por `empresa_id`, incluyendo `preprocesamiento_json`.
 - `backend/handlers/grafologia.go`:
 	- endpoint `/api/empresa/grafologia` con dashboard, catalogo, upload multipart, analisis, reporte HTML/JSON/PDF imprimible y OCR Tesseract opcional por CLI.
 - `web/administrar_empresa/grafologia.html`:

@@ -1,4 +1,12 @@
 2026-06-01: GRAFOLOGIX grafologia OCR.
+- Actualizacion Fase 2:
+  - `backend/internal/grafologia/preprocess.go` genera artefactos PNG de escala de grises, binarizacion Otsu, bordes tipo Sobel y lineas/margenes.
+  - `backend/internal/grafologia/report.go` agrega exportadores Word compatible, CSV y TXT, ademas de HTML y PDF real.
+  - `backend/handlers/grafologia.go` expone `format=doc|csv|txt` en `/api/empresa/grafologia?action=reporte`.
+  - `backend/db/grafologia.go` agrega `preprocesamiento_json` a `empresa_grafologia_analisis`.
+  - `backend/handlers/grafologia.go` guarda los artefactos en `/uploads/empresas/empresa_{id}/imagenes/grafologia/procesado/` y los devuelve en `resultado.preprocess`.
+  - `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js` muestran el preprocesamiento visual, agregan botones de Word/CSV/TXT y corrigen el contraste claro/oscuro con variables `--graf-*`.
+  - Se valida tema claro y `dark-absolute` en navegador local sin errores de consola.
 - Se agrega modulo empresarial `grafologia` en `Administrar empresa > Analisis y control > GRAFOLOGIX`.
 - Backend:
   - `backend/internal/grafologia/analyzer.go` implementa analisis de imagen en Go puro con escala de grises, Otsu, segmentacion de lineas, estimacion de palabras/letras y metricas graficas.
