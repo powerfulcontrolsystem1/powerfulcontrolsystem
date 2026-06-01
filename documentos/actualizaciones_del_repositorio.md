@@ -12037,3 +12037,16 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/grafologia.html
 - web/js/grafologia.js
+
+2026-06-01 17:35:57 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: acbc358f; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- deploy/.env.platform.example
+- deploy/docker-compose.platform.yml
+- deploy/docker/backend.Dockerfile
+- documentos/contexto_codex.md
+- documentos/grafologix_arquitectura.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/grafologia.html
+- web/js/grafologia.js
