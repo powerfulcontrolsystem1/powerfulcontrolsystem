@@ -1,3 +1,12 @@
+2026-06-01: GRAFOLOGIX grafologia OCR
+- Modulo afectado: `grafologia`.
+- Cambio funcional: Administrar empresa incorpora `Analisis y control > GRAFOLOGIX` para cargar o tomar una fotografia de texto manuscrito, ajustar brillo/contraste/recorte y generar un informe grafológico orientativo.
+- Backend: `backend/internal/grafologia` usa Go puro para escala de grises, umbral Otsu, segmentacion por proyecciones, metricas graficas e interpretacion heuristica; `/api/empresa/grafologia` maneja dashboard, catalogo, upload multipart, analisis y reportes.
+- Persistencia: `empresa_grafologia_analisis` guarda imagen, resumen, metricas JSON, interpretacion JSON, reporte HTML y confianza por `empresa_id`.
+- Exportaciones: HTML imprimible blanco y negro, JSON y PDF real generado por Go estandar.
+- OCR: Tesseract queda disponible como CLI opcional en VPS sin agregar dependencias Go.
+- Seguridad: endpoint protegido por `WithEmpresaGrafologiaPermissions`, permiso `grafologia` y consultas aisladas por empresa.
+
 2026-06-01: Cantidades naturales positivas en carrito
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`, `inventario` y `modo_offline`.
 - Cambio funcional: los campos de cantidad del carrito solo aceptan enteros positivos, evitando cantidades decimales, negativas o en cero.

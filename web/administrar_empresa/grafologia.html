@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GRAFOLOGIX</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .grafologia-page{background:var(--page-bg,#f4f7fb);color:var(--text,#162033)}
+    .grafologia-grid{display:grid;grid-template-columns:minmax(320px,.95fr) minmax(360px,1.05fr);gap:14px;align-items:start}
+    .grafologia-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#dce4ef);border-radius:8px;padding:14px;box-shadow:none}
+    .grafologia-drop{border:2px dashed var(--border-color,#b9c7d8);border-radius:8px;min-height:132px;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;background:rgba(255,255,255,.35);cursor:pointer}
+    .grafologia-drop.drag{border-color:#1f8a70;background:rgba(31,138,112,.08)}
+    .grafologia-actions,.grafologia-export{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .grafologia-canvas-wrap{margin-top:12px;border:1px solid var(--border-color,#dce4ef);border-radius:8px;overflow:hidden;background:#101820}
+    #grafologiaCanvas{display:block;width:100%;max-height:440px;object-fit:contain;background:#fff}
+    .grafologia-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .grafologia-controls label{display:flex;flex-direction:column;gap:4px;font-weight:700}
+    .grafologia-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    .grafologia-kpi{background:var(--card-bg,#fff);border:1px solid var(--border-color,#dce4ef);border-radius:8px;padding:10px}
+    .grafologia-kpi span{display:block;font-size:12px;color:var(--muted-text,#667085)}
+    .grafologia-kpi strong{display:block;font-size:21px;margin-top:4px}
+    .grafologia-bars{display:grid;gap:8px}
+    .grafologia-bar{border:1px solid var(--border-color,#dce4ef);border-radius:8px;padding:9px;background:rgba(255,255,255,.35)}
+    .grafologia-bar-head{display:flex;justify-content:space-between;gap:10px;font-weight:800}
+    .grafologia-track{height:8px;border-radius:999px;background:rgba(100,116,139,.18);overflow:hidden;margin:7px 0}
+    .grafologia-fill{height:100%;background:linear-gradient(90deg,#0f766e,#2563eb)}
+    .grafologia-table{width:100%;border-collapse:collapse}
+    .grafologia-table th,.grafologia-table td{padding:8px;border-bottom:1px solid var(--border-color,#dce4ef);text-align:left;vertical-align:top}
+    .grafologia-history{display:grid;gap:8px}
+    .grafologia-history-item{border:1px solid var(--border-color,#dce4ef);border-radius:8px;padding:10px;background:rgba(255,255,255,.3)}
+    .grafologia-loader{display:none;align-items:center;gap:8px;font-weight:800;color:#0f766e}
+    .grafologia-loader.show{display:flex}
+    .grafologia-warning{font-size:13px;color:var(--muted-text,#667085);line-height:1.45}
+    @media(max-width:920px){.grafologia-grid{grid-template-columns:1fr}.grafologia-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grafologia-controls{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="empresa-page grafologia-page" data-auto-estacion-labels="true">
+  <main class="empresa-main">
+    <header class="page-heading compact">
+      <div>
+        <p class="eyebrow">OCR libre y análisis heurístico</p>
+        <h1>GRAFOLOGIX</h1>
+        <p>Analiza fotografías de texto manuscrito, calcula métricas grafológicas y genera informes imprimibles por empresa.</p>
+      </div>
+      <div class="page-heading-actions">
+        <button id="btnGrafologiaRefresh" class="btn secondary" type="button">Actualizar</button>
+        <button id="btnGrafologiaAnalyze" class="btn primary" type="button">Analizar manuscrito</button>
+      </div>
+    </header>
+
+    <section class="grafologia-kpis" aria-label="Indicadores GRAFOLOGIX">
+      <article class="grafologia-kpi"><span>Análisis</span><strong id="grafKpiAnalisis">0</strong></article>
+      <article class="grafologia-kpi"><span>Confianza</span><strong id="grafKpiConfianza">0%</strong></article>
+      <article class="grafologia-kpi"><span>Líneas</span><strong id="grafKpiLineas">0</strong></article>
+      <article class="grafologia-kpi"><span>Motor</span><strong id="grafKpiMotor">Go</strong></article>
+    </section>
+
+    <section class="grafologia-grid">
+      <article class="grafologia-card">
+        <h2>Carga de imagen</h2>
+        <p class="grafologia-warning">Sube una foto clara del manuscrito o toma una desde cámara. El ajuste se aplica antes de enviar la imagen al motor.</p>
+        <input id="grafologiaFile" type="file" accept="image/*" hidden>
+        <div id="grafologiaDrop" class="grafologia-drop" tabindex="0">
+          <div>
+            <strong>Arrastra la foto manuscrita aquí</strong>
+            <p>o haz clic para buscar en el equipo</p>
+          </div>
+        </div>
+        <div class="grafologia-actions">
+          <button id="btnGrafologiaCamera" class="btn secondary" type="button">Usar cámara</button>
+          <button id="btnGrafologiaCapture" class="btn secondary" type="button" disabled>Tomar foto</button>
+          <button id="btnGrafologiaCrop" class="btn secondary" type="button">Recortar centro</button>
+          <button id="btnGrafologiaPerspective" class="btn secondary" type="button">Auto perspectiva</button>
+        </div>
+        <video id="grafologiaVideo" playsinline muted style="display:none;width:100%;margin-top:10px;border-radius:8px;background:#111"></video>
+        <div class="grafologia-canvas-wrap"><canvas id="grafologiaCanvas"></canvas></div>
+        <div class="grafologia-controls">
+          <label>Brillo
+            <input id="grafologiaBrightness" type="range" min="-60" max="60" value="0">
+          </label>
+          <label>Contraste
+            <input id="grafologiaContrast" type="range" min="-60" max="80" value="0">
+          </label>
+        </div>
+        <label style="display:block;margin-top:10px;font-weight:800">Título del informe
+          <input id="grafologiaTitle" class="form-input" type="text" value="Informe grafológico GRAFOLOGIX">
+        </label>
+        <label style="display:block;margin-top:10px;font-weight:800">Texto OCR opcional
+          <textarea id="grafologiaOCRText" class="form-input" rows="3" placeholder="Si Tesseract no está activo, puedes pegar aquí el texto reconocido manualmente."></textarea>
+        </label>
+        <div id="grafologiaLoader" class="grafologia-loader">Procesando imagen y métricas...</div>
+      </article>
+
+      <article class="grafologia-card">
+        <h2>Resultado visual</h2>
+        <div id="grafologiaEmpty" class="grafologia-warning">Carga una imagen manuscrita y presiona analizar para ver métricas, interpretación y exportaciones.</div>
+        <div id="grafologiaResult" style="display:none">
+          <p id="grafologiaSummary"></p>
+          <div class="grafologia-export">
+            <button id="btnGrafologiaHTML" class="btn secondary" type="button">Ver HTML</button>
+            <button id="btnGrafologiaJSON" class="btn secondary" type="button">Exportar JSON</button>
+            <button id="btnGrafologiaPDF" class="btn primary" type="button">PDF / imprimir</button>
+          </div>
+          <h3>Métricas técnicas</h3>
+          <table class="grafologia-table">
+            <thead><tr><th>Métrica</th><th>Resultado</th><th>Confianza</th></tr></thead>
+            <tbody id="grafologiaMetrics"></tbody>
+          </table>
+          <h3>Interpretación orientativa</h3>
+          <div id="grafologiaTraits" class="grafologia-bars"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grafologia-card" style="margin-top:14px">
+      <h2>Informes recientes</h2>
+      <div id="grafologiaHistory" class="grafologia-history"></div>
+    </section>
+  </main>
+  <script src="/js/grafologia.js"></script>
+</body>
+</html>

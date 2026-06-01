@@ -1073,6 +1073,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/grafologia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/grafologia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/grafologia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/hoja_vida_operativa":
     get:
       tags: [empresa]

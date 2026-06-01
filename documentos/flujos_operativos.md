@@ -4,6 +4,24 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## GRAFOLOGIX grafologia OCR
+
+1. Abrir `Administrar empresa > Analisis y control > GRAFOLOGIX`.
+2. Cargar imagen desde PC, arrastrar archivo o tomar fotografia con camara.
+3. Ajustar brillo, contraste, recorte central o recorte automatico por tinta.
+4. Presionar `Analizar manuscrito`.
+5. El frontend envia `multipart/form-data` a
+   `/api/empresa/grafologia?empresa_id={id}&action=analizar`.
+6. El backend valida empresa, permisos y tipo `image/*`, guarda la imagen en la
+   carpeta de la empresa y ejecuta el motor Go puro.
+7. Si la VPS tiene `GRAFOLOGIA_TESSERACT_ENABLED=1`, se intenta OCR por
+   Tesseract CLI; si falla, el analisis geometrico continua.
+8. El sistema guarda metricas, interpretacion y reporte HTML en
+   `empresa_grafologia_analisis`.
+9. El usuario puede abrir HTML imprimible, JSON o vista `PDF / imprimir`.
+10. El resultado es orientativo; no debe tratarse como diagnostico ni decision
+    automatizada.
+
 ## Registro administrador
 
 1. Usuario abre `web/login.html` y entra a registro de administrador.

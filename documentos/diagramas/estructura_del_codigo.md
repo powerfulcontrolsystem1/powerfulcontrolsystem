@@ -1,3 +1,18 @@
+## Actualizacion 2026-06-01 (GRAFOLOGIX grafologia OCR)
+
+- `backend/internal/grafologia/`: nuevo paquete interno con motor de analisis
+  grafológico en Go puro, reporte HTML y prueba unitaria.
+- `backend/db/grafologia.go`: esquema y consultas de
+  `empresa_grafologia_analisis`.
+- `backend/handlers/grafologia.go`: endpoint empresarial
+  `/api/empresa/grafologia` con upload multipart, dashboard y reportes.
+- `backend/main.go`: asegura el esquema y registra la ruta con permisos.
+- `backend/handlers/empresa_permisos.go`: agrega modulo `grafologia`, pagina
+  `linkGrafologia` y wrapper `WithEmpresaGrafologiaPermissions`.
+- `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`: dashboard
+  de carga, camara, canvas, analisis y exportaciones.
+- `documentos/grafologix_arquitectura.md`: especificacion tecnica de Fase 1.
+
 ## Actualizacion 2026-05-30 (carrito plano, fondo diferenciado y pantalla completa)
 
 - `web/administrar_empresa/carrito_de_compras.html`:

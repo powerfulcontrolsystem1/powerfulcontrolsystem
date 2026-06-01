@@ -1,3 +1,23 @@
+2026-06-01 - GRAFOLOGIX grafologia OCR
+- `backend/internal/grafologia/analyzer.go`:
+	- motor heuristico en Go puro para analizar imagenes manuscritas con umbral Otsu, segmentacion de lineas, metricas graficas e interpretacion orientativa.
+- `backend/internal/grafologia/report.go`:
+	- genera reporte HTML imprimible en blanco y negro para ver/guardar como PDF desde navegador.
+- `backend/internal/grafologia/analyzer_test.go`:
+	- prueba unitaria con manuscrito sintetico en PNG.
+- `backend/db/grafologia.go`:
+	- crea y consulta `empresa_grafologia_analisis` filtrando siempre por `empresa_id`.
+- `backend/handlers/grafologia.go`:
+	- endpoint `/api/empresa/grafologia` con dashboard, catalogo, upload multipart, analisis, reporte HTML/JSON/PDF imprimible y OCR Tesseract opcional por CLI.
+- `web/administrar_empresa/grafologia.html`:
+	- pagina GRAFOLOGIX con carga drag and drop, camara, recorte, brillo, contraste, analisis y exportaciones.
+- `web/js/grafologia.js`:
+	- logica vanilla para captura, canvas, envio multipart, render de metricas, interpretaciones e historial.
+- `documentos/grafologix_arquitectura.md`:
+	- arquitectura, esquema PostgreSQL, endpoints, algoritmo, seguridad y pendientes de fase 2.
+- `backend/main.go`, `backend/handlers/empresa_permisos.go`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`:
+	- registran esquema, ruta protegida, permiso `grafologia` y boton `GRAFOLOGIX` en Administrar empresa.
+
 2026-06-01 - Codigos de descuento para licencias en super administrador
 - `backend/handlers/licencias_codigos_descuento.go`:
 	- nuevo handler super para listar, crear, actualizar, activar/desactivar y eliminar codigos globales de descuento de licencias.

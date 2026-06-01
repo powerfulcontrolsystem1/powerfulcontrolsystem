@@ -40,6 +40,32 @@ del frontend.
 | `409` | Conflicto de negocio o duplicado no idempotente |
 | `500` | Error interno; debe incluir `request_id` o identificador de error cuando aplique |
 
+## GRAFOLOGIX grafologia OCR
+
+Endpoint empresarial:
+
+```http
+GET  /api/empresa/grafologia?empresa_id={id}&action=dashboard
+GET  /api/empresa/grafologia?empresa_id={id}&action=catalogo
+GET  /api/empresa/grafologia?empresa_id={id}&action=analisis&id={analisis_id}
+GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=html|json|pdf
+POST /api/empresa/grafologia?empresa_id={id}&action=analizar
+```
+
+`POST analizar` usa `multipart/form-data` con:
+
+- `imagen`: foto manuscrita.
+- `titulo`: titulo del informe.
+- `ocr_texto`: opcional, texto reconocido por Tesseract u otro OCR.
+
+Reglas:
+
+- requiere sesion, alcance de empresa, licencia y permiso `grafologia`;
+- todo `id` de analisis se consulta con `empresa_id`;
+- solo acepta archivos `image/*`;
+- las imagenes se guardan bajo carpeta propia de la empresa;
+- el resultado es heuristico y orientativo, no diagnostico.
+
 ## Carritos, estaciones y venta directa
 
 Endpoints principales:

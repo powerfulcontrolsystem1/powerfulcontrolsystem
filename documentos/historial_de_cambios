@@ -1,3 +1,26 @@
+2026-06-01: GRAFOLOGIX grafologia OCR.
+- Se agrega modulo empresarial `grafologia` en `Administrar empresa > Analisis y control > GRAFOLOGIX`.
+- Backend:
+  - `backend/internal/grafologia/analyzer.go` implementa analisis de imagen en Go puro con escala de grises, Otsu, segmentacion de lineas, estimacion de palabras/letras y metricas graficas.
+  - `backend/internal/grafologia/report.go` genera informe HTML imprimible en blanco y negro.
+  - `backend/db/grafologia.go` crea `empresa_grafologia_analisis` y consulta siempre por `empresa_id`.
+  - `backend/handlers/grafologia.go` agrega `/api/empresa/grafologia` con dashboard, catalogo, carga multipart, analisis y reportes HTML/JSON/PDF imprimible.
+  - `backend/main.go` asegura esquema y registra ruta protegida.
+  - `backend/handlers/empresa_permisos.go` agrega modulo `grafologia`, pagina `linkGrafologia` y wrapper `WithEmpresaGrafologiaPermissions`.
+- Frontend:
+  - `web/administrar_empresa/grafologia.html` agrega dashboard con drag and drop, camara, canvas, brillo/contraste, recorte y resultados visuales.
+  - `web/js/grafologia.js` envia la imagen ajustada, renderiza metricas, barras de interpretacion e historial.
+  - `web/administrar_empresa.html` y `web/js/administrar_empresa.js` agregan el boton y permiso de menu.
+- Documentacion:
+  - se agrega `documentos/grafologix_arquitectura.md` y se actualizan contexto, mapa de modulos, flujos, BD, estructura de codigo, descripcion de modulos, descripcion de archivos, ayuda de APIs, descripcion del proyecto y changelog.
+- Pruebas:
+  - `go test ./internal/grafologia -count=1`
+  - `go test ./internal/grafologia ./db ./handlers -run "Grafologia|EmpresaRoutesUsePermissionWrappers" -count=1`
+  - `go test . -run TestEmpresaRoutesUsePermissionWrappers -count=1`
+  - `node --check web/js/grafologia.js` con Node bundled.
+- Riesgo:
+  - La interpretacion grafologica queda marcada como heuristica orientativa, no diagnostico. Tesseract OCR es opcional por CLI en VPS y OpenCV queda para fase posterior como sidecar o herramienta externa autorizada.
+
 2026-06-01: cantidades naturales positivas en carrito.
 - Modulos afectados: `carritos`, `venta_directa`, `estaciones`,
   `inventario`.

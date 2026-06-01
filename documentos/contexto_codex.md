@@ -4,6 +4,21 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-01 - GRAFOLOGIX
+
+- Nuevo modulo empresarial `grafologia` visible como `Administrar empresa >
+  Analisis y control > GRAFOLOGIX`.
+- API: `/api/empresa/grafologia`, protegida por
+  `WithEmpresaGrafologiaPermissions`.
+- Backend: `backend/internal/grafologia` contiene el motor Go puro; no usa
+  dependencias externas.
+- BD: `empresa_grafologia_analisis` en `pcs_empresas`.
+- UI: `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`.
+- Documento completo: `documentos/grafologix_arquitectura.md`.
+- Advertencia permanente: las interpretaciones grafológicas son heuristicas y
+  orientativas; no son diagnostico psicologico ni criterio automatico de
+  contratacion.
+
 ## Resumen del sistema
 
 Powerful Control System es un POS/ERP SaaS multiempresa. El backend esta escrito

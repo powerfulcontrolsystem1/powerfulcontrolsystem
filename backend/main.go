@@ -939,6 +939,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaEnergiaSolarSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure energia solar schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure grafologia schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
 	}
@@ -1213,6 +1216,7 @@ func main() {
 	http.HandleFunc("/api/empresa/facturacion_electronica/paises_disponibles", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaFacturacionElectronicaPaisesDisponiblesHandler()))
 	http.HandleFunc("/api/empresa/impuestos", handlers.WithEmpresaFacturacionPermissions(dbEmpresas, dbSuper, handlers.EmpresaImpuestosHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/energia_solar", handlers.WithEmpresaEnergiaSolarPermissions(dbEmpresas, dbSuper, handlers.EmpresaEnergiaSolarHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/grafologia", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/participantes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasParticipantesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/chat_tareas/mensajes", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasMensajesHandler(dbEmpresas)))
