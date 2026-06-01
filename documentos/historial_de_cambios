@@ -29954,3 +29954,20 @@ Validacion:
 - `go test ./db -run "Test.*Impuesto|Test.*Producto" -count=1` desde `backend`.
 - `git diff --check`.
 - Intento visual en `http://127.0.0.1:8896/administrar_empresa/administrar_productos.html?empresa_id=7&view=productos`; el servidor local sirvio la pantalla de login para esa ruta protegida, por lo que la comprobacion visual autenticada quedo pendiente.
+
+2026-06-01: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/carritos_compras.go
+- backend/handlers/auth_admin_handlers.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/carritos_compras_validation_test.go
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/administrar_productos.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/super/administradores.html
