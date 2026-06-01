@@ -1812,16 +1812,15 @@ func permissionChangeRequiresApproval(module string, r *http.Request, action str
 	if path == "/api/empresa/permisos_empresa" {
 		return !strings.EqualFold(strings.TrimSpace(r.Method), http.MethodGet)
 	}
-	if path != "/api/empresa/usuarios" {
+	if path == "/api/empresa/usuarios" {
+		// Crear, editar, activar o eliminar usuarios operativos ya queda cubierto
+		// por los permisos seguridad:C/U/D y la auditoria empresarial. La
+		// aprobacion trazable se reserva para cambios de roles o matriz fina de
+		// permisos, porque el formulario de usuarios no debe pedir codigos extra.
 		return false
 	}
 
-	queryAction := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
-	if queryAction == "reenviar_confirmacion" || queryAction == "activar" {
-		return false
-	}
-
-	return true
+	return false
 }
 
 func defaultPermissionActionFromMethod(method string) string {

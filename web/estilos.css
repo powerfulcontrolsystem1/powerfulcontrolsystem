@@ -5967,18 +5967,19 @@ body.selector-delete-modal-open{overflow:hidden}
   --station-card-min: 12.6em;
   --station-card-height: 8.82em;
   --station-gap: 8px;
+  --station-row-gap: 14px;
   --station-card-title: #1f3550;
   --station-card-copy: #35506f;
   /* font-size here controls scaling of card internals (use em in children) */
   font-size: calc(1rem * var(--station-card-scale));
   display:grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--station-card-min), 1fr));
-  gap: var(--station-gap);
+  gap: var(--station-row-gap) var(--station-gap);
   align-items: start;
   justify-items: center;
   width: 100%;
 }
-#estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 11.4em; --station-card-height: 7.56em; }
+#estacionesGrid.station-size-small{ --station-card-scale: 0.85; --station-card-min: 11.4em; --station-card-height: 7.56em; --station-row-gap: 14px; }
 #estacionesGrid.station-size-medium{ --station-card-scale: 1; --station-card-min: 12.6em; --station-card-height: 8.82em; }
 #estacionesGrid.station-size-large{ --station-card-scale: 1.25; --station-card-min: 15em; --station-card-height: 10.5em; }
 #estacionesGrid.station-size-auto_text{ --station-card-scale: 1; --station-card-min: 14em; --station-card-height: var(--station-card-auto-height, auto); }
@@ -11089,7 +11090,7 @@ html.theme-light .chat-dashboard-metrics-table tbody tr:nth-child(even) td{
   }
   #estacionesGrid.estaciones-thumb-mobile{
     grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:8px;
+    gap:10px 8px;
   }
   #estacionesGrid .youtube-station-card{height:auto;min-height:12.5em;padding:0.6em}
   .youtube-station-browser-preview{max-height:180px}

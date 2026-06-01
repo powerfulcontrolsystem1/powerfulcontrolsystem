@@ -61,6 +61,10 @@ Este contrato cubre la capa de autorizacion por `empresa_id` para rutas `/api/em
   - query/body/header `aprobado_por` o `approved_by`
   - query/body/header `codigo_aprobacion` o `approval_code`
   - query/body/header `motivo_aprobacion` o `approval_reason`
+  - aplica a cambios de catalogo de roles y matriz fina de permisos
+    (`/api/empresa/roles_de_usuario`, `/api/empresa/permisos_empresa`), no al
+    ciclo operativo de usuarios (`/api/empresa/usuarios`), que queda protegido
+    por permisos `seguridad:C/R/U/D`, alcance empresarial y auditoria.
 
 ## Fuentes de resolucion de `empresa_id`
 

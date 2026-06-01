@@ -150,6 +150,9 @@ afecte dinero, documentos, licencias o seguridad.
 
 1. El administrador de una empresa crea el usuario desde `Administrar usuarios`;
    el sistema envia invitacion por correo y guarda token temporal en `users`.
+   Este alta operativa usa permisos `seguridad:C/U/D` y auditoria por
+   `empresa_id`; no debe pedir `aprobado_por` ni `codigo_aprobacion`. Esos
+   campos se reservan para cambios de roles o matriz fina de permisos.
 2. El usuario abre `login_usuario.html` desde la invitacion para completar
    registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
    no hay alta publica.

@@ -758,6 +758,10 @@
       return String(v == null ? '' : v).trim().toLowerCase();
     }
 
+    function normalizeDisplayText(v) {
+      return String(v == null ? '' : v).trim();
+    }
+
     function normalizeCashCode(v) {
       return String(v == null ? '' : v)
         .trim()
@@ -923,7 +927,7 @@
         mostrar_observaciones_item: src.mostrar_observaciones_item === undefined ? base.mostrar_observaciones_item : toBool(src.mostrar_observaciones_item),
         mostrar_selector_cliente: src.mostrar_selector_cliente === undefined ? base.mostrar_selector_cliente : toBool(src.mostrar_selector_cliente),
         cliente_obligatorio_pago: src.cliente_obligatorio_pago === undefined ? base.cliente_obligatorio_pago : toBool(src.cliente_obligatorio_pago),
-        cliente_general_nombre: normalizeText(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
+        cliente_general_nombre: normalizeDisplayText(src.cliente_general_nombre || src.nombre_cliente_general || src.cliente_generico_nombre || base.cliente_general_nombre) || base.cliente_general_nombre,
         mostrar_impuestos_item: src.mostrar_impuestos_item === undefined ? base.mostrar_impuestos_item : toBool(src.mostrar_impuestos_item),
         mostrar_lector_codigo_barras: src.mostrar_lector_codigo_barras === undefined ? base.mostrar_lector_codigo_barras : toBool(src.mostrar_lector_codigo_barras),
         mostrar_descuentos: src.mostrar_descuentos === undefined ? base.mostrar_descuentos : toBool(src.mostrar_descuentos),

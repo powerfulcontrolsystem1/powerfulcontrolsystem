@@ -29955,6 +29955,30 @@ Validacion:
 - `git diff --check`.
 - Intento visual en `http://127.0.0.1:8896/administrar_empresa/administrar_productos.html?empresa_id=7&view=productos`; el servidor local sirvio la pantalla de login para esa ruta protegida, por lo que la comprobacion visual autenticada quedo pendiente.
 
+2026-06-01: espaciado vertical en tarjetas de estaciones pequenas
+Archivos modificados:
+- web/estilos.css
+- documentos/historial_de_cambios
+- CHANGELOG.md
+Detalle:
+- `#estacionesGrid` separa el espacio vertical (`--station-row-gap`) del horizontal (`--station-gap`) para que las estaciones pequenas no queden pegadas entre filas.
+- En miniatura movil se mantiene una separacion vertical mayor que la horizontal con `gap: 10px 8px`.
+Validacion:
+- `git diff --check`.
+
+2026-06-01: nombre para ventas sin cliente conserva mayusculas y minusculas
+Archivos modificados:
+- web/administrar_empresa/configuracion_de_estaciones.html
+- documentos/historial_de_cambios
+- CHANGELOG.md
+Detalle:
+- La normalizacion de `cliente_general_nombre` en Configuracion de estaciones deja de usar la funcion que convierte a minusculas.
+- El campo ahora solo recorta espacios y conserva el texto tal como lo escriba la empresa, por ejemplo `Cliente General`, `CONSUMIDOR Final` o `cliente Mostrador`.
+Validacion:
+- Parseo de scripts embebidos de `web/administrar_empresa/configuracion_de_estaciones.html`.
+- Parseo de scripts embebidos de `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`.
+- `git diff --check`.
+
 2026-06-01: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:
@@ -29971,3 +29995,13 @@ Archivos modificados:
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/carrito_de_compras.html
 - web/super/administradores.html
+2026-06-01: usuarios operativos sin aprobacion extra
+- Modulos afectados: `usuarios_empresa`, `seguridad`, `permisos`.
+- Cambio funcional: `/api/empresa/usuarios` deja de exigir
+  `aprobado_por` y `codigo_aprobacion` para crear, editar, activar,
+  reenviar invitacion o eliminar usuarios operativos desde Administrar empresa.
+- Seguridad/datos: el flujo sigue protegido por alcance `empresa_id`, permisos
+  `seguridad:C/R/U/D`, pagina autorizada y auditoria empresarial. La aprobacion
+  trazable se mantiene para cambios reales de matriz de permisos:
+  `/api/empresa/roles_de_usuario` y `/api/empresa/permisos_empresa`.
+- Validacion: `go test ./handlers -run TestPermissionChangeRequiresApprovalForSecurityEndpoints -count=1`.
