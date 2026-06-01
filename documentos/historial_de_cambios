@@ -30025,8 +30025,9 @@ Archivos modificados:
 - Seguridad/datos: el usuario no queda activo ni puede iniciar sesion hasta
   confirmar correo o completar el flujo de invitacion; se mantiene aislamiento
   por `empresa_id`.
-- Validacion: pendiente de prueba visual completa despues de sincronizar el
-  backend con este segundo ajuste.
+- Validacion: prueba visual en `Administrar usuarios` de la empresa 44 creando
+  un usuario con rol `caja`; el alta aparecio en la tabla sin error de
+  aprobacion trazable ni `502`.
 
 2026-06-01: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
