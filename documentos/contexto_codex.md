@@ -57,6 +57,11 @@ botones, desde handlers estaticos del backend.
   Si el correo no existe se registra por invitacion con token; si ya existe y
   esta confirmado se usa `admin_principal_delegaciones` para que vea sus empresas
   propias mas las empresas compartidas, sin cambiar `usuario_creador`.
+  El selector de empresas debe resolver alcance efectivo por cuatro caminos:
+  propietario por `usuario_creador`, delegado del principal, empresa compartida
+  con el administrador y empresa que el administrador compartio con otro usuario;
+  esta ultima conserva `access_source=owner` para que el propietario no pierda la
+  empresa despues de compartirla.
   Desde `seleccionar_empresa.html` siempre se abre con `scope=principal` y solo
   debe mostrar invitados del administrador autenticado; sin ese parametro el
   panel super mantiene la vista global. Los nuevos `super_administrador` tambien
@@ -73,8 +78,10 @@ botones, desde handlers estaticos del backend.
   super. Nunca se deben guardar secretos en metadata.
 - Licencias: `web/elegir_licencia.html`, `web/pagar_licencia.html`,
   `web/super/licencias.html`, `web/super/formato_para_emviar_email.html`,
+  `web/super/licencias_codigos_descuento.html`,
   `web/administrar_empresa/licencia_sistema.html`, `/super/api/licencias`,
-  `/licencias/activar_sin_pago` y `/api/empresa/licencia_sistema/pdf`.
+  `/super/api/licencias/codigos_descuento`, `/licencias/activar_sin_pago` y
+  `/api/empresa/licencia_sistema/pdf`.
   El catalogo base vigente es global para todos
   los tipos de empresa (`tipo_id=0`, `pais_codigo=GLOBAL`) con cuatro planes:
   prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000. La
@@ -94,6 +101,11 @@ botones, desde handlers estaticos del backend.
   `pagos_epayco` y `pagos_wompi` guardan `licencia_activation_status`,
   `licencia_activada_id` y `licencia_activada_en` para que una consulta o
   webhook repetido no sume dias dos veces.
+  Los codigos de descuento de licencias se administran desde Super
+  administrador > Comercial y licencias > Codigos descuento; se guardan en
+  `configuraciones.licencias.discount_codes` con formato `CODIGO=10%`,
+  `CODIGO=50000` o `CODIGO=gratis`, y el checkout registra su uso en pagos o
+  activaciones sin pago para bloquear reutilizacion por la misma empresa.
   El checkout publico de licencia debe mostrar Epayco y Wompi cuando sus
   credenciales reales estan configuradas; `*.enabled` solo se usa como override
   explicito para apagar una pasarela lista.

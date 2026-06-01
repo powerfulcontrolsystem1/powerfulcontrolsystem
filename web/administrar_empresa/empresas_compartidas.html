@@ -147,12 +147,12 @@
       }
 
       function canManageAccess(item){
-        if (state.isOwner) return true;
+        if (state.isOwner || state.canManageShares) return true;
         return normalizeEmail(item && item.admin_email) === normalizeEmail(state.requesterEmail);
       }
 
       function canManageInvitation(item){
-        if (state.isOwner) return true;
+        if (state.isOwner || state.canManageShares) return true;
         var requester = normalizeEmail(state.requesterEmail);
         return normalizeEmail(item && item.admin_email) === requester || normalizeEmail(item && item.invitado_por_email) === requester;
       }
@@ -241,6 +241,7 @@
         state.invitaciones = Array.isArray(data && data.invitaciones) ? data.invitaciones : [];
         state.requesterEmail = String(data && data.requester_email ? data.requester_email : "").trim();
         state.isOwner = !!(data && data.is_owner);
+        state.canManageShares = !!(data && data.can_manage_shares);
         renderAll();
         setMessage("", false);
       }

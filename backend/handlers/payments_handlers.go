@@ -1521,7 +1521,7 @@ func roundLicenciaCheckoutAmount(value float64) float64 {
 }
 
 func normalizeLicenciaDiscountCode(code string) string {
-	return strings.ToUpper(strings.TrimSpace(code))
+	return strings.ToUpper(strings.Join(strings.Fields(strings.TrimSpace(code)), "-"))
 }
 
 func validateLicenciaAsesorCode(dbSuper *sql.DB, asesorID string) (string, error) {

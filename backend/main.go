@@ -1299,6 +1299,7 @@ func main() {
 	http.HandleFunc("/super/api/administradores/restablecer_password", handlers.AdminResetPasswordHandler(dbSuper))
 	// Endpoint CRUD para licencias (nuevo)
 	http.HandleFunc("/super/api/licencias", handlers.WithSuperAuditoria(dbSuper, "licencias", handlers.LicenciasHandler(dbSuper)))
+	http.HandleFunc("/super/api/licencias/codigos_descuento", handlers.WithSuperAuditoria(dbSuper, "licencias_codigos_descuento", handlers.SuperLicenciasCodigosDescuentoHandler(dbSuper)))
 	http.HandleFunc("/super/api/empresa_licencias_adicionales", handlers.EmpresaLicenciasAdicionalesHandler(dbSuper))
 	http.HandleFunc("/super/api/licencias/vencimiento_alertas", handlers.WithSuperAuditoria(dbSuper, "super_config_alertas_licencia", handlers.SuperLicenciaVencimientoAlertasHandler(dbSuper, dbEmpresas)))
 	// Endpoint super: lista de administradores autorizados (Frecuencia FE/FP)

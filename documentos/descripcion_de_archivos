@@ -1,3 +1,20 @@
+2026-06-01 - Codigos de descuento para licencias en super administrador
+- `backend/handlers/licencias_codigos_descuento.go`:
+	- nuevo handler super para listar, crear, actualizar, activar/desactivar y eliminar codigos globales de descuento de licencias.
+	- persiste en `configuraciones.licencias.discount_codes`, compatible con el formato existente del checkout.
+- `backend/handlers/licencias_codigos_descuento_test.go`:
+	- cubre parseo de codigos activos/inactivos y validacion de codigo/spec.
+- `backend/handlers/payments_handlers.go`:
+	- normaliza codigos de descuento reemplazando espacios por guion antes de resolverlos.
+- `backend/main.go`:
+	- registra `/super/api/licencias/codigos_descuento` con auditoria de super administrador.
+- `web/super/licencias_codigos_descuento.html`:
+	- nueva pagina visual de super administrador para gestionar los codigos de descuento de licencias.
+- `web/super_administrador.html` y `web/js/super_administrador.js`:
+	- agregan el boton `Codigos descuento` y lo permiten como pagina valida del iframe/favoritos.
+- `web/pagar_licencia.html`:
+	- precarga el campo de descuento desde `discount_code` o `codigo_descuento` recibido por URL.
+
 2026-06-01 - Renovaciones anticipadas de licencias
 - `backend/db/db.go`:
 	- agrega calculo de vigencia acumulada para que las licencias comerciales pagadas antes del vencimiento se programen desde la fecha fin acumulada de la empresa.

@@ -405,6 +405,73 @@ func ListActiveAdminEmpresaCompartidaAccesosByAdmin(dbConn *sql.DB, adminEmail s
 	return out, rows.Err()
 }
 
+func ListActiveAdminEmpresaCompartidaAccesosBySharer(dbConn *sql.DB, sharedByEmail string) ([]AdminEmpresaCompartidaAcceso, error) {
+	sharedByEmail = normalizeAdminEmpresaCompartidaEmail(sharedByEmail)
+	if dbConn == nil || sharedByEmail == "" {
+		return []AdminEmpresaCompartidaAcceso{}, nil
+	}
+	if err := EnsureAdminEmpresaCompartidaSchema(dbConn); err != nil {
+		return nil, err
+	}
+	rows, err := querySQLCompat(dbConn, `SELECT
+		a.id,
+		a.empresa_id,
+		COALESCE(a.admin_email, ''),
+		COALESCE(adm.name, ''),
+		COALESCE(a.compartido_por_email, ''),
+		COALESCE(inv.name, ''),
+		COALESCE(a.invitacion_id, 0),
+		COALESCE(a.nivel_acceso, 'acceso_total'),
+		COALESCE(a.modulos_permitidos, ''),
+		COALESCE(a.fecha_aceptada, ''),
+		COALESCE(a.fecha_revocada, ''),
+		COALESCE(a.fecha_creacion, ''),
+		COALESCE(a.fecha_actualizacion, ''),
+		COALESCE(a.usuario_creador, ''),
+		COALESCE(a.estado, 'activo'),
+		COALESCE(a.observaciones, '')
+	FROM admin_empresa_compartida a
+	LEFT JOIN administradores adm ON lower(adm.email) = lower(a.admin_email)
+	LEFT JOIN administradores inv ON lower(inv.email) = lower(a.compartido_por_email)
+	WHERE lower(COALESCE(a.compartido_por_email, '')) = lower(?)
+	  AND lower(COALESCE(a.estado, 'activo')) = 'activo'
+	  AND COALESCE(a.fecha_revocada, '') = ''
+	ORDER BY a.id DESC`, sharedByEmail)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]AdminEmpresaCompartidaAcceso, 0)
+	for rows.Next() {
+		item, scanErr := scanAdminEmpresaCompartidaAcceso(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func HasActiveAdminEmpresaCompartidaAccesoBySharer(dbConn *sql.DB, empresaID int64, sharedByEmail string) (bool, error) {
+	sharedByEmail = normalizeAdminEmpresaCompartidaEmail(sharedByEmail)
+	if dbConn == nil || empresaID <= 0 || sharedByEmail == "" {
+		return false, nil
+	}
+	if err := EnsureAdminEmpresaCompartidaSchema(dbConn); err != nil {
+		return false, err
+	}
+	var total int
+	if err := queryRowSQLCompat(dbConn, `SELECT COUNT(1)
+		FROM admin_empresa_compartida
+		WHERE empresa_id = ?
+		  AND lower(COALESCE(compartido_por_email, '')) = lower(?)
+		  AND lower(COALESCE(estado, 'activo')) = 'activo'
+		  AND COALESCE(fecha_revocada, '') = ''`, empresaID, sharedByEmail).Scan(&total); err != nil {
+		return false, err
+	}
+	return total > 0, nil
+}
+
 func ListPendingAdminEmpresaCompartidaInvitacionesByAdmin(dbConn *sql.DB, adminEmail string) ([]AdminEmpresaCompartidaInvitacion, error) {
 	adminEmail = normalizeAdminEmpresaCompartidaEmail(adminEmail)
 	if dbConn == nil || adminEmail == "" {
@@ -834,6 +901,7 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 		}
 		InvalidateAdminEmpresaCompartidaAccessCache(payload.EmpresaID, payload.AdminEmail)
 		InvalidateCanAdminAccessEmpresaIACache(payload.EmpresaID, payload.AdminEmail)
+		InvalidateCanAdminAccessEmpresaIACache(payload.EmpresaID, payload.CompartidoPorEmail)
 		return existing.ID, nil
 	}
 	id, err := insertSQLCompat(dbConn, `INSERT INTO admin_empresa_compartida (
@@ -866,6 +934,7 @@ func UpsertAdminEmpresaCompartidaAcceso(dbConn *sql.DB, payload AdminEmpresaComp
 	}
 	InvalidateAdminEmpresaCompartidaAccessCache(payload.EmpresaID, payload.AdminEmail)
 	InvalidateCanAdminAccessEmpresaIACache(payload.EmpresaID, payload.AdminEmail)
+	InvalidateCanAdminAccessEmpresaIACache(payload.EmpresaID, payload.CompartidoPorEmail)
 	return id, nil
 }
 
@@ -926,6 +995,7 @@ func RevokeAdminEmpresaCompartidaAcceso(dbConn *sql.DB, id int64, usuario string
 	if err == nil && existing != nil {
 		InvalidateAdminEmpresaCompartidaAccessCache(existing.EmpresaID, existing.AdminEmail)
 		InvalidateCanAdminAccessEmpresaIACache(existing.EmpresaID, existing.AdminEmail)
+		InvalidateCanAdminAccessEmpresaIACache(existing.EmpresaID, existing.CompartidoPorEmail)
 	}
 	return err
 }

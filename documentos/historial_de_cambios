@@ -1,3 +1,51 @@
+2026-06-01: propietario conserva empresas compartidas en selector.
+- Modulos afectados: `seleccionar_empresa`, `empresas_compartidas`,
+  `seguridad_multiempresa`.
+- Cambio funcional: el listado `/super/api/empresas` incluye empresas que el
+  administrador autenticado compartio con otro usuario, tratandolas como propias
+  para el selector aunque existan datos historicos donde `usuario_creador` no
+  coincide.
+- Backend: se agregan consultas por `compartido_por_email` en
+  `backend/db/empresa_admin_compartida.go` y se reutilizan en
+  `decorateEmpresasByEffectiveAccess` y `CanAdminAccessEmpresaIA`.
+- Seguridad: solo se acepta una relacion activa, no revocada, en
+  `admin_empresa_compartida`; no se concede acceso por URL, localStorage ni datos
+  enviados por navegador.
+- Validacion: `go test ./handlers -run "DecorateEmpresasByEffectiveAccess|AdminEmpresaCompartida|SelectorAdminScope" -count=1`
+  y `go test ./db -run "AdminEmpresaCompartida|CanAdminAccessEmpresaIA" -count=1`.
+
+2026-06-01: codigos de descuento para licencias desde super administrador.
+- Modulos afectados: `licencias`, `pagos`, `super_administrador`.
+- Cambio funcional: se agrega `web/super/licencias_codigos_descuento.html` al
+  grupo Comercial y licencias para crear, editar, activar/desactivar y eliminar
+  codigos globales aplicables al checkout de licencias.
+- Backend: nuevo endpoint auditado `/super/api/licencias/codigos_descuento` en
+  `backend/handlers/licencias_codigos_descuento.go`, protegido por sesion de
+  super administrador y persistido en `configuraciones.licencias.discount_codes`.
+- Checkout: `web/pagar_licencia.html` precarga `discount_code` o
+  `codigo_descuento` desde URL y mantiene el bloqueo de reutilizacion por
+  empresa usando pagos/activaciones existentes.
+- Seguridad: el codigo se normaliza y valida en backend; el descuento sigue
+  recalculandose antes de crear transacciones Epayco/Wompi o activar sin pago.
+- Validacion: `go test ./handlers -run "LicenciaDiscountCode|LicenciasCodigos" -count=1`,
+  `go test ./db -run "LicenciaDiscount|LicenciasGratis" -count=1`, parseo
+  sintactico de JS embebido de la nueva pagina y de `pagar_licencia.html`.
+
+2026-06-01: super administrador puede compartir empresas.
+- Modulos afectados: `empresas_compartidas`, `seleccionar_empresa`, `editar_empresa`,
+  `seguridad_multiempresa`.
+- Cambio funcional: el endpoint `/super/api/empresas/compartidos` permite que un
+  super administrador autenticado cree, reenvie y revoque invitaciones o accesos
+  compartidos de cualquier empresa, aunque no sea el `usuario_creador`.
+- Seguridad: la excepcion se valida en backend por rol super administrador; los
+  administradores normales, delegados o compartidos siguen sin poder reencadenar
+  empresas ajenas.
+- Frontend: el selector de empresas, `editar_empresa.js` y
+  `empresas_compartidas.html` habilitan las acciones cuando la cuenta actual es
+  super administradora.
+- Validacion: `go test ./handlers -run "AdminEmpresaCompartida|EmpresaCompartida|SelectorAdminScope" -count=1`,
+  `node --check` en los JS tocados y prueba visual local con empresa ajena.
+
 2026-06-01: nombre real de la caja en estaciones.
 - Modulos afectados: `estaciones`, `caja`, `frontend_ux`.
 - Cambio funcional: la tarjeta especial de Caja muestra el codigo y nombre de la

@@ -3309,6 +3309,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/super/api/licencias/codigos_descuento":
+    get:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/codigos_descuento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [super-administrador]
+      summary: Ruta inventariada /super/api/licencias/codigos_descuento
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/super/api/licencias/vencimiento_alertas":
     get:
       tags: [super-administrador]

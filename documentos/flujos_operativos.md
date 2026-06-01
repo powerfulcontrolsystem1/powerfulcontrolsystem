@@ -62,10 +62,14 @@ afecte dinero, documentos, licencias o seguridad.
    administracion delegada y entra con permisos empresariales efectivos.
 6. El delegado no puede compartir esas empresas ni administrar otros
    administradores; el propietario sigue siendo el principal.
-7. Eliminar desde el listado revoca la delegacion si la cuenta ya era de otro administrador; no borra su cuenta.
-8. Pruebas: principal invita delegado, correo/enlace funciona, delegado ve
+7. El super administrador si puede compartir, reenviar o revocar accesos de una
+   empresa aunque no sea su propietario, por gobierno global del sistema; esta
+   excepcion se valida en backend por rol super.
+8. Eliminar desde el listado revoca la delegacion si la cuenta ya era de otro administrador; no borra su cuenta.
+9. Pruebas: principal invita delegado, correo/enlace funciona, delegado ve
    empresas del principal, no ve empresas de otro principal y no puede compartir
-   por URL ni boton.
+   por URL ni boton; super administrador comparte una empresa ajena y queda
+   auditado.
 
 ## Super administradores por invitacion
 
@@ -114,6 +118,12 @@ afecte dinero, documentos, licencias o seguridad.
    pagada inicia el 10 de junio y vence el 10 de julio; un segundo pago
    anticipado inicia desde el 10 de julio. Los webhooks/consultas repetidos de
    la misma referencia quedan idempotentes con `licencia_activation_status`.
+11. Los codigos de descuento para licencias se crean desde Super administrador >
+   Comercial y licencias > Codigos descuento. El formato tecnico es
+   `CODIGO=10%`, `CODIGO=50000` o `CODIGO=gratis`; el checkout los calcula en
+   `/api/public/licencias/checkout_summary` y los conserva al pagar por Epayco,
+   Wompi o activacion sin pago. Cada codigo queda limitado a un uso por empresa
+   mediante `pagos_epayco`, `pagos_wompi` y `licencias_activaciones_gratis`.
 11. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
    bloquear segundo uso real despues del vencimiento y comprobar que el
    historial muestra otras licencias cuando la prueba no es renovable, ademas

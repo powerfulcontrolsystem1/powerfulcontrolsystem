@@ -1,3 +1,20 @@
+## [2026-06-01] Propietario conserva empresas compartidas en selector
+- [Selector] `/super/api/empresas` ahora incluye tambien las empresas que el administrador autenticado compartio con otro administrador, aunque el `usuario_creador` historico no coincida.
+- [Seguridad] `CanAdminAccessEmpresaIA` reconoce esa misma relacion activa como alcance valido del propietario que compartio, sin ampliar el acceso a empresas sin invitacion o sin relacion.
+- [QA] `go test ./handlers -run "DecorateEmpresasByEffectiveAccess|AdminEmpresaCompartida|SelectorAdminScope" -count=1` y `go test ./db -run "AdminEmpresaCompartida|CanAdminAccessEmpresaIA" -count=1`.
+
+## [2026-06-01] Codigos de descuento para licencias en super administrador
+- [Super] Nueva pagina `web/super/licencias_codigos_descuento.html` en Comercial y licencias para crear, editar, activar/desactivar y eliminar codigos globales de descuento de licencias.
+- [Backend] Nuevo endpoint auditado `/super/api/licencias/codigos_descuento` que administra `configuraciones.licencias.discount_codes` con formatos `CODIGO=10%`, `CODIGO=50000` y `CODIGO=gratis`.
+- [Checkout] `pagar_licencia.html` ahora precarga `discount_code` o `codigo_descuento` recibido por URL y mantiene la validacion existente de un uso por empresa.
+- [QA] `go test ./handlers -run "LicenciaDiscountCode|LicenciasCodigos" -count=1`, `go test ./db -run "LicenciaDiscount|LicenciasGratis" -count=1` y validacion sintactica del JS embebido de checkout y la nueva pagina.
+
+## [2026-06-01] Super administrador puede compartir empresas
+- [Backend] `/super/api/empresas/compartidos` permite crear, reenviar y revocar invitaciones/accesos cuando el actor autenticado es super administrador, aunque no sea el propietario `usuario_creador` de la empresa.
+- [Seguridad] La excepcion queda limitada al rol super en backend; administradores compartidos o delegados normales siguen sin poder reencadenar empresas ajenas.
+- [UX] El selector, `editar_empresa.js` y `empresas_compartidas.html` habilitan las acciones de compartir/gestionar para super administradores.
+- [QA] `go test ./handlers -run "AdminEmpresaCompartida|EmpresaCompartida|SelectorAdminScope" -count=1`, validacion sintactica de JS y prueba visual local con empresa ajena.
+
 ## [2026-06-01] Nombre real de caja en estaciones
 - [UX] La tarjeta especial de Caja en `estaciones.html` ya no muestra el titulo generico `Caja`; usa el codigo y nombre configurado de la caja activa, por ejemplo `CAJA-1 - Caja principal`.
 - [UX] Si solo hay una caja activa, se oculta la lista redundante para no repetir `Caja principal`; si hay varias, se conserva la lista de seleccion.

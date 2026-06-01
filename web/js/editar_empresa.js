@@ -185,9 +185,13 @@
     return String(state.empresa && state.empresa.access_source ? state.empresa.access_source : "owner").toLowerCase() === "shared";
   }
 
+  function canManageShares() {
+    return !!(state.shareMeta && (state.shareMeta.can_manage_shares || state.shareMeta.is_owner || state.shareMeta.is_super_admin));
+  }
+
   function canRevokeAccess(item) {
     if (!item) return false;
-    if (state.shareMeta && state.shareMeta.is_owner) return true;
+    if (canManageShares()) return true;
     var requester = normalizeEmail(state.shareMeta && state.shareMeta.requester_email);
     return requester && (
       requester === normalizeEmail(item.admin_email) ||
@@ -197,7 +201,7 @@
 
   function canRevokeInvitation(item) {
     if (!item) return false;
-    if (state.shareMeta && state.shareMeta.is_owner) return true;
+    if (canManageShares()) return true;
     var requester = normalizeEmail(state.shareMeta && state.shareMeta.requester_email);
     return requester && (
       requester === normalizeEmail(item.admin_email) ||
@@ -409,7 +413,7 @@
   function renderShares() {
     var accessList = $("empresaShareAccessList");
     var inviteList = $("empresaShareInviteList");
-    var ownerCanManage = !!(state.shareMeta && state.shareMeta.is_owner);
+    var ownerCanManage = canManageShares();
     if (accessList) {
       if (!state.accesos.length) {
         accessList.innerHTML = '<p class="muted">No hay administradores con acceso compartido activo.</p>';
@@ -469,6 +473,8 @@
     state.shareScopeCatalog = Array.isArray(data && data.scope_catalog) ? data.scope_catalog : state.shareScopeCatalog;
     state.shareMeta = {
       is_owner: !!(data && data.is_owner),
+      is_super_admin: !!(data && data.is_super_admin),
+      can_manage_shares: !!(data && data.can_manage_shares),
       requester_email: String(data && data.requester_email ? data.requester_email : '').trim(),
       principal_email: String(data && data.principal_email ? data.principal_email : '').trim(),
     };
@@ -740,8 +746,8 @@
   async function inviteAdmin(ev) {
     ev.preventDefault();
     if (!state.empresa) return;
-    if (isSharedEmpresa()) {
-      setMessage("empresaShareMessageBox", "Solo el propietario puede invitar nuevos administradores.", true);
+    if (!canManageShares()) {
+      setMessage("empresaShareMessageBox", "Solo el propietario o un super administrador puede invitar nuevos administradores.", true);
       return;
     }
 

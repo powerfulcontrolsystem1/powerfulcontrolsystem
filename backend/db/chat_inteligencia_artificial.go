@@ -767,6 +767,16 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 			canAdminAccessEmpresaIACacheMu.Unlock()
 			return true, nil
 		}
+		sharedBy, err := HasActiveAdminEmpresaCompartidaAccesoBySharer(dbSuper, empresaID, adminEmail)
+		if err != nil {
+			return false, err
+		}
+		if sharedBy {
+			canAdminAccessEmpresaIACacheMu.Lock()
+			canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
+			canAdminAccessEmpresaIACacheMu.Unlock()
+			return true, nil
+		}
 	}
 	canAdminAccessEmpresaIACacheMu.Lock()
 	canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: false, LoadedAt: time.Now()}

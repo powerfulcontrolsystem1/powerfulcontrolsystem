@@ -421,6 +421,7 @@
         const checkoutMode = String(params.get('checkout_mode') || '').trim();
         const addonLicenciaIDs = String(params.get('addon_licencia_ids') || '').trim();
         const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim();
+        const initialDiscountCode = String(params.get('discount_code') || params.get('codigo_descuento') || '').trim();
         if (!licenciaId && pendingSeed && pendingSeed.licenciaId) licenciaId = String(pendingSeed.licenciaId);
         if (!empresaId && pendingSeed && pendingSeed.empresaId) empresaId = String(pendingSeed.empresaId);
 
@@ -460,6 +461,7 @@
           if (empresaId) summaryParams.set('empresa_id', String(empresaId));
           if (checkoutMode) summaryParams.set('checkout_mode', checkoutMode);
           if (addonLicenciaIDs) summaryParams.set('addon_licencia_ids', addonLicenciaIDs);
+          if (initialDiscountCode) summaryParams.set('discount_code', initialDiscountCode);
           if (initialAsesorID) summaryParams.set('asesor_id', initialAsesorID);
 
           function resolveCountryFromBrowser(){
@@ -637,7 +639,7 @@
                     '</div>'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="discountCode">Código de descuento</label>'+
-                      '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional">'+
+                      '<input id="discountCode" class="form-input" type="text" placeholder="Código promocional" value="' + escapeHtml(initialDiscountCode) + '">'+
                     '</div>'+
                     '<div class="form-col">'+
                       '<label class="form-label" for="asesorId">Código de asesor comercial</label>'+

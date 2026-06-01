@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Codigos de descuento para licencias</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;padding:18px;background:linear-gradient(180deg,var(--bg-alt),var(--bg));color:var(--text);font-family:"Segoe UI",Arial,sans-serif}
+    .discount-shell{max-width:1180px;margin:0 auto;display:grid;gap:14px}
+    .discount-hero,.discount-card{min-width:0;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,var(--surface-soft),var(--surface));box-shadow:0 14px 34px rgba(15,23,42,.12);padding:16px}
+    .discount-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .discount-hero h1{margin:0;color:var(--text);font-size:1.45rem;line-height:1.1}
+    .discount-hero p{margin:7px 0 0;color:var(--muted);line-height:1.42;max-width:760px}
+    .discount-grid{min-width:0;display:grid;grid-template-columns:minmax(290px,.74fr) minmax(0,1fr);gap:14px;align-items:start}
+    .discount-form{display:grid;gap:10px}
+    .discount-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .discount-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+    .discount-rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    .discount-rule{border:1px solid var(--border);border-radius:12px;background:var(--surface-soft);padding:10px}
+    .discount-rule span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+    .discount-rule strong{display:block;margin-top:3px;color:var(--text);font-size:.9rem;line-height:1.22}
+    .discount-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+    .discount-table{width:100%;min-width:760px;border-collapse:collapse}
+    .discount-table th,.discount-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top;font-size:.86rem}
+    .discount-table th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+    .discount-code{font-family:Consolas,monospace;font-weight:900;color:var(--accent-yellow);white-space:nowrap}
+    .discount-badge{display:inline-flex;align-items:center;justify-content:center;padding:5px 8px;border-radius:999px;border:1px solid var(--border);font-size:.72rem;font-weight:900;background:var(--surface-soft);color:var(--text)}
+    .discount-badge.ok{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.35);color:#047857}
+    .discount-badge.off{background:rgba(239,68,68,.11);border-color:rgba(239,68,68,.35);color:#b91c1c}
+    .discount-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .discount-empty{padding:18px;text-align:center;color:var(--muted)}
+    .discount-raw{white-space:pre-wrap;font-family:Consolas,monospace;font-size:.78rem;line-height:1.35;border:1px solid var(--border);border-radius:12px;background:var(--surface-soft);padding:10px;color:var(--muted)}
+    .discount-shell [hidden]{display:none!important}
+    @media(max-width:860px){body{padding:10px}.discount-grid,.discount-row,.discount-rules{grid-template-columns:1fr}.discount-hero{display:grid}}
+  </style>
+</head>
+<body>
+  <main class="discount-shell">
+    <section class="discount-hero">
+      <div>
+        <h1>Codigos de descuento para licencias</h1>
+        <p>Crea codigos promocionales globales para el checkout de licencias. El sistema los aplica en pagar licencia y valida que cada codigo se use solo una vez por empresa.</p>
+        <div class="discount-rules">
+          <div class="discount-rule"><span>Alcance</span><strong>Licencias del sistema</strong></div>
+          <div class="discount-rule"><span>Regla</span><strong>Un uso por empresa</strong></div>
+          <div class="discount-rule"><span>Formatos</span><strong>Porcentaje, valor fijo o gratis</strong></div>
+        </div>
+      </div>
+      <button id="reloadBtn" class="btn secondary" type="button">Actualizar</button>
+    </section>
+
+    <section class="discount-grid">
+      <article class="discount-card">
+        <div class="discount-toolbar">
+          <div>
+            <h2 id="formTitle">Crear codigo</h2>
+            <p class="form-help">Usa nombres cortos como LANZAMIENTO20 o RENUEVA50.</p>
+          </div>
+        </div>
+        <form id="discountForm" class="discount-form">
+          <input id="oldCode" type="hidden">
+          <label class="form-label" for="code">Codigo</label>
+          <input id="code" class="form-input" autocomplete="off" required placeholder="Ej: LANZAMIENTO20">
+          <div class="discount-row">
+            <div>
+              <label class="form-label" for="type">Tipo de descuento</label>
+              <select id="type" class="form-input">
+                <option value="porcentaje">Porcentaje</option>
+                <option value="valor">Valor fijo</option>
+                <option value="gratis">Gratis / cortesia total</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="value">Valor</label>
+              <input id="value" class="form-input" type="number" min="0" step="0.01" value="10">
+            </div>
+          </div>
+          <label class="form-label" style="display:flex;align-items:center;gap:9px;margin:0;">
+            <input id="active" type="checkbox" checked>
+            Codigo activo
+          </label>
+          <div class="form-actions">
+            <button id="saveBtn" class="btn" type="submit">Guardar codigo</button>
+            <button id="cancelBtn" class="btn secondary" type="button" hidden>Cancelar</button>
+          </div>
+          <div id="msg" class="form-help"></div>
+        </form>
+      </article>
+
+      <article class="discount-card">
+        <div class="discount-toolbar">
+          <div>
+            <h2>Codigos registrados</h2>
+            <p class="form-help">Los codigos inactivos quedan comentados y no aplican en el checkout.</p>
+          </div>
+        </div>
+        <div id="codesBox" class="discount-table-wrap">
+          <div class="discount-empty">Cargando codigos...</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="discount-card">
+      <h2>Configuracion tecnica</h2>
+      <p class="form-help">Vista de soporte de la clave global que usa el checkout.</p>
+      <pre id="rawBox" class="discount-raw">Cargando...</pre>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var state = { items: [] };
+      function safe(v){return String(v == null ? "" : v).replace(/[&<>"']/g, function(s){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s];});}
+      function field(id){var el=document.getElementById(id); return el ? String(el.value || "").trim() : "";}
+      function setMsg(text, error){var el=document.getElementById("msg"); if(!el)return; el.textContent=text||""; el.style.color=error?"var(--danger)":"var(--success)";}
+      function normalizeCode(code){return String(code||"").trim().toUpperCase().replace(/\s+/g,"-");}
+      async function requestJSON(url, options){
+        var res = await fetch(url, Object.assign({credentials:"same-origin"}, options || {}));
+        var raw = await res.text();
+        var data = null;
+        try{data = raw ? JSON.parse(raw) : null;}catch(e){}
+        if(!res.ok) throw new Error((data && (data.error || data.message)) || raw || "Solicitud fallida");
+        return data || {};
+      }
+      function resetForm(){
+        document.getElementById("discountForm").reset();
+        document.getElementById("oldCode").value = "";
+        document.getElementById("active").checked = true;
+        document.getElementById("type").value = "porcentaje";
+        document.getElementById("value").value = "10";
+        document.getElementById("formTitle").textContent = "Crear codigo";
+        document.getElementById("saveBtn").textContent = "Guardar codigo";
+        document.getElementById("cancelBtn").hidden = true;
+        setMsg("", false);
+        toggleValueField();
+      }
+      function toggleValueField(){
+        var isFree = field("type") === "gratis";
+        document.getElementById("value").disabled = isFree;
+        if (isFree) document.getElementById("value").value = "100";
+      }
+      function buildPayload(){
+        return {
+          old_codigo: field("oldCode"),
+          codigo: normalizeCode(field("code")),
+          tipo: field("type"),
+          valor: Number(field("value") || 0),
+          activo: !!document.getElementById("active").checked
+        };
+      }
+      function render(){
+        var box = document.getElementById("codesBox");
+        if (!state.items.length) {
+          box.innerHTML = '<div class="discount-empty">Aun no hay codigos creados.</div>';
+          return;
+        }
+        box.innerHTML = '<table class="discount-table"><thead><tr><th>Codigo</th><th>Descuento</th><th>Estado</th><th>Regla</th><th>Acciones</th></tr></thead><tbody>' +
+          state.items.map(function(item){
+            return '<tr>' +
+              '<td><span class="discount-code">' + safe(item.codigo) + '</span></td>' +
+              '<td><strong>' + safe(item.descripcion || item.spec || '') + '</strong><div class="form-help">' + safe(item.tipo || '') + ' - ' + safe(item.spec || '') + '</div></td>' +
+              '<td><span class="discount-badge ' + (item.activo ? 'ok' : 'off') + '">' + (item.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+              '<td>Un uso por empresa en checkout de licencias.</td>' +
+              '<td><div class="discount-actions">' +
+                '<button class="btn secondary small" type="button" data-action="edit" data-code="' + safe(item.codigo) + '">Editar</button>' +
+                '<button class="btn secondary small" type="button" data-action="toggle" data-code="' + safe(item.codigo) + '">' + (item.activo ? 'Desactivar' : 'Activar') + '</button>' +
+                '<button class="btn danger small" type="button" data-action="delete" data-code="' + safe(item.codigo) + '">Eliminar</button>' +
+              '</div></td>' +
+            '</tr>';
+          }).join('') + '</tbody></table>';
+      }
+      async function load(){
+        setMsg("", false);
+        var data = await requestJSON("/super/api/licencias/codigos_descuento");
+        state.items = Array.isArray(data.items) ? data.items : [];
+        document.getElementById("rawBox").textContent = data.raw || "(sin codigos configurados)";
+        render();
+      }
+      function editCode(code){
+        var item = state.items.find(function(x){return x.codigo === code;});
+        if (!item) return;
+        document.getElementById("oldCode").value = item.codigo;
+        document.getElementById("code").value = item.codigo;
+        document.getElementById("type").value = item.tipo || "porcentaje";
+        document.getElementById("value").value = String(item.valor || (item.tipo === "gratis" ? 100 : 0));
+        document.getElementById("active").checked = !!item.activo;
+        document.getElementById("formTitle").textContent = "Editar codigo";
+        document.getElementById("saveBtn").textContent = "Actualizar codigo";
+        document.getElementById("cancelBtn").hidden = false;
+        toggleValueField();
+      }
+      async function toggleCode(code){
+        var item = state.items.find(function(x){return x.codigo === code;});
+        if (!item) return;
+        await requestJSON("/super/api/licencias/codigos_descuento", {
+          method:"PUT",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({old_codigo:item.codigo,codigo:item.codigo,tipo:item.tipo,valor:item.valor,activo:!item.activo,spec:item.spec})
+        });
+        await load();
+      }
+      async function deleteCode(code){
+        if (!window.confirm("Eliminar el codigo " + code + "?")) return;
+        await requestJSON("/super/api/licencias/codigos_descuento?codigo=" + encodeURIComponent(code), {method:"DELETE"});
+        await load();
+      }
+      document.getElementById("type").addEventListener("change", toggleValueField);
+      document.getElementById("reloadBtn").addEventListener("click", function(){load().catch(function(err){setMsg(err.message || String(err), true);});});
+      document.getElementById("cancelBtn").addEventListener("click", resetForm);
+      document.getElementById("codesBox").addEventListener("click", function(ev){
+        var btn = ev.target.closest("button[data-action]");
+        if (!btn) return;
+        var action = btn.getAttribute("data-action");
+        var code = btn.getAttribute("data-code");
+        Promise.resolve().then(function(){
+          if (action === "edit") return editCode(code);
+          if (action === "toggle") return toggleCode(code);
+          if (action === "delete") return deleteCode(code);
+        }).catch(function(err){setMsg(err.message || String(err), true);});
+      });
+      document.getElementById("discountForm").addEventListener("submit", async function(ev){
+        ev.preventDefault();
+        var payload = buildPayload();
+        var editing = !!payload.old_codigo;
+        setMsg(editing ? "Actualizando codigo..." : "Guardando codigo...", false);
+        try{
+          await requestJSON("/super/api/licencias/codigos_descuento", {
+            method: editing ? "PUT" : "POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          });
+          resetForm();
+          await load();
+          setMsg("Codigo guardado correctamente.", false);
+        }catch(err){
+          setMsg(err.message || String(err), true);
+        }
+      });
+      resetForm();
+      load().catch(function(err){setMsg(err.message || String(err), true); document.getElementById("codesBox").innerHTML='<div class="discount-empty">Error cargando codigos.</div>';});
+    })();
+  </script>
+</body>
+</html>

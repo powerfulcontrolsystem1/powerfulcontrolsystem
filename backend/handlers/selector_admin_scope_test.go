@@ -32,6 +32,31 @@ func TestDecorateEmpresasByEffectiveAccessIncludesPrincipalOwnedForDelegatedAdmi
 	}
 }
 
+func TestDecorateEmpresasByEffectiveAccessIncludesEmpresaSharedByRequester(t *testing.T) {
+	t.Parallel()
+
+	empresas := []dbpkg.Empresa{
+		{ID: 20, EmpresaID: 20, Nombre: "Empresa creada y compartida", UsuarioCreador: "legacy-owner@example.com"},
+		{ID: 21, EmpresaID: 21, Nombre: "Compartida conmigo", UsuarioCreador: "otra@example.com"},
+		{ID: 22, EmpresaID: 22, Nombre: "Sin acceso", UsuarioCreador: "tercero@example.com"},
+	}
+	shareMap := map[int64]dbpkg.AdminEmpresaCompartidaAcceso{
+		21: {EmpresaID: 21, CompartidoPorEmail: "otra@example.com", NivelAcceso: "solo_ver"},
+	}
+	sharedByMap := map[int64]bool{20: true}
+
+	got := decorateEmpresasByEffectiveAccessCore("propietario@example.com", empresas, nil, shareMap, sharedByMap)
+	if len(got) != 2 {
+		t.Fatalf("expected own shared-by plus received share, got %d: %+v", len(got), got)
+	}
+	if got[0].EmpresaID != 20 || got[0].AccessSource != "owner" {
+		t.Fatalf("expected empresa shared by requester to behave as owner, got %+v", got[0])
+	}
+	if got[1].EmpresaID != 21 || got[1].AccessSource != "shared" {
+		t.Fatalf("expected received share to remain shared, got %+v", got[1])
+	}
+}
+
 func TestFilterAdministradoresForPrincipalScopeExcludesPrincipal(t *testing.T) {
 	t.Parallel()
 

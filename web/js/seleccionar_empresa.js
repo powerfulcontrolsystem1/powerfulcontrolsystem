@@ -780,6 +780,10 @@
     return getEmpresaAccessSource(empresa) === "owner";
   }
 
+  function canShareEmpresa(empresa) {
+    return isOwnerEmpresa(empresa) || isPrincipalSuperAccount(currentAccount);
+  }
+
   function navigateToEmpresa(empresa, hasLicense) {
     persistEmpresaContext(empresa.id);
     recordSelectorAuditEvent(hasLicense ? "abrir_empresa" : "abrir_licencias_empresa", {
@@ -867,9 +871,9 @@
   }
 
   function buildEmpresaShareButton(empresa) {
-    var disabled = !isOwnerEmpresa(empresa);
+    var disabled = !canShareEmpresa(empresa);
     var title = disabled
-      ? "Solo el administrador propietario puede compartir esta empresa"
+      ? "Solo el administrador propietario o un super administrador puede compartir esta empresa"
       : "Compartir empresa con otro administrador (correo)";
     return '' +
       '<button type="button" class="empresa-card-icon-action empresa-share-toggle' + (disabled ? ' is-disabled' : '') + '" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" data-share-disabled="' + (disabled ? '1' : '0') + '" aria-label="' + escapeHtml(title) + '" title="' + escapeHtml(title) + '">' +
@@ -883,10 +887,10 @@
   }
 
   function buildEmpresaSharePanel(empresa) {
-    if (!isOwnerEmpresa(empresa)) {
+    if (!canShareEmpresa(empresa)) {
       return '' +
         '<div class="empresa-card-share-panel" data-empresa-id="' + escapeHtml(String(empresa.id || '')) + '" hidden>' +
-        '<div class="empresa-card-share-feedback is-error">Solo el administrador propietario puede enviar nuevas invitaciones para esta empresa.</div>' +
+        '<div class="empresa-card-share-feedback is-error">Solo el administrador propietario o un super administrador puede enviar nuevas invitaciones para esta empresa.</div>' +
         '</div>';
     }
     return '' +
