@@ -99,6 +99,9 @@ services:
       GOOGLE_RECAPTCHA_SECRET_KEY: ${GOOGLE_RECAPTCHA_SECRET_KEY:-}
       RECAPTCHA_PROVIDER: ${RECAPTCHA_PROVIDER:-google-recaptcha-v2}
       RECAPTCHA_DEV_BYPASS: ${RECAPTCHA_DEV_BYPASS:-0}
+      GRAFOLOGIA_TESSERACT_ENABLED: ${GRAFOLOGIA_TESSERACT_ENABLED:-1}
+      GRAFOLOGIA_TESSERACT_BIN: ${GRAFOLOGIA_TESSERACT_BIN:-tesseract}
+      GRAFOLOGIA_TESSERACT_LANG: ${GRAFOLOGIA_TESSERACT_LANG:-spa+eng}
     volumes:
       - pcs_backend_logs:/app/backend/logs
       - pcs_web_uploads:/app/web/uploads

@@ -46,8 +46,11 @@
     .grafologia-actions,.grafologia-export{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
     .grafologia-canvas-wrap{margin-top:12px;border:1px solid var(--graf-line);border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--graf-card) 82%,#000 18%)}
     #grafologiaCanvas{display:block;width:100%;max-height:440px;object-fit:contain;background:#fff}
-    .grafologia-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+    .grafologia-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
     .grafologia-controls label{display:flex;flex-direction:column;gap:4px;font-weight:700;color:var(--graf-text)}
+    .grafologia-zoom-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .grafologia-zoom-row .btn{min-width:42px}
+    .grafologia-zoom-value{font-weight:900;color:var(--graf-text);min-width:58px;text-align:center}
     .grafologia-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
     .grafologia-kpi{background:var(--graf-card);border:1px solid var(--graf-line);border-radius:8px;padding:10px;color:var(--graf-text)}
     .grafologia-kpi span{display:block;font-size:12px;color:var(--graf-muted)}
@@ -69,7 +72,7 @@
     .grafologia-loader{display:none;align-items:center;gap:8px;font-weight:800;color:var(--graf-accent)}
     .grafologia-loader.show{display:flex}
     .grafologia-warning{font-size:13px;color:var(--graf-muted);line-height:1.45}
-    @media(max-width:920px){.grafologia-grid{grid-template-columns:1fr}.grafologia-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grafologia-controls{grid-template-columns:1fr}}
+    @media(max-width:920px){.grafologia-grid{grid-template-columns:1fr}.grafologia-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grafologia-controls{grid-template-columns:1fr}.grafologia-zoom-row .btn{flex:1 1 120px}}
   </style>
 </head>
 <body class="empresa-page grafologia-page" data-auto-estacion-labels="true">
@@ -112,12 +115,21 @@
         </div>
         <video id="grafologiaVideo" playsinline muted style="display:none;width:100%;margin-top:10px;border-radius:8px;background:#111"></video>
         <div class="grafologia-canvas-wrap"><canvas id="grafologiaCanvas"></canvas></div>
+        <div class="grafologia-zoom-row" aria-label="Controles de zoom de la imagen">
+          <button id="btnGrafologiaZoomOut" class="btn secondary" type="button">Reducir</button>
+          <span id="grafologiaZoomValue" class="grafologia-zoom-value">100%</span>
+          <button id="btnGrafologiaZoomIn" class="btn secondary" type="button">Ampliar</button>
+          <button id="btnGrafologiaZoomReset" class="btn secondary" type="button">Restablecer</button>
+        </div>
         <div class="grafologia-controls">
           <label>Brillo
             <input id="grafologiaBrightness" type="range" min="-60" max="60" value="0">
           </label>
           <label>Contraste
             <input id="grafologiaContrast" type="range" min="-60" max="80" value="0">
+          </label>
+          <label>Zoom
+            <input id="grafologiaZoom" type="range" min="50" max="300" step="10" value="100">
           </label>
         </div>
         <label style="display:block;margin-top:10px;font-weight:800">Título del informe

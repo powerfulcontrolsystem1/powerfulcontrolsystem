@@ -1,4 +1,10 @@
 2026-06-01: GRAFOLOGIX grafologia OCR.
+- Correccion OCR/zoom:
+  - `web/administrar_empresa/grafologia.html` agrega controles de zoom para reducir, ampliar, restablecer y usar slider 50%-300%.
+  - `web/js/grafologia.js` aplica el zoom sobre el area visible que se envia al analisis y muestra un mensaje claro cuando falta sesion/permisos.
+  - `deploy/docker/backend.Dockerfile` instala `tesseract-ocr` con datos `spa` y `eng`.
+  - `deploy/docker-compose.platform.yml` habilita `GRAFOLOGIA_TESSERACT_ENABLED=1` por defecto para VPS/Docker.
+  - Pruebas: `node --check web/js/grafologia.js`, `go test ./internal/grafologia -count=1`.
 - Actualizacion Fase 2:
   - `backend/internal/grafologia/preprocess.go` genera artefactos PNG de escala de grises, binarizacion Otsu, bordes tipo Sobel y lineas/margenes.
   - `backend/internal/grafologia/report.go` agrega exportadores Word compatible, CSV y TXT, ademas de HTML y PDF real.

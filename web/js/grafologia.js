@@ -9,7 +9,8 @@
     analysisID: 0,
     reportURL: "",
     lastResult: null,
-    crop: null
+    crop: null,
+    zoom: 1
   };
 
   function $(id) {
@@ -70,6 +71,10 @@
     $("btnGrafologiaPerspective")?.addEventListener("click", autoPerspective);
     $("grafologiaBrightness")?.addEventListener("input", renderCanvas);
     $("grafologiaContrast")?.addEventListener("input", renderCanvas);
+    $("grafologiaZoom")?.addEventListener("input", function () { setZoom(numberValue("grafologiaZoom") / 100); });
+    $("btnGrafologiaZoomOut")?.addEventListener("click", function () { setZoom(state.zoom - 0.1); });
+    $("btnGrafologiaZoomIn")?.addEventListener("click", function () { setZoom(state.zoom + 0.1); });
+    $("btnGrafologiaZoomReset")?.addEventListener("click", function () { setZoom(1); });
     $("btnGrafologiaHTML")?.addEventListener("click", function () { openReport("html"); });
     $("btnGrafologiaDOC")?.addEventListener("click", function () { openReport("doc"); });
     $("btnGrafologiaJSON")?.addEventListener("click", function () { openReport("json"); });
@@ -85,6 +90,7 @@
       img.onload = function () {
         state.image = img;
         state.crop = null;
+        setZoom(1, true);
         renderCanvas();
       };
       img.src = reader.result;
@@ -114,12 +120,38 @@
     var scale = Math.min(1, maxW / img.width);
     var source = state.crop || { x: 0, y: 0, w: img.width, h: img.height };
     scale = Math.min(1, maxW / source.w);
-    canvas.width = Math.max(320, Math.round(source.w * scale));
-    canvas.height = Math.max(220, Math.round(source.h * scale));
+    var zoomedSource = zoomSource(source, state.zoom || 1);
+    canvas.width = Math.max(320, Math.round(zoomedSource.w * scale));
+    canvas.height = Math.max(220, Math.round(zoomedSource.h * scale));
     var ctx = canvas.getContext("2d");
     ctx.filter = "brightness(" + (100 + numberValue("grafologiaBrightness")) + "%) contrast(" + (100 + numberValue("grafologiaContrast")) + "%)";
-    ctx.drawImage(img, source.x, source.y, source.w, source.h, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, zoomedSource.x, zoomedSource.y, zoomedSource.w, zoomedSource.h, 0, 0, canvas.width, canvas.height);
     ctx.filter = "none";
+  }
+
+  function zoomSource(source, zoom) {
+    zoom = Math.max(0.5, Math.min(3, Number(zoom) || 1));
+    if (Math.abs(zoom - 1) < 0.01) return source;
+    var img = state.image;
+    var nextW = Math.max(1, Math.round(source.w / zoom));
+    var nextH = Math.max(1, Math.round(source.h / zoom));
+    var centerX = source.x + source.w / 2;
+    var centerY = source.y + source.h / 2;
+    var x = Math.round(centerX - nextW / 2);
+    var y = Math.round(centerY - nextH / 2);
+    x = Math.max(0, Math.min(x, img.width - nextW));
+    y = Math.max(0, Math.min(y, img.height - nextH));
+    return { x: x, y: y, w: Math.min(nextW, img.width), h: Math.min(nextH, img.height) };
+  }
+
+  function setZoom(value, skipRender) {
+    state.zoom = Math.max(0.5, Math.min(3, Number(value) || 1));
+    var pct = Math.round(state.zoom * 100);
+    var slider = $("grafologiaZoom");
+    var label = $("grafologiaZoomValue");
+    if (slider) slider.value = String(pct);
+    if (label) label.textContent = pct + "%";
+    if (!skipRender) renderCanvas();
   }
 
   function cropCenter() {
@@ -209,6 +241,7 @@
     img.onload = function () {
       state.image = img;
       state.crop = null;
+      setZoom(1, true);
       renderCanvas();
     };
     img.src = canvas.toDataURL("image/png");
@@ -232,7 +265,10 @@
       form.append("titulo", $("grafologiaTitle")?.value || "Informe grafológico GRAFOLOGIX");
       form.append("ocr_texto", $("grafologiaOCRText")?.value || "");
       var res = await fetch(api("analizar"), { method: "POST", body: form, credentials: "include" });
-      if (!res.ok) throw new Error(await res.text());
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Tu sesión no está activa o no tienes permiso para analizar manuscritos en esta empresa. Entra desde Administrar empresa y vuelve a abrir GRAFOLOGIX.");
+      }
+      if (!res.ok) throw new Error(cleanErrorMessage(await res.text()));
       var data = await res.json();
       state.analysisID = data.id || 0;
       state.reportURL = data.reporte_url || "";
@@ -391,6 +427,17 @@
     if (loader) loader.classList.toggle("show", !!active);
     var btn = $("btnGrafologiaAnalyze");
     if (btn) btn.disabled = !!active;
+  }
+
+  function cleanErrorMessage(raw) {
+    raw = String(raw || "").trim();
+    if (!raw) return "No se pudo completar la operación.";
+    try {
+      var data = JSON.parse(raw);
+      return data.error || data.message || raw;
+    } catch (_) {
+      return raw;
+    }
   }
 
   function fmtPct(value) {

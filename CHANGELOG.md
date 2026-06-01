@@ -4612,3 +4612,4 @@
 - 2026-06-01: `GRAFOLOGIX grafologia OCR` agrega modulo empresarial para subir/tomar fotos de manuscritos, ajustar imagen, analizar metricas graficas con Go puro, guardar informes por `empresa_id`, exportar HTML/JSON/PDF real y documentar Tesseract opcional sin dependencias Go nuevas.
 - 2026-06-01: `GRAFOLOGIX Fase 2` agrega preprocesamiento visual con escala de grises, binarizacion, bordes y lineas/margenes, guarda `preprocesamiento_json` y corrige apariencia clara/oscura del dashboard.
 - 2026-06-01: `GRAFOLOGIX exportaciones` agrega salida Word compatible, CSV y TXT, con botones visibles en resultado e historial junto a HTML, JSON y PDF.
+- 2026-06-01: `GRAFOLOGIX OCR y zoom` habilita Tesseract libre en la imagen Docker del backend, expone variables `GRAFOLOGIA_TESSERACT_*` en Compose y agrega controles de ampliar/reducir/restablecer imagen antes del analisis.

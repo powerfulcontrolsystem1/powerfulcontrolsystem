@@ -161,16 +161,20 @@ web/uploads/empresas/empresa_{empresa_id}/imagenes/grafologia/procesado/
 El JSON `preprocesamiento_json` guarda URLs, calidad visual, umbral, lineas y
 caja de tinta.
 
-## OCR y OpenCV
+## OCR, zoom y OpenCV
 
-Fase 1 no agrega dependencias Go nuevas. Para VPS se permite activar OCR libre por
-CLI:
+El backend no agrega dependencias Go nuevas. En Docker/VPS el OCR libre queda
+habilitado con Tesseract CLI dentro de la imagen del backend:
 
 ```env
 GRAFOLOGIA_TESSERACT_ENABLED=1
 GRAFOLOGIA_TESSERACT_BIN=tesseract
 GRAFOLOGIA_TESSERACT_LANG=spa+eng
 ```
+
+La pantalla de carga permite ampliar, reducir y restablecer la vista previa de la
+imagen entre 50% y 300%. El zoom se aplica al recorte visible que se envia al
+motor, junto con brillo, contraste, recorte central y auto perspectiva.
 
 OpenCV queda recomendado como sidecar o herramienta CLI futura para mejorar
 perspectiva, Canny, Hough y deskew avanzado sin acoplar bindings externos al
