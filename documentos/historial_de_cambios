@@ -30005,3 +30005,15 @@ Archivos modificados:
   trazable se mantiene para cambios reales de matriz de permisos:
   `/api/empresa/roles_de_usuario` y `/api/empresa/permisos_empresa`.
 - Validacion: `go test ./handlers -run TestPermissionChangeRequiresApprovalForSecurityEndpoints -count=1`.
+
+2026-06-01: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/estilos.css

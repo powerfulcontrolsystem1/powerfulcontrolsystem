@@ -11971,3 +11971,14 @@ Archivos modificados:
 - web/administrar_empresa/administrar_productos.html
 - web/administrar_empresa/carrito_de_compras.html
 - web/super/administradores.html
+
+2026-06-01 14:57:41 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ad8994f4; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_test.go
+- documentos/flujos_operativos.md
+- documentos/gobernanza_tecnica/contratos/contrato_permisos_contexto_y_wrappers_api_empresa.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/estilos.css
