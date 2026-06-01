@@ -129,7 +129,10 @@ botones, desde handlers estaticos del backend.
   imagenes es `web/uploads/empresas/empresa_{id}_{slug}/imagenes/`, con
   subcarpetas como `domotica` y `usuarios`.
 - Configuracion empresa: `web/administrar_empresa/configuracion_menu.html` y
-  paginas bajo `web/administrar_empresa/configuracion/`.
+  paginas bajo `web/administrar_empresa/configuracion/`. La configuracion de
+  `Campos obligatorios para productos` vive en Configuracion > Productos y
+  pedidos y guarda en `/api/empresa/inventario/configuracion`; el modulo de
+  productos solo la consume para validar y marcar campos del formulario.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
   `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
   Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de

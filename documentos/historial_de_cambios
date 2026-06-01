@@ -1,3 +1,18 @@
+2026-06-01: campos obligatorios de productos movidos a configuracion.
+- Modulos afectados: `configuracion_empresa`, `inventario_productos`.
+- Cambio funcional: la tarjeta `Campos obligatorios para productos` se retira de
+  `web/administrar_empresa/administrar_productos.html` y se coloca en
+  `web/administrar_empresa/configuracion.html`, visible desde Configuracion >
+  Productos y pedidos.
+- Persistencia: se conserva el endpoint empresarial
+  `/api/empresa/inventario/configuracion` y la tabla
+  `empresa_inventario_configuracion.producto_campos_obligatorios_json`.
+- UX: el modulo de productos ya no muestra esa tarjeta, pero sigue cargando la
+  configuracion para marcar y validar campos obligatorios al crear o editar.
+- Validacion: parseo de scripts embebidos con Node y verificacion visual estatica
+  en servidor local temporal: configuracion muestra 20 checks y productos no
+  muestra la tarjeta.
+
 2026-06-01: propietario conserva empresas compartidas en selector.
 - Modulos afectados: `seleccionar_empresa`, `empresas_compartidas`,
   `seguridad_multiempresa`.

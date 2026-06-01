@@ -83,9 +83,74 @@
       color:var(--danger);
       font-weight:900;
     }
+    .producto-admin-summary{
+      grid-template-columns:minmax(170px,.34fr) minmax(0,1fr);
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+    }
+    .producto-admin-summary h1{
+      margin:0 0 2px;
+      font-size:1.12rem;
+      line-height:1.1;
+    }
+    .producto-admin-summary #empresaInfo{
+      margin:0;
+      font-size:.74rem;
+      line-height:1.1;
+      color:var(--muted);
+    }
+    .producto-admin-summary .empresa-module-kpis{
+      grid-template-columns:repeat(auto-fit,minmax(76px,1fr));
+      gap:4px;
+    }
+    .producto-admin-summary .kpi-box{
+      min-height:36px;
+      padding:4px 6px;
+      border-radius:7px;
+      gap:2px;
+    }
+    .producto-admin-summary .kpi-label{
+      font-size:.62rem;
+      line-height:1.1;
+    }
+    .producto-admin-summary .kpi-box strong{
+      font-size:.82rem;
+      line-height:1;
+    }
+    #productosTable{
+      table-layout:auto;
+      width:max-content;
+      min-width:100%;
+    }
+    #productosTable th:nth-child(4),
+    #productosTable td.producto-name-cell,
+    #productosTable .producto-table-name{
+      white-space:nowrap !important;
+      word-break:normal !important;
+      overflow-wrap:normal !important;
+      writing-mode:horizontal-tb !important;
+      text-orientation:mixed !important;
+      hyphens:none !important;
+    }
+    #productosTable td.producto-name-cell{
+      min-width:240px;
+      width:auto;
+    }
+    #productosTable .producto-table-name{
+      display:inline-block;
+      max-width:none;
+    }
     @media (max-width:720px){
       .producto-inline-form-header{align-items:stretch;flex-direction:column}
       .producto-inline-form-header .btn{width:100%}
+      .producto-admin-summary{
+        grid-template-columns:1fr;
+        padding:8px 9px;
+      }
+      .producto-admin-summary .empresa-module-kpis{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+      }
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
@@ -100,23 +165,9 @@
           Organiza bodegas, proveedores, categorías, servicios y alertas de stock desde una vista más clara para compras y operación.
         </p>
       </div>
-      <div class="empresa-module-overview">
-        <div class="empresa-module-kpi">
-          <strong>Catálogo</strong>
-          <span>Productos, servicios y categorías</span>
-        </div>
-        <div class="empresa-module-kpi">
-          <strong>Abastecimiento</strong>
-          <span>Bodegas y proveedores</span>
-        </div>
-        <div class="empresa-module-kpi">
-          <strong>Control</strong>
-          <span>Alertas y déficit de inventario</span>
-        </div>
-      </div>
     </section>
 
-    <section class="card empresa-module-header">
+    <section class="card empresa-module-header producto-admin-summary">
       <div>
         <h1>Administrar Productos</h1>
         <p id="empresaInfo">Empresa: cargando...</p>
@@ -162,40 +213,6 @@
     </section>
 
     <div id="messageBox" class="form-help"></div>
-
-    <section class="card empresa-section" data-view-section="productos">
-      <div class="empresa-section-header">
-        <div>
-          <h2>Campos obligatorios para productos</h2>
-          <p class="form-help" style="margin:4px 0 0;">Cada empresa decide que datos debe diligenciar antes de guardar un producto. El nombre siempre es obligatorio.</p>
-        </div>
-        <button id="btnGuardarProductoCamposObligatorios" class="btn secondary" type="button">Guardar campos</button>
-      </div>
-      <div class="producto-required-grid">
-        <label class="producto-required-item"><input type="checkbox" checked disabled> Nombre (siempre)</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="sku"> SKU</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="codigo_barras"> Codigo de barras</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="categoria_id"> Categoria</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="marca"> Marca</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="unidad_medida"> Unidad de medida</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="costo"> Costo</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="precio"> Precio</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="impuesto_porcentaje"> Impuesto</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="stock_minimo"> Stock minimo</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="stock_maximo"> Stock maximo</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="stock_inicial"> Stock inicial</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="bodega_principal_id"> Bodega principal</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="proveedor_principal_id"> Proveedor principal</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="imagen_url"> URL de imagen</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="descripcion"> Descripcion</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="observaciones"> Observaciones</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="maneja_vencimiento"> Control de vencimiento</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="fecha_vencimiento"> Fecha de vencimiento</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="dias_alerta_vencimiento"> Dias alerta vencimiento</label>
-        <label class="producto-required-item"><input type="checkbox" data-product-required="lote_codigo"> Lote</label>
-      </div>
-      <p id="productoCamposObligatoriosEstado" class="form-help">Sincronizando configuracion...</p>
-    </section>
 
     <section class="card empresa-section" data-view-section="bodegas">
       <div class="empresa-section-header">
@@ -2150,7 +2167,7 @@
           '<td>' + Number(p.id) + '</td>' +
           '<td>' + img + '</td>' +
           '<td>' + sanitize(p.sku || '') + '</td>' +
-          '<td>' + sanitize(p.nombre || '') + '</td>' +
+          '<td class="producto-name-cell"><span class="producto-table-name">' + sanitize(p.nombre || '') + '</span></td>' +
           '<td>' + sanitize(p.categoria || '') + '</td>' +
           '<td>' + sanitize(printerLabel) + '</td>' +
           '<td data-field="precio" data-producto-id="' + Number(p.id) + '">' + Number(p.precio || 0).toFixed(2) + '</td>' +
@@ -3654,13 +3671,16 @@
         }
       });
 
-      document.getElementById('btnGuardarProductoCamposObligatorios').addEventListener('click', async () => {
-        try {
-          await saveProductoCamposObligatorios();
-        } catch (e) {
-          showMessage(e.message || 'No se pudieron guardar los campos obligatorios.', 'error');
-        }
-      });
+      const btnGuardarProductoCamposObligatorios = document.getElementById('btnGuardarProductoCamposObligatorios');
+      if (btnGuardarProductoCamposObligatorios) {
+        btnGuardarProductoCamposObligatorios.addEventListener('click', async () => {
+          try {
+            await saveProductoCamposObligatorios();
+          } catch (e) {
+            showMessage(e.message || 'No se pudieron guardar los campos obligatorios.', 'error');
+          }
+        });
+      }
 
       document.getElementById('conteoCiclicoForm').addEventListener('submit', async ev => {
         try {

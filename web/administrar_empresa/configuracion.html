@@ -144,6 +144,48 @@
       max-width: 100%;
       white-space: normal;
     }
+    .producto-required-config {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .producto-required-config-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .producto-required-config-header h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .producto-required-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .producto-required-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface-soft) 78%, var(--card));
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 700;
+    }
+    .producto-required-item input {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+    }
     @media (max-width: 760px) {
       body.empresa-config-single-section .container {
         padding: 10px;
@@ -163,6 +205,13 @@
       body.empresa-config-single-section .empresa-config-grid,
       body.empresa-config-single-section .corte-config-grid {
         grid-template-columns: 1fr;
+      }
+      .producto-required-config-header {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .producto-required-config-header .btn {
+        width: 100%;
       }
       body.empresa-config-single-section .form-row {
         display: grid;
@@ -367,6 +416,40 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="producto-required-config">
+        <div class="producto-required-config-header">
+          <div>
+            <h3>Campos obligatorios para productos</h3>
+            <p class="form-help" style="margin:4px 0 0;">Cada empresa decide que datos debe diligenciar antes de guardar un producto. El nombre siempre es obligatorio.</p>
+          </div>
+          <button id="btnGuardarProductoCamposObligatoriosConfig" class="btn secondary" type="button">Guardar campos</button>
+        </div>
+        <div class="producto-required-grid">
+          <label class="producto-required-item"><input type="checkbox" checked disabled> Nombre (siempre)</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="sku"> SKU</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="codigo_barras"> Codigo de barras</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="categoria_id"> Categoria</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="marca"> Marca</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="unidad_medida"> Unidad de medida</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="costo"> Costo</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="precio"> Precio</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="impuesto_porcentaje"> Impuesto</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="stock_minimo"> Stock minimo</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="stock_maximo"> Stock maximo</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="stock_inicial"> Stock inicial</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="bodega_principal_id"> Bodega principal</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="proveedor_principal_id"> Proveedor principal</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="imagen_url"> URL de imagen</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="descripcion"> Descripcion</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="observaciones"> Observaciones</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="maneja_vencimiento"> Control de vencimiento</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="fecha_vencimiento"> Fecha de vencimiento</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="dias_alerta_vencimiento"> Dias alerta vencimiento</label>
+          <label class="producto-required-item"><input type="checkbox" data-product-required-config="lote_codigo"> Lote</label>
+        </div>
+        <p id="productoCamposObligatoriosConfigEstado" class="form-help">Sincronizando configuracion...</p>
       </div>
 
       <div id="configMsg" class="form-help"></div>
@@ -1297,6 +1380,29 @@
       catalogoCategorias: [],
       editingId: 0
     };
+    let productoCamposObligatoriosConfigCache = null;
+    const productoCampoObligatorioConfigDefs = [
+      'sku',
+      'codigo_barras',
+      'categoria_id',
+      'marca',
+      'unidad_medida',
+      'costo',
+      'precio',
+      'impuesto_porcentaje',
+      'stock_minimo',
+      'stock_maximo',
+      'stock_inicial',
+      'bodega_principal_id',
+      'proveedor_principal_id',
+      'imagen_url',
+      'descripcion',
+      'observaciones',
+      'maneja_vencimiento',
+      'fecha_vencimiento',
+      'dias_alerta_vencimiento',
+      'lote_codigo'
+    ];
 
     function normalizeConfig(raw) {
       const src = raw && typeof raw === 'object' ? raw : {};
@@ -1362,6 +1468,110 @@
       }
       const data = await res.json();
       return normalizeConfig((data && data.configuracion) || payload);
+    }
+
+    function defaultProductoCamposObligatoriosConfig() {
+      const cfg = {};
+      productoCampoObligatorioConfigDefs.forEach(function(key) {
+        cfg[key] = false;
+      });
+      return cfg;
+    }
+
+    function normalizeProductoCamposObligatoriosConfig(raw) {
+      const cfg = defaultProductoCamposObligatoriosConfig();
+      if (raw && typeof raw === 'object') {
+        productoCampoObligatorioConfigDefs.forEach(function(key) {
+          cfg[key] = Boolean(raw[key]);
+        });
+      }
+      return cfg;
+    }
+
+    function collectProductoCamposObligatoriosConfig() {
+      const cfg = defaultProductoCamposObligatoriosConfig();
+      document.querySelectorAll('[data-product-required-config]').forEach(function(input) {
+        cfg[input.getAttribute('data-product-required-config')] = Boolean(input.checked);
+      });
+      return cfg;
+    }
+
+    function setProductoCamposObligatoriosConfigMessage(text, type) {
+      const box = document.getElementById('productoCamposObligatoriosConfigEstado');
+      if (!box) return;
+      box.textContent = text || '';
+      box.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'form-help');
+    }
+
+    function renderProductoCamposObligatoriosConfig(raw) {
+      const cfg = normalizeProductoCamposObligatoriosConfig(raw);
+      document.querySelectorAll('[data-product-required-config]').forEach(function(input) {
+        input.checked = Boolean(cfg[input.getAttribute('data-product-required-config')]);
+      });
+      const total = Object.keys(cfg).filter(function(key) { return cfg[key]; }).length;
+      setProductoCamposObligatoriosConfigMessage(
+        total > 0
+          ? (total + ' campo(s) adicional(es) obligatorio(s) para registrar productos.')
+          : 'Solo el nombre del producto es obligatorio.',
+        total > 0 ? 'success' : ''
+      );
+    }
+
+    async function loadProductoCamposObligatoriosConfig() {
+      if (!empresaId) return;
+      setProductoCamposObligatoriosConfigMessage('Cargando campos obligatorios...', '');
+      try {
+        const res = await fetch('/api/empresa/inventario/configuracion?empresa_id=' + encodeURIComponent(empresaId), {
+          credentials: 'same-origin'
+        });
+        if (!res.ok) {
+          throw new Error(await res.text() || 'No se pudo cargar configuracion de inventario');
+        }
+        const data = await res.json();
+        productoCamposObligatoriosConfigCache = data || {};
+        renderProductoCamposObligatoriosConfig(productoCamposObligatoriosConfigCache.producto_campos_obligatorios);
+      } catch (err) {
+        productoCamposObligatoriosConfigCache = null;
+        renderProductoCamposObligatoriosConfig({});
+        setProductoCamposObligatoriosConfigMessage('No se pudieron cargar los campos obligatorios: ' + (err && err.message ? err.message : err), 'error');
+      }
+    }
+
+    async function guardarProductoCamposObligatoriosConfig() {
+      if (!empresaId) {
+        setProductoCamposObligatoriosConfigMessage('No se puede guardar sin empresa seleccionada.', 'error');
+        return;
+      }
+      const base = productoCamposObligatoriosConfigCache && typeof productoCamposObligatoriosConfigCache === 'object'
+        ? productoCamposObligatoriosConfigCache
+        : {};
+      let politica = String(base.politica_costo || 'promedio').trim().toLowerCase();
+      if (politica !== 'promedio' && politica !== 'peps') politica = 'promedio';
+      const payload = {
+        empresa_id: Number(empresaId),
+        politica_costo: politica,
+        producto_campos_obligatorios: collectProductoCamposObligatoriosConfig(),
+        observaciones: String(base.observaciones || '').trim(),
+        usuario_aplicacion: 'ui_configuracion_productos_campos'
+      };
+      setProductoCamposObligatoriosConfigMessage('Guardando campos obligatorios...', '');
+      try {
+        const res = await fetch('/api/empresa/inventario/configuracion', {
+          method: 'PUT',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          throw new Error(await res.text() || 'No se pudieron guardar los campos obligatorios');
+        }
+        const data = await res.json();
+        productoCamposObligatoriosConfigCache = data || payload;
+        renderProductoCamposObligatoriosConfig(productoCamposObligatoriosConfigCache.producto_campos_obligatorios);
+        setProductoCamposObligatoriosConfigMessage('Campos obligatorios de productos guardados correctamente.', 'success');
+      } catch (err) {
+        setProductoCamposObligatoriosConfigMessage('No se pudieron guardar los campos obligatorios: ' + (err && err.message ? err.message : err), 'error');
+      }
     }
 
     function setConfigMessage(text, type) {
@@ -3255,6 +3465,7 @@
         setFacturaMessage('No se detectó empresa_id para cargar facturación.', 'error');
         setFormatoNumericoMessage('No se detectó empresa_id para cargar formato numérico.', 'error');
         setCorteReporteMessage('No se detecto empresa_id para cargar el reporte de corte.', 'error');
+        setProductoCamposObligatoriosConfigMessage('No se detecto empresa_id para cargar campos obligatorios de productos.', 'error');
         return;
       }
 
@@ -3273,7 +3484,9 @@
       loadCorteReporteConfig();
       loadPasarelasConfig();
       loadImpresorasConfig(false);
+      loadProductoCamposObligatoriosConfig();
       document.getElementById('btnGuardarConfig').addEventListener('click', guardarConfiguracion);
+      document.getElementById('btnGuardarProductoCamposObligatoriosConfig').addEventListener('click', guardarProductoCamposObligatoriosConfig);
       document.getElementById('btnGuardarCajaConfig').addEventListener('click', guardarCajaConfig);
       document.getElementById('btnGuardarConfigOperativa').addEventListener('click', guardarOperativaEmpresa);
       document.getElementById('btnGuardarConfigOperativaRol').addEventListener('click', guardarOperativaRol);

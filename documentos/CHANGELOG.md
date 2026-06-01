@@ -1,3 +1,8 @@
+## [2026-06-01] Campos obligatorios de productos movidos a configuracion
+- [UX] La tarjeta `Campos obligatorios para productos` sale de `Administrar Productos` y queda en `Configuracion > Productos y pedidos`.
+- [Frontend] `administrar_productos.html` conserva la lectura de la configuracion para marcar campos obligatorios en el formulario, pero ya no muestra ni guarda la tarjeta desde el modulo de productos.
+- [QA] Validacion sintactica de scripts embebidos y verificacion visual estatica: configuracion muestra 20 checks y productos ya no muestra la tarjeta.
+
 ## [2026-06-01] Propietario conserva empresas compartidas en selector
 - [Selector] `/super/api/empresas` ahora incluye tambien las empresas que el administrador autenticado compartio con otro administrador, aunque el `usuario_creador` historico no coincida.
 - [Seguridad] `CanAdminAccessEmpresaIA` reconoce esa misma relacion activa como alcance valido del propietario que compartio, sin ampliar el acceso a empresas sin invitacion o sin relacion.
