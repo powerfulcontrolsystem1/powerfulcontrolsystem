@@ -12092,3 +12092,25 @@ Archivos modificados:
 - backend/handlers/usuarios_empresa.go
 - documentos/historial_de_cambios
 - web/administrar_empresa/administrar_usuarios.html
+
+2026-06-02 01:32:34 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ba21bbd3; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresa_configuracion_avanzada.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/carritos_compras.go
+- backend/handlers/offline_ventas.go
+- backend/handlers/usuarios_empresa.go
+- documentos/contexto_codex.md
+- documentos/decisiones_tecnicas.md
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/administrar_usuarios.html
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_impresora.html
+- web/estilos.css
+- web/js/print_documents.js
