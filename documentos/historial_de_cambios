@@ -30430,3 +30430,13 @@ Archivos modificados:
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/administrar_empresa/administrar_usuarios.html
 - web/js/administrar_empresa.js
+
+2026-06-02: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/usuarios_empresa.go
+- backend/db/usuarios_empresa_lookup_test.go
+- backend/handlers/usuarios_empresa.go
+- backend/handlers/usuarios_empresa_invitation_test.go
+- documentos/historial_de_cambios
