@@ -12196,3 +12196,22 @@ Archivos modificados:
 - tmp/visual-cajero-alfaix-final/03-carrito.png
 - tmp/visual-cajero-alfaix-final/resultado.txt
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-02 16:59:09 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 81ed3aac; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- tmp/login-cajero-caja-visual/01-selector-caja-login-cajero.png
+- tmp/login-cajero-caja-visual/02-check-config-cajas.png
+- tmp/visual-cajero-alfaix-final-ok/carrito-cajero-final.png
+- tmp/visual-cajero-alfaix-final-ok/resultado.txt
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
+- web/js/login_usuario.js
+- web/login_usuario.html

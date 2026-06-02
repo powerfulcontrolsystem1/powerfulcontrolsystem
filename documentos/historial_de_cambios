@@ -30530,3 +30530,23 @@ Archivos modificados:
 - Estaciones, carrito y corte de caja leen la caja elegida desde la sesion del navegador para mantener caja independiente por cajero.
 - Validacion: `node --check web/js/login_usuario.js` OK; `go test ./handlers -run "TestResolvePermissionPageKeyForDirectSaleCart|TestResolvePermissionPageKeyForOperationalStationCart|TestResolvePermissionPageKeyForRegularCart" -count=1` OK; prueba visual automatizada confirmo selector CAJA-1/CAJA-2/CAJA-3, preseleccion de CAJA-2 y redireccion con caja.
 - Archivos afectados: backend/handlers/usuarios_empresa.go, web/login_usuario.html, web/js/login_usuario.js, web/estilos.css, web/administrar_empresa/configuracion_de_estaciones.html, web/administrar_empresa/estaciones.html, web/administrar_empresa/carrito_de_compras.html, web/administrar_empresa/corte_de_caja.html, documentos/flujos_operativos.md, documentos/mapa_modulos.md, CHANGELOG.md, documentos/historial_de_cambios
+
+2026-06-02: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- tmp/login-cajero-caja-visual/01-selector-caja-login-cajero.png
+- tmp/login-cajero-caja-visual/02-check-config-cajas.png
+- tmp/visual-cajero-alfaix-final-ok/carrito-cajero-final.png
+- tmp/visual-cajero-alfaix-final-ok/resultado.txt
+- web/administrar_empresa/carrito_de_compras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/corte_de_caja.html
+- web/administrar_empresa/estaciones.html
+- web/estilos.css
+- web/js/login_usuario.js
+- web/login_usuario.html
