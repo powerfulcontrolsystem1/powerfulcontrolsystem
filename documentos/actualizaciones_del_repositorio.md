@@ -12123,3 +12123,17 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
+
+2026-06-02 02:12:07 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3a945016; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/roles_tipos_usuario.go
+- backend/db/roles_tipos_usuario_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/usuarios_empresa_invitation_test.go
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/administrar_usuarios.html
+- web/js/administrar_empresa.js
