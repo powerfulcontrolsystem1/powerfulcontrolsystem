@@ -466,6 +466,11 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					writeCarritoStationAccessError(w, err)
 					return
 				}
+				monto = roundMoneyCarritoForMoneda(payload.Monto, carrito.Moneda)
+				if monto <= 0 {
+					http.Error(w, "monto de abono invalido para la moneda del carrito", http.StatusBadRequest)
+					return
+				}
 				if !isCarritoOperativoActivo(carrito) {
 					http.Error(w, "solo se pueden registrar abonos en una cuenta activa de estacion", http.StatusConflict)
 					return
@@ -928,7 +933,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				totalPagadoMixto := 0.0
 				if metodoPago == "mixto" {
 					var err error
-					pagosMixtos, totalPagadoMixto, err = normalizePagosMixtosCarrito(payload.PagosMixtos)
+					pagosMixtos, totalPagadoMixto, err = normalizePagosMixtosCarrito(payload.PagosMixtos, carrito.Moneda)
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusBadRequest)
 						return
@@ -939,7 +944,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 							return
 						}
 					}
-					referenciaPago = buildReferenciaPagoMixto(pagosMixtos)
+					referenciaPago = buildReferenciaPagoMixto(pagosMixtos, carrito.Moneda)
 				} else if (metodoPago == "tarjeta_credito" || metodoPago == "tarjeta_debito" || metodoPago == "transferencia_bancaria") && len(referenciaPago) < 4 {
 					http.Error(w, "referencia_pago es obligatoria para pagos con tarjeta o transferencia bancaria (minimo 4 caracteres)", http.StatusBadRequest)
 					return
@@ -985,6 +990,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					descuentoCodigo = aplicado.Codigo
 					descuentoValor = aplicado.ValorAplicado
 				}
+				descuentoValor = roundMoneyCarritoForMoneda(descuentoValor, carrito.Moneda)
 
 				devolucionTotal := payload.DevolucionTotal
 				if devolucionTotal < 0 {
@@ -997,8 +1003,9 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				if devolucionTotal > maxDevolucion {
 					devolucionTotal = maxDevolucion
 				}
+				devolucionTotal = roundMoneyCarritoForMoneda(devolucionTotal, carrito.Moneda)
 
-				totalEsperado := roundMoneyCarritoHandler(carrito.Total - descuentoValor - devolucionTotal)
+				totalEsperado := roundMoneyCarritoForMoneda(carrito.Total-descuentoValor-devolucionTotal, carrito.Moneda)
 				if totalEsperado < 0 {
 					totalEsperado = 0
 				}
@@ -1008,18 +1015,18 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					http.Error(w, "No se pudieron validar los abonos del carrito", http.StatusInternalServerError)
 					return
 				}
-				abonosAplicados := roundMoneyCarritoHandler(abonosRegistrados)
+				abonosAplicados := roundMoneyCarritoForMoneda(abonosRegistrados, carrito.Moneda)
 				if abonosAplicados < 0 {
 					abonosAplicados = 0
 				}
 				if abonosAplicados > totalEsperado {
 					abonosAplicados = totalEsperado
 				}
-				if payload.AbonosTotal > 0 && math.Abs(roundMoneyCarritoHandler(payload.AbonosTotal)-abonosAplicados) > 0.01 {
+				if payload.AbonosTotal > 0 && math.Abs(roundMoneyCarritoForMoneda(payload.AbonosTotal, carrito.Moneda)-abonosAplicados) > carritoMoneyTolerance(carrito.Moneda) {
 					http.Error(w, "los abonos del carrito cambiaron; actualiza el carrito antes de pagar", http.StatusConflict)
 					return
 				}
-				saldoEsperado := roundMoneyCarritoHandler(totalEsperado - abonosAplicados)
+				saldoEsperado := roundMoneyCarritoForMoneda(totalEsperado-abonosAplicados, carrito.Moneda)
 				if saldoEsperado < 0 {
 					saldoEsperado = 0
 				}
@@ -1055,13 +1062,13 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				propinaAplicada := propinaHabilitada && aplicarPropina && propinaPorcentaje > 0
 				montoPropina := 0.0
 				if propinaAplicada {
-					montoPropina = roundMoneyCarritoHandler(totalEsperado * (propinaPorcentaje / 100))
+					montoPropina = roundMoneyCarritoForMoneda(totalEsperado*(propinaPorcentaje/100), carrito.Moneda)
 					if montoPropina < 0 {
 						montoPropina = 0
 					}
 				}
-				totalDocumentoConPropina := roundMoneyCarritoHandler(totalEsperado + montoPropina)
-				totalEsperadoConPropina := roundMoneyCarritoHandler(saldoEsperado + montoPropina)
+				totalDocumentoConPropina := roundMoneyCarritoForMoneda(totalEsperado+montoPropina, carrito.Moneda)
+				totalEsperadoConPropina := roundMoneyCarritoForMoneda(saldoEsperado+montoPropina, carrito.Moneda)
 
 				totalPagado := payload.TotalPagado
 				if metodoPago == "mixto" {
@@ -1074,7 +1081,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						totalPagado = totalEsperadoConPropina
 					}
 				}
-				totalPagado = roundMoneyCarritoHandler(totalPagado)
+				totalPagado = roundMoneyCarritoForMoneda(totalPagado, carrito.Moneda)
 
 				if metodoPago == "codigo_descuento" {
 					if totalEsperadoConPropina > 0 {
@@ -1087,7 +1094,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 						http.Error(w, "pago mixto requiere al menos 2 metodos con monto mayor a cero", http.StatusBadRequest)
 						return
 					}
-					if math.Abs(totalPagado-totalEsperadoConPropina) > 0.01 {
+					if math.Abs(totalPagado-totalEsperadoConPropina) > carritoMoneyTolerance(carrito.Moneda) {
 						http.Error(w, "la suma de pagos mixtos debe coincidir con el total esperado", http.StatusBadRequest)
 						return
 					}
@@ -1124,7 +1131,7 @@ func EmpresaCarritosCompraHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 					}
 				}
 
-				totalPagadoCarrito := roundMoneyCarritoHandler(totalPagado + abonosAplicados)
+				totalPagadoCarrito := roundMoneyCarritoForMoneda(totalPagado+abonosAplicados, carrito.Moneda)
 				if err := dbpkg.PayCarritoStationSession(
 					dbEmp,
 					empresaID,
@@ -1983,6 +1990,11 @@ func EmpresaCarritoItemsHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeCarritoStationAccessError(w, err)
 				return
 			}
+			if err := normalizeCarritoItemMoneyFields(dbEmp, &payload); err != nil {
+				log.Printf("[carritos_items] normalize money create empresa_id=%d carrito_id=%d error: %v", payload.EmpresaID, payload.CarritoID, err)
+				http.Error(w, "No se pudo validar la moneda del carrito", http.StatusInternalServerError)
+				return
+			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
 			id, err := dbpkg.CreateCarritoCompraItem(dbEmp, payload)
 			if err != nil {
@@ -2068,6 +2080,11 @@ Si necesita ayuda, consulte la sección de Inventario o contacte al administrado
 			}
 			if err := ensureCarritoStationAccessByID(dbEmp, payload.EmpresaID, payload.CarritoID, adminEmailFromRequest(r)); err != nil {
 				writeCarritoStationAccessError(w, err)
+				return
+			}
+			if err := normalizeCarritoItemMoneyFields(dbEmp, &payload); err != nil {
+				log.Printf("[carritos_items] normalize money update empresa_id=%d carrito_id=%d id=%d error: %v", payload.EmpresaID, payload.CarritoID, payload.ID, err)
+				http.Error(w, "No se pudo validar la moneda del carrito", http.StatusInternalServerError)
 				return
 			}
 			payload.UsuarioCreador = strings.TrimSpace(adminEmailFromRequest(r))
@@ -2697,6 +2714,18 @@ func validateCarritoItemPayload(payload dbpkg.CarritoCompraItem) error {
 	return nil
 }
 
+func normalizeCarritoItemMoneyFields(dbConn *sql.DB, payload *dbpkg.CarritoCompraItem) error {
+	if dbConn == nil || payload == nil || payload.EmpresaID <= 0 || payload.CarritoID <= 0 {
+		return nil
+	}
+	carrito, err := dbpkg.GetCarritoCompraByID(dbConn, payload.EmpresaID, payload.CarritoID)
+	if err != nil {
+		return err
+	}
+	payload.PrecioUnitario = roundMoneyCarritoForMoneda(payload.PrecioUnitario, carrito.Moneda)
+	return nil
+}
+
 func isNaturalCarritoQuantity(value float64) bool {
 	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= 1 && math.Trunc(value) == value
 }
@@ -2705,7 +2734,35 @@ func roundMoneyCarritoHandler(v float64) float64 {
 	return math.Round(v*100) / 100
 }
 
-func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada) ([]carritoPagoMixtoNormalizado, float64, error) {
+func carritoUsesWholeMoney(moneda string) bool {
+	return strings.EqualFold(strings.TrimSpace(moneda), "COP")
+}
+
+func roundMoneyCarritoForMoneda(v float64, moneda string) float64 {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0
+	}
+	if carritoUsesWholeMoney(moneda) {
+		return math.Round(v)
+	}
+	return roundMoneyCarritoHandler(v)
+}
+
+func carritoMoneyTolerance(moneda string) float64 {
+	if carritoUsesWholeMoney(moneda) {
+		return 0.01
+	}
+	return 0.01
+}
+
+func formatCarritoMoneyForReference(v float64, moneda string) string {
+	if carritoUsesWholeMoney(moneda) {
+		return fmt.Sprintf("%.0f", roundMoneyCarritoForMoneda(v, moneda))
+	}
+	return fmt.Sprintf("%.2f", roundMoneyCarritoForMoneda(v, moneda))
+}
+
+func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada, moneda string) ([]carritoPagoMixtoNormalizado, float64, error) {
 	if len(entries) == 0 {
 		return nil, 0, fmt.Errorf("pago mixto requiere detalle de pagos_mixtos")
 	}
@@ -2717,7 +2774,7 @@ func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada) ([]carritoPa
 		if metodo == "" || metodo == "mixto" || metodo == "codigo_descuento" {
 			return nil, 0, fmt.Errorf("pago mixto solo permite efectivo, tarjeta_credito, tarjeta_debito y transferencia_bancaria")
 		}
-		monto := roundMoneyCarritoHandler(item.Monto)
+		monto := roundMoneyCarritoForMoneda(item.Monto, moneda)
 		if monto <= 0 {
 			continue
 		}
@@ -2731,7 +2788,7 @@ func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada) ([]carritoPa
 			Monto:      monto,
 			Referencia: referencia,
 		})
-		total = roundMoneyCarritoHandler(total + monto)
+		total = roundMoneyCarritoForMoneda(total+monto, moneda)
 	}
 
 	if len(normalized) < 2 {
@@ -2741,13 +2798,13 @@ func normalizePagosMixtosCarrito(entries []carritoPagoMixtoEntrada) ([]carritoPa
 	return normalized, total, nil
 }
 
-func buildReferenciaPagoMixto(pagos []carritoPagoMixtoNormalizado) string {
+func buildReferenciaPagoMixto(pagos []carritoPagoMixtoNormalizado, moneda string) string {
 	if len(pagos) == 0 {
 		return ""
 	}
 	parts := make([]string, 0, len(pagos))
 	for _, item := range pagos {
-		chunk := item.Metodo + ":" + fmt.Sprintf("%.2f", item.Monto)
+		chunk := item.Metodo + ":" + formatCarritoMoneyForReference(item.Monto, moneda)
 		if strings.TrimSpace(item.Referencia) != "" {
 			chunk += "(ref:" + strings.TrimSpace(item.Referencia) + ")"
 		}

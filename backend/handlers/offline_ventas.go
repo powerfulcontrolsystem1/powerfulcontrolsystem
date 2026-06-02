@@ -237,12 +237,12 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 	}
 	referenciaPago := strings.TrimSpace(pago.ReferenciaPago)
 	if metodoPago == "mixto" && len(pago.PagosMixtos) > 0 {
-		pagosMixtos, _, err := normalizePagosMixtosCarrito(pago.PagosMixtos)
+		pagosMixtos, _, err := normalizePagosMixtosCarrito(pago.PagosMixtos, carrito.Moneda)
 		if err != nil {
 			_ = dbpkg.MarkEmpresaVentaOfflineSyncResult(dbEmp, empresaID, syncKey, "error", carrito.ID, "", "", err.Error())
 			return nil, err
 		}
-		referenciaPago = buildReferenciaPagoMixto(pagosMixtos)
+		referenciaPago = buildReferenciaPagoMixto(pagosMixtos, carrito.Moneda)
 	}
 
 	descuentoTipo := strings.TrimSpace(strings.ToLower(pago.DescuentoTipo))
@@ -273,10 +273,12 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 	if descuentoValor > carrito.Total {
 		descuentoValor = carrito.Total
 	}
+	descuentoValor = roundMoneyCarritoForMoneda(descuentoValor, carrito.Moneda)
 	devolucionTotal := pago.DevolucionTotal
 	if devolucionTotal < 0 {
 		devolucionTotal = 0
 	}
+	devolucionTotal = roundMoneyCarritoForMoneda(devolucionTotal, carrito.Moneda)
 	totalPagado := pago.TotalPagado
 	if totalPagado <= 0 {
 		totalPagado = carrito.Total - descuentoValor - devolucionTotal
@@ -284,6 +286,7 @@ func syncOfflineVenta(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, 
 	if totalPagado < 0 {
 		totalPagado = 0
 	}
+	totalPagado = roundMoneyCarritoForMoneda(totalPagado, carrito.Moneda)
 
 	caja, _, err := openCajaCobroForCarrito(dbEmp, dbSuper, empresaID, pago.CajaCodigo, pago.CajaTurno, pago.CajaSucursalID, 0, carrito.Moneda, usuario)
 	if err != nil {

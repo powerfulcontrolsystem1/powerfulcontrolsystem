@@ -162,7 +162,12 @@ afecte dinero, documentos, licencias o seguridad.
    `empresa_estacion_prefs.estaciones_config`.
 4. La configuracion del carrito permite activar pitido y vibracion de botones por
    separado para PC y celular desde `carrito_ui_global`.
-5. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio.
+5. La configuracion de impresora permite activar `Mostrar deducido del impuesto
+   en la impresion`; el carrito usa `base_gravable` y `valor_impuesto` ya
+   calculados para mostrar base e impuesto en el papel, sin cambiar el XML ni la
+   validacion legal DIAN de la factura electronica.
+6. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio
+   e imprimir una venta con impuesto para confirmar el bloque.
 
 ## Login usuarios operativos
 
@@ -173,6 +178,10 @@ afecte dinero, documentos, licencias o seguridad.
    campos se reservan para cambios de roles o matriz fina de permisos.
    Si el correo no se puede entregar, el usuario queda pendiente y la pantalla
    debe permitir reintentar o reenviar confirmacion sin crear duplicados.
+   Si se intenta crear otra vez el mismo correo en la misma empresa, el endpoint
+   responde `409` con `usuario_existente` sin exponer tokens; la interfaz debe
+   recargar con `include_inactive=1`, resaltar el usuario y dejar disponible
+   `Reenviar confirmacion`.
 2. El usuario abre `login_usuario.html` desde la invitacion para completar
    registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
    no hay alta publica.
@@ -216,6 +225,9 @@ afecte dinero, documentos, licencias o seguridad.
    Las cantidades de items deben ser numeros naturales positivos (`1, 2, 3...`);
    el backend rechaza decimales, cero y negativos aunque se manipule el
    navegador o la API.
+   Si la empresa detectada es Colombia o el carrito usa `COP`, precios y pagos
+   del carrito se capturan, muestran y sincronizan como pesos enteros positivos,
+   sin centavos ni sufijo `.00`.
 4. La venta directa usa el carrito canonico `VENTA-DIRECTA-{empresa_id}-0` y
    puede abrirse en pantalla completa desde el boton de la parte superior; el
    mismo boton cambia a `Salir` y vuelve a la vista normal.
@@ -235,7 +247,10 @@ afecte dinero, documentos, licencias o seguridad.
 5. La apariencia del carrito de estacion tambien depende de `carrito-flat-page`:
    fondo mas oscuro que tarjetas, sin sombras, con botones de accion visibles
    como botones.
-6. Pruebas: dos sesiones/usuarios, estado compartido, abrir carrito correcto,
+6. Si en Configuracion > Impresora esta activo el deducido de impuesto, la
+   impresion del recibo o factura muestra base gravable e impuesto deducido por
+   los impuestos del carrito.
+7. Pruebas: dos sesiones/usuarios, estado compartido, abrir carrito correcto,
    contraste visual y ausencia de relieves.
 
 ## Pagar e imprimir

@@ -1,3 +1,52 @@
+2026-06-02: Usuario existente visible para reenviar confirmacion.
+- Modulo afectado: `usuarios_empresa`.
+- `backend/handlers/usuarios_empresa.go` cambia el 409 por correo repetido para responder JSON con `usuario_existente`, `email_confirmado`, `estado` y `can_resend_confirmation` cuando el usuario ya pertenece a la misma empresa.
+- `web/administrar_empresa/administrar_usuarios.html` interpreta ese 409, recarga la lista con usuarios inactivos o pendientes, resalta el registro encontrado y muestra una explicacion clara para usar `Reenviar confirmacion`.
+- `backend/db/usuarios_empresa.go` refuerza la migracion PostgreSQL y elimina constraints/indices unicos heredados basados solo en `email`, conservando la unicidad real por `(lower(email), empresa_id)`.
+- Seguridad: no se exponen tokens de confirmacion; reenvio, edicion, foto, estado y eliminacion siguen validando `empresa_id` junto con `id`.
+- Pruebas: sintaxis del script embebido de `administrar_usuarios.html` con Node empaquetado, `go test ./db ./handlers -run "^$" -count=1`.
+
+2026-06-02: Deducido de impuesto en factura impresa.
+- Modulos afectados: configuracion empresarial, carrito unificado, documentos imprimibles y facturacion.
+- `web/administrar_empresa/configuracion_impresora.html` agrega el check `Mostrar deducido del impuesto en la impresion` dentro de Documento de venta e impresion.
+- `backend/db/empresa_configuracion_avanzada.go` agrega `mostrar_deducido_impuesto_factura` por empresa con migracion ligera y guardado por `/api/empresa/configuracion_avanzada`.
+- `web/administrar_empresa/carrito_de_compras.html` muestra base gravable e impuesto deducido en recibos y facturas impresas usando `base_gravable` y `valor_impuesto` de los items; si no hay impuesto, no agrega bloque.
+- `web/js/print_documents.js` agrega un bloque de resumen reutilizable en documentos imprimibles POS/carta, siempre en blanco y negro.
+- Alcance legal: no cambia XML, CUFE/CUDE, envio, validacion ni reglas de factura electronica DIAN; solo cambia la presentacion impresa cuando la empresa lo activa.
+- Seguridad: reutiliza endpoint empresarial existente con `empresa_id`; no agrega rutas publicas ni dependencias.
+- Pruebas: `node --check web/js/print_documents.js`, sintaxis de scripts embebidos de carrito/configuracion, `go test ./db ./handlers -run "^$" -count=1`. La prueba visual local no se completo porque faltan DSN de PostgreSQL para arrancar el servidor local y el navegador integrado bloqueo `file://`.
+
+2026-06-02: Carrito Colombia/COP sin decimales.
+- Modulo afectado: `carrito_de_compras`, `offline_ventas`.
+- `web/administrar_empresa/carrito_de_compras.html` agrega deteccion de pais/moneda para usar enteros cuando la empresa esta en Colombia o el carrito opera en COP.
+- La UI del carrito formatea sin `.00` los totales, precios unitarios, pagos por medio, efectivo recibido, vuelto/faltante, abonos, devoluciones, catalogo, QR de pago y tablas de items.
+- Los campos monetarios del carrito cambian a `inputmode=numeric` y `step=1` para COP; al perder foco se normalizan a enteros positivos.
+- `backend/handlers/carritos_compras.go` normaliza a pesos enteros los abonos, pagos mixtos, descuento/devolucion, total pagado, propina y precio unitario de items cuando la moneda del carrito es COP.
+- `backend/handlers/offline_ventas.go` aplica la misma normalizacion al sincronizar ventas offline para evitar diferencias por centavos entre varias cajas.
+- Pruebas: sintaxis de scripts embebidos del carrito, `go test ./handlers ./db -run "^$" -count=1`, `git diff --check`. `go test ./handlers ./db` ejecutado completo falla por prueba existente no relacionada `TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups`.
+
+2026-06-02: Pago combinado desde tarjeta de valores del carrito.
+- Modulo afectado: `carrito_de_compras`.
+- `web/administrar_empresa/carrito_de_compras.html` agrega un mensaje dentro de la tarjeta `Valores por medio de pago` y hace que al enfocar o hacer clic en Efectivo, Debito, Credito u Otro se cargue el total a pagar o el saldo restante si ya existe otro medio editado.
+- Los valores manuales vuelven a sincronizar el metodo real del cobro antes de renderizar y pagar: un medio queda como pago simple y varios medios generan `metodo_pago=mixto` con `pagos_mixtos`.
+- Para la tarjeta compacta, si hay tarjeta/transferencia sin referencia manual, se usa una referencia operativa `POS-MIXTO` para que el backend reciba tramos validos sin obligar a abrir otra tarjeta.
+- `web/estilos.css` agrega estilos de aviso correcto/error dentro de la tarjeta, compatibles con apariencias claras y oscuras.
+- Pruebas: validacion de sintaxis de scripts embebidos de `carrito_de_compras.html` y `git diff --check`.
+
+2026-06-02: Domotica movida a Analisis y control.
+- Modulo afectado: navegacion de `Administrar empresa`.
+- `web/administrar_empresa.html` mueve el enlace `Domotica` desde el menu principal suelto al grupo `Análisis y control`, manteniendo `id="linkControlElectrico"` y la ruta `/administrar_empresa/modulo_menu.html?module=control_electrico`.
+- `documentos/mapa_modulos.md` queda actualizado con la nueva ubicacion del modulo.
+- Pruebas: inspeccion estatica del menu para confirmar un unico enlace `linkControlElectrico` dentro del grupo `Análisis y control`.
+
+2026-06-02: Usuarios empresariales con correo reutilizable entre empresas.
+- Modulo afectado: `usuarios_empresa`.
+- `backend/db/usuarios_empresa.go` elimina en PostgreSQL la restriccion global antigua `users_email_key` generada por `email TEXT UNIQUE`.
+- Se crea `ux_users_lower_email_empresa` sobre `(lower(email), empresa_id)` para conservar unicidad dentro de cada empresa y permitir que el mismo correo sea invitado por otra empresa.
+- Caso operativo validado: empresa Alfaix (`empresa_id=44`) ya puede tener el usuario `ivanundo@hotmail.com` pendiente; el boton `Reenviar confirmacion` se probo visualmente y mostro `Correo de confirmacion reenviado`.
+- Seguridad: las consultas, reenvios y cambios siguen filtrando por `empresa_id` e `id`; el cambio no permite ver ni reenviar invitaciones de otra empresa.
+- Pruebas: `go test ./db -run TestDoesNotExist -count=1`, `sync_to_vps.ps1`, creacion de invitacion pendiente en Alfaix y prueba visual con Chrome/Playwright del boton `Reenviar confirmacion`.
+
 2026-06-01: Edicion rapida de roles de usuarios empresariales.
 - Modulo afectado: `usuarios_empresa`.
 - `web/administrar_empresa/administrar_usuarios.html` agrega una tarjeta `Editar rol de usuario` visible para administradores con acceso a la pagina de usuarios.
@@ -30275,6 +30324,21 @@ Archivos:
 Validacion:
 - `go test ./handlers -run "EmpresaRoutesUsePermissionWrappers|Reenviar|Usuario" -count=1`
 - Validacion de sintaxis del script embebido de `administrar_usuarios.html`
+
+2026-06-02: Apariencia claro/oscuro en tarjeta de agregar usuario
+Modulo: Usuarios empresa
+Cambio:
+- La pagina `Administrar empresa > Usuarios` deja de forzar `form-bg-dark` en el
+  formulario de alta/edicion de usuario.
+- Se agrega una clase propia `usuarios-page` para que la tarjeta de agregar
+  usuario, catalogo de roles, foto, mensajes y checks hereden correctamente las
+  variables de tema claro y oscuro del sistema.
+- No cambia backend, endpoint, permisos, datos ni flujo de invitacion.
+Archivos:
+- web/administrar_empresa/administrar_usuarios.html
+Validacion:
+- Validacion de sintaxis del script embebido de `administrar_usuarios.html`
+- `git diff --check`
 
 2026-06-01: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

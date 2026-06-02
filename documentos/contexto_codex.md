@@ -164,12 +164,19 @@ botones, desde handlers estaticos del backend.
   impuesto del formulario de productos se elige desde un selector construido con
   `/api/empresa/impuestos?action=context`; solo muestra impuestos habilitados
   para ventas/ambos de la empresa y guarda el porcentaje en
-  `productos.impuesto_porcentaje`.
+  `productos.impuesto_porcentaje`. En Configuracion > Impresora > Documento de
+  venta, `empresa_configuracion_avanzada.mostrar_deducido_impuesto_factura`
+  controla si recibos/facturas impresas muestran base gravable e impuesto
+  deducido; es una opcion visual de impresion y no altera el XML ni la
+  validacion legal de factura electronica DIAN.
 - Usuarios empresa: `web/administrar_empresa/administrar_usuarios.html` consume
   `/api/empresa/roles_de_usuario`, que entrega un catalogo global deduplicado de
   `roles_de_usuario` para todos los tipos de empresa. La asignacion guarda
   `rol_usuario_id` y `rol_nombre`; los permisos efectivos se calculan por nombre
-  normalizado y matriz de rol, no por tipo de empresa.
+  normalizado y matriz de rol, no por tipo de empresa. Si al crear un usuario el
+  correo ya existe dentro de la misma empresa, `/api/empresa/usuarios` devuelve
+  `409` con `usuario_existente`; la pantalla recarga usuarios inactivos o
+  pendientes, resalta el registro y permite usar `Reenviar confirmacion`.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
   `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
   Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de
@@ -183,6 +190,9 @@ botones, desde handlers estaticos del backend.
   Las cantidades de items en carrito son numeros naturales positivos: el
   frontend usa `min=1`/`step=1` y el backend rechaza cero, negativos, decimales o
   valores no finitos antes de tocar inventario.
+  En Colombia/COP, la parte monetaria del carrito trabaja sin centavos: la UI
+  muestra y edita pesos enteros y el backend normaliza precios unitarios, abonos,
+  pagos simples/mixtos y ventas offline a enteros cuando `moneda=COP`.
   Los productos y recetas descuentan/reservan inventario en tiempo real al
   agregarse al carrito mediante `carrito_compra_items`; el pago no debe volver a
   descontar stock. El cierre `action=pagar_estacion` debe ser idempotente en

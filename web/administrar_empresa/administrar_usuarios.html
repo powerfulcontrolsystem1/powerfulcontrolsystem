@@ -28,11 +28,66 @@
     .usuarios-global-msg{display:none;margin:12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:700}
     .usuarios-global-msg.is-visible{display:block}
     .usuarios-global-msg.value-negative{border-color:var(--danger,#ef4444);color:var(--danger,#ef4444)}
+    .usuario-row-highlight{outline:2px solid var(--accent);outline-offset:-2px;background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+    .usuario-row-highlight td{font-weight:700}
+    body.usuarios-page{background:var(--bg);color:var(--text)}
+    .usuarios-page .container{display:grid;gap:14px}
+    .usuarios-page #form{
+      width:100%;
+      max-width:none;
+      margin:0;
+      background:var(--card);
+      border:1px solid var(--border);
+      color:var(--text);
+      box-shadow:none;
+      backdrop-filter:none;
+    }
+    .usuarios-page #form .form-row{align-items:flex-start}
+    .usuarios-page #form .form-label{color:var(--text)}
+    .usuarios-page #form .form-help{color:var(--muted)}
+    .usuarios-page #form .form-input,
+    .usuarios-page #form .form-textarea,
+    .usuarios-page #form select.form-input{
+      background:var(--form-input-bg);
+      border-color:var(--form-border);
+      color:var(--text);
+    }
+    .usuarios-page #form .form-input::placeholder,
+    .usuarios-page #form .form-textarea::placeholder{
+      color:color-mix(in srgb,var(--muted) 72%,transparent);
+    }
+    .usuarios-page .roles-catalog,
+    .usuarios-page .usuario-photo,
+    .usuarios-page .role-editor-current,
+    .usuarios-page .station-access-check{
+      background:var(--surface-soft);
+      border-color:var(--border);
+      color:var(--text);
+    }
+    .usuarios-page .role-row{
+      background:var(--surface);
+      border-color:var(--border);
+      color:var(--text);
+    }
+    .usuarios-page .role-row.is-selected{
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 20%,transparent);
+    }
+    html.theme-light .usuarios-page #form,
+    html[data-theme^="light"] .usuarios-page #form{
+      background:var(--card);
+      border-color:var(--border);
+      color:var(--text);
+    }
+    html.theme-light .usuarios-page #form::before,
+    html[data-theme^="light"] .usuarios-page #form::before{
+      background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    }
     @media(max-width:760px){.role-editor-grid{grid-template-columns:1fr}}
     @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}}
   </style>
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page usuarios-page">
   <div class="container">
 <div class="page-header">
       <div>
@@ -179,7 +234,9 @@
       roles: [],
       users: [],
       stationConfig: null,
-      stationAccess: { habilitado: false, caja_por_cajero: true, usuarios: {} }
+      stationAccess: { habilitado: false, caja_por_cajero: true, usuarios: {} },
+      highlightUserID: 0,
+      highlightUserEmail: ''
     };
 
     function getQueryParam(name) {
@@ -206,8 +263,9 @@
       if (res.ok) return;
       const t = await res.text();
       let message = t || ('HTTP ' + res.status);
+      let body = null;
       try {
-        const body = JSON.parse(t);
+        body = JSON.parse(t);
         if (body && body.error) {
           message = body.error;
         } else if (body && body.message) {
@@ -217,7 +275,44 @@
       if (res.status === 409 && /usuario con ese correo|ese correo ya esta|ese correo ya est[aá]|ya existe un usuario/i.test(message)) {
         message = 'Ya existe un usuario de esta empresa con ese correo. Revisa la lista de usuarios; si la cuenta esta pendiente de confirmacion, usa el boton Reenviar confirmacion para enviarle nuevamente la invitacion por correo electronico.';
       }
-      throw new Error(message);
+      const err = new Error(message);
+      err.status = res.status;
+      err.payload = body;
+      err.rawText = t;
+      throw err;
+    }
+
+    function normalizeEmailForCompare(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function markUserForHighlight(user) {
+      state.highlightUserID = Number(user && user.id || 0);
+      state.highlightUserEmail = normalizeEmailForCompare(user && user.email);
+    }
+
+    function scrollHighlightedUserIntoView() {
+      const row = document.querySelector('.usuario-row-highlight');
+      if (!row) return;
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function handleDuplicateUserError(err, attemptedEmail) {
+      const payload = err && err.payload ? err.payload : {};
+      const existing = payload.usuario_existente || null;
+      markUserForHighlight(existing || { email: attemptedEmail });
+      try {
+        await loadUsers();
+      } catch (_) {}
+      const email = normalizeEmailForCompare((existing && existing.email) || attemptedEmail);
+      const inList = state.users.some(function(item) {
+        return Number(item.id || 0) === state.highlightUserID || normalizeEmailForCompare(item.email) === email;
+      });
+      if (inList) {
+        setMessage((payload.message || err.message || 'Ya existe un usuario con ese correo.') + ' El registro fue resaltado en la lista para que puedas reenviar la confirmacion.', true);
+      } else {
+        setMessage(payload.message || err.message || 'Ese correo ya existe, pero no se encontro en la lista de esta empresa. Recarga la pagina o pide revision al super administrador.', true);
+      }
     }
 
     function fillRolesSelect(selected) {
@@ -615,6 +710,11 @@
         const activo = item.estado === 'activo' ? 1 : 0;
         const toggleLabel = activo === 1 ? 'Desactivar' : 'Activar';
         const confirmado = Number(item.email_confirmado || 0) === 1;
+        const highlighted = (state.highlightUserID && Number(item.id || 0) === state.highlightUserID) ||
+          (state.highlightUserEmail && normalizeEmailForCompare(item.email) === state.highlightUserEmail);
+        if (highlighted) {
+          tr.className = 'usuario-row-highlight';
+        }
 
         tr.innerHTML = '<td>' + item.id + '</td>' +
           '<td>' + photoHTML(item, true) + '</td>' +
@@ -639,6 +739,9 @@
       const list = document.getElementById('list');
       list.innerHTML = '';
       list.appendChild(table);
+      if (state.highlightUserID || state.highlightUserEmail) {
+        window.setTimeout(scrollHighlightedUserIntoView, 80);
+      }
 
       document.querySelectorAll('.edit').forEach(function(btn) {
         btn.onclick = function() {
@@ -826,6 +929,10 @@
         resetForm(true);
         await loadData();
       } catch (err) {
+        if (!id && Number(err && err.status || 0) === 409) {
+          await handleDuplicateUserError(err, payload.email);
+          return;
+        }
         setMessage(err.message || 'Error guardando usuario', true);
       }
     };

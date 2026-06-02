@@ -64,6 +64,9 @@ trazabilidad en `documentos/historial_de_cambios`.
 - No deben depender del tema claro/oscuro de la aplicacion.
 - La factura o venta debe parecerse al documento fiscal/electronico aplicable
   cuando corresponda.
+- El bloque opcional de deducido de impuesto en la impresion de factura o recibo
+  es solo presentacional: usa base gravable e impuesto ya calculados y no debe
+  modificar XML, CUFE/CUDE, envio, validacion ni reglas legales de la DIAN.
 - El reporte de turno debe ser compacto, claro, profesional y adaptable a POS
   80mm y carta, pero no necesita copiar la apariencia de una factura electronica.
 
@@ -92,6 +95,9 @@ trazabilidad en `documentos/historial_de_cambios`.
   permitir `fullscreen`.
 - Abonos, descuentos, pagos mixtos y cierres deben reflejarse en el pago final y
   en el reporte de turno.
+- En Colombia/COP, el carrito no debe mostrar ni aceptar centavos operativos:
+  precios, abonos, pagos, devoluciones, QR y totales se normalizan a pesos
+  enteros; monedas de otros paises pueden conservar precision decimal.
 
 ## Despliegue y portabilidad
 

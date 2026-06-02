@@ -236,6 +236,54 @@ func writeEmpresaUsuarioContractRequirement(w http.ResponseWriter, item *dbpkg.E
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+func empresaUsuarioPublicPayload(item *dbpkg.EmpresaUsuario) map[string]interface{} {
+	if item == nil {
+		return nil
+	}
+	return map[string]interface{}{
+		"id":                          item.ID,
+		"empresa_id":                  item.EmpresaID,
+		"email":                       item.Email,
+		"nombre":                      item.Nombre,
+		"documento_identidad":         item.DocumentoIdentidad,
+		"rol_usuario_id":              item.RolUsuarioID,
+		"rol_nombre":                  item.RolNombre,
+		"foto_url":                    item.FotoURL,
+		"control_aseo_estaciones":     item.ControlAseoEstaciones,
+		"email_confirmado":            item.EmailConfirmado,
+		"email_confirmado_en":         item.EmailConfirmadoEn,
+		"estado":                      item.Estado,
+		"fecha_creacion":              item.FechaCreacion,
+		"fecha_actualizacion":         item.FechaActualizacion,
+		"observaciones":               item.Observaciones,
+		"puede_reenviar_confirmacion": item.EmailConfirmado != 1,
+	}
+}
+
+func writeEmpresaUsuarioDuplicateResponse(w http.ResponseWriter, empresaID int64, email string, existing *dbpkg.EmpresaUsuario, message string) {
+	if strings.TrimSpace(message) == "" {
+		message = "Ya existe un usuario de esta empresa con ese correo. Revisa la lista y, si esta pendiente de confirmacion, usa Reenviar confirmacion."
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+	response := map[string]interface{}{
+		"ok":                      false,
+		"code":                    "empresa_usuario_email_duplicado",
+		"empresa_id":              empresaID,
+		"email":                   strings.TrimSpace(email),
+		"error":                   message,
+		"message":                 message,
+		"can_resend_confirmation": existing != nil && existing.EmailConfirmado != 1,
+		"email_confirmado":        0,
+		"usuario_existente":       empresaUsuarioPublicPayload(existing),
+	}
+	if existing != nil {
+		response["email_confirmado"] = existing.EmailConfirmado
+		response["estado"] = existing.Estado
+	}
+	_ = json.NewEncoder(w).Encode(response)
+}
+
 func ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario, acceptRequested bool) (*dbpkg.SuperContractVersion, bool, error) {
 	contract, err := dbpkg.GetCurrentSuperContract(dbSuper)
 	if err != nil {
@@ -368,7 +416,13 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			)
 			if err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "unique") {
-					http.Error(w, "Ya existe un usuario de esta empresa con ese correo. No es necesario crearlo de nuevo. Si el usuario aun no confirmo la cuenta, busca el registro en la lista y usa el boton Reenviar confirmacion para enviarle una nueva invitacion al correo electronico.", http.StatusConflict)
+					email := strings.TrimSpace(payload.Email)
+					existing, lookupErr := dbpkg.GetEmpresaUsuarioByEmailScoped(dbEmp, email, payload.EmpresaID)
+					if lookupErr == nil && existing != nil {
+						writeEmpresaUsuarioDuplicateResponse(w, payload.EmpresaID, email, existing, "Ya existe un usuario de esta empresa con ese correo. Lo dejamos ubicado en la lista; si esta pendiente de confirmacion, usa el boton Reenviar confirmacion para enviarle una nueva invitacion al correo electronico.")
+						return
+					}
+					writeEmpresaUsuarioDuplicateResponse(w, payload.EmpresaID, email, nil, "Este correo ya existe en el sistema, pero no se encontro como usuario de esta empresa. Vuelve a cargar la lista; si no aparece, pide al super administrador revisar usuarios heredados o usa otro correo.")
 					return
 				}
 				http.Error(w, "failed to create user: "+err.Error(), http.StatusInternalServerError)

@@ -521,6 +521,13 @@
                 <span>Imprimir copia adicional de la factura</span>
               </label>
             </div>
+            <div class="form-col">
+              <label class="empresa-config-check" for="facturaMostrarDeducidoImpuesto" >
+                <input id="facturaMostrarDeducidoImpuesto" type="checkbox">
+                <span>Mostrar deducido del impuesto en la impresion</span>
+              </label>
+              <p class="form-help">Agrega base gravable e impuesto deducido al documento impreso cuando la empresa lo requiera. En factura electronica, la validacion legal y el XML conservan las reglas vigentes de la DIAN.</p>
+            </div>
           </div>
         </div>
 
@@ -2341,6 +2348,7 @@
       document.getElementById('facturaImprimirVenta').checked = src.imprimir_venta === true;
       document.getElementById('facturaImprimirFacturaElectronica').checked = src.imprimir_factura_electronica === true;
       document.getElementById('facturaImprimirCopia').checked = src.imprimir_copia_factura === true;
+      document.getElementById('facturaMostrarDeducidoImpuesto').checked = src.mostrar_deducido_impuesto_factura === true;
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_empresa !== false && src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
     }
@@ -2363,6 +2371,7 @@
         imprimir_venta: document.getElementById('facturaImprimirVenta').checked,
         imprimir_factura_electronica: document.getElementById('facturaImprimirFacturaElectronica').checked,
         imprimir_copia_factura: document.getElementById('facturaImprimirCopia').checked,
+        mostrar_deducido_impuesto_factura: document.getElementById('facturaMostrarDeducidoImpuesto').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
         mostrar_logo_empresa: document.getElementById('facturaMostrarLogo').checked,
         logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()

@@ -45,6 +45,7 @@ type EmpresaConfiguracionAvanzada struct {
 	ImprimirVenta                         bool   `json:"imprimir_venta"`
 	ImprimirFacturaElectronica            bool   `json:"imprimir_factura_electronica"`
 	ImprimirCopiaFactura                  bool   `json:"imprimir_copia_factura"`
+	MostrarDeducidoImpuestoFactura        bool   `json:"mostrar_deducido_impuesto_factura"`
 	MostrarLogo                           bool   `json:"mostrar_logo"`
 	MostrarLogoEmpresa                    bool   `json:"mostrar_logo_empresa"`
 	MostrarLogoSistema                    bool   `json:"mostrar_logo_sistema"`
@@ -124,6 +125,7 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			imprimir_venta INTEGER DEFAULT 0,
 			imprimir_factura_electronica INTEGER DEFAULT 0,
 			imprimir_copia_factura INTEGER DEFAULT 0,
+			mostrar_deducido_impuesto_factura INTEGER DEFAULT 0,
 			mostrar_logo INTEGER DEFAULT 1,
 			mostrar_logo_empresa INTEGER DEFAULT 1,
 			mostrar_logo_sistema INTEGER DEFAULT 0,
@@ -254,6 +256,9 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "imprimir_copia_factura", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_deducido_impuesto_factura", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo", "INTEGER DEFAULT 1"); err != nil {
 		return err
 	}
@@ -335,6 +340,7 @@ func ensureEmpresaConfiguracionAvanzadaFlagColumns(dbConn *sql.DB) error {
 		"imprimir_venta":                           0,
 		"imprimir_factura_electronica":             0,
 		"imprimir_copia_factura":                   0,
+		"mostrar_deducido_impuesto_factura":        0,
 		"mostrar_logo":                             1,
 		"mostrar_logo_empresa":                     1,
 		"mostrar_logo_sistema":                     0,
@@ -570,6 +576,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(imprimir_venta, 0),
 		COALESCE(imprimir_factura_electronica, 0),
 		COALESCE(imprimir_copia_factura, 0),
+		COALESCE(mostrar_deducido_impuesto_factura, 0),
 		COALESCE(mostrar_logo, 1),
 		COALESCE(mostrar_logo_empresa, mostrar_logo, 1),
 		COALESCE(mostrar_logo_sistema, 0),
@@ -599,6 +606,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	var imprimirVentaInt int
 	var imprimirFacturaElectronicaInt int
 	var imprimirCopiaFacturaInt int
+	var mostrarDeducidoImpuestoFacturaInt int
 	var mostrarLogoInt int
 	var mostrarLogoEmpresaInt int
 	var mostrarLogoSistemaInt int
@@ -642,6 +650,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&imprimirVentaInt,
 		&imprimirFacturaElectronicaInt,
 		&imprimirCopiaFacturaInt,
+		&mostrarDeducidoImpuestoFacturaInt,
 		&mostrarLogoInt,
 		&mostrarLogoEmpresaInt,
 		&mostrarLogoSistemaInt,
@@ -679,6 +688,7 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 	cfg.ImprimirVenta = imprimirVentaInt == 1
 	cfg.ImprimirFacturaElectronica = imprimirFacturaElectronicaInt == 1
 	cfg.ImprimirCopiaFactura = imprimirCopiaFacturaInt == 1
+	cfg.MostrarDeducidoImpuestoFactura = mostrarDeducidoImpuestoFacturaInt == 1
 	cfg.MostrarLogoEmpresa = mostrarLogoEmpresaInt == 1
 	cfg.MostrarLogoSistema = mostrarLogoSistemaInt == 1
 	cfg.MostrarLogo = mostrarLogoInt == 1 && (cfg.MostrarLogoEmpresa || cfg.MostrarLogoSistema)
@@ -787,6 +797,10 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	imprimirCopiaFacturaInt := 0
 	if payload.ImprimirCopiaFactura {
 		imprimirCopiaFacturaInt = 1
+	}
+	mostrarDeducidoImpuestoFacturaInt := 0
+	if payload.MostrarDeducidoImpuestoFactura {
+		mostrarDeducidoImpuestoFacturaInt = 1
 	}
 
 	usarDecimalesInt := 0
@@ -976,11 +990,13 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 		SET mostrar_logo_empresa = ?,
 			mostrar_logo_sistema = ?,
 			mostrar_logo = ?,
+			mostrar_deducido_impuesto_factura = ?,
 			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 		mostrarLogoEmpresaInt,
 		mostrarLogoSistemaInt,
 		mostrarLogoInt,
+		mostrarDeducidoImpuestoFacturaInt,
 		payload.EmpresaID,
 	); err != nil {
 		return 0, err

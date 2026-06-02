@@ -1,3 +1,17 @@
+2026-06-02: Usuario existente visible para reenviar confirmacion
+- Modulo afectado: `usuarios_empresa`.
+- Cambio funcional: si el administrador intenta crear un usuario con un correo ya existente dentro de la misma empresa, el backend responde `409` con el registro saneado en `usuario_existente`.
+- UX: Administrar usuarios recarga la lista incluyendo inactivos/pendientes, resalta el registro y orienta al administrador a usar `Reenviar confirmacion`.
+- Base de datos: la migracion PostgreSQL elimina constraints e indices unicos heredados compuestos solo por `email`, manteniendo `ux_users_lower_email_empresa`.
+- Seguridad: no se exponen tokens ni claves; las acciones siguen aisladas por `empresa_id` e `id`.
+
+2026-06-02: Deducido de impuesto en factura impresa
+- Modulos afectados: Configuracion empresarial, carrito unificado, documentos imprimibles y facturacion.
+- Cambio funcional: Configuracion > Impresora > Documento de venta agrega el check `Mostrar deducido del impuesto en la impresion` por empresa.
+- Persistencia: se agrega `empresa_configuracion_avanzada.mostrar_deducido_impuesto_factura` como bandera `0/1`.
+- Impresion: recibos y facturas del carrito muestran base gravable e impuesto deducido usando los valores ya calculados del item (`base_gravable`, `valor_impuesto`), en POS 80mm o carta.
+- Alcance: no cambia payload electronico, XML, CUFE/CUDE, envio ni validacion DIAN; es una opcion visual de impresion.
+
 2026-06-01: GRAFOLOGIX con analisis GPT-5.5
 - Modulo afectado: `grafologia`.
 - Cambio funcional: la pantalla agrega el boton `Analizar con GPT-5.5` para obtener una lectura grafologica complementaria desde el modelo de vision configurado como `openai:gpt-5.5`.

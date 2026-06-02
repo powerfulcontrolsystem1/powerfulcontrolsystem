@@ -115,6 +115,18 @@ Actualizacion 2026-05-29 (domotica empresarial, lecturas y storage)
   `web/uploads/empresas/empresa_{id}_{slug}/imagenes/`, con subcarpetas como
   `domotica` y `usuarios`.
 
+Actualizacion 2026-06-02 (usuarios empresariales por empresa)
+- Tabla en `pcs_empresas`: `users`.
+- La unicidad del correo operativo ya no es global. En PostgreSQL se elimina la
+  restriccion heredada `users_email_key` y se aplica el indice unico
+  `ux_users_lower_email_empresa` sobre `(lower(email), empresa_id)`.
+- La migracion defensiva tambien elimina constraints e indices unicos heredados
+  compuestos solo por `email`, para bases ya modificadas donde el nombre no sea
+  `users_email_key`.
+- Regla: un mismo correo puede estar invitado en empresas distintas, pero no se
+  puede duplicar dentro de la misma empresa. Los endpoints de lista, reenvio,
+  edicion, foto y eliminacion siguen validando `empresa_id` junto con `id`.
+
 Actualizacion 2026-05-29 (fotos de usuarios de empresa)
 - Tabla en `pcs_empresas`: `users`.
 - Campo nuevo: `foto_url TEXT`, usado para guardar la foto del usuario creado
@@ -1187,7 +1199,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - ambiente_fe, tipo_operacion, prefijo_factura
   - resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - consecutivo_desde, consecutivo_hasta, proximo_consecutivo
-  - formato_impresion, imprimir_copia_factura, mostrar_logo, mostrar_logo_empresa, mostrar_logo_sistema, logo_url
+  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, mostrar_logo, mostrar_logo_empresa, mostrar_logo_sistema, logo_url
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
   - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
@@ -1741,6 +1753,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-06-02: `empresa_configuracion_avanzada.mostrar_deducido_impuesto_factura` agrega el check empresarial para mostrar base gravable e impuesto deducido en la impresion de recibos/facturas, sin alterar documentos electronicos legales.
 - 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, cantidad de ventas, total de descuentos, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
 - 2026-05-18: `empresa_corte_caja_configuracion.formato_impresion` usa `pos` como default operativo para reporte de turno en impresora POS 80mm; `empresa_impresoras` conserva `formato_impresion` `pos`/`carta` y la predeterminada por empresa.
 - 2026-05-19: `empresa_cierres_caja` cambia su unicidad operativa a `empresa_id, sucursal_id, caja_codigo, fecha_operacion, turno, usuario_creador`; en PostgreSQL se eliminan constraints e indices legacy sin usuario y se agrega `ux_empresa_cierres_caja_usuario_turno`, permitiendo que varios usuarios de la misma empresa manejen cajas/turnos independientes sin mezclar pagos, abonos, ingresos, egresos ni reportes.

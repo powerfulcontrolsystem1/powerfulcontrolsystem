@@ -100,6 +100,18 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_lower_email_empresa ON users ((lower(email)), empresa_id)`); err != nil {
 			return err
 		}
+		if _, err := execSQLCompat(dbConn, `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key`); err != nil {
+			return err
+		}
+		if err := dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn); err != nil {
+			return err
+		}
+		if err := dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn); err != nil {
+			return err
+		}
+		if _, err := execSQLCompat(dbConn, `CREATE UNIQUE INDEX IF NOT EXISTS ux_users_lower_email_empresa ON users ((lower(email)), empresa_id)`); err != nil {
+			return err
+		}
 		if _, err := execSQLCompat(dbConn, `CREATE INDEX IF NOT EXISTS ix_users_email_confirm_token ON users (email_confirm_token)`); err != nil {
 			return err
 		}
@@ -187,6 +199,81 @@ func EnsureEmpresaUsuariosAuthSchema(dbConn *sql.DB) error {
 
 	empresaUsuariosAuthSchemaReady = true
 	return nil
+}
+
+func dropLegacyEmpresaUsuariosEmailUniqueConstraints(dbConn *sql.DB) error {
+	if !isPostgresDialect() {
+		return nil
+	}
+	rows, err := dbConn.Query(`
+		SELECT tc.constraint_name
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+		  ON kcu.constraint_schema = tc.constraint_schema
+		 AND kcu.constraint_name = tc.constraint_name
+		 AND kcu.table_schema = tc.table_schema
+		 AND kcu.table_name = tc.table_name
+		WHERE tc.table_schema = current_schema()
+		  AND tc.table_name = 'users'
+		  AND tc.constraint_type = 'UNIQUE'
+		GROUP BY tc.constraint_name
+		HAVING array_agg(kcu.column_name ORDER BY kcu.ordinal_position) = ARRAY['email']::text[]`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
+		stmt := fmt.Sprintf(`ALTER TABLE users DROP CONSTRAINT IF EXISTS %s`, quotePostgresIdentifier(name))
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func dropLegacyEmpresaUsuariosEmailUniqueIndexes(dbConn *sql.DB) error {
+	if !isPostgresDialect() {
+		return nil
+	}
+	rows, err := dbConn.Query(`
+		SELECT idx.relname
+		FROM pg_index ix
+		JOIN pg_class tbl ON tbl.oid = ix.indrelid
+		JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+		JOIN pg_class idx ON idx.oid = ix.indexrelid
+		JOIN LATERAL unnest(ix.indkey) WITH ORDINALITY AS keys(attnum, ord) ON true
+		JOIN pg_attribute att ON att.attrelid = tbl.oid AND att.attnum = keys.attnum
+		WHERE ns.nspname = current_schema()
+		  AND tbl.relname = 'users'
+		  AND ix.indisunique
+		  AND NOT ix.indisprimary
+		GROUP BY idx.relname
+		HAVING array_agg(att.attname::text ORDER BY keys.ord) = ARRAY['email']::text[]`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if strings.TrimSpace(name) == "" || strings.EqualFold(name, "ux_users_lower_email_empresa") {
+			continue
+		}
+		stmt := fmt.Sprintf(`DROP INDEX IF EXISTS %s`, quotePostgresIdentifier(name))
+		if _, err := dbConn.Exec(stmt); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
 }
 
 // CreateEmpresaUsuario crea un usuario de empresa en estado pendiente de confirmación de correo.

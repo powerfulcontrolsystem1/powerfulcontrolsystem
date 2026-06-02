@@ -99,6 +99,11 @@
       '.pcs-print-table td{border-bottom:1px solid #d1d5db;padding:6px 4px;vertical-align:top;}',
       '.pcs-print-number{text-align:right;white-space:nowrap;}',
       '.pcs-print-total{display:flex;justify-content:space-between;gap:12px;border:2px solid ' + accent + ';border-radius:8px;padding:10px 12px;margin-top:10px;font-size:16px;font-weight:900;}',
+      '.pcs-print-summary{margin-top:8px;border-top:1px solid #d1d5db;border-bottom:1px solid #d1d5db;}',
+      '.pcs-print-summary-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #d1d5db;font-size:12px;}',
+      '.pcs-print-summary-row:last-child{border-bottom:0;}',
+      '.pcs-print-summary-row span{color:#374151;font-weight:700;}',
+      '.pcs-print-summary-row strong{color:#111827;text-align:right;white-space:nowrap;}',
       '.pcs-print-note{margin-top:10px;padding:9px;border:1px dashed #6b7280;border-radius:8px;color:#111827;font-size:12px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}',
       '.pcs-print-qr{margin-top:12px;text-align:center;border-top:1px dashed #9ca3af;padding-top:10px;color:#111827;}',
       '.pcs-print-qr img{display:block;width:126px;height:126px;object-fit:contain;margin:0 auto 6px;image-rendering:pixelated;}',
@@ -126,6 +131,9 @@
         '.pcs-print-table{font-size:10px;margin:7px 0;}',
         '.pcs-print-table th,.pcs-print-table td{border-bottom:1px dashed #9ca3af;padding:4px 2px;}',
         '.pcs-print-total{border:1px dashed #111827;border-radius:0;padding:7px 0;font-size:13px;}',
+        '.pcs-print-summary{margin-top:6px;border-top:1px dashed #9ca3af;border-bottom:1px dashed #9ca3af;}',
+        '.pcs-print-summary-row{font-size:10px;padding:3px 0;border-bottom:1px dashed #d1d5db;}',
+        '.pcs-print-summary-row strong{font-size:10px;}',
         '.pcs-print-note{border:0;border-top:1px dashed #9ca3af;border-radius:0;padding:7px 0;font-size:10px;}',
         '.pcs-print-qr{margin-top:8px;padding-top:7px;}',
         '.pcs-print-qr img{width:92px;height:92px;margin-bottom:4px;}',
@@ -176,6 +184,14 @@
       '</section>';
   }
 
+  function summaryRowsHTML(rows) {
+    return (Array.isArray(rows) ? rows : []).filter(function(row) {
+      return row && text(row.value).trim() !== '';
+    }).map(function(row) {
+      return '<div class="pcs-print-summary-row"><span>' + escapeHTML(row.label || '') + '</span><strong>' + escapeHTML(row.value || '') + '</strong></div>';
+    }).join('');
+  }
+
   function buildDocument(options) {
     options = options || {};
     var format = normalizeFormat(options.format);
@@ -199,6 +215,8 @@
       if (text(options.totalLabel || options.totalValue).trim()) {
         body += '<section class="pcs-print-total"><span>' + escapeHTML(options.totalLabel || 'Total') + '</span><span>' + escapeHTML(options.totalValue || '') + '</span></section>';
       }
+      var summary = summaryRowsHTML(options.summaryRows);
+      if (summary) body += '<section class="pcs-print-summary">' + summary + '</section>';
       if (text(options.note).trim()) body += '<section class="pcs-print-note">' + escapeHTML(options.note) + '</section>';
       body += qrBlock;
       if (options.signatures !== false && format === 'carta') body += '<section class="pcs-print-signatures"><div>Recibe</div><div>Entrega / registra</div></section>';

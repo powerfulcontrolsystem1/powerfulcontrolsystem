@@ -511,10 +511,11 @@
           </div>
           <div class="form-col">
             <label class="form-label" for="stationCashReceivedDisplay">Efectivo recibido</label>
-            <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" placeholder="COP 0.00">
-            <div id="stationCashChangeHint" class="cash-change-hint mt-6">Vuelto: COP 0.00</div>
+            <input id="stationCashReceivedDisplay" type="text" inputmode="decimal" class="form-input" value="" autocomplete="off" placeholder="COP 0">
+            <div id="stationCashChangeHint" class="cash-change-hint mt-6">Vuelto: COP 0</div>
           </div>
         </div>
+        <div id="stationPaymentAmountsMsg" class="carrito-payment-amounts-msg form-help mt-8">Haz clic en un medio de pago para cargar el total. Puedes editar los valores para pago combinado.</div>
       </section>
 
       <section id="stationPaymentQrCard" class="card empresa-section carrito-payment-qr-card is-hidden mt-12" hidden>
@@ -879,6 +880,63 @@
       return normalizedCode(v).replace(/\s+/g, '_').replace(/[^A-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
     }
 
+    function getEmpresaCountryCode() {
+      const cfg = loadEmpresaGeneralConfig();
+      const candidates = [
+        cfg && cfg.pais_codigo,
+        cfg && cfg.pais,
+        cfg && cfg.country,
+        cfg && cfg.clima_pais_codigo,
+        cfg && cfg.clima_pais
+      ];
+      for (let i = 0; i < candidates.length; i++) {
+        const raw = normalize(candidates[i]).toUpperCase();
+        if (!raw) continue;
+        if (raw === 'CO' || raw === 'COL' || raw.indexOf('COLOMBIA') !== -1) return 'CO';
+        return raw;
+      }
+      return '';
+    }
+
+    function shouldUseWholeMoney(moneda) {
+      const m = normalize(moneda || 'COP').toUpperCase();
+      const country = getEmpresaCountryCode();
+      return country === 'CO' || m === 'COP';
+    }
+
+    function moneyPrecision(moneda) {
+      return shouldUseWholeMoney(moneda) ? 0 : 2;
+    }
+
+    function normalizeMoneyValue(value, moneda) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n)) return 0;
+      if (shouldUseWholeMoney(moneda)) return Math.max(0, Math.round(n));
+      return Math.max(0, Math.round(n * 100) / 100);
+    }
+
+    function parseWholeMoneyInputValue(text) {
+      let raw = normalize(text).replace(/[^\d,.\-]/g, '');
+      if (!raw) return 0;
+      const negative = raw.charAt(0) === '-';
+      raw = raw.replace(/-/g, '');
+      const lastComma = raw.lastIndexOf(',');
+      const lastDot = raw.lastIndexOf('.');
+      const sepIndex = Math.max(lastComma, lastDot);
+      if (sepIndex > -1) {
+        const after = raw.slice(sepIndex + 1).replace(/\D/g, '');
+        const before = raw.slice(0, sepIndex).replace(/\D/g, '');
+        if (after.length > 0 && after.length < 3 && before.length > 1) {
+          const decimal = Number(before + '.' + after);
+          return negative ? -decimal : decimal;
+        }
+      }
+      const digits = raw.replace(/\D/g, '');
+      if (!digits) return 0;
+      const n = Number(digits);
+      return negative ? -n : n;
+    }
+
     function parseCajaBool(v, fallback) {
       if (v === undefined || v === null) return !!fallback;
       if (typeof v === 'boolean') return v;
@@ -946,6 +1004,9 @@
     }
 
     function parseMoneyInputValue(value) {
+      if (shouldUseWholeMoney()) {
+        return normalizeMoneyValue(parseWholeMoneyInputValue(value), 'COP');
+      }
       let text = normalize(value);
       if (!text) return 0;
       text = text.replace(/[^\d,.\-]/g, '');
@@ -2930,7 +2991,7 @@
       const amountEl = document.getElementById('carritoAbonoMonto');
       const methodEl = document.getElementById('carritoAbonoMetodo');
       const referenceEl = document.getElementById('carritoAbonoReferencia');
-      const monto = roundMoney(toNumber(amountEl && amountEl.value, 0));
+      const monto = normalizeMoneyValue(toNumber(amountEl && amountEl.value, 0), selected.moneda || 'COP');
       const metodo = normalize(methodEl && methodEl.value) || 'efectivo';
       const referencia = normalize(referenceEl && referenceEl.value);
       if (monto <= 0) {
@@ -3121,7 +3182,7 @@
         if (totalPagarFinal > 0 && manualEntries.length === 0) {
           paymentAmountsMessage = 'Ingresa el valor recibido en al menos un medio de pago.';
         } else if (Math.abs(manualTotal - totalPagarFinal) > 0.01) {
-          paymentAmountsMessage = 'La suma de Efectivo, Débito, Crédito y Otro debe ser igual al total final a pagar.';
+          paymentAmountsMessage = 'La sumatoria debe ser igual al total.';
         }
       }
 
@@ -3165,13 +3226,50 @@
       ];
     }
 
+    function isNonCashPaymentAmountMethod(metodo) {
+      metodo = normalize(metodo).toLowerCase();
+      return metodo === 'tarjeta_debito' || metodo === 'tarjeta_credito' || metodo === 'transferencia_bancaria';
+    }
+
+    function paymentAmountAutoReference(metodo) {
+      const manualRef = normalize(state.stationDiscount.paymentReference);
+      if (manualRef) return manualRef;
+      return isNonCashPaymentAmountMethod(metodo) ? 'POS-MIXTO' : '';
+    }
+
+    function ensurePaymentAmountReferenceForEntries(entries) {
+      const needsReference = (Array.isArray(entries) ? entries : []).some(function(item) {
+        return isNonCashPaymentAmountMethod(item && item.metodo);
+      });
+      if (!needsReference || normalize(state.stationDiscount.paymentReference)) return;
+      state.stationDiscount.paymentReference = 'POS-MIXTO';
+      const refEl = document.getElementById('paymentReference');
+      if (refEl && !normalize(refEl.value)) refEl.value = state.stationDiscount.paymentReference;
+    }
+
+    function getStationPaymentAmountsTotal() {
+      const amounts = state.paymentAmounts || {};
+      return getStationPaymentAmountInputDefs().reduce(function(acc, def) {
+        return roundMoney(acc + Math.max(0, Number(amounts[def.metodo] || 0)));
+      }, 0);
+    }
+
+    function getStationPaymentAmountsTotalExcluding(metodo) {
+      metodo = normalize(metodo).toLowerCase();
+      const amounts = state.paymentAmounts || {};
+      return getStationPaymentAmountInputDefs().reduce(function(acc, def) {
+        if (def.metodo === metodo) return acc;
+        return roundMoney(acc + Math.max(0, Number(amounts[def.metodo] || 0)));
+      }, 0);
+    }
+
     function getStationPaymentAmountEntries() {
       const amounts = state.paymentAmounts || {};
       return getStationPaymentAmountInputDefs().map(function(def) {
         return {
           metodo: def.metodo,
           monto: Math.max(0, roundMoney(Number(amounts[def.metodo] || 0))),
-          referencia: normalize(state.stationDiscount.paymentReference)
+          referencia: paymentAmountAutoReference(def.metodo)
         };
       }).filter(function(item) {
         return item.monto > 0;
@@ -3185,6 +3283,7 @@
         state.stationDiscount.mixedPayments = [];
         return;
       }
+      ensurePaymentAmountReferenceForEntries(entries);
       if (entries.length === 1) {
         state.stationDiscount.paymentMethod = entries[0].metodo;
         state.stationDiscount.mixedPayments = [];
@@ -3203,6 +3302,43 @@
       });
       state.paymentAmounts = next;
       applyStationPaymentAmountsToDiscount();
+    }
+
+    function getStationPaymentTotalForAmountAutofill(carrito) {
+      if (!carrito) return 0;
+      const wasManual = state.paymentAmountsManual;
+      state.paymentAmountsManual = false;
+      const pay = getStationPaymentBreakdown(carrito);
+      state.paymentAmountsManual = wasManual;
+      return Math.max(0, roundMoney(Number(pay && pay.totalPagarFinal || 0)));
+    }
+
+    function handleStationPaymentAmountIntent(def) {
+      if (!def) return;
+      const selected = getSelectedCarrito();
+      if (!selected) return;
+      const el = document.getElementById(def.id);
+      if (!el || el.disabled) return;
+      const metodo = normalize(def.metodo).toLowerCase();
+      const current = Math.max(0, roundMoney(Number((state.paymentAmounts || {})[metodo] || 0)));
+      if (current > 0) return;
+
+      const total = getStationPaymentTotalForAmountAutofill(selected);
+      if (total <= 0) return;
+      if (!state.paymentAmountsManual) {
+        state.paymentAmounts = { efectivo: 0, tarjeta_debito: 0, tarjeta_credito: 0, transferencia_bancaria: 0 };
+      }
+      state.paymentAmountsManual = true;
+      const otherTotal = getStationPaymentAmountsTotalExcluding(metodo);
+      const amount = otherTotal <= 0 ? total : Math.max(0, roundMoney(total - otherTotal));
+      state.paymentAmounts[metodo] = amount;
+      applyStationPaymentAmountsToDiscount();
+      formatStationPaymentAmountInputs(selected.moneda);
+      renderStationPaymentPanel(selected);
+      window.setTimeout(function() {
+        const input = document.getElementById(def.id);
+        if (input) input.select();
+      }, 0);
     }
 
     function formatStationPaymentAmountInputs(moneda) {
@@ -3241,6 +3377,24 @@
           hint.textContent = 'Vuelto: ' + formatAmount(cambio, moneda);
           hint.classList.remove('value-negative');
         }
+      }
+    }
+
+    function renderStationPaymentAmountsStatus(carrito, pay) {
+      const msg = document.getElementById('stationPaymentAmountsMsg');
+      if (!msg) return;
+      const moneda = (carrito && carrito.moneda) || 'COP';
+      const total = Math.max(0, roundMoney(Number(pay && pay.totalPagarFinal || 0)));
+      const sum = getStationPaymentAmountsTotal();
+      msg.classList.remove('value-negative', 'value-positive');
+      if (state.paymentAmountsManual && pay && pay.paymentAmountsMessage) {
+        msg.textContent = pay.paymentAmountsMessage + ' Total: ' + formatAmount(total, moneda) + ' | Sumatoria: ' + formatAmount(sum, moneda) + '.';
+        msg.classList.add('value-negative');
+      } else if (state.paymentAmountsManual && sum > 0 && total > 0) {
+        msg.textContent = 'Sumatoria correcta: ' + formatAmount(sum, moneda) + '. Pago listo para cerrar.';
+        msg.classList.add('value-positive');
+      } else {
+        msg.textContent = 'Haz clic en Efectivo, Débito, Crédito u Otro para cargar el total. Puedes editar los valores para pago combinado.';
       }
     }
 
@@ -3373,12 +3527,14 @@
     function buildPaymentQrPayload(carrito, pay, account, reference) {
       const amount = roundMoney(Number(pay && pay.totalPagarFinal || 0));
       const provider = normalize(account && account.proveedor).toLowerCase() || 'breb';
+      const moneda = normalize(carrito && carrito.moneda) || 'COP';
+      const amountText = moneyPrecision(moneda) === 0 ? String(Math.round(amount)) : amount.toFixed(2);
       const data = {
         proveedor: paymentQrProviderLabel(provider),
         provider: provider,
-        valor: amount.toFixed(2),
-        total: amount.toFixed(2),
-        moneda: normalize(carrito && carrito.moneda) || 'COP',
+        valor: amountText,
+        total: amountText,
+        moneda: moneda,
         referencia: reference,
         reference: reference,
         empresa_id: String(state.empresaID || ''),
@@ -3546,7 +3702,9 @@
     }
 
     function roundMoney(value) {
-      return Math.round(Number(value || 0) * 100) / 100;
+      const n = Number(value || 0);
+      if (!Number.isFinite(n)) return 0;
+      return shouldUseWholeMoney() ? Math.round(n) : Math.round(n * 100) / 100;
     }
 
     async function resolvePrinterForServiceOrder(itemPayload) {
@@ -4009,6 +4167,94 @@
         '</section>';
     }
 
+    function shouldShowTaxDeductionOnInvoice(cfg) {
+      return Boolean(cfg && cfg.mostrar_deducido_impuesto_factura === true);
+    }
+
+    function formatTaxPercent(value) {
+      const n = Number(value || 0);
+      if (!Number.isFinite(n) || n <= 0) return '0%';
+      const rounded = Math.round(n * 100) / 100;
+      return String(rounded).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1') + '%';
+    }
+
+    function buildTaxDeductionSummary(items) {
+      const groups = {};
+      let baseTotal = 0;
+      let taxTotal = 0;
+      let documentTotal = 0;
+      (Array.isArray(items) ? items : []).forEach(function(it) {
+        if (normalize(it && (it.estado || 'activo')).toLowerCase() !== 'activo') return;
+        const qty = Number(it.cantidad || 0);
+        const unit = Number(it.precio_unitario || 0);
+        const lineTotal = Number(it.total_linea || 0) || (qty * unit);
+        const explicitBase = Number(it.base_gravable || 0);
+        const explicitTax = Number(it.valor_impuesto || 0);
+        const pct = Number(it.impuesto_porcentaje || 0);
+        let base = explicitBase;
+        let tax = explicitTax;
+        if ((!Number.isFinite(base) || base <= 0) && (!Number.isFinite(tax) || tax <= 0) && pct > 0 && lineTotal > 0) {
+          base = lineTotal / (1 + (pct / 100));
+          tax = lineTotal - base;
+        }
+        if (!Number.isFinite(base) || base < 0) base = 0;
+        if (!Number.isFinite(tax) || tax < 0) tax = 0;
+        if (!Number.isFinite(lineTotal) || lineTotal < 0) return;
+        base = roundMoney(base);
+        tax = roundMoney(tax);
+        documentTotal += roundMoney(lineTotal);
+        if (tax <= 0 && base <= 0) return;
+        baseTotal += base;
+        taxTotal += tax;
+        const code = normalize(it.impuesto_codigo || 'IVA') || 'IVA';
+        const key = code + '|' + formatTaxPercent(pct);
+        if (!groups[key]) {
+          groups[key] = { label: code + ' ' + formatTaxPercent(pct), base: 0, tax: 0 };
+        }
+        groups[key].base += base;
+        groups[key].tax += tax;
+      });
+      const rows = Object.keys(groups).sort().map(function(key) {
+        const item = groups[key];
+        item.base = roundMoney(item.base);
+        item.tax = roundMoney(item.tax);
+        return item;
+      });
+      return {
+        baseTotal: roundMoney(baseTotal),
+        taxTotal: roundMoney(taxTotal),
+        documentTotal: roundMoney(documentTotal),
+        rows: rows,
+        hasTax: roundMoney(taxTotal) > 0
+      };
+    }
+
+    function taxDeductionSummaryRows(summary, moneda) {
+      if (!summary || !summary.hasTax) return [];
+      const rows = [
+        { label: 'Base gravable', value: formatAmount(summary.baseTotal, moneda) },
+        { label: 'Impuesto deducido', value: formatAmount(summary.taxTotal, moneda) }
+      ];
+      (Array.isArray(summary.rows) ? summary.rows : []).forEach(function(row) {
+        rows.push({
+          label: row.label,
+          value: 'Base ' + formatAmount(row.base, moneda) + ' / Imp. ' + formatAmount(row.tax, moneda)
+        });
+      });
+      return rows;
+    }
+
+    function taxDeductionFallbackHTML(summary, moneda) {
+      const rows = taxDeductionSummaryRows(summary, moneda);
+      if (!rows.length) return '';
+      return '<section class="invoice-tax-deduction">' +
+        '<h2>Deducido del impuesto</h2>' +
+        rows.map(function(row) {
+          return '<p><span>' + escapeHtml(row.label) + '</span><strong>' + escapeHtml(row.value) + '</strong></p>';
+        }).join('') +
+        '</section>';
+    }
+
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       if (!shouldPrintCartReceipt(cfg)) return false;
@@ -4023,6 +4269,8 @@
       const now = new Date();
       const clienteNombre = carritoCustomerDisplayName(carrito);
       const invoiceQR = await buildElectronicInvoiceQRForPrint(documentoVenta, printFormat);
+      const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
+      const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
 
       let rowsHtml = '';
       (Array.isArray(items) ? items : []).forEach(function(it) {
@@ -4068,6 +4316,7 @@
           rows: printRows,
           totalLabel: 'Total a pagar',
           totalValue: formatAmount(pay.totalPagarFinal, moneda),
+          summaryRows: taxSummaryRows,
           footer: markOfflinePending ? 'Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.' : 'Gracias por su compra.',
           qr: invoiceQR,
           signatures: false
@@ -4080,8 +4329,8 @@
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
         : '@media print{@page{size:letter;margin:14mm}body{margin:0}}';
       const baseStyle = printFormat === 'pos'
-        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
-        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
+        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}.muted{color:#555;font-size:10px}hr{border:0;border-top:1px dashed #999;margin:7px 0}.invoice-tax-deduction{border-top:1px dashed #999;border-bottom:1px dashed #999;margin:7px 0;padding:5px 0}.invoice-tax-deduction h2{font-size:11px;margin:0 0 3px;text-align:center}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:5px;margin:2px 0;font-size:10px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
+        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}h1{font-size:18px;margin:0 0 8px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.muted{color:#666;font-size:12px}.invoice-tax-deduction{border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:10px 0;padding:6px 0}.invoice-tax-deduction h2{font-size:13px;margin:0 0 5px}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:10px;margin:3px 0;font-size:12px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>Recibo de cobro</title>' +
         '<style>' + pageStyle + baseStyle + '</style>' +
         '</head><body>' +
@@ -4096,6 +4345,7 @@
         '<hr>' +
         '<table><thead><tr><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
+        taxDeductionFallbackHTML(taxDeduction, moneda) +
         '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' +
         '<p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias: ' + escapeHtml(String(copias)) + '</p>' +
         (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p class="muted">Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.</p>' : '') +
@@ -4123,6 +4373,8 @@
       const logoUrl = normalize(cfg.logo_url);
       const pie = normalize(cfg.pie_factura);
       const notas = normalize(cfg.notas_legales);
+      const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
+      const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
       const rowsHtml = (Array.isArray(items) ? items : []).filter(function(it) {
         return normalize(it && (it.estado || 'activo')).toLowerCase() === 'activo';
       }).map(function(it) {
@@ -4166,6 +4418,7 @@
           rows: printRows,
           totalLabel: 'Total documento',
           totalValue: formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda),
+          summaryRows: taxSummaryRows,
           note: [notas, pie].filter(Boolean).join('\n'),
           footer: normalize(doc.codigo_validacion) ? ('Validacion: ' + normalize(doc.codigo_validacion)) : '',
           qr: invoiceQR,
@@ -4179,8 +4432,8 @@
         ? '@media print{@page{size:80mm auto;margin:3mm}body{width:74mm;margin:0}}'
         : '@media print{@page{size:letter;margin:14mm}body{margin:0}}';
       const bodyStyle = formato === 'pos'
-        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}.muted{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}hr{border:0;border-top:1px dashed #999;margin:7px 0}.logo{max-height:48px;display:block;margin:0 auto 6px;max-width:160px}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
-        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
+        ? 'body{font-family:monospace;padding:6px;color:#111;font-size:11px;line-height:1.25}h1{font-size:14px;text-align:center;margin:0 0 6px}.muted{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;font-size:10.5px}td,th{border-bottom:1px dashed #999;padding:4px 2px;vertical-align:top}th{text-align:left}.tot{font-weight:bold;font-size:13px;text-align:right}hr{border:0;border-top:1px dashed #999;margin:7px 0}.logo{max-height:48px;display:block;margin:0 auto 6px;max-width:160px}.invoice-tax-deduction{border-top:1px dashed #999;border-bottom:1px dashed #999;margin:7px 0;padding:5px 0}.invoice-tax-deduction h2{font-size:11px;margin:0 0 3px;text-align:center}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:5px;margin:2px 0;font-size:10px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #999;margin-top:8px;padding-top:7px}.invoice-access-qr img{width:92px;height:92px;display:block;margin:0 auto 4px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:9px;overflow-wrap:anywhere}'
+        : 'body{font-family:Arial,sans-serif;padding:14px;color:#111}.logo{max-height:72px;max-width:220px;display:block;margin:0 0 10px}.muted{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid #ddd;padding:6px 4px}th{text-align:left}.tot{font-weight:bold}.meta{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}.invoice-tax-deduction{border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:10px 0;padding:6px 0}.invoice-tax-deduction h2{font-size:13px;margin:0 0 5px}.invoice-tax-deduction p{display:flex;justify-content:space-between;gap:10px;margin:3px 0;font-size:12px}.invoice-tax-deduction strong{text-align:right;white-space:nowrap}.invoice-access-qr{text-align:center;border-top:1px dashed #aaa;margin-top:14px;padding-top:12px}.invoice-access-qr img{width:126px;height:126px;display:block;margin:0 auto 6px}.invoice-access-qr strong,.invoice-access-qr span{display:block;font-size:11px;overflow-wrap:anywhere}';
       const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(normalize(doc.documento_codigo || doc.numero_legal || 'Factura electr?nica')) + '</title>' +
         '<style>' + pageStyle + bodyStyle + '</style></head><body>' +
         (logoUrl && cfg.mostrar_logo_empresa !== false && cfg.mostrar_logo !== false ? ('<img class="logo" src="' + escapeHtml(logoUrl) + '" alt="Logo empresa">') : '') +
@@ -4195,6 +4448,7 @@
         '<hr>' +
         '<table><thead><tr><th>Descripci?n</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total documento: ' + escapeHtml(formatAmount(Number(doc.monto_total || pay.totalPagarFinal || 0), moneda)) + '</p>' +
+        taxDeductionFallbackHTML(taxDeduction, moneda) +
         (notas ? ('<p><strong>Notas legales:</strong> ' + escapeHtml(notas) + '</p>') : '') +
         (pie ? ('<p class="muted">' + escapeHtml(pie) + '</p>') : '') +
         (normalize(doc.codigo_validacion) ? ('<p class="muted">Validaci?n: ' + escapeHtml(normalize(doc.codigo_validacion)) + '</p>') : '') +
@@ -4724,28 +4978,30 @@
       const selectedMixedMethod1 = normalize(document.getElementById('mixedMethod1').value).toLowerCase();
       const selectedMixedMethod2 = normalize(document.getElementById('mixedMethod2').value).toLowerCase();
       const selectedMixedMethod3 = (document.getElementById('mixedMethod3') ? normalize(document.getElementById('mixedMethod3').value).toLowerCase() : 'tarjeta_credito');
+      const selected = getSelectedCarrito();
+      const moneda = (selected && selected.moneda) || 'COP';
 
       state.stationDiscount.type = normalize(document.getElementById('discountType').value) || 'none';
-      state.stationDiscount.value = Math.max(0, toNumber(document.getElementById('discountValue').value, 0));
+      state.stationDiscount.value = normalizeMoneyValue(toNumber(document.getElementById('discountValue').value, 0), moneda);
       state.stationDiscount.code = normalize(document.getElementById('discountCode').value).toUpperCase();
-      state.stationDiscount.devolucion = Math.max(0, toNumber(document.getElementById('devolucionMonto').value, 0));
+      state.stationDiscount.devolucion = normalizeMoneyValue(toNumber(document.getElementById('devolucionMonto').value, 0), moneda);
       state.stationDiscount.paymentMethod = isPaymentMethodAllowed(selectedPaymentMethod) ? selectedPaymentMethod : (allowedPaymentMethods[0] || '');
       state.stationDiscount.paymentReference = normalize(document.getElementById('paymentReference').value);
       state.stationTip.aplicar = Boolean(document.getElementById('applyTipCheckbox').checked);
       state.stationDiscount.mixedPayments = [
         {
           metodo: isMixedMethodAllowed(selectedMixedMethod1) ? selectedMixedMethod1 : (allowedMixedMethods[0] || 'efectivo'),
-          monto: Math.max(0, toNumber(document.getElementById('mixedAmount1').value, 0)),
+          monto: normalizeMoneyValue(toNumber(document.getElementById('mixedAmount1').value, 0), moneda),
           referencia: normalize(document.getElementById('mixedReference1').value)
         },
         {
           metodo: isMixedMethodAllowed(selectedMixedMethod2) ? selectedMixedMethod2 : (allowedMixedMethods[Math.min(1, Math.max(0, allowedMixedMethods.length - 1))] || allowedMixedMethods[0] || 'tarjeta_debito'),
-          monto: Math.max(0, toNumber(document.getElementById('mixedAmount2').value, 0)),
+          monto: normalizeMoneyValue(toNumber(document.getElementById('mixedAmount2').value, 0), moneda),
           referencia: normalize(document.getElementById('mixedReference2').value)
         },
         {
           metodo: isMixedMethodAllowed(selectedMixedMethod3) ? selectedMixedMethod3 : (allowedMixedMethods[Math.min(2, Math.max(0, allowedMixedMethods.length - 1))] || allowedMixedMethods[0] || 'tarjeta_credito'),
-          monto: Math.max(0, toNumber(document.getElementById('mixedAmount3').value, 0)),
+          monto: normalizeMoneyValue(toNumber(document.getElementById('mixedAmount3').value, 0), moneda),
           referencia: normalize(document.getElementById('mixedReference3').value)
         }
       ];
@@ -4763,6 +5019,7 @@
       const optionalControls = document.getElementById('stationOptionalSectionsControls');
       const stationItemsPanel = document.getElementById('stationCartSplitRow');
       const focusedSaleMode = state.stationMode || state.directSaleMode;
+      applyCartMoneyInputScale((carrito && carrito.moneda) || 'COP');
       if (!focusedSaleMode || !carrito) {
         const btnPay = document.getElementById('btnPagarCarrito');
         const abonosPanel = document.getElementById('carritoAbonosPanel');
@@ -4949,6 +5206,9 @@
       });
 
       syncStationDiscountFromInputs();
+      if (state.paymentAmountsManual) {
+        applyStationPaymentAmountsToDiscount();
+      }
       if (state.stationDiscount.paymentMethod === 'codigo_descuento' && state.stationDiscount.type !== 'code') {
         state.stationDiscount.type = 'code';
         discountTypeEl.value = 'code';
@@ -5061,6 +5321,7 @@
       }
 
       syncStationPaymentDisplayInputs(carrito);
+      renderStationPaymentAmountsStatus(carrito, pay);
 
       document.getElementById('itemForm').style.display = 'none';
       document.getElementById('itemForm').hidden = true;
@@ -5398,9 +5659,63 @@
     }
 
     function formatAmount(value, moneda) {
-      const amount = Number(value || 0);
       const m = normalize(moneda || 'COP') || 'COP';
-      return m + ' ' + amount.toFixed(2);
+      const precision = moneyPrecision(m);
+      const amount = normalizeMoneyValue(value, m);
+      return m + ' ' + amount.toFixed(precision);
+    }
+
+    function applyCartMoneyInputScale(moneda) {
+      const m = normalize(moneda || 'COP') || 'COP';
+      const whole = shouldUseWholeMoney(m);
+      const textMoneyIds = [
+        'stationPayDisplayEfectivo',
+        'stationPayDisplayDebito',
+        'stationPayDisplayCredito',
+        'stationPayDisplayOtro',
+        'stationCashReceivedDisplay'
+      ];
+      const numberMoneyIds = [
+        'itemPrecio',
+        'carritoAbonoMonto',
+        'discountValue',
+        'devolucionMonto',
+        'mixedAmount1',
+        'mixedAmount2',
+        'mixedAmount3'
+      ];
+      textMoneyIds.forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.setAttribute('inputmode', whole ? 'numeric' : 'decimal');
+        if (whole) {
+          el.setAttribute('pattern', '[0-9]*');
+        } else {
+          el.removeAttribute('pattern');
+        }
+      });
+      numberMoneyIds.forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.setAttribute('step', whole ? '1' : '0.01');
+        el.setAttribute('inputmode', whole ? 'numeric' : 'decimal');
+        if (whole) {
+          el.setAttribute('pattern', '[0-9]*');
+        } else {
+          el.removeAttribute('pattern');
+        }
+      });
+      const cashReceived = document.getElementById('stationCashReceivedDisplay');
+      if (cashReceived) cashReceived.placeholder = formatAmount(0, m);
+      const changeHint = document.getElementById('stationCashChangeHint');
+      if (changeHint && !state.cashReceivedAmount) changeHint.textContent = 'Vuelto: ' + formatAmount(0, m);
+    }
+
+    function normalizeMoneyNumberInputElement(el, moneda) {
+      if (!el) return;
+      const m = normalize(moneda || ((getSelectedCarrito() && getSelectedCarrito().moneda) || 'COP')) || 'COP';
+      const value = normalizeMoneyValue(toNumber(el.value, 0), m);
+      el.value = moneyPrecision(m) === 0 ? String(Math.round(value)) : value.toFixed(2);
     }
 
     function usuarioEmpresaIDPorEntrada(value) {
@@ -6126,7 +6441,9 @@
         const opt = document.createElement('option');
         opt.value = String(idx);
         const codigo = normalize(item.codigo) || 'sin-codigo';
-        const precio = Number(item.precio || 0).toFixed(2);
+        const carrito = getSelectedCarrito();
+        const moneda = (carrito && carrito.moneda) || item.moneda || 'COP';
+        const precio = formatAmount(Number(item.precio || 0), moneda);
         opt.textContent = (item.nombre || item.descripcion || 'Item') + ' | ' + codigo + ' | ' + precio;
         sel.appendChild(opt);
       });
@@ -7601,13 +7918,14 @@
       const tbody = document.createElement('tbody');
       productos.forEach(function(item) {
         const tr = document.createElement('tr');
+        const moneda = normalize(item.moneda || selected.moneda) || 'COP';
         let row = '<td>' + Number(item.id || 0) + '</td>' +
           '<td>' + escapeHtml(normalize(item.tipo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.codigo_item) || '-') + '</td>' +
           '<td>' + escapeHtml(normalize(item.descripcion) || '-') + '</td>' +
-          '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
-          '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>';
-        if (showTotal) row += '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>';
+          '<td>' + String(Number(item.cantidad || 0)) + '</td>' +
+          '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>';
+        if (showTotal) row += '<td>' + escapeHtml(formatAmount(item.total_linea || 0, moneda)) + '</td>';
         row += '<td>' + escapeHtml(normalize(item.estado) || 'activo') + '</td>';
         tr.innerHTML = row;
         tbody.appendChild(tr);
@@ -7753,13 +8071,14 @@
       const tbody = document.createElement('tbody');
       state.items.forEach(function(item) {
         const tr = document.createElement('tr');
+        const moneda = normalize(item.moneda || selected.moneda) || 'COP';
         let row = '<td>' + item.id + '</td>' +
           '<td>' + (normalize(item.descripcion) || '') + '</td>' +
-          '<td>' + Number(item.cantidad || 0).toFixed(2) + '</td>' +
-          '<td>' + Number(item.precio_unitario || 0).toFixed(2) + '</td>' +
+          '<td>' + String(Number(item.cantidad || 0)) + '</td>' +
+          '<td>' + escapeHtml(formatAmount(item.precio_unitario || 0, moneda)) + '</td>' +
           '<td>' + Number(item.descuento_porcentaje || 0).toFixed(2) + '</td>' +
           '<td>' + Number(item.impuesto_porcentaje || 0).toFixed(2) + '</td>';
-        if (showTotal) row += '<td>' + Number(item.total_linea || 0).toFixed(2) + '</td>';
+        if (showTotal) row += '<td>' + escapeHtml(formatAmount(item.total_linea || 0, moneda)) + '</td>';
         row += '<td class="actions">' +
             (readOnlyMode
               ? '<span class="form-help">Solo lectura</span>'
@@ -7791,7 +8110,7 @@
 
       const devolucionEl = document.getElementById('devolucionMonto');
       if (devolucionEl) {
-        devolucionEl.value = amount.toFixed(2);
+        devolucionEl.value = moneyPrecision(selected.moneda || 'COP') === 0 ? String(Math.round(amount)) : amount.toFixed(2);
       }
 
       renderStationPaymentPanel(selected);
@@ -8350,7 +8669,7 @@
         descripcion: normalize(document.getElementById('itemDescripcion').value),
         unidad_medida: normalize(document.getElementById('itemUnidad').value) || 'unidad',
         cantidad: toNaturalQuantity(cantidadRaw, 1),
-        precio_unitario: toNumber(document.getElementById('itemPrecio').value, 0),
+        precio_unitario: normalizeMoneyValue(toNumber(document.getElementById('itemPrecio').value, 0), (getSelectedCarrito() && getSelectedCarrito().moneda) || 'COP'),
         descuento_porcentaje: toNumber(document.getElementById('itemDescuentoPct').value, 0),
         impuesto_porcentaje: toNumber(document.getElementById('itemImpuestoPct').value, 0),
         impuesto_codigo: normalize(document.getElementById('itemImpuestoCodigo').value) || 'IVA',
@@ -8726,6 +9045,15 @@
       });
     });
 
+    ['itemPrecio', 'carritoAbonoMonto', 'discountValue', 'devolucionMonto', 'mixedAmount1', 'mixedAmount2', 'mixedAmount3'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', function() {
+        const selected = getSelectedCarrito();
+        normalizeMoneyNumberInputElement(el, selected && selected.moneda);
+      });
+    });
+
     ['discountType', 'discountValue', 'discountCode', 'devolucionMonto', 'paymentMethod', 'paymentReference', 'activeCashRegister', 'applyTipCheckbox', 'commissionWorker'].forEach(function(id) {
       const el = document.getElementById(id);
       if (!el) return;
@@ -8753,6 +9081,12 @@
     getStationPaymentAmountInputDefs().forEach(function(def) {
       const el = document.getElementById(def.id);
       if (!el) return;
+      el.addEventListener('focus', function() {
+        handleStationPaymentAmountIntent(def);
+      });
+      el.addEventListener('click', function() {
+        handleStationPaymentAmountIntent(def);
+      });
       el.addEventListener('input', function() {
         const selected = getSelectedCarrito();
         if (!selected) return;
@@ -8936,6 +9270,7 @@
         document.getElementById('cancelItemBtn').style.display = 'none';
 
         await loadEmpresaGeneralConfigFromServer();
+        applyCartMoneyInputScale('COP');
         await loadEmpresaAvanzadaConfigFromServer();
         await loadEmpresaPermissionsContextFromServer();
         await loadStationConfigFromServer();

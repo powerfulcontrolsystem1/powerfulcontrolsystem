@@ -9319,6 +9319,26 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   background:color-mix(in srgb, var(--surface-soft) 72%, #ef4444 28%);
   color:var(--text);
 }
+.carrito-payment-amounts-msg{
+  display:block;
+  width:100%;
+  padding:8px 10px;
+  border:1px solid var(--content-soft-border);
+  border-radius:8px;
+  background:var(--content-soft-bg);
+  color:var(--muted);
+  font-weight:800;
+}
+.carrito-payment-amounts-msg.value-negative{
+  border-color:color-mix(in srgb, #ef4444 58%, var(--content-soft-border) 42%);
+  background:color-mix(in srgb, var(--surface-soft) 74%, #ef4444 26%);
+  color:var(--text);
+}
+.carrito-payment-amounts-msg.value-positive{
+  border-color:color-mix(in srgb, #22c55e 58%, var(--content-soft-border) 42%);
+  background:color-mix(in srgb, var(--surface-soft) 76%, #22c55e 24%);
+  color:var(--text);
+}
 .carrito-summary-content{display:grid;gap:4px;margin-top:6px;}
 .carrito-summary-profile{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:8px;background:color-mix(in srgb, var(--surface-soft) 82%, var(--btn-primary) 18%);border:1px solid color-mix(in srgb, var(--content-soft-border) 78%, var(--btn-primary) 22%);min-height:28px;}
 .carrito-summary-profile span{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
