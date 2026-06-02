@@ -2963,11 +2963,20 @@
       state.cartAbonosLoading = true;
       if (renderAfterLoad) renderCarritoAbonosPanel();
       try {
-        const url = new URL('/api/empresa/carritos_compra', window.location.origin);
-        url.searchParams.set('action', 'abonos');
-        url.searchParams.set('empresa_id', String(state.empresaID));
-        url.searchParams.set('carrito_id', String(selected.id));
-        const res = await fetchWithTimeout(url.pathname + url.search, { credentials: 'same-origin' });
+          const url = new URL('/api/empresa/carritos_compra', window.location.origin);
+          url.searchParams.set('action', 'abonos');
+          url.searchParams.set('empresa_id', String(state.empresaID));
+          url.searchParams.set('carrito_id', String(selected.id));
+          if (state.directSaleMode) {
+            url.searchParams.set('modo', 'venta_directa');
+            url.searchParams.set('perm_page', 'linkVentaDirecta');
+          } else if (state.stationMode) {
+            url.searchParams.set('perm_page', 'linkEstaciones');
+            if (state.stationID > 0) {
+              url.searchParams.set('estacion_id', String(state.stationID));
+            }
+          }
+          const res = await fetchWithTimeout(url.pathname + url.search, { credentials: 'same-origin' });
         await ensureOk(res);
         const payload = await res.json();
         state.cartAbonos = Array.isArray(payload) ? payload : (Array.isArray(payload && payload.abonos) ? payload.abonos : []);
