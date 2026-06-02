@@ -1,6 +1,7 @@
 2026-06-02: Cajero puede cargar carritos desde estaciones.
 - Modulos afectados: permisos empresariales, estaciones, carrito de compras y corte de caja.
 - `backend/handlers/empresa_permisos.go` respeta `perm_page=linkEstaciones` y `perm_page=linkCorteCaja` para `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`, evitando que el endpoint caiga al permiso administrativo `linkCarritoCompras`.
+- `web/administrar_empresa/carrito_de_compras.html` agrega `perm_page=linkEstaciones`/`linkVentaDirecta` en `loadCarritos()` y `loadItems()` para que el carrito cargue visualmente completo al entrar desde una estacion con rol cajero.
 - Seguridad: el cambio no habilita la pagina administrativa de Carritos; solo permite el uso operativo desde Estaciones o Corte de Caja con sesion, `empresa_id`, rol y accesos de estacion validados en backend.
 - Pruebas: `go test ./handlers -run "TestResolvePermissionPageKeyForDirectSaleCart|TestResolvePermissionPageKeyForOperationalStationCart|TestResolvePermissionPageKeyForRegularCart" -count=1`.
 

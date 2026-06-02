@@ -8307,6 +8307,14 @@
         if (state.selectedCarritoCode) {
           url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
         }
+      } else if (state.stationMode) {
+        url.searchParams.set('perm_page', 'linkEstaciones');
+        if (state.stationID > 0) {
+          url.searchParams.set('estacion_id', String(state.stationID));
+        }
+        if (state.selectedCarritoCode) {
+          url.searchParams.set('carrito_codigo', state.selectedCarritoCode);
+        }
       }
       if (state.qCarrito) url.searchParams.set('q', state.qCarrito);
 
@@ -8580,6 +8588,15 @@
       url.searchParams.set('empresa_id', String(state.empresaID));
       url.searchParams.set('carrito_id', String(state.selectedCarritoID));
       url.searchParams.set('include_inactive', '1');
+      if (state.directSaleMode) {
+        url.searchParams.set('modo', 'venta_directa');
+        url.searchParams.set('perm_page', 'linkVentaDirecta');
+      } else if (state.stationMode) {
+        url.searchParams.set('perm_page', 'linkEstaciones');
+        if (state.stationID > 0) {
+          url.searchParams.set('estacion_id', String(state.stationID));
+        }
+      }
       const res = await fetchWithTimeout(url.pathname + url.search, {
         credentials: 'same-origin'
       });

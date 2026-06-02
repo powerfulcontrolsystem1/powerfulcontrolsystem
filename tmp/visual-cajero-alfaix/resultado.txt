@@ -1,0 +1,34 @@
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+loginUrl=https://powerfulcontrolsystem.com/administrar_empresa.html?id=44
+menuHasVentaDirecta=true
+menuHasEstaciones=false
+menuHasCorteCaja=true
+menuHasCarritosAdmin=false
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+mesa15Visible=true
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+console:Failed to load resource: the server responded with a status of 403 ()
+afterStationClickUrl=https://powerfulcontrolsystem.com/administrar_empresa/carrito_de_compras.html?empresa_id=44&estacion_id=15&estacion_nombre=Mesa%2015&carrito_codigo=EST-44-15
+cartUrl=https://powerfulcontrolsystem.com/administrar_empresa/carrito_de_compras.html?empresa_id=44&estacion_id=15&estacion_nombre=Mesa%2015&carrito_codigo=EST-44-15
+cartHasBuscarProductos=false
+cartHasEfectivo=false
+cartHasDebito=false
+cartHasCredito=false
+cartHasPagar=true
