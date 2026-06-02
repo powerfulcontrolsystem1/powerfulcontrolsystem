@@ -21,10 +21,25 @@ func TestEmpresaUsuarioEstadoBloqueaPrimerIngresoBloqueaConfirmadoInactivo(t *te
 	item := &dbpkg.EmpresaUsuario{
 		Estado:          "inactivo",
 		EmailConfirmado: 1,
+		PasswordSet:     1,
+		PasswordHash:    "hash",
+		PasswordSalt:    "salt",
 	}
 
 	if !empresaUsuarioEstadoBloqueaPrimerIngreso(item) {
 		t.Fatal("usuario confirmado e inactivo debe quedar bloqueado")
+	}
+}
+
+func TestEmpresaUsuarioEstadoBloqueaPrimerIngresoPermiteConfirmadoSinPassword(t *testing.T) {
+	item := &dbpkg.EmpresaUsuario{
+		Estado:          "inactivo",
+		EmailConfirmado: 1,
+		PasswordSet:     0,
+	}
+
+	if empresaUsuarioEstadoBloqueaPrimerIngreso(item) {
+		t.Fatal("usuario confirmado por invitacion pero sin password debe completar primer ingreso")
 	}
 }
 

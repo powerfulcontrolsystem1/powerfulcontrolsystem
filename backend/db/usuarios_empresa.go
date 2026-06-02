@@ -604,7 +604,12 @@ func GetEmpresaUsuarioByEmailScoped(dbConn *sql.DB, email string, empresaID int6
 		query += " AND empresa_id = ?"
 		args = append(args, empresaID)
 	}
-	query += " LIMIT 1"
+	query += ` ORDER BY
+		CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(email_confirmado, 0) = 1 THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(password_set, 0) = 1 AND COALESCE(password_hash, '') <> '' THEN 0 ELSE 1 END,
+		id DESC
+	LIMIT 1`
 
 	row := queryRowSQLCompat(dbConn, query, args...)
 
@@ -685,7 +690,12 @@ func GetEmpresaUsuariosByEmail(dbConn *sql.DB, email string) ([]EmpresaUsuario, 
 		COALESCE(observaciones, '')
 	FROM users
 	WHERE lower(email) = lower(?)
-	ORDER BY empresa_id ASC, id DESC`, strings.TrimSpace(email))
+	ORDER BY
+		empresa_id ASC,
+		CASE WHEN COALESCE(estado, 'activo') = 'activo' THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(email_confirmado, 0) = 1 THEN 0 ELSE 1 END,
+		CASE WHEN COALESCE(password_set, 0) = 1 AND COALESCE(password_hash, '') <> '' THEN 0 ELSE 1 END,
+		id DESC`, strings.TrimSpace(email))
 	if err != nil {
 		return nil, err
 	}

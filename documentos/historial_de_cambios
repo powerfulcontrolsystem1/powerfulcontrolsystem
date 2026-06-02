@@ -30340,6 +30340,26 @@ Validacion:
 - `go test ./handlers -run "EmpresaRoutesUsePermissionWrappers|Reenviar|Usuario" -count=1`
 - Validacion de sintaxis del script embebido de `administrar_usuarios.html`
 
+2026-06-02: Login usuario confirmado sin password
+Modulo: Usuarios empresa / Login usuario
+Cambio:
+- El primer ingreso por `login_usuario.html` ya no bloquea como inactivo a un
+  usuario que tiene `email_confirmado=1` pero aun no ha creado contrasena, si
+  conserva token de invitacion valido.
+- La busqueda por correo de usuarios operativos ahora prioriza cuentas activas,
+  confirmadas, con contrasena y mas recientes, evitando que duplicados
+  historicos no confirmados disparen el mensaje contradictorio de confirmacion.
+- La cuenta sigue protegida: sin invitacion valida no se completa el registro, y
+  un usuario confirmado/inactivo con contrasena configurada continua bloqueado
+  hasta que el administrador lo active.
+Archivos:
+- backend/handlers/usuarios_empresa.go
+- backend/db/usuarios_empresa.go
+- backend/handlers/usuarios_empresa_invitation_test.go
+- backend/db/usuarios_empresa_lookup_test.go
+Validacion:
+- `go test ./handlers ./db -run "TestEmpresaUsuarioEstadoBloqueaPrimerIngreso|TestEmpresaUsuarioEmailLookupPrefiereCuentaConfirmadaActiva|TestNormalizePermissionRoleCajaEsCajero|TestCajeroSoloVePaginasOperativas" -count=1`
+
 2026-06-02: Apariencia claro/oscuro en tarjeta de agregar usuario
 Modulo: Usuarios empresa
 Cambio:

@@ -288,7 +288,13 @@ func empresaUsuarioEstadoBloqueaPrimerIngreso(item *dbpkg.EmpresaUsuario) bool {
 	if item == nil {
 		return true
 	}
-	return strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") && item.EmailConfirmado == 1
+	if !strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+		return false
+	}
+	if item.EmailConfirmado != 1 {
+		return false
+	}
+	return item.PasswordSet == 1 || strings.TrimSpace(item.PasswordHash) != "" || strings.TrimSpace(item.PasswordSalt) != ""
 }
 
 func ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario, acceptRequested bool) (*dbpkg.SuperContractVersion, bool, error) {
