@@ -1,3 +1,9 @@
+2026-06-02: Ayuda con apariencias claras y oscuras reparadas.
+- Modulo afectado: centro de ayuda.
+- `web/ayuda/ayuda.html` agrega clase de pagina y reglas especificas con variables `--bg`, `--surface`, `--text`, `--muted`, `--accent`, `--border` y `--form-*` para que hero, navegacion, tarjetas internas, chips, links, codigo y barra de regreso respeten el tema activo.
+- Se agrega estado visual `No se encontraron temas con esa busqueda` compatible con apariencias claras y oscuras.
+- Pruebas: validacion de scripts embebidos con Node, carga local en servidor estatico y comprobacion visual en tema oscuro y tema claro forzado.
+
 2026-06-02: Carrito completo para rol cajero.
 - Modulos afectados: `usuarios_empresa`, `carrito_de_compras`, permisos empresariales, catalogo de productos/clientes operativo.
 - `backend/handlers/empresa_permisos.go` conserva el menu del cajero limitado a `Venta directa`, `Estaciones` y `Corte de Caja`, pero mantiene permisos internos de carrito para ventas, finanzas, facturacion, lectura de inventario y lectura/creacion/actualizacion de clientes.

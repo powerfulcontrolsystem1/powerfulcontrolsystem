@@ -8,18 +8,73 @@
   <script src="/menu.js"></script>
   <script src="/js/help_navigation.js" defer></script>
   <style>
+    .help-page {
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28%),
+        linear-gradient(180deg, var(--bg), var(--bg-alt));
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .help-page .container {
+      color: var(--text);
+    }
+    .help-page a {
+      color: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+    }
+    .help-page a:hover,
+    .help-page a:focus-visible {
+      color: color-mix(in srgb, var(--accent-2) 76%, var(--text) 24%);
+    }
+    .help-page code {
+      background: color-mix(in srgb, var(--surface-soft) 78%, var(--accent) 8%);
+      border: 1px solid color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
+      border-radius: 6px;
+      color: color-mix(in srgb, var(--text) 88%, var(--accent-yellow) 12%);
+      display: inline-block;
+      font-weight: 800;
+      line-height: 1.35;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      padding: 1px 6px;
+      vertical-align: baseline;
+      white-space: normal;
+    }
+    .help-page :is(strong, h1, h2, h3, li) {
+      color: var(--text);
+    }
+    .help-page p {
+      color: var(--muted);
+    }
+    .help-back-bar {
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border-bottom: 1px solid var(--border);
+      padding: 10px var(--page-gutter, 16px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(14px);
+    }
     .help-hero {
       background:
-        linear-gradient(135deg, rgba(37,99,235,.16), rgba(16,185,129,.10)),
-        var(--card-bg, #fff);
-      border: 1px solid var(--content-soft-border, rgba(148,163,184,.35));
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-2) 11%, transparent)),
+        var(--surface);
+      border: 1px solid color-mix(in srgb, var(--border) 82%, var(--accent) 18%);
       border-radius: 8px;
+      box-shadow: 0 18px 36px color-mix(in srgb, #000 22%, transparent);
+      color: var(--text);
       display: grid;
       gap: 16px;
       padding: 22px;
     }
-    .help-hero h1 { margin: 0; font-size: clamp(1.8rem, 2.6vw, 2.7rem); letter-spacing: 0; }
-    .help-hero p { max-width: 980px; }
+    .help-hero h1 {
+      color: var(--text);
+      margin: 0;
+      font-size: clamp(1.8rem, 2.6vw, 2.7rem);
+      letter-spacing: 0;
+    }
+    .help-hero p { color: var(--muted); max-width: 980px; }
     .help-search-row {
       display: grid;
       gap: 10px;
@@ -37,18 +92,28 @@
       position: sticky;
       top: 74px;
     }
+    .help-nav,
+    .help-section {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
     .help-nav a {
       align-items: center;
-      border-bottom: 1px solid var(--content-soft-border, rgba(148,163,184,.22));
-      color: var(--text, #111827);
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+      color: var(--text);
       display: flex;
       font-weight: 700;
       justify-content: space-between;
       padding: 10px 0;
       text-decoration: none;
     }
+    .help-nav a:hover,
+    .help-nav a:focus-visible {
+      color: color-mix(in srgb, var(--accent) 70%, var(--text) 30%);
+    }
     .help-nav a span {
-      color: var(--muted, #64748b);
+      color: var(--muted);
       font-size: .82rem;
       font-weight: 600;
     }
@@ -60,6 +125,7 @@
       scroll-margin-top: 88px;
     }
     .help-section h2 {
+      color: var(--text);
       margin: 0 0 8px;
       letter-spacing: 0;
     }
@@ -69,12 +135,14 @@
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     }
     .help-mini-card {
-      background: var(--content-soft-bg, rgba(148,163,184,.08));
-      border: 1px solid var(--content-soft-border, rgba(148,163,184,.26));
+      background: color-mix(in srgb, var(--surface-soft) 88%, var(--surface) 12%);
+      border: 1px solid color-mix(in srgb, var(--border) 84%, var(--accent) 16%);
       border-radius: 8px;
+      color: var(--text);
       padding: 12px;
     }
     .help-mini-card h3 {
+      color: var(--text);
       font-size: 1rem;
       margin: 0 0 6px;
     }
@@ -84,7 +152,7 @@
       margin-bottom: 0;
     }
     .help-route {
-      color: var(--muted, #64748b);
+      color: color-mix(in srgb, var(--muted) 80%, var(--accent) 20%);
       display: block;
       font-size: .88rem;
       font-weight: 700;
@@ -104,17 +172,47 @@
     }
     .help-chip-row a,
     .help-chip-row span {
-      background: var(--content-soft-bg, rgba(148,163,184,.10));
-      border: 1px solid var(--content-soft-border, rgba(148,163,184,.30));
+      background: color-mix(in srgb, var(--surface-soft) 84%, var(--accent) 8%);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
       border-radius: 999px;
-      color: var(--text, #111827);
+      color: var(--text);
       font-size: .9rem;
       font-weight: 700;
       padding: 7px 10px;
       text-decoration: none;
     }
+    .help-chip-row a:hover,
+    .help-chip-row a:focus-visible {
+      background: color-mix(in srgb, var(--accent) 18%, var(--surface-soft) 82%);
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--border) 58%);
+      color: var(--text);
+    }
     .help-hidden {
       display: none !important;
+    }
+    .help-empty-state {
+      background: color-mix(in srgb, var(--surface-soft) 90%, var(--danger) 6%);
+      border: 1px solid color-mix(in srgb, var(--border) 78%, var(--danger) 22%);
+      border-radius: 8px;
+      color: var(--text);
+      font-weight: 800;
+      padding: 12px;
+    }
+    html[data-theme^="light"] .help-page {
+      background:
+        radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28%),
+        linear-gradient(180deg, var(--bg), color-mix(in srgb, var(--bg-alt) 92%, white 8%));
+    }
+    html[data-theme^="light"] .help-hero,
+    html[data-theme^="light"] .help-nav,
+    html[data-theme^="light"] .help-section {
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--border) 34%, transparent);
+    }
+    html[data-theme="dark-absolute"] .help-hero,
+    html[data-theme="dark-absolute"] .help-nav,
+    html[data-theme="dark-absolute"] .help-section,
+    html[data-theme="dark-absolute"] .help-mini-card {
+      box-shadow: none;
     }
     @media (max-width: 860px) {
       .help-search-row { grid-template-columns: 1fr; }
@@ -123,7 +221,7 @@
     }
   </style>
 </head>
-<body class="empresa-subpage">
+<body class="empresa-subpage help-page">
   <div class="container empresa-module">
     <section class="help-hero">
       <div>
@@ -756,6 +854,19 @@
           var haystack = normalize(section.textContent + ' ' + (section.getAttribute('data-help') || ''));
           section.classList.toggle('help-hidden', haystack.indexOf(q) < 0);
         });
+        var visible = sections.some(function(section){
+          return !section.classList.contains('help-hidden');
+        });
+        var empty = document.getElementById('helpEmptyState');
+        if (!empty) {
+          empty = document.createElement('div');
+          empty.id = 'helpEmptyState';
+          empty.className = 'help-empty-state help-hidden';
+          empty.textContent = 'No se encontraron temas con esa busqueda.';
+          var content = document.getElementById('helpContent');
+          if (content) content.appendChild(empty);
+        }
+        empty.classList.toggle('help-hidden', visible || !q);
       }
 
       if (input) input.addEventListener('input', applyFilter);
