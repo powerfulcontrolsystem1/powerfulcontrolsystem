@@ -8,12 +8,18 @@
   <script src="/menu.js"></script>
   <script src="/js/help_navigation.js" defer></script>
   <style>
+    html {
+      background: var(--bg);
+      overflow-x: hidden;
+    }
     .help-page {
       background:
         radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28%),
         linear-gradient(180deg, var(--bg), var(--bg-alt));
       color: var(--text);
       min-height: 100vh;
+      overflow-x: hidden;
+      width: 100%;
     }
     .help-page .container {
       color: var(--text);
