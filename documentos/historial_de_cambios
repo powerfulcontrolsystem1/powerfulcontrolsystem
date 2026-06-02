@@ -30471,3 +30471,8 @@ Archivos modificados:
 - CHANGELOG.md
 - documentos/historial_de_cambios
 - web/ayuda/ayuda.html
+
+2026-06-02: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- web/ayuda/ayuda.html
