@@ -284,6 +284,13 @@ func writeEmpresaUsuarioDuplicateResponse(w http.ResponseWriter, empresaID int64
 	_ = json.NewEncoder(w).Encode(response)
 }
 
+func empresaUsuarioEstadoBloqueaPrimerIngreso(item *dbpkg.EmpresaUsuario) bool {
+	if item == nil {
+		return true
+	}
+	return strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") && item.EmailConfirmado == 1
+}
+
 func ensureEmpresaUsuarioCurrentContractAccepted(dbEmp, dbSuper *sql.DB, item *dbpkg.EmpresaUsuario, acceptRequested bool) (*dbpkg.SuperContractVersion, bool, error) {
 	contract, err := dbpkg.GetCurrentSuperContract(dbSuper)
 	if err != nil {
@@ -721,7 +728,7 @@ func EmpresaUsuarioLoginHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, "debes confirmar tu correo antes de iniciar sesión", http.StatusForbidden)
 			return
 		}
-		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") && item.EmailConfirmado == 1 {
 			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
@@ -884,7 +891,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			http.Error(w, msg, status)
 			return
 		}
-		if strings.EqualFold(strings.TrimSpace(item.Estado), "inactivo") {
+		if empresaUsuarioEstadoBloqueaPrimerIngreso(item) {
 			http.Error(w, "tu usuario está inactivo", http.StatusForbidden)
 			return
 		}
@@ -921,6 +928,7 @@ func EmpresaUsuarioSetPasswordHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 		item.EmailConfirmado = 1
 		item.EmailConfirmToken = ""
 		item.EmailConfirmExpira = ""
+		item.Estado = "activo"
 
 		if err := createEmpresaUsuarioSessionAndRespond(w, r, dbSuper, item); err != nil {
 			log.Printf("[usuarios_empresa] failed to create session (set_password) empresa_id=%d email=%s error=%v", item.EmpresaID, item.Email, err)

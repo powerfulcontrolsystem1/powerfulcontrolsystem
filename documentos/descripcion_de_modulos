@@ -1,3 +1,9 @@
+2026-06-02: Primer ingreso de usuario operativo pendiente
+- Modulo afectado: `usuarios_empresa`.
+- Cambio funcional: `login_usuario.html` puede completar el alta inicial de un usuario invitado que aun aparece como `inactivo` porque esta pendiente de confirmar.
+- Backend: `/api/empresa/usuarios/establecer_password` permite `estado=inactivo` solo cuando el token de invitacion es valido y el correo aun no estaba confirmado; despues confirma correo, consume token y activa el usuario.
+- Seguridad: si el usuario ya estaba confirmado e inactivo, el bloqueo se mantiene.
+
 2026-06-02: Usuario existente visible para reenviar confirmacion
 - Modulo afectado: `usuarios_empresa`.
 - Cambio funcional: si el administrador intenta crear un usuario con un correo ya existente dentro de la misma empresa, el backend responde `409` con el registro saneado en `usuario_existente`.

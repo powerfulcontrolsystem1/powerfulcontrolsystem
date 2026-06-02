@@ -1,3 +1,10 @@
+2026-06-02: Primer ingreso usuario operativo pendiente.
+- Modulo afectado: `usuarios_empresa` y `login_usuario`.
+- `backend/handlers/usuarios_empresa.go` permite que un usuario pendiente con `estado=inactivo`, correo no confirmado y token de invitacion valido complete el formulario de contrasena.
+- Al completar la invitacion, el handler usa `CompleteEmpresaUsuarioInvitationPassword`, confirma el correo, consume el token y deja el usuario en `estado=activo` antes de crear sesion.
+- Seguridad: un usuario ya confirmado pero inactivo sigue bloqueado; no se relaja el acceso por login normal ni por recuperacion de contrasena.
+- Pruebas: `go test ./handlers -run "TestEmpresaUsuarioEstadoBloqueaPrimerIngreso" -count=1`.
+
 2026-06-02: Usuario existente visible para reenviar confirmacion.
 - Modulo afectado: `usuarios_empresa`.
 - `backend/handlers/usuarios_empresa.go` cambia el 409 por correo repetido para responder JSON con `usuario_existente`, `email_confirmado`, `estado` y `can_resend_confirmation` cuando el usuario ya pertenece a la misma empresa.

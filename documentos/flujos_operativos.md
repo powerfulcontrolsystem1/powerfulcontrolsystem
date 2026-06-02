@@ -184,7 +184,10 @@ afecte dinero, documentos, licencias o seguridad.
    `Reenviar confirmacion`.
 2. El usuario abre `login_usuario.html` desde la invitacion para completar
    registro o iniciar con Google. Sin invitacion o usuario empresarial confirmado
-   no hay alta publica.
+   no hay alta publica. En este primer ingreso, un usuario pendiente puede tener
+   `estado=inactivo`; si el token es valido, el sistema permite crear la
+   contrasena, confirma el correo y cambia el estado a `activo`. Un usuario ya
+   confirmado e inactivo sigue bloqueado hasta que el administrador lo active.
 3. `Iniciar sesion con Google` usa `/auth/google/usuario/login`, conserva
    `empresa_id` y token de invitacion en cookies tecnicas de corta vida y vuelve
    por `/auth/google/callback`.
