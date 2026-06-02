@@ -25,6 +25,9 @@
     .role-editor-current{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;margin-top:10px;color:var(--text)}
     .role-editor-current strong{display:block}
     .role-editor-current small{display:block;color:var(--muted);line-height:1.4;margin-top:3px}
+    .usuarios-global-msg{display:none;margin:12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:700}
+    .usuarios-global-msg.is-visible{display:block}
+    .usuarios-global-msg.value-negative{border-color:var(--danger,#ef4444);color:var(--danger,#ef4444)}
     @media(max-width:760px){.role-editor-grid{grid-template-columns:1fr}}
     @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}}
   </style>
@@ -128,6 +131,7 @@
       <div id="roleEditorMsg" class="form-help"></div>
     </section>
 
+    <div id="globalMsg" class="usuarios-global-msg" role="status" aria-live="polite"></div>
     <div id="list">Cargando...</div>
 
     <section class="card empresa-section" id="stationAccessPanel" style="margin-top:16px;">
@@ -184,18 +188,36 @@
     }
 
     function setMessage(text, isError) {
-      const el = document.getElementById('msg');
-      el.textContent = text || '';
-      el.classList.remove('value-negative');
-      if (isError) {
-        el.classList.add('value-negative');
-      }
+      ['msg', 'globalMsg'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || '';
+        el.classList.remove('value-negative');
+        if (id === 'globalMsg') {
+          el.classList.toggle('is-visible', !!text);
+        }
+        if (isError) {
+          el.classList.add('value-negative');
+        }
+      });
     }
 
     async function ensureOk(res) {
       if (res.ok) return;
       const t = await res.text();
-      throw new Error(t || ('HTTP ' + res.status));
+      let message = t || ('HTTP ' + res.status);
+      try {
+        const body = JSON.parse(t);
+        if (body && body.error) {
+          message = body.error;
+        } else if (body && body.message) {
+          message = body.message;
+        }
+      } catch (_) {}
+      if (res.status === 409 && /usuario con ese correo|ese correo ya esta|ese correo ya est[aá]|ya existe un usuario/i.test(message)) {
+        message = 'Ya existe un usuario de esta empresa con ese correo. Revisa la lista de usuarios; si la cuenta esta pendiente de confirmacion, usa el boton Reenviar confirmacion para enviarle nuevamente la invitacion por correo electronico.';
+      }
+      throw new Error(message);
     }
 
     function fillRolesSelect(selected) {

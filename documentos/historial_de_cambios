@@ -30236,3 +30236,42 @@ Archivos modificados:
 - web/login.html
 - web/login_usuario.html
 - web/super/configuracion_avanzada.html
+
+2026-06-02: Reenvio de confirmacion de usuarios empresa con respaldo Mailu
+Modulo: Usuarios empresa / notificaciones operativas
+Cambio:
+- El envio de confirmacion e invitacion de usuarios empresa mantiene Gmail SMTP
+  como transporte principal y agrega respaldo por Mailu/correo corporativo
+  interno cuando Gmail falla por configuracion, clave no descifrable o error de
+  entrega.
+- La recuperacion de contrasena de usuarios operativos usa el mismo respaldo.
+- La pantalla de Administrar usuarios ahora muestra el resultado del reenvio en
+  un aviso visible encima de la tabla, incluso cuando el formulario esta oculto.
+- No cambia el token, la plantilla, la validacion de empresa ni los permisos del
+  endpoint `/api/empresa/usuarios?action=reenviar_confirmacion`.
+Archivos:
+- backend/handlers/usuarios_empresa.go
+- web/administrar_empresa/administrar_usuarios.html
+Validacion:
+- `go test ./handlers -run "EmpresaRoutesUsePermissionWrappers|Reenviar" -count=1`
+- `git diff --check`
+- Prueba visual en produccion: abrir Administrar usuarios de Motel Calipso,
+  presionar `Reenviar confirmacion` y confirmar aviso visible `Correo de
+  confirmacion reenviado`.
+
+2026-06-02: Mensaje profesional al crear usuario con correo duplicado
+Modulo: Usuarios empresa
+Cambio:
+- Cuando el administrador intenta crear o editar un usuario con un correo ya
+  registrado en la misma empresa, el backend devuelve una explicacion accionable
+  en lugar de un texto corto tecnico.
+- La pantalla `Administrar usuarios` extrae `error` o `message` de respuestas
+  JSON y muestra un aviso limpio, sin exponer el JSON completo ni el request id.
+- El mensaje sugiere buscar el usuario existente y usar `Reenviar confirmacion`
+  si la cuenta esta pendiente.
+Archivos:
+- backend/handlers/usuarios_empresa.go
+- web/administrar_empresa/administrar_usuarios.html
+Validacion:
+- `go test ./handlers -run "EmpresaRoutesUsePermissionWrappers|Reenviar|Usuario" -count=1`
+- Validacion de sintaxis del script embebido de `administrar_usuarios.html`

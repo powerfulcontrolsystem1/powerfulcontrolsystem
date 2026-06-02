@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"database/sql"
@@ -17,6 +18,7 @@ import (
 	"net/smtp"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -366,7 +368,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			)
 			if err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "unique") {
-					http.Error(w, "ya existe un usuario con ese correo", http.StatusConflict)
+					http.Error(w, "Ya existe un usuario de esta empresa con ese correo. No es necesario crearlo de nuevo. Si el usuario aun no confirmo la cuenta, busca el registro en la lista y usa el boton Reenviar confirmacion para enviarle una nueva invitacion al correo electronico.", http.StatusConflict)
 					return
 				}
 				http.Error(w, "failed to create user: "+err.Error(), http.StatusInternalServerError)
@@ -560,7 +562,7 @@ func EmpresaUsuariosHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				confirmExpira,
 			); err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "unique") {
-					http.Error(w, "ya existe un usuario con ese correo", http.StatusConflict)
+					http.Error(w, "Ese correo ya esta asignado a otro usuario de esta empresa. Revisa la lista de usuarios; si la cuenta esta pendiente, usa Reenviar confirmacion para enviar nuevamente la invitacion.", http.StatusConflict)
 					return
 				}
 				http.Error(w, "failed to update user: "+err.Error(), http.StatusInternalServerError)
@@ -2003,6 +2005,215 @@ func friendlyEmpresaUsuarioMailConfigError(err error) error {
 	return err
 }
 
+type empresaUsuarioSMTPConfig struct {
+	Email    string
+	Password string
+	Host     string
+	Port     string
+	FromName string
+}
+
+func getEmpresaUsuarioGmailSMTPConfig(dbSuper *sql.DB) (empresaUsuarioSMTPConfig, error) {
+	var cfg empresaUsuarioSMTPConfig
+	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
+	if err != nil {
+		return cfg, friendlyEmpresaUsuarioMailConfigError(err)
+	}
+	cfg.Email = strings.TrimSpace(smtpEmail)
+	if cfg.Email == "" {
+		return cfg, fmt.Errorf("gmail.smtp_email no configurado")
+	}
+
+	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
+	if err != nil {
+		return cfg, friendlyEmpresaUsuarioMailConfigError(err)
+	}
+	cfg.Password = strings.TrimSpace(smtpPass)
+	if cfg.Password == "" {
+		return cfg, fmt.Errorf("gmail.smtp_app_password no configurado")
+	}
+
+	cfg.Host, _ = getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
+	cfg.Port, _ = getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
+	cfg.FromName, _ = getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
+
+	cfg.Host = strings.TrimSpace(cfg.Host)
+	if cfg.Host == "" {
+		cfg.Host = "smtp.gmail.com"
+	}
+	cfg.Port = strings.TrimSpace(cfg.Port)
+	if cfg.Port == "" {
+		cfg.Port = "587"
+	}
+	cfg.FromName = strings.TrimSpace(cfg.FromName)
+	if cfg.FromName == "" {
+		cfg.FromName = "Powerful Control System"
+	}
+	return cfg, nil
+}
+
+func sendEmpresaUsuarioSMTPMessage(cfg empresaUsuarioSMTPConfig, toEmail string, msg []byte) error {
+	mailHostForAuth := cfg.Host
+	if strings.Contains(cfg.Host, ":") {
+		if h, _, err := net.SplitHostPort(cfg.Host); err == nil {
+			mailHostForAuth = h
+		}
+	}
+	addr := cfg.Host
+	if !strings.Contains(addr, ":") {
+		addr = net.JoinHostPort(cfg.Host, cfg.Port)
+	}
+	auth := smtp.PlainAuth("", cfg.Email, cfg.Password, mailHostForAuth)
+	return smtp.SendMail(addr, auth, cfg.Email, []string{toEmail}, msg)
+}
+
+func buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML string) string {
+	boundary := "==PCS_BOUNDARY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	listUnsub := ""
+	if u, err := url.Parse(baseURL); err == nil {
+		host := u.Host
+		if strings.Contains(host, ":") {
+			host, _, _ = net.SplitHostPort(host)
+		}
+		if strings.TrimSpace(host) != "" {
+			listUnsub = "<mailto:postmaster@" + strings.TrimSpace(host) + ">"
+		}
+	}
+
+	headers := "From: " + strings.TrimSpace(fromName) + " <" + strings.TrimSpace(fromEmail) + ">\r\n" +
+		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
+		"Subject: " + strings.TrimSpace(subject) + "\r\n"
+	if listUnsub != "" {
+		headers += "List-Unsubscribe: " + listUnsub + "\r\n"
+	}
+	headers += "MIME-Version: 1.0\r\n" +
+		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n"
+
+	return headers +
+		"--" + boundary + "\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
+		bodyPlain + "\r\n" +
+		"--" + boundary + "\r\n" +
+		"Content-Type: text/html; charset=UTF-8\r\n" +
+		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
+		bodyHTML + "\r\n" +
+		"--" + boundary + "--\r\n"
+}
+
+func buildEmpresaUsuarioPlainMessage(fromName, fromEmail, toEmail, subject, body string) string {
+	return "From: " + strings.TrimSpace(fromName) + " <" + strings.TrimSpace(fromEmail) + ">\r\n" +
+		"To: " + strings.TrimSpace(toEmail) + "\r\n" +
+		"Subject: " + strings.TrimSpace(subject) + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
+		body
+}
+
+func sendEmpresaUsuarioGmailMultipart(dbSuper *sql.DB, baseURL, toEmail, subject, bodyPlain, bodyHTML string) error {
+	cfg, err := getEmpresaUsuarioGmailSMTPConfig(dbSuper)
+	if err != nil {
+		return err
+	}
+	msg := buildEmpresaUsuarioMultipartMessage(baseURL, cfg.FromName, cfg.Email, toEmail, subject, bodyPlain, bodyHTML)
+	return sendEmpresaUsuarioSMTPMessage(cfg, toEmail, []byte(msg))
+}
+
+func sendEmpresaUsuarioGmailPlain(dbSuper *sql.DB, toEmail, subject, body string) error {
+	cfg, err := getEmpresaUsuarioGmailSMTPConfig(dbSuper)
+	if err != nil {
+		return err
+	}
+	msg := buildEmpresaUsuarioPlainMessage(cfg.FromName, cfg.Email, toEmail, subject, body)
+	return sendEmpresaUsuarioSMTPMessage(cfg, toEmail, []byte(msg))
+}
+
+func empresaUsuarioMailuFallbackEnabled(dbSuper *sql.DB) bool {
+	cfg := getCorporateEmailConfig(dbSuper)
+	if cfg.Enabled {
+		return true
+	}
+	return corporateEmailEnvBool([]string{"EMAIL_CORPORATIVO_ENABLED", "MAILU_ENABLED", "PCS_MAILU_SMTP_FALLBACK"}, false)
+}
+
+func empresaUsuarioMailuSender(dbSuper *sql.DB) (string, string) {
+	cfg := getCorporateEmailConfig(dbSuper)
+	domain := normalizeCorporateEmailDomain(cfg.Domain)
+	if domain == "" {
+		domain = normalizeCorporateEmailDomain(firstNonEmptyEnv("EMAIL_CORPORATIVO_DOMAIN", "MAILU_DOMAIN"))
+	}
+	if domain == "" {
+		domain = "powerfulcontrolsystem.com"
+	}
+	fromName := strings.TrimSpace(getEmpresaUsuarioConfigValue(dbSuper, "gmail.smtp_from_name"))
+	if fromName == "" {
+		fromName = "Powerful Control System"
+	}
+	return fromName, "postmaster@" + domain
+}
+
+func sanitizeEmpresaUsuarioMailerError(err error, output []byte) string {
+	parts := []string{}
+	if err != nil {
+		parts = append(parts, strings.TrimSpace(err.Error()))
+	}
+	if trimmed := strings.TrimSpace(string(output)); trimmed != "" {
+		parts = append(parts, trimmed)
+	}
+	msg := strings.Join(parts, " - ")
+	msg = strings.ReplaceAll(msg, "\r", " ")
+	msg = strings.ReplaceAll(msg, "\n", " ")
+	msg = strings.Join(strings.Fields(msg), " ")
+	if len(msg) > 280 {
+		msg = msg[:280] + "..."
+	}
+	if msg == "" {
+		msg = "sin detalle"
+	}
+	return msg
+}
+
+func sendEmpresaUsuarioMailuMessage(dbSuper *sql.DB, fromEmail, toEmail string, msg []byte) error {
+	if !empresaUsuarioMailuFallbackEnabled(dbSuper) {
+		return fmt.Errorf("correo corporativo Mailu no habilitado")
+	}
+
+	if err := smtp.SendMail("mailu-smtp:25", nil, fromEmail, []string{toEmail}, msg); err == nil {
+		return nil
+	}
+
+	candidates := [][]string{
+		{"docker", "exec", "-i", "pcs-mailu-smtp", "sendmail", "-t", "-f", fromEmail},
+		{"docker", "exec", "-i", "pcs-mailu-smtp", "/usr/sbin/sendmail", "-t", "-f", fromEmail},
+		{"docker", "exec", "-i", "pcs-mailu-front", "sendmail", "-t", "-f", fromEmail},
+	}
+	var lastDetail string
+	for _, args := range candidates {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+		cmd.Stdin = strings.NewReader(string(msg))
+		output, err := cmd.CombinedOutput()
+		cancel()
+		if err == nil {
+			return nil
+		}
+		lastDetail = sanitizeEmpresaUsuarioMailerError(err, output)
+	}
+	return fmt.Errorf("Mailu no pudo enviar el correo: %s", lastDetail)
+}
+
+func sendEmpresaUsuarioMailuMultipart(dbSuper *sql.DB, baseURL, toEmail, subject, bodyPlain, bodyHTML string) error {
+	fromName, fromEmail := empresaUsuarioMailuSender(dbSuper)
+	msg := buildEmpresaUsuarioMultipartMessage(baseURL, fromName, fromEmail, toEmail, subject, bodyPlain, bodyHTML)
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
+}
+
+func sendEmpresaUsuarioMailuPlain(dbSuper *sql.DB, toEmail, subject, body string) error {
+	fromName, fromEmail := empresaUsuarioMailuSender(dbSuper)
+	msg := buildEmpresaUsuarioPlainMessage(fromName, fromEmail, toEmail, subject, body)
+	return sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, []byte(msg))
+}
+
 func isEmpresaUsuarioMailActionableConfigError(err error) bool {
 	if err == nil {
 		return false
@@ -2140,91 +2351,13 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbEmp, dbSuper *sql.DB
 		return confirmURL, nil
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return confirmURL, friendlyEmpresaUsuarioMailConfigError(err)
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return confirmURL, fmt.Errorf("gmail.smtp_email no configurado")
-	}
-
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return confirmURL, friendlyEmpresaUsuarioMailConfigError(err)
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return confirmURL, fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
-			mailHostForAuth = h
+	if err := sendEmpresaUsuarioGmailMultipart(dbSuper, baseURL, toEmail, subject, bodyPlain, bodyHTML); err != nil {
+		gmailErr := err
+		if fallbackErr := sendEmpresaUsuarioMailuMultipart(dbSuper, baseURL, toEmail, subject, bodyPlain, bodyHTML); fallbackErr == nil {
+			log.Printf("[usuarios_empresa] confirmacion enviada por Mailu interno tras fallo de Gmail empresa_id=%d", empresaID)
+			return confirmURL, nil
 		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-
-	// build multipart/alternative message
-	boundary := "==PCS_BOUNDARY_" + strconv.FormatInt(time.Now().UnixNano(), 10)
-
-	// list-unsubscribe: use base host from baseURL
-	listUnsub := ""
-	if u, err := url.Parse(baseURL); err == nil {
-		host := u.Host
-		if strings.Contains(host, ":") {
-			host, _, _ = net.SplitHostPort(host)
-		}
-		if host != "" {
-			listUnsub = "<mailto:postmaster@" + host + ">"
-		}
-	}
-
-	headers := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
-		"To: " + toEmail + "\r\n" +
-		"Subject: " + subject + "\r\n"
-	if listUnsub != "" {
-		headers += "List-Unsubscribe: " + listUnsub + "\r\n"
-	}
-	headers += "MIME-Version: 1.0\r\n" +
-		"Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n\r\n"
-
-	msg := headers +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
-		bodyPlain + "\r\n" +
-		"--" + boundary + "\r\n" +
-		"Content-Type: text/html; charset=UTF-8\r\n" +
-		"Content-Transfer-Encoding: 7bit\r\n\r\n" +
-		bodyHTML + "\r\n" +
-		"--" + boundary + "--\r\n"
-
-	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
-		return confirmURL, err
+		return confirmURL, gmailErr
 	}
 	return confirmURL, nil
 }
@@ -2272,63 +2405,13 @@ func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sq
 		return resetHintURL, nil
 	}
 
-	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
-	if err != nil {
-		return resetHintURL, friendlyEmpresaUsuarioMailConfigError(err)
-	}
-	smtpEmail = strings.TrimSpace(smtpEmail)
-	if smtpEmail == "" {
-		return resetHintURL, fmt.Errorf("gmail.smtp_email no configurado")
-	}
-
-	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
-	if err != nil {
-		return resetHintURL, friendlyEmpresaUsuarioMailConfigError(err)
-	}
-	smtpPass = strings.TrimSpace(smtpPass)
-	if smtpPass == "" {
-		return resetHintURL, fmt.Errorf("gmail.smtp_app_password no configurado")
-	}
-
-	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
-	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
-	fromName, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_from_name")
-
-	smtpHost = strings.TrimSpace(smtpHost)
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-	}
-	smtpPort = strings.TrimSpace(smtpPort)
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-	fromName = strings.TrimSpace(fromName)
-	if fromName == "" {
-		fromName = "Powerful Control System"
-	}
-
-	mailHostForAuth := smtpHost
-	if strings.Contains(smtpHost, ":") {
-		if h, _, err := net.SplitHostPort(smtpHost); err == nil {
-			mailHostForAuth = h
+	if err := sendEmpresaUsuarioGmailPlain(dbSuper, toEmail, subject, body); err != nil {
+		gmailErr := err
+		if fallbackErr := sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body); fallbackErr == nil {
+			log.Printf("[usuarios_empresa] recuperacion enviada por Mailu interno tras fallo de Gmail empresa_id=%d", empresaID)
+			return resetHintURL, nil
 		}
-	}
-	addr := smtpHost
-	if !strings.Contains(addr, ":") {
-		addr = smtpHost + ":" + smtpPort
-	}
-
-	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
-
-	msg := "From: " + fromName + " <" + smtpEmail + ">\r\n" +
-		"To: " + toEmail + "\r\n" +
-		"Subject: " + subject + "\r\n" +
-		"MIME-Version: 1.0\r\n" +
-		"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-		body
-
-	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, []byte(msg)); err != nil {
-		return resetHintURL, err
+		return resetHintURL, gmailErr
 	}
 	return resetHintURL, nil
 }
