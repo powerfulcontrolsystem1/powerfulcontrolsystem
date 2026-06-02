@@ -12114,3 +12114,12 @@ Archivos modificados:
 - web/administrar_empresa/configuracion_impresora.html
 - web/estilos.css
 - web/js/print_documents.js
+
+2026-06-02 01:51:58 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ccb2f2e3; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- backend/handlers/usuarios_empresa_invitation_test.go
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
