@@ -42,6 +42,11 @@
   var contractDialogContent = document.getElementById("contractDialogContent");
   var contractDialogClose = document.getElementById("contractDialogClose");
   var googleUsuarioBtn = document.getElementById("googleUsuarioBtn");
+  var cashRegisterLoginDialog = document.getElementById("cashRegisterLoginDialog");
+  var cashRegisterLoginSelect = document.getElementById("cashRegisterLoginSelect");
+  var cashRegisterLoginMsg = document.getElementById("cashRegisterLoginMsg");
+  var cashRegisterLoginContinue = document.getElementById("cashRegisterLoginContinue");
+  var pendingCashRegisterAuthPayload = null;
   var recaptchaManagers = {
     login: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaLoginRecaptcha", action: "empresa_login" }) : null,
     setup: window.PCSRecaptcha ? window.PCSRecaptcha.createManager({ containerId: "empresaSetupRecaptcha", action: "empresa_setup_password" }) : null,
@@ -129,6 +134,33 @@
     target.classList.toggle("is-visible", !!text);
     target.classList.toggle("error", !!text && !!isError);
     target.classList.toggle("success", !!text && !isError);
+  }
+
+  function setPasswordVisibility(toggleBtn, input, isVisible) {
+    if (!toggleBtn || !input) {
+      return;
+    }
+    input.type = isVisible ? "text" : "password";
+    toggleBtn.setAttribute("aria-pressed", isVisible ? "true" : "false");
+    toggleBtn.setAttribute("aria-label", isVisible ? "Ocultar contrasena" : "Mostrar contrasena");
+    toggleBtn.setAttribute("title", isVisible ? "Ocultar contrasena" : "Mostrar contrasena");
+    toggleBtn.classList.toggle("is-visible", !!isVisible);
+  }
+
+  function initPasswordVisibilityToggles() {
+    var toggles = document.querySelectorAll(".password-visibility-toggle[data-target]");
+    Array.prototype.forEach.call(toggles, function (toggleBtn) {
+      var targetId = toggleBtn.getAttribute("data-target");
+      var input = targetId ? document.getElementById(targetId) : null;
+      setPasswordVisibility(toggleBtn, input, false);
+      toggleBtn.addEventListener("click", function () {
+        if (!input) {
+          return;
+        }
+        setPasswordVisibility(toggleBtn, input, input.type === "password");
+        input.focus();
+      });
+    });
   }
 
   function setContractStatus(text, isWarning) {
@@ -415,6 +447,191 @@
     window.location.href = redirectURL;
   }
 
+  function normalizeCashCode(value) {
+    return String(value == null ? "" : value)
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^A-Z0-9_-]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  }
+
+  function normalizeCashierRole(value) {
+    var raw = String(value || "").trim().toLowerCase();
+    return raw.replace(/\s+/g, "_");
+  }
+
+  function isCashierAuthPayload(payload) {
+    var role = normalizeCashierRole((payload && (payload.rol_nombre || payload.rol || payload.role)) || "");
+    return role === "cajero" || role === "caja" || role === "cashier";
+  }
+
+  function parseStationConfigValue(raw) {
+    var current = raw;
+    for (var i = 0; i < 8; i += 1) {
+      if (typeof current !== "string") break;
+      var trimmed = current.trim();
+      if (!trimmed) return null;
+      try {
+        current = JSON.parse(trimmed);
+      } catch (error) {
+        return null;
+      }
+    }
+    return current && typeof current === "object" ? current : null;
+  }
+
+  function defaultCashRegisterRow(index) {
+    var pos = Math.max(1, Number(index || 1));
+    return {
+      codigo: "CAJA-" + pos,
+      nombre: pos === 1 ? "Caja principal" : ("Caja " + pos),
+      descripcion: "",
+      activa: true
+    };
+  }
+
+  function normalizeCashRegisterRows(raw) {
+    var rows = Array.isArray(raw) ? raw : [];
+    var out = [];
+    var seen = {};
+    rows.forEach(function (item, index) {
+      if (!item || typeof item !== "object") return;
+      var fallback = defaultCashRegisterRow(index + 1);
+      var codigo = normalizeCashCode(item.codigo || item.caja_codigo || item.code || fallback.codigo) || fallback.codigo;
+      if (seen[codigo]) return;
+      seen[codigo] = true;
+      var nombre = String(item.nombre || item.caja_nombre || item.name || fallback.nombre).trim() || fallback.nombre;
+      var descripcion = String(item.descripcion || item.caja_descripcion || item.description || "").trim();
+      var activa = item.activa === undefined && item.active === undefined ? true : !!(item.activa !== undefined ? item.activa : item.active);
+      if (activa !== false) {
+        out.push({ codigo: codigo, nombre: nombre, descripcion: descripcion, activa: true });
+      }
+    });
+    if (!out.length) out.push(defaultCashRegisterRow(1));
+    return out.slice(0, 50);
+  }
+
+  function cashRegisterLoginStorageKey(payload) {
+    var empresaID = Number((payload && payload.empresa_id) || state.empresaID || 0);
+    var email = String((payload && payload.email) || document.getElementById("email").value || "").trim().toLowerCase();
+    return "pcs_cajero_caja_login_" + String(empresaID || 0) + "_" + email.replace(/[^a-z0-9_.@-]/g, "_");
+  }
+
+  function readLastCashRegisterCode(payload) {
+    try {
+      return normalizeCashCode(window.localStorage.getItem(cashRegisterLoginStorageKey(payload)));
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function persistSelectedCashRegister(payload, caja) {
+    if (!caja || !caja.codigo) return;
+    try {
+      window.localStorage.setItem(cashRegisterLoginStorageKey(payload), caja.codigo);
+      window.sessionStorage.setItem("pcs_caja_trabajo_codigo", caja.codigo);
+      window.sessionStorage.setItem("pcs_caja_trabajo_nombre", caja.nombre || "");
+      window.sessionStorage.setItem("pcs_caja_trabajo_descripcion", caja.descripcion || "");
+      window.sessionStorage.setItem("pcs_caja_trabajo_empresa_id", String((payload && payload.empresa_id) || state.empresaID || 0));
+    } catch (error) {}
+  }
+
+  function redirectWithCashRegister(payload, caja) {
+    persistSelectedCashRegister(payload, caja);
+    var next = Object.assign({}, payload || {});
+    var redirectURL = String(next.redirect_url || "").trim() || "/administrar_empresa.html";
+    try {
+      var target = new URL(redirectURL, window.location.origin);
+      target.searchParams.set("caja_codigo", caja.codigo);
+      target.searchParams.set("caja_nombre", caja.nombre || "");
+      if (caja.descripcion) target.searchParams.set("caja_descripcion", caja.descripcion);
+      next.redirect_url = target.pathname + target.search + target.hash;
+    } catch (error) {}
+    redirectAfterAuth(next);
+  }
+
+  function setCashRegisterLoginMessage(text, isError) {
+    if (!cashRegisterLoginMsg) return;
+    cashRegisterLoginMsg.textContent = text || "";
+    cashRegisterLoginMsg.classList.toggle("value-negative", !!isError);
+  }
+
+  function closeCashRegisterLoginDialog() {
+    if (!cashRegisterLoginDialog) return;
+    cashRegisterLoginDialog.hidden = true;
+    cashRegisterLoginDialog.setAttribute("aria-hidden", "true");
+  }
+
+  function openCashRegisterLoginDialog(payload, rows) {
+    if (!cashRegisterLoginDialog || !cashRegisterLoginSelect) {
+      redirectAfterAuth(payload);
+      return;
+    }
+    pendingCashRegisterAuthPayload = payload || null;
+    var lastCode = readLastCashRegisterCode(payload);
+    cashRegisterLoginSelect.innerHTML = "";
+    rows.forEach(function (caja) {
+      var label = caja.codigo + (caja.nombre ? (" - " + caja.nombre) : "");
+      if (caja.descripcion && label.toLowerCase().indexOf(caja.descripcion.toLowerCase()) === -1) {
+        label += " · " + caja.descripcion;
+      }
+      cashRegisterLoginSelect.appendChild(new Option(label, caja.codigo));
+    });
+    if (lastCode && rows.some(function (item) { return item.codigo === lastCode; })) {
+      cashRegisterLoginSelect.value = lastCode;
+    }
+    setCashRegisterLoginMessage(lastCode ? "Ultima caja usada preseleccionada." : "Elige la caja fisica que usaras en este turno.", false);
+    cashRegisterLoginDialog.hidden = false;
+    cashRegisterLoginDialog.setAttribute("aria-hidden", "false");
+    cashRegisterLoginSelect.focus();
+  }
+
+  function loadCashRegisterLoginConfig(empresaID) {
+    if (!empresaID) {
+      return Promise.resolve({ enabled: true, rows: normalizeCashRegisterRows([]) });
+    }
+    return fetch("/api/empresa/estacion_prefs?empresa_id=" + encodeURIComponent(empresaID), { credentials: "same-origin" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("No se pudo cargar la configuracion de cajas.");
+        return response.json();
+      })
+      .then(function (data) {
+        var prefs = data && Array.isArray(data.prefs) ? data.prefs : [];
+        var pref = prefs.find(function (item) {
+          return item && String(item.clave || "") === "estaciones_config" && Number(item.estacion_id || 0) === 0;
+        });
+        var cfg = parseStationConfigValue(pref && pref.valor) || {};
+        return {
+          enabled: cfg.solicitar_caja_login_cajero === undefined ? true : !!cfg.solicitar_caja_login_cajero,
+          rows: normalizeCashRegisterRows(cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)
+        };
+      })
+      .catch(function () {
+        return { enabled: true, rows: normalizeCashRegisterRows([]) };
+      });
+  }
+
+  function maybePromptCashRegisterBeforeRedirect(payload) {
+    if (!isCashierAuthPayload(payload)) {
+      redirectAfterAuth(payload);
+      return;
+    }
+    loadCashRegisterLoginConfig(Number((payload && payload.empresa_id) || state.empresaID || 0)).then(function (config) {
+      if (!config || config.enabled === false) {
+        redirectAfterAuth(payload);
+        return;
+      }
+      var rows = normalizeCashRegisterRows(config.rows);
+      if (rows.length <= 1) {
+        redirectWithCashRegister(payload, rows[0]);
+        return;
+      }
+      openCashRegisterLoginDialog(payload, rows);
+    });
+  }
+
   function handleAuthResult(payload, formKey) {
     if (payload && payload.ok) {
       setContractPanelAttention(false);
@@ -423,7 +640,7 @@
         updateEmpresaContextHint();
       }
       persistThemePreference(payload.apariencia);
-      redirectAfterAuth(payload);
+      maybePromptCashRegisterBeforeRedirect(payload);
       return;
     }
 
@@ -777,6 +994,30 @@
     });
   }
 
+  if (cashRegisterLoginContinue) {
+    cashRegisterLoginContinue.addEventListener("click", function (event) {
+      event.preventDefault();
+      var payload = pendingCashRegisterAuthPayload || {};
+      var code = normalizeCashCode(cashRegisterLoginSelect && cashRegisterLoginSelect.value);
+      var selected = null;
+      if (cashRegisterLoginSelect) {
+        selected = Array.prototype.slice.call(cashRegisterLoginSelect.options || []).map(function (option) {
+          return {
+            codigo: normalizeCashCode(option.value),
+            nombre: String(option.textContent || "").replace(normalizeCashCode(option.value), "").replace(/^[\s\-·]+/, "").split("·")[0].trim(),
+            descripcion: String(option.textContent || "").split("·").slice(1).join("·").trim()
+          };
+        }).find(function (item) { return item.codigo === code; });
+      }
+      if (!selected || !selected.codigo) {
+        setCashRegisterLoginMessage("Selecciona una caja para continuar.", true);
+        return;
+      }
+      closeCashRegisterLoginDialog();
+      redirectWithCashRegister(payload, selected);
+    });
+  }
+
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && contractDialog && !contractDialog.hidden) {
       closeContractDialog();
@@ -853,6 +1094,7 @@
   } else {
     showForm("login", { email: urlEmail });
   }
+  initPasswordVisibilityToggles();
   updateGoogleUsuarioHref();
 
   var googleError = String(getQueryParam("google_error") || "").trim();

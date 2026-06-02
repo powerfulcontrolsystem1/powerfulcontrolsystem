@@ -4633,3 +4633,5 @@
 - 2026-06-02: `Reenvio confirmacion usuarios empresa` agrega respaldo por Mailu/correo corporativo interno para confirmaciones y recuperacion de contrasena de usuarios operativos cuando Gmail SMTP falla por configuracion o clave no descifrable.
 - 2026-06-02: `Usuario empresa duplicado` cambia el error por correo repetido en Administrar usuarios para mostrar una explicacion profesional y sugerir usar `Reenviar confirmacion` cuando la cuenta sigue pendiente.
 - 2026-06-02: `Apariencia usuarios empresa` corrige la tarjeta de agregar usuario en Administrar empresa > Usuarios para que respete temas claros y oscuros sin forzar fondo oscuro.
+- 2026-06-02: `Ojo de contrasena login usuario` inicializa el boton de visualizar/ocultar contrasena en `login_usuario.html` y conserva el foco del campo.
+- 2026-06-02: `Caja de trabajo para cajeros` agrega en configuracion de estaciones el check activo por defecto para pedir caja al cajero al iniciar sesion; `login_usuario.html` muestra selector de caja, recuerda la ultima caja por usuario/empresa y propaga la caja a estaciones, carrito y corte.

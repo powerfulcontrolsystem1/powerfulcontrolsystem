@@ -196,14 +196,22 @@ afecte dinero, documentos, licencias o seguridad.
    contrato vigente, vuelve al formulario para aceptarlo.
 5. La sesion redirige siempre a `administrar_empresa.html?id={empresa_id}`; el
    panel carga rol, permisos y estaciones asignadas de esa empresa.
-6. Para `cajero`, el menu queda limitado a `Venta directa`, `Estaciones` y
+6. Para `cajero`, si la configuracion de estaciones tiene activo
+   `solicitar_caja_login_cajero` (activo por defecto), despues de validar
+   credenciales se muestra una ventana para elegir la caja fisica de trabajo
+   del dia. La lista sale de `estaciones_config.cajas_config`, recuerda la
+   ultima caja usada por usuario/empresa en el navegador y propaga
+   `caja_codigo`, `caja_nombre` y `caja_descripcion` a estaciones, carrito y
+   corte de caja.
+7. Para `cajero`, el menu queda limitado a `Venta directa`, `Estaciones` y
    `Corte de Caja`, pero el carrito debe cargar completo: catalogo de productos,
    servicios, recetas, clientes, descuentos, propinas/comisiones y valores por
    medio de pago. Esas APIs auxiliares solo se permiten dentro del alcance del
    carrito, sin mostrar paginas administrativas de Productos o Clientes.
-7. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
+8. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
    consumir token y entrar, correo ambiguo exige enlace de empresa, tema claro u
-   oscuro se conserva y el boton `Instalar app` permanece visible.
+   oscuro se conserva, el boton `Instalar app` permanece visible y el cajero ve
+   el selector de caja solo cuando el check de configuracion esta activo.
 
 ## Abrir, usar y cerrar caja
 
@@ -212,12 +220,15 @@ afecte dinero, documentos, licencias o seguridad.
    `estaciones_config.cajas_config`, cada una con codigo, nombre, descripcion y
    estado activo. La estacion Caja muestra esos nombres, por ejemplo
    `CAJA-1 - FRUTERA`.
-3. Al hacer clic en una caja configurada, `corte_de_caja.html` recibe
+3. En la misma seccion de configuracion existe el check
+   `solicitar_caja_login_cajero`, activo por defecto, para exigir a los cajeros
+   elegir caja al iniciar sesion operativa.
+4. Al hacer clic en una caja configurada, `corte_de_caja.html` recibe
    `caja_codigo`, `caja_nombre` y descripcion para abrir el corte de esa caja.
-4. La caja puede abrirse manual o automaticamente segun flujo vigente.
-5. Cada usuario/caja mantiene turno, pagos, ingresos, egresos y reporte
+5. La caja puede abrirse manual o automaticamente segun flujo vigente.
+6. Cada usuario/caja mantiene turno, pagos, ingresos, egresos y reporte
    independiente.
-6. `Corte automatico` calcula desde apertura hasta el momento actual sin pedir
+7. `Corte automatico` calcula desde apertura hasta el momento actual sin pedir
    fechas.
 7. `Cerrar turno e imprimir reporte` imprime y luego cierra sesion.
 8. Pruebas: abrir caja con dos usuarios, registrar movimientos, cerrar una caja

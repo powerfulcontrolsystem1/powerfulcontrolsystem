@@ -88,6 +88,10 @@
                 <button id="btnGuardarCajasConfig" class="btn" type="button">Guardar cajas</button>
               </div>
             </div>
+            <label class="form-help" style="display:flex;align-items:center;gap:8px;margin:0 0 10px;">
+              <input type="checkbox" id="solicitarCajaLoginCajeroToggle" checked>
+              Pedir al cajero que elija caja al iniciar sesion
+            </label>
             <div class="table-wrap">
               <table class="table" id="cajasConfigTable">
                 <thead>
@@ -1318,6 +1322,7 @@
         card_size: cardSize,
         caja_enabled: caja_enabled,
         caja_placement: cajaPlacement,
+        solicitar_caja_login_cajero: cfg && cfg.solicitar_caja_login_cajero === undefined ? true : toBool(cfg && cfg.solicitar_caja_login_cajero),
         cajas_config: normalizeCajasConfig(cfg && (cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)),
         youtube_enabled: youtube_enabled,
         youtube_placement: youtubePlacement,
@@ -1397,6 +1402,7 @@
         'notasBeepToggle',
         'notasBlinkToggle',
         'saveNotasConfigBtn',
+        'solicitarCajaLoginCajeroToggle',
         'btnAgregarCajaConfig',
         'btnGuardarCajasConfig'
       ].forEach(function(id){
@@ -1490,9 +1496,12 @@
         var cfg = await getConfigFromServer();
         if (!cfg) cfg = normalizeConfig({ cantidad: 1, estaciones: [] });
         cfg.cajas_config = collectCajasConfigRows();
+        var solicitarCajaLogin = document.getElementById('solicitarCajaLoginCajeroToggle');
+        cfg.solicitar_caja_login_cajero = solicitarCajaLogin ? !!solicitarCajaLogin.checked : true;
         cfg = await saveConfigToServer(cfg);
         current = cfg;
         renderCajasConfig(cfg.cajas_config);
+        if (solicitarCajaLogin) solicitarCajaLogin.checked = cfg.solicitar_caja_login_cajero !== false;
         setCajasConfigMessage('Cajas guardadas correctamente.', 'success');
       } catch (err) {
         console.error('No se pudo guardar cajas fisicas', err);
@@ -2602,6 +2611,10 @@
       } catch (_) {}
       renderRows(cfg);
       renderCajasConfig(cfg.cajas_config);
+      var solicitarCajaLoginToggle = document.getElementById('solicitarCajaLoginCajeroToggle');
+      if (solicitarCajaLoginToggle) {
+        solicitarCajaLoginToggle.checked = cfg.solicitar_caja_login_cajero !== false;
+      }
       fillCarritoConfigTargetOptions(cfg);
       setCarritoConfigForm(cfg, 0);
       var cajaToggleEl = document.getElementById('cajaToggle');

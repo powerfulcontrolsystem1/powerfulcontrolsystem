@@ -30517,3 +30517,16 @@ Archivos modificados:
 - tmp/visual-cajero-alfaix-final/03-carrito.png
 - tmp/visual-cajero-alfaix-final/resultado.txt
 - web/administrar_empresa/carrito_de_compras.html
+
+2026-06-02: Ojo de contrasena en login de usuarios operativos
+- Se agrego la inicializacion del boton `.password-visibility-toggle` en `web/js/login_usuario.js`.
+- El campo `#password` cambia entre `password` y `text`, actualiza `aria-pressed` y conserva el foco tras cada clic.
+- Validacion: `node --check web/js/login_usuario.js` OK; prueba visual automatizada confirmo ocultar, mostrar y volver a ocultar la contrasena.
+- Archivos afectados: web/js/login_usuario.js, CHANGELOG.md, documentos/historial_de_cambios
+
+2026-06-02: Selector de caja de trabajo para cajeros
+- Se agrego en `Configuracion de estaciones > Cajas fisicas de la empresa` el check `Pedir al cajero que elija caja al iniciar sesion`, activo por defecto y guardado como `estaciones_config.solicitar_caja_login_cajero`.
+- `login_usuario.html` muestra una ventana al rol cajero despues de autenticar, lista las cajas activas de `cajas_config`, preselecciona la ultima caja usada por usuario/empresa y redirige con `caja_codigo`, `caja_nombre` y `caja_descripcion`.
+- Estaciones, carrito y corte de caja leen la caja elegida desde la sesion del navegador para mantener caja independiente por cajero.
+- Validacion: `node --check web/js/login_usuario.js` OK; `go test ./handlers -run "TestResolvePermissionPageKeyForDirectSaleCart|TestResolvePermissionPageKeyForOperationalStationCart|TestResolvePermissionPageKeyForRegularCart" -count=1` OK; prueba visual automatizada confirmo selector CAJA-1/CAJA-2/CAJA-3, preseleccion de CAJA-2 y redireccion con caja.
+- Archivos afectados: backend/handlers/usuarios_empresa.go, web/login_usuario.html, web/js/login_usuario.js, web/estilos.css, web/administrar_empresa/configuracion_de_estaciones.html, web/administrar_empresa/estaciones.html, web/administrar_empresa/carrito_de_compras.html, web/administrar_empresa/corte_de_caja.html, documentos/flujos_operativos.md, documentos/mapa_modulos.md, CHANGELOG.md, documentos/historial_de_cambios

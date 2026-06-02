@@ -1003,6 +1003,23 @@
       return (codigo + (nombre ? (' - ' + nombre) : '')).trim();
     }
 
+    function getSelectedLoginCaja() {
+      try {
+        const storedEmpresa = Number(sessionStorage.getItem('pcs_caja_trabajo_empresa_id') || 0);
+        if (storedEmpresa && Number(state.empresaID || 0) && storedEmpresa !== Number(state.empresaID || 0)) return null;
+        const codigo = normalizeCashCode(sessionStorage.getItem('pcs_caja_trabajo_codigo') || '');
+        if (!codigo) return null;
+        const match = findCajaCatalogEntry(codigo) || {};
+        return {
+          codigo,
+          nombre: normalize(match.nombre || sessionStorage.getItem('pcs_caja_trabajo_nombre') || ''),
+          descripcion: normalize(match.descripcion || sessionStorage.getItem('pcs_caja_trabajo_descripcion') || '')
+        };
+      } catch (_) {
+        return null;
+      }
+    }
+
     function parseMoneyInputValue(value) {
       if (shouldUseWholeMoney()) {
         return normalizeMoneyValue(parseWholeMoneyInputValue(value), 'COP');
@@ -1066,7 +1083,13 @@
       rows.forEach(function(caja) {
         select.appendChild(new Option(cashRegisterLabel(caja), String(caja.id || 0)));
       });
-      const chosen = rows.some(function(x) { return Number(x.id || 0) === previous; }) ? previous : Number(rows[0].id || 0);
+      const selectedLoginCaja = getSelectedLoginCaja();
+      const loginCajaRow = selectedLoginCaja && selectedLoginCaja.codigo
+        ? rows.find(function(x) { return normalizeCashCode(x.caja_codigo) === selectedLoginCaja.codigo; })
+        : null;
+      const chosen = rows.some(function(x) { return Number(x.id || 0) === previous; })
+        ? previous
+        : (loginCajaRow ? Number(loginCajaRow.id || 0) : Number(rows[0].id || 0));
       select.value = String(chosen || '');
       state.selectedCashRegisterID = chosen;
       if (hint) {
@@ -1108,6 +1131,8 @@
     }
 
     function defaultPaymentCashRegisterCode() {
+      const selectedLoginCaja = getSelectedLoginCaja();
+      if (selectedLoginCaja && selectedLoginCaja.codigo) return selectedLoginCaja.codigo;
       const cajas = activeCajasConfig();
       if (cajas.length && normalizeCashCode(cajas[0].codigo)) return normalizeCashCode(cajas[0].codigo);
       const drawer = getCashDrawerConfig();
@@ -1698,6 +1723,7 @@
             carrito: normalizeStationCarritoConfig(current && (current.carrito || current.carrito_ui))
           };
         }),
+        solicitar_caja_login_cajero: src.solicitar_caja_login_cajero === undefined ? true : Boolean(src.solicitar_caja_login_cajero),
         cajas_config: normalizeCajasConfig(src.cajas_config || src.cajas_fisicas || src.cajas || src.caja_catalogo),
         carrito_ui_global: normalizeUnifiedCartUIConfig(src.carrito_ui_global || src.carrito || src.carrito_configuracion_global),
         station_card_ui: src.station_card_ui && typeof src.station_card_ui === 'object' ? src.station_card_ui : {}

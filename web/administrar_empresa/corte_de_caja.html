@@ -477,13 +477,24 @@
 
   function resolvePageContext() {
     var params = new URLSearchParams(window.location.search || '');
+    var storedCajaCodigo = '';
+    var storedCajaNombre = '';
+    var storedCajaDescripcion = '';
+    try {
+      var storedEmpresa = Number(sessionStorage.getItem('pcs_caja_trabajo_empresa_id') || 0);
+      if (!storedEmpresa || !empresaId || storedEmpresa === Number(empresaId || 0)) {
+        storedCajaCodigo = String(sessionStorage.getItem('pcs_caja_trabajo_codigo') || '').trim();
+        storedCajaNombre = String(sessionStorage.getItem('pcs_caja_trabajo_nombre') || '').trim();
+        storedCajaDescripcion = String(sessionStorage.getItem('pcs_caja_trabajo_descripcion') || '').trim();
+      }
+    } catch (_) {}
     return {
       source: String(params.get('source') || '').trim().toLowerCase(),
       returnTo: String(params.get('return_to') || '').trim().toLowerCase(),
       autoGenerar: String(params.get('auto_generar') || '').trim() === '1',
-      cajaNombre: String(params.get('caja_nombre') || '').trim(),
-      cajaCodigo: String(params.get('caja_codigo') || '').trim(),
-      cajaDescripcion: String(params.get('caja_descripcion') || '').trim(),
+      cajaNombre: String(params.get('caja_nombre') || storedCajaNombre || '').trim(),
+      cajaCodigo: String(params.get('caja_codigo') || storedCajaCodigo || '').trim(),
+      cajaDescripcion: String(params.get('caja_descripcion') || storedCajaDescripcion || '').trim(),
       cierreCajaID: Number(params.get('cierre_caja_id') || 0),
       sucursalID: Number(params.get('sucursal_id') || 0),
       usuario: String(params.get('usuario') || '').trim(),

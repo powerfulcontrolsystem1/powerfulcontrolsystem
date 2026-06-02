@@ -2488,6 +2488,8 @@ type empresaUsuarioSessionResult struct {
 	EmpresaID   int64
 	UsuarioID   int64
 	Rol         string
+	RolNombre   string
+	Email       string
 	RedirectURL string
 	Apariencia  string
 }
@@ -2546,6 +2548,8 @@ func createEmpresaUsuarioSession(w http.ResponseWriter, r *http.Request, dbSuper
 		EmpresaID:   item.EmpresaID,
 		UsuarioID:   item.ID,
 		Rol:         sessionRole,
+		RolNombre:   item.RolNombre,
+		Email:       item.Email,
 		RedirectURL: redirectURL,
 		Apariencia:  apariencia,
 	}
@@ -2563,6 +2567,8 @@ func createEmpresaUsuarioSessionAndRespond(w http.ResponseWriter, r *http.Reques
 		"empresa_id":   result.EmpresaID,
 		"usuario_id":   result.UsuarioID,
 		"rol":          result.Rol,
+		"rol_nombre":   result.RolNombre,
+		"email":        result.Email,
 		"redirect_url": result.RedirectURL,
 		"apariencia":   result.Apariencia,
 	})

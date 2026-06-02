@@ -2809,6 +2809,8 @@ body.theme-dark .login-page{
 .login-usuario-modal .modal__header h2{margin:0;color:var(--text)}
 .login-usuario-modal .modal__body{padding:18px 20px;color:var(--text);background:var(--surface)}
 .login-usuario-modal .modal__body p{margin:0 0 12px;color:var(--text)}
+.login-usuario-modal .login-cash-register-panel{width:min(460px,calc(100vw - 32px))}
+.login-usuario-modal .login-cash-register-panel .form-actions{justify-content:flex-end}
 
 @media (min-width: 980px) and (max-width: 1240px){
   .login-usuario-hero-visual{

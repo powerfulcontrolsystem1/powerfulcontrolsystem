@@ -341,6 +341,7 @@
         card_size,
         caja_enabled,
         caja_placement,
+        solicitar_caja_login_cajero: cfg && cfg.solicitar_caja_login_cajero === undefined ? true : toBool(cfg && cfg.solicitar_caja_login_cajero),
         cajas_config: normalizeCajasConfig(cfg && (cfg.cajas_config || cfg.cajas_fisicas || cfg.cajas || cfg.caja_catalogo)),
         youtube_enabled,
         youtube_placement,
@@ -898,6 +899,24 @@
       return desc;
     }
 
+    function getSelectedLoginCaja() {
+      try {
+        const storedEmpresa = Number(sessionStorage.getItem('pcs_caja_trabajo_empresa_id') || 0);
+        if (storedEmpresa && Number(empresaId || 0) && storedEmpresa !== Number(empresaId || 0)) return null;
+        const codigo = normalizeCashCode(sessionStorage.getItem('pcs_caja_trabajo_codigo') || '');
+        if (!codigo) return null;
+        const cajas = activeCajasConfig(stationConfig || {});
+        const match = cajas.find(caja => normalizeCashCode(caja.codigo) === codigo) || {};
+        return {
+          codigo,
+          nombre: String(match.nombre || sessionStorage.getItem('pcs_caja_trabajo_nombre') || '').trim(),
+          descripcion: String(match.descripcion || sessionStorage.getItem('pcs_caja_trabajo_descripcion') || '').trim()
+        };
+      } catch (_) {
+        return null;
+      }
+    }
+
     function openStationCarrito(stationID, stationName, directSaleMode) {
       if (!empresaId || stationID == null) return;
       const directMode = !!directSaleMode;
@@ -911,14 +930,18 @@
     }
     function openCajaClosePage(stationName, cajaCodigo, cajaDescripcion) {
       if (!empresaId) return;
+      const selectedLoginCaja = getSelectedLoginCaja();
+      const resolvedCajaCodigo = cajaCodigo || (selectedLoginCaja && selectedLoginCaja.codigo) || '';
+      const resolvedCajaNombre = stationName || (selectedLoginCaja && selectedLoginCaja.nombre) || 'Caja';
+      const resolvedCajaDescripcion = cajaDescripcion || (selectedLoginCaja && selectedLoginCaja.descripcion) || '';
       const params = new URLSearchParams();
       params.set('empresa_id', String(empresaId));
       params.set('source', 'estaciones');
       params.set('return_to', 'estaciones');
       params.set('auto_generar', '1');
-      params.set('caja_nombre', String(stationName || 'Caja').trim() || 'Caja');
-      if (cajaCodigo) params.set('caja_codigo', normalizeCashCode(cajaCodigo));
-      if (cajaDescripcion) params.set('caja_descripcion', String(cajaDescripcion || '').trim());
+      params.set('caja_nombre', String(resolvedCajaNombre || 'Caja').trim() || 'Caja');
+      if (resolvedCajaCodigo) params.set('caja_codigo', normalizeCashCode(resolvedCajaCodigo));
+      if (resolvedCajaDescripcion) params.set('caja_descripcion', String(resolvedCajaDescripcion || '').trim());
       window.location.href = '/administrar_empresa/corte_de_caja.html?' + params.toString();
     }
     function buildUltimosMovimientosCajaURL() {
@@ -927,6 +950,8 @@
       params.set('action', 'ultimos_movimientos');
       params.set('solo_usuario_actual', '1');
       params.set('mi_caja_actual', '1');
+      const selectedLoginCaja = getSelectedLoginCaja();
+      if (selectedLoginCaja && selectedLoginCaja.codigo) params.set('caja_codigo', selectedLoginCaja.codigo);
       return '/administrar_empresa/ultimos_movimientos_de_caja.html?' + params.toString();
     }
 
