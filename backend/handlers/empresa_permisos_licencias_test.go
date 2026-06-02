@@ -256,6 +256,23 @@ func TestResolvePermissionPageKeyForDirectSaleCart(t *testing.T) {
 	}
 }
 
+func TestResolvePermissionPageKeyForOperationalStationCart(t *testing.T) {
+	cases := map[string]string{
+		"/api/empresa/carritos_compra?empresa_id=7&perm_page=linkEstaciones":         "linkEstaciones",
+		"/api/empresa/carritos_compra/items?empresa_id=7&perm_page=linkEstaciones":   "linkEstaciones",
+		"/api/empresa/carritos_compra?empresa_id=7&perm_page=linkCorteCaja":          "linkCorteCaja",
+		"/api/empresa/carritos_compra?empresa_id=7&action=cajas_abiertas_estacion":   "linkEstaciones",
+		"/api/empresa/carritos_compra?empresa_id=7&action=activar_estacion&id=3":     "linkEstaciones",
+		"/api/empresa/carritos_compra/items?empresa_id=7&estacion_id=3&carrito_id=9": "linkEstaciones",
+	}
+	for rawURL, expected := range cases {
+		r := httptest.NewRequest(http.MethodGet, rawURL, nil)
+		if got := resolvePermissionPageKeyForRequest(r); got != expected {
+			t.Fatalf("resolvePermissionPageKeyForRequest(%q)=%q, want %s", rawURL, got, expected)
+		}
+	}
+}
+
 func TestResolvePermissionPageKeyForRegularCart(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/api/empresa/carritos_compra?empresa_id=7", nil)
 	if got := resolvePermissionPageKeyForRequest(r); got != "linkCarritoCompras" {

@@ -1,3 +1,9 @@
+2026-06-02: Cajero puede cargar carritos desde estaciones.
+- Modulos afectados: permisos empresariales, estaciones, carrito de compras y corte de caja.
+- `backend/handlers/empresa_permisos.go` respeta `perm_page=linkEstaciones` y `perm_page=linkCorteCaja` para `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`, evitando que el endpoint caiga al permiso administrativo `linkCarritoCompras`.
+- Seguridad: el cambio no habilita la pagina administrativa de Carritos; solo permite el uso operativo desde Estaciones o Corte de Caja con sesion, `empresa_id`, rol y accesos de estacion validados en backend.
+- Pruebas: `go test ./handlers -run "TestResolvePermissionPageKeyForDirectSaleCart|TestResolvePermissionPageKeyForOperationalStationCart|TestResolvePermissionPageKeyForRegularCart" -count=1`.
+
 2026-06-02: Ayuda con apariencias claras y oscuras reparadas.
 - Modulo afectado: centro de ayuda.
 - `web/ayuda/ayuda.html` agrega clase de pagina y reglas especificas con variables `--bg`, `--surface`, `--text`, `--muted`, `--accent`, `--border` y `--form-*` para que hero, navegacion, tarjetas internas, chips, links, codigo y barra de regreso respeten el tema activo.

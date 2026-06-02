@@ -3607,6 +3607,12 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		if strings.EqualFold(permPage, "linkVentaDirecta") || modo == "venta_directa" || strings.HasPrefix(carritoCodigo, "VENTA-DIRECTA") || strings.HasPrefix(carritoCodigo, "VENTA_DIRECTA") {
 			return "linkVentaDirecta"
 		}
+		if strings.EqualFold(permPage, "linkEstaciones") {
+			return "linkEstaciones"
+		}
+		if strings.EqualFold(permPage, "linkCorteCaja") {
+			return "linkCorteCaja"
+		}
 		if strings.Contains(action, "estacion") || strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
 			return "linkEstaciones"
 		}
