@@ -1,3 +1,11 @@
+2026-06-02: Login usuario aplica rol cajero y deduplica Caja.
+- Modulos afectados: `login_usuario`, `usuarios_empresa`, permisos empresariales y menu de Administrar empresa.
+- `backend/handlers/empresa_permisos.go` reconoce `Caja`, `Caja principal`, `Caja turno` y variantes como alias canonicos de `cajero`.
+- El rol `cajero` queda tratado como rol operativo restringido: solo ve `Venta directa`, `Estaciones` y `Corte de Caja` en el menu empresarial.
+- `backend/db/roles_tipos_usuario.go` deduplica las variantes `Caja/Cajero` en el catalogo global de roles y prefiere mostrar `Cajero`.
+- `web/administrar_empresa/administrar_usuarios.html` y `web/js/administrar_empresa.js` aplican los mismos alias en frontend para selector y fallback local.
+- Pruebas: `go test ./handlers ./db -run "TestNormalizePermissionRoleCajaEsCajero|TestCajeroSoloVePaginasOperativas|TestNormalizeRolCatalogKeyCajaDeduplicaComoCajero|TestPreferredRolCatalogDisplayRankPrefiereCajero|TestEmpresaUsuarioEstadoBloqueaPrimerIngreso" -count=1`, `node --check web/js/administrar_empresa.js` y sintaxis de scripts embebidos de `administrar_usuarios.html`.
+
 2026-06-02: Primer ingreso usuario operativo pendiente.
 - Modulo afectado: `usuarios_empresa` y `login_usuario`.
 - `backend/handlers/usuarios_empresa.go` permite que un usuario pendiente con `estado=inactivo`, correo no confirmado y token de invitacion valido complete el formulario de contrasena.

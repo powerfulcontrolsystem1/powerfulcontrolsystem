@@ -18,6 +18,10 @@
 - `recursos_humanos`: `horarios_trabajadores:R/C/U`, `asistencia_empleados:R/C/U` y `nomina_sueldos:R/C/U`; sin ventas, caja ni permisos generales de seguridad.
 - `vendedor` y `recepcion`: orientados a ventas/clientes con consulta de inventario, sin administracion global.
 - Defensa backend: las restricciones de roles especializados se reaplican despues de licencia, vertical, empresa y acceso compartido.
+- `cajero`: las variantes historicas `Caja`, `Caja principal` y `Caja turno`
+  se normalizan como `cajero`. En `login_usuario.html` el menu queda limitado a
+  `Venta directa`, `Estaciones` y `Corte de Caja`, aunque el rol conserve
+  permisos operativos internos para cobrar, facturar y cerrar turno.
 
 2026-05-31: Nota de rol Servicio de limpieza para estaciones
 - Se agrega el rol `servicio_limpieza` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.

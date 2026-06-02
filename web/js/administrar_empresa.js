@@ -959,6 +959,21 @@ try {
       case "supervisor_sucursal":
         return "supervisor_sucursal";
       case "cajero":
+      case "caja":
+      case "caja turno":
+      case "caja_turno":
+      case "caja principal":
+      case "caja_principal":
+      case "caja hotel":
+      case "caja_hotel":
+      case "caja bar":
+      case "caja_bar":
+      case "caja salon":
+      case "caja_salon":
+      case "caja restaurante":
+      case "caja_restaurante":
+      case "caja pyme":
+      case "caja_pyme":
         return "cajero";
       case "vendedor":
       case "ventas":
@@ -1355,6 +1370,15 @@ try {
       refreshMenuGroups();
       return;
     }
+    if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "cajero") {
+      var cajeroLinksContext = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja"];
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && cajeroLinksContext.indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
+      refreshMenuGroups();
+      return;
+    }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "portero") {
       links.forEach(function (link) {
         setMenuLinkVisible(link, !!link && link.id === "linkEstaciones");
@@ -1608,6 +1632,15 @@ try {
     });
     if (!normalizedRole) {
       setSecondaryMenuVisibility(true);
+      refreshMenuGroups();
+      return;
+    }
+    if (normalizedRole === "cajero") {
+      var cajeroLinks = ["linkVentaDirecta", "linkEstaciones", "linkCorteCaja"];
+      links.forEach(function (link) {
+        setMenuLinkVisible(link, !!link && cajeroLinks.indexOf(link.id) !== -1);
+      });
+      setSecondaryMenuVisibility(false);
       refreshMenuGroups();
       return;
     }

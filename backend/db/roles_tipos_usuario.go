@@ -204,6 +204,11 @@ func GetRolesDeUsuarioCatalogoGlobal(dbConn *sql.DB, incluirInactivos bool) ([]R
 		if leftActive != rightActive {
 			return leftActive
 		}
+		leftPreferred := preferredRolCatalogDisplayRank(leftKey, roles[i].Nombre)
+		rightPreferred := preferredRolCatalogDisplayRank(rightKey, roles[j].Nombre)
+		if leftPreferred != rightPreferred {
+			return leftPreferred < rightPreferred
+		}
 		return roles[i].ID < roles[j].ID
 	})
 	seen := map[string]bool{}
@@ -236,6 +241,14 @@ func normalizeRolCatalogKey(nombre string) string {
 		"administrador_de_empresa": "admin_empresa",
 		"admin":                    "admin_empresa",
 		"supervisor":               "supervisor_sucursal",
+		"caja":                     "cajero",
+		"caja_turno":               "cajero",
+		"caja_principal":           "cajero",
+		"caja_hotel":               "cajero",
+		"caja_bar":                 "cajero",
+		"caja_salon":               "cajero",
+		"caja_restaurante":         "cajero",
+		"caja_pyme":                "cajero",
 		"servicio_de_limpieza":     "servicio_limpieza",
 		"limpieza":                 "servicio_limpieza",
 		"aseadora":                 "servicio_limpieza",
@@ -255,6 +268,13 @@ func normalizeRolCatalogKey(nombre string) string {
 		return alias
 	}
 	return key
+}
+
+func preferredRolCatalogDisplayRank(key, nombre string) int {
+	if key == "cajero" && normalizeRolCatalogKey(nombre) == "cajero" && strings.EqualFold(strings.TrimSpace(nombre), "cajero") {
+		return 0
+	}
+	return 1
 }
 
 // UpdateRolDeUsuario actualiza un rol de usuario.

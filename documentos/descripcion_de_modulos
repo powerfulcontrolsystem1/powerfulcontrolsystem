@@ -1,3 +1,9 @@
+2026-06-02: Login usuario con rol Cajero restringido
+- Modulo afectado: `usuarios_empresa`.
+- Cambio funcional: al entrar por `login_usuario.html`, las variantes de rol `Caja`, `Caja principal`, `Caja turno` y similares se normalizan como `cajero`.
+- UX: el selector de roles de Administrar usuarios deduplica `Caja/Cajero` y el catalogo global prefiere mostrar `Cajero`.
+- Permisos: el cajero solo ve `Venta directa`, `Estaciones` y `Corte de Caja`; no ve panel general, usuarios, configuracion, inventario, finanzas completas ni reportes ejecutivos.
+
 2026-06-02: Primer ingreso de usuario operativo pendiente
 - Modulo afectado: `usuarios_empresa`.
 - Cambio funcional: `login_usuario.html` puede completar el alta inicial de un usuario invitado que aun aparece como `inactivo` porque esta pendiente de confirmar.

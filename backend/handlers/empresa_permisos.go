@@ -2167,7 +2167,7 @@ func normalizePermissionRole(raw string) string {
 		return "admin_empresa"
 	case "supervisor", "supervisor_sucursal":
 		return "supervisor_sucursal"
-	case "cajero":
+	case "cajero", "caja", "caja turno", "caja_turno", "caja principal", "caja_principal", "caja hotel", "caja_hotel", "caja bar", "caja_bar", "caja salon", "caja_salon", "caja restaurante", "caja_restaurante", "caja pyme", "caja_pyme":
 		return "cajero"
 	case "vendedor", "ventas":
 		return "vendedor"
@@ -2810,6 +2810,11 @@ func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, mod
 		pageOverrides = map[string]bool{}
 	}
 	rows := buildPermissionPagesCatalogFromModuleRows(modulos, pageOverrides)
+	if normalizePermissionRole(role) == "cajero" {
+		for idx := range rows {
+			rows[idx].Permitido = isAllowedPageForOperationalRole("cajero", rows[idx].PaginaClave)
+		}
+	}
 	if normalizePermissionRole(role) == "portero" {
 		for idx := range rows {
 			rows[idx].Permitido = rows[idx].PaginaClave == "linkEstaciones"
@@ -2851,7 +2856,7 @@ func buildPermissionPagesCatalogForRoleDynamic(dbSuper *sql.DB, role string, mod
 
 func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissionModuleMatrixRow) []permissionModuleMatrixRow {
 	normalizedRole := normalizePermissionRole(role)
-	if normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
+	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
 		return rows
 	}
 	out := clonePermissionModuleRows(rows)
@@ -2859,6 +2864,11 @@ func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissi
 		row := &out[idx]
 		for _, action := range permissionActionsCatalogOrdered {
 			allowed := false
+			if normalizedRole == "cajero" {
+				if row.Modulo == permModuleVentas || row.Modulo == permModuleFinanzas || row.Modulo == permModuleFacturacion {
+					allowed = action == permActionRead || action == permActionCreate || action == permActionUpdate || action == permActionApprove
+				}
+			}
 			if normalizedRole == "portero" && row.Modulo == permModuleVentas {
 				allowed = action == permActionRead || action == permActionApprove
 			}
@@ -2893,6 +2903,13 @@ func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissi
 
 func isAllowedPageForOperationalRole(role, pageKey string) bool {
 	switch normalizePermissionRole(role) {
+	case "cajero":
+		switch pageKey {
+		case "linkVentaDirecta", "linkEstaciones", "linkCorteCaja":
+			return true
+		default:
+			return false
+		}
 	case "portero":
 		return pageKey == "linkEstaciones"
 	case "servicio_limpieza":
@@ -2934,7 +2951,7 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 
 func restrictPermissionPagesForOperationalRole(role string, pages map[string]bool) map[string]bool {
 	normalizedRole := normalizePermissionRole(role)
-	if normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
+	if normalizedRole != "cajero" && normalizedRole != "portero" && normalizedRole != "contador" && normalizedRole != "empresario" && normalizedRole != "servicio_limpieza" && normalizedRole != "tecnico_solar" && normalizedRole != "jefe_bodega" && normalizedRole != "recursos_humanos" {
 		return pages
 	}
 	if pages == nil {
@@ -2944,6 +2961,10 @@ func restrictPermissionPagesForOperationalRole(role string, pages map[string]boo
 		pages[key] = isAllowedPageForOperationalRole(normalizedRole, key)
 	}
 	switch normalizedRole {
+	case "cajero":
+		pages["linkVentaDirecta"] = true
+		pages["linkEstaciones"] = true
+		pages["linkCorteCaja"] = true
 	case "portero", "servicio_limpieza":
 		pages["linkEstaciones"] = true
 	case "tecnico_solar":
