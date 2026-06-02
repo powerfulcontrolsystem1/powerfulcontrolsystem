@@ -12085,3 +12085,10 @@ Archivos modificados:
 - web/login.html
 - web/login_usuario.html
 - web/super/configuracion_avanzada.html
+
+2026-06-01 23:12:30 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ccac0e6c; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- documentos/historial_de_cambios
+- web/administrar_empresa/administrar_usuarios.html

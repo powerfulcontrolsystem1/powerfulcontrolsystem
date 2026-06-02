@@ -30275,3 +30275,11 @@ Archivos:
 Validacion:
 - `go test ./handlers -run "EmpresaRoutesUsePermissionWrappers|Reenviar|Usuario" -count=1`
 - Validacion de sintaxis del script embebido de `administrar_usuarios.html`
+
+2026-06-01: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/usuarios_empresa.go
+- documentos/historial_de_cambios
+- web/administrar_empresa/administrar_usuarios.html
