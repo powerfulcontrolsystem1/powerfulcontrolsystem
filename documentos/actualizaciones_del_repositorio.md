@@ -12166,3 +12166,10 @@ Archivos modificados:
 2026-06-02 12:24:18 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: dcb7e739; PushStatus: OK
 Archivos modificados:
 - web/ayuda/ayuda.html
+
+2026-06-02 12:46:25 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 64036935; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- documentos/historial_de_cambios

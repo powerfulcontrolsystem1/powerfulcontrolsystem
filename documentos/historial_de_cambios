@@ -30482,3 +30482,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - web/ayuda/ayuda.html
+
+2026-06-02: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_permisos_licencias_test.go
+- documentos/historial_de_cambios
