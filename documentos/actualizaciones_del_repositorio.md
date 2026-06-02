@@ -12146,3 +12146,13 @@ Archivos modificados:
 - backend/handlers/usuarios_empresa.go
 - backend/handlers/usuarios_empresa_invitation_test.go
 - documentos/historial_de_cambios
+
+2026-06-02 12:05:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: d35afd62; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/empresa_permisos.go
+- backend/handlers/usuarios_empresa_invitation_test.go
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
