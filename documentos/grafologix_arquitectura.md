@@ -10,6 +10,11 @@ manuscrito, ajustar la imagen en navegador y generar un informe grafológico
 heuristico con metricas visuales, interpretacion orientativa y exportacion HTML
 imprimible, PDF, Word compatible, JSON, CSV y TXT.
 
+Cada manuscrito puede quedar asociado a un cliente central de la empresa. La UI
+busca clientes por nombre o documento, permite crear uno nuevo con el endpoint
+general de clientes y guarda descripcion/caracteristicas de la persona dentro
+del informe.
+
 El modulo no debe usarse como diagnostico psicologico, medico, juridico ni como
 decision automatizada de seleccion de personal. La interpretacion es una lectura
 heuristica sobre rasgos graficos.
@@ -53,6 +58,11 @@ Tabla principal en `pcs_empresas`:
 empresa_grafologia_analisis (
   id BIGSERIAL PRIMARY KEY,
   empresa_id INTEGER NOT NULL,
+  cliente_id INTEGER DEFAULT 0,
+  cliente_nombre TEXT,
+  cliente_documento TEXT,
+  persona_descripcion TEXT,
+  persona_caracteristicas TEXT,
   titulo TEXT,
   archivo_nombre TEXT,
   imagen_url TEXT,
@@ -76,6 +86,7 @@ Indices:
 
 - `ix_grafologia_analisis_empresa(empresa_id, fecha_creacion DESC)`
 - `ix_grafologia_analisis_estado(empresa_id, estado)`
+- `ix_grafologia_analisis_cliente(empresa_id, cliente_id)`
 
 Las imagenes se guardan en:
 
@@ -98,6 +109,7 @@ GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&for
 GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=csv
 GET  /api/empresa/grafologia?empresa_id={id}&action=reporte&id={analisis_id}&format=txt
 POST /api/empresa/grafologia?empresa_id={id}&action=analizar
+POST /api/empresa/grafologia?empresa_id={id}&action=analizar_ia
 ```
 
 `POST analizar` usa `multipart/form-data`:
@@ -105,23 +117,40 @@ POST /api/empresa/grafologia?empresa_id={id}&action=analizar
 - `imagen`: archivo de imagen.
 - `titulo`: titulo del informe.
 - `ocr_texto`: texto OCR opcional si se pega manualmente o viene de otro motor.
+- `cliente_id`: cliente central asociado, validado por `empresa_id`.
+- `persona_descripcion`: contexto de la persona asociada al manuscrito.
+- `persona_caracteristicas`: caracteristicas registradas por el operador.
+
+`POST analizar_ia` usa el mismo `multipart/form-data`, envia la imagen ajustada
+al modelo configurado `openai:gpt-5.5` del modulo Chat IA y devuelve un informe
+orientativo en texto. No crea dependencias nuevas: reutiliza el cliente OpenAI
+existente, los checks globales de IA, el limite diario GPT-5.5 por empresa y el
+registro de uso/auditoria de consultas IA. El cliente asociado se valida por
+`empresa_id` igual que en el analisis local.
 
 ## Flujo operativo
 
 1. El usuario abre `Administrar empresa > Analisis y control > GRAFOLOGIX`.
-2. Sube una foto, arrastra un archivo o toma una fotografia desde la camara.
-3. Ajusta brillo, contraste, recorte central o recorte automatico por tinta.
-4. El navegador envia el canvas final como PNG al backend.
-5. El backend guarda la imagen aislada por `empresa_id`.
-6. Si `GRAFOLOGIA_TESSERACT_ENABLED=1`, intenta OCR con Tesseract CLI.
-7. El motor Go calcula metricas de imagen y rasgos heurísticos.
-8. El preprocesador genera escala de grises, binarizacion, bordes y overlay de
+2. Busca el cliente central por nombre/documento o lo crea desde la tarjeta
+   `Cliente asociado`.
+3. Registra descripcion y caracteristicas autorizadas de la persona.
+4. Sube una foto, arrastra un archivo o toma una fotografia desde la camara.
+5. Ajusta brillo, contraste, recorte central o recorte automatico por tinta.
+6. El navegador envia el canvas final como PNG al backend.
+7. El backend valida que `cliente_id` pertenezca a la misma empresa y guarda la
+   imagen aislada por `empresa_id`.
+8. Si `GRAFOLOGIA_TESSERACT_ENABLED=1`, intenta OCR con Tesseract CLI.
+9. El motor Go calcula metricas de imagen y rasgos heurísticos.
+10. El preprocesador genera escala de grises, binarizacion, bordes y overlay de
    lineas/margenes.
-9. Se guarda el resultado en PostgreSQL.
-10. La UI muestra metricas, barras de interpretacion, preprocesamiento visual e
+11. Se guarda el resultado en PostgreSQL con snapshot del cliente/persona.
+12. La UI muestra metricas, barras de interpretacion, preprocesamiento visual e
     historial.
-11. El informe se abre en HTML imprimible, PDF real, Word compatible, JSON,
+13. El informe se abre en HTML imprimible, PDF real, Word compatible, JSON,
     CSV o TXT.
+14. Opcionalmente, el operador presiona `Analizar con GPT-5.5`; el navegador
+    envia el mismo canvas a `action=analizar_ia` y muestra una respuesta
+    complementaria separada del informe local.
 
 ## Algoritmos Fase 1
 
@@ -184,6 +213,10 @@ backend Go.
 
 - El endpoint exige `empresa_id`, sesion, alcance, licencia y permiso de modulo.
 - Toda consulta filtra por `empresa_id`.
+- Si se envia `cliente_id`, el backend verifica `clientes.empresa_id + id`
+  antes de guardar el analisis; un cliente de otra empresa se rechaza.
+- La accion `analizar_ia` respeta la configuracion global/empresarial del Chat
+  IA y bloquea llamadas cuando GPT-5.5 esta desactivado o sin cupo diario.
 - Los archivos cargados se guardan en carpeta de la empresa.
 - No se aceptan tipos que no sean `image/*`.
 - Los reportes solo cargan `id` asociado al mismo `empresa_id`.

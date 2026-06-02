@@ -28,6 +28,7 @@ func RenderHTMLReport(title string, result AnalysisResult) string {
 	b.WriteString(`</p><p>`)
 	b.WriteString(html.EscapeString(result.Summary))
 	b.WriteString(`</p></section>`)
+	writeHTMLSubjectSection(&b, result)
 	b.WriteString(`<section class="section"><h2>Resumen técnico</h2><div class="grid">`)
 	summaryRows := [][2]string{
 		{"Resolución", intString(result.Image.Width) + " x " + intString(result.Image.Height)},
@@ -137,6 +138,7 @@ func RenderTextReport(title string, result AnalysisResult) string {
 	b.WriteString("Confianza global: " + formatPercent(result.GlobalTrust) + "\n\n")
 	b.WriteString("RESUMEN GENERAL\n")
 	b.WriteString(cleanPDFText(result.Summary) + "\n\n")
+	appendSubjectText(&b, result)
 	b.WriteString("METRICAS\n")
 	for _, m := range result.Metrics {
 		b.WriteString("- " + cleanPDFText(m.Name) + ": " + cleanPDFText(m.Value) + " | Confianza " + formatPercent(m.Confidence) + "\n")
@@ -164,6 +166,10 @@ func RenderTextReport(title string, result AnalysisResult) string {
 func RenderCSVReport(result AnalysisResult) string {
 	var b strings.Builder
 	b.WriteString("tipo,clave,nombre,valor,nivel_o_categoria,puntaje,confianza,explicacion\n")
+	if result.Subject != nil {
+		writeCSVRow(&b, []string{"persona", "cliente", "Cliente asociado", result.Subject.ClienteNombre, result.Subject.ClienteDocumento, "", "", result.Subject.PersonaDescripcion})
+		writeCSVRow(&b, []string{"persona", "caracteristicas", "Caracteristicas registradas", result.Subject.PersonaCaracteristicas, "", "", "", ""})
+	}
 	for _, m := range result.Metrics {
 		writeCSVRow(&b, []string{"metrica", m.Key, m.Name, m.Value, m.Category, sprintf2(m.Score), sprintf2(m.Confidence), m.Explanation})
 	}
@@ -186,8 +192,24 @@ func RenderPDFReport(title string, result AnalysisResult) []byte {
 		"Resumen general",
 		result.Summary,
 		"",
-		"Metricas principales",
 	}
+	if result.Subject != nil && (strings.TrimSpace(result.Subject.ClienteNombre) != "" || strings.TrimSpace(result.Subject.PersonaDescripcion) != "") {
+		lines = append(lines, "Persona asociada al manuscrito")
+		if strings.TrimSpace(result.Subject.ClienteNombre) != "" {
+			lines = append(lines, "Cliente: "+result.Subject.ClienteNombre)
+		}
+		if strings.TrimSpace(result.Subject.ClienteDocumento) != "" {
+			lines = append(lines, "Documento: "+result.Subject.ClienteDocumento)
+		}
+		if strings.TrimSpace(result.Subject.PersonaDescripcion) != "" {
+			lines = append(lines, "Descripcion: "+result.Subject.PersonaDescripcion)
+		}
+		if strings.TrimSpace(result.Subject.PersonaCaracteristicas) != "" {
+			lines = append(lines, "Caracteristicas: "+result.Subject.PersonaCaracteristicas)
+		}
+		lines = append(lines, "")
+	}
+	lines = append(lines, "Metricas principales")
 	for _, m := range result.Metrics {
 		lines = append(lines, "- "+m.Name+": "+m.Value+" ("+formatPercent(m.Confidence)+")")
 	}
@@ -236,6 +258,56 @@ func RenderPDFReport(title string, result AnalysisResult) []byte {
 	}
 	pdf.WriteString(fmt.Sprintf("trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref))
 	return pdf.Bytes()
+}
+
+func writeHTMLSubjectSection(b *strings.Builder, result AnalysisResult) {
+	if result.Subject == nil {
+		return
+	}
+	if strings.TrimSpace(result.Subject.ClienteNombre) == "" && strings.TrimSpace(result.Subject.PersonaDescripcion) == "" && strings.TrimSpace(result.Subject.PersonaCaracteristicas) == "" {
+		return
+	}
+	b.WriteString(`<section class="section"><h2>Persona asociada al manuscrito</h2><div class="grid">`)
+	rows := [][2]string{
+		{"Cliente", result.Subject.ClienteNombre},
+		{"Documento", result.Subject.ClienteDocumento},
+		{"Descripcion", result.Subject.PersonaDescripcion},
+		{"Caracteristicas registradas", result.Subject.PersonaCaracteristicas},
+	}
+	for _, row := range rows {
+		if strings.TrimSpace(row[1]) == "" {
+			continue
+		}
+		b.WriteString(`<div class="row"><strong>`)
+		b.WriteString(html.EscapeString(row[0]))
+		b.WriteString(`</strong><span>`)
+		b.WriteString(html.EscapeString(row[1]))
+		b.WriteString(`</span></div>`)
+	}
+	b.WriteString(`</div></section>`)
+}
+
+func appendSubjectText(b *strings.Builder, result AnalysisResult) {
+	if result.Subject == nil {
+		return
+	}
+	if strings.TrimSpace(result.Subject.ClienteNombre) == "" && strings.TrimSpace(result.Subject.PersonaDescripcion) == "" && strings.TrimSpace(result.Subject.PersonaCaracteristicas) == "" {
+		return
+	}
+	b.WriteString("PERSONA ASOCIADA AL MANUSCRITO\n")
+	if strings.TrimSpace(result.Subject.ClienteNombre) != "" {
+		b.WriteString("- Cliente: " + cleanPDFText(result.Subject.ClienteNombre) + "\n")
+	}
+	if strings.TrimSpace(result.Subject.ClienteDocumento) != "" {
+		b.WriteString("- Documento: " + cleanPDFText(result.Subject.ClienteDocumento) + "\n")
+	}
+	if strings.TrimSpace(result.Subject.PersonaDescripcion) != "" {
+		b.WriteString("- Descripcion: " + cleanPDFText(result.Subject.PersonaDescripcion) + "\n")
+	}
+	if strings.TrimSpace(result.Subject.PersonaCaracteristicas) != "" {
+		b.WriteString("- Caracteristicas: " + cleanPDFText(result.Subject.PersonaCaracteristicas) + "\n")
+	}
+	b.WriteString("\n")
 }
 
 func writeCSVRow(b *strings.Builder, values []string) {

@@ -20,6 +20,10 @@
 - `backend/main.go`, `backend/handlers/empresa_permisos.go`, `web/administrar_empresa.html`, `web/js/administrar_empresa.js`:
 	- registran esquema, ruta protegida, permiso `grafologia` y boton `GRAFOLOGIX` en Administrar empresa.
 
+2026-06-01 - Catalogo global de roles de usuarios
+- `backend/db/roles_tipos_usuario_test.go`:
+	- prueba alias y normalizacion usados para deduplicar roles empresariales globales al asignar usuarios.
+
 2026-06-01 - Codigos de descuento para licencias en super administrador
 - `backend/handlers/licencias_codigos_descuento.go`:
 	- nuevo handler super para listar, crear, actualizar, activar/desactivar y eliminar codigos globales de descuento de licencias.

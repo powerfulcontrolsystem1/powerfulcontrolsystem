@@ -1,3 +1,17 @@
+2026-06-01: GRAFOLOGIX con analisis GPT-5.5
+- Modulo afectado: `grafologia`.
+- Cambio funcional: la pantalla agrega el boton `Analizar con GPT-5.5` para obtener una lectura grafologica complementaria desde el modelo de vision configurado como `openai:gpt-5.5`.
+- Backend: `/api/empresa/grafologia?action=analizar_ia` reutiliza el cliente Chat IA existente, valida activacion global/empresarial, limite diario por empresa y cliente asociado por `empresa_id`.
+- UX: el resultado GPT-5.5 se muestra en una tarjeta separada del informe local Go/Tesseract para no reemplazar exportaciones ni historial.
+- Seguridad: la consulta queda registrada como uso IA de la empresa y no agrega dependencias ni expone datos entre empresas.
+
+2026-06-01: GRAFOLOGIX con cliente asociado
+- Modulos afectados: `grafologia`, `clientes`, `reportes`.
+- Cambio funcional: GRAFOLOGIX agrega una tarjeta `Cliente asociado` para buscar clientes centrales por nombre/documento, seleccionar uno o crear un cliente nuevo sin salir del modulo.
+- Backend: `/api/empresa/grafologia?action=analizar` recibe `cliente_id`, valida que pertenezca al mismo `empresa_id` en `clientes` y guarda snapshot de cliente, descripcion y caracteristicas de la persona.
+- Reportes: HTML, PDF, Word, JSON, CSV y TXT incluyen la persona asociada cuando existe.
+- Seguridad: no se confia en el cliente enviado por el navegador; se verifica `empresa_id + cliente_id` antes de persistir el analisis.
+
 2026-06-01: GRAFOLOGIX grafologia OCR
 - Modulo afectado: `grafologia`.
 - Cambio funcional: Administrar empresa incorpora `Analisis y control > GRAFOLOGIX` para cargar o tomar una fotografia de texto manuscrito, ajustar brillo/contraste/recorte y generar un informe grafológico orientativo.

@@ -128,10 +128,10 @@
     <section class="help-hero">
       <div>
         <h1>Centro de ayuda Powerful Control System</h1>
-        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-06-01 con energia solar, preconfiguraciones, roles/licencias, APIs y ayuda operativa.</p>
+        <p class="form-help mt-8">Guia operativa moderna para super administradores: organiza modulos, controla permisos, gestiona empresas, valida finanzas/contabilidad, usa IA, revisa APIs y resuelve bloqueos frecuentes sin romper el flujo diario. Actualizada el 2026-06-01 con energia solar, GRAFOLOGIX, preconfiguraciones, roles/licencias, APIs y ayuda operativa.</p>
       </div>
       <div class="help-search-row">
-        <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, inventario...">
+        <input id="helpSearch" class="form-input" type="search" placeholder="Buscar: carrito, DIAN, Epayco, estaciones, IA, grafologia, inventario...">
         <button id="helpClear" class="btn secondary" type="button">Limpiar</button>
       </div>
       <div class="help-chip-row">
@@ -158,6 +158,7 @@
         <a href="#pagos">Licencias y pagos <span>Epayco</span></a>
         <a href="#dian">Facturacion DIAN <span>Colombia</span></a>
         <a href="#ia">IA, voz y documentos <span>asistente</span></a>
+        <a href="#grafologia">GRAFOLOGIX <span>grafologia</span></a>
         <a href="#publico">Venta publica y red social <span>web</span></a>
         <a href="#reportes">Reportes y auditoria <span>control</span></a>
         <a href="#soporte-comunicaciones">Soporte y avisos <span>tickets</span></a>
@@ -220,6 +221,26 @@
               <p>Cajero, inventario, supervisor, vendedor, tecnico, lavador u otros roles dependen de permisos por modulo, pagina, accion y componente.</p>
               <span class="help-route">Ruta: /login_usuario.html</span>
             </article>
+          </div>
+          <h3 id="roles-empresa">Roles empresariales disponibles</h3>
+          <div class="help-grid">
+            <article id="rol-administrador_total" class="help-mini-card"><h3>Administrador total</h3><p>Acceso empresarial completo sobre las empresas autorizadas. Puede supervisar configuracion, usuarios, ventas, caja, inventario, reportes e integraciones segun licencia.</p><span class="help-route">Rol: administrador_total</span></article>
+            <article id="rol-admin_empresa" class="help-mini-card"><h3>Administrador de empresa</h3><p>Configura la empresa, crea usuarios, administra permisos, estaciones, productos, caja, facturacion, reportes y modulos activos.</p><span class="help-route">Rol: admin_empresa</span></article>
+            <article id="rol-supervisor_sucursal" class="help-mini-card"><h3>Supervisor de sucursal</h3><p>Supervisa la operacion diaria, estaciones, ventas, caja, personal y reportes sin administrar la plataforma global.</p><span class="help-route">Rol: supervisor_sucursal</span></article>
+            <article id="rol-cajero" class="help-mini-card"><h3>Cajero</h3><p>Opera carritos, ventas, cobros, facturacion operativa, caja propia y cierre de turno independiente por usuario.</p><span class="help-route">Rol: cajero</span></article>
+            <article id="rol-vendedor" class="help-mini-card"><h3>Vendedor</h3><p>Atiende clientes, cotiza, registra ventas operativas y consulta disponibilidad sin administrar caja ni configuracion avanzada.</p><span class="help-route">Rol: vendedor</span></article>
+            <article id="rol-recepcion" class="help-mini-card"><h3>Recepcion</h3><p>Atiende ingresos, salidas, clientes, estaciones y reservas cuando el tipo de empresa lo usa.</p><span class="help-route">Rol: recepcion</span></article>
+            <article id="rol-portero" class="help-mini-card"><h3>Portero</h3><p>Ve estaciones y puede activar estaciones disponibles. No entra al carrito, no cobra y no cambia configuracion.</p><span class="help-route">Rol: portero</span></article>
+            <article id="rol-servicio_limpieza" class="help-mini-card"><h3>Servicio de limpieza</h3><p>Ve estaciones asignadas y cambia el estado de sucia a limpia, registrando tiempos de aseo para reportes de control.</p><span class="help-route">Rol: servicio_limpieza</span></article>
+            <article id="rol-inventario" class="help-mini-card"><h3>Inventario</h3><p>Gestiona productos, servicios, bodegas, traslados, existencias, alertas y procesos de inventario autorizados.</p><span class="help-route">Rol: inventario</span></article>
+            <article id="rol-jefe_bodega" class="help-mini-card"><h3>Jefe de bodega</h3><p>Administra una o varias bodegas, existencias, traslados y control de stock sin operar caja ni ventas.</p><span class="help-route">Rol: jefe_bodega</span></article>
+            <article id="rol-compras" class="help-mini-card"><h3>Compras</h3><p>Gestiona proveedores, compras, recepcion de mercancia y soporte operativo de abastecimiento.</p><span class="help-route">Rol: compras</span></article>
+            <article id="rol-recursos_humanos" class="help-mini-card"><h3>Recursos humanos</h3><p>Gestiona horarios, asistencia, novedades y nomina operativa del personal autorizado.</p><span class="help-route">Rol: recursos_humanos</span></article>
+            <article id="rol-tecnico_solar" class="help-mini-card"><h3>Tecnico solar</h3><p>Consulta estado, lecturas, eventos y alertas del sistema de energia solar sin modificar configuracion critica.</p><span class="help-route">Rol: tecnico_solar</span></article>
+            <article id="rol-contabilidad" class="help-mini-card"><h3>Contabilidad</h3><p>Gestiona procesos contables, financieros, tributarios y reportes autorizados segun la matriz de permisos.</p><span class="help-route">Rol: contabilidad</span></article>
+            <article id="rol-contador" class="help-mini-card"><h3>Contador</h3><p>Consulta finanzas, impuestos y cumplimiento de la empresa en modo lectura, sin operar ventas, caja ni configuracion.</p><span class="help-route">Rol: contador</span></article>
+            <article id="rol-empresario" class="help-mini-card"><h3>Empresario</h3><p>Consulta resultados, indicadores y reportes ejecutivos sin operar ventas, caja, inventario ni configuracion.</p><span class="help-route">Rol: empresario</span></article>
+            <article id="rol-auditor" class="help-mini-card"><h3>Auditor</h3><p>Consulta trazabilidad, auditoria, reportes y cumplimiento sin ejecutar operacion diaria ni modificar datos.</p><span class="help-route">Rol: auditor</span></article>
           </div>
         </section>
 
@@ -446,6 +467,57 @@
             <article class="help-mini-card">
               <h3>Documentos dinamicos</h3>
               <p>El chat puede generar contratos, reportes, facturas, actas, cotizaciones, Excel, Word, PDF, TXT o JSON cuando el contenido aplica.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="grafologia" class="card empresa-section help-section" data-help="grafologia grafologix manuscrito ocr tesseract gpt 5.5 imagen handwriting analisis reporte pdf word json csv cliente">
+          <h2>GRAFOLOGIX - analisis grafológico</h2>
+          <p class="form-help">GRAFOLOGIX permite cargar una fotografia de texto manuscrito, asociarla a un cliente de la empresa y generar un informe grafológico orientativo con métricas visuales, preprocesamiento, interpretación heurística y exportaciones. El resultado es una herramienta de apoyo empresarial y documental; no reemplaza una evaluación clínica, judicial o psicológica profesional.</p>
+          <div class="help-grid">
+            <article class="help-mini-card">
+              <h3>Ruta del modulo</h3>
+              <p>Abre <strong>Administrar empresa &gt; Analisis y control &gt; GRAFOLOGIX</strong>. El modulo trabaja siempre con la empresa activa y guarda cada informe separado por <code>empresa_id</code>.</p>
+              <span class="help-route">Ruta: /administrar_empresa/grafologia.html</span>
+            </article>
+            <article class="help-mini-card">
+              <h3>Flujo recomendado</h3>
+              <ol class="help-step-list">
+                <li>Busca o crea el cliente asociado al manuscrito.</li>
+                <li>Sube la foto o tomala desde camara.</li>
+                <li>Ajusta brillo, contraste, recorte, perspectiva y zoom.</li>
+                <li>Presiona <strong>Analizar manuscrito</strong> para generar el informe local.</li>
+                <li>Exporta el resultado en HTML, PDF, Word, JSON, CSV o TXT.</li>
+              </ol>
+            </article>
+            <article class="help-mini-card">
+              <h3>Motor local en Go</h3>
+              <p>El backend procesa la imagen con Go puro: escala de grises, umbral tipo Otsu, deteccion de bordes, correccion/estimacion de inclinacion, segmentacion de lineas, palabras y zonas de letras. Con esas medidas calcula inclinacion, presion estimada, tamano, espaciado, continuidad, direccion de lineas, margenes, velocidad estimada, regularidad y forma predominante.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>OCR libre</h3>
+              <p>Cuando el servidor tiene Tesseract activo, el modulo puede apoyarse en OCR libre para extraer texto reconocido. Si el OCR no esta disponible o la foto no es clara, puedes pegar texto reconocido manualmente en el campo <strong>Texto OCR opcional</strong>.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Analisis con GPT-5.5</h3>
+              <p>El boton <strong>Analizar con GPT-5.5</strong> genera una lectura complementaria usando la IA configurada en el sistema. Este analisis no reemplaza el informe local ni sus exportaciones; se registra como uso de IA por empresa y depende de que la configuracion global/empresarial de IA este activa.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Informe y resultados</h3>
+              <p>El informe muestra resumen general, tabla de metricas, porcentajes, nivel de confianza, interpretacion orientativa, observaciones tecnicas, preprocesamiento visual e historial de informes recientes. Los documentos imprimibles se presentan en estilo profesional blanco y negro.</p>
+            </article>
+            <article class="help-mini-card">
+              <h3>Buenas practicas de imagen</h3>
+              <ul class="help-step-list">
+                <li>Usa una hoja plana, buena luz y enfoque nitido.</li>
+                <li>Evita sombras fuertes, reflejos, dobleces y fondos con textura.</li>
+                <li>Procura que todo el manuscrito quede dentro de la foto.</li>
+                <li>Si la letra es muy tenue, aumenta contraste antes de analizar.</li>
+              </ul>
+            </article>
+            <article class="help-mini-card">
+              <h3>Seguridad y permisos</h3>
+              <p>Las consultas, clientes e informes se validan por <code>empresa_id</code>. Un usuario solo puede analizar o consultar informes si tiene permiso para el modulo <code>grafologia</code> dentro de esa empresa.</p>
             </article>
           </div>
         </section>

@@ -1,3 +1,55 @@
+2026-06-01: Edicion rapida de roles de usuarios empresariales.
+- Modulo afectado: `usuarios_empresa`.
+- `web/administrar_empresa/administrar_usuarios.html` agrega una tarjeta `Editar rol de usuario` visible para administradores con acceso a la pagina de usuarios.
+- Cada fila de la tabla agrega `Cambiar rol`, que enfoca la tarjeta, precarga el usuario y su rol actual, permite seleccionar un rol activo del catalogo global y guarda por `/api/empresa/usuarios`.
+- Seguridad: no se crea endpoint nuevo ni se relaja permiso; se reutiliza `WithEmpresaSeguridadPermissions`, `empresa_id` validado en payload y `id` validado por empresa antes de actualizar.
+- Pruebas: validacion sintactica del script embebido, `git diff --check` y prueba visual simulada con Chrome/Playwright donde el rol cambio en la tabla y se mostro `Rol actualizado correctamente`.
+
+2026-06-01: Ayuda operativa de GRAFOLOGIX.
+- `web/ayuda/ayuda.html` agrega la seccion `GRAFOLOGIX - analisis grafológico` con ruta del modulo, flujo recomendado, motor local en Go, OCR/Tesseract, analisis GPT-5.5, reportes, buenas practicas de imagen y seguridad por `empresa_id`.
+- `web/administrar_empresa/grafologia.html` agrega el enlace `Ayuda GRAFOLOGIX` para abrir directamente esa seccion desde el modulo.
+- Pruebas: validacion sintactica del script embebido de ayuda, parseo HTML basico y verificacion visual local del ancla y del enlace desde GRAFOLOGIX.
+
+2026-06-01: Diagnostico de invitaciones de usuarios por correo.
+- Se comprobo en produccion el flujo de crear usuario empresarial en la empresa 7: el usuario se crea, pero la invitacion no se envia porque la contrasena SMTP guardada no puede descifrarse con la clave actual del servidor (`cipher: message authentication failed`).
+- `backend/handlers/usuarios_empresa.go` agrega diagnostico amigable para credenciales Gmail SMTP corruptas o cifradas con otra `CONFIG_ENC_KEY`, preservando el enlace de confirmacion cuando el envio falla.
+- `web/super/configuracion_avanzada.html` muestra el estado `smtp_app_password_decrypt_ok` y avisa que se debe regrabar la contrasena de aplicacion SMTP desde Super administrador > Mensajeria y alertas > Gmail SMTP.
+- Pruebas: POST real de prueba Gmail con `error_id=6960`, creacion y eliminacion de usuario alias de prueba, `go test ./handlers -run Gmail -count=1` y validacion sintactica de scripts embebidos.
+
+2026-06-01: Boton instalar app reparado en logins.
+- `web/login.html` y `web/login_usuario.html` capturan temprano el evento `beforeinstallprompt` para que Chrome en PC no lo pierda antes de cargar el script comun.
+- `web/js/pwa_install.js` reutiliza el evento capturado, registra el service worker de inmediato, marca el boton como listo cuando hay prompt instalable y muestra mensajes distintos para instalacion real o preparacion.
+- Pruebas: `node --check web/js/pwa_install.js`, prueba visual local de ambos logins y prueba funcional Playwright simulando `beforeinstallprompt`; en ambos botones se ejecuto `prompt()` y el mensaje final fue `Instalacion iniciada.`.
+
+2026-06-01: GRAFOLOGIX IA verificada y diagnostico de credencial OpenAI.
+- `web/js/grafologia.js` ahora convierte el canvas a JPEG optimizado y redimensionado antes de enviarlo a `analizar` o `analizar_ia`, evitando rechazos `413 Request Entity Too Large` con fotos grandes.
+- `backend/handlers/chat_con_inteligencia_artificial_controller.go` devuelve un diagnostico operativo cuando una credencial IA cifrada existe pero no puede descifrarse con la `CONFIG_ENC_KEY` actual, en lugar de ocultarlo como simple falta de conexion.
+- `backend/db/grafologia.go` asegura columnas de cliente/persona antes de crear el indice `(empresa_id, cliente_id)`, para que bases existentes no fallen al reiniciar backend.
+- VPS: se confirmo `ai.global.enabled=1`, proveedor OpenAI habilitado y limite GPT-5.5 de empresa en 20 consultas diarias; la prueba visual con carta manuscrita ya no falla por tamano de payload.
+- Incidente pendiente: las filas `ai.provider.openai.api_key` y `ai.model.openai.gpt_5_4_mini.api_key` estan cifradas con una llave no disponible; `deploy/.env.platform`, `backend/.env.local` y `deploy/.env.staging` no las descifran, y `OPENAI_API_KEY` del contenedor esta vacia. Para activar IA real se debe re-registrar la API key en Super administrador > IA o definir `OPENAI_API_KEY` valida en el entorno Docker y reiniciar.
+- Pruebas: `go test ./internal/grafologia -count=1`, `go test ./handlers -run "EmpresaRoutesUsePermissionWrappers|Grafologia" -count=1`, despliegue Docker VPS, health `pcs-backend=healthy` y prueba visual de GRAFOLOGIX con imagen manuscrita de Wikimedia Commons.
+
+2026-06-01: GRAFOLOGIX con GPT-5.5.
+- `web/administrar_empresa/grafologia.html` agrega el boton `Analizar con GPT-5.5` y una tarjeta de respuesta IA separada del resultado tecnico local.
+- `web/js/grafologia.js` envia el canvas procesado, cliente asociado, descripcion, caracteristicas y OCR opcional a `/api/empresa/grafologia?action=analizar_ia`.
+- `backend/handlers/grafologia.go` reutiliza el catalogo Chat IA (`openai:gpt-5.5`), valida IA global/empresarial, limite diario GPT-5.5 por empresa, imagen `image/*` y `cliente_id` aislado por `empresa_id`.
+- La consulta queda registrada en uso/auditoria de IA con observacion `grafologia_gpt55`; no se agregan dependencias ni tablas nuevas.
+
+2026-06-01: GRAFOLOGIX con cliente asociado al manuscrito.
+- `empresa_grafologia_analisis` agrega `cliente_id`, snapshot de cliente, descripcion y caracteristicas de la persona asociada.
+- `/api/empresa/grafologia?action=analizar` valida que el `cliente_id` exista dentro de la misma empresa antes de guardar el informe.
+- `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js` agregan tarjeta `Cliente asociado`, busqueda por nombre/documento, seleccion de cliente y alta centralizada por `/api/empresa/clientes`.
+- Los reportes HTML, PDF, Word, JSON, CSV y TXT incluyen la persona asociada cuando existe.
+- Pruebas: `go test ./internal/grafologia -count=1`, `go test ./handlers -run EmpresaRoutesUsePermissionWrappers -count=1`, `node --check web/js/grafologia.js` y prueba visual local con cliente simulado.
+
+2026-06-01: Catalogo global de roles al crear usuarios.
+- `backend/db/roles_tipos_usuario.go` agrega `GetRolesDeUsuarioCatalogoGlobal`, deduplicado por nombre/alias para que todos los tipos de empresa vean los mismos roles activos sin repetidos.
+- `backend/handlers/usuarios_empresa.go` usa el catalogo global en `/api/empresa/roles_de_usuario` y valida que el rol elegido exista y este activo sin exigir que pertenezca al `tipo_empresa_id` de la empresa.
+- `web/administrar_empresa/administrar_usuarios.html` agrega lista compacta de roles disponibles con descripcion, boton `Seleccionar` y enlace `Saber mas` hacia la ayuda.
+- `web/ayuda/ayuda.html` agrega fichas por rol empresarial: administrador, supervisor, cajero, vendedor, recepcion, portero, servicio de limpieza, inventario, jefe de bodega, compras, recursos humanos, tecnico solar, contabilidad, contador, empresario y auditor.
+- `backend/db/roles_tipos_usuario_test.go` cubre alias de deduplicacion del catalogo.
+- Pruebas: script embebido de `administrar_usuarios.html` validado con Node; `go test ./handlers -run EmpresaRoutesUsePermissionWrappers -count=1`; `go test ./db -run TestDoesNotExist -count=1`.
+
 2026-06-01: GRAFOLOGIX grafologia OCR.
 - Correccion OCR/zoom:
   - `web/administrar_empresa/grafologia.html` agrega controles de zoom para reducir, ampliar, restablecer y usar slider 50%-300%.
@@ -30137,3 +30189,14 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - web/administrar_empresa/grafologia.html
 - web/js/grafologia.js
+
+2026-06-01: ajustar visor de zoom de GRAFOLOGIX
+PushStatus: pendiente
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/grafologia.html
+- web/js/grafologia.js
+Validacion:
+- Node runtime del proyecto: `--check web/js/grafologia.js`
+- Prueba visual local con imagen manuscrita: zoom 100% y 220%, canvas del mismo tamano que la tarjeta.

@@ -5,6 +5,13 @@
 - Licencias nuevas deben habilitar `energia_solar` como clave independiente cuando el plan incluya monitoreo solar; licencias antiguas pueden conservar fallback desde `control_electrico` o `seguridad` para no cortar empresas ya configuradas.
 
 2026-05-31: Nota de catalogo base de roles empresariales comunes
+- 2026-06-01: La asignacion de usuarios empresariales ya no limita el selector
+  de roles al `tipo_empresa_id` de la empresa. `/api/empresa/roles_de_usuario`
+  devuelve un catalogo global deduplicado por nombre/alias para todos los tipos
+  de empresa, y `/api/empresa/usuarios` acepta cualquier rol activo del catalogo.
+  La autorizacion efectiva sigue dependiendo de `rol_nombre` normalizado, matriz
+  de permisos, licencia y `empresa_id`; no se concede acceso por editar la URL.
+  La UI muestra cada rol con descripcion y enlace `Saber mas` a la ayuda.
 - Las preconfiguraciones de tipos de empresa incluyen roles comunes para asignacion directa desde usuarios empresariales: `supervisor_sucursal`, `vendedor`, `recepcion`, `jefe_bodega`, `recursos_humanos` y `tecnico_solar`.
 - `tecnico_solar`: `energia_solar:R`, pagina `linkEnergiaSolar`, sin permisos de configuracion, domotica, inventario, ventas ni reportes.
 - `jefe_bodega`: `inventario:R/C/U/A` y `compras:R`; puede ver paginas de inventario, bodegas, categorias, recetas, historial y codigos de barras, pero no ventas, caja ni configuracion. No recibe `D` para eliminar inventario.

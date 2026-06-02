@@ -19,6 +19,7 @@ const EngineVersion = "grafologix-go-1.0"
 type AnalysisResult struct {
 	Version        string            `json:"version"`
 	GeneratedAt    string            `json:"generated_at"`
+	Subject        *SubjectInfo      `json:"subject,omitempty"`
 	Summary        string            `json:"summary"`
 	GlobalTrust    float64           `json:"global_trust"`
 	Image          ImageSummary      `json:"image"`
@@ -28,6 +29,14 @@ type AnalysisResult struct {
 	TechnicalNotes []string          `json:"technical_notes"`
 	OCRText        string            `json:"ocr_text,omitempty"`
 	Raw            json.RawMessage   `json:"raw,omitempty"`
+}
+
+type SubjectInfo struct {
+	ClienteID              int64  `json:"cliente_id,omitempty"`
+	ClienteNombre          string `json:"cliente_nombre,omitempty"`
+	ClienteDocumento       string `json:"cliente_documento,omitempty"`
+	PersonaDescripcion     string `json:"persona_descripcion,omitempty"`
+	PersonaCaracteristicas string `json:"persona_caracteristicas,omitempty"`
 }
 
 type ImageSummary struct {

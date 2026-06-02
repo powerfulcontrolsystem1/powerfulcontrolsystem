@@ -9,6 +9,9 @@
     analysisID: 0,
     reportURL: "",
     lastResult: null,
+    clientes: [],
+    selectedCliente: null,
+    clienteSearchTimer: 0,
     crop: null,
     zoom: 1
   };
@@ -28,6 +31,10 @@
     bindButtons();
     paintBlankCanvas();
     loadDashboard();
+    window.addEventListener("resize", function () {
+      if (state.image) renderCanvas();
+      else paintBlankCanvas();
+    });
   }
 
   function bindUpload() {
@@ -65,6 +72,7 @@
   function bindButtons() {
     $("btnGrafologiaRefresh")?.addEventListener("click", loadDashboard);
     $("btnGrafologiaAnalyze")?.addEventListener("click", analyzeCurrentCanvas);
+    $("btnGrafologiaAnalyzeAI")?.addEventListener("click", analyzeCurrentCanvasWithGPT55);
     $("btnGrafologiaCamera")?.addEventListener("click", startCamera);
     $("btnGrafologiaCapture")?.addEventListener("click", captureCamera);
     $("btnGrafologiaCrop")?.addEventListener("click", cropCenter);
@@ -81,6 +89,142 @@
     $("btnGrafologiaCSV")?.addEventListener("click", function () { openReport("csv"); });
     $("btnGrafologiaTXT")?.addEventListener("click", function () { openReport("txt"); });
     $("btnGrafologiaPDF")?.addEventListener("click", function () { openReport("pdf"); });
+    $("btnGrafologiaBuscarCliente")?.addEventListener("click", searchClientes);
+    $("btnGrafologiaNuevoCliente")?.addEventListener("click", function () { toggleClienteForm(true); });
+    $("btnGrafologiaCancelarCliente")?.addEventListener("click", function () { toggleClienteForm(false); });
+    $("btnGrafologiaCrearCliente")?.addEventListener("click", createClienteCentral);
+    $("grafologiaClienteSearch")?.addEventListener("input", function () {
+      clearTimeout(state.clienteSearchTimer);
+      state.clienteSearchTimer = setTimeout(searchClientes, 280);
+    });
+  }
+
+  function clientesApi(q) {
+    var url = "/api/empresa/clientes?empresa_id=" + encodeURIComponent(empresaID || "0");
+    if (q) url += "&q=" + encodeURIComponent(q);
+    return url;
+  }
+
+  async function searchClientes() {
+    var box = $("grafologiaClienteSugerencias");
+    var input = $("grafologiaClienteSearch");
+    if (!box || !input || !empresaID) return;
+    var q = (input.value || "").trim();
+    if (q.length < 2) {
+      box.innerHTML = '<p class="grafologia-warning">Escribe al menos 2 caracteres para buscar clientes.</p>';
+      return;
+    }
+    box.innerHTML = '<p class="grafologia-warning">Buscando clientes...</p>';
+    try {
+      var res = await fetch(clientesApi(q), { credentials: "include" });
+      if (!res.ok) throw new Error(cleanErrorMessage(await res.text()));
+      state.clientes = await res.json();
+      renderClienteSuggestions(state.clientes || []);
+    } catch (err) {
+      box.innerHTML = '<p class="grafologia-warning">No se pudieron buscar clientes: ' + escapeHTML(err && err.message ? err.message : err) + '</p>';
+    }
+  }
+
+  function renderClienteSuggestions(items) {
+    var box = $("grafologiaClienteSugerencias");
+    if (!box) return;
+    box.innerHTML = "";
+    if (!items.length) {
+      box.innerHTML = '<p class="grafologia-warning">No se encontro el cliente. Puedes crearlo con el boton Nuevo cliente.</p>';
+      return;
+    }
+    items.slice(0, 12).forEach(function (cliente) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "grafologia-client-option";
+      btn.innerHTML = '<span><strong></strong><br><small></small></span><span class="btn secondary" aria-hidden="true">Asociar</span>';
+      btn.querySelector("strong").textContent = cliente.nombre_razon_social || "Cliente sin nombre";
+      btn.querySelector("small").textContent = clienteLabel(cliente);
+      btn.addEventListener("click", function () { selectCliente(cliente); });
+      box.appendChild(btn);
+    });
+  }
+
+  function selectCliente(cliente) {
+    state.selectedCliente = cliente || null;
+    renderSelectedCliente();
+    var input = $("grafologiaClienteSearch");
+    if (input && cliente) input.value = cliente.nombre_razon_social || "";
+    var box = $("grafologiaClienteSugerencias");
+    if (box) box.innerHTML = "";
+    toggleClienteForm(false);
+  }
+
+  function renderSelectedCliente() {
+    var box = $("grafologiaClienteSeleccionado");
+    if (!box) return;
+    if (!state.selectedCliente) {
+      box.classList.remove("show");
+      box.innerHTML = "";
+      return;
+    }
+    var cliente = state.selectedCliente;
+    box.classList.add("show");
+    box.innerHTML = '<strong></strong><p class="grafologia-warning"></p><div class="grafologia-actions"><button class="btn secondary" type="button">Quitar cliente</button></div>';
+    box.querySelector("strong").textContent = cliente.nombre_razon_social || "Cliente asociado";
+    box.querySelector("p").textContent = clienteLabel(cliente);
+    box.querySelector("button").addEventListener("click", function () {
+      state.selectedCliente = null;
+      var input = $("grafologiaClienteSearch");
+      if (input) input.value = "";
+      renderSelectedCliente();
+    });
+  }
+
+  function toggleClienteForm(show) {
+    var form = $("grafologiaClienteForm");
+    if (form) form.classList.toggle("show", !!show);
+  }
+
+  async function createClienteCentral() {
+    if (!empresaID || empresaID === "0") {
+      alert("No se detecto empresa_id para crear el cliente.");
+      return;
+    }
+    var nombre = ($("grafologiaNuevoClienteNombre")?.value || "").trim();
+    var numero = ($("grafologiaNuevoClienteDocumento")?.value || "").trim();
+    if (!nombre || !numero) {
+      alert("Nombre y numero de documento son obligatorios para crear el cliente central.");
+      return;
+    }
+    var payload = {
+      empresa_id: Number(empresaID),
+      tipo_documento: ($("grafologiaNuevoClienteTipo")?.value || "CC").trim(),
+      numero_documento: numero,
+      tipo_persona: "natural",
+      nombre_razon_social: nombre,
+      email: ($("grafologiaNuevoClienteEmail")?.value || "").trim(),
+      telefono: ($("grafologiaNuevoClienteTelefono")?.value || "").trim(),
+      pais: ($("grafologiaNuevoClientePais")?.value || "CO").trim() || "CO",
+      observaciones: ($("grafologiaPersonaDescripcion")?.value || "").trim()
+    };
+    try {
+      var res = await fetch("/api/empresa/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(cleanErrorMessage(await res.text()));
+      var data = await res.json();
+      var cliente = Object.assign({}, payload, { id: data.id || data.cliente_id || 0, estado: "activo" });
+      selectCliente(cliente);
+      alert("Cliente creado y asociado al manuscrito.");
+    } catch (err) {
+      alert("No se pudo crear el cliente: " + (err && err.message ? err.message : err));
+    }
+  }
+
+  function clienteLabel(cliente) {
+    if (!cliente) return "";
+    var doc = [cliente.tipo_documento, cliente.numero_documento].filter(Boolean).join(" ");
+    var parts = [doc, cliente.telefono, cliente.email].filter(Boolean);
+    return parts.join(" · ");
   }
 
   function loadImageFile(file) {
@@ -101,32 +245,62 @@
   function paintBlankCanvas() {
     var canvas = $("grafologiaCanvas");
     if (!canvas) return;
-    canvas.width = 900;
-    canvas.height = 520;
-    var ctx = canvas.getContext("2d");
+    var viewport = prepareCanvasViewport(canvas);
+    var ctx = viewport.ctx;
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
     ctx.fillStyle = "#64748b";
     ctx.font = "700 24px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("Vista previa del manuscrito", canvas.width / 2, canvas.height / 2);
+    ctx.fillText("Vista previa del manuscrito", viewport.width / 2, viewport.height / 2);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   function renderCanvas() {
     var img = state.image;
     var canvas = $("grafologiaCanvas");
     if (!img || !canvas) return;
-    var maxW = 1200;
-    var scale = Math.min(1, maxW / img.width);
     var source = state.crop || { x: 0, y: 0, w: img.width, h: img.height };
-    scale = Math.min(1, maxW / source.w);
-    var zoomedSource = zoomSource(source, state.zoom || 1);
-    canvas.width = Math.max(320, Math.round(zoomedSource.w * scale));
-    canvas.height = Math.max(220, Math.round(zoomedSource.h * scale));
-    var ctx = canvas.getContext("2d");
+    var viewport = prepareCanvasViewport(canvas);
+    var zoomedSource = zoomSourceForViewport(source, state.zoom || 1, viewport.width / viewport.height);
+    var ctx = viewport.ctx;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
     ctx.filter = "brightness(" + (100 + numberValue("grafologiaBrightness")) + "%) contrast(" + (100 + numberValue("grafologiaContrast")) + "%)";
-    ctx.drawImage(img, zoomedSource.x, zoomedSource.y, zoomedSource.w, zoomedSource.h, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, zoomedSource.x, zoomedSource.y, zoomedSource.w, zoomedSource.h, 0, 0, viewport.width, viewport.height);
     ctx.filter = "none";
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  function prepareCanvasViewport(canvas) {
+    var wrap = canvas.parentElement;
+    var width = Math.max(320, Math.round((wrap && wrap.clientWidth) || canvas.clientWidth || 900));
+    var height = Math.max(260, Math.round((wrap && wrap.clientHeight) || canvas.clientHeight || 520));
+    var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, width: width, height: height };
+  }
+
+  function zoomSourceForViewport(source, zoom, viewportRatio) {
+    var cropped = zoomSource(source, zoom);
+    viewportRatio = viewportRatio > 0 ? viewportRatio : cropped.w / Math.max(1, cropped.h);
+    var next = { x: cropped.x, y: cropped.y, w: cropped.w, h: cropped.h };
+    var currentRatio = next.w / Math.max(1, next.h);
+    if (currentRatio > viewportRatio) {
+      var nextW = Math.max(1, Math.round(next.h * viewportRatio));
+      next.x = Math.round(next.x + (next.w - nextW) / 2);
+      next.w = nextW;
+    } else if (currentRatio < viewportRatio) {
+      var nextH = Math.max(1, Math.round(next.w / viewportRatio));
+      next.y = Math.round(next.y + (next.h - nextH) / 2);
+      next.h = nextH;
+    }
+    return clampZoomSource(next);
   }
 
   function zoomSource(source, zoom) {
@@ -142,6 +316,16 @@
     x = Math.max(0, Math.min(x, img.width - nextW));
     y = Math.max(0, Math.min(y, img.height - nextH));
     return { x: x, y: y, w: Math.min(nextW, img.width), h: Math.min(nextH, img.height) };
+  }
+
+  function clampZoomSource(source) {
+    var img = state.image;
+    if (!img) return source;
+    var w = Math.max(1, Math.min(Math.round(source.w), img.width));
+    var h = Math.max(1, Math.min(Math.round(source.h), img.height));
+    var x = Math.max(0, Math.min(Math.round(source.x), img.width - w));
+    var y = Math.max(0, Math.min(Math.round(source.y), img.height - h));
+    return { x: x, y: y, w: w, h: h };
   }
 
   function setZoom(value, skipRender) {
@@ -259,11 +443,16 @@
     }
     setLoading(true);
     try {
-      var blob = await new Promise(function (resolve) { canvas.toBlob(resolve, "image/png", 0.95); });
+      var blob = await canvasToOptimizedBlob(canvas);
       var form = new FormData();
-      form.append("imagen", blob, "manuscrito.png");
+      form.append("imagen", blob, "manuscrito.jpg");
       form.append("titulo", $("grafologiaTitle")?.value || "Informe grafológico GRAFOLOGIX");
       form.append("ocr_texto", $("grafologiaOCRText")?.value || "");
+      form.append("cliente_id", state.selectedCliente && state.selectedCliente.id ? String(state.selectedCliente.id) : "");
+      form.append("persona_nombre", state.selectedCliente ? (state.selectedCliente.nombre_razon_social || "") : "");
+      form.append("cliente_documento", state.selectedCliente ? clienteLabel(state.selectedCliente) : "");
+      form.append("persona_descripcion", $("grafologiaPersonaDescripcion")?.value || "");
+      form.append("persona_caracteristicas", $("grafologiaPersonaCaracteristicas")?.value || "");
       var res = await fetch(api("analizar"), { method: "POST", body: form, credentials: "include" });
       if (res.status === 401 || res.status === 403) {
         throw new Error("Tu sesión no está activa o no tienes permiso para analizar manuscritos en esta empresa. Entra desde Administrar empresa y vuelve a abrir GRAFOLOGIX.");
@@ -280,6 +469,98 @@
     } finally {
       setLoading(false);
     }
+  }
+
+  async function analyzeCurrentCanvasWithGPT55() {
+    if (!empresaID || empresaID === "0") {
+      alert("No se detecto empresa_id para analizar con GPT-5.5.");
+      return;
+    }
+    var canvas = $("grafologiaCanvas");
+    if (!state.image || !canvas) {
+      alert("Carga una imagen manuscrita antes de analizar con GPT-5.5.");
+      return;
+    }
+    renderAIResult(null, true);
+    setLoading(true);
+    try {
+      var blob = await canvasToOptimizedBlob(canvas);
+      var form = new FormData();
+      form.append("imagen", blob, "manuscrito-gpt55.jpg");
+      form.append("titulo", $("grafologiaTitle")?.value || "Informe grafologico GRAFOLOGIX");
+      form.append("ocr_texto", $("grafologiaOCRText")?.value || "");
+      form.append("cliente_id", state.selectedCliente && state.selectedCliente.id ? String(state.selectedCliente.id) : "");
+      form.append("persona_nombre", state.selectedCliente ? (state.selectedCliente.nombre_razon_social || "") : "");
+      form.append("cliente_documento", state.selectedCliente ? clienteLabel(state.selectedCliente) : "");
+      form.append("persona_descripcion", $("grafologiaPersonaDescripcion")?.value || "");
+      form.append("persona_caracteristicas", $("grafologiaPersonaCaracteristicas")?.value || "");
+      var res = await fetch(api("analizar_ia"), { method: "POST", body: form, credentials: "include" });
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Tu sesion no esta activa o no tienes permiso para usar GPT-5.5 en GRAFOLOGIX.");
+      }
+      if (!res.ok) throw new Error(cleanErrorMessage(await res.text()));
+      var data = await res.json();
+      renderAIResult(data, false);
+    } catch (err) {
+      renderAIResult({
+        error: err && err.message ? err.message : String(err || "No se pudo completar el analisis GPT-5.5.")
+      }, false);
+      alert("No se pudo analizar con GPT-5.5: " + (err && err.message ? err.message : err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderAIResult(data, loading) {
+    var box = $("grafologiaAIResult");
+    if (!box) return;
+    box.classList.add("show");
+    $("grafologiaEmpty").style.display = "none";
+    if (loading) {
+      box.innerHTML = '<div class="grafologia-ai-meta"><span>GPT-5.5</span><span>Analizando manuscrito...</span></div><div class="grafologia-ai-response">Procesando imagen con el modelo de vision configurado en el sistema.</div>';
+      return;
+    }
+    if (!data || data.error) {
+      box.innerHTML = '<div class="grafologia-ai-meta"><span>GPT-5.5</span><span>No completado</span></div><div class="grafologia-ai-response"></div>';
+      box.querySelector(".grafologia-ai-response").textContent = data && data.error ? data.error : "No se recibio respuesta del analisis GPT-5.5.";
+      return;
+    }
+    var usage = data.usage || {};
+    var meta = [
+      data.display_name || data.model_id || "GPT-5.5",
+      data.upstream_model ? "Modelo " + data.upstream_model : "",
+      usage.daily_limit ? "Uso diario " + (usage.daily_used || 0) + "/" + usage.daily_limit : "",
+      usage.daily_remaining !== undefined ? "Restantes " + usage.daily_remaining : ""
+    ].filter(Boolean);
+    box.innerHTML = '<div class="grafologia-ai-meta"></div><div class="grafologia-ai-response"></div>';
+    box.querySelector(".grafologia-ai-meta").textContent = meta.join(" · ");
+    box.querySelector(".grafologia-ai-response").textContent = data.respuesta || "GPT-5.5 no devolvio contenido.";
+  }
+
+  async function canvasToOptimizedBlob(canvas) {
+    var maxDim = 1600;
+    var ratio = Math.min(1, maxDim / Math.max(canvas.width || 1, canvas.height || 1));
+    var target = canvas;
+    if (ratio < 1) {
+      target = document.createElement("canvas");
+      target.width = Math.max(1, Math.round(canvas.width * ratio));
+      target.height = Math.max(1, Math.round(canvas.height * ratio));
+      var tctx = target.getContext("2d");
+      tctx.imageSmoothingEnabled = true;
+      tctx.imageSmoothingQuality = "high";
+      tctx.fillStyle = "#ffffff";
+      tctx.fillRect(0, 0, target.width, target.height);
+      tctx.drawImage(canvas, 0, 0, target.width, target.height);
+    }
+    return new Promise(function (resolve, reject) {
+      target.toBlob(function (blob) {
+        if (blob && blob.size > 0) {
+          resolve(blob);
+        } else {
+          reject(new Error("No se pudo preparar la imagen optimizada para enviar."));
+        }
+      }, "image/jpeg", 0.82);
+    });
   }
 
   async function loadDashboard() {
@@ -303,6 +584,7 @@
     if (!result) return;
     $("grafologiaEmpty").style.display = "none";
     $("grafologiaResult").style.display = "block";
+    renderResultSubject(result.subject || null);
     $("grafologiaSummary").textContent = result.summary || "";
     $("grafKpiConfianza").textContent = fmtPct(result.global_trust || 0);
     $("grafKpiLineas").textContent = String((result.image && result.image.lines_detected) || 0);
@@ -330,6 +612,24 @@
       div.querySelector("p").textContent = t.explanation || "";
       traits.appendChild(div);
     });
+  }
+
+  function renderResultSubject(subject) {
+    var box = $("grafologiaSubject");
+    if (!box) return;
+    if (!subject || (!subject.cliente_nombre && !subject.persona_descripcion && !subject.persona_caracteristicas)) {
+      box.classList.remove("show");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.add("show");
+    box.innerHTML = '<strong></strong><p class="grafologia-warning"></p>';
+    box.querySelector("strong").textContent = subject.cliente_nombre || "Persona asociada";
+    var lines = [];
+    if (subject.cliente_documento) lines.push(subject.cliente_documento);
+    if (subject.persona_descripcion) lines.push(subject.persona_descripcion);
+    if (subject.persona_caracteristicas) lines.push(subject.persona_caracteristicas);
+    box.querySelector("p").textContent = lines.join(" · ");
   }
 
   function renderPreprocess(preprocess) {
@@ -398,7 +698,7 @@
       div.className = "grafologia-history-item";
       div.innerHTML = '<strong></strong><p></p><div class="grafologia-export"><button class="btn secondary" type="button">HTML</button><button class="btn secondary" type="button">Word</button><button class="btn secondary" type="button">JSON</button><button class="btn secondary" type="button">CSV</button><button class="btn secondary" type="button">TXT</button><button class="btn primary" type="button">PDF</button></div>';
       div.querySelector("strong").textContent = item.titulo || "Informe GRAFOLOGIX";
-      div.querySelector("p").textContent = (item.fecha_creacion || "") + " · Confianza " + fmtPct(item.confianza_global || 0);
+      div.querySelector("p").textContent = [item.fecha_creacion || "", item.cliente_nombre ? "Cliente " + item.cliente_nombre : "", "Confianza " + fmtPct(item.confianza_global || 0)].filter(Boolean).join(" · ");
       var buttons = div.querySelectorAll("button");
       buttons[0].addEventListener("click", function () { window.open(reportUrl(item.id, "html"), "_blank", "noopener"); });
       buttons[1].addEventListener("click", function () { window.open(reportUrl(item.id, "doc"), "_blank", "noopener"); });
@@ -427,6 +727,8 @@
     if (loader) loader.classList.toggle("show", !!active);
     var btn = $("btnGrafologiaAnalyze");
     if (btn) btn.disabled = !!active;
+    var btnAI = $("btnGrafologiaAnalyzeAI");
+    if (btnAI) btnAI.disabled = !!active;
   }
 
   function cleanErrorMessage(raw) {
@@ -438,6 +740,12 @@
     } catch (_) {
       return raw;
     }
+  }
+
+  function escapeHTML(value) {
+    return String(value || "").replace(/[&<>"']/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch;
+    });
   }
 
   function fmtPct(value) {

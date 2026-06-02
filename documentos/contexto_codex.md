@@ -16,6 +16,14 @@ decisiones en cada tarea.
   con `GRAFOLOGIA_TESSERACT_ENABLED=1`, idioma `spa+eng`.
 - BD: `empresa_grafologia_analisis` en `pcs_empresas`.
 - UI: `web/administrar_empresa/grafologia.html` y `web/js/grafologia.js`.
+- La pantalla asocia cada manuscrito a un cliente central de la empresa:
+  busca/crea desde `/api/empresa/clientes`, guarda `cliente_id` validado por
+  `empresa_id` y conserva descripcion/caracteristicas de la persona en el
+  informe.
+- La pantalla tambien ofrece `Analizar con GPT-5.5`, que reutiliza el catalogo
+  de Chat IA empresarial (`openai:gpt-5.5`), valida limites diarios por empresa,
+  envia la imagen como adjunto de vision y registra la consulta en la auditoria
+  de uso IA sin crear dependencias nuevas.
 - Documento completo: `documentos/grafologix_arquitectura.md`.
 - Advertencia permanente: las interpretaciones grafológicas son heuristicas y
   orientativas; no son diagnostico psicologico ni criterio automatico de
@@ -157,6 +165,11 @@ botones, desde handlers estaticos del backend.
   `/api/empresa/impuestos?action=context`; solo muestra impuestos habilitados
   para ventas/ambos de la empresa y guarda el porcentaje en
   `productos.impuesto_porcentaje`.
+- Usuarios empresa: `web/administrar_empresa/administrar_usuarios.html` consume
+  `/api/empresa/roles_de_usuario`, que entrega un catalogo global deduplicado de
+  `roles_de_usuario` para todos los tipos de empresa. La asignacion guarda
+  `rol_usuario_id` y `rol_nombre`; los permisos efectivos se calculan por nombre
+  normalizado y matriz de rol, no por tipo de empresa.
 - Configuracion carrito: `web/administrar_empresa/configuracion_carrito_de_compra_empresa.html`,
   `/api/empresa/estacion_prefs`; la visibilidad automatica de la tarjeta
   Domotica se guarda como `mostrar_tarjeta_domotica_carrito` dentro de

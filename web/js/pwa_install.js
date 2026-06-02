@@ -1,8 +1,9 @@
 (function () {
-  var installPromptEvent = null;
+  var installPromptEvent = window.__pcsInstallPromptEvent || null;
   var installButton = document.getElementById("installPwaBtn");
   var messageBox = document.getElementById("installPwaMessage");
   var installButtonLabel = installButton ? installButton.querySelector(".pwa-install-label") : null;
+  var serviceWorkerReady = false;
 
   function setMessage(text, isError) {
     if (!messageBox) {
@@ -32,6 +33,7 @@
       return;
     }
     installButton.disabled = false;
+    installButton.classList.toggle("is-install-ready", !!installPromptEvent);
     setInstallButtonLabel("Instalar app");
   }
 
@@ -43,21 +45,48 @@
     installButton.textContent = text;
   }
 
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (registration) {
-        if (registration && typeof registration.update === "function") {
-          registration.update().catch(function () {});
-        }
-      }).catch(function () {});
+  function rememberInstallPrompt(event) {
+    if (!event) {
+      return;
+    }
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    installPromptEvent = event;
+    window.__pcsInstallPromptEvent = event;
+    syncInstallButton();
+    setMessage("", false);
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) {
+      return Promise.resolve(false);
+    }
+    return navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (registration) {
+      serviceWorkerReady = true;
+      if (registration && typeof registration.update === "function") {
+        registration.update().catch(function () {});
+      }
+      return navigator.serviceWorker.ready.catch(function () { return registration; });
+    }).then(function () {
+      serviceWorkerReady = true;
+      syncInstallButton();
+      return true;
+    }).catch(function () {
+      serviceWorkerReady = false;
+      syncInstallButton();
+      return false;
     });
   }
 
+  registerServiceWorker();
+
   window.addEventListener("beforeinstallprompt", function (event) {
-    event.preventDefault();
-    installPromptEvent = event;
-    syncInstallButton();
-    setMessage("", false);
+    rememberInstallPrompt(event);
+  });
+
+  window.addEventListener("pcs:beforeinstallprompt", function () {
+    rememberInstallPrompt(window.__pcsInstallPromptEvent);
   });
 
   window.addEventListener("appinstalled", function () {
@@ -111,7 +140,10 @@
         setMessage("En iPhone o iPad, usa Compartir y luego Agregar a pantalla de inicio.", false);
         return;
       }
-      setMessage("Si no aparece la ventana, usa el menu del navegador y elige Instalar app o Agregar a pantalla de inicio.", false);
+      setMessage(serviceWorkerReady ? "Chrome todavia no habilito la ventana automatica. Usa el icono de instalar de la barra del navegador o el menu y elige Instalar app." : "Preparando la app para instalacion. Espera unos segundos y vuelve a presionar Instalar app.", false);
+      if (!serviceWorkerReady) {
+        registerServiceWorker();
+      }
     });
   }
 

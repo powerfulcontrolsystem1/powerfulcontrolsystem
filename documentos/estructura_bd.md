@@ -7,13 +7,20 @@ Actualizacion 2026-06-01 (GRAFOLOGIX grafologia OCR)
 - Nueva tabla empresarial `empresa_grafologia_analisis` en `pcs_empresas`.
 - Todos los registros incluyen `empresa_id` obligatorio y los handlers consultan
   siempre por `empresa_id + id`.
+- El manuscrito puede asociarse a un cliente central de `clientes` mediante
+  `cliente_id`; el backend valida que pertenezca a la misma empresa antes de
+  guardar. Tambien conserva snapshot `cliente_nombre`, `cliente_documento`,
+  `persona_descripcion` y `persona_caracteristicas` para que los reportes no
+  pierdan contexto si luego cambia el cliente.
 - Campos principales: `titulo`, `archivo_nombre`, `imagen_url`, `imagen_mime`,
   `ocr_texto`, `ocr_motor`, `estado`, `resumen`, `metricas_json`,
   `interpretacion_json`, `preprocesamiento_json`, `reporte_html`,
   `confianza_global`, `usuario_creador`, `fecha_creacion` y
   `fecha_actualizacion`.
 - Indices `ix_grafologia_analisis_empresa(empresa_id, fecha_creacion DESC)` y
-  `ix_grafologia_analisis_estado(empresa_id, estado)`.
+  `ix_grafologia_analisis_estado(empresa_id, estado)`;
+  `ix_grafologia_analisis_cliente(empresa_id, cliente_id)` acelera busquedas por
+  persona/cliente.
 - Las imagenes se almacenan en
   `web/uploads/empresas/empresa_{empresa_id}/imagenes/grafologia/`.
 - Los artefactos procesados se almacenan en

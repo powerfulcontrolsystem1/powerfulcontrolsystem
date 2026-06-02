@@ -44,8 +44,8 @@
     .grafologia-drop{border:2px dashed var(--graf-line);border-radius:8px;min-height:132px;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;background:var(--graf-soft);cursor:pointer;color:var(--graf-text)}
     .grafologia-drop.drag{border-color:var(--graf-accent);background:color-mix(in srgb,var(--graf-soft) 84%,var(--graf-accent) 16%)}
     .grafologia-actions,.grafologia-export{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    .grafologia-canvas-wrap{margin-top:12px;border:1px solid var(--graf-line);border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--graf-card) 82%,#000 18%)}
-    #grafologiaCanvas{display:block;width:100%;max-height:440px;object-fit:contain;background:#fff}
+    .grafologia-canvas-wrap{margin-top:12px;border:1px solid var(--graf-line);border-radius:8px;overflow:hidden;background:#fff;height:clamp(360px,48vh,560px)}
+    #grafologiaCanvas{display:block;width:100%;height:100%;background:#fff}
     .grafologia-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
     .grafologia-controls label{display:flex;flex-direction:column;gap:4px;font-weight:700;color:var(--graf-text)}
     .grafologia-zoom-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -71,8 +71,23 @@
     .grafologia-preprocess-item strong{color:var(--graf-text)}
     .grafologia-loader{display:none;align-items:center;gap:8px;font-weight:800;color:var(--graf-accent)}
     .grafologia-loader.show{display:flex}
+    .grafologia-ai-result{display:none;margin-top:12px;border:1px solid var(--graf-line);border-radius:8px;background:var(--graf-panel-alpha);padding:12px;color:var(--graf-text)}
+    .grafologia-ai-result.show{display:block}
+    .grafologia-ai-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;color:var(--graf-muted);font-size:13px;font-weight:800}
+    .grafologia-ai-response{white-space:pre-wrap;line-height:1.55;color:var(--graf-text);font-size:14px}
     .grafologia-warning{font-size:13px;color:var(--graf-muted);line-height:1.45}
+    .grafologia-client-grid{display:grid;grid-template-columns:1.2fr auto;gap:10px;align-items:end}
+    .grafologia-client-suggestions{display:grid;gap:6px;margin-top:8px;max-height:220px;overflow:auto}
+    .grafologia-client-option{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--graf-line);border-radius:8px;padding:9px;background:var(--graf-soft);color:var(--graf-text);text-align:left}
+    .grafologia-client-option small{color:var(--graf-muted)}
+    .grafologia-client-selected{display:none;margin-top:10px;border:1px solid var(--graf-line);border-radius:8px;padding:10px;background:var(--graf-panel-alpha)}
+    .grafologia-client-selected.show{display:block}
+    .grafologia-client-form{display:none;margin-top:12px;border-top:1px solid var(--graf-line);padding-top:12px}
+    .grafologia-client-form.show{display:block}
+    .grafologia-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .grafologia-form-grid label{display:flex;flex-direction:column;gap:4px;font-weight:800;color:var(--graf-text)}
     @media(max-width:920px){.grafologia-grid{grid-template-columns:1fr}.grafologia-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grafologia-controls{grid-template-columns:1fr}.grafologia-zoom-row .btn{flex:1 1 120px}}
+    @media(max-width:720px){.grafologia-canvas-wrap{height:clamp(300px,56vh,480px)}.grafologia-client-grid,.grafologia-form-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="empresa-page grafologia-page" data-auto-estacion-labels="true">
@@ -84,7 +99,9 @@
         <p>Analiza fotografías de texto manuscrito, calcula métricas grafológicas y genera informes imprimibles por empresa.</p>
       </div>
       <div class="page-heading-actions">
+        <a class="btn secondary" href="/ayuda/ayuda.html#grafologia">Ayuda GRAFOLOGIX</a>
         <button id="btnGrafologiaRefresh" class="btn secondary" type="button">Actualizar</button>
+        <button id="btnGrafologiaAnalyzeAI" class="btn secondary" type="button">Analizar con GPT-5.5</button>
         <button id="btnGrafologiaAnalyze" class="btn primary" type="button">Analizar manuscrito</button>
       </div>
     </header>
@@ -94,6 +111,62 @@
       <article class="grafologia-kpi"><span>Confianza</span><strong id="grafKpiConfianza">0%</strong></article>
       <article class="grafologia-kpi"><span>Líneas</span><strong id="grafKpiLineas">0</strong></article>
       <article class="grafologia-kpi"><span>Motor</span><strong id="grafKpiMotor">Go</strong></article>
+    </section>
+
+    <section class="grafologia-card" style="margin-bottom:14px">
+      <h2>Cliente asociado</h2>
+      <p class="grafologia-warning">Busca el cliente central de la empresa y asocialo al manuscrito. Si no existe, crealo desde esta misma tarjeta.</p>
+      <div class="grafologia-client-grid">
+        <label style="font-weight:800">Buscar cliente por nombre o documento
+          <input id="grafologiaClienteSearch" class="form-input" type="search" placeholder="Escribe nombre, NIT, cedula o identificacion">
+        </label>
+        <div class="grafologia-actions" style="margin-top:0">
+          <button id="btnGrafologiaBuscarCliente" class="btn secondary" type="button">Buscar</button>
+          <button id="btnGrafologiaNuevoCliente" class="btn primary" type="button">Nuevo cliente</button>
+        </div>
+      </div>
+      <div id="grafologiaClienteSugerencias" class="grafologia-client-suggestions"></div>
+      <div id="grafologiaClienteSeleccionado" class="grafologia-client-selected"></div>
+      <div id="grafologiaClienteForm" class="grafologia-client-form">
+        <h3>Crear cliente central</h3>
+        <div class="grafologia-form-grid">
+          <label>Nombre completo
+            <input id="grafologiaNuevoClienteNombre" class="form-input" type="text" placeholder="Nombre de la persona">
+          </label>
+          <label>Tipo documento
+            <select id="grafologiaNuevoClienteTipo" class="form-input">
+              <option value="CC">CC</option>
+              <option value="NIT">NIT</option>
+              <option value="CE">CE</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </label>
+          <label>Numero documento
+            <input id="grafologiaNuevoClienteDocumento" class="form-input" type="text" placeholder="Identificacion">
+          </label>
+          <label>Email
+            <input id="grafologiaNuevoClienteEmail" class="form-input" type="email" placeholder="correo@dominio.com">
+          </label>
+          <label>Telefono
+            <input id="grafologiaNuevoClienteTelefono" class="form-input" type="tel" placeholder="Telefono">
+          </label>
+          <label>Pais
+            <input id="grafologiaNuevoClientePais" class="form-input" type="text" value="CO">
+          </label>
+        </div>
+        <div class="grafologia-actions">
+          <button id="btnGrafologiaCrearCliente" class="btn primary" type="button">Crear y asociar cliente</button>
+          <button id="btnGrafologiaCancelarCliente" class="btn secondary" type="button">Cancelar</button>
+        </div>
+      </div>
+      <div class="grafologia-form-grid" style="margin-top:12px">
+        <label style="grid-column:span 1">Descripcion de la persona
+          <textarea id="grafologiaPersonaDescripcion" class="form-input" rows="3" placeholder="Contexto de la persona asociada al manuscrito"></textarea>
+        </label>
+        <label style="grid-column:span 2">Caracteristicas registradas
+          <textarea id="grafologiaPersonaCaracteristicas" class="form-input" rows="3" placeholder="Edad aproximada, ocupacion, observaciones relevantes o datos autorizados"></textarea>
+        </label>
+      </div>
     </section>
 
     <section class="grafologia-grid">
@@ -144,7 +217,9 @@
       <article class="grafologia-card">
         <h2>Resultado visual</h2>
         <div id="grafologiaEmpty" class="grafologia-warning">Carga una imagen manuscrita y presiona analizar para ver métricas, interpretación y exportaciones.</div>
+        <div id="grafologiaAIResult" class="grafologia-ai-result" aria-live="polite"></div>
         <div id="grafologiaResult" style="display:none">
+          <div id="grafologiaSubject" class="grafologia-client-selected"></div>
           <p id="grafologiaSummary"></p>
           <div class="grafologia-export">
             <button id="btnGrafologiaHTML" class="btn secondary" type="button">Ver HTML</button>

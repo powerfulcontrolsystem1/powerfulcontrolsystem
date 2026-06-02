@@ -261,22 +261,13 @@ func EmpresaRolesDeUsuarioHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		empresaID, err := parseEmpresaIDQuery(r)
-		if err != nil {
+		if _, err := parseEmpresaIDQuery(r); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		tipoEmpresaID, _, err := resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper, empresaID)
-		if err != nil {
-			// Si aún no hay relación tipo->empresa, devolvemos vacío para no romper la UI.
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]dbpkg.RolDeUsuario{})
-			return
-		}
-
 		includeInactive := r.URL.Query().Get("include_inactive") == "1"
-		roles, err := dbpkg.GetRolesDeUsuario(dbSuper, tipoEmpresaID, includeInactive)
+		roles, err := dbpkg.GetRolesDeUsuarioCatalogoGlobal(dbSuper, includeInactive)
 		if err != nil {
 			http.Error(w, "failed to query roles_de_usuario: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -1352,6 +1343,14 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if appPass != "" {
 				masked = "********"
 			}
+			appPassDecryptOK := true
+			appPassDecryptMessage := ""
+			if strings.TrimSpace(appPass) != "" {
+				if _, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password"); err != nil {
+					appPassDecryptOK = false
+					appPassDecryptMessage = friendlyEmpresaUsuarioMailConfigError(err).Error()
+				}
+			}
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{
@@ -1359,6 +1358,8 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 				"smtp_email":                      smtpEmail,
 				"smtp_email_updated":              smtpEmailUpdated,
 				"smtp_app_password_set":           strings.TrimSpace(appPass) != "",
+				"smtp_app_password_decrypt_ok":    appPassDecryptOK,
+				"smtp_app_password_error":         appPassDecryptMessage,
 				"smtp_app_password_masked":        masked,
 				"smtp_app_password_updated":       appPassUpdated,
 				"smtp_from_name":                  fromName,
@@ -1386,7 +1387,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 			if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("action")), "test") {
 				if err := sendSuperGmailTestEmail(dbSuper, adminEmailFromRequest(r)); err != nil {
 					status := http.StatusInternalServerError
-					if strings.Contains(strings.ToLower(err.Error()), "no configurado") {
+					if isEmpresaUsuarioMailActionableConfigError(err) {
 						status = http.StatusBadRequest
 					}
 					w.Header().Set("Content-Type", "application/json")
@@ -1394,7 +1395,7 @@ func GmailConfigHandler(dbSuper *sql.DB) http.HandlerFunc {
 					json.NewEncoder(w).Encode(map[string]interface{}{
 						"sent":      false,
 						"recipient": superGmailTestRecipient,
-						"error":     err.Error(),
+						"error":     friendlyEmpresaUsuarioMailConfigError(err).Error(),
 					})
 					return
 				}
@@ -1549,7 +1550,7 @@ func sendSuperGmailTestEmail(dbSuper *sql.DB, usuarioCreador string) error {
 
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
 	if err != nil {
-		return err
+		return friendlyEmpresaUsuarioMailConfigError(err)
 	}
 	smtpEmail = strings.TrimSpace(smtpEmail)
 	if smtpEmail == "" {
@@ -1558,7 +1559,7 @@ func sendSuperGmailTestEmail(dbSuper *sql.DB, usuarioCreador string) error {
 
 	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
 	if err != nil {
-		return err
+		return friendlyEmpresaUsuarioMailConfigError(err)
 	}
 	smtpPass = strings.TrimSpace(smtpPass)
 	if smtpPass == "" {
@@ -1733,12 +1734,11 @@ func resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper *sql.DB, empresaID int64) (in
 }
 
 func resolveRolNombreValidoParaEmpresa(dbEmp, dbSuper *sql.DB, empresaID, rolID int64) (string, error) {
-	tipoEmpresaID, _, err := resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper, empresaID)
-	if err != nil {
+	if _, _, err := resolveTipoEmpresaIDForEmpresa(dbEmp, dbSuper, empresaID); err != nil {
 		return "", err
 	}
 
-	row := dbSuper.QueryRow(`SELECT nombre, COALESCE(estado, 'activo') FROM roles_de_usuario WHERE id = ? AND tipo_empresa_id = ? LIMIT 1`, rolID, tipoEmpresaID)
+	row := dbSuper.QueryRow(`SELECT nombre, COALESCE(estado, 'activo') FROM roles_de_usuario WHERE id = ? LIMIT 1`, rolID)
 	var nombre string
 	var estado string
 	if err := row.Scan(&nombre, &estado); err != nil {
@@ -1985,6 +1985,35 @@ func isEmpresaUsuarioMailTestMode(dbSuper *sql.DB) bool {
 	return parseEmpresaUsuarioBool(getEmpresaUsuarioConfigValue(dbSuper, "gmail.smtp_test_mode"), false)
 }
 
+func isEmpresaUsuarioMailSecretDecryptError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(msg, "message authentication failed") || strings.Contains(msg, "cipher:")
+}
+
+func friendlyEmpresaUsuarioMailConfigError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if isEmpresaUsuarioMailSecretDecryptError(err) {
+		return fmt.Errorf("la contrasena SMTP guardada no se puede descifrar. Regraba Gmail SMTP en Super administrador > Mensajeria y alertas > Gmail SMTP para cifrarla con la clave actual del servidor")
+	}
+	return err
+}
+
+func isEmpresaUsuarioMailActionableConfigError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	return isEmpresaUsuarioMailSecretDecryptError(err) ||
+		strings.Contains(msg, "no configurado") ||
+		strings.Contains(msg, "smtp") ||
+		strings.Contains(msg, "gmail")
+}
+
 func captureEmpresaUsuarioMailNotification(
 	dbSuper *sql.DB,
 	tipo string,
@@ -2090,7 +2119,7 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbEmp, dbSuper *sql.DB
 		"admin_message_block_html": templateParagraphHTML("Mensaje del administrador:", adminMessage),
 	})
 	if err != nil {
-		return "", err
+		return confirmURL, err
 	}
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
@@ -2113,20 +2142,20 @@ func sendEmpresaUsuarioConfirmationEmail(r *http.Request, dbEmp, dbSuper *sql.DB
 
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
 	if err != nil {
-		return "", err
+		return confirmURL, friendlyEmpresaUsuarioMailConfigError(err)
 	}
 	smtpEmail = strings.TrimSpace(smtpEmail)
 	if smtpEmail == "" {
-		return "", fmt.Errorf("gmail.smtp_email no configurado")
+		return confirmURL, fmt.Errorf("gmail.smtp_email no configurado")
 	}
 
 	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
 	if err != nil {
-		return "", err
+		return confirmURL, friendlyEmpresaUsuarioMailConfigError(err)
 	}
 	smtpPass = strings.TrimSpace(smtpPass)
 	if smtpPass == "" {
-		return "", fmt.Errorf("gmail.smtp_app_password no configurado")
+		return confirmURL, fmt.Errorf("gmail.smtp_app_password no configurado")
 	}
 
 	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
@@ -2222,7 +2251,7 @@ func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sq
 		"reset_url": resetHintURL,
 	})
 	if err != nil {
-		return "", err
+		return resetHintURL, err
 	}
 
 	if isEmpresaUsuarioMailTestMode(dbSuper) {
@@ -2245,20 +2274,20 @@ func sendEmpresaUsuarioPasswordRecoveryEmail(r *http.Request, dbEmp, dbSuper *sq
 
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
 	if err != nil {
-		return "", err
+		return resetHintURL, friendlyEmpresaUsuarioMailConfigError(err)
 	}
 	smtpEmail = strings.TrimSpace(smtpEmail)
 	if smtpEmail == "" {
-		return "", fmt.Errorf("gmail.smtp_email no configurado")
+		return resetHintURL, fmt.Errorf("gmail.smtp_email no configurado")
 	}
 
 	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
 	if err != nil {
-		return "", err
+		return resetHintURL, friendlyEmpresaUsuarioMailConfigError(err)
 	}
 	smtpPass = strings.TrimSpace(smtpPass)
 	if smtpPass == "" {
-		return "", fmt.Errorf("gmail.smtp_app_password no configurado")
+		return resetHintURL, fmt.Errorf("gmail.smtp_app_password no configurado")
 	}
 
 	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")

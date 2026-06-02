@@ -11,6 +11,14 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/png" href="/img/pwa-icon-192.png">
   <link rel="apple-touch-icon" href="/img/pwa-icon-192.png">
+  <script>
+    window.__pcsInstallPromptEvent = null;
+    window.addEventListener("beforeinstallprompt", function(event){
+      event.preventDefault();
+      window.__pcsInstallPromptEvent = event;
+      window.dispatchEvent(new CustomEvent("pcs:beforeinstallprompt"));
+    });
+  </script>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
 </head>
@@ -138,6 +146,6 @@
   <script src="/config.js?v=20260511-admin-2fa"></script>
   <script src="/js/recaptcha_helper.js?v=20260510-mobile-login"></script>
   <script src="/js/login.js?v=20260511-admin-2fa"></script>
-  <script src="/js/pwa_install.js?v=20260531-login-install-fix"></script>
+  <script src="/js/pwa_install.js?v=20260601-login-install-pc"></script>
 </body>
 </html>

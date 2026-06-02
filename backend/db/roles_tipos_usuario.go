@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"sort"
 	"strings"
 )
 
@@ -182,6 +183,78 @@ func GetRolesDeUsuario(dbConn *sql.DB, tipoEmpresaID int64, incluirInactivos boo
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+// GetRolesDeUsuarioCatalogoGlobal obtiene un catalogo unico de roles para asignacion
+// empresarial. No filtra por tipo de empresa: deduplica por nombre normalizado para
+// que todos los tipos vean los mismos roles sin repetir opciones en el selector.
+func GetRolesDeUsuarioCatalogoGlobal(dbConn *sql.DB, incluirInactivos bool) ([]RolDeUsuario, error) {
+	roles, err := GetRolesDeUsuario(dbConn, 0, incluirInactivos)
+	if err != nil {
+		return nil, err
+	}
+	sort.SliceStable(roles, func(i, j int) bool {
+		leftKey := normalizeRolCatalogKey(roles[i].Nombre)
+		rightKey := normalizeRolCatalogKey(roles[j].Nombre)
+		if leftKey != rightKey {
+			return leftKey < rightKey
+		}
+		leftActive := !strings.EqualFold(strings.TrimSpace(roles[i].Estado), "inactivo")
+		rightActive := !strings.EqualFold(strings.TrimSpace(roles[j].Estado), "inactivo")
+		if leftActive != rightActive {
+			return leftActive
+		}
+		return roles[i].ID < roles[j].ID
+	})
+	seen := map[string]bool{}
+	out := make([]RolDeUsuario, 0, len(roles))
+	for _, item := range roles {
+		key := normalizeRolCatalogKey(item.Nombre)
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		item.TipoEmpresaID = 0
+		item.TipoEmpresaNombre = "Todos los tipos de empresa"
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func normalizeRolCatalogKey(nombre string) string {
+	value := strings.ToLower(strings.TrimSpace(nombre))
+	replacer := strings.NewReplacer(
+		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n",
+		"Á", "a", "É", "e", "Í", "i", "Ó", "o", "Ú", "u", "Ñ", "n",
+		"_", " ", "-", " ", "/", " ", ".", " ",
+	)
+	value = replacer.Replace(value)
+	key := strings.Join(strings.Fields(value), "_")
+	aliases := map[string]string{
+		"administrador":            "admin_empresa",
+		"administrador_empresa":    "admin_empresa",
+		"administrador_de_empresa": "admin_empresa",
+		"admin":                    "admin_empresa",
+		"supervisor":               "supervisor_sucursal",
+		"servicio_de_limpieza":     "servicio_limpieza",
+		"limpieza":                 "servicio_limpieza",
+		"aseadora":                 "servicio_limpieza",
+		"jefe_de_bodega":           "jefe_bodega",
+		"bodega":                   "jefe_bodega",
+		"bodeguero":                "jefe_bodega",
+		"recursos_humanos":         "recursos_humanos",
+		"talento_humano":           "recursos_humanos",
+		"rrhh":                     "recursos_humanos",
+		"tecnico":                  "tecnico_solar",
+		"tecnico_solar":            "tecnico_solar",
+		"dueno":                    "empresario",
+		"dueño":                    "empresario",
+		"propietario":              "empresario",
+	}
+	if alias, ok := aliases[key]; ok {
+		return alias
+	}
+	return key
 }
 
 // UpdateRolDeUsuario actualiza un rol de usuario.

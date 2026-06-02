@@ -610,6 +610,14 @@ func (c *EmpresaAIChatController) ConsultarHandler(w http.ResponseWriter, r *htt
 				c.writeLimitReached(w, payload.EmpresaID, model, usoActual.Consultas)
 				return
 			}
+			if isAICredentialUnavailableError(err) {
+				writeJSON(w, http.StatusOK, map[string]interface{}{
+					"ok":    false,
+					"code":  "ai_credentials_unavailable",
+					"error": err.Error(),
+				})
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
@@ -881,13 +889,13 @@ func (c *EmpresaAIChatController) ConsultarConAdjuntoHandler(w http.ResponseWrit
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":         true,
-		"empresa_id": empresaID,
-		"provider":   model.Provider,
-		"model_id":   model.ID,
-		"display_name": model.DisplayName,
+		"ok":             true,
+		"empresa_id":     empresaID,
+		"provider":       model.Provider,
+		"model_id":       model.ID,
+		"display_name":   model.DisplayName,
 		"upstream_model": model.UpstreamModel,
-		"respuesta":  respuesta,
+		"respuesta":      respuesta,
 		"usage": map[string]interface{}{
 			"plan":              planActual,
 			"daily_used":        usoActualizado.Consultas,
@@ -1732,6 +1740,7 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 	if strings.TrimSpace(model.ApiKeyEnv) == "" {
 		return "", nil
 	}
+	credentialReadErrors := []string{}
 	if c.dbSuper != nil {
 		if def, ok := aiCredentialByModelID()[model.ID]; ok {
 			if key, err := getDecryptedConfigValue(c.dbSuper, def.ConfigKey); err == nil {
@@ -1740,6 +1749,7 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 				}
 			} else {
 				log.Printf("[chat_ia] warning: no se pudo leer config_key=%s: %v", def.ConfigKey, err)
+				credentialReadErrors = append(credentialReadErrors, def.ConfigKey)
 			}
 		}
 
@@ -1751,6 +1761,7 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 				}
 			} else {
 				log.Printf("[chat_ia] warning: no se pudo leer provider_key=%s: %v", providerKey, err)
+				credentialReadErrors = append(credentialReadErrors, providerKey)
 			}
 		}
 	}
@@ -1758,6 +1769,9 @@ func (c *EmpresaAIChatController) resolveModelAPIKey(model empresaAIModelDef) (s
 	apiKey := strings.TrimSpace(os.Getenv(model.ApiKeyEnv))
 	if apiKey != "" {
 		return apiKey, nil
+	}
+	if len(credentialReadErrors) > 0 {
+		return "", fmt.Errorf("la credencial IA guardada no se pudo descifrar con la llave actual; re-registra la API key en Super administrador > IA")
 	}
 	return "", fmt.Errorf("la credencial %s no esta configurada en servidor", model.ApiKeyEnv)
 }
@@ -1798,6 +1812,17 @@ func isProviderLimitError(err error) bool {
 		}
 	}
 	return false
+}
+
+func isAICredentialUnavailableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "credencial ia") ||
+		strings.Contains(msg, "api key") ||
+		strings.Contains(msg, "openai_api_key") ||
+		strings.Contains(msg, "no esta configurada")
 }
 
 func googleAccountFromRequest(r *http.Request) string {

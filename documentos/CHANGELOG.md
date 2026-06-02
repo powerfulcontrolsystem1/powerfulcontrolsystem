@@ -1,3 +1,19 @@
+## [2026-06-01] Edicion rapida de roles de usuarios empresariales
+- [Usuarios] `web/administrar_empresa/administrar_usuarios.html` agrega la tarjeta `Editar rol de usuario` para que administradores de empresa cambien el rol de un usuario sin abrir todo el formulario.
+- [UX] Cada fila de usuarios agrega el boton `Cambiar rol`, que selecciona el usuario en la tarjeta, muestra su rol actual y permite elegir un rol activo del catalogo global.
+- [Seguridad] Se reutiliza `/api/empresa/usuarios` con `empresa_id` en payload y `id` por query; el backend mantiene validacion de alcance empresarial y permisos `seguridad:U`.
+- [QA] Validacion sintactica del script embebido, `git diff --check` y prueba visual simulada con Chrome/Playwright: cambiar rol de usuario actualizo la tabla y mostro mensaje de exito.
+
+## [2026-06-01] Ayuda operativa de GRAFOLOGIX
+- [Ayuda] `web/ayuda/ayuda.html` agrega la seccion `GRAFOLOGIX - analisis grafológico` con flujo, motor Go, OCR libre, GPT-5.5, exportaciones, buenas practicas y permisos.
+- [UX] `web/administrar_empresa/grafologia.html` agrega el enlace `Ayuda GRAFOLOGIX` apuntando directamente a la seccion de ayuda del modulo.
+- [QA] Validacion sintactica del script embebido de ayuda, parseo HTML basico y verificacion visual local del ancla y del enlace desde GRAFOLOGIX.
+
+## [2026-06-01] Diagnostico de invitaciones de usuarios por correo
+- [Usuarios] Al crear usuarios empresariales, el sistema conserva el enlace de confirmacion y reporta claramente cuando el correo no puede salir por una credencial SMTP guardada que no se puede descifrar.
+- [Super] La configuracion Gmail SMTP muestra si la contrasena SMTP almacenada no descifra con la clave actual del servidor, y la prueba de correo devuelve un error accionable en vez de un 500 generico.
+- [QA] Prueba real de creacion de usuario en empresa 7: el usuario se creo, `email_sent=false` y la causa fue `cipher: message authentication failed`; el usuario de prueba fue eliminado. `go test ./handlers -run Gmail -count=1` y validacion sintactica de scripts embebidos.
+
 ## [2026-06-01] Campos obligatorios de productos movidos a configuracion
 - [UX] La tarjeta `Campos obligatorios para productos` sale de `Administrar Productos` y queda en `Configuracion > Productos y pedidos`.
 - [Frontend] `administrar_productos.html` conserva la lectura de la configuracion para marcar campos obligatorios en el formulario, pero ya no muestra ni guarda la tarjeta desde el modulo de productos.
@@ -2179,3 +2195,8 @@
 - [Preconfiguracion] `tipo_empresa_preconfiguraciones.config_json` incluye `modulos.energia_solar` apagado por defecto con catalogo de proveedores, baterias y alertas.
 - [Roles/Licencias] `tecnico_solar` queda como solo lectura; las licencias nuevas deben habilitar `energia_solar` como clave independiente y el fallback legacy queda documentado.
 - [Ayuda/API] Se actualizan ayuda general, ayuda de APIs, OpenAPI generado, mapa de modulos, flujos, matriz de roles y estructura BD.
+
+## [2026-06-01] GRAFOLOGIX visor de zoom
+- [UX] El visor del manuscrito usa una tarjeta de altura estable y el canvas rellena todo el espacio disponible.
+- [Grafologia] Al aplicar zoom, la imagen se recorta proporcionalmente desde el centro y ocupa toda la tarjeta sin franjas vacias.
+- [QA] Validado con imagen manuscrita local: en 100% y 220% el canvas conserva el mismo tamano visual que la tarjeta.

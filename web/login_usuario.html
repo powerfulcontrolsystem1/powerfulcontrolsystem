@@ -12,6 +12,14 @@
   <link rel="icon" type="image/png" href="/img/pwa-icon-192.png">
   <link rel="apple-touch-icon" href="/img/pwa-icon-192.png">
   <script>
+    window.__pcsInstallPromptEvent = null;
+    window.addEventListener("beforeinstallprompt", function(event){
+      event.preventDefault();
+      window.__pcsInstallPromptEvent = event;
+      window.dispatchEvent(new CustomEvent("pcs:beforeinstallprompt"));
+    });
+  </script>
+  <script>
     (function(){
       var allowed = {light:1,"light-rose":1,"light-gold":1,"light-wood":1,dark:1,"dark-violet":1,"dark-emerald":1,"dark-corporate":1,"dark-absolute":1,"dark-obsidian":1,"dark-neon":1};
       function cookieTheme(){
@@ -287,6 +295,6 @@
   <script src="/config.js?v=20260513-global-user-login"></script>
   <script src="/js/recaptcha_helper.js?v=20260513-global-user-login"></script>
   <script src="/js/login_usuario.js?v=20260513-global-user-login"></script>
-  <script src="/js/pwa_install.js?v=20260531-login-usuario-install"></script>
+  <script src="/js/pwa_install.js?v=20260601-login-usuario-install-pc"></script>
 </body>
 </html>

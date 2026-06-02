@@ -14,7 +14,19 @@
     .station-access-check{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:9px 10px;background:var(--surface-soft)}
     .station-access-check input{width:18px;height:18px}
     .station-access-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}}
+    .roles-catalog{display:grid;gap:8px;margin-top:10px;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--surface-soft)}
+    .role-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:9px 10px}
+    .role-row strong{display:block;color:var(--text)}
+    .role-row small{display:block;color:var(--muted);line-height:1.35;margin-top:2px}
+    .role-row.is-selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
+    .role-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .role-actions .btn{padding:7px 10px}
+    .role-editor-grid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto;gap:10px;align-items:end}
+    .role-editor-current{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;margin-top:10px;color:var(--text)}
+    .role-editor-current strong{display:block}
+    .role-editor-current small{display:block;color:var(--muted);line-height:1.4;margin-top:3px}
+    @media(max-width:760px){.role-editor-grid{grid-template-columns:1fr}}
+    @media(max-width:640px){.usuario-photo-field{grid-template-columns:1fr}.usuario-photo{width:100%;height:120px}.station-access-grid{grid-template-columns:1fr}.role-row{grid-template-columns:1fr}.role-actions{justify-content:flex-start}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -49,6 +61,14 @@
         <div class="form-col">
           <label class="form-label">Rol</label>
           <select id="rol_usuario_id" class="form-input" required></select>
+          <div class="form-help">El catalogo muestra roles globales, sin repetidos, disponibles para todos los tipos de empresa.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-col" style="flex:1 1 100%;">
+          <label class="form-label">Roles disponibles</label>
+          <div id="rolesCatalog" class="roles-catalog"></div>
         </div>
       </div>
 
@@ -91,6 +111,22 @@
       </div>
       <div id="msg" class="form-help"></div>
     </form>
+
+    <section class="card empresa-section" id="roleEditorPanel" style="margin-top:16px;">
+      <h2>Editar rol de usuario</h2>
+      <p class="form-help">Cambia el rol operativo de un usuario de esta empresa. El sistema valida la empresa y el usuario en backend antes de actualizar.</p>
+      <div class="role-editor-grid">
+        <label class="form-label">Usuario
+          <select id="roleEditorUser" class="form-input"></select>
+        </label>
+        <label class="form-label">Nuevo rol
+          <select id="roleEditorRole" class="form-input"></select>
+        </label>
+        <button type="button" id="roleEditorSave" class="btn">Guardar rol</button>
+      </div>
+      <div id="roleEditorCurrent" class="role-editor-current"></div>
+      <div id="roleEditorMsg" class="form-help"></div>
+    </section>
 
     <div id="list">Cargando...</div>
 
@@ -173,12 +209,124 @@
         select.appendChild(opt);
       });
       if (selected) select.value = String(selected);
+      renderRolesCatalog();
+    }
+
+    function normalizeRoleKey(value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+
+    function canonicalRoleKey(value) {
+      let key = normalizeRoleKey(value);
+      const aliases = {
+        administrador: 'admin_empresa',
+        administrador_de_empresa: 'admin_empresa',
+        administrador_empresa: 'admin_empresa',
+        admin: 'admin_empresa',
+        supervisor: 'supervisor_sucursal',
+        servicio_de_limpieza: 'servicio_limpieza',
+        limpieza: 'servicio_limpieza',
+        aseadora: 'servicio_limpieza',
+        jefe_de_bodega: 'jefe_bodega',
+        bodega: 'jefe_bodega',
+        bodeguero: 'jefe_bodega',
+        recursos_humanos: 'recursos_humanos',
+        talento_humano: 'recursos_humanos',
+        rrhh: 'recursos_humanos',
+        tecnico_solar: 'tecnico_solar',
+        tecnico: 'tecnico_solar',
+        dueno: 'empresario',
+        propietario: 'empresario'
+      };
+      return aliases[key] || key;
+    }
+
+    function roleHelpAnchor(role) {
+      const key = canonicalRoleKey(role && role.nombre);
+      return key ? ('/ayuda/ayuda.html#rol-' + encodeURIComponent(key)) : '/ayuda/ayuda.html#roles';
+    }
+
+    function roleDescription(role) {
+      const explicit = String(role && role.descripcion || '').trim();
+      if (explicit) return explicit;
+      const key = canonicalRoleKey(role && role.nombre);
+      const map = {
+        administrador: 'Administra la empresa, usuarios, permisos, configuracion, ventas, caja, inventario, reportes e integraciones.',
+        admin_empresa: 'Administra la empresa, usuarios, permisos, configuracion, ventas, caja, inventario, reportes e integraciones.',
+        administrador_total: 'Acceso empresarial total sobre empresas autorizadas, con supervision, configuracion y operacion.',
+        supervisor: 'Supervisa operacion diaria, estaciones, ventas, caja, personal y reportes.',
+        supervisor_sucursal: 'Supervisa operacion diaria, estaciones, ventas, caja, personal y reportes.',
+        cajero: 'Opera ventas, carritos, cobros, facturacion operativa, caja y cierre de turno de su usuario.',
+        vendedor: 'Atiende clientes, cotiza, registra ventas operativas y consulta inventario disponible.',
+        recepcion: 'Atiende clientes, estaciones, reservas, ingresos y salidas segun la operacion de la empresa.',
+        portero: 'Ve estaciones y puede activar estaciones disponibles sin entrar al carrito ni cobrar.',
+        servicio_limpieza: 'Ve estaciones y cambia estado de sucia a limpia, registrando tiempos de aseo.',
+        inventario: 'Gestiona productos, servicios, bodegas, traslados, existencias y procesos de inventario.',
+        jefe_bodega: 'Administra bodegas, existencias, traslados y control de stock.',
+        compras: 'Gestiona proveedores, compras, recepcion de mercancia y abastecimiento.',
+        recursos_humanos: 'Gestiona horarios, asistencia, novedades y nomina operativa del personal.',
+        tecnico_solar: 'Consulta estado, lecturas, eventos y alertas del sistema de energia solar.',
+        contabilidad: 'Gestiona procesos contables, financieros, tributarios y reportes autorizados.',
+        contador: 'Consulta finanzas e impuestos de la empresa en modo lectura.',
+        empresario: 'Consulta resultados y reportes ejecutivos sin operar ventas, caja, inventario ni configuracion.',
+        auditor: 'Consulta trazabilidad, auditoria, reportes y cumplimiento sin ejecutar operacion diaria.'
+      };
+      return map[key] || 'Rol operativo configurable por empresa; sus permisos efectivos dependen de la matriz de modulos y paginas.';
+    }
+
+    function renderRolesCatalog() {
+      const box = document.getElementById('rolesCatalog');
+      const select = document.getElementById('rol_usuario_id');
+      if (!box || !select) return;
+      const selected = String(select.value || '');
+      const roles = state.roles.filter(function(role) { return !(role.estado && role.estado !== 'activo'); });
+      if (!roles.length) {
+        box.innerHTML = '<div class="form-help">No hay roles activos disponibles.</div>';
+        return;
+      }
+      box.innerHTML = '';
+      roles.forEach(function(role) {
+        const row = document.createElement('div');
+        row.className = 'role-row' + (String(role.id) === selected ? ' is-selected' : '');
+        row.innerHTML =
+          '<div><strong></strong><small></small></div>' +
+          '<div class="role-actions">' +
+            '<button type="button" class="btn secondary role-select">Seleccionar</button>' +
+            '<a class="btn secondary role-help" target="_blank" rel="noopener">Saber mas</a>' +
+          '</div>';
+        row.querySelector('strong').textContent = role.nombre || 'Rol sin nombre';
+        row.querySelector('small').textContent = roleDescription(role);
+        row.querySelector('.role-help').href = roleHelpAnchor(role);
+        row.querySelector('.role-select').onclick = function() {
+          select.value = String(role.id);
+          renderRolesCatalog();
+        };
+        box.appendChild(row);
+      });
     }
 
     function rolNombreById(id, fallback) {
       const role = state.roles.find(function(r) { return Number(r.id) === Number(id); });
       if (role && role.nombre) return role.nombre;
       return fallback || 'N/A';
+    }
+
+    function dedupeRoles(roles) {
+      const seen = new Set();
+      const out = [];
+      (Array.isArray(roles) ? roles : []).forEach(function(role) {
+        const key = canonicalRoleKey(role && role.nombre);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        out.push(role);
+      });
+      return out;
     }
 
     function escapeHTML(value) {
@@ -203,6 +351,14 @@
 
     function setStationAccessMessage(text, isError) {
       const el = document.getElementById('stationAccessMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.remove('value-negative');
+      if (isError) el.classList.add('value-negative');
+    }
+
+    function setRoleEditorMessage(text, isError) {
+      const el = document.getElementById('roleEditorMsg');
       if (!el) return;
       el.textContent = text || '';
       el.classList.remove('value-negative');
@@ -315,6 +471,59 @@
       }).join('');
     }
 
+    function renderRoleEditor() {
+      const userSelect = document.getElementById('roleEditorUser');
+      const roleSelect = document.getElementById('roleEditorRole');
+      const current = document.getElementById('roleEditorCurrent');
+      if (!userSelect || !roleSelect || !current) return;
+
+      const previousUser = userSelect.value;
+      const previousRole = roleSelect.value;
+
+      userSelect.innerHTML = '<option value="">-- Seleccionar usuario --</option>';
+      state.users.forEach(function(user) {
+        const opt = document.createElement('option');
+        opt.value = String(user.id);
+        opt.textContent = (user.nombre ? user.nombre + ' - ' : '') + (user.email || ('Usuario #' + user.id));
+        userSelect.appendChild(opt);
+      });
+      if (previousUser) userSelect.value = previousUser;
+
+      roleSelect.innerHTML = '<option value="">-- Seleccionar nuevo rol --</option>';
+      state.roles.forEach(function(role) {
+        if (role.estado && role.estado !== 'activo') return;
+        const opt = document.createElement('option');
+        opt.value = String(role.id);
+        opt.textContent = role.nombre || ('Rol #' + role.id);
+        roleSelect.appendChild(opt);
+      });
+      if (previousRole) roleSelect.value = previousRole;
+
+      const user = state.users.find(function(item) { return String(item.id) === String(userSelect.value || ''); });
+      if (!user) {
+        current.innerHTML = '<strong>Sin usuario seleccionado</strong><small>Selecciona un usuario para ver su rol actual y asignar uno nuevo.</small>';
+        return;
+      }
+
+      if (!roleSelect.value) {
+        roleSelect.value = String(user.rol_usuario_id || '');
+      }
+      const roleName = rolNombreById(user.rol_usuario_id, user.rol_nombre);
+      current.innerHTML =
+        '<strong>Rol actual: ' + escapeHTML(roleName) + '</strong>' +
+        '<small>' + escapeHTML(roleDescription({ nombre: roleName })) + '</small>';
+    }
+
+    function focusRoleEditorForUser(userID) {
+      const userSelect = document.getElementById('roleEditorUser');
+      const panel = document.getElementById('roleEditorPanel');
+      if (!userSelect || !panel) return;
+      userSelect.value = String(userID || '');
+      renderRoleEditor();
+      setRoleEditorMessage('', false);
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
     function collectStationAccessForm() {
       const email = selectedStationAccessUserEmail();
       if (!email) throw new Error('Selecciona un usuario');
@@ -396,6 +605,7 @@
           '<td>' + (item.estado || '') + '</td>' +
           '<td class="actions">' +
             '<button data-id="' + item.id + '" class="edit btn secondary">Editar</button> ' +
+            '<button data-id="' + item.id + '" class="role-change btn secondary">Cambiar rol</button> ' +
             '<button data-id="' + item.id + '" class="del btn danger">Eliminar</button> ' +
             '<button data-id="' + item.id + '" data-activo="' + activo + '" class="toggle btn">' + toggleLabel + '</button> ' +
             (confirmado ? '' : '<button data-id="' + item.id + '" class="resend btn">Reenviar confirmación</button>') +
@@ -431,6 +641,12 @@
           document.getElementById('cancelBtn').style.display = '';
           setMessage('', false);
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+      });
+
+      document.querySelectorAll('.role-change').forEach(function(btn) {
+        btn.onclick = function() {
+          focusRoleEditorForUser(Number(btn.getAttribute('data-id') || 0));
         };
       });
 
@@ -486,7 +702,7 @@
     async function loadRoles() {
       const res = await fetch('/api/empresa/roles_de_usuario?empresa_id=' + encodeURIComponent(state.empresaID));
       await ensureOk(res);
-      state.roles = await res.json();
+      state.roles = dedupeRoles(await res.json());
       fillRolesSelect('');
     }
 
@@ -506,10 +722,12 @@
       await ensureOk(res);
       state.users = await res.json();
       renderList();
+      renderRoleEditor();
     }
 
     async function loadData() {
       await Promise.all([loadRoles(), loadUsers()]);
+      renderRoleEditor();
       try {
         await loadStationAccessConfig();
       } catch (err) {
@@ -601,6 +819,10 @@
       resetForm(true);
     };
 
+    document.getElementById('rol_usuario_id').addEventListener('change', function() {
+      renderRolesCatalog();
+    });
+
     document.getElementById('foto_usuario').addEventListener('change', function() {
       const input = document.getElementById('foto_usuario');
       const file = input.files && input.files[0];
@@ -614,6 +836,56 @@
 
     document.getElementById('stationAccessUser').addEventListener('change', function() {
       renderStationAccessPanel();
+    });
+
+    document.getElementById('roleEditorUser').addEventListener('change', function() {
+      renderRoleEditor();
+      setRoleEditorMessage('', false);
+    });
+
+    document.getElementById('roleEditorRole').addEventListener('change', function() {
+      setRoleEditorMessage('', false);
+    });
+
+    document.getElementById('roleEditorSave').addEventListener('click', async function() {
+      const userID = Number(document.getElementById('roleEditorUser').value || 0);
+      const roleID = Number(document.getElementById('roleEditorRole').value || 0);
+      const user = state.users.find(function(item) { return Number(item.id) === userID; });
+      if (!user) {
+        setRoleEditorMessage('Selecciona un usuario', true);
+        return;
+      }
+      if (!roleID) {
+        setRoleEditorMessage('Selecciona el nuevo rol', true);
+        return;
+      }
+      if (Number(user.rol_usuario_id || 0) === roleID) {
+        setRoleEditorMessage('Ese usuario ya tiene ese rol asignado', false);
+        return;
+      }
+      const payload = {
+        empresa_id: Number(state.empresaID),
+        email: String(user.email || '').trim(),
+        nombre: String(user.nombre || '').trim(),
+        documento_identidad: String(user.documento_identidad || '').trim(),
+        rol_usuario_id: roleID,
+        control_aseo_estaciones: Number(user.control_aseo_estaciones || 0) === 1 ? 1 : 0,
+        observaciones: String(user.observaciones || '').trim(),
+        motivo_aprobacion: 'Cambio de rol desde Administrar usuarios'
+      };
+      try {
+        const res = await fetch('/api/empresa/usuarios?id=' + encodeURIComponent(user.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await ensureOk(res);
+        await loadData();
+        focusRoleEditorForUser(user.id);
+        setRoleEditorMessage('Rol actualizado correctamente', false);
+      } catch (err) {
+        setRoleEditorMessage(err.message || 'No se pudo actualizar el rol', true);
+      }
     });
 
     document.getElementById('stationAccessAll').addEventListener('click', function() {
