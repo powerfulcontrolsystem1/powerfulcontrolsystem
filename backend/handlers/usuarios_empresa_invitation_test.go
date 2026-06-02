@@ -65,3 +65,53 @@ func TestCajeroSoloVePaginasOperativas(t *testing.T) {
 		}
 	}
 }
+
+func TestCajeroTienePermisosOperativosParaCarritoCompleto(t *testing.T) {
+	rows := restrictPermissionModuleRowsForOperationalRole("cajero", buildPermissionModuleMatrixForRole("admin_empresa"))
+	byModule := map[string]permissionModuleMatrixRow{}
+	for _, row := range rows {
+		byModule[row.Modulo] = row
+	}
+
+	if !byModule[permModuleVentas].Acciones[permActionCreate] {
+		t.Fatal("cajero debe poder crear/cobrar ventas desde carrito")
+	}
+	if !byModule[permModuleFinanzas].Acciones[permActionCreate] {
+		t.Fatal("cajero debe poder registrar cobros de caja desde carrito")
+	}
+	if !byModule[permModuleFacturacion].Acciones[permActionCreate] {
+		t.Fatal("cajero debe poder emitir facturacion operativa desde carrito")
+	}
+	if !byModule[permModuleInventario].Acciones[permActionRead] || byModule[permModuleInventario].Acciones[permActionCreate] {
+		t.Fatal("cajero debe consultar catalogo de inventario sin administrar productos")
+	}
+	if !byModule[permModuleClientes].Acciones[permActionRead] || !byModule[permModuleClientes].Acciones[permActionCreate] || byModule[permModuleClientes].Acciones[permActionDelete] {
+		t.Fatal("cajero debe leer/crear clientes desde carrito sin eliminarlos")
+	}
+	if isAllowedPageForOperationalRole("cajero", "linkClientes") || isAllowedPageForOperationalRole("cajero", "linkProductos") {
+		t.Fatal("cajero no debe ganar paginas de Clientes o Productos en el menu")
+	}
+}
+
+func TestCajeroPuedeUsarAPIAuxiliaresDelCarritoSinPaginaDeMenu(t *testing.T) {
+	allowed := []string{
+		"/api/empresa/clientes",
+		"/api/empresa/productos",
+		"/api/empresa/servicios",
+		"/api/empresa/recetas_productos",
+		"/api/empresa/codigos_de_descuento",
+		"/api/empresa/propinas",
+		"/api/empresa/comisiones",
+	}
+	for _, path := range allowed {
+		if !isCajeroCartAuxiliaryAPIRequest("cajero", path) {
+			t.Fatalf("cajero debe poder usar API auxiliar de carrito %s", path)
+		}
+	}
+	if isCajeroCartAuxiliaryAPIRequest("cajero", "/api/empresa/usuarios") {
+		t.Fatal("cajero no debe saltarse pagina para APIs administrativas")
+	}
+	if isCajeroCartAuxiliaryAPIRequest("contador", "/api/empresa/clientes") {
+		t.Fatal("la excepcion de APIs auxiliares aplica solo a cajero")
+	}
+}

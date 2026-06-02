@@ -196,7 +196,12 @@ afecte dinero, documentos, licencias o seguridad.
    contrato vigente, vuelve al formulario para aceptarlo.
 5. La sesion redirige siempre a `administrar_empresa.html?id={empresa_id}`; el
    panel carga rol, permisos y estaciones asignadas de esa empresa.
-6. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
+6. Para `cajero`, el menu queda limitado a `Venta directa`, `Estaciones` y
+   `Corte de Caja`, pero el carrito debe cargar completo: catalogo de productos,
+   servicios, recetas, clientes, descuentos, propinas/comisiones y valores por
+   medio de pago. Esas APIs auxiliares solo se permiten dentro del alcance del
+   carrito, sin mostrar paginas administrativas de Productos o Clientes.
+7. Pruebas: Google sin invitacion debe rechazar, Google con invitacion debe
    consumir token y entrar, correo ambiguo exige enlace de empresa, tema claro u
    oscuro se conserva y el boton `Instalar app` permanece visible.
 
@@ -237,8 +242,9 @@ afecte dinero, documentos, licencias o seguridad.
 5. Visualmente debe conservar el modo plano del carrito: tarjetas sin sombras ni
    apariencia 3D, pero con el fondo estructural mas oscuro que las tarjetas para
    diferenciar zonas en cualquier apariencia.
-6. Pruebas: agregar item, buscar producto, pagar, imprimir, validar inventario y
-   caja, abrir/salir de pantalla completa y revisar contraste fondo/tarjetas.
+6. Pruebas: entrar con rol `cajero` por `login_usuario`, agregar item, buscar
+   producto, pagar, imprimir, validar inventario y caja, abrir/salir de pantalla
+   completa y revisar contraste fondo/tarjetas.
 
 ## Estaciones y carrito
 

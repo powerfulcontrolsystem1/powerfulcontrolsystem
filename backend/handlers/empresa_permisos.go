@@ -1437,6 +1437,9 @@ func withEmpresaRolePermissions(dbEmp, dbSuper *sql.DB, module string, resolveAc
 			strings.TrimSpace(r.URL.Query().Get("estacion_id")) != "" {
 			pageKey = ""
 		}
+		if pageKey != "" && isCajeroCartAuxiliaryAPIRequest(effectiveRole, requestPath) {
+			pageKey = ""
+		}
 		if pageKey != "" {
 			if !snapshot.AllowedPages[pageKey] {
 				http.Error(w, "forbidden: rol sin acceso a la funcionalidad solicitada", http.StatusForbidden)
@@ -2868,6 +2871,12 @@ func restrictPermissionModuleRowsForOperationalRole(role string, rows []permissi
 				if row.Modulo == permModuleVentas || row.Modulo == permModuleFinanzas || row.Modulo == permModuleFacturacion {
 					allowed = action == permActionRead || action == permActionCreate || action == permActionUpdate || action == permActionApprove
 				}
+				if row.Modulo == permModuleInventario {
+					allowed = action == permActionRead
+				}
+				if row.Modulo == permModuleClientes {
+					allowed = action == permActionRead || action == permActionCreate || action == permActionUpdate || action == permActionApprove
+				}
 			}
 			if normalizedRole == "portero" && row.Modulo == permModuleVentas {
 				allowed = action == permActionRead || action == permActionApprove
@@ -2946,6 +2955,24 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 		}
 	default:
 		return true
+	}
+}
+
+func isCajeroCartAuxiliaryAPIRequest(role, requestPath string) bool {
+	if normalizePermissionRole(role) != "cajero" {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(requestPath)) {
+	case "/api/empresa/clientes",
+		"/api/empresa/productos",
+		"/api/empresa/servicios",
+		"/api/empresa/recetas_productos",
+		"/api/empresa/codigos_de_descuento",
+		"/api/empresa/propinas",
+		"/api/empresa/comisiones":
+		return true
+	default:
+		return false
 	}
 }
 

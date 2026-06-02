@@ -1,3 +1,10 @@
+2026-06-02: Carrito completo para rol cajero.
+- Modulos afectados: `usuarios_empresa`, `carrito_de_compras`, permisos empresariales, catalogo de productos/clientes operativo.
+- `backend/handlers/empresa_permisos.go` conserva el menu del cajero limitado a `Venta directa`, `Estaciones` y `Corte de Caja`, pero mantiene permisos internos de carrito para ventas, finanzas, facturacion, lectura de inventario y lectura/creacion/actualizacion de clientes.
+- Se agrega una excepcion controlada de `pageKey` solo para APIs auxiliares del carrito del rol `cajero`: productos, servicios, recetas, clientes, codigos de descuento, propinas y comisiones. No aplica a usuarios, configuracion, inventario administrativo ni otros roles.
+- Seguridad: la excepcion no quita validacion de sesion, `empresa_id`, licencia ni modulo; solo evita que ocultar paginas administrativas bloquee el carrito operativo.
+- Pruebas: `go test ./handlers -run "TestCajeroSoloVePaginasOperativas|TestCajeroTienePermisosOperativosParaCarritoCompleto|TestCajeroPuedeUsarAPIAuxiliaresDelCarritoSinPaginaDeMenu|TestNormalizePermissionRoleCajaEsCajero" -count=1`.
+
 2026-06-02: Login usuario aplica rol cajero y deduplica Caja.
 - Modulos afectados: `login_usuario`, `usuarios_empresa`, permisos empresariales y menu de Administrar empresa.
 - `backend/handlers/empresa_permisos.go` reconoce `Caja`, `Caja principal`, `Caja turno` y variantes como alias canonicos de `cajero`.

@@ -21,7 +21,11 @@
 - `cajero`: las variantes historicas `Caja`, `Caja principal` y `Caja turno`
   se normalizan como `cajero`. En `login_usuario.html` el menu queda limitado a
   `Venta directa`, `Estaciones` y `Corte de Caja`, aunque el rol conserve
-  permisos operativos internos para cobrar, facturar y cerrar turno.
+  permisos operativos internos para cobrar, facturar, cerrar turno, consultar
+  catalogo de inventario y crear/actualizar clientes desde el carrito. Las APIs
+  auxiliares de carrito para productos, servicios, recetas, clientes, codigos de
+  descuento, propinas y comisiones pueden ejecutarse sin mostrar las paginas
+  administrativas de Productos o Clientes en el menu.
 
 2026-05-31: Nota de rol Servicio de limpieza para estaciones
 - Se agrega el rol `servicio_limpieza` al catalogo base de roles empresariales y a las preconfiguraciones de tipos de empresa.
