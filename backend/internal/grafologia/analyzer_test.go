@@ -20,6 +20,11 @@ func TestAnalyzeImageBytesProducesCoreMetrics(t *testing.T) {
 	if len(result.Metrics) != 10 {
 		t.Fatalf("expected 10 metrics, got %d", len(result.Metrics))
 	}
+	for _, metric := range result.Metrics {
+		if len(metric.Details) == 0 {
+			t.Fatalf("metric %s missing technical details", metric.Key)
+		}
+	}
 	if len(result.Traits) != 12 {
 		t.Fatalf("expected 12 traits, got %d", len(result.Traits))
 	}
@@ -63,9 +68,20 @@ func TestPreprocessArtifactsAndReportExports(t *testing.T) {
 	}
 	if txt := RenderTextReport("Prueba", result); !bytes.Contains([]byte(txt), []byte("RESUMEN GENERAL")) {
 		t.Fatalf("text report missing summary")
+	} else if !bytes.Contains([]byte(txt), []byte("Separacion promedio entre palabras")) {
+		t.Fatalf("text report missing spacing details")
 	}
 	if doc := RenderWordReport("Prueba", result); !bytes.Contains(doc, []byte("urn:schemas-microsoft-com:office:word")) {
 		t.Fatalf("word report missing office namespace")
+	}
+}
+
+func TestFormatPercentKeepsIntegerZeros(t *testing.T) {
+	if got := formatPercent(70); got != "70%" {
+		t.Fatalf("expected 70%%, got %q", got)
+	}
+	if got := formatPercent(7); got != "7%" {
+		t.Fatalf("expected 7%%, got %q", got)
 	}
 }
 

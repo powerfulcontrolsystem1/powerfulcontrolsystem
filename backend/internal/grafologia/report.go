@@ -73,7 +73,9 @@ func RenderHTMLReport(title string, result AnalysisResult) string {
 		b.WriteString(html.EscapeString(m.Name))
 		b.WriteString(`</strong><br><span class="muted">`)
 		b.WriteString(html.EscapeString(m.Explanation))
-		b.WriteString(`</span></div><span>`)
+		b.WriteString(`</span>`)
+		writeHTMLMetricDetails(&b, m.Details)
+		b.WriteString(`</div><span>`)
 		b.WriteString(html.EscapeString(m.Value))
 		b.WriteString(` · `)
 		b.WriteString(formatPercent(m.Confidence))
@@ -143,6 +145,7 @@ func RenderTextReport(title string, result AnalysisResult) string {
 	for _, m := range result.Metrics {
 		b.WriteString("- " + cleanPDFText(m.Name) + ": " + cleanPDFText(m.Value) + " | Confianza " + formatPercent(m.Confidence) + "\n")
 		b.WriteString("  " + cleanPDFText(m.Explanation) + "\n")
+		appendMetricDetailsText(&b, m.Details, "  ")
 	}
 	b.WriteString("\nINTERPRETACION ORIENTATIVA\n")
 	for _, t := range result.Traits {
@@ -172,6 +175,9 @@ func RenderCSVReport(result AnalysisResult) string {
 	}
 	for _, m := range result.Metrics {
 		writeCSVRow(&b, []string{"metrica", m.Key, m.Name, m.Value, m.Category, sprintf2(m.Score), sprintf2(m.Confidence), m.Explanation})
+		for _, d := range m.Details {
+			writeCSVRow(&b, []string{"medida", m.Key, d.Label, d.Value, d.Unit, "", "", d.Note})
+		}
 	}
 	for _, t := range result.Traits {
 		writeCSVRow(&b, []string{"interpretacion", t.Key, t.Name, sprintf2(t.Percent), t.Level, sprintf2(t.Percent), sprintf2(t.Confidence), t.Explanation})
@@ -212,6 +218,16 @@ func RenderPDFReport(title string, result AnalysisResult) []byte {
 	lines = append(lines, "Metricas principales")
 	for _, m := range result.Metrics {
 		lines = append(lines, "- "+m.Name+": "+m.Value+" ("+formatPercent(m.Confidence)+")")
+		for _, d := range m.Details {
+			value := strings.TrimSpace(d.Value)
+			if strings.TrimSpace(d.Unit) != "" {
+				value += " " + strings.TrimSpace(d.Unit)
+			}
+			if strings.TrimSpace(d.Note) != "" {
+				value += " - " + strings.TrimSpace(d.Note)
+			}
+			lines = append(lines, "  * "+d.Label+": "+value)
+		}
 	}
 	lines = append(lines, "", "Interpretacion orientativa")
 	for _, t := range result.Traits {
@@ -221,27 +237,28 @@ func RenderPDFReport(title string, result AnalysisResult) []byte {
 	for _, note := range result.TechnicalNotes {
 		lines = append(lines, "- "+note)
 	}
-	if len(lines) > 58 {
-		lines = append(lines[:57], "... informe resumido; use HTML para el detalle completo.")
-	}
+	return renderSimplePDF(lines)
+}
 
-	var content strings.Builder
-	content.WriteString("BT\n/F1 11 Tf\n50 800 Td\n14 TL\n")
-	for _, line := range lines {
-		for _, wrapped := range wrapPDFLine(cleanPDFText(line), 92) {
-			content.WriteString("(")
-			content.WriteString(escapePDFString(wrapped))
-			content.WriteString(") Tj\nT*\n")
-		}
+func renderSimplePDF(lines []string) []byte {
+	pages := paginatePDFLines(lines, 105, 58)
+	kids := make([]string, 0, len(pages))
+	for i := range pages {
+		kids = append(kids, fmt.Sprintf("%d 0 R", 4+i*2))
 	}
-	content.WriteString("ET\n")
-
 	objects := []string{
 		"<< /Type /Catalog /Pages 2 0 R >>",
-		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+		fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d >>", strings.Join(kids, " "), len(pages)),
 		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-		fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(content.String()), content.String()),
+	}
+	for i, pageLines := range pages {
+		pageObj := 4 + i*2
+		contentObj := pageObj + 1
+		content := renderPDFPageContent(pageLines)
+		objects = append(objects,
+			fmt.Sprintf("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents %d 0 R >>", contentObj),
+			fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(content), content),
+		)
 	}
 	var pdf bytes.Buffer
 	pdf.WriteString("%PDF-1.4\n")
@@ -258,6 +275,39 @@ func RenderPDFReport(title string, result AnalysisResult) []byte {
 	}
 	pdf.WriteString(fmt.Sprintf("trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref))
 	return pdf.Bytes()
+}
+
+func paginatePDFLines(lines []string, wrapWidth, maxLinesPerPage int) [][]string {
+	pages := [][]string{}
+	current := []string{}
+	for _, line := range lines {
+		for _, wrapped := range wrapPDFLine(cleanPDFText(line), wrapWidth) {
+			if len(current) >= maxLinesPerPage {
+				pages = append(pages, current)
+				current = []string{}
+			}
+			current = append(current, wrapped)
+		}
+	}
+	if len(current) > 0 {
+		pages = append(pages, current)
+	}
+	if len(pages) == 0 {
+		pages = append(pages, []string{"Informe grafologico GRAFOLOGIX"})
+	}
+	return pages
+}
+
+func renderPDFPageContent(lines []string) string {
+	var content strings.Builder
+	content.WriteString("BT\n/F1 9 Tf\n50 800 Td\n12 TL\n")
+	for _, line := range lines {
+		content.WriteString("(")
+		content.WriteString(escapePDFString(line))
+		content.WriteString(") Tj\nT*\n")
+	}
+	content.WriteString("ET\n")
+	return content.String()
 }
 
 func writeHTMLSubjectSection(b *strings.Builder, result AnalysisResult) {
@@ -310,6 +360,47 @@ func appendSubjectText(b *strings.Builder, result AnalysisResult) {
 	b.WriteString("\n")
 }
 
+func writeHTMLMetricDetails(b *strings.Builder, details []MetricDetail) {
+	if len(details) == 0 {
+		return
+	}
+	b.WriteString(`<div class="muted" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px;margin-top:6px;font-size:12px">`)
+	for _, d := range details {
+		if strings.TrimSpace(d.Label) == "" && strings.TrimSpace(d.Value) == "" {
+			continue
+		}
+		value := strings.TrimSpace(d.Value)
+		if strings.TrimSpace(d.Unit) != "" {
+			value += " " + strings.TrimSpace(d.Unit)
+		}
+		if strings.TrimSpace(d.Note) != "" {
+			value += " - " + strings.TrimSpace(d.Note)
+		}
+		b.WriteString(`<span><strong>`)
+		b.WriteString(html.EscapeString(d.Label))
+		b.WriteString(`:</strong> `)
+		b.WriteString(html.EscapeString(value))
+		b.WriteString(`</span>`)
+	}
+	b.WriteString(`</div>`)
+}
+
+func appendMetricDetailsText(b *strings.Builder, details []MetricDetail, prefix string) {
+	for _, d := range details {
+		if strings.TrimSpace(d.Label) == "" && strings.TrimSpace(d.Value) == "" {
+			continue
+		}
+		value := strings.TrimSpace(d.Value)
+		if strings.TrimSpace(d.Unit) != "" {
+			value += " " + strings.TrimSpace(d.Unit)
+		}
+		if strings.TrimSpace(d.Note) != "" {
+			value += " - " + strings.TrimSpace(d.Note)
+		}
+		b.WriteString(prefix + "* " + cleanPDFText(d.Label) + ": " + cleanPDFText(value) + "\n")
+	}
+}
+
 func writeCSVRow(b *strings.Builder, values []string) {
 	for i, value := range values {
 		if i > 0 {
@@ -338,11 +429,18 @@ func conclusion(result AnalysisResult) string {
 }
 
 func formatPercent(v float64) string {
-	return strings.TrimRight(strings.TrimRight(floatString(v), "0"), ".") + "%"
+	return floatString(v) + "%"
 }
 
 func floatString(v float64) string {
-	return strings.ReplaceAll(strings.TrimRight(strings.TrimRight(sprintf2(v), "0"), "."), ",", ".")
+	s := strings.ReplaceAll(sprintf2(v), ",", ".")
+	if strings.Contains(s, ".") {
+		s = strings.TrimRight(strings.TrimRight(s, "0"), ".")
+	}
+	if s == "" || s == "-" {
+		return "0"
+	}
+	return s
 }
 
 func sprintf2(v float64) string {

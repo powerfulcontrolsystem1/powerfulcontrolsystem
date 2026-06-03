@@ -24,6 +24,12 @@
 - Impresion: recibos y facturas del carrito muestran base gravable e impuesto deducido usando los valores ya calculados del item (`base_gravable`, `valor_impuesto`), en POS 80mm o carta.
 - Alcance: no cambia payload electronico, XML, CUFE/CUDE, envio ni validacion DIAN; es una opcion visual de impresion.
 
+2026-06-02: GRAFOLOGIX con medidas tecnicas en reportes
+- Modulo afectado: `grafologia`.
+- Cambio funcional: los resultados del motor Go agregan `details` por cada metrica y la UI muestra esas medidas debajo del resultado.
+- Reportes: HTML, PDF multipagina, Word, JSON, CSV y TXT incluyen angulos, separaciones, margenes, alturas, continuidad, densidad, regularidad y forma.
+- QA: `go test ./internal/grafologia -count=1`, `node --check web/js/grafologia.js` y captura visual del reporte generado con Chrome.
+
 2026-06-01: GRAFOLOGIX con analisis GPT-5.5
 - Modulo afectado: `grafologia`.
 - Cambio funcional: la pantalla agrega el boton `Analizar con GPT-5.5` para obtener una lectura grafologica complementaria desde el modelo de vision configurado como `openai:gpt-5.5`.

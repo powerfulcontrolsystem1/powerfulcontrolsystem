@@ -595,7 +595,12 @@
       tr.innerHTML = "<td><strong></strong><br><small></small></td><td></td><td></td>";
       tr.querySelector("strong").textContent = m.name || m.key || "";
       tr.querySelector("small").textContent = m.explanation || "";
-      tr.children[1].textContent = m.value || m.category || "";
+      tr.children[1].innerHTML = "";
+      var mainValue = document.createElement("strong");
+      mainValue.textContent = m.value || m.category || "";
+      tr.children[1].appendChild(mainValue);
+      var details = metricDetailsNode(m.details || []);
+      if (details) tr.children[1].appendChild(details);
       tr.children[2].textContent = fmtPct(m.confidence || 0);
       metrics.appendChild(tr);
     });
@@ -630,6 +635,25 @@
     if (subject.persona_descripcion) lines.push(subject.persona_descripcion);
     if (subject.persona_caracteristicas) lines.push(subject.persona_caracteristicas);
     box.querySelector("p").textContent = lines.join(" · ");
+  }
+
+  function metricDetailsNode(details) {
+    if (!details || !details.length) return null;
+    var box = document.createElement("div");
+    box.className = "grafologia-warning";
+    box.style.marginTop = "6px";
+    box.style.display = "grid";
+    box.style.gap = "3px";
+    details.forEach(function (item) {
+      if (!item || (!item.label && !item.value)) return;
+      var row = document.createElement("span");
+      var value = String(item.value || "");
+      if (item.unit) value += " " + item.unit;
+      if (item.note) value += " - " + item.note;
+      row.textContent = (item.label || "Medida") + ": " + value;
+      box.appendChild(row);
+    });
+    return box.childElementCount ? box : null;
   }
 
   function renderPreprocess(preprocess) {

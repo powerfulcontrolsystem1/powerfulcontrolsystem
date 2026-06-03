@@ -51,13 +51,21 @@ type ImageSummary struct {
 }
 
 type Metric struct {
-	Key         string  `json:"key"`
-	Name        string  `json:"name"`
-	Value       string  `json:"value"`
-	Category    string  `json:"category"`
-	Score       float64 `json:"score"`
-	Confidence  float64 `json:"confidence"`
-	Explanation string  `json:"explanation"`
+	Key         string         `json:"key"`
+	Name        string         `json:"name"`
+	Value       string         `json:"value"`
+	Category    string         `json:"category"`
+	Score       float64        `json:"score"`
+	Confidence  float64        `json:"confidence"`
+	Explanation string         `json:"explanation"`
+	Details     []MetricDetail `json:"details,omitempty"`
+}
+
+type MetricDetail struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+	Unit  string `json:"unit,omitempty"`
+	Note  string `json:"note,omitempty"`
 }
 
 type Trait struct {
@@ -216,7 +224,7 @@ func buildMetrics(ws analysisWorkspace) []Metric {
 	speedCat, speedScore, speedTrust, speedExp := metricSpeed(contScore, pressureScore, spScore)
 	regCat, regScore, regTrust, regExp := metricRegularity(ws)
 	formCat, formScore, formTrust, formExp := metricLetterForm(ws)
-	return []Metric{
+	metrics := []Metric{
 		metric("inclinacion", "Inclinacion de escritura", slCat, slCat, slScore, slTrust, slExp),
 		metric("presion", "Presion del trazo", pressureCat, pressureCat, pressureScore, pressureTrust, pressureExp),
 		metric("tamano_letra", "Tamano de letra", sizeCat, sizeCat, sizeScore, sizeTrust, sizeExp),
@@ -228,6 +236,10 @@ func buildMetrics(ws analysisWorkspace) []Metric {
 		metric("regularidad", "Regularidad", regCat, regCat, regScore, regTrust, regExp),
 		metric("forma_letras", "Forma de letras", formCat, formCat, formScore, formTrust, formExp),
 	}
+	for i := range metrics {
+		metrics[i].Details = metricDetails(ws, metrics[i].Key)
+	}
+	return metrics
 }
 
 func buildTraits(metrics []Metric) []Trait {
@@ -476,6 +488,269 @@ func metricLetterForm(ws analysisWorkspace) (string, float64, float64, string) {
 	return "Mixtas", score, 66, "La forma combina curvas y angulos."
 }
 
+func metricDetails(ws analysisWorkspace, key string) []MetricDetail {
+	stats := collectWritingStats(ws)
+	switch key {
+	case "inclinacion":
+		slope := slantSlope(ws)
+		angle := math.Atan(slope) * 180 / math.Pi
+		return []MetricDetail{
+			detail("Angulo estimado del eje de tinta", signed2(angle), "grados", "Positivo inclina hacia la derecha; negativo hacia la izquierda."),
+			detail("Pendiente horizontal por pixel vertical", sprintf2(slope), "px/px", ""),
+			detail("Filas con tinta usadas", intString(stats.InkedRows), "filas", ""),
+			detail("Caja analizada", boxText(ws.box), "px", ""),
+		}
+	case "presion":
+		darkness := ws.inkDarkSum / math.Max(1, float64(ws.inkCount))
+		density := float64(ws.inkCount) / math.Max(1, float64(ws.width*ws.height))
+		return []MetricDetail{
+			detail("Oscuridad promedio del trazo", sprintf2(round2(darkness)), "%", ""),
+			detail("Densidad de tinta global", sprintf2(round4(density)*100), "%", ""),
+			detail("Pixeles de tinta detectados", intString(ws.inkCount), "px", ""),
+			detail("Umbral Otsu usado", intString(int(ws.threshold)), "0-255", ""),
+		}
+	case "tamano_letra":
+		return []MetricDetail{
+			detail("Altura promedio de renglon", sprintf2(stats.AvgLineHeight), "px", "Se usa como aproximacion del tamano de letra."),
+			detail("Altura minima de renglon", sprintf2(stats.MinLineHeight), "px", ""),
+			detail("Altura maxima de renglon", sprintf2(stats.MaxLineHeight), "px", ""),
+			detail("Lineas detectadas", intString(len(ws.lines)), "lineas", ""),
+		}
+	case "espaciado":
+		return []MetricDetail{
+			detail("Separacion promedio entre letras/componentes", sprintf2(stats.AvgLetterGap), "px", "Estimacion por huecos pequenos entre grupos de tinta."),
+			detail("Separacion promedio entre palabras", sprintf2(stats.AvgWordGap), "px", "Estimacion por huecos amplios entre grupos de tinta."),
+			detail("Separacion promedio entre lineas", sprintf2(stats.AvgLineGap), "px", ""),
+			detail("Relacion palabras/letras", sprintf2(float64(ws.words)/math.Max(1, float64(ws.letters))), "ratio", ""),
+		}
+	case "continuidad":
+		return []MetricDetail{
+			detail("Recorridos horizontales detectados", intString(stats.HorizontalRunCount), "trazos", ""),
+			detail("Longitud promedio de recorrido", sprintf2(stats.AvgHorizontalRun), "px", ""),
+			detail("Recorridos largos", intString(stats.LongHorizontalRunCount), "trazos", "Recorridos de 8 px o mas."),
+			detail("Indice de continuidad", sprintf2(stats.LongRunRatio*100), "%", ""),
+		}
+	case "direccion_lineas":
+		return []MetricDetail{
+			detail("Delta vertical promedio derecha-izquierda", signed2(stats.AvgBaselineDelta), "px", "Negativo sugiere linea ascendente; positivo descendente."),
+			detail("Angulo de linea base estimado", signed2(stats.AvgBaselineAngle), "grados", ""),
+			detail("Lineas con direccion medible", intString(stats.BaselineSamples), "lineas", ""),
+			detail("Ancho de escritura usado", intString(maxInt(0, ws.box.MaxX-ws.box.MinX+1)), "px", ""),
+		}
+	case "margenes":
+		return []MetricDetail{
+			detail("Margen izquierdo", marginValue(ws.box.MinX, ws.width), "", ""),
+			detail("Margen derecho", marginValue(ws.width-1-ws.box.MaxX, ws.width), "", ""),
+			detail("Margen superior", marginValue(ws.box.MinY, ws.height), "", ""),
+			detail("Margen inferior", marginValue(ws.height-1-ws.box.MaxY, ws.height), "", ""),
+		}
+	case "velocidad":
+		return []MetricDetail{
+			detail("Continuidad usada", sprintf2(stats.LongRunRatio*100), "%", ""),
+			detail("Separacion palabra/letra", sprintf2(stats.GapRatio), "ratio", ""),
+			detail("Presion aproximada", sprintf2((ws.inkDarkSum/math.Max(1, float64(ws.inkCount)))*0.8+float64(ws.inkCount)/math.Max(1, float64(ws.width*ws.height))*500), "puntos", ""),
+			detail("Nota", "Velocidad estimada por geometria", "", "No mide tiempo real de escritura."),
+		}
+	case "regularidad":
+		return []MetricDetail{
+			detail("Variacion de altura de lineas", sprintf2(stats.LineHeightCV*100), "%", ""),
+			detail("Variacion de espacios entre lineas", sprintf2(stats.LineGapCV*100), "%", ""),
+			detail("Altura promedio", sprintf2(stats.AvgLineHeight), "px", ""),
+			detail("Espacio promedio entre lineas", sprintf2(stats.AvgLineGap), "px", ""),
+		}
+	case "forma_letras":
+		return []MetricDetail{
+			detail("Puntos de forma evaluados", intString(stats.ShapeTransitions), "puntos", ""),
+			detail("Vertices/angulos detectados", intString(stats.ShapeCorners), "puntos", ""),
+			detail("Indice de angulosidad", sprintf2(stats.ShapeCornerRatio*100), "%", ""),
+			detail("Letras estimadas", intString(ws.letters), "letras", ""),
+		}
+	default:
+		return nil
+	}
+}
+
+type writingStats struct {
+	AvgLineHeight          float64
+	MinLineHeight          float64
+	MaxLineHeight          float64
+	AvgLineGap             float64
+	AvgLetterGap           float64
+	AvgWordGap             float64
+	GapRatio               float64
+	HorizontalRunCount     int
+	AvgHorizontalRun       float64
+	LongHorizontalRunCount int
+	LongRunRatio           float64
+	AvgBaselineDelta       float64
+	AvgBaselineAngle       float64
+	BaselineSamples        int
+	LineHeightCV           float64
+	LineGapCV              float64
+	ShapeTransitions       int
+	ShapeCorners           int
+	ShapeCornerRatio       float64
+	InkedRows              int
+}
+
+func collectWritingStats(ws analysisWorkspace) writingStats {
+	heights := make([]float64, 0, len(ws.lines))
+	lineGaps := make([]float64, 0)
+	letterGaps := make([]float64, 0)
+	wordGaps := make([]float64, 0)
+	baselineDeltas := make([]float64, 0)
+	baselineAngles := make([]float64, 0)
+	for i, line := range ws.lines {
+		heights = append(heights, float64(line.End-line.Start+1))
+		if i > 0 {
+			lineGaps = append(lineGaps, float64(line.Start-ws.lines[i-1].End))
+		}
+		runs, gaps := lineRunsAndGaps(ws, line)
+		wordBreak := medianInt(gaps) + maxInt(5, (line.End-line.Start)/2)
+		for _, gap := range gaps {
+			if gap >= wordBreak {
+				wordGaps = append(wordGaps, float64(gap))
+			} else if gap > 0 {
+				letterGaps = append(letterGaps, float64(gap))
+			}
+		}
+		_ = runs
+		leftY := centroidYInRange(ws, line, ws.box.MinX, ws.box.MinX+(ws.box.MaxX-ws.box.MinX)/3)
+		rightY := centroidYInRange(ws, line, ws.box.MaxX-(ws.box.MaxX-ws.box.MinX)/3, ws.box.MaxX)
+		if leftY > 0 && rightY > 0 {
+			delta := rightY - leftY
+			width := math.Max(1, float64(ws.box.MaxX-ws.box.MinX+1))
+			baselineDeltas = append(baselineDeltas, delta)
+			baselineAngles = append(baselineAngles, math.Atan(delta/width)*180/math.Pi)
+		}
+	}
+	runs := horizontalRuns(ws)
+	runValues := make([]float64, 0, len(runs))
+	longRuns := 0
+	for _, run := range runs {
+		runValues = append(runValues, float64(run))
+		if run >= 8 {
+			longRuns++
+		}
+	}
+	corners, transitions := shapeCounts(ws)
+	inkedRows := 0
+	for _, count := range ws.rowCounts {
+		if count > 0 {
+			inkedRows++
+		}
+	}
+	return writingStats{
+		AvgLineHeight:          average(heights),
+		MinLineHeight:          minFloat(heights),
+		MaxLineHeight:          maxFloat(heights),
+		AvgLineGap:             average(lineGaps),
+		AvgLetterGap:           average(letterGaps),
+		AvgWordGap:             average(wordGaps),
+		GapRatio:               average(wordGaps) / math.Max(1, average(letterGaps)),
+		HorizontalRunCount:     len(runs),
+		AvgHorizontalRun:       average(runValues),
+		LongHorizontalRunCount: longRuns,
+		LongRunRatio:           float64(longRuns) / math.Max(1, float64(len(runs))),
+		AvgBaselineDelta:       average(baselineDeltas),
+		AvgBaselineAngle:       average(baselineAngles),
+		BaselineSamples:        len(baselineDeltas),
+		LineHeightCV:           coefficientVariation(heights),
+		LineGapCV:              coefficientVariation(lineGaps),
+		ShapeTransitions:       transitions,
+		ShapeCorners:           corners,
+		ShapeCornerRatio:       float64(corners) / math.Max(1, float64(transitions)),
+		InkedRows:              inkedRows,
+	}
+}
+
+func lineRunsAndGaps(ws analysisWorkspace, line lineBand) ([][2]int, []int) {
+	colActive := make([]bool, ws.width)
+	for x := 0; x < ws.width; x++ {
+		count := 0
+		for y := line.Start; y <= line.End; y++ {
+			if ws.ink[y*ws.width+x] {
+				count++
+			}
+		}
+		colActive[x] = count >= 1
+	}
+	runs := activeRuns(colActive)
+	return runs, inactiveGapsBetweenRuns(runs)
+}
+
+func slantSlope(ws analysisWorkspace) float64 {
+	if ws.inkCount < 40 {
+		return 0
+	}
+	var n, sumY, sumX, sumYY, sumYX float64
+	for y := ws.box.MinY; y <= ws.box.MaxY; y++ {
+		var sx, c float64
+		for x := ws.box.MinX; x <= ws.box.MaxX; x++ {
+			if ws.ink[y*ws.width+x] {
+				sx += float64(x)
+				c++
+			}
+		}
+		if c > 0 {
+			xavg := sx / c
+			yy := float64(y - ws.box.MinY)
+			n++
+			sumY += yy
+			sumX += xavg
+			sumYY += yy * yy
+			sumYX += yy * xavg
+		}
+	}
+	den := n*sumYY - sumY*sumY
+	if math.Abs(den) <= 0.001 {
+		return 0
+	}
+	return (n*sumYX - sumY*sumX) / den
+}
+
+func shapeCounts(ws analysisWorkspace) (int, int) {
+	corners := 0
+	transitions := 0
+	for y := ws.box.MinY + 1; y < ws.box.MaxY; y++ {
+		for x := ws.box.MinX + 1; x < ws.box.MaxX; x++ {
+			if !ws.ink[y*ws.width+x] {
+				continue
+			}
+			hv := boolToInt(ws.ink[y*ws.width+x-1]) + boolToInt(ws.ink[y*ws.width+x+1]) + boolToInt(ws.ink[(y-1)*ws.width+x]) + boolToInt(ws.ink[(y+1)*ws.width+x])
+			diag := boolToInt(ws.ink[(y-1)*ws.width+x-1]) + boolToInt(ws.ink[(y-1)*ws.width+x+1]) + boolToInt(ws.ink[(y+1)*ws.width+x-1]) + boolToInt(ws.ink[(y+1)*ws.width+x+1])
+			transitions++
+			if diag > hv+1 || hv <= 1 {
+				corners++
+			}
+		}
+	}
+	return corners, transitions
+}
+
+func detail(label, value, unit, note string) MetricDetail {
+	return MetricDetail{Label: label, Value: value, Unit: unit, Note: note}
+}
+
+func marginValue(px, total int) string {
+	if px < 0 {
+		px = 0
+	}
+	pct := float64(px) / math.Max(1, float64(total)) * 100
+	return intString(px) + " px / " + sprintf2(pct) + "%"
+}
+
+func boxText(box inkBox) string {
+	return intString(box.MinX) + "," + intString(box.MinY) + " - " + intString(box.MaxX) + "," + intString(box.MaxY)
+}
+
+func signed2(v float64) string {
+	if v > 0 {
+		return "+" + sprintf2(v)
+	}
+	return sprintf2(v)
+}
+
 func segmentLines(rowCounts []int, width int) []lineBand {
 	threshold := maxInt(3, int(float64(width)*0.008))
 	lines := []lineBand{}
@@ -719,6 +994,32 @@ func average(values []float64) float64 {
 		sum += v
 	}
 	return sum / float64(len(values))
+}
+
+func minFloat(values []float64) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+	min := values[0]
+	for _, v := range values[1:] {
+		if v < min {
+			min = v
+		}
+	}
+	return min
+}
+
+func maxFloat(values []float64) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+	max := values[0]
+	for _, v := range values[1:] {
+		if v > max {
+			max = v
+		}
+	}
+	return max
 }
 
 func coefficientVariation(values []float64) float64 {

@@ -30404,6 +30404,13 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - web/administrar_empresa/administrar_usuarios.html
 
+2026-06-02: Medidas tecnicas completas en reporte de grafologia
+- `backend/internal/grafologia/analyzer.go` agrega `MetricDetail` y llena `details` por cada metrica con angulo, pendiente, alturas, separaciones, continuidad, margenes, densidad, regularidad y forma de letras.
+- `backend/internal/grafologia/report.go` imprime esas medidas en HTML, Word, TXT, CSV y PDF; el PDF se pagina para no recortar el detalle y se corrigio el formato de porcentajes enteros como `70%`.
+- `web/js/grafologia.js` muestra las medidas en la tabla `Metricas tecnicas` tras analizar un manuscrito.
+- Validacion: `go test ./internal/grafologia -count=1` OK; `node --check web/js/grafologia.js` OK con Node local; captura visual Chrome confirmo medidas y porcentajes en `tmp/grafologia-visual/reporte_metricas.png`.
+- Archivos afectados: backend/internal/grafologia/analyzer.go, backend/internal/grafologia/report.go, backend/internal/grafologia/analyzer_test.go, web/js/grafologia.js, documentos/grafologix_arquitectura.md, documentos/mapa_modulos.md, documentos/CHANGELOG.md, documentos/historial_de_cambios
+
 2026-06-02: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK
 Archivos modificados:

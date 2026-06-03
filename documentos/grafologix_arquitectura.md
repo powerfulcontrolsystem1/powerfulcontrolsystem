@@ -172,6 +172,14 @@ El motor usa Go puro y libreria estandar:
 - regularidad por variacion de alturas y espacios;
 - forma de letras por vecindad de pixeles y cambios angulosos.
 
+Cada metrica incluye un bloque `details` en `metricas_json` para que los
+reportes muestren las medidas usadas por el motor: angulo de inclinacion,
+pendiente, altura promedio/minima/maxima de renglones, separacion entre
+letras/componentes, palabras y lineas, continuidad, direccion de linea base,
+margenes izquierdo/derecho/superior/inferior, densidad de tinta, umbral Otsu,
+regularidad y forma de letras. Estos detalles se imprimen en HTML, PDF
+multipagina, Word, TXT y CSV.
+
 ## Preprocesamiento Fase 2
 
 El backend genera artefactos PNG por analisis:
@@ -236,8 +244,8 @@ node --check web/js/grafologia.js
 
 - Dockerfile/VPS con paquetes opcionales `tesseract-ocr`, `tesseract-ocr-spa` y
   utilidades OpenCV CLI si se decide instalar en imagen.
-- PDF avanzado multipagina con logo, graficas y estilos completos. La Fase actual ya
-  entrega PDF real resumido con Go estandar y conserva HTML para el detalle visual.
+- PDF avanzado con logo, graficas y estilos completos. La fase actual ya entrega
+  PDF real multipagina con Go estandar y conserva HTML para el detalle visual.
 - Correccion de perspectiva completa por cuadrilateros.
 - Panel administrativo super para activar/desactivar el modulo por licencia.
 - Dataset y motor entrenable futuro para separar analisis geométrico de reglas

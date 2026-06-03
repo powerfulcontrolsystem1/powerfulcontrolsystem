@@ -1,3 +1,9 @@
+## [2026-06-02] Medidas tecnicas completas en reportes GRAFOLOGIX
+- [Grafologia] Cada metrica del motor Go ahora guarda `details` con angulo de inclinacion, pendiente, altura de renglones, separacion entre letras/palabras/lineas, continuidad, direccion de linea base, margenes, densidad, regularidad y forma.
+- [Reportes] HTML, Word, TXT, CSV y PDF muestran esas medidas; el PDF de GRAFOLOGIX ahora pagina el contenido para no recortar el detalle tecnico.
+- [UX] La tabla de metricas de `grafologia.html` muestra las medidas debajo del resultado de cada metrica.
+- [QA] `go test ./internal/grafologia -count=1`, `node --check web/js/grafologia.js` con Node local y captura visual Chrome del reporte generado en `tmp/grafologia-visual/reporte_metricas.png`.
+
 ## [2026-06-01] Edicion rapida de roles de usuarios empresariales
 - [Usuarios] `web/administrar_empresa/administrar_usuarios.html` agrega la tarjeta `Editar rol de usuario` para que administradores de empresa cambien el rol de un usuario sin abrir todo el formulario.
 - [UX] Cada fila de usuarios agrega el boton `Cambiar rol`, que selecciona el usuario en la tarjeta, muestra su rol actual y permite elegir un rol activo del catalogo global.
