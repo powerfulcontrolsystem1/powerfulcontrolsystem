@@ -12229,3 +12229,18 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/js/grafologia.js
+
+2026-06-03 10:14:14 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 07706c33; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/nomina_colombia_avanzada.go
+- backend/db/nomina_sueldos.go
+- backend/handlers/nomina_sueldos.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/nomina_sueldos.html

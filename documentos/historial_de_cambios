@@ -30580,3 +30580,19 @@ Archivos modificados:
 - `/api/empresa/nomina` agrega `documentos_electronicos_colombia` y `preparar_nomina_electronica` para preparar documento soporte de pago de nomina electronica por empleado.
 - Validacion: `go test ./db ./handlers -run "Nomina|Facturacion.*Documento|DocumentosElectronicos" -count=1` OK; scripts embebidos de `nomina_sueldos.html` OK; prueba visual con servidor temporal y datos simulados de Motel Calipso confirmo KPI sedes=2 y lote DIAN preparado con 3 documentos.
 - Evidencia visual: `tmp_nomina_multisede_dian.png`.
+
+2026-06-03: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/nomina_colombia_avanzada.go
+- backend/db/nomina_sueldos.go
+- backend/handlers/nomina_sueldos.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/nomina_sueldos.html
