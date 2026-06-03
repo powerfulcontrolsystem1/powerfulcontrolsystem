@@ -2206,3 +2206,9 @@
 - [UX] El visor del manuscrito usa una tarjeta de altura estable y el canvas rellena todo el espacio disponible.
 - [Grafologia] Al aplicar zoom, la imagen se recorta proporcionalmente desde el centro y ocupa toda la tarjeta sin franjas vacias.
 - [QA] Validado con imagen manuscrita local: en 100% y 220% el canvas conserva el mismo tamano visual que la tarjeta.
+
+## [2026-06-03] Nomina multi-sede y DIAN
+- [Nomina] Empleados, liquidaciones y desprendibles conservan sede y centro de costo por empresa.
+- [Motel Calipso] La demo profesional distribuye empleados entre sede principal, Rodadero y administracion para validar empresas con varias sedes.
+- [DIAN] Se agregan consulta y preparacion de lote de documento soporte de pago de nomina electronica por empleado, listo para el flujo documental con firma/CUNE/numeracion.
+- [QA] Pruebas Go de nomina/facturacion y validacion visual con datos simulados de Motel Calipso.

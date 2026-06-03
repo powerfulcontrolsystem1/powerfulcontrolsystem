@@ -4,6 +4,19 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-03 - Nomina multi-sede y DIAN
+
+- Modulo: `web/administrar_empresa/nomina_sueldos.html`.
+- API: `/api/empresa/nomina`, protegida por permisos empresariales de nomina.
+- Empleados y liquidaciones guardan `sede_codigo`, `sede_nombre` y
+  `centro_costo`; las liquidaciones conservan esos datos historicos.
+- `seed_motel_calipso` crea demo profesional con empleados distribuidos en sede
+  principal, Rodadero y administracion.
+- Acciones DIAN de nomina: `documentos_electronicos_colombia` consulta estado y
+  `preparar_nomina_electronica` arma lote por empleado para documento soporte de
+  pago de nomina electronica. El envio real requiere credenciales, firma, CUNE,
+  numeracion y transporte documental en facturacion electronica por empresa.
+
 ## Actualizacion 2026-06-01 - GRAFOLOGIX
 
 - Nuevo modulo empresarial `grafologia` visible como `Administrar empresa >

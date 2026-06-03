@@ -61,6 +61,9 @@ type EmpresaNominaEmpleado struct {
 	EmpleadoNombre           string  `json:"empleado_nombre"`
 	EmpleadoDocumento        string  `json:"empleado_documento,omitempty"`
 	Cargo                    string  `json:"cargo,omitempty"`
+	SedeCodigo               string  `json:"sede_codigo,omitempty"`
+	SedeNombre               string  `json:"sede_nombre,omitempty"`
+	CentroCosto              string  `json:"centro_costo,omitempty"`
 	TipoContrato             string  `json:"tipo_contrato,omitempty"`
 	FechaIngreso             string  `json:"fecha_ingreso,omitempty"`
 	SalarioBasicoMensual     float64 `json:"salario_basico_mensual"`
@@ -99,6 +102,9 @@ type EmpresaNominaLiquidacion struct {
 	EmpleadoNombre                 string  `json:"empleado_nombre"`
 	EmpleadoDocumento              string  `json:"empleado_documento,omitempty"`
 	Cargo                          string  `json:"cargo,omitempty"`
+	SedeCodigo                     string  `json:"sede_codigo,omitempty"`
+	SedeNombre                     string  `json:"sede_nombre,omitempty"`
+	CentroCosto                    string  `json:"centro_costo,omitempty"`
 	PeriodoDesde                   string  `json:"periodo_desde"`
 	PeriodoHasta                   string  `json:"periodo_hasta"`
 	DiasLiquidados                 float64 `json:"dias_liquidados"`
@@ -257,6 +263,9 @@ type EmpresaNominaDesprendible struct {
 	EmpleadoNombre                 string  `json:"empleado_nombre"`
 	EmpleadoDocumento              string  `json:"empleado_documento,omitempty"`
 	Cargo                          string  `json:"cargo,omitempty"`
+	SedeCodigo                     string  `json:"sede_codigo,omitempty"`
+	SedeNombre                     string  `json:"sede_nombre,omitempty"`
+	CentroCosto                    string  `json:"centro_costo,omitempty"`
 	TipoContrato                   string  `json:"tipo_contrato,omitempty"`
 	FechaIngreso                   string  `json:"fecha_ingreso,omitempty"`
 	DiasLiquidados                 float64 `json:"dias_liquidados"`
@@ -419,6 +428,9 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			empleado_nombre TEXT NOT NULL,
 			empleado_documento TEXT,
 			cargo TEXT,
+			sede_codigo TEXT,
+			sede_nombre TEXT,
+			centro_costo TEXT,
 			tipo_contrato TEXT DEFAULT 'indefinido',
 			fecha_ingreso TEXT,
 			salario_basico_mensual REAL DEFAULT 0,
@@ -457,6 +469,9 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			empleado_nombre TEXT NOT NULL,
 			empleado_documento TEXT,
 			cargo TEXT,
+			sede_codigo TEXT,
+			sede_nombre TEXT,
+			centro_costo TEXT,
 			periodo_desde TEXT NOT NULL,
 			periodo_hasta TEXT NOT NULL,
 			dias_liquidados REAL DEFAULT 0,
@@ -574,6 +589,14 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_empleados", "incluir_auxilio_transporte", "INTEGER DEFAULT 1"); err != nil {
 		return err
+	}
+	for _, col := range []string{"sede_codigo", "sede_nombre", "centro_costo"} {
+		if err := ensureColumnIfMissing(dbConn, "empresa_nomina_empleados", col, "TEXT"); err != nil {
+			return err
+		}
+		if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", col, "TEXT"); err != nil {
+			return err
+		}
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_liquidaciones", "valor_extra_dominical_nocturna", "REAL DEFAULT 0"); err != nil {
 		return err
@@ -1056,6 +1079,9 @@ func CreateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		empleado_nombre,
 		empleado_documento,
 		cargo,
+		sede_codigo,
+		sede_nombre,
+		centro_costo,
 		tipo_contrato,
 		fecha_ingreso,
 		salario_basico_mensual,
@@ -1069,13 +1095,16 @@ func CreateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		payload.EmpresaID,
 		payload.EmpleadoID,
 		strings.TrimSpace(payload.EmpleadoCodigo),
 		payload.EmpleadoNombre,
 		strings.TrimSpace(payload.EmpleadoDocumento),
 		strings.TrimSpace(payload.Cargo),
+		strings.TrimSpace(payload.SedeCodigo),
+		strings.TrimSpace(payload.SedeNombre),
+		strings.TrimSpace(payload.CentroCosto),
 		payload.TipoContrato,
 		strings.TrimSpace(payload.FechaIngreso),
 		round2(payload.SalarioBasicoMensual),
@@ -1132,6 +1161,9 @@ func UpdateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		empleado_nombre = ?,
 		empleado_documento = ?,
 		cargo = ?,
+		sede_codigo = ?,
+		sede_nombre = ?,
+		centro_costo = ?,
 		tipo_contrato = ?,
 		fecha_ingreso = ?,
 		salario_basico_mensual = ?,
@@ -1148,6 +1180,9 @@ func UpdateEmpresaNominaEmpleado(dbConn *sql.DB, payload EmpresaNominaEmpleado) 
 		payload.EmpleadoNombre,
 		strings.TrimSpace(payload.EmpleadoDocumento),
 		strings.TrimSpace(payload.Cargo),
+		strings.TrimSpace(payload.SedeCodigo),
+		strings.TrimSpace(payload.SedeNombre),
+		strings.TrimSpace(payload.CentroCosto),
 		payload.TipoContrato,
 		strings.TrimSpace(payload.FechaIngreso),
 		round2(payload.SalarioBasicoMensual),
@@ -1209,6 +1244,9 @@ func ListEmpresaNominaEmpleados(dbConn *sql.DB, empresaID int64, includeInactive
 		COALESCE(empleado_nombre, ''),
 		COALESCE(empleado_documento, ''),
 		COALESCE(cargo, ''),
+		COALESCE(sede_codigo, ''),
+		COALESCE(sede_nombre, ''),
+		COALESCE(centro_costo, ''),
 		COALESCE(tipo_contrato, 'indefinido'),
 		COALESCE(fecha_ingreso, ''),
 		COALESCE(salario_basico_mensual, 0),
@@ -1237,9 +1275,12 @@ func ListEmpresaNominaEmpleados(dbConn *sql.DB, empresaID int64, includeInactive
 			OR LOWER(COALESCE(empleado_nombre, '')) LIKE ?
 			OR LOWER(COALESCE(empleado_documento, '')) LIKE ?
 			OR LOWER(COALESCE(cargo, '')) LIKE ?
+			OR LOWER(COALESCE(sede_codigo, '')) LIKE ?
+			OR LOWER(COALESCE(sede_nombre, '')) LIKE ?
+			OR LOWER(COALESCE(centro_costo, '')) LIKE ?
 		)`
 		like := "%" + q + "%"
-		args = append(args, like, like, like, like)
+		args = append(args, like, like, like, like, like, like, like)
 	}
 
 	if limit <= 0 {
@@ -1269,6 +1310,9 @@ func ListEmpresaNominaEmpleados(dbConn *sql.DB, empresaID int64, includeInactive
 			&item.EmpleadoNombre,
 			&item.EmpleadoDocumento,
 			&item.Cargo,
+			&item.SedeCodigo,
+			&item.SedeNombre,
+			&item.CentroCosto,
 			&item.TipoContrato,
 			&item.FechaIngreso,
 			&item.SalarioBasicoMensual,
@@ -1785,6 +1829,9 @@ func buildNominaLiquidacion(
 		EmpleadoNombre:                 empleado.EmpleadoNombre,
 		EmpleadoDocumento:              strings.TrimSpace(empleado.EmpleadoDocumento),
 		Cargo:                          strings.TrimSpace(empleado.Cargo),
+		SedeCodigo:                     strings.TrimSpace(empleado.SedeCodigo),
+		SedeNombre:                     strings.TrimSpace(empleado.SedeNombre),
+		CentroCosto:                    strings.TrimSpace(empleado.CentroCosto),
 		PeriodoDesde:                   req.PeriodoDesde,
 		PeriodoHasta:                   req.PeriodoHasta,
 		DiasLiquidados:                 round2(detail.DiasLiquidados),
@@ -1886,6 +1933,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 			empleado_nombre = ?,
 			empleado_documento = ?,
 			cargo = ?,
+			sede_codigo = ?,
+			sede_nombre = ?,
+			centro_costo = ?,
 			dias_liquidados = ?,
 			horas_asistencia_total = ?,
 			registros_asistencia = ?,
@@ -1934,6 +1984,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 			payload.EmpleadoNombre,
 			strings.TrimSpace(payload.EmpleadoDocumento),
 			strings.TrimSpace(payload.Cargo),
+			strings.TrimSpace(payload.SedeCodigo),
+			strings.TrimSpace(payload.SedeNombre),
+			strings.TrimSpace(payload.CentroCosto),
 			payload.DiasLiquidados,
 			payload.HorasAsistenciaTotal,
 			payload.RegistrosAsistencia,
@@ -1991,6 +2044,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		empleado_nombre,
 		empleado_documento,
 		cargo,
+		sede_codigo,
+		sede_nombre,
+		centro_costo,
 		periodo_desde,
 		periodo_hasta,
 		dias_liquidados,
@@ -2033,7 +2089,7 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		usuario_creador,
 		estado,
 		observaciones
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		payload.EmpresaID,
 		payload.EmpleadoNominaID,
 		payload.EmpleadoID,
@@ -2041,6 +2097,9 @@ func upsertEmpresaNominaLiquidacion(dbConn *sql.DB, payload EmpresaNominaLiquida
 		payload.EmpleadoNombre,
 		strings.TrimSpace(payload.EmpleadoDocumento),
 		strings.TrimSpace(payload.Cargo),
+		strings.TrimSpace(payload.SedeCodigo),
+		strings.TrimSpace(payload.SedeNombre),
+		strings.TrimSpace(payload.CentroCosto),
 		payload.PeriodoDesde,
 		payload.PeriodoHasta,
 		payload.DiasLiquidados,
@@ -2101,6 +2160,9 @@ func ListEmpresaNominaLiquidaciones(dbConn *sql.DB, empresaID int64, filter Empr
 		COALESCE(empleado_nombre, ''),
 		COALESCE(empleado_documento, ''),
 		COALESCE(cargo, ''),
+		COALESCE(sede_codigo, ''),
+		COALESCE(sede_nombre, ''),
+		COALESCE(centro_costo, ''),
 		COALESCE(periodo_desde, ''),
 		COALESCE(periodo_hasta, ''),
 		COALESCE(dias_liquidados, 0),
@@ -2194,6 +2256,9 @@ func ListEmpresaNominaLiquidaciones(dbConn *sql.DB, empresaID int64, filter Empr
 			&item.EmpleadoNombre,
 			&item.EmpleadoDocumento,
 			&item.Cargo,
+			&item.SedeCodigo,
+			&item.SedeNombre,
+			&item.CentroCosto,
 			&item.PeriodoDesde,
 			&item.PeriodoHasta,
 			&item.DiasLiquidados,
@@ -2661,6 +2726,9 @@ func GetEmpresaNominaDesprendible(dbConn *sql.DB, empresaID, empleadoNominaID in
 		EmpleadoNombre:                 liq.EmpleadoNombre,
 		EmpleadoDocumento:              strings.TrimSpace(liq.EmpleadoDocumento),
 		Cargo:                          strings.TrimSpace(liq.Cargo),
+		SedeCodigo:                     strings.TrimSpace(liq.SedeCodigo),
+		SedeNombre:                     strings.TrimSpace(liq.SedeNombre),
+		CentroCosto:                    strings.TrimSpace(liq.CentroCosto),
 		TipoContrato:                   normalizeNominaTipoContrato(strings.TrimSpace(emp.TipoContrato)),
 		FechaIngreso:                   strings.TrimSpace(emp.FechaIngreso),
 		DiasLiquidados:                 round2(liq.DiasLiquidados),

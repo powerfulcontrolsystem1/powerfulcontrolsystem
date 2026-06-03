@@ -295,6 +295,22 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 				writeJSON(w, http.StatusOK, ds)
 				return
 
+			case "documentos_electronicos_colombia", "documentos_dian_colombia", "nomina_electronica_dian":
+				periodoDesde := strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				periodoHasta := strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				if periodoDesde == "" || periodoHasta == "" {
+					now := time.Now()
+					periodoDesde = now.Format("2006-01") + "-01"
+					periodoHasta = now.Format("2006-01-02")
+				}
+				resumen, err := buildEmpresaNominaElectronicaDianResumen(dbEmp, empresaID, periodoDesde, periodoHasta, false)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, resumen)
+				return
+
 			default:
 				http.Error(w, "action invalida. Use: config, empleados, festivos o liquidaciones", http.StatusBadRequest)
 				return
@@ -502,6 +518,46 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 					return
 				}
 				writeJSON(w, http.StatusOK, result)
+				return
+
+			case "preparar_nomina_electronica", "preparar_documentos_dian_colombia":
+				var payload struct {
+					EmpresaID     int64  `json:"empresa_id"`
+					PeriodoDesde  string `json:"periodo_desde"`
+					PeriodoHasta  string `json:"periodo_hasta"`
+					EnviarADian   bool   `json:"enviar_a_dian"`
+					Observaciones string `json:"observaciones"`
+				}
+				if r.Body != nil {
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						http.Error(w, "JSON invalido", http.StatusBadRequest)
+						return
+					}
+				}
+				if payload.EmpresaID <= 0 {
+					if empresaID, err := parseInt64QueryOptional(r, "empresa_id"); err == nil && empresaID > 0 {
+						payload.EmpresaID = empresaID
+					}
+				}
+				if payload.PeriodoDesde == "" {
+					payload.PeriodoDesde = strings.TrimSpace(r.URL.Query().Get("periodo_desde"))
+				}
+				if payload.PeriodoHasta == "" {
+					payload.PeriodoHasta = strings.TrimSpace(r.URL.Query().Get("periodo_hasta"))
+				}
+				if payload.EmpresaID <= 0 {
+					http.Error(w, "empresa_id es obligatorio", http.StatusBadRequest)
+					return
+				}
+				resumen, err := buildEmpresaNominaElectronicaDianResumen(dbEmp, payload.EmpresaID, payload.PeriodoDesde, payload.PeriodoHasta, true)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if payload.EnviarADian {
+					resumen.Mensajes = append(resumen.Mensajes, "El lote quedo preparado. El envio real a DIAN requiere firma, CUNE, numeracion, credenciales habilitadas y transporte documental activo por empresa.")
+				}
+				writeJSON(w, http.StatusOK, resumen)
 				return
 
 			case "concepto_colombia", "conceptos_colombia":
@@ -787,9 +843,64 @@ type empresaNominaDashboard struct {
 	TotalNeto            float64                                `json:"total_neto"`
 	TotalPagado          float64                                `json:"total_pagado"`
 	CostoEmpresaEstimado float64                                `json:"costo_empresa_estimado"`
+	Sedes                []empresaNominaSedeResumen             `json:"sedes,omitempty"`
 	Provisiones          *dbpkg.EmpresaNominaProvisionesResumen `json:"provisiones,omitempty"`
 	ControlContable      *empresaNominaControlContable          `json:"control_contable,omitempty"`
 	Alertas              []string                               `json:"alertas,omitempty"`
+}
+
+type empresaNominaSedeResumen struct {
+	Codigo           string  `json:"codigo,omitempty"`
+	Nombre           string  `json:"nombre"`
+	CentroCosto      string  `json:"centro_costo,omitempty"`
+	EmpleadosActivos int     `json:"empleados_activos"`
+	Liquidaciones    int     `json:"liquidaciones"`
+	TotalDevengado   float64 `json:"total_devengado"`
+	TotalDeducciones float64 `json:"total_deducciones"`
+	TotalNeto        float64 `json:"total_neto"`
+	CostoEmpresa     float64 `json:"costo_empresa"`
+}
+
+type empresaNominaElectronicaDianResumen struct {
+	EmpresaID             int64                                   `json:"empresa_id"`
+	PaisCodigo            string                                  `json:"pais_codigo"`
+	PeriodoDesde          string                                  `json:"periodo_desde"`
+	PeriodoHasta          string                                  `json:"periodo_hasta"`
+	Estado                string                                  `json:"estado"`
+	Preparado             bool                                    `json:"preparado"`
+	EndpointEnvioSugerido string                                  `json:"endpoint_envio_sugerido"`
+	TotalDocumentos       int                                     `json:"total_documentos"`
+	TotalDevengado        float64                                 `json:"total_devengado"`
+	TotalDeducciones      float64                                 `json:"total_deducciones"`
+	TotalNeto             float64                                 `json:"total_neto"`
+	DocumentosSoportados  []map[string]interface{}                `json:"documentos_soportados"`
+	DocumentosPreparados  []empresaNominaElectronicaDianDocumento `json:"documentos_preparados"`
+	RequisitosPendientes  []string                                `json:"requisitos_pendientes,omitempty"`
+	Mensajes              []string                                `json:"mensajes,omitempty"`
+	FuentesNormativas     []dbpkg.FacturacionDianFuenteNormativa  `json:"fuentes_normativas,omitempty"`
+}
+
+type empresaNominaElectronicaDianDocumento struct {
+	TipoDocumento     string  `json:"tipo_documento"`
+	AccionFacturacion string  `json:"accion_facturacion"`
+	EmpleadoNominaID  int64   `json:"empleado_nomina_id"`
+	EmpleadoCodigo    string  `json:"empleado_codigo,omitempty"`
+	EmpleadoNombre    string  `json:"empleado_nombre"`
+	EmpleadoDocumento string  `json:"empleado_documento,omitempty"`
+	Cargo             string  `json:"cargo,omitempty"`
+	SedeCodigo        string  `json:"sede_codigo,omitempty"`
+	SedeNombre        string  `json:"sede_nombre,omitempty"`
+	CentroCosto       string  `json:"centro_costo,omitempty"`
+	PeriodoDesde      string  `json:"periodo_desde"`
+	PeriodoHasta      string  `json:"periodo_hasta"`
+	DevengadoTotal    float64 `json:"devengado_total"`
+	DeduccionTotal    float64 `json:"deduccion_total"`
+	NetoPagar         float64 `json:"neto_pagar"`
+	IBC               float64 `json:"ibc"`
+	MedioPago         string  `json:"medio_pago"`
+	EstadoDocumental  string  `json:"estado_documental"`
+	RequiereCUNE      bool    `json:"requiere_cune"`
+	RequiereFirma     bool    `json:"requiere_firma"`
 }
 
 type empresaNominaControlContable struct {
@@ -848,6 +959,19 @@ func buildEmpresaNominaDashboard(dbEmp *sql.DB, empresaID int64, periodoDesde, p
 			out.EmpleadosInactivos++
 		}
 	}
+	sedes := make(map[string]*empresaNominaSedeResumen)
+	for _, row := range empleados {
+		if !strings.EqualFold(strings.TrimSpace(row.Estado), "activo") {
+			continue
+		}
+		key, nombre, codigo, centro := nominaSedeKey(row.SedeCodigo, row.SedeNombre, row.CentroCosto)
+		item := sedes[key]
+		if item == nil {
+			item = &empresaNominaSedeResumen{Codigo: codigo, Nombre: nombre, CentroCosto: centro}
+			sedes[key] = item
+		}
+		item.EmpleadosActivos++
+	}
 
 	festivos, err := dbpkg.ListEmpresaNominaFestivos(dbEmp, empresaID, false, out.PeriodoDesde, out.PeriodoHasta, 5000)
 	if err == nil {
@@ -869,6 +993,16 @@ func buildEmpresaNominaDashboard(dbEmp *sql.DB, empresaID int64, periodoDesde, p
 		out.TotalDevengado += item.DevengadoTotal
 		out.TotalDeducciones += item.DeduccionTotal
 		out.TotalNeto += item.NetoPagar
+		key, nombre, codigo, centro := nominaSedeKey(item.SedeCodigo, item.SedeNombre, item.CentroCosto)
+		row := sedes[key]
+		if row == nil {
+			row = &empresaNominaSedeResumen{Codigo: codigo, Nombre: nombre, CentroCosto: centro}
+			sedes[key] = row
+		}
+		row.Liquidaciones++
+		row.TotalDevengado += item.DevengadoTotal
+		row.TotalDeducciones += item.DeduccionTotal
+		row.TotalNeto += item.NetoPagar
 	}
 
 	pagos, err := dbpkg.ListEmpresaNominaPagos(dbEmp, empresaID, dbpkg.EmpresaNominaPagoFilter{
@@ -889,6 +1023,16 @@ func buildEmpresaNominaDashboard(dbEmp *sql.DB, empresaID int64, periodoDesde, p
 	if err == nil && provisiones != nil {
 		out.Provisiones = provisiones
 		out.CostoEmpresaEstimado = provisiones.CostoEmpresaEstimado
+		if out.TotalDevengado > 0 {
+			for _, sede := range sedes {
+				if sede.TotalDevengado > 0 {
+					sede.CostoEmpresa = provisiones.CostoEmpresaEstimado * (sede.TotalDevengado / out.TotalDevengado)
+				}
+			}
+		}
+	}
+	for _, sede := range sedes {
+		out.Sedes = append(out.Sedes, *sede)
 	}
 
 	if out.EmpleadosActivos == 0 {
@@ -915,6 +1059,118 @@ func buildEmpresaNominaDashboard(dbEmp *sql.DB, empresaID int64, periodoDesde, p
 	}
 
 	return out, nil
+}
+
+func buildEmpresaNominaElectronicaDianResumen(dbEmp *sql.DB, empresaID int64, periodoDesde, periodoHasta string, preparado bool) (*empresaNominaElectronicaDianResumen, error) {
+	if empresaID <= 0 {
+		return nil, errors.New("empresa_id es obligatorio")
+	}
+	desde, hasta, err := normalizeNominaControlPeriodo(periodoDesde, periodoHasta)
+	if err != nil {
+		return nil, err
+	}
+	liquidaciones, err := dbpkg.ListEmpresaNominaLiquidaciones(dbEmp, empresaID, dbpkg.EmpresaNominaLiquidacionFilter{
+		PeriodoDesde:    desde,
+		PeriodoHasta:    hasta,
+		IncludeInactive: false,
+		Limit:           5000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := &empresaNominaElectronicaDianResumen{
+		EmpresaID:             empresaID,
+		PaisCodigo:            "CO",
+		PeriodoDesde:          desde,
+		PeriodoHasta:          hasta,
+		Estado:                "pendiente_liquidaciones",
+		Preparado:             preparado,
+		EndpointEnvioSugerido: "/api/empresa/facturacion_electronica?action=nomina_electronica",
+		DocumentosPreparados:  make([]empresaNominaElectronicaDianDocumento, 0, len(liquidaciones)),
+		Mensajes:              make([]string, 0),
+		FuentesNormativas:     dbpkg.ListFacturacionDianFuentesNormativas(),
+	}
+	for _, item := range dbpkg.ListFacturacionDianDocumentosElectronicos() {
+		if item.Categoria != "Nomina" {
+			continue
+		}
+		out.DocumentosSoportados = append(out.DocumentosSoportados, map[string]interface{}{
+			"codigo":                item.Codigo,
+			"titulo":                item.Titulo,
+			"alcance":               item.Alcance,
+			"estado_implementacion": item.EstadoImplementacion,
+			"requiere_firma":        item.RequiereFirma,
+		})
+	}
+	if len(liquidaciones) == 0 {
+		out.RequisitosPendientes = append(out.RequisitosPendientes, "Genera primero liquidaciones de nomina para el periodo.")
+		out.Mensajes = append(out.Mensajes, "Sin liquidaciones no se puede preparar documento soporte de pago de nomina electronica.")
+		return out, nil
+	}
+	out.Estado = "listo_para_preparar"
+	if preparado {
+		out.Estado = "preparado_para_firma_y_envio"
+	}
+	for _, liq := range liquidaciones {
+		doc := empresaNominaElectronicaDianDocumento{
+			TipoDocumento:     "nomina_electronica",
+			AccionFacturacion: "nomina_electronica",
+			EmpleadoNominaID:  liq.EmpleadoNominaID,
+			EmpleadoCodigo:    strings.TrimSpace(liq.EmpleadoCodigo),
+			EmpleadoNombre:    strings.TrimSpace(liq.EmpleadoNombre),
+			EmpleadoDocumento: strings.TrimSpace(liq.EmpleadoDocumento),
+			Cargo:             strings.TrimSpace(liq.Cargo),
+			SedeCodigo:        strings.TrimSpace(liq.SedeCodigo),
+			SedeNombre:        strings.TrimSpace(liq.SedeNombre),
+			CentroCosto:       strings.TrimSpace(liq.CentroCosto),
+			PeriodoDesde:      liq.PeriodoDesde,
+			PeriodoHasta:      liq.PeriodoHasta,
+			DevengadoTotal:    liq.DevengadoTotal,
+			DeduccionTotal:    liq.DeduccionTotal,
+			NetoPagar:         liq.NetoPagar,
+			IBC:               liq.IngresoBaseCotizacion,
+			MedioPago:         "transferencia_bancaria",
+			EstadoDocumental:  "pendiente_firma_y_cune",
+			RequiereCUNE:      true,
+			RequiereFirma:     true,
+		}
+		if preparado {
+			doc.EstadoDocumental = "preparado"
+		}
+		if doc.EmpleadoDocumento == "" {
+			out.RequisitosPendientes = append(out.RequisitosPendientes, "Falta documento de identificacion para "+doc.EmpleadoNombre+".")
+		}
+		if doc.EmpleadoNombre == "" {
+			out.RequisitosPendientes = append(out.RequisitosPendientes, "Hay una liquidacion sin nombre de empleado.")
+		}
+		out.TotalDocumentos++
+		out.TotalDevengado += doc.DevengadoTotal
+		out.TotalDeducciones += doc.DeduccionTotal
+		out.TotalNeto += doc.NetoPagar
+		out.DocumentosPreparados = append(out.DocumentosPreparados, doc)
+	}
+	if len(out.RequisitosPendientes) > 0 {
+		out.Estado = "requiere_revision"
+	} else if !preparado {
+		out.Mensajes = append(out.Mensajes, "Liquidaciones listas para preparar documento soporte de pago de nomina electronica por empleado.")
+	} else {
+		out.Mensajes = append(out.Mensajes, "Lote preparado para el flujo documental. La firma, CUNE y transmision se ejecutan desde facturacion electronica con credenciales DIAN por empresa.")
+	}
+	return out, nil
+}
+
+func nominaSedeKey(codigo, nombre, centro string) (key, cleanName, cleanCode, cleanCentro string) {
+	cleanCode = strings.TrimSpace(codigo)
+	cleanName = strings.TrimSpace(nombre)
+	cleanCentro = strings.TrimSpace(centro)
+	if cleanName == "" {
+		cleanName = "Sede principal"
+	}
+	key = strings.ToLower(cleanCode + "|" + cleanName + "|" + cleanCentro)
+	if strings.Trim(key, "| ") == "" {
+		key = "sede principal"
+	}
+	return key, cleanName, cleanCode, cleanCentro
 }
 
 func buildEmpresaNominaControlContable(dbEmp *sql.DB, empresaID int64, periodoDesde, periodoHasta string, empleadoNominaID int64) (*empresaNominaControlContable, error) {

@@ -1294,13 +1294,14 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - deduccion_salud_porcentaje, deduccion_pension_porcentaje, deduccion_fondo_solidaridad_porcentaje
 - empresa_nomina_empleados:
   - empresa_id, empleado_id, empleado_codigo, empleado_nombre, empleado_documento
-  - cargo, tipo_contrato, fecha_ingreso
+  - cargo, sede_codigo, sede_nombre, centro_costo, tipo_contrato, fecha_ingreso
   - salario_basico_mensual, auxilio_transporte_mensual, bonificacion_fija_mensual, deduccion_fija_mensual
   - jornada_horas_dia, incluir_auxilio_transporte
 - empresa_nomina_festivos:
   - empresa_id, fecha_festivo (UNIQUE por empresa), descripcion
 - empresa_nomina_liquidaciones:
   - empresa_id, empleado_nomina_id, empleado_id, empleado_codigo, empleado_nombre, empleado_documento, cargo
+  - sede_codigo, sede_nombre, centro_costo
   - periodo_desde, periodo_hasta, dias_liquidados
   - horas_asistencia_total, registros_asistencia
   - horas_ordinarias, horas_recargo_nocturno
@@ -1788,6 +1789,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - 2026-04-06: se agrega `empresa_vehiculos_configuracion` para parametrizar validacion de placa/patente por pais y regex por `empresa_id`, junto con regla de duplicidad activa; se incorpora reporte operativo `operativo_vehiculos_permanencia` con exportacion PDF/XLS/CSV/JSON/TXT.
 - 2026-04-06: se agregan `empresa_asistencia_configuracion` y `empresa_asistencia_periodos_cerrados` para parametrizar tolerancias/turnos y bloquear ediciones por cierre de periodo en asistencia; se publica reporte operativo `operativo_asistencia_nomina_auditoria` para auditoria de nomina.
 - 2026-05-20: se documenta el alcance operativo de Nomina Colombia avanzada. No se agregan tablas nuevas en este cierre; se amplian conceptos seed, novedades aprobadas aplicadas a liquidacion y flujo demo profesional por empresa.
+- 2026-06-03: `empresa_nomina_empleados` y `empresa_nomina_liquidaciones` incorporan `sede_codigo`, `sede_nombre` y `centro_costo` para soportar nomina multi-sede, desprendibles y preparacion de documento soporte de pago de nomina electronica por empresa.
 - 2026-04-06: se agrega `super_correo_notificaciones_prueba` en `pcs_superadministrador` para captura de confirmacion/restablecimiento de usuarios de empresa en entorno de pruebas de correo, junto con politicas configurables `usuarios.password_*` y rotacion opcional de contraseña.
 - 2026-04-06: se retira la operacion activa de Mercado Pago en backend y se deja Wompi como pasarela unica; el registro operativo de pagos se concentra en `pagos_wompi`.
 - 2026-04-06: se agregan tablas ERP extendidas por `empresa_id` para ventas avanzadas (cotizaciones/pedidos/devoluciones), contabilidad (plan de cuentas y cartera CxC/CxP), inventario por lotes/series, RRHH (vacaciones/licencias), CRM, produccion (BOM y ordenes), logistica, gestion documental, integraciones externas y configuracion DIAN Colombia.

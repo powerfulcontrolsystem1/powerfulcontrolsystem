@@ -1883,6 +1883,13 @@
 - Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega cobertura profesional, boton `Crear nomina demo Motel Calipso` y acciones de aprobacion/rechazo de novedades.
 - Seguridad: se mantiene el mismo wrapper/permisos de nomina y aislamiento por `empresa_id`; no se agregan licencias ni rutas duplicadas.
 
+2026-06-03: Nomina empresarial multi-sede y preparacion DIAN
+- Modulos afectados: `nomina_sueldos`, `facturacion_electronica`, `contabilidad_colombia`.
+- Cambio funcional: las fichas de empleados y liquidaciones guardan sede y centro de costo para operar empresas con varias sedes; el dashboard muestra sedes activas y las tablas/desprendibles conservan la trazabilidad.
+- Backend: `/api/empresa/nomina` agrega consulta `documentos_electronicos_colombia` y preparacion `preparar_nomina_electronica` para construir lote de documento soporte de pago de nomina electronica por empleado, con devengados, deducciones, neto, IBC, sede y estado documental.
+- Demo: `seed_motel_calipso` distribuye empleados entre sede principal, Rodadero y administracion para probar multi-sede.
+- Seguridad: no se crea una ruta nueva ni se omite el wrapper de permisos; todo sigue filtrado por `empresa_id`.
+
 2026-05-06: Tesoreria y presupuesto
 - Modulos afectados: `tesoreria_presupuesto`, `finanzas`, `contabilidad_colombia`, `roles/licencias`, `administrar_empresa`.
 - Cambio funcional: se agrega `Tesoreria y presupuesto` dentro del Centro financiero y contable para manejar cuentas banco/caja, presupuestos, partidas, ejecucion y flujo de caja proyectado por empresa.

@@ -481,3 +481,25 @@ afecte dinero, documentos, licencias o seguridad.
 11. Pruebas: guardar configuracion, sincronizar empresas existentes, crear empresa
    duplicada de nombre similar, comprobar sufijo unico, abrir webmail, desactivar
    autoapertura y cambiar clave sin exponerla.
+
+## Nomina multi-sede y documentos DIAN Colombia
+
+1. La ficha de nomina del empleado guarda `sede_codigo`, `sede_nombre` y
+   `centro_costo`; estos valores se copian a cada liquidacion para conservar la
+   trazabilidad historica aunque luego cambie la ficha.
+2. La liquidacion se genera desde asistencia, novedades aprobadas, recargos,
+   comisiones, provisiones y deducciones; el dashboard resume empleados,
+   liquidaciones, pagos, costo empresa y sedes activas.
+3. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
+   resumen de documentos electronicos de nomina.
+4. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
+   periodo y muestra liquidaciones listas por empleado para documento soporte de
+   pago de nomina electronica.
+5. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
+   por empleado con devengados, deducciones, neto, IBC, sede y centro de costo.
+   El envio real a DIAN sigue dependiendo de firma, CUNE, numeracion,
+   credenciales y transporte documental configurados por empresa en facturacion
+   electronica.
+6. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
+   sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
+   DIAN` / `Preparar lote DIAN`.

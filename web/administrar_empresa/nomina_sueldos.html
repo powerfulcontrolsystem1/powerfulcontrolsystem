@@ -70,6 +70,10 @@
           <strong id="kpiEmpleados">0</strong>
         </div>
         <div class="kpi-box">
+          <span class="kpi-label">Sedes activas</span>
+          <strong id="kpiSedes">0</strong>
+        </div>
+        <div class="kpi-box">
           <span class="kpi-label">Festivos configurados</span>
           <strong id="kpiFestivos">0</strong>
         </div>
@@ -266,6 +270,20 @@
               <input id="empCargo" class="form-input">
             </div>
             <div class="form-col">
+              <label class="form-label" for="empSedeCodigo">Codigo sede</label>
+              <input id="empSedeCodigo" class="form-input" placeholder="SEDE-01">
+            </div>
+            <div class="form-col">
+              <label class="form-label" for="empSedeNombre">Sede</label>
+              <input id="empSedeNombre" class="form-input" placeholder="Sede principal">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-col">
+              <label class="form-label" for="empCentroCosto">Centro de costo</label>
+              <input id="empCentroCosto" class="form-input" placeholder="OPERACION">
+            </div>
+            <div class="form-col">
               <label class="form-label" for="empTipoContrato">Tipo contrato</label>
               <select id="empTipoContrato" class="form-input">
                 <option value="indefinido">Indefinido</option>
@@ -321,7 +339,7 @@
           <div class="form-row">
             <div class="form-col">
               <label class="form-label" for="empBuscar">Buscar empleado</label>
-              <input id="empBuscar" class="form-input" placeholder="Nombre, codigo, documento o cargo">
+              <input id="empBuscar" class="form-input" placeholder="Nombre, codigo, documento, cargo, sede o centro">
             </div>
             <div class="form-col nomina-filter-actions">
               <button id="empBuscarBtn" type="button" class="btn secondary">Buscar</button>
@@ -336,13 +354,14 @@
               <tr>
                 <th>Empleado</th>
                 <th>Cargo</th>
+                <th>Sede</th>
                 <th>Salario</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="empTableBody">
-              <tr><td colspan="5">Sin datos</td></tr>
+              <tr><td colspan="6">Sin datos</td></tr>
             </tbody>
           </table>
         </div>
@@ -468,6 +487,7 @@
             <tr>
               <th>Empleado</th>
               <th>Días</th>
+              <th>Sede</th>
               <th>Horas asistencia</th>
               <th>Horas extra</th>
               <th>Devengado</th>
@@ -477,7 +497,7 @@
             </tr>
           </thead>
           <tbody id="liqTableBody">
-            <tr><td colspan="8">Sin liquidaciones para mostrar.</td></tr>
+            <tr><td colspan="9">Sin liquidaciones para mostrar.</td></tr>
           </tbody>
         </table>
       </div>
@@ -625,6 +645,17 @@
           </div>
           <button id="nomCoSeedProfesionalBtn" type="button" class="btn">Crear nomina demo Motel Calipso</button>
         </div>
+        <div class="nomina-demo-panel">
+          <div>
+            <strong>Nomina electronica DIAN</strong>
+            <span id="nomCoDianResumen" class="form-help">Consulta liquidaciones y prepara el lote por empleado para firma, CUNE y envio documental.</span>
+          </div>
+          <div class="form-actions" style="margin:0;">
+            <button id="nomCoDianVerBtn" type="button" class="btn secondary">Ver estado DIAN</button>
+            <button id="nomCoDianPrepararBtn" type="button" class="btn">Preparar lote DIAN</button>
+          </div>
+        </div>
+        <div id="nomCoDianPanel" class="nomina-result-summary">Sin lote DIAN consultado.</div>
         <div class="table-wrap">
           <table class="table nomina-table">
             <thead>
@@ -691,7 +722,8 @@
         pagos: [],
         dashboard: null,
         provisiones: null,
-        controlContable: null
+        controlContable: null,
+        dianNomina: null
       };
 
       function getQueryParam(name) {
@@ -915,6 +947,9 @@
         document.getElementById('empNombre').value = '';
         document.getElementById('empDocumento').value = '';
         document.getElementById('empCargo').value = '';
+        document.getElementById('empSedeCodigo').value = '';
+        document.getElementById('empSedeNombre').value = '';
+        document.getElementById('empCentroCosto').value = '';
         document.getElementById('empTipoContrato').value = 'indefinido';
         document.getElementById('empFechaIngreso').value = '';
         document.getElementById('empSalario').value = '0';
@@ -933,6 +968,9 @@
           empleado_nombre: normalize(document.getElementById('empNombre').value),
           empleado_documento: normalize(document.getElementById('empDocumento').value),
           cargo: normalize(document.getElementById('empCargo').value),
+          sede_codigo: normalize(document.getElementById('empSedeCodigo').value),
+          sede_nombre: normalize(document.getElementById('empSedeNombre').value),
+          centro_costo: normalize(document.getElementById('empCentroCosto').value),
           tipo_contrato: normalize(document.getElementById('empTipoContrato').value),
           fecha_ingreso: normalize(document.getElementById('empFechaIngreso').value),
           salario_basico_mensual: toNumber(document.getElementById('empSalario').value, 0),
@@ -962,7 +1000,7 @@
         const body = document.getElementById('empTableBody');
         const rows = Array.isArray(state.empleados) ? state.empleados : [];
         if (!rows.length) {
-          body.innerHTML = '<tr><td colspan="5">No hay empleados de nomina.</td></tr>';
+          body.innerHTML = '<tr><td colspan="6">No hay empleados de nomina.</td></tr>';
           return;
         }
 
@@ -975,6 +1013,7 @@
           return '<tr>' +
             '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_codigo || item.empleado_documento || '-') + '</small></td>' +
             '<td>' + esc(item.cargo || '-') + '</td>' +
+            '<td><strong>' + esc(item.sede_nombre || 'Sede principal') + '</strong><br><small>' + esc(item.sede_codigo || item.centro_costo || '-') + '</small></td>' +
             '<td>' + esc(money(item.salario_basico_mensual)) + '</td>' +
             '<td>' + esc(estado) + '</td>' +
             '<td>' +
@@ -1007,6 +1046,9 @@
         document.getElementById('empNombre').value = normalize(item.empleado_nombre);
         document.getElementById('empDocumento').value = normalize(item.empleado_documento);
         document.getElementById('empCargo').value = normalize(item.cargo);
+        document.getElementById('empSedeCodigo').value = normalize(item.sede_codigo);
+        document.getElementById('empSedeNombre').value = normalize(item.sede_nombre);
+        document.getElementById('empCentroCosto').value = normalize(item.centro_costo);
         document.getElementById('empTipoContrato').value = normalize(item.tipo_contrato) || 'indefinido';
         document.getElementById('empFechaIngreso').value = normalize(item.fecha_ingreso);
         document.getElementById('empSalario').value = toNumber(item.salario_basico_mensual, 0);
@@ -1162,7 +1204,7 @@
         const list = Array.isArray(rows) ? rows : [];
 
         if (!list.length) {
-          body.innerHTML = '<tr><td colspan="8">Sin liquidaciones para mostrar.</td></tr>';
+          body.innerHTML = '<tr><td colspan="9">Sin liquidaciones para mostrar.</td></tr>';
           document.getElementById('calcResumen').textContent = summaryText || 'Sin calculos recientes.';
           updateKpis();
           return;
@@ -1173,6 +1215,7 @@
           return '<tr>' +
             '<td><strong>' + esc(item.empleado_nombre || '-') + '</strong><br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
             '<td>' + toNumber(item.dias_liquidados, 0).toFixed(2) + '</td>' +
+            '<td>' + esc(item.sede_nombre || 'Sede principal') + '<br><small>' + esc(item.centro_costo || item.sede_codigo || '-') + '</small></td>' +
             '<td>' + toNumber(item.horas_asistencia_total, 0).toFixed(2) + '</td>' +
             '<td>' + sumHorasExtra(item).toFixed(2) + '</td>' +
             '<td>' + esc(money(item.devengado_total)) + '</td>' +
@@ -1236,11 +1279,13 @@
         const documento = esc(doc.empleado_documento || doc.empleado_codigo || '-');
         const contrato = esc(doc.tipo_contrato || '-');
         const cargo = esc(doc.cargo || '-');
+        const sede = esc(doc.sede_nombre || 'Sede principal');
+        const centro = esc(doc.centro_costo || doc.sede_codigo || '-');
         const horas = toNumber(doc.horas_asistencia_total, 0).toFixed(2);
         const dias = toNumber(doc.dias_liquidados, 0).toFixed(2);
 
         const html = '<div><strong>Desprendible estandar</strong> | Periodo: ' + period + '</div>' +
-          '<div class="form-help" >Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Contrato: ' + contrato + '</div>' +
+          '<div class="form-help" >Empleado: <strong>' + empleado + '</strong> | Documento/Codigo: ' + documento + ' | Cargo: ' + cargo + ' | Sede: ' + sede + ' | Centro: ' + centro + ' | Contrato: ' + contrato + '</div>' +
           '<div class="form-help" >Días liquidados: ' + dias + ' | Horas asistencia: ' + horas + '</div>' +
           '<div >' +
             '<div class="card" ><strong>Devengado</strong><br>Base salario: ' + esc(money(doc.base_salario_proporcional)) + '<br>Recargos/Extras: ' + esc(money(doc.total_recargos_horas_extras)) + '<br>Auxilio: ' + esc(money(doc.auxilio_transporte)) + '<br>Bonificacion: ' + esc(money(doc.bonificacion)) + '<br><strong>Total devengado: ' + esc(money(doc.devengado_total)) + '</strong></div>' +
@@ -1628,17 +1673,28 @@
         const pagos = Array.isArray(state.pagos) ? state.pagos : [];
         const dashboard = state.dashboard || {};
         const provisiones = state.provisiones || {};
+        const sedes = Array.isArray(dashboard.sedes) ? dashboard.sedes : [];
 
         const neto = liquidaciones.reduce(function (acc, item) {
           return acc + toNumber(item.neto_pagar, 0);
         }, 0);
 
         document.getElementById('kpiEmpleados').textContent = String(empleados.length);
+        document.getElementById('kpiSedes').textContent = String(sedes.length || countEmployeeSedes(empleados));
         document.getElementById('kpiFestivos').textContent = String(festivos.length);
         document.getElementById('kpiLiquidaciones').textContent = String(liquidaciones.length);
         document.getElementById('kpiNeto').textContent = money(neto);
         document.getElementById('kpiPagos').textContent = String(pagos.length || Number(dashboard.pagos_generados || 0));
         document.getElementById('kpiCostoEmpresa').textContent = money(provisiones.costo_empresa_estimado || dashboard.costo_empresa_estimado || 0);
+      }
+
+      function countEmployeeSedes(rows) {
+        const map = {};
+        (Array.isArray(rows) ? rows : []).forEach(function (item) {
+          const key = [item.sede_codigo || '', item.sede_nombre || 'Sede principal', item.centro_costo || ''].join('|').toLowerCase();
+          if (normalize(item.estado || 'activo').toLowerCase() === 'activo') map[key] = true;
+        });
+        return Object.keys(map).length;
       }
 
       async function refreshAll() {
@@ -1964,6 +2020,60 @@
         if (!silent) msg('Nomina Colombia avanzada actualizada.', 'success');
       }
 
+      function renderNominaDian(data) {
+        state.dianNomina = data || null;
+        const panel = document.getElementById('nomCoDianPanel');
+        const resumen = document.getElementById('nomCoDianResumen');
+        if (!panel || !resumen) return;
+        if (!data || typeof data !== 'object') {
+          panel.textContent = 'Sin lote DIAN consultado.';
+          resumen.textContent = 'Consulta liquidaciones y prepara el lote por empleado para firma, CUNE y envio documental.';
+          return;
+        }
+        const docs = Array.isArray(data.documentos_preparados) ? data.documentos_preparados : [];
+        const pendientes = Array.isArray(data.requisitos_pendientes) ? data.requisitos_pendientes : [];
+        resumen.textContent = 'Estado: ' + txt(data.estado || '-') + ' | Documentos: ' + Number(data.total_documentos || docs.length || 0) + ' | Neto: ' + money(data.total_neto || 0);
+        const docsHTML = docs.slice(0, 8).map(function (item) {
+          return '<tr>' +
+            '<td>' + esc(item.empleado_nombre || '-') + '<br><small>' + esc(item.empleado_documento || item.empleado_codigo || '-') + '</small></td>' +
+            '<td>' + esc(item.sede_nombre || 'Sede principal') + '<br><small>' + esc(item.centro_costo || item.sede_codigo || '-') + '</small></td>' +
+            '<td>' + esc(money(item.devengado_total)) + '</td>' +
+            '<td>' + esc(money(item.deduccion_total)) + '</td>' +
+            '<td><strong>' + esc(money(item.neto_pagar)) + '</strong></td>' +
+            '<td>' + esc(item.estado_documental || '-') + '</td>' +
+          '</tr>';
+        }).join('');
+        const pendientesHTML = pendientes.length
+          ? '<div class="nomina-alert-list">' + pendientes.map(function (item) { return '<div class="nomina-alert-item">' + esc(item) + '</div>'; }).join('') + '</div>'
+          : '<div class="form-help">Sin requisitos pendientes en las liquidaciones consultadas.</div>';
+        panel.innerHTML =
+          '<div><strong>Documentos electronicos de nomina Colombia</strong> | Periodo: ' + esc(data.periodo_desde || '-') + ' a ' + esc(data.periodo_hasta || '-') + '</div>' +
+          '<div class="form-help">Endpoint documental sugerido: ' + esc(data.endpoint_envio_sugerido || '-') + '</div>' +
+          '<div class="form-help">Totales: Devengado ' + esc(money(data.total_devengado || 0)) + ' | Deducciones ' + esc(money(data.total_deducciones || 0)) + ' | Neto ' + esc(money(data.total_neto || 0)) + '</div>' +
+          pendientesHTML +
+          '<div class="table-wrap" style="margin-top:10px;"><table class="table nomina-table"><thead><tr><th>Empleado</th><th>Sede</th><th>Devengado</th><th>Deducciones</th><th>Neto</th><th>Estado</th></tr></thead><tbody>' +
+          (docsHTML || '<tr><td colspan="6">Sin documentos preparados.</td></tr>') +
+          '</tbody></table></div>';
+      }
+
+      async function cargarNominaDian(preparar) {
+        const desde = txt(document.getElementById('calcDesde').value);
+        const hasta = txt(document.getElementById('calcHasta').value);
+        if (preparar) {
+          const data = await requestJSON('/api/empresa/nomina?action=preparar_nomina_electronica', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ empresa_id: state.empresaID, periodo_desde: desde, periodo_hasta: hasta })
+          });
+          renderNominaDian(data);
+          msg('Lote de nomina electronica preparado para revision documental.', 'success');
+          return;
+        }
+        const params = new URLSearchParams({ empresa_id: String(state.empresaID), action: 'documentos_electronicos_colombia', periodo_desde: desde, periodo_hasta: hasta });
+        const data = await requestJSON('/api/empresa/nomina?' + params.toString());
+        renderNominaDian(data);
+      }
+
       async function seedParametros() {
         await requestJSON('/api/empresa/nomina?action=seed_colombia&empresa_id=' + encodeURIComponent(String(state.empresaID)), { method: 'POST' });
         await loadDashboard(true);
@@ -1986,6 +2096,7 @@
             ' | Pagos nuevos: ' + pagos;
         }
         window.dispatchEvent(new CustomEvent('nomina:refresh-all'));
+        cargarNominaDian(false).catch(function () {});
         msg('Nomina demo profesional de Motel Calipso creada y liquidada.', 'success');
       }
 
@@ -2019,10 +2130,14 @@
         const seed = document.getElementById('nomCoSeedBtn');
         const seedPro = document.getElementById('nomCoSeedProfesionalBtn');
         const pila = document.getElementById('nomCoPilaBtn');
+        const dianVer = document.getElementById('nomCoDianVerBtn');
+        const dianPreparar = document.getElementById('nomCoDianPrepararBtn');
         if (refresh) refresh.addEventListener('click', function () { loadDashboard(false).catch(function (err) { msg(err.message, 'error'); }); });
         if (seed) seed.addEventListener('click', function () { seedParametros().catch(function (err) { msg(err.message, 'error'); }); });
         if (seedPro) seedPro.addEventListener('click', function () { seedNominaProfesional().catch(function (err) { msg(err.message, 'error'); }); });
         if (pila) pila.addEventListener('click', function () { generarPila().catch(function (err) { msg(err.message, 'error'); }); });
+        if (dianVer) dianVer.addEventListener('click', function () { cargarNominaDian(false).catch(function (err) { msg(err.message, 'error'); }); });
+        if (dianPreparar) dianPreparar.addEventListener('click', function () { cargarNominaDian(true).catch(function (err) { msg(err.message, 'error'); }); });
         const novedadesBody = document.getElementById('nomCoNovedadesBody');
         if (novedadesBody) {
           novedadesBody.addEventListener('click', function (ev) {
