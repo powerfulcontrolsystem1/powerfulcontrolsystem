@@ -30624,3 +30624,26 @@ Archivos modificados:
 - Validacion:
   - Sintaxis de scripts embebidos validada con Node.
   - Prueba visual local con datos simulados: `Licencias` mostro solo la licencia activa y `Historial de licencias` mostro activa mas vencida.
+
+2026-06-04: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/licencias_empresa_sistema.go
+- backend/db/licencias_globales_test.go
+- backend/handlers/payments_handlers.go
+- backend/handlers/payments_handlers_test.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/configuracion.html
+- web/seleccionar_empresa.html
+- web/super/historial_licencias.html
+- web/super/licencias.html
