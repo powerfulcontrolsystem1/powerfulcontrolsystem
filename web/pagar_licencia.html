@@ -422,6 +422,7 @@
         const addonLicenciaIDs = String(params.get('addon_licencia_ids') || '').trim();
         const initialAsesorID = String(params.get('asesor_id') || params.get('codigo_asesor') || '').trim();
         const initialDiscountCode = String(params.get('discount_code') || params.get('codigo_descuento') || '').trim();
+        const initialCustomerEmail = String(params.get('customer_email') || params.get('cliente_email') || '').trim();
         if (!licenciaId && pendingSeed && pendingSeed.licenciaId) licenciaId = String(pendingSeed.licenciaId);
         if (!empresaId && pendingSeed && pendingSeed.empresaId) empresaId = String(pendingSeed.empresaId);
 
@@ -646,6 +647,11 @@
                       '<input id="asesorId" class="form-input" type="text" placeholder="Ej: AC-123ABC" value="' + escapeHtml(initialAsesorID) + '">'+
                       '<div class="form-help">También aplica para activar licencias de prueba de 15 días y dejar asociado el asesor.</div>'+
                     '</div>'+
+                    '<div class="form-col">'+
+                      '<label class="form-label" for="customerEmail">Correo del cliente</label>'+
+                      '<input id="customerEmail" class="form-input" type="email" placeholder="cliente@correo.com" value="' + escapeHtml(initialCustomerEmail) + '">'+
+                      '<div class="form-help">Aquí llegará el correo de licencia y, si el pago es mayor a cero, la factura electrónica adjunta.</div>'+
+                    '</div>'+
                   '</div>'+
                   '<div class="checkout-mini-pills">'+
                     '<span class="checkout-mini-pill">Opcional</span>'+
@@ -743,6 +749,7 @@
             epaycoStatus: document.getElementById('epaycoStatus'),
             discountCodeInput: document.getElementById('discountCode'),
             asesorIdInput: document.getElementById('asesorId'),
+            customerEmailInput: document.getElementById('customerEmail'),
             checkoutCountrySelect: document.getElementById('checkoutCountrySelect'),
             summaryOriginalValue: document.getElementById('summaryOriginalValue'),
             summaryDiscountValue: document.getElementById('summaryDiscountValue'),
@@ -1109,6 +1116,8 @@
               };
               if (checkoutMode) payload.checkout_mode = checkoutMode;
               if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
+              var freeCustomerEmail = String((ui.customerEmailInput && ui.customerEmailInput.value) || adminEmail || '').trim();
+              if (freeCustomerEmail) payload.customer_email = freeCustomerEmail;
               var freeCode = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim();
               if (freeCode) payload.discount_code = freeCode;
               var freeAsesor = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim();
@@ -1181,7 +1190,8 @@
               if (checkoutMode) payload.checkout_mode = checkoutMode;
               if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
               if (empresaId) payload.empresa_id = Number(empresaId);
-              if (adminEmail) payload.customer_email = adminEmail;
+              var wompiCustomerEmail = String((ui.customerEmailInput && ui.customerEmailInput.value) || adminEmail || '').trim();
+              if (wompiCustomerEmail) payload.customer_email = wompiCustomerEmail;
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
               try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 
@@ -1258,7 +1268,8 @@
               if (checkoutMode) payload.checkout_mode = checkoutMode;
               if (addonLicenciaIDs) payload.addon_licencia_ids = addonLicenciaIDs.split(',').map(function(v){ return Number(String(v).trim() || 0); }).filter(function(v){ return v > 0; });
               if (empresaId) payload.empresa_id = Number(empresaId);
-              if (adminEmail) payload.customer_email = adminEmail;
+              var epaycoCustomerEmail = String((ui.customerEmailInput && ui.customerEmailInput.value) || adminEmail || '').trim();
+              if (epaycoCustomerEmail) payload.customer_email = epaycoCustomerEmail;
               try { const code = String((ui.discountCodeInput && ui.discountCodeInput.value) || '').trim(); if (code) payload.discount_code = code; } catch(e){}
               try { const aId = String((ui.asesorIdInput && ui.asesorIdInput.value) || '').trim(); if (aId) { payload.asesor_id = aId; } } catch(e){}
 

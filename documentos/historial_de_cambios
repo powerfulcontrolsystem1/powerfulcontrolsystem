@@ -1,3 +1,10 @@
+2026-06-04: Checkout de licencia con correo cliente y codigo usado sin 500.
+- Modulos afectados: checkout de licencias, codigos de descuento, activacion sin pago y correo de licencia.
+- Cambio funcional: `pagar_licencia.html` agrega el campo `Correo del cliente` y lo envia a Wompi, Epayco y `activar_sin_pago`; el backend valida `customer_email` antes de activar y lo usa como destinatario del correo de licencia.
+- Correccion: si un codigo de descuento de licencia ya fue usado por la empresa, el resumen publico devuelve mensaje bloqueado sin error interno 500.
+- Regla fiscal: la activacion con total cero continua sin emitir factura electronica; solo envia el PDF de licencia al correo disponible.
+- Pruebas: `go test ./handlers -run "Licencia|Factura|Payment|Epayco|Wompi" -count=1`; `go test ./db -run "Licencia|Payment|Factura" -count=1`; validacion de script embebido de `web/pagar_licencia.html`.
+
 2026-06-04: Correo unificado de compra de licencia con factura adjunta.
 - Modulos afectados: licencias, pagos Epayco/Wompi, facturacion electronica y mensajeria super.
 - Cambio funcional: la activacion de licencias envia un solo correo con el PDF de licencia; cuando el pago comercial aprobado tiene valor mayor que cero, el mismo correo adjunta tambien el PDF resumen de la factura electronica emitida por la empresa interna Powerful Control System.

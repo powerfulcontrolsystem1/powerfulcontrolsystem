@@ -1,3 +1,9 @@
+## [2026-06-04] Checkout de licencia con correo cliente
+- [Checkout] `pagar_licencia.html` agrega `Correo del cliente` y lo envia a activacion directa, Wompi y Epayco.
+- [Licencias] `activar_sin_pago` valida `customer_email` antes de activar y lo usa para enviar el correo con PDF de licencia cuando el total queda en cero.
+- [Codigos] Un codigo de descuento ya usado por la empresa devuelve mensaje bloqueado sin provocar 500 en el resumen publico.
+- [QA] Pruebas Go enfocadas de licencias/pagos y validacion sintactica del script embebido de checkout.
+
 ## [2026-06-04] Correo unificado de licencia y factura electronica
 - [Licencias] La activacion de licencia envia un solo correo al cliente con el PDF de licencia; si la compra comercial aprobada tiene valor mayor que cero, adjunta en ese mismo mensaje el PDF resumen de la factura electronica.
 - [Pagos] Epayco y Wompi ya no disparan un correo separado de factura en el flujo normal; conservan la marca `licencia_factura_electronica_emitida` para idempotencia.

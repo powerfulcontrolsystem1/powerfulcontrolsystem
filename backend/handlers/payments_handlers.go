@@ -2281,7 +2281,17 @@ func resolveLicenciaCheckoutSummary(dbSuper *sql.DB, lic *dbpkg.Licencia, empres
 			return summary, usedErr
 		}
 		if used {
-			return summary, fmt.Errorf("este codigo de descuento ya fue usado por esta empresa")
+			return licenciaCheckoutSummary{
+				OriginalValue:             originalValue,
+				TotalValue:                originalValue,
+				DiscountCode:              strings.TrimSpace(discountCode),
+				AsesorID:                  strings.ToUpper(strings.TrimSpace(asesorID)),
+				DiscountApplied:           false,
+				IsZeroTotal:               false,
+				ZeroTotalBlocked:          true,
+				CanActivateWithoutPayment: false,
+				Message:                   "Este codigo de descuento ya fue usado por esta empresa.",
+			}, nil
 		}
 	}
 	if discountValue > originalValue {
@@ -2424,7 +2434,17 @@ func resolveLicenciaCheckoutSummaryWithMode(dbSuper *sql.DB, lic *dbpkg.Licencia
 			return licenciaCheckoutSummary{}, nil, usedErr
 		}
 		if used {
-			return licenciaCheckoutSummary{}, nil, fmt.Errorf("este codigo de descuento ya fue usado por esta empresa")
+			return licenciaCheckoutSummary{
+				OriginalValue:             originalValue,
+				TotalValue:                originalValue,
+				DiscountCode:              strings.TrimSpace(discountCode),
+				AsesorID:                  strings.ToUpper(strings.TrimSpace(asesorID)),
+				DiscountApplied:           false,
+				IsZeroTotal:               false,
+				ZeroTotalBlocked:          true,
+				CanActivateWithoutPayment: false,
+				Message:                   "Este codigo de descuento ya fue usado por esta empresa.",
+			}, bundle, nil
 		}
 	}
 	subtotalAfterDiscount := roundLicenciaCheckoutAmount(originalValue - discountValue)
@@ -6455,6 +6475,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			Motivo           string  `json:"motivo,omitempty"`
 			DiscountCode     string  `json:"discount_code,omitempty"`
 			AsesorID         string  `json:"asesor_id,omitempty"`
+			CustomerEmail    string  `json:"customer_email,omitempty"`
 			CheckoutMode     string  `json:"checkout_mode,omitempty"`
 			AddonLicenciaIDs []int64 `json:"addon_licencia_ids,omitempty"`
 		}
@@ -6469,6 +6490,14 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		if payload.EmpresaID <= 0 {
 			http.Error(w, "empresa_id invÃ¡lido", http.StatusBadRequest)
 			return
+		}
+
+		customerEmailForActivation := strings.TrimSpace(payload.CustomerEmail)
+		if customerEmailForActivation != "" {
+			if _, parseErr := mail.ParseAddress(customerEmailForActivation); parseErr != nil {
+				http.Error(w, "customer_email invalido", http.StatusBadRequest)
+				return
+			}
 		}
 
 		var err error
@@ -6594,6 +6623,9 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		}
 		if empresa, eerr := dbpkg.GetEmpresaByScopeID(empresaDB, payload.EmpresaID); eerr == nil && empresa != nil {
 			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
+		}
+		if customerEmailForActivation != "" {
+			toEmail = customerEmailForActivation
 		}
 		rawMapWelcome := map[string]interface{}{
 			"provider":           "manual",
