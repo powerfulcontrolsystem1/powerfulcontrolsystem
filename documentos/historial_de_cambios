@@ -1,3 +1,9 @@
+2026-06-04: Fallback Mailu para correos de licencia.
+- Modulos afectados: licencias, pagos, mensajeria super y correo corporativo.
+- Cambio funcional: el correo unificado de activacion de licencia intenta Gmail SMTP como canal principal y, si la credencial SMTP no descifra o el envio falla, usa el correo corporativo Mailu activo para enviar el mismo mensaje con PDF de licencia y adjuntos.
+- Operacion: evita que una credencial SMTP antigua bloquee el correo de licencia cuando Mailu ya esta disponible en el VPS; no imprime secretos y mantiene el destinatario validado del checkout.
+- Pruebas: `go test ./handlers -run "Licencia|Factura|Payment|Epayco|Wompi" -count=1`; prueba visual de checkout con descuento total y activacion directa.
+
 2026-06-04: Checkout de licencia con correo cliente y codigo usado sin 500.
 - Modulos afectados: checkout de licencias, codigos de descuento, activacion sin pago y correo de licencia.
 - Cambio funcional: `pagar_licencia.html` agrega el campo `Correo del cliente` y lo envia a Wompi, Epayco y `activar_sin_pago`; el backend valida `customer_email` antes de activar y lo usa como destinatario del correo de licencia.

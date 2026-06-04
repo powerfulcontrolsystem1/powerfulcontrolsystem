@@ -1711,21 +1711,25 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 		return captureEmpresaUsuarioMailNotification(dbSuper, "licencia_activada_pago", empresaID, toEmail, asunto, cuerpo, reference, metadataJSON, adminEmailFromRequest(r))
 	}
 
+	return sendLicenciaActivationMailViaConfiguredChannels(dbSuper, toEmail, asunto, cuerpo, attachments)
+}
+
+func sendLicenciaActivationMailViaConfiguredChannels(dbSuper *sql.DB, toEmail, asunto, cuerpo string, attachments []licenciaEmailAttachment) error {
 	smtpEmail, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_email")
 	if err != nil {
-		return err
+		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, err)
 	}
 	smtpEmail = strings.TrimSpace(smtpEmail)
 	if smtpEmail == "" {
-		return fmt.Errorf("gmail.smtp_email no configurado")
+		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, fmt.Errorf("gmail.smtp_email no configurado"))
 	}
 	smtpPass, err := getDecryptedConfigValue(dbSuper, "gmail.smtp_app_password")
 	if err != nil {
-		return err
+		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, err)
 	}
 	smtpPass = strings.TrimSpace(smtpPass)
 	if smtpPass == "" {
-		return fmt.Errorf("gmail.smtp_app_password no configurado")
+		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, fmt.Errorf("gmail.smtp_app_password no configurado"))
 	}
 	smtpHost, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_host")
 	smtpPort, _ := getDecryptedConfigValue(dbSuper, "gmail.smtp_port")
@@ -1750,7 +1754,22 @@ func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
 	addr := net.JoinHostPort(smtpHost, smtpPort)
 	msg := buildLicenciaActivationEmailMessageWithAttachments(fromName, smtpEmail, toEmail, asunto, cuerpo, attachments)
-	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, msg)
+	if err := smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, msg); err != nil {
+		return sendLicenciaActivationMailViaMailuFallback(dbSuper, toEmail, asunto, cuerpo, attachments, err)
+	}
+	return nil
+}
+
+func sendLicenciaActivationMailViaMailuFallback(dbSuper *sql.DB, toEmail, asunto, cuerpo string, attachments []licenciaEmailAttachment, primaryErr error) error {
+	if !empresaUsuarioMailuFallbackEnabled(dbSuper) {
+		return primaryErr
+	}
+	fromName, fromEmail := empresaUsuarioMailuSender(dbSuper)
+	msg := buildLicenciaActivationEmailMessageWithAttachments(fromName, fromEmail, toEmail, asunto, cuerpo, attachments)
+	if err := sendEmpresaUsuarioMailuMessage(dbSuper, fromEmail, toEmail, msg); err != nil {
+		return fmt.Errorf("Gmail SMTP fallo (%v) y Mailu fallback fallo: %w", primaryErr, err)
+	}
+	return nil
 }
 
 func buildLicenciaActivationEmailMessage(fromName, fromEmail, toEmail, subject, bodyText, attachmentName string, attachment []byte) []byte {

@@ -1,3 +1,8 @@
+## [2026-06-04] Fallback Mailu para correos de licencia
+- [Licencias] El correo unificado de activacion de licencia intenta primero Gmail SMTP y, si la credencial no descifra o el envio falla, usa Mailu corporativo como canal de respaldo.
+- [Correo] El fallback conserva el mismo asunto, cuerpo, PDF de licencia y adjuntos de factura cuando corresponda, sin exponer secretos en errores o logs.
+- [QA] Pruebas Go enfocadas de licencias/pagos y prueba visual real del checkout con descuento total y activacion directa.
+
 ## [2026-06-04] Checkout de licencia con correo cliente
 - [Checkout] `pagar_licencia.html` agrega `Correo del cliente` y lo envia a activacion directa, Wompi y Epayco.
 - [Licencias] `activar_sin_pago` valida `customer_email` antes de activar y lo usa para enviar el correo con PDF de licencia cuando el total queda en cero.
