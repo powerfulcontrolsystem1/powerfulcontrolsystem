@@ -12287,3 +12287,10 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/pagar_licencia.html
+
+2026-06-04 18:27:04 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 179923f6; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios

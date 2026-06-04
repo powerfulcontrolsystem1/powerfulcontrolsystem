@@ -30690,3 +30690,11 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/pagar_licencia.html
+
+2026-06-04: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
