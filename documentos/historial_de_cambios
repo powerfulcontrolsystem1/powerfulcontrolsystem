@@ -30654,3 +30654,16 @@ Archivos modificados:
 - web/seleccionar_empresa.html
 - web/super/historial_licencias.html
 - web/super/licencias.html
+
+2026-06-04: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/licencias_pdf.go
+- backend/handlers/licencias_pdf_test.go
+- backend/handlers/payments_handlers.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
