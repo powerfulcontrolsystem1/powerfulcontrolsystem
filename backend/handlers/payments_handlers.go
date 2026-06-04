@@ -268,6 +268,9 @@ func LicenciasHandler(dbSuper *sql.DB) http.HandlerFunc {
 							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "trial", ref); mailErr != nil {
 								log.Println("warning: failed to send trial licencia welcome email:", mailErr)
 							}
+							if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec, "trial", ref); invoiceErr != nil {
+								log.Println("warning: failed to issue trial licencia factura electronica:", invoiceErr)
+							}
 						}
 					}
 					recordAsesorComercialComision(dbSuper, "epayco", ref, ref, licID, empresaID)
@@ -707,7 +710,14 @@ func resolveLicenciaPaymentRecipient(dbSuper *sql.DB, empresaID int64, rawPayloa
 	payload := parsePaymentPayloadMap(rawPayload)
 	toEmail := strings.TrimSpace(extractCustomerEmailFromPaymentPayload(payload))
 	if toEmail == "" && empresaID > 0 {
-		empresa, err := dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+		var empresa *dbpkg.Empresa
+		var err error
+		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+			empresa, err = dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
+		}
+		if empresa == nil && dbSuper != nil {
+			empresa, err = dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+		}
 		if err == nil && empresa != nil {
 			toEmail = strings.TrimSpace(empresa.UsuarioCreador)
 		}
@@ -829,6 +839,126 @@ func markWompiActivationEmailSent(dbSuper *sql.DB, payRec *dbpkg.WompiPaymentRec
 	return nil
 }
 
+type licenciaFacturaElectronicaOutcome struct {
+	DocumentoCodigo  string
+	NumeroLegal      string
+	CodigoValidacion string
+	EstadoDocumento  string
+	Destinatario     string
+	EmailSent        bool
+	SystemEmpresaID  int64
+	Skipped          bool
+	SkipReason       string
+}
+
+func epaycoLicenciaFacturaAlreadyIssued(payRec *dbpkg.EpaycoPaymentRecord) bool {
+	if payRec == nil || !payRec.RawPayload.Valid {
+		return false
+	}
+	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_factura_electronica_emitida")
+}
+
+func wompiLicenciaFacturaAlreadyIssued(payRec *dbpkg.WompiPaymentRecord) bool {
+	if payRec == nil || !payRec.RawPayload.Valid {
+		return false
+	}
+	return paymentPayloadFlagIsTrue(payRec.RawPayload.String, "licencia_factura_electronica_emitida")
+}
+
+func markEpaycoLicenciaFacturaIssued(dbSuper *sql.DB, payRec *dbpkg.EpaycoPaymentRecord, outcome licenciaFacturaElectronicaOutcome, reference string) error {
+	if dbSuper == nil || payRec == nil || outcome.Skipped {
+		return nil
+	}
+	status := strings.TrimSpace(payRec.Status.String)
+	if status == "" {
+		status = "APPROVED"
+	}
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, buildLicenciaFacturaPaymentPatch(outcome, reference))
+	transactionID := strings.TrimSpace(payRec.TransactionID.String)
+	recordReference := strings.TrimSpace(payRec.Reference.String)
+	if transactionID != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByTransaction(dbSuper, transactionID, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if recordReference != "" {
+		if err := dbpkg.UpdateEpaycoPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
+func markWompiLicenciaFacturaIssued(dbSuper *sql.DB, payRec *dbpkg.WompiPaymentRecord, outcome licenciaFacturaElectronicaOutcome, reference string) error {
+	if dbSuper == nil || payRec == nil || outcome.Skipped {
+		return nil
+	}
+	status := strings.TrimSpace(payRec.Status.String)
+	if status == "" {
+		status = "APPROVED"
+	}
+	mergedPayload := mergePaymentPayloadJSON(payRec.RawPayload.String, buildLicenciaFacturaPaymentPatch(outcome, reference))
+	transactionID := strings.TrimSpace(payRec.TransactionID.String)
+	recordReference := strings.TrimSpace(payRec.Reference.String)
+	if transactionID != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByTransaction(dbSuper, transactionID, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	if recordReference != "" {
+		if err := dbpkg.UpdateWompiPaymentRecordByReference(dbSuper, recordReference, status, mergedPayload); err != nil {
+			return err
+		}
+	}
+	payRec.RawPayload = sql.NullString{String: mergedPayload, Valid: strings.TrimSpace(mergedPayload) != ""}
+	return nil
+}
+
+func buildLicenciaFacturaPaymentPatch(outcome licenciaFacturaElectronicaOutcome, reference string) string {
+	patchBytes, _ := json.Marshal(map[string]interface{}{
+		"licencia_factura_electronica_emitida":           true,
+		"licencia_factura_electronica_emitida_at":        time.Now().Format(time.RFC3339),
+		"licencia_factura_electronica_ref":               strings.TrimSpace(reference),
+		"licencia_factura_electronica_documento":         strings.TrimSpace(outcome.DocumentoCodigo),
+		"licencia_factura_electronica_numero_legal":      strings.TrimSpace(outcome.NumeroLegal),
+		"licencia_factura_electronica_codigo_validacion": strings.TrimSpace(outcome.CodigoValidacion),
+		"licencia_factura_electronica_estado":            strings.TrimSpace(outcome.EstadoDocumento),
+		"licencia_factura_electronica_to":                strings.TrimSpace(outcome.Destinatario),
+		"licencia_factura_electronica_email_sent":        outcome.EmailSent,
+		"licencia_factura_electronica_empresa_emisora":   outcome.SystemEmpresaID,
+	})
+	return string(patchBytes)
+}
+
+func tryIssueLicenciaFacturaElectronicaForEpayco(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string) error {
+	if payRec == nil || lic == nil {
+		return nil
+	}
+	if epaycoLicenciaFacturaAlreadyIssued(payRec) {
+		return nil
+	}
+	outcome, err := issueLicenciaFacturaElectronica(r, dbEmp, dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+	if err != nil {
+		return err
+	}
+	return markEpaycoLicenciaFacturaIssued(dbSuper, payRec, outcome, reference)
+}
+
+func tryIssueLicenciaFacturaElectronicaForWompi(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.WompiPaymentRecord, provider, reference string) error {
+	if payRec == nil || lic == nil {
+		return nil
+	}
+	if wompiLicenciaFacturaAlreadyIssued(payRec) {
+		return nil
+	}
+	outcome, err := issueLicenciaFacturaElectronica(r, dbEmp, dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+	if err != nil {
+		return err
+	}
+	return markWompiLicenciaFacturaIssued(dbSuper, payRec, outcome, reference)
+}
+
 func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string) error {
 	if payRec == nil || lic == nil {
 		return nil
@@ -870,6 +1000,352 @@ func trySendLicenciaActivationEmailForWompi(r *http.Request, dbSuper *sql.DB, em
 		return err
 	}
 	return nil
+}
+
+func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, rawPayload, provider, reference string) (licenciaFacturaElectronicaOutcome, error) {
+	var outcome licenciaFacturaElectronicaOutcome
+	if dbEmp == nil {
+		dbEmp = dbpkg.GetDB()
+	}
+	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || lic == nil {
+		return outcome, nil
+	}
+	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
+		return outcome, err
+	}
+	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
+		return outcome, err
+	}
+	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
+		return outcome, err
+	}
+
+	payloadMap := parsePaymentPayloadMap(rawPayload)
+	amount, amountFound := licenciaFacturaAmountFromPayload(lic, payloadMap)
+	if !amountFound && lic.Valor > 0 {
+		amount = lic.Valor
+	}
+	if amount <= 0 {
+		outcome.Skipped = true
+		outcome.SkipReason = "licencia sin valor pagado"
+		return outcome, nil
+	}
+
+	systemEmpresa, err := dbpkg.EnsurePowerfulSystemEmpresa(dbEmp, dbSuper)
+	if err != nil {
+		return outcome, err
+	}
+	if systemEmpresa == nil || systemEmpresa.EmpresaID <= 0 {
+		return outcome, fmt.Errorf("empresa emisora del sistema no disponible")
+	}
+	outcome.SystemEmpresaID = systemEmpresa.EmpresaID
+
+	toEmail, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, rawPayload)
+	if err != nil {
+		return outcome, err
+	}
+
+	clienteNombre := licenciaFacturaClienteNombre(dbEmp, empresaID, payloadMap)
+	documentoCodigo := buildLicenciaFacturaDocumentoCodigo(provider, reference, lic.ID, empresaID)
+	outcome.DocumentoCodigo = documentoCodigo
+	outcome.Destinatario = toEmail
+
+	docPersistido, existingErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, systemEmpresa.EmpresaID, "factura_electronica", documentoCodigo)
+	if existingErr != nil && !errors.Is(existingErr, sql.ErrNoRows) {
+		return outcome, existingErr
+	}
+
+	if docPersistido == nil {
+		legalDoc, legalErr := dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, systemEmpresa.EmpresaID, "CO", documentoCodigo, amount, "COP")
+		nowText := time.Now().Format("2006-01-02 15:04:05")
+		docPayload := dbpkg.EmpresaDocumentoFacturacion{
+			EmpresaID:            systemEmpresa.EmpresaID,
+			TipoDocumento:        "factura_electronica",
+			DocumentoCodigo:      documentoCodigo,
+			PaisCodigo:           "CO",
+			EstadoDocumento:      "pendiente_emision",
+			EstadoAnterior:       "borrador",
+			EventoUltimo:         "factura_licencia_pendiente",
+			PeriodoContable:      time.Now().Format("2006-01"),
+			MontoTotal:           amount,
+			Moneda:               "COP",
+			FechaDocumento:       nowText,
+			EntidadRelacionadaID: empresaID,
+			UsuarioCreador:       "sistema.licencias",
+			Estado:               "activo",
+			Observaciones:        licenciaFacturaObservaciones(empresaID, clienteNombre, lic, provider, reference, legalErr),
+		}
+		if legalErr == nil && legalDoc != nil {
+			docPayload.NumeroLegal = legalDoc.NumeroLegal
+			docPayload.CodigoValidacion = legalDoc.CodigoValidacion
+			docPayload.AmbienteFE = legalDoc.Ambiente
+			docPayload.EstadoDocumento = "emitida"
+			docPayload.EventoUltimo = "factura_licencia_emitida"
+			docPayload.FechaDocumento = legalDoc.FechaEmisionLegal
+		}
+
+		docPersistido, err = dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
+		if err != nil {
+			return outcome, err
+		}
+		if legalErr != nil {
+			outcome.EstadoDocumento = docPayload.EstadoDocumento
+			return outcome, fmt.Errorf("factura electronica de licencia pendiente por configuracion fiscal: %w", legalErr)
+		}
+	} else if !strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
+		docActualizado := *docPersistido
+		if strings.TrimSpace(docActualizado.NumeroLegal) == "" || strings.TrimSpace(docActualizado.CodigoValidacion) == "" {
+			legalDoc, legalErr := dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, systemEmpresa.EmpresaID, "CO", documentoCodigo, amount, "COP")
+			if legalErr != nil {
+				outcome.EstadoDocumento = docPersistido.EstadoDocumento
+				return outcome, fmt.Errorf("factura electronica de licencia pendiente por configuracion fiscal: %w", legalErr)
+			}
+			if legalDoc != nil {
+				docActualizado.NumeroLegal = legalDoc.NumeroLegal
+				docActualizado.CodigoValidacion = legalDoc.CodigoValidacion
+				docActualizado.AmbienteFE = legalDoc.Ambiente
+				docActualizado.FechaDocumento = legalDoc.FechaEmisionLegal
+			}
+		}
+		docActualizado.EstadoAnterior = docPersistido.EstadoDocumento
+		docActualizado.EstadoDocumento = "emitida"
+		docActualizado.EventoUltimo = "factura_licencia_emitida"
+		docActualizado.MontoTotal = amount
+		docActualizado.Moneda = "COP"
+		docActualizado.PaisCodigo = "CO"
+		docActualizado.UsuarioCreador = "sistema.licencias"
+		docActualizado.Observaciones = licenciaFacturaObservaciones(empresaID, clienteNombre, lic, provider, reference, nil)
+		docPersistido, err = dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docActualizado)
+		if err != nil {
+			return outcome, err
+		}
+	}
+
+	if docPersistido == nil {
+		return outcome, fmt.Errorf("factura electronica de licencia no fue persistida")
+	}
+	outcome.DocumentoCodigo = docPersistido.DocumentoCodigo
+	outcome.NumeroLegal = docPersistido.NumeroLegal
+	outcome.CodigoValidacion = docPersistido.CodigoValidacion
+	outcome.EstadoDocumento = docPersistido.EstadoDocumento
+
+	if !strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
+		return outcome, fmt.Errorf("factura electronica de licencia en estado %s", strings.TrimSpace(docPersistido.EstadoDocumento))
+	}
+
+	fePayload := facturacionOperacionPayload{
+		EmpresaID:            systemEmpresa.EmpresaID,
+		EntidadID:            empresaID,
+		ClienteEmail:         toEmail,
+		ClienteNombre:        clienteNombre,
+		TipoDocumento:        "factura_electronica",
+		DocumentoCodigo:      docPersistido.DocumentoCodigo,
+		PaisCodigo:           "CO",
+		MontoTotal:           amount,
+		Moneda:               "COP",
+		PeriodoContable:      docPersistido.PeriodoContable,
+		Observaciones:        "Factura electronica automatica por compra de licencia del sistema.",
+		EstadoActual:         docPersistido.EstadoDocumento,
+		PermitirModoOffline:  false,
+		ConfirmarModoOffline: false,
+	}
+
+	integracion, _, intErr := processFacturacionIntegracionForDocumento(dbEmp, fePayload, *docPersistido, "emitir", "sistema.licencias")
+	if intErr != nil {
+		return outcome, intErr
+	}
+	if facturaElectronicaVentaRequiereAcuseFiscal(docPersistido, integracion) && !facturaElectronicaVentaIntegracionConfirmada(integracion) {
+		docPendiente := *docPersistido
+		docPendiente.EstadoAnterior = docPersistido.EstadoDocumento
+		docPendiente.EstadoDocumento = "pendiente_emision"
+		docPendiente.EventoUltimo = "factura_licencia_pendiente_acuse_fiscal"
+		docPendiente.Observaciones = strings.TrimSpace(docPendiente.Observaciones + " Integracion fiscal pendiente: " + strings.TrimSpace(integracion.Error))
+		if updated, upErr := dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPendiente); upErr == nil && updated != nil {
+			docPersistido = updated
+			outcome.EstadoDocumento = updated.EstadoDocumento
+		}
+		return outcome, fmt.Errorf("factura electronica de licencia pendiente de acuse fiscal")
+	}
+
+	emailResult := enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, fePayload, *docPersistido)
+	outcome.EmailSent = emailResult.Enviado
+	outcome.Destinatario = emailResult.Destinatario
+	if !emailResult.Enviado {
+		if strings.TrimSpace(emailResult.Error) == "" {
+			emailResult.Error = "correo no enviado"
+		}
+		return outcome, fmt.Errorf("factura electronica de licencia creada pero no enviada: %s", emailResult.Error)
+	}
+	return outcome, nil
+}
+
+func licenciaFacturaAmountFromPayload(lic *dbpkg.Licencia, payload map[string]interface{}) (float64, bool) {
+	if len(payload) > 0 {
+		keys := []string{"total_value", "valor_pagado", "amount_paid", "x_amount", "amount", "value", "precio"}
+		for _, key := range keys {
+			if value, ok := payload[key]; ok {
+				amount, parsed := licenciaFacturaParseAmount(value)
+				if parsed {
+					return amount, true
+				}
+			}
+		}
+		if value, ok := payload["amount_in_cents"]; ok {
+			amount, parsed := licenciaFacturaParseAmount(value)
+			if parsed {
+				return amount / 100, true
+			}
+		}
+		if data, ok := payload["data"].(map[string]interface{}); ok {
+			if value, ok := data["amount_in_cents"]; ok {
+				amount, parsed := licenciaFacturaParseAmount(value)
+				if parsed {
+					return amount / 100, true
+				}
+			}
+			for _, key := range keys {
+				if value, ok := data[key]; ok {
+					amount, parsed := licenciaFacturaParseAmount(value)
+					if parsed {
+						return amount, true
+					}
+				}
+			}
+		}
+	}
+	if lic != nil && lic.Valor > 0 {
+		return lic.Valor, false
+	}
+	return 0, false
+}
+
+func licenciaFacturaParseAmount(value interface{}) (float64, bool) {
+	switch v := value.(type) {
+	case float64:
+		return math.Max(v, 0), true
+	case float32:
+		return math.Max(float64(v), 0), true
+	case int:
+		return math.Max(float64(v), 0), true
+	case int64:
+		return math.Max(float64(v), 0), true
+	case json.Number:
+		f, err := v.Float64()
+		return math.Max(f, 0), err == nil
+	default:
+		raw := strings.TrimSpace(fmt.Sprint(value))
+		if raw == "" || raw == "<nil>" {
+			return 0, false
+		}
+		raw = strings.ToUpper(raw)
+		raw = strings.ReplaceAll(raw, "COP", "")
+		raw = regexp.MustCompile(`[^0-9,.\-]`).ReplaceAllString(raw, "")
+		if raw == "" || raw == "-" {
+			return 0, false
+		}
+		lastComma := strings.LastIndex(raw, ",")
+		lastDot := strings.LastIndex(raw, ".")
+		if lastComma >= 0 && lastDot >= 0 {
+			if lastComma > lastDot {
+				raw = strings.ReplaceAll(raw, ".", "")
+				raw = strings.ReplaceAll(raw, ",", ".")
+			} else {
+				raw = strings.ReplaceAll(raw, ",", "")
+			}
+		} else if lastComma >= 0 {
+			raw = strings.ReplaceAll(raw, ",", ".")
+		}
+		amount, err := strconv.ParseFloat(raw, 64)
+		if err != nil {
+			return 0, false
+		}
+		return math.Max(amount, 0), true
+	}
+}
+
+func licenciaFacturaClienteNombre(dbEmp *sql.DB, empresaID int64, payload map[string]interface{}) string {
+	for _, key := range []string{"customer_name", "cliente_nombre", "name", "full_name"} {
+		if value := strings.TrimSpace(fmt.Sprint(payload[key])); value != "" && value != "<nil>" {
+			return value
+		}
+	}
+	if data, ok := payload["data"].(map[string]interface{}); ok {
+		for _, key := range []string{"customer_name", "cliente_nombre", "name", "full_name"} {
+			if value := strings.TrimSpace(fmt.Sprint(data[key])); value != "" && value != "<nil>" {
+				return value
+			}
+		}
+	}
+	if dbEmp != nil && empresaID > 0 {
+		if empresa, err := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); err == nil && empresa != nil && strings.TrimSpace(empresa.Nombre) != "" {
+			return strings.TrimSpace(empresa.Nombre)
+		}
+	}
+	return "cliente"
+}
+
+func buildLicenciaFacturaDocumentoCodigo(provider, reference string, licenciaID, empresaID int64) string {
+	cleanProvider := sanitizeLicenciaFacturaCodePart(provider)
+	if cleanProvider == "" {
+		cleanProvider = "LIC"
+	}
+	cleanReference := sanitizeLicenciaFacturaCodePart(reference)
+	if cleanReference == "" {
+		cleanReference = fmt.Sprintf("LIC-%d-EMP-%d", licenciaID, empresaID)
+	}
+	code := "LIC-" + cleanProvider + "-" + cleanReference
+	if len(code) > 80 {
+		code = code[:80]
+	}
+	return strings.Trim(code, "-_")
+}
+
+func sanitizeLicenciaFacturaCodePart(raw string) string {
+	raw = strings.ToUpper(strings.TrimSpace(raw))
+	if raw == "" {
+		return ""
+	}
+	var b strings.Builder
+	lastDash := false
+	for _, r := range raw {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			lastDash = false
+			continue
+		}
+		if r == '-' || r == '_' {
+			if !lastDash {
+				b.WriteRune('-')
+				lastDash = true
+			}
+			continue
+		}
+		if !lastDash {
+			b.WriteRune('-')
+			lastDash = true
+		}
+	}
+	return strings.Trim(b.String(), "-_")
+}
+
+func licenciaFacturaObservaciones(empresaID int64, clienteNombre string, lic *dbpkg.Licencia, provider, reference string, legalErr error) string {
+	parts := []string{
+		"Factura electronica generada automaticamente por compra de licencia del sistema.",
+		fmt.Sprintf("Empresa cliente ID: %d.", empresaID),
+		"Cliente: " + strings.TrimSpace(clienteNombre) + ".",
+		"Proveedor de pago: " + strings.TrimSpace(provider) + ".",
+		"Referencia: " + strings.TrimSpace(reference) + ".",
+	}
+	if lic != nil {
+		parts = append(parts, fmt.Sprintf("Licencia ID: %d.", lic.ID))
+		if strings.TrimSpace(lic.Nombre) != "" {
+			parts = append(parts, "Plan: "+strings.TrimSpace(lic.Nombre)+".")
+		}
+	}
+	if legalErr != nil {
+		parts = append(parts, "Pendiente fiscal: "+legalErr.Error()+".")
+	}
+	return strings.Join(parts, " ")
 }
 
 func sendLicenciaPaymentRejectedEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, provider, reference, status, rawPayload string) error {
@@ -4700,6 +5176,9 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRecForEmail, "wompi", reference); mailErr != nil {
 								log.Println("warning: failed to send licencia activation email for Wompi status:", mailErr)
 							}
+							if invoiceErr := tryIssueLicenciaFacturaElectronicaForWompi(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRecForEmail, "wompi", reference); invoiceErr != nil {
+								log.Println("warning: failed to issue licencia factura electronica for Wompi status:", invoiceErr)
+							}
 						}
 					}
 
@@ -4858,6 +5337,9 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 						if payRec != nil {
 							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRec, "wompi", reference); mailErr != nil {
 								log.Println("warning: failed to send licencia activation email for Wompi webhook:", mailErr)
+							}
+							if invoiceErr := tryIssueLicenciaFacturaElectronicaForWompi(r, dbEmpConn, dbSuper, empresaID, lic, payRec, "wompi", reference); invoiceErr != nil {
+								log.Println("warning: failed to issue licencia factura electronica for Wompi webhook:", invoiceErr)
 							}
 						}
 					}
@@ -5585,8 +6067,14 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 						payRec, recErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{recordTransactionID, transactionID, originalTransactionID}, []string{recordReference, invoiceReference, reference, originalReference})
 						if recErr != nil {
 							log.Println("warning: failed to reload Epayco payment for activation email:", recErr)
-						} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)); mailErr != nil {
-							log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
+						} else if payRec != nil {
+							licenseRef := firstNonEmptyString(recordReference, invoiceReference, reference, originalReference)
+							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", licenseRef); mailErr != nil {
+								log.Println("warning: failed to send licencia activation email for Epayco status:", mailErr)
+							}
+							if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec, "epayco", licenseRef); invoiceErr != nil {
+								log.Println("warning: failed to issue licencia factura electronica for Epayco status:", invoiceErr)
+							}
 						}
 					}
 				}
@@ -5788,8 +6276,14 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 						payRec, payErr := findEpaycoPaymentRecordByCandidates(dbSuper, []string{transactionID}, []string{reference, invoiceReference})
 						if payErr != nil {
 							log.Println("warning: failed to reload Epayco payment for webhook activation email:", payErr)
-						} else if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", firstNonEmptyString(invoiceReference, reference)); mailErr != nil {
-							log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
+						} else if payRec != nil {
+							licenseRef := firstNonEmptyString(invoiceReference, reference)
+							if mailErr := trySendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, "epayco", licenseRef); mailErr != nil {
+								log.Println("warning: failed to send licencia activation email for Epayco webhook:", mailErr)
+							}
+							if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbEmpConn, dbSuper, empresaID, lic, payRec, "epayco", licenseRef); invoiceErr != nil {
+								log.Println("warning: failed to issue licencia factura electronica for Epayco webhook:", invoiceErr)
+							}
 						}
 					}
 				}
@@ -6016,6 +6510,9 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 				if payRec, perr := dbpkg.GetEpaycoPaymentByReference(dbSuper, ref); perr == nil && payRec != nil {
 					if mailErr := trySendLicenciaActivationEmail(r, dbSuper, payload.EmpresaID, licReload, payRec, "manual", ref); mailErr != nil {
 						log.Println("warning: failed to send manual licencia welcome email:", mailErr)
+					}
+					if invoiceErr := tryIssueLicenciaFacturaElectronicaForEpayco(r, dbEmpresas, dbSuper, payload.EmpresaID, licReload, payRec, "manual", ref); invoiceErr != nil {
+						log.Println("warning: failed to issue manual licencia factura electronica:", invoiceErr)
 					}
 				}
 			}

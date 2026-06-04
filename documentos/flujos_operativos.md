@@ -119,6 +119,16 @@ afecte dinero, documentos, licencias o seguridad.
    el mensaje `licencia_activation_payment` y adjunta un PDF de licencia de
    software generado desde la plantilla `licencia_software_pdf`, ambas
    configurables en `web/super/formato_para_emviar_email.html`.
+   Si el pago comercial queda aprobado con valor mayor a cero, ademas se emite
+   automaticamente una factura electronica desde la empresa interna `Powerful
+   Control System` (tambien reconoce el nombre existente `Powerful Control
+   Systen`) y se envia al correo del cliente. El documento se guarda en
+   `empresa_facturacion_documentos` de la empresa emisora y el pago queda
+   marcado con `licencia_factura_electronica_emitida` en `pagos_epayco` o
+   `pagos_wompi` para idempotencia.
+   La empresa emisora interna se resuelve por
+   `configuraciones.licencias.facturacion_empresa_sistema_id` y mantiene una
+   licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL` sin vencimiento.
 7. La empresa puede descargar el mismo documento desde Administrar empresa >
    Licencia > Licencia del sistema; el endpoint
    `/api/empresa/licencia_sistema/pdf` debe quedar protegido por permisos de

@@ -763,6 +763,12 @@ func main() {
 			log.Printf("INFO: catalogo global de licencias verificado: planes=%d", ensured)
 		}
 		startupTrace("after_ensure_licencias_catalogo_global")
+		if empresaSistema, err := dbpkg.EnsurePowerfulSystemEmpresa(dbEmpresas, dbSuper); err != nil {
+			log.Printf("warning: no se pudo asegurar empresa interna Powerful Control System: %v", err)
+		} else if empresaSistema != nil {
+			log.Printf("INFO: empresa interna Powerful Control System verificada: empresa_id=%d", empresaSistema.EmpresaID)
+		}
+		startupTrace("after_ensure_powerful_system_empresa")
 		if err := dbpkg.EnsureSuperAuditoriaSchema(dbSuper); err != nil {
 			log.Fatalf("failed to ensure super auditoria schema in superadministrador db: %v", err)
 		}

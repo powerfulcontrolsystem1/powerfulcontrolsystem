@@ -1,3 +1,19 @@
+2026-06-04 - Tarjeta de logo registrado en Identidad visual
+- `web/administrar_empresa/configuracion.html`:
+	- agrega una tarjeta visible `Logo registrado` en la seccion de identidad visual para mostrar el logo guardado, estado de uso y URL registrada.
+	- actualiza la tarjeta al cargar configuracion, escribir URL, subir logo o cambiar checks de logo de empresa/sistema.
+	- corrige CSS de imagenes ocultas para que no aparezcan iconos rotos cuando no existe logo.
+
+2026-06-04 - Factura electronica automatica por compra de licencia
+- `backend/db/licencias_empresa_sistema.go`:
+	- nuevo helper de base de datos para resolver la empresa interna `Powerful Control System`/`Powerful Control Systen`, guardar su `empresa_id` en configuracion global y asegurar la licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL`.
+- `backend/handlers/payments_handlers.go`:
+	- agrega helpers para emitir factura electronica por licencias comerciales pagadas, enviar correo al cliente y marcar `pagos_epayco`/`pagos_wompi` como facturados de forma idempotente.
+- `backend/main.go`:
+	- verifica la empresa interna del sistema durante el arranque.
+- `backend/db/licencias_globales_test.go` y `backend/handlers/payments_handlers_test.go`:
+	- agregan pruebas de reconocimiento de empresa interna, codigo de documento de factura de licencia y lectura de montos de pago.
+
 2026-06-01 - GRAFOLOGIX grafologia OCR
 - `backend/internal/grafologia/analyzer.go`:
 	- motor heuristico en Go puro para analizar imagenes manuscritas con umbral Otsu, segmentacion de lineas, metricas graficas e interpretacion orientativa.
@@ -10538,3 +10554,11 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 - `documentos/api/ayuda_apis.md` y `web/ayuda/ayuda_apis.html`: agregan endpoints y reglas del modulo solar.
 - `web/ayuda/ayuda.html`: agrega seccion de Energia solar y actualiza fecha/alcance de la ayuda.
 - `documentos/contexto_codex.md`, `documentos/mapa_modulos.md`, `documentos/flujos_operativos.md`, `documentos/estructura_bd.md`, `documentos/matriz_roles_permisos_pos_multiempresa.md`, `documentos/descripcion_del_proyecto`, `documentos/descripcion_de_modulos`, `documentos/historial_de_cambios` y `documentos/CHANGELOG.md`: trazabilidad documental del cambio.
+
+2026-06-04 - Historial completo de licencias
+- `web/super/historial_licencias.html`:
+	- Nueva pagina del selector de empresas que abre el historial completo de licencias visibles para el administrador, incluyendo activas y vencidas desde el inicio.
+- `web/super/licencias.html`:
+	- En modo `scope=mine&con_empresa=1`, la vista principal muestra solo licencias activas o por vencer; las vencidas reemplazadas quedan fuera de esa pagina y se consultan desde el historial.
+- `web/seleccionar_empresa.html`:
+	- Agrega el acceso `Historial de licencias` en el menu lateral.

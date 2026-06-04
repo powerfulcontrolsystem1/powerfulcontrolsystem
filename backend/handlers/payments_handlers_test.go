@@ -230,6 +230,32 @@ func TestIsLicenciaPrueba15DiasCatalogo(t *testing.T) {
 	}
 }
 
+func TestBuildLicenciaFacturaDocumentoCodigoIsStableAndSafe(t *testing.T) {
+	got := buildLicenciaFacturaDocumentoCodigo("Epayco", "EPAYCO-LIC-6-EMP-20-ABC#123", 6, 20)
+	want := "LIC-EPAYCO-EPAYCO-LIC-6-EMP-20-ABC-123"
+	if got != want {
+		t.Fatalf("documento codigo = %q, want %q", got, want)
+	}
+
+	got = buildLicenciaFacturaDocumentoCodigo("", "", 6, 20)
+	if got != "LIC-LIC-LIC-6-EMP-20" {
+		t.Fatalf("fallback documento codigo inesperado: %q", got)
+	}
+}
+
+func TestLicenciaFacturaAmountFromPayloadPrefersPaidTotal(t *testing.T) {
+	lic := &dbpkg.Licencia{Valor: 150000}
+	amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"total_value": "COP 60.000,00"})
+	if !found || amount != 60000 {
+		t.Fatalf("expected paid total 60000, got amount=%.2f found=%v", amount, found)
+	}
+
+	amount, found = licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"data": map[string]interface{}{"amount_in_cents": float64(10000000)}})
+	if !found || amount != 100000 {
+		t.Fatalf("expected Wompi cents to become 100000, got amount=%.2f found=%v", amount, found)
+	}
+}
+
 func TestBuildWompiWebCheckoutFormUsesOfficialFields(t *testing.T) {
 	form := buildWompiWebCheckoutForm(
 		"pub_test_123",

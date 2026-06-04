@@ -31,9 +31,93 @@
       padding: 8px;
       box-sizing: border-box;
     }
+    .empresa-logo-config-preview img[hidden] {
+      display: none;
+    }
     .empresa-logo-config-empty {
       color: var(--muted);
       font-weight: 700;
+    }
+    .empresa-logo-registered-card {
+      display: grid;
+      gap: 12px;
+      margin: 12px 0;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+    .empresa-logo-registered-head,
+    .empresa-logo-registered-body {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .empresa-logo-registered-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .empresa-logo-registered-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 800;
+      font-size: .78rem;
+    }
+    .empresa-logo-registered-frame {
+      display: grid;
+      place-items: center;
+      width: 136px;
+      min-height: 108px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 10px;
+      box-sizing: border-box;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+    .empresa-logo-registered-frame img {
+      width: 100%;
+      max-width: 112px;
+      max-height: 86px;
+      object-fit: contain;
+      display: block;
+    }
+    .empresa-logo-registered-frame img[hidden] {
+      display: none;
+    }
+    .empresa-logo-registered-meta {
+      display: grid;
+      gap: 4px;
+      min-width: 220px;
+      flex: 1 1 260px;
+      color: var(--text);
+    }
+    .empresa-logo-registered-meta span {
+      color: var(--muted);
+      font-size: .88rem;
+    }
+    .empresa-logo-registered-url {
+      display: block;
+      max-width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--muted);
+      overflow-wrap: anywhere;
+      font-size: .78rem;
     }
     .corte-config-toolbar {
       display: flex;
@@ -296,6 +380,24 @@
         <button id="btnGuardarLogoEmpresa" type="button" class="btn">Guardar logo</button>
       </div>
       <p class="form-help">Carga el logo de esta empresa para mostrarlo en el panel principal y reutilizarlo en documentos. Si no hay logo, el panel conserva el diseno actual.</p>
+
+      <div class="empresa-logo-registered-card" aria-live="polite">
+        <div class="empresa-logo-registered-head">
+          <h3>Logo registrado</h3>
+          <span id="empresaLogoRegisteredStatus" class="empresa-logo-registered-status">Sin logo</span>
+        </div>
+        <div class="empresa-logo-registered-body">
+          <div class="empresa-logo-registered-frame">
+            <img id="empresaLogoRegisteredImg" alt="Logo registrado de la empresa" hidden>
+            <span id="empresaLogoRegisteredEmpty">Sin logo registrado.</span>
+          </div>
+          <div class="empresa-logo-registered-meta">
+            <strong id="empresaLogoRegisteredTitle">No hay logo registrado</strong>
+            <span id="empresaLogoRegisteredHelp">Sube un archivo o guarda una URL publica para ver aqui el logo activo de la empresa.</span>
+            <code id="empresaLogoRegisteredURL" class="empresa-logo-registered-url" hidden></code>
+          </div>
+        </div>
+      </div>
 
       <div class="empresa-config-grid">
         <div class="form">
@@ -3080,6 +3182,44 @@
       }
     }
 
+    function setEmpresaLogoRegisteredCard(logoURL, mostrarLogoEmpresa, mostrarLogoSistema) {
+      const safeURL = normalizeLogoURL(logoURL);
+      const img = document.getElementById('empresaLogoRegisteredImg');
+      const empty = document.getElementById('empresaLogoRegisteredEmpty');
+      const status = document.getElementById('empresaLogoRegisteredStatus');
+      const title = document.getElementById('empresaLogoRegisteredTitle');
+      const help = document.getElementById('empresaLogoRegisteredHelp');
+      const url = document.getElementById('empresaLogoRegisteredURL');
+      const hasLogo = !!safeURL;
+      if (img) {
+        img.hidden = !hasLogo;
+        img.src = hasLogo ? safeURL : '';
+      }
+      if (empty) {
+        empty.hidden = hasLogo;
+        empty.textContent = 'Sin logo registrado.';
+      }
+      if (url) {
+        url.hidden = !hasLogo;
+        url.textContent = hasLogo ? safeURL : '';
+      }
+      if (status) {
+        status.textContent = hasLogo ? (mostrarLogoEmpresa !== false ? 'Activo' : 'Guardado') : 'Sin logo';
+      }
+      if (title) {
+        title.textContent = hasLogo ? 'Logo de la empresa registrado' : 'No hay logo registrado';
+      }
+      if (help) {
+        if (!hasLogo) {
+          help.textContent = 'Sube un archivo o guarda una URL publica para ver aqui el logo activo de la empresa.';
+        } else if (mostrarLogoEmpresa !== false) {
+          help.textContent = mostrarLogoSistema ? 'Se mostrara junto al logo del sistema cuando los documentos lo permitan.' : 'Se mostrara en panel, facturas, recibos, reportes y documentos imprimibles.';
+        } else {
+          help.textContent = 'El logo esta guardado, pero ahora esta oculto por configuracion.';
+        }
+      }
+    }
+
     function setIdentidadVisualFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       const logoURL = normalizeLogoURL(src.logo_url);
@@ -3089,6 +3229,7 @@
       document.getElementById('empresaMostrarLogoEmpresa').checked = mostrarLogoEmpresa;
       document.getElementById('empresaMostrarLogoSistema').checked = mostrarLogoSistema;
       setEmpresaLogoPreview(logoURL, mostrarLogoEmpresa);
+      setEmpresaLogoRegisteredCard(logoURL, mostrarLogoEmpresa, mostrarLogoSistema);
       if (document.getElementById('facturaLogoURL')) {
         document.getElementById('facturaLogoURL').value = logoURL;
       }
@@ -3507,10 +3648,24 @@
       document.getElementById('btnGuardarLogoEmpresa').addEventListener('click', guardarIdentidadVisualConfig);
       document.getElementById('btnSubirLogoEmpresa').addEventListener('click', subirLogoEmpresa);
       document.getElementById('empresaLogoURL').addEventListener('input', function() {
-        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogoEmpresa').checked);
+        const logoURL = document.getElementById('empresaLogoURL').value;
+        const mostrarEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;
+        const mostrarSistema = document.getElementById('empresaMostrarLogoSistema').checked;
+        setEmpresaLogoPreview(logoURL, mostrarEmpresa);
+        setEmpresaLogoRegisteredCard(logoURL, mostrarEmpresa, mostrarSistema);
       });
       document.getElementById('empresaMostrarLogoEmpresa').addEventListener('change', function() {
-        setEmpresaLogoPreview(document.getElementById('empresaLogoURL').value, document.getElementById('empresaMostrarLogoEmpresa').checked);
+        const logoURL = document.getElementById('empresaLogoURL').value;
+        const mostrarEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;
+        const mostrarSistema = document.getElementById('empresaMostrarLogoSistema').checked;
+        setEmpresaLogoPreview(logoURL, mostrarEmpresa);
+        setEmpresaLogoRegisteredCard(logoURL, mostrarEmpresa, mostrarSistema);
+      });
+      document.getElementById('empresaMostrarLogoSistema').addEventListener('change', function() {
+        const logoURL = document.getElementById('empresaLogoURL').value;
+        const mostrarEmpresa = document.getElementById('empresaMostrarLogoEmpresa').checked;
+        const mostrarSistema = document.getElementById('empresaMostrarLogoSistema').checked;
+        setEmpresaLogoRegisteredCard(logoURL, mostrarEmpresa, mostrarSistema);
       });
       document.getElementById('btnGuardarFormatoNumerico').addEventListener('click', guardarFormatoNumericoConfig);
       document.getElementById('formatoUsarDecimales').addEventListener('change', syncFormatoDecimalesUI);

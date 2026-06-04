@@ -1,3 +1,15 @@
+## [2026-06-04] Historial de licencias separado
+- [Licencias] `Seleccionar empresa > Licencias` muestra solo licencias activas o por vencer, ocultando las vencidas que ya fueron reemplazadas por una nueva licencia vigente.
+- [UX] Se agrega `Historial de licencias` como pagina independiente para consultar todas las licencias visibles del administrador, activas y vencidas desde el inicio.
+- [Seguridad] No se crean endpoints nuevos; la vista reutiliza `/super/api/licencias?scope=mine&con_empresa=1` con el alcance multiempresa existente.
+- [QA] Scripts embebidos validados con Node y prueba visual local con datos simulados de licencia activa mas vencida.
+
+## [2026-06-04] Factura electronica automatica por compra de licencia
+- [Licencias] Las compras comerciales aprobadas generan factura electronica desde la empresa interna `Powerful Control System` y envian el documento al correo del cliente.
+- [Backend] Se agrega `backend/db/licencias_empresa_sistema.go` para resolver la empresa existente, incluyendo `Powerful Control Systen`, y asegurar licencia tecnica perpetua sin vencimiento.
+- [Pagos] Epayco/Wompi marcan `licencia_factura_electronica_emitida` en el payload del pago para evitar facturas duplicadas por reintentos o webhooks repetidos.
+- [QA] `go test -p 1 ./db ./handlers -run "Powerful|Licencia|Facturacion" -count=1`.
+
 ## [2026-06-02] Medidas tecnicas completas en reportes GRAFOLOGIX
 - [Grafologia] Cada metrica del motor Go ahora guarda `details` con angulo de inclinacion, pendiente, altura de renglones, separacion entre letras/palabras/lineas, continuidad, direccion de linea base, margenes, densidad, regularidad y forma.
 - [Reportes] HTML, Word, TXT, CSV y PDF muestran esas medidas; el PDF de GRAFOLOGIX ahora pagina el contenido para no recortar el detalle tecnico.

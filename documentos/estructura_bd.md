@@ -3,6 +3,30 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-04 (factura electronica automatica por compra de licencia)
+- `pcs_superadministrador.configuraciones`: clave
+  `licencias.facturacion_empresa_sistema_id` guarda el `empresa_id` de la
+  empresa interna emisora `Powerful Control System`. El resolver tambien acepta
+  el nombre historico existente `Powerful Control Systen` para no duplicar
+  empresas.
+- `pcs_superadministrador.licencias`: la empresa emisora interna conserva una
+  licencia tecnica `PCS_SYSTEM_INTERNAL_PERPETUAL`, activa, sin `fecha_fin`, con
+  valor cero y fuera del catalogo comercial. Esta licencia evita vencimiento de
+  la empresa del sistema.
+- `pcs_superadministrador.pagos_epayco` y `pcs_superadministrador.pagos_wompi`:
+  el JSON de `raw_payload` puede incluir
+  `licencia_factura_electronica_emitida`,
+  `licencia_factura_electronica_documento`,
+  `licencia_factura_electronica_numero_legal`,
+  `licencia_factura_electronica_codigo_validacion`,
+  `licencia_factura_electronica_to` y
+  `licencia_factura_electronica_email_sent` para idempotencia de factura por
+  compra de licencia.
+- `pcs_empresas.empresa_facturacion_documentos`: las facturas electronicas por
+  licencias comerciales se registran bajo el `empresa_id` de la empresa interna
+  emisora y usan `entidad_relacionada_id` para guardar la empresa cliente que
+  compro la licencia.
+
 Actualizacion 2026-06-01 (GRAFOLOGIX grafologia OCR)
 - Nueva tabla empresarial `empresa_grafologia_analisis` en `pcs_empresas`.
 - Todos los registros incluyen `empresa_id` obligatorio y los handlers consultan

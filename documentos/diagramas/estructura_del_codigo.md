@@ -1,3 +1,19 @@
+## Actualizacion 2026-06-04 (licencias con factura electronica del SaaS)
+
+- `backend/db/licencias_empresa_sistema.go`: resuelve la empresa interna
+  `Powerful Control System`/`Powerful Control Systen`, guarda su `empresa_id`
+  en configuracion global y asegura una licencia tecnica perpetua sin
+  vencimiento comercial.
+- `backend/handlers/payments_handlers.go`: al aprobar una licencia comercial en
+  Epayco, Wompi o flujo manual, reutiliza la capa de facturacion electronica
+  para crear `factura_electronica` desde la empresa interna, enviar correo al
+  cliente y marcar el pago como facturado sin duplicar por reintentos.
+- `backend/main.go`: verifica la empresa interna al arrancar junto al catalogo
+  global de licencias.
+- Flujo de capas: checkout licencia -> pago aprobado -> activacion idempotente
+  -> empresa emisora interna -> consecutivo/facturacion electronica -> correo
+  al cliente -> marca idempotente en `pagos_epayco`/`pagos_wompi`.
+
 ## Actualizacion 2026-06-01 (GRAFOLOGIX grafologia OCR)
 
 - `backend/internal/grafologia/`: nuevo paquete interno con motor de analisis

@@ -1,3 +1,10 @@
+2026-06-04: Licencias comerciales con factura electronica de Powerful Control System
+- Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `mensajeria_super`.
+- Cambio funcional: cuando una licencia comercial queda pagada/aprobada con valor mayor que cero, el sistema emite automaticamente una factura electronica desde la empresa interna `Powerful Control System` y la envia al correo del cliente comprador.
+- Backend: `backend/db/licencias_empresa_sistema.go` resuelve la empresa interna existente, incluyendo la variante historica `Powerful Control Systen`, y asegura una licencia tecnica perpetua sin `fecha_fin`. `backend/handlers/payments_handlers.go` conecta Epayco, Wompi y activacion manual con el flujo de facturacion electronica ya existente.
+- Persistencia: `configuraciones.licencias.facturacion_empresa_sistema_id` guarda la empresa emisora; `pagos_epayco` y `pagos_wompi` marcan `licencia_factura_electronica_emitida` en `raw_payload` para idempotencia; `empresa_facturacion_documentos` guarda la factura bajo el `empresa_id` de la emisora interna.
+- Seguridad: no se crean facturas para licencias de valor cero; los documentos usan la configuracion fiscal real de la empresa interna y no inventan credenciales DIAN. Si falta configuracion legal, el documento queda pendiente para reintento sin duplicar.
+
 2026-06-02: Login usuario con rol Cajero restringido
 - Modulo afectado: `usuarios_empresa`.
 - Cambio funcional: al entrar por `login_usuario.html`, las variantes de rol `Caja`, `Caja principal`, `Caja turno` y similares se normalizan como `cajero`.

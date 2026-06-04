@@ -1,3 +1,17 @@
+2026-06-04: Tarjeta de logo registrado en Identidad visual.
+- Modulo afectado: configuracion de empresa / identidad visual.
+- Cambio funcional: `web/administrar_empresa/configuracion.html` agrega una tarjeta `Logo registrado` que muestra el logo guardado de la empresa, su estado de uso y la URL registrada dentro de la pagina independiente `Administrar empresa > Configuracion > Identidad visual`.
+- UX: la tarjeta se actualiza al cargar configuracion, guardar URL, subir archivo y cambiar los checks de logo de empresa/sistema. Se corrige el estado `hidden` de las imagenes para evitar iconos rotos cuando no hay logo.
+- Pruebas: sintaxis de script embebido con Node y comprobacion visual local con servidor estatico temporal.
+
+2026-06-04: Factura electronica automatica por compra de licencia.
+- Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `mensajeria_super`, `backend_db`.
+- Cambio funcional: cuando una licencia comercial queda aprobada con valor mayor que cero por Epayco, Wompi o activacion manual, el sistema genera una factura electronica desde la empresa interna `Powerful Control System` y la envia al correo del cliente comprador.
+- Backend/DB: se agrega `backend/db/licencias_empresa_sistema.go` para resolver la empresa interna existente, incluyendo el nombre historico `Powerful Control Systen`, guardar `configuraciones.licencias.facturacion_empresa_sistema_id` y asegurar una licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL` sin fecha de vencimiento.
+- Pagos: `backend/handlers/payments_handlers.go` reutiliza la capa de facturacion electronica, marca `raw_payload` de `pagos_epayco`/`pagos_wompi` con `licencia_factura_electronica_emitida` y evita duplicados por reintentos/webhooks repetidos.
+- Seguridad/legal: no se inventan credenciales DIAN; si la empresa interna no tiene configuracion fiscal lista, el documento queda pendiente y puede reintentarse sin crear una segunda factura. Las licencias de valor cero no generan factura.
+- Pruebas: `go test -p 1 ./db ./handlers -run "Powerful|Licencia|Facturacion" -count=1`.
+
 2026-06-02: Cajero puede cargar carritos desde estaciones.
 - Modulos afectados: permisos empresariales, estaciones, carrito de compras y corte de caja.
 - `backend/handlers/empresa_permisos.go` respeta `perm_page=linkEstaciones` y `perm_page=linkCorteCaja` para `/api/empresa/carritos_compra` y `/api/empresa/carritos_compra/items`, evitando que el endpoint caiga al permiso administrativo `linkCarritoCompras`.
@@ -30596,3 +30610,17 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/administrar_empresa/nomina_sueldos.html
+
+2026-06-04: Historial completo de licencias separado del selector
+- `web/super/licencias.html`:
+  - En la vista de `Seleccionar empresa > Licencias`, el modo empresarial muestra solo licencias activas o por vencer para evitar que licencias vencidas reemplazadas aparezcan junto a la licencia vigente.
+  - Agrega un boton `Historial de licencias` que abre una pagina independiente.
+- `web/super/historial_licencias.html`:
+  - Nueva pagina que reutiliza la vista de licencias con `historial=1` para listar todas las licencias visibles para el administrador, activas y vencidas desde el inicio.
+- `web/seleccionar_empresa.html`:
+  - Agrega el acceso `Historial de licencias` en el menu lateral del selector.
+- Seguridad:
+  - No se agregan endpoints nuevos; se reutiliza `/super/api/licencias?scope=mine&con_empresa=1`, que mantiene el alcance de empresas visibles por sesion.
+- Validacion:
+  - Sintaxis de scripts embebidos validada con Node.
+  - Prueba visual local con datos simulados: `Licencias` mostro solo la licencia activa y `Historial de licencias` mostro activa mas vencida.

@@ -72,3 +72,20 @@ func TestIsGlobalLicenciaCatalogItem(t *testing.T) {
 		t.Fatal("codigo antiguo no debe contar como catalogo global")
 	}
 }
+
+func TestIsPowerfulSystemEmpresaNameRecognizesExistingCompanyAndLegacyTypo(t *testing.T) {
+	valid := []string{
+		"Powerful Control System",
+		"powerful control system",
+		"  Powerful   Control   System  ",
+		"Powerful Control Systen",
+	}
+	for _, name := range valid {
+		if !IsPowerfulSystemEmpresaName(name) {
+			t.Fatalf("expected %q to be recognized as system company", name)
+		}
+	}
+	if IsPowerfulSystemEmpresaName("Powerful Control System Demo") {
+		t.Fatal("similar demo company must not be treated as the internal system company")
+	}
+}
