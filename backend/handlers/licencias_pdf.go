@@ -184,6 +184,72 @@ func buildLicenciaSoftwarePDF(input licenciaSoftwarePDFInput) []byte {
 	return assembleSimplePDF(content.Bytes())
 }
 
+func buildLicenciaFacturaElectronicaPDF(doc dbpkg.EmpresaDocumentoFacturacion, clienteNombre, licenciaNombre, provider, reference string) ([]byte, string) {
+	numeroLegal := strings.TrimSpace(doc.NumeroLegal)
+	if numeroLegal == "" {
+		numeroLegal = strings.TrimSpace(doc.DocumentoCodigo)
+	}
+	codigoValidacion := strings.TrimSpace(doc.CodigoValidacion)
+	if codigoValidacion == "" {
+		codigoValidacion = "Pendiente"
+	}
+	moneda := strings.ToUpper(strings.TrimSpace(doc.Moneda))
+	if moneda == "" {
+		moneda = "COP"
+	}
+	clienteNombre = strings.TrimSpace(clienteNombre)
+	if clienteNombre == "" {
+		clienteNombre = "Cliente de licencia"
+	}
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		provider = "Sistema"
+	}
+
+	var content bytes.Buffer
+	pdfLine(&content, "q 0 0 0 RG 0.90 0.95 1 rg 1 w 54 781 38 28 re B Q")
+	pdfText(&content, "F2", 13, 62, 790, "PCS")
+	pdfLine(&content, "q 0 0 0 RG 1.4 w 46 760 m 548 760 l S Q")
+	pdfText(&content, "F2", 22, 104, 790, "Powerful Control System")
+	pdfText(&content, "F1", 9, 105, 775, "Sistema de facturacion electronica con domotica integrada")
+	pdfText(&content, "F2", 15, 54, 742, "Factura electronica por compra de licencia")
+
+	lines := []string{
+		"Documento: " + emptyPDFValue(doc.DocumentoCodigo, "Factura electronica"),
+		"Numero legal: " + emptyPDFValue(numeroLegal, "Sin numero legal"),
+		"Codigo validacion: " + emptyPDFValue(codigoValidacion, "Pendiente"),
+		"Estado: " + emptyPDFValue(doc.EstadoDocumento, "emitida"),
+		"Cliente: " + clienteNombre,
+		"Licencia: " + emptyPDFValue(licenciaNombre, "Licencia del sistema"),
+		"Referencia: " + emptyPDFValue(reference, "Sin referencia"),
+		"Pasarela: " + provider,
+		"Fecha: " + emptyPDFValue(doc.FechaDocumento, time.Now().Format("2006-01-02 15:04:05")),
+		"Total: " + fmt.Sprintf("%.0f %s", doc.MontoTotal, moneda),
+		"Pais FE: " + emptyPDFValue(doc.PaisCodigo, "CO"),
+		"Ambiente FE: " + emptyPDFValue(doc.AmbienteFE, "configurado"),
+	}
+	y := 710
+	for _, line := range lines {
+		pdfText(&content, "F1", 10, 54, y, line)
+		y -= 16
+	}
+	y -= 8
+	for _, paragraph := range splitPDFParagraphs("Este documento resume la factura electronica generada automaticamente por la compra de la licencia del sistema. La trazabilidad fiscal completa queda registrada en el modulo de facturacion electronica de la empresa emisora Powerful Control System.") {
+		for _, line := range wrapPDFText(paragraph, 92) {
+			if y < 78 {
+				break
+			}
+			pdfText(&content, "F1", 10, 54, y, line)
+			y -= 13
+		}
+		y -= 5
+	}
+	pdfLine(&content, "q 0 0 0 RG 0.8 w 46 52 m 548 52 l S Q")
+	pdfText(&content, "F1", 8, 54, 38, "Documento generado automaticamente por Powerful Control System.")
+
+	return assembleSimplePDF(content.Bytes()), licenciaFacturaElectronicaPDFFilename(doc.DocumentoCodigo)
+}
+
 func assembleSimplePDF(content []byte) []byte {
 	objects := []string{
 		"<< /Type /Catalog /Pages 2 0 R >>",
@@ -305,4 +371,17 @@ func licenciaSoftwarePDFFilename(companyName string, empresaID int64) string {
 		base = strings.Trim(base[:64], "-")
 	}
 	return "licencia-powerful-control-system-" + base + ".pdf"
+}
+
+func licenciaFacturaElectronicaPDFFilename(documentoCodigo string) string {
+	base := strings.ToLower(normalizePDFText(strings.TrimSpace(documentoCodigo)))
+	base = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(base, "-")
+	base = strings.Trim(base, "-")
+	if base == "" {
+		base = "factura-electronica-licencia"
+	}
+	if len(base) > 72 {
+		base = strings.Trim(base[:72], "-")
+	}
+	return "factura-electronica-" + base + ".pdf"
 }

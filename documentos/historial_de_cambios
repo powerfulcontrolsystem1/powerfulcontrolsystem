@@ -1,3 +1,10 @@
+2026-06-04: Correo unificado de compra de licencia con factura adjunta.
+- Modulos afectados: licencias, pagos Epayco/Wompi, facturacion electronica y mensajeria super.
+- Cambio funcional: la activacion de licencias envia un solo correo con el PDF de licencia; cuando el pago comercial aprobado tiene valor mayor que cero, el mismo correo adjunta tambien el PDF resumen de la factura electronica emitida por la empresa interna Powerful Control System.
+- Backend: `backend/handlers/payments_handlers.go` separa la emision/preparacion de factura del envio directo para evitar dos correos, mantiene marcas idempotentes en `pagos_epayco`/`pagos_wompi` y conserva que valor cero, prueba o descuento total no emitan factura electronica en el flujo final.
+- PDF: `backend/handlers/licencias_pdf.go` agrega generacion Go pura del PDF resumen de factura electronica de licencia.
+- Pruebas: `go test ./handlers -run "Licencia|Factura|Payment|Epayco|Wompi" -count=1`; `go test ./db -run "Licencia|Payment|Factura" -count=1`.
+
 2026-06-04: Tarjeta de logo registrado en Identidad visual.
 - Modulo afectado: configuracion de empresa / identidad visual.
 - Cambio funcional: `web/administrar_empresa/configuracion.html` agrega una tarjeta `Logo registrado` que muestra el logo guardado de la empresa, su estado de uso y la URL registrada dentro de la pagina independiente `Administrar empresa > Configuracion > Identidad visual`.

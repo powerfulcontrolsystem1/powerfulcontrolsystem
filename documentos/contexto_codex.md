@@ -131,19 +131,21 @@ botones, desde handlers estaticos del backend.
   licencias base antiguas por tipo y addons de catalogo sin empresa asignada se
   eliminan del catalogo comercial. Al activarse una licencia por pago o por
   flujo de valor cero permitido, `backend/handlers/payments_handlers.go` envia
-  correo al administrador de la empresa y adjunta un PDF de licencia de software
-  generado en Go puro. Ese mismo PDF se descarga desde Administrar empresa >
-  Licencia > Licencia del sistema y su texto se edita con la plantilla
+  un solo correo al administrador de la empresa y adjunta un PDF de licencia de
+  software generado en Go puro. Ese mismo PDF se descarga desde Administrar
+  empresa > Licencia > Licencia del sistema y su texto se edita con la plantilla
   `licencia_software_pdf` de Super administrador > Formatos de email.
   En compras comerciales con total pagado mayor que cero, el mismo flujo emite
   una factura electronica automatica desde la empresa interna `Powerful Control
-  System`/`Powerful Control Systen` ya existente, envia el documento al correo
-  del cliente y marca `pagos_epayco` o `pagos_wompi` con
+  System`/`Powerful Control Systen` ya existente y adjunta el PDF resumen de esa
+  factura al mismo correo de activacion de licencia. El documento se registra en
+  `empresa_facturacion_documentos` de la empresa emisora y marca `pagos_epayco` o `pagos_wompi` con
   `licencia_factura_electronica_emitida` para no duplicar documentos por
   webhooks repetidos. La empresa emisora interna se guarda en
   `configuraciones.licencias.facturacion_empresa_sistema_id` y recibe una
   licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL`, sin fecha fin y sin
-  depender de planes comerciales.
+  depender de planes comerciales. Las activaciones con total pagado cero por
+  prueba o descuento total no emiten factura electronica en el flujo final.
   Si una empresa paga una licencia comercial antes de que venza la licencia
   actual, la nueva vigencia no reemplaza ni acorta la anterior: se programa
   desde el vencimiento acumulado mas lejano de esa empresa y queda lista para

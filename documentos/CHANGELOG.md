@@ -1,3 +1,9 @@
+## [2026-06-04] Correo unificado de licencia y factura electronica
+- [Licencias] La activacion de licencia envia un solo correo al cliente con el PDF de licencia; si la compra comercial aprobada tiene valor mayor que cero, adjunta en ese mismo mensaje el PDF resumen de la factura electronica.
+- [Pagos] Epayco y Wompi ya no disparan un correo separado de factura en el flujo normal; conservan la marca `licencia_factura_electronica_emitida` para idempotencia.
+- [Regla fiscal] Las activaciones con total pagado cero por prueba o descuento total no emiten factura electronica en el flujo final.
+- [QA] `go test ./handlers -run "Licencia|Factura|Payment|Epayco|Wompi" -count=1`; `go test ./db -run "Licencia|Payment|Factura" -count=1`.
+
 ## [2026-06-04] Historial de licencias separado
 - [Licencias] `Seleccionar empresa > Licencias` muestra solo licencias activas o por vencer, ocultando las vencidas que ya fueron reemplazadas por una nueva licencia vigente.
 - [UX] Se agrega `Historial de licencias` como pagina independiente para consultar todas las licencias visibles del administrador, activas y vencidas desde el inicio.

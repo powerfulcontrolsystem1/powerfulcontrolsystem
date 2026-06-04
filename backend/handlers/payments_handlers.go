@@ -851,6 +851,17 @@ type licenciaFacturaElectronicaOutcome struct {
 	SkipReason       string
 }
 
+type licenciaFacturaElectronicaOptions struct {
+	SendEmail             bool
+	AllowZeroTotalForTest bool
+}
+
+type licenciaEmailAttachment struct {
+	Filename    string
+	ContentType string
+	Data        []byte
+}
+
 func epaycoLicenciaFacturaAlreadyIssued(payRec *dbpkg.EpaycoPaymentRecord) bool {
 	if payRec == nil || !payRec.RawPayload.Valid {
 		return false
@@ -938,7 +949,7 @@ func tryIssueLicenciaFacturaElectronicaForEpayco(r *http.Request, dbEmp, dbSuper
 	if epaycoLicenciaFacturaAlreadyIssued(payRec) {
 		return nil
 	}
-	outcome, err := issueLicenciaFacturaElectronica(r, dbEmp, dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+	outcome, _, err := issueLicenciaFacturaElectronicaWithOptions(r, dbEmp, dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference, licenciaFacturaElectronicaOptions{SendEmail: false})
 	if err != nil {
 		return err
 	}
@@ -952,7 +963,7 @@ func tryIssueLicenciaFacturaElectronicaForWompi(r *http.Request, dbEmp, dbSuper 
 	if wompiLicenciaFacturaAlreadyIssued(payRec) {
 		return nil
 	}
-	outcome, err := issueLicenciaFacturaElectronica(r, dbEmp, dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+	outcome, _, err := issueLicenciaFacturaElectronicaWithOptions(r, dbEmp, dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference, licenciaFacturaElectronicaOptions{SendEmail: false})
 	if err != nil {
 		return err
 	}
@@ -970,11 +981,20 @@ func trySendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID 
 	if err != nil {
 		return err
 	}
-	if err := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, payRec, provider, reference); err != nil {
+	invoiceOutcome, invoiceAttachments, invoiceErr := prepareLicenciaFacturaElectronicaAttachments(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+	if invoiceErr != nil {
+		log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
+	}
+	if err := sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, payRec, provider, reference, invoiceAttachments); err != nil {
 		return err
 	}
 	if err := markEpaycoActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
 		return err
+	}
+	if len(invoiceAttachments) > 0 {
+		if err := markEpaycoLicenciaFacturaIssued(dbSuper, payRec, invoiceOutcome, reference); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -993,31 +1013,66 @@ func trySendLicenciaActivationEmailForWompi(r *http.Request, dbSuper *sql.DB, em
 	epaycoLike := &dbpkg.EpaycoPaymentRecord{
 		RawPayload: payRec.RawPayload,
 	}
-	if err := sendLicenciaActivationEmail(r, dbSuper, empresaID, lic, epaycoLike, provider, reference); err != nil {
+	invoiceOutcome, invoiceAttachments, invoiceErr := prepareLicenciaFacturaElectronicaAttachments(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRec.RawPayload.String, provider, reference)
+	if invoiceErr != nil {
+		log.Println("warning: licencia factura electronica no se adjunta al correo unificado:", invoiceErr)
+	}
+	if err := sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, epaycoLike, provider, reference, invoiceAttachments); err != nil {
 		return err
 	}
 	if err := markWompiActivationEmailSent(dbSuper, payRec, recipient, reference); err != nil {
 		return err
 	}
+	if len(invoiceAttachments) > 0 {
+		if err := markWompiLicenciaFacturaIssued(dbSuper, payRec, invoiceOutcome, reference); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
+func prepareLicenciaFacturaElectronicaAttachments(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, rawPayload, provider, reference string) (licenciaFacturaElectronicaOutcome, []licenciaEmailAttachment, error) {
+	outcome, doc, err := issueLicenciaFacturaElectronicaWithOptions(r, dbEmp, dbSuper, empresaID, lic, rawPayload, provider, reference, licenciaFacturaElectronicaOptions{SendEmail: false})
+	if err != nil || outcome.Skipped || doc == nil {
+		return outcome, nil, err
+	}
+	if !strings.EqualFold(strings.TrimSpace(doc.EstadoDocumento), "emitida") {
+		return outcome, nil, nil
+	}
+	clienteNombre := licenciaFacturaClienteNombre(dbEmp, empresaID, parsePaymentPayloadMap(rawPayload))
+	pdfBytes, pdfName := buildLicenciaFacturaElectronicaPDF(*doc, clienteNombre, strings.TrimSpace(lic.Nombre), provider, reference)
+	if len(pdfBytes) == 0 {
+		return outcome, nil, nil
+	}
+	outcome.EmailSent = true
+	return outcome, []licenciaEmailAttachment{{
+		Filename:    pdfName,
+		ContentType: "application/pdf",
+		Data:        pdfBytes,
+	}}, nil
+}
+
 func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, rawPayload, provider, reference string) (licenciaFacturaElectronicaOutcome, error) {
+	outcome, _, err := issueLicenciaFacturaElectronicaWithOptions(r, dbEmp, dbSuper, empresaID, lic, rawPayload, provider, reference, licenciaFacturaElectronicaOptions{SendEmail: true})
+	return outcome, err
+}
+
+func issueLicenciaFacturaElectronicaWithOptions(r *http.Request, dbEmp, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, rawPayload, provider, reference string, options licenciaFacturaElectronicaOptions) (licenciaFacturaElectronicaOutcome, *dbpkg.EmpresaDocumentoFacturacion, error) {
 	var outcome licenciaFacturaElectronicaOutcome
 	if dbEmp == nil {
 		dbEmp = dbpkg.GetDB()
 	}
 	if dbEmp == nil || dbSuper == nil || empresaID <= 0 || lic == nil {
-		return outcome, nil
+		return outcome, nil, nil
 	}
 	if err := dbpkg.EnsureEmpresaConfiguracionAvanzadaSchema(dbEmp); err != nil {
-		return outcome, err
+		return outcome, nil, err
 	}
 	if err := dbpkg.EnsureEmpresaFacturacionElectronicaSchema(dbEmp); err != nil {
-		return outcome, err
+		return outcome, nil, err
 	}
 	if err := dbpkg.EnsureEmpresaDocumentosTransaccionalesSchema(dbEmp); err != nil {
-		return outcome, err
+		return outcome, nil, err
 	}
 
 	payloadMap := parsePaymentPayloadMap(rawPayload)
@@ -1026,23 +1081,27 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 		amount = lic.Valor
 	}
 	if amount <= 0 {
-		outcome.Skipped = true
-		outcome.SkipReason = "licencia sin valor pagado"
-		return outcome, nil
+		if options.AllowZeroTotalForTest && lic.Valor > 0 {
+			amount = lic.Valor
+		} else {
+			outcome.Skipped = true
+			outcome.SkipReason = "licencia sin valor pagado"
+			return outcome, nil, nil
+		}
 	}
 
 	systemEmpresa, err := dbpkg.EnsurePowerfulSystemEmpresa(dbEmp, dbSuper)
 	if err != nil {
-		return outcome, err
+		return outcome, nil, err
 	}
 	if systemEmpresa == nil || systemEmpresa.EmpresaID <= 0 {
-		return outcome, fmt.Errorf("empresa emisora del sistema no disponible")
+		return outcome, nil, fmt.Errorf("empresa emisora del sistema no disponible")
 	}
 	outcome.SystemEmpresaID = systemEmpresa.EmpresaID
 
 	toEmail, err := resolveLicenciaPaymentRecipient(dbSuper, empresaID, rawPayload)
 	if err != nil {
-		return outcome, err
+		return outcome, nil, err
 	}
 
 	clienteNombre := licenciaFacturaClienteNombre(dbEmp, empresaID, payloadMap)
@@ -1052,7 +1111,7 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 
 	docPersistido, existingErr := dbpkg.GetEmpresaDocumentoFacturacionByCodigo(dbEmp, systemEmpresa.EmpresaID, "factura_electronica", documentoCodigo)
 	if existingErr != nil && !errors.Is(existingErr, sql.ErrNoRows) {
-		return outcome, existingErr
+		return outcome, nil, existingErr
 	}
 
 	if docPersistido == nil {
@@ -1086,11 +1145,11 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 
 		docPersistido, err = dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docPayload)
 		if err != nil {
-			return outcome, err
+			return outcome, nil, err
 		}
 		if legalErr != nil {
 			outcome.EstadoDocumento = docPayload.EstadoDocumento
-			return outcome, fmt.Errorf("factura electronica de licencia pendiente por configuracion fiscal: %w", legalErr)
+			return outcome, docPersistido, fmt.Errorf("factura electronica de licencia pendiente por configuracion fiscal: %w", legalErr)
 		}
 	} else if !strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
 		docActualizado := *docPersistido
@@ -1098,7 +1157,7 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 			legalDoc, legalErr := dbpkg.PrepareFacturacionDocumentoLegal(dbEmp, systemEmpresa.EmpresaID, "CO", documentoCodigo, amount, "COP")
 			if legalErr != nil {
 				outcome.EstadoDocumento = docPersistido.EstadoDocumento
-				return outcome, fmt.Errorf("factura electronica de licencia pendiente por configuracion fiscal: %w", legalErr)
+				return outcome, docPersistido, fmt.Errorf("factura electronica de licencia pendiente por configuracion fiscal: %w", legalErr)
 			}
 			if legalDoc != nil {
 				docActualizado.NumeroLegal = legalDoc.NumeroLegal
@@ -1117,12 +1176,12 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 		docActualizado.Observaciones = licenciaFacturaObservaciones(empresaID, clienteNombre, lic, provider, reference, nil)
 		docPersistido, err = dbpkg.UpsertEmpresaDocumentoFacturacion(dbEmp, docActualizado)
 		if err != nil {
-			return outcome, err
+			return outcome, nil, err
 		}
 	}
 
 	if docPersistido == nil {
-		return outcome, fmt.Errorf("factura electronica de licencia no fue persistida")
+		return outcome, nil, fmt.Errorf("factura electronica de licencia no fue persistida")
 	}
 	outcome.DocumentoCodigo = docPersistido.DocumentoCodigo
 	outcome.NumeroLegal = docPersistido.NumeroLegal
@@ -1130,7 +1189,7 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 	outcome.EstadoDocumento = docPersistido.EstadoDocumento
 
 	if !strings.EqualFold(strings.TrimSpace(docPersistido.EstadoDocumento), "emitida") {
-		return outcome, fmt.Errorf("factura electronica de licencia en estado %s", strings.TrimSpace(docPersistido.EstadoDocumento))
+		return outcome, docPersistido, fmt.Errorf("factura electronica de licencia en estado %s", strings.TrimSpace(docPersistido.EstadoDocumento))
 	}
 
 	fePayload := facturacionOperacionPayload{
@@ -1152,7 +1211,7 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 
 	integracion, _, intErr := processFacturacionIntegracionForDocumento(dbEmp, fePayload, *docPersistido, "emitir", "sistema.licencias")
 	if intErr != nil {
-		return outcome, intErr
+		return outcome, docPersistido, intErr
 	}
 	if facturaElectronicaVentaRequiereAcuseFiscal(docPersistido, integracion) && !facturaElectronicaVentaIntegracionConfirmada(integracion) {
 		docPendiente := *docPersistido
@@ -1164,7 +1223,11 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 			docPersistido = updated
 			outcome.EstadoDocumento = updated.EstadoDocumento
 		}
-		return outcome, fmt.Errorf("factura electronica de licencia pendiente de acuse fiscal")
+		return outcome, docPersistido, fmt.Errorf("factura electronica de licencia pendiente de acuse fiscal")
+	}
+
+	if !options.SendEmail {
+		return outcome, docPersistido, nil
 	}
 
 	emailResult := enviarFacturaElectronicaAlCliente(dbEmp, dbSuper, fePayload, *docPersistido)
@@ -1174,9 +1237,9 @@ func issueLicenciaFacturaElectronica(r *http.Request, dbEmp, dbSuper *sql.DB, em
 		if strings.TrimSpace(emailResult.Error) == "" {
 			emailResult.Error = "correo no enviado"
 		}
-		return outcome, fmt.Errorf("factura electronica de licencia creada pero no enviada: %s", emailResult.Error)
+		return outcome, docPersistido, fmt.Errorf("factura electronica de licencia creada pero no enviada: %s", emailResult.Error)
 	}
-	return outcome, nil
+	return outcome, docPersistido, nil
 }
 
 func licenciaFacturaAmountFromPayload(lic *dbpkg.Licencia, payload map[string]interface{}) (float64, bool) {
@@ -1514,6 +1577,10 @@ func trySendLicenciaPaymentRejectedEmailForWompi(r *http.Request, dbSuper *sql.D
 }
 
 func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string) error {
+	return sendLicenciaActivationEmailWithAttachments(r, dbSuper, empresaID, lic, payRec, provider, reference, nil)
+}
+
+func sendLicenciaActivationEmailWithAttachments(r *http.Request, dbSuper *sql.DB, empresaID int64, lic *dbpkg.Licencia, payRec *dbpkg.EpaycoPaymentRecord, provider, reference string, extraAttachments []licenciaEmailAttachment) error {
 	if dbSuper == nil || lic == nil || payRec == nil || !payRec.RawPayload.Valid {
 		return nil
 	}
@@ -1605,6 +1672,9 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	if err != nil {
 		return err
 	}
+	if len(extraAttachments) > 0 {
+		cuerpo = strings.TrimSpace(cuerpo) + "\n\nAdjunto tambien encontraras la factura electronica emitida por la compra de esta licencia."
+	}
 	issueDate := time.Now()
 	empresaPDF := &dbpkg.Empresa{ID: empresaID, EmpresaID: empresaID, Nombre: safeEmpresa, Nit: empresaNit}
 	if empresaID > 0 {
@@ -1617,6 +1687,23 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	pdfBytes, pdfName, err := buildLicenciaSoftwarePDFForEmpresa(dbSuper, empresaPDF, lic, safeProvider, strings.TrimSpace(reference), totalValue, issueDate)
 	if err != nil {
 		return err
+	}
+	attachments := []licenciaEmailAttachment{{
+		Filename:    pdfName,
+		ContentType: "application/pdf",
+		Data:        pdfBytes,
+	}}
+	for _, attachment := range extraAttachments {
+		if len(attachment.Data) == 0 {
+			continue
+		}
+		if strings.TrimSpace(attachment.ContentType) == "" {
+			attachment.ContentType = "application/octet-stream"
+		}
+		if strings.TrimSpace(attachment.Filename) == "" {
+			attachment.Filename = "documento-adjunto.pdf"
+		}
+		attachments = append(attachments, attachment)
 	}
 	metadataJSON := fmt.Sprintf(`{"provider":%q,"licencia_id":%d,"empresa_id":%d,"reference":%q,"discount_code":%q,"asesor_id":%q,"total_value":%q,"license_pdf_filename":%q,"license_pdf_bytes":%d}`, provider, lic.ID, empresaID, reference, discountCode, asesorID, totalValue, pdfName, len(pdfBytes))
 
@@ -1662,20 +1749,24 @@ func sendLicenciaActivationEmail(r *http.Request, dbSuper *sql.DB, empresaID int
 	}
 	auth := smtp.PlainAuth("", smtpEmail, smtpPass, mailHostForAuth)
 	addr := net.JoinHostPort(smtpHost, smtpPort)
-	msg := buildLicenciaActivationEmailMessage(fromName, smtpEmail, toEmail, asunto, cuerpo, pdfName, pdfBytes)
+	msg := buildLicenciaActivationEmailMessageWithAttachments(fromName, smtpEmail, toEmail, asunto, cuerpo, attachments)
 	return smtp.SendMail(addr, auth, smtpEmail, []string{toEmail}, msg)
 }
 
 func buildLicenciaActivationEmailMessage(fromName, fromEmail, toEmail, subject, bodyText, attachmentName string, attachment []byte) []byte {
+	return buildLicenciaActivationEmailMessageWithAttachments(fromName, fromEmail, toEmail, subject, bodyText, []licenciaEmailAttachment{{
+		Filename:    attachmentName,
+		ContentType: "application/pdf",
+		Data:        attachment,
+	}})
+}
+
+func buildLicenciaActivationEmailMessageWithAttachments(fromName, fromEmail, toEmail, subject, bodyText string, attachments []licenciaEmailAttachment) []byte {
 	from := (&mail.Address{Name: strings.TrimSpace(fromName), Address: strings.TrimSpace(fromEmail)}).String()
 	to := (&mail.Address{Address: strings.TrimSpace(toEmail)}).String()
 	boundary := "pcs-licencia-" + fmt.Sprint(time.Now().UnixNano())
 	if strings.TrimSpace(bodyText) == "" {
 		bodyText = "Adjunto encontraras la licencia del software Powerful Control System."
-	}
-	attachmentName = strings.ReplaceAll(strings.TrimSpace(attachmentName), `"`, "")
-	if attachmentName == "" {
-		attachmentName = "licencia-powerful-control-system.pdf"
 	}
 
 	var msg bytes.Buffer
@@ -1690,17 +1781,34 @@ func buildLicenciaActivationEmailMessage(fromName, fromEmail, toEmail, subject, 
 	msg.WriteString("Content-Transfer-Encoding: 8bit\r\n\r\n")
 	msg.WriteString(bodyText + "\r\n\r\n")
 
-	msg.WriteString("--" + boundary + "\r\n")
-	msg.WriteString("Content-Type: application/pdf\r\n")
-	msg.WriteString("Content-Transfer-Encoding: base64\r\n")
-	msg.WriteString("Content-Disposition: attachment; filename=\"" + attachmentName + "\"\r\n\r\n")
-	encoded := base64.StdEncoding.EncodeToString(attachment)
-	for i := 0; i < len(encoded); i += 76 {
-		end := i + 76
-		if end > len(encoded) {
-			end = len(encoded)
+	for index, attachment := range attachments {
+		if len(attachment.Data) == 0 {
+			continue
 		}
-		msg.WriteString(encoded[i:end] + "\r\n")
+		attachmentName := strings.ReplaceAll(strings.TrimSpace(attachment.Filename), `"`, "")
+		if attachmentName == "" {
+			if index == 0 {
+				attachmentName = "licencia-powerful-control-system.pdf"
+			} else {
+				attachmentName = fmt.Sprintf("documento-adjunto-%d.pdf", index+1)
+			}
+		}
+		contentType := strings.TrimSpace(attachment.ContentType)
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		msg.WriteString("--" + boundary + "\r\n")
+		msg.WriteString("Content-Type: " + contentType + "\r\n")
+		msg.WriteString("Content-Transfer-Encoding: base64\r\n")
+		msg.WriteString("Content-Disposition: attachment; filename=\"" + attachmentName + "\"\r\n\r\n")
+		encoded := base64.StdEncoding.EncodeToString(attachment.Data)
+		for i := 0; i < len(encoded); i += 76 {
+			end := i + 76
+			if end > len(encoded) {
+				end = len(encoded)
+			}
+			msg.WriteString(encoded[i:end] + "\r\n")
+		}
 	}
 	msg.WriteString("\r\n--" + boundary + "--\r\n")
 	return msg.Bytes()

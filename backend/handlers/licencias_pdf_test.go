@@ -58,6 +58,62 @@ func TestBuildLicenciaActivationEmailMessageAdjuntaPDF(t *testing.T) {
 	}
 }
 
+func TestBuildLicenciaActivationEmailMessageAdjuntaLicenciaYFactura(t *testing.T) {
+	licenciaPDF := buildLicenciaSoftwarePDF(licenciaSoftwarePDFInput{CompanyName: "Motel Calipso"})
+	facturaPDF := []byte("%PDF-1.4\nfactura electronica\n%%EOF")
+	msg := buildLicenciaActivationEmailMessageWithAttachments(
+		"Powerful Control System",
+		"no-reply@example.com",
+		"cliente@example.com",
+		"Tu licencia ya quedo activa",
+		"Adjunto encontraras la licencia y la factura electronica.",
+		[]licenciaEmailAttachment{
+			{Filename: "licencia.pdf", ContentType: "application/pdf", Data: licenciaPDF},
+			{Filename: "factura-electronica.pdf", ContentType: "application/pdf", Data: facturaPDF},
+		},
+	)
+	text := string(msg)
+	for _, want := range []string{
+		"Content-Type: multipart/mixed",
+		"Content-Disposition: attachment; filename=\"licencia.pdf\"",
+		"Content-Disposition: attachment; filename=\"factura-electronica.pdf\"",
+		"Adjunto encontraras la licencia y la factura electronica.",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("mensaje no contiene %q", want)
+		}
+	}
+	if got := strings.Count(text, "Content-Type: application/pdf"); got != 2 {
+		t.Fatalf("adjuntos PDF = %d, want 2", got)
+	}
+}
+
+func TestBuildLicenciaFacturaElectronicaPDFGeneraDocumentoValido(t *testing.T) {
+	doc := dbpkg.EmpresaDocumentoFacturacion{
+		DocumentoCodigo:  "LIC-WOMPI-REF 123",
+		NumeroLegal:      "FE-PCS-000123",
+		CodigoValidacion: "CUFE-123",
+		EstadoDocumento:  "emitida",
+		PaisCodigo:       "CO",
+		AmbienteFE:       "habilitacion",
+		MontoTotal:       60000,
+		Moneda:           "COP",
+		FechaDocumento:   "2026-06-04 12:00:00",
+	}
+	pdf, filename := buildLicenciaFacturaElectronicaPDF(doc, "Cliente Prueba", "Plan 60000", "wompi", "REF 123")
+	if !bytes.HasPrefix(pdf, []byte("%PDF-1.4")) {
+		t.Fatalf("pdf no inicia con cabecera PDF")
+	}
+	for _, want := range []string{"Factura electronica por compra de licencia", "FE-PCS-000123", "Cliente Prueba", "Plan 60000", "60000 COP"} {
+		if !bytes.Contains(pdf, []byte(want)) {
+			t.Fatalf("pdf no contiene %q", want)
+		}
+	}
+	if filename != "factura-electronica-lic-wompi-ref-123.pdf" {
+		t.Fatalf("filename = %s", filename)
+	}
+}
+
 func TestBuildLicenciaSoftwarePDFForEmpresaUsaFormatoDefault(t *testing.T) {
 	empresa := &dbpkg.Empresa{ID: 7, EmpresaID: 7, Nombre: "Motel Calipso", Nit: "900123456"}
 	lic := &dbpkg.Licencia{

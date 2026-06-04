@@ -115,20 +115,23 @@ afecte dinero, documentos, licencias o seguridad.
    aunque la licencia anterior ya este vencida o inactiva.
 5. La activacion debe ser idempotente si el primer intento ya dejo la licencia
    vigente.
-6. Al quedar activa, el sistema envia correo al administrador de la empresa con
-   el mensaje `licencia_activation_payment` y adjunta un PDF de licencia de
-   software generado desde la plantilla `licencia_software_pdf`, ambas
-   configurables en `web/super/formato_para_emviar_email.html`.
+6. Al quedar activa, el sistema envia un solo correo al administrador de la
+   empresa con el mensaje `licencia_activation_payment` y adjunta un PDF de
+   licencia de software generado desde la plantilla `licencia_software_pdf`,
+   ambas configurables en `web/super/formato_para_emviar_email.html`.
    Si el pago comercial queda aprobado con valor mayor a cero, ademas se emite
    automaticamente una factura electronica desde la empresa interna `Powerful
    Control System` (tambien reconoce el nombre existente `Powerful Control
-   Systen`) y se envia al correo del cliente. El documento se guarda en
-   `empresa_facturacion_documentos` de la empresa emisora y el pago queda
-   marcado con `licencia_factura_electronica_emitida` en `pagos_epayco` o
-   `pagos_wompi` para idempotencia.
+   Systen`) y el PDF resumen de esa factura se adjunta al mismo correo de
+   activacion. El documento se guarda en `empresa_facturacion_documentos` de la
+   empresa emisora y el pago queda marcado con
+   `licencia_factura_electronica_emitida` en `pagos_epayco` o `pagos_wompi`
+   para idempotencia.
    La empresa emisora interna se resuelve por
    `configuraciones.licencias.facturacion_empresa_sistema_id` y mantiene una
    licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL` sin vencimiento.
+   Las activaciones con total pagado cero por prueba o descuento total solo
+   envian la licencia; no emiten factura electronica en el flujo final.
 7. La empresa puede descargar el mismo documento desde Administrar empresa >
    Licencia > Licencia del sistema; el endpoint
    `/api/empresa/licencia_sistema/pdf` debe quedar protegido por permisos de
@@ -155,10 +158,12 @@ afecte dinero, documentos, licencias o seguridad.
 11. Pruebas: activar una vez, reintentar sin duplicar mientras sigue vigente,
    bloquear segundo uso real despues del vencimiento y comprobar que el
    historial muestra otras licencias cuando la prueba no es renovable, ademas
-   de validar que el correo capturado o enviado incluya el PDF adjunto y que la
-   descarga empresarial devuelva `application/pdf`; para pago, seleccionar
-   Epayco y Wompi, aceptar terminos y comprobar que cada proveedor pasa a
-   verificacion con referencia propia. Para renovaciones comerciales, simular
+   de validar que el correo capturado o enviado incluya el PDF de licencia y,
+   cuando el pago sea mayor a cero, el PDF de factura electronica en el mismo
+   mensaje; confirmar tambien que descuento total o valor cero no genera factura
+   electronica. La descarga empresarial debe devolver `application/pdf`; para
+   pago, seleccionar Epayco y Wompi, aceptar terminos y comprobar que cada
+   proveedor pasa a verificacion con referencia propia. Para renovaciones comerciales, simular
    pago anticipado con licencia vigente y validar que `fecha_inicio` queda en el
    vencimiento anterior, que `fecha_fin` suma la duracion comprada y que repetir
    la misma referencia no vuelve a extender.
