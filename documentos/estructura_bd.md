@@ -26,9 +26,11 @@ Actualizacion 2026-06-04 (factura electronica automatica por compra de licencia)
   el nombre historico existente `Powerful Control Systen` para no duplicar
   empresas.
 - `pcs_superadministrador.licencias`: la empresa emisora interna conserva una
-  licencia tecnica `PCS_SYSTEM_INTERNAL_PERPETUAL`, activa, sin `fecha_fin`, con
-  valor cero y fuera del catalogo comercial. Esta licencia evita vencimiento de
-  la empresa del sistema.
+  licencia tecnica `PCS_SYSTEM_INTERNAL_PERPETUAL`, activa, con `fecha_fin`
+  fechada a 100 anos, valor cero, limites altos y `modulos_habilitados`
+  completos. Esta licencia esta fuera del catalogo comercial y permite que la
+  empresa del sistema cargue carrito, correo corporativo, facturacion,
+  configuracion y reportes como cualquier empresa normal.
 - `pcs_superadministrador.pagos_epayco` y `pcs_superadministrador.pagos_wompi`:
   el JSON de `raw_payload` puede incluir
   `licencia_factura_electronica_emitida`,

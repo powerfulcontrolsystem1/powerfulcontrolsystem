@@ -1,6 +1,9 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestDefaultGlobalLicenciaPlans(t *testing.T) {
 	plans := DefaultGlobalLicenciaPlans()
@@ -87,5 +90,17 @@ func TestIsPowerfulSystemEmpresaNameRecognizesExistingCompanyAndLegacyTypo(t *te
 	}
 	if IsPowerfulSystemEmpresaName("Powerful Control System Demo") {
 		t.Fatal("similar demo company must not be treated as the internal system company")
+	}
+}
+
+func TestPowerfulSystemEmpresaLicenseIsLongAndOperational(t *testing.T) {
+	if PowerfulSystemEmpresaLicenseDays < 36500 {
+		t.Fatalf("licencia interna debe cubrir 100 anos, got %d dias", PowerfulSystemEmpresaLicenseDays)
+	}
+	modules := PowerfulSystemEmpresaLicenseModules()
+	for _, expected := range []string{"ventas", "seguridad", "facturacion", "finanzas", "grafologia", "camaras", "energia_solar"} {
+		if !strings.Contains(","+modules+",", ","+expected+",") {
+			t.Fatalf("licencia interna debe habilitar %q; modulos=%q", expected, modules)
+		}
 	}
 }

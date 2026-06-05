@@ -324,7 +324,9 @@ func informacionModulosDefaultConfig() informacionModulosConfig {
 			{Titulo: "Finanzas y cumplimiento", IconoURL: "/img/taxes.svg", Caracteristicas: []string{"Impuestos", "Bancos", "Ingresos", "Egresos", "Tesoreria", "Presupuesto", "Reportes", "Modulo del contador", "Certificados tributarios", "Informacion exogena"}},
 			{Titulo: "Operacion por estaciones", IconoURL: "/img/hotel-logo.svg", Caracteristicas: []string{"Estaciones", "Mesas", "Habitaciones", "Zonas o bahias configurables", "Control de estados", "Turnos", "Reservas", "Alertas de tiempo", "Aseo", "Cierre/corte de caja"}},
 			{Titulo: "Automatizacion e IA", IconoURL: "/img/gpt.svg", Caracteristicas: []string{"Integracion con IA", "Documentos inteligentes", "OCR de compras", "Soporte operativo", "Reportes asistidos", "Acciones confirmables"}},
+			{Titulo: "GRAFOLOGIX", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Carga de manuscritos", "OCR libre con Tesseract", "Medidas de inclinacion", "Espacios entre palabras y letras", "Metricas de margenes", "Reporte PDF", "Exportacion HTML, JSON, CSV y TXT", "Analisis complementario con IA configurada"}},
 			{Titulo: "Energia solar", IconoURL: "/img/solar-energy.svg", Caracteristicas: []string{"Monitoreo de paneles", "Controladoras Victron", "SMA Sunny Portal", "SolarEdge Monitoring", "Baterias Powerwall, BYD, Pylontech y Enphase", "Alertas por correo", "Lecturas por gateway local", "BMS y estado de salud"}},
+			{Titulo: "Camaras y DVR", IconoURL: "/img/shield-security-color.svg", Caracteristicas: []string{"Registro de camaras por empresa", "DVR/NVR por canal", "Visores HLS, WebRTC, MJPEG o iframe", "Estaciones tipo camara", "Carga antes o despues de estaciones", "Acceso por permisos", "Monitoreo operativo"}},
 			{Titulo: "Domotica y control fisico", IconoURL: "/img/sensor.png", Caracteristicas: []string{"Domotica por estacion", "Manejo de sensores", "Puertas", "Aparatos", "Permanencia", "Acceso", "Vehiculos", "Parqueaderos", "Trazabilidad operativa"}},
 			{Titulo: "Gestion empresarial", IconoURL: "/img/company-briefcase-color.svg", Caracteristicas: []string{"Clientes", "CRM", "Usuarios", "Roles", "Permisos", "Licencias", "Auditoria", "Backups", "Comunicaciones", "Soporte", "Chat y tareas"}},
 			{Titulo: "Plantillas listas", IconoURL: "/img/analytics-color.svg", Caracteristicas: []string{"Hotel", "Motel", "Restaurante", "Gimnasio", "Odontologia", "Propiedad horizontal", "Domicilios", "Taxi", "Carta QR", "Venta publica", "Red social comercial"}},
@@ -625,9 +627,7 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 	if len(source) == 0 {
 		source = defaults.Modulos
 	}
-	if len(source) > informacionModulosDefaultLimit {
-		source = source[:informacionModulosDefaultLimit]
-	}
+	source = informacionModulosEnsureDefaultHighlights(source, defaults.Modulos)
 
 	modules := make([]informacionModuloItem, 0, len(source))
 	for i, item := range source {
@@ -644,6 +644,30 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 	}
 
 	return informacionModulosConfig{Titulo: title, Modulos: modules}
+}
+
+func informacionModulosEnsureDefaultHighlights(source, defaults []informacionModuloItem) []informacionModuloItem {
+	if len(source) == 0 {
+		return source
+	}
+	seen := map[string]bool{}
+	for _, item := range source {
+		seen[strings.ToLower(strings.TrimSpace(item.Titulo))] = true
+	}
+	for _, item := range defaults {
+		key := strings.ToLower(strings.TrimSpace(item.Titulo))
+		switch key {
+		case "grafologix", "camaras y dvr", "energia solar":
+			if !seen[key] && len(source) < informacionModulosDefaultLimit {
+				source = append(source, item)
+				seen[key] = true
+			}
+		}
+	}
+	if len(source) > informacionModulosDefaultLimit {
+		source = source[:informacionModulosDefaultLimit]
+	}
+	return source
 }
 
 func informacionModulosLoadConfig(dbSuper *sql.DB) (informacionModulosConfig, string, string, error) {

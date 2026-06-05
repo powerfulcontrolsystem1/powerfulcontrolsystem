@@ -19,8 +19,9 @@
 
 - `backend/db/licencias_empresa_sistema.go`: resuelve la empresa interna
   `Powerful Control System`/`Powerful Control Systen`, guarda su `empresa_id`
-  en configuracion global y asegura una licencia tecnica perpetua sin
-  vencimiento comercial.
+  en configuracion global y asegura una licencia tecnica interna fechada a 100
+  anos, con limites altos y modulos completos para que opere como una empresa
+  normal del sistema.
 - `backend/handlers/payments_handlers.go`: al aprobar una licencia comercial en
   Epayco, Wompi o flujo manual, reutiliza la capa de facturacion electronica
   para crear `factura_electronica` desde la empresa interna, enviar correo al

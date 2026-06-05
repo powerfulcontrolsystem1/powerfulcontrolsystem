@@ -149,9 +149,13 @@ afecte dinero, documentos, licencias o seguridad.
    para idempotencia.
    La empresa emisora interna se resuelve por
    `configuraciones.licencias.facturacion_empresa_sistema_id` y mantiene una
-   licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL` sin vencimiento.
-   Las activaciones con total pagado cero por prueba o descuento total solo
-   envian la licencia; no emiten factura electronica en el flujo final.
+   licencia tecnica interna `PCS_SYSTEM_INTERNAL_PERPETUAL` con fecha fin a 100
+   anos, limites altos y modulos completos. La empresa interna debe cargar
+   carrito, correo corporativo, facturacion y configuracion como cualquier otra
+   empresa; la unica diferencia es que esa licencia no pertenece al catalogo
+   comercial. Las activaciones con total pagado cero por prueba o descuento
+   total solo envian la licencia; no emiten factura electronica en el flujo
+   final.
 7. La empresa puede descargar el mismo documento desde Administrar empresa >
    Licencia > Licencia del sistema; el endpoint
    `/api/empresa/licencia_sistema/pdf` debe quedar protegido por permisos de

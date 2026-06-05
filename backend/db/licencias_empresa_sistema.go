@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -12,9 +13,77 @@ const (
 	PowerfulSystemEmpresaNameLegacyTypo   = "Powerful Control Systen"
 	PowerfulSystemEmpresaConfigKey        = "licencias.facturacion_empresa_sistema_id"
 	PowerfulSystemEmpresaLicenseCode      = "PCS_SYSTEM_INTERNAL_PERPETUAL"
+	PowerfulSystemEmpresaLicenseDays      = 36500
 	powerfulSystemEmpresaUsuarioCreador   = "sistema.powerful_control_system"
 	powerfulSystemEmpresaObservacionMarca = "Empresa interna del SaaS para facturar licencias de Powerful Control System."
 )
+
+var powerfulSystemEmpresaFullModules = []string{
+	"ventas",
+	"inventario",
+	"finanzas",
+	"contabilidad_colombia",
+	"contabilidad_colombia_avanzada",
+	"centros_costo",
+	"cierre_fiscal",
+	"activos_fijos_niif_fiscal",
+	"declaraciones_tributarias",
+	"clientes",
+	"crm_unificado",
+	"compras",
+	"facturacion",
+	"facturacion_ecuador",
+	"facturacion_panama",
+	"seguridad",
+	"venta_publica",
+	"reservas_hotel",
+	"chat_tareas",
+	"gimnasio",
+	"taxi_system",
+	"domicilios",
+	"parqueadero",
+	"apartamentos_turisticos",
+	"propiedad_horizontal",
+	"alquileres",
+	"odontologia",
+	"turnos_atencion",
+	"control_electrico",
+	"energia_solar",
+	"camaras",
+	"grafologia",
+	"carnets",
+	"horarios_trabajadores",
+	"asistencia_empleados",
+	"vehiculos_registro",
+	"hoja_vida_operativa",
+	"ubicacion_gps",
+	"produccion_mrp",
+	"logistica_wms",
+	"tesoreria_presupuesto",
+	"nomina_sueldos",
+	"importaciones_costeo",
+	"aiu_construccion",
+	"cobranza",
+	"reportes",
+	"portal_contador",
+	"portal_terceros_certificados",
+	"soportes_compras_ia",
+	"bancos_pagos",
+	"gestion_documental",
+	"cumplimiento_kyc",
+	"contratos_obligaciones",
+	"calidad_procesos",
+	"drogueria_farmacia",
+	"auditoria",
+	"backups",
+	"documentos_onlyoffice",
+}
+
+// PowerfulSystemEmpresaLicenseModules devuelve los modulos empresariales que la
+// empresa interna necesita para operar como cualquier empresa real del sistema.
+func PowerfulSystemEmpresaLicenseModules() string {
+	return strings.Join(powerfulSystemEmpresaFullModules, ",")
+}
 
 // IsPowerfulSystemEmpresaName reconoce la empresa interna del sistema sin crear duplicados
 // por diferencias de mayusculas, espacios o el nombre historico escrito con "Systen".
@@ -92,8 +161,9 @@ func EnsurePowerfulSystemEmpresa(dbEmp, dbSuper *sql.DB) (*Empresa, error) {
 	return empresa, nil
 }
 
-// EnsurePowerfulSystemEmpresaPerpetualLicense mantiene una licencia interna activa,
-// sin fecha de vencimiento, para que la empresa del sistema no dependa de planes comerciales.
+// EnsurePowerfulSystemEmpresaPerpetualLicense mantiene una licencia interna activa
+// de 100 anos para que la empresa del sistema opere como empresa normal sin
+// depender de renovaciones comerciales mensuales.
 func EnsurePowerfulSystemEmpresaPerpetualLicense(dbSuper *sql.DB, empresaID int64, usuario string) error {
 	if dbSuper == nil || empresaID <= 0 {
 		return nil
@@ -116,6 +186,8 @@ func EnsurePowerfulSystemEmpresaPerpetualLicense(dbSuper *sql.DB, empresaID int6
 	}
 
 	nowExpr := sqlNowExpr()
+	fechaFin := time.Now().AddDate(100, 0, 0).Format("2006-01-02 23:59:59")
+	modulos := PowerfulSystemEmpresaLicenseModules()
 	if id > 0 {
 		_, err = execSQLCompat(dbSuper, `UPDATE licencias
 			SET tipo_id = 0,
@@ -123,24 +195,27 @@ func EnsurePowerfulSystemEmpresaPerpetualLicense(dbSuper *sql.DB, empresaID int6
 				nombre = ?,
 				descripcion = ?,
 				valor = 0,
-				duracion_dias = 0,
-				max_documentos_mensuales = 0,
+				duracion_dias = ?,
+				max_documentos_mensuales = 999999,
 				max_cajas_simultaneas = 99,
-				modulos_habilitados = '',
+				modulos_habilitados = ?,
 				es_adicional = 0,
 				super_rol_habilitado = 0,
 				fecha_inicio = CASE WHEN COALESCE(fecha_inicio, '') = '' THEN `+nowExpr+` ELSE fecha_inicio END,
-				fecha_fin = '',
+				fecha_fin = ?,
 				activo = 1,
 				fecha_actualizacion = `+nowExpr+`,
 				usuario_creador = CASE WHEN COALESCE(usuario_creador, '') = '' THEN ? ELSE usuario_creador END,
 				estado = 'activo',
 				observaciones = ?
 			WHERE id = ?`,
-			"Licencia interna perpetua Powerful Control System",
-			"Licencia tecnica interna para que la empresa emisora del SaaS facture licencias sin vencimiento comercial.",
+			"Licencia interna 100 anos Powerful Control System",
+			"Licencia tecnica interna de 100 anos para que la empresa emisora del SaaS facture licencias y opere modulos internos como una empresa normal.",
+			PowerfulSystemEmpresaLicenseDays,
+			modulos,
+			fechaFin,
 			usuario,
-			"Licencia interna del sistema; no se vence y no se ofrece en el catalogo comercial.",
+			"Licencia interna del sistema por 100 anos; no se ofrece en el catalogo comercial.",
 			id,
 		)
 		if err != nil {
@@ -155,13 +230,16 @@ func EnsurePowerfulSystemEmpresaPerpetualLicense(dbSuper *sql.DB, empresaID int6
 		max_documentos_mensuales, max_cajas_simultaneas, modulos_habilitados,
 		es_adicional, codigo_funcion, super_rol_habilitado, fecha_inicio, fecha_fin,
 		activo, fecha_creacion, fecha_actualizacion, usuario_creador, estado, observaciones
-	) VALUES (?, 0, 'CO', ?, ?, 0, 0, 0, 99, '', 0, ?, 0, `+nowExpr+`, '', 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
+	) VALUES (?, 0, 'CO', ?, ?, 0, ?, 999999, 99, ?, 0, ?, 0, `+nowExpr+`, ?, 1, `+nowExpr+`, `+nowExpr+`, ?, 'activo', ?)`,
 		empresaID,
-		"Licencia interna perpetua Powerful Control System",
-		"Licencia tecnica interna para que la empresa emisora del SaaS facture licencias sin vencimiento comercial.",
+		"Licencia interna 100 anos Powerful Control System",
+		"Licencia tecnica interna de 100 anos para que la empresa emisora del SaaS facture licencias y opere modulos internos como una empresa normal.",
+		PowerfulSystemEmpresaLicenseDays,
+		modulos,
 		PowerfulSystemEmpresaLicenseCode,
+		fechaFin,
 		usuario,
-		"Licencia interna del sistema; no se vence y no se ofrece en el catalogo comercial.",
+		"Licencia interna del sistema por 100 anos; no se ofrece en el catalogo comercial.",
 	)
 	if err != nil {
 		return err

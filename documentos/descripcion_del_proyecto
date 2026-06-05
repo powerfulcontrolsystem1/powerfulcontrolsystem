@@ -62,7 +62,7 @@ Revision informacion editable de modulos 2026-05-27: la seccion publica `Modulos
 
 Revision logo imagen login administrador 2026-05-27: `web/login.html` reemplaza el titulo textual `Powerful Control System` por la imagen transparente `web/img/titulo-powerful-control-system-login.png` en tamano pequeno y responsive. `web/estilos.css` agrega reglas para contener el asset dentro del encabezado del login sin alterar autenticacion, reCAPTCHA, Google OAuth, permisos ni endpoints.
 
-Revision subtitulo portal POS domotica 2026-05-27: `web/index.html` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`, reforzando la propuesta POS multiempresa y domotica sin cambiar backend, datos, permisos ni dependencias.
+Revision subtitulo portal POS domotica 2026-05-27: `web/index.html` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica con domotica integrada`, reforzando la propuesta POS multiempresa y domotica sin cambiar backend, datos, permisos ni dependencias.
 
 Revision index modulos con vinetas reales 2026-05-27: `web/index.html` cambia la seccion publica `Modulos y caracteristicas principales` para que cada tarjeta use una lista HTML real de caracteristicas (`ul/li`) con vinetas visibles, en vez de texto fluido con puntos simulados. El ajuste conserva iconos, tarjetas y contenido, mejora lectura en escritorio y movil, y no cambia backend, datos, permisos ni dependencias.
 

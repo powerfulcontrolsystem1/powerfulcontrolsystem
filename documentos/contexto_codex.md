@@ -161,9 +161,12 @@ botones, desde handlers estaticos del backend.
   `licencia_factura_electronica_emitida` para no duplicar documentos por
   webhooks repetidos. La empresa emisora interna se guarda en
   `configuraciones.licencias.facturacion_empresa_sistema_id` y recibe una
-  licencia tecnica perpetua `PCS_SYSTEM_INTERNAL_PERPETUAL`, sin fecha fin y sin
-  depender de planes comerciales. Las activaciones con total pagado cero por
-  prueba o descuento total no emiten factura electronica en el flujo final.
+  licencia tecnica interna `PCS_SYSTEM_INTERNAL_PERPETUAL` con vigencia fechada
+  de 100 anos, limites altos y modulos operativos completos. Esta licencia no se
+  ofrece en el catalogo comercial; solo evita tratar a la empresa interna como
+  una excepcion sin carrito, correo o permisos normales. Las activaciones con
+  total pagado cero por prueba o descuento total no emiten factura electronica
+  en el flujo final.
   Si una empresa paga una licencia comercial antes de que venza la licencia
   actual, la nueva vigencia no reemplaza ni acorta la anterior: se programa
   desde el vencimiento acumulado mas lejano de esa empresa y queda lista para

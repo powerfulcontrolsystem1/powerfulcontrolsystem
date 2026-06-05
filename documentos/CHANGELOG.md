@@ -1,3 +1,9 @@
+## [2026-06-05] Empresa interna Powerful Control System operativa
+- [Licencias] La empresa interna del SaaS conserva el codigo tecnico `PCS_SYSTEM_INTERNAL_PERPETUAL`, pero ahora se asegura como licencia fechada a 100 anos, con valor cero, limites altos y modulos completos.
+- [Operacion] `Powerful Control System` debe cargar carrito, correo corporativo, facturacion, configuracion y reportes como cualquier empresa; la unica diferencia es que la licencia no pertenece al catalogo comercial.
+- [Portal] El respaldo editable de `Modulos y caracteristicas principales` agrega GRAFOLOGIX y Camaras/DVR, y completa esos modulos cuando la configuracion guardada es antigua.
+- [QA] Pruebas enfocadas en `licencias_empresa_sistema.go`, permisos de licencia y validacion visual del carrito/correo de la empresa interna.
+
 ## [2026-06-04] Instalar app en login y login usuario
 - [PWA] `web/js/pwa_install.js` prepara el service worker, espera el evento nativo de instalacion, consume el prompt una sola vez como exige Chrome/Edge y evita mostrar de inmediato el mensaje de instalacion manual cuando el navegador aun no entrega el prompt.
 - [UX] El boton `Instalar app` conserva el mismo flujo en `login.html` y `login_usuario.html`; si el usuario ya escribio correo o contrasena, no se fuerza recarga para no perder datos.
@@ -35,7 +41,7 @@
 
 ## [2026-06-04] Factura electronica automatica por compra de licencia
 - [Licencias] Las compras comerciales aprobadas generan factura electronica desde la empresa interna `Powerful Control System` y envian el documento al correo del cliente.
-- [Backend] Se agrega `backend/db/licencias_empresa_sistema.go` para resolver la empresa existente, incluyendo `Powerful Control Systen`, y asegurar licencia tecnica perpetua sin vencimiento.
+- [Backend] Se agrega `backend/db/licencias_empresa_sistema.go` para resolver la empresa existente, incluyendo `Powerful Control Systen`, y asegurar licencia tecnica interna. Desde 2026-06-05 esa licencia se normaliza con vigencia fechada de 100 anos y modulos completos.
 - [Pagos] Epayco/Wompi marcan `licencia_factura_electronica_emitida` en el payload del pago para evitar facturas duplicadas por reintentos o webhooks repetidos.
 - [QA] `go test -p 1 ./db ./handlers -run "Powerful|Licencia|Facturacion" -count=1`.
 
@@ -465,7 +471,7 @@
 - [Alcance] No cambia backend, endpoints, permisos, reCAPTCHA ni Google OAuth.
 
 ## [2026-05-27] Index subtitulo POS multiempresa con domotica
-- [Portal] `web/index.html` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
+- [Portal] `web/index.html` actualiza el subtitulo del encabezado publico a `Sistema de Facturacion Electronica con domotica integrada`.
 - [Alcance] Cambio de texto visible sin backend, endpoints, tablas, permisos ni dependencias.
 
 ## [2026-05-27] Index con vinetas reales por caracteristica

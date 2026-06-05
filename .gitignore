@@ -19,6 +19,7 @@ scripts/pcs_deployment.local.ps1
 tmp/*.txt
 tmp/*.js
 tmp_*.png
+outputs/
 backend/.env.local
 .env.local
 deploy/.env.platform

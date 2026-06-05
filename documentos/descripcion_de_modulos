@@ -1,9 +1,15 @@
 2026-06-04: Licencias comerciales con factura electronica de Powerful Control System
 - Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `mensajeria_super`.
 - Cambio funcional: cuando una licencia comercial queda pagada/aprobada con valor mayor que cero, el sistema emite automaticamente una factura electronica desde la empresa interna `Powerful Control System` y la envia al correo del cliente comprador.
-- Backend: `backend/db/licencias_empresa_sistema.go` resuelve la empresa interna existente, incluyendo la variante historica `Powerful Control Systen`, y asegura una licencia tecnica perpetua sin `fecha_fin`. `backend/handlers/payments_handlers.go` conecta Epayco, Wompi y activacion manual con el flujo de facturacion electronica ya existente.
+- Backend: `backend/db/licencias_empresa_sistema.go` resuelve la empresa interna existente, incluyendo la variante historica `Powerful Control Systen`, y asegura una licencia tecnica de 100 anos con fecha fin, limites altos y modulos completos. `backend/handlers/payments_handlers.go` conecta Epayco, Wompi y activacion manual con el flujo de facturacion electronica ya existente.
 - Persistencia: `configuraciones.licencias.facturacion_empresa_sistema_id` guarda la empresa emisora; `pagos_epayco` y `pagos_wompi` marcan `licencia_factura_electronica_emitida` en `raw_payload` para idempotencia; `empresa_facturacion_documentos` guarda la factura bajo el `empresa_id` de la emisora interna.
-- Seguridad: no se crean facturas para licencias de valor cero; los documentos usan la configuracion fiscal real de la empresa interna y no inventan credenciales DIAN. Si falta configuracion legal, el documento queda pendiente para reintento sin duplicar.
+- Seguridad: no se crean facturas para licencias de valor cero; los documentos usan la configuracion fiscal real de la empresa interna y no inventan credenciales DIAN. Si falta configuracion legal, el documento queda pendiente para reintento sin duplicar. La empresa interna debe cargar carrito, correo corporativo, configuracion y reportes como cualquier empresa.
+
+2026-06-05: Licencia interna normalizada para Powerful Control System
+- Modulos afectados: `licencias`, `carritos`, `email_corporativo`, `portal_publico`, `documentacion`.
+- Cambio funcional: `Powerful Control System` deja de depender de una licencia tecnica sin fecha de fin y queda con una licencia interna fechada a 100 anos, valor cero, limites altos y todos los modulos empresariales actuales.
+- Portal publico: el respaldo editable de `Modulos y caracteristicas principales` agrega GRAFOLOGIX y Camaras/DVR, y completa esos modulos si existe una configuracion antigua en base.
+- QA: probar que la empresa interna abre carrito y bandeja de correo corporativo igual que las demas empresas despues de ejecutar el arranque/`rs`.
 
 2026-06-02: Login usuario con rol Cajero restringido
 - Modulo afectado: `usuarios_empresa`.
@@ -440,7 +446,7 @@
 
 2026-05-27: Subtitulo publico POS multiempresa con domotica
 - Modulos afectados: `portal_publico`, `landing`, `frontend_ux`.
-- Cambio funcional: el encabezado del index muestra `Sistema de Facturacion Electronica - Sistema POS Multiempresa con domotica integrada`.
+- Cambio funcional: el encabezado del index muestra `Sistema de Facturacion Electronica con domotica integrada`.
 - Alcance: cambio de texto publico sin backend, endpoints, tablas, permisos ni dependencias.
 
 2026-05-27: Index con vinetas reales por caracteristica
