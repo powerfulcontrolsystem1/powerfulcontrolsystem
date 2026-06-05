@@ -220,6 +220,9 @@ afecte dinero, documentos, licencias o seguridad.
    privada RSA.
 3. El backend guarda la llave privada y el certificado publico extraido en
    `web/uploads/empresas/empresa_{id}_{slug}/facturacion_electronica/firma_electronica/`.
+   Para P12/PFX con multiples bolsas o cadenas de certificados, el backend
+   convierte internamente a PEM con la dependencia existente antes de extraer la
+   llave RSA.
 4. Las rutas guardadas en la configuracion DIAN son referencias internas `file:`
    a archivos con permiso `0600`; no deben convertirse en enlaces publicos.
 5. El backend extrae del X.509 la fecha real de vencimiento y la guarda en

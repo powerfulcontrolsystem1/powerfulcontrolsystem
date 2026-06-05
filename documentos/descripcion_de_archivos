@@ -3,6 +3,7 @@
 	- agrega columnas de metadatos seguros para la ultima firma DIAN cargada por empresa.
 - `backend/handlers/modulos_faltantes.go`:
 	- persiste archivo original, formato, titular, emisor, serial, fecha de carga y estado seguro de clave al subir P12/PFX o PEM.
+	- agrega fallback `pkcs12.ToPEM` para leer P12/PFX con multiples bolsas o cadena de certificados.
 	- mantiene la regla de no guardar ni mostrar la clave de la firma en claro.
 - `web/administrar_empresa/facturacion_electronica.html`:
 	- muestra en la tarjeta de carga de firma el resumen de ultima carga y el estado seguro de la clave.

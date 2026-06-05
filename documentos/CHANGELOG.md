@@ -1,5 +1,6 @@
 ## [2026-06-05] Ultima carga de firma DIAN segura
 - [Facturacion electronica] La tarjeta `Cargar firma electronica (Colombia / DIAN)` muestra fecha de ultima carga, archivo, formato, titular, serial y estado de clave sin exponer la contrasena.
+- [Compatibilidad] La carga de P12/PFX agrega fallback interno `ToPEM` para certificados con multiples bolsas o cadenas que no decodifican con el lector simple.
 - [Seguridad] La clave del P12/PFX se usa solo para decodificar la firma; no se guarda ni se muestra en claro.
 - [BD] `empresa_dian_configuracion` agrega metadatos seguros de ultima firma cargada por `empresa_id`.
 - [QA] Validacion de script embebido de `facturacion_electronica.html`; pruebas Go enfocadas de DIAN/facturacion en handlers y db.

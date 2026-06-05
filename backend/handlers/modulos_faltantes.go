@@ -7790,19 +7790,50 @@ func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (
 	ext := strings.ToLower(filepath.Ext(name))
 	if ext == ".p12" || ext == ".pfx" {
 		privateKey, cert, err := pkcs12.Decode(contentBytes, password)
-		if err != nil {
+		if err == nil {
+			rsaKey, ok := privateKey.(*rsa.PrivateKey)
+			if !ok || rsaKey == nil {
+				return material, fmt.Errorf("el P12/PFX no contiene llave privada RSA")
+			}
+			material.PrivateKeyPEM = encodeDIANRSAPrivateKeyPEM(rsaKey)
+			material.CertificatePEM = encodeDIANCertificatePEM(cert)
+			material.Format = strings.TrimPrefix(ext, ".")
+			if cert != nil {
+				setDIANSignatureCertificateMetadata(&material, cert)
+			}
+			return material, nil
+		}
+
+		blocks, pemErr := pkcs12.ToPEM(contentBytes, password)
+		if pemErr != nil {
 			return material, fmt.Errorf("no se pudo decodificar P12/PFX; verifique la clave o convierta el certificado a PEM compatible")
 		}
-		rsaKey, ok := privateKey.(*rsa.PrivateKey)
-		if !ok || rsaKey == nil {
+		for _, block := range blocks {
+			if block == nil {
+				continue
+			}
+			blockType := strings.ToUpper(strings.TrimSpace(block.Type))
+			if material.PrivateKeyPEM == "" && strings.Contains(blockType, "PRIVATE KEY") {
+				rsaKey, keyErr := parseDIANRSAPrivateKeyBlock(block, "")
+				if keyErr == nil {
+					material.PrivateKeyPEM = encodeDIANRSAPrivateKeyPEM(rsaKey)
+				}
+			}
+			if material.CertificatePEM == "" && strings.Contains(blockType, "CERTIFICATE") {
+				parsedCert, certErr := x509.ParseCertificate(block.Bytes)
+				if certErr == nil {
+					material.CertificatePEM = encodeDIANCertificatePEM(parsedCert)
+					setDIANSignatureCertificateMetadata(&material, parsedCert)
+				}
+			}
+		}
+		if material.PrivateKeyPEM == "" {
 			return material, fmt.Errorf("el P12/PFX no contiene llave privada RSA")
 		}
-		material.PrivateKeyPEM = encodeDIANRSAPrivateKeyPEM(rsaKey)
-		material.CertificatePEM = encodeDIANCertificatePEM(cert)
-		material.Format = strings.TrimPrefix(ext, ".")
-		if cert != nil {
-			setDIANSignatureCertificateMetadata(&material, cert)
+		if material.CertificatePEM == "" {
+			return material, fmt.Errorf("el P12/PFX no contiene certificado X.509")
 		}
+		material.Format = strings.TrimPrefix(ext, ".")
 		return material, nil
 	}
 
