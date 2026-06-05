@@ -1,6 +1,7 @@
 2026-06-05: Set automatico DIAN por empresa y factura de licencias.
 - Modulos afectados: facturacion electronica Colombia, pruebas DIAN, licencias, ayuda y documentacion operativa.
 - Backend: el fallback del set DIAN de software propio/proveedor queda en 30 facturas, 10 notas debito y 10 notas credito; las pruebas Go cubren que el objetivo guardado por empresa se use en `action=pruebas_dian` y que una simulacion no marque `habilitacion_aprobada`.
+- Backend: `validar_credenciales` ahora incluye `checks.test_set_id`; en habilitacion real falta de TestSetId devuelve `ok=false`, mientras que una simulacion puede continuar y mostrar el faltante sin marcar produccion.
 - Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` muestra el preset principal 30+10+10 con minimo aceptado 1 factura, conserva set gratuito e historico y mantiene el boton automatico basado en los campos/objetivo guardado por empresa.
 - Documentacion: ayuda, contexto, mapa de modulos y flujos explican TestSetId, token solo para proveedor/API bearer, simulacion vs ejecucion real y regla de factura de licencia solo con pago comercial mayor que cero.
 - Seguridad: se conserva aislamiento por `empresa_id`, no se documentan secretos y no se marca produccion local sin acuse real de DIAN/proveedor.

@@ -259,6 +259,43 @@ func TestValidateDIANCredentialRefsRequiresTokenForProviderAPI(t *testing.T) {
 	}
 }
 
+func TestValidateDIANCredentialRefsRequiresTestSetForRealHabilitacion(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	delete(cfg, "test_set_id")
+	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})
+	if err != nil || status != 200 {
+		t.Fatalf("validate credentials returned status=%d err=%v response=%#v", status, err, response)
+	}
+	if parseTruthy(genericStringValue(response["ok"])) {
+		t.Fatalf("expected real habilitacion validation to fail without test_set_id, got %#v", response)
+	}
+	checks, _ := response["checks"].(map[string]interface{})
+	testSetCheck, _ := checks["test_set_id"].(map[string]interface{})
+	if !parseTruthy(genericStringValue(testSetCheck["required"])) || parseTruthy(genericStringValue(testSetCheck["ok"])) {
+		t.Fatalf("expected required missing test_set_id check, got %#v", testSetCheck)
+	}
+	if !dianTestContainsString(missingDIANFields(cfg), "test_set_id") {
+		t.Fatalf("test_set_id must be listed as missing for real habilitacion")
+	}
+}
+
+func TestValidateDIANCredentialRefsAllowsMissingTestSetInSimulation(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	delete(cfg, "test_set_id")
+	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{"simular": true})
+	if err != nil || status != 200 {
+		t.Fatalf("validate credentials returned status=%d err=%v response=%#v", status, err, response)
+	}
+	if !parseTruthy(genericStringValue(response["ok"])) {
+		t.Fatalf("expected simulation validation to pass without test_set_id, got %#v", response)
+	}
+	checks, _ := response["checks"].(map[string]interface{})
+	testSetCheck, _ := checks["test_set_id"].(map[string]interface{})
+	if !parseTruthy(genericStringValue(testSetCheck["required"])) || parseTruthy(genericStringValue(testSetCheck["ok"])) {
+		t.Fatalf("expected required but non-blocking missing test_set_id check in simulation, got %#v", testSetCheck)
+	}
+}
+
 func TestRunDIANPruebasHabilitacionTwoEachSimulatedOfficialSOAP(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{

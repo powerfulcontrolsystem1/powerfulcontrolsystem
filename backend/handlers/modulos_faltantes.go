@@ -10518,6 +10518,30 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"message":  dianTruncate(tokenMessage, 180),
 	}
 
+	ambiente := chooseDIANAmbiente(cfg)
+	simular := parseTruthy(genericStringValue(payload["simular"]))
+	testSetID := dianFirstNonBlank(genericStringValue(payload["test_set_id"]), genericStringValue(cfg["test_set_id"]))
+	testSetRequired := ambiente == "habilitacion"
+	testSetOK := strings.TrimSpace(testSetID) != ""
+	testSetMessage := "configurado"
+	testSetSource := "configuracion"
+	if strings.TrimSpace(genericStringValue(payload["test_set_id"])) != "" {
+		testSetSource = "payload"
+	}
+	if !testSetOK {
+		testSetSource = "vacio"
+		testSetMessage = "faltante para envio real de habilitacion"
+		if testSetRequired && !simular {
+			issues = append(issues, "test_set_id no configurado")
+		}
+	}
+	checks["test_set_id"] = map[string]interface{}{
+		"ok":       testSetOK,
+		"required": testSetRequired,
+		"source":   testSetSource,
+		"message":  dianTruncate(testSetMessage, 180),
+	}
+
 	keyRef := dianFirstNonBlank(genericStringValue(payload["certificado_clave_ref"]), genericStringValue(cfg["certificado_clave_ref"]))
 	keyOK := false
 	keyMessage := ""
