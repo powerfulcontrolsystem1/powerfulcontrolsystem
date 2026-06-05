@@ -482,6 +482,8 @@ var (
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
 			"certificado_vencimiento", "certificado_vencimiento_en", "certificado_alerta_dias",
 			"certificado_alerta_ultimo_envio", "certificado_alerta_email",
+			"certificado_ultima_carga_en", "certificado_archivo_original", "certificado_formato",
+			"certificado_subject", "certificado_issuer", "certificado_serial", "certificado_clave_estado",
 			"resolucion_fecha_desde", "resolucion_fecha_hasta", "rango_desde", "rango_hasta", "consecutivo_actual",
 			"url_dian", "token_emisor_ref", "ultimo_envio", "estado_dian", "usuario_creador", "estado", "observaciones",
 		},
@@ -10361,8 +10363,20 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 	}
 
 	estadoActual := genericStringDefault(cfg["estado_dian"], "pendiente")
+	uploadTime := time.Now().Format(time.RFC3339)
+	keyStatus := "clave no requerida"
+	if strings.TrimSpace(password) != "" {
+		keyStatus = "clave recibida y usada; no se muestra ni se guarda en claro"
+	}
 	updates := map[string]interface{}{
-		"certificado_clave_ref": keyRef,
+		"certificado_clave_ref":        keyRef,
+		"certificado_ultima_carga_en":  uploadTime,
+		"certificado_archivo_original": strings.TrimSpace(header.Filename),
+		"certificado_formato":          material.Format,
+		"certificado_subject":          material.Subject,
+		"certificado_issuer":           material.Issuer,
+		"certificado_serial":           material.Serial,
+		"certificado_clave_estado":     keyStatus,
 		"observaciones": appendStateMachineObservation(
 			genericStringValue(cfg["observaciones"]),
 			estadoActual,
@@ -10387,23 +10401,25 @@ func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[st
 	vencimiento := checkDIANCertificateExpiry(dbEmp, dbSuper, empresaID, cfg, true)
 
 	return map[string]interface{}{
-		"ok":                      true,
-		"empresa_id":              empresaID,
-		"archivo_original":        strings.TrimSpace(header.Filename),
-		"archivo_guardado":        keyFileName,
-		"certificado_guardado":    certFileName,
-		"carpeta_empresa":         empresaFolder,
-		"carpeta_firma":           filepath.ToSlash(filepath.Join("uploads", "empresas", empresaFolder, empresaFacturacionElectronicaDirName, empresaFirmaElectronicaDirName)),
-		"certificado_clave_ref":   keyRef,
-		"certificado_url":         certRef,
-		"formato_detectado":       material.Format,
-		"certificado_subject":     material.Subject,
-		"certificado_issuer":      material.Issuer,
-		"certificado_serial":      material.Serial,
-		"certificado_vencimiento": genericStringValue(vencimiento["fecha_vencimiento"]),
-		"vencimiento_certificado": vencimiento,
-		"tamano_bytes":            len(contentBytes),
-		"siguiente_paso":          "ejecutar action=validar_credenciales y luego action=pruebas_dian",
+		"ok":                          true,
+		"empresa_id":                  empresaID,
+		"archivo_original":            strings.TrimSpace(header.Filename),
+		"archivo_guardado":            keyFileName,
+		"certificado_guardado":        certFileName,
+		"carpeta_empresa":             empresaFolder,
+		"carpeta_firma":               filepath.ToSlash(filepath.Join("uploads", "empresas", empresaFolder, empresaFacturacionElectronicaDirName, empresaFirmaElectronicaDirName)),
+		"certificado_clave_ref":       keyRef,
+		"certificado_url":             certRef,
+		"formato_detectado":           material.Format,
+		"certificado_subject":         material.Subject,
+		"certificado_issuer":          material.Issuer,
+		"certificado_serial":          material.Serial,
+		"certificado_ultima_carga_en": uploadTime,
+		"certificado_clave_estado":    keyStatus,
+		"certificado_vencimiento":     genericStringValue(vencimiento["fecha_vencimiento"]),
+		"vencimiento_certificado":     vencimiento,
+		"tamano_bytes":                len(contentBytes),
+		"siguiente_paso":              "ejecutar action=validar_credenciales y luego action=pruebas_dian",
 	}, http.StatusOK, nil
 }
 

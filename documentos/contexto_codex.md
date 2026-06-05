@@ -77,6 +77,10 @@ decisiones en cada tarea.
   `certificado_vencimiento`, `certificado_vencimiento_en`,
   `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y
   `certificado_alerta_email` en `empresa_dian_configuracion`.
+- La ultima carga de firma conserva metadatos seguros
+  (`certificado_ultima_carga_en`, archivo original, formato, titular, emisor,
+  serial y estado de clave). La clave del P12/PFX nunca debe guardarse ni
+  mostrarse en claro; solo se usa para decodificar el archivo.
 - El endpoint
   `/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado`
   calcula dias restantes, estado vigente/proximo/vencido y envia aviso por

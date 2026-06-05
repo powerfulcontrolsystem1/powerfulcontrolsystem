@@ -1,3 +1,10 @@
+2026-06-05: Ultima carga segura de firma DIAN.
+- Modulos afectados: facturacion electronica Colombia, carga de firma DIAN y configuracion por empresa.
+- Cambio funcional: la pantalla muestra un resumen persistente de la ultima firma cargada con fecha/hora, archivo original, formato, titular, serial y estado de clave.
+- Seguridad: la clave del P12/PFX se usa solo para abrir el certificado; no se guarda ni se devuelve en claro. La interfaz muestra `Clave: recibida y usada; no se muestra ni se guarda en claro`.
+- Backend/BD: `empresa_dian_configuracion` agrega metadatos de ultima carga por `empresa_id`; el handler `uploadDIANCompanySignature` actualiza esos campos junto con la referencia privada `file:`.
+- Pruebas: script embebido de `web/administrar_empresa/facturacion_electronica.html` validado con Node; `go test ./handlers -run "DIANSignature|DIANCertificateExpiry|FacturacionElectronica|EmpresaRoutesUsePermissionWrappers" -count=1`; `go test ./db -run "ModulosFaltantes|DIAN|Facturacion" -count=1`.
+
 2026-06-05: Apariencias de Camaras, Energia solar y Empresas compartidas.
 - Modulos afectados: camaras, energia solar, empresas compartidas y hoja global de estilos.
 - Cambio funcional: las paginas respetan las apariencias clara y oscura del sistema, sin fondos, tarjetas, campos o textos con colores fijos que queden ilegibles.

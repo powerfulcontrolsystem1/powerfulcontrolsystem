@@ -1,3 +1,9 @@
+## [2026-06-05] Ultima carga de firma DIAN segura
+- [Facturacion electronica] La tarjeta `Cargar firma electronica (Colombia / DIAN)` muestra fecha de ultima carga, archivo, formato, titular, serial y estado de clave sin exponer la contrasena.
+- [Seguridad] La clave del P12/PFX se usa solo para decodificar la firma; no se guarda ni se muestra en claro.
+- [BD] `empresa_dian_configuracion` agrega metadatos seguros de ultima firma cargada por `empresa_id`.
+- [QA] Validacion de script embebido de `facturacion_electronica.html`; pruebas Go enfocadas de DIAN/facturacion en handlers y db.
+
 ## [2026-06-05] Apariencias de Camaras, Energia solar y Empresas compartidas
 - [UX] `web/administrar_empresa/camaras.html` deja de usar estilos inline con colores fijos y hereda la apariencia global del sistema.
 - [Temas] `web/estilos.css` normaliza fondos, tarjetas, formularios, estados, bordes y textos para Camaras, Energia solar y Empresas compartidas en temas claros y oscuros.

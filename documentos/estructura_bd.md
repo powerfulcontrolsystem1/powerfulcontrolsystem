@@ -22,6 +22,11 @@ Actualizacion 2026-06-05 (carpetas empresariales y firma electronica)
   `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y
   `certificado_alerta_email`. No guardan secretos; solo fechas y correo
   notificado por empresa.
+- Tambien guarda metadatos seguros de ultima carga de firma:
+  `certificado_ultima_carga_en`, `certificado_archivo_original`,
+  `certificado_formato`, `certificado_subject`, `certificado_issuer`,
+  `certificado_serial` y `certificado_clave_estado`. La clave real del P12/PFX
+  no se persiste ni se muestra en claro.
 
 Actualizacion 2026-06-04 (camaras y DVR)
 - Nueva tabla empresarial `empresa_camaras` en `pcs_empresas`.
@@ -1568,6 +1573,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - certificado_url, certificado_clave_ref
   - certificado_vencimiento, certificado_vencimiento_en
   - certificado_alerta_dias, certificado_alerta_ultimo_envio, certificado_alerta_email
+  - certificado_ultima_carga_en, certificado_archivo_original, certificado_formato
+  - certificado_subject, certificado_issuer, certificado_serial, certificado_clave_estado
   - prefijo, resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - rango_desde, rango_hasta, consecutivo_actual
   - url_dian, token_emisor_ref, ultimo_envio, estado_dian

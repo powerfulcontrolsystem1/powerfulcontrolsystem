@@ -649,6 +649,13 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			certificado_alerta_dias INTEGER DEFAULT 30,
 			certificado_alerta_ultimo_envio TEXT,
 			certificado_alerta_email TEXT,
+			certificado_ultima_carga_en TEXT,
+			certificado_archivo_original TEXT,
+			certificado_formato TEXT,
+			certificado_subject TEXT,
+			certificado_issuer TEXT,
+			certificado_serial TEXT,
+			certificado_clave_estado TEXT,
 			prefijo TEXT,
 			resolucion_numero TEXT,
 			resolucion_fecha_desde TEXT,
@@ -840,6 +847,27 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_alerta_email", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_ultima_carga_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_archivo_original", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_formato", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_subject", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_issuer", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_serial", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_clave_estado", "TEXT"); err != nil {
 		return err
 	}
 

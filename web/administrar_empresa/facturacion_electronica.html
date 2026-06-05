@@ -55,6 +55,9 @@
         <span id="feFirmaExpiryText">Sin verificar.</span>
         <button id="feFirmaExpiryBtn" class="btn secondary" type="button" style="margin-left:8px;">Verificar vencimiento</button>
       </div>
+      <div id="feFirmaLastUpload" class="form-help" style="margin-top:8px;">
+        Ultima firma cargada: sin registro. Clave: no visible por seguridad.
+      </div>
     </div>
 
     <div id="feDianConfigCard" class="card is-hidden">
@@ -873,6 +876,46 @@
       el.textContent = texto;
     }
 
+    function formatFirmaDate(value) {
+      value = txt(value);
+      if (!value) return "";
+      var d = new Date(value);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleString("es-CO", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+      return value;
+    }
+
+    function renderFirmaLastUpload(info) {
+      var el = document.getElementById("feFirmaLastUpload");
+      if (!el) return;
+      info = info || {};
+      var loadedAt = info.certificado_ultima_carga_en || info.ultima_carga_en || "";
+      var fileName = info.certificado_archivo_original || info.archivo_original || "";
+      var format = info.certificado_formato || info.formato_detectado || "";
+      var subject = info.certificado_subject || "";
+      var serial = info.certificado_serial || "";
+      var keyStatus = info.certificado_clave_estado || "";
+      if (!loadedAt && !fileName && !format && !subject && !serial) {
+        el.textContent = "Ultima firma cargada: sin registro. Clave: no visible por seguridad.";
+        return;
+      }
+      var parts = [];
+      parts.push("Ultima firma cargada: " + (formatFirmaDate(loadedAt) || "fecha no disponible"));
+      if (fileName) parts.push("Archivo: " + fileName);
+      if (format) parts.push("Formato: " + format);
+      if (subject) parts.push("Titular: " + subject);
+      if (serial) parts.push("Serial: " + serial);
+      parts.push("Clave: " + (keyStatus || "registrada/no visible por seguridad"));
+      el.textContent = parts.join(" | ");
+    }
+
     async function verificarDianFirmaVencimiento(notificar) {
       if (!state.empresaID) return null;
       var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado&empresa_id=" + encodeURIComponent(state.empresaID);
@@ -1026,6 +1069,7 @@
       set("dian_certificado_url", cfg.certificado_url);
       set("dian_certificado_clave_ref", cfg.certificado_clave_ref);
       set("dian_observaciones", cfg.observaciones);
+      renderFirmaLastUpload(cfg);
       var shared = document.getElementById("dian_usar_software_compartido");
       if (shared) shared.checked = asBool(cfg.usar_software_compartido);
     }
@@ -1152,7 +1196,8 @@
           if (data && data.vencimiento_certificado) {
             renderFirmaExpiry(data.vencimiento_certificado);
           }
-          setMsg("Firma cargada y guardada correctamente.", false);
+          renderFirmaLastUpload(data || {});
+          setMsg("Firma cargada y guardada correctamente. La clave fue usada de forma segura y no se muestra en pantalla.", false);
           if (typeof loadDianConfig === "function") {
             loadDianConfig().catch(function() {});
           }

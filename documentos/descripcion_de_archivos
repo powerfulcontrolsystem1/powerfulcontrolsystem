@@ -1,3 +1,12 @@
+2026-06-05 - Ultima carga segura de firma DIAN
+- `backend/db/modulos_faltantes.go`:
+	- agrega columnas de metadatos seguros para la ultima firma DIAN cargada por empresa.
+- `backend/handlers/modulos_faltantes.go`:
+	- persiste archivo original, formato, titular, emisor, serial, fecha de carga y estado seguro de clave al subir P12/PFX o PEM.
+	- mantiene la regla de no guardar ni mostrar la clave de la firma en claro.
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- muestra en la tarjeta de carga de firma el resumen de ultima carga y el estado seguro de la clave.
+
 2026-06-05 - Apariencias de Camaras, Energia solar y Empresas compartidas
 - `web/administrar_empresa/camaras.html`:
 	- elimina el bloque de estilos inline para que la pagina use la hoja global y respete las apariencias configuradas.
