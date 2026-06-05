@@ -12494,3 +12494,10 @@ Archivos modificados:
 - web/js/editar_empresa.js
 - web/js/seleccionar_empresa.js
 - web/seleccionar_empresa.html
+
+2026-06-05 15:43:52 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: ee94767a; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/historial_de_cambios
