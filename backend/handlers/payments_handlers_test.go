@@ -474,6 +474,9 @@ func TestEpaycoCheckoutCredentialReadinessSeparatesSmartAndClassicKeys(t *testin
 	if epaycoCustomCheckoutReady("", "9695", "a1c7200f0e2029d11b62bfd863422d5db10a8397") {
 		t.Fatal("checkout.js fallback must require the public key")
 	}
+	if !epaycoCheckoutJSReady("491d6a0b6e992cf924edd8d3d088aff1") {
+		t.Fatal("current checkout.js fallback must be available with public key")
+	}
 	if epaycoClassicCheckoutReady("9695", "clave-corta#") {
 		t.Fatal("short password-like values must not enable classic checkout")
 	}

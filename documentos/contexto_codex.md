@@ -231,8 +231,9 @@ botones, desde handlers estaticos del backend.
   credenciales reales estan configuradas; `*.enabled` solo se usa como override
   explicito para apagar una pasarela lista. La disponibilidad debe calcularse
   con credenciales realmente legibles: Epayco puede usar credenciales Smart o
-  fallback clasico/legacy, y Wompi requiere `public_key` con prefijo valido mas
-  `integrity_key` descifrable para Web Checkout.
+  fallback `checkout.js` con Public Key valida aunque no exista `P_KEY`; Wompi
+  requiere `public_key` con prefijo valido mas `integrity_key` descifrable para
+  Web Checkout.
 - Menu super administrador: `web/super_administrador.html` debe enlazar solo
   las paginas activas del panel super; `web/js/super_administrador.js` debe
   permitir restaurar cada enlace con `target="contentFrame"`. `Reportes globales`

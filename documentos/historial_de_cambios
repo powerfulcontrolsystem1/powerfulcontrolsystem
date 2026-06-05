@@ -1,6 +1,6 @@
 2026-06-05: Pasarelas de licencia Epayco/Wompi.
 - Modulos afectados: licencias, checkout publico de licencia, pagos Epayco y Wompi.
-- Cambio funcional: la disponibilidad publica de Epayco tolera credenciales opcionales legacy/cifradas que no sean indispensables, sin apagar una configuracion valida; Wompi solo se ofrece cuando Web Checkout tiene public key e integrity key realmente legibles.
+- Cambio funcional: la disponibilidad publica de Epayco tolera credenciales opcionales legacy/cifradas que no sean indispensables, sin apagar una configuracion valida; el fallback `checkout.js` queda disponible con Public Key valida aunque no exista `P_KEY`; Wompi solo se ofrece cuando Web Checkout tiene public key e integrity key realmente legibles.
 - Backend: `backend/handlers/payments_handlers.go` agrega lectura opcional saneada de credenciales de pago para readiness y separa el helper de disponibilidad Wompi.
 - Seguridad: no se imprimen secretos; las credenciales cifradas no descifrables se ignoran solo para publicar disponibilidad, mientras los endpoints reales conservan validacion estricta.
 - Pruebas: `go test ./handlers -run "EpaycoCheckoutCredential|DefaultLicenciaPayment|Wompi|PaymentCredential" -count=1`.

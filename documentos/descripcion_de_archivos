@@ -1,6 +1,7 @@
 2026-06-05 - Pasarelas de licencia Epayco/Wompi
 - `backend/handlers/payments_handlers.go`:
 	- agrega helpers para leer credenciales opcionales de pasarelas sin exponer secretos ni apagar el proveedor completo por una clave secundaria antigua.
+	- habilita la disponibilidad operativa del fallback Epayco `checkout.js` con Public Key valida, sin exigir `P_KEY` para ese flujo.
 	- publica Wompi como disponible solo cuando la public key y la integrity key son utilizables para Web Checkout.
 - `backend/handlers/payments_handlers_test.go`:
 	- cubre la tolerancia a credenciales cifradas no descifrables en readiness y los requisitos minimos de Wompi Web Checkout.

@@ -1,5 +1,5 @@
 ## [2026-06-05] Pasarelas de licencia Epayco/Wompi
-- [Pagos] La disponibilidad publica de Epayco vuelve a resolver credenciales legacy y opcionales sin apagar toda la pasarela si una clave opcional cifrada no se puede descifrar.
+- [Pagos] La disponibilidad publica de Epayco vuelve a resolver credenciales legacy y opcionales sin apagar toda la pasarela si una clave opcional cifrada no se puede descifrar; el fallback `checkout.js` se habilita con Public Key valida sin exigir `P_KEY`.
 - [Pagos] Wompi solo se publica como disponible cuando la llave publica y la llave de integridad son realmente legibles para Web Checkout.
 - [QA] `go test ./handlers -run "EpaycoCheckoutCredential|DefaultLicenciaPayment|Wompi|PaymentCredential" -count=1`.
 

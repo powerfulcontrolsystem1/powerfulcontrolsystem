@@ -2969,6 +2969,10 @@ func epaycoCustomCheckoutReady(publicKey, customerID, checkoutKey string) bool {
 	return strings.TrimSpace(publicKey) != "" && epaycoClassicCheckoutReady(customerID, checkoutKey)
 }
 
+func epaycoCheckoutJSReady(publicKey string) bool {
+	return strings.TrimSpace(publicKey) != ""
+}
+
 func resolveEpaycoCredentialSet(dbSuper *sql.DB) (epaycoCredentialSet, error) {
 	var creds epaycoCredentialSet
 	var err error
@@ -3126,8 +3130,8 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 		epaycoCreds = epaycoCredentialSet{}
 	}
 	epaycoSmartConfigured := epaycoSmartCheckoutReady(epaycoCreds.PublicKey, epaycoCreds.PrivateKey)
-	epaycoClassicConfigured := epaycoCustomCheckoutReady(epaycoCreds.PublicKey, epaycoCreds.CustomerID, epaycoCreds.CheckoutKey)
-	epaycoConfigured := epaycoSmartConfigured || epaycoClassicConfigured
+	epaycoCheckoutJSConfigured := epaycoCheckoutJSReady(epaycoCreds.PublicKey)
+	epaycoConfigured := epaycoSmartConfigured || epaycoCheckoutJSConfigured
 	epaycoEnabled, err := resolveEnabledConfigValue(dbSuper, "epayco.enabled", defaultLicenciaPaymentProviderEnabled(epaycoConfigured))
 	if err != nil {
 		return nil, err
@@ -5656,12 +5660,12 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 		privateKey := strings.TrimSpace(epaycoCreds.PrivateKey)
 		checkoutKey := strings.TrimSpace(epaycoCreds.CheckoutKey)
 		smartCheckoutReady := epaycoSmartCheckoutReady(publicKey, privateKey)
-		classicCheckoutReady := epaycoCustomCheckoutReady(publicKey, customerID, checkoutKey)
+		classicCheckoutReady := epaycoCheckoutJSReady(publicKey)
 		if !smartCheckoutReady && !classicCheckoutReady {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":                     "Epayco no esta configurado completamente: Smart Checkout requiere Public Key y Private Key API; el checkout estandar requiere Public Key, Customer ID y P_KEY.",
+				"error":                     "Epayco no esta configurado completamente: Smart Checkout requiere Public Key y Private Key API; el checkout estandar requiere Public Key.",
 				"provider":                  "epayco",
 				"smart_checkout_ready":      smartCheckoutReady,
 				"classic_checkout_ready":    classicCheckoutReady,
@@ -5745,7 +5749,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusPreconditionFailed)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"error":    "Epayco requiere credenciales completas para iniciar el checkout",
+				"error":    "Epayco requiere Public Key para iniciar el checkout",
 				"provider": "epayco",
 			})
 			return
@@ -5768,7 +5772,7 @@ func EpaycoCreateTransactionHandler(dbSuper *sql.DB) http.HandlerFunc {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusConflict)
 				json.NewEncoder(w).Encode(map[string]interface{}{
-					"error":                     "Epayco Smart Checkout fallo y el checkout estandar no esta listo. Registra PUBLIC_KEY, Customer ID y P_KEY para checkout estandar en configuracion avanzada de Epayco.",
+					"error":                     "Epayco Smart Checkout fallo y el checkout estandar no esta listo. Registra PUBLIC_KEY en configuracion avanzada de Epayco.",
 					"provider":                  "epayco",
 					"smart_checkout_error":      reason,
 					"classic_checkout_ready":    false,
