@@ -12294,3 +12294,35 @@ Archivos modificados:
 - backend/handlers/payments_handlers.go
 - documentos/CHANGELOG.md
 - documentos/historial_de_cambios
+
+2026-06-04 19:26:26 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 2fae119e; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/camaras.go
+- backend/handlers/camaras.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/empresa_preconfiguracion.go
+- backend/main.go
+- backend/main_empresa_routes_security_test.go
+- documentos/CHANGELOG.md
+- documentos/api/ayuda_apis.md
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/administrar_empresa/camaras.html
+- web/administrar_empresa/configuracion_de_estaciones.html
+- web/administrar_empresa/estaciones.html
+- web/ayuda/ayuda_apis.html
+- web/js/camaras.js
+- web/js/pwa_install.js
+- web/login.html
+- web/login_usuario.html
+- web/super/licencias.html
