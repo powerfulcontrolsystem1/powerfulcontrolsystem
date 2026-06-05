@@ -63,7 +63,7 @@
     <div id="feDianConfigCard" class="card is-hidden">
       <h2>Configuración DIAN Colombia</h2>
       <p class="form-help">
-        Checklist operativo para dejar lista la empresa: datos fiscales, Software ID/PIN, TestSetId, resolución, rangos, token y certificado X.509.
+        Checklist operativo para dejar lista la empresa: datos fiscales, Software ID/PIN, TestSetId, resolucion, rangos, firma/certificado X.509 y token de proveedor si aplica.
       </p>
       <form id="feDianConfigForm" class="form">
         <input type="hidden" id="dian_id">
@@ -93,7 +93,8 @@
           <div class="form-col"><label class="form-label">Rango autorizado</label><div style="display:flex; gap:8px;"><input id="dian_rango_desde" type="number" min="1" class="form-input" placeholder="Desde"><input id="dian_rango_hasta" type="number" min="1" class="form-input" placeholder="Hasta"></div></div>
         </div>
         <div class="form-row">
-          <div class="form-col"><label class="form-label">Token emisor (referencia segura)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="env:DIAN_TOKEN_EMPRESA_1 / file:/ruta/token"></div>
+          <div class="form-col"><label class="form-label">Llave tÃ©cnica DIAN</label><input id="dian_llave_tecnica" class="form-input" placeholder="Llave tÃ©cnica del rango de numeraciÃ³n"></div>
+          <div class="form-col"><label class="form-label">Token proveedor/API (opcional en DIAN oficial)</label><input id="dian_token_emisor_ref" class="form-input" placeholder="Solo si usa proveedor/API bearer: env:DIAN_TOKEN_EMPRESA_1"></div>
           <div class="form-col"><label class="form-label">Certificado X.509</label><input id="dian_certificado_url" class="form-input" placeholder="Se completa al cargar P12/PFX o PEM con certificado"></div>
           <div class="form-col"><label class="form-label">Llave privada</label><input id="dian_certificado_clave_ref" class="form-input" placeholder="Se completa al cargar firma"></div>
         </div>
@@ -102,6 +103,7 @@
           <button id="btnDianConfigGuardar" type="submit" class="btn">Guardar DIAN Colombia</button>
           <button id="btnDianConfigValidar" type="button" class="btn secondary">Validar checklist</button>
           <button id="btnDianConfigRecargar" type="button" class="btn secondary">Recargar</button>
+          <a id="btnDianPasarTest" class="btn secondary" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html">Pasar test DIAN</a>
         </div>
         <div id="feDianConfigMsg" class="form-help"></div>
         <pre id="feDianConfigResultado" class="form-help pre-output"></pre>
@@ -1065,6 +1067,7 @@
       set("dian_rango_desde", cfg.rango_desde || document.getElementById("adv_consecutivo_desde") && document.getElementById("adv_consecutivo_desde").value);
       set("dian_rango_hasta", cfg.rango_hasta || document.getElementById("adv_consecutivo_hasta") && document.getElementById("adv_consecutivo_hasta").value);
       set("dian_consecutivo_actual", cfg.consecutivo_actual || document.getElementById("adv_proximo_consecutivo") && document.getElementById("adv_proximo_consecutivo").value || 1);
+      set("dian_llave_tecnica", cfg.llave_tecnica);
       set("dian_token_emisor_ref", cfg.token_emisor_ref);
       set("dian_certificado_url", cfg.certificado_url);
       set("dian_certificado_clave_ref", cfg.certificado_clave_ref);
@@ -1093,6 +1096,7 @@
         rango_desde: Number(document.getElementById("dian_rango_desde").value || 0),
         rango_hasta: Number(document.getElementById("dian_rango_hasta").value || 0),
         consecutivo_actual: Number(document.getElementById("dian_consecutivo_actual").value || 0),
+        llave_tecnica: txt(document.getElementById("dian_llave_tecnica").value),
         url_dian: txt(document.getElementById("dian_url").value),
         token_emisor_ref: txt(document.getElementById("dian_token_emisor_ref").value),
         certificado_url: txt(document.getElementById("dian_certificado_url").value),
@@ -1573,6 +1577,11 @@
           setDianConfigMessage(err && err.message ? err.message : "No se pudo recargar DIAN Colombia", true);
         });
       });
+    }
+
+    var btnDianPasarTest = document.getElementById("btnDianPasarTest");
+    if (btnDianPasarTest && state.empresaID) {
+      btnDianPasarTest.href = "/administrar_empresa/facturacion_electronica_pruebas_dian.html?empresa_id=" + encodeURIComponent(state.empresaID);
     }
 
     var btnFirmaExpiry = document.getElementById("feFirmaExpiryBtn");

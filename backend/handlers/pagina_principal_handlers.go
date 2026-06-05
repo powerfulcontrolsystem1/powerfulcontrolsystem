@@ -320,7 +320,17 @@ func informacionModulosDefaultConfig() informacionModulosConfig {
 			{Titulo: "Inventario profesional", IconoURL: "/img/warehouse-color.svg", Caracteristicas: []string{"Productos", "Servicios", "Recetas", "Categorias", "Bodegas", "Kardex", "Traslados", "Compras", "Proveedores", "Control de existencias"}},
 			{Titulo: "Ventas POS", IconoURL: "/img/punto_venta.png", Caracteristicas: []string{"Venta directa", "Carritos por estacion", "Pagos mixtos", "Abonos", "Descuentos", "Codigos promocionales", "Caja por usuario", "Varias cajas simultaneas"}},
 			{Titulo: "Pagos y hardware", IconoURL: "/img/money.svg", Caracteristicas: []string{"Manejo de datafonos", "Pagos QR", "Cajon monedero", "Impresoras POS", "Impresoras por area o producto", "Facturacion offline"}},
-			{Titulo: "Documentos electronicos", IconoURL: "/img/invoice.svg", Caracteristicas: []string{"Factura electronica", "Notas credito/debito", "Documento soporte", "Notas de ajuste", "Nomina electronica", "Documentos equivalentes electronicos/POS electronico", "Contingencia y eventos RADIAN para Colombia", "Factura, nota credito y nota debito para Panama y Ecuador segun el pais configurado"}},
+			{Titulo: "Documentos electronicos", IconoURL: "/img/invoice.svg", Caracteristicas: []string{
+				"Documentos electronicos DIAN Colombia",
+				"Activa los documentos del Sistema de Facturacion Electronica que la empresa usara. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.",
+				"Documentos y eventos del SFE",
+				"Factura electronica de venta - Venta: venta de bienes o servicios validada previamente por DIAN.",
+				"Nota credito electronica - Ajustes de venta: disminuye, corrige o reversa valores de una factura electronica.",
+				"Nota debito electronica - Ajustes de venta: aumenta o corrige valores de una factura electronica.",
+				"Reporte de factura de talonario o papel por contingencia - Contingencia: reporte para validacion posterior cuando hubo inconveniente tecnologico del facturador.",
+				"Documento soporte en adquisiciones a no obligados - Compras: soporta costos, deducciones o impuestos descontables en compras a sujetos no obligados a facturar.",
+				"Nota de ajuste del documento soporte - Compras: ajusta o corrige un documento soporte de adquisiciones.",
+			}},
 			{Titulo: "Finanzas y cumplimiento", IconoURL: "/img/taxes.svg", Caracteristicas: []string{"Impuestos", "Bancos", "Ingresos", "Egresos", "Tesoreria", "Presupuesto", "Reportes", "Modulo del contador", "Certificados tributarios", "Informacion exogena"}},
 			{Titulo: "Operacion por estaciones", IconoURL: "/img/hotel-logo.svg", Caracteristicas: []string{"Estaciones", "Mesas", "Habitaciones", "Zonas o bahias configurables", "Control de estados", "Turnos", "Reservas", "Alertas de tiempo", "Aseo", "Cierre/corte de caja"}},
 			{Titulo: "Automatizacion e IA", IconoURL: "/img/gpt.svg", Caracteristicas: []string{"Integracion con IA", "Documentos inteligentes", "OCR de compras", "Soporte operativo", "Reportes asistidos", "Acciones confirmables"}},
@@ -628,6 +638,7 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 		source = defaults.Modulos
 	}
 	source = informacionModulosEnsureDefaultHighlights(source, defaults.Modulos)
+	documentosBase := informacionModulosDocumentosElectronicosDefault(defaults.Modulos)
 
 	modules := make([]informacionModuloItem, 0, len(source))
 	for i, item := range source {
@@ -636,14 +647,51 @@ func informacionModulosNormalizeConfig(cfg informacionModulosConfig) informacion
 		if moduleTitle == "" {
 			moduleTitle = base.Titulo
 		}
+		if informacionModulosIsDocumentosElectronicosTitle(moduleTitle) {
+			base = documentosBase
+		}
+		features := informacionModulosNormalizeFeatures(item.Caracteristicas, base.Caracteristicas)
+		if informacionModulosIsDocumentosElectronicosTitle(moduleTitle) && !informacionModulosHasDocumentosDianColombia(features) {
+			features = informacionModulosNormalizeFeatures(base.Caracteristicas, base.Caracteristicas)
+		}
 		modules = append(modules, informacionModuloItem{
 			Titulo:          moduleTitle,
 			IconoURL:        paginaPrincipalNormalizeImageURL(item.IconoURL, base.IconoURL),
-			Caracteristicas: informacionModulosNormalizeFeatures(item.Caracteristicas, base.Caracteristicas),
+			Caracteristicas: features,
 		})
 	}
 
 	return informacionModulosConfig{Titulo: title, Modulos: modules}
+}
+
+func informacionModulosDocumentosElectronicosDefault(defaults []informacionModuloItem) informacionModuloItem {
+	for _, item := range defaults {
+		if informacionModulosIsDocumentosElectronicosTitle(item.Titulo) {
+			return item
+		}
+	}
+	return informacionModuloItem{
+		Titulo:          "Documentos electronicos",
+		IconoURL:        "/img/invoice.svg",
+		Caracteristicas: []string{"Documentos electronicos DIAN Colombia"},
+	}
+}
+
+func informacionModulosIsDocumentosElectronicosTitle(title string) bool {
+	key := strings.ToLower(strings.TrimSpace(title))
+	key = strings.ReplaceAll(key, "é", "e")
+	return key == "documentos electronicos" || key == "documentos electrónicos"
+}
+
+func informacionModulosHasDocumentosDianColombia(features []string) bool {
+	for _, item := range features {
+		key := strings.ToLower(strings.TrimSpace(item))
+		key = strings.ReplaceAll(key, "ó", "o")
+		if strings.Contains(key, "documentos electronicos dian colombia") {
+			return true
+		}
+	}
+	return false
 }
 
 func informacionModulosEnsureDefaultHighlights(source, defaults []informacionModuloItem) []informacionModuloItem {

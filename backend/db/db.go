@@ -51,6 +51,19 @@ func InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID int64) {
 	licenciaPermisoPolicyCacheMu.Unlock()
 }
 
+// InvalidateEmpresaByScopeCacheForEmpresa descarta cualquier resolucion cacheada
+// por id fisico o empresa_id logico para evitar accesos residuales tras borrados.
+func InvalidateEmpresaByScopeCacheForEmpresa(ids ...int64) {
+	empresaByScopeCacheMu.Lock()
+	defer empresaByScopeCacheMu.Unlock()
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		delete(empresaByScopeCache, id)
+	}
+}
+
 func invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn *sql.DB, licenciaID int64) {
 	if dbConn == nil || licenciaID <= 0 {
 		return

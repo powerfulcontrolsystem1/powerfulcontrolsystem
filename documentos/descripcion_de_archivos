@@ -1,3 +1,35 @@
+2026-06-05 - Orden manual de empresas en selector
+- `backend/db/usuario_config_schema.go`:
+	- agrega `selector_empresas_orden_json` en `usuario_configuracion` y helpers para leer/guardar el orden saneado por usuario.
+- `backend/db/usuario_config_schema_test.go`:
+	- cubre la normalizacion de IDs positivos y unicos para el orden visual.
+- `backend/handlers/user_config.go`:
+	- expone `selector_empresas_orden` en `GET/POST /api/user/configuracion` sin cambiar el contrato de apariencia.
+- `web/seleccionar_empresa.html`:
+	- agrega la barra `Orden de tarjetas` y el boton `Restablecer orden`.
+- `web/js/seleccionar_empresa.js`:
+	- permite arrastrar tarjetas visibles por grupo, guardar el orden, restaurarlo al recargar y auditar el evento visual.
+- `web/estilos.css`:
+	- agrega estilos responsive y por tema para la barra de orden, asa de arrastre y estados de movimiento.
+
+2026-06-05 - Centro de habilitacion DIAN
+- `backend/db/modulos_faltantes.go`:
+	- amplia `empresa_dian_configuracion` con modo de operacion DIAN, fechas del set y totales requeridos/aceptados por tipo documental.
+- `backend/handlers/modulos_faltantes.go`:
+	- permite guardar los nuevos campos DIAN, calcula el objetivo efectivo del set desde la configuracion empresarial y valida minimos aceptados configurables.
+	- agrega mensajes de recepcion por documento y soporta envios manuales con conteos cero donde aplica.
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
+	- reorganiza la pantalla como `Centro de habilitacion DIAN`, con estado, validacion, diagnostico, guardar objetivo, set automatico y botones manuales por documento.
+- `web/administrar_empresa/facturacion_electronica.html` y `facturacion_electronica_menu.html`:
+	- agregan acceso directo `Pasar test DIAN` desde la configuracion y el submenu de facturacion electronica.
+
+2026-06-05 - OnlyOffice corrige token JWT del editor
+- `backend/handlers/onlyoffice.go`:
+	- agrega `onlyOfficeAttachConfigToken` para firmar la configuracion completa y dejar el JWT solo en `config.token`.
+	- elimina tokens duplicados dentro de `document` y `editorConfig`, evitando el error de seguridad del Document Server.
+- `backend/handlers/onlyoffice_test.go`:
+	- agrega cobertura para impedir que `document.token` o `editorConfig.token` vuelvan a enviarse en `editor_config`.
+
 2026-06-05 - Ultima carga segura de firma DIAN
 - `backend/db/modulos_faltantes.go`:
 	- agrega columnas de metadatos seguros para la ultima firma DIAN cargada por empresa.
@@ -41,6 +73,7 @@
 	- refuerza el checklist DIAN con warning de certificado proximo a vencer.
 - `backend/db/modulos_faltantes.go`:
 	- agrega columnas de vencimiento y control de alerta en `empresa_dian_configuracion`.
+	- agrega `llave_tecnica` para guardar la clave tecnica DIAN del rango de numeracion por empresa, separada de `token_emisor_ref`.
 - `web/administrar_empresa/facturacion_electronica.html`:
 	- muestra vencimiento del certificado y boton `Verificar vencimiento`.
 - `backend/handlers/dian_signature_upload_test.go`:

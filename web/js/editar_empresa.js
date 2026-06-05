@@ -41,6 +41,37 @@
     return "/descargar_informacion_de_la_empresa.html?empresa_id=" + encodeURIComponent(empresaId);
   }
 
+  function removeEmpresaFromSelectorOrderLocal(empresaId) {
+    var id = String(empresaId || "").trim();
+    if (!id || !window.localStorage) return;
+    try {
+      for (var index = 0; index < window.localStorage.length; index += 1) {
+        var key = window.localStorage.key(index);
+        if (!key || key.indexOf("seleccionar_empresa:orden:") !== 0) continue;
+        var raw = window.localStorage.getItem(key);
+        if (!raw) continue;
+        var values = JSON.parse(raw);
+        if (!Array.isArray(values)) continue;
+        var next = [];
+        var changed = false;
+        var seen = {};
+        values.forEach(function (value) {
+          var normalized = String(parseInt(value, 10) || "");
+          if (!normalized || seen[normalized]) return;
+          seen[normalized] = true;
+          if (normalized === id) {
+            changed = true;
+            return;
+          }
+          next.push(Number(normalized));
+        });
+        if (changed) {
+          window.localStorage.setItem(key, JSON.stringify(next));
+        }
+      }
+    } catch (e) {}
+  }
+
   function openEmpresaDownload(options) {
     var opts = options && typeof options === "object" ? options : {};
     var sameWindowFallback = opts.sameWindowFallback !== false;
@@ -732,6 +763,7 @@
       if (erroresArchivos) {
         message += " Advertencias al limpiar archivos: " + erroresArchivos + ".";
       }
+      removeEmpresaFromSelectorOrderLocal(state.empresa.id);
       setMessage("empresaDeleteMessage", message, false);
       setDeleteBusy(true, "Empresa eliminada. Redirigiendo al selector...");
       window.setTimeout(function () {

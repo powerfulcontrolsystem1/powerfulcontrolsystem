@@ -64,3 +64,38 @@ func TestOnlyOfficeBrowserDocumentServerURLKeepsPublicHost(t *testing.T) {
 		t.Fatalf("unexpected browser document server URL\nwant: %s\n got: %s", want, got)
 	}
 }
+
+func TestOnlyOfficeAttachConfigTokenUsesTopLevelTokenOnly(t *testing.T) {
+	cfg := map[string]any{
+		"documentType": "word",
+		"document": map[string]any{
+			"fileType": "docx",
+			"key":      "key-1",
+			"title":    "Prueba.docx",
+			"url":      "https://example.com/file.docx",
+			"token":    "stale-document-token",
+		},
+		"editorConfig": map[string]any{
+			"mode":        "edit",
+			"callbackUrl": "https://example.com/callback",
+			"token":       "stale-editor-token",
+		},
+	}
+
+	jwt, err := onlyOfficeAttachConfigToken("secret-for-test", cfg)
+	if err != nil {
+		t.Fatalf("onlyOfficeAttachConfigToken returned error: %v", err)
+	}
+	if jwt == "" {
+		t.Fatalf("expected jwt")
+	}
+	if cfg["token"] != jwt {
+		t.Fatalf("expected top-level config token")
+	}
+	if doc, ok := cfg["document"].(map[string]any); !ok || doc["token"] != nil {
+		t.Fatalf("document.token must not be sent to Document Server")
+	}
+	if ed, ok := cfg["editorConfig"].(map[string]any); !ok || ed["token"] != nil {
+		t.Fatalf("editorConfig.token must not be sent to Document Server")
+	}
+}

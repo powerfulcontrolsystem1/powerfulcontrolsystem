@@ -480,12 +480,16 @@ var (
 		AllowedColumns: []string{
 			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "software_id", "software_pin",
 			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
+			"modo_operacion_descripcion", "modo_operacion_fecha_inicio", "modo_operacion_fecha_termino",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
 			"certificado_vencimiento", "certificado_vencimiento_en", "certificado_alerta_dias",
 			"certificado_alerta_ultimo_envio", "certificado_alerta_email",
 			"certificado_ultima_carga_en", "certificado_archivo_original", "certificado_formato",
 			"certificado_subject", "certificado_issuer", "certificado_serial", "certificado_clave_estado",
 			"resolucion_fecha_desde", "resolucion_fecha_hasta", "rango_desde", "rango_hasta", "consecutivo_actual",
+			"llave_tecnica", "set_documentos_requeridos", "set_facturas_requeridas", "set_notas_debito_requeridas",
+			"set_notas_credito_requeridas", "set_documentos_aceptados_requeridos", "set_facturas_aceptadas_requeridas",
+			"set_notas_debito_aceptadas_requeridas", "set_notas_credito_aceptadas_requeridas",
 			"url_dian", "token_emisor_ref", "ultimo_envio", "estado_dian", "usuario_creador", "estado", "observaciones",
 		},
 		RequiredOnCreate: []string{"nit", "razon_social", "tipo_ambiente"},
@@ -7376,9 +7380,9 @@ func dianNowLocal() string {
 }
 
 const (
-	dianOfficialSetFacturas     = 60
-	dianOfficialSetNotasDebito  = 20
-	dianOfficialSetNotasCredito = 20
+	dianOfficialSetFacturas     = 30
+	dianOfficialSetNotasDebito  = 10
+	dianOfficialSetNotasCredito = 10
 	dianOfficialSetTotal        = dianOfficialSetFacturas + dianOfficialSetNotasDebito + dianOfficialSetNotasCredito
 	dianCertificateAlertDays    = 30
 )
@@ -7601,14 +7605,94 @@ func dianDefaultSetRequirement() map[string]interface{} {
 		"notas_credito":          dianOfficialSetNotasCredito,
 		"total_documentos":       dianOfficialSetTotal,
 		"estado_requerido_final": "Aceptado",
-		"nota":                   "Base DIAN para software propio o proveedor tecnologico; verifique siempre el objetivo exacto que muestra la plataforma DIAN para el modo de operacion de esta empresa.",
+		"nota":                   "Base operativa para software propio/proveedor segun el objetivo cargado en portal DIAN; verifique siempre el set exacto asignado a esta empresa.",
+	}
+}
+
+func dianConfiguredSetCounts(cfg map[string]interface{}) (int, int, int, int) {
+	facturas := int(anyToInt64(cfg["set_facturas_requeridas"]))
+	notasDebito := int(anyToInt64(cfg["set_notas_debito_requeridas"]))
+	notasCredito := int(anyToInt64(cfg["set_notas_credito_requeridas"]))
+	total := int(anyToInt64(cfg["set_documentos_requeridos"]))
+	if facturas < 0 {
+		facturas = 0
+	}
+	if notasDebito < 0 {
+		notasDebito = 0
+	}
+	if notasCredito < 0 {
+		notasCredito = 0
+	}
+	suma := facturas + notasDebito + notasCredito
+	if suma <= 0 {
+		return dianOfficialSetFacturas, dianOfficialSetNotasDebito, dianOfficialSetNotasCredito, dianOfficialSetTotal
+	}
+	if total < suma {
+		total = suma
+	}
+	if total == 0 {
+		total = suma
+	}
+	return facturas, notasDebito, notasCredito, total
+}
+
+func dianConfiguredAcceptedCounts(cfg map[string]interface{}) (int, int, int, int) {
+	facturas := int(anyToInt64(cfg["set_facturas_aceptadas_requeridas"]))
+	notasDebito := int(anyToInt64(cfg["set_notas_debito_aceptadas_requeridas"]))
+	notasCredito := int(anyToInt64(cfg["set_notas_credito_aceptadas_requeridas"]))
+	total := int(anyToInt64(cfg["set_documentos_aceptados_requeridos"]))
+	if facturas < 0 {
+		facturas = 0
+	}
+	if notasDebito < 0 {
+		notasDebito = 0
+	}
+	if notasCredito < 0 {
+		notasCredito = 0
+	}
+	suma := facturas + notasDebito + notasCredito
+	if total < suma {
+		total = suma
+	}
+	return facturas, notasDebito, notasCredito, total
+}
+
+func dianEffectiveAcceptedCounts(cfg map[string]interface{}, payload map[string]interface{}) (int, int, int, int) {
+	defaultFacturas, defaultDebito, defaultCredito, defaultTotal := dianConfiguredAcceptedCounts(cfg)
+	facturas := dianPayloadNonNegativeInt(payload, defaultFacturas, "set_facturas_aceptadas_requeridas", "facturas_aceptadas_requeridas", "accepted_invoices_required")
+	notasDebito := dianPayloadNonNegativeInt(payload, defaultDebito, "set_notas_debito_aceptadas_requeridas", "notas_debito_aceptadas_requeridas", "accepted_debit_notes_required")
+	notasCredito := dianPayloadNonNegativeInt(payload, defaultCredito, "set_notas_credito_aceptadas_requeridas", "notas_credito_aceptadas_requeridas", "accepted_credit_notes_required")
+	total := dianPayloadNonNegativeInt(payload, defaultTotal, "set_documentos_aceptados_requeridos", "documentos_aceptados_requeridos", "accepted_documents_required")
+	suma := facturas + notasDebito + notasCredito
+	if total < suma {
+		total = suma
+	}
+	return facturas, notasDebito, notasCredito, total
+}
+
+func dianConfiguredSetRequirement(cfg map[string]interface{}) map[string]interface{} {
+	facturas, notasDebito, notasCredito, totalDocumentos := dianConfiguredSetCounts(cfg)
+	accFacturas, accDebito, accCredito, accTotal := dianConfiguredAcceptedCounts(cfg)
+	return map[string]interface{}{
+		"ambiente":                               "habilitacion",
+		"modo_operacion":                         genericStringValue(cfg["modo_operacion_descripcion"]),
+		"facturas_electronicas":                  facturas,
+		"notas_debito":                           notasDebito,
+		"notas_credito":                          notasCredito,
+		"total_documentos":                       totalDocumentos,
+		"facturas_electronicas_aceptadas_minimo": accFacturas,
+		"notas_debito_aceptadas_minimo":          accDebito,
+		"notas_credito_aceptadas_minimo":         accCredito,
+		"total_documentos_aceptados_minimo":      accTotal,
+		"estado_requerido_final":                 "Aceptado",
+		"nota":                                   "Objetivo cargado desde el modo de operacion del portal DIAN para esta empresa.",
 	}
 }
 
 func dianEffectiveSetRequirement(payload map[string]interface{}) map[string]interface{} {
-	facturas := dianPayloadPositiveInt(payload, dianOfficialSetFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
-	notasDebito := dianPayloadPositiveInt(payload, dianOfficialSetNotasDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
-	notasCredito := dianPayloadPositiveInt(payload, dianOfficialSetNotasCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
+	facturas := dianPayloadNonNegativeInt(payload, dianOfficialSetFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
+	notasDebito := dianPayloadNonNegativeInt(payload, dianOfficialSetNotasDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
+	notasCredito := dianPayloadNonNegativeInt(payload, dianOfficialSetNotasCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
 	totalDocumentos := facturas + notasDebito + notasCredito
 	return map[string]interface{}{
 		"ambiente":               "habilitacion",
@@ -7618,6 +7702,29 @@ func dianEffectiveSetRequirement(payload map[string]interface{}) map[string]inte
 		"total_documentos":       totalDocumentos,
 		"estado_requerido_final": "Aceptado",
 		"nota":                   "Valores configurables segun el set que DIAN asigne a la empresa.",
+	}
+}
+
+func dianEffectiveSetRequirementForConfig(cfg map[string]interface{}, payload map[string]interface{}) map[string]interface{} {
+	defaultFacturas, defaultDebito, defaultCredito, _ := dianConfiguredSetCounts(cfg)
+	facturas := dianPayloadNonNegativeInt(payload, defaultFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
+	notasDebito := dianPayloadNonNegativeInt(payload, defaultDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
+	notasCredito := dianPayloadNonNegativeInt(payload, defaultCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
+	totalDocumentos := facturas + notasDebito + notasCredito
+	accFacturas, accDebito, accCredito, accTotal := dianEffectiveAcceptedCounts(cfg, payload)
+	return map[string]interface{}{
+		"ambiente":                               "habilitacion",
+		"modo_operacion":                         genericStringValue(cfg["modo_operacion_descripcion"]),
+		"facturas_electronicas":                  facturas,
+		"notas_debito":                           notasDebito,
+		"notas_credito":                          notasCredito,
+		"total_documentos":                       totalDocumentos,
+		"facturas_electronicas_aceptadas_minimo": accFacturas,
+		"notas_debito_aceptadas_minimo":          accDebito,
+		"notas_credito_aceptadas_minimo":         accCredito,
+		"total_documentos_aceptados_minimo":      accTotal,
+		"estado_requerido_final":                 "Aceptado",
+		"nota":                                   "Valores configurables segun el set que DIAN asigne a la empresa.",
 	}
 }
 
@@ -8735,6 +8842,25 @@ func isDIANOfficialEndpoint(endpoint string) bool {
 	return strings.Contains(host, "dian.gov.co")
 }
 
+func dianConfiguredEndpoint(cfg map[string]interface{}, payload map[string]interface{}) string {
+	if payload == nil {
+		payload = map[string]interface{}{}
+	}
+	return normalizeIntegracionEndpoint(dianFirstNonBlank(
+		genericStringValue(payload["url_dian"]),
+		genericStringValue(payload["endpoint"]),
+		genericStringValue(cfg["url_dian"]),
+	))
+}
+
+func dianTokenRequiredForEndpoint(cfg map[string]interface{}, payload map[string]interface{}) bool {
+	endpoint := dianConfiguredEndpoint(cfg, payload)
+	if endpoint == "" {
+		return false
+	}
+	return !isDIANOfficialEndpoint(endpoint)
+}
+
 func normalizeDIANSOAPEndpoint(endpoint string) string {
 	endpoint = normalizeIntegracionEndpoint(endpoint)
 	if endpoint == "" {
@@ -9115,9 +9241,6 @@ func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int6
 	if configured {
 		for _, field := range missingDIANFields(cfg) {
 			addMissing(field)
-		}
-		if strings.TrimSpace(genericStringValue(cfg["token_emisor_ref"])) == "" {
-			addMissing("token_emisor_ref")
 		}
 		if strings.TrimSpace(genericStringValue(cfg["certificado_clave_ref"])) == "" {
 			addMissing("certificado_clave_ref")
@@ -9583,6 +9706,36 @@ func dianPayloadPositiveInt(payload map[string]interface{}, fallback int, keys .
 	return fallback
 }
 
+func dianPayloadNonNegativeInt(payload map[string]interface{}, fallback int, keys ...string) int {
+	if fallback < 0 {
+		fallback = 0
+	}
+	for _, key := range keys {
+		if payload == nil {
+			continue
+		}
+		value, ok := payload[strings.TrimSpace(key)]
+		if !ok {
+			continue
+		}
+		if raw := strings.TrimSpace(genericStringValue(value)); raw == "" {
+			continue
+		}
+		if _, isString := value.(string); !isString {
+			n := anyToInt64(value)
+			if n >= 0 {
+				return int(n)
+			}
+			continue
+		}
+		raw := strings.TrimSpace(genericStringValue(value))
+		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
+			return int(n)
+		}
+	}
+	return fallback
+}
+
 func dianBuildDocumentoCodigo(prefijo string, consecutivo int64) string {
 	prefijo = strings.TrimSpace(prefijo)
 	if prefijo == "" {
@@ -9592,6 +9745,49 @@ func dianBuildDocumentoCodigo(prefijo string, consecutivo int64) string {
 		consecutivo = 1
 	}
 	return prefijo + strconv.FormatInt(consecutivo, 10)
+}
+
+func dianReceptionMessage(estadoDIAN, acuseEstado, providerMessage string) string {
+	estado := strings.ToLower(strings.TrimSpace(estadoDIAN))
+	acuse := strings.ToLower(strings.TrimSpace(acuseEstado))
+	if msg := strings.TrimSpace(providerMessage); msg != "" {
+		return msg
+	}
+	switch {
+	case estado == "aceptado" || acuse == "aceptado":
+		return "Documento recibido y aceptado por DIAN."
+	case estado == "enviado" || estado == "pendiente" || acuse == "recibido" || acuse == "procesando" || acuse == "pendiente":
+		return "Documento recibido por DIAN/proveedor; consulta el acuse final."
+	case estado == "rechazado" || acuse == "rechazado":
+		return "Documento recibido pero rechazado; revise el detalle del acuse."
+	case estado == "contingencia":
+		return "Documento en contingencia; debe reprocesarse cuando DIAN/proveedor responda."
+	case estado == "simulado" || acuse == "simulado":
+		return "Simulacion local correcta; no se envio a DIAN."
+	default:
+		return "Resultado recibido; revise el estado DIAN y el acuse."
+	}
+}
+
+func dianAcceptanceRequirementMet(cfg map[string]interface{}, payload map[string]interface{}, resumen map[string]int, aceptadosPorTipo map[string]int, totalDocumentos int) bool {
+	accFacturas, accDebito, accCredito, accTotal := dianEffectiveAcceptedCounts(cfg, payload)
+	hasConfiguredRequirement := accFacturas > 0 || accDebito > 0 || accCredito > 0 || accTotal > 0
+	if !hasConfiguredRequirement {
+		return resumen["aceptado"] >= totalDocumentos
+	}
+	if accTotal > 0 && resumen["aceptado"] < accTotal {
+		return false
+	}
+	if accFacturas > 0 && aceptadosPorTipo["factura"] < accFacturas {
+		return false
+	}
+	if accDebito > 0 && aceptadosPorTipo["nota_debito"] < accDebito {
+		return false
+	}
+	if accCredito > 0 && aceptadosPorTipo["nota_credito"] < accCredito {
+		return false
+	}
+	return true
 }
 
 func dianBuildDocumentoXML(cfg map[string]interface{}, documentoCodigo, documentoTipo, issueDate, total string) string {
@@ -9655,11 +9851,12 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		}, http.StatusConflict, nil
 	}
 
+	defaultFacturas, defaultDebito, defaultCredito, defaultTotal := dianConfiguredSetCounts(cfg)
 	for key, value := range map[string]interface{}{
-		"facturas_electronicas": dianOfficialSetFacturas,
-		"notas_debito":          dianOfficialSetNotasDebito,
-		"notas_credito":         dianOfficialSetNotasCredito,
-		"total_documentos":      dianOfficialSetTotal,
+		"facturas_electronicas": defaultFacturas,
+		"notas_debito":          defaultDebito,
+		"notas_credito":         defaultCredito,
+		"total_documentos":      defaultTotal,
 	} {
 		if _, exists := payload[key]; !exists {
 			payload[key] = value
@@ -9685,7 +9882,7 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 			"paso":                    "validar_credenciales",
 			"motivo":                  "Faltan credenciales o firma DIAN antes de ejecutar el set real.",
 			"validacion_credenciales": credenciales,
-			"requisito_set_dian":      dianEffectiveSetRequirement(payload),
+			"requisito_set_dian":      dianEffectiveSetRequirementForConfig(cfg, payload),
 		}, http.StatusConflict, nil
 	}
 
@@ -9709,11 +9906,15 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		payload = map[string]interface{}{}
 	}
 
-	facturas := dianPayloadPositiveInt(payload, dianOfficialSetFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
-	notasDebito := dianPayloadPositiveInt(payload, dianOfficialSetNotasDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
-	notasCredito := dianPayloadPositiveInt(payload, dianOfficialSetNotasCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
+	defaultFacturas, defaultDebito, defaultCredito, _ := dianConfiguredSetCounts(cfg)
+	facturas := dianPayloadNonNegativeInt(payload, defaultFacturas, "facturas_electronicas", "facturas", "invoices_total_required")
+	notasDebito := dianPayloadNonNegativeInt(payload, defaultDebito, "notas_debito", "debit_notes", "total_debit_notes_required")
+	notasCredito := dianPayloadNonNegativeInt(payload, defaultCredito, "notas_credito", "credit_notes", "total_credit_notes_required")
 
 	sumaBase := facturas + notasDebito + notasCredito
+	if sumaBase <= 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("define al menos un documento para el set DIAN")
+	}
 	totalDocumentos := dianPayloadPositiveInt(payload, sumaBase, "total_documentos", "documentos", "total_document_required")
 	if totalDocumentos < sumaBase {
 		totalDocumentos = sumaBase
@@ -9777,6 +9978,11 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		"contingencia": 0,
 		"error":        0,
 		"simulado":     0,
+	}
+	aceptadosPorTipo := map[string]int{
+		"factura":      0,
+		"nota_debito":  0,
+		"nota_credito": 0,
 	}
 
 	procesados := 0
@@ -9927,6 +10133,11 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 			detalle["ok"] = parseTruthy(genericStringValue(envioResp["ok"]))
 			detalle["estado_dian"] = genericStringDefault(envioResp["estado_dian"], "pendiente")
 			detalle["acuse_estado"] = genericStringDefault(envioResp["acuse_estado"], "pendiente")
+			detalle["mensaje_recepcion"] = dianReceptionMessage(
+				genericStringValue(detalle["estado_dian"]),
+				genericStringValue(detalle["acuse_estado"]),
+				genericStringValue(envioResp["acuse_mensaje"]),
+			)
 			detalle["http_status"] = anyToInt64(envioResp["http_status"])
 			detalle["latency_ms"] = anyToInt64(envioResp["latency_ms"])
 			detalle["contingencia_activa"] = parseTruthy(genericStringValue(envioResp["contingencia_activa"]))
@@ -9937,6 +10148,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 			switch estado {
 			case "aceptado":
 				resumen["aceptado"]++
+				aceptadosPorTipo[target.Tipo]++
 			case "rechazado":
 				resumen["rechazado"]++
 			case "contingencia":
@@ -9964,7 +10176,8 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	if !simular && procesados > 0 {
 		okSet := resumen["error"] == 0 && resumen["rechazado"] == 0 && resumen["contingencia"] == 0
 		estadoSet := "pruebas_habilitacion_enviadas"
-		if resumen["aceptado"] >= totalDocumentos {
+		habilitacionAprobada := dianAcceptanceRequirementMet(cfg, payload, resumen, aceptadosPorTipo, totalDocumentos)
+		if habilitacionAprobada {
 			estadoSet = "habilitacion_aprobada"
 		} else if !okSet {
 			estadoSet = "habilitacion_observada"
@@ -9991,9 +10204,10 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		"ok":                     ok,
 		"empresa_id":             empresaID,
 		"simulado":               simular,
-		"requisito_set_dian":     dianEffectiveSetRequirement(payload),
+		"requisito_set_dian":     dianEffectiveSetRequirementForConfig(cfg, payload),
+		"requisito_configurado":  dianConfiguredSetRequirement(cfg),
 		"requisito_base_sistema": dianDefaultSetRequirement(),
-		"habilitacion_aprobada":  !simular && resumen["aceptado"] >= totalDocumentos,
+		"habilitacion_aprobada":  !simular && dianAcceptanceRequirementMet(cfg, payload, resumen, aceptadosPorTipo, totalDocumentos),
 		"software_modo":          map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware],
 		"software_id":            softwareID,
 		"test_set_id":            genericStringValue(cfg["test_set_id"]),
@@ -10001,6 +10215,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		"objetivo":               map[string]interface{}{"total_documentos": totalDocumentos, "facturas_electronicas": facturas, "notas_debito": notasDebito, "notas_credito": notasCredito},
 		"procesados":             procesados,
 		"resumen":                resumen,
+		"aceptados_por_tipo":     aceptadosPorTipo,
 		"detenido_por_error":     detenidoPorError,
 		"consecutivo_inicial":    consecutivoInicial,
 		"consecutivo_siguiente":  siguienteConsecutivo,
@@ -10116,7 +10331,7 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 	pasos := []map[string]interface{}{
 		{"paso": 1, "titulo": "Registrar empresa DIAN", "detalle": "Guardar NIT, razon social, ambiente, prefijo, resolucion y rango en /api/empresa/facturacion_electronica/dian (CRUD por empresa_id)."},
 		{"paso": 2, "titulo": "Definir modelo de software", "detalle": "Activar usar_software_compartido=1 para SaaS o mantener 0 para software propio por empresa."},
-		{"paso": 3, "titulo": "Configurar credenciales por empresa", "detalle": "Registrar token_emisor_ref y certificado_clave_ref por empresa; son obligatorios para envio real por NIT."},
+		{"paso": 3, "titulo": "Configurar credenciales por empresa", "detalle": "Registrar certificado_clave_ref, certificado X.509, Software ID/PIN y TestSetId por empresa; token_emisor_ref solo aplica si se usa proveedor/API con bearer token."},
 		{"paso": 4, "titulo": "Subir firma digital", "detalle": "Usar action=subir_firma (multipart) para adjuntar PEM y guardar referencia segura automaticamente."},
 		{"paso": 5, "titulo": "Generar XML base y firma base", "detalle": "Usar action=generar_xml_ubl_base y action=firmar_xml_xades_base para preparar la estructura UBL/firma antes del transporte oficial."},
 		{"paso": 6, "titulo": "Validar antes de emitir", "detalle": "Ejecutar action=checklist, action=validar, action=validar_credenciales, action=validar_documento_dian y action=diagnostico_oficial para bloquear errores preventivos antes del envio."},
@@ -10135,7 +10350,7 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 			"rango_hasta":              999999,
 			"consecutivo_actual":       1,
 			"url_dian":                 "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl",
-			"token_emisor_ref":         "env:DIAN_TOKEN_EMPRESA_XXX",
+			"token_emisor_ref":         "opcional si usa proveedor/API bearer: env:DIAN_TOKEN_EMPRESA_XXX",
 			"certificado_clave_ref":    "file:/ruta/segura/empresa_xxx_key.pem",
 			"usar_software_compartido": 1,
 		},
@@ -10218,7 +10433,7 @@ func buildDIANOnboardingGuide(cfg map[string]interface{}, empresaID int64) map[s
 		"software_id_efectivo":    softwareID,
 		"pasos":                   pasos,
 		"plantillas":              plantillas,
-		"recomendacion_operativa": "Modelo SaaS: software compartido + NIT/token/firma por empresa. El transporte SOAP/WSDL base esta conectado; para certificacion final aun deben validarse UBL 2.1 completo, XAdES/canonicalizacion y politicas WS-Security con acuses reales DIAN.",
+		"recomendacion_operativa": "Modelo SaaS: software compartido + NIT/firma/TestSetId por empresa. El token de emisor solo se exige para proveedor/API bearer; el transporte SOAP/WSDL base esta conectado y el acuse real DIAN confirma la aceptacion fiscal.",
 	}
 	if softwareErr != nil {
 		response["software_error"] = softwareErr.Error()
@@ -10263,6 +10478,7 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"software_id": softwareID,
 	}
 
+	tokenRequired := dianTokenRequiredForEndpoint(cfg, payload)
 	tokenRef := dianFirstNonBlank(genericStringValue(payload["token_emisor_ref"]), genericStringValue(cfg["token_emisor_ref"]))
 	tokenPayload := strings.TrimSpace(genericStringValue(payload["token"]))
 	tokenOK := false
@@ -10273,12 +10489,21 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		tokenSource = "payload.token"
 		tokenMessage = "token entregado en payload"
 	} else if tokenRef == "" {
-		issues = append(issues, "token_emisor_ref no configurado")
 		tokenSource = "vacio"
-		tokenMessage = "faltante"
+		if tokenRequired {
+			issues = append(issues, "token_emisor_ref no configurado")
+			tokenMessage = "faltante"
+		} else {
+			tokenOK = true
+			tokenSource = "no_requerido"
+			tokenMessage = "no requerido para endpoint oficial SOAP DIAN; se usa certificado, Software ID/PIN y TestSetId"
+		}
 	} else {
 		tokenSource = dianReferenceSource(tokenRef)
-		if _, err := resolveDIANSecretValue(tokenRef); err != nil {
+		if !tokenRequired {
+			tokenOK = true
+			tokenMessage = "configurado, pero no requerido para endpoint oficial SOAP DIAN"
+		} else if _, err := resolveDIANSecretValue(tokenRef); err != nil {
 			issues = append(issues, "token_emisor_ref invalido")
 			tokenMessage = err.Error()
 		} else {
@@ -10287,9 +10512,10 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		}
 	}
 	checks["token_emisor"] = map[string]interface{}{
-		"ok":      tokenOK,
-		"source":  tokenSource,
-		"message": dianTruncate(tokenMessage, 180),
+		"ok":       tokenOK,
+		"required": tokenRequired,
+		"source":   tokenSource,
+		"message":  dianTruncate(tokenMessage, 180),
 	}
 
 	keyRef := dianFirstNonBlank(genericStringValue(payload["certificado_clave_ref"]), genericStringValue(cfg["certificado_clave_ref"]))
@@ -10353,7 +10579,9 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		"issues":        issues,
 		"faltantes":     missingDIANFields(cfg),
 		"recomendaciones": []string{
-			"Mantener token_emisor_ref y certificado_clave_ref por empresa.",
+			"Mantener certificado_clave_ref y certificado X.509 por empresa.",
+			"Configurar token_emisor_ref solo cuando el endpoint sea de proveedor/API que use bearer token.",
+			"Para endpoint oficial DIAN SOAP/WCF, mantener certificado, Software ID/PIN y TestSetId de habilitacion.",
 			"Usar referencias seguras env:/file:/base64: en lugar de secretos inline.",
 			"Ejecutar pruebas_dian con simular=true antes de envio real.",
 		},
@@ -10739,8 +10967,8 @@ func missingDIANFields(cfg map[string]interface{}) []string {
 		"rango_desde",
 		"rango_hasta",
 		"consecutivo_actual",
+		"llave_tecnica",
 		"url_dian",
-		"token_emisor_ref",
 		"certificado_clave_ref",
 		"certificado_url",
 	}
@@ -10761,6 +10989,9 @@ func missingDIANFields(cfg map[string]interface{}) []string {
 		if isEmptyGenericValue(cfg[field]) {
 			addMissing(field)
 		}
+	}
+	if dianTokenRequiredForEndpoint(cfg, nil) && isEmptyGenericValue(cfg["token_emisor_ref"]) {
+		addMissing("token_emisor_ref")
 	}
 	ambiente := chooseDIANAmbiente(cfg)
 	if ambiente == "habilitacion" && isEmptyGenericValue(cfg["test_set_id"]) {

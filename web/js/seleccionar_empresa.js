@@ -7,6 +7,10 @@
   var currentEmpresas = [];
   var currentAccount = null;
   var currentActiveByEmpresa = {};
+  var selectorEmpresasOrder = [];
+  var selectorOrderSaveTimer = null;
+  var selectorDragState = null;
+  var suppressEmpresaCardClickUntil = 0;
   var shareNoticeEl = document.getElementById("selectorShareNotice");
   var shareInvitesPanel = null;
   var nuevasPlantillasCatalog = Array.isArray(window.PCS_NUEVAS_PLANTILLAS) ? window.PCS_NUEVAS_PLANTILLAS.slice() : [];
@@ -92,6 +96,130 @@
       throw err;
     }
     return data;
+  }
+
+  function normalizeEmpresaOrderIDs(values) {
+    var seen = {};
+    var out = [];
+    if (!Array.isArray(values)) return out;
+    values.forEach(function (value) {
+      var id = Number(value || 0);
+      if (!Number.isFinite(id) || id <= 0) return;
+      id = Math.trunc(id);
+      if (seen[id]) return;
+      seen[id] = true;
+      out.push(id);
+    });
+    return out;
+  }
+
+  function selectorOrderStorageKey() {
+    var email = "";
+    try {
+      email = normalizeEmail((currentAccount && (currentAccount.email || (currentAccount.admin && currentAccount.admin.email))) || "");
+    } catch (e) {
+      email = "";
+    }
+    return "seleccionar_empresa:orden:" + (email || "anonimo");
+  }
+
+  function readSelectorOrderLocal() {
+    try {
+      var raw = window.localStorage.getItem(selectorOrderStorageKey());
+      if (!raw) return [];
+      return normalizeEmpresaOrderIDs(JSON.parse(raw));
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeSelectorOrderLocal(order) {
+    try {
+      window.localStorage.setItem(selectorOrderStorageKey(), JSON.stringify(normalizeEmpresaOrderIDs(order)));
+    } catch (e) {}
+  }
+
+  async function loadSelectorEmpresasOrder() {
+    selectorEmpresasOrder = readSelectorOrderLocal();
+    try {
+      var data = await fetchJSON("/api/user/configuracion", { credentials: "same-origin" });
+      var remoteOrder = data && (
+        data.selector_empresas_orden ||
+        data.selector_empresas_order ||
+        data.selector_companies_order
+      );
+      if (Array.isArray(remoteOrder)) {
+        var order = normalizeEmpresaOrderIDs(remoteOrder);
+        selectorEmpresasOrder = order;
+        writeSelectorOrderLocal(order);
+      }
+    } catch (err) {
+      // La preferencia local conserva la experiencia si la configuracion remota no responde.
+    }
+    return selectorEmpresasOrder.slice();
+  }
+
+  function saveSelectorEmpresasOrder(order, immediate) {
+    var normalized = normalizeEmpresaOrderIDs(order);
+    selectorEmpresasOrder = normalized;
+    writeSelectorOrderLocal(normalized);
+    if (selectorOrderSaveTimer) {
+      window.clearTimeout(selectorOrderSaveTimer);
+      selectorOrderSaveTimer = null;
+    }
+    var persist = function () {
+      return fetchJSON("/api/user/configuracion", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selector_empresas_orden: normalized })
+      }).then(function () {
+        setShareNotice("Orden de empresas guardado.", false);
+      }).catch(function () {
+        setShareNotice("El orden se guardo en este navegador, pero no se pudo sincronizar con tu cuenta.", true);
+      });
+    };
+    if (immediate) {
+      return persist();
+    } else {
+      selectorOrderSaveTimer = window.setTimeout(persist, 500);
+    }
+    return Promise.resolve({ ok: true });
+  }
+
+  function collectRenderedEmpresaOrder() {
+    return normalizeEmpresaOrderIDs(Array.prototype.map.call(
+      document.querySelectorAll(".empresa-card-link[data-empresa-id]"),
+      function (node) {
+        return node.getAttribute("data-empresa-id");
+      }
+    ));
+  }
+
+  function sortEmpresasBySelectorOrder(empresas) {
+    var base = Array.isArray(empresas) ? empresas.slice() : [];
+    var indexByID = {};
+    selectorEmpresasOrder.forEach(function (id, index) {
+      indexByID[String(id)] = index;
+    });
+    return base.sort(function (left, right) {
+      var leftID = String(left && left.id ? left.id : "");
+      var rightID = String(right && right.id ? right.id : "");
+      var leftHas = Object.prototype.hasOwnProperty.call(indexByID, leftID);
+      var rightHas = Object.prototype.hasOwnProperty.call(indexByID, rightID);
+      if (leftHas && rightHas) {
+        return indexByID[leftID] - indexByID[rightID];
+      }
+      if (leftHas !== rightHas) {
+        return leftHas ? -1 : 1;
+      }
+      var leftShared = String(left && left.access_source ? left.access_source : "owner").toLowerCase() === "shared";
+      var rightShared = String(right && right.access_source ? right.access_source : "owner").toLowerCase() === "shared";
+      if (leftShared !== rightShared) {
+        return leftShared ? 1 : -1;
+      }
+      return String(left && left.nombre ? left.nombre : "").localeCompare(String(right && right.nombre ? right.nombre : ""), "es", { sensitivity: "base" });
+    });
   }
 
   function setShareNotice(text, isError) {
@@ -1109,16 +1237,119 @@
     setShareNotice(cleanMsg, false);
   }
 
+  function isEmpresaDragInteractiveTarget(target) {
+    if (!target || !target.closest) return false;
+    if (target.closest(".empresa-reorder-handle")) return false;
+    return !!target.closest("button, a, input, select, textarea, .empresa-card-share-panel, .empresa-share-toggle, .empresa-license-action, .edit-empresa, .delete-empresa, .download-data");
+  }
+
+  function beginEmpresaDrag(state) {
+    if (!state || !state.card || state.dragging) return;
+    state.dragging = true;
+    suppressEmpresaCardClickUntil = Date.now() + 700;
+    document.body.classList.add("selector-empresa-drag-active");
+    state.card.classList.add("is-dragging");
+    state.card.setAttribute("aria-grabbed", "true");
+    state.grid.classList.add("is-sorting");
+  }
+
+  function finishEmpresaDrag(save) {
+    var state = selectorDragState;
+    if (!state) return;
+    try {
+      if (state.card) {
+        state.card.classList.remove("is-dragging");
+        state.card.setAttribute("aria-grabbed", "false");
+      }
+      if (state.grid) {
+        state.grid.classList.remove("is-sorting");
+      }
+      document.body.classList.remove("selector-empresa-drag-active");
+      if (save && state.dragging) {
+        saveSelectorEmpresasOrder(collectRenderedEmpresaOrder(), false);
+        recordSelectorAuditEvent("ordenar_tarjetas_empresas", {
+          view: "empresas",
+          empresa_id: Number(state.card && state.card.getAttribute("data-empresa-id") || 0) || 0
+        });
+      }
+    } finally {
+      selectorDragState = null;
+    }
+  }
+
+  function moveEmpresaCardFromPointer(evt) {
+    var state = selectorDragState;
+    if (!state || !state.card || !state.grid) return;
+    var dx = Number(evt.clientX || 0) - state.startX;
+    var dy = Number(evt.clientY || 0) - state.startY;
+    if (!state.dragging && Math.sqrt(dx * dx + dy * dy) >= 10) {
+      beginEmpresaDrag(state);
+    }
+    if (!state.dragging) return;
+    evt.preventDefault();
+    var element = document.elementFromPoint(Number(evt.clientX || 0), Number(evt.clientY || 0));
+    var targetCard = element && element.closest ? element.closest(".empresa-card-link[data-empresa-id]") : null;
+    if (!targetCard || targetCard === state.card || targetCard.parentNode !== state.grid) {
+      return;
+    }
+    var rect = targetCard.getBoundingClientRect();
+    var insertAfter = Number(evt.clientY || 0) > rect.top + rect.height / 2;
+    if (insertAfter) {
+      state.grid.insertBefore(state.card, targetCard.nextSibling);
+    } else {
+      state.grid.insertBefore(state.card, targetCard);
+    }
+  }
+
+  function initializeEmpresaDragAndDrop(grid) {
+    if (!grid || grid.dataset.sortableEmpresas === "1") return;
+    grid.dataset.sortableEmpresas = "1";
+    grid.addEventListener("pointerdown", function (evt) {
+      var card = evt.target && evt.target.closest ? evt.target.closest(".empresa-card-link[data-empresa-id]") : null;
+      if (!card || card.parentNode !== grid) return;
+      var isHandle = !!(evt.target.closest && evt.target.closest(".empresa-reorder-handle"));
+      if (evt.pointerType === "touch" && !isHandle) return;
+      if (isEmpresaDragInteractiveTarget(evt.target)) return;
+      selectorDragState = {
+        card: card,
+        grid: grid,
+        startX: Number(evt.clientX || 0),
+        startY: Number(evt.clientY || 0),
+        dragging: false
+      };
+      try {
+        card.setPointerCapture(evt.pointerId);
+      } catch (e) {}
+    });
+    if (document.documentElement.dataset.selectorEmpresaDragDocumentBound !== "1") {
+      document.documentElement.dataset.selectorEmpresaDragDocumentBound = "1";
+      document.addEventListener("pointermove", moveEmpresaCardFromPointer, { passive: false });
+      document.addEventListener("pointerup", function () {
+        finishEmpresaDrag(true);
+      });
+      document.addEventListener("pointercancel", function () {
+        finishEmpresaDrag(false);
+      });
+    }
+  }
+
   function buildEmpresaCard(empresa, hasLicense) {
     var visual = getEmpresaTypeVisual(empresa);
     var descripcion = buildEmpresaCardDescription(empresa, visual, hasLicense);
     var cardLink = document.createElement("div");
     cardLink.className = "card-link empresa-card-link";
+    cardLink.dataset.empresaId = String(empresa.id || "");
     cardLink.tabIndex = 0;
     cardLink.setAttribute("role", "button");
+    cardLink.setAttribute("aria-grabbed", "false");
     cardLink.setAttribute("aria-label", (hasLicense ? "Administrar " : "Elegir licencia para ") + String(empresa.nombre || "empresa"));
     cardLink.addEventListener("click", function (evt) {
-      if (evt.target.closest && evt.target.closest('.empresa-share-toggle, .empresa-card-share-panel, button.download-data, .empresa-license-action, .edit-empresa')) {
+      if (Date.now() < suppressEmpresaCardClickUntil) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        return;
+      }
+      if (evt.target.closest && evt.target.closest('.empresa-reorder-handle, .empresa-share-toggle, .empresa-card-share-panel, button.download-data, .empresa-license-action, .edit-empresa, .delete-empresa')) {
         return;
       }
       try {
@@ -1162,6 +1393,9 @@
       '<span class="empresa-card-watermark" aria-hidden="true">' +
       '<img src="' + escapeHtml(visual.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
       "</span>" +
+      '<button type="button" class="empresa-reorder-handle" aria-label="Mover tarjeta de ' + escapeHtml(String(empresa.nombre || "empresa")) + '" title="Mover tarjeta">' +
+      '<span aria-hidden="true">⋮⋮</span>' +
+      "</button>" +
       '<div class="card-body empresa-card-body">' +
       '<h3 class="card-title">' +
       escapeHtml(empresa.nombre || "--") +
@@ -1479,6 +1713,10 @@
       var archivos = data && data.archivos ? data.archivos : {};
       var erroresArchivos = Array.isArray(archivos.errores) ? archivos.errores.length : 0;
       clearEmpresaContextIfMatches(empresa.id);
+      selectorEmpresasOrder = normalizeEmpresaOrderIDs(selectorEmpresasOrder).filter(function (id) {
+        return String(id) !== String(empresa.id);
+      });
+      writeSelectorOrderLocal(selectorEmpresasOrder);
       setSelectorDeleteMessage("Empresa eliminada. Registros eliminados: " + String(result.registros_eliminados || 0) + (erroresArchivos ? ". Advertencias al limpiar archivos: " + erroresArchivos + "." : "."), false);
       setSelectorDeleteBusy(true, "Actualizando selector...");
       await render();
@@ -1564,6 +1802,7 @@
       var hasLicense = !!activeByEmpresa[empresa.id];
       grid.appendChild(buildEmpresaCard(empresa, hasLicense));
     });
+    initializeEmpresaDragAndDrop(grid);
 
     section.appendChild(header);
     section.appendChild(grid);
@@ -1579,6 +1818,7 @@
         return;
       }
       var me = await meRes.json();
+      currentAccount = me || currentAccount;
 
       var licenciasURL = "/super/api/licencias?scope=mine&con_empresa=1&activo=1";
       var empPromise = fetch("/super/api/empresas");
@@ -1642,14 +1882,8 @@
         }
       }
 
-      var list = empresas.slice().sort(function (left, right) {
-        var leftShared = String(left && left.access_source ? left.access_source : "owner").toLowerCase() === "shared";
-        var rightShared = String(right && right.access_source ? right.access_source : "owner").toLowerCase() === "shared";
-        if (leftShared !== rightShared) {
-          return leftShared ? 1 : -1;
-        }
-        return String(left && left.nombre ? left.nombre : "").localeCompare(String(right && right.nombre ? right.nombre : ""), "es", { sensitivity: "base" });
-      });
+      await loadSelectorEmpresasOrder();
+      var list = sortEmpresasBySelectorOrder(empresas);
       currentEmpresas = list.slice();
       if (!readEmpresaContext() && list.length > 0) {
         persistEmpresaContext(list[0].id);
@@ -1873,9 +2107,30 @@
     clearQueryParam("shared_invitation_accepted");
   }
 
+  function wireSelectorEmpresaOrderControls() {
+    var resetBtn = document.getElementById("resetEmpresaOrderBtn");
+    if (!resetBtn || resetBtn.dataset.bound === "1") return;
+    resetBtn.dataset.bound = "1";
+    resetBtn.addEventListener("click", async function () {
+      resetBtn.disabled = true;
+      try {
+        selectorEmpresasOrder = [];
+        writeSelectorOrderLocal([]);
+        await saveSelectorEmpresasOrder([], true);
+        await render();
+        setShareNotice("Orden restablecido.", false);
+      } catch (err) {
+        setShareNotice(err && err.message ? err.message : "No se pudo restablecer el orden.", true);
+      } finally {
+        resetBtn.disabled = false;
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     applySidebarPermissions(null);
     wireSidebarFrameLinks();
+    wireSelectorEmpresaOrderControls();
     fetchCurrentAccount().finally(async function () {
       await render();
       await processSharedInvitationToken();

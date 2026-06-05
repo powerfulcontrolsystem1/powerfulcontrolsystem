@@ -28,6 +28,27 @@ func TestBuildLicenciaStackWindowSumaPagoAnticipado(t *testing.T) {
 	}
 }
 
+func TestBuildLicenciaStackWindowSumaDosPagosDelMismoPlan(t *testing.T) {
+	now := time.Date(2026, 6, 1, 9, 0, 0, 0, time.Local)
+
+	inicioPrimero, finPrimero := buildLicenciaStackWindow(now, now, "", "", 30)
+	if inicioPrimero != "2026-06-01 09:00:00" {
+		t.Fatalf("inicio primer pago = %s, want 2026-06-01 09:00:00", inicioPrimero)
+	}
+	if finPrimero != "2026-07-01 09:00:00" {
+		t.Fatalf("fin primer pago = %s, want 2026-07-01 09:00:00", finPrimero)
+	}
+
+	anchorSegundo := time.Date(2026, 7, 1, 9, 0, 0, 0, time.Local)
+	inicioSegundo, finSegundo := buildLicenciaStackWindow(now, anchorSegundo, "", "", 30)
+	if inicioSegundo != "2026-07-01 09:00:00" {
+		t.Fatalf("inicio segundo pago = %s, want 2026-07-01 09:00:00", inicioSegundo)
+	}
+	if finSegundo != "2026-07-31 09:00:00" {
+		t.Fatalf("fin segundo pago = %s, want 2026-07-31 09:00:00", finSegundo)
+	}
+}
+
 func TestResolveLicenciaDurationDaysFallback(t *testing.T) {
 	got := resolveLicenciaDurationDays(sql.NullInt64{}, "2026-06-01 10:00:00", "2026-06-16 10:00:00")
 	if got != 15 {

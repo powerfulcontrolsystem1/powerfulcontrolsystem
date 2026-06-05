@@ -1,3 +1,51 @@
+2026-06-05: Set automatico DIAN por empresa y factura de licencias.
+- Modulos afectados: facturacion electronica Colombia, pruebas DIAN, licencias, ayuda y documentacion operativa.
+- Backend: el fallback del set DIAN de software propio/proveedor queda en 30 facturas, 10 notas debito y 10 notas credito; las pruebas Go cubren que el objetivo guardado por empresa se use en `action=pruebas_dian` y que una simulacion no marque `habilitacion_aprobada`.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` muestra el preset principal 30+10+10 con minimo aceptado 1 factura, conserva set gratuito e historico y mantiene el boton automatico basado en los campos/objetivo guardado por empresa.
+- Documentacion: ayuda, contexto, mapa de modulos y flujos explican TestSetId, token solo para proveedor/API bearer, simulacion vs ejecucion real y regla de factura de licencia solo con pago comercial mayor que cero.
+- Seguridad: se conserva aislamiento por `empresa_id`, no se documentan secretos y no se marca produccion local sin acuse real de DIAN/proveedor.
+
+2026-06-05: Eliminacion total de empresas sin residuos visibles.
+- Modulos afectados: selector de empresas, empresas compartidas, licencias y seguridad multiempresa.
+- Cambio funcional: `DeleteEmpresaCascade` ahora limpia tambien el orden personalizado `usuario_configuracion.selector_empresas_orden_json` de todos los usuarios durante la eliminacion total, ademas del barrido por `empresa_id` existente en base operativa y base super.
+- Backend: se invalidan caches de licencia, resolucion de empresa por scope e accesos compartidos para evitar que una empresa borrada siga apareciendo o siendo accesible temporalmente a otros administradores.
+- Frontend: al borrar desde el selector o desde editar empresa se depura el respaldo local del orden de tarjetas del navegador antes de volver al listado.
+- Archivos clave: `backend/db/empresas_delete.go`, `backend/db/usuario_config_schema.go`, `backend/db/db.go`, `backend/db/empresa_admin_compartida.go`, `web/js/seleccionar_empresa.js`, `web/js/editar_empresa.js`.
+- Pruebas: `go test ./db -run "EmpresaDelete|UsuarioSelector|AdminEmpresaCompartidaAccessCache|EmpresaByScopeCache" -count=1`; `go test ./handlers -run "Empresas|EmpresaCompartida" -count=1`.
+
+2026-06-05: Validacion de credenciales DIAN oficial.
+- Modulos afectados: facturacion electronica Colombia, centro de habilitacion DIAN y configuracion DIAN por empresa.
+- Cambio funcional: `token_emisor_ref` deja de bloquear la validacion cuando `url_dian` apunta al endpoint oficial SOAP/WCF de DIAN. El token queda reservado para endpoints de proveedor/API que usen bearer token.
+- Seguridad: se conserva certificado/firma, Software ID/PIN, NIT y aislamiento por `empresa_id`; no se imprimen secretos ni se inventan credenciales. En habilitacion real `test_set_id` sigue siendo obligatorio.
+- Frontend: se agrega boton rapido `Enviar prueba 2 + 2 + 2` para 2 facturas, 2 notas debito y 2 notas credito, respetando confirmacion de envio real y modo simulacion.
+- Pruebas: `go test ./handlers -run "DIANCredential|DIANPruebasHabilitacion|DIANDocumentPreflight|DIANSOAP|DIANSignature|DIANDefaultSet|DIANEffectiveSet|CalculateColombianNITDV" -count=1`; validacion de sintaxis del script embebido de `facturacion_electronica_pruebas_dian.html`.
+
+2026-06-05: Selector de empresas ordenable.
+- Modulos afectados: seleccion de empresas, preferencias de usuario y seguridad multiempresa.
+- Cambio funcional: la pagina `seleccionar_empresa.html` permite reordenar tarjetas visibles con clic sostenido en PC o con el asa de mover en celular, tanto para empresas con licencia activa como para empresas sin licencia activa.
+- Backend/BD: `usuario_configuracion` agrega `selector_empresas_orden_json`; `/api/user/configuracion` devuelve y guarda `selector_empresas_orden` por administrador autenticado.
+- Frontend: `web/js/seleccionar_empresa.js` ordena empresas por preferencia guardada, implementa drag-and-drop robusto, respaldo local, auditoria visual y boton `Restablecer orden`.
+- Seguridad: el orden no consulta ni habilita empresas fuera del alcance; solo reordena IDs saneados de la lista ya autorizada por `/super/api/empresas`.
+- Pruebas: `node --check web/js/seleccionar_empresa.js`; `go test ./db -run "TestNormalizeUsuarioSelectorEmpresaIDs" -count=1`; `go test ./handlers -run "^$" -count=1`; prueba visual local con empresas simuladas para mover activas, mover inactivas, persistir tras recarga y restablecer.
+
+2026-06-05: Centro de habilitacion DIAN.
+- Modulos afectados: facturacion electronica, DIAN y administrar empresa.
+- Cambio funcional: la pagina `Pasar test DIAN` permite registrar el objetivo exacto del portal DIAN por empresa, ejecutar el set automatico y enviar documentos manuales de prueba.
+- Backend: `empresa_dian_configuracion` agrega campos de modo, fechas, documentos requeridos y documentos aceptados requeridos; `action=pruebas_dian` usa esos valores para calcular cumplimiento.
+- Seguridad: la llave tecnica y el PIN se guardan como configuracion sensible y no se imprimen en documentacion ni respuestas de cierre.
+- Operacion: Powerful Control System queda configurada en produccion con el modo de operacion y rango de pruebas entregado por el portal DIAN.
+
+2026-06-05: Licencias acumuladas por pago repetido.
+- Modulos afectados: licencias, pagos Epayco/Wompi y activacion manual sin pasarela.
+- Cambio funcional: la activacion comercial conserva el ID de la licencia empresarial creada o renovada y lo usa para trazabilidad, correo y PDF; la fecha fin se suma desde la vigencia acumulada mas lejana.
+- Regla operativa: dos pagos independientes de un plan de 30 dias quedan como 60 dias de vigencia; repetir la misma referencia de pasarela sigue siendo idempotente y no vuelve a extender.
+- QA: `go test ./db -run "LicenciaStack|ResolveLicenciaDuration" -count=1`; `go test ./handlers -run "Licencia|Epayco|Wompi" -count=1`.
+
+2026-06-05: Index Documentos electronicos DIAN Colombia.
+- Portal publico: `web/index.html` actualiza la tarjeta `Documentos electronicos` en `Modulos y caracteristicas principales` para mostrar documentos y eventos SFE de Colombia: factura electronica de venta, nota credito, nota debito, reporte de contingencia, documento soporte y nota de ajuste.
+- Backend: `backend/handlers/pagina_principal_handlers.go` actualiza el contenido predeterminado de `/api/public/informacion_de_modulos` y reemplaza automaticamente la lista generica anterior cuando una configuracion antigua conserva `Documentos electronicos` sin el bloque DIAN Colombia.
+- QA: `go test ./handlers -run "InformacionModulos" -count=1`.
+
 2026-06-05: Ultima carga segura de firma DIAN.
 - Modulos afectados: facturacion electronica Colombia, carga de firma DIAN y configuracion por empresa.
 - Cambio funcional: la pantalla muestra un resumen persistente de la ultima firma cargada con fecha/hora, archivo original, formato, titular, serial y estado de clave.
@@ -30818,6 +30866,12 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/contexto_codex.md
 - documentos/descripcion_de_modulos
+
+2026-06-05: Registro datos habilitacion DIAN Powerful Control System
+- Facturacion electronica: se agrega el campo `llave_tecnica` en `empresa_dian_configuracion`, handler DIAN y formulario de configuracion Colombia para separar la clave tecnica del rango de numeracion del token de emisor.
+- Operacion: en produccion se actualizo `empresa_id=12` (`Powerful Control System`) con ambiente habilitacion, software propio, prefijo SETP, resolucion, rango 990000000-995000000, URL DIAN de habilitacion y estado activo. PIN y llave tecnica quedaron configurados sin imprimirse ni documentarse en claro.
+- Seguridad: la actualizacion conserva aislamiento por `empresa_id` y no altera referencias privadas `file:` de certificado/firma ya cargadas.
+- QA: `go test ./handlers -run "^$" -count=1`; verificacion SQL posterior con campos sensibles enmascarados.
 
 2026-06-05: rs: actualizar repositorio y sincronizar VPS
 PushStatus: OK

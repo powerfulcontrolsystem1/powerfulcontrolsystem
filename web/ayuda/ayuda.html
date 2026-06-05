@@ -565,7 +565,8 @@
             <li>El catalogo comercial visible solo contiene 4 planes globales: prueba gratis 15 dias, COP 60000, COP 100000 y COP 150000.</li>
             <li>Los codigos de descuento y licencias de prueba solo aplican una vez por empresa; una prueba vencida no se puede activar otra vez.</li>
             <li>Si el valor final queda en cero, la licencia se activa sin pasar por Epayco y debe enviarse correo de confirmacion.</li>
-            <li>Si hay pago Epayco, la licencia se activa solo con estado aprobado, webhook valido o retorno con evidencia fuerte.</li>
+            <li>Si el pago comercial aprobado es mayor que cero, el sistema envia un solo correo con PDF de licencia y PDF de factura electronica emitida desde la empresa interna Powerful Control System. Si el descuento deja el total en cero, no se emite factura electronica.</li>
+            <li>Si hay pago Epayco o Wompi, la licencia se activa solo con estado aprobado, webhook valido o retorno con evidencia fuerte e idempotente.</li>
             <li>Para cambiar entre sandbox y produccion, revisa las credenciales y modo Epayco en Super Administrador.</li>
           </ol>
         </section>
@@ -575,7 +576,9 @@
           <p class="form-help">La facturacion electronica requiere datos fiscales completos, firma electronica, resolucion, prefijo, consecutivos, ambiente y pruebas de habilitacion cuando aplique.</p>
           <ol class="help-step-list">
             <li>Configura empresa, responsabilidad fiscal, correo, NIT, ciudad, direccion y certificado.</li>
-            <li>Ejecuta <strong>Pruebas DIAN</strong> cuando la firma y datos esten listos.</li>
+            <li>En <strong>Pruebas DIAN</strong> guarda el objetivo exacto que muestra el portal DIAN para la empresa: TestSetId, facturas, notas debito, notas credito y minimos aceptados. Para Powerful Control System el set cargado es 30 facturas, 10 notas debito, 10 notas credito y minimo aceptado 1 factura.</li>
+            <li>Usa <strong>Ejecutar set automatico</strong> para enviar el lote completo configurado. En simulacion no se marca habilitacion aprobada; la aprobacion solo queda cuando DIAN/proveedor devuelve acuse aceptado en ejecucion real.</li>
+            <li>Para el endpoint oficial SOAP/WCF de DIAN no se requiere token bearer. Si el sistema usa proveedor/API externa, entonces si debe configurar <code>token_emisor_ref</code>. En habilitacion real siempre se requiere <code>test_set_id</code>.</li>
             <li>La emision requiere conexion activa con el servidor y DIAN/proveedor; si no hay conexion, no se debe continuar la operacion.</li>
             <li>Cuando vuelva la conexion, procesa la cola de reintentos desde el modulo para enviar pendientes fallidos.</li>
           </ol>

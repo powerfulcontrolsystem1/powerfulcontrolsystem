@@ -35,7 +35,7 @@ No cubre una integracion SOAP/WSDL oficial completa con DIAN. El propio backend 
 4. Confirmar que los secretos DIAN no esten incrustados en texto plano y que las referencias `env:`, `file:` o `base64:` resuelvan valores no vacios.
 5. Verificar que el software configurado sea `compartido` o `empresa` segun el escenario esperado, sin asumir que uno reemplaza el token o la firma por empresa.
 6. Validar el rango y consecutivos antes de correr `enviar_set_pruebas`.
-7. Para software propio o proveedor tecnologico, usar como base 60 facturas, 20 notas debito y 20 notas credito; si el portal DIAN de habilitacion muestra otro objetivo, ajustar la UI antes de ejecutar.
+7. Para software propio o proveedor tecnologico, abrir `Facturacion electronica > Pasar test DIAN`, cargar el objetivo exacto mostrado por el portal DIAN y guardar modo de operacion, fechas, rango, totales requeridos y minimos aceptados. La base historica 60/20/20 solo sirve como respaldo si la empresa aun no tiene datos del portal.
 
 ## Causas probables
 
@@ -54,8 +54,9 @@ No cubre una integracion SOAP/WSDL oficial completa con DIAN. El propio backend 
 4. Generar `generar_xml_ubl_base` y, si hace falta evidencia de firma, correr `firmar_xml_xades_base` para verificar que la salida base exista antes de intentar envios.
 5. Usar `diagnostico_oficial` para distinguir entre una falla de configuracion local y una brecha del transporte oficial aun no implementado.
 6. Si el error es de rango, corregir consecutivos o ampliar el tramo disponible antes de repetir `enviar_set_pruebas`.
-7. Si el problema ocurre en `enviar_documento_real` o `consultar_acuse_real`, registrar la respuesta exacta y verificar primero que no se trate de una limitacion conocida del transporte oficial pendiente.
-8. Si la empresa usa software `compartido`, confirmar que las referencias compartidas existan y que la empresa aun provea sus propios secretos exigidos por el flujo real.
+7. Si el objetivo guardado no coincide con el portal, actualizarlo antes de repetir el set; los botones manuales pueden usar totales 1/0/0 para verificar recepcion por tipo sin consumir un lote completo.
+8. Si el problema ocurre en `enviar_documento_real` o `consultar_acuse_real`, registrar la respuesta exacta y verificar primero que no se trate de una limitacion conocida del transporte oficial pendiente.
+9. Si la empresa usa software `compartido`, confirmar que las referencias compartidas existan y que la empresa aun provea sus propios secretos exigidos por el flujo real.
 
 ## Validacion posterior
 

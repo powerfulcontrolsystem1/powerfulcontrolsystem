@@ -1,3 +1,36 @@
+## [2026-06-05] DIAN oficial sin token proveedor obligatorio
+- [Backend] La validacion de credenciales DIAN distingue `*.dian.gov.co` de endpoints de proveedor/API: `token_emisor_ref` es opcional para SOAP/WCF oficial y obligatorio para proveedor bearer.
+- [Operacion] `test_set_id` sigue siendo obligatorio para envios reales de habilitacion y se muestra como el faltante real cuando no esta configurado.
+- [Frontend] `facturacion_electronica_pruebas_dian.html` agrega el boton `Enviar prueba 2 + 2 + 2`.
+- [QA] Pruebas unitarias de credenciales DIAN y sintaxis del script embebido de la pantalla de pruebas.
+
+## [2026-06-05] Selector de empresas ordenable
+- [UX] `seleccionar_empresa.html` permite mover tarjetas de empresas con clic sostenido en PC o usando el asa en celular.
+- [Alcance] Funciona por separado en empresas con licencia activa y empresas sin licencia activa, conservando esos grupos.
+- [Persistencia] `/api/user/configuracion` guarda `selector_empresas_orden` por administrador en `usuario_configuracion.selector_empresas_orden_json`, con respaldo local si la red falla.
+- [Seguridad] El orden solo aplica a empresas que `/super/api/empresas` ya autorizo para la sesion; no concede acceso ni mezcla empresas de otros administradores.
+- [QA] Prueba visual local con empresas simuladas confirma mover activas, mover inactivas, recargar con persistencia y `Restablecer orden`.
+
+## [2026-06-05] Centro de habilitacion DIAN
+- [Facturacion electronica] `facturacion_electronica_pruebas_dian.html` queda como pantalla de `Pasar test DIAN`, con estado de alistamiento, validacion de credenciales, diagnostico, objetivo del set y botones para envio automatico o por tipo documental.
+- [BD] `empresa_dian_configuracion` guarda modo de operacion, fechas del set y totales requeridos/aceptados por tipo documental para ajustar la habilitacion a lo que muestra el portal DIAN de cada empresa.
+- [Operacion] La empresa interna `Powerful Control System` queda configurada con el set DIAN asignado en el portal; la documentacion solo confirma que los secretos estan registrados, no los imprime.
+
+## [2026-06-05] Llave tecnica DIAN por empresa
+- [Facturacion electronica] `empresa_dian_configuracion` agrega `llave_tecnica` para guardar la clave tecnica del rango de numeracion DIAN sin mezclarla con `token_emisor_ref`.
+- [Frontend] La configuracion DIAN Colombia muestra y guarda `Llave tecnica DIAN` junto al rango autorizado.
+- [Operacion] Se registro en produccion el set de habilitacion DIAN de la empresa interna `Powerful Control System` con software propio, prefijo SETP, resolucion y rango de prueba.
+
+## [2026-06-05] OnlyOffice corrige token JWT del editor
+- [Backend] `editor_config` firma la configuracion completa de ONLYOFFICE y deja el JWT solo en `config.token`, evitando enviar tokens duplicados dentro de `document` o `editorConfig`.
+- [Compatibilidad] Corrige el error visual `The document security token is not correctly formed` al crear y abrir documentos Word/Excel/PowerPoint.
+- [QA] `go test ./handlers -run OnlyOffice -count=1`; comprobacion visual autenticada contra Document Server antes del despliegue reprodujo el fallo de token.
+
+## [2026-06-05] Licencias acumuladas por pago repetido
+- [Licencias] La activacion de Epayco, Wompi y activacion manual con descuento total devuelve y registra el ID real de la licencia empresarial creada o extendida.
+- [Pagos] Las renovaciones comerciales simples conservan la regla acumulativa: la nueva vigencia inicia en la fecha fin mas lejana ya activa/futura de la empresa y suma la duracion del plan pagado.
+- [QA] Se agrega prueba para dos pagos del mismo plan mensual de 30 dias, confirmando 60 dias acumulados.
+
 ## [2026-06-05] Ultima carga de firma DIAN segura
 - [Facturacion electronica] La tarjeta `Cargar firma electronica (Colombia / DIAN)` muestra fecha de ultima carga, archivo, formato, titular, serial y estado de clave sin exponer la contrasena.
 - [Compatibilidad] La carga de P12/PFX agrega fallback interno `ToPEM` y respaldo OpenSSL en el contenedor para certificados modernos con multiples bolsas, cadenas o cifrado no soportado por el lector Go simple.
@@ -2291,3 +2324,8 @@
 - [Motel Calipso] La demo profesional distribuye empleados entre sede principal, Rodadero y administracion para validar empresas con varias sedes.
 - [DIAN] Se agregan consulta y preparacion de lote de documento soporte de pago de nomina electronica por empleado, listo para el flujo documental con firma/CUNE/numeracion.
 - [QA] Pruebas Go de nomina/facturacion y validacion visual con datos simulados de Motel Calipso.
+
+## [2026-06-05] Index - Documentos electronicos DIAN Colombia
+- [Portal publico] La tarjeta `Documentos electronicos` del index muestra el bloque solicitado de documentos y eventos SFE para Colombia.
+- [DIAN] Se listan factura electronica de venta, nota credito, nota debito, reporte de contingencia, documento soporte y nota de ajuste del documento soporte.
+- [Super administrador] El contenido predeterminado del editor de `Informacion de modulos` se alinea con la nueva tarjeta y actualiza configuraciones antiguas que aun conservaban la lista generica.

@@ -1,3 +1,42 @@
+2026-06-05: Set automatico DIAN configurable por empresa
+- Modulo afectado: `facturacion_electronica`, `DIAN`, `licencias`.
+- Cambio funcional: el preset principal de `Pasar test DIAN` queda alineado con el objetivo de habilitacion de Powerful Control System (30 facturas, 10 notas debito, 10 notas credito, minimo aceptado 1 factura), y el backend usa el objetivo guardado por cada empresa antes de ejecutar `action=pruebas_dian`.
+- Operacion: la simulacion permite validar conteos, credenciales y UI sin enviar a DIAN ni marcar produccion; la ejecucion real exige `test_set_id`, firma y acuse aceptado.
+- Licencias: se documenta que el correo unificado solo adjunta factura electronica cuando el pago comercial aprobado es mayor que cero; descuento total o valor cero no emite factura.
+
+2026-06-05: Eliminacion integral de empresa en selector
+- Modulo afectado: `seleccion_empresas` y `seguridad_multiempresa`.
+- Cambio funcional: la eliminacion total de una empresa limpia registros con `empresa_id` en la base operativa y en la base super, incluyendo comparticiones, invitaciones, licencias, pagos y datos de modulos cuando existen.
+- Persistencia: `usuario_configuracion.selector_empresas_orden_json` se depura para todos los usuarios, de modo que una empresa eliminada no queda en el orden personalizado del selector.
+- Seguridad: se invalidan caches de licencia, resolucion de empresa y acceso compartido para evitar accesos residuales o tarjetas visibles a otros administradores despues del borrado.
+
+2026-06-05: Validacion DIAN oficial sin token proveedor
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio funcional: la validacion de credenciales distingue endpoint oficial SOAP/WCF de DIAN (`*.dian.gov.co`) de endpoints de proveedor/API. En DIAN oficial `token_emisor_ref` queda opcional; para proveedor/API bearer sigue siendo obligatorio.
+- Operacion: `test_set_id` continua siendo obligatorio para envios reales de habilitacion porque DIAN lo usa para asociar los documentos al set asignado.
+- Frontend: `facturacion_electronica_pruebas_dian.html` agrega boton rapido `Enviar prueba 2 + 2 + 2` para enviar 2 facturas, 2 notas debito y 2 notas credito con el mismo flujo de confirmacion.
+- QA: `go test ./handlers -run "DIANCredential|DIANPruebasHabilitacion|DIANDocumentPreflight|DIANSOAP|DIANSignature|DIANDefaultSet|DIANEffectiveSet|CalculateColombianNITDV" -count=1`; validacion de sintaxis del script embebido de la pagina de pruebas DIAN.
+
+2026-06-05: Selector de empresas ordenable
+- Modulo afectado: `seleccion_empresas`.
+- Cambio funcional: `seleccionar_empresa.html` permite reordenar tarjetas con clic sostenido en PC o con el asa de mover en celular, tanto en empresas con licencia activa como en empresas sin licencia activa.
+- Persistencia: el orden se guarda por administrador en `usuario_configuracion.selector_empresas_orden_json` mediante `/api/user/configuracion`, con respaldo local si el guardado remoto falla.
+- Seguridad: no cambia el alcance de empresas; solo se ordenan las tarjetas que `/super/api/empresas` ya devolvio para la sesion autenticada.
+- UX: agrega boton `Restablecer orden` para volver al orden base.
+
+2026-06-05: Centro de habilitacion DIAN por empresa
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
+- Cambio funcional: la subpagina `facturacion_electronica_pruebas_dian.html` se convierte en un centro para pasar test DIAN con estado de alistamiento, validacion de credenciales, diagnostico oficial, objetivo del set y resultados por documento.
+- Persistencia: `empresa_dian_configuracion` guarda modo de operacion, fechas del set, totales requeridos y minimos aceptados para facturas, notas debito y notas credito; la llave tecnica se mantiene separada del token de emisor y no se documenta en claro.
+- Operacion: el usuario puede guardar el objetivo asignado en el portal DIAN, ejecutar el set automatico completo o enviar manualmente una factura/nota debito/nota credito de prueba y ver si fue recibida, aceptada, rechazada o queda pendiente.
+
+2026-06-05: OnlyOffice corrige token JWT del editor
+- Modulo afectado: `documentos_onlyoffice`.
+- Cambio funcional: `editor_config` envia el JWT de seguridad en el nivel raiz `config.token`, sin duplicarlo en `document.token` ni `editorConfig.token`.
+- Motivo: Document Server 9.x interpreta esos tokens internos como tokens de seccion y muestra `The document security token is not correctly formed`.
+- Seguridad: se conserva el JWT HS256, tokens temporales para archivo/callback y aislamiento por `empresa_id`.
+- QA: `go test ./handlers -run OnlyOffice -count=1` y prueba visual autenticada del editor Word.
+
 2026-06-05: Tutorial guiado de nomina
 - Modulo afectado: `nomina_sueldos`.
 - Cambio funcional: se agrega `web/ayuda/tutorial_nomina.html` como presentacion paso a paso para configurar empleados, liquidar, revisar pagos y preparar documentos electronicos de nomina.
@@ -3357,7 +3396,7 @@ Criterio de esta guia:
 18) Facturacion electronica DIAN Colombia
 - Configuracion DIAN, firma XML, envio/acuse y contingencia/reconexion.
 - Incluye envio automatizado del set de habilitacion (`action=enviar_set_pruebas`) con distribucion configurable de facturas/notas y resumen por estado (`aceptado`, `rechazado`, `contingencia`, `pendiente`).
-- Soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales por empresa (`NIT`, `certificado_clave_ref`, `token_emisor_ref`).
+- Soporta modelo SaaS multiempresa con software compartido (`Software ID/PIN`) y credenciales por empresa (`NIT`, `certificado_clave_ref`, `token_emisor_ref`). La numeracion DIAN guarda ademas `llave_tecnica` del rango autorizado, separada del token de emisor.
 - Agrega soporte de onboarding por empresa con `action=guia_onboarding`, validacion de secretos con `action=validar_credenciales` y carga de firma PEM con `action=subir_firma`.
 - Amplia la fase base de preparacion tecnica con `action=generar_xml_ubl_base`, `action=firmar_xml_xades_base` y `action=diagnostico_oficial` para estructurar UBL 2.1 base, firma XMLDSig/XAdES base y reporte de brechas frente al contrato oficial DIAN antes de implementar el transporte SOAP/WSDL definitivo.
 

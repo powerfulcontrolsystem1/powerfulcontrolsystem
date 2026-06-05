@@ -70,6 +70,18 @@ POST /api/empresa/carritos_compra?action=pagar_estacion</code>
       </section>
 
       <section class="api-help-card">
+        <h2>Facturacion electronica DIAN</h2>
+        <p class="form-help">Las acciones DIAN son empresariales y siempre deben validar sesion, permisos, licencia, <code>empresa_id</code>, firma y configuracion fiscal. El objetivo de habilitacion se guarda por empresa y el boton automatico usa esos valores.</p>
+        <code class="api-help-code">GET /api/empresa/facturacion_electronica/dian?empresa_id=12
+POST /api/empresa/facturacion_electronica/dian?empresa_id=12&amp;action=validar_credenciales
+POST /api/empresa/facturacion_electronica/dian?empresa_id=12&amp;action=diagnostico_oficial
+POST /api/empresa/facturacion_electronica/dian?empresa_id=12&amp;action=pruebas_dian
+POST /api/empresa/facturacion_electronica/dian?empresa_id=12&amp;action=vencimiento_certificado
+PUT /api/empresa/facturacion_electronica/dian?empresa_id=12&amp;id={config_id}</code>
+        <p class="form-help mt-8"><code>pruebas_dian</code> acepta <code>facturas_electronicas</code>, <code>notas_debito</code>, <code>notas_credito</code>, <code>total_documentos</code>, minimos aceptados y <code>simular</code>. En endpoint oficial SOAP/WCF DIAN no se exige token bearer; en habilitacion real si se exige <code>test_set_id</code>. Una simulacion no debe marcar produccion ni habilitacion aprobada.</p>
+      </section>
+
+      <section class="api-help-card">
         <h2>Energia solar</h2>
         <p class="form-help">Modulo empresarial independiente para sistemas solares, baterias, BMS, inversores, alertas y eventos. Usa permisos <code>energia_solar</code>, pagina <code>linkEnergiaSolar</code> y wrapper empresarial.</p>
         <code class="api-help-code">GET /api/empresa/energia_solar?empresa_id=7&amp;action=dashboard

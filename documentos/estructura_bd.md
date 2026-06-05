@@ -3,6 +3,15 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-05 (orden de empresas por usuario)
+- Tabla en `pcs_superadministrador`: `usuario_configuracion`.
+- Campo nuevo: `selector_empresas_orden_json TEXT DEFAULT '[]'`.
+- Guarda una lista JSON saneada de `empresa_id` visibles que define el orden
+  visual del selector para cada administrador autenticado.
+- No cambia permisos ni alcance multiempresa: `/super/api/empresas` sigue
+  decidiendo que empresas puede ver la cuenta; esta preferencia solo ordena las
+  tarjetas ya autorizadas.
+
 Actualizacion 2026-06-05 (carpetas empresariales y firma electronica)
 - No se agrega tabla nueva; cambia el contrato operativo de archivos por
   empresa.
@@ -29,6 +38,21 @@ Actualizacion 2026-06-05 (carpetas empresariales y firma electronica)
   no se persiste ni se muestra en claro.
 - La compatibilidad con P12/PFX modernos usa OpenSSL dentro del contenedor
   backend; no agrega columnas adicionales ni guarda la clave del certificado.
+
+Actualizacion 2026-06-05 (centro de habilitacion DIAN)
+- No se agrega tabla nueva; se amplia `empresa_dian_configuracion` para guardar
+  el objetivo de habilitacion que DIAN asigna a cada empresa.
+- Campos nuevos de modo: `modo_operacion_descripcion`,
+  `modo_operacion_fecha_inicio` y `modo_operacion_fecha_termino`.
+- Campos nuevos de documentos requeridos: `set_documentos_requeridos`,
+  `set_facturas_requeridas`, `set_notas_debito_requeridas` y
+  `set_notas_credito_requeridas`.
+- Campos nuevos de aceptacion minima: `set_documentos_aceptados_requeridos`,
+  `set_facturas_aceptadas_requeridas`,
+  `set_notas_debito_aceptadas_requeridas` y
+  `set_notas_credito_aceptadas_requeridas`.
+- `llave_tecnica` queda asociada al rango DIAN de la empresa y debe tratarse
+  como dato sensible operativo; no se imprime en reportes ni documentacion.
 
 Actualizacion 2026-06-04 (camaras y DVR)
 - Nueva tabla empresarial `empresa_camaras` en `pcs_empresas`.
@@ -1579,6 +1603,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - certificado_subject, certificado_issuer, certificado_serial, certificado_clave_estado
   - prefijo, resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - rango_desde, rango_hasta, consecutivo_actual
+  - llave_tecnica para la clave tecnica DIAN asociada al rango de numeracion
   - url_dian, token_emisor_ref, ultimo_envio, estado_dian
 
 ## 2) Base: pcs_superadministrador

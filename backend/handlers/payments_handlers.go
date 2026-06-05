@@ -1860,16 +1860,16 @@ func buildLicenciaActivationEmailMessageWithAttachments(fromName, fromEmail, toE
 	return msg.Bytes()
 }
 
-func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, error) {
+func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, int64, error) {
 	if licenciaID <= 0 || empresaID <= 0 {
-		return false, nil
+		return false, 0, nil
 	}
 	lic, err := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
 	if lic == nil {
-		return false, nil
+		return false, 0, nil
 	}
 	now := time.Now()
 	if lic.DuracionDias <= 0 {
@@ -1877,34 +1877,35 @@ func activateLicenciaByIDs(dbSuper *sql.DB, licenciaID, empresaID int64) (bool, 
 	}
 	fechaInicio := now.Format("2006-01-02 15:04:05")
 	fechaFin := now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-	if err := dbpkg.ActivateLicenciaForEmpresa(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin); err != nil {
-		return false, err
+	assignedID, err := dbpkg.ActivateLicenciaForEmpresaAsignada(dbSuper, licenciaID, empresaID, fechaInicio, fechaFin)
+	if err != nil {
+		return false, 0, err
 	}
 	if dbEmp := dbpkg.GetDB(); dbEmp != nil {
 		if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
-			return false, err
+			return false, assignedID, err
 		}
 	}
-	lic.EmpresaID = empresaID
-	lic.Activo = 1
-	lic.FechaInicio = fechaInicio
-	lic.FechaFin = fechaFin
-	return true, nil
+	return true, assignedID, nil
 }
 
-func activateLicenciaCheckoutContextForPayment(dbSuper, dbEmp *sql.DB, provider, transactionID, reference string, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, error) {
+func activateLicenciaCheckoutContextForPayment(dbSuper, dbEmp *sql.DB, provider, transactionID, reference string, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, int64, error) {
 	canActivate, guardErr := dbpkg.TryBeginLicenciaPaymentActivation(dbSuper, provider, transactionID, reference)
 	if guardErr != nil {
-		return false, guardErr
+		return false, 0, guardErr
 	}
 	if !canActivate {
-		return false, nil
+		return false, 0, nil
 	}
-	activated, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmp, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
-	if finishErr := dbpkg.FinishLicenciaPaymentActivation(dbSuper, provider, transactionID, reference, licenciaID, actErr); finishErr != nil && actErr == nil {
+	activated, assignedID, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmp, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+	finishedLicenciaID := assignedID
+	if finishedLicenciaID <= 0 {
+		finishedLicenciaID = licenciaID
+	}
+	if finishErr := dbpkg.FinishLicenciaPaymentActivation(dbSuper, provider, transactionID, reference, finishedLicenciaID, actErr); finishErr != nil && actErr == nil {
 		actErr = finishErr
 	}
-	return activated, actErr
+	return activated, assignedID, actErr
 }
 
 func finalizeEmpresaAfterLicenciaActivation(dbEmp, dbSuper *sql.DB, empresaID, licenciaID int64, origen string) error {
@@ -1979,33 +1980,34 @@ func maxTime(a, b time.Time) time.Time {
 	return b
 }
 
-func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, error) {
+func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresaID int64, checkoutMode string, addonLicenciaIDs []int64) (bool, int64, error) {
 	lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
 	if licErr != nil {
-		return false, licErr
+		return false, 0, licErr
 	}
 	if err := validateLicenciaEmpresaTipoCompat(dbSuper, dbEmp, lic, empresaID); err != nil {
-		return false, err
+		return false, 0, err
 	}
 	mode := normalizeLicenciaCheckoutMode(checkoutMode)
 	if mode == "" {
-		activated, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+		activated, assignedID, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
 		if err != nil || !activated {
-			return activated, err
+			return activated, assignedID, err
 		}
 		if _, preErr := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, "licencias.activacion"); preErr != nil {
-			return activated, preErr
+			return activated, assignedID, preErr
 		}
 		invalidateEmpresaPermissionCacheForEmpresa(empresaID)
-		return activated, nil
+		return activated, assignedID, nil
 	}
 
 	baseLic, err := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
 	if err != nil && err != sql.ErrNoRows {
-		return false, err
+		return false, 0, err
 	}
 	now := time.Now()
 	activatedAny := false
+	assignedID := int64(0)
 
 	switch mode {
 	case "empresa_addons":
@@ -2024,17 +2026,20 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 				continue
 			}
 			if _, err := dbpkg.UpsertEmpresaLicenciaAdicional(dbSuper, empresaID, addonID, fechaInicio, fechaFin, true, "checkout_addons", "activacion por compra de adicional"); err != nil {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 			activatedAny = true
 		}
 	case "empresa_bundle":
 		if baseLic == nil {
-			act, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
+			act, newAssignedID, err := activateLicenciaByIDs(dbSuper, licenciaID, empresaID)
 			if err != nil {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 			activatedAny = activatedAny || act
+			if newAssignedID > 0 {
+				assignedID = newAssignedID
+			}
 			baseLic, _ = dbpkg.GetActiveLicenciaByEmpresa(dbSuper, empresaID)
 		} else {
 			anchor := now
@@ -2050,15 +2055,16 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 			}
 			baseEnd := anchor.AddDate(0, 0, baseLic.DuracionDias).Format("2006-01-02 15:04:05")
 			if err := dbpkg.SetLicenciaFechas(dbSuper, baseLic.ID, baseStart, baseEnd); err != nil {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 			baseLic.FechaFin = baseEnd
+			assignedID = baseLic.ID
 			activatedAny = true
 		}
 
 		activeAddons, err := dbpkg.ListEmpresaLicenciasAdicionales(dbSuper, empresaID, false)
 		if err != nil {
-			return activatedAny, err
+			return activatedAny, assignedID, err
 		}
 		for _, addon := range activeAddons {
 			if addon.AutoRenovar != 1 {
@@ -2078,7 +2084,7 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 			}
 			fechaFin := anchor.AddDate(0, 0, duration).Format("2006-01-02 15:04:05")
 			if _, err := dbpkg.UpsertEmpresaLicenciaAdicional(dbSuper, empresaID, addon.LicenciaID, fechaInicio, fechaFin, true, "bundle_renew", "renovacion agrupada"); err != nil {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 			activatedAny = true
 		}
@@ -2097,10 +2103,10 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 				continue
 			}
 			if err != nil && err != sql.ErrNoRows {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 			if _, err := dbpkg.UpsertEmpresaLicenciaAdicional(dbSuper, empresaID, addonID, now.Format("2006-01-02 15:04:05"), newAddonEnd.Format("2006-01-02 15:04:05"), true, "bundle_new_addon", "alta desde renovacion agrupada"); err != nil {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 			activatedAny = true
 		}
@@ -2109,15 +2115,15 @@ func activateLicenciaCheckoutContext(dbSuper, dbEmp *sql.DB, licenciaID, empresa
 	if activatedAny {
 		if dbEmp := dbpkg.GetDB(); dbEmp != nil {
 			if err := dbpkg.SetEmpresaEstado(dbEmp, empresaID, "activo"); err != nil {
-				return activatedAny, err
+				return activatedAny, assignedID, err
 			}
 		}
 		if _, preErr := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, empresaID, licenciaID, "licencias.activacion"); preErr != nil {
-			return activatedAny, preErr
+			return activatedAny, assignedID, preErr
 		}
 		invalidateEmpresaPermissionCacheForEmpresa(empresaID)
 	}
-	return activatedAny, nil
+	return activatedAny, assignedID, nil
 }
 
 type licenciaCheckoutSummary struct {
@@ -2903,6 +2909,15 @@ func firstNonEmptyString(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func firstPositiveInt64(values ...int64) int64 {
+	for _, value := range values {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
 }
 
 func uniqueNonEmptyStrings(values ...string) []string {
@@ -5334,11 +5349,20 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 					if payRec != nil && payRec.RawPayload.Valid {
 						checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(payRec.RawPayload.String)
 					}
-					act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, nil, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+					act, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, nil, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 					if actErr != nil {
 						log.Println("warning: failed to activate licencia from Wompi:", actErr)
 					} else {
 						activated = act
+						emailLicID := assignedLicenciaID
+						if emailLicID <= 0 {
+							emailLicID = licenciaID
+						}
+						licForEmail, licEmailErr := dbpkg.GetLicenciaByID(dbSuper, emailLicID)
+						if licEmailErr != nil {
+							log.Println("warning: failed to reload assigned licencia after Wompi activation:", licEmailErr)
+							licForEmail = lic
+						}
 						payRecForEmail := payRec
 						if payRecForEmail == nil {
 							if payRecByTx, payTxErr := dbpkg.GetWompiPaymentByTransaction(dbSuper, transactionID); payTxErr != nil {
@@ -5355,10 +5379,10 @@ func WompiTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 							}
 						}
 						if payRecForEmail != nil {
-							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, lic, payRecForEmail, "wompi", reference); mailErr != nil {
+							if mailErr := trySendLicenciaActivationEmailForWompi(r, dbSuper, empresaID, licForEmail, payRecForEmail, "wompi", reference); mailErr != nil {
 								log.Println("warning: failed to send licencia activation email for Wompi status:", mailErr)
 							}
-							if invoiceErr := tryIssueLicenciaFacturaElectronicaForWompi(r, dbpkg.GetDB(), dbSuper, empresaID, lic, payRecForEmail, "wompi", reference); invoiceErr != nil {
+							if invoiceErr := tryIssueLicenciaFacturaElectronicaForWompi(r, dbpkg.GetDB(), dbSuper, empresaID, licForEmail, payRecForEmail, "wompi", reference); invoiceErr != nil {
 								log.Println("warning: failed to issue licencia factura electronica for Wompi status:", invoiceErr)
 							}
 						}
@@ -5498,12 +5522,16 @@ func WompiWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if len(dbEmp) > 0 {
 					dbEmpConn = dbEmp[0]
 				}
-				act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "wompi", transactionID, reference, licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Wompi webhook:", actErr)
 				} else {
 					activated = act
-					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					emailLicID := assignedLicenciaID
+					if emailLicID <= 0 {
+						emailLicID = licenciaID
+					}
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, emailLicID)
 					if licErr != nil {
 						log.Println("warning: failed to reload licencia after Wompi webhook activation:", licErr)
 					} else {
@@ -6237,12 +6265,16 @@ func EpaycoTransactionStatusHandler(dbSuper *sql.DB) http.HandlerFunc {
 				if rec != nil && rec.RawPayload.Valid {
 					checkoutMode, addonLicenciaIDs = readCheckoutContextFromRawPayload(rec.RawPayload.String)
 				}
-				act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, nil, "epayco", firstNonEmptyString(recordTransactionID, transactionID, originalTransactionID), firstNonEmptyString(recordReference, invoiceReference, reference, originalReference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, nil, "epayco", firstNonEmptyString(recordTransactionID, transactionID, originalTransactionID), firstNonEmptyString(recordReference, invoiceReference, reference, originalReference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco status:", actErr)
 				} else {
 					activated = act
-					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					emailLicID := assignedLicenciaID
+					if emailLicID <= 0 {
+						emailLicID = licenciaID
+					}
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, emailLicID)
 					if licErr != nil {
 						log.Println("warning: failed to reload licencia after Epayco activation:", licErr)
 					} else {
@@ -6446,12 +6478,16 @@ func EpaycoWebhookHandler(dbSuper *sql.DB, dbEmp ...*sql.DB) http.HandlerFunc {
 				if len(dbEmp) > 0 {
 					dbEmpConn = dbEmp[0]
 				}
-				act, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
+				act, assignedLicenciaID, actErr := activateLicenciaCheckoutContextForPayment(dbSuper, dbEmpConn, "epayco", transactionID, firstNonEmptyString(invoiceReference, reference), licenciaID, empresaID, checkoutMode, addonLicenciaIDs)
 				if actErr != nil {
 					log.Println("warning: failed to activate licencia from Epayco webhook:", actErr)
 				} else {
 					activated = act
-					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, licenciaID)
+					emailLicID := assignedLicenciaID
+					if emailLicID <= 0 {
+						emailLicID = licenciaID
+					}
+					lic, licErr := dbpkg.GetLicenciaByID(dbSuper, emailLicID)
 					if licErr != nil {
 						log.Println("warning: failed to reload licencia after Epayco webhook activation:", licErr)
 					} else {
@@ -6607,51 +6643,70 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		now := time.Now()
 		fechaInicio := now.Format("2006-01-02 15:04:05")
 		fechaFin := now.AddDate(0, 0, 30).Format("2006-01-02 15:04:05")
+		assignedLicenciaID := int64(0)
 		if normalizeLicenciaCheckoutMode(payload.CheckoutMode) == "" {
 			if lic.DuracionDias <= 0 {
 				lic.DuracionDias = 30
 			}
 			fechaFin = now.AddDate(0, 0, lic.DuracionDias).Format("2006-01-02 15:04:05")
-			if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo, payload.AsesorID); err != nil {
-				if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
-					if activeLic, activeErr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID); activeErr == nil && activeLic != nil && activeLic.Valor <= 0 {
-						if ferr := finalizeEmpresaAfterLicenciaActivation(dbEmpresas, dbSuper, payload.EmpresaID, activeLic.ID, "licencias.activacion_sin_pago_idempotente"); ferr != nil {
-							http.Error(w, "failed to activate empresa: "+ferr.Error(), http.StatusInternalServerError)
+			if roundLicenciaCheckoutAmount(lic.Valor) > 0 {
+				activated, newAssignedID, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpresas, payload.LicenciaID, payload.EmpresaID, "", nil)
+				if actErr != nil {
+					http.Error(w, "failed to activate licencia comercial con descuento total: "+actErr.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !activated {
+					http.Error(w, "no se pudo activar la licencia comercial con descuento total", http.StatusConflict)
+					return
+				}
+				assignedLicenciaID = newAssignedID
+			} else {
+				if err := dbpkg.ActivateLicenciaGratisForEmpresa(dbSuper, payload.LicenciaID, payload.EmpresaID, fechaInicio, fechaFin, payload.DiscountCode, payload.Motivo, payload.AsesorID); err != nil {
+					if errors.Is(err, dbpkg.ErrLicenciaGratisYaUsada) {
+						if activeLic, activeErr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID); activeErr == nil && activeLic != nil && activeLic.Valor <= 0 {
+							if ferr := finalizeEmpresaAfterLicenciaActivation(dbEmpresas, dbSuper, payload.EmpresaID, activeLic.ID, "licencias.activacion_sin_pago_idempotente"); ferr != nil {
+								http.Error(w, "failed to activate empresa: "+ferr.Error(), http.StatusInternalServerError)
+								return
+							}
+							w.Header().Set("Content-Type", "application/json")
+							json.NewEncoder(w).Encode(map[string]interface{}{
+								"activated":      true,
+								"already_active": true,
+								"provider":       "manual",
+								"payment_method": "ACTIVAR_SIN_PAGO",
+								"licencia_id":    activeLic.ID,
+								"empresa_id":     payload.EmpresaID,
+								"fecha_inicio":   activeLic.FechaInicio,
+								"fecha_fin":      activeLic.FechaFin,
+								"summary":        summary,
+								"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
+							})
 							return
 						}
-						w.Header().Set("Content-Type", "application/json")
-						json.NewEncoder(w).Encode(map[string]interface{}{
-							"activated":      true,
-							"already_active": true,
-							"provider":       "manual",
-							"payment_method": "ACTIVAR_SIN_PAGO",
-							"licencia_id":    activeLic.ID,
-							"empresa_id":     payload.EmpresaID,
-							"fecha_inicio":   activeLic.FechaInicio,
-							"fecha_fin":      activeLic.FechaFin,
-							"summary":        summary,
-							"redirect_url":   fmt.Sprintf("/administrar_empresa.html?id=%d", payload.EmpresaID),
-						})
+						http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
 						return
 					}
-					http.Error(w, "esta licencia gratuita ya fue usada por esta empresa", http.StatusConflict)
+					http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
-				http.Error(w, "failed to activate licencia: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if dbEmp := dbpkg.GetDB(); dbEmp != nil {
-				if err := dbpkg.SetEmpresaEstado(dbEmp, payload.EmpresaID, "activo"); err != nil {
-					http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
-					return
+				if activeLic, activeErr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID); activeErr == nil && activeLic != nil {
+					assignedLicenciaID = activeLic.ID
+					fechaInicio = activeLic.FechaInicio
+					fechaFin = activeLic.FechaFin
 				}
-				if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, payload.EmpresaID, payload.LicenciaID, "licencias.activacion_sin_pago"); err != nil {
-					log.Printf("warning: failed to apply tipo empresa preconfig after zero-total activation empresa=%d licencia=%d: %v", payload.EmpresaID, payload.LicenciaID, err)
+				if dbEmp := dbpkg.GetDB(); dbEmp != nil {
+					if err := dbpkg.SetEmpresaEstado(dbEmp, payload.EmpresaID, "activo"); err != nil {
+						http.Error(w, "failed to activate empresa: "+err.Error(), http.StatusInternalServerError)
+						return
+					}
+					if _, err := applyEmpresaTipoPreconfiguracionFromLicencia(dbEmp, dbSuper, payload.EmpresaID, payload.LicenciaID, "licencias.activacion_sin_pago"); err != nil {
+						log.Printf("warning: failed to apply tipo empresa preconfig after zero-total activation empresa=%d licencia=%d: %v", payload.EmpresaID, payload.LicenciaID, err)
+					}
+					invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 				}
-				invalidateEmpresaPermissionCacheForEmpresa(payload.EmpresaID)
 			}
 		} else {
-			activated, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpresas, payload.LicenciaID, payload.EmpresaID, payload.CheckoutMode, payload.AddonLicenciaIDs)
+			activated, newAssignedID, actErr := activateLicenciaCheckoutContext(dbSuper, dbEmpresas, payload.LicenciaID, payload.EmpresaID, payload.CheckoutMode, payload.AddonLicenciaIDs)
 			if actErr != nil {
 				http.Error(w, "failed to activate bundle de licencias: "+actErr.Error(), http.StatusInternalServerError)
 				return
@@ -6660,8 +6715,15 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 				http.Error(w, "no hubo componentes por activar en el checkout agrupado", http.StatusConflict)
 				return
 			}
+			assignedLicenciaID = newAssignedID
 			if bundle != nil && strings.TrimSpace(bundle.FechaCorteBase) != "" {
 				fechaFin = bundle.FechaCorteBase
+			}
+		}
+		if assignedLicenciaID > 0 {
+			if assignedLic, assignedErr := dbpkg.GetLicenciaByID(dbSuper, assignedLicenciaID); assignedErr == nil && assignedLic != nil {
+				fechaInicio = assignedLic.FechaInicio
+				fechaFin = assignedLic.FechaFin
 			}
 		}
 
@@ -6696,7 +6758,14 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 		}
 		rawBytesWelcome, _ := json.Marshal(rawMapWelcome)
 		if _, recErr := dbpkg.CreateEpaycoPaymentRecord(dbSuper, payload.LicenciaID, payload.EmpresaID, ref, ref, "APPROVED", string(rawBytesWelcome), payload.DiscountCode, payload.AsesorID); recErr == nil {
-			licReload, lerr := dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID)
+			var licReload *dbpkg.Licencia
+			var lerr error
+			if assignedLicenciaID > 0 {
+				licReload, lerr = dbpkg.GetLicenciaByID(dbSuper, assignedLicenciaID)
+			}
+			if lerr != nil || licReload == nil {
+				licReload, lerr = dbpkg.GetActiveLicenciaByEmpresa(dbSuper, payload.EmpresaID)
+			}
 			if lerr != nil || licReload == nil {
 				licReload, lerr = dbpkg.GetLicenciaByID(dbSuper, payload.LicenciaID)
 			}
@@ -6731,7 +6800,7 @@ func ActivateLicenciaSinPagoHandler(dbSuper *sql.DB, dbEmpresas *sql.DB) http.Ha
 			"activated":      true,
 			"provider":       "manual",
 			"payment_method": "ACTIVAR_SIN_PAGO",
-			"licencia_id":    payload.LicenciaID,
+			"licencia_id":    firstPositiveInt64(assignedLicenciaID, payload.LicenciaID),
 			"empresa_id":     payload.EmpresaID,
 			"fecha_inicio":   fechaInicio,
 			"fecha_fin":      fechaFin,

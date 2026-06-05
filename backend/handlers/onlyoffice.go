@@ -247,6 +247,24 @@ func onlyOfficeJWTSignHS256(secret string, payload any) (string, error) {
 	return signing + "." + sig, nil
 }
 
+func onlyOfficeAttachConfigToken(secret string, cfg map[string]any) (string, error) {
+	if cfg == nil {
+		return "", fmt.Errorf("config onlyoffice invalida")
+	}
+	if doc, ok := cfg["document"].(map[string]any); ok {
+		delete(doc, "token")
+	}
+	if ed, ok := cfg["editorConfig"].(map[string]any); ok {
+		delete(ed, "token")
+	}
+	jwt, err := onlyOfficeJWTSignHS256(secret, cfg)
+	if err != nil {
+		return "", err
+	}
+	cfg["token"] = jwt
+	return jwt, nil
+}
+
 func onlyOfficeGuessFileType(name string) string {
 	ext := strings.ToLower(filepath.Ext(name))
 	switch ext {
@@ -868,17 +886,9 @@ func OnlyOfficeDocumentosHandler(dbSuper *sql.DB) http.HandlerFunc {
 				},
 			}
 
-			jwt, err := onlyOfficeJWTSignHS256(jwtSecret, ooCfg)
-			if err != nil {
+			if _, signErr := onlyOfficeAttachConfigToken(jwtSecret, ooCfg); signErr != nil {
 				http.Error(w, "no se pudo firmar jwt", http.StatusInternalServerError)
 				return
-			}
-			ooCfg["token"] = jwt
-			if doc, ok := ooCfg["document"].(map[string]any); ok {
-				doc["token"] = jwt
-			}
-			if ed, ok := ooCfg["editorConfig"].(map[string]any); ok {
-				ed["token"] = jwt
 			}
 			writeJSON(w, http.StatusOK, map[string]any{
 				"ok":               true,

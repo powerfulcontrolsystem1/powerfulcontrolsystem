@@ -13026,7 +13026,108 @@ html.theme-light .task-item{
   color:#ffffff !important;
 }
 
+.selector-order-tools{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  max-width:1040px;
+  margin:0 auto 14px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:color-mix(in srgb, var(--surface) 88%, var(--accent) 12%);
+  color:var(--text);
+}
+
+.selector-order-tools strong{
+  display:block;
+  font-weight:900;
+  color:var(--text);
+  line-height:1.2;
+}
+
+.selector-order-tools span{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.84rem;
+  line-height:1.35;
+}
+
+.selector-order-tools .btn{
+  flex:0 0 auto;
+  min-height:36px;
+  padding:8px 12px;
+}
+
+.empresas-grid .empresa-card-link{
+  position:relative;
+  user-select:none;
+}
+
+.selector-empresa-drag-active,
+.selector-empresa-drag-active *{
+  cursor:grabbing !important;
+}
+
+.empresas-grid.is-sorting .empresa-card-link{
+  transition:transform .14s ease, opacity .14s ease;
+}
+
+.empresas-grid .empresa-card-link.is-dragging{
+  opacity:.82;
+  transform:scale(.985);
+  z-index:6;
+}
+
+.empresas-grid .empresa-reorder-handle{
+  position:absolute;
+  top:12px;
+  right:64px;
+  z-index:4;
+  width:34px;
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid color-mix(in srgb, var(--border) 80%, var(--accent) 20%);
+  border-radius:10px;
+  background:color-mix(in srgb, var(--surface) 82%, var(--accent) 18%);
+  color:var(--text);
+  font-weight:900;
+  line-height:1;
+  cursor:grab;
+  touch-action:none;
+}
+
+.empresas-grid .empresa-reorder-handle:hover,
+.empresas-grid .empresa-reorder-handle:focus-visible{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+  outline:none;
+}
+
+.empresas-grid .empresa-card-link.is-dragging .empresa-reorder-handle{
+  cursor:grabbing;
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
 @media (max-width: 780px){
+  .selector-order-tools{
+    align-items:flex-start;
+    flex-direction:column;
+    max-width:none;
+  }
+
+  .selector-order-tools .btn{
+    width:100%;
+  }
+
   .empresas-grid{justify-content:flex-start; margin: 0; padding: 0; width: 100%; justify-items: start;
     grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) !important;
     max-width:none !important;
@@ -13039,6 +13140,11 @@ html.theme-light .task-item{
 
   .empresas-grid .card-link.empresa-card-link{
     min-height:171px !important;
+  }
+
+  .empresas-grid .empresa-reorder-handle{
+    right:58px;
+    top:10px;
   }
 }
 

@@ -43,6 +43,20 @@ func TestPickEpaycoFieldIgnoresNonScalarMatches(t *testing.T) {
 	}
 }
 
+func TestLicenciaFacturaAmountHonorsZeroAndPositivePaymentPayloads(t *testing.T) {
+	lic := &dbpkg.Licencia{Valor: 60000}
+
+	if amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"total_value": 0}); !found || amount != 0 {
+		t.Fatalf("expected explicit zero payment to be honored as zero, got amount=%v found=%v", amount, found)
+	}
+	if amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{"total_value": 60000}); !found || amount != 60000 {
+		t.Fatalf("expected positive payment to be honored, got amount=%v found=%v", amount, found)
+	}
+	if amount, found := licenciaFacturaAmountFromPayload(lic, map[string]interface{}{}); found || amount != 60000 {
+		t.Fatalf("expected empty payload to fall back to license value without explicit payment flag, got amount=%v found=%v", amount, found)
+	}
+}
+
 func TestBuildEpaycoClassicCheckoutFormUsesSecurePaycoPostAndSignature(t *testing.T) {
 	checkoutKey := "a1c7200f0e2029d11b62bfd863422d5db10a8397"
 	form := buildEpaycoClassicCheckoutForm(

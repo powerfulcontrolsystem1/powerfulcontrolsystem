@@ -71,6 +71,25 @@ afecte dinero, documentos, licencias o seguridad.
 8. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
    deben crear empresas duplicadas.
 
+## Ordenar empresas en el selector
+
+1. Administrador entra a `web/seleccionar_empresa.html`.
+2. La pantalla carga solo empresas visibles para esa cuenta: propias,
+   delegadas o compartidas.
+3. El usuario mantiene presionada una tarjeta en PC, o el asa de mover en
+   celular, y la arrastra dentro del grupo de empresas con licencia activa o
+   sin licencia activa.
+4. El frontend guarda el orden de IDs visibles en
+   `/api/user/configuracion` como preferencia del usuario autenticado y mantiene
+   respaldo local del navegador si la red falla.
+5. Al recargar, las empresas nuevas o no ordenadas se agregan despues de las ya
+   guardadas, conservando el orden alfabetico base.
+6. `Restablecer orden` borra la preferencia y vuelve al orden base.
+7. Seguridad: el orden no concede acceso a empresas; solo reordena tarjetas que
+   `/super/api/empresas` ya autorizo para la sesion actual.
+8. Pruebas: mover tarjetas en activas e inactivas, recargar, confirmar
+   persistencia y restablecer.
+
 ## Eliminar empresa
 
 1. Solo el administrador propietario puede iniciar la eliminacion total desde el
@@ -84,9 +103,17 @@ afecte dinero, documentos, licencias o seguridad.
 4. El endpoint destructivo recibe `descarga_ofrecida` para auditoria y mantiene
    las validaciones backend de propietario, confirmacion y aislamiento por
    empresa.
-5. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
+5. El backend elimina en transaccion los registros con `empresa_id` en la base
+   operativa y en la base super, incluyendo licencias, pagos, invitaciones,
+   accesos compartidos y datos de modulo cuando existan esas columnas.
+6. Ademas limpia `usuario_configuracion.selector_empresas_orden_json` de todos
+   los usuarios para quitar la empresa del orden personalizado del selector,
+   invalida caches de licencia, resolucion de empresa y accesos compartidos, y
+   borra carpetas empresariales asociadas.
+7. Pruebas: no permitir borrado sin validaciones, ofrecer descarga previa,
    eliminar solo la empresa indicada y volver al selector sin filtrar datos de
-   otra empresa.
+   otra empresa; confirmar con otro administrador invitado o delegado que la
+   empresa eliminada ya no aparece.
 
 ## Administradores delegados
 
@@ -238,11 +265,33 @@ afecte dinero, documentos, licencias o seguridad.
    como maximo una vez cada 24 horas.
 8. Despues de cargar firma, el siguiente paso operativo es
    `action=validar_credenciales` y luego `action=pruebas_dian`.
-9. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
+9. La pagina `Facturacion electronica > Pasar test DIAN` muestra estado de
+   ambiente, rango, TestSetId y credenciales; desde alli se guarda el objetivo
+   del set que aparece en el portal DIAN, incluyendo totales requeridos y
+   minimos aceptados por facturas, notas debito y notas credito.
+10. `Ejecutar set automatico` usa los valores guardados para generar el lote
+   completo; los botones `Enviar factura`, `Enviar nota debito` y `Enviar nota
+   credito` permiten probar un documento a la vez y ver si fue recibido,
+   aceptado, rechazado o queda pendiente.
+   Para la empresa interna Powerful Control System, el set registrado desde el
+   portal de habilitacion es: 50 documentos totales, 30 facturas electronicas,
+   10 notas debito, 10 notas credito, minimo aceptado total 1 y minimo aceptado
+   de facturas 1.
+11. El resultado visual debe mostrar resumen por estado, aceptados por tipo,
+   mensaje de recepcion y si el minimo configurado ya se cumple. No se debe
+   declarar produccion local hasta tener acuse suficiente de DIAN/proveedor.
+12. Para endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese
+   token solo aplica a proveedor/API con bearer token. En habilitacion real si
+   es obligatorio `test_set_id`, porque DIAN lo usa para `SendTestSetAsync`.
+13. Las pruebas simuladas deben confirmar preparacion, firma, conteos y UI, pero
+   nunca marcar `habilitacion_aprobada`. Solo una ejecucion real con acuse
+   aceptado puede cambiar la empresa a habilitada/produccion local.
+14. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar
    vencimiento` en la pantalla para confirmar que se ve fecha, dias restantes y
-   estado de alerta.
+   estado de alerta. En `Pasar test DIAN`, guardar objetivo, validar
+   credenciales y ejecutar al menos un envio manual de factura de prueba.
 
 ## Login usuarios operativos
 

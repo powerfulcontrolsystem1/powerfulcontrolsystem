@@ -13,6 +13,66 @@ import (
 	"time"
 )
 
+func testDIANKeyAndCertPEM(t *testing.T) (string, string) {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject:      pkix.Name{CommonName: "Empresa DIAN Test"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().AddDate(1, 0, 0),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("create cert: %v", err)
+	}
+	var keyPEM strings.Builder
+	_ = pem.Encode(&keyPEM, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	var certPEM strings.Builder
+	_ = pem.Encode(&certPEM, &pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	return keyPEM.String(), certPEM.String()
+}
+
+func testDIANValidConfig(t *testing.T, endpoint string) map[string]interface{} {
+	t.Helper()
+	keyPEM, certPEM := testDIANKeyAndCertPEM(t)
+	return map[string]interface{}{
+		"nit":                       "900373913",
+		"digito_verificacion":       "4",
+		"razon_social":              "Empresa Test SAS",
+		"tipo_ambiente":             "habilitacion",
+		"prefijo":                   "SETP",
+		"resolucion_numero":         "18760000000001",
+		"resolucion_fecha_desde":    time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
+		"resolucion_fecha_hasta":    time.Now().AddDate(0, 1, 0).Format("2006-01-02"),
+		"rango_desde":               1,
+		"rango_hasta":               999999,
+		"consecutivo_actual":        1,
+		"llave_tecnica":             "llave-tecnica-test",
+		"url_dian":                  endpoint,
+		"certificado_clave_ref":     keyPEM,
+		"certificado_url":           certPEM,
+		"test_set_id":               "test-set",
+		"software_id":               "software-id",
+		"software_pin":              "software-pin",
+		"usar_software_compartido":  0,
+		"set_documentos_requeridos": 1,
+	}
+}
+
+func dianTestContainsString(items []string, expected string) bool {
+	for _, item := range items {
+		if item == expected {
+			return true
+		}
+	}
+	return false
+}
+
 func TestDecodeDIANSignatureUploadPEMWithPrivateKeyAndCertificate(t *testing.T) {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
@@ -158,13 +218,133 @@ func TestBuildDIANGetStatusZipEnvelope(t *testing.T) {
 	}
 }
 
+func TestValidateDIANCredentialRefsDoesNotRequireTokenForOfficialSOAP(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})
+	if err != nil || status != 200 {
+		t.Fatalf("validate credentials returned status=%d err=%v response=%#v", status, err, response)
+	}
+	if !parseTruthy(genericStringValue(response["ok"])) {
+		t.Fatalf("expected official SOAP credentials to pass without token, got %#v", response)
+	}
+	checks, _ := response["checks"].(map[string]interface{})
+	tokenCheck, _ := checks["token_emisor"].(map[string]interface{})
+	if !parseTruthy(genericStringValue(tokenCheck["ok"])) {
+		t.Fatalf("expected token check ok for official SOAP endpoint, got %#v", tokenCheck)
+	}
+	if parseTruthy(genericStringValue(tokenCheck["required"])) {
+		t.Fatalf("token must not be required for official SOAP endpoint, got %#v", tokenCheck)
+	}
+	if dianTestContainsString(missingDIANFields(cfg), "token_emisor_ref") {
+		t.Fatalf("token_emisor_ref must not be listed as missing for official SOAP endpoint")
+	}
+}
+
+func TestValidateDIANCredentialRefsRequiresTokenForProviderAPI(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://proveedor.example.com/api/dian")
+	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})
+	if err != nil || status != 200 {
+		t.Fatalf("validate credentials returned status=%d err=%v response=%#v", status, err, response)
+	}
+	if parseTruthy(genericStringValue(response["ok"])) {
+		t.Fatalf("expected provider API credentials to fail without token, got %#v", response)
+	}
+	checks, _ := response["checks"].(map[string]interface{})
+	tokenCheck, _ := checks["token_emisor"].(map[string]interface{})
+	if !parseTruthy(genericStringValue(tokenCheck["required"])) {
+		t.Fatalf("token must be required for provider API endpoint, got %#v", tokenCheck)
+	}
+	if !dianTestContainsString(missingDIANFields(cfg), "token_emisor_ref") {
+		t.Fatalf("token_emisor_ref must be listed as missing for provider API endpoint")
+	}
+}
+
+func TestRunDIANPruebasHabilitacionTwoEachSimulatedOfficialSOAP(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
+		"simular":                true,
+		"facturas_electronicas":  2,
+		"notas_debito":           2,
+		"notas_credito":          2,
+		"total_documentos":       6,
+		"max_envios":             6,
+		"detener_en_error":       true,
+		"total_por_documento":    "1000.00",
+		"set_habilitacion":       true,
+		"cliente_nombre":         "Cliente habilitacion DIAN",
+		"cliente_nit":            "222222222222",
+		"set_documentos_minimos": 1,
+	})
+	if err != nil || status != 200 {
+		t.Fatalf("run pruebas returned status=%d err=%v result=%#v", status, err, result)
+	}
+	if !parseTruthy(genericStringValue(result["ok"])) {
+		t.Fatalf("expected simulated 2+2+2 set to be ok, got %#v", result)
+	}
+	if anyToInt64(result["procesados"]) != 6 {
+		t.Fatalf("expected 6 processed docs, got %#v", result)
+	}
+	resumen, _ := result["resumen"].(map[string]int)
+	if resumen["simulado"] != 6 {
+		t.Fatalf("expected 6 simulated docs, got %#v", resumen)
+	}
+	objetivo, _ := result["objetivo"].(map[string]interface{})
+	if anyToInt64(objetivo["facturas_electronicas"]) != 2 || anyToInt64(objetivo["notas_debito"]) != 2 || anyToInt64(objetivo["notas_credito"]) != 2 {
+		t.Fatalf("unexpected 2+2+2 objective: %#v", objetivo)
+	}
+}
+
 func TestDIANDefaultSetRequirementUsesSoftwarePropioProveedorTarget(t *testing.T) {
 	got := dianDefaultSetRequirement()
-	if got["facturas_electronicas"] != 60 || got["notas_debito"] != 20 || got["notas_credito"] != 20 || got["total_documentos"] != 100 {
+	if got["facturas_electronicas"] != 30 || got["notas_debito"] != 10 || got["notas_credito"] != 10 || got["total_documentos"] != 50 {
 		t.Fatalf("unexpected default DIAN set requirement: %#v", got)
 	}
 	if !strings.Contains(genericStringValue(got["nota"]), "software propio") {
 		t.Fatalf("expected default note to explain software mode, got %#v", got)
+	}
+}
+
+func TestRunDIANPruebasHabilitacionUsesConfiguredPortalSet(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	cfg["set_documentos_requeridos"] = 50
+	cfg["set_facturas_requeridas"] = 30
+	cfg["set_notas_debito_requeridas"] = 10
+	cfg["set_notas_credito_requeridas"] = 10
+	cfg["set_documentos_aceptados_requeridos"] = 1
+	cfg["set_facturas_aceptadas_requeridas"] = 1
+	cfg["set_notas_debito_aceptadas_requeridas"] = 0
+	cfg["set_notas_credito_aceptadas_requeridas"] = 0
+
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
+		"simular": true,
+	})
+	if err != nil || status != 200 {
+		t.Fatalf("run pruebas returned status=%d err=%v result=%#v", status, err, result)
+	}
+	if anyToInt64(result["procesados"]) != 50 {
+		t.Fatalf("expected configured portal set to process 50 docs, got %#v", result["procesados"])
+	}
+	objetivo, _ := result["objetivo"].(map[string]interface{})
+	if anyToInt64(objetivo["facturas_electronicas"]) != 30 || anyToInt64(objetivo["notas_debito"]) != 10 || anyToInt64(objetivo["notas_credito"]) != 10 {
+		t.Fatalf("unexpected configured portal objective: %#v", objetivo)
+	}
+	req, _ := result["requisito_set_dian"].(map[string]interface{})
+	if anyToInt64(req["facturas_electronicas_aceptadas_minimo"]) != 1 || anyToInt64(req["notas_debito_aceptadas_minimo"]) != 0 || anyToInt64(req["notas_credito_aceptadas_minimo"]) != 0 {
+		t.Fatalf("unexpected accepted minimums: %#v", req)
+	}
+	if parseTruthy(genericStringValue(result["habilitacion_aprobada"])) {
+		t.Fatalf("simulation must not mark habilitation approved: %#v", result)
+	}
+}
+
+func TestDIANEffectiveSetRequirementAllowsManualSingleDocument(t *testing.T) {
+	got := dianEffectiveSetRequirement(map[string]interface{}{
+		"facturas_electronicas": 1,
+		"notas_debito":          0,
+		"notas_credito":         0,
+	})
+	if got["facturas_electronicas"] != 1 || got["notas_debito"] != 0 || got["notas_credito"] != 0 || got["total_documentos"] != 1 {
+		t.Fatalf("unexpected manual DIAN set requirement: %#v", got)
 	}
 }
 
@@ -191,6 +371,7 @@ func TestValidateDIANDocumentPreflightAcceptsBasicUBL(t *testing.T) {
 		"rango_desde":            1,
 		"rango_hasta":            999999,
 		"consecutivo_actual":     1,
+		"llave_tecnica":          "llave-tecnica-test",
 		"url_dian":               "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl",
 		"token_emisor_ref":       "env:DIAN_TOKEN_TEST",
 		"certificado_clave_ref":  "file:/tmp/key.pem",

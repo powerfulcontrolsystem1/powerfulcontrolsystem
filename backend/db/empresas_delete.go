@@ -134,6 +134,14 @@ func DeleteEmpresaCascade(dbEmp, dbSuper *sql.DB, empresaID int64) (*EmpresaDele
 	if err != nil {
 		return nil, err
 	}
+	targetEmpresaIDs := []int64{empresaID}
+	if empresa.EmpresaID > 0 && empresa.EmpresaID != empresaID {
+		if _, lookupErr := GetEmpresaByID(dbEmp, empresa.EmpresaID); lookupErr == sql.ErrNoRows {
+			targetEmpresaIDs = append(targetEmpresaIDs, empresa.EmpresaID)
+		} else if lookupErr != nil {
+			return nil, lookupErr
+		}
+	}
 
 	tablesEmp, err := empresaDeleteListCandidateTables(dbEmp, map[string]bool{"empresas": true})
 	if err != nil {
@@ -163,20 +171,36 @@ func DeleteEmpresaCascade(dbEmp, dbSuper *sql.DB, empresaID int64) (*EmpresaDele
 	var totalDeleted int64
 
 	if txSuper != nil {
-		superResults, deletedSuper, err := empresaDeleteRowsByEmpresa(txSuper, "super", empresaID, tablesSuper)
+		for _, targetEmpresaID := range targetEmpresaIDs {
+			superResults, deletedSuper, err := empresaDeleteRowsByEmpresa(txSuper, "super", targetEmpresaID, tablesSuper)
+			if err != nil {
+				return nil, err
+			}
+			detail = append(detail, superResults...)
+			totalDeleted += deletedSuper
+
+			selectorRows, err := RemoveEmpresaFromAllUsuarioSelectorEmpresasOrdenTx(txSuper, targetEmpresaID)
+			if err != nil {
+				return nil, fmt.Errorf("super.usuario_configuracion limpiar orden selector empresa_id=%d: %w", targetEmpresaID, err)
+			}
+			if selectorRows > 0 {
+				detail = append(detail, EmpresaDeleteTableResult{
+					Scope:   "super",
+					Table:   "usuario_configuracion.selector_empresas_orden_json",
+					Deleted: selectorRows,
+				})
+			}
+		}
+	}
+
+	for _, targetEmpresaID := range targetEmpresaIDs {
+		empResults, deletedEmp, err := empresaDeleteRowsByEmpresa(txEmp, "operativa", targetEmpresaID, tablesEmp)
 		if err != nil {
 			return nil, err
 		}
-		detail = append(detail, superResults...)
-		totalDeleted += deletedSuper
+		detail = append(detail, empResults...)
+		totalDeleted += deletedEmp
 	}
-
-	empResults, deletedEmp, err := empresaDeleteRowsByEmpresa(txEmp, "operativa", empresaID, tablesEmp)
-	if err != nil {
-		return nil, err
-	}
-	detail = append(detail, empResults...)
-	totalDeleted += deletedEmp
 
 	deleteEmpresaRes, err := execTxSQLCompat(txEmp, "DELETE FROM empresas WHERE id = ?", empresaID)
 	if err != nil {
@@ -200,6 +224,11 @@ func DeleteEmpresaCascade(dbEmp, dbSuper *sql.DB, empresaID int64) (*EmpresaDele
 		return nil, err
 	}
 	InvalidateLicenciaPermisoPolicyCacheForEmpresa(empresaID)
+	InvalidateEmpresaByScopeCacheForEmpresa(empresaID, empresa.EmpresaID)
+	InvalidateAdminEmpresaCompartidaAccessCacheForEmpresa(empresaID)
+	if empresa.EmpresaID != empresaID {
+		InvalidateAdminEmpresaCompartidaAccessCacheForEmpresa(empresa.EmpresaID)
+	}
 
 	return &EmpresaDeleteCascadeResult{
 		EmpresaID:           empresaID,

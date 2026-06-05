@@ -4,6 +4,28 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-05 - Set automatico DIAN y licencias
+
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` permite
+  guardar por empresa el objetivo exacto que muestra el portal DIAN:
+  `test_set_id`, facturas, notas debito, notas credito, total requerido y
+  minimos aceptados.
+- El preset principal de software propio/proveedor queda en 30 facturas, 10
+  notas debito y 10 notas credito, con minimo aceptado total 1 y minimo de
+  facturas 1, porque ese es el set registrado para la empresa interna Powerful
+  Control System. El boton automatico usa siempre lo guardado por empresa, por
+  lo que otra empresa puede tener otro objetivo.
+- En endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese campo
+  solo aplica cuando la empresa usa proveedor/API con bearer token. En
+  habilitacion real si es obligatorio `test_set_id`.
+- Una ejecucion simulada de `action=pruebas_dian` nunca debe marcar
+  `habilitacion_aprobada`. Solo una ejecucion real con acuse aceptado de
+  DIAN/proveedor puede permitir pasar a produccion local.
+- Compra de licencias: el correo unificado adjunta licencia y factura
+  electronica solo cuando el pago comercial aprobado es mayor que cero. Una
+  activacion valor cero o con descuento total activa la licencia, pero no emite
+  factura electronica.
+
 ## Actualizacion 2026-06-05 - Tutorial guiado de nomina
 
 - Ayuda visual: `web/ayuda/tutorial_nomina.html`.

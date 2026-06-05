@@ -78,6 +78,20 @@ func InvalidateAdminEmpresaCompartidaAccessCache(empresaID int64, adminEmail str
 	adminEmpresaCompartidaAccessCacheMu.Unlock()
 }
 
+func InvalidateAdminEmpresaCompartidaAccessCacheForEmpresa(empresaID int64) {
+	if empresaID <= 0 {
+		return
+	}
+	prefix := fmt.Sprintf("%d|", empresaID)
+	adminEmpresaCompartidaAccessCacheMu.Lock()
+	for key := range adminEmpresaCompartidaAccessCache {
+		if strings.HasPrefix(key, prefix) {
+			delete(adminEmpresaCompartidaAccessCache, key)
+		}
+	}
+	adminEmpresaCompartidaAccessCacheMu.Unlock()
+}
+
 func EnsureAdminEmpresaCompartidaSchema(dbConn *sql.DB) error {
 	if dbConn == nil {
 		return nil

@@ -641,6 +641,9 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			usar_software_compartido INTEGER DEFAULT 0,
 			software_id_compartido_ref TEXT,
 			software_pin_compartido_ref TEXT,
+			modo_operacion_descripcion TEXT,
+			modo_operacion_fecha_inicio TEXT,
+			modo_operacion_fecha_termino TEXT,
 			test_set_id TEXT,
 			certificado_url TEXT,
 			certificado_clave_ref TEXT,
@@ -663,6 +666,15 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			rango_desde INTEGER DEFAULT 0,
 			rango_hasta INTEGER DEFAULT 0,
 			consecutivo_actual INTEGER DEFAULT 0,
+			llave_tecnica TEXT,
+			set_documentos_requeridos INTEGER DEFAULT 0,
+			set_facturas_requeridas INTEGER DEFAULT 0,
+			set_notas_debito_requeridas INTEGER DEFAULT 0,
+			set_notas_credito_requeridas INTEGER DEFAULT 0,
+			set_documentos_aceptados_requeridos INTEGER DEFAULT 0,
+			set_facturas_aceptadas_requeridas INTEGER DEFAULT 0,
+			set_notas_debito_aceptadas_requeridas INTEGER DEFAULT 0,
+			set_notas_credito_aceptadas_requeridas INTEGER DEFAULT 0,
 			url_dian TEXT,
 			token_emisor_ref TEXT,
 			ultimo_envio TEXT,
@@ -868,6 +880,42 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_clave_estado", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "llave_tecnica", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "modo_operacion_descripcion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "modo_operacion_fecha_inicio", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "modo_operacion_fecha_termino", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_documentos_requeridos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_facturas_requeridas", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_notas_debito_requeridas", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_notas_credito_requeridas", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_documentos_aceptados_requeridos", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_facturas_aceptadas_requeridas", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_notas_debito_aceptadas_requeridas", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "set_notas_credito_aceptadas_requeridas", "INTEGER DEFAULT 0"); err != nil {
 		return err
 	}
 
