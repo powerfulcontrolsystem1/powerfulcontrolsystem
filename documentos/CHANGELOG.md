@@ -1,5 +1,7 @@
 ## [2026-06-05] Empresa interna Powerful Control System operativa
 - [Licencias] La empresa interna del SaaS conserva el codigo tecnico `PCS_SYSTEM_INTERNAL_PERPETUAL`, pero ahora se asegura como licencia fechada a 100 anos, con valor cero, limites altos y modulos completos.
+- [Licencias] Las consultas PostgreSQL de licencias vigentes/vencidas toleran fechas heredadas vacias o no fechables para que una licencia antigua no bloquee permisos, carrito, correo ni reportes.
+- [Permisos] El rol `super_administrador` validado en backend puede acceder globalmente a empresas para soporte y operacion interna, sin quitar los filtros por `empresa_id` de cada endpoint.
 - [Operacion] `Powerful Control System` debe cargar carrito, correo corporativo, facturacion, configuracion y reportes como cualquier empresa; la unica diferencia es que la licencia no pertenece al catalogo comercial.
 - [Portal] El respaldo editable de `Modulos y caracteristicas principales` agrega GRAFOLOGIX y Camaras/DVR, y completa esos modulos cuando la configuracion guardada es antigua.
 - [QA] Pruebas enfocadas en `licencias_empresa_sistema.go`, permisos de licencia y validacion visual del carrito/correo de la empresa interna.

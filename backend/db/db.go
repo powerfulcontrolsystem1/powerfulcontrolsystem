@@ -84,6 +84,34 @@ func invalidateLicenciaPermisoPolicyCacheForLicencia(dbConn *sql.DB, licenciaID 
 	}
 }
 
+func postgresDateTextExpr(expr string) string {
+	expr = strings.TrimSpace(expr)
+	if expr == "" {
+		expr = "NULL"
+	}
+	return "NULLIF(BTRIM(CAST(" + expr + " AS TEXT)), '')"
+}
+
+func postgresTimestampExpr(expr string) string {
+	txt := postgresDateTextExpr(expr)
+	return "(CASE WHEN " + txt + " IS NULL THEN NULL WHEN " + txt + " ~ '^\\d{4}-\\d{2}-\\d{2}' THEN CAST(" + txt + " AS TIMESTAMP) ELSE NULL END)"
+}
+
+func postgresLicenciaDatePredicate(expr, operator string) string {
+	ts := postgresTimestampExpr(expr)
+	return "(" + ts + " IS NULL OR " + ts + " " + operator + " CURRENT_TIMESTAMP)"
+}
+
+func postgresLicenciaHasExpiredPredicate(expr string) string {
+	ts := postgresTimestampExpr(expr)
+	return "(" + ts + " IS NOT NULL AND " + ts + " < CURRENT_TIMESTAMP)"
+}
+
+func postgresLicenciaFechaFinOrderExpr(expr string) string {
+	ts := postgresTimestampExpr(expr)
+	return "COALESCE(" + ts + ", TIMESTAMP '9999-12-31 23:59:59')"
+}
+
 type cachedAdminByEmail struct {
 	Admin    *Admin
 	LoadedAt time.Time
@@ -598,8 +626,8 @@ func GetLicenciasFiltered(dbConn *sql.DB, soloActivas bool, usuarioCreador strin
 	if soloActivas {
 		where = append(where, "COALESCE(l.activo, 1) = 1")
 		if isPostgresDialect() {
-			where = append(where, "(COALESCE(CAST(l.fecha_inicio AS TEXT), '') = '' OR CAST(l.fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)")
-			where = append(where, "(COALESCE(CAST(l.fecha_fin AS TEXT), '') = '' OR CAST(l.fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)")
+			where = append(where, postgresLicenciaDatePredicate("l.fecha_inicio", "<="))
+			where = append(where, postgresLicenciaDatePredicate("l.fecha_fin", ">="))
 		} else {
 			where = append(where, "(COALESCE(l.fecha_inicio, '') = '' OR datetime(l.fecha_inicio) <= datetime('now','localtime'))")
 			where = append(where, "(COALESCE(l.fecha_fin, '') = '' OR datetime(l.fecha_fin) >= datetime('now','localtime'))")
@@ -756,11 +784,11 @@ func GetActiveLicenciaByEmpresa(dbConn *sql.DB, empresaID int64) (*Licencia, err
 		FROM licencias
 		WHERE empresa_id = ?
 			AND COALESCE(activo, 1) = 1
-			AND (COALESCE(CAST(fecha_inicio AS TEXT), '') = '' OR CAST(fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)
-			AND (COALESCE(CAST(fecha_fin AS TEXT), '') = '' OR CAST(fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)
+			AND ` + postgresLicenciaDatePredicate("fecha_inicio", "<=") + `
+			AND ` + postgresLicenciaDatePredicate("fecha_fin", ">=") + `
 		ORDER BY
-			CASE WHEN COALESCE(CAST(fecha_fin AS TEXT), '') = '' THEN 1 ELSE 0 END DESC,
-			COALESCE(CAST(fecha_fin AS TIMESTAMP), TIMESTAMP '9999-12-31 23:59:59') DESC,
+			CASE WHEN ` + postgresTimestampExpr("fecha_fin") + ` IS NULL THEN 1 ELSE 0 END DESC,
+			` + postgresLicenciaFechaFinOrderExpr("fecha_fin") + ` DESC,
 			id DESC
 		LIMIT 1`
 	}
@@ -936,11 +964,11 @@ func GetLicenciaPermisoPolicyByEmpresa(dbConn *sql.DB, empresaID int64) (*Licenc
 		FROM licencias
 		WHERE empresa_id = ?
 			AND COALESCE(activo, 1) = 1
-			AND (COALESCE(CAST(fecha_inicio AS TEXT), '') = '' OR CAST(fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP)
-			AND (COALESCE(CAST(fecha_fin AS TEXT), '') = '' OR CAST(fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)
+			AND ` + postgresLicenciaDatePredicate("fecha_inicio", "<=") + `
+			AND ` + postgresLicenciaDatePredicate("fecha_fin", ">=") + `
 		ORDER BY
-			CASE WHEN COALESCE(CAST(fecha_fin AS TEXT), '') = '' THEN 1 ELSE 0 END DESC,
-			COALESCE(CAST(fecha_fin AS TIMESTAMP), TIMESTAMP '9999-12-31 23:59:59') DESC,
+			CASE WHEN ` + postgresTimestampExpr("fecha_fin") + ` IS NULL THEN 1 ELSE 0 END DESC,
+			` + postgresLicenciaFechaFinOrderExpr("fecha_fin") + ` DESC,
 			id DESC
 		LIMIT 1`
 	}

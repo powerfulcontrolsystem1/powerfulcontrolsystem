@@ -110,7 +110,7 @@ func ListEmpresaLicenciasAdicionales(dbConn *sql.DB, empresaID int64, includeIna
 	args := []interface{}{empresaID}
 	if !includeInactive {
 		if isPostgresDialect() {
-			query += ` AND COALESCE(a.activo,1) = 1 AND (COALESCE(a.fecha_fin,'') = '' OR CAST(a.fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)`
+			query += ` AND COALESCE(a.activo,1) = 1 AND ` + postgresLicenciaDatePredicate("a.fecha_fin", ">=")
 		} else {
 			query += ` AND COALESCE(a.activo,1) = 1 AND (COALESCE(a.fecha_fin,'') = '' OR datetime(a.fecha_fin) >= datetime('now','localtime'))`
 		}

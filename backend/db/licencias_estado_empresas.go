@@ -21,7 +21,7 @@ func licenciaActivePredicate(alias string) string {
 		prefix = alias + "."
 	}
 	if isPostgresDialect() {
-		return "COALESCE(" + prefix + "activo, 1) = 1 AND (COALESCE(CAST(" + prefix + "fecha_inicio AS TEXT), '') = '' OR CAST(" + prefix + "fecha_inicio AS TIMESTAMP) <= CURRENT_TIMESTAMP) AND (COALESCE(CAST(" + prefix + "fecha_fin AS TEXT), '') = '' OR CAST(" + prefix + "fecha_fin AS TIMESTAMP) >= CURRENT_TIMESTAMP)"
+		return "COALESCE(" + prefix + "activo, 1) = 1 AND " + postgresLicenciaDatePredicate(prefix+"fecha_inicio", "<=") + " AND " + postgresLicenciaDatePredicate(prefix+"fecha_fin", ">=")
 	}
 	return "COALESCE(" + prefix + "activo, 1) = 1 AND (COALESCE(" + prefix + "fecha_inicio, '') = '' OR datetime(" + prefix + "fecha_inicio) <= datetime('now','localtime')) AND (COALESCE(" + prefix + "fecha_fin, '') = '' OR datetime(" + prefix + "fecha_fin) >= datetime('now','localtime'))"
 }
@@ -32,7 +32,7 @@ func licenciaExpiredPredicate(alias string) string {
 		prefix = alias + "."
 	}
 	if isPostgresDialect() {
-		return "COALESCE(CAST(" + prefix + "fecha_fin AS TEXT), '') <> '' AND CAST(" + prefix + "fecha_fin AS TIMESTAMP) < CURRENT_TIMESTAMP"
+		return postgresLicenciaHasExpiredPredicate(prefix + "fecha_fin")
 	}
 	return "COALESCE(" + prefix + "fecha_fin, '') <> '' AND datetime(" + prefix + "fecha_fin) < datetime('now','localtime')"
 }

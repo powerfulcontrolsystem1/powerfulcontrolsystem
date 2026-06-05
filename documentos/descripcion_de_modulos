@@ -9,6 +9,8 @@
 - Modulos afectados: `licencias`, `carritos`, `email_corporativo`, `portal_publico`, `documentacion`.
 - Cambio funcional: `Powerful Control System` deja de depender de una licencia tecnica sin fecha de fin y queda con una licencia interna fechada a 100 anos, valor cero, limites altos y todos los modulos empresariales actuales.
 - Portal publico: el respaldo editable de `Modulos y caracteristicas principales` agrega GRAFOLOGIX y Camaras/DVR, y completa esos modulos si existe una configuracion antigua en base.
+- Licencias: las consultas PostgreSQL de licencias vigentes/vencidas toleran fechas heredadas vacias o no fechables para evitar que registros antiguos bloqueen permisos empresariales, carrito, correo corporativo o reportes.
+- Permisos: el rol `super_administrador` validado en backend puede operar globalmente para soporte y gobierno del sistema, conservando aislamiento por `empresa_id` en handlers y SQL.
 - QA: probar que la empresa interna abre carrito y bandeja de correo corporativo igual que las demas empresas despues de ejecutar el arranque/`rs`.
 
 2026-06-02: Login usuario con rol Cajero restringido

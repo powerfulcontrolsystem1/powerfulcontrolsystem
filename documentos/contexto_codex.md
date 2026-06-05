@@ -35,6 +35,21 @@ decisiones en cada tarea.
 - Nota tecnica: RTSP/ONVIF directo no se reproduce en navegador; debe pasar por
   gateway HLS, WebRTC, MJPEG o iframe confiable.
 
+## Actualizacion 2026-06-05 - Empresa interna Powerful Control System
+
+- La empresa interna `Powerful Control System` opera como cualquier empresa del
+  SaaS: panel, carrito, correo corporativo, facturacion, reportes y modulos
+  empresariales pasan por los mismos endpoints y permisos multiempresa.
+- La unica diferencia es su licencia tecnica interna
+  `PCS_SYSTEM_INTERNAL_PERPETUAL`: vigencia fechada de 100 anos, valor cero,
+  limites altos y todos los modulos operativos habilitados.
+- No usar excepciones sin fecha para esta empresa; las consultas de licencia
+  deben tolerar valores heredados vacios y resolver siempre una licencia vigente
+  normal.
+- El rol `super_administrador` validado en backend puede acceder globalmente a
+  empresas para soporte, auditoria, comparticion y operacion interna, manteniendo
+  filtros por `empresa_id` en las consultas.
+
 ## Actualizacion 2026-06-01 - GRAFOLOGIX
 
 - Nuevo modulo empresarial `grafologia` visible como `Administrar empresa >

@@ -703,8 +703,7 @@ func CanAdminAccessEmpresaIA(dbEmp, dbSuper *sql.DB, adminEmail string, empresaI
 
 	if dbSuper != nil {
 		if adm, err := GetAdminByEmail(dbSuper, adminEmail); err == nil {
-			creator := strings.TrimSpace(strings.ToLower(adm.UsuarioCreador))
-			if strings.EqualFold(strings.TrimSpace(adm.Role), "super_administrador") && (creator == "" || creator == adminEmail) {
+			if strings.EqualFold(strings.TrimSpace(adm.Role), "super_administrador") {
 				canAdminAccessEmpresaIACacheMu.Lock()
 				canAdminAccessEmpresaIACache[cacheKey] = cachedAdminEmpresaAccessIA{Allowed: true, LoadedAt: time.Now()}
 				canAdminAccessEmpresaIACacheMu.Unlock()
