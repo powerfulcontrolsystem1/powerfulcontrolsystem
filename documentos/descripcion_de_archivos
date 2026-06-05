@@ -1,3 +1,10 @@
+2026-06-05 - Apariencias de Camaras, Energia solar y Empresas compartidas
+- `web/administrar_empresa/camaras.html`:
+	- elimina el bloque de estilos inline para que la pagina use la hoja global y respete las apariencias configuradas.
+- `web/estilos.css`:
+	- agrega reglas tokenizadas para Camaras, Energia solar y Empresas compartidas.
+	- normaliza fondos, tarjetas, formularios, estados, bordes, textos secundarios y tablas para modo claro y oscuro.
+
 2026-06-05 - Pasarelas de licencia Epayco/Wompi
 - `backend/handlers/payments_handlers.go`:
 	- agrega helpers para leer credenciales opcionales de pasarelas sin exponer secretos ni apagar el proveedor completo por una clave secundaria antigua.

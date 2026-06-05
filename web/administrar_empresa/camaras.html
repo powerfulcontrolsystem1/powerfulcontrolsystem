@@ -7,32 +7,6 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/menu.js"></script>
   <script src="/js/empresa_submenu_context.js"></script>
-  <style>
-    .camaras-page .empresa-main{display:flex;flex-direction:column;gap:14px}
-    .camaras-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .camara-kpi,.camara-panel,.camara-card,.camara-tech{background:var(--card-bg,#fff);border:1px solid var(--border-color,#d9e1ea);border-radius:8px;padding:12px;box-shadow:none;color:var(--text-color,#172033)}
-    .camara-kpi span{display:block;font-size:.82rem;color:var(--muted-text,#637083)}
-    .camara-kpi strong{font-size:1.35rem}
-    .camaras-layout{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(420px,1.4fr);gap:12px;align-items:start}
-    .camara-panel-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
-    .camara-panel-header h2{margin:0;font-size:1.05rem}
-    .camara-panel-header p{margin:4px 0 0;color:var(--muted-text,#637083)}
-    .camara-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .camara-form .wide{grid-column:1/-1}
-    .camara-actions{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1}
-    .camara-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-    .camara-card{display:flex;flex-direction:column;gap:8px}
-    .camara-preview{height:150px;border:1px solid var(--border-color,#d9e1ea);border-radius:6px;overflow:hidden;background:#101722;display:flex;align-items:center;justify-content:center;color:#f4f7fb;text-align:center;padding:10px}
-    .camara-preview img,.camara-preview video,.camara-preview iframe{width:100%;height:100%;object-fit:cover;border:0}
-    .camara-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:.86rem;color:var(--muted-text,#637083)}
-    .camara-meta strong{color:var(--text-color,#172033)}
-    .camara-tech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-    .camara-tech h3{margin:0 0 4px;font-size:.98rem}
-    .camara-tech p{margin:0;color:var(--muted-text,#637083);font-size:.86rem}
-    .camara-status{margin:0;padding:9px 10px;border-radius:8px;background:var(--surface-muted,#eef3f8);color:var(--text-color,#172033)}
-    .camara-status.is-error{background:#fff1f1;color:#9f1d1d}
-    @media (max-width:900px){.camaras-kpi-grid,.camaras-layout{grid-template-columns:1fr}.camara-form{grid-template-columns:1fr}}
-  </style>
 </head>
 <body class="empresa-page camaras-page" data-auto-estacion-labels="true">
   <main class="empresa-main">

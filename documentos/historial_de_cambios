@@ -1,3 +1,9 @@
+2026-06-05: Apariencias de Camaras, Energia solar y Empresas compartidas.
+- Modulos afectados: camaras, energia solar, empresas compartidas y hoja global de estilos.
+- Cambio funcional: las paginas respetan las apariencias clara y oscura del sistema, sin fondos, tarjetas, campos o textos con colores fijos que queden ilegibles.
+- Frontend: `web/administrar_empresa/camaras.html` elimina estilos inline; `web/estilos.css` centraliza los estilos tokenizados de Camaras y refuerza Energia solar y Empresas compartidas con variables de tema.
+- Validacion: `node --check web/js/camaras.js`, `node --check web/js/energia_solar.js`, `git diff --check` y capturas locales en claro y oscuro absoluto para las tres paginas.
+
 2026-06-05: Pasarelas de licencia Epayco/Wompi.
 - Modulos afectados: licencias, checkout publico de licencia, pagos Epayco y Wompi.
 - Cambio funcional: la disponibilidad publica de Epayco tolera credenciales opcionales legacy/cifradas que no sean indispensables, sin apagar una configuracion valida; el fallback `checkout.js` queda disponible con Public Key valida aunque no exista `P_KEY`; Wompi solo se ofrece cuando Web Checkout tiene public key e integrity key realmente legibles.

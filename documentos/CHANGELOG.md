@@ -1,3 +1,8 @@
+## [2026-06-05] Apariencias de Camaras, Energia solar y Empresas compartidas
+- [UX] `web/administrar_empresa/camaras.html` deja de usar estilos inline con colores fijos y hereda la apariencia global del sistema.
+- [Temas] `web/estilos.css` normaliza fondos, tarjetas, formularios, estados, bordes y textos para Camaras, Energia solar y Empresas compartidas en temas claros y oscuros.
+- [QA] Validacion sintactica de `web/js/camaras.js` y `web/js/energia_solar.js`; comprobacion visual local en claro y oscuro absoluto de las tres paginas.
+
 ## [2026-06-05] Pasarelas de licencia Epayco/Wompi
 - [Pagos] La disponibilidad publica de Epayco vuelve a resolver credenciales legacy y opcionales sin apagar toda la pasarela si una clave opcional cifrada no se puede descifrar; el fallback `checkout.js` se habilita con Public Key valida sin exigir `P_KEY`.
 - [Pagos] Wompi solo se publica como disponible cuando la llave publica y la llave de integridad son realmente legibles para Web Checkout.
