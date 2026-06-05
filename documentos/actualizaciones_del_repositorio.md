@@ -12326,3 +12326,12 @@ Archivos modificados:
 - web/login.html
 - web/login_usuario.html
 - web/super/licencias.html
+
+2026-06-04 19:46:13 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: be7411ef; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/js/pwa_install.js
+- web/login.html
+- web/login_usuario.html
