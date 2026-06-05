@@ -1,4 +1,9 @@
 2026-06-01: Nota de preconfiguracion solar y licencias por modulo
+- 2026-06-04: se agrega modulo independiente `camaras`, pagina
+  `linkCamaras`, wrapper `WithEmpresaCamarasPermissions` y fallback de licencia
+  a `control_electrico` o `seguridad`. Los roles con lectura general pueden
+  consultar; administracion/supervision pueden crear/actualizar; la eliminacion
+  logica queda restringida a `admin_empresa`.
 - Las preconfiguraciones de tipos de empresa incluyen `modulos.energia_solar` como modulo opcional apagado por defecto.
 - El catalogo solar base contiene proveedores Victron VRM, SMA Sunny Portal, SolarEdge Monitoring y gateway local, baterias comunes y alertas recomendadas.
 - El rol `tecnico_solar` se mantiene con `energia_solar:R` y pagina `linkEnergiaSolar`; no obtiene permisos de configuracion, ventas, caja, inventario ni facturacion.

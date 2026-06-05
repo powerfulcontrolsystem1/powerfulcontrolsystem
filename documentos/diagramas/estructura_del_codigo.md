@@ -1,3 +1,20 @@
+## Actualizacion 2026-06-04 (Camaras y DVR)
+
+- `backend/db/camaras.go`: define `empresa_camaras`, CRUD por `empresa_id` y
+  baja logica.
+- `backend/handlers/camaras.go`: expone `/api/empresa/camaras` con dashboard,
+  catalogo, listado y escritura.
+- `backend/handlers/empresa_permisos.go`: agrega modulo `camaras`, pagina
+  `linkCamaras` y wrapper `WithEmpresaCamarasPermissions`.
+- `web/administrar_empresa/camaras.html` y `web/js/camaras.js`: formulario,
+  KPIs, catalogo de tecnologias y tarjetas de visor.
+- `web/administrar_empresa/configuracion_de_estaciones.html`: guarda
+  `camaras_enabled`, `camaras_placement`, `tipo_estacion` y `camara_id`.
+- `web/administrar_empresa/estaciones.html`: renderiza camaras globales o
+  estaciones tipo camara sin abrir carrito.
+- Flujo de capas: Administrar empresa -> Camaras -> `/api/empresa/camaras`
+  -> `empresa_camaras` -> Configuracion de estaciones -> tablero de Estaciones.
+
 ## Actualizacion 2026-06-04 (licencias con factura electronica del SaaS)
 
 - `backend/db/licencias_empresa_sistema.go`: resuelve la empresa interna

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Camaras</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .camaras-page .empresa-main{display:flex;flex-direction:column;gap:14px}
+    .camaras-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .camara-kpi,.camara-panel,.camara-card,.camara-tech{background:var(--card-bg,#fff);border:1px solid var(--border-color,#d9e1ea);border-radius:8px;padding:12px;box-shadow:none;color:var(--text-color,#172033)}
+    .camara-kpi span{display:block;font-size:.82rem;color:var(--muted-text,#637083)}
+    .camara-kpi strong{font-size:1.35rem}
+    .camaras-layout{display:grid;grid-template-columns:minmax(320px,.9fr) minmax(420px,1.4fr);gap:12px;align-items:start}
+    .camara-panel-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+    .camara-panel-header h2{margin:0;font-size:1.05rem}
+    .camara-panel-header p{margin:4px 0 0;color:var(--muted-text,#637083)}
+    .camara-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .camara-form .wide{grid-column:1/-1}
+    .camara-actions{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1}
+    .camara-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+    .camara-card{display:flex;flex-direction:column;gap:8px}
+    .camara-preview{height:150px;border:1px solid var(--border-color,#d9e1ea);border-radius:6px;overflow:hidden;background:#101722;display:flex;align-items:center;justify-content:center;color:#f4f7fb;text-align:center;padding:10px}
+    .camara-preview img,.camara-preview video,.camara-preview iframe{width:100%;height:100%;object-fit:cover;border:0}
+    .camara-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:.86rem;color:var(--muted-text,#637083)}
+    .camara-meta strong{color:var(--text-color,#172033)}
+    .camara-tech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+    .camara-tech h3{margin:0 0 4px;font-size:.98rem}
+    .camara-tech p{margin:0;color:var(--muted-text,#637083);font-size:.86rem}
+    .camara-status{margin:0;padding:9px 10px;border-radius:8px;background:var(--surface-muted,#eef3f8);color:var(--text-color,#172033)}
+    .camara-status.is-error{background:#fff1f1;color:#9f1d1d}
+    @media (max-width:900px){.camaras-kpi-grid,.camaras-layout{grid-template-columns:1fr}.camara-form{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="empresa-page camaras-page" data-auto-estacion-labels="true">
+  <main class="empresa-main">
+    <header class="page-heading compact">
+      <div>
+        <p class="eyebrow">Analisis y control</p>
+        <h1>Camaras y DVR</h1>
+        <p>Registra camaras conectadas a DVR/NVR o gateways y visualizalas por empresa, por estacion o como tarjetas operativas.</p>
+      </div>
+      <div class="page-heading-actions">
+        <button id="btnCamarasRefresh" class="btn secondary" type="button">Actualizar</button>
+      </div>
+    </header>
+
+    <section class="camaras-kpi-grid" aria-label="Indicadores de camaras">
+      <article class="camara-kpi"><span>Total</span><strong id="camKpiTotal">0</strong></article>
+      <article class="camara-kpi"><span>Activas</span><strong id="camKpiActivas">0</strong></article>
+      <article class="camara-kpi"><span>En estaciones</span><strong id="camKpiEstaciones">0</strong></article>
+      <article class="camara-kpi"><span>Visor web</span><strong id="camKpiWeb">0</strong></article>
+    </section>
+
+    <section class="camaras-layout">
+      <article class="camara-panel">
+        <div class="camara-panel-header">
+          <div>
+            <h2>Registrar camara</h2>
+            <p>Para RTSP u ONVIF use un gateway HLS, WebRTC o MJPEG si desea verla dentro del navegador.</p>
+          </div>
+        </div>
+        <form id="camaraForm" class="camara-form">
+          <input id="camaraId" type="hidden">
+          <label>Nombre
+            <input id="camaraNombre" class="form-input" required placeholder="Camara entrada principal">
+          </label>
+          <label>Ubicacion
+            <input id="camaraUbicacion" class="form-input" placeholder="Recepcion, estacion 1, bodega...">
+          </label>
+          <label>DVR / NVR
+            <input id="camaraDvrNombre" class="form-input" placeholder="DVR Hikvision local">
+          </label>
+          <label>Host DVR
+            <input id="camaraDvrHost" class="form-input" placeholder="192.168.1.20 o dvr.empresa.local">
+          </label>
+          <label>Canal
+            <input id="camaraCanal" class="form-input" placeholder="1, 2, CH03...">
+          </label>
+          <label>Fabricante
+            <input id="camaraFabricante" class="form-input" placeholder="Hikvision, Dahua, Uniview...">
+          </label>
+          <label>Modelo
+            <input id="camaraModelo" class="form-input" placeholder="Modelo de camara o DVR">
+          </label>
+          <label>Tecnologia origen
+            <select id="camaraProtocolo" class="form-input"></select>
+          </label>
+          <label>Tipo de visor
+            <select id="camaraVisor" class="form-input"></select>
+          </label>
+          <label>Estacion asociada
+            <input id="camaraEstacionId" class="form-input" type="number" min="0" step="1" value="0">
+          </label>
+          <label class="wide">URL stream/origen
+            <input id="camaraUrlStream" class="form-input" placeholder="rtsp://..., https://.../stream.m3u8">
+          </label>
+          <label class="wide">URL visor web
+            <input id="camaraUrlEmbed" class="form-input" placeholder="https://gateway.local/cam1">
+          </label>
+          <label class="wide">URL snapshot / MJPEG
+            <input id="camaraUrlSnapshot" class="form-input" placeholder="https://gateway.local/cam1.jpg o /mjpeg/cam1">
+          </label>
+          <label>Usuario ref.
+            <input id="camaraUsuarioRef" class="form-input" placeholder="env:CAMARA_7_USER">
+          </label>
+          <label>Password ref.
+            <input id="camaraPasswordRef" class="form-input" placeholder="env:CAMARA_7_PASSWORD">
+          </label>
+          <label>Orden
+            <input id="camaraOrden" class="form-input" type="number" min="0" step="1" value="0">
+          </label>
+          <label class="inline-check"><input id="camaraCargarEstaciones" type="checkbox" checked> Mostrar en estaciones</label>
+          <label class="inline-check"><input id="camaraActiva" type="checkbox" checked> Activa</label>
+          <label class="wide">Observaciones
+            <textarea id="camaraObservaciones" class="form-input" rows="3" placeholder="Notas de instalacion, gateway o ubicacion fisica."></textarea>
+          </label>
+          <div class="camara-actions">
+            <button class="btn primary" type="submit">Guardar camara</button>
+            <button id="btnCamaraLimpiar" class="btn secondary" type="button">Limpiar</button>
+          </div>
+        </form>
+      </article>
+
+      <article class="camara-panel">
+        <div class="camara-panel-header">
+          <div>
+            <h2>Camaras registradas</h2>
+            <p>Cada tarjeta puede usarse como visor web o como referencia para una estacion tipo camara.</p>
+          </div>
+        </div>
+        <div id="camaraStatus" class="camara-status" hidden></div>
+        <div id="camaraGrid" class="camara-grid"></div>
+      </article>
+    </section>
+
+    <section class="camara-panel">
+      <div class="camara-panel-header">
+        <div>
+          <h2>Tecnologias soportadas</h2>
+          <p>El sistema guarda la configuracion y muestra el visor cuando la fuente es compatible con navegador.</p>
+        </div>
+      </div>
+      <div id="camaraTechGrid" class="camara-tech-grid"></div>
+    </section>
+  </main>
+  <script src="/js/camaras.js"></script>
+</body>
+</html>

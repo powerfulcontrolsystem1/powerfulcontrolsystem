@@ -3,6 +3,22 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-04 (camaras y DVR)
+- Nueva tabla empresarial `empresa_camaras` en `pcs_empresas`.
+- Campos principales: `empresa_id`, `nombre`, `ubicacion`, `dvr_nombre`,
+  `dvr_host`, `canal`, `fabricante`, `modelo`, `protocolo_origen`,
+  `url_stream`, `url_snapshot`, `url_embed`, `visor_tipo`, `usuario_ref`,
+  `password_ref`, `estacion_id`, `cargar_en_estaciones`, `orden`, `activa`,
+  `estado`, `observaciones`, `usuario_creador`, `fecha_creacion` y
+  `fecha_actualizacion`.
+- Indices `ix_empresa_camaras_empresa(empresa_id, estado, activa)` e
+  `ix_empresa_camaras_estacion(empresa_id, estacion_id)`.
+- `empresa_estacion_prefs.clave=estaciones_config` ahora puede guardar
+  `camaras_enabled`, `camaras_placement` y, por estacion,
+  `tipo_estacion=camara` con `camara_id`.
+- Las consultas CRUD siempre filtran por `empresa_id`; la baja de una camara es
+  logica (`activa=0`, `estado='inactivo'`).
+
 Actualizacion 2026-06-04 (factura electronica automatica por compra de licencia)
 - `pcs_superadministrador.configuraciones`: clave
   `licencias.facturacion_empresa_sistema_id` guarda el `empresa_id` de la

@@ -1,3 +1,15 @@
+## [2026-06-04] Instalar app en login y login usuario
+- [PWA] `web/js/pwa_install.js` prepara el service worker, espera el evento nativo de instalacion y evita mostrar de inmediato el mensaje de instalacion manual cuando Chrome/Edge aun no entregan el prompt.
+- [UX] El boton `Instalar app` conserva el mismo flujo en `login.html` y `login_usuario.html`; si el usuario ya escribio correo o contrasena, no se fuerza recarga para no perder datos.
+- [QA] Validado con `node --check web/js/pwa_install.js`, `git diff --check` y prueba visual local de ambos botones usando `?qa_pwa=1`.
+
+## [2026-06-04] Modulo Camaras y DVR
+- [Backend] Se agrega `/api/empresa/camaras` con tabla `empresa_camaras`, CRUD por `empresa_id`, catalogo RTSP/ONVIF/HLS/WebRTC/MJPEG/iframe y baja logica.
+- [Permisos] Nuevo modulo `camaras`, pagina `linkCamaras`, wrapper `WithEmpresaCamarasPermissions`, fallback de licencia a `control_electrico`/`seguridad` y cobertura en planes enterprise.
+- [Frontend] Nueva pagina `Administrar empresa > Analisis y control > Camaras`; Configuracion de estaciones permite mostrar camaras antes/despues y marcar estaciones como tipo camara.
+- [Estaciones] El tablero renderiza visores de camara y enlaza al modulo sin pasar por carrito.
+- [QA] `go test ./... -run "EmpresaRoutesUsePermissionWrappers|Camaras" -count=1`, `node --check web/js/camaras.js`, validacion de scripts inline y prueba visual local con datos simulados.
+
 ## [2026-06-04] Fallback Mailu para correos de licencia
 - [Licencias] El correo unificado de activacion de licencia intenta primero Gmail SMTP y, si la credencial no descifra o el envio falla, usa Mailu corporativo como canal de respaldo.
 - [Correo] El fallback conserva el mismo asunto, cuerpo, PDF de licencia y adjuntos de factura cuando corresponda, sin exponer secretos en errores o logs.

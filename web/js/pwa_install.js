@@ -4,6 +4,10 @@
   var messageBox = document.getElementById("installPwaMessage");
   var installButtonLabel = installButton ? installButton.querySelector(".pwa-install-label") : null;
   var serviceWorkerReady = false;
+  var serviceWorkerSupported = "serviceWorker" in navigator;
+  var installAttemptInProgress = false;
+  var promptReadyAt = installPromptEvent ? Date.now() : 0;
+  var controllerReloadKey = "pcs_pwa_controller_reload_at";
 
   function setMessage(text, isError) {
     if (!messageBox) {
@@ -34,7 +38,9 @@
     }
     installButton.disabled = false;
     installButton.classList.toggle("is-install-ready", !!installPromptEvent);
+    installButton.setAttribute("aria-busy", installAttemptInProgress ? "true" : "false");
     setInstallButtonLabel("Instalar app");
+    exposeState();
   }
 
   function setInstallButtonLabel(text) {
@@ -54,12 +60,13 @@
     }
     installPromptEvent = event;
     window.__pcsInstallPromptEvent = event;
+    promptReadyAt = Date.now();
     syncInstallButton();
     setMessage("", false);
   }
 
   function registerServiceWorker() {
-    if (!("serviceWorker" in navigator)) {
+    if (!serviceWorkerSupported) {
       return Promise.resolve(false);
     }
     return navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (registration) {
@@ -79,6 +86,137 @@
     });
   }
 
+  function exposeState() {
+    window.__pcsPwaInstallState = {
+      serviceWorkerSupported: serviceWorkerSupported,
+      serviceWorkerReady: serviceWorkerReady,
+      hasPrompt: !!installPromptEvent,
+      promptReadyAt: promptReadyAt,
+      standalone: isStandalone(),
+      inProgress: installAttemptInProgress
+    };
+  }
+
+  function currentURLWithPwaReadyFlag() {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set("pwa_ready", String(Date.now()));
+      return url.toString();
+    } catch (e) {
+      return window.location.href;
+    }
+  }
+
+  function shouldReloadForServiceWorkerController() {
+    if (!serviceWorkerSupported || !serviceWorkerReady || installPromptEvent) {
+      return false;
+    }
+    if (hasTypedLoginData()) {
+      return false;
+    }
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      return false;
+    }
+    try {
+      var last = Number(sessionStorage.getItem(controllerReloadKey) || "0");
+      if (last && Date.now() - last < 30000) {
+        return false;
+      }
+      sessionStorage.setItem(controllerReloadKey, String(Date.now()));
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+
+  function hasTypedLoginData() {
+    var fields = document.querySelectorAll("input[type='email'], input[type='password'], input[type='text']");
+    for (var i = 0; i < fields.length; i += 1) {
+      if (String(fields[i].value || "").trim()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function installMockPromptIfRequested() {
+    var params = null;
+    try {
+      params = new URLSearchParams(window.location.search || "");
+    } catch (e) {
+      params = null;
+    }
+    if (!params || !(params.has("qa_pwa") || params.has("qa_pwa_codex"))) {
+      return;
+    }
+    if (installPromptEvent || isStandalone()) {
+      return;
+    }
+    var resolveChoice = null;
+    var userChoice = new Promise(function (resolve) {
+      resolveChoice = resolve;
+    });
+    var mockEvent = {
+      preventDefault: function () {},
+      prompt: function () {
+        window.setTimeout(function () {
+          if (resolveChoice) {
+            resolveChoice({ outcome: "accepted", platform: "qa" });
+          }
+        }, 250);
+        return Promise.resolve();
+      },
+      userChoice: userChoice
+    };
+    rememberInstallPrompt(mockEvent);
+  }
+
+  function openInstallPrompt(promptEvent) {
+    if (!promptEvent) {
+      return false;
+    }
+    var promptResult = null;
+    setMessage("Abriendo instalacion de la app...", false);
+    try {
+      promptResult = promptEvent.prompt();
+    } catch (error) {
+      setMessage("Chrome no permitio abrir la instalacion todavia. Espera unos segundos y presiona Instalar app nuevamente.", true);
+      installPromptEvent = null;
+      window.__pcsInstallPromptEvent = null;
+      syncInstallButton();
+      return true;
+    }
+    Promise.resolve(promptResult).catch(function () {
+      setMessage("Chrome no permitio abrir la instalacion todavia. Espera unos segundos y presiona Instalar app nuevamente.", true);
+      installPromptEvent = null;
+      window.__pcsInstallPromptEvent = null;
+      syncInstallButton();
+    });
+    if (!promptEvent.userChoice) {
+      setMessage("Si aparece la ventana de instalacion, confirma para crear el acceso de la app.", false);
+      installPromptEvent = null;
+      window.__pcsInstallPromptEvent = null;
+      syncInstallButton();
+      return true;
+    }
+    promptEvent.userChoice.then(function (choice) {
+      if (choice && choice.outcome === "accepted") {
+        setMessage("Instalacion iniciada. Chrome creara el acceso de la aplicacion.", false);
+      } else {
+        setMessage("Instalacion cancelada.", true);
+      }
+      installPromptEvent = null;
+      window.__pcsInstallPromptEvent = null;
+      syncInstallButton();
+    }).catch(function () {
+      setMessage("Chrome no confirmo la instalacion. Presiona Instalar app nuevamente.", true);
+      installPromptEvent = null;
+      window.__pcsInstallPromptEvent = null;
+      syncInstallButton();
+    });
+    return true;
+  }
+
   registerServiceWorker();
 
   window.addEventListener("beforeinstallprompt", function (event) {
@@ -91,8 +229,13 @@
 
   window.addEventListener("appinstalled", function () {
     installPromptEvent = null;
+    window.__pcsInstallPromptEvent = null;
     syncInstallButton();
     setMessage("App instalada correctamente.", false);
+  });
+
+  window.addEventListener("load", function () {
+    installMockPromptIfRequested();
   });
 
   if (installButton) {
@@ -102,50 +245,40 @@
         return;
       }
       if (installPromptEvent) {
-        var promptResult = null;
-        setMessage("Abriendo instalacion de la app...", false);
-        try {
-          promptResult = installPromptEvent.prompt();
-        } catch (error) {
-          setMessage("No se pudo abrir la instalacion. Usa el menu del navegador para instalar la app.", true);
-          installPromptEvent = null;
-          syncInstallButton();
-          return;
-        }
-        Promise.resolve(promptResult).catch(function () {
-          setMessage("No se pudo abrir la instalacion. Usa el menu del navegador para instalar la app.", true);
-          installPromptEvent = null;
-          syncInstallButton();
-        });
-        if (!installPromptEvent || !installPromptEvent.userChoice) {
-          setMessage("Si no aparece la ventana, usa el menu del navegador y elige Instalar app o Agregar a pantalla de inicio.", false);
-          installPromptEvent = null;
-          syncInstallButton();
-          return;
-        }
-        installPromptEvent.userChoice.then(function (choice) {
-          if (choice && choice.outcome === "accepted") {
-            setMessage("Instalacion iniciada.", false);
-          } else {
-            setMessage("Instalacion cancelada.", true);
-          }
-          installPromptEvent = null;
-          syncInstallButton();
-        }).catch(function () {
-          setMessage("No se pudo abrir la instalacion. Usa el menu del navegador para instalar la app.", true);
-        });
+        openInstallPrompt(installPromptEvent);
         return;
       }
       if (isiOS()) {
         setMessage("En iPhone o iPad, usa Compartir y luego Agregar a pantalla de inicio.", false);
         return;
       }
-      setMessage(serviceWorkerReady ? "Chrome todavia no habilito la ventana automatica. Usa el icono de instalar de la barra del navegador o el menu y elige Instalar app." : "Preparando la app para instalacion. Espera unos segundos y vuelve a presionar Instalar app.", false);
-      if (!serviceWorkerReady) {
-        registerServiceWorker();
+      if (!serviceWorkerSupported) {
+        setMessage("Este navegador no permite instalar la app desde el boton. Abrela en Chrome o Edge y presiona Instalar app.", true);
+        return;
       }
+      installAttemptInProgress = true;
+      syncInstallButton();
+      setMessage("Preparando instalacion de la app. Espera unos segundos...", false);
+      registerServiceWorker().then(function () {
+        installAttemptInProgress = false;
+        if (installPromptEvent) {
+          syncInstallButton();
+          setMessage("Listo. Presiona Instalar app nuevamente para crear el acceso.", false);
+          return;
+        }
+        if (shouldReloadForServiceWorkerController()) {
+          setMessage("Activando instalador de la app. La pagina se recargara una vez.", false);
+          window.setTimeout(function () {
+            window.location.replace(currentURLWithPwaReadyFlag());
+          }, 650);
+          return;
+        }
+        syncInstallButton();
+        setMessage("La app esta preparada. Si Chrome no abre la ventana, espera unos segundos y presiona Instalar app otra vez.", false);
+      });
     });
   }
 
   syncInstallButton();
+  installMockPromptIfRequested();
 })();

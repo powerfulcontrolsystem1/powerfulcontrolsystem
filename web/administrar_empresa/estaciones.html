@@ -6,6 +6,14 @@
   <title>Estaciones</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .camera-station-card{display:flex;flex-direction:column;gap:8px}
+    .camera-station-preview{height:150px;border:1px solid var(--border-color,#d9e1ea);border-radius:6px;background:#101722;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#f4f7fb;text-align:center;padding:8px}
+    .camera-station-preview img,.camera-station-preview video,.camera-station-preview iframe{width:100%;height:100%;object-fit:cover;border:0}
+    .camera-station-empty{font-size:.86rem;line-height:1.35}
+    .camera-station-card .station-data{display:grid;gap:4px}
+    .camera-station-card .btn{align-self:flex-start;margin-top:4px}
+  </style>
 </head>
 <body class="empresa-subpage estaciones-page" data-auto-estacion-labels="true">
   <div class="container empresa-module">
@@ -97,6 +105,7 @@
         abrir_carrito_al_activar: true
       },
       dirtyByEstacion: {},
+      camaras: [],
       aseoControlEnabled: false,
       canViewAseoReport: false,
       currentUserEmail: '',
@@ -225,6 +234,7 @@
         visibleForPortero.youtube_enabled = false;
         visibleForPortero.notas_enabled = false;
         visibleForPortero.ia_pedidos_enabled = false;
+        visibleForPortero.camaras_enabled = false;
         return visibleForPortero;
       }
       const access = normalizeStationAccessConfig(source.acceso_estaciones_cajeros || source.acceso_estaciones_por_cajero);
@@ -306,6 +316,8 @@
           mostrar_fecha_hora_inicio: current.mostrar_fecha_hora_inicio === undefined ? true : toBool(current.mostrar_fecha_hora_inicio),
           mostrar_fecha_hora_fin_tarifa: current.mostrar_fecha_hora_fin_tarifa === undefined ? true : toBool(current.mostrar_fecha_hora_fin_tarifa),
           mostrar_total: current.mostrar_total === undefined ? true : toBool(current.mostrar_total),
+          tipo_estacion: String(current.tipo_estacion || current.tipo || '').trim().toLowerCase() === 'camara' ? 'camara' : 'normal',
+          camara_id: Math.max(0, Math.trunc(Number(current.camara_id || current.camaraId || 0) || 0)),
           carrito: normalizeStationCarritoConfig(current.carrito || current.carrito_ui)
         });
       }
@@ -331,6 +343,9 @@
       const iaPedidosEnabledRaw = (cfg && (cfg.ia_pedidos_enabled !== undefined ? cfg.ia_pedidos_enabled : cfg.iaPedidosEnabled)) || false;
       const ia_pedidos_enabled = toBool(iaPedidosEnabledRaw);
       const ia_pedidos_placement = normalizeSpecialPlacement(cfg && (cfg.ia_pedidos_placement !== undefined ? cfg.ia_pedidos_placement : cfg.iaPedidosPlacement));
+      const camarasEnabledRaw = (cfg && (cfg.camaras_enabled !== undefined ? cfg.camaras_enabled : cfg.camarasEnabled)) || false;
+      const camaras_enabled = toBool(camarasEnabledRaw);
+      const camaras_placement = normalizeSpecialPlacement(cfg && (cfg.camaras_placement !== undefined ? cfg.camaras_placement : cfg.camarasPlacement));
       return {
         cantidad,
         estacion_nombre_singular: labels.singular,
@@ -355,6 +370,8 @@
         notas_blink_enabled: notas_blink_enabled === undefined ? true : toBool(notas_blink_enabled),
         ia_pedidos_enabled,
         ia_pedidos_placement,
+        camaras_enabled,
+        camaras_placement,
         carrito_ui_global: normalizeUnifiedCartConfig(cfg && (cfg.carrito_ui_global || cfg.carrito || cfg.carrito_configuracion_global)),
         station_card_ui: cfg && cfg.station_card_ui && typeof cfg.station_card_ui === 'object' ? cfg.station_card_ui : {},
         acceso_estaciones_cajeros: normalizeStationAccessConfig(cfg && (cfg.acceso_estaciones_cajeros || cfg.acceso_estaciones_por_cajero))
@@ -660,6 +677,19 @@
         body: JSON.stringify(payload)
       });
       return res;
+    }
+
+    async function loadCamarasCatalog() {
+      state.camaras = [];
+      if (!empresaId) return state.camaras;
+      try {
+        const data = await requestJSON('/api/empresa/camaras?empresa_id=' + encodeURIComponent(empresaId) + '&action=camaras');
+        state.camaras = Array.isArray(data && data.items) ? data.items : [];
+      } catch (err) {
+        console.warn('No se pudieron cargar camaras:', err);
+        state.camaras = [];
+      }
+      return state.camaras;
     }
 
     function getStationCardSize(cfg) {
@@ -1243,6 +1273,7 @@
           applyCardSize(stationConfig);
         }
         await Promise.all([
+          loadCamarasCatalog(),
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),
           loadSensorStates()
@@ -2099,13 +2130,68 @@
       }
     }
 
+    function findCamaraByID(id) {
+      const target = Number(id || 0);
+      if (!target) return null;
+      return (state.camaras || []).find(function(cam) { return Number(cam && cam.id || 0) === target; }) || null;
+    }
+
+    function safeCamaraBrowserURL(value) {
+      const raw = String(value || '').trim();
+      const lower = raw.toLowerCase();
+      if (!raw || lower.indexOf('javascript:') === 0 || lower.indexOf('data:') === 0) return '';
+      if (lower.indexOf('http://') === 0 || lower.indexOf('https://') === 0 || raw.indexOf('/') === 0) return raw;
+      return '';
+    }
+
+    function camaraPreviewHtml(cam) {
+      cam = cam || {};
+      const visor = String(cam.visor_tipo || 'auto').toLowerCase();
+      const protocolo = String(cam.protocolo_origen || 'rtsp').toLowerCase();
+      const embed = safeCamaraBrowserURL(cam.url_embed);
+      const snapshot = safeCamaraBrowserURL(cam.url_snapshot);
+      const stream = safeCamaraBrowserURL(cam.url_stream);
+      if (visor === 'iframe' && embed) return '<iframe src="' + sanitize(embed) + '" loading="lazy" referrerpolicy="no-referrer"></iframe>';
+      if ((visor === 'mjpeg' || protocolo === 'mjpeg') && (snapshot || stream)) return '<img src="' + sanitize(snapshot || stream) + '" alt="' + sanitize(cam.nombre || 'Camara') + '">';
+      if ((visor === 'hls' || protocolo === 'hls') && (stream || embed)) return '<video controls muted autoplay playsinline src="' + sanitize(stream || embed) + '"></video>';
+      if ((visor === 'webrtc' || protocolo === 'webrtc') && embed) return '<iframe src="' + sanitize(embed) + '" loading="lazy" referrerpolicy="no-referrer"></iframe>';
+      if (embed) return '<iframe src="' + sanitize(embed) + '" loading="lazy" referrerpolicy="no-referrer"></iframe>';
+      if (snapshot) return '<img src="' + sanitize(snapshot) + '" alt="' + sanitize(cam.nombre || 'Camara') + '">';
+      return '<div class="camera-station-empty"><strong>' + sanitize(String(protocolo || 'rtsp').toUpperCase()) + '</strong><br>Configure HLS, WebRTC, MJPEG o iframe para vista en navegador.</div>';
+    }
+
+    function generateCamaraStationCardHtml(cam, title, stationID) {
+      cam = cam || {};
+      const url = '/administrar_empresa/camaras.html?empresa_id=' + encodeURIComponent(empresaId) + (cam.id ? '&camara_id=' + encodeURIComponent(cam.id) : '');
+      return '<article class="portal-card camera-station-card" data-camara-id="' + sanitize(cam.id || '') + '" data-estacion-id="' + sanitize(stationID || '') + '">' +
+        '<h3>' + sanitize(title || cam.nombre || 'Camara') + '</h3>' +
+        '<div class="camera-station-preview">' + camaraPreviewHtml(cam) + '</div>' +
+        '<div class="station-data">' +
+          stationMetaRowHtml('estado', 'Estado', cam.activa === false ? 'Inactiva' : 'Activa', true) +
+          stationMetaRowHtml('ubicacion', 'Ubicacion', cam.ubicacion || cam.dvr_nombre || '', !!(cam.ubicacion || cam.dvr_nombre)) +
+          stationMetaRowHtml('canal', 'Canal', cam.canal || '', !!cam.canal) +
+          stationMetaRowHtml('tecnologia', 'Tecnologia', String(cam.protocolo_origen || 'rtsp').toUpperCase(), true) +
+        '</div>' +
+        '<a class="btn secondary" href="' + sanitize(url) + '">Abrir camara</a>' +
+      '</article>';
+    }
+
+    function generateCamarasCardsHtml() {
+      const items = (state.camaras || []).filter(function(cam) {
+        return cam && cam.cargar_en_estaciones !== false && cam.activa !== false;
+      });
+      return items.map(function(cam) {
+        return generateCamaraStationCardHtml(cam, cam.nombre || 'Camara', cam.estacion_id || 0);
+      }).join('');
+    }
+
     function renderEstaciones(cfg) {
       const baseConfig = cfg || stationConfig || {};
       cfg = buildVisibleConfigForCurrentUser(baseConfig);
       const grid = document.getElementById('estacionesGrid');
       const labels = normalizeStationLabels(baseConfig);
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
-        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.ia_pedidos_enabled)) {
+        if (!(cfg && cfg.youtube_enabled) && !(cfg && cfg.caja_enabled) && !(cfg && cfg.notas_enabled) && !(cfg && cfg.ia_pedidos_enabled) && !(cfg && cfg.camaras_enabled)) {
           grid.innerHTML = '<p class="form-help">No hay ' + sanitize(labels.pluralLower) + ' configuradas. Ve a Configuración de ' + sanitize(labels.pluralLower) + ' para crearlas.</p>';
           applyStationLabelsToDOM(cfg, grid);
           return;
@@ -2124,6 +2210,7 @@
       pushSpecial(cfg && cfg.youtube_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.youtube_enabled, () => generateYouTubeCardHtml(cfg));
       pushSpecial(cfg && cfg.notas_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.notas_enabled, () => generateNotasCardHtml(cfg));
       pushSpecial(cfg && cfg.ia_pedidos_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.ia_pedidos_enabled, () => generateIAPedidosCardHtml());
+      pushSpecial(cfg && cfg.camaras_placement === 'after' ? afterSpecial : beforeSpecial, cfg && cfg.camaras_enabled, () => generateCamarasCardsHtml());
 
       html += beforeSpecial.join('');
       if (!cfg || !cfg.estaciones || !cfg.estaciones.length) {
@@ -2136,6 +2223,11 @@
       }
       html += cfg.estaciones.map(est => {
         const stationID = Number(est.id || 0);
+        if (String(est.tipo_estacion || '').trim().toLowerCase() === 'camara') {
+          const camara = findCamaraByID(est.camara_id);
+          if (camara) return generateCamaraStationCardHtml(camara, est.nombre || camara.nombre, stationID);
+          return generateCamaraStationCardHtml({ nombre: est.nombre || 'Camara', protocolo_origen: 'rtsp', activa: false }, est.nombre || 'Camara', stationID);
+        }
         const useMostrarInicio = est.mostrar_fecha_hora_inicio === undefined ? true : !!est.mostrar_fecha_hora_inicio;
         const useMostrarFinTarifa = est.mostrar_fecha_hora_fin_tarifa === undefined ? true : !!est.mostrar_fecha_hora_fin_tarifa;
         const useMostrarTotal = est.mostrar_total === undefined ? true : !!est.mostrar_total;
@@ -2568,6 +2660,7 @@
         await loadCurrentAccount();
         await loadPermissionContext();
         await Promise.all([
+          loadCamarasCatalog(),
           loadColoresEstadoCarrito(),
           loadEstadoCarritosEstacion(),
           loadSensorStates(),

@@ -280,6 +280,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/camaras":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/camaras
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/camaras
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/carnets":
     get:
       tags: [empresa]

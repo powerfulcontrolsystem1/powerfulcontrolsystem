@@ -3604,3 +3604,21 @@ Captura inteligente de compras y gastos
 - Cambio funcional: `tipo_empresa_preconfiguraciones.config_json` incorpora `modulos.energia_solar` como bloque opcional apagado por defecto, con proveedores Victron, SMA, SolarEdge y gateway local, baterias comunes y alertas base.
 - Roles/licencias: `tecnico_solar` conserva solo `energia_solar:R`; las licencias nuevas deben habilitar `energia_solar` como modulo independiente y el fallback desde `control_electrico`/`seguridad` queda como compatibilidad de licencias antiguas.
 - Documentacion: se actualizan ayuda general, ayuda de APIs, mapa de modulos, flujos, matriz de roles, estructura BD y documento del modulo solar.
+# Modulo Camaras y DVR - 2026-06-04
+
+- Modulo: `camaras`.
+- Navegacion: `Administrar empresa > Analisis y control > Camaras`.
+- Backend: nuevo endpoint `/api/empresa/camaras` con wrapper
+  `WithEmpresaCamarasPermissions`.
+- Persistencia: tabla empresarial `empresa_camaras`, siempre filtrada por
+  `empresa_id`, con baja logica.
+- Frontend: `web/administrar_empresa/camaras.html` y `web/js/camaras.js`.
+- Estaciones: `configuracion_de_estaciones.html` agrega check para mostrar
+  camaras antes/despues y permite marcar una estacion como `tipo_estacion=camara`
+  con `camara_id`; `estaciones.html` renderiza visores de camara.
+- Tecnologias: RTSP, ONVIF, HLS, WebRTC, MJPEG e iframe; RTSP/ONVIF requieren
+  gateway para visor en navegador.
+- Licencias/permisos: clave independiente `camaras`, pagina `linkCamaras`,
+  fallback a `control_electrico` o `seguridad` para compatibilidad.
+- Seguridad: URLs web bloquean esquemas `javascript:`/`data:` y el backend exige
+  `empresa_id` en consulta, actualizacion y baja.

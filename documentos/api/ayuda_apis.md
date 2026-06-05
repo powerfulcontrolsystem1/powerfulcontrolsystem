@@ -133,6 +133,33 @@ Reglas:
 - las llaves reales deben viajar como referencias `env:*`, no como secretos en
   texto plano.
 
+## Camaras y DVR
+
+Endpoint empresarial:
+
+```http
+GET    /api/empresa/camaras?empresa_id={id}&action=dashboard
+GET    /api/empresa/camaras?empresa_id={id}&action=catalogo
+GET    /api/empresa/camaras?empresa_id={id}&action=camaras
+GET    /api/empresa/camaras?empresa_id={id}&action=camara&id={camara_id}
+POST   /api/empresa/camaras?empresa_id={id}&action=camara
+PUT    /api/empresa/camaras?empresa_id={id}&action=camara
+DELETE /api/empresa/camaras?empresa_id={id}&action=camara&id={camara_id}
+```
+
+Reglas:
+
+- modulo independiente `camaras`, pagina `linkCamaras`;
+- cada camara pertenece a un solo `empresa_id`;
+- soporta catalogo operativo para RTSP, ONVIF, HLS, WebRTC, MJPEG e iframe;
+- RTSP/ONVIF directo requiere gateway HLS, WebRTC o MJPEG para verse en el
+  navegador;
+- `url_embed` y `url_snapshot` solo deben usar `http`, `https` o ruta interna;
+- `estaciones_config` permite `camaras_enabled`, `camaras_placement` y
+  estaciones con `tipo_estacion=camara` mas `camara_id`;
+- usuarios y claves reales deben guardarse como referencias seguras
+  (`env:CAMARA_EMPRESA_*`), no impresas ni documentadas.
+
 ## Checklist para crear o cambiar una API empresarial
 
 1. Ubicar modulo, pagina, handler, tablas y permisos en `documentos/mapa_modulos.md`.

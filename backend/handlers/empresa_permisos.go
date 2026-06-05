@@ -55,6 +55,7 @@ const (
 	permModuleTurnos               = "turnos_atencion"
 	permModuleControlElectrico     = "control_electrico"
 	permModuleEnergiaSolar         = "energia_solar"
+	permModuleCamaras              = "camaras"
 	permModuleGrafologia           = "grafologia"
 	permModuleCarnets              = "carnets"
 	permModuleHorariosTrab         = "horarios_trabajadores"
@@ -298,6 +299,7 @@ var permissionModulesCatalogOrdered = []string{
 	permModuleTurnos,
 	permModuleControlElectrico,
 	permModuleEnergiaSolar,
+	permModuleCamaras,
 	permModuleGrafologia,
 	permModuleCarnets,
 	permModuleHorariosTrab,
@@ -376,6 +378,7 @@ var permissionModuleDisplayNames = map[string]string{
 	permModuleTurnos:               "Turnos de atencion",
 	permModuleControlElectrico:     "Domotica e IoT",
 	permModuleEnergiaSolar:         "Energia solar y baterias",
+	permModuleCamaras:              "Camaras y DVR",
 	permModuleGrafologia:           "GRAFOLOGIX - Grafologia OCR",
 	permModuleCarnets:              "Carnets empresariales",
 	permModuleHorariosTrab:         "Horarios laborales",
@@ -560,6 +563,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 
 	{PaginaClave: "linkAuditoria", Modulo: permModuleAuditoria, Accion: permActionRead, Titulo: "Auditoria de acciones", Grupo: "Analisis y control"},
 	{PaginaClave: "linkCalidadProcesos", Modulo: permModuleCalidadProcesos, Accion: permActionCreate, Titulo: "Calidad, procesos y no conformidades", Grupo: "Analisis y control"},
+	{PaginaClave: "linkCamaras", Modulo: permModuleCamaras, Accion: permActionCreate, Titulo: "Camaras y DVR", Grupo: "Analisis y control"},
 	{PaginaClave: "linkEnergiaSolar", Modulo: permModuleEnergiaSolar, Accion: permActionCreate, Titulo: "Energia solar y baterias", Grupo: "Analisis y control"},
 	{PaginaClave: "linkGrafologia", Modulo: permModuleGrafologia, Accion: permActionCreate, Titulo: "GRAFOLOGIX - Grafologia OCR", Grupo: "Analisis y control"},
 	{PaginaClave: "linkBackups", Modulo: permModuleBackups, Accion: permActionApprove, Titulo: "Backups empresariales", Grupo: "Analisis y control"},
@@ -1131,6 +1135,11 @@ func WithEmpresaControlElectricoPermissions(dbEmp, dbSuper *sql.DB, next http.Ha
 // WithEmpresaEnergiaSolarPermissions aplica permisos independientes para monitoreo solar y baterias.
 func WithEmpresaEnergiaSolarPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleEnergiaSolar, resolveVerticalPermissionAction, next)
+}
+
+// WithEmpresaCamarasPermissions aplica permisos independientes para camaras, DVR y visores web.
+func WithEmpresaCamarasPermissions(dbEmp, dbSuper *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return withEmpresaRolePermissions(dbEmp, dbSuper, permModuleCamaras, resolveVerticalPermissionAction, next)
 }
 
 // WithEmpresaGrafologiaPermissions aplica permisos independientes para GRAFOLOGIX y analisis grafológico.
@@ -2327,7 +2336,7 @@ func roleAllowsModuleAction(role, module, action string) bool {
 			return roleIn(role, "contabilidad")
 		}
 
-	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleEnergiaSolar, permModuleGrafologia, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
+	case permModuleBancosPagos, permModuleGestionDocumental, permModuleCumplimientoKYC, permModuleContratosOblig, permModuleCalidadProcesos, permModuleEnergiaSolar, permModuleCamaras, permModuleGrafologia, permModuleAuditoria, permModuleBackups, permModuleDocumentosOnlyOffice:
 		switch action {
 		case permActionRead:
 			if module == permModuleEnergiaSolar {
@@ -3326,6 +3335,7 @@ var permissionModuleLicenseFallbacks = map[string][]string{
 	permModuleReportes:             {permModuleFinanzas},
 	permModuleAuditoria:            {permModuleSeguridad},
 	permModuleEnergiaSolar:         {permModuleControlElectrico, permModuleSeguridad},
+	permModuleCamaras:              {permModuleControlElectrico, permModuleSeguridad},
 	permModuleGrafologia:           {permModuleReportes, permModuleSeguridad},
 	permModuleBackups:              {permModuleSeguridad},
 	permModuleDocumentosOnlyOffice: {permModuleSeguridad},
@@ -3581,6 +3591,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkCalidadProcesos"
 	case path == "/api/empresa/energia_solar":
 		return "linkEnergiaSolar"
+	case path == "/api/empresa/camaras":
+		return "linkCamaras"
 	case path == "/api/empresa/grafologia":
 		return "linkGrafologia"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||

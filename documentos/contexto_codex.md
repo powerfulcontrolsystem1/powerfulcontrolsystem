@@ -17,6 +17,24 @@ decisiones en cada tarea.
   pago de nomina electronica. El envio real requiere credenciales, firma, CUNE,
   numeracion y transporte documental en facturacion electronica por empresa.
 
+## Actualizacion 2026-06-04 - Camaras y DVR
+
+- Nuevo modulo empresarial `camaras` visible como `Administrar empresa >
+  Analisis y control > Camaras`.
+- API: `/api/empresa/camaras`, protegida por
+  `WithEmpresaCamarasPermissions`.
+- Backend: `backend/db/camaras.go` y `backend/handlers/camaras.go`.
+- BD: `empresa_camaras` guarda camaras por `empresa_id`, DVR/NVR, canal,
+  protocolo origen, visor web, estacion asociada, orden, estado y referencias
+  seguras de usuario/clave.
+- UI: `web/administrar_empresa/camaras.html` y `web/js/camaras.js`.
+- Estaciones: `estaciones_config` acepta `camaras_enabled`,
+  `camaras_placement`, `tipo_estacion=camara` y `camara_id`; una estacion puede
+  mostrarse como visor de camara y las camaras globales pueden cargar antes o
+  despues de las estaciones.
+- Nota tecnica: RTSP/ONVIF directo no se reproduce en navegador; debe pasar por
+  gateway HLS, WebRTC, MJPEG o iframe confiable.
+
 ## Actualizacion 2026-06-01 - GRAFOLOGIX
 
 - Nuevo modulo empresarial `grafologia` visible como `Administrar empresa >

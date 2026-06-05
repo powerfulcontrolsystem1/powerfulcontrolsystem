@@ -22,6 +22,26 @@ afecte dinero, documentos, licencias o seguridad.
 10. El resultado es orientativo; no debe tratarse como diagnostico ni decision
     automatizada.
 
+## Camaras y DVR
+
+1. Abrir `Administrar empresa > Analisis y control > Camaras`.
+2. Registrar nombre, ubicacion, DVR/NVR, host, canal, fabricante, tecnologia
+   origen y tipo de visor.
+3. Si la fuente es RTSP u ONVIF, configurar un gateway HLS, WebRTC o MJPEG para
+   que el navegador pueda mostrar video en tiempo real.
+4. Asociar opcionalmente la camara a una estacion y marcar `Mostrar en
+   estaciones`.
+5. Guardar; el backend valida `empresa_id`, URL segura y registra en
+   `empresa_camaras`.
+6. En `Configuracion de estaciones`, activar `Mostrar Camaras` y elegir si
+   cargan antes o despues de las estaciones.
+7. Para convertir una estacion en visor, elegir `Tipo = Camara` y seleccionar
+   `camara_id`.
+8. En `Estaciones`, la tarjeta de camara abre el visor/modulo sin entrar al
+   carrito; estaciones normales conservan su flujo operativo.
+9. Pruebas negativas: intentar editar una camara de otra empresa debe devolver
+   404/403; URL `javascript:` o `data:` no debe guardarse.
+
 ## Registro administrador
 
 1. Usuario abre `web/login.html` y entra a registro de administrador.

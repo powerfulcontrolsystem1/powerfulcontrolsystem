@@ -86,6 +86,18 @@ POST /api/empresa/energia_solar?empresa_id=7&amp;action=probar_alerta&amp;sistem
       </section>
 
       <section class="api-help-card">
+        <h2>Camaras y DVR</h2>
+        <p class="form-help">Modulo empresarial independiente para camaras conectadas a DVR/NVR o gateways. Usa permiso <code>camaras</code>, pagina <code>linkCamaras</code> y configuracion por <code>empresa_id</code>.</p>
+        <code class="api-help-code">GET /api/empresa/camaras?empresa_id=7&amp;action=dashboard
+GET /api/empresa/camaras?empresa_id=7&amp;action=catalogo
+GET /api/empresa/camaras?empresa_id=7&amp;action=camaras
+GET /api/empresa/camaras?empresa_id=7&amp;action=camara&amp;id=1
+POST /api/empresa/camaras?empresa_id=7&amp;action=camara
+DELETE /api/empresa/camaras?empresa_id=7&amp;action=camara&amp;id=1</code>
+        <p class="form-help mt-8">RTSP y ONVIF son fuentes comunes de DVR, pero para verlas en navegador deben pasar por HLS, WebRTC, MJPEG o iframe seguro. Las estaciones pueden usar <code>tipo_estacion=camara</code> y <code>camara_id</code>.</p>
+      </section>
+
+      <section class="api-help-card">
         <h2>Checklist antes de exponer o cambiar una API</h2>
         <ol class="api-help-list form-help">
           <li>Confirmar wrapper de modulo y accion efectiva por metodo o <code>action</code>.</li>

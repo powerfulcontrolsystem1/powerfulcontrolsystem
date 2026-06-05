@@ -10562,3 +10562,12 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- En modo `scope=mine&con_empresa=1`, la vista principal muestra solo licencias activas o por vencer; las vencidas reemplazadas quedan fuera de esa pagina y se consultan desde el historial.
 - `web/seleccionar_empresa.html`:
 	- Agrega el acceso `Historial de licencias` en el menu lateral.
+- `backend/db/camaras.go`: esquema y CRUD empresarial del modulo `camaras`,
+  tabla `empresa_camaras`, normalizacion de protocolo/visor y baja logica por
+  `empresa_id`.
+- `backend/handlers/camaras.go`: endpoint protegido `/api/empresa/camaras`
+  para dashboard, catalogo, listado, alta/edicion y desactivacion de camaras.
+- `web/administrar_empresa/camaras.html`: pagina empresarial para registrar DVR,
+  camaras, tecnologia de origen, visor web, estacion asociada y vista previa.
+- `web/js/camaras.js`: logica frontend del modulo Camaras y DVR: carga,
+  guardado, edicion, desactivacion, KPIs, catalogo y render de visor.
