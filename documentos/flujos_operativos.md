@@ -61,11 +61,14 @@ afecte dinero, documentos, licencias o seguridad.
 4. La creacion debe ser idempotente: doble clic, reintento o solicitud
    concurrente con el mismo administrador, tipo, nombre y NIT debe devolver la
    empresa ya creada sin insertar otra ni repetir avisos.
-5. Si esta activo el aviso de empresa nueva, se notifica al super administrador
+5. El backend prepara la carpeta empresarial
+   `web/uploads/empresas/empresa_{id}_{slug}/` con subcarpeta `imagenes` y la
+   carpeta privada `facturacion_electronica/firma_electronica`.
+6. Si esta activo el aviso de empresa nueva, se notifica al super administrador
    solo cuando realmente se inserta una empresa nueva.
-6. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
+7. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
    `empresa_id` correcto.
-7. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
+8. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
    deben crear empresas duplicadas.
 
 ## Eliminar empresa
@@ -207,6 +210,32 @@ afecte dinero, documentos, licencias o seguridad.
    validacion legal DIAN de la factura electronica.
 6. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio
    e imprimir una venta con impuesto para confirmar el bloque.
+
+## Firma electronica DIAN
+
+1. La empresa configura primero los datos base de facturacion electronica
+   Colombia.
+2. Al cargar la firma, el endpoint multipart valida `empresa_id`, configuracion
+   DIAN existente, archivo no vacio, tamano maximo 10 MB y contenido con llave
+   privada RSA.
+3. El backend guarda la llave privada y el certificado publico extraido en
+   `web/uploads/empresas/empresa_{id}_{slug}/facturacion_electronica/firma_electronica/`.
+4. Las rutas guardadas en la configuracion DIAN son referencias internas `file:`
+   a archivos con permiso `0600`; no deben convertirse en enlaces publicos.
+5. El backend extrae del X.509 la fecha real de vencimiento y la guarda en
+   `certificado_vencimiento` / `certificado_vencimiento_en`.
+6. La accion
+   `/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado`
+   muestra estado, dias restantes y ventana de alerta. Si el certificado esta
+   vencido o a 30 dias de vencer, envia correo al administrador de la empresa
+   como maximo una vez cada 24 horas.
+7. Despues de cargar firma, el siguiente paso operativo es
+   `action=validar_credenciales` y luego `action=pruebas_dian`.
+8. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
+   archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
+   puede consultar ni modificar la configuracion. Luego usar `Verificar
+   vencimiento` en la pantalla para confirmar que se ve fecha, dias restantes y
+   estado de alerta.
 
 ## Login usuarios operativos
 

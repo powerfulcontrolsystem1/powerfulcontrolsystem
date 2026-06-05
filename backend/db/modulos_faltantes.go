@@ -644,6 +644,11 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 			test_set_id TEXT,
 			certificado_url TEXT,
 			certificado_clave_ref TEXT,
+			certificado_vencimiento TEXT,
+			certificado_vencimiento_en TEXT,
+			certificado_alerta_dias INTEGER DEFAULT 30,
+			certificado_alerta_ultimo_envio TEXT,
+			certificado_alerta_email TEXT,
 			prefijo TEXT,
 			resolucion_numero TEXT,
 			resolucion_fecha_desde TEXT,
@@ -820,6 +825,21 @@ func EnsureEmpresaModulosFaltantesSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "software_pin_compartido_ref", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_vencimiento", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_vencimiento_en", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_alerta_dias", "INTEGER DEFAULT 30"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_alerta_ultimo_envio", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_dian_configuracion", "certificado_alerta_email", "TEXT"); err != nil {
 		return err
 	}
 

@@ -1,3 +1,37 @@
+2026-06-05 - Tutorial guiado de nomina con narracion
+- `web/ayuda/tutorial_nomina.html`:
+	- nueva presentacion operativa de nomina con pasos numerados, tarjetas visuales y narraciones por diapositiva.
+	- cada bloque `Narracion` incorpora boton con icono de play para reproducir la guia por voz en navegadores compatibles.
+- `web/administrar_empresa/nomina_sueldos.html`:
+	- agrega boton `Ayuda` con icono en el encabezado y conserva `empresa_id` al abrir el tutorial.
+- `web/ayuda/ayuda.html`:
+	- agrega acceso rapido y seccion dedicada de `Nomina de sueldos` enlazada a la presentacion.
+
+2026-06-05 - Alertas de vencimiento de certificado DIAN
+- `backend/handlers/modulos_faltantes.go`:
+	- agrega `action=vencimiento_certificado` en `/api/empresa/facturacion_electronica/dian`.
+	- extrae `NotBefore`/`NotAfter` del certificado X.509 al cargar firma y envia alerta de vencimiento al administrador de la empresa.
+	- refuerza el checklist DIAN con warning de certificado proximo a vencer.
+- `backend/db/modulos_faltantes.go`:
+	- agrega columnas de vencimiento y control de alerta en `empresa_dian_configuracion`.
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- muestra vencimiento del certificado y boton `Verificar vencimiento`.
+- `backend/handlers/dian_signature_upload_test.go`:
+	- cubre metadatos de vencimiento y calculo de estado proximo/vencido.
+
+2026-06-05 - Carpetas empresariales y firma electronica
+- `backend/handlers/empresa_upload_paths.go`:
+	- nuevo helper central para resolver la carpeta empresarial `web/uploads/empresas/empresa_{id}_{slug}/`.
+	- asegura subcarpetas iniciales de imagenes y firma electronica.
+	- define la ruta privada `facturacion_electronica/firma_electronica` para certificados DIAN.
+- `backend/handlers/modulos_faltantes.go`:
+	- `uploadDIANCompanySignature` guarda llave privada y certificado publico en la carpeta empresarial de facturacion electronica.
+	- conserva referencias internas `file:` y permisos privados.
+- `backend/handlers/system_empresas_handlers.go`:
+	- al crear una empresa, incluso por flujo idempotente, asegura la carpeta empresarial base.
+- `backend/handlers/empresa_delete_files.go`:
+	- agrega limpieza segura de `web/uploads/empresas/empresa_{id}_*` al eliminar una empresa.
+
 2026-06-04 - Tarjeta de logo registrado en Identidad visual
 - `web/administrar_empresa/configuracion.html`:
 	- agrega una tarjeta visible `Logo registrado` en la seccion de identidad visual para mostrar el logo guardado, estado de uso y URL registrada.

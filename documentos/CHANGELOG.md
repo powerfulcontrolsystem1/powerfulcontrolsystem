@@ -1,3 +1,16 @@
+## [2026-06-05] Tutorial de nomina con narracion
+- [Ayuda] Se agrega `web/ayuda/tutorial_nomina.html` como presentacion guiada de nomina con pasos operativos, tarjetas visuales y narraciones.
+- [UX] Cada bloque `Narracion` tiene boton con icono de play para reproducir la guia por voz cuando el navegador soporte sintesis de voz.
+- [Nomina] `web/administrar_empresa/nomina_sueldos.html` agrega un boton `Ayuda` con icono que abre el tutorial conservando `empresa_id`.
+- [QA] Validacion sintactica de scripts embebidos y comprobacion visual local de los botones de play y del enlace desde nomina.
+
+## [2026-06-05] Carpetas empresariales para firma electronica
+- [Archivos] Cada empresa asegura carpeta base `web/uploads/empresas/empresa_{id}_{slug}/` al crearse o resolverse por idempotencia.
+- [Facturacion electronica] La carga de firma DIAN extrae y guarda el vencimiento X.509, agrega verificacion visible en la pantalla y envia aviso al administrador cuando el certificado esta vencido o proximo a vencer.
+- [Facturacion electronica] La carga de firma DIAN guarda llave privada y certificado en `facturacion_electronica/firma_electronica/` dentro de la carpeta empresarial, con permisos privados y referencias internas `file:`.
+- [Seguridad] La eliminacion segura de empresa limpia tambien `web/uploads/empresas/empresa_{id}_*` para no dejar firmas o imagenes huerfanas.
+- [QA] Pruebas Go enfocadas para decodificacion DIAN y convencion de ruta de firma electronica.
+
 ## [2026-06-05] Empresa interna Powerful Control System operativa
 - [Licencias] La empresa interna del SaaS conserva el codigo tecnico `PCS_SYSTEM_INTERNAL_PERPETUAL`, pero ahora se asegura como licencia fechada a 100 anos, con valor cero, limites altos y modulos completos.
 - [Licencias] Las consultas PostgreSQL de licencias vigentes/vencidas toleran fechas heredadas vacias o no fechables para que una licencia antigua no bloquee permisos, carrito, correo ni reportes.

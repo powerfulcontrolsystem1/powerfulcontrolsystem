@@ -1,3 +1,21 @@
+2026-06-05: Tutorial guiado de nomina
+- Modulo afectado: `nomina_sueldos`.
+- Cambio funcional: se agrega `web/ayuda/tutorial_nomina.html` como presentacion paso a paso para configurar empleados, liquidar, revisar pagos y preparar documentos electronicos de nomina.
+- UX: cada seccion de `Narracion` tiene un boton con icono de play que usa sintesis de voz del navegador; la pagina de nomina agrega un boton `Ayuda` con icono que abre la presentacion conservando `empresa_id`.
+- Documentacion: `web/ayuda/ayuda.html` enlaza el tutorial desde el centro de ayuda.
+
+2026-06-05: Alertas de vencimiento de certificado DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `mensajeria`.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado` calcula estado, fecha y dias restantes desde el certificado X.509 registrado por empresa.
+- Persistencia: `empresa_dian_configuracion` guarda `certificado_vencimiento`, `certificado_vencimiento_en`, `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y `certificado_alerta_email`.
+- Notificacion: si el certificado esta vencido o a 30 dias de vencer, se envia correo al administrador de la empresa y se evita repetir la alerta dentro de 24 horas.
+- Frontend: la tarjeta `Cargar firma electronica (Colombia / DIAN)` muestra vencimiento y agrega boton `Verificar vencimiento`.
+
+2026-06-05: Carpetas empresariales para firma electronica
+- Modulos afectados: `seleccion_empresas`, `facturacion_electronica`, `backups/borrado`.
+- Cambio funcional: cada empresa asegura una carpeta base `web/uploads/empresas/empresa_{id}_{slug}/`; la firma DIAN se guarda en `facturacion_electronica/firma_electronica/` dentro de esa carpeta.
+- Seguridad: la firma se guarda con permisos privados y se referencia como `file:` interno; no se publica como URL navegable. La eliminacion de empresa limpia tambien la carpeta empresarial unificada.
+
 2026-06-04: Licencias comerciales con factura electronica de Powerful Control System
 - Modulos afectados: `licencias`, `pagos`, `facturacion_electronica`, `mensajeria_super`.
 - Cambio funcional: cuando una licencia comercial queda pagada/aprobada con valor mayor que cero, el sistema emite automaticamente una factura electronica desde la empresa interna `Powerful Control System` y la envia al correo del cliente comprador.

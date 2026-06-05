@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -46,6 +47,35 @@ func TestDecodeDIANSignatureUploadPEMWithPrivateKeyAndCertificate(t *testing.T) 
 	if material.Subject == "" || material.Serial == "" {
 		t.Fatalf("expected certificate metadata, got subject=%q serial=%q", material.Subject, material.Serial)
 	}
+	if material.NotAfter.IsZero() {
+		t.Fatalf("expected certificate expiration metadata")
+	}
+}
+
+func TestDIANCertificateExpiryStatusWarnsBeforeExpiration(t *testing.T) {
+	now := time.Date(2026, 6, 1, 9, 0, 0, 0, time.UTC)
+	notAfter := now.AddDate(0, 0, 10)
+	status := dianCertificateExpiryStatus(now, now.AddDate(0, -1, 0), notAfter, 30)
+	if !parseTruthy(genericStringValue(status["proximo_a_vencer"])) {
+		t.Fatalf("expected certificate to be close to expiration, got %#v", status)
+	}
+	if parseTruthy(genericStringValue(status["vencido"])) {
+		t.Fatalf("certificate must not be expired, got %#v", status)
+	}
+	if genericStringValue(status["fecha_vencimiento"]) != notAfter.Format("2006-01-02") {
+		t.Fatalf("unexpected expiration date: %#v", status)
+	}
+}
+
+func TestDIANCertificateExpiryStatusDetectsExpired(t *testing.T) {
+	now := time.Date(2026, 6, 1, 9, 0, 0, 0, time.UTC)
+	status := dianCertificateExpiryStatus(now, now.AddDate(0, -2, 0), now.AddDate(0, 0, -1), 30)
+	if !parseTruthy(genericStringValue(status["vencido"])) {
+		t.Fatalf("expected expired certificate, got %#v", status)
+	}
+	if parseTruthy(genericStringValue(status["ok"])) {
+		t.Fatalf("expired certificate must not be ok, got %#v", status)
+	}
 }
 
 func TestDecodeDIANSignatureUploadRejectsCertificateWithoutPrivateKey(t *testing.T) {
@@ -69,6 +99,20 @@ func TestDecodeDIANSignatureUploadRejectsCertificateWithoutPrivateKey(t *testing
 	_, err = decodeDIANSignatureUpload([]byte(pemBody.String()), "certificado.crt", "")
 	if err == nil || !strings.Contains(err.Error(), "no contiene llave privada RSA") {
 		t.Fatalf("expected private-key validation error, got %v", err)
+	}
+}
+
+func TestEmpresaFacturacionFirmaElectronicaUsesCompanyFolder(t *testing.T) {
+	dir, publicPrefix, folder := empresaUploadsSubdir(nil, 15, empresaFacturacionElectronicaDirName, empresaFirmaElectronicaDirName)
+	expectedSuffix := filepath.Join("uploads", "empresas", "empresa_15_empresa", "facturacion_electronica", "firma_electronica")
+	if !strings.HasSuffix(filepath.Clean(dir), expectedSuffix) {
+		t.Fatalf("expected firma dir suffix %q, got %q", expectedSuffix, dir)
+	}
+	if folder != "empresa_15_empresa" {
+		t.Fatalf("expected company folder empresa_15_empresa, got %q", folder)
+	}
+	if publicPrefix != "/uploads/empresas/empresa_15_empresa/facturacion_electronica/firma_electronica" {
+		t.Fatalf("unexpected public prefix: %q", publicPrefix)
 	}
 }
 

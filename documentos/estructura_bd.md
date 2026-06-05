@@ -3,6 +3,26 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-05 (carpetas empresariales y firma electronica)
+- No se agrega tabla nueva; cambia el contrato operativo de archivos por
+  empresa.
+- Carpeta base por empresa:
+  `web/uploads/empresas/empresa_{empresa_id}_{slug}/`.
+- Subcarpetas iniciales: `imagenes/` para recursos publicos de la empresa y
+  `facturacion_electronica/firma_electronica/` para firma DIAN.
+- `facturacion_electronica/firma_electronica/` es privada: carpeta con permiso
+  `0700`, archivos de llave/certificado con permiso `0600` y referencias
+  internas `file:` guardadas en la configuracion DIAN (`certificado_clave_ref`,
+  `certificado_url`).
+- El borrado seguro de empresa elimina tambien
+  `web/uploads/empresas/empresa_{empresa_id}_*` ademas de los uploads
+  historicos por modulo.
+- `empresa_dian_configuracion` agrega metadatos de vencimiento y alerta:
+  `certificado_vencimiento`, `certificado_vencimiento_en`,
+  `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y
+  `certificado_alerta_email`. No guardan secretos; solo fechas y correo
+  notificado por empresa.
+
 Actualizacion 2026-06-04 (camaras y DVR)
 - Nueva tabla empresarial `empresa_camaras` en `pcs_empresas`.
 - Campos principales: `empresa_id`, `nombre`, `ubicacion`, `dvr_nombre`,
@@ -1546,6 +1566,8 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - usar_software_compartido, software_id_compartido_ref, software_pin_compartido_ref
   - test_set_id
   - certificado_url, certificado_clave_ref
+  - certificado_vencimiento, certificado_vencimiento_en
+  - certificado_alerta_dias, certificado_alerta_ultimo_envio, certificado_alerta_email
   - prefijo, resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - rango_desde, rango_hasta, consecutivo_actual
   - url_dian, token_emisor_ref, ultimo_envio, estado_dian

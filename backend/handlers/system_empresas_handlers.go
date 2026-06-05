@@ -574,6 +574,9 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			// Crear carpeta de backup en disco para esta empresa (best-effort).
 			if id > 0 {
 				_ = ensureDir(empresaBackupDir(id))
+				if _, folderErr := ensureEmpresaUploadFolders(dbEmp, id); folderErr != nil {
+					log.Printf("POST /super/api/empresas id=%d carpeta empresa warning: %v", id, folderErr)
+				}
 			}
 			emailCorporativo, emailCorporativoErr := EnsureEmpresaCorporateEmailAfterCreate(dbSuper, id, payload.Nombre, payload.UsuarioCreador)
 			emailCorporativoErrText := ""

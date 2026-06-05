@@ -50,6 +50,11 @@
         </div>
       </div>
       <div id="feFirmaMsg" class="form-help"></div>
+      <div class="form-help" style="margin-top:10px;">
+        <strong>Vencimiento del certificado:</strong>
+        <span id="feFirmaExpiryText">Sin verificar.</span>
+        <button id="feFirmaExpiryBtn" class="btn secondary" type="button" style="margin-left:8px;">Verificar vencimiento</button>
+      </div>
     </div>
 
     <div id="feDianConfigCard" class="card is-hidden">
@@ -839,6 +844,45 @@
       }
     }
 
+    function renderFirmaExpiry(info) {
+      var el = document.getElementById("feFirmaExpiryText");
+      if (!el) return;
+      if (!info || !info.configurado) {
+        el.textContent = "No hay certificado registrado todavia.";
+        el.style.color = "";
+        return;
+      }
+      var dias = info.dias_restantes;
+      var texto = (info.fecha_vencimiento ? ("Vence el " + info.fecha_vencimiento) : "Vencimiento no disponible");
+      if (dias !== null && dias !== undefined && dias !== "") {
+        texto += " (" + dias + " dia(s) restantes)";
+      }
+      if (info.vencido) {
+        texto += ". Certificado vencido.";
+        el.style.color = "#ef5350";
+      } else if (info.proximo_a_vencer || info.proximo_vencer) {
+        texto += ". Proximo a vencer.";
+        el.style.color = "#f59e0b";
+      } else {
+        texto += ". Vigente.";
+        el.style.color = "";
+      }
+      if (info.correo_enviado) {
+        texto += " Aviso enviado al administrador.";
+      }
+      el.textContent = texto;
+    }
+
+    async function verificarDianFirmaVencimiento(notificar) {
+      if (!state.empresaID) return null;
+      var url = "/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado&empresa_id=" + encodeURIComponent(state.empresaID);
+      url += "&notificar=" + (notificar === false ? "0" : "1");
+      var res = await fetch(url, { credentials: "same-origin" });
+      var data = await readJSONResponse(res);
+      renderFirmaExpiry(data || {});
+      return data;
+    }
+
     function listFromValue(value) {
       if (Array.isArray(value)) return value.map(function(x) { return txt(x); }).filter(Boolean);
       if (typeof value === "string") return value.split(",").map(function(x) { return txt(x); }).filter(Boolean);
@@ -1023,6 +1067,7 @@
       var data = await readJSONResponse(res);
       var item = Array.isArray(data) && data.length ? data[0] : null;
       setDianConfigFormData(item || {});
+      verificarDianFirmaVencimiento(true).catch(function() {});
       return item;
     }
 
@@ -1103,6 +1148,9 @@
           if (!res.ok) {
             var err = (data && (data.error || data.message)) ? String(data.error || data.message) : ("HTTP " + res.status);
             throw new Error(err);
+          }
+          if (data && data.vencimiento_certificado) {
+            renderFirmaExpiry(data.vencimiento_certificado);
           }
           setMsg("Firma cargada y guardada correctamente.", false);
           if (typeof loadDianConfig === "function") {
@@ -1478,6 +1526,26 @@
           setDianConfigMessage(data ? "Configuración DIAN recargada." : "No hay configuración DIAN todavía; completa el formulario y guarda.", false);
         }).catch(function(err) {
           setDianConfigMessage(err && err.message ? err.message : "No se pudo recargar DIAN Colombia", true);
+        });
+      });
+    }
+
+    var btnFirmaExpiry = document.getElementById("feFirmaExpiryBtn");
+    if (btnFirmaExpiry) {
+      btnFirmaExpiry.addEventListener("click", function() {
+        btnFirmaExpiry.disabled = true;
+        btnFirmaExpiry.textContent = "Verificando...";
+        verificarDianFirmaVencimiento(true).then(function(data) {
+          setDianConfigResult(data || {});
+        }).catch(function(err) {
+          var el = document.getElementById("feFirmaExpiryText");
+          if (el) {
+            el.textContent = err && err.message ? err.message : "No se pudo verificar el vencimiento.";
+            el.style.color = "#ef5350";
+          }
+        }).finally(function() {
+          btnFirmaExpiry.disabled = false;
+          btnFirmaExpiry.textContent = "Verificar vencimiento";
         });
       });
     }

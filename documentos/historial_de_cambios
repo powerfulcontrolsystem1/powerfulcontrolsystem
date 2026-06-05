@@ -1,3 +1,17 @@
+2026-06-05: Tutorial de ayuda para nomina.
+- Modulos afectados: centro de ayuda y `nomina_sueldos`.
+- Cambio funcional: se crea `web/ayuda/tutorial_nomina.html` como presentacion guiada de nomina con pasos numerados y narraciones reproducibles por boton de play.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` agrega boton `Ayuda` con icono en el encabezado; `web/ayuda/ayuda.html` agrega acceso rapido y seccion de Nomina.
+- Validacion: scripts embebidos de `tutorial_nomina.html`, `ayuda.html` y `nomina_sueldos.html` validados con Node; comprobacion visual local confirmo 6 botones de play, 6 narraciones y enlace de ayuda con `empresa_id`.
+
+2026-06-05: Alertas de vencimiento de certificado DIAN.
+- Modulos afectados: facturacion electronica Colombia, DIAN, mensajeria empresarial y configuracion por empresa.
+- Cambio funcional: al cargar una firma/certificado DIAN se extrae `NotAfter` del X.509, se guarda el vencimiento por `empresa_id` y se habilita `action=vencimiento_certificado` para ver estado, dias restantes y alerta.
+- Backend: `backend/handlers/modulos_faltantes.go` envia correo al administrador de la empresa cuando el certificado esta vencido o a 30 dias de vencer, con control de repeticion de 24 horas; el checklist DIAN advierte certificado proximo a vencer.
+- Base de datos: `backend/db/modulos_faltantes.go` agrega columnas de vencimiento y control de alerta en `empresa_dian_configuracion` sin guardar secretos.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` muestra vencimiento y boton `Verificar vencimiento`.
+- Pruebas: `go test .\handlers -run "DIANSignature|DIANCertificateExpiry|FacturacionElectronica|EmpresaRoutesUsePermissionWrappers" -count=1`.
+
 2026-06-04: Instalador PWA reparado en login y login usuario.
 - Modulos afectados: autenticacion, PWA, login administrador y login usuario operativo.
 - Cambio funcional: `web/js/pwa_install.js` ahora prepara y reintenta el service worker antes de mostrar instrucciones manuales, usa y consume correctamente el prompt nativo cuando Chrome/Edge lo entrega, evita quedar esperando indefinidamente `userChoice`, evita perder datos escritos si el usuario ya lleno campos y mantiene el mismo flujo en `login.html` y `login_usuario.html`.

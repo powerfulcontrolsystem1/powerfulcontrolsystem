@@ -4,6 +4,15 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-05 - Tutorial guiado de nomina
+
+- Ayuda visual: `web/ayuda/tutorial_nomina.html`.
+- Acceso desde nomina: `web/administrar_empresa/nomina_sueldos.html` muestra
+  un boton `Ayuda` que conserva `empresa_id` y abre la presentacion guiada.
+- La presentacion tiene diapositivas operativas y cada bloque `Narracion`
+  incluye un boton con icono de play para reproducir la guia por voz cuando el
+  navegador soporte sintesis de voz.
+
 ## Actualizacion 2026-06-03 - Nomina multi-sede y DIAN
 
 - Modulo: `web/administrar_empresa/nomina_sueldos.html`.
@@ -49,6 +58,30 @@ decisiones en cada tarea.
 - El rol `super_administrador` validado en backend puede acceder globalmente a
   empresas para soporte, auditoria, comparticion y operacion interna, manteniendo
   filtros por `empresa_id` en las consultas.
+
+## Actualizacion 2026-06-05 - Carpetas empresariales y firma electronica
+
+- Cada empresa debe tener carpeta propia bajo
+  `web/uploads/empresas/empresa_{id}_{slug}/`.
+- Al crear una empresa se preparan carpetas base de uploads e imagenes; si la
+  creacion fue idempotente, se asegura la misma carpeta sin duplicar empresa.
+- La firma electronica para DIAN se guarda en la subcarpeta privada
+  `facturacion_electronica/firma_electronica/` dentro de la carpeta de la
+  empresa. Los archivos se guardan con permisos `0600`, la carpeta con `0700` y
+  se referencian internamente con `file:`; no deben exponerse como URL publica.
+- Al eliminar una empresa, el limpiador de archivos incluye tambien
+  `web/uploads/empresas/empresa_{id}_*` para no dejar firmas, imagenes o
+  adjuntos huérfanos.
+
+- Al cargar una firma DIAN, el backend lee el certificado X.509 y guarda
+  `certificado_vencimiento`, `certificado_vencimiento_en`,
+  `certificado_alerta_dias`, `certificado_alerta_ultimo_envio` y
+  `certificado_alerta_email` en `empresa_dian_configuracion`.
+- El endpoint
+  `/api/empresa/facturacion_electronica/dian?action=vencimiento_certificado`
+  calcula dias restantes, estado vigente/proximo/vencido y envia aviso por
+  correo al administrador de la empresa cuando faltan 30 dias o menos, con
+  control de no repetir alertas dentro de 24 horas.
 
 ## Actualizacion 2026-06-01 - GRAFOLOGIX
 

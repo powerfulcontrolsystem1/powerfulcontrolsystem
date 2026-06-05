@@ -672,17 +672,7 @@ func domoticaStorageMaxImageBytes(dbSuper *sql.DB, empresaID int64) int64 {
 }
 
 func domoticaEmpresaStorageFolder(dbEmp *sql.DB, empresaID int64) string {
-	name := ""
-	if dbEmp != nil && empresaID > 0 {
-		if empresa, err := dbpkg.GetEmpresaByScopeID(dbEmp, empresaID); err == nil && empresa != nil {
-			name = empresa.Nombre
-		}
-	}
-	slug := sanitizeDomoticaStorageSlug(name)
-	if slug == "" {
-		slug = "empresa"
-	}
-	return fmt.Sprintf("empresa_%d_%s", empresaID, slug)
+	return empresaUploadsFolderName(dbEmp, empresaID)
 }
 
 func sanitizeDomoticaStorageSlug(raw string) string {

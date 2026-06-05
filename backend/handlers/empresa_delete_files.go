@@ -147,6 +147,20 @@ func cleanupEmpresaOwnedFiles(empresaID int64) empresaDeleteFileCleanupResult {
 	} {
 		removeEmpresaOwnedDir(uploadsRoot, filepath.Join(uploadsRoot, rel), &result)
 	}
+	empresasUploadsRoot := filepath.Join(uploadsRoot, empresaUploadsRootDirName)
+	for _, pattern := range []string{
+		filepath.Join(empresasUploadsRoot, empresaDir),
+		filepath.Join(empresasUploadsRoot, fmt.Sprintf("empresa_%d_*", empresaID)),
+	} {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			result.Errores = append(result.Errores, fmt.Sprintf("%s: %v", pattern, err))
+			continue
+		}
+		for _, match := range matches {
+			removeEmpresaOwnedDir(empresasUploadsRoot, match, &result)
+		}
+	}
 
 	removeEmpresaOwnedDir(backupEmpresasRoot, filepath.Join(backupEmpresasRoot, fmt.Sprintf("%d", empresaID)), &result)
 	cleanupEmpresaDynamicDocuments(empresaID, &result)

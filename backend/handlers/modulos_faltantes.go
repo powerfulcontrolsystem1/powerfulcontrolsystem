@@ -19,6 +19,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/mail"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -479,6 +480,8 @@ var (
 			"codigo", "nit", "digito_verificacion", "razon_social", "tipo_ambiente", "software_id", "software_pin",
 			"usar_software_compartido", "software_id_compartido_ref", "software_pin_compartido_ref",
 			"test_set_id", "certificado_url", "certificado_clave_ref", "prefijo", "resolucion_numero",
+			"certificado_vencimiento", "certificado_vencimiento_en", "certificado_alerta_dias",
+			"certificado_alerta_ultimo_envio", "certificado_alerta_email",
 			"resolucion_fecha_desde", "resolucion_fecha_hasta", "rango_desde", "rango_hasta", "consecutivo_actual",
 			"url_dian", "token_emisor_ref", "ultimo_envio", "estado_dian", "usuario_creador", "estado", "observaciones",
 		},
@@ -636,7 +639,7 @@ func RegisterEmpresaModulosFaltantesRoutes(dbEmp, dbSuper *sql.DB) {
 	http.HandleFunc("/api/empresa/integraciones/apis", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaIntegracionesAPIsHandler(dbEmp))))
 	http.HandleFunc("/api/empresa/integraciones/bancos", WithEmpresaSeguridadPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaIntegracionesBancosHandler(dbEmp))))
 
-	http.HandleFunc("/api/empresa/facturacion_electronica/dian", WithEmpresaFacturacionPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaDIANColombiaHandler(dbEmp))))
+	http.HandleFunc("/api/empresa/facturacion_electronica/dian", WithEmpresaFacturacionPermissions(dbEmp, dbSuper, withEmpresaModulosFaltantesSchema(dbEmp, EmpresaDIANColombiaHandler(dbEmp, dbSuper))))
 }
 
 func EmpresaVentasCotizacionesHandler(dbEmp *sql.DB) http.HandlerFunc {
@@ -6910,7 +6913,7 @@ func buildIntegracionProbeResult(row map[string]interface{}, ops empresaModuloIn
 }
 
 // EmpresaDIANColombiaHandler expone configuracion DIAN y utilidades operativas de validacion.
-func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
+func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 	base := empresaModuloGenericCRUDHandler(dbEmp, cfgDIAN)
 	return func(w http.ResponseWriter, r *http.Request) {
 		action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
@@ -6952,12 +6955,31 @@ func EmpresaDIANColombiaHandler(dbEmp *sql.DB) http.HandlerFunc {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-			response, status, err := uploadDIANCompanySignature(dbEmp, r)
+			response, status, err := uploadDIANCompanySignature(dbEmp, dbSuper, r)
 			if err != nil {
 				http.Error(w, err.Error(), status)
 				return
 			}
 			writeJSON(w, status, response)
+			return
+
+		case "vencimiento_certificado", "verificar_vencimiento_certificado", "alerta_certificado":
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cfg, _ := getEmpresaDIANConfig(dbEmp, empresaID)
+			if len(cfg) == 0 {
+				http.Error(w, "configuracion DIAN no existe para la empresa; registre base DIAN primero", http.StatusBadRequest)
+				return
+			}
+			notificar := true
+			if raw := strings.TrimSpace(r.URL.Query().Get("notificar")); raw != "" {
+				notificar = parseTruthy(raw)
+			}
+			response := checkDIANCertificateExpiry(dbEmp, dbSuper, empresaID, cfg, notificar)
+			writeJSON(w, http.StatusOK, response)
 			return
 
 		case "checklist", "validar":
@@ -7355,7 +7377,218 @@ const (
 	dianOfficialSetNotasDebito  = 20
 	dianOfficialSetNotasCredito = 20
 	dianOfficialSetTotal        = dianOfficialSetFacturas + dianOfficialSetNotasDebito + dianOfficialSetNotasCredito
+	dianCertificateAlertDays    = 30
 )
+
+func parseDIANStoredTime(raw string) (time.Time, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false
+	}
+	layouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02",
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func dianCertificateAlertThresholdDays(cfg map[string]interface{}) int {
+	days := int(anyToInt64(cfg["certificado_alerta_dias"]))
+	if days <= 0 {
+		return dianCertificateAlertDays
+	}
+	if days > 365 {
+		return 365
+	}
+	return days
+}
+
+func dianCertificateDaysRemaining(now, notAfter time.Time) int {
+	hours := notAfter.Sub(now).Hours()
+	if hours >= 0 {
+		return int(math.Ceil(hours / 24))
+	}
+	return -int(math.Ceil(math.Abs(hours) / 24))
+}
+
+func dianCertificateExpiryStatus(now, notBefore, notAfter time.Time, alertDays int) map[string]interface{} {
+	if alertDays <= 0 {
+		alertDays = dianCertificateAlertDays
+	}
+	if notAfter.IsZero() {
+		return map[string]interface{}{
+			"ok":              false,
+			"configurado":     false,
+			"mensaje":         "No hay certificado X.509 registrado para calcular vencimiento.",
+			"alerta_dias":     alertDays,
+			"dias_restantes":  nil,
+			"proximo_vencer":  false,
+			"vencido":         false,
+			"requiere_alerta": false,
+		}
+	}
+	days := dianCertificateDaysRemaining(now, notAfter)
+	expired := now.After(notAfter)
+	closeToExpiry := !expired && days <= alertDays
+	status := "vigente"
+	startDate := ""
+	if !notBefore.IsZero() {
+		startDate = notBefore.Format("2006-01-02")
+	}
+	message := fmt.Sprintf("Certificado vigente; vence el %s.", notAfter.Format("2006-01-02"))
+	if expired {
+		status = "vencido"
+		message = fmt.Sprintf("Certificado vencido el %s.", notAfter.Format("2006-01-02"))
+	} else if closeToExpiry {
+		status = "proximo_a_vencer"
+		message = fmt.Sprintf("Certificado proximo a vencer en %d dia(s).", days)
+	}
+	return map[string]interface{}{
+		"ok":                   !expired,
+		"configurado":          true,
+		"estado":               status,
+		"mensaje":              message,
+		"fecha_inicio":         startDate,
+		"fecha_vencimiento":    notAfter.Format("2006-01-02"),
+		"vence_en":             notAfter.Format(time.RFC3339),
+		"alerta_dias":          alertDays,
+		"dias_restantes":       days,
+		"proximo_a_vencer":     closeToExpiry,
+		"proximo_vencer":       closeToExpiry,
+		"vencido":              expired,
+		"requiere_alerta":      expired || closeToExpiry,
+		"validacion_x509":      true,
+		"zona_horaria_sistema": time.Local.String(),
+	}
+}
+
+func resolveDIANCertificateExpiryFromConfig(cfg map[string]interface{}) (time.Time, time.Time, string, error) {
+	if cfg == nil {
+		return time.Time{}, time.Time{}, "", fmt.Errorf("configuracion DIAN no disponible")
+	}
+	if notAfter, ok := parseDIANStoredTime(genericStringValue(cfg["certificado_vencimiento_en"])); ok {
+		notBefore, _ := parseDIANStoredTime(genericStringValue(cfg["certificado_inicio_en"]))
+		return notBefore, notAfter, "configuracion", nil
+	}
+	if notAfter, ok := parseDIANStoredTime(genericStringValue(cfg["certificado_vencimiento"])); ok {
+		notBefore, _ := parseDIANStoredTime(genericStringValue(cfg["certificado_inicio"]))
+		return notBefore, notAfter, "configuracion", nil
+	}
+	certRef := genericStringValue(cfg["certificado_url"])
+	if certRef == "" {
+		return time.Time{}, time.Time{}, "", nil
+	}
+	cert, err := parseDIANCertificate(certRef)
+	if err != nil {
+		return time.Time{}, time.Time{}, "certificado_url", err
+	}
+	return cert.NotBefore, cert.NotAfter, "certificado_x509", nil
+}
+
+func dianCertificateAlertRecentlySent(cfg map[string]interface{}, now time.Time) bool {
+	lastRaw := genericStringValue(cfg["certificado_alerta_ultimo_envio"])
+	last, ok := parseDIANStoredTime(lastRaw)
+	if !ok {
+		return false
+	}
+	return now.Sub(last) < 24*time.Hour
+}
+
+func sendDIANCertificateExpiryEmail(dbEmp, dbSuper *sql.DB, empresaID int64, cfg map[string]interface{}, status map[string]interface{}) (string, error) {
+	if dbSuper == nil {
+		return "", fmt.Errorf("configuracion de correo no disponible")
+	}
+	var empresa *dbpkg.Empresa
+	var err error
+	if dbEmp != nil {
+		empresa, err = dbpkg.GetEmpresaByScopeID(dbEmp, empresaID)
+	}
+	if empresa == nil && dbSuper != nil {
+		empresa, err = dbpkg.GetEmpresaByScopeID(dbSuper, empresaID)
+	}
+	if err != nil {
+		return "", err
+	}
+	if empresa == nil {
+		return "", fmt.Errorf("empresa no encontrada")
+	}
+	toEmail := strings.TrimSpace(empresa.UsuarioCreador)
+	if toEmail == "" {
+		return "", fmt.Errorf("la empresa no tiene correo administrador registrado")
+	}
+	if _, err := mail.ParseAddress(toEmail); err != nil {
+		return toEmail, fmt.Errorf("correo administrador invalido")
+	}
+	empresaNombre := strings.TrimSpace(empresa.Nombre)
+	if empresaNombre == "" {
+		empresaNombre = fmt.Sprintf("Empresa %d", empresaID)
+	}
+	subject := "Certificado digital DIAN proximo a vencer - " + empresaNombre
+	if parseTruthy(genericStringValue(status["vencido"])) {
+		subject = "Certificado digital DIAN vencido - " + empresaNombre
+	}
+	body := fmt.Sprintf(
+		"Hola,\n\nEl certificado digital usado para facturacion electronica DIAN de %s requiere revision.\n\nEstado: %s\nVence: %s\nDias restantes: %s\n\nIngresa a Administrar empresa > Facturacion electronica, carga una nueva firma/certificado y ejecuta la validacion DIAN antes de emitir documentos.\n\nPowerful Control System",
+		empresaNombre,
+		genericStringValue(status["estado"]),
+		genericStringValue(status["fecha_vencimiento"]),
+		genericStringValue(status["dias_restantes"]),
+	)
+	if err := sendEmpresaUsuarioGmailPlain(dbSuper, toEmail, subject, body); err != nil {
+		gmailErr := err
+		if fallbackErr := sendEmpresaUsuarioMailuPlain(dbSuper, toEmail, subject, body); fallbackErr == nil {
+			return toEmail, nil
+		}
+		return toEmail, gmailErr
+	}
+	return toEmail, nil
+}
+
+func checkDIANCertificateExpiry(dbEmp, dbSuper *sql.DB, empresaID int64, cfg map[string]interface{}, notify bool) map[string]interface{} {
+	now := time.Now()
+	alertDays := dianCertificateAlertThresholdDays(cfg)
+	notBefore, notAfter, source, err := resolveDIANCertificateExpiryFromConfig(cfg)
+	status := dianCertificateExpiryStatus(now, notBefore, notAfter, alertDays)
+	status["empresa_id"] = empresaID
+	status["fuente"] = source
+	status["correo_enviado"] = false
+	status["correo_destino"] = genericStringValue(cfg["certificado_alerta_email"])
+	if err != nil {
+		status["ok"] = false
+		status["certificado_error"] = dianTruncate(err.Error(), 180)
+		return status
+	}
+	if !notify || !parseTruthy(genericStringValue(status["requiere_alerta"])) {
+		return status
+	}
+	if dianCertificateAlertRecentlySent(cfg, now) {
+		status["correo_omitido"] = "alerta enviada en las ultimas 24 horas"
+		return status
+	}
+	toEmail, sendErr := sendDIANCertificateExpiryEmail(dbEmp, dbSuper, empresaID, cfg, status)
+	if strings.TrimSpace(toEmail) != "" {
+		status["correo_destino"] = toEmail
+	}
+	if sendErr != nil {
+		status["email_error"] = dianTruncate(sendErr.Error(), 180)
+		return status
+	}
+	status["correo_enviado"] = true
+	status["certificado_alerta_ultimo_envio"] = dianNowLocal()
+	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, map[string]interface{}{
+		"certificado_alerta_ultimo_envio": status["certificado_alerta_ultimo_envio"],
+		"certificado_alerta_email":        toEmail,
+	})
+	return status
+}
 
 func dianDefaultSetRequirement() map[string]interface{} {
 	return map[string]interface{}{
@@ -7534,6 +7767,19 @@ type dianSignatureUploadMaterial struct {
 	Subject        string
 	Issuer         string
 	Serial         string
+	NotBefore      time.Time
+	NotAfter       time.Time
+}
+
+func setDIANSignatureCertificateMetadata(material *dianSignatureUploadMaterial, cert *x509.Certificate) {
+	if material == nil || cert == nil {
+		return
+	}
+	material.Subject = cert.Subject.String()
+	material.Issuer = cert.Issuer.String()
+	material.Serial = cert.SerialNumber.String()
+	material.NotBefore = cert.NotBefore
+	material.NotAfter = cert.NotAfter
 }
 
 func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (dianSignatureUploadMaterial, error) {
@@ -7553,9 +7799,7 @@ func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (
 		material.CertificatePEM = encodeDIANCertificatePEM(cert)
 		material.Format = strings.TrimPrefix(ext, ".")
 		if cert != nil {
-			material.Subject = cert.Subject.String()
-			material.Issuer = cert.Issuer.String()
-			material.Serial = cert.SerialNumber.String()
+			setDIANSignatureCertificateMetadata(&material, cert)
 		}
 		return material, nil
 	}
@@ -7581,9 +7825,7 @@ func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (
 			}
 			if material.CertificatePEM == "" {
 				material.CertificatePEM = encodeDIANCertificatePEM(cert)
-				material.Subject = cert.Subject.String()
-				material.Issuer = cert.Issuer.String()
-				material.Serial = cert.SerialNumber.String()
+				setDIANSignatureCertificateMetadata(&material, cert)
 			}
 		}
 		remaining = rest
@@ -7592,9 +7834,7 @@ func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (
 	if material.PrivateKeyPEM == "" && material.CertificatePEM == "" {
 		if cert, err := x509.ParseCertificate(contentBytes); err == nil {
 			material.CertificatePEM = encodeDIANCertificatePEM(cert)
-			material.Subject = cert.Subject.String()
-			material.Issuer = cert.Issuer.String()
-			material.Serial = cert.SerialNumber.String()
+			setDIANSignatureCertificateMetadata(&material, cert)
 		}
 	}
 	if material.PrivateKeyPEM == "" {
@@ -7959,8 +8199,13 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-001", "error", "certificado_url", "certificado X.509 es obligatorio antes del envio", "firma_digital")
 		} else if cert, err := parseDIANCertificate(certRef); err != nil {
 			dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-002", "error", "certificado_url", "certificado X.509 invalido: "+dianTruncate(err.Error(), 120), "firma_digital")
-		} else if time.Now().After(cert.NotAfter) {
-			dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-003", "error", "certificado_url", "certificado X.509 vencido", "firma_digital")
+		} else {
+			expiry := dianCertificateExpiryStatus(time.Now(), cert.NotBefore, cert.NotAfter, dianCertificateAlertThresholdDays(cfg))
+			if parseTruthy(genericStringValue(expiry["vencido"])) {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-003", "error", "certificado_url", "certificado X.509 vencido", "firma_digital")
+			} else if parseTruthy(genericStringValue(expiry["proximo_a_vencer"])) {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-CER-004", "warning", "certificado_url", genericStringValue(expiry["mensaje"]), "firma_digital")
+			}
 		}
 	}
 
@@ -9993,11 +10238,13 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 		certMessage = err.Error()
 	} else {
 		certOK = true
-		certMessage = fmt.Sprintf("certificado X.509 valido; vence %s", cert.NotAfter.Format("2006-01-02"))
-		if time.Now().After(cert.NotAfter) {
+		expiry := dianCertificateExpiryStatus(time.Now(), cert.NotBefore, cert.NotAfter, dianCertificateAlertThresholdDays(cfg))
+		certMessage = genericStringValue(expiry["mensaje"])
+		if parseTruthy(genericStringValue(expiry["vencido"])) {
 			certOK = false
 			issues = append(issues, "certificado_url vencido")
-			certMessage = fmt.Sprintf("certificado vencido el %s", cert.NotAfter.Format("2006-01-02"))
+		} else if parseTruthy(genericStringValue(expiry["proximo_a_vencer"])) {
+			checks["certificado_vencimiento"] = expiry
 		}
 	}
 	checks["certificado_x509"] = map[string]interface{}{
@@ -10040,7 +10287,7 @@ func resolveEmpresaIDFromMultipartRequest(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-func uploadDIANCompanySignature(dbEmp *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
+func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
 	if err := r.ParseMultipartForm(12 << 20); err != nil {
 		return nil, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
 	}
@@ -10088,11 +10335,11 @@ func uploadDIANCompanySignature(dbEmp *sql.DB, r *http.Request) (map[string]inte
 		return nil, http.StatusBadRequest, err
 	}
 
-	webRoot := resolveWebRootDir()
-	dir := filepath.Join(webRoot, "uploads", "dian", fmt.Sprintf("empresa_%d", empresaID))
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	dir, empresaFolder := empresaFacturacionFirmaElectronicaDir(dbEmp, empresaID)
+	if _, err := ensureEmpresaUploadFolders(dbEmp, empresaID); err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio de firma")
 	}
+	_ = os.Chmod(dir, empresaFirmaElectronicaPrivateDirPerms)
 
 	suffix := time.Now().UnixNano()
 	keyFileName := fmt.Sprintf("firma_privada_%d.pem", suffix)
@@ -10127,24 +10374,36 @@ func uploadDIANCompanySignature(dbEmp *sql.DB, r *http.Request) (map[string]inte
 	if certRef != "" {
 		updates["certificado_url"] = certRef
 	}
+	if !material.NotAfter.IsZero() {
+		updates["certificado_vencimiento"] = material.NotAfter.Format("2006-01-02")
+		updates["certificado_vencimiento_en"] = material.NotAfter.Format(time.RFC3339)
+		if anyToInt64(cfg["certificado_alerta_dias"]) <= 0 {
+			updates["certificado_alerta_dias"] = dianCertificateAlertDays
+		}
+	}
 	if err := updateDIANConfigFields(dbEmp, empresaID, cfg, updates); err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo actualizar certificado_clave_ref")
 	}
+	vencimiento := checkDIANCertificateExpiry(dbEmp, dbSuper, empresaID, cfg, true)
 
 	return map[string]interface{}{
-		"ok":                    true,
-		"empresa_id":            empresaID,
-		"archivo_original":      strings.TrimSpace(header.Filename),
-		"archivo_guardado":      keyFileName,
-		"certificado_guardado":  certFileName,
-		"certificado_clave_ref": keyRef,
-		"certificado_url":       certRef,
-		"formato_detectado":     material.Format,
-		"certificado_subject":   material.Subject,
-		"certificado_issuer":    material.Issuer,
-		"certificado_serial":    material.Serial,
-		"tamano_bytes":          len(contentBytes),
-		"siguiente_paso":        "ejecutar action=validar_credenciales y luego action=pruebas_dian",
+		"ok":                      true,
+		"empresa_id":              empresaID,
+		"archivo_original":        strings.TrimSpace(header.Filename),
+		"archivo_guardado":        keyFileName,
+		"certificado_guardado":    certFileName,
+		"carpeta_empresa":         empresaFolder,
+		"carpeta_firma":           filepath.ToSlash(filepath.Join("uploads", "empresas", empresaFolder, empresaFacturacionElectronicaDirName, empresaFirmaElectronicaDirName)),
+		"certificado_clave_ref":   keyRef,
+		"certificado_url":         certRef,
+		"formato_detectado":       material.Format,
+		"certificado_subject":     material.Subject,
+		"certificado_issuer":      material.Issuer,
+		"certificado_serial":      material.Serial,
+		"certificado_vencimiento": genericStringValue(vencimiento["fecha_vencimiento"]),
+		"vencimiento_certificado": vencimiento,
+		"tamano_bytes":            len(contentBytes),
+		"siguiente_paso":          "ejecutar action=validar_credenciales y luego action=pruebas_dian",
 	}, http.StatusOK, nil
 }
 

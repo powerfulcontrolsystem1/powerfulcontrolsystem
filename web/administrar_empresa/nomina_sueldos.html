@@ -6,6 +6,37 @@
   <title>Nómina de sueldos</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .nomina-help-action {
+      align-items: center;
+      display: inline-flex;
+      gap: 8px;
+      min-height: 40px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nomina-help-action-icon {
+      align-items: center;
+      background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+      border-radius: 999px;
+      color: var(--accent);
+      display: inline-flex;
+      font-size: 1rem;
+      font-weight: 950;
+      height: 26px;
+      justify-content: center;
+      line-height: 1;
+      width: 26px;
+    }
+    @media (max-width: 640px) {
+      .nomina-help-action,
+      .nomina-page .empresa-section-header .form-actions .btn {
+        justify-content: center;
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body class="empresa-subpage nomina-page">
   <div class="container empresa-module">
@@ -60,6 +91,10 @@
           <p id="empresaInfo" class="form-help">Empresa: cargando...</p>
         </div>
         <div class="form-actions">
+          <a id="nominaHelpTutorial" class="btn secondary nomina-help-action" href="/ayuda/tutorial_nomina.html" target="_blank" rel="noopener">
+            <span class="nomina-help-action-icon" aria-hidden="true">?</span>
+            Ayuda
+          </a>
           <button id="btnRecargarTodo" class="btn secondary" type="button">Actualizar</button>
         </div>
       </div>
@@ -729,6 +764,14 @@
       function getQueryParam(name) {
         const params = new URLSearchParams(window.location.search);
         return params.get(name);
+      }
+
+      function syncTutorialHelpLink() {
+        const link = document.getElementById('nominaHelpTutorial');
+        if (!link) return;
+        const params = new URLSearchParams();
+        if (state.empresaID > 0) params.set('empresa_id', String(state.empresaID));
+        link.href = '/ayuda/tutorial_nomina.html' + (params.toString() ? '?' + params.toString() : '');
       }
 
       function normalize(v) {
@@ -1859,6 +1902,7 @@
           return;
         }
 
+        syncTutorialHelpLink();
         setDefaultDates();
         bindEvents();
         setEmpresaInfo();
