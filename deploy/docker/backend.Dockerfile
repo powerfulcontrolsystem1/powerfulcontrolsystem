@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/pcs-bac
 
 FROM alpine:3.20
 
-RUN apk add --no-cache bash ca-certificates curl docker-cli openssh-client tesseract-ocr tesseract-ocr-data-eng tesseract-ocr-data-spa tzdata
+RUN apk add --no-cache bash ca-certificates curl docker-cli openssh-client openssl tesseract-ocr tesseract-ocr-data-eng tesseract-ocr-data-spa tzdata
 WORKDIR /app/backend
 
 COPY --from=build /out/pcs-backend /app/backend/pcs-backend

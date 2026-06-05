@@ -27,6 +27,8 @@ Actualizacion 2026-06-05 (carpetas empresariales y firma electronica)
   `certificado_formato`, `certificado_subject`, `certificado_issuer`,
   `certificado_serial` y `certificado_clave_estado`. La clave real del P12/PFX
   no se persiste ni se muestra en claro.
+- La compatibilidad con P12/PFX modernos usa OpenSSL dentro del contenedor
+  backend; no agrega columnas adicionales ni guarda la clave del certificado.
 
 Actualizacion 2026-06-04 (camaras y DVR)
 - Nueva tabla empresarial `empresa_camaras` en `pcs_empresas`.

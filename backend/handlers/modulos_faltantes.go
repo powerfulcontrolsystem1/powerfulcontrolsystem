@@ -22,6 +22,7 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -7784,6 +7785,46 @@ func setDIANSignatureCertificateMetadata(material *dianSignatureUploadMaterial, 
 	material.NotAfter = cert.NotAfter
 }
 
+func decodeDIANP12WithOpenSSL(contentBytes []byte, password, format string) (dianSignatureUploadMaterial, error) {
+	var material dianSignatureUploadMaterial
+	opensslPath, err := exec.LookPath("openssl")
+	if err != nil {
+		return material, err
+	}
+	tmp, err := os.CreateTemp("", "pcs-dian-firma-*.p12")
+	if err != nil {
+		return material, err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if _, err := tmp.Write(contentBytes); err != nil {
+		tmp.Close()
+		return material, err
+	}
+	if err := tmp.Close(); err != nil {
+		return material, err
+	}
+	_ = os.Chmod(tmpName, 0o600)
+
+	cmd := exec.Command(opensslPath, "pkcs12", "-in", tmpName, "-nodes", "-passin", "env:PCS_DIAN_P12_PASSWORD")
+	cmd.Env = append(os.Environ(), "PCS_DIAN_P12_PASSWORD="+password)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return material, fmt.Errorf("no se pudo decodificar P12/PFX con OpenSSL")
+	}
+	material, err = decodeDIANSignatureUpload(stdout.Bytes(), "firma_convertida.pem", "")
+	if err != nil {
+		return material, err
+	}
+	if strings.TrimSpace(format) != "" {
+		material.Format = strings.TrimSpace(format)
+	}
+	return material, nil
+}
+
 func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (dianSignatureUploadMaterial, error) {
 	var material dianSignatureUploadMaterial
 	name := strings.ToLower(strings.TrimSpace(filename))
@@ -7806,6 +7847,10 @@ func decodeDIANSignatureUpload(contentBytes []byte, filename, password string) (
 
 		blocks, pemErr := pkcs12.ToPEM(contentBytes, password)
 		if pemErr != nil {
+			opensslMaterial, opensslErr := decodeDIANP12WithOpenSSL(contentBytes, password, strings.TrimPrefix(ext, "."))
+			if opensslErr == nil {
+				return opensslMaterial, nil
+			}
 			return material, fmt.Errorf("no se pudo decodificar P12/PFX; verifique la clave o convierta el certificado a PEM compatible")
 		}
 		for _, block := range blocks {

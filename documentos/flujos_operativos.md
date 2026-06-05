@@ -222,7 +222,8 @@ afecte dinero, documentos, licencias o seguridad.
    `web/uploads/empresas/empresa_{id}_{slug}/facturacion_electronica/firma_electronica/`.
    Para P12/PFX con multiples bolsas o cadenas de certificados, el backend
    convierte internamente a PEM con la dependencia existente antes de extraer la
-   llave RSA.
+   llave RSA; para P12/PFX modernos no soportados por Go, el contenedor backend
+   usa OpenSSL con la clave en una variable de entorno temporal del proceso.
 4. Las rutas guardadas en la configuracion DIAN son referencias internas `file:`
    a archivos con permiso `0600`; no deben convertirse en enlaces publicos.
 5. El backend extrae del X.509 la fecha real de vencimiento y la guarda en
