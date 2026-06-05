@@ -12335,3 +12335,20 @@ Archivos modificados:
 - web/js/pwa_install.js
 - web/login.html
 - web/login_usuario.html
+
+2026-06-05 01:17:18 - Mensaje: Normalizar empresa interna Powerful Control System; Commit: 4b3461a4; PushStatus: OK
+Archivos modificados:
+- .gitignore
+- CHANGELOG.md
+- backend/db/licencias_empresa_sistema.go
+- backend/db/licencias_globales_test.go
+- backend/handlers/informacion_modulos_test.go
+- backend/handlers/pagina_principal_handlers.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/mapa_modulos.md
