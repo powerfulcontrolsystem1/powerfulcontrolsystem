@@ -30890,3 +30890,14 @@ Archivos modificados:
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica.html
+
+2026-06-05: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- tmp/firma-dian-precheck.png
+- tmp/firma-dian-upload-result.png

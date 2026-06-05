@@ -12430,3 +12430,13 @@ Archivos modificados:
 - documentos/flujos_operativos.md
 - documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica.html
+
+2026-06-05 11:03:28 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 4de71f16; PushStatus: OK
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- tmp/firma-dian-precheck.png
+- tmp/firma-dian-upload-result.png
