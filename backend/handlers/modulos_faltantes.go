@@ -7806,13 +7806,26 @@ func decodeDIANP12WithOpenSSL(contentBytes []byte, password, format string) (dia
 	}
 	_ = os.Chmod(tmpName, 0o600)
 
-	cmd := exec.Command(opensslPath, "pkcs12", "-in", tmpName, "-nodes", "-passin", "env:PCS_DIAN_P12_PASSWORD")
-	cmd.Env = append(os.Environ(), "PCS_DIAN_P12_PASSWORD="+password)
 	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	var lastErr error
+	for _, args := range [][]string{
+		{"pkcs12", "-in", tmpName, "-nodes", "-passin", "env:PCS_DIAN_P12_PASSWORD"},
+		{"pkcs12", "-legacy", "-in", tmpName, "-nodes", "-passin", "env:PCS_DIAN_P12_PASSWORD"},
+	} {
+		stdout.Reset()
+		var stderr bytes.Buffer
+		cmd := exec.Command(opensslPath, args...)
+		cmd.Env = append(os.Environ(), "PCS_DIAN_P12_PASSWORD="+password)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			lastErr = err
+			continue
+		}
+		lastErr = nil
+		break
+	}
+	if lastErr != nil {
 		return material, fmt.Errorf("no se pudo decodificar P12/PFX con OpenSSL")
 	}
 	material, err = decodeDIANSignatureUpload(stdout.Bytes(), "firma_convertida.pem", "")
