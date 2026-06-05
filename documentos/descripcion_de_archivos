@@ -1,3 +1,10 @@
+2026-06-05 - Pasarelas de licencia Epayco/Wompi
+- `backend/handlers/payments_handlers.go`:
+	- agrega helpers para leer credenciales opcionales de pasarelas sin exponer secretos ni apagar el proveedor completo por una clave secundaria antigua.
+	- publica Wompi como disponible solo cuando la public key y la integrity key son utilizables para Web Checkout.
+- `backend/handlers/payments_handlers_test.go`:
+	- cubre la tolerancia a credenciales cifradas no descifrables en readiness y los requisitos minimos de Wompi Web Checkout.
+
 2026-06-05 - Tutorial guiado de nomina con narracion
 - `web/ayuda/tutorial_nomina.html`:
 	- nueva presentacion operativa de nomina con pasos numerados, tarjetas visuales y narraciones por diapositiva.

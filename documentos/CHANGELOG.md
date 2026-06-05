@@ -1,3 +1,8 @@
+## [2026-06-05] Pasarelas de licencia Epayco/Wompi
+- [Pagos] La disponibilidad publica de Epayco vuelve a resolver credenciales legacy y opcionales sin apagar toda la pasarela si una clave opcional cifrada no se puede descifrar.
+- [Pagos] Wompi solo se publica como disponible cuando la llave publica y la llave de integridad son realmente legibles para Web Checkout.
+- [QA] `go test ./handlers -run "EpaycoCheckoutCredential|DefaultLicenciaPayment|Wompi|PaymentCredential" -count=1`.
+
 ## [2026-06-05] Tutorial de nomina con narracion
 - [Ayuda] Se agrega `web/ayuda/tutorial_nomina.html` como presentacion guiada de nomina con pasos operativos, tarjetas visuales y narraciones.
 - [UX] Cada bloque `Narracion` tiene boton con icono de play para reproducir la guia por voz cuando el navegador soporte sintesis de voz.

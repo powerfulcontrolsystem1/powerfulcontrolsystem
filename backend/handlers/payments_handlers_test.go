@@ -482,6 +482,27 @@ func TestEpaycoCheckoutCredentialReadinessSeparatesSmartAndClassicKeys(t *testin
 	}
 }
 
+func TestPaymentCredentialValueForReadinessIgnoresBrokenEncryptedValue(t *testing.T) {
+	if got := paymentCredentialValueForReadiness("epayco.private_key", "not-a-valid-ciphertext", true); got != "" {
+		t.Fatalf("expected broken encrypted credential to be ignored, got %q", got)
+	}
+	if got := paymentCredentialValueForReadiness("epayco.customer_id", " 9695 ", false); got != "9695" {
+		t.Fatalf("expected plaintext credential to be trimmed, got %q", got)
+	}
+}
+
+func TestWompiWebCheckoutReadyRequiresUsablePublicAndIntegrityKeys(t *testing.T) {
+	if !wompiWebCheckoutReady("pub_test_123", "integrity-secret") {
+		t.Fatal("expected Wompi web checkout to be ready with public and integrity keys")
+	}
+	if wompiWebCheckoutReady("pub_test_123", "") {
+		t.Fatal("expected Wompi web checkout to require an integrity key")
+	}
+	if wompiWebCheckoutReady("encrypted-value-without-prefix", "integrity-secret") {
+		t.Fatal("expected Wompi web checkout to require a real public key prefix")
+	}
+}
+
 func TestDefaultLicenciaPaymentProviderEnabledFollowsConfigurationReadiness(t *testing.T) {
 	if !defaultLicenciaPaymentProviderEnabled(true) {
 		t.Fatal("configured license payment providers should be enabled by default")

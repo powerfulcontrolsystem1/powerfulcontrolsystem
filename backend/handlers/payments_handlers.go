@@ -484,6 +484,33 @@ func getDecryptedConfigValue(dbSuper *sql.DB, key string) (string, error) {
 	return dec, nil
 }
 
+func paymentCredentialValueForReadiness(key, value string, encrypted bool) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if !encrypted {
+		return value
+	}
+	dec, err := utils.DecryptString(value)
+	if err != nil {
+		log.Printf("warning: encrypted payment credential %s could not be decrypted for readiness; ignoring stored value", key)
+		return ""
+	}
+	return strings.TrimSpace(dec)
+}
+
+func getOptionalPaymentCredentialValue(dbSuper *sql.DB, key string) (string, error) {
+	value, encrypted, _, _, err := dbpkg.GetConfigEntry(dbSuper, key)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return paymentCredentialValueForReadiness(key, value, encrypted), nil
+}
+
 func isApprovedPaymentStatus(status string) bool {
 	status = strings.ToLower(strings.TrimSpace(status))
 	switch status {
@@ -2954,19 +2981,19 @@ func resolveEpaycoCredentialSet(dbSuper *sql.DB) (epaycoCredentialSet, error) {
 	if err != nil {
 		return creds, err
 	}
-	creds.PrivateKey, err = getDecryptedConfigValue(dbSuper, "epayco.private_key")
+	creds.PrivateKey, err = getOptionalPaymentCredentialValue(dbSuper, "epayco.private_key")
 	if err != nil {
 		return creds, err
 	}
 	creds.PrivateKey = strings.TrimSpace(creds.PrivateKey)
 
-	if checkoutKey, keyErr := getDecryptedConfigValue(dbSuper, "epayco.checkout_key"); keyErr != nil {
+	if checkoutKey, keyErr := getOptionalPaymentCredentialValue(dbSuper, "epayco.checkout_key"); keyErr != nil {
 		return creds, keyErr
 	} else {
 		creds.CheckoutKey = strings.TrimSpace(checkoutKey)
 	}
 	if creds.CheckoutKey == "" {
-		if checkoutKey, keyErr := getDecryptedConfigValue(dbSuper, "epayco.p_key"); keyErr != nil {
+		if checkoutKey, keyErr := getOptionalPaymentCredentialValue(dbSuper, "epayco.p_key"); keyErr != nil {
 			return creds, keyErr
 		} else {
 			creds.CheckoutKey = strings.TrimSpace(checkoutKey)
@@ -2977,7 +3004,7 @@ func resolveEpaycoCredentialSet(dbSuper *sql.DB) (epaycoCredentialSet, error) {
 	if err != nil {
 		return creds, err
 	}
-	legacyKey, err := getDecryptedConfigValue(dbSuper, "epayco.key")
+	legacyKey, err := getOptionalPaymentCredentialValue(dbSuper, "epayco.key")
 	if err != nil {
 		return creds, err
 	}
@@ -3088,6 +3115,10 @@ func resolveCountryProviderEnabled(dbSuper *sql.DB, paisCodigo, providerID strin
 	return parseBoolConfigValue(val)
 }
 
+func wompiWebCheckoutReady(publicKey, integrityKey string) bool {
+	return looksLikeWompiPublicKey(publicKey) && strings.TrimSpace(integrityKey) != ""
+}
+
 func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]licenciaPaymentMethodStatus, error) {
 	epaycoCreds, err := resolveEpaycoCredentialSet(dbSuper)
 	if err != nil {
@@ -3102,17 +3133,17 @@ func loadLicenciaPaymentMethodStatuses(dbSuper *sql.DB, paisCodigo string) ([]li
 		return nil, err
 	}
 
-	wompiPublicKey, err := getConfigEntryTrimmed(dbSuper, "wompi.public_key")
+	wompiPublicKey, err := getOptionalPaymentCredentialValue(dbSuper, "wompi.public_key")
 	if err != nil {
 		log.Printf("warning: failed to read wompi.public_key for public payment methods: %v", err)
 		wompiPublicKey = ""
 	}
-	wompiIntegrityKey, err := getConfigEntryTrimmed(dbSuper, "wompi.integrity_key")
+	wompiIntegrityKey, err := getOptionalPaymentCredentialValue(dbSuper, "wompi.integrity_key")
 	if err != nil {
 		log.Printf("warning: failed to read wompi.integrity_key for public payment methods: %v", err)
 		wompiIntegrityKey = ""
 	}
-	wompiWebCheckoutConfigured := looksLikeWompiPublicKey(wompiPublicKey) && wompiIntegrityKey != ""
+	wompiWebCheckoutConfigured := wompiWebCheckoutReady(wompiPublicKey, wompiIntegrityKey)
 	wompiConfigured := wompiWebCheckoutConfigured
 	wompiEnabled, err := resolveEnabledConfigValue(dbSuper, "wompi.enabled", defaultLicenciaPaymentProviderEnabled(wompiConfigured))
 	if err != nil {
