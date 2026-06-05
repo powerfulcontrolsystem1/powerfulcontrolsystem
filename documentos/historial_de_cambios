@@ -30771,3 +30771,15 @@ Archivos modificados:
 - documentos/estructura_bd.md
 - documentos/flujos_operativos.md
 - documentos/mapa_modulos.md
+
+2026-06-05: Reparar empresa interna Powerful Control System
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/chat_inteligencia_artificial.go
+- backend/db/db.go
+- backend/db/licencias_adicionales.go
+- backend/db/licencias_estado_empresas.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
