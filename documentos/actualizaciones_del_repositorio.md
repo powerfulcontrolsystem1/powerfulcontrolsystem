@@ -12440,3 +12440,13 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - tmp/firma-dian-precheck.png
 - tmp/firma-dian-upload-result.png
+
+2026-06-05 11:13:38 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 8fd86947; PushStatus: OK
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
+- deploy/docker/backend.Dockerfile
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
