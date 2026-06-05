@@ -1,6 +1,6 @@
 2026-06-04: Instalador PWA reparado en login y login usuario.
 - Modulos afectados: autenticacion, PWA, login administrador y login usuario operativo.
-- Cambio funcional: `web/js/pwa_install.js` ahora prepara y reintenta el service worker antes de mostrar instrucciones manuales, usa el prompt nativo cuando Chrome/Edge lo entrega, evita perder datos escritos si el usuario ya lleno campos y mantiene el mismo flujo en `login.html` y `login_usuario.html`.
+- Cambio funcional: `web/js/pwa_install.js` ahora prepara y reintenta el service worker antes de mostrar instrucciones manuales, usa y consume correctamente el prompt nativo cuando Chrome/Edge lo entrega, evita quedar esperando indefinidamente `userChoice`, evita perder datos escritos si el usuario ya lleno campos y mantiene el mismo flujo en `login.html` y `login_usuario.html`.
 - Frontend: se actualizaron los cache-busters de ambos login para cargar el helper corregido.
 - Pruebas: `node --check web\js\pwa_install.js`, `git diff --check` y validacion visual local con `?qa_pwa=1` en ambas paginas verificando que el boton muestre `Instalacion iniciada...`.
 

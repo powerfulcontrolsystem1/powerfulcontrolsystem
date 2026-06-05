@@ -1,5 +1,5 @@
 ## [2026-06-04] Instalar app en login y login usuario
-- [PWA] `web/js/pwa_install.js` prepara el service worker, espera el evento nativo de instalacion y evita mostrar de inmediato el mensaje de instalacion manual cuando Chrome/Edge aun no entregan el prompt.
+- [PWA] `web/js/pwa_install.js` prepara el service worker, espera el evento nativo de instalacion, consume el prompt una sola vez como exige Chrome/Edge y evita mostrar de inmediato el mensaje de instalacion manual cuando el navegador aun no entrega el prompt.
 - [UX] El boton `Instalar app` conserva el mismo flujo en `login.html` y `login_usuario.html`; si el usuario ya escribio correo o contrasena, no se fuerza recarga para no perder datos.
 - [QA] Validado con `node --check web/js/pwa_install.js`, `git diff --check` y prueba visual local de ambos botones usando `?qa_pwa=1`.
 

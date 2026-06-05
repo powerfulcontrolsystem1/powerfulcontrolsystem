@@ -8,6 +8,7 @@
   var installAttemptInProgress = false;
   var promptReadyAt = installPromptEvent ? Date.now() : 0;
   var controllerReloadKey = "pcs_pwa_controller_reload_at";
+  var promptFallbackTimer = null;
 
   function setMessage(text, isError) {
     if (!messageBox) {
@@ -186,32 +187,49 @@
       syncInstallButton();
       return true;
     }
+    installPromptEvent = null;
+    window.__pcsInstallPromptEvent = null;
+    syncInstallButton();
+    if (promptFallbackTimer) {
+      window.clearTimeout(promptFallbackTimer);
+    }
+    promptFallbackTimer = window.setTimeout(function () {
+      setMessage("Si aparece la ventana de instalacion, confirma para crear el acceso de la app. Si no aparece, recarga la pagina y presiona Instalar app nuevamente.", false);
+    }, 1200);
     Promise.resolve(promptResult).catch(function () {
+      if (promptFallbackTimer) {
+        window.clearTimeout(promptFallbackTimer);
+        promptFallbackTimer = null;
+      }
       setMessage("Chrome no permitio abrir la instalacion todavia. Espera unos segundos y presiona Instalar app nuevamente.", true);
-      installPromptEvent = null;
-      window.__pcsInstallPromptEvent = null;
       syncInstallButton();
     });
     if (!promptEvent.userChoice) {
+      if (promptFallbackTimer) {
+        window.clearTimeout(promptFallbackTimer);
+        promptFallbackTimer = null;
+      }
       setMessage("Si aparece la ventana de instalacion, confirma para crear el acceso de la app.", false);
-      installPromptEvent = null;
-      window.__pcsInstallPromptEvent = null;
       syncInstallButton();
       return true;
     }
     promptEvent.userChoice.then(function (choice) {
+      if (promptFallbackTimer) {
+        window.clearTimeout(promptFallbackTimer);
+        promptFallbackTimer = null;
+      }
       if (choice && choice.outcome === "accepted") {
         setMessage("Instalacion iniciada. Chrome creara el acceso de la aplicacion.", false);
       } else {
         setMessage("Instalacion cancelada.", true);
       }
-      installPromptEvent = null;
-      window.__pcsInstallPromptEvent = null;
       syncInstallButton();
     }).catch(function () {
+      if (promptFallbackTimer) {
+        window.clearTimeout(promptFallbackTimer);
+        promptFallbackTimer = null;
+      }
       setMessage("Chrome no confirmo la instalacion. Presiona Instalar app nuevamente.", true);
-      installPromptEvent = null;
-      window.__pcsInstallPromptEvent = null;
       syncInstallButton();
     });
     return true;
