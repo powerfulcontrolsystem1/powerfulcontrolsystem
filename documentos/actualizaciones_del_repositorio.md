@@ -12518,3 +12518,7 @@ Archivos modificados:
 - backend/handlers/dian_signature_upload_test.go
 - backend/handlers/modulos_faltantes.go
 - documentos/historial_de_cambios
+
+2026-06-05 21:08:36 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b0b2cc29; PushStatus: OK
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
