@@ -13136,3 +13136,10 @@ Archivos modificados:
 - tmp/dian-visual-auth-profile/component_crx_cache/metadata.json
 - tmp/dian-visual-auth-profile/extensions_crx_cache/metadata.json
 - tmp/dian-visual-auth-profile/first_party_sets.db-journal
+
+2026-06-06 18:54:32 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6c689c4f; PushStatus: OK
+Archivos modificados:
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
