@@ -8901,6 +8901,129 @@ func buildDIANZipContent(fileName, xmlContent string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+const (
+	dianSOAPNamespace       = "http://www.w3.org/2003/05/soap-envelope"
+	dianAddressingNamespace = "http://www.w3.org/2005/08/addressing"
+	dianWCFNamespace        = "http://wcf.dian.colombia"
+	dianWSUSecurityNS       = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+	dianWSSESecurityNS      = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+	dianWSSX509ValueType    = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3"
+	dianWSSBase64Encoding   = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary"
+	dianDSigNamespace       = "http://www.w3.org/2000/09/xmldsig#"
+	dianExcC14NAlgorithm    = "http://www.w3.org/2001/10/xml-exc-c14n#"
+	dianRSASHA256Algorithm  = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+	dianSHA256DigestAlg     = "http://www.w3.org/2001/04/xmlenc#sha256"
+)
+
+func dianSOAPSafeID(prefix string) string {
+	raw := make([]byte, 12)
+	if _, err := rand.Read(raw); err != nil {
+		return prefix + "-" + strconv.FormatInt(time.Now().UnixNano(), 36)
+	}
+	return prefix + "-" + hex.EncodeToString(raw)
+}
+
+func dianSOAPSHA256DigestBase64(canonicalXML string) string {
+	digest := sha256.Sum256([]byte(canonicalXML))
+	return base64.StdEncoding.EncodeToString(digest[:])
+}
+
+func dianSOAPSignedReference(id, canonicalXML string) string {
+	return fmt.Sprintf(`<ds:Reference URI="#%s"><ds:Transforms><ds:Transform Algorithm="%s"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="%s"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>`,
+		escapeXML(id),
+		dianExcC14NAlgorithm,
+		dianSHA256DigestAlg,
+		dianSOAPSHA256DigestBase64(canonicalXML),
+	)
+}
+
+func dianBuildSOAPBody(operation, fileName string, zipBytes []byte, testSetID string) string {
+	contentBase64 := base64.StdEncoding.EncodeToString(zipBytes)
+	switch operation {
+	case "SendTestSetAsync":
+		return fmt.Sprintf(`<wcf:SendTestSetAsync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile><wcf:testSetId>%s</wcf:testSetId></wcf:SendTestSetAsync>`,
+			escapeXML(fileName), contentBase64, escapeXML(testSetID))
+	case "SendBillAsync":
+		return fmt.Sprintf(`<wcf:SendBillAsync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile></wcf:SendBillAsync>`,
+			escapeXML(fileName), contentBase64)
+	default:
+		return fmt.Sprintf(`<wcf:SendBillSync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile></wcf:SendBillSync>`,
+			escapeXML(fileName), contentBase64)
+	}
+}
+
+func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, zipBytes []byte, testSetID string, privateKey *rsa.PrivateKey, cert *x509.Certificate, now time.Time) (string, map[string]interface{}, error) {
+	if privateKey == nil {
+		return "", nil, fmt.Errorf("llave privada DIAN requerida para WS-Security")
+	}
+	if cert == nil {
+		return "", nil, fmt.Errorf("certificado X.509 requerido para WS-Security")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	action := dianSOAPAction(operation)
+	bodyContent := dianBuildSOAPBody(operation, fileName, zipBytes, testSetID)
+	actionID := dianSOAPSafeID("PCSAction")
+	toID := dianSOAPSafeID("PCSTo")
+	bodyID := dianSOAPSafeID("PCSBody")
+	timestampID := dianSOAPSafeID("PCSTS")
+	tokenID := dianSOAPSafeID("PCSBST")
+
+	created := now.Format("2006-01-02T15:04:05Z")
+	expires := now.Add(5 * time.Minute).Format("2006-01-02T15:04:05Z")
+	actionHeader := fmt.Sprintf(`<a:Action s:mustUnderstand="1" wsu:Id="%s" xmlns:a="%s" xmlns:s="%s" xmlns:wsu="%s">%s</a:Action>`,
+		actionID, dianAddressingNamespace, dianSOAPNamespace, dianWSUSecurityNS, escapeXML(action))
+	toHeader := fmt.Sprintf(`<a:To s:mustUnderstand="1" wsu:Id="%s" xmlns:a="%s" xmlns:s="%s" xmlns:wsu="%s">%s</a:To>`,
+		toID, dianAddressingNamespace, dianSOAPNamespace, dianWSUSecurityNS, escapeXML(endpoint))
+	body := fmt.Sprintf(`<s:Body wsu:Id="%s" xmlns:s="%s" xmlns:wsu="%s" xmlns:wcf="%s">%s</s:Body>`,
+		bodyID, dianSOAPNamespace, dianWSUSecurityNS, dianWCFNamespace, bodyContent)
+	timestamp := fmt.Sprintf(`<wsu:Timestamp wsu:Id="%s" xmlns:wsu="%s"><wsu:Created>%s</wsu:Created><wsu:Expires>%s</wsu:Expires></wsu:Timestamp>`,
+		timestampID, dianWSUSecurityNS, created, expires)
+	binaryToken := fmt.Sprintf(`<wsse:BinarySecurityToken wsu:Id="%s" EncodingType="%s" ValueType="%s" xmlns:wsse="%s" xmlns:wsu="%s">%s</wsse:BinarySecurityToken>`,
+		tokenID, dianWSSBase64Encoding, dianWSSX509ValueType, dianWSSESecurityNS, dianWSUSecurityNS, base64.StdEncoding.EncodeToString(cert.Raw))
+
+	references := strings.Join([]string{
+		dianSOAPSignedReference(timestampID, timestamp),
+		dianSOAPSignedReference(actionID, actionHeader),
+		dianSOAPSignedReference(toID, toHeader),
+		dianSOAPSignedReference(bodyID, body),
+		dianSOAPSignedReference(tokenID, binaryToken),
+	}, "")
+	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="%s"><ds:CanonicalizationMethod Algorithm="%s"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="%s"></ds:SignatureMethod>%s</ds:SignedInfo>`,
+		dianDSigNamespace, dianExcC14NAlgorithm, dianRSASHA256Algorithm, references)
+	signedInfoDigest := sha256.Sum256([]byte(signedInfo))
+	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
+	if err != nil {
+		return "", nil, fmt.Errorf("no se pudo firmar WS-Security DIAN")
+	}
+	signature := fmt.Sprintf(`<ds:Signature xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo><wsse:SecurityTokenReference xmlns:wsse="%s"><wsse:Reference URI="#%s" ValueType="%s"></wsse:Reference></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+		dianDSigNamespace,
+		signedInfo,
+		base64.StdEncoding.EncodeToString(signatureValue),
+		dianWSSESecurityNS,
+		escapeXML(tokenID),
+		dianWSSX509ValueType,
+	)
+	security := fmt.Sprintf(`<wsse:Security s:mustUnderstand="1" xmlns:wsse="%s" xmlns:s="%s">%s%s%s</wsse:Security>`,
+		dianWSSESecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
+	envelope := fmt.Sprintf(`<s:Envelope xmlns:s="%s" xmlns:a="%s" xmlns:wcf="%s" xmlns:wsu="%s"><s:Header>%s%s%s</s:Header>%s</s:Envelope>`,
+		dianSOAPNamespace, dianAddressingNamespace, dianWCFNamespace, dianWSUSecurityNS, security, actionHeader, toHeader, body)
+	meta := map[string]interface{}{
+		"ws_security":              true,
+		"signed_parts":             []string{"Timestamp", "Action", "To", "Body", "BinarySecurityToken"},
+		"signature_algorithm":      "RSA-SHA256",
+		"digest_algorithm":         "SHA-256",
+		"canonicalization":         "exclusive_c14n_generated_xml",
+		"timestamp_created":        created,
+		"timestamp_expires":        expires,
+		"binary_security_token_id": tokenID,
+	}
+	return envelope, meta, nil
+}
+
 func dianSOAPOperationFromPayload(payload map[string]interface{}, ambiente, testSetID string) string {
 	operation := strings.TrimSpace(dianPayloadString(payload, "soap_operacion", "operacion_soap", "operation"))
 	if operation != "" {
@@ -8925,19 +9048,7 @@ func dianSOAPAction(operation string) string {
 
 func buildDIANSOAPEnvelope(operation, endpoint, fileName string, zipBytes []byte, testSetID string) string {
 	action := dianSOAPAction(operation)
-	contentBase64 := base64.StdEncoding.EncodeToString(zipBytes)
-	var body string
-	switch operation {
-	case "SendTestSetAsync":
-		body = fmt.Sprintf(`<wcf:SendTestSetAsync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile><wcf:testSetId>%s</wcf:testSetId></wcf:SendTestSetAsync>`,
-			escapeXML(fileName), contentBase64, escapeXML(testSetID))
-	case "SendBillAsync":
-		body = fmt.Sprintf(`<wcf:SendBillAsync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile></wcf:SendBillAsync>`,
-			escapeXML(fileName), contentBase64)
-	default:
-		body = fmt.Sprintf(`<wcf:SendBillSync><wcf:fileName>%s</wcf:fileName><wcf:contentFile>%s</wcf:contentFile></wcf:SendBillSync>`,
-			escapeXML(fileName), contentBase64)
-	}
+	body := dianBuildSOAPBody(operation, fileName, zipBytes, testSetID)
 	return fmt.Sprintf(`<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:wcf="http://wcf.dian.colombia"><s:Header><a:Action s:mustUnderstand="1">%s</a:Action><a:To s:mustUnderstand="1">%s</a:To></s:Header><s:Body>%s</s:Body></s:Envelope>`,
 		escapeXML(action), escapeXML(endpoint), body)
 }
@@ -9017,6 +9128,58 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 
 	soapEndpoint := normalizeDIANSOAPEndpoint(endpoint)
 	envelope := buildDIANSOAPEnvelope(operation, soapEndpoint, zipFileName, zipBytes, testSetID)
+	wsSecurityMeta := map[string]interface{}{"ws_security": false}
+	if isDIANOfficialEndpoint(soapEndpoint) {
+		keyRef := dianFirstNonBlank(
+			genericStringValue(payload["private_key_pem"]),
+			genericStringValue(payload["certificado_clave_ref"]),
+			genericStringValue(cfg["certificado_clave_ref"]),
+		)
+		certRef := dianFirstNonBlank(
+			genericStringValue(payload["certificado_pem"]),
+			genericStringValue(payload["certificado_ref"]),
+			genericStringValue(payload["certificado_x509_ref"]),
+			genericStringValue(cfg["certificado_url"]),
+		)
+		privateKey, keyErr := parseDIANRSAPrivateKey(keyRef)
+		certificate, certErr := parseDIANCertificate(certRef)
+		if keyErr != nil || certErr != nil {
+			missingParts := make([]string, 0)
+			if keyErr != nil {
+				missingParts = append(missingParts, "llave privada")
+			}
+			if certErr != nil {
+				missingParts = append(missingParts, "certificado X.509")
+			}
+			return map[string]interface{}{
+				"ok":                  false,
+				"empresa_id":          empresaID,
+				"documento_codigo":    documentoCodigo,
+				"cufe":                cufe,
+				"transporte":          "soap_dian",
+				"operacion_soap":      operation,
+				"contingencia_activa": true,
+				"estado_dian":         "contingencia",
+				"error":               "no se pudo preparar WS-Security DIAN: " + strings.Join(missingParts, ", "),
+			}, http.StatusOK, nil
+		}
+		secureEnvelope, meta, secureErr := buildDIANSOAPEnvelopeWithWSSecurity(operation, soapEndpoint, zipFileName, zipBytes, testSetID, privateKey, certificate, time.Now())
+		if secureErr != nil {
+			return map[string]interface{}{
+				"ok":                  false,
+				"empresa_id":          empresaID,
+				"documento_codigo":    documentoCodigo,
+				"cufe":                cufe,
+				"transporte":          "soap_dian",
+				"operacion_soap":      operation,
+				"contingencia_activa": true,
+				"estado_dian":         "contingencia",
+				"error":               dianTruncate(secureErr.Error(), 240),
+			}, http.StatusOK, nil
+		}
+		envelope = secureEnvelope
+		wsSecurityMeta = meta
+	}
 	req, err := http.NewRequest(http.MethodPost, soapEndpoint, strings.NewReader(envelope))
 	if err != nil {
 		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo construir request SOAP DIAN")
@@ -9121,6 +9284,7 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		"zip_file_name":       zipFileName,
 		"zip_size_bytes":      len(zipBytes),
 		"test_set_id":         testSetID,
+		"seguridad_soap":      wsSecurityMeta,
 		"http_status":         resp.StatusCode,
 		"acuse_estado":        acuseEstado,
 		"acuse_mensaje":       acuseMensaje,

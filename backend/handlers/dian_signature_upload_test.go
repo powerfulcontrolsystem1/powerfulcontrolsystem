@@ -195,6 +195,43 @@ func TestBuildDIANSOAPEnvelopeSendTestSetAsync(t *testing.T) {
 	}
 }
 
+func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
+	keyPEM, certPEM := testDIANKeyAndCertPEM(t)
+	privateKey, err := parseDIANRSAPrivateKey(keyPEM)
+	if err != nil {
+		t.Fatalf("parse key: %v", err)
+	}
+	certificate, err := parseDIANCertificate(certPEM)
+	if err != nil {
+		t.Fatalf("parse cert: %v", err)
+	}
+	zipBytes, err := buildDIANZipContent("FV1.xml", "<Invoice><ID>FV1</ID></Invoice>")
+	if err != nil {
+		t.Fatalf("zip content: %v", err)
+	}
+	envelope, meta, err := buildDIANSOAPEnvelopeWithWSSecurity("SendTestSetAsync", "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc", "FV1.zip", zipBytes, "abc-test-set", privateKey, certificate, time.Date(2026, 6, 5, 10, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("secure envelope: %v", err)
+	}
+	for _, expected := range []string{
+		`<wsse:Security`,
+		`<wsu:Timestamp`,
+		`<wsse:BinarySecurityToken`,
+		`<ds:Signature`,
+		`<ds:SignatureValue>`,
+		`<wsse:Reference URI="#PCSBST-`,
+		`<wcf:testSetId>abc-test-set</wcf:testSetId>`,
+		`http://wcf.dian.colombia/IWcfDianCustomerServices/SendTestSetAsync`,
+	} {
+		if !strings.Contains(envelope, expected) {
+			t.Fatalf("expected WS-Security envelope to contain %q, got %s", expected, envelope)
+		}
+	}
+	if !parseTruthy(genericStringValue(meta["ws_security"])) {
+		t.Fatalf("expected ws_security meta true, got %#v", meta)
+	}
+}
+
 func TestExtractDIANSOAPResponseMapTrackID(t *testing.T) {
 	raw := `<s:Envelope><s:Body><SendTestSetAsyncResponse><SendTestSetAsyncResult><ZipKey>TRACK-123</ZipKey><StatusCode>00</StatusCode><StatusMessage>Procesado</StatusMessage></SendTestSetAsyncResult></SendTestSetAsyncResponse></s:Body></s:Envelope>`
 	out := extractDIANSOAPResponseMap(raw)

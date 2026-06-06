@@ -1,3 +1,10 @@
+2026-06-05: SOAP WS-Security para set real DIAN.
+- Modulos afectados: facturacion electronica Colombia, pruebas DIAN y envio real `SendTestSetAsync`.
+- Backend: los envios al endpoint oficial `dian.gov.co` ahora arman el sobre SOAP con `wsse:Security`, `wsu:Timestamp`, `BinarySecurityToken`, firma RSA-SHA256, referencias firmadas a Timestamp/Action/To/Body/BinarySecurityToken y el `test_set_id` asignado por DIAN.
+- Operacion: se registro y valido el TestSetId `db98ef26-0c2a-468f-a3d0-31667aba47e1` para la empresa interna Powerful Control System; la validacion de credenciales queda sin faltantes.
+- Seguridad: la llave privada y certificado se cargan desde referencias seguras existentes por `empresa_id`; no se imprimen secretos ni se elimina aislamiento multiempresa.
+- Pruebas: `go test ./handlers -run "DIAN(SOAP|Credential|PruebasHabilitacion|DefaultSet|EffectiveSet|Signature|Firma)" -count=1`.
+
 2026-06-05: Pruebas DIAN con TestSetId visible y confirmacion de firma.
 - Modulos afectados: facturacion electronica Colombia, pruebas DIAN y carga de firma electronica por empresa.
 - Backend: el bloqueo de envio real ahora informa los faltantes exactos, por ejemplo `test_set_id`, en lugar de mostrar un mensaje generico de credenciales o firma.
