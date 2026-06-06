@@ -12501,3 +12501,13 @@ Archivos modificados:
 - backend/handlers/dian_signature_upload_test.go
 - backend/handlers/modulos_faltantes.go
 - documentos/historial_de_cambios
+
+2026-06-05 19:17:07 - Mensaje: DIAN: mostrar TestSetId y mejorar confirmacion de firma; Commit: 1ecd32a1; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+- web/estilos.css
