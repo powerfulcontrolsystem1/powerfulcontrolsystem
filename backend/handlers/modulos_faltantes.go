@@ -9013,7 +9013,7 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 		dianWSSX509ValueType,
 	)
 	security := fmt.Sprintf(`<wsse:Security soap:mustUnderstand="1" xmlns:wsse="%s" xmlns:wsu="%s" xmlns:soap="%s">%s%s%s</wsse:Security>`,
-		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
+		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, signature, timestamp, binaryToken)
 	envelope := fmt.Sprintf(`<soap:Envelope xmlns:soap="%s" xmlns:wcf="%s"><soap:Header xmlns:wsa="%s">%s%s%s</soap:Header>%s</soap:Envelope>`,
 		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, toHeader, body)
 	meta := map[string]interface{}{
@@ -9026,6 +9026,7 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 		"timestamp_created":        created,
 		"timestamp_expires":        expires,
 		"binary_security_token_id": tokenID,
+		"security_layout":          "signature_prepend",
 	}
 	return envelope, meta, nil
 }
@@ -9127,7 +9128,7 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 		dianWSSX509ValueType,
 	)
 	security := fmt.Sprintf(`<wsse:Security soap:mustUnderstand="1" xmlns:wsse="%s" xmlns:wsu="%s" xmlns:soap="%s">%s%s%s</wsse:Security>`,
-		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
+		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, signature, timestamp, binaryToken)
 	envelope := fmt.Sprintf(`<soap:Envelope xmlns:soap="%s" xmlns:wcf="%s"><soap:Header xmlns:wsa="%s">%s%s%s</soap:Header>%s</soap:Envelope>`,
 		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, toHeader, body)
 	meta := map[string]interface{}{
@@ -9139,6 +9140,7 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 		"canonicalization":    "exclusive_c14n_with_inclusive_namespaces",
 		"timestamp_created":   created,
 		"timestamp_expires":   expires,
+		"security_layout":     "signature_prepend",
 	}
 	return envelope, meta, nil
 }
