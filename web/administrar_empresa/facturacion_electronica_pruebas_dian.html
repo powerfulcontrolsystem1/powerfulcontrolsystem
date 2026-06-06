@@ -68,6 +68,10 @@
           <label class="form-label">Fecha de termino</label>
           <input id="feDianModoFechaTermino" class="form-input" type="datetime-local">
         </div>
+        <div class="form-col">
+          <label class="form-label">TestSetId / ZipKey DIAN</label>
+          <input id="feDianTestSetId" class="form-input" placeholder="Pega aqui el identificador del set DIAN">
+        </div>
       </div>
       <div class="form-row">
         <div class="form-col">
@@ -341,6 +345,7 @@
       setValue("feDianModoDescripcion", cfg.modo_operacion_descripcion || "");
       setValue("feDianModoFechaInicio", asDateTimeLocal(cfg.modo_operacion_fecha_inicio));
       setValue("feDianModoFechaTermino", asDateTimeLocal(cfg.modo_operacion_fecha_termino));
+      setValue("feDianTestSetId", cfg.test_set_id || "");
       if (Number(cfg.set_facturas_requeridas || 0) || Number(cfg.set_notas_debito_requeridas || 0) || Number(cfg.set_notas_credito_requeridas || 0)) {
         setValue("feDianSetPreset", "personalizado");
         setValue("feDianSetFacturas", Number(cfg.set_facturas_requeridas || 0));
@@ -377,7 +382,7 @@
       setText("feDianConfigMsg", "Validando credenciales y firma DIAN...", false);
       setJSON("feDianPruebasResultado", null);
       try {
-        const payload = { empresa_id: Number(state.empresaID) };
+        const payload = { empresa_id: Number(state.empresaID), test_set_id: txt(document.getElementById("feDianTestSetId").value) };
         const url = "/api/empresa/facturacion_electronica/dian?action=validar_credenciales&empresa_id=" + encodeURIComponent(state.empresaID);
         const data = await readJSONResponse(await fetch(url, {
           method: "POST",
@@ -427,6 +432,7 @@
       const maxEnvios = numberInputValue("feDianSetMaxEnvios", 0);
       const payload = {
         empresa_id: Number(state.empresaID),
+        test_set_id: txt(document.getElementById("feDianTestSetId").value),
         facturas_electronicas: facturas,
         notas_debito: notasDebito,
         notas_credito: notasCredito,
@@ -451,6 +457,7 @@
         modo_operacion_descripcion: txt(document.getElementById("feDianModoDescripcion").value),
         modo_operacion_fecha_inicio: txt(document.getElementById("feDianModoFechaInicio").value),
         modo_operacion_fecha_termino: txt(document.getElementById("feDianModoFechaTermino").value),
+        test_set_id: txt(document.getElementById("feDianTestSetId").value),
         set_documentos_requeridos: total || (facturas + notasDebito + notasCredito),
         set_facturas_requeridas: facturas,
         set_notas_debito_requeridas: notasDebito,

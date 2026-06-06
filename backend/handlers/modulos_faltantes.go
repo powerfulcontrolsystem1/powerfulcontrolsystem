@@ -9875,12 +9875,19 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		return nil, http.StatusBadRequest, credErr
 	}
 	if !simular && !parseTruthy(genericStringValue(credenciales["ok"])) {
+		faltantes := credentialMissingList(credenciales)
+		motivo := "Faltan datos DIAN antes de ejecutar el set real."
+		if len(faltantes) > 0 {
+			motivo = "Faltan datos DIAN antes de ejecutar el set real: " + strings.Join(faltantes, ", ") + "."
+		}
 		return map[string]interface{}{
 			"ok":                      false,
 			"empresa_id":              empresaID,
 			"bloqueado":               true,
 			"paso":                    "validar_credenciales",
-			"motivo":                  "Faltan credenciales o firma DIAN antes de ejecutar el set real.",
+			"motivo":                  motivo,
+			"faltantes":               faltantes,
+			"issues":                  credenciales["issues"],
 			"validacion_credenciales": credenciales,
 			"requisito_set_dian":      dianEffectiveSetRequirementForConfig(cfg, payload),
 		}, http.StatusConflict, nil
@@ -9893,6 +9900,45 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		result["fuente_requisito"] = "DIAN - validar en portal de habilitacion el objetivo exacto del set asignado a la empresa."
 	}
 	return result, status, err
+}
+
+func credentialMissingList(response map[string]interface{}) []string {
+	out := make([]string, 0)
+	add := func(raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
+		}
+		for _, existing := range out {
+			if existing == raw {
+				return
+			}
+		}
+		out = append(out, raw)
+	}
+	if arr, ok := response["faltantes"].([]string); ok {
+		for _, item := range arr {
+			add(item)
+		}
+	} else if arr, ok := response["faltantes"].([]interface{}); ok {
+		for _, item := range arr {
+			add(genericStringValue(item))
+		}
+	}
+	if arr, ok := response["issues"].([]string); ok {
+		for _, item := range arr {
+			if strings.Contains(strings.ToLower(item), "test_set_id") {
+				add("test_set_id")
+			}
+		}
+	} else if arr, ok := response["issues"].([]interface{}); ok {
+		for _, item := range arr {
+			if strings.Contains(strings.ToLower(genericStringValue(item)), "test_set_id") {
+				add("test_set_id")
+			}
+		}
+	}
+	return out
 }
 
 func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, payload map[string]interface{}) (map[string]interface{}, int, error) {

@@ -1,3 +1,10 @@
+2026-06-05: Pruebas DIAN con TestSetId visible y confirmacion de firma.
+- Modulos afectados: facturacion electronica Colombia, pruebas DIAN y carga de firma electronica por empresa.
+- Backend: el bloqueo de envio real ahora informa los faltantes exactos, por ejemplo `test_set_id`, en lugar de mostrar un mensaje generico de credenciales o firma.
+- Frontend: `facturacion_electronica_pruebas_dian.html` agrega el campo TestSetId/ZipKey DIAN y lo envia al diagnostico, validacion, guardado del objetivo y pruebas 2+2+2.
+- Frontend: la ultima firma cargada se muestra con confirmacion verde, texto mas grande y clave oculta; el estado sin registro permanece neutral.
+- Pruebas: se agrego cobertura Go para envio real bloqueado por falta de TestSetId.
+
 2026-06-05: Set automatico DIAN por empresa y factura de licencias.
 - Modulos afectados: facturacion electronica Colombia, pruebas DIAN, licencias, ayuda y documentacion operativa.
 - Backend: el fallback del set DIAN de software propio/proveedor queda en 30 facturas, 10 notas debito y 10 notas credito; las pruebas Go cubren que el objetivo guardado por empresa se use en `action=pruebas_dian` y que una simulacion no marque `habilitacion_aprobada`.

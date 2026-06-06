@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -293,6 +294,30 @@ func TestValidateDIANCredentialRefsAllowsMissingTestSetInSimulation(t *testing.T
 	testSetCheck, _ := checks["test_set_id"].(map[string]interface{})
 	if !parseTruthy(genericStringValue(testSetCheck["required"])) || parseTruthy(genericStringValue(testSetCheck["ok"])) {
 		t.Fatalf("expected required but non-blocking missing test_set_id check in simulation, got %#v", testSetCheck)
+	}
+}
+
+func TestRunDIANPruebasHabilitacionReportsMissingTestSetForRealRun(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
+	delete(cfg, "test_set_id")
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
+		"simular": false,
+	})
+	if err != nil {
+		t.Fatalf("run pruebas returned err=%v", err)
+	}
+	if status != http.StatusConflict {
+		t.Fatalf("expected conflict for missing test_set_id, got status=%d result=%#v", status, result)
+	}
+	if parseTruthy(genericStringValue(result["ok"])) {
+		t.Fatalf("expected blocked response, got %#v", result)
+	}
+	if !strings.Contains(genericStringValue(result["motivo"]), "test_set_id") {
+		t.Fatalf("expected motivo to mention test_set_id, got %#v", result)
+	}
+	faltantes, _ := result["faltantes"].([]string)
+	if !dianTestContainsString(faltantes, "test_set_id") {
+		t.Fatalf("expected top-level faltantes to include test_set_id, got %#v", result["faltantes"])
 	}
 }
 

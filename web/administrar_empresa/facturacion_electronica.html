@@ -55,7 +55,7 @@
         <span id="feFirmaExpiryText">Sin verificar.</span>
         <button id="feFirmaExpiryBtn" class="btn secondary" type="button" style="margin-left:8px;">Verificar vencimiento</button>
       </div>
-      <div id="feFirmaLastUpload" class="form-help" style="margin-top:8px;">
+      <div id="feFirmaLastUpload" class="form-help fe-firma-last-upload is-empty">
         Ultima firma cargada: sin registro. Clave: no visible por seguridad.
       </div>
     </div>
@@ -905,9 +905,11 @@
       var serial = info.certificado_serial || "";
       var keyStatus = info.certificado_clave_estado || "";
       if (!loadedAt && !fileName && !format && !subject && !serial) {
+        el.classList.add("is-empty");
         el.textContent = "Ultima firma cargada: sin registro. Clave: no visible por seguridad.";
         return;
       }
+      el.classList.remove("is-empty");
       var parts = [];
       parts.push("Ultima firma cargada: " + (formatFirmaDate(loadedAt) || "fecha no disponible"));
       if (fileName) parts.push("Archivo: " + fileName);

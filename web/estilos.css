@@ -1701,6 +1701,9 @@ p{color:var(--muted);line-height:1.5}
 .form-textarea::placeholder{color:rgba(159,179,204,0.78)}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .form-help{color:var(--muted);font-size:13px;margin-top:6px}
+.fe-firma-last-upload{margin-top:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-soft);line-height:1.45}
+.fe-firma-last-upload:not(.is-empty){border-color:color-mix(in srgb,var(--success) 42%,var(--border));background:color-mix(in srgb,var(--success) 12%,var(--surface));color:var(--success);font-size:1.02rem;font-weight:800}
+.fe-firma-last-upload.is-empty{font-size:.9rem;font-weight:600}
 .error{color:var(--danger);font-weight:700}
 .success{color:var(--success);font-weight:700}
 .text-empty{color:var(--status-empty)}
