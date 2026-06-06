@@ -12551,3 +12551,12 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-06-06 17:16:19 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: a8319610; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md
+- documentos/historial_de_cambios
