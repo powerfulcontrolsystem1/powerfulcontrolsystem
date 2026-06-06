@@ -1,3 +1,9 @@
+2026-06-06: DIAN WS-Security con Action firmado para WCF.
+- Modulos afectados: facturacion electronica Colombia, transporte SOAP/WCF DIAN y centro de habilitacion.
+- Backend: el sobre WS-Security oficial firma `Timestamp`, `wsa:Action` y `wsa:To`, manteniendo referencia `ThumbprintSHA1`, `BinarySecurityToken`, RSA-SHA256 y digest SHA-256.
+- QA visual: la prueba 2+2+2 real de la empresa 12 alcanzo DIAN y genero `SETP990000022`, pero DIAN respondio `InvalidSecurity`; este cambio ajusta la firma de encabezados WS-Addressing para una nueva validacion real.
+- Seguridad: no se imprimen credenciales ni secretos; el perfil temporal de navegador queda ignorado por git.
+
 2026-06-06: DIAN WS-Security con BinarySecurityToken.
 - Modulos afectados: facturacion electronica Colombia, envio real DIAN SOAP/WCF y consulta `GetStatusZip`.
 - Backend: el sobre WS-Security de `SendTestSetAsync` y `GetStatusZip` cambia la referencia de `KeyInfo` a `wsse:Reference URI="#X509-..."` contra el `BinarySecurityToken`, alineado con la guia DIAN SoapUI.
