@@ -8978,8 +8978,8 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 	expires := now.Add(5 * time.Minute).Format("2006-01-02T15:04:05Z")
 	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s">%s</wsa:Action>`,
 		dianAddressingNamespace, escapeXML(action))
-	toHeader := fmt.Sprintf(`<wsa:To xmlns:wsa="%s" xmlns:wsu="%s" xmlns:soap="%s" xmlns:wcf="%s" wsu:Id="%s">%s</wsa:To>`,
-		dianAddressingNamespace, dianWSUSecurityNS, dianSOAPNamespace, dianWCFNamespace, toID, escapeXML(endpoint))
+	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wcf="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s">%s</wsa:To>`,
+		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, dianWSUSecurityNS, toID, escapeXML(endpoint))
 	body := fmt.Sprintf(`<soap:Body xmlns:soap="%s" xmlns:wcf="%s">%s</soap:Body>`,
 		dianSOAPNamespace, dianWCFNamespace, bodyContent)
 	timestamp := fmt.Sprintf(`<wsu:Timestamp wsu:Id="%s" xmlns:wsu="%s"><wsu:Created>%s</wsu:Created><wsu:Expires>%s</wsu:Expires></wsu:Timestamp>`,
