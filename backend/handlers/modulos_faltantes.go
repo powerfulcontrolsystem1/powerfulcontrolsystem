@@ -10350,6 +10350,22 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 			)
 			detalle["http_status"] = anyToInt64(envioResp["http_status"])
 			detalle["latency_ms"] = anyToInt64(envioResp["latency_ms"])
+			for _, debugKey := range []string{
+				"endpoint",
+				"transporte",
+				"operacion_soap",
+				"zip_file_name",
+				"zip_size_bytes",
+				"test_set_id",
+				"seguridad_soap",
+				"track_id",
+				"respuesta_dian",
+				"raw_response",
+			} {
+				if value, exists := envioResp[debugKey]; exists {
+					detalle[debugKey] = value
+				}
+			}
 			detalle["contingencia_activa"] = parseTruthy(genericStringValue(envioResp["contingencia_activa"]))
 			detalle["software_modo"] = genericStringDefault(envioResp["software_modo"], map[bool]string{true: "compartido", false: "empresa"}[useSharedSoftware])
 			detalle["software_id"] = dianFirstNonBlank(genericStringValue(envioResp["software_id"]), softwareID)
