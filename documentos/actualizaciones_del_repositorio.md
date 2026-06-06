@@ -12560,3 +12560,8 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/gobernanza_tecnica/runbooks/runbook_dian_set_pruebas_y_diagnostico_oficial.md
 - documentos/historial_de_cambios
+
+2026-06-06 17:25:38 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5aeb031b; PushStatus: OK
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
+- documentos/historial_de_cambios
