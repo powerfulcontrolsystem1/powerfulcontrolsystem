@@ -1,3 +1,10 @@
+## [2026-06-06] DIAN set real sin simulacion
+- [Backend] `action=pruebas_dian` y `action=enviar_set_pruebas` rechazan `simular=true`; el flujo automatico ahora exige envio real.
+- [DIAN] El set real consulta `GetStatusZip` despues de recibir `ZipKey` y solo cuenta documentos aceptados con acuse final.
+- [Seguridad] `pruebas_dian`, `enviar_set_pruebas`, `firmar_xml_xades_base`, `validar_documento_dian` y `activar_produccion_local` pasan a accion de aprobacion en permisos de facturacion.
+- [Frontend] `facturacion_electronica_pruebas_dian.html` elimina el checkbox de simulacion y fuerza envio real al ambiente de habilitacion.
+- [QA] Se reemplaza la prueba 2+2+2 simulada por un servidor SOAP local estricto que valida `SendTestSetAsync`, ZIP firmado y `GetStatusZip` aceptado.
+
 ## [2026-06-05] DIAN oficial sin token proveedor obligatorio
 - [Backend] La validacion de credenciales DIAN distingue `*.dian.gov.co` de endpoints de proveedor/API: `token_emisor_ref` es opcional para SOAP/WCF oficial y obligatorio para proveedor bearer.
 - [Operacion] `test_set_id` sigue siendo obligatorio para envios reales de habilitacion y se muestra como el faltante real cuando no esta configurado.

@@ -124,7 +124,7 @@
           <input id="feDianProduccionURL" class="form-input" placeholder="Configurar antes de activar produccion local">
         </div>
         <div class="form-col">
-          <div class="form-help"><label><input id="feDianPruebasSimular" type="checkbox"> Simular sin enviar a DIAN</label></div>
+          <div class="form-help">Las pruebas se envian realmente al ambiente de habilitacion DIAN.</div>
           <div class="form-help"><label><input id="feDianConfirmarHabilitado" type="checkbox"> Confirmo que DIAN ya dejo la empresa habilitada</label></div>
         </div>
       </div>
@@ -570,16 +570,15 @@
     }
 
     async function ejecutarDianSet(payload, label) {
-      const simular = !!document.getElementById("feDianPruebasSimular").checked;
       if (!payload || payload.total_documentos <= 0) {
         setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
         return;
       }
-      if (!simular && !window.confirm("Esto enviara documentos al ambiente de habilitacion DIAN. Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
+      if (!window.confirm("Esto enviara documentos reales al ambiente de habilitacion DIAN. Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
         return;
       }
-      payload = Object.assign({}, payload, { simular: simular, detener_en_error: true });
-      setText("feDianPruebasMsg", simular ? ("Simulando " + label + "...") : ("Enviando " + label + "..."), false);
+      payload = Object.assign({}, payload, { simular: false, detener_en_error: true });
+      setText("feDianPruebasMsg", "Enviando " + label + "...", false);
       setJSON("feDianPruebasResultado", null);
       renderDianRunResult(null);
       try {

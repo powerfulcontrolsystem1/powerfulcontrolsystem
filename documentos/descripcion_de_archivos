@@ -12,6 +12,18 @@
 - `web/estilos.css`:
 	- agrega estilos responsive y por tema para la barra de orden, asa de arrastre y estados de movimiento.
 
+2026-06-06 - DIAN set real sin simulacion
+- `backend/handlers/modulos_faltantes.go`:
+	- bloquea `simular=true` en `pruebas_dian`/`enviar_set_pruebas`, fuerza envio real del set, consulta `GetStatusZip` cuando hay `ZipKey` y soporta WS-Security para esa consulta en endpoint oficial DIAN.
+- `backend/handlers/dian_signature_upload_test.go`:
+	- reemplaza la prueba 2+2+2 simulada por un servidor SOAP local que valida `SendTestSetAsync`, ZIP con XML firmado y `GetStatusZip` aceptado.
+- `backend/handlers/empresa_permisos.go`:
+	- clasifica acciones criticas DIAN de firma, validacion, set y activacion local como accion de aprobacion.
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
+	- elimina el checkbox de simulacion y envia siempre `simular=false` para pruebas DIAN.
+- `documentos/*`:
+	- alinea changelog, historial, mapa, flujos, matriz, contrato y runbook con la regla de envio real obligatorio.
+
 2026-06-05 - Centro de habilitacion DIAN
 - `backend/db/modulos_faltantes.go`:
 	- amplia `empresa_dian_configuracion` con modo de operacion DIAN, fechas del set y totales requeridos/aceptados por tipo documental.

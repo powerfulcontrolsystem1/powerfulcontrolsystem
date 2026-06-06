@@ -18,9 +18,10 @@ decisiones en cada tarea.
 - En endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese campo
   solo aplica cuando la empresa usa proveedor/API con bearer token. En
   habilitacion real si es obligatorio `test_set_id`.
-- Una ejecucion simulada de `action=pruebas_dian` nunca debe marcar
-  `habilitacion_aprobada`. Solo una ejecucion real con acuse aceptado de
-  DIAN/proveedor puede permitir pasar a produccion local.
+- `action=pruebas_dian` y `action=enviar_set_pruebas` no aceptan simulacion:
+  deben enviar documentos reales al ambiente de habilitacion, recibir `ZipKey`
+  cuando aplique y cerrar el acuse con `GetStatusZip`. Solo una ejecucion real
+  con acuse aceptado de DIAN/proveedor puede permitir pasar a produccion local.
 - Compra de licencias: el correo unificado adjunta licencia y factura
   electronica solo cuando el pago comercial aprobado es mayor que cero. Una
   activacion valor cero o con descuento total activa la licencia, pero no emite

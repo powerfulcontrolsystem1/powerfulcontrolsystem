@@ -283,9 +283,10 @@ afecte dinero, documentos, licencias o seguridad.
 12. Para endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese
    token solo aplica a proveedor/API con bearer token. En habilitacion real si
    es obligatorio `test_set_id`, porque DIAN lo usa para `SendTestSetAsync`.
-13. Las pruebas simuladas deben confirmar preparacion, firma, conteos y UI, pero
-   nunca marcar `habilitacion_aprobada`. Solo una ejecucion real con acuse
-   aceptado puede cambiar la empresa a habilitada/produccion local.
+13. Las pruebas DIAN automaticas no aceptan simulacion: deben enviar al ambiente
+   de habilitacion, recibir `ZipKey` cuando aplique y consultar `GetStatusZip`
+   hasta un acuse final. Solo una ejecucion real con acuse aceptado puede
+   cambiar la empresa a habilitada/produccion local.
 14. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar

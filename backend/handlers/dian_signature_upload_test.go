@@ -1,15 +1,21 @@
 package handlers
 
 import (
+	"archive/zip"
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/pem"
+	"io"
 	"math/big"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -60,9 +66,74 @@ func testDIANValidConfig(t *testing.T, endpoint string) map[string]interface{} {
 		"test_set_id":               "test-set",
 		"software_id":               "software-id",
 		"software_pin":              "software-pin",
+		"token_emisor_ref":          "inline-token",
 		"usar_software_compartido":  0,
 		"set_documentos_requeridos": 1,
 	}
+}
+
+type testDIANSOAPServerStats struct {
+	sendTestSet int32
+	statusZip   int32
+}
+
+func newTestDIANSOAPServer(t *testing.T) (*httptest.Server, *testDIANSOAPServerStats) {
+	t.Helper()
+	stats := &testDIANSOAPServerStats{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bodyBytes, _ := io.ReadAll(r.Body)
+		body := string(bodyBytes)
+		w.Header().Set("Content-Type", "application/soap+xml; charset=utf-8")
+		switch {
+		case strings.Contains(body, "SendTestSetAsync"):
+			count := atomic.AddInt32(&stats.sendTestSet, 1)
+			if !strings.Contains(body, "<wcf:testSetId>test-set</wcf:testSetId>") {
+				t.Errorf("SendTestSetAsync without expected testSetId: %s", body)
+			}
+			content := extractDIANSOAPTag(body, "contentFile")
+			if content == "" {
+				t.Errorf("SendTestSetAsync without contentFile")
+			} else {
+				zipBytes, err := base64.StdEncoding.DecodeString(content)
+				if err != nil {
+					t.Errorf("invalid contentFile base64: %v", err)
+				} else {
+					zr, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
+					if err != nil {
+						t.Errorf("invalid DIAN zip: %v", err)
+					} else if len(zr.File) != 1 {
+						t.Errorf("expected one XML in DIAN zip, got %d", len(zr.File))
+					} else {
+						rc, err := zr.File[0].Open()
+						if err != nil {
+							t.Errorf("open XML in DIAN zip: %v", err)
+						} else {
+							xmlBytes, _ := io.ReadAll(rc)
+							_ = rc.Close()
+							xmlPayload := string(xmlBytes)
+							if !strings.Contains(xmlPayload, "<ds:Signature") {
+								t.Errorf("XML sent to DIAN must be signed, got %s", xmlPayload)
+							}
+							if strings.Contains(strings.ToLower(xmlPayload), "simulado") {
+								t.Errorf("XML sent to DIAN must not be simulated, got %s", xmlPayload)
+							}
+						}
+					}
+				}
+			}
+			_, _ = w.Write([]byte(`<s:Envelope><s:Body><SendTestSetAsyncResponse><SendTestSetAsyncResult><ZipKey>TRACK-` + genericStringValue(count) + `</ZipKey><StatusCode>00</StatusCode><StatusMessage>Recibido</StatusMessage></SendTestSetAsyncResult></SendTestSetAsyncResponse></s:Body></s:Envelope>`))
+		case strings.Contains(body, "GetStatusZip"):
+			atomic.AddInt32(&stats.statusZip, 1)
+			trackID := extractDIANSOAPTag(body, "trackId")
+			if trackID == "" {
+				t.Errorf("GetStatusZip without trackId: %s", body)
+			}
+			_, _ = w.Write([]byte(`<s:Envelope><s:Body><GetStatusZipResponse><GetStatusZipResult><IsValid>true</IsValid><StatusCode>00</StatusCode><StatusMessage>Documento aceptado</StatusMessage><XmlDocumentKey>` + trackID + `</XmlDocumentKey></GetStatusZipResult></GetStatusZipResponse></s:Body></s:Envelope>`))
+		default:
+			http.Error(w, "unexpected SOAP operation", http.StatusBadRequest)
+		}
+	}))
+	return server, stats
 }
 
 func dianTestContainsString(items []string, expected string) bool {
@@ -281,6 +352,7 @@ func TestValidateDIANCredentialRefsDoesNotRequireTokenForOfficialSOAP(t *testing
 
 func TestValidateDIANCredentialRefsRequiresTokenForProviderAPI(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://proveedor.example.com/api/dian")
+	delete(cfg, "token_emisor_ref")
 	response, status, err := validateDIANCredentialRefs(cfg, 12, map[string]interface{}{})
 	if err != nil || status != 200 {
 		t.Fatalf("validate credentials returned status=%d err=%v response=%#v", status, err, response)
@@ -359,10 +431,29 @@ func TestRunDIANPruebasHabilitacionReportsMissingTestSetForRealRun(t *testing.T)
 	}
 }
 
-func TestRunDIANPruebasHabilitacionTwoEachSimulatedOfficialSOAP(t *testing.T) {
+func TestRunDIANPruebasHabilitacionRejectsSimulation(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
-		"simular":                true,
+		"simular": true,
+	})
+	if err != nil {
+		t.Fatalf("run pruebas returned err=%v", err)
+	}
+	if status != http.StatusBadRequest {
+		t.Fatalf("expected bad request for simulated DIAN set, got status=%d result=%#v", status, result)
+	}
+	if !parseTruthy(genericStringValue(result["bloqueado"])) {
+		t.Fatalf("expected simulated DIAN set to be blocked, got %#v", result)
+	}
+}
+
+func TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip(t *testing.T) {
+	server, stats := newTestDIANSOAPServer(t)
+	defer server.Close()
+
+	cfg := testDIANValidConfig(t, server.URL)
+	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
+		"simular":                false,
 		"facturas_electronicas":  2,
 		"notas_debito":           2,
 		"notas_credito":          2,
@@ -374,23 +465,32 @@ func TestRunDIANPruebasHabilitacionTwoEachSimulatedOfficialSOAP(t *testing.T) {
 		"cliente_nombre":         "Cliente habilitacion DIAN",
 		"cliente_nit":            "222222222222",
 		"set_documentos_minimos": 1,
+		"acuse_intentos":         1,
+		"acuse_espera_ms":        0,
+		"usar_soap_dian":         true,
 	})
 	if err != nil || status != 200 {
 		t.Fatalf("run pruebas returned status=%d err=%v result=%#v", status, err, result)
 	}
 	if !parseTruthy(genericStringValue(result["ok"])) {
-		t.Fatalf("expected simulated 2+2+2 set to be ok, got %#v", result)
+		t.Fatalf("expected real 2+2+2 set to be ok, got %#v", result)
 	}
 	if anyToInt64(result["procesados"]) != 6 {
 		t.Fatalf("expected 6 processed docs, got %#v", result)
 	}
 	resumen, _ := result["resumen"].(map[string]int)
-	if resumen["simulado"] != 6 {
-		t.Fatalf("expected 6 simulated docs, got %#v", resumen)
+	if resumen["aceptado"] != 6 || resumen["simulado"] != 0 {
+		t.Fatalf("expected 6 accepted real docs and no simulation, got %#v", resumen)
+	}
+	if atomic.LoadInt32(&stats.sendTestSet) != 6 || atomic.LoadInt32(&stats.statusZip) != 6 {
+		t.Fatalf("expected 6 SendTestSetAsync and 6 GetStatusZip calls, got send=%d status=%d", stats.sendTestSet, stats.statusZip)
 	}
 	objetivo, _ := result["objetivo"].(map[string]interface{})
 	if anyToInt64(objetivo["facturas_electronicas"]) != 2 || anyToInt64(objetivo["notas_debito"]) != 2 || anyToInt64(objetivo["notas_credito"]) != 2 {
 		t.Fatalf("unexpected 2+2+2 objective: %#v", objetivo)
+	}
+	if !parseTruthy(genericStringValue(result["habilitacion_aprobada"])) {
+		t.Fatalf("expected accepted real set to approve habilitation, got %#v", result)
 	}
 }
 
@@ -405,35 +505,44 @@ func TestDIANDefaultSetRequirementUsesSoftwarePropioProveedorTarget(t *testing.T
 }
 
 func TestRunDIANPruebasHabilitacionUsesConfiguredPortalSet(t *testing.T) {
-	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc?wsdl")
-	cfg["set_documentos_requeridos"] = 50
-	cfg["set_facturas_requeridas"] = 30
-	cfg["set_notas_debito_requeridas"] = 10
-	cfg["set_notas_credito_requeridas"] = 10
+	server, stats := newTestDIANSOAPServer(t)
+	defer server.Close()
+
+	cfg := testDIANValidConfig(t, server.URL)
+	cfg["set_documentos_requeridos"] = 4
+	cfg["set_facturas_requeridas"] = 2
+	cfg["set_notas_debito_requeridas"] = 1
+	cfg["set_notas_credito_requeridas"] = 1
 	cfg["set_documentos_aceptados_requeridos"] = 1
 	cfg["set_facturas_aceptadas_requeridas"] = 1
 	cfg["set_notas_debito_aceptadas_requeridas"] = 0
 	cfg["set_notas_credito_aceptadas_requeridas"] = 0
 
 	result, status, err := runDIANPruebasHabilitacion(nil, cfg, 12, map[string]interface{}{
-		"simular": true,
+		"simular":         false,
+		"acuse_intentos":  1,
+		"acuse_espera_ms": 0,
+		"usar_soap_dian":  true,
 	})
 	if err != nil || status != 200 {
 		t.Fatalf("run pruebas returned status=%d err=%v result=%#v", status, err, result)
 	}
-	if anyToInt64(result["procesados"]) != 50 {
-		t.Fatalf("expected configured portal set to process 50 docs, got %#v", result["procesados"])
+	if anyToInt64(result["procesados"]) != 4 {
+		t.Fatalf("expected configured portal set to process 4 docs, got %#v", result["procesados"])
 	}
 	objetivo, _ := result["objetivo"].(map[string]interface{})
-	if anyToInt64(objetivo["facturas_electronicas"]) != 30 || anyToInt64(objetivo["notas_debito"]) != 10 || anyToInt64(objetivo["notas_credito"]) != 10 {
+	if anyToInt64(objetivo["facturas_electronicas"]) != 2 || anyToInt64(objetivo["notas_debito"]) != 1 || anyToInt64(objetivo["notas_credito"]) != 1 {
 		t.Fatalf("unexpected configured portal objective: %#v", objetivo)
 	}
 	req, _ := result["requisito_set_dian"].(map[string]interface{})
 	if anyToInt64(req["facturas_electronicas_aceptadas_minimo"]) != 1 || anyToInt64(req["notas_debito_aceptadas_minimo"]) != 0 || anyToInt64(req["notas_credito_aceptadas_minimo"]) != 0 {
 		t.Fatalf("unexpected accepted minimums: %#v", req)
 	}
-	if parseTruthy(genericStringValue(result["habilitacion_aprobada"])) {
-		t.Fatalf("simulation must not mark habilitation approved: %#v", result)
+	if !parseTruthy(genericStringValue(result["habilitacion_aprobada"])) {
+		t.Fatalf("accepted real set must mark habilitation approved: %#v", result)
+	}
+	if atomic.LoadInt32(&stats.sendTestSet) != 4 || atomic.LoadInt32(&stats.statusZip) != 4 {
+		t.Fatalf("expected configured set to call DIAN 4+4 times, got send=%d status=%d", stats.sendTestSet, stats.statusZip)
 	}
 }
 

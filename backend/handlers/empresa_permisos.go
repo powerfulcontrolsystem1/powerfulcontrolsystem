@@ -2092,7 +2092,7 @@ func resolveFacturacionPermissionAction(r *http.Request) string {
 	if action == "activar" || action == "desactivar" {
 		return permActionUpdate
 	}
-	if (action == "procesar_reintentos" || action == "reconciliar_estados" || action == "firmar_xml_real" || action == "enviar_documento_real" || action == "reconexion_dian" || action == "consultar_acuse_real") && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
+	if (action == "procesar_reintentos" || action == "reconciliar_estados" || action == "firmar_xml_real" || action == "firmar_xml_xades_base" || action == "validar_documento_dian" || action == "enviar_documento_real" || action == "reconexion_dian" || action == "consultar_acuse_real" || action == "pruebas_dian" || action == "pruebas_habilitacion" || action == "enviar_set_pruebas" || action == "activar_produccion_local") && (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
 		return permActionApprove
 	}
 	if action == "aprobar" || action == "emitir" || action == "emitir_factura" || action == "emitir_documento" || action == "nota_credito" || action == "emitir_nota_credito" {

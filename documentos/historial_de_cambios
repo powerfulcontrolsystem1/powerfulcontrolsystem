@@ -1,3 +1,11 @@
+2026-06-06: DIAN set real sin simulacion
+- Modulos afectados: `facturacion_electronica`, `DIAN`, permisos empresariales y centro de habilitacion.
+- Backend: `action=pruebas_dian` y `action=enviar_set_pruebas` bloquean `simular=true`; el set 2+2+2 se envia por flujo real y consulta `GetStatusZip` despues de recibir `ZipKey`.
+- Backend: `GetStatusZip` soporta WS-Security para endpoint oficial DIAN y el set solo suma aceptados con acuse final aceptado.
+- Permisos: las acciones DIAN de firma XAdES, validacion documental, pruebas, envio de set y activacion de produccion local quedan bajo accion de aprobacion.
+- Frontend: la pantalla `facturacion_electronica_pruebas_dian.html` elimina la opcion de simulacion y confirma envio real al ambiente de habilitacion.
+- QA: `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`.
+
 2026-06-05: SOAP WS-Security para set real DIAN.
 - Modulos afectados: facturacion electronica Colombia, pruebas DIAN y envio real `SendTestSetAsync`.
 - Backend: los envios al endpoint oficial `dian.gov.co` ahora arman el sobre SOAP segun el WSDL oficial: `wsse:Security`, `wsu:Timestamp`, `BinarySecurityToken`, firma RSA-SHA256, `ThumbprintSHA1` y referencia firmada al header `wsa:To` con el `test_set_id` asignado por DIAN.

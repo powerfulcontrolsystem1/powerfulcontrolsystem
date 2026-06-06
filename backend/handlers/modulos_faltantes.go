@@ -9069,6 +9069,96 @@ func buildDIANGetStatusZipEnvelope(endpoint, trackID string) string {
 		escapeXML(action), escapeXML(endpoint), body)
 }
 
+func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, privateKey *rsa.PrivateKey, cert *x509.Certificate, now time.Time) (string, map[string]interface{}, error) {
+	if privateKey == nil {
+		return "", nil, fmt.Errorf("llave privada DIAN requerida para WS-Security")
+	}
+	if cert == nil {
+		return "", nil, fmt.Errorf("certificado X.509 requerido para WS-Security")
+	}
+	if now.IsZero() {
+		now = time.Now().UTC()
+	} else {
+		now = now.UTC()
+	}
+	action := dianSOAPAction("GetStatusZip")
+	toID := dianSOAPSafeID("ID")
+	timestampID := dianSOAPSafeID("PCSTS")
+	tokenID := dianSOAPSafeID("X509")
+	signatureID := dianSOAPSafeID("SIG")
+	keyInfoID := dianSOAPSafeID("KI")
+	strID := dianSOAPSafeID("STR")
+
+	created := now.Format("2006-01-02T15:04:05Z")
+	expires := now.Add(5 * time.Minute).Format("2006-01-02T15:04:05Z")
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s">%s</wsa:Action>`,
+		dianAddressingNamespace, escapeXML(action))
+	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wcf="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s">%s</wsa:To>`,
+		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, dianWSUSecurityNS, toID, escapeXML(endpoint))
+	body := fmt.Sprintf(`<soap:Body xmlns:soap="%s" xmlns:wcf="%s"><wcf:GetStatusZip><wcf:trackId>%s</wcf:trackId></wcf:GetStatusZip></soap:Body>`,
+		dianSOAPNamespace, dianWCFNamespace, escapeXML(trackID))
+	timestamp := fmt.Sprintf(`<wsu:Timestamp wsu:Id="%s" xmlns:wsu="%s"><wsu:Created>%s</wsu:Created><wsu:Expires>%s</wsu:Expires></wsu:Timestamp>`,
+		timestampID, dianWSUSecurityNS, created, expires)
+	binaryToken := fmt.Sprintf(`<wsse:BinarySecurityToken wsu:Id="%s" EncodingType="%s" ValueType="%s" xmlns:wsse="%s" xmlns:wsu="%s">%s</wsse:BinarySecurityToken>`,
+		tokenID, dianWSSBase64Encoding, dianWSSX509ValueType, dianWSSESecurityNS, dianWSUSecurityNS, base64.StdEncoding.EncodeToString(cert.Raw))
+
+	reference := fmt.Sprintf(`<ds:Reference URI="#%s"><ds:Transforms><ds:Transform Algorithm="%s"><ec:InclusiveNamespaces xmlns:ec="%s" PrefixList="soap wcf"></ec:InclusiveNamespaces></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="%s"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>`,
+		escapeXML(toID),
+		dianExcC14NAlgorithm,
+		dianExcC14NAlgorithm,
+		dianSHA256DigestAlg,
+		dianSOAPSHA256DigestBase64(toHeader),
+	)
+	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="%s"><ds:CanonicalizationMethod Algorithm="%s"><ec:InclusiveNamespaces xmlns:ec="%s" PrefixList="wsa soap wcf"></ec:InclusiveNamespaces></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="%s"></ds:SignatureMethod>%s</ds:SignedInfo>`,
+		dianDSigNamespace, dianExcC14NAlgorithm, dianExcC14NAlgorithm, dianRSASHA256Algorithm, reference)
+	signedInfoDigest := sha256.Sum256([]byte(signedInfo))
+	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
+	if err != nil {
+		return "", nil, fmt.Errorf("no se pudo firmar WS-Security DIAN")
+	}
+	thumbprint := sha1.Sum(cert.Raw)
+	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:KeyIdentifier EncodingType="%s" ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security-1.1#ThumbprintSHA1">%s</wsse:KeyIdentifier></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+		signatureID,
+		dianDSigNamespace,
+		signedInfo,
+		base64.StdEncoding.EncodeToString(signatureValue),
+		keyInfoID,
+		strID,
+		dianWSSESecurityNS,
+		dianWSUSecurityNS,
+		dianWSSBase64Encoding,
+		base64.StdEncoding.EncodeToString(thumbprint[:]),
+	)
+	security := fmt.Sprintf(`<wsse:Security soap:mustUnderstand="1" xmlns:wsse="%s" xmlns:wsu="%s" xmlns:soap="%s">%s%s%s</wsse:Security>`,
+		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
+	envelope := fmt.Sprintf(`<soap:Envelope xmlns:soap="%s" xmlns:wcf="%s"><soap:Header xmlns:wsa="%s">%s%s%s</soap:Header>%s</soap:Envelope>`,
+		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, toHeader, body)
+	meta := map[string]interface{}{
+		"ws_security":         true,
+		"signed_parts":        []string{"To"},
+		"key_reference":       "ThumbprintSHA1",
+		"signature_algorithm": "RSA-SHA256",
+		"digest_algorithm":    "SHA-256",
+		"canonicalization":    "exclusive_c14n_with_inclusive_namespaces",
+		"timestamp_created":   created,
+		"timestamp_expires":   expires,
+	}
+	return envelope, meta, nil
+}
+
+func shouldUseDIANSOAPTransport(endpoint string, cfg map[string]interface{}, payload map[string]interface{}) bool {
+	if isDIANOfficialEndpoint(endpoint) {
+		return true
+	}
+	if strings.TrimSpace(dianPayloadString(payload, "soap_operacion", "operacion_soap", "operation")) != "" {
+		return true
+	}
+	if parseTruthy(dianPayloadString(payload, "usar_soap_dian", "soap_dian", "transporte_soap")) {
+		return true
+	}
+	return false
+}
+
 func extractDIANSOAPTag(raw string, names ...string) string {
 	for _, name := range names {
 		name = strings.TrimSpace(name)
@@ -9313,6 +9403,44 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 	}
 	soapEndpoint := normalizeDIANSOAPEndpoint(endpoint)
 	envelope := buildDIANGetStatusZipEnvelope(soapEndpoint, trackID)
+	wsSecurityMeta := map[string]interface{}{"ws_security": false}
+	if isDIANOfficialEndpoint(soapEndpoint) {
+		keyRef := genericStringValue(cfg["certificado_clave_ref"])
+		certRef := genericStringValue(cfg["certificado_url"])
+		privateKey, keyErr := parseDIANRSAPrivateKey(keyRef)
+		certificate, certErr := parseDIANCertificate(certRef)
+		if keyErr != nil || certErr != nil {
+			return map[string]interface{}{
+				"ok":                  false,
+				"empresa_id":          empresaID,
+				"track_id":            trackID,
+				"endpoint":            soapEndpoint,
+				"transporte":          "soap_dian",
+				"operacion_soap":      "GetStatusZip",
+				"acuse_estado":        "contingencia",
+				"estado_dian":         "contingencia",
+				"error":               "no se pudo preparar WS-Security DIAN para GetStatusZip",
+				"contingencia_activa": true,
+			}, http.StatusOK, nil
+		}
+		secureEnvelope, meta, secureErr := buildDIANGetStatusZipEnvelopeWithWSSecurity(soapEndpoint, trackID, privateKey, certificate, time.Now())
+		if secureErr != nil {
+			return map[string]interface{}{
+				"ok":                  false,
+				"empresa_id":          empresaID,
+				"track_id":            trackID,
+				"endpoint":            soapEndpoint,
+				"transporte":          "soap_dian",
+				"operacion_soap":      "GetStatusZip",
+				"acuse_estado":        "contingencia",
+				"estado_dian":         "contingencia",
+				"error":               dianTruncate(secureErr.Error(), 240),
+				"contingencia_activa": true,
+			}, http.StatusOK, nil
+		}
+		envelope = secureEnvelope
+		wsSecurityMeta = meta
+	}
 	action := dianSOAPAction("GetStatusZip")
 	req, err := http.NewRequest(http.MethodPost, soapEndpoint, strings.NewReader(envelope))
 	if err != nil {
@@ -9381,6 +9509,7 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		"endpoint":       soapEndpoint,
 		"transporte":     "soap_dian",
 		"operacion_soap": "GetStatusZip",
+		"seguridad_soap": wsSecurityMeta,
 		"http_status":    resp.StatusCode,
 		"acuse_estado":   acuseEstado,
 		"acuse_mensaje":  acuseMensaje,
@@ -9389,6 +9518,45 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 		"respuesta_dian": responseMap,
 		"raw_response":   rawResponse,
 	}, http.StatusOK, nil
+}
+
+func consultarDIANSetTrackFinal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, endpoint, trackID, token string, payload map[string]interface{}) map[string]interface{} {
+	trackID = strings.TrimSpace(trackID)
+	if trackID == "" {
+		return nil
+	}
+	intentos := dianPayloadPositiveInt(payload, 3, "acuse_intentos", "get_status_zip_intentos", "consultas_acuse")
+	if intentos <= 0 {
+		intentos = 1
+	}
+	esperaMS := dianPayloadNonNegativeInt(payload, 1200, "acuse_espera_ms", "get_status_zip_espera_ms", "espera_acuse_ms")
+	var ultimo map[string]interface{}
+	for intento := 0; intento < intentos; intento++ {
+		if intento > 0 && esperaMS > 0 {
+			time.Sleep(time.Duration(esperaMS) * time.Millisecond)
+		}
+		resp, _, err := consultarDIANStatusZipSOAP(dbEmp, cfg, empresaID, endpoint, trackID, token)
+		if err != nil {
+			ultimo = map[string]interface{}{
+				"ok":             false,
+				"track_id":       trackID,
+				"operacion_soap": "GetStatusZip",
+				"acuse_estado":   "contingencia",
+				"estado_dian":    "contingencia",
+				"error":          dianTruncate(err.Error(), 240),
+				"intento":        intento + 1,
+			}
+			continue
+		}
+		ultimo = resp
+		ultimo["intento"] = intento + 1
+		estado := strings.ToLower(strings.TrimSpace(genericStringValue(resp["estado_dian"])))
+		acuse := strings.ToLower(strings.TrimSpace(genericStringValue(resp["acuse_estado"])))
+		if estado == "aceptado" || estado == "rechazado" || estado == "contingencia" || acuse == "aceptado" || acuse == "rechazado" || acuse == "contingencia" {
+			break
+		}
+	}
+	return ultimo
 }
 
 func buildDIANOfficialReadinessReport(cfg map[string]interface{}, empresaID int64) (map[string]interface{}, int, error) {
@@ -9527,7 +9695,7 @@ func sendDIANDocumentoReal(dbEmp *sql.DB, cfg map[string]interface{}, empresaID 
 		}, http.StatusConflict, nil
 	}
 
-	if isDIANOfficialEndpoint(endpoint) {
+	if shouldUseDIANSOAPTransport(endpoint, cfg, payload) {
 		return sendDIANDocumentoRealSOAP(dbEmp, cfg, empresaID, payload, requestBody, endpoint, documentoCodigo, documentoTipo, xmlFirmado, cufe, token, softwareID, useSharedSoftware)
 	}
 
@@ -10043,6 +10211,14 @@ func runDIANPruebasHabilitacion(dbEmp *sql.DB, cfg map[string]interface{}, empre
 
 	credenciales, _, credErr := validateDIANCredentialRefs(cfg, empresaID, payload)
 	simular := parseTruthy(genericStringValue(payload["simular"]))
+	if simular {
+		return map[string]interface{}{
+			"ok":         false,
+			"empresa_id": empresaID,
+			"bloqueado":  true,
+			"motivo":     "Las pruebas DIAN automaticas deben ejecutarse con envio real; simular=true no esta permitido en este flujo.",
+		}, http.StatusBadRequest, nil
+	}
 	if credErr != nil {
 		return nil, http.StatusBadRequest, credErr
 	}
@@ -10147,6 +10323,14 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	}
 
 	simular := parseTruthy(dianPayloadString(payload, "simular", "dry_run", "solo_plan"))
+	if simular {
+		return map[string]interface{}{
+			"ok":         false,
+			"empresa_id": empresaID,
+			"bloqueado":  true,
+			"motivo":     "El set DIAN debe enviarse realmente; simular/dry_run/solo_plan no esta permitido.",
+		}, http.StatusBadRequest, nil
+	}
 	detenerEnError := parseTruthy(dianPayloadString(payload, "detener_en_error", "stop_on_error"))
 	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1000.00")
 	prefijo := dianFirstNonBlank(dianPayloadString(payload, "prefijo"), genericStringValue(cfg["prefijo"]), "SETP")
@@ -10320,6 +10504,9 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				"fecha_emision":    fechaEmision,
 				"test_set_id":      genericStringValue(cfg["test_set_id"]),
 			}
+			if parseTruthy(dianPayloadString(payload, "usar_soap_dian", "soap_dian", "transporte_soap")) || isDIANOfficialEndpoint(dianFirstNonBlank(dianPayloadString(payload, "url_dian", "endpoint"), genericStringValue(cfg["url_dian"]))) {
+				envioPayload["usar_soap_dian"] = true
+			}
 			if overrideURL := dianPayloadString(payload, "url_dian", "endpoint"); overrideURL != "" {
 				envioPayload["url_dian"] = overrideURL
 			}
@@ -10348,6 +10535,27 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				continue
 			}
 
+			if trackID := genericStringValue(envioResp["track_id"]); trackID != "" && !parseTruthy(dianPayloadString(payload, "omitir_consulta_acuse", "skip_get_status_zip")) {
+				finalResp := consultarDIANSetTrackFinal(
+					dbEmp,
+					cfg,
+					empresaID,
+					dianFirstNonBlank(dianPayloadString(payload, "url_dian", "endpoint"), genericStringValue(cfg["url_dian"])),
+					trackID,
+					dianPayloadString(payload, "token"),
+					payload,
+				)
+				if finalResp != nil {
+					envioResp["consulta_acuse"] = finalResp
+					for _, key := range []string{"ok", "http_status", "acuse_estado", "acuse_mensaje", "estado_dian", "latency_ms", "respuesta_dian", "raw_response", "seguridad_soap"} {
+						if value, exists := finalResp[key]; exists {
+							envioResp[key] = value
+						}
+					}
+					envioResp["track_id"] = trackID
+				}
+			}
+
 			detalle["ok"] = parseTruthy(genericStringValue(envioResp["ok"]))
 			detalle["estado_dian"] = genericStringDefault(envioResp["estado_dian"], "pendiente")
 			detalle["acuse_estado"] = genericStringDefault(envioResp["acuse_estado"], "pendiente")
@@ -10367,6 +10575,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				"test_set_id",
 				"seguridad_soap",
 				"track_id",
+				"consulta_acuse",
 				"respuesta_dian",
 				"raw_response",
 			} {
@@ -10841,7 +11050,7 @@ func validateDIANCredentialRefs(cfg map[string]interface{}, empresaID int64, pay
 			"Configurar token_emisor_ref solo cuando el endpoint sea de proveedor/API que use bearer token.",
 			"Para endpoint oficial DIAN SOAP/WCF, mantener certificado, Software ID/PIN y TestSetId de habilitacion.",
 			"Usar referencias seguras env:/file:/base64: en lugar de secretos inline.",
-			"Ejecutar pruebas_dian con simular=true antes de envio real.",
+			"Ejecutar pruebas_dian contra el ambiente de habilitacion DIAN con TestSetId, firma y acuse GetStatusZip final.",
 		},
 	}, http.StatusOK, nil
 }

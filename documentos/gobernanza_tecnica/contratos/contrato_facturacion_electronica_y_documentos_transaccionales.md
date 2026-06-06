@@ -176,12 +176,12 @@ Restriccion clave:
 12. El destinatario del correo se resuelve primero por payload y luego por `cliente_id` en la empresa; si no existe correo valido, se reporta el motivo sin romper la operacion principal.
 13. La configuracion por pais FE es por `empresa_id + pais_codigo` y debe mantenerse separada del estado documental de cada factura.
 14. `modo_documento_venta` decide el tipo documental generado al cerrar una venta; el flujo de cobro es comun y la diferencia ocurre en el documento persistido.
-15. La base DIAN Colombia actual es operativa para onboarding, validacion, firma base, pruebas y simulaciones, pero no equivale aun a la integracion SOAP/WSDL oficial completa.
+15. La base DIAN Colombia actual es operativa para onboarding, validacion, firma base y pruebas reales de habilitacion; `pruebas_dian` y `enviar_set_pruebas` no aceptan simulacion.
 16. El software DIAN puede operar en modo `compartido` o `empresa`; el software compartido no elimina la obligacion de token y firma por empresa.
 17. Las referencias sensibles DIAN (`token_emisor_ref`, `certificado_clave_ref`, software compartido) deben resolverse por `env:`, `file:` o `base64:`; no deben quedar como secretos en codigo fuente.
 18. El set de pruebas DIAN respeta consecutivos y rango configurado; si el rango no alcanza, la operacion debe fallar con conflicto.
 19. La documentacion debe distinguir explicitamente entre `firma base` y `firma oficial`, y entre `envio real base` y `transporte oficial DIAN`.
-20. Para Colombia, el objetivo base del set DIAN en software propio o proveedor tecnologico es 60 facturas, 20 notas debito y 20 notas credito; la UI permite cambiarlo cuando el portal DIAN asigne un objetivo diferente.
+20. Para Colombia, el objetivo base vigente del set DIAN en software propio o proveedor tecnologico es 30 facturas, 10 notas debito y 10 notas credito; la UI permite cambiarlo cuando el portal DIAN asigne un objetivo diferente.
 
 ## Salidas y estados funcionales
 
@@ -289,7 +289,7 @@ Orden de prioridad:
 - envio base de documento real usando la capa actual
 - consulta base de acuse
 - reconexion operativa
-- ejecucion de set de pruebas con simulacion o envio
+- ejecucion de set de pruebas con envio real, `ZipKey` y consulta de acuse `GetStatusZip`
 
 ### Limites explicitamente vigentes
 

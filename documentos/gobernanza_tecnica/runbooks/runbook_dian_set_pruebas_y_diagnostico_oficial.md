@@ -3,6 +3,10 @@
 Fecha: 2026-04-18
 Estado: vigente
 
+Actualizacion 2026-06-06: `pruebas_dian` y `enviar_set_pruebas` ya no aceptan
+simulacion. El cierre operativo del set requiere envio real al ambiente de
+habilitacion, `ZipKey` y acuse final consultado con `GetStatusZip`.
+
 ## Sintomas cubiertos
 
 - la empresa no logra pasar de onboarding DIAN a pruebas operativas.
@@ -63,12 +67,12 @@ No cubre una integracion SOAP/WSDL oficial completa con DIAN. El propio backend 
 - `diagnostico_oficial` refleja menos brechas o deja claramente separada la brecha del transporte oficial pendiente.
 - `generar_xml_ubl_base` produce una salida reutilizable.
 - `firmar_xml_xades_base` o `firmar_xml_real` generan evidencia consistente de firma base.
-- `enviar_set_pruebas` responde sin conflicto de rango y con trazabilidad suficiente para auditoria.
+- `enviar_set_pruebas` responde sin conflicto de rango, envia documentos reales y consulta `GetStatusZip` cuando DIAN devuelve `ZipKey`.
 - el equipo entiende si el bloqueo restante es de datos/configuracion o del alcance aun no completado de la integracion oficial.
 
 ## Limites vigentes del modulo
 
-1. El backend ofrece una base operativa util para onboarding, validacion, diagnostico, firma base, pruebas y simulaciones.
+1. El backend ofrece una base operativa util para onboarding, validacion, diagnostico, firma base y pruebas reales de habilitacion; la simulacion queda bloqueada en el set DIAN automatico.
 2. El backend tiene sobres SOAP/WSDL base para envio y consulta, pero no debe prometer aceptacion fiscal sin acuse real DIAN/proveedor de la empresa.
 3. El correo automatico actual envia resumen fiscal; el adjunto XML/PDF certificado por documento queda como brecha hasta persistir artefactos fiscales definitivos.
 4. Cualquier incidencia debe clasificarse explicitamente en una de estas dos categorias:
