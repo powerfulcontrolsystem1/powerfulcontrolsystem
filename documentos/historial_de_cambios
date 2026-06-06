@@ -31137,6 +31137,11 @@ Archivos modificados:
 PushStatus: OK
 Archivos modificados:
 - backend/handlers/modulos_faltantes.go
+2026-06-06: DIAN WS-Security alineado con politica WSDL oficial
+- Backend: `backend/handlers/modulos_faltantes.go` ajusta los sobres SOAP firmados de `SendTestSetAsync` y `GetStatusZip` para usar `ThumbprintSHA1` en `SecurityTokenReference`, firmar el header `To`, incluir `MessageID`/`ReplyTo` y ordenar `Timestamp + BinarySecurityToken + Signature` conforme al `TransportBinding`/`EndorsingSupportingTokens` del WSDL DIAN de habilitacion.
+- QA: se actualiza `backend/handlers/dian_signature_upload_test.go` para validar la referencia Thumbprint y la metadata del layout estricto.
+- Validacion: `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`, ejecutados desde `backend`, OK.
+
 2026-06-06: Botones DIAN y conexion oficial desde el centro de habilitacion
 - Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` autogenera `documento_codigo` para los botones de emision manual si el operador no lo digita, evitando bloqueos por campo vacio durante validacion visual.
 - Frontend: la emision manual usa el lector JSON comun para mostrar detalles reales de errores HTTP del backend en el panel de resultado.

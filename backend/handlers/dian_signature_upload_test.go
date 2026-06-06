@@ -290,9 +290,10 @@ func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
 		`<wsse:BinarySecurityToken`,
 		`<ds:Signature`,
 		`<ds:SignatureValue>`,
-		`<wsse:Reference URI="#X509-`,
-		`#X509v3`,
+		`<wsse:KeyIdentifier EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary" ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security-1.1#ThumbprintSHA1">`,
 		`<ds:Reference URI="#ID-`,
+		`<wsa:MessageID`,
+		`<wsa:ReplyTo`,
 		`<wcf:testSetId>abc-test-set</wcf:testSetId>`,
 		`http://wcf.dian.colombia/IWcfDianCustomerServices/SendTestSetAsync`,
 	} {
@@ -302,6 +303,12 @@ func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
 	}
 	if !parseTruthy(genericStringValue(meta["ws_security"])) {
 		t.Fatalf("expected ws_security meta true, got %#v", meta)
+	}
+	if genericStringValue(meta["key_reference"]) != "ThumbprintSHA1" {
+		t.Fatalf("expected ThumbprintSHA1 key reference, got %#v", meta)
+	}
+	if genericStringValue(meta["security_layout"]) != "strict_timestamp_token_signature" {
+		t.Fatalf("expected strict layout metadata, got %#v", meta)
 	}
 }
 
