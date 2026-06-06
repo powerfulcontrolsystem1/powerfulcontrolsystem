@@ -6,6 +6,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
 	"database/sql"
@@ -8966,57 +8967,64 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 	}
 	action := dianSOAPAction(operation)
 	bodyContent := dianBuildSOAPBody(operation, fileName, zipBytes, testSetID)
-	actionID := dianSOAPSafeID("PCSAction")
-	toID := dianSOAPSafeID("PCSTo")
-	bodyID := dianSOAPSafeID("PCSBody")
+	toID := dianSOAPSafeID("ID")
 	timestampID := dianSOAPSafeID("PCSTS")
-	tokenID := dianSOAPSafeID("PCSBST")
+	tokenID := dianSOAPSafeID("X509")
+	signatureID := dianSOAPSafeID("SIG")
+	keyInfoID := dianSOAPSafeID("KI")
+	strID := dianSOAPSafeID("STR")
 
 	created := now.Format("2006-01-02T15:04:05Z")
 	expires := now.Add(5 * time.Minute).Format("2006-01-02T15:04:05Z")
-	actionHeader := fmt.Sprintf(`<a:Action s:mustUnderstand="1" wsu:Id="%s" xmlns:a="%s" xmlns:s="%s" xmlns:wsu="%s">%s</a:Action>`,
-		actionID, dianAddressingNamespace, dianSOAPNamespace, dianWSUSecurityNS, escapeXML(action))
-	toHeader := fmt.Sprintf(`<a:To s:mustUnderstand="1" wsu:Id="%s" xmlns:a="%s" xmlns:s="%s" xmlns:wsu="%s">%s</a:To>`,
-		toID, dianAddressingNamespace, dianSOAPNamespace, dianWSUSecurityNS, escapeXML(endpoint))
-	body := fmt.Sprintf(`<s:Body wsu:Id="%s" xmlns:s="%s" xmlns:wsu="%s" xmlns:wcf="%s">%s</s:Body>`,
-		bodyID, dianSOAPNamespace, dianWSUSecurityNS, dianWCFNamespace, bodyContent)
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s">%s</wsa:Action>`,
+		dianAddressingNamespace, escapeXML(action))
+	toHeader := fmt.Sprintf(`<wsa:To xmlns:wsa="%s" xmlns:wsu="%s" xmlns:soap="%s" xmlns:wcf="%s" wsu:Id="%s">%s</wsa:To>`,
+		dianAddressingNamespace, dianWSUSecurityNS, dianSOAPNamespace, dianWCFNamespace, toID, escapeXML(endpoint))
+	body := fmt.Sprintf(`<soap:Body xmlns:soap="%s" xmlns:wcf="%s">%s</soap:Body>`,
+		dianSOAPNamespace, dianWCFNamespace, bodyContent)
 	timestamp := fmt.Sprintf(`<wsu:Timestamp wsu:Id="%s" xmlns:wsu="%s"><wsu:Created>%s</wsu:Created><wsu:Expires>%s</wsu:Expires></wsu:Timestamp>`,
 		timestampID, dianWSUSecurityNS, created, expires)
 	binaryToken := fmt.Sprintf(`<wsse:BinarySecurityToken wsu:Id="%s" EncodingType="%s" ValueType="%s" xmlns:wsse="%s" xmlns:wsu="%s">%s</wsse:BinarySecurityToken>`,
 		tokenID, dianWSSBase64Encoding, dianWSSX509ValueType, dianWSSESecurityNS, dianWSUSecurityNS, base64.StdEncoding.EncodeToString(cert.Raw))
 
-	references := strings.Join([]string{
-		dianSOAPSignedReference(timestampID, timestamp),
-		dianSOAPSignedReference(actionID, actionHeader),
-		dianSOAPSignedReference(toID, toHeader),
-		dianSOAPSignedReference(bodyID, body),
-		dianSOAPSignedReference(tokenID, binaryToken),
-	}, "")
-	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="%s"><ds:CanonicalizationMethod Algorithm="%s"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="%s"></ds:SignatureMethod>%s</ds:SignedInfo>`,
-		dianDSigNamespace, dianExcC14NAlgorithm, dianRSASHA256Algorithm, references)
+	reference := fmt.Sprintf(`<ds:Reference URI="#%s"><ds:Transforms><ds:Transform Algorithm="%s"><ec:InclusiveNamespaces xmlns:ec="%s" PrefixList="soap wcf"></ec:InclusiveNamespaces></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="%s"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>`,
+		escapeXML(toID),
+		dianExcC14NAlgorithm,
+		dianExcC14NAlgorithm,
+		dianSHA256DigestAlg,
+		dianSOAPSHA256DigestBase64(toHeader),
+	)
+	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="%s"><ds:CanonicalizationMethod Algorithm="%s"><ec:InclusiveNamespaces xmlns:ec="%s" PrefixList="wsa soap wcf"></ec:InclusiveNamespaces></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="%s"></ds:SignatureMethod>%s</ds:SignedInfo>`,
+		dianDSigNamespace, dianExcC14NAlgorithm, dianExcC14NAlgorithm, dianRSASHA256Algorithm, reference)
 	signedInfoDigest := sha256.Sum256([]byte(signedInfo))
 	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
 	if err != nil {
 		return "", nil, fmt.Errorf("no se pudo firmar WS-Security DIAN")
 	}
-	signature := fmt.Sprintf(`<ds:Signature xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo><wsse:SecurityTokenReference xmlns:wsse="%s"><wsse:Reference URI="#%s" ValueType="%s"></wsse:Reference></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+	thumbprint := sha1.Sum(cert.Raw)
+	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:KeyIdentifier EncodingType="%s" ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security-1.1#ThumbprintSHA1">%s</wsse:KeyIdentifier></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+		signatureID,
 		dianDSigNamespace,
 		signedInfo,
 		base64.StdEncoding.EncodeToString(signatureValue),
+		keyInfoID,
+		strID,
 		dianWSSESecurityNS,
-		escapeXML(tokenID),
-		dianWSSX509ValueType,
+		dianWSUSecurityNS,
+		dianWSSBase64Encoding,
+		base64.StdEncoding.EncodeToString(thumbprint[:]),
 	)
-	security := fmt.Sprintf(`<wsse:Security s:mustUnderstand="1" xmlns:wsse="%s" xmlns:s="%s">%s%s%s</wsse:Security>`,
-		dianWSSESecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
-	envelope := fmt.Sprintf(`<s:Envelope xmlns:s="%s" xmlns:a="%s" xmlns:wcf="%s" xmlns:wsu="%s"><s:Header>%s%s%s</s:Header>%s</s:Envelope>`,
-		dianSOAPNamespace, dianAddressingNamespace, dianWCFNamespace, dianWSUSecurityNS, security, actionHeader, toHeader, body)
+	security := fmt.Sprintf(`<wsse:Security soap:mustUnderstand="1" xmlns:wsse="%s" xmlns:wsu="%s" xmlns:soap="%s">%s%s%s</wsse:Security>`,
+		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
+	envelope := fmt.Sprintf(`<soap:Envelope xmlns:soap="%s" xmlns:wcf="%s"><soap:Header xmlns:wsa="%s">%s%s%s</soap:Header>%s</soap:Envelope>`,
+		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, toHeader, body)
 	meta := map[string]interface{}{
 		"ws_security":              true,
-		"signed_parts":             []string{"Timestamp", "Action", "To", "Body", "BinarySecurityToken"},
+		"signed_parts":             []string{"To"},
+		"key_reference":            "ThumbprintSHA1",
 		"signature_algorithm":      "RSA-SHA256",
 		"digest_algorithm":         "SHA-256",
-		"canonicalization":         "exclusive_c14n_generated_xml",
+		"canonicalization":         "exclusive_c14n_with_inclusive_namespaces",
 		"timestamp_created":        created,
 		"timestamp_expires":        expires,
 		"binary_security_token_id": tokenID,

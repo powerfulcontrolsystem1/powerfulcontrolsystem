@@ -219,7 +219,8 @@ func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
 		`<wsse:BinarySecurityToken`,
 		`<ds:Signature`,
 		`<ds:SignatureValue>`,
-		`<wsse:Reference URI="#PCSBST-`,
+		`ThumbprintSHA1`,
+		`<ds:Reference URI="#ID-`,
 		`<wcf:testSetId>abc-test-set</wcf:testSetId>`,
 		`http://wcf.dian.colombia/IWcfDianCustomerServices/SendTestSetAsync`,
 	} {
