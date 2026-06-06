@@ -226,7 +226,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 					http.Error(w, "No se pudo consultar conectividad DIAN", http.StatusInternalServerError)
 					return
 				}
-				status := facturacionProveedorConnectionStatus(cfg)
+				status := facturacionDIANConnectionStatus(dbEmp, empresaID, paisCodigo, cfg)
 				if cfg != nil && parseTruthy(r.URL.Query().Get("procesar_reintentos")) {
 					if online, _ := status["online"].(bool); online {
 						settings := facturacionDianOfflineSettingsFromConfig(cfg)
@@ -1773,6 +1773,42 @@ func facturacionProveedorConnectionStatus(cfg *dbpkg.FacturacionElectronicaPaisC
 
 	out["accion_recomendada"] = "bloquear_facturacion_electronica"
 	return out
+}
+
+func facturacionDIANConnectionStatus(dbEmp *sql.DB, empresaID int64, paisCodigo string, cfg *dbpkg.FacturacionElectronicaPaisConfig) map[string]interface{} {
+	status := facturacionProveedorConnectionStatus(cfg)
+	if strings.ToUpper(strings.TrimSpace(paisCodigo)) != "CO" || empresaID <= 0 || dbEmp == nil {
+		return status
+	}
+
+	dianCfg, err := getEmpresaDIANConfig(dbEmp, empresaID)
+	if err != nil || len(dianCfg) == 0 {
+		return status
+	}
+	endpoint := normalizeDIANSOAPEndpoint(genericStringValue(dianCfg["url_dian"]))
+	if endpoint == "" {
+		return status
+	}
+
+	httpStatus, reachable, latencyMS, message := runIntegracionProbe(endpoint)
+	status["ok"] = true
+	status["online"] = reachable
+	status["estado_conexion"] = map[bool]string{true: "online", false: "offline"}[reachable]
+	status["mensaje"] = message
+	status["endpoint"] = endpoint
+	status["http_status"] = httpStatus
+	status["latency_ms"] = latencyMS
+	status["proveedor"] = "DIAN"
+	status["transporte"] = "soap_dian"
+	status["ambiente"] = chooseDIANAmbiente(dianCfg)
+	status["estado_dian"] = genericStringValue(dianCfg["estado_dian"])
+	status["test_set_id_configurado"] = strings.TrimSpace(genericStringValue(dianCfg["test_set_id"])) != ""
+	if reachable {
+		status["accion_recomendada"] = "continuar_online"
+	} else {
+		status["accion_recomendada"] = "revisar_endpoint_dian"
+	}
+	return status
 }
 
 func facturacionOfflineDianPreflight(dbEmp *sql.DB, payload facturacionOperacionPayload) (map[string]interface{}, error) {

@@ -1,3 +1,8 @@
+## [2026-06-06] Botones DIAN y conexion oficial
+- [Frontend] `facturacion_electronica_pruebas_dian.html` autogenera codigos para los botones de emision manual cuando el campo esta vacio y muestra errores JSON reales del backend.
+- [Backend] `estado_conexion_dian` usa la configuracion DIAN Colombia oficial de la empresa cuando existe, probando el endpoint SOAP guardado en lugar de depender solo del proveedor FE generico.
+- [QA] `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`.
+
 ## [2026-06-06] DIAN WS-Security BinarySecurityToken
 - [Backend] `SendTestSetAsync` y `GetStatusZip` oficiales referencian el `BinarySecurityToken` en `KeyInfo`, como pide la guia DIAN SoapUI, en lugar de `ThumbprintSHA1`.
 - [DIAN] El timestamp WS-Security usa vigencia de 60 segundos y precision en milisegundos; se mantiene firma RSA-SHA256, digest SHA-256 y firma del header `wsa:To`.

@@ -499,6 +499,12 @@
       const rawMonto = Number(document.getElementById("op_monto_total").value || 0);
       const rawClienteID = Number(document.getElementById("op_cliente_id").value || 0);
       const clienteID = Number.isFinite(rawClienteID) && rawClienteID > 0 ? Math.trunc(rawClienteID) : 0;
+      const tipoDocumento = txt(document.getElementById("op_tipo_documento").value) || "factura_electronica";
+      let documentoCodigo = txt(document.getElementById("op_documento_codigo").value);
+      if (!documentoCodigo) {
+        documentoCodigo = buildOperacionDocumentoCodigo(action, tipoDocumento);
+        setValue("op_documento_codigo", documentoCodigo);
+      }
       return {
         empresa_id: Number(state.empresaID),
         entidad_id: clienteID,
@@ -506,14 +512,28 @@
         cliente_email: txt(document.getElementById("op_cliente_email").value),
         cliente_nombre: txt(document.getElementById("op_cliente_nombre").value),
         pais_codigo: "CO",
-        tipo_documento: txt(document.getElementById("op_tipo_documento").value) || "factura_electronica",
-        documento_codigo: txt(document.getElementById("op_documento_codigo").value),
+        tipo_documento: tipoDocumento,
+        documento_codigo: documentoCodigo,
         estado_actual: txt(document.getElementById("op_estado_actual").value),
         monto_total: Number.isFinite(rawMonto) && rawMonto > 0 ? rawMonto : 0,
         moneda: txt(document.getElementById("op_moneda").value).toUpperCase() || "COP",
         periodo_contable: txt(document.getElementById("op_periodo_contable").value),
         observaciones: "operacion " + action + " desde pruebas DIAN"
       };
+    }
+
+    function buildOperacionDocumentoCodigo(action, tipoDocumento) {
+      const prefijos = {
+        factura_electronica: "FE",
+        nota_credito: "NC",
+        nota_debito: "ND",
+        documento_soporte: "DS",
+        nomina_electronica: "NE",
+        documento_equivalente_pos: "POS"
+      };
+      const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
+      const prefijo = prefijos[tipoDocumento] || "DOC";
+      return prefijo + "-" + stamp + "-" + txt(action).toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 8);
     }
 
     async function ejecutarDianDiagnostico() {
@@ -716,8 +736,7 @@
           body: JSON.stringify(payload),
           credentials: "same-origin"
         });
-        await ensureOk(res);
-        const data = await res.json();
+        const data = await readJSONResponse(res);
         setJSON("op_resultado", data);
         if (data && data.estado_nuevo) document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
         setText("op_msg", data && data.numero_legal ? ("Operacion ejecutada. Numero legal: " + data.numero_legal) : "Operacion ejecutada correctamente", false);
