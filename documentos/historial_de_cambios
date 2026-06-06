@@ -31142,3 +31142,11 @@ Archivos modificados:
 - Frontend: la emision manual usa el lector JSON comun para mostrar detalles reales de errores HTTP del backend en el panel de resultado.
 - Backend: `backend/handlers/facturacion_electronica.go` hace que `action=estado_conexion_dian` consulte el endpoint SOAP guardado en la configuracion DIAN Colombia por empresa cuando exista, manteniendo aislamiento por `empresa_id` y sin exponer secretos.
 - Validacion: `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`, ejecutados desde `backend`, OK.
+
+2026-06-06: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html

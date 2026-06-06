@@ -12577,3 +12577,10 @@ Archivos modificados:
 2026-06-06 17:47:28 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: f3ac2321; PushStatus: OK
 Archivos modificados:
 - backend/handlers/modulos_faltantes.go
+
+2026-06-06 18:01:57 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 66a6a0c8; PushStatus: OK
+Archivos modificados:
+- backend/handlers/facturacion_electronica.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
