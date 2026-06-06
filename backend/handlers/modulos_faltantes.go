@@ -6,7 +6,6 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/x509"
 	"database/sql"
@@ -8974,9 +8973,9 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 	keyInfoID := dianSOAPSafeID("KI")
 	strID := dianSOAPSafeID("STR")
 
-	created := now.Format("2006-01-02T15:04:05Z")
-	expires := now.Add(5 * time.Minute).Format("2006-01-02T15:04:05Z")
-	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s">%s</wsa:Action>`,
+	created := now.Format("2006-01-02T15:04:05.000Z")
+	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
 		dianAddressingNamespace, escapeXML(action))
 	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wcf="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s">%s</wsa:To>`,
 		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, dianWSUSecurityNS, toID, escapeXML(endpoint))
@@ -9001,8 +9000,7 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 	if err != nil {
 		return "", nil, fmt.Errorf("no se pudo firmar WS-Security DIAN")
 	}
-	thumbprint := sha1.Sum(cert.Raw)
-	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:KeyIdentifier EncodingType="%s" ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security-1.1#ThumbprintSHA1">%s</wsse:KeyIdentifier></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:Reference URI="#%s" ValueType="%s"></wsse:Reference></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
 		signatureID,
 		dianDSigNamespace,
 		signedInfo,
@@ -9011,8 +9009,8 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 		strID,
 		dianWSSESecurityNS,
 		dianWSUSecurityNS,
-		dianWSSBase64Encoding,
-		base64.StdEncoding.EncodeToString(thumbprint[:]),
+		escapeXML(tokenID),
+		dianWSSX509ValueType,
 	)
 	security := fmt.Sprintf(`<wsse:Security soap:mustUnderstand="1" xmlns:wsse="%s" xmlns:wsu="%s" xmlns:soap="%s">%s%s%s</wsse:Security>`,
 		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
@@ -9021,7 +9019,7 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 	meta := map[string]interface{}{
 		"ws_security":              true,
 		"signed_parts":             []string{"To"},
-		"key_reference":            "ThumbprintSHA1",
+		"key_reference":            "BinarySecurityToken",
 		"signature_algorithm":      "RSA-SHA256",
 		"digest_algorithm":         "SHA-256",
 		"canonicalization":         "exclusive_c14n_with_inclusive_namespaces",
@@ -9089,9 +9087,9 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 	keyInfoID := dianSOAPSafeID("KI")
 	strID := dianSOAPSafeID("STR")
 
-	created := now.Format("2006-01-02T15:04:05Z")
-	expires := now.Add(5 * time.Minute).Format("2006-01-02T15:04:05Z")
-	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s">%s</wsa:Action>`,
+	created := now.Format("2006-01-02T15:04:05.000Z")
+	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
 		dianAddressingNamespace, escapeXML(action))
 	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wcf="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s">%s</wsa:To>`,
 		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, dianWSUSecurityNS, toID, escapeXML(endpoint))
@@ -9116,8 +9114,7 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 	if err != nil {
 		return "", nil, fmt.Errorf("no se pudo firmar WS-Security DIAN")
 	}
-	thumbprint := sha1.Sum(cert.Raw)
-	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:KeyIdentifier EncodingType="%s" ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security-1.1#ThumbprintSHA1">%s</wsse:KeyIdentifier></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
+	signature := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="%s">%s<ds:SignatureValue>%s</ds:SignatureValue><ds:KeyInfo Id="%s"><wsse:SecurityTokenReference wsu:Id="%s" xmlns:wsse="%s" xmlns:wsu="%s"><wsse:Reference URI="#%s" ValueType="%s"></wsse:Reference></wsse:SecurityTokenReference></ds:KeyInfo></ds:Signature>`,
 		signatureID,
 		dianDSigNamespace,
 		signedInfo,
@@ -9126,8 +9123,8 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 		strID,
 		dianWSSESecurityNS,
 		dianWSUSecurityNS,
-		dianWSSBase64Encoding,
-		base64.StdEncoding.EncodeToString(thumbprint[:]),
+		escapeXML(tokenID),
+		dianWSSX509ValueType,
 	)
 	security := fmt.Sprintf(`<wsse:Security soap:mustUnderstand="1" xmlns:wsse="%s" xmlns:wsu="%s" xmlns:soap="%s">%s%s%s</wsse:Security>`,
 		dianWSSESecurityNS, dianWSUSecurityNS, dianSOAPNamespace, timestamp, binaryToken, signature)
@@ -9136,7 +9133,7 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 	meta := map[string]interface{}{
 		"ws_security":         true,
 		"signed_parts":        []string{"To"},
-		"key_reference":       "ThumbprintSHA1",
+		"key_reference":       "BinarySecurityToken",
 		"signature_algorithm": "RSA-SHA256",
 		"digest_algorithm":    "SHA-256",
 		"canonicalization":    "exclusive_c14n_with_inclusive_namespaces",

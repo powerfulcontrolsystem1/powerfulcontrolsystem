@@ -7,6 +7,11 @@ Actualizacion 2026-06-06: `pruebas_dian` y `enviar_set_pruebas` ya no aceptan
 simulacion. El cierre operativo del set requiere envio real al ambiente de
 habilitacion, `ZipKey` y acuse final consultado con `GetStatusZip`.
 
+Actualizacion 2026-06-06: el transporte SOAP oficial DIAN usa WS-Security con
+referencia directa al `BinarySecurityToken`, firma RSA-SHA256, digest SHA-256,
+canonicalizacion exclusiva y timestamp de 60 segundos con precision en
+milisegundos.
+
 ## Sintomas cubiertos
 
 - la empresa no logra pasar de onboarding DIAN a pruebas operativas.
@@ -17,9 +22,7 @@ habilitacion, `ZipKey` y acuse final consultado con `GetStatusZip`.
 
 ## Alcance
 
-Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/dian` y a su uso desde el contexto autenticado de empresa. Este runbook cubre la base operativa ya implementada para onboarding, checklist, validacion, firma base, diagnostico y set de pruebas.
-
-No cubre una integracion SOAP/WSDL oficial completa con DIAN. El propio backend deja esa brecha explicita en el reporte de alistamiento oficial.
+Aplica al endpoint base de Colombia bajo `/api/empresa/facturacion_electronica/dian` y a su uso desde el contexto autenticado de empresa. Este runbook cubre la base operativa ya implementada para onboarding, checklist, validacion, firma base, diagnostico, `SendTestSetAsync` y `GetStatusZip` reales contra el endpoint SOAP/WCF oficial DIAN.
 
 ## Fuentes de evidencia
 

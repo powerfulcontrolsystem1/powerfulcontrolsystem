@@ -1,3 +1,10 @@
+2026-06-06: DIAN WS-Security con BinarySecurityToken.
+- Modulos afectados: facturacion electronica Colombia, envio real DIAN SOAP/WCF y consulta `GetStatusZip`.
+- Backend: el sobre WS-Security de `SendTestSetAsync` y `GetStatusZip` cambia la referencia de `KeyInfo` a `wsse:Reference URI="#X509-..."` contra el `BinarySecurityToken`, alineado con la guia DIAN SoapUI.
+- Backend: el timestamp usa 60 segundos de vigencia y precision en milisegundos, manteniendo firma RSA-SHA256, digest SHA-256 y referencia firmada del header `wsa:To`.
+- Seguridad: no se imprimen secretos; certificado y llave siguen resolviendose por referencias seguras y por `empresa_id`.
+- Pruebas: `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./... -run "^$" -count=1`.
+
 2026-06-06: DIAN set real sin simulacion
 - Modulos afectados: `facturacion_electronica`, `DIAN`, permisos empresariales y centro de habilitacion.
 - Backend: `action=pruebas_dian` y `action=enviar_set_pruebas` bloquean `simular=true`; el set 2+2+2 se envia por flujo real y consulta `GetStatusZip` despues de recibir `ZipKey`.

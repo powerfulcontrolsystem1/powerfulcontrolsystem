@@ -1,3 +1,8 @@
+## [2026-06-06] DIAN WS-Security BinarySecurityToken
+- [Backend] `SendTestSetAsync` y `GetStatusZip` oficiales referencian el `BinarySecurityToken` en `KeyInfo`, como pide la guia DIAN SoapUI, en lugar de `ThumbprintSHA1`.
+- [DIAN] El timestamp WS-Security usa vigencia de 60 segundos y precision en milisegundos; se mantiene firma RSA-SHA256, digest SHA-256 y firma del header `wsa:To`.
+- [QA] `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./... -run "^$" -count=1`.
+
 ## [2026-06-06] DIAN set real sin simulacion
 - [Backend] `action=pruebas_dian` y `action=enviar_set_pruebas` rechazan `simular=true`; el flujo automatico ahora exige envio real.
 - [DIAN] El set real consulta `GetStatusZip` despues de recibir `ZipKey` y solo cuenta documentos aceptados con acuse final.
