@@ -12860,3 +12860,279 @@ Archivos modificados:
 - tmp/dian-visual-auth-profile/component_crx_cache/metadata.json
 - tmp/dian-visual-auth-profile/extensions_crx_cache/metadata.json
 - tmp/dian-visual-auth-profile/first_party_sets.db-journal
+
+2026-06-06 18:34:05 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3692dc91; PushStatus: OK
+Archivos modificados:
+- .gitignore
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
+- tmp/dian-visual-auth-profile/Ad Blocking/blocklist
+- tmp/dian-visual-auth-profile/BrowserMetrics-spare.pma
+- tmp/dian-visual-auth-profile/Crashpad/metadata
+- tmp/dian-visual-auth-profile/Crashpad/settings.dat
+- tmp/dian-visual-auth-profile/Crashpad/throttle_store.dat
+- tmp/dian-visual-auth-profile/Default/AutofillAiModelCache/LOCK
+- tmp/dian-visual-auth-profile/Default/AutofillAiModelCache/LOG
+- tmp/dian-visual-auth-profile/Default/AutofillStrikeDatabase/LOCK
+- tmp/dian-visual-auth-profile/Default/AutofillStrikeDatabase/LOG
+- tmp/dian-visual-auth-profile/Default/BookmarkMergedSurfaceOrdering
+- tmp/dian-visual-auth-profile/Default/Bookmarks
+- tmp/dian-visual-auth-profile/Default/BudgetDatabase/LOCK
+- tmp/dian-visual-auth-profile/Default/BudgetDatabase/LOG
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/data_0
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/data_1
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/data_2
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/data_3
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000001
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000002
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000003
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000004
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000005
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000006
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000008
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_000009
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_00000a
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_00000b
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_00000c
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_00000d
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_00000e
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/f_00000f
+- tmp/dian-visual-auth-profile/Default/Cache/Cache_Data/index
+- tmp/dian-visual-auth-profile/Default/Cache/No_Vary_Search/journal.baj
+- tmp/dian-visual-auth-profile/Default/Cache/No_Vary_Search/snapshot.baf
+- tmp/dian-visual-auth-profile/Default/ClientCertificates/LOCK
+- tmp/dian-visual-auth-profile/Default/ClientCertificates/LOG
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/1066288b66ccfe0e_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/27ca2caca8aeba57_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/3636144840c07694_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/44d883d0a7e683ca_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/bd03bd4754ef76c8_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/d083511e72072c3e_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/f7b578f803e5e611_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/fc7b30360f90464b_0
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/index
+- tmp/dian-visual-auth-profile/Default/Code Cache/js/index-dir/the-real-index
+- tmp/dian-visual-auth-profile/Default/Code Cache/wasm/index
+- tmp/dian-visual-auth-profile/Default/Code Cache/wasm/index-dir/the-real-index
+- tmp/dian-visual-auth-profile/Default/Collections/collectionsSQLite
+- tmp/dian-visual-auth-profile/Default/Collections/collectionsSQLite-journal
+- tmp/dian-visual-auth-profile/Default/DIPS
+- tmp/dian-visual-auth-profile/Default/DawnGraphiteCache/data_0
+- tmp/dian-visual-auth-profile/Default/DawnGraphiteCache/data_1
+- tmp/dian-visual-auth-profile/Default/DawnGraphiteCache/data_2
+- tmp/dian-visual-auth-profile/Default/DawnGraphiteCache/data_3
+- tmp/dian-visual-auth-profile/Default/DawnGraphiteCache/index
+- tmp/dian-visual-auth-profile/Default/DawnWebGPUCache/data_0
+- tmp/dian-visual-auth-profile/Default/DawnWebGPUCache/data_1
+- tmp/dian-visual-auth-profile/Default/DawnWebGPUCache/data_2
+- tmp/dian-visual-auth-profile/Default/DawnWebGPUCache/data_3
+- tmp/dian-visual-auth-profile/Default/DawnWebGPUCache/index
+- tmp/dian-visual-auth-profile/Default/DualEngine/SiteList-Consumer.json
+- tmp/dian-visual-auth-profile/Default/DualEngine/SiteList-Enterprise.json
+- tmp/dian-visual-auth-profile/Default/Edge Profile Picture.png
+- tmp/dian-visual-auth-profile/Default/EdgeHubAppUsage/EdgeHubAppUsageSQLite.db-journal
+- tmp/dian-visual-auth-profile/Default/EdgePushStorageWithConnectTokenAndKey/LOCK
+- tmp/dian-visual-auth-profile/Default/EdgePushStorageWithConnectTokenAndKey/LOG
+- tmp/dian-visual-auth-profile/Default/EdgePushStorageWithConnectTokenAndKey/LOG.old
+- tmp/dian-visual-auth-profile/Default/EntityExtraction/domains_config.json
+- tmp/dian-visual-auth-profile/Default/Extension Rules/000003.log
+- tmp/dian-visual-auth-profile/Default/Extension Rules/CURRENT
+- tmp/dian-visual-auth-profile/Default/Extension Rules/LOCK
+- tmp/dian-visual-auth-profile/Default/Extension Rules/LOG
+- tmp/dian-visual-auth-profile/Default/Extension Rules/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Extension Scripts/000003.log
+- tmp/dian-visual-auth-profile/Default/Extension Scripts/CURRENT
+- tmp/dian-visual-auth-profile/Default/Extension Scripts/LOCK
+- tmp/dian-visual-auth-profile/Default/Extension Scripts/LOG
+- tmp/dian-visual-auth-profile/Default/Extension Scripts/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Extension State/000003.log
+- tmp/dian-visual-auth-profile/Default/Extension State/CURRENT
+- tmp/dian-visual-auth-profile/Default/Extension State/LOCK
+- tmp/dian-visual-auth-profile/Default/Extension State/LOG
+- tmp/dian-visual-auth-profile/Default/Extension State/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/ExtensionActivityComp
+- tmp/dian-visual-auth-profile/Default/ExtensionActivityEdge
+- tmp/dian-visual-auth-profile/Default/ExtensionActivityEdge-journal
+- tmp/dian-visual-auth-profile/Default/Favicons
+- tmp/dian-visual-auth-profile/Default/Favicons-journal
+- tmp/dian-visual-auth-profile/Default/Feature Engagement Tracker/AvailabilityDB/LOCK
+- tmp/dian-visual-auth-profile/Default/Feature Engagement Tracker/AvailabilityDB/LOG
+- tmp/dian-visual-auth-profile/Default/Feature Engagement Tracker/EventDB/LOCK
+- tmp/dian-visual-auth-profile/Default/Feature Engagement Tracker/EventDB/LOG
+- tmp/dian-visual-auth-profile/Default/GPUCache/data_0
+- tmp/dian-visual-auth-profile/Default/GPUCache/data_1
+- tmp/dian-visual-auth-profile/Default/GPUCache/data_2
+- tmp/dian-visual-auth-profile/Default/GPUCache/data_3
+- tmp/dian-visual-auth-profile/Default/GPUCache/index
+- tmp/dian-visual-auth-profile/Default/History
+- tmp/dian-visual-auth-profile/Default/History-journal
+- tmp/dian-visual-auth-profile/Default/HubApps
+- tmp/dian-visual-auth-profile/Default/HubApps Icons
+- tmp/dian-visual-auth-profile/Default/HubApps Icons-journal
+- tmp/dian-visual-auth-profile/Default/LOCK
+- tmp/dian-visual-auth-profile/Default/LOG
+- tmp/dian-visual-auth-profile/Default/Local Storage/leveldb/000003.log
+- tmp/dian-visual-auth-profile/Default/Local Storage/leveldb/CURRENT
+- tmp/dian-visual-auth-profile/Default/Local Storage/leveldb/LOCK
+- tmp/dian-visual-auth-profile/Default/Local Storage/leveldb/LOG
+- tmp/dian-visual-auth-profile/Default/Local Storage/leveldb/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Login Data
+- tmp/dian-visual-auth-profile/Default/Login Data For Account
+- tmp/dian-visual-auth-profile/Default/Login Data For Account-journal
+- tmp/dian-visual-auth-profile/Default/Login Data-journal
+- tmp/dian-visual-auth-profile/Default/Network Action Predictor
+- tmp/dian-visual-auth-profile/Default/Network Action Predictor-journal
+- tmp/dian-visual-auth-profile/Default/Network/Cookies
+- tmp/dian-visual-auth-profile/Default/Network/Cookies-journal
+- tmp/dian-visual-auth-profile/Default/Network/Device Bound Sessions
+- tmp/dian-visual-auth-profile/Default/Network/Device Bound Sessions-journal
+- tmp/dian-visual-auth-profile/Default/Network/Network Persistent State
+- tmp/dian-visual-auth-profile/Default/Network/NetworkDataMigrated
+- tmp/dian-visual-auth-profile/Default/Network/Reporting and NEL
+- tmp/dian-visual-auth-profile/Default/Network/Reporting and NEL-journal
+- tmp/dian-visual-auth-profile/Default/Network/SCT Auditing Pending Reports
+- tmp/dian-visual-auth-profile/Default/Network/Sdch Dictionaries
+- tmp/dian-visual-auth-profile/Default/Network/TransportSecurity
+- tmp/dian-visual-auth-profile/Default/Network/Trust Tokens
+- tmp/dian-visual-auth-profile/Default/Network/Trust Tokens-journal
+- tmp/dian-visual-auth-profile/Default/Nurturing/campaign_history
+- tmp/dian-visual-auth-profile/Default/Nurturing/campaign_history-journal
+- tmp/dian-visual-auth-profile/Default/PersistentOriginTrials/LOCK
+- tmp/dian-visual-auth-profile/Default/PersistentOriginTrials/LOG
+- tmp/dian-visual-auth-profile/Default/Preferences
+- tmp/dian-visual-auth-profile/Default/PreferredApps
+- tmp/dian-visual-auth-profile/Default/README
+- tmp/dian-visual-auth-profile/Default/Safe Browsing Network/NetworkDataMigrated
+- tmp/dian-visual-auth-profile/Default/Safe Browsing Network/Safe Browsing Cookies
+- tmp/dian-visual-auth-profile/Default/Safe Browsing Network/Safe Browsing Cookies-journal
+- tmp/dian-visual-auth-profile/Default/Secure Preferences
+- tmp/dian-visual-auth-profile/Default/Segmentation Platform/SegmentInfoDB/LOCK
+- tmp/dian-visual-auth-profile/Default/Segmentation Platform/SegmentInfoDB/LOG
+- tmp/dian-visual-auth-profile/Default/Segmentation Platform/SignalDB/LOCK
+- tmp/dian-visual-auth-profile/Default/Segmentation Platform/SignalDB/LOG
+- tmp/dian-visual-auth-profile/Default/Segmentation Platform/SignalStorageConfigDB/LOCK
+- tmp/dian-visual-auth-profile/Default/Segmentation Platform/SignalStorageConfigDB/LOG
+- tmp/dian-visual-auth-profile/Default/ServerCertificate
+- tmp/dian-visual-auth-profile/Default/ServerCertificate-journal
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/24db60a93199f5ab_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/35ca14aee432b71d_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/73367d42e004dde2_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/86cce1fccf42c7a2_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/8b424936fb88f4f7_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/9348e387b8a8311d_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/b0d998bde18c1728_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/d481641e646f9b40_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/ef9ec518dd7556cf_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/f1d1d8340187177a_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/index
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/ba31240d-49a0-4404-8b11-b8ac9d90d863/index-dir/the-real-index
+- tmp/dian-visual-auth-profile/Default/Service Worker/CacheStorage/05cd631522cdfc9c31925f052964e0b61269526c/index.txt
+- tmp/dian-visual-auth-profile/Default/Service Worker/Database/000003.log
+- tmp/dian-visual-auth-profile/Default/Service Worker/Database/CURRENT
+- tmp/dian-visual-auth-profile/Default/Service Worker/Database/LOCK
+- tmp/dian-visual-auth-profile/Default/Service Worker/Database/LOG
+- tmp/dian-visual-auth-profile/Default/Service Worker/Database/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_0
+- tmp/dian-visual-auth-profile/Default/Service Worker/ScriptCache/2cc80dabc69f58b6_1
+- tmp/dian-visual-auth-profile/Default/Service Worker/ScriptCache/index
+- tmp/dian-visual-auth-profile/Default/Service Worker/ScriptCache/index-dir/the-real-index
+- tmp/dian-visual-auth-profile/Default/Session Storage/000003.log
+- tmp/dian-visual-auth-profile/Default/Session Storage/CURRENT
+- tmp/dian-visual-auth-profile/Default/Session Storage/LOCK
+- tmp/dian-visual-auth-profile/Default/Session Storage/LOG
+- tmp/dian-visual-auth-profile/Default/Session Storage/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Sessions/Session_13425261181466272
+- tmp/dian-visual-auth-profile/Default/Sessions/Tabs_13425261348287459
+- tmp/dian-visual-auth-profile/Default/Shared Dictionary/cache/index
+- tmp/dian-visual-auth-profile/Default/Shared Dictionary/cache/index-dir/the-real-index
+- tmp/dian-visual-auth-profile/Default/Shared Dictionary/db
+- tmp/dian-visual-auth-profile/Default/Shared Dictionary/db-journal
+- tmp/dian-visual-auth-profile/Default/SharedStorage
+- tmp/dian-visual-auth-profile/Default/Shortcuts
+- tmp/dian-visual-auth-profile/Default/Shortcuts-journal
+- tmp/dian-visual-auth-profile/Default/Site Characteristics Database/000003.log
+- tmp/dian-visual-auth-profile/Default/Site Characteristics Database/CURRENT
+- tmp/dian-visual-auth-profile/Default/Site Characteristics Database/LOCK
+- tmp/dian-visual-auth-profile/Default/Site Characteristics Database/LOG
+- tmp/dian-visual-auth-profile/Default/Site Characteristics Database/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Sync Data/LevelDB/000003.log
+- tmp/dian-visual-auth-profile/Default/Sync Data/LevelDB/CURRENT
+- tmp/dian-visual-auth-profile/Default/Sync Data/LevelDB/LOCK
+- tmp/dian-visual-auth-profile/Default/Sync Data/LevelDB/LOG
+- tmp/dian-visual-auth-profile/Default/Sync Data/LevelDB/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/Top Sites
+- tmp/dian-visual-auth-profile/Default/Top Sites-journal
+- tmp/dian-visual-auth-profile/Default/Vpn Tokens
+- tmp/dian-visual-auth-profile/Default/Vpn Tokens-journal
+- tmp/dian-visual-auth-profile/Default/Web Data
+- tmp/dian-visual-auth-profile/Default/Web Data-journal
+- tmp/dian-visual-auth-profile/Default/WebStorage/QuotaManager
+- tmp/dian-visual-auth-profile/Default/WebStorage/QuotaManager-journal
+- tmp/dian-visual-auth-profile/Default/Workspaces/Logs/Workspaces Internals Logs
+- tmp/dian-visual-auth-profile/Default/arbitration_service_config.json
+- tmp/dian-visual-auth-profile/Default/commerce_subscription_db/LOCK
+- tmp/dian-visual-auth-profile/Default/commerce_subscription_db/LOG
+- tmp/dian-visual-auth-profile/Default/discount_infos_db/LOCK
+- tmp/dian-visual-auth-profile/Default/discount_infos_db/LOG
+- tmp/dian-visual-auth-profile/Default/discounts_db/LOCK
+- tmp/dian-visual-auth-profile/Default/discounts_db/LOG
+- tmp/dian-visual-auth-profile/Default/favorites_diagnostic.log
+- tmp/dian-visual-auth-profile/Default/heavy_ad_intervention_opt_out.db-journal
+- tmp/dian-visual-auth-profile/Default/parcel_tracking_db/LOCK
+- tmp/dian-visual-auth-profile/Default/parcel_tracking_db/LOG
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/000003.log
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/CURRENT
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/LOCK
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/LOG
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/MANIFEST-000001
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/metadata/000003.log
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/metadata/CURRENT
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/metadata/LOCK
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/metadata/LOG
+- tmp/dian-visual-auth-profile/Default/shared_proto_db/metadata/MANIFEST-000001
+- tmp/dian-visual-auth-profile/FirstLaunchAfterInstallation
+- tmp/dian-visual-auth-profile/GrShaderCache/data_0
+- tmp/dian-visual-auth-profile/GrShaderCache/data_1
+- tmp/dian-visual-auth-profile/GrShaderCache/data_2
+- tmp/dian-visual-auth-profile/GrShaderCache/data_3
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000001
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000002
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000003
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000004
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000005
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000006
+- tmp/dian-visual-auth-profile/GrShaderCache/f_000007
+- tmp/dian-visual-auth-profile/GrShaderCache/index
+- tmp/dian-visual-auth-profile/GraphiteDawnCache/data_0
+- tmp/dian-visual-auth-profile/GraphiteDawnCache/data_1
+- tmp/dian-visual-auth-profile/GraphiteDawnCache/data_2
+- tmp/dian-visual-auth-profile/GraphiteDawnCache/data_3
+- tmp/dian-visual-auth-profile/GraphiteDawnCache/index
+- tmp/dian-visual-auth-profile/Last Browser
+- tmp/dian-visual-auth-profile/Last Version
+- tmp/dian-visual-auth-profile/Local State
+- tmp/dian-visual-auth-profile/Nurturing/campaign_history
+- tmp/dian-visual-auth-profile/Nurturing/campaign_history-journal
+- tmp/dian-visual-auth-profile/ShaderCache/data_0
+- tmp/dian-visual-auth-profile/ShaderCache/data_1
+- tmp/dian-visual-auth-profile/ShaderCache/data_2
+- tmp/dian-visual-auth-profile/ShaderCache/data_3
+- tmp/dian-visual-auth-profile/ShaderCache/index
+- tmp/dian-visual-auth-profile/SmartScreen/RemoteData/customSettings
+- tmp/dian-visual-auth-profile/SmartScreen/RemoteData/customSettings_F95BA787499AB4FA9EFFF472CE383A14
+- tmp/dian-visual-auth-profile/SmartScreen/RemoteData/edgeSettings
+- tmp/dian-visual-auth-profile/SmartScreen/RemoteData/edgeSettings_2.0-a82cb2897a8bf9445d68dcc2be05af89ad4b2fda1fddb2952693be7cd5353ad3
+- tmp/dian-visual-auth-profile/SmartScreen/RemoteData/topTraffic
+- tmp/dian-visual-auth-profile/SmartScreen/RemoteData/topTraffic_638004170464094982
+- tmp/dian-visual-auth-profile/SmartScreen/local/downloadCache
+- tmp/dian-visual-auth-profile/SmartScreen/local/downloadCache_
+- tmp/dian-visual-auth-profile/SmartScreen/local/uriCache
+- tmp/dian-visual-auth-profile/SmartScreen/local/uriCache_
+- tmp/dian-visual-auth-profile/Variations
+- tmp/dian-visual-auth-profile/VariationsRuntimeSeedV2
+- tmp/dian-visual-auth-profile/VariationsSafeSeedV2
+- tmp/dian-visual-auth-profile/VariationsSeedV2
+- tmp/dian-visual-auth-profile/component_crx_cache/metadata.json
+- tmp/dian-visual-auth-profile/extensions_crx_cache/metadata.json
+- tmp/dian-visual-auth-profile/first_party_sets.db-journal
