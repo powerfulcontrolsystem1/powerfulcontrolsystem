@@ -18,6 +18,8 @@ scripts/actualizar_repositorio.repo_url
 scripts/pcs_deployment.local.ps1
 tmp/*.txt
 tmp/*.js
+tmp/*-profile/
+tmp/playwright-*/
 tmp_*.png
 outputs/
 backend/.env.local

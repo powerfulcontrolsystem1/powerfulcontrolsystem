@@ -31138,7 +31138,7 @@ PushStatus: OK
 Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 2026-06-06: DIAN WS-Security alineado con politica WSDL oficial
-- Backend: `backend/handlers/modulos_faltantes.go` ajusta los sobres SOAP firmados de `SendTestSetAsync` y `GetStatusZip` para usar `ThumbprintSHA1` en `SecurityTokenReference`, firmar el header `To`, incluir `MessageID`/`ReplyTo` y ordenar `Timestamp + BinarySecurityToken + Signature` conforme al `TransportBinding`/`EndorsingSupportingTokens` del WSDL DIAN de habilitacion.
+- Backend: `backend/handlers/modulos_faltantes.go` ajusta los sobres SOAP firmados de `SendTestSetAsync` y `GetStatusZip` para usar `ThumbprintSHA1` en `SecurityTokenReference`, firmar `Timestamp + To`, incluir `MessageID`/`ReplyTo` y ordenar `Timestamp + BinarySecurityToken + Signature` conforme al `TransportBinding`/`EndorsingSupportingTokens` del WSDL DIAN de habilitacion.
 - QA: se actualiza `backend/handlers/dian_signature_upload_test.go` para validar la referencia Thumbprint y la metadata del layout estricto.
 - Validacion: `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`, ejecutados desde `backend`, OK.
 

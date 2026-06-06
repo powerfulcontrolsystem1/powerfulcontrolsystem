@@ -1,5 +1,5 @@
 ## [2026-06-06] DIAN WS-Security segun politica WSDL
-- [Backend] `SendTestSetAsync` y `GetStatusZip` ajustan la firma WS-Security a la politica publicada por el WSDL de DIAN habilitacion: referencia `ThumbprintSHA1`, firma del header `To`, headers WS-Addressing completos y layout estricto `Timestamp + BinarySecurityToken + Signature`.
+- [Backend] `SendTestSetAsync` y `GetStatusZip` ajustan la firma WS-Security a la politica publicada por el WSDL de DIAN habilitacion: referencia `ThumbprintSHA1`, firma de `Timestamp + To`, headers WS-Addressing completos y layout estricto `Timestamp + BinarySecurityToken + Signature`.
 - [QA] `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`.
 
 ## [2026-06-06] Botones DIAN y conexion oficial
