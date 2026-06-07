@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bolsa</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .bolsa-shell{width:min(1320px,calc(100% - 24px));margin:0 auto;padding:18px 0 26px}
+    .bolsa-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+    .bolsa-title{margin:0;font-size:1.65rem;line-height:1.15}
+    .bolsa-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-weight:800;font-size:.9rem}
+    .bolsa-chip{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:5px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);font-weight:900}
+    .bolsa-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 14px}
+    .bolsa-kpi{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px}
+    .bolsa-kpi small{display:block;color:var(--muted);font-weight:900;text-transform:uppercase;font-size:.72rem}
+    .bolsa-kpi strong{display:block;margin-top:6px;font-size:1.45rem;line-height:1.1}
+    .bolsa-section{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+    .bolsa-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden}
+    .bolsa-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface-soft)}
+    .bolsa-card-head h2{margin:0;font-size:1.05rem;line-height:1.2}
+    .bolsa-count{color:var(--muted);font-size:.82rem;font-weight:900}
+    .bolsa-table-wrap{overflow:auto}
+    .bolsa-table{width:100%;border-collapse:collapse;min-width:620px}
+    .bolsa-table th,.bolsa-table td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+    .bolsa-table th{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:0;font-weight:900;background:color-mix(in srgb,var(--surface) 88%,var(--surface-soft))}
+    .bolsa-symbol{font-weight:950}
+    .bolsa-name{display:block;color:var(--muted);font-size:.78rem;font-weight:800;margin-top:2px}
+    .bolsa-price{font-weight:950;white-space:nowrap}
+    .bolsa-change{display:inline-flex;align-items:center;justify-content:flex-end;min-width:84px;font-weight:950;white-space:nowrap}
+    .bolsa-up{color:#16a34a}
+    .bolsa-down{color:#dc2626}
+    .bolsa-flat{color:var(--muted)}
+    .bolsa-status{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;border:1px solid var(--border);font-size:.78rem;font-weight:900}
+    .bolsa-status.ok{border-color:color-mix(in srgb,#16a34a 45%,var(--border));color:#16a34a}
+    .bolsa-status.error{border-color:color-mix(in srgb,#dc2626 45%,var(--border));color:#dc2626}
+    .bolsa-warnings{margin-top:12px;display:grid;gap:8px}
+    .bolsa-warning{border:1px solid color-mix(in srgb,#f59e0b 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#f59e0b 10%,var(--surface));padding:10px 12px;font-weight:800;color:var(--text)}
+    .bolsa-loading{min-height:220px;display:grid;place-items:center;color:var(--muted);font-weight:900}
+    .bolsa-error{border:1px solid color-mix(in srgb,#dc2626 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#dc2626 8%,var(--surface));padding:12px;color:var(--text);font-weight:850}
+    @media(max-width:1050px){.bolsa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bolsa-section{grid-template-columns:1fr}}
+    @media(max-width:620px){.bolsa-shell{width:min(100% - 16px,1320px);padding-top:12px}.bolsa-title{font-size:1.35rem}.bolsa-grid{grid-template-columns:1fr}.bolsa-toolbar{align-items:flex-start}.bolsa-card-head{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <div class="bolsa-shell">
+    <div class="bolsa-toolbar">
+      <div>
+        <h1 class="bolsa-title">Bolsa</h1>
+        <div id="meta" class="bolsa-meta">
+          <span class="bolsa-chip">Pais detectado: --</span>
+          <span>Actualizando mercado...</span>
+        </div>
+      </div>
+      <div class="empresa-inline-actions">
+        <button id="refreshBtn" class="btn" type="button">Actualizar</button>
+      </div>
+    </div>
+
+    <div id="msg"></div>
+
+    <section class="bolsa-grid" aria-label="Resumen de mercado">
+      <article class="bolsa-kpi"><small>Indicadores disponibles</small><strong id="kpiOk">--</strong></article>
+      <article class="bolsa-kpi"><small>Al alza</small><strong id="kpiUp">--</strong></article>
+      <article class="bolsa-kpi"><small>A la baja</small><strong id="kpiDown">--</strong></article>
+      <article class="bolsa-kpi"><small>Moneda local</small><strong id="kpiCurrency">--</strong></article>
+    </section>
+
+    <section id="content" class="bolsa-section">
+      <div class="bolsa-card"><div class="bolsa-loading">Cargando indicadores...</div></div>
+      <div class="bolsa-card"><div class="bolsa-loading">Detectando pais...</div></div>
+    </section>
+
+    <section id="warnings" class="bolsa-warnings" aria-label="Notas de mercado"></section>
+  </div>
+
+  <script>
+    (function(){
+      function qs(name){ try{ return new URLSearchParams(location.search).get(name); }catch(_){ return null; } }
+      function n(v){ var x=Number(String(v||'').trim()); return Number.isFinite(x)&&x>0?Math.trunc(x):0; }
+      function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+      function fmtNum(v, currency){
+        var num=Number(v);
+        if(!Number.isFinite(num)) return '--';
+        var abs=Math.abs(num);
+        var digits=abs>=1000?2:(abs>=10?2:4);
+        return (currency?currency+' ':'') + num.toLocaleString('es-CO',{maximumFractionDigits:digits,minimumFractionDigits:0});
+      }
+      function fmtPct(v){
+        var num=Number(v);
+        if(!Number.isFinite(num)) return '--';
+        var sign=num>0?'+':'';
+        return sign + num.toLocaleString('es-CO',{maximumFractionDigits:2,minimumFractionDigits:2}) + '%';
+      }
+      function cls(v){ var n=Number(v); return n>0?'bolsa-up':(n<0?'bolsa-down':'bolsa-flat'); }
+      function dt(v){
+        if(!v) return '--';
+        var d=new Date(v);
+        if(!Number.isFinite(d.getTime())) return '--';
+        return d.toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'});
+      }
+      function empresaId(){
+        var id=n(qs('empresa_id')||qs('id'));
+        if(id) return id;
+        try{ if(parent && parent.__resolveEmpresaIdContext) return n(parent.__resolveEmpresaIdContext()); }catch(_){}
+        return 0;
+      }
+      function setMsg(text, error){
+        var host=document.getElementById('msg');
+        host.innerHTML = text ? '<div class="'+(error?'bolsa-error':'form-help')+'">'+esc(text)+'</div>' : '';
+      }
+      function setLoading(){
+        document.getElementById('content').innerHTML = '<div class="bolsa-card"><div class="bolsa-loading">Cargando indicadores...</div></div><div class="bolsa-card"><div class="bolsa-loading">Detectando pais...</div></div>';
+      }
+      async function api(){
+        var id=empresaId();
+        if(!id) throw new Error('Falta empresa_id.');
+        var url=new URL('/api/empresa/bolsa', location.origin);
+        url.searchParams.set('empresa_id', String(id));
+        try{ url.searchParams.set('tz', Intl.DateTimeFormat().resolvedOptions().timeZone || ''); }catch(_){}
+        url.searchParams.set('lang', navigator.language || '');
+        var res=await fetch(url.toString(), {credentials:'same-origin'});
+        var raw=await res.text();
+        var data={};
+        try{ data=raw?JSON.parse(raw):{}; }catch(_){ data={error:raw}; }
+        if(!res.ok || data.ok===false) throw new Error(data.error || raw || ('HTTP '+res.status));
+        return data;
+      }
+      function row(item){
+        var ok=item.estado==='ok';
+        var changeClass=cls(item.cambio_pct);
+        return '<tr>'+
+          '<td><span class="bolsa-symbol">'+esc(item.symbol)+'</span><span class="bolsa-name">'+esc(item.nombre)+'</span></td>'+
+          '<td>'+esc(item.mercado || '--')+'<span class="bolsa-name">'+esc(item.tipo || '')+'</span></td>'+
+          '<td class="bolsa-price">'+(ok?fmtNum(item.precio,item.moneda):'--')+'</td>'+
+          '<td><span class="bolsa-change '+changeClass+'">'+(ok?fmtPct(item.cambio_pct):'--')+'</span><span class="bolsa-name">'+(ok?fmtNum(item.cambio,item.moneda):esc(item.error||'Sin datos'))+'</span></td>'+
+          '<td>'+esc(item.exchange || '--')+'<span class="bolsa-name">'+esc(dt(item.actualizado_en))+'</span></td>'+
+          '<td><span class="bolsa-status '+(ok?'ok':'error')+'">'+(ok?'OK':'Error')+'</span></td>'+
+        '</tr>';
+      }
+      function table(title, items){
+        items=Array.isArray(items)?items:[];
+        var ok=items.filter(function(x){ return x.estado==='ok'; }).length;
+        return '<article class="bolsa-card">'+
+          '<div class="bolsa-card-head"><h2>'+esc(title)+'</h2><span class="bolsa-count">'+ok+' de '+items.length+' activos</span></div>'+
+          '<div class="bolsa-table-wrap"><table class="bolsa-table">'+
+          '<thead><tr><th>Indicador</th><th>Mercado</th><th>Valor</th><th>Variacion</th><th>Fuente</th><th>Estado</th></tr></thead>'+
+          '<tbody>'+items.map(row).join('')+'</tbody></table></div></article>';
+      }
+      function render(data){
+        var pais=data.pais || {};
+        var resumen=data.resumen || {};
+        document.getElementById('meta').innerHTML = '<span class="bolsa-chip">Pais detectado: '+esc(pais.nombre || pais.codigo || '--')+'</span><span>Fuente: '+esc(data.fuente_datos || 'mercado')+'</span><span>Actualizado: '+esc(dt(data.actualizado_en))+'</span>';
+        document.getElementById('kpiOk').textContent = String(resumen.disponibles ?? '--') + '/' + String(resumen.total ?? '--');
+        document.getElementById('kpiUp').textContent = String(resumen.al_alza ?? '--');
+        document.getElementById('kpiDown').textContent = String(resumen.a_la_baja ?? '--');
+        document.getElementById('kpiCurrency').textContent = String(resumen.moneda_local || pais.moneda || '--');
+        document.getElementById('content').innerHTML = table('Mercado internacional', data.internacional) + table('Mercado local detectado', data.local);
+        var warnings=Array.isArray(data.advertencias)?data.advertencias:[];
+        document.getElementById('warnings').innerHTML = warnings.map(function(w){ return '<div class="bolsa-warning">'+esc(w)+'</div>'; }).join('');
+      }
+      async function load(){
+        var btn=document.getElementById('refreshBtn');
+        btn.disabled=true;
+        setMsg('',false);
+        setLoading();
+        try{
+          var data=await api();
+          render(data);
+        }catch(err){
+          setMsg(err && err.message ? err.message : String(err), true);
+        }finally{
+          btn.disabled=false;
+        }
+      }
+      document.getElementById('refreshBtn').addEventListener('click', load);
+      load();
+    })();
+  </script>
+</body>
+</html>

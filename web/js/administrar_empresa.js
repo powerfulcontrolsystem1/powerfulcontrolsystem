@@ -307,6 +307,7 @@ try {
   var permModuleAuditoria = "auditoria";
   var permModuleEnergiaSolar = "energia_solar";
   var permModuleGrafologia = "grafologia";
+  var permModuleBolsa = "bolsa";
   var permModuleBackups = "backups";
   var permModuleDocumentosOnlyOffice = "documentos_onlyoffice";
   var menuPermissionCatalog = {
@@ -440,6 +441,7 @@ try {
     linkCalidadProcesos: { module: permModuleCalidadProcesos, action: permActionCreate },
     linkEnergiaSolar: { module: permModuleEnergiaSolar, action: permActionCreate },
     linkGrafologia: { module: permModuleGrafologia, action: permActionCreate },
+    linkBolsa: { module: permModuleBolsa, action: permActionRead },
     linkBackups: { module: permModuleBackups, action: permActionApprove },
 
     linkDocumentosOnlyOffice: { module: permModuleDocumentosOnlyOffice, action: permActionRead },

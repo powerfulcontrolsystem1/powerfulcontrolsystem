@@ -4,6 +4,20 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Bolsa empresarial
+
+1. Abrir `Administrar empresa > Analisis y control > Bolsa`.
+2. La pagina conserva `empresa_id` del panel y consulta
+   `/api/empresa/bolsa?empresa_id={id}` con zona horaria e idioma del navegador.
+3. El backend valida sesion, empresa y permiso `bolsa:R` mediante
+   `WithEmpresaBolsaPermissions`.
+4. El pais se detecta desde la configuracion empresarial/facturacion; si no hay
+   dato usable, se usa Colombia como fallback operativo.
+5. El handler consulta indicadores internacionales y locales desde el servidor,
+   calcula precio, variacion y porcentaje, y cachea por 60 segundos.
+6. La pantalla muestra resumen, tablas y errores por indicador; no guarda datos,
+   no emite ordenes y no constituye recomendacion de inversion.
+
 ## GRAFOLOGIX grafologia OCR
 
 1. Abrir `Administrar empresa > Analisis y control > GRAFOLOGIX`.

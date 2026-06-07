@@ -1,3 +1,18 @@
+2026-06-06 - Modulo Bolsa empresarial
+- `backend/handlers/bolsa.go`:
+	- nuevo handler de solo lectura para indicadores internacionales y locales por pais detectado.
+	- consulta datos de mercado desde servidor, calcula variacion y usa cache corta para no saturar el proveedor.
+- `backend/handlers/bolsa_test.go`:
+	- cubre calculo de variacion y set local de indicadores Colombia.
+- `backend/handlers/empresa_permisos.go`:
+	- agrega modulo `bolsa`, pagina `linkBolsa`, wrapper `WithEmpresaBolsaPermissions` y fallback de licencia a `reportes`/`finanzas`.
+- `backend/main.go`:
+	- registra `/api/empresa/bolsa`.
+- `web/administrar_empresa.html` y `web/js/administrar_empresa.js`:
+	- agregan el acceso `Bolsa` en `Analisis y control` y lo conectan con permisos.
+- `web/administrar_empresa/bolsa.html`:
+	- nueva pagina de tablero de mercado con resumen, indicadores internacionales, mercado local detectado, estados y advertencias.
+
 2026-06-06 - OnlyOffice JWT y PPTX real
 - `backend/handlers/onlyoffice.go`:
 	- conecta la creacion de `.pptx` con `onlyOfficeBuildBlankPPTX`.

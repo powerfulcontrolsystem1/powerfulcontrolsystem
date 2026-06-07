@@ -1,3 +1,9 @@
+2026-06-06: Nota de modulo Bolsa empresarial
+- Se agrega modulo `bolsa`, pagina `linkBolsa` y wrapper `WithEmpresaBolsaPermissions`.
+- Matriz efectiva: lectura (`R`) para roles con acceso general de consulta; administracion no agrega acciones de escritura porque el endpoint es solo informativo.
+- Licencias: fallback a `reportes` o `finanzas` para no bloquear empresas con planes actuales que ya tienen analitica financiera.
+- Seguridad: `/api/empresa/bolsa` valida `empresa_id` mediante el wrapper empresarial, no guarda datos, no crea tablas y solo devuelve indicadores de mercado saneados.
+
 2026-06-01: Nota de preconfiguracion solar y licencias por modulo
 - 2026-06-04: se agrega modulo independiente `camaras`, pagina
   `linkCamaras`, wrapper `WithEmpresaCamarasPermissions` y fallback de licencia

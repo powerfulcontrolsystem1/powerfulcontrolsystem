@@ -1,3 +1,11 @@
+2026-06-06: Modulo Bolsa empresarial.
+- Modulo afectado: Bolsa en Administrar empresa > Analisis y control.
+- Frontend: se crea `web/administrar_empresa/bolsa.html` con tablero de indicadores internacionales y del pais detectado, resumen de alzas/bajas, tablas y estados por indicador.
+- Backend: se crea `/api/empresa/bolsa`, protegido por permisos empresariales, que detecta pais, consulta datos de mercado en vivo desde servidor y aplica cache corta.
+- Permisos/licencias: se agrega `bolsa`, `linkBolsa` y `WithEmpresaBolsaPermissions` de lectura, con fallback a `reportes`/`finanzas`.
+- Seguridad: endpoint GET sin mutaciones ni tablas nuevas; el wrapper valida `empresa_id` y los errores de proveedor se devuelven saneados por indicador.
+- QA: `go test ./handlers -run Bolsa -count=1`; `go test ./... -run "^$" -count=1`; validacion sintactica JS de la pagina y menu.
+
 2026-06-06: OnlyOffice JWT y PPTX real.
 - Modulo afectado: documentos OnlyOffice por empresa.
 - Causa tecnica: `pcs-backend` y `pcs-onlyoffice-documentserver` tenian secretos JWT distintos en VPS, lo que provocaba `The document security token is not correctly formed`; ademas el `.pptx` minimo generado no incluia master, layout y theme suficientes para OnlyOffice.

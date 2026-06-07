@@ -1,3 +1,8 @@
+## [2026-06-06] Modulo Bolsa empresarial
+- [Frontend] `administrar_empresa/bolsa.html` agrega un tablero profesional de indicadores internacionales y del pais detectado por empresa.
+- [Backend] `/api/empresa/bolsa` consulta datos de mercado en vivo desde servidor, aplica cache corta, detecta pais con la configuracion empresarial y devuelve errores por indicador sin romper la pantalla.
+- [Permisos] Se agrega modulo `bolsa`, pagina `linkBolsa` y wrapper `WithEmpresaBolsaPermissions` de lectura, con fallback de licencia a reportes/finanzas.
+
 ## [2026-06-06] OnlyOffice JWT y PPTX real
 - [Operacion] Se alineo el secreto JWT del Document Server OnlyOffice con el backend en VPS sin exponer el valor, corrigiendo el error visual `The document security token is not correctly formed`.
 - [Backend] `onlyOfficeBuildBlankPPTX` genera presentaciones PresentationML con master, layout, theme, propiedades y relaciones minimas para que OnlyOffice abra archivos `.pptx` nuevos.
