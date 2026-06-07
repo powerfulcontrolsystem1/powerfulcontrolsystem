@@ -291,15 +291,19 @@ afecte dinero, documentos, licencias o seguridad.
    de habilitacion, recibir `ZipKey` cuando aplique y consultar `GetStatusZip`
    hasta un acuse final. Solo una ejecucion real con acuse aceptado puede
    cambiar la empresa a habilitada/produccion local.
-15. Estado operativo actual: la prueba `Enviar prueba 2 + 2 + 2` debe quedar
+15. La pagina `Facturacion electronica > Tutorial DIAN` resume el flujo
+   operativo para conectar DIAN: datos del portal, configuracion Colombia,
+   carga de firma, prueba 2+2+2, set completo, acuse final y activacion local
+   de produccion. Debe mantenerse sin secretos reales.
+16. Estado operativo actual: la prueba `Enviar prueba 2 + 2 + 2` debe quedar
    como envio real con HTTP 200, TrackId/ZipKey y respuesta inicial `Batch en
    proceso de validacion`. Ese estado todavia no equivale a aceptacion final.
-16. Lo que falta en el modulo DIAN/documentos electronicos es consultar y
+17. Lo que falta en el modulo DIAN/documentos electronicos es consultar y
    persistir el acuse final por TrackId hasta aceptado/rechazado, reconciliar
    `facturacion_electronica_reintentos` y `empresa_facturacion_documentos`,
    mostrar un resumen claro en la pantalla y habilitar produccion local solo
    cuando los minimos aceptados del set esten cumplidos.
-17. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
+18. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar
    vencimiento` en la pantalla para confirmar que se ve fecha, dias restantes y
@@ -437,15 +441,15 @@ afecte dinero, documentos, licencias o seguridad.
 1. El submenu de facturacion permanece visible, pero las paginas internas se
    muestran segun pais detectado y licencia.
 2. Colombia usa configuracion DIAN, firma, resolucion, documentos electronicos,
-   pruebas y cola documental.
+   tutorial operativo, pruebas y cola documental.
 3. Panama y Ecuador tienen paginas propias con configuracion de DGI/SRI.
 4. Credenciales, firma, NIT/RUC y trazabilidad son por empresa.
 5. En Colombia el envio real de habilitacion puede quedar primero como `Batch en
    proceso de validacion`; el sistema debe tratarlo como pendiente hasta que
    `GetStatusZip` entregue acuse final.
 6. Pruebas: guardar configuracion por pais, validar checklist, generar documento,
-   enviar correo si aplica, revisar cola/reintentos y reconciliar estados DIAN
-   finales por TrackId.
+   abrir `Tutorial DIAN`, enviar correo si aplica, revisar cola/reintentos y
+   reconciliar estados DIAN finales por TrackId.
 
 ## Modo offline
 

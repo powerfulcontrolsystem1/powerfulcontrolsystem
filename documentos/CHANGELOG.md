@@ -1,3 +1,8 @@
+## [2026-06-06] Tutorial DIAN en submenu de facturacion electronica
+- [Frontend] `facturacion_electronica_tutorial_dian.html` agrega una guia operativa para configurar conexion DIAN, firma digital, prueba 2+2+2, set completo, acuse final y activacion de produccion local.
+- [Navegacion] `facturacion_electronica_menu.html` incorpora `Tutorial DIAN` para Colombia con permiso de lectura de facturacion y conserva `empresa_id` al abrir configuracion o pruebas.
+- [Seguridad] El tutorial evita publicar secretos reales y orienta a usar la consola DIAN saneada como evidencia operativa.
+
 ## [2026-06-06] Set DIAN completo por tandas reales
 - [Frontend] `facturacion_electronica_pruebas_dian.html` ejecuta el set automatico completo por tandas reales de 3 documentos cuando no se define limite manual, evitando el `504 Gateway Time-out` del proxy.
 - [DIAN] Cada tanda sigue usando `action=pruebas_dian`, TestSetId, firma y envio real a habilitacion; no se reintroduce simulacion.

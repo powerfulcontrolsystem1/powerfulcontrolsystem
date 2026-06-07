@@ -1,3 +1,11 @@
+2026-06-06 - Tutorial operativo DIAN en submenu
+- `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`:
+	- nueva pagina de guia corta para configurar conexion DIAN, cargar firma, enviar 2+2+2, ejecutar set completo, consultar acuse final y activar produccion local sin publicar secretos.
+- `web/administrar_empresa/facturacion_electronica_menu.html`:
+	- agrega el enlace `Tutorial DIAN` dentro del submenu de facturacion electronica Colombia, gated por pais CO y permiso de lectura de facturacion.
+- `documentos/*`:
+	- registra mapa, flujos, changelog, descripcion de modulos e historial para ubicar la guia en la operacion DIAN.
+
 2026-06-05 - Orden manual de empresas en selector
 - `backend/db/usuario_config_schema.go`:
 	- agrega `selector_empresas_orden_json` en `usuario_configuracion` y helpers para leer/guardar el orden saneado por usuario.

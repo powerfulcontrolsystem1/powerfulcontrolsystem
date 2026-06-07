@@ -1,3 +1,10 @@
+2026-06-06: Tutorial DIAN en submenu de facturacion electronica.
+- Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y submenu de administrar empresa.
+- Frontend: se agrega `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` con pasos para reunir datos del portal DIAN, configurar Colombia, cargar firma, validar credenciales, enviar 2+2+2, ejecutar set completo, consultar acuse final y activar produccion local.
+- Navegacion: `web/administrar_empresa/facturacion_electronica_menu.html` muestra `Tutorial DIAN` solo para pais CO y permiso de lectura de facturacion.
+- Seguridad: la guia no documenta secretos reales y recuerda usar respuestas DIAN saneadas en la consola de pruebas.
+- QA: validar sintaxis del script embebido, revisar `git diff --check` y comprobar visualmente la pagina y el enlace del submenu.
+
 2026-06-06: Set DIAN completo por tandas reales.
 - Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y centro de habilitacion.
 - Incidente: ejecutar los 50 documentos del set DIAN en una sola solicitud puede superar el timeout del proxy Nginx y devolver `504 Gateway Time-out` aunque el transporte DIAN este funcional.

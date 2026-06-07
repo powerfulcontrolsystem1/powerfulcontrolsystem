@@ -1,3 +1,9 @@
+2026-06-06: Tutorial operativo DIAN
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: `facturacion_electronica_tutorial_dian.html` agrega una guia corta dentro del submenu para conectar DIAN, cargar firma, validar credenciales, enviar 2+2+2, ejecutar set completo y cerrar acuse final.
+- Navegacion: `facturacion_electronica_menu.html` muestra `Tutorial DIAN` solo para Colombia y usuarios con permiso de lectura de facturacion.
+- Seguridad: la guia usa placeholders operativos y no imprime PIN, claves tecnicas, certificados, contrasenas ni tokens.
+
 2026-06-06: Set DIAN completo sin timeout de proxy
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Frontend: el boton `Ejecutar set automatico` divide el set completo en tandas reales de 3 documentos cuando no hay limite manual, para evitar `504 Gateway Time-out`.

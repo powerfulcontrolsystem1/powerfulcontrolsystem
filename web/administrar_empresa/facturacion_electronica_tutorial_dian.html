@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tutorial DIAN - Conexion y emision electronica</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .dian-guide-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .dian-guide-header h1{margin-bottom:6px}
+    .dian-guide-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .dian-guide-actions .btn{display:inline-flex;align-items:center;gap:8px;min-height:40px}
+    .dian-guide-icon{width:18px;height:18px;object-fit:contain}
+    .dian-guide-alert{margin-top:12px;border-left:4px solid var(--accent);border-radius:8px;background:var(--surface-soft);padding:10px 12px;color:var(--muted);font-size:.92rem}
+    .dian-guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+    .dian-guide-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:14px;min-height:190px}
+    .dian-guide-step h2{display:flex;align-items:center;gap:10px;margin:0 0 8px;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-guide-number{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:999px;background:var(--accent);color:#fff;font-weight:900;font-size:.88rem;flex:0 0 auto}
+    .dian-guide-step ul{margin:8px 0 0;padding-left:20px;color:var(--text)}
+    .dian-guide-step li{margin:6px 0;line-height:1.45}
+    .dian-guide-step code{font-size:.86em}
+    .dian-guide-checklist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+    .dian-guide-check{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:9px;color:var(--text);font-size:.88rem;min-height:58px}
+    .dian-guide-check span:first-child{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:color-mix(in srgb,var(--success) 22%,var(--surface));color:var(--success);font-weight:900;flex:0 0 auto}
+    .dian-guide-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
+    .dian-guide-table th,.dian-guide-table td{border-bottom:1px solid var(--border);padding:9px 7px;text-align:left;vertical-align:top;font-size:.9rem}
+    .dian-guide-table th{color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
+    .dian-guide-note{margin-top:12px;color:var(--muted);font-size:.9rem;line-height:1.5}
+    @media (max-width:900px){.dian-guide-grid{grid-template-columns:1fr}.dian-guide-checklist{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.dian-guide-actions{width:100%}.dian-guide-actions .btn{width:100%;justify-content:center}.dian-guide-checklist{grid-template-columns:1fr}.dian-guide-table{display:block;overflow-x:auto;white-space:nowrap}}
+  </style>
+</head>
+<body class="super-page form-bg-dark">
+  <div class="container">
+    <div class="page-header dian-guide-header">
+      <div>
+        <h1>Tutorial DIAN</h1>
+        <p class="form-help">Pasos minimos para conectar la empresa con DIAN y emitir documentos electronicos reales en Colombia.</p>
+      </div>
+      <div class="dian-guide-actions" aria-label="Accesos rapidos DIAN">
+        <a class="btn secondary" data-dian-link href="/administrar_empresa/facturacion_electronica.html">
+          <img class="dian-guide-icon" src="/img/settings-color.svg" alt="">
+          Configuracion
+        </a>
+        <a class="btn primary" data-dian-link href="/administrar_empresa/facturacion_electronica_pruebas_dian.html">
+          <img class="dian-guide-icon" src="/img/invoice.svg" alt="">
+          Pasar test DIAN
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Antes de empezar</h2>
+      <p class="form-help">
+        Ten a mano los datos del portal DIAN, la firma digital de la empresa y el acceso de administrador de la empresa en el sistema.
+        No pegues claves, PIN, certificados ni contrasenas en soportes, chats o documentacion.
+      </p>
+      <div class="dian-guide-alert">
+        En habilitacion, DIAN puede responder primero <strong>Batch en proceso de validacion</strong>. Ese mensaje confirma recepcion inicial, pero la empresa solo debe pasar a produccion local cuando el acuse final quede aceptado.
+      </div>
+    </div>
+
+    <div class="dian-guide-grid">
+      <section class="dian-guide-step">
+        <h2><span class="dian-guide-number">1</span>Registra el modo de operacion</h2>
+        <ul>
+          <li>En el portal DIAN selecciona el modo de operacion: software propio o proveedor tecnologico.</li>
+          <li>Copia al sistema el <code>TestSetId</code>, identificacion del software, PIN, URL de habilitacion, prefijo, resolucion y rango de prueba.</li>
+          <li>Verifica que el NIT, DV y razon social coincidan con la empresa que va a emitir.</li>
+        </ul>
+      </section>
+
+      <section class="dian-guide-step">
+        <h2><span class="dian-guide-number">2</span>Configura DIAN en el sistema</h2>
+        <ul>
+          <li>Abre <strong>Facturacion electronica</strong> y usa el bloque Colombia / DIAN.</li>
+          <li>Guarda ambiente de habilitacion, URL oficial DIAN o proveedor, datos del software, rango, resolucion y llave tecnica.</li>
+          <li>Revisa que la configuracion se guarde para el <code>empresa_id</code> actual antes de probar.</li>
+        </ul>
+      </section>
+
+      <section class="dian-guide-step">
+        <h2><span class="dian-guide-number">3</span>Carga la firma digital</h2>
+        <ul>
+          <li>Sube el certificado <code>.p12</code>, <code>.pfx</code> o PEM desde la tarjeta de firma electronica.</li>
+          <li>La clave se usa solo para abrir la firma; no debe mostrarse ni quedar escrita en la consola.</li>
+          <li>Confirma titular, serial y vencimiento. Si el certificado esta vencido, DIAN rechazara el envio.</li>
+        </ul>
+      </section>
+
+      <section class="dian-guide-step">
+        <h2><span class="dian-guide-number">4</span>Valida y envia 2 + 2 + 2</h2>
+        <ul>
+          <li>En <strong>Pasar test DIAN</strong> pulsa recargar, validar credenciales y diagnostico DIAN.</li>
+          <li>Ejecuta <strong>Enviar prueba 2 + 2 + 2</strong>: dos facturas, dos notas debito y dos notas credito reales.</li>
+          <li>Usa la consola DIAN para revisar HTTP, TrackId, ZipKey, mensajes y errores saneados.</li>
+        </ul>
+      </section>
+
+      <section class="dian-guide-step">
+        <h2><span class="dian-guide-number">5</span>Ejecuta el set completo</h2>
+        <ul>
+          <li>Guarda el objetivo del portal DIAN: documentos requeridos y minimos aceptados por tipo.</li>
+          <li>Ejecuta el set automatico. El sistema puede dividirlo en tandas reales para evitar timeout del proxy.</li>
+          <li>No repitas el set completo sin revisar primero la respuesta y los TrackId generados.</li>
+        </ul>
+      </section>
+
+      <section class="dian-guide-step">
+        <h2><span class="dian-guide-number">6</span>Cierra acuse y activa produccion</h2>
+        <ul>
+          <li>Consulta el estado final con <code>GetStatusZip</code> hasta tener aceptado o rechazado.</li>
+          <li>Si DIAN rechaza, corrige la causa del XML, firma, rango, impuestos o datos de empresa y reenvia.</li>
+          <li>Activa produccion local solo cuando DIAN confirme habilitacion y el set cumpla los minimos exigidos.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="card">
+      <h2>Checklist rapido</h2>
+      <div class="dian-guide-checklist">
+        <div class="dian-guide-check"><span>✓</span><span>Empresa, NIT, DV y regimen fiscal revisados.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>TestSetId, software ID, PIN, URL y llave tecnica guardados.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Prefijo, resolucion y rango DIAN coinciden con el portal.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Firma digital cargada, vigente y con llave privada valida.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Prueba 2 + 2 + 2 enviada al ambiente real de habilitacion.</span></div>
+        <div class="dian-guide-check"><span>✓</span><span>Set completo enviado y acuse final DIAN consultado.</span></div>
+      </div>
+      <p class="dian-guide-note">
+        La consola de la pagina de pruebas debe ser la evidencia operativa principal: muestra respuestas DIAN saneadas sin exponer secretos.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Errores frecuentes</h2>
+      <table class="dian-guide-table">
+        <thead>
+          <tr><th>Mensaje</th><th>Que revisar</th><th>Accion recomendada</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>InvalidSecurity</code></td>
+            <td>Firma WS-Security, certificado, hora del servidor y endpoint.</td>
+            <td>Recargar configuracion, validar credenciales y revisar que la firma cargada sea la vigente.</td>
+          </tr>
+          <tr>
+            <td><code>504 Gateway Time-out</code></td>
+            <td>Solicitud demasiado larga frente al proxy.</td>
+            <td>Ejecutar el set por tandas desde el boton automatico y revisar la consola por cada lote.</td>
+          </tr>
+          <tr>
+            <td>Batch en proceso</td>
+            <td>DIAN recibio el ZIP, pero aun no entrego acuse final.</td>
+            <td>Esperar y consultar <code>GetStatusZip</code>; no activar produccion local con solo recepcion inicial.</td>
+          </tr>
+          <tr>
+            <td>Documento rechazado</td>
+            <td>Detalle del ApplicationResponse: impuestos, CUFE/CUDE, rango, tercero, firma o XML.</td>
+            <td>Corregir el dato indicado, generar nuevo documento y reenviar dentro del set correspondiente.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+      function resolveEmpresaId() {
+        try {
+          var params = new URLSearchParams(window.location.search || '');
+          var own = Number(params.get('empresa_id') || params.get('id') || 0);
+          if (own > 0) return Math.trunc(own);
+        } catch (_) {}
+        try {
+          var stored = Number(sessionStorage.getItem('active_empresa_id') || sessionStorage.getItem('empresa_id') || localStorage.getItem('active_empresa_id') || localStorage.getItem('empresa_id') || 0);
+          if (stored > 0) return Math.trunc(stored);
+        } catch (_) {}
+        return 0;
+      }
+
+      var empresaId = resolveEmpresaId();
+      Array.prototype.slice.call(document.querySelectorAll('[data-dian-link]')).forEach(function(link) {
+        try {
+          var url = new URL(link.getAttribute('href') || '', window.location.origin);
+          if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+          link.setAttribute('href', url.pathname + url.search + url.hash);
+        } catch (_) {}
+      });
+    })();
+  </script>
+</body>
+</html>
