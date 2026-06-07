@@ -32090,3 +32090,14 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/administrar_empresa.html
+
+2026-06-07: rs: actualizar repositorio y sincronizar VPS
+PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/js/radio_catalog.js
+- web/js/radio_online.js
+- web/js/radio_player.js
