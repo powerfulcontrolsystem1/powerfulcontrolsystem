@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
   <style>
+    html{min-height:100%;height:auto;overflow-y:auto}
+    body.dian-test-page{min-height:100%;height:auto;overflow-y:auto;padding-bottom:18px}
     .dian-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
     .dian-status-item{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:70px}
     .dian-status-label{display:block;color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
@@ -69,7 +71,7 @@
     @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}}
   </style>
 </head>
-<body class="super-page form-bg-dark">
+<body class="super-page form-bg-dark dian-test-page">
   <div class="container">
     <div class="page-header">
       <h1>Centro de habilitacion DIAN</h1>
