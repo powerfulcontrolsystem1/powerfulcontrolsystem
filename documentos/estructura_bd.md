@@ -1349,7 +1349,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
   - ambiente_fe, tipo_operacion, prefijo_factura
   - resolucion_numero, resolucion_fecha_desde, resolucion_fecha_hasta
   - consecutivo_desde, consecutivo_hasta, proximo_consecutivo
-  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, mostrar_logo, mostrar_logo_empresa, mostrar_logo_sistema, logo_url
+  - formato_impresion, imprimir_copia_factura, mostrar_deducido_impuesto_factura, impresion_recibo_items_json, impresion_corte_items_json, mostrar_logo, mostrar_logo_empresa, mostrar_logo_sistema, logo_url
   - pie_factura, notas_legales
   - color_carrito_activo, color_carrito_inactivo
   - moneda_codigo, sistema_numerico, usar_decimales, cantidad_decimales
@@ -1909,6 +1909,7 @@ Actualizacion 2026-04-29 (auditoria como fuente de contexto IA)
 - super_venta_digital_items.id -> super_venta_digital_ordenes.item_id
 
 ## 4) Historial resumido
+- 2026-06-07: `empresa_configuracion_avanzada.impresion_recibo_items_json` e `impresion_corte_items_json` guardan mapas JSON de booleanos por `empresa_id` para decidir que campos aparecen impresos en recibos operativos y reportes de corte/cierre; no aplican a factura electronica DIAN ni modifican XML/CUFE/CUDE.
 - 2026-06-02: `empresa_configuracion_avanzada.mostrar_deducido_impuesto_factura` agrega el check empresarial para mostrar base gravable e impuesto deducido en la impresion de recibos/facturas, sin alterar documentos electronicos legales.
 - 2026-05-18: `empresa_corte_caja_configuracion` agrega banderas para que cada empresa active/desactive encabezado, datos de empresa, fecha/hora, usuario, consecutivo, cantidad de ventas, total de descuentos, columnas del detalle de ventas y metricas de productos/servicios en el reporte de turno/corte de caja.
 - 2026-05-18: `empresa_corte_caja_configuracion.formato_impresion` usa `pos` como default operativo para reporte de turno en impresora POS 80mm; `empresa_impresoras` conserva `formato_impresion` `pos`/`carta` y la predeterminada por empresa.

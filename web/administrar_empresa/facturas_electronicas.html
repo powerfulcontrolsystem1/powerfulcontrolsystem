@@ -704,15 +704,23 @@
       }
 
       function printInvoice(item) {
-        var win = window.open("", "_blank", "noopener,noreferrer,width=980,height=760");
+        var win = window.open("", "pcs_factura_electronica_print", "width=980,height=760,scrollbars=yes,resizable=yes");
         if (!win) {
           showMessage("No se pudo abrir la ventana de impresión. Revisa el bloqueador de popups.", "error");
           return;
         }
 
-        win.document.open();
-        win.document.write(buildPrintableDocumentPage(item));
-        win.document.close();
+        try {
+          win.document.open();
+          win.document.write(buildPrintableDocumentPage(item));
+          win.document.close();
+          try { win.opener = null; } catch (_) {}
+          try { win.focus(); } catch (_) {}
+          showMessage("Vista de factura abierta correctamente.", "ok");
+        } catch (err) {
+          try { win.close(); } catch (_) {}
+          showMessage("No se pudo renderizar la factura en la ventana de impresion: " + (err && err.message ? err.message : err), "error");
+        }
       }
 
       function resendInvoiceEmail(item) {

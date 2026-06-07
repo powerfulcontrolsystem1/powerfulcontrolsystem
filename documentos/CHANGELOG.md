@@ -1,3 +1,13 @@
+## [2026-06-07] Visualizacion de factura electronica
+- [Frontend] `facturas_electronicas.html` corrige `Visualizar factura` para abrir una ventana imprimible escribible y evitar `about:blank`.
+- [UX] Se muestra confirmacion cuando la vista abre y error claro si el navegador bloquea o impide renderizar la factura.
+
+## [2026-06-07] Configuracion de campos imprimibles por empresa
+- [Backend] `empresa_configuracion_avanzada` guarda `impresion_recibo_items_json` e `impresion_corte_items_json` como JSON saneado de booleanos por empresa.
+- [Frontend] `configuracion_impresora.html` agrega checks para recibo operativo de venta y corte/cierre de turno.
+- [Impresion] `carrito_de_compras.html`, `corte_de_caja.html` y `reportes_turnos.html` aplican esos checks al imprimir recibos y reportes operativos.
+- [Alcance] La factura electronica DIAN no cambia: XML, CUFE/CUDE y campos legales siguen fuera de esta configuracion.
+
 ## [2026-06-07] Barra de configuracion DIAN Colombia
 - [Frontend] `facturacion_electronica.html` muestra una barra 0-100% para la configuracion DIAN Colombia antes del formulario.
 - [UX] La barra resume identidad fiscal, ambiente/TestSetId, software, numeracion, llave tecnica y firma/certificado, y enumera los campos pendientes.

@@ -1,3 +1,19 @@
+2026-06-07: Visualizacion de factura electronica sin hoja en blanco.
+- Modulo afectado: Facturas electronicas y comprobantes.
+- Frontend: `web/administrar_empresa/facturas_electronicas.html` abre la vista imprimible con una ventana nombrada y escribible (`pcs_factura_electronica_print`) en lugar de `_blank` con `noopener/noreferrer`.
+- Causa tecnica: el navegador separaba la ventana abierta y el script no podia escribir el HTML del documento, quedando `about:blank`.
+- UX: el usuario recibe mensaje de exito al abrir la vista o error claro si la ventana se bloquea o falla el render.
+- QA: reproduccion visual en produccion empresa 12 antes del cambio: click en `Visualizar` dejaba la pestaña en `about:blank`; validacion sintactica del script embebido.
+
+2026-06-07: Configuracion de campos imprimibles por empresa.
+- Modulos afectados: Configuracion de impresora, Carrito/Venta directa, Corte de caja y Reportes de turnos.
+- Backend: `empresa_configuracion_avanzada` agrega `impresion_recibo_items_json` e `impresion_corte_items_json`; el guardado sanea JSON de booleanos y conserva aislamiento por `empresa_id`.
+- Frontend: `web/administrar_empresa/configuracion_impresora.html` agrega checks para campos del recibo operativo y campos de corte/cierre.
+- Recibo operativo: `web/administrar_empresa/carrito_de_compras.html` filtra empresa, carrito, codigo, cliente, cajero, metodo, fecha, formato, impresora y copias antes de imprimir.
+- Corte/cierre: `web/administrar_empresa/corte_de_caja.html` y `web/administrar_empresa/reportes_turnos.html` aplican los checks al encabezado y detalle de ventas del reporte impreso.
+- Alcance legal: la factura electronica DIAN no se modifica por esta configuracion; sus campos legales, XML, CUFE/CUDE y validacion siguen gobernados por la normativa y el modulo de documentos electronicos.
+- QA: `go test ./db ./handlers -run "ConfiguracionAvanzada|CorteCaja" -count=1`; validacion sintactica de scripts embebidos en paginas tocadas; `git diff --check`.
+
 2026-06-07: Barra de configuracion DIAN Colombia.
 - Modulo afectado: Facturacion electronica Colombia.
 - Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega un panel `Avance de configuracion DIAN` 0-100% dentro de `Configuracion DIAN Colombia`.

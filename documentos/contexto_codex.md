@@ -13,6 +13,19 @@ decisiones en cada tarea.
 - La pantalla lista campos faltantes por nombre, sin mostrar valores sensibles,
   y no crea endpoint, tabla ni persistencia nueva.
 
+## Actualizacion 2026-06-07 - Checks de impresion por empresa
+
+- `web/administrar_empresa/configuracion_impresora.html` agrega dos matrices de
+  checks por empresa: campos del recibo de venta y campos de corte/cierre de
+  turno.
+- La persistencia usa `/api/empresa/configuracion_avanzada` y los campos
+  `empresa_configuracion_avanzada.impresion_recibo_items_json` e
+  `impresion_corte_items_json`, validados como JSON de booleanos.
+- `carrito_de_compras.html` aplica esos checks solo al recibo operativo de
+  venta. La factura electronica DIAN no cambia sus campos legales ni su XML.
+- `corte_de_caja.html` y `reportes_turnos.html` aplican los checks a encabezado
+  y detalle impreso de reportes operativos por empresa.
+
 ## Actualizacion 2026-06-07 - Modulo NIIF
 
 - `web/administrar_empresa/niif.html` agrega un centro NIIF por empresa dentro

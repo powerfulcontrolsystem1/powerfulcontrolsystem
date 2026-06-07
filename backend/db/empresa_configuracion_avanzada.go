@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -46,6 +47,8 @@ type EmpresaConfiguracionAvanzada struct {
 	ImprimirFacturaElectronica            bool   `json:"imprimir_factura_electronica"`
 	ImprimirCopiaFactura                  bool   `json:"imprimir_copia_factura"`
 	MostrarDeducidoImpuestoFactura        bool   `json:"mostrar_deducido_impuesto_factura"`
+	ImpresionReciboItemsJSON              string `json:"impresion_recibo_items_json,omitempty"`
+	ImpresionCorteItemsJSON               string `json:"impresion_corte_items_json,omitempty"`
 	MostrarLogo                           bool   `json:"mostrar_logo"`
 	MostrarLogoEmpresa                    bool   `json:"mostrar_logo_empresa"`
 	MostrarLogoSistema                    bool   `json:"mostrar_logo_sistema"`
@@ -126,6 +129,8 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 			imprimir_factura_electronica INTEGER DEFAULT 0,
 			imprimir_copia_factura INTEGER DEFAULT 0,
 			mostrar_deducido_impuesto_factura INTEGER DEFAULT 0,
+			impresion_recibo_items_json TEXT,
+			impresion_corte_items_json TEXT,
 			mostrar_logo INTEGER DEFAULT 1,
 			mostrar_logo_empresa INTEGER DEFAULT 1,
 			mostrar_logo_sistema INTEGER DEFAULT 0,
@@ -257,6 +262,12 @@ func EnsureEmpresaConfiguracionAvanzadaSchema(dbConn *sql.DB) error {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_deducido_impuesto_factura", "INTEGER DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_recibo_items_json", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "impresion_corte_items_json", "TEXT"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_configuracion_avanzada", "mostrar_logo", "INTEGER DEFAULT 1"); err != nil {
@@ -535,6 +546,43 @@ func normalizeFrecuenciaContador(v int64, cadaNNo int64) int64 {
 
 // GetEmpresaConfiguracionAvanzada obtiene la configuración avanzada por empresa.
 // Si no existe registro, retorna valores por defecto para facilitar captura inicial.
+func normalizePrintItemsJSON(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || len(raw) > 8000 {
+		return ""
+	}
+	var incoming map[string]bool
+	if err := json.Unmarshal([]byte(raw), &incoming); err != nil {
+		return ""
+	}
+	clean := make(map[string]bool, len(incoming))
+	for key, value := range incoming {
+		key = strings.TrimSpace(strings.ToLower(key))
+		if key == "" || len(key) > 80 {
+			continue
+		}
+		valid := true
+		for i := 0; i < len(key); i++ {
+			c := key[i]
+			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_') {
+				valid = false
+				break
+			}
+		}
+		if valid {
+			clean[key] = value
+		}
+	}
+	if len(clean) == 0 {
+		return ""
+	}
+	out, err := json.Marshal(clean)
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
 func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaConfiguracionAvanzada, error) {
 	if err := EnsureEmpresaConfiguracionAvanzadaSchema(dbConn); err != nil {
 		return nil, err
@@ -577,6 +625,8 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		COALESCE(imprimir_factura_electronica, 0),
 		COALESCE(imprimir_copia_factura, 0),
 		COALESCE(mostrar_deducido_impuesto_factura, 0),
+		COALESCE(impresion_recibo_items_json, ''),
+		COALESCE(impresion_corte_items_json, ''),
 		COALESCE(mostrar_logo, 1),
 		COALESCE(mostrar_logo_empresa, mostrar_logo, 1),
 		COALESCE(mostrar_logo_sistema, 0),
@@ -651,6 +701,8 @@ func GetEmpresaConfiguracionAvanzada(dbConn *sql.DB, empresaID int64) (*EmpresaC
 		&imprimirFacturaElectronicaInt,
 		&imprimirCopiaFacturaInt,
 		&mostrarDeducidoImpuestoFacturaInt,
+		&cfg.ImpresionReciboItemsJSON,
+		&cfg.ImpresionCorteItemsJSON,
 		&mostrarLogoInt,
 		&mostrarLogoEmpresaInt,
 		&mostrarLogoSistemaInt,
@@ -768,6 +820,8 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 	}
 	payload.LogoURL = strings.TrimSpace(payload.LogoURL)
 	payload.LogoSistemaURL = defaultLogoSistemaURL
+	payload.ImpresionReciboItemsJSON = normalizePrintItemsJSON(payload.ImpresionReciboItemsJSON)
+	payload.ImpresionCorteItemsJSON = normalizePrintItemsJSON(payload.ImpresionCorteItemsJSON)
 	if payload.MostrarLogo && !payload.MostrarLogoEmpresa && !payload.MostrarLogoSistema {
 		payload.MostrarLogoEmpresa = true
 	}
@@ -991,12 +1045,16 @@ func UpsertEmpresaConfiguracionAvanzada(dbConn *sql.DB, payload EmpresaConfigura
 			mostrar_logo_sistema = ?,
 			mostrar_logo = ?,
 			mostrar_deducido_impuesto_factura = ?,
+			impresion_recibo_items_json = ?,
+			impresion_corte_items_json = ?,
 			fecha_actualizacion = `+nowExpr+`
 		WHERE empresa_id = ?`,
 		mostrarLogoEmpresaInt,
 		mostrarLogoSistemaInt,
 		mostrarLogoInt,
 		mostrarDeducidoImpuestoFacturaInt,
+		payload.ImpresionReciboItemsJSON,
+		payload.ImpresionCorteItemsJSON,
 		payload.EmpresaID,
 	); err != nil {
 		return 0, err

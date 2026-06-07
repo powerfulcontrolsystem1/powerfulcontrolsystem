@@ -559,6 +559,71 @@
     return data;
   }
 
+  var DEFAULT_CORTE_PRINT_ITEMS = {
+    empresa: true,
+    fecha_hora: true,
+    usuario_reporte: true,
+    caja: true,
+    consecutivo: true,
+    detalle_fecha_entrada: true,
+    detalle_fecha_salida: true,
+    detalle_numero_venta: true,
+    detalle_estacion: true,
+    detalle_cajero: true,
+    detalle_medio_pago: true,
+    detalle_total: true
+  };
+
+  function parsePrintItemsJSON(raw, defaults) {
+    var base = Object.assign({}, defaults || {});
+    if (raw && typeof raw === 'object') return Object.assign(base, raw);
+    var text = String(raw || '').trim();
+    if (!text) return base;
+    try {
+      var parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
+      Object.keys(base).forEach(function(key) {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+      });
+    } catch (_) {}
+    return base;
+  }
+
+  function applyAdvancedPrintItems(items) {
+    var cfg = {
+      mostrar_empresa_datos: items.empresa !== false,
+      mostrar_fecha_hora: items.fecha_hora !== false,
+      mostrar_usuario_reporte: items.usuario_reporte !== false,
+      mostrar_caja: items.caja !== false,
+      mostrar_consecutivo: items.consecutivo !== false,
+      mostrar_detalle_fecha_entrada: items.detalle_fecha_entrada !== false,
+      mostrar_detalle_fecha_salida: items.detalle_fecha_salida !== false,
+      mostrar_detalle_numero_venta: items.detalle_numero_venta !== false,
+      mostrar_detalle_estacion: items.detalle_estacion !== false,
+      mostrar_detalle_cajero: items.detalle_cajero !== false,
+      mostrar_detalle_medio_pago: items.detalle_medio_pago !== false,
+      mostrar_detalle_total: items.detalle_total !== false
+    };
+    reporteConfig = Object.assign({}, reporteConfig, cfg);
+    document.querySelectorAll('[data-config-key]').forEach(function(box) {
+      var key = box.getAttribute('data-config-key');
+      if (Object.prototype.hasOwnProperty.call(cfg, key)) box.checked = !!cfg[key];
+    });
+    if (lastReport) {
+      lastReport.configuracion_reporte = Object.assign({}, lastReport.configuracion_reporte || {}, cfg);
+      renderReport(lastReport);
+    }
+  }
+
+  async function cargarConfigImpresionAvanzada() {
+    if (!empresaId) return;
+    try {
+      var cfg = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+      var items = parsePrintItemsJSON(cfg && cfg.impresion_corte_items_json, DEFAULT_CORTE_PRINT_ITEMS);
+      applyAdvancedPrintItems(items);
+    } catch (_) {}
+  }
+
   function selectedReports() {
     var cfg = reporteConfig || {};
     var out = [];
@@ -615,6 +680,7 @@
       var res = await requestJSON('/api/empresa/corte_caja/configuracion?empresa_id=' + encodeURIComponent(empresaId));
       if (res && res.configuracion) applyReporteConfig(res.configuracion);
     } catch (_) {}
+    await cargarConfigImpresionAvanzada();
   }
 
   function normalizePrintFormat(value) {
@@ -793,7 +859,7 @@
     var meta = [];
     if (cfg.mostrar_fecha_hora) meta.push(['Fecha y hora', formatDateTime(payload.generado_en || resumen.hasta)]);
     if (cfg.mostrar_usuario_reporte) meta.push(['Usuario', resumen.usuario_filtro || (payload.caja_actual && payload.caja_actual.usuario) || 'Todos']);
-    meta.push(['Caja', cajaDisplayName(caja.caja_codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL', pageContext.cajaNombre)]);
+    if (cfg.mostrar_caja !== false) meta.push(['Caja', cajaDisplayName(caja.caja_codigo || document.getElementById('cajaCodigo').value || 'CAJA-PRINCIPAL', pageContext.cajaNombre)]);
     if (cfg.mostrar_consecutivo) meta.push(['Consecutivo', reportConsecutivo(payload)]);
     var metaHtml = meta.length ? '<section class="turno-report-panel"><h3>Datos del turno</h3><div class="turno-report-meta">' + meta.map(function(row) {
       return '<div><span>' + escapeHtml(row[0]) + '</span><strong>' + escapeHtml(row[1]) + '</strong></div>';

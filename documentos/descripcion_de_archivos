@@ -1,3 +1,24 @@
+2026-06-07 - Visualizacion de factura electronica
+- `web/administrar_empresa/facturas_electronicas.html`:
+	- corrige la apertura de `Visualizar factura` para usar una ventana imprimible escribible por la propia app.
+	- elimina `noopener/noreferrer` del documento generado en blanco, evitando que el navegador deje `about:blank` sin contenido.
+	- muestra mensaje visible si la ventana se bloquea o si no se puede renderizar el HTML.
+
+2026-06-07 - Configuracion de campos imprimibles por empresa
+- `backend/db/empresa_configuracion_avanzada.go`:
+	- agrega columnas `impresion_recibo_items_json` e `impresion_corte_items_json`.
+	- sanea ambos JSON para aceptar solo mapas de booleanos con llaves tecnicas seguras.
+	- expone los campos en GET/UPSERT de configuracion avanzada por `empresa_id`.
+- `web/administrar_empresa/configuracion_impresora.html`:
+	- agrega checks para campos imprimibles de recibo operativo y corte/cierre de turno.
+	- guarda ambas matrices en `/api/empresa/configuracion_avanzada`.
+- `web/administrar_empresa/carrito_de_compras.html`:
+	- aplica `impresion_recibo_items_json` al recibo operativo de venta sin cambiar factura electronica DIAN.
+- `web/administrar_empresa/corte_de_caja.html`:
+	- aplica `impresion_corte_items_json` al encabezado y detalle del reporte de corte/cierre.
+- `web/administrar_empresa/reportes_turnos.html`:
+	- carga la configuracion avanzada y filtra encabezado/detalle en la vista imprimible historica.
+
 2026-06-07 - Barra de configuracion DIAN Colombia
 - `web/administrar_empresa/facturacion_electronica.html`:
 	- agrega estilos locales y panel `Avance de configuracion DIAN`.

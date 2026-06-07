@@ -360,7 +360,12 @@ afecte dinero, documentos, licencias o seguridad.
    en la impresion`; el carrito usa `base_gravable` y `valor_impuesto` ya
    calculados para mostrar base e impuesto en el papel, sin cambiar el XML ni la
    validacion legal DIAN de la factura electronica.
-6. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio
+6. La misma pagina permite definir por checks los campos imprimibles del recibo
+   operativo de venta (`impresion_recibo_items_json`) y de reportes de corte o
+   cierre de turno (`impresion_corte_items_json`). Esta configuracion no aplica
+   a factura electronica, porque sus campos legales quedan definidos por la
+   normativa DIAN y el XML/documento electronico vigente.
+7. Pruebas: guardar seccion, recargar pagina, validar que otra seccion no cambio
    e imprimir una venta con impuesto para confirmar el bloque.
 
 ## Firma electronica DIAN
@@ -557,7 +562,9 @@ afecte dinero, documentos, licencias o seguridad.
    movimientos de inventario.
 5. Se registra venta/pago y se genera documento.
 6. La impresion debe salir en blanco y negro como papel real, POS 80mm por
-   defecto, sin tema claro/oscuro.
+   defecto, sin tema claro/oscuro. El recibo operativo debe respetar los checks
+   por empresa de fecha, cajero, cliente, metodo, impresora, copias, carrito,
+   codigo y empresa.
 7. Si hay QR DIAN activo y documento con CUFE/CUDE/codigo, se imprime al final.
 8. Pruebas: efectivo, debito, credito, otro, pago mixto, vuelto, abono,
    descuento, dos cajeros simultaneos y doble solicitud de pago sobre el mismo
@@ -620,9 +627,13 @@ afecte dinero, documentos, licencias o seguridad.
    ventas ordenado por fecha/hora y resumenes configurables.
 3. Debe incluir ventas, descuentos, ingresos, egresos, productos, servicios,
    medios de pago y efectivo esperado segun checks.
-4. Vista e impresion deben adaptarse a POS 80mm y carta; POS 80mm es default.
-5. Pruebas: turno con ventas, descuento, tarjeta, ingreso, egreso, anulacion,
-   exportar/imprimir.
+4. Los checks de `Configuracion > Impresora` para corte/cierre controlan campos
+   del encabezado y columnas del detalle impreso en `corte_de_caja.html` y en
+   `reportes_turnos.html`.
+5. Vista e impresion deben adaptarse a POS 80mm y carta; POS 80mm es default.
+6. Pruebas: turno con ventas, descuento, tarjeta, ingreso, egreso, anulacion,
+   exportar/imprimir, ocultar cajero o fecha desde la configuracion y confirmar
+   que no aparece en el reporte impreso.
 
 ## Cajeros simultaneos y estaciones asignadas
 

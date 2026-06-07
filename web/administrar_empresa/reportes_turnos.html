@@ -180,6 +180,20 @@
       var empresaId = window.__resolveEmpresaIdContext ? Number(window.__resolveEmpresaIdContext()) : 0;
       var selectedTurnoId = 0;
       var turnos = [];
+      var cortePrintItems = {
+        empresa: true,
+        fecha_hora: true,
+        usuario_reporte: true,
+        caja: true,
+        consecutivo: true,
+        detalle_fecha_entrada: true,
+        detalle_fecha_salida: true,
+        detalle_numero_venta: true,
+        detalle_estacion: true,
+        detalle_cajero: true,
+        detalle_medio_pago: true,
+        detalle_total: true
+      };
 
       function escapeHtml(v) {
         return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -203,6 +217,27 @@
         try { data = text ? JSON.parse(text) : null; } catch (_) {}
         if (!res.ok) throw new Error((data && (data.error || data.message)) || text || ('HTTP ' + res.status));
         return data;
+      }
+      function parsePrintItemsJSON(raw, defaults) {
+        var base = Object.assign({}, defaults || {});
+        if (raw && typeof raw === 'object') return Object.assign(base, raw);
+        var text = String(raw || '').trim();
+        if (!text) return base;
+        try {
+          var parsed = JSON.parse(text);
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
+          Object.keys(base).forEach(function(key) {
+            if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+          });
+        } catch (_) {}
+        return base;
+      }
+      async function loadAdvancedPrintConfig() {
+        if (!empresaId) return;
+        try {
+          var cfg = await requestJSON('/api/empresa/configuracion_avanzada?empresa_id=' + encodeURIComponent(empresaId));
+          cortePrintItems = parsePrintItemsJSON(cfg && cfg.impresion_corte_items_json, cortePrintItems);
+        } catch (_) {}
       }
       function buildParams(action) {
         var p = new URLSearchParams();
@@ -313,24 +348,25 @@
         var caja = payload.caja_actual || {};
         var cur = r.moneda || 'COP';
         var ventas = Array.isArray(payload.ventas) ? payload.ventas : [];
+        var metaRows = [];
+        if (cortePrintItems.fecha_hora !== false) metaRows.push('<div><span>Fecha y hora</span><strong>' + escapeHtml(fmtDate(payload.generado_en || r.hasta)) + '</strong></div>');
+        if (cortePrintItems.usuario_reporte !== false) metaRows.push('<div><span>Usuario</span><strong>' + escapeHtml(r.usuario_filtro || caja.usuario || '') + '</strong></div>');
+        if (cortePrintItems.caja !== false) metaRows.push('<div><span>Caja</span><strong>' + escapeHtml(caja.caja_codigo || '') + '</strong></div>');
+        if (cortePrintItems.consecutivo !== false) metaRows.push('<div><span>Consecutivo</span><strong>TURN-' + escapeHtml(String(caja.id || selectedTurnoId).padStart(6, '0')) + '</strong></div>');
+        var detailColumns = [];
+        if (cortePrintItems.detalle_fecha_entrada !== false) detailColumns.push({ label:'Entrada', value:function(v){ return fmtDate(v.fecha_entrada || v.fecha_pago); } });
+        if (cortePrintItems.detalle_fecha_salida !== false) detailColumns.push({ label:'Salida', value:function(v){ return fmtDate(v.fecha_salida || v.fecha_pago); } });
+        if (cortePrintItems.detalle_numero_venta !== false) detailColumns.push({ label:'Numero venta', key:'codigo' });
+        if (cortePrintItems.detalle_estacion !== false) detailColumns.push({ label:'Estacion', value:function(v){ return v.estacion_nombre || v.nombre || ''; } });
+        if (cortePrintItems.detalle_cajero !== false) detailColumns.push({ label:'Cajero', key:'cajero' });
+        if (cortePrintItems.detalle_medio_pago !== false) detailColumns.push({ label:'Medio', key:'metodo_pago' });
+        if (cortePrintItems.detalle_total !== false) detailColumns.push({ label:'Total', value:function(v){ return money(v.total_pagado || v.total || 0, v.moneda || cur); } });
+        if (!detailColumns.length) detailColumns.push({ label:'Venta', key:'codigo' });
         document.getElementById('turnoPreview').innerHTML = [
-          '<header class="turnos-preview-head"><div><h2>Reporte de turno</h2><p>' + escapeHtml(r.empresa_nombre || 'Empresa') + ' | ' + escapeHtml(r.empresa_nit ? ('NIT: ' + r.empresa_nit) : ('Empresa ID ' + String(empresaId || ''))) + '</p></div><strong>Turno #' + escapeHtml(caja.id || selectedTurnoId) + '</strong></header>',
-          '<section class="turnos-report-panel"><h3>Datos del turno</h3><div class="turnos-preview-meta">',
-          '<div><span>Fecha y hora</span><strong>' + escapeHtml(fmtDate(payload.generado_en || r.hasta)) + '</strong></div>',
-          '<div><span>Usuario</span><strong>' + escapeHtml(r.usuario_filtro || caja.usuario || '') + '</strong></div>',
-          '<div><span>Caja</span><strong>' + escapeHtml(caja.caja_codigo || '') + '</strong></div>',
-          '<div><span>Consecutivo</span><strong>TURN-' + escapeHtml(String(caja.id || selectedTurnoId).padStart(6, '0')) + '</strong></div>',
-          '</div></section>',
+          '<header class="turnos-preview-head"><div><h2>Reporte de turno</h2>' + (cortePrintItems.empresa !== false ? '<p>' + escapeHtml(r.empresa_nombre || 'Empresa') + ' | ' + escapeHtml(r.empresa_nit ? ('NIT: ' + r.empresa_nit) : ('Empresa ID ' + String(empresaId || ''))) + '</p>' : '') + '</div><strong>Turno #' + escapeHtml(caja.id || selectedTurnoId) + '</strong></header>',
+          metaRows.length ? '<section class="turnos-report-panel"><h3>Datos del turno</h3><div class="turnos-preview-meta">' + metaRows.join('') + '</div></section>' : '',
           '<h3>Detalle de ventas</h3>',
-          detailRows([
-            { label:'Entrada', value:function(v){ return fmtDate(v.fecha_entrada || v.fecha_pago); } },
-            { label:'Salida', value:function(v){ return fmtDate(v.fecha_salida || v.fecha_pago); } },
-            { label:'Numero venta', key:'codigo' },
-            { label:'Estacion', value:function(v){ return v.estacion_nombre || v.nombre || ''; } },
-            { label:'Cajero', key:'cajero' },
-            { label:'Medio', key:'metodo_pago' },
-            { label:'Total', value:function(v){ return money(v.total_pagado || v.total || 0, v.moneda || cur); } }
-          ], ventas, 'Sin ventas registradas en este turno.'),
+          detailRows(detailColumns, ventas, 'Sin ventas registradas en este turno.'),
           '<section class="turnos-report-panel"><h3>Resumen financiero</h3><div class="turnos-summary-grid">',
           summaryCard('Ingresos', money(r.ingresos_financieros || 0, cur)),
           summaryCard('Egresos', money(r.egresos_financieros || 0, cur)),
@@ -415,7 +451,7 @@
         });
       });
       applyPaperMode();
-      loadPaperModeFromConfig().finally(function(){
+      Promise.allSettled([loadPaperModeFromConfig(), loadAdvancedPrintConfig()]).finally(function(){
         return loadTurnos();
       }).then(function(){
         var direct = Number(new URLSearchParams(window.location.search).get('turno_id') || 0);

@@ -4290,9 +4290,50 @@
         '</section>';
     }
 
+    const DEFAULT_RECIBO_PRINT_ITEMS = {
+      empresa: true,
+      carrito: true,
+      codigo: true,
+      cliente: true,
+      cajero: true,
+      metodo_pago: true,
+      fecha: true,
+      formato: true,
+      impresora: true,
+      copias: true
+    };
+
+    function parsePrintItemsJSON(raw, defaults) {
+      const base = Object.assign({}, defaults || {});
+      if (raw && typeof raw === 'object') return Object.assign(base, raw);
+      const text = normalize(raw);
+      if (!text) return base;
+      try {
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
+        Object.keys(base).forEach(function(key) {
+          if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+        });
+      } catch (_) {}
+      return base;
+    }
+
+    function receiptPrintItems(cfg) {
+      return parsePrintItemsJSON(cfg && cfg.impresion_recibo_items_json, DEFAULT_RECIBO_PRINT_ITEMS);
+    }
+
+    function receiptItemEnabled(items, key) {
+      return !items || items[key] !== false;
+    }
+
+    function receiptCashierName(pay) {
+      return normalize(pay && (pay.cajero || pay.cajero_nombre || pay.usuario || pay.usuario_email || pay.usuario_creador)) || normalize(currentOfflineOperatorEmail && currentOfflineOperatorEmail());
+    }
+
     async function printSaleReceiptIfEnabled(carrito, pay, items, printTarget, documentoVenta) {
       const cfg = state.empresaAvanzadaConfig && typeof state.empresaAvanzadaConfig === 'object' ? state.empresaAvanzadaConfig : {};
       if (!shouldPrintCartReceipt(cfg)) return false;
+      const printItems = receiptPrintItems(cfg);
 
       const moneda = (carrito && carrito.moneda) || 'COP';
       const printerResolution = await resolvePrinterForTicketCobro();
@@ -4306,6 +4347,10 @@
       const invoiceQR = await buildElectronicInvoiceQRForPrint(documentoVenta, printFormat);
       const taxDeduction = shouldShowTaxDeductionOnInvoice(cfg) ? buildTaxDeductionSummary(items) : null;
       const taxSummaryRows = taxDeductionSummaryRows(taxDeduction, moneda);
+      const cajeroNombre = receiptCashierName(pay);
+      const subtitleParts = [];
+      if (receiptItemEnabled(printItems, 'carrito')) subtitleParts.push('Carrito: ' + ((carrito && carrito.nombre) || ''));
+      if (receiptItemEnabled(printItems, 'codigo')) subtitleParts.push('Codigo: ' + ((carrito && carrito.codigo) || ''));
 
       let rowsHtml = '';
       (Array.isArray(items) ? items : []).forEach(function(it) {
@@ -4337,15 +4382,17 @@
           kind: 'recibo',
           format: printFormat,
           logos: window.PCSPrint.resolveDocumentLogos(cfg),
-          company: 'Empresa #' + String(state.empresaID || ''),
-          subtitle: 'Carrito: ' + ((carrito && carrito.nombre) || '') + ' | Codigo: ' + ((carrito && carrito.codigo) || ''),
+          company: receiptItemEnabled(printItems, 'empresa') ? ('Empresa #' + String(state.empresaID || '')) : '',
+          subtitle: subtitleParts.join(' | '),
           badge: markOfflinePending ? 'OFFLINE' : printFormat.toUpperCase(),
           meta: [
-            { label: 'Cliente', value: clienteNombre },
-            { label: 'Metodo', value: normalize(pay.paymentLabel || pay.paymentMethod || '') },
-            { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') },
-            { label: 'Fecha', value: now.toLocaleString() },
-            { label: 'Copias', value: String(copias) }
+            receiptItemEnabled(printItems, 'cliente') ? { label: 'Cliente', value: clienteNombre } : null,
+            receiptItemEnabled(printItems, 'cajero') ? { label: 'Cajero', value: cajeroNombre } : null,
+            receiptItemEnabled(printItems, 'metodo_pago') ? { label: 'Metodo', value: normalize(pay.paymentLabel || pay.paymentMethod || '') } : null,
+            receiptItemEnabled(printItems, 'impresora') ? { label: 'Impresora', value: printerName + (printerSource ? (' (' + printerSource + ')') : '') } : null,
+            receiptItemEnabled(printItems, 'fecha') ? { label: 'Fecha', value: now.toLocaleString() } : null,
+            receiptItemEnabled(printItems, 'copias') ? { label: 'Copias', value: String(copias) } : null,
+            receiptItemEnabled(printItems, 'formato') ? { label: 'Formato', value: printFormat.toUpperCase() } : null
           ],
           tableHeaders: ['Descripcion', 'Cant.', 'P.U.', 'Total'],
           rows: printRows,
@@ -4371,18 +4418,22 @@
         '</head><body>' +
         '<h1>' + (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? 'Factura provisional offline' : 'Recibo de cobro') + '</h1>' +
         (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p><strong>Estado:</strong> Pendiente de sincronizar</p>' : '') +
-        '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' +
-        '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || '') + '</p>' +
-        '<p><strong>Cliente:</strong> ' + escapeHtml(clienteNombre) + '</p>' +
-        '<p><strong>Formato:</strong> ' + escapeHtml(printFormat.toUpperCase()) + '</p>' +
-        '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' +
-        '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' +
+        (receiptItemEnabled(printItems, 'empresa') ? '<p><strong>Empresa ID:</strong> ' + escapeHtml(state.empresaID) + '</p>' : '') +
+        (receiptItemEnabled(printItems, 'carrito') ? '<p><strong>Carrito:</strong> ' + escapeHtml((carrito && carrito.nombre) || '') + '</p>' : '') +
+        (receiptItemEnabled(printItems, 'cliente') ? '<p><strong>Cliente:</strong> ' + escapeHtml(clienteNombre) + '</p>' : '') +
+        (receiptItemEnabled(printItems, 'cajero') && cajeroNombre ? '<p><strong>Cajero:</strong> ' + escapeHtml(cajeroNombre) + '</p>' : '') +
+        (receiptItemEnabled(printItems, 'formato') ? '<p><strong>Formato:</strong> ' + escapeHtml(printFormat.toUpperCase()) + '</p>' : '') +
+        (receiptItemEnabled(printItems, 'codigo') ? '<p><strong>Código:</strong> ' + escapeHtml((carrito && carrito.codigo) || '') + '</p>' : '') +
+        (receiptItemEnabled(printItems, 'impresora') ? '<p><strong>Impresora objetivo:</strong> ' + escapeHtml(printerName) + (printerSource ? (' <span class="muted">(' + escapeHtml(printerSource) + ')</span>') : '') + '</p>' : '') +
         '<hr>' +
         '<table><thead><tr><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">P.U.</th><th style="text-align:right">Total</th></tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '<p class="tot">Total a pagar: ' + escapeHtml(formatAmount(pay.totalPagarFinal, moneda)) + '</p>' +
         taxDeductionFallbackHTML(taxDeduction, moneda) +
-        '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' +
-        '<p class="muted">Fecha: ' + escapeHtml(now.toLocaleString()) + ' | Copias: ' + escapeHtml(String(copias)) + '</p>' +
+        (receiptItemEnabled(printItems, 'metodo_pago') ? '<p>Método: ' + escapeHtml(normalize(pay.paymentLabel || pay.paymentMethod || '')) + '</p>' : '') +
+        ((receiptItemEnabled(printItems, 'fecha') || receiptItemEnabled(printItems, 'copias')) ? '<p class="muted">' + [
+          receiptItemEnabled(printItems, 'fecha') ? ('Fecha: ' + escapeHtml(now.toLocaleString())) : '',
+          receiptItemEnabled(printItems, 'copias') ? ('Copias: ' + escapeHtml(String(copias))) : ''
+        ].filter(Boolean).join(' | ') + '</p>' : '') +
         (pay && pay.offlineProvisional && shouldMarkOfflineInvoicePending() ? '<p class="muted">Documento provisional emitido sin internet. Se sincroniza y valida al recuperar conexion.</p>' : '') +
         electronicInvoiceQRFallbackHTML(invoiceQR) +
         '</body></html>';

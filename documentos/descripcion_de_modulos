@@ -1,3 +1,10 @@
+2026-06-07: Configuracion de campos imprimibles por empresa
+- Modulos afectados: `configuracion_impresora`, `carrito_de_compras`, `corte_de_caja` y `reportes_turnos`.
+- Backend: `empresa_configuracion_avanzada` guarda `impresion_recibo_items_json` e `impresion_corte_items_json` como JSON saneado de booleanos por `empresa_id`.
+- Frontend: `configuracion_impresora.html` muestra checks de recibo operativo y corte/cierre; `carrito_de_compras.html` filtra metadatos del recibo; `corte_de_caja.html` y `reportes_turnos.html` filtran encabezado y detalle de reportes.
+- Alcance: no modifica factura electronica DIAN, XML, CUFE/CUDE ni campos legales; aplica solo a recibos de venta y reportes operativos impresos.
+- Seguridad: se reutiliza `/api/empresa/configuracion_avanzada` con permisos empresariales y aislamiento por `empresa_id`.
+
 2026-06-07: Barra de configuracion DIAN Colombia
 - Modulo afectado: `facturacion_electronica`.
 - Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega una barra 0-100% dentro de `Configuracion DIAN Colombia`.

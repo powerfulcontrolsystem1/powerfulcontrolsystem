@@ -14,6 +14,23 @@
     #configuracionImpresoraAtajo {
       display: none !important;
     }
+    .print-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 14px;
+      margin-top: 10px;
+    }
+    .print-items-panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)), var(--card);
+      color: var(--text);
+    }
+    .print-items-panel h3 {
+      margin: 0 0 6px 0;
+      font-size: 0.98rem;
+    }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
 </head>
@@ -541,6 +558,44 @@
                 <span>Mostrar logo en factura</span>
               </label>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="empresa-config-grid mt-12">
+        <div class="print-items-panel">
+          <h3>Campos del recibo de venta</h3>
+          <p class="form-help">Aplica solo al recibo operativo de venta. La factura electronica conserva los campos exigidos por la ley colombiana y la DIAN.</p>
+          <div class="print-items-grid" id="reciboPrintItems">
+            <label class="empresa-config-check" for="reciboItemEmpresa"><input id="reciboItemEmpresa" type="checkbox" data-print-scope="recibo" data-print-key="empresa"><span>Empresa</span></label>
+            <label class="empresa-config-check" for="reciboItemCarrito"><input id="reciboItemCarrito" type="checkbox" data-print-scope="recibo" data-print-key="carrito"><span>Carrito</span></label>
+            <label class="empresa-config-check" for="reciboItemCodigo"><input id="reciboItemCodigo" type="checkbox" data-print-scope="recibo" data-print-key="codigo"><span>Codigo</span></label>
+            <label class="empresa-config-check" for="reciboItemCliente"><input id="reciboItemCliente" type="checkbox" data-print-scope="recibo" data-print-key="cliente"><span>Cliente</span></label>
+            <label class="empresa-config-check" for="reciboItemCajero"><input id="reciboItemCajero" type="checkbox" data-print-scope="recibo" data-print-key="cajero"><span>Cajero</span></label>
+            <label class="empresa-config-check" for="reciboItemMetodo"><input id="reciboItemMetodo" type="checkbox" data-print-scope="recibo" data-print-key="metodo_pago"><span>Metodo de pago</span></label>
+            <label class="empresa-config-check" for="reciboItemFecha"><input id="reciboItemFecha" type="checkbox" data-print-scope="recibo" data-print-key="fecha"><span>Fecha y hora</span></label>
+            <label class="empresa-config-check" for="reciboItemFormato"><input id="reciboItemFormato" type="checkbox" data-print-scope="recibo" data-print-key="formato"><span>Formato</span></label>
+            <label class="empresa-config-check" for="reciboItemImpresora"><input id="reciboItemImpresora" type="checkbox" data-print-scope="recibo" data-print-key="impresora"><span>Impresora objetivo</span></label>
+            <label class="empresa-config-check" for="reciboItemCopias"><input id="reciboItemCopias" type="checkbox" data-print-scope="recibo" data-print-key="copias"><span>Copias</span></label>
+          </div>
+        </div>
+
+        <div class="print-items-panel">
+          <h3>Campos de corte de caja y cierre de turno</h3>
+          <p class="form-help">Controla el encabezado y el detalle impreso de reportes operativos de caja por empresa.</p>
+          <div class="print-items-grid" id="cortePrintItems">
+            <label class="empresa-config-check" for="corteItemEmpresa"><input id="corteItemEmpresa" type="checkbox" data-print-scope="corte" data-print-key="empresa"><span>Datos de empresa</span></label>
+            <label class="empresa-config-check" for="corteItemFecha"><input id="corteItemFecha" type="checkbox" data-print-scope="corte" data-print-key="fecha_hora"><span>Fecha y hora</span></label>
+            <label class="empresa-config-check" for="corteItemUsuario"><input id="corteItemUsuario" type="checkbox" data-print-scope="corte" data-print-key="usuario_reporte"><span>Usuario que genera</span></label>
+            <label class="empresa-config-check" for="corteItemCaja"><input id="corteItemCaja" type="checkbox" data-print-scope="corte" data-print-key="caja"><span>Caja</span></label>
+            <label class="empresa-config-check" for="corteItemConsecutivo"><input id="corteItemConsecutivo" type="checkbox" data-print-scope="corte" data-print-key="consecutivo"><span>Consecutivo</span></label>
+            <label class="empresa-config-check" for="corteItemEntrada"><input id="corteItemEntrada" type="checkbox" data-print-scope="corte" data-print-key="detalle_fecha_entrada"><span>Entrada en ventas</span></label>
+            <label class="empresa-config-check" for="corteItemSalida"><input id="corteItemSalida" type="checkbox" data-print-scope="corte" data-print-key="detalle_fecha_salida"><span>Salida en ventas</span></label>
+            <label class="empresa-config-check" for="corteItemVenta"><input id="corteItemVenta" type="checkbox" data-print-scope="corte" data-print-key="detalle_numero_venta"><span>Numero de venta</span></label>
+            <label class="empresa-config-check" for="corteItemEstacion"><input id="corteItemEstacion" type="checkbox" data-print-scope="corte" data-print-key="detalle_estacion"><span>Estacion</span></label>
+            <label class="empresa-config-check" for="corteItemCajero"><input id="corteItemCajero" type="checkbox" data-print-scope="corte" data-print-key="detalle_cajero"><span>Cajero</span></label>
+            <label class="empresa-config-check" for="corteItemMedio"><input id="corteItemMedio" type="checkbox" data-print-scope="corte" data-print-key="detalle_medio_pago"><span>Medio de pago</span></label>
+            <label class="empresa-config-check" for="corteItemTotal"><input id="corteItemTotal" type="checkbox" data-print-scope="corte" data-print-key="detalle_total"><span>Total de venta</span></label>
           </div>
         </div>
       </div>
@@ -2341,6 +2396,66 @@
       input.value = String(normalizeCantidadDecimales(input.value, true));
     }
 
+    const DEFAULT_RECIBO_PRINT_ITEMS = {
+      empresa: true,
+      carrito: true,
+      codigo: true,
+      cliente: true,
+      cajero: true,
+      metodo_pago: true,
+      fecha: true,
+      formato: true,
+      impresora: true,
+      copias: true
+    };
+
+    const DEFAULT_CORTE_PRINT_ITEMS = {
+      empresa: true,
+      fecha_hora: true,
+      usuario_reporte: true,
+      caja: true,
+      consecutivo: true,
+      detalle_fecha_entrada: true,
+      detalle_fecha_salida: true,
+      detalle_numero_venta: true,
+      detalle_estacion: true,
+      detalle_cajero: true,
+      detalle_medio_pago: true,
+      detalle_total: true
+    };
+
+    function parsePrintItemsJSON(raw, defaults) {
+      const base = Object.assign({}, defaults || {});
+      if (raw && typeof raw === 'object') return Object.assign(base, raw);
+      const text = String(raw || '').trim();
+      if (!text) return base;
+      try {
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return base;
+        Object.keys(base).forEach(function(key) {
+          if (Object.prototype.hasOwnProperty.call(parsed, key)) base[key] = parsed[key] !== false;
+        });
+      } catch (_) {}
+      return base;
+    }
+
+    function setPrintItemChecks(scope, values, defaults) {
+      const cfg = Object.assign({}, defaults || {}, values || {});
+      document.querySelectorAll('[data-print-scope="' + scope + '"][data-print-key]').forEach(function(box) {
+        const key = box.getAttribute('data-print-key');
+        box.checked = cfg[key] !== false;
+      });
+    }
+
+    function collectPrintItemChecks(scope, defaults) {
+      const cfg = Object.assign({}, defaults || {});
+      document.querySelectorAll('[data-print-scope="' + scope + '"][data-print-key]').forEach(function(box) {
+        const key = box.getAttribute('data-print-key');
+        if (key) cfg[key] = !!box.checked;
+      });
+      return cfg;
+    }
+
     function setFacturaFormData(cfg) {
       const src = cfg && typeof cfg === 'object' ? cfg : {};
       document.getElementById('facturaModoDocumentoVenta').value = String(src.modo_documento_venta || 'comprobante_pago').trim().toLowerCase() === 'factura_electronica' ? 'factura_electronica' : 'comprobante_pago';
@@ -2351,6 +2466,8 @@
       document.getElementById('facturaMostrarDeducidoImpuesto').checked = src.mostrar_deducido_impuesto_factura === true;
       document.getElementById('facturaMostrarLogo').checked = src.mostrar_logo_empresa !== false && src.mostrar_logo !== false;
       document.getElementById('facturaLogoURL').value = String(src.logo_url || '').trim();
+      setPrintItemChecks('recibo', parsePrintItemsJSON(src.impresion_recibo_items_json, DEFAULT_RECIBO_PRINT_ITEMS), DEFAULT_RECIBO_PRINT_ITEMS);
+      setPrintItemChecks('corte', parsePrintItemsJSON(src.impresion_corte_items_json, DEFAULT_CORTE_PRINT_ITEMS), DEFAULT_CORTE_PRINT_ITEMS);
     }
 
     function setFormatoNumericoFormData(cfg) {
@@ -2374,7 +2491,9 @@
         mostrar_deducido_impuesto_factura: document.getElementById('facturaMostrarDeducidoImpuesto').checked,
         mostrar_logo: document.getElementById('facturaMostrarLogo').checked,
         mostrar_logo_empresa: document.getElementById('facturaMostrarLogo').checked,
-        logo_url: String(document.getElementById('facturaLogoURL').value || '').trim()
+        logo_url: String(document.getElementById('facturaLogoURL').value || '').trim(),
+        impresion_recibo_items_json: JSON.stringify(collectPrintItemChecks('recibo', DEFAULT_RECIBO_PRINT_ITEMS)),
+        impresion_corte_items_json: JSON.stringify(collectPrintItemChecks('corte', DEFAULT_CORTE_PRINT_ITEMS))
       };
     }
 
