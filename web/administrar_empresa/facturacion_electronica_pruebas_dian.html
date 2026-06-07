@@ -29,6 +29,19 @@
     .dian-portal-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;min-height:58px}
     .dian-portal-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
     .dian-portal-metric strong{display:block;margin-top:5px;color:var(--text);font-size:1rem}
+    .dian-progress-panel{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px}
+    .dian-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-progress-head h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-progress-head p{margin:4px 0 0;color:var(--muted);font-size:.86rem;line-height:1.4}
+    .dian-progress-percent{font-size:1.7rem;font-weight:950;color:var(--text);line-height:1;white-space:nowrap}
+    .dian-progress-track{position:relative;margin-top:12px;height:18px;border:1px solid var(--border);border-radius:999px;background:var(--surface);overflow:hidden}
+    .dian-progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .28s ease}
+    .dian-progress-milestones{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+    .dian-progress-step{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:7px 8px;color:var(--muted);font-size:.78rem;font-weight:800;min-height:42px}
+    .dian-progress-step::before{content:"";width:10px;height:10px;border-radius:999px;background:var(--border);flex:0 0 auto}
+    .dian-progress-step.done{color:var(--text);border-color:color-mix(in srgb,var(--success) 34%,var(--border));background:color-mix(in srgb,var(--success) 12%,var(--surface))}
+    .dian-progress-step.done::before{background:var(--success)}
+    .dian-progress-step.pending{color:var(--muted)}
     .dian-result-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
     .dian-result-table th,.dian-result-table td{border-bottom:1px solid var(--border);padding:8px 6px;text-align:left;vertical-align:top;font-size:.86rem}
     .dian-result-table th{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
@@ -52,8 +65,8 @@
     .dian-console-title strong{color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
     .dian-console-meta{color:var(--muted);font-size:.76rem;white-space:nowrap}
     .dian-console-body{margin:0;padding:10px;color:var(--text);font-size:.78rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
-    @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid{grid-template-columns:1fr}}
+    @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -72,6 +85,19 @@
         <div class="dian-status-item"><span class="dian-status-label">Estado DIAN</span><span id="feDianStatusEstado" class="dian-status-value">Cargando</span></div>
         <div class="dian-status-item"><span class="dian-status-label">TestSetId</span><span id="feDianStatusTestSet" class="dian-status-value">Cargando</span></div>
         <div class="dian-status-item"><span class="dian-status-label">Rango</span><span id="feDianStatusRango" class="dian-status-value">Cargando</span></div>
+      </div>
+      <div class="dian-progress-panel" aria-label="Porcentaje del proceso DIAN">
+        <div class="dian-progress-head">
+          <div>
+            <h3>Avance de validacion DIAN</h3>
+            <p id="feDianProgressStage">Cargando estado del proceso.</p>
+          </div>
+          <div id="feDianProgressPercent" class="dian-progress-percent">0%</div>
+        </div>
+        <div class="dian-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance de validacion DIAN">
+          <div id="feDianProgressFill" class="dian-progress-fill"></div>
+        </div>
+        <div id="feDianProgressMilestones" class="dian-progress-milestones"></div>
       </div>
       <div class="form-actions">
         <button id="btnDianRecargarConfig" type="button" class="btn secondary">Recargar configuracion</button>
@@ -286,6 +312,7 @@
       empresaID: Number(new URLSearchParams(window.location.search).get("empresa_id") || new URLSearchParams(window.location.search).get("id") || 0),
       dianConfig: null,
       ultimoResultado: null,
+      dianValidationOk: false,
       dianConsole: [],
       dianConsoleAutoScroll: true,
       dianBatchSize: 3
@@ -419,6 +446,105 @@
     function setStatusValue(id, value, emptyText) {
       const el = document.getElementById(id);
       if (el) el.textContent = txt(value) || emptyText || "No configurado";
+    }
+
+    function lowerValue(value) {
+      return txt(value).toLowerCase();
+    }
+
+    function hasDianBaseConfig(cfg) {
+      cfg = cfg || {};
+      const softwareReady = txt(cfg.software_id) && (txt(cfg.software_pin) || txt(cfg.software_pin_compartido_ref));
+      const rangeReady = txt(cfg.prefijo) && txt(cfg.resolucion_numero) && Number(cfg.rango_desde || 0) > 0 && Number(cfg.rango_hasta || 0) > 0;
+      return !!(cfg.id && txt(cfg.nit) && txt(cfg.url_dian) && softwareReady && rangeReady && txt(cfg.llave_tecnica));
+    }
+
+    function hasDianFirma(cfg) {
+      cfg = cfg || {};
+      return !!(txt(cfg.certificado_url) && txt(cfg.certificado_clave_ref));
+    }
+
+    function hasDianTestSet(cfg) {
+      cfg = cfg || {};
+      return !!txt(cfg.test_set_id || (document.getElementById("feDianTestSetId") || {}).value);
+    }
+
+    function hasDianObjetivo() {
+      const facturas = numberInputValue("feDianSetFacturas", 0);
+      const debito = numberInputValue("feDianSetNotasDebito", 0);
+      const credito = numberInputValue("feDianSetNotasCredito", 0);
+      const total = numberInputValue("feDianSetTotalRequerido", facturas + debito + credito);
+      const aceptados = numberInputValue("feDianSetAceptadosTotal", 0) +
+        numberInputValue("feDianSetAceptadasFacturas", 0) +
+        numberInputValue("feDianSetAceptadasND", 0) +
+        numberInputValue("feDianSetAceptadasNC", 0);
+      return total > 0 && (facturas + debito + credito) > 0 && aceptados > 0;
+    }
+
+    function hasDianEnvioReal(result) {
+      result = result || state.ultimoResultado || {};
+      const resumen = result.resumen || {};
+      const detalles = Array.isArray(result.detalles) ? result.detalles : [];
+      return !!(Number(result.procesados || 0) > 0 ||
+        Number(resumen.enviado || 0) > 0 ||
+        Number(resumen.aceptado || 0) > 0 ||
+        detalles.some(function(row) { return txt(row.track_id) || txt(row.zip_key) || lowerValue(row.estado_dian) === "enviado"; }));
+    }
+
+    function hasDianAcuseFinal(cfg, result) {
+      cfg = cfg || state.dianConfig || {};
+      result = result || state.ultimoResultado || {};
+      const estado = lowerValue(cfg.estado_dian || cfg.estado);
+      const resumen = result.resumen || {};
+      if (result.habilitacion_aprobada === true) return true;
+      if (estado === "habilitacion_aprobada" || estado === "produccion_local_activa") return true;
+      if (Number(resumen.aceptado || 0) > 0) return true;
+      return false;
+    }
+
+    function hasDianProduccionLocal(cfg) {
+      cfg = cfg || state.dianConfig || {};
+      return lowerValue(cfg.tipo_ambiente) === "produccion" || lowerValue(cfg.estado_dian || cfg.estado) === "produccion_local_activa";
+    }
+
+    function updateDianProgress() {
+      const cfg = state.dianConfig || {};
+      const result = state.ultimoResultado || {};
+      const productionReady = hasDianProduccionLocal(cfg);
+      const acuseReady = hasDianAcuseFinal(cfg, result) || productionReady;
+      const validationReady = state.dianValidationOk || acuseReady || productionReady;
+      const steps = [
+        { key: "base", label: "Configuracion base", weight: 15, done: hasDianBaseConfig(cfg) },
+        { key: "firma", label: "Firma digital", weight: 15, done: hasDianFirma(cfg) },
+        { key: "testset", label: "TestSetId", weight: 10, done: hasDianTestSet(cfg) },
+        { key: "objetivo", label: "Objetivo del set", weight: 10, done: hasDianObjetivo() },
+        { key: "credenciales", label: "Credenciales validadas", weight: 15, done: validationReady },
+        { key: "envio", label: "Envio real a DIAN", weight: 15, done: hasDianEnvioReal(result) || acuseReady || productionReady },
+        { key: "acuse", label: "Acuse final aceptado", weight: 15, done: acuseReady },
+        { key: "produccion", label: "Produccion local activa", weight: 5, done: productionReady }
+      ];
+      let percent = steps.reduce(function(sum, step) {
+        return sum + (step.done ? step.weight : 0);
+      }, 0);
+      percent = Math.max(0, Math.min(100, percent));
+      const firstPending = steps.find(function(step) { return !step.done; });
+      const stage = firstPending
+        ? "Siguiente paso: " + firstPending.label + "."
+        : "Proceso completo para emitir en produccion local.";
+      const percentEl = document.getElementById("feDianProgressPercent");
+      const fillEl = document.getElementById("feDianProgressFill");
+      const stageEl = document.getElementById("feDianProgressStage");
+      const trackEl = document.querySelector(".dian-progress-track");
+      const milestonesEl = document.getElementById("feDianProgressMilestones");
+      if (percentEl) percentEl.textContent = percent + "%";
+      if (fillEl) fillEl.style.width = percent + "%";
+      if (stageEl) stageEl.textContent = stage;
+      if (trackEl) trackEl.setAttribute("aria-valuenow", String(percent));
+      if (milestonesEl) {
+        milestonesEl.innerHTML = steps.map(function(step) {
+          return '<div class="dian-progress-step ' + (step.done ? "done" : "pending") + '">' + escapeHTML(step.label) + '</div>';
+        }).join("");
+      }
     }
 
     function portalValue(value, emptyText) {
@@ -625,6 +751,7 @@
         setValue("feDianSetAceptadasND", Number(cfg.set_notas_debito_aceptadas_requeridas || 0));
         setValue("feDianSetAceptadasNC", Number(cfg.set_notas_credito_aceptadas_requeridas || 0));
       }
+      updateDianProgress();
     }
 
     async function loadDianConfigStatus() {
@@ -657,8 +784,12 @@
           body: JSON.stringify(payload)
         }, "Validar credenciales DIAN");
         setJSON("feDianPruebasResultado", data);
+        state.dianValidationOk = !!(data && data.ok);
+        updateDianProgress();
         setText("feDianConfigMsg", data && data.ok ? "Credenciales DIAN listas." : "Hay datos pendientes antes de enviar a DIAN.", !(data && data.ok));
       } catch (err) {
+        state.dianValidationOk = false;
+        updateDianProgress();
         setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
         setText("feDianConfigMsg", err && err.message ? err.message : "No se pudo validar credenciales DIAN.", true);
       }
@@ -683,11 +814,13 @@
       setValue("feDianSetAceptadasND", preset.aceptadasDebito);
       setValue("feDianSetAceptadasNC", preset.aceptadasCredito);
       setValue("feDianSetMaxEnvios", "");
+      updateDianProgress();
     }
 
     function markPresetPersonalizado() {
       const select = document.getElementById("feDianSetPreset");
       if (select) select.value = "personalizado";
+      updateDianProgress();
     }
 
     function collectDianSetPayloadBase() {
@@ -755,6 +888,7 @@
           body: JSON.stringify(payload)
         }, "Guardar objetivo DIAN");
         if (data && data.item) renderDianConfigStatus(data.item);
+        updateDianProgress();
         setText("feDianPruebasMsg", "Objetivo DIAN guardado.", false);
       } catch (err) {
         setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo guardar objetivo DIAN.", true);
@@ -834,6 +968,7 @@
           return '<div class="dian-status-item"><span class="dian-status-label">' + escapeHTML(item[0]) + '</span><span class="dian-status-value">' + escapeHTML(item[1]) + '</span></div>';
         }).join("");
       }
+      updateDianProgress();
       if (!details) return;
       const rows = data && Array.isArray(data.detalles) ? data.detalles : [];
       if (!rows.length) {
@@ -1085,7 +1220,13 @@
         }, "Activar produccion local DIAN");
         setJSON("feDianPruebasResultado", data);
         setText("feDianPruebasMsg", data && data.ok ? "Produccion local DIAN activada. Verifica resolucion y rangos reales antes de emitir." : "No se pudo activar produccion local.", !(data && data.ok));
+        if (data && data.ok) {
+          await loadDianConfigStatus().catch(function() {});
+        } else {
+          updateDianProgress();
+        }
       } catch (err) {
+        updateDianProgress();
         setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
         setText("feDianPruebasMsg", err && err.message ? err.message : "No se pudo activar produccion local DIAN", true);
       }

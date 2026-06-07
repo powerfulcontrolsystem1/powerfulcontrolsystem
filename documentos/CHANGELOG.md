@@ -1,3 +1,8 @@
+## [2026-06-06] Barra de avance DIAN
+- [Frontend] `facturacion_electronica_pruebas_dian.html` agrega una barra 0-100% para que el administrador vea el avance del proceso DIAN por hitos reales.
+- [Operacion] El porcentaje considera configuracion base, firma, TestSetId, objetivo del set, credenciales validadas, envio real, acuse final y produccion local.
+- [Seguridad] La barra no muestra secretos y no reemplaza el acuse final aceptado de DIAN.
+
 ## [2026-06-06] Tutorial DIAN en submenu de facturacion electronica
 - [Frontend] `facturacion_electronica_tutorial_dian.html` agrega una guia operativa para configurar conexion DIAN, firma digital, prueba 2+2+2, set completo, acuse final y activacion de produccion local.
 - [Navegacion] `facturacion_electronica_menu.html` incorpora `Tutorial DIAN` para Colombia con permiso de lectura de facturacion y conserva `empresa_id` al abrir configuracion o pruebas.

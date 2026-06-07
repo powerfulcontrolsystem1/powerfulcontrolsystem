@@ -1,3 +1,10 @@
+2026-06-06: Barra de avance DIAN.
+- Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y centro de habilitacion.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrega `Avance de validacion DIAN`, una barra 0-100% con hitos visibles para configuracion base, firma digital, TestSetId, objetivo del set, credenciales, envio real, acuse final y produccion local.
+- Operacion: la barra se recalcula al cargar configuracion, validar credenciales, guardar objetivo, enviar pruebas reales y activar produccion local.
+- Seguridad: el porcentaje no publica secretos y no debe interpretarse como habilitacion oficial sin acuse final DIAN aceptado.
+- QA: validar script embebido, `git diff --check`, comprobar visualmente la barra con empresa 12 y confirmar que no hay overflow en movil.
+
 2026-06-06: Tutorial DIAN en submenu de facturacion electronica.
 - Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y submenu de administrar empresa.
 - Frontend: se agrega `web/administrar_empresa/facturacion_electronica_tutorial_dian.html` con pasos para reunir datos del portal DIAN, configurar Colombia, cargar firma, validar credenciales, enviar 2+2+2, ejecutar set completo, consultar acuse final y activar produccion local.

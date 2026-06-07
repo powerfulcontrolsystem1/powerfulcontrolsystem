@@ -1,3 +1,9 @@
+2026-06-06 - Barra de avance DIAN
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
+	- agrega una barra 0-100% en el Centro de habilitacion DIAN para mostrar al administrador el avance por hitos reales: configuracion base, firma, TestSetId, objetivo, credenciales, envio real, acuse final y produccion local.
+- `documentos/*`:
+	- actualiza trazabilidad del modulo DIAN para aclarar que el porcentaje no reemplaza el acuse oficial.
+
 2026-06-06 - Tutorial operativo DIAN en submenu
 - `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`:
 	- nueva pagina de guia corta para configurar conexion DIAN, cargar firma, enviar 2+2+2, ejecutar set completo, consultar acuse final y activar produccion local sin publicar secretos.

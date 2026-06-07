@@ -268,7 +268,9 @@ afecte dinero, documentos, licencias o seguridad.
 9. La pagina `Facturacion electronica > Pasar test DIAN` muestra estado de
    ambiente, rango, TestSetId y credenciales; desde alli se guarda el objetivo
    del set que aparece en el portal DIAN, incluyendo totales requeridos y
-   minimos aceptados por facturas, notas debito y notas credito.
+   minimos aceptados por facturas, notas debito y notas credito. La barra
+   `Avance de validacion DIAN` muestra un porcentaje operativo 0-100% por
+   hitos, pero no reemplaza el acuse final de DIAN.
 10. `Ejecutar set automatico` usa los valores guardados para generar el lote
    completo; los botones `Enviar factura`, `Enviar nota debito` y `Enviar nota
    credito` permiten probar un documento a la vez y ver si fue recibido,
