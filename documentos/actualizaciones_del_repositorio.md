@@ -13511,3 +13511,20 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica_menu.html
 - web/js/empresa_submenu_context.js
 - web/js/help_ai_bridge.js
+
+2026-06-07 17:53:41 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 80ac9e66; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/db/empresa_colombia_defaults.go
+- backend/db/productos.go
+- backend/db/productos_bodegas_test.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
