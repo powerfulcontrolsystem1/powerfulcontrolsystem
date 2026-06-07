@@ -936,6 +936,16 @@
         document.getElementById('cfgPrima').value = toNumber(item.provision_prima_porcentaje, 8.33);
         document.getElementById('cfgVacaciones').value = toNumber(item.provision_vacaciones_porcentaje, 4.17);
         document.getElementById('cfgObservaciones').value = normalize(item.observaciones);
+        if (!normalize(document.getElementById('empId').value)) {
+          const salarioInput = document.getElementById('empSalario');
+          const auxilioInput = document.getElementById('empAuxilio');
+          if (toNumber(salarioInput.value, 0) <= 0) {
+            salarioInput.value = String(toNumber(item.salario_minimo_mensual, 0));
+          }
+          if (toNumber(auxilioInput.value, 0) <= 0) {
+            auxilioInput.value = String(toNumber(item.auxilio_transporte_legal_mensual, 0));
+          }
+        }
       }
 
       function buildConfigPayload() {
