@@ -4,6 +4,7 @@
 - Chat/robot: `web/js/ai_chat_drawer.js` muestra ayuda contextual estatica en robot o caja IA, con acciones de abrir guia y pedir paso a paso; no ejecuta mutaciones ni consume IA automaticamente.
 - Runtime: el drawer IA ahora inicializa tambien cuando el script carga despues de `DOMContentLoaded`, y `administrar_empresa.html` versiona el JS para evitar cache antiguo.
 - UX: si la caja IA esta oculta/desactivada por empresa, el enlace de ayuda ya no queda silencioso; abre un panel informativo sin enviar consultas ni activar IA automaticamente.
+- Integracion iframe: `help_ai_bridge.js` tambien inyecta el puente en iframes empresariales same-origin y sus iframes anidados para cubrir subpaginas con cache previo de `empresa_submenu_context.js`.
 - Integracion: `web/js/empresa_submenu_context.js` carga el puente en subpaginas empresariales; `nomina_sueldos.html` conecta el boton `Ayuda` al nuevo flujo.
 - Seguridad: si chat/IA estan apagados por configuracion de empresa, se muestra ayuda estatica visible y la guia completa sin cambiar preferencias, backend, permisos, licencias ni datos.
 

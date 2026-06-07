@@ -18,6 +18,9 @@ decisiones en cada tarea.
 - `web/js/empresa_submenu_context.js` carga el puente de ayuda en subpaginas
   empresariales para que los iframes puedan pedir ayuda al panel padre sin
   romper `empresa_id`.
+- El panel padre tambien inyecta `help_ai_bridge.js` en iframes empresariales
+  same-origin y anidados, evitando que una subpagina con cache viejo pierda el
+  enlace con la caja de ayuda.
 
 ## Actualizacion 2026-06-07 - Barra de configuracion DIAN
 

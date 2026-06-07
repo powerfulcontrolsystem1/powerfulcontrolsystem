@@ -2,6 +2,7 @@
 - [Frontend] `help_ai_bridge.js` conecta enlaces de ayuda y tutoriales con el robot/caja IA del panel empresarial.
 - [Chat IA] `ai_chat_drawer.js` muestra ayuda contextual estatica sin consumir IA ni ejecutar acciones hasta que el usuario lo pida.
 - [UX] Si la caja IA esta oculta por defecto, el click de ayuda abre un panel informativo visible sin activar IA ni cambiar preferencias.
+- [Iframe] El puente se inyecta desde el panel padre en iframes same-origin para cubrir subpaginas empresariales anidadas aunque tengan cache anterior.
 - [Nomina] El boton `Ayuda` abre el robot/caja cuando esta habilitado y mantiene el tutorial HTML como respaldo.
 
 ## [2026-06-07] Ajuste visual de previsualizacion de factura electronica

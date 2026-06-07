@@ -3,6 +3,7 @@
 
   var HELP_MESSAGE_TYPE = 'pcs-help-ai-open';
   var INSTALLED_FLAG = '__pcsHelpAIBridgeInstalled';
+  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260607-help-ai3';
 
   if (window[INSTALLED_FLAG]) return;
   window[INSTALLED_FLAG] = true;
@@ -224,6 +225,61 @@
     }
   }
 
+  function injectBridgeIntoFrame(frame) {
+    if (!frame) return;
+    try {
+      var doc = frame.contentDocument;
+      var childWindow = frame.contentWindow;
+      if (!doc || !childWindow) return;
+      if (childWindow[INSTALLED_FLAG]) return;
+      if (doc.querySelector('script[data-pcs-help-ai-bridge]')) return;
+      var script = doc.createElement('script');
+      script.src = BRIDGE_SRC;
+      script.defer = true;
+      script.dataset.pcsHelpAiBridge = '1';
+      (doc.head || doc.documentElement).appendChild(script);
+    } catch (error) {}
+  }
+
+  function scanFramesForBridge() {
+    var frames = [];
+    try {
+      frames = Array.prototype.slice.call(document.querySelectorAll('iframe'));
+    } catch (error) {
+      frames = [];
+    }
+    frames.forEach(function (frame) {
+      injectBridgeIntoFrame(frame);
+      if (!frame.dataset.pcsHelpAiBridgeLoadBound) {
+        frame.dataset.pcsHelpAiBridgeLoadBound = '1';
+        frame.addEventListener('load', function () {
+          injectBridgeIntoFrame(frame);
+        });
+      }
+    });
+  }
+
+  function startFrameBridgeScanner() {
+    scanFramesForBridge();
+    var attempts = 0;
+    var timer = window.setInterval(function () {
+      attempts += 1;
+      scanFramesForBridge();
+      if (attempts >= 12) {
+        window.clearInterval(timer);
+      }
+    }, 800);
+    try {
+      var observer = new MutationObserver(function () {
+        scanFramesForBridge();
+      });
+      observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+      window.setTimeout(function () {
+        try { observer.disconnect(); } catch (error) {}
+      }, 15000);
+    } catch (error) {}
+  }
+
   window.PCSHelpAI = {
     buildPayload: buildPayload,
     request: requestHelp,
@@ -231,4 +287,9 @@
   };
 
   document.addEventListener('click', handleClick, true);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startFrameBridgeScanner);
+  } else {
+    startFrameBridgeScanner();
+  }
 })();

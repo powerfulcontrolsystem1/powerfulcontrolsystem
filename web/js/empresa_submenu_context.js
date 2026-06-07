@@ -512,7 +512,7 @@
       if (window.__pcsHelpAIBridgeInstalled) return;
       if (document.querySelector('script[data-pcs-help-ai-bridge]')) return;
       const script = document.createElement('script');
-      script.src = '/js/help_ai_bridge.js?v=20260607-help-ai2';
+      script.src = '/js/help_ai_bridge.js?v=20260607-help-ai3';
       script.defer = true;
       script.dataset.pcsHelpAiBridge = '1';
       (document.head || document.documentElement).appendChild(script);

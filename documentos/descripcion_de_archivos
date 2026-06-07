@@ -3,6 +3,7 @@
 	- nuevo puente frontend para capturar enlaces de ayuda, tutoriales y botones `data-pcs-help-ai`.
 	- envia la solicitud al panel padre cuando la ayuda esta dentro de un iframe empresarial.
 	- conserva `empresa_id` en URLs internas y usa la guia HTML completa como respaldo visible.
+	- se autoinyecta en iframes empresariales same-origin y anidados desde el panel padre.
 - `web/js/ai_chat_drawer.js`:
 	- agrega `PCSAIChatHelp` y el mensaje `pcs-help-ai-open` para mostrar ayuda contextual estatica en robot o caja IA.
 	- no ejecuta acciones reales ni consume IA hasta que el usuario envie una pregunta o confirme una accion.
