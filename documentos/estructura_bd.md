@@ -3,6 +3,21 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-07 (catalogo legal versionado)
+- Nueva tabla `catalogo_legal_pais_versiones`: almacena versiones legales por
+  pais (`pais_codigo`, `version`, vigencia, estado, fuente y descripcion).
+- Nueva tabla `catalogo_legal_pais_parametros`: almacena parametros por version
+  (`codigo`, `grupo`, `tipo_valor`, `valor_numero`, `valor_texto`,
+  `habilitado`, `orden`).
+- Nueva tabla `empresa_parametros_legales_aplicados`: registra por
+  `empresa_id` y pais la version aplicada, preferencia `auto_actualizar`,
+  fecha de revision/aplicacion, modo (`manual`, `automatico`, `backfill`,
+  `creacion_empresa`) y resumen JSON.
+- El worker de parametros legales solo aplica versiones pendientes si
+  `auto_actualizar=1`; el boton manual usa el mismo flujo y deja version
+  aplicada.
+- No se crean datos operativos simulados; solo configuracion legal versionada.
+
 Actualizacion 2026-06-07 (preconfiguracion Colombia por empresa)
 - Tabla `empresa_impuestos_config`: se llena por `empresa_id` con catalogo base
   Colombia version `CO-2026-06` en empresas nuevas y existentes de

@@ -1,3 +1,15 @@
+2026-06-07 - Catalogo legal versionado
+- `backend/db/empresa_colombia_defaults.go`:
+	- agrega esquema de catalogo legal por pais/version, parametros por version, estado aplicado por empresa, aplicacion manual y worker de autoactualizacion.
+- `backend/handlers/nomina_sueldos.go`:
+	- agrega acciones empresariales para consultar, aplicar y configurar autoactualizacion de parametros legales.
+- `backend/main.go`:
+	- registra catalogo legal al arrancar, ejecuta backfill versionado y activa worker diario.
+- `backend/handlers/system_empresas_handlers.go`:
+	- cambia la creacion de empresa para registrar parametros legales versionados ademas de aplicar defaults Colombia.
+- `web/administrar_empresa/nomina_sueldos.html`:
+	- agrega tarjeta de parametros legales con version aplicada/disponible, vigencia, estado, boton manual y switch de autoactualizacion.
+
 2026-06-07 - Preconfiguracion Colombia para empresas
 - `backend/db/empresa_colombia_defaults.go`:
 	- nuevo registro idempotente de defaults Colombia `CO-2026-06` para impuestos, nomina y marcador por empresa.

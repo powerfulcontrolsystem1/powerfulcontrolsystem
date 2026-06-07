@@ -1,3 +1,11 @@
+2026-06-07: Catalogo legal versionado con boton y autoactualizacion.
+- Modulos afectados: Nomina, impuestos, creacion/configuracion de empresa y arranque backend.
+- Backend: `backend/db/empresa_colombia_defaults.go` agrega `catalogo_legal_pais_versiones`, `catalogo_legal_pais_parametros` y `empresa_parametros_legales_aplicados` para controlar versiones legales por pais y empresa.
+- API: `backend/handlers/nomina_sueldos.go` agrega acciones `parametros_legales`, `parametros_legales_aplicar` y `parametros_legales_auto` bajo `/api/empresa/nomina`, conservando wrapper de permisos y aislamiento por `empresa_id`.
+- Operacion: `backend/main.go` registra el catalogo Colombia, backfill versionado para empresas existentes y worker diario que aplica versiones pendientes solo si la empresa tiene `auto_actualizar` activo.
+- Frontend: `web/administrar_empresa/nomina_sueldos.html` muestra estado versionado, boton manual y switch de autoactualizacion; al aplicar recarga configuracion legal real.
+- Seguridad: no descarga ni ejecuta datos externos sin revision; la version legal vigente es la registrada y auditada en el catalogo interno.
+
 2026-06-07: Preconfiguracion Colombia para empresas nuevas y existentes.
 - Modulos afectados: Creacion de empresas, impuestos y nomina.
 - Backend: `backend/db/empresa_colombia_defaults.go` agrega version `CO-2026-06` para aplicar catalogo fiscal Colombia, parametros legales de nomina y conceptos base por `empresa_id`.

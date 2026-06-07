@@ -890,6 +890,14 @@ func main() {
 	} else if result != nil {
 		log.Printf("INFO: preconfiguracion Colombia %s verificada: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
 	}
+	if err := dbpkg.SeedCatalogoLegalColombiaBase(dbEmpresas, "sistema.arranque"); err != nil {
+		log.Printf("warning: no se pudo registrar catalogo legal Colombia: %v", err)
+	}
+	if result, err := dbpkg.ApplyParametrosLegalesToExistingEmpresas(dbEmpresas); err != nil {
+		log.Printf("warning: no se pudo registrar parametros legales por empresa: %v", err)
+	} else if result != nil {
+		log.Printf("INFO: parametros legales Colombia %s registrados: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
+	}
 	startupTrace("after_empresa_colombia_defaults")
 	if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
@@ -1052,6 +1060,11 @@ func main() {
 	stopLicenciasVencimiento := make(chan struct{})
 	go utils.RunProtectedProcess("licencias.vencimiento_alertas_worker", map[string]interface{}{"interval_hours": 12}, func() {
 		handlers.StartLicenciaVencimientoAlertasWorker(dbSuper, dbEmpresas, 12*time.Hour, stopLicenciasVencimiento)
+	})
+
+	stopParametrosLegales := make(chan struct{})
+	go utils.RunProtectedProcess("parametros_legales.worker", map[string]interface{}{"interval_hours": 24}, func() {
+		dbpkg.StartEmpresaParametrosLegalesWorker(dbEmpresas, 24*time.Hour, stopParametrosLegales)
 	})
 
 	asientosInterval, asientosBatchSize, asientosMaxRetries := resolveAsientosWorkerPolicy()

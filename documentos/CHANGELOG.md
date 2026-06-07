@@ -1,3 +1,9 @@
+## [2026-06-07] Catalogo legal versionado por empresa
+- [Backend] Se agrega catalogo legal por pais/version con tablas para versiones, parametros y version aplicada por empresa.
+- [Nomina] `/api/empresa/nomina` expone estado, aplicacion manual y preferencia de autoactualizacion de parametros legales.
+- [Worker] El backend revisa periodicamente empresas con autoactualizacion activa y aplica la version legal vigente registrada.
+- [Frontend] `nomina_sueldos.html` muestra version aplicada/disponible, vigencia, estado, boton `Aplicar actualizacion legal` y switch `Autoactualizar`.
+
 ## [2026-06-07] Preconfiguracion Colombia para empresas
 - [Backend] Las empresas nuevas reciben automaticamente catalogo fiscal Colombia y parametros base de nomina al crearse desde `/super/api/empresas`.
 - [Backfill] El arranque registra la version `CO-2026-06` para empresas existentes de preproduccion: IVA 19%, IVA 0%, INC 8% inactivo, ICA/retenciones inactivas, salario minimo 2026 y auxilio legal de transporte.

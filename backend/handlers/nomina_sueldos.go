@@ -32,6 +32,16 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 			}
 
 			switch action {
+			case "parametros_legales", "legal_params", "estado_parametros_legales":
+				estado, err := dbpkg.GetEmpresaParametrosLegalesEstado(dbEmp, empresaID, "CO")
+				if err != nil {
+					log.Printf("[nomina] parametros legales estado empresa_id=%d error: %v", empresaID, err)
+					http.Error(w, "No se pudo consultar parametros legales", http.StatusInternalServerError)
+					return
+				}
+				writeJSON(w, http.StatusOK, estado)
+				return
+
 			case "", "config", "configuracion":
 				cfg, err := dbpkg.GetEmpresaNominaConfiguracion(dbEmp, empresaID)
 				if err != nil {
@@ -318,6 +328,21 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPost:
 			switch action {
+			case "parametros_legales_aplicar", "aplicar_parametros_legales", "actualizar_parametros_legales":
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				result, err := dbpkg.ApplyEmpresaParametrosLegalesLatest(dbEmp, empresaID, "CO", strings.TrimSpace(adminEmailFromRequest(r)), "manual")
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				estado, _ := dbpkg.GetEmpresaParametrosLegalesEstado(dbEmp, empresaID, "CO")
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "resultado": result, "estado": estado})
+				return
+
 			case "empleado", "empleados":
 				var payload dbpkg.EmpresaNominaEmpleado
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -701,6 +726,27 @@ func EmpresaNominaSueldosHandler(dbEmp *sql.DB) http.HandlerFunc {
 
 		case http.MethodPut:
 			switch action {
+			case "parametros_legales_auto", "auto_parametros_legales":
+				empresaID, err := parseEmpresaIDQuery(r)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				var payload struct {
+					AutoActualizar bool `json:"auto_actualizar"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					http.Error(w, "JSON invalido", http.StatusBadRequest)
+					return
+				}
+				estado, err := dbpkg.SetEmpresaParametrosLegalesAutoActualizar(dbEmp, empresaID, "CO", payload.AutoActualizar, strings.TrimSpace(adminEmailFromRequest(r)))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "estado": estado})
+				return
+
 			case "", "config", "configuracion":
 				var payload dbpkg.EmpresaNominaConfiguracion
 				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {

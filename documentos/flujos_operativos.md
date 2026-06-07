@@ -762,24 +762,30 @@ afecte dinero, documentos, licencias o seguridad.
    mensual y auxilio de transporte legal desde `empresa_nomina_configuracion`;
    las empresas nuevas/existentes de preproduccion reciben esos valores por
    preconfiguracion Colombia.
-2. La ficha de nomina del empleado guarda `sede_codigo`, `sede_nombre` y
+2. La tarjeta `Parametros legales` consulta la version aplicada y disponible.
+   Si hay version pendiente, el administrador puede aplicar manualmente o dejar
+   activa la autoactualizacion para el worker diario.
+3. La aplicacion legal actualiza parametros reales de impuestos/nomina y guarda
+   version en `empresa_parametros_legales_aplicados`; no crea empleados,
+   liquidaciones ni documentos.
+4. La ficha de nomina del empleado guarda `sede_codigo`, `sede_nombre` y
    `centro_costo`; estos valores se copian a cada liquidacion para conservar la
    trazabilidad historica aunque luego cambie la ficha.
-3. Al crear empleado nuevo, el formulario sugiere salario minimo y auxilio
+5. Al crear empleado nuevo, el formulario sugiere salario minimo y auxilio
    legal, pero el usuario puede ajustar segun contrato real.
-4. La liquidacion se genera desde asistencia, novedades aprobadas, recargos,
+6. La liquidacion se genera desde asistencia, novedades aprobadas, recargos,
    comisiones, provisiones y deducciones; el dashboard resume empleados,
    liquidaciones, pagos, costo empresa y sedes activas.
-5. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
+7. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
    resumen de documentos electronicos de nomina.
-6. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
+8. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
    periodo y muestra liquidaciones listas por empleado para documento soporte de
    pago de nomina electronica.
-7. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
+9. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
    por empleado con devengados, deducciones, neto, IBC, sede y centro de costo.
    El envio real a DIAN sigue dependiendo de firma, CUNE, numeracion,
    credenciales y transporte documental configurados por empresa en facturacion
    electronica.
-8. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
+10. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
    sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
    DIAN` / `Preparar lote DIAN`.

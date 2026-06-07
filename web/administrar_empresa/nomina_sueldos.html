@@ -134,6 +134,40 @@
 
     <section class="card empresa-section">
       <div class="empresa-section-header">
+        <div>
+          <h2>ParÃ¡metros legales</h2>
+          <p id="legalParamsMsg" class="form-help">Verificando vigencia...</p>
+        </div>
+        <div class="form-actions">
+          <label class="form-help" for="legalAutoUpdate">
+            <input id="legalAutoUpdate" type="checkbox">
+            Autoactualizar
+          </label>
+          <button id="btnAplicarParametrosLegales" class="btn primary" type="button">Aplicar actualizaciÃ³n legal</button>
+        </div>
+      </div>
+      <div class="kpi-grid nomina-kpi-grid">
+        <div class="kpi-box">
+          <span class="kpi-label">Aplicada</span>
+          <strong id="legalVersionAplicada">-</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Disponible</span>
+          <strong id="legalVersionDisponible">-</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Vigencia</span>
+          <strong id="legalVigencia">-</strong>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Estado</span>
+          <strong id="legalEstado">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="card empresa-section">
+      <div class="empresa-section-header">
         <h2>Configuración legal de nómina</h2>
       </div>
       <form id="cfgForm" class="form">
@@ -766,7 +800,8 @@
         dashboard: null,
         provisiones: null,
         controlContable: null,
-        dianNomina: null
+        dianNomina: null,
+        parametrosLegales: null
       };
 
       function getQueryParam(name) {
@@ -900,6 +935,62 @@
           state.empresaNombre = '';
         }
         setEmpresaInfo();
+      }
+
+      function renderLegalParams(data) {
+        state.parametrosLegales = data || null;
+        const item = data || {};
+        const aplicada = normalize(item.version_aplicada) || 'Sin aplicar';
+        const disponible = normalize(item.version_disponible) || '-';
+        const pendiente = !!item.pendiente;
+        document.getElementById('legalVersionAplicada').textContent = aplicada;
+        document.getElementById('legalVersionDisponible').textContent = disponible;
+        document.getElementById('legalVigencia').textContent = normalize(item.vigencia_desde) || '-';
+        document.getElementById('legalEstado').textContent = pendiente ? 'Pendiente' : 'Al dia';
+        document.getElementById('legalAutoUpdate').checked = !!item.auto_actualizar;
+        document.getElementById('btnAplicarParametrosLegales').disabled = false;
+        setMessage('legalParamsMsg', normalize(item.mensaje) || (pendiente ? 'Actualizacion legal disponible.' : 'Parametros legales al dia.'), pendiente ? null : 'success');
+      }
+
+      async function loadLegalParams() {
+        const data = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=parametros_legales');
+        renderLegalParams(data || {});
+      }
+
+      async function applyLegalParams() {
+        const btn = document.getElementById('btnAplicarParametrosLegales');
+        btn.disabled = true;
+        setMessage('legalParamsMsg', 'Aplicando parametros legales...', null);
+        try {
+          const resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=parametros_legales_aplicar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}'
+          });
+          renderLegalParams(resp && resp.estado ? resp.estado : {});
+          await loadConfig();
+          setMessage('legalParamsMsg', 'Parametros legales aplicados correctamente.', 'success');
+        } catch (err) {
+          setMessage('legalParamsMsg', err.message || 'No se pudieron aplicar parametros legales.', 'error');
+          btn.disabled = false;
+        }
+      }
+
+      async function saveLegalAutoUpdate() {
+        const enabled = document.getElementById('legalAutoUpdate').checked;
+        setMessage('legalParamsMsg', 'Guardando preferencia...', null);
+        try {
+          const resp = await requestJSON('/api/empresa/nomina?empresa_id=' + encodeURIComponent(state.empresaID) + '&action=parametros_legales_auto', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ auto_actualizar: enabled })
+          });
+          renderLegalParams(resp && resp.estado ? resp.estado : {});
+          setMessage('legalParamsMsg', enabled ? 'Autoactualizacion legal activada.' : 'Autoactualizacion legal desactivada.', 'success');
+        } catch (err) {
+          document.getElementById('legalAutoUpdate').checked = !enabled;
+          setMessage('legalParamsMsg', err.message || 'No se pudo guardar la preferencia.', 'error');
+        }
       }
 
       function applyConfig(cfg) {
@@ -1763,12 +1854,22 @@
       }
 
       async function refreshAll() {
-        await Promise.all([loadConfig(), loadEmployees(), loadFestivos()]);
+        await Promise.all([loadConfig(), loadLegalParams(), loadEmployees(), loadFestivos()]);
         await Promise.all([loadLiquidaciones(), loadPagos(), loadDashboard(), loadProvisiones()]);
         updateKpis();
       }
 
       function bindEvents() {
+        document.getElementById('btnAplicarParametrosLegales').addEventListener('click', function () {
+          applyLegalParams().catch(function (err) {
+            setMessage('legalParamsMsg', err.message || 'No se pudieron aplicar parametros legales.', 'error');
+          });
+        });
+        document.getElementById('legalAutoUpdate').addEventListener('change', function () {
+          saveLegalAutoUpdate().catch(function (err) {
+            setMessage('legalParamsMsg', err.message || 'No se pudo guardar la preferencia.', 'error');
+          });
+        });
         document.getElementById('cfgForm').addEventListener('submit', saveConfig);
         document.getElementById('empForm').addEventListener('submit', saveEmployee);
         document.getElementById('empCancelar').addEventListener('click', function () {

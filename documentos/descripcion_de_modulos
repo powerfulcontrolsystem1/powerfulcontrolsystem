@@ -1,3 +1,11 @@
+2026-06-07: Catalogo legal versionado
+- Modulos afectados: `nomina_sueldos`, `impuestos`, `seleccion_empresas` y configuracion legal empresarial.
+- Backend: el sistema mantiene versiones legales por pais y parametros asociados; Colombia queda cargado como `CO-2026-06`.
+- Operacion manual: el administrador puede aplicar la version vigente desde Nomina con el boton `Aplicar actualizacion legal`.
+- Operacion automatica: cada empresa puede activar `Autoactualizar`; el worker diario aplica versiones pendientes registradas en el catalogo interno.
+- Modelo hibrido: si autoactualizar esta apagado, la pantalla muestra version pendiente y el administrador/contador decide cuando aplicarla.
+- Seguridad/alcance: todo queda por `empresa_id`, bajo permisos de nomina, sin scraping externo ni mutaciones contables/documentales.
+
 2026-06-07: Preconfiguracion Colombia por empresa
 - Modulos afectados: `seleccion_empresas`, `impuestos`, `nomina_sueldos` y configuracion empresarial.
 - Creacion de empresa: al registrar una empresa nueva se aplica una base fiscal y laboral Colombia versionada como `CO-2026-06`, independiente de la plantilla por tipo de empresa.
