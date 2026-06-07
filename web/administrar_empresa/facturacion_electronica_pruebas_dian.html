@@ -21,8 +21,23 @@
     .dian-pill.warn{background:color-mix(in srgb,var(--accent-yellow,#facc15) 18%,var(--surface));border-color:color-mix(in srgb,var(--accent-yellow,#facc15) 44%,var(--border));color:color-mix(in srgb,#b7791f 72%,var(--text))}
     .dian-pill.error{background:color-mix(in srgb,var(--danger) 16%,var(--surface));border-color:color-mix(in srgb,var(--danger) 40%,var(--border));color:color-mix(in srgb,var(--danger) 78%,var(--text))}
     .dian-source-note{border-left:4px solid var(--accent);padding:8px 10px;background:var(--surface-soft);border-radius:8px;color:var(--muted);font-size:.86rem}
+    .dian-console-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .dian-console-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .dian-console-toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.86rem;font-weight:700}
+    .dian-console{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:color-mix(in srgb,var(--surface) 88%,#020617 12%);min-height:220px;max-height:440px;overflow:auto;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+    .dian-console-empty{display:flex;align-items:center;justify-content:center;min-height:190px;color:var(--muted);font-family:inherit;font-size:.9rem;text-align:center}
+    .dian-console-entry{border:1px solid color-mix(in srgb,var(--border) 82%,transparent);border-radius:8px;background:color-mix(in srgb,var(--surface-soft) 78%,transparent);margin-bottom:10px;overflow:hidden}
+    .dian-console-entry:last-child{margin-bottom:0}
+    .dian-console-entry.ok{border-left:4px solid var(--success)}
+    .dian-console-entry.warn{border-left:4px solid var(--accent-yellow,#facc15)}
+    .dian-console-entry.error{border-left:4px solid var(--danger)}
+    .dian-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid color-mix(in srgb,var(--border) 72%,transparent)}
+    .dian-console-title{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+    .dian-console-title strong{color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
+    .dian-console-meta{color:var(--muted);font-size:.76rem;white-space:nowrap}
+    .dian-console-body{margin:0;padding:10px;color:var(--text);font-size:.78rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
     @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}}
-    @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}}
+    @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -144,6 +159,26 @@
     </div>
 
     <div class="card">
+      <h2>Consola DIAN</h2>
+      <p class="form-help">
+        Bitacora visible de las respuestas reales que llegan desde DIAN/proveedor por medio del backend. Los datos sensibles se ocultan automaticamente.
+      </p>
+      <div class="dian-console-toolbar">
+        <div class="dian-console-toggle">
+          <input id="feDianConsoleAutoScroll" type="checkbox" checked>
+          <span>Auto-scroll</span>
+        </div>
+        <div class="dian-console-actions">
+          <button id="btnDianConsoleCopiar" type="button" class="btn secondary">Copiar consola</button>
+          <button id="btnDianConsoleLimpiar" type="button" class="btn secondary">Limpiar consola</button>
+        </div>
+      </div>
+      <div id="feDianConsole" class="dian-console" aria-live="polite">
+        <div class="dian-console-empty">Ejecuta una validacion, diagnostico o envio DIAN para ver aqui la respuesta.</div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Conexion DIAN/proveedor</h2>
       <p class="form-help">
         La facturacion electronica requiere conexion activa con el servidor y con DIAN/proveedor. Usa estas acciones para revisar disponibilidad y reprocesar cola.
@@ -233,7 +268,9 @@
     const state = {
       empresaID: Number(new URLSearchParams(window.location.search).get("empresa_id") || new URLSearchParams(window.location.search).get("id") || 0),
       dianConfig: null,
-      ultimoResultado: null
+      ultimoResultado: null,
+      dianConsole: [],
+      dianConsoleAutoScroll: true
     };
 
     const DIAN_SET_PRESETS = {
@@ -264,6 +301,93 @@
         box.textContent = JSON.stringify(data, null, 2);
       } catch (_) {
         box.textContent = String(data);
+      }
+    }
+
+    function isSensitiveDianKey(key) {
+      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|certificado_clave|llave_tecnica|software_pin/i.test(String(key || ""));
+    }
+
+    function sanitizeDianConsoleValue(value, key) {
+      if (isSensitiveDianKey(key)) return "[oculto]";
+      if (Array.isArray(value)) return value.map(function(item) { return sanitizeDianConsoleValue(item, ""); });
+      if (value && typeof value === "object") {
+        const out = {};
+        Object.keys(value).forEach(function(childKey) {
+          out[childKey] = sanitizeDianConsoleValue(value[childKey], childKey);
+        });
+        return out;
+      }
+      if (typeof value === "string") {
+        if (/-----BEGIN [A-Z ]+-----/.test(value)) return "[certificado oculto]";
+        if (value.length > 8000) return value.slice(0, 8000) + "\n...[respuesta truncada en consola]";
+      }
+      return value;
+    }
+
+    function formatConsolePayload(data) {
+      try {
+        return JSON.stringify(sanitizeDianConsoleValue(data, ""), null, 2);
+      } catch (_) {
+        return String(data == null ? "" : data);
+      }
+    }
+
+    function renderDianConsole() {
+      const box = document.getElementById("feDianConsole");
+      if (!box) return;
+      if (!state.dianConsole.length) {
+        box.innerHTML = '<div class="dian-console-empty">Ejecuta una validacion, diagnostico o envio DIAN para ver aqui la respuesta.</div>';
+        return;
+      }
+      box.innerHTML = state.dianConsole.map(function(entry) {
+        const cls = entry.ok ? "ok" : (entry.error ? "error" : "warn");
+        const status = entry.httpStatus ? ("HTTP " + entry.httpStatus) : "local";
+        const duration = typeof entry.durationMs === "number" ? (" · " + entry.durationMs + " ms") : "";
+        return '<article class="dian-console-entry ' + cls + '">' +
+          '<div class="dian-console-head">' +
+            '<div class="dian-console-title">' + renderPill(entry.ok ? "ok" : (entry.error ? "error" : "pendiente")) + '<strong>' + escapeHTML(entry.label || "Respuesta DIAN") + '</strong></div>' +
+            '<span class="dian-console-meta">' + escapeHTML(entry.time || "") + ' · ' + escapeHTML(status) + escapeHTML(duration) + '</span>' +
+          '</div>' +
+          '<pre class="dian-console-body">' + escapeHTML(formatConsolePayload(entry.payload)) + '</pre>' +
+        '</article>';
+      }).join("");
+      if (state.dianConsoleAutoScroll) box.scrollTop = box.scrollHeight;
+    }
+
+    function addDianConsoleEntry(label, payload, options) {
+      options = options || {};
+      state.dianConsole.push({
+        label: label || "Respuesta DIAN",
+        payload: payload,
+        httpStatus: options.httpStatus || 0,
+        durationMs: options.durationMs,
+        ok: !!options.ok,
+        error: !!options.error,
+        time: new Date().toLocaleTimeString("es-CO", { hour12: false })
+      });
+      if (state.dianConsole.length > 60) state.dianConsole = state.dianConsole.slice(-60);
+      renderDianConsole();
+    }
+
+    function clearDianConsole() {
+      state.dianConsole = [];
+      renderDianConsole();
+    }
+
+    async function copyDianConsole() {
+      const text = state.dianConsole.map(function(entry) {
+        return "[" + entry.time + "] " + entry.label + " HTTP " + (entry.httpStatus || "local") + "\n" + formatConsolePayload(entry.payload);
+      }).join("\n\n");
+      if (!text) {
+        setText("feDianPruebasMsg", "La consola DIAN esta vacia.", true);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setText("feDianPruebasMsg", "Consola DIAN copiada al portapapeles.", false);
+      } catch (_) {
+        setText("feDianPruebasMsg", "No se pudo copiar automaticamente; selecciona el texto de la consola.", true);
       }
     }
 
@@ -326,6 +450,27 @@
       return data || {};
     }
 
+    async function dianFetchJSON(url, options, label) {
+      const started = Date.now();
+      let res = null;
+      try {
+        res = await fetch(url, options || {});
+        const data = await readJSONResponse(res);
+        addDianConsoleEntry(label, {
+          url: url,
+          respuesta: data
+        }, { httpStatus: res.status, durationMs: Date.now() - started, ok: res.ok && !(data && data.ok === false) });
+        return data;
+      } catch (err) {
+        addDianConsoleEntry(label, {
+          url: url,
+          error: err && err.message ? err.message : "Error consultando DIAN",
+          respuesta: err && err.data ? err.data : null
+        }, { httpStatus: res ? res.status : 0, durationMs: Date.now() - started, error: true });
+        throw err;
+      }
+    }
+
     async function ensureOk(res) {
       if (res.ok) return res;
       const t = await res.text();
@@ -366,7 +511,7 @@
       setText("feDianConfigMsg", "Cargando configuracion DIAN...", false);
       try {
         const url = "/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID) + "&include_inactive=1&limit=1";
-        const data = await readJSONResponse(await fetch(url, { credentials: "same-origin" }));
+        const data = await dianFetchJSON(url, { credentials: "same-origin" }, "Cargar configuracion DIAN");
         const item = Array.isArray(data) && data.length ? data[0] : {};
         renderDianConfigStatus(item);
         setText("feDianConfigMsg", item && item.id ? "Configuracion DIAN lista para validar." : "Registra primero la configuracion DIAN Colombia.", !(item && item.id));
@@ -384,12 +529,12 @@
       try {
         const payload = { empresa_id: Number(state.empresaID), test_set_id: txt(document.getElementById("feDianTestSetId").value) };
         const url = "/api/empresa/facturacion_electronica/dian?action=validar_credenciales&empresa_id=" + encodeURIComponent(state.empresaID);
-        const data = await readJSONResponse(await fetch(url, {
+        const data = await dianFetchJSON(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify(payload)
-        }));
+        }, "Validar credenciales DIAN");
         setJSON("feDianPruebasResultado", data);
         setText("feDianConfigMsg", data && data.ok ? "Credenciales DIAN listas." : "Hay datos pendientes antes de enviar a DIAN.", !(data && data.ok));
       } catch (err) {
@@ -482,12 +627,12 @@
       setText("feDianPruebasMsg", "Guardando objetivo DIAN...", false);
       try {
         const url = "/api/empresa/facturacion_electronica/dian?empresa_id=" + encodeURIComponent(state.empresaID) + "&id=" + encodeURIComponent(payload.id);
-        const data = await readJSONResponse(await fetch(url, {
+        const data = await dianFetchJSON(url, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify(payload)
-        }));
+        }, "Guardar objetivo DIAN");
         if (data && data.item) renderDianConfigStatus(data.item);
         setText("feDianPruebasMsg", "Objetivo DIAN guardado.", false);
       } catch (err) {
@@ -541,7 +686,7 @@
       setJSON("feDianPruebasResultado", null);
       try {
         const url = "/api/empresa/facturacion_electronica/dian?action=diagnostico_oficial&empresa_id=" + encodeURIComponent(state.empresaID);
-        const data = await readJSONResponse(await fetch(url, { credentials: "same-origin" }));
+        const data = await dianFetchJSON(url, { credentials: "same-origin" }, "Diagnostico oficial DIAN");
         setJSON("feDianPruebasResultado", data);
         setText("feDianPruebasMsg", "Diagnostico DIAN cargado.", false);
       } catch (err) {
@@ -603,12 +748,12 @@
       renderDianRunResult(null);
       try {
         const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
-        const data = await readJSONResponse(await fetch(url, {
+        const data = await dianFetchJSON(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           credentials: "same-origin"
-        }));
+        }, "Envio real DIAN: " + label);
         renderDianRunResult(data);
         setJSON("feDianPruebasResultado", data);
         const first = data && Array.isArray(data.detalles) && data.detalles.length ? data.detalles[0] : null;
@@ -674,12 +819,12 @@
       setJSON("feDianPruebasResultado", null);
       try {
         const url = "/api/empresa/facturacion_electronica/dian?action=activar_produccion_local&empresa_id=" + encodeURIComponent(state.empresaID);
-        const data = await readJSONResponse(await fetch(url, {
+        const data = await dianFetchJSON(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           credentials: "same-origin"
-        }));
+        }, "Activar produccion local DIAN");
         setJSON("feDianPruebasResultado", data);
         setText("feDianPruebasMsg", data && data.ok ? "Produccion local DIAN activada. Verifica resolucion y rangos reales antes de emitir." : "No se pudo activar produccion local.", !(data && data.ok));
       } catch (err) {
@@ -691,7 +836,7 @@
     async function checkDianConnection(procesarCola) {
       const url = "/api/empresa/facturacion_electronica?action=estado_conexion_dian&empresa_id=" +
         encodeURIComponent(state.empresaID) + "&pais_codigo=CO&procesar_reintentos=" + (procesarCola ? "1" : "0");
-      const data = await readJSONResponse(await fetch(url, { credentials: "same-origin" }));
+      const data = await dianFetchJSON(url, { credentials: "same-origin" }, procesarCola ? "Procesar cola DIAN" : "Probar conexion DIAN");
       let msg = data.mensaje || "Estado de conexion consultado.";
       if (data.online) {
         msg = "Conexion DIAN/proveedor disponible. " + msg;
@@ -730,13 +875,12 @@
       try {
         Object.assign(payload, await preflightDianForOperation(action, payload));
         const url = "/api/empresa/facturacion_electronica?action=" + encodeURIComponent(action) + "&empresa_id=" + encodeURIComponent(state.empresaID);
-        const res = await fetch(url, {
+        const data = await dianFetchJSON(url, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
           credentials: "same-origin"
-        });
-        const data = await readJSONResponse(res);
+        }, "Operacion documental: " + action);
         setJSON("op_resultado", data);
         if (data && data.estado_nuevo) document.getElementById("op_estado_actual").value = String(data.estado_nuevo);
         setText("op_msg", data && data.numero_legal ? ("Operacion ejecutada. Numero legal: " + data.numero_legal) : "Operacion ejecutada correctamente", false);
@@ -760,6 +904,11 @@
     document.getElementById("btnDianEnviarND").addEventListener("click", function() { ejecutarDianDocumentoManual("nota_debito"); });
     document.getElementById("btnDianEnviarNC").addEventListener("click", function() { ejecutarDianDocumentoManual("nota_credito"); });
     document.getElementById("btnDianActivarProduccion").addEventListener("click", activarProduccionDianLocal);
+    document.getElementById("btnDianConsoleLimpiar").addEventListener("click", clearDianConsole);
+    document.getElementById("btnDianConsoleCopiar").addEventListener("click", copyDianConsole);
+    document.getElementById("feDianConsoleAutoScroll").addEventListener("change", function(event) {
+      state.dianConsoleAutoScroll = !!event.target.checked;
+    });
     document.getElementById("feDianSetPreset").addEventListener("change", function(event) { applyDianPreset(event.target.value); });
     ["feDianSetFacturas", "feDianSetNotasDebito", "feDianSetNotasCredito", "feDianSetTotalRequerido", "feDianSetAceptadosTotal", "feDianSetAceptadasFacturas", "feDianSetAceptadasND", "feDianSetAceptadasNC"].forEach(function(id) {
       var el = document.getElementById(id);

@@ -1,3 +1,10 @@
+2026-06-06: Consola visible de respuestas DIAN.
+- Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y soporte operativo.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrega una consola en la pagina para registrar respuestas de configuracion, validacion, diagnostico, envios reales, conexion, cola y emision documental.
+- Seguridad: la consola oculta claves, PIN, tokens, certificados y llave tecnica antes de pintar o copiar la respuesta, manteniendo el aislamiento por `empresa_id`.
+- UX/operacion: cada entrada muestra hora, accion, HTTP, duracion y JSON de respuesta; incluye auto-scroll, limpiar y copiar para analizar resultados DIAN sin abrir F12.
+- QA: validar sintaxis del script embebido, abrir la pagina y confirmar que la consola se llena con la respuesta real de `Recargar configuracion` y conserva controles visibles.
+
 2026-06-06: Documentacion DIAN habilitacion real y pendientes.
 - Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos, documentacion operativa.
 - Documentacion: se actualizan contexto rapido, mapa de modulos, flujos operativos, decisiones tecnicas, estructura BD, descripcion de modulos y changelog para reflejar el estado real del transporte DIAN.

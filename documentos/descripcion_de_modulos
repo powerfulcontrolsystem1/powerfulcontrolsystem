@@ -1,3 +1,9 @@
+2026-06-06: Consola operativa DIAN en pagina de pruebas
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Frontend: `facturacion_electronica_pruebas_dian.html` muestra una consola de respuestas DIAN/proveedor con hora, accion, estado HTTP, duracion y JSON saneado.
+- Seguridad: se ocultan claves, PIN, tokens, certificados y llave tecnica en la consola y al copiar la bitacora.
+- Operacion: la consola registra recarga de configuracion, validacion, diagnostico, prueba 2+2+2, envios manuales, conexion, cola y operaciones documentales para soporte sin depender de F12.
+
 2026-06-06: DIAN SOAP real recibido y acuse final pendiente
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Backend: el transporte oficial SOAP/WCF conserva WS-Security con `BinarySecurityToken`, firma de `wsa:To` e `InclusiveNamespaces`; la prueba real 2+2+2 ya debe llegar a DIAN y recibir TrackId/ZipKey sin `InvalidSecurity`.

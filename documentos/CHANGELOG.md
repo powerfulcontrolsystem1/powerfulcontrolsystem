@@ -1,3 +1,8 @@
+## [2026-06-06] Consola visible de respuestas DIAN
+- [Frontend] `facturacion_electronica_pruebas_dian.html` agrega una consola DIAN con historial visible de configuracion, validacion, diagnostico, envios reales, conexion, cola y operaciones documentales.
+- [Seguridad] La consola sanea claves, PIN, tokens, certificados y llave tecnica antes de mostrar o copiar respuestas.
+- [UX] La consola incluye estado HTTP, duracion, hora, auto-scroll, limpiar y copiar para soporte operativo sin depender de F12.
+
 ## [2026-06-06] Documentacion DIAN habilitacion real
 - [Documentacion] Se actualiza el contexto operativo, mapa de modulos, flujos, decisiones tecnicas y estructura BD para reflejar que el transporte SOAP/WCF real ya responde con TrackId/ZipKey.
 - [DIAN] Se documenta la forma WS-Security vigente: `BinarySecurityToken`, firma de `wsa:To`, `wsse:Reference URI="#X509-..."` e `InclusiveNamespaces`.
