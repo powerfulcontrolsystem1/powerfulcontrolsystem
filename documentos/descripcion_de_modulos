@@ -1,3 +1,9 @@
+2026-06-07: Apariencia profesional de Suite contador
+- Modulo afectado: `suite_contador`.
+- Frontend: `web/administrar_empresa/suite_contador.html` usa variables de tema, tarjetas compactas, acciones con iconos textuales y estados visuales consistentes para modulos disponibles o bloqueados.
+- Responsive: escritorio/tablet sin scroll horizontal; en movil la grilla pasa a una columna y el boton de apertura ocupa el ancho disponible.
+- Seguridad/alcance: no cambia permisos, endpoints, datos ni rutas; cada enlace conserva `empresa_id` y cada destino mantiene su wrapper.
+
 2026-06-07: Ayuda integrada con robot/caja IA
 - Modulos afectados: `ayuda`, `chat_flotante`, `robot_ia`, `nomina_sueldos` y paginas empresariales en iframe.
 - Frontend: `web/js/help_ai_bridge.js` captura enlaces de ayuda/tutorial, conserva `empresa_id` y solicita al panel padre abrir la ayuda en el robot/caja IA.

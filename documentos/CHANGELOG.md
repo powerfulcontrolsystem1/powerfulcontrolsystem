@@ -1,3 +1,8 @@
+## [2026-06-07] Apariencia profesional de Suite contador
+- [Frontend] `suite_contador.html` adopta variables de tema para claro/oscuro, tarjetas compactas, botones con icono y estados disponibles/bloqueados más legibles.
+- [UX] Se corrige el contraste del botón `Abrir` en temas oscuros donde el acento global puede ser gris, y se valida responsive sin desborde horizontal.
+- [Alcance] No cambia endpoints, permisos, rutas ni datos; la suite sigue enlazando módulos existentes con `empresa_id`.
+
 ## [2026-06-07] Ayuda integrada con robot/caja IA
 - [Frontend] `help_ai_bridge.js` conecta enlaces de ayuda y tutoriales con el robot/caja IA del panel empresarial.
 - [Chat IA] `ai_chat_drawer.js` muestra ayuda contextual estatica sin consumir IA ni ejecutar acciones hasta que el usuario lo pida.

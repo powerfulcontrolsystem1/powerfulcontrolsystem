@@ -1,3 +1,10 @@
+2026-06-07: Apariencia profesional de Suite contador.
+- Modulo afectado: Suite contador.
+- Frontend: `web/administrar_empresa/suite_contador.html` reemplaza colores fijos por variables de tema, ordena tarjetas, botones, metricas, buscador y flujo operativo con una apariencia mas consistente dentro del Centro financiero.
+- UX: los botones principales ahora tienen icono textual compacto, el boton `Abrir` usa un azul operativo estable para evitar bajo contraste en `dark-absolute`, y las tarjetas se adaptan a tablet/movil sin desborde horizontal.
+- Alcance: no se crean endpoints, tablas ni datos; se conservan permisos, rutas y `empresa_id`.
+- QA: validacion del script embebido con Node; prueba visual local en escritorio/tablet y breakpoint movil, confirmando 13 modulos visibles y cero desborde horizontal.
+
 2026-06-07: Ayuda integrada con robot/caja IA.
 - Modulos afectados: ayuda, chat flotante IA, robot/secretaria 3D y paginas empresariales en iframe.
 - Frontend: `web/js/help_ai_bridge.js` captura enlaces de ayuda/tutorial y los envia a `PCSAIChatHelp` en el panel padre conservando `empresa_id`.
