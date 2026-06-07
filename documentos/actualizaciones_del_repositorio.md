@@ -13468,3 +13468,10 @@ Archivos modificados:
 - web/js/ai_chat_drawer.js
 - web/js/empresa_submenu_context.js
 - web/js/help_ai_bridge.js
+
+2026-06-07 16:28:22 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 8fde5032; PushStatus: OK
+Archivos modificados:
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/js/ai_chat_drawer.js
