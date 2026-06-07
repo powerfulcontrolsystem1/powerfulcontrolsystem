@@ -8420,6 +8420,23 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   min-height:140px;
 }
 
+.factura-print-preview{
+  overflow-x:auto;
+  padding-bottom:8px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.factura-print-preview .factura-print-sheet{
+  min-width:760px;
+}
+
+.factura-print-preview .factura-print-strip strong,
+.factura-print-preview .factura-print-panel dd,
+.factura-print-preview .factura-print-doc-meta dd{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
 .factura-print-preview-empty{
   border:1px dashed #6b7280;
   border-radius:8px;
@@ -8443,6 +8460,7 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   .email-templates-actions{align-items:stretch}
   .email-templates-actions .form-actions{width:100%}
   .email-templates-actions .btn{width:100%}
+  .factura-print-preview .factura-print-sheet{min-width:720px}
 }
 
 @media (max-width:900px){

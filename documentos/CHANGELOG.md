@@ -1,3 +1,7 @@
+## [2026-06-07] Ajuste visual de previsualizacion de factura electronica
+- [Frontend] `estilos.css` evita que la hoja embebida de factura electronica se comprima y se solapen columnas en contenedores angostos.
+- [UX] La previsualizacion mantiene aspecto de papel y usa desplazamiento horizontal cuando el ancho disponible no alcanza.
+
 ## [2026-06-07] Visualizacion de factura electronica
 - [Frontend] `facturas_electronicas.html` corrige `Visualizar factura` para abrir un `Blob` HTML imprimible y evitar `about:blank`.
 - [UX] Se muestra confirmacion cuando la vista abre y error claro si el navegador bloquea o impide renderizar la factura.
