@@ -13454,3 +13454,17 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
 - web/estilos.css
+
+2026-06-07 16:17:56 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 01c3e76d; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa.html
+- web/administrar_empresa/nomina_sueldos.html
+- web/js/ai_chat_drawer.js
+- web/js/empresa_submenu_context.js
+- web/js/help_ai_bridge.js
