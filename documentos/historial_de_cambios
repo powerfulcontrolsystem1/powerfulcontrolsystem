@@ -1,7 +1,7 @@
 2026-06-07: Ajuste visual de previsualizacion de factura electronica.
 - Modulo afectado: Facturas electronicas y comprobantes.
 - Frontend: `web/estilos.css` fija ancho minimo para la hoja embebida de previsualizacion y agrega desplazamiento horizontal cuando el contenedor sea angosto.
-- UX: evita solapes de columnas y datos largos al visualizar una factura electronica antes de imprimirla.
+- UX: evita solapes de columnas y datos largos al visualizar una factura electronica antes de imprimirla, y fuerza contraste de papel blanco/negro aunque la aplicacion este en tema oscuro.
 - QA: validacion visual en la empresa 12 con documento real visible en pantalla.
 
 2026-06-07: Visualizacion de factura electronica sin hoja en blanco.

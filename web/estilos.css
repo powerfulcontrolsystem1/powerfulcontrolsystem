@@ -8710,6 +8710,27 @@ html[data-theme^="light"] .estaciones-page .empresa-section{
   line-height:1.6;
 }
 
+.factura-print-sheet .factura-print-kicker,
+.factura-print-sheet .factura-print-head h3,
+.factura-print-sheet .factura-print-company strong,
+.factura-print-sheet .factura-print-strip strong,
+.factura-print-sheet .factura-print-panel h4,
+.factura-print-sheet .factura-print-panel dd,
+.factura-print-sheet .factura-print-doc-meta dd,
+.factura-print-sheet .factura-print-note,
+.factura-print-sheet .factura-print-note strong,
+.factura-print-sheet .factura-print-note p{
+  color:#111827 !important;
+}
+
+.factura-print-sheet .factura-print-head p,
+.factura-print-sheet .factura-print-company span,
+.factura-print-sheet .factura-print-strip span,
+.factura-print-sheet .factura-print-panel dt,
+.factura-print-sheet .factura-print-doc-meta dt{
+  color:#374151 !important;
+}
+
 .auditoria-checkbox-row{margin-top:8px}
 
 .auditoria-pagination{

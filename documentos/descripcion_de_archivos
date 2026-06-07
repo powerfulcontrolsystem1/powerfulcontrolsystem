@@ -3,6 +3,7 @@
 	- fija ancho minimo de la hoja dentro de `.factura-print-preview`.
 	- agrega desplazamiento horizontal tactil para que los documentos no se aplasten en contenedores angostos.
 	- permite corte de palabras largas en codigos y metadatos sin alterar el documento imprimible ni el envio electronico.
+	- fuerza colores de papel blanco/negro para que el tema oscuro no aclare codigos, totales ni metadatos.
 
 2026-06-07 - Visualizacion de factura electronica
 - `web/administrar_empresa/facturas_electronicas.html`:
