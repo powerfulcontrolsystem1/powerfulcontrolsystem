@@ -13215,3 +13215,13 @@ Archivos modificados:
 2026-06-06 21:52:43 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 3973b3e1; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+
+2026-06-06 22:02:02 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: eb957a22; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
