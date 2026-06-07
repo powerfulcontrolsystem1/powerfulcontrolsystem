@@ -147,6 +147,14 @@
             <input id="cfgMoneda" class="form-input" maxlength="3" value="COP">
           </div>
           <div class="form-col">
+            <label class="form-label" for="cfgSalarioMinimo">Salario minimo mensual</label>
+            <input id="cfgSalarioMinimo" class="form-input" type="number" min="0" step="1" value="1750905">
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="cfgAuxilioLegal">Auxilio transporte legal</label>
+            <input id="cfgAuxilioLegal" class="form-input" type="number" min="0" step="1" value="249095">
+          </div>
+          <div class="form-col">
             <label class="form-label" for="cfgHorasSemana">Horas ordinarias semana</label>
             <input id="cfgHorasSemana" class="form-input" type="number" min="1" max="168" step="0.01" value="44">
           </div>
@@ -899,6 +907,8 @@
         const item = cfg || {};
         document.getElementById('cfgPais').value = normalize(item.pais_codigo || 'CO');
         document.getElementById('cfgMoneda').value = normalize(item.moneda || 'COP');
+        document.getElementById('cfgSalarioMinimo').value = toNumber(item.salario_minimo_mensual, 1750905);
+        document.getElementById('cfgAuxilioLegal').value = toNumber(item.auxilio_transporte_legal_mensual, 249095);
         document.getElementById('cfgHorasSemana').value = toNumber(item.horas_ordinarias_semana, 44);
         document.getElementById('cfgHorasDia').value = toNumber(item.horas_ordinarias_dia, 8);
         document.getElementById('cfgDiasMes').value = toNumber(item.dias_nomina_mes, 30);
@@ -933,6 +943,8 @@
           empresa_id: Number(state.empresaID),
           pais_codigo: normalize(document.getElementById('cfgPais').value).toUpperCase(),
           moneda: normalize(document.getElementById('cfgMoneda').value).toUpperCase(),
+          salario_minimo_mensual: toNumber(document.getElementById('cfgSalarioMinimo').value, 1750905),
+          auxilio_transporte_legal_mensual: toNumber(document.getElementById('cfgAuxilioLegal').value, 249095),
           horas_ordinarias_semana: toNumber(document.getElementById('cfgHorasSemana').value, 44),
           horas_ordinarias_dia: toNumber(document.getElementById('cfgHorasDia').value, 8),
           dias_nomina_mes: Math.max(1, Math.round(toNumber(document.getElementById('cfgDiasMes').value, 30))),
@@ -995,8 +1007,8 @@
         document.getElementById('empCentroCosto').value = '';
         document.getElementById('empTipoContrato').value = 'indefinido';
         document.getElementById('empFechaIngreso').value = '';
-        document.getElementById('empSalario').value = '0';
-        document.getElementById('empAuxilio').value = '0';
+        document.getElementById('empSalario').value = String(toNumber(state.config && state.config.salario_minimo_mensual, 0));
+        document.getElementById('empAuxilio').value = String(toNumber(state.config && state.config.auxilio_transporte_legal_mensual, 0));
         document.getElementById('empBonificacion').value = '0';
         document.getElementById('empDeduccionFija').value = '0';
         document.getElementById('empJornadaDia').value = '8';

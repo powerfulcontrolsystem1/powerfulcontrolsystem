@@ -1,3 +1,11 @@
+2026-06-07: Preconfiguracion Colombia para empresas nuevas y existentes.
+- Modulos afectados: Creacion de empresas, impuestos y nomina.
+- Backend: `backend/db/empresa_colombia_defaults.go` agrega version `CO-2026-06` para aplicar catalogo fiscal Colombia, parametros legales de nomina y conceptos base por `empresa_id`.
+- Empresa nueva: `backend/handlers/system_empresas_handlers.go` aplica la preconfiguracion Colombia inmediatamente despues de crear la empresa y antes de devolver la respuesta.
+- Empresas existentes: `backend/main.go` ejecuta backfill idempotente en arranque mediante `schema_migrations`; si alguna empresa falla, no marca la migracion como completada para reintentar.
+- Nomina: `empresa_nomina_configuracion` agrega `salario_minimo_mensual` y `auxilio_transporte_legal_mensual`; `web/administrar_empresa/nomina_sueldos.html` los muestra, guarda y usa como valores sugeridos en empleados nuevos.
+- Seguridad: no crea empleados, liquidaciones, ventas ni documentos electronicos ficticios; todo se filtra por `empresa_id` y se marca en `empresa_estacion_prefs.preconfiguracion_colombia_fiscal_nomina`.
+
 2026-06-07: Asa de orden junto al tipo de empresa en selector.
 - Modulo afectado: Seleccion de empresas.
 - Frontend: `web/js/seleccionar_empresa.js` mueve el boton `empresa-reorder-handle` dentro de una fila superior junto al chip de tipo de empresa.

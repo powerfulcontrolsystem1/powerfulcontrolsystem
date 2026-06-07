@@ -584,6 +584,12 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				emailCorporativoErrText = emailCorporativoErr.Error()
 				log.Printf("POST /super/api/empresas id=%d email corporativo warning: %v", id, emailCorporativoErr)
 			}
+			colombiaDefaults, colombiaDefaultsErr := dbpkg.ApplyEmpresaColombiaDefaults(dbEmp, id, payload.UsuarioCreador)
+			colombiaDefaultsErrText := ""
+			if colombiaDefaultsErr != nil {
+				colombiaDefaultsErrText = colombiaDefaultsErr.Error()
+				log.Printf("POST /super/api/empresas id=%d defaults Colombia warning: %v", id, colombiaDefaultsErr)
+			}
 			preconfigResult, preconfigErr := applyEmpresaTipoPreconfiguracion(dbEmp, dbSuper, id, payload.TipoID, payload.TipoNombre, payload.UsuarioCreador)
 			if preconfigErr != nil {
 				log.Printf("POST /super/api/empresas id=%d preconfiguracion warning: %v", id, preconfigErr)
@@ -603,6 +609,8 @@ func EmpresasHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 				"preconfiguracion_aplicada": preconfigResult != nil && preconfigResult.Aplicada,
 				"preconfiguracion":          preconfigResult,
 				"preconfiguracion_error":    preconfigErrText,
+				"preconfiguracion_colombia": colombiaDefaults,
+				"colombia_defaults_error":   colombiaDefaultsErrText,
 				"email_corporativo":         emailCorporativo,
 				"email_corporativo_error":   emailCorporativoErrText,
 			})

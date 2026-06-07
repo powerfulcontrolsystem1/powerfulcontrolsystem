@@ -3,6 +3,24 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-07 (preconfiguracion Colombia por empresa)
+- Tabla `empresa_impuestos_config`: se llena por `empresa_id` con catalogo base
+  Colombia version `CO-2026-06` en empresas nuevas y existentes de
+  preproduccion. Incluye IVA general 19%, IVA 0%/exento, INC 8% inactivo, ICA
+  variable inactivo y retenciones base inactivas (`RETEFUENTE`, `RETEIVA`,
+  `RETEICA`).
+- Tabla `empresa_nomina_configuracion`: campos nuevos
+  `salario_minimo_mensual REAL DEFAULT 1750905` y
+  `auxilio_transporte_legal_mensual REAL DEFAULT 249095`.
+- Tabla `empresa_estacion_prefs`: clave
+  `preconfiguracion_colombia_fiscal_nomina` guarda marcador JSON por empresa
+  con version, valores legales y conteo de registros aplicados.
+- Tabla `schema_migrations`: version
+  `20260607_colombia_impuestos_nomina_defaults` controla el backfill de
+  empresas existentes; si falla alguna empresa no se marca como completado.
+- No se crean empleados, liquidaciones, ventas, facturas ni documentos
+  electronicos simulados.
+
 Actualizacion 2026-06-06 (Renta IA en finanzas)
 - No se agrega tabla nueva.
 - `/api/empresa/finanzas/renta_ia` lee fuentes existentes filtradas por

@@ -877,6 +877,20 @@ func main() {
 		log.Fatalf("failed to ensure finanzas schema in empresas db: %v", err)
 	}
 	startupTrace("after_empresa_finanzas_schema")
+	if err := dbpkg.EnsureEmpresaImpuestosSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure impuestos schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_impuestos_schema")
+	if err := dbpkg.EnsureEmpresaNominaSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure nomina schema in empresas db: %v", err)
+	}
+	startupTrace("after_empresa_nomina_schema")
+	if result, err := dbpkg.ApplyColombiaDefaultsToExistingEmpresas(dbEmpresas); err != nil {
+		log.Printf("warning: no se pudo aplicar preconfiguracion Colombia a empresas existentes: %v", err)
+	} else if result != nil {
+		log.Printf("INFO: preconfiguracion Colombia %s verificada: empresas=%d aplicadas=%d errores=%d", result.Version, result.Empresas, result.Aplicadas, len(result.Errores))
+	}
+	startupTrace("after_empresa_colombia_defaults")
 	if err := dbpkg.EnsureEmpresaCreditosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure creditos schema in empresas db: %v", err)
 	}

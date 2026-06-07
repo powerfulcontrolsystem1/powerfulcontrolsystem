@@ -19,6 +19,8 @@ type EmpresaNominaConfiguracion struct {
 	EmpresaID                             int64   `json:"empresa_id"`
 	PaisCodigo                            string  `json:"pais_codigo"`
 	Moneda                                string  `json:"moneda"`
+	SalarioMinimoMensual                  float64 `json:"salario_minimo_mensual"`
+	AuxilioTransporteLegalMensual         float64 `json:"auxilio_transporte_legal_mensual"`
 	HorasOrdinariasSemana                 float64 `json:"horas_ordinarias_semana"`
 	HorasOrdinariasDia                    float64 `json:"horas_ordinarias_dia"`
 	DiasNominaMes                         int     `json:"dias_nomina_mes"`
@@ -387,6 +389,8 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 			empresa_id INTEGER NOT NULL UNIQUE,
 			pais_codigo TEXT DEFAULT 'CO',
 			moneda TEXT DEFAULT 'COP',
+			salario_minimo_mensual REAL DEFAULT 1750905,
+			auxilio_transporte_legal_mensual REAL DEFAULT 249095,
 			horas_ordinarias_semana REAL DEFAULT 44,
 			horas_ordinarias_dia REAL DEFAULT 8,
 			dias_nomina_mes INTEGER DEFAULT 30,
@@ -549,12 +553,18 @@ func EnsureEmpresaNominaSchema(dbConn *sql.DB) error {
 	}
 
 	for _, stmt := range stmts {
-		if _, err := dbConn.Exec(stmt); err != nil {
+		if _, err := execSQLCompat(dbConn, stmt); err != nil {
 			return err
 		}
 	}
 
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "fecha_actualizacion", "TEXT"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "salario_minimo_mensual", "REAL DEFAULT 1750905"); err != nil {
+		return err
+	}
+	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "auxilio_transporte_legal_mensual", "REAL DEFAULT 249095"); err != nil {
 		return err
 	}
 	if err := ensureColumnIfMissing(dbConn, "empresa_nomina_configuracion", "aporte_salud_empleador_porcentaje", "REAL DEFAULT 8.5"); err != nil {
@@ -624,6 +634,8 @@ func defaultEmpresaNominaConfiguracion(empresaID int64) EmpresaNominaConfiguraci
 		EmpresaID:                             empresaID,
 		PaisCodigo:                            "CO",
 		Moneda:                                "COP",
+		SalarioMinimoMensual:                  ColombiaSalarioMinimoMensual2026,
+		AuxilioTransporteLegalMensual:         ColombiaAuxilioTransporteMensual2026,
 		HorasOrdinariasSemana:                 44,
 		HorasOrdinariasDia:                    8,
 		DiasNominaMes:                         30,
@@ -690,6 +702,16 @@ func normalizeNominaPorcentaje(v float64) float64 {
 	return round2(v)
 }
 
+func normalizeNominaMoney(v, fallback float64) float64 {
+	if v <= 0 {
+		v = fallback
+	}
+	if v < 0 {
+		v = 0
+	}
+	return round2(v)
+}
+
 func normalizeNominaHoras(v, fallback float64) float64 {
 	if v <= 0 {
 		v = fallback
@@ -750,11 +772,13 @@ func normalizeNominaTipoContrato(raw string) string {
 // GetEmpresaNominaConfiguracion obtiene configuracion legal de nomina por empresa.
 func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNominaConfiguracion, error) {
 	cfg := defaultEmpresaNominaConfiguracion(empresaID)
-	row := dbConn.QueryRow(`SELECT
+	row := queryRowSQLCompat(dbConn, `SELECT
 		id,
 		empresa_id,
 		COALESCE(pais_codigo, 'CO'),
 		COALESCE(moneda, 'COP'),
+		COALESCE(salario_minimo_mensual, 1750905),
+		COALESCE(auxilio_transporte_legal_mensual, 249095),
 		COALESCE(horas_ordinarias_semana, 44),
 		COALESCE(horas_ordinarias_dia, 8),
 		COALESCE(dias_nomina_mes, 30),
@@ -795,6 +819,8 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 		&cfg.EmpresaID,
 		&cfg.PaisCodigo,
 		&cfg.Moneda,
+		&cfg.SalarioMinimoMensual,
+		&cfg.AuxilioTransporteLegalMensual,
 		&cfg.HorasOrdinariasSemana,
 		&cfg.HorasOrdinariasDia,
 		&cfg.DiasNominaMes,
@@ -839,6 +865,8 @@ func GetEmpresaNominaConfiguracion(dbConn *sql.DB, empresaID int64) (*EmpresaNom
 func normalizeEmpresaNominaConfiguracion(cfg EmpresaNominaConfiguracion) *EmpresaNominaConfiguracion {
 	cfg.PaisCodigo = normalizeNominaPais(cfg.PaisCodigo)
 	cfg.Moneda = normalizeNominaMoneda(cfg.Moneda)
+	cfg.SalarioMinimoMensual = normalizeNominaMoney(cfg.SalarioMinimoMensual, ColombiaSalarioMinimoMensual2026)
+	cfg.AuxilioTransporteLegalMensual = normalizeNominaMoney(cfg.AuxilioTransporteLegalMensual, ColombiaAuxilioTransporteMensual2026)
 	cfg.HorasOrdinariasSemana = normalizeNominaHoras(cfg.HorasOrdinariasSemana, 44)
 	cfg.HorasOrdinariasDia = normalizeNominaHoras(cfg.HorasOrdinariasDia, 8)
 	if cfg.DiasNominaMes <= 0 {
@@ -885,16 +913,18 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 	cfg := normalizeEmpresaNominaConfiguracion(payload)
 
 	var existingID int64
-	err := dbConn.QueryRow(`SELECT id FROM empresa_nomina_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM empresa_nomina_configuracion WHERE empresa_id = ? LIMIT 1`, cfg.EmpresaID).Scan(&existingID)
 	if err != nil && err != sql.ErrNoRows {
 		return 0, err
 	}
 
 	if existingID > 0 {
-		_, err = dbConn.Exec(`UPDATE empresa_nomina_configuracion
+		_, err = execSQLCompat(dbConn, `UPDATE empresa_nomina_configuracion
 		SET
 			pais_codigo = ?,
 			moneda = ?,
+			salario_minimo_mensual = ?,
+			auxilio_transporte_legal_mensual = ?,
 			horas_ordinarias_semana = ?,
 			horas_ordinarias_dia = ?,
 			dias_nomina_mes = ?,
@@ -928,6 +958,8 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		WHERE empresa_id = ?`,
 			cfg.PaisCodigo,
 			cfg.Moneda,
+			cfg.SalarioMinimoMensual,
+			cfg.AuxilioTransporteLegalMensual,
 			cfg.HorasOrdinariasSemana,
 			cfg.HorasOrdinariasDia,
 			cfg.DiasNominaMes,
@@ -969,6 +1001,8 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		empresa_id,
 		pais_codigo,
 		moneda,
+		salario_minimo_mensual,
+		auxilio_transporte_legal_mensual,
 		horas_ordinarias_semana,
 		horas_ordinarias_dia,
 		dias_nomina_mes,
@@ -1000,10 +1034,12 @@ func UpsertEmpresaNominaConfiguracion(dbConn *sql.DB, payload EmpresaNominaConfi
 		observaciones,
 		fecha_creacion,
 		fecha_actualizacion
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))`,
 		cfg.EmpresaID,
 		cfg.PaisCodigo,
 		cfg.Moneda,
+		cfg.SalarioMinimoMensual,
+		cfg.AuxilioTransporteLegalMensual,
 		cfg.HorasOrdinariasSemana,
 		cfg.HorasOrdinariasDia,
 		cfg.DiasNominaMes,

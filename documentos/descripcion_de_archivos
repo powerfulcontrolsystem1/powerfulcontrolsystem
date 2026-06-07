@@ -1,3 +1,21 @@
+2026-06-07 - Preconfiguracion Colombia para empresas
+- `backend/db/empresa_colombia_defaults.go`:
+	- nuevo registro idempotente de defaults Colombia `CO-2026-06` para impuestos, nomina y marcador por empresa.
+	- centraliza el catalogo base de impuestos usado por el contexto fiscal y por el backfill.
+- `backend/db/nomina_sueldos.go`:
+	- agrega salario minimo mensual y auxilio de transporte legal a la configuracion de nomina por empresa.
+	- usa wrappers SQL compatibles para cargar/guardar configuracion en PostgreSQL.
+- `backend/db/nomina_colombia_avanzada.go`:
+	- expone `SeedEmpresaNominaColombiaConceptosBase` para sembrar conceptos base sin semantica de demo.
+- `backend/handlers/system_empresas_handlers.go`:
+	- aplica defaults Colombia al crear empresa y devuelve resultado saneado en la respuesta.
+- `backend/handlers/impuestos.go`:
+	- usa el catalogo fiscal centralizado del paquete `db`.
+- `backend/main.go`:
+	- asegura esquemas de impuestos/nomina y registra defaults Colombia para empresas existentes al arrancar.
+- `web/administrar_empresa/nomina_sueldos.html`:
+	- muestra salario minimo y auxilio legal en configuracion, y los propone al crear empleado.
+
 2026-06-07 - Asa de orden en selector de empresas
 - `web/js/seleccionar_empresa.js`:
 	- reubica el boton de mover tarjeta dentro de la fila superior de cada tarjeta de empresa, antes del chip de tipo.

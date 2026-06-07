@@ -362,7 +362,7 @@ func BuildEmpresaNominaColombiaAvanzadaDashboard(dbConn *sql.DB, empresaID int64
 	return ds, nil
 }
 
-func SeedEmpresaNominaColombiaAvanzadaDemo(dbConn *sql.DB, empresaID int64, usuario string) error {
+func SeedEmpresaNominaColombiaConceptosBase(dbConn *sql.DB, empresaID int64, usuario string) error {
 	if err := EnsureEmpresaNominaSchema(dbConn); err != nil {
 		return err
 	}
@@ -372,6 +372,10 @@ func SeedEmpresaNominaColombiaAvanzadaDemo(dbConn *sql.DB, empresaID int64, usua
 		}
 	}
 	return nil
+}
+
+func SeedEmpresaNominaColombiaAvanzadaDemo(dbConn *sql.DB, empresaID int64, usuario string) error {
+	return SeedEmpresaNominaColombiaConceptosBase(dbConn, empresaID, usuario)
 }
 
 func SeedEmpresaNominaProfesionalDemo(dbConn *sql.DB, empresaID int64, usuario string) (*EmpresaNominaProfesionalDemoResult, error) {

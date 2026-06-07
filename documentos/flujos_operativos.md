@@ -177,17 +177,22 @@ afecte dinero, documentos, licencias o seguridad.
 2. Presiona agregar empresa, elige tipo y completa datos.
 3. Backend crea empresa en `pcs_empresas`, aplica preconfiguracion por tipo,
    permisos y modulos.
-4. La creacion debe ser idempotente: doble clic, reintento o solicitud
+4. Ademas aplica la preconfiguracion Colombia `CO-2026-06`: impuestos base,
+   configuracion legal de nomina, conceptos de nomina Colombia y marcador
+   `preconfiguracion_colombia_fiscal_nomina` por `empresa_id`.
+5. La preconfiguracion no crea empleados, ventas, liquidaciones ni documentos
+   electronicos; solo deja parametros reales para operacion posterior.
+6. La creacion debe ser idempotente: doble clic, reintento o solicitud
    concurrente con el mismo administrador, tipo, nombre y NIT debe devolver la
    empresa ya creada sin insertar otra ni repetir avisos.
-5. El backend prepara la carpeta empresarial
+7. El backend prepara la carpeta empresarial
    `web/uploads/empresas/empresa_{id}_{slug}/` con subcarpeta `imagenes` y la
    carpeta privada `facturacion_electronica/firma_electronica`.
-6. Si esta activo el aviso de empresa nueva, se notifica al super administrador
+8. Si esta activo el aviso de empresa nueva, se notifica al super administrador
    solo cuando realmente se inserta una empresa nueva.
-7. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
+9. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
    `empresa_id` correcto.
-8. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
+10. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
    deben crear empresas duplicadas.
 
 ## Ordenar empresas en el selector
@@ -753,22 +758,28 @@ afecte dinero, documentos, licencias o seguridad.
 
 ## Nomina multi-sede y documentos DIAN Colombia
 
-1. La ficha de nomina del empleado guarda `sede_codigo`, `sede_nombre` y
+1. Al abrir nomina, la configuracion de empresa debe traer salario minimo
+   mensual y auxilio de transporte legal desde `empresa_nomina_configuracion`;
+   las empresas nuevas/existentes de preproduccion reciben esos valores por
+   preconfiguracion Colombia.
+2. La ficha de nomina del empleado guarda `sede_codigo`, `sede_nombre` y
    `centro_costo`; estos valores se copian a cada liquidacion para conservar la
    trazabilidad historica aunque luego cambie la ficha.
-2. La liquidacion se genera desde asistencia, novedades aprobadas, recargos,
+3. Al crear empleado nuevo, el formulario sugiere salario minimo y auxilio
+   legal, pero el usuario puede ajustar segun contrato real.
+4. La liquidacion se genera desde asistencia, novedades aprobadas, recargos,
    comisiones, provisiones y deducciones; el dashboard resume empleados,
    liquidaciones, pagos, costo empresa y sedes activas.
-3. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
+5. Para Colombia, la seccion avanzada consulta conceptos, novedades, PILA y el
    resumen de documentos electronicos de nomina.
-4. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
+6. `GET /api/empresa/nomina?action=documentos_electronicos_colombia` valida el
    periodo y muestra liquidaciones listas por empleado para documento soporte de
    pago de nomina electronica.
-5. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
+7. `POST /api/empresa/nomina?action=preparar_nomina_electronica` prepara el lote
    por empleado con devengados, deducciones, neto, IBC, sede y centro de costo.
    El envio real a DIAN sigue dependiendo de firma, CUNE, numeracion,
    credenciales y transporte documental configurados por empresa en facturacion
    electronica.
-6. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
+8. Pruebas: usar `Crear nomina demo Motel Calipso`, verificar empleados en varias
    sedes, liquidaciones por sede, PILA, pagos, desprendible y botones `Ver estado
    DIAN` / `Preparar lote DIAN`.

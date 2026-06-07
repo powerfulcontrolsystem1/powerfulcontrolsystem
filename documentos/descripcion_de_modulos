@@ -1,3 +1,11 @@
+2026-06-07: Preconfiguracion Colombia por empresa
+- Modulos afectados: `seleccion_empresas`, `impuestos`, `nomina_sueldos` y configuracion empresarial.
+- Creacion de empresa: al registrar una empresa nueva se aplica una base fiscal y laboral Colombia versionada como `CO-2026-06`, independiente de la plantilla por tipo de empresa.
+- Impuestos: el catalogo operativo queda prellenado por `empresa_id` con IVA 19%, IVA 0%, INC 8% inactivo, ICA y retenciones base inactivas para que el administrador active/ajuste lo que corresponda.
+- Nomina: la configuracion legal incluye salario minimo mensual, auxilio de transporte legal, jornada, recargos, deducciones, aportes y provisiones Colombia; al crear empleado se sugieren salario minimo y auxilio.
+- Backfill: empresas existentes reciben la misma base en arranque mientras el proyecto esta en preproduccion.
+- Seguridad/alcance: no se crean datos simulados ni documentos; cada registro queda aislado por `empresa_id` y debe validarse con contador antes de produccion.
+
 2026-06-07: Finanzas y cumplimiento sin accesos repetidos
 - Modulo afectado: `administrar_empresa` y `finanzas`.
 - Frontend: `web/administrar_empresa.html` reduce el grupo `Finanzas y cumplimiento` a `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.

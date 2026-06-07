@@ -1,3 +1,9 @@
+## [2026-06-07] Preconfiguracion Colombia para empresas
+- [Backend] Las empresas nuevas reciben automaticamente catalogo fiscal Colombia y parametros base de nomina al crearse desde `/super/api/empresas`.
+- [Backfill] El arranque registra la version `CO-2026-06` para empresas existentes de preproduccion: IVA 19%, IVA 0%, INC 8% inactivo, ICA/retenciones inactivas, salario minimo 2026 y auxilio legal de transporte.
+- [Nomina] `nomina_sueldos.html` muestra y guarda salario minimo mensual y auxilio de transporte legal; al crear ficha de empleado propone esos valores reales como base.
+- [Seguridad] No se crean empleados, liquidaciones ni documentos simulados; todos los registros quedan por `empresa_id` y con marcador de preconfiguracion.
+
 ## [2026-06-07] Asa de orden en tarjetas de empresas
 - [Frontend] `seleccionar_empresa.js` mueve el boton de arrastre a la fila superior de la tarjeta, a la izquierda del chip de tipo de empresa.
 - [UX] `estilos.css` fija el asa en la esquina superior izquierda junto al titulo visual `Pymes`/tipo, conservando drag and drop en escritorio y movil.
