@@ -4,6 +4,15 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-07 - Barra de configuracion DIAN
+
+- `web/administrar_empresa/facturacion_electronica.html` muestra una barra
+  `Avance de configuracion DIAN` dentro de `Configuracion DIAN Colombia`.
+- El avance se calcula en frontend con los campos ya cargados: identidad fiscal,
+  ambiente/TestSetId, software, numeracion, llave tecnica y firma/certificado.
+- La pantalla lista campos faltantes por nombre, sin mostrar valores sensibles,
+  y no crea endpoint, tabla ni persistencia nueva.
+
 ## Actualizacion 2026-06-07 - Modulo NIIF
 
 - `web/administrar_empresa/niif.html` agrega un centro NIIF por empresa dentro

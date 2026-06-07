@@ -1,3 +1,8 @@
+2026-06-07 - Barra de configuracion DIAN Colombia
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- agrega estilos locales y panel `Avance de configuracion DIAN`.
+	- calcula porcentaje, hitos por grupo y campos pendientes con los inputs DIAN existentes, sin exponer valores sensibles.
+
 2026-06-07 - Catalogo legal versionado
 - `backend/db/empresa_colombia_defaults.go`:
 	- agrega esquema de catalogo legal por pais/version, parametros por version, estado aplicado por empresa, aplicacion manual y worker de autoactualizacion.

@@ -1,3 +1,9 @@
+2026-06-07: Barra de configuracion DIAN Colombia.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega un panel `Avance de configuracion DIAN` 0-100% dentro de `Configuracion DIAN Colombia`.
+- UX: el avance se recalcula al cargar, editar, guardar o recargar datos DIAN; muestra hitos por grupo y lista los campos pendientes para que el administrador sepa que falta completar.
+- Seguridad: no se crea endpoint ni tabla nueva, no se muestran valores sensibles y se conserva el flujo real de guardado/validacion existente por `empresa_id`.
+
 2026-06-07: Catalogo legal versionado con boton y autoactualizacion.
 - Modulos afectados: Nomina, impuestos, creacion/configuracion de empresa y arranque backend.
 - Backend: `backend/db/empresa_colombia_defaults.go` agrega `catalogo_legal_pais_versiones`, `catalogo_legal_pais_parametros` y `empresa_parametros_legales_aplicados` para controlar versiones legales por pais y empresa.

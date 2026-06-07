@@ -1,3 +1,8 @@
+## [2026-06-07] Barra de configuracion DIAN Colombia
+- [Frontend] `facturacion_electronica.html` muestra una barra 0-100% para la configuracion DIAN Colombia antes del formulario.
+- [UX] La barra resume identidad fiscal, ambiente/TestSetId, software, numeracion, llave tecnica y firma/certificado, y enumera los campos pendientes.
+- [Alcance] No crea endpoints ni persiste datos nuevos; calcula el avance con los campos reales ya cargados en la pagina y no muestra secretos.
+
 ## [2026-06-07] Catalogo legal versionado por empresa
 - [Backend] Se agrega catalogo legal por pais/version con tablas para versiones, parametros y version aplicada por empresa.
 - [Nomina] `/api/empresa/nomina` expone estado, aplicacion manual y preferencia de autoactualizacion de parametros legales.

@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Facturación electrónica por país</title>
   <link rel="stylesheet" href="/estilos.css">
+  <style>
+    .fe-config-progress-panel{margin:14px 0 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px}
+    .fe-config-progress-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .fe-config-progress-head h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .fe-config-progress-head p{margin:4px 0 0;color:var(--muted);font-size:.86rem;line-height:1.4}
+    .fe-config-progress-percent{font-size:1.65rem;font-weight:950;color:var(--text);line-height:1;white-space:nowrap}
+    .fe-config-progress-track{position:relative;margin-top:12px;height:18px;border:1px solid var(--border);border-radius:999px;background:var(--surface);overflow:hidden}
+    .fe-config-progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:width .24s ease}
+    .fe-config-progress-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    .fe-config-progress-step{display:flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;color:var(--muted);font-size:.78rem;font-weight:800;min-height:42px}
+    .fe-config-progress-step::before{content:"";width:10px;height:10px;border-radius:999px;background:var(--border);flex:0 0 auto}
+    .fe-config-progress-step.done{color:var(--text);border-color:color-mix(in srgb,var(--success) 34%,var(--border));background:color-mix(in srgb,var(--success) 12%,var(--surface))}
+    .fe-config-progress-step.done::before{background:var(--success)}
+    .fe-config-missing{margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .fe-config-missing strong{color:var(--text)}
+    .fe-config-missing ul{margin:8px 0 0 18px;padding:0}
+    .fe-config-missing li{margin:3px 0}
+    @media (max-width:900px){.fe-config-progress-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.fe-config-progress-steps{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}}
+  </style>
 </head>
 <body class="super-page form-bg-dark">
   <div class="container">
@@ -65,6 +85,20 @@
       <p class="form-help">
         Checklist operativo para dejar lista la empresa: datos fiscales, Software ID/PIN, TestSetId, resolucion, rangos, firma/certificado X.509 y token de proveedor si aplica.
       </p>
+      <div class="fe-config-progress-panel" aria-label="Porcentaje de configuracion DIAN Colombia">
+        <div class="fe-config-progress-head">
+          <div>
+            <h3>Avance de configuraci&oacute;n DIAN</h3>
+            <p id="feDianSetupStage">Calculando campos requeridos.</p>
+          </div>
+          <div id="feDianSetupPercent" class="fe-config-progress-percent">0%</div>
+        </div>
+        <div id="feDianSetupTrack" class="fe-config-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance de configuracion DIAN Colombia">
+          <div id="feDianSetupFill" class="fe-config-progress-fill"></div>
+        </div>
+        <div id="feDianSetupSteps" class="fe-config-progress-steps"></div>
+        <div id="feDianSetupMissing" class="fe-config-missing"></div>
+      </div>
       <form id="feDianConfigForm" class="form">
         <input type="hidden" id="dian_id">
         <div class="form-row">
@@ -849,6 +883,118 @@
       }
     }
 
+    function dianFieldValue(id) {
+      var el = document.getElementById(id);
+      return el ? txt(el.value) : "";
+    }
+
+    function dianNumberValue(id) {
+      var n = Number(dianFieldValue(id));
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function dianSetupChecks() {
+      var ambiente = dianFieldValue("dian_tipo_ambiente").toLowerCase();
+      var softwareCompartido = !!(document.getElementById("dian_usar_software_compartido") && document.getElementById("dian_usar_software_compartido").checked);
+      var rangoDesde = dianNumberValue("dian_rango_desde");
+      var rangoHasta = dianNumberValue("dian_rango_hasta");
+      var consecutivo = dianNumberValue("dian_consecutivo_actual");
+      var testSetRequired = ambiente !== "produccion";
+      var checks = [
+        { group: "Identidad fiscal", label: "NIT", done: !!dianFieldValue("dian_nit") },
+        { group: "Identidad fiscal", label: "DV", done: !!dianFieldValue("dian_dv") },
+        { group: "Identidad fiscal", label: "Razón social", done: !!dianFieldValue("dian_razon_social") },
+        { group: "Ambiente y conexión", label: "Ambiente DIAN", done: !!dianFieldValue("dian_tipo_ambiente") },
+        { group: "Ambiente y conexión", label: "URL DIAN / proveedor", done: !!dianFieldValue("dian_url") },
+        { group: "Ambiente y conexión", label: "TestSetId de habilitación", done: !testSetRequired || !!dianFieldValue("dian_test_set_id") },
+        { group: "Software", label: "Software ID", done: !!dianFieldValue("dian_software_id") },
+        { group: "Software", label: "Software PIN o software compartido SaaS", done: softwareCompartido || !!dianFieldValue("dian_software_pin") },
+        { group: "Numeración", label: "Prefijo", done: !!dianFieldValue("dian_prefijo") },
+        { group: "Numeración", label: "Resolución", done: !!dianFieldValue("dian_resolucion_numero") },
+        { group: "Numeración", label: "Fechas de resolución", done: !!dianFieldValue("dian_resolucion_fecha_desde") && !!dianFieldValue("dian_resolucion_fecha_hasta") },
+        { group: "Numeración", label: "Rango autorizado", done: rangoDesde > 0 && rangoHasta > 0 && rangoHasta >= rangoDesde },
+        { group: "Numeración", label: "Consecutivo actual válido", done: consecutivo > 0 && (!rangoDesde || consecutivo >= rangoDesde) && (!rangoHasta || consecutivo <= rangoHasta) },
+        { group: "Llave y firma", label: "Llave técnica DIAN", done: !!dianFieldValue("dian_llave_tecnica") },
+        { group: "Llave y firma", label: "Certificado X.509", done: !!dianFieldValue("dian_certificado_url") },
+        { group: "Llave y firma", label: "Referencia de llave privada", done: !!dianFieldValue("dian_certificado_clave_ref") }
+      ];
+      if (!testSetRequired) {
+        checks = checks.map(function(item) {
+          if (item.label === "TestSetId de habilitación") {
+            return { group: item.group, label: "TestSetId no requerido en producción", done: true };
+          }
+          return item;
+        });
+      }
+      return checks;
+    }
+
+    function renderDianSetupProgress() {
+      var percentEl = document.getElementById("feDianSetupPercent");
+      var fillEl = document.getElementById("feDianSetupFill");
+      var trackEl = document.getElementById("feDianSetupTrack");
+      var stageEl = document.getElementById("feDianSetupStage");
+      var stepsEl = document.getElementById("feDianSetupSteps");
+      var missingEl = document.getElementById("feDianSetupMissing");
+      if (!percentEl || !fillEl || !trackEl || !stageEl || !stepsEl || !missingEl) return;
+
+      var checks = dianSetupChecks();
+      var total = checks.length || 1;
+      var done = checks.filter(function(item) { return item.done; }).length;
+      var percent = Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+      var missing = checks.filter(function(item) { return !item.done; });
+      percentEl.textContent = percent + "%";
+      fillEl.style.width = percent + "%";
+      trackEl.setAttribute("aria-valuenow", String(percent));
+      stageEl.textContent = missing.length
+        ? ("Faltan " + missing.length + " campo(s) para completar la configuración DIAN Colombia.")
+        : "Configuración DIAN Colombia completa para intentar validación y pruebas.";
+
+      var groups = {};
+      checks.forEach(function(item) {
+        if (!groups[item.group]) groups[item.group] = { total: 0, done: 0 };
+        groups[item.group].total += 1;
+        if (item.done) groups[item.group].done += 1;
+      });
+      stepsEl.innerHTML = "";
+      Object.keys(groups).forEach(function(name) {
+        var div = document.createElement("div");
+        var g = groups[name];
+        div.className = "fe-config-progress-step " + (g.done === g.total ? "done" : "pending");
+        div.textContent = name + " " + g.done + "/" + g.total;
+        stepsEl.appendChild(div);
+      });
+
+      if (!missing.length) {
+        missingEl.innerHTML = "<strong>Sin campos pendientes.</strong> Ya puedes guardar, validar credenciales y continuar con el test DIAN.";
+        return;
+      }
+      var html = "<strong>Campos pendientes:</strong><ul>";
+      missing.forEach(function(item) {
+        html += "<li>" + item.label + "</li>";
+      });
+      html += "</ul>";
+      missingEl.innerHTML = html;
+    }
+
+    function bindDianSetupProgressInputs() {
+      var ids = [
+        "dian_nit", "dian_dv", "dian_razon_social", "dian_tipo_ambiente",
+        "dian_url", "dian_test_set_id", "dian_software_id", "dian_software_pin",
+        "dian_usar_software_compartido", "dian_prefijo", "dian_resolucion_numero",
+        "dian_consecutivo_actual", "dian_resolucion_fecha_desde",
+        "dian_resolucion_fecha_hasta", "dian_rango_desde", "dian_rango_hasta",
+        "dian_llave_tecnica", "dian_certificado_url", "dian_certificado_clave_ref"
+      ];
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("input", renderDianSetupProgress);
+        el.addEventListener("change", renderDianSetupProgress);
+      });
+      renderDianSetupProgress();
+    }
+
     function renderFirmaExpiry(info) {
       var el = document.getElementById("feFirmaExpiryText");
       if (!el) return;
@@ -1077,6 +1223,7 @@
       renderFirmaLastUpload(cfg);
       var shared = document.getElementById("dian_usar_software_compartido");
       if (shared) shared.checked = asBool(cfg.usar_software_compartido);
+      renderDianSetupProgress();
     }
 
     function collectDianConfigPayload() {
@@ -1138,6 +1285,7 @@
       var data = await readJSONResponse(res);
       if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
       if (data && data.item) setDianConfigFormData(data.item);
+      renderDianSetupProgress();
       return data;
     }
 
@@ -1673,6 +1821,8 @@
         setAdvancedMessage(err && err.message ? err.message : "No se pudo recargar la configuración avanzada", true);
       });
     });
+
+    bindDianSetupProgressInputs();
 
     (async function init() {
       const empresaID = Number(q("empresa_id") || 0);

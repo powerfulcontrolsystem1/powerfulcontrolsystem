@@ -1,3 +1,10 @@
+2026-06-07: Barra de configuracion DIAN Colombia
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega una barra 0-100% dentro de `Configuracion DIAN Colombia`.
+- Criterios: identidad fiscal, ambiente/TestSetId, software, numeracion, llave tecnica y firma/certificado.
+- UX: muestra hitos por grupo y lista de campos pendientes para completar la configuracion antes de validar credenciales o pasar pruebas DIAN.
+- Alcance: no agrega endpoint, tabla ni dato simulado; solo calcula estado visual sobre los campos reales de la pagina.
+
 2026-06-07: Catalogo legal versionado
 - Modulos afectados: `nomina_sueldos`, `impuestos`, `seleccion_empresas` y configuracion legal empresarial.
 - Backend: el sistema mantiene versiones legales por pais y parametros asociados; Colombia queda cargado como `CO-2026-06`.
