@@ -1,6 +1,7 @@
 2026-06-06: DIAN WS-Security con Action firmado para WCF.
 - Modulos afectados: facturacion electronica Colombia, transporte SOAP/WCF DIAN y centro de habilitacion.
 - Backend: el sobre WS-Security oficial firma `Timestamp`, `wsa:Action` y `wsa:To`, manteniendo referencia `ThumbprintSHA1`, `BinarySecurityToken`, RSA-SHA256 y digest SHA-256.
+- Backend: los digest de `wsa:Action` y `wsa:To` se calculan con el orden canonico de atributos XML (`wsu:Id` antes de `soap:mustUnderstand`) para evitar discrepancias de hash al validar en WCF/DIAN.
 - QA visual: la prueba 2+2+2 real de la empresa 12 alcanzo DIAN y genero `SETP990000022`, pero DIAN respondio `InvalidSecurity`; este cambio ajusta la firma de encabezados WS-Addressing para una nueva validacion real.
 - Seguridad: no se imprimen credenciales ni secretos; el perfil temporal de navegador queda ignorado por git.
 

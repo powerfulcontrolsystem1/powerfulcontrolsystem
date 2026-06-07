@@ -8948,7 +8948,7 @@ func dianSOAPSignedReference(id, canonicalXML string) string {
 }
 
 func dianSOAPCanonicalToHeader(id, endpoint string) string {
-	return fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" soap:mustUnderstand="1" wsu:Id="%s">%s</wsa:To>`,
+	return fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:To>`,
 		dianSOAPNamespace,
 		dianAddressingNamespace,
 		dianWSUSecurityNS,
@@ -8958,7 +8958,7 @@ func dianSOAPCanonicalToHeader(id, endpoint string) string {
 }
 
 func dianSOAPCanonicalActionHeader(id, action string) string {
-	return fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" soap:mustUnderstand="1" wsu:Id="%s">%s</wsa:Action>`,
+	return fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
 		dianSOAPNamespace,
 		dianAddressingNamespace,
 		dianWSUSecurityNS,
@@ -9016,13 +9016,13 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 
 	created := now.Format("2006-01-02T15:04:05.000Z")
 	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
-	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" soap:mustUnderstand="1" wsu:Id="%s">%s</wsa:Action>`,
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
 		dianSOAPNamespace, dianAddressingNamespace, dianWSUSecurityNS, actionID, escapeXML(action))
 	messageIDHeader := fmt.Sprintf(`<wsa:MessageID xmlns:wsa="%s">%s</wsa:MessageID>`,
 		dianAddressingNamespace, escapeXML(messageID))
 	replyToHeader := fmt.Sprintf(`<wsa:ReplyTo xmlns:wsa="%s"><wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address></wsa:ReplyTo>`,
 		dianAddressingNamespace)
-	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" soap:mustUnderstand="1" wsu:Id="%s">%s</wsa:To>`,
+	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:To>`,
 		dianSOAPNamespace, dianAddressingNamespace, dianWSUSecurityNS, toID, escapeXML(endpoint))
 	body := fmt.Sprintf(`<soap:Body xmlns:soap="%s" xmlns:wcf="%s">%s</soap:Body>`,
 		dianSOAPNamespace, dianWCFNamespace, bodyContent)
@@ -9135,13 +9135,13 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 
 	created := now.Format("2006-01-02T15:04:05.000Z")
 	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
-	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" soap:mustUnderstand="1" wsu:Id="%s">%s</wsa:Action>`,
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
 		dianSOAPNamespace, dianAddressingNamespace, dianWSUSecurityNS, actionID, escapeXML(action))
 	messageIDHeader := fmt.Sprintf(`<wsa:MessageID xmlns:wsa="%s">%s</wsa:MessageID>`,
 		dianAddressingNamespace, escapeXML(messageID))
 	replyToHeader := fmt.Sprintf(`<wsa:ReplyTo xmlns:wsa="%s"><wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address></wsa:ReplyTo>`,
 		dianAddressingNamespace)
-	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" soap:mustUnderstand="1" wsu:Id="%s">%s</wsa:To>`,
+	toHeader := fmt.Sprintf(`<wsa:To xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:To>`,
 		dianSOAPNamespace, dianAddressingNamespace, dianWSUSecurityNS, toID, escapeXML(endpoint))
 	body := fmt.Sprintf(`<soap:Body xmlns:soap="%s" xmlns:wcf="%s"><wcf:GetStatusZip><wcf:trackId>%s</wcf:trackId></wcf:GetStatusZip></soap:Body>`,
 		dianSOAPNamespace, dianWCFNamespace, escapeXML(trackID))
