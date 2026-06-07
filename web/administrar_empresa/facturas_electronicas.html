@@ -704,6 +704,31 @@
       }
 
       function printInvoice(item) {
+        var html = buildPrintableDocumentPage(item);
+        if (window.Blob && window.URL && typeof window.URL.createObjectURL === "function") {
+          var blobUrl = "";
+          try {
+            var blob = new Blob([html], { type: "text/html;charset=utf-8" });
+            blobUrl = window.URL.createObjectURL(blob);
+            var blobWin = window.open(blobUrl, "pcs_factura_electronica_print", "width=980,height=760,scrollbars=yes,resizable=yes");
+            if (!blobWin) {
+              window.URL.revokeObjectURL(blobUrl);
+              showMessage("No se pudo abrir la ventana de impresiÃ³n. Revisa el bloqueador de popups.", "error");
+              return;
+            }
+            try { blobWin.focus(); } catch (_) {}
+            window.setTimeout(function () {
+              try { window.URL.revokeObjectURL(blobUrl); } catch (_) {}
+            }, 60000);
+            showMessage("Vista de factura abierta correctamente.", "ok");
+            return;
+          } catch (blobErr) {
+            if (blobUrl) {
+              try { window.URL.revokeObjectURL(blobUrl); } catch (_) {}
+            }
+          }
+        }
+
         var win = window.open("", "pcs_factura_electronica_print", "width=980,height=760,scrollbars=yes,resizable=yes");
         if (!win) {
           showMessage("No se pudo abrir la ventana de impresión. Revisa el bloqueador de popups.", "error");
@@ -712,7 +737,7 @@
 
         try {
           win.document.open();
-          win.document.write(buildPrintableDocumentPage(item));
+          win.document.write(html);
           win.document.close();
           try { win.opener = null; } catch (_) {}
           try { win.focus(); } catch (_) {}

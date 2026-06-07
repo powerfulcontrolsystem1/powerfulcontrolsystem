@@ -1,5 +1,5 @@
 ## [2026-06-07] Visualizacion de factura electronica
-- [Frontend] `facturas_electronicas.html` corrige `Visualizar factura` para abrir una ventana imprimible escribible y evitar `about:blank`.
+- [Frontend] `facturas_electronicas.html` corrige `Visualizar factura` para abrir un `Blob` HTML imprimible y evitar `about:blank`.
 - [UX] Se muestra confirmacion cuando la vista abre y error claro si el navegador bloquea o impide renderizar la factura.
 
 ## [2026-06-07] Configuracion de campos imprimibles por empresa

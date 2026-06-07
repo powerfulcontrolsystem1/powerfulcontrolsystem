@@ -1,7 +1,7 @@
 2026-06-07 - Visualizacion de factura electronica
 - `web/administrar_empresa/facturas_electronicas.html`:
-	- corrige la apertura de `Visualizar factura` para usar una ventana imprimible escribible por la propia app.
-	- elimina `noopener/noreferrer` del documento generado en blanco, evitando que el navegador deje `about:blank` sin contenido.
+	- corrige la apertura de `Visualizar factura` para generar un `Blob` HTML imprimible y abrirlo con URL propia.
+	- evita depender de `document.write()` sobre una pestaña `about:blank`, que algunos navegadores separan o dejan sin contenido.
 	- muestra mensaje visible si la ventana se bloquea o si no se puede renderizar el HTML.
 
 2026-06-07 - Configuracion de campos imprimibles por empresa

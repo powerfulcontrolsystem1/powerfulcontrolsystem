@@ -1,7 +1,7 @@
 2026-06-07: Visualizacion de factura electronica sin hoja en blanco.
 - Modulo afectado: Facturas electronicas y comprobantes.
-- Frontend: `web/administrar_empresa/facturas_electronicas.html` abre la vista imprimible con una ventana nombrada y escribible (`pcs_factura_electronica_print`) en lugar de `_blank` con `noopener/noreferrer`.
-- Causa tecnica: el navegador separaba la ventana abierta y el script no podia escribir el HTML del documento, quedando `about:blank`.
+- Frontend: `web/administrar_empresa/facturas_electronicas.html` genera la vista imprimible como `Blob` HTML y la abre en una ventana nombrada (`pcs_factura_electronica_print`).
+- Causa tecnica: el navegador separaba la ventana abierta o no permitia escribir el HTML del documento sobre `about:blank`, dejando una hoja vacia.
 - UX: el usuario recibe mensaje de exito al abrir la vista o error claro si la ventana se bloquea o falla el render.
 - QA: reproduccion visual en produccion empresa 12 antes del cambio: click en `Visualizar` dejaba la pestaña en `about:blank`; validacion sintactica del script embebido.
 
