@@ -1,5 +1,6 @@
 ## [2026-06-07] Auditoria de navegacion de Administrar empresa
 - [Frontend] `administrar_empresa.html` normaliza etiquetas visibles del menu principal y del drawer de radio con tildes y nombres mas profesionales.
+- [UX] El selector de pais del reproductor conserva `PA` como codigo tecnico y muestra `Panamá` como etiqueta visible.
 - [Catalogo] `plantillas_nuevas_catalogo.js` corrige titulos, textos y secciones visibles de plantillas verticales sin cambiar modulos, ids ni rutas.
 - [QA] Auditoria estatica confirma 57 enlaces con `id`, sin `href` vacios, sin rutas HTML inexistentes y sin URLs repetidas exactas.
 
