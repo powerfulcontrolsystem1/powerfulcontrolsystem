@@ -5,7 +5,8 @@
 - Frontend: se crea `web/administrar_empresa/renta_ia.html` y se enlaza desde `finanzas_menu.html` como `Renta IA`.
 - Permisos: `linkRentaIA` queda con `finanzas:R`, disponible para contador y roles con lectura financiera.
 - Seguridad: no guarda datos, no crea tablas, no expone secretos y no reemplaza declaracion oficial ni revision del contador.
-- QA: `go test ./db -run EmpresaFinanzasRenta -count=1`; `go test ./handlers -run "EmpresaPermisos|Finanzas" -count=1`; validacion sintactica JS de la pagina y menu.
+- QA: `go test ./db -run EmpresaFinanzasRenta -count=1`; `go test ./handlers -run "EmpresaPermisos|Finanzas" -count=1`; `go test ./db ./handlers -run "EmpresaFinanzasRenta|EmpresaPermisos|Finanzas" -count=1`; `go test ./... -run "^$" -count=1`; validacion sintactica JS de la pagina y menu.
+- QA visual produccion: empresa 12 carga `Renta IA`, calcula desde datos reales del periodo 2026-01-01 a 2026-06-07 y muestra ingresos/deducciones/impuesto en cero porque no hay movimientos fuente en ese rango. El boton `Analizar con IA` responde con error operativo controlado por credencial IA cifrada no descifrable; falta regrabar la API key en Super administrador > IA para activar la explicacion generativa real.
 
 2026-06-06: Modulo Bolsa empresarial.
 - Modulo afectado: Bolsa en Administrar empresa > Analisis y control.

@@ -3,6 +3,7 @@
 - [Backend] `/api/empresa/finanzas/renta_ia` calcula ingresos, deducciones, renta liquida gravable, impuesto estimado y saldo usando datos de ventas, movimientos financieros, inventario y nomina por `empresa_id`.
 - [IA] La explicacion con GPT-5.4 mini usa solo el JSON calculado por backend, respeta limite diario por empresa y conserva fallback numerico cuando la IA esta desactivada.
 - [Permisos] Se agrega `linkRentaIA` bajo `finanzas:R`, visible para contador y roles con lectura financiera.
+- [QA] Produccion empresa 12: la pagina calcula con fuentes reales sin errores; el analisis generativo queda bloqueado por credencial IA cifrada no descifrable y requiere regrabar la API key en Super administrador > IA.
 
 ## [2026-06-06] Modulo Bolsa empresarial
 - [Frontend] `administrar_empresa/bolsa.html` agrega un tablero profesional de indicadores internacionales y del pais detectado por empresa.
