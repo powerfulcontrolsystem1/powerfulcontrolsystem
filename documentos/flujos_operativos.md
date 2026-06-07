@@ -203,11 +203,12 @@ afecte dinero, documentos, licencias o seguridad.
    respaldo local del navegador si la red falla.
 5. Al recargar, las empresas nuevas o no ordenadas se agregan despues de las ya
    guardadas, conservando el orden alfabetico base.
-6. `Restablecer orden` borra la preferencia y vuelve al orden base.
+6. La tarjeta informativa de orden y el boton visible de restablecer fueron
+   retirados de la pantalla; el arrastre conserva su soporte interno.
 7. Seguridad: el orden no concede acceso a empresas; solo reordena tarjetas que
    `/super/api/empresas` ya autorizo para la sesion actual.
-8. Pruebas: mover tarjetas en activas e inactivas, recargar, confirmar
-   persistencia y restablecer.
+8. Pruebas: mover tarjetas en activas e inactivas, recargar y confirmar
+   persistencia.
 
 ## Eliminar empresa
 

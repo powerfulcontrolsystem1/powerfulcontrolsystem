@@ -1,3 +1,8 @@
+2026-06-07: Nota de navegacion financiera sin duplicados
+- El grupo `Finanzas y cumplimiento` del menu principal queda como entrada resumida: `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.
+- `Suite contador`, `NIIF`, `Creditos y cartera`, `Gestion de cobranza` e `Impuestos` se mantienen dentro del Centro financiero para no duplicar funciones visibles.
+- No cambian permisos efectivos, wrappers ni paginas del catalogo; las rutas directas siguen protegidas para enlaces historicos y submenus internos.
+
 2026-06-07: Nota de auditoria integral de modulos nuevos
 - No se agregan permisos, endpoints ni wrappers nuevos.
 - `operativo_modulos_resumen` queda dentro de `/api/empresa/reportes` y conserva `WithEmpresaReportesPermissions`, por lo que requiere `reportes:R` y `empresa_id` valido.
@@ -167,7 +172,7 @@
 - El cambio es solo de navegacion visual; conserva los mismos `PaginaClave`, modulos, acciones y wrappers existentes.
 
 2026-05-25: Nota de navegacion financiera y paginas huerfanas
-- `linkCreditos` y `linkCobranza` se muestran como accesos directos en `Administrar empresa > Finanzas y cumplimiento`; conservan los permisos existentes de `finanzas:C` y `cobranza:C` respectivamente.
+- `linkCreditos` y `linkCobranza` se conservan como paginas protegidas y accesos internos del Centro financiero; ya no se duplican como botones directos del grupo principal `Finanzas y cumplimiento`.
 - `linkChatIA`, `linkConfiguracionGuiada` y `linkERPExtendido` se conectan desde menus visibles para paginas empresariales ya existentes. No se crean wrappers nuevos ni se relaja el aislamiento por `empresa_id`.
 - Las paginas legacy o generadas por accion, como `frecuencia_fp.html` y `soporte_remoto_view.html`, no se promocionan a menu principal porque son alias/visores de flujo, no modulos de entrada operativa.
 

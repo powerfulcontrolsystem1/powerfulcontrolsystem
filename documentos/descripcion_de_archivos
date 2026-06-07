@@ -99,11 +99,11 @@
 - `backend/handlers/user_config.go`:
 	- expone `selector_empresas_orden` en `GET/POST /api/user/configuracion` sin cambiar el contrato de apariencia.
 - `web/seleccionar_empresa.html`:
-	- agrega la barra `Orden de tarjetas` y el boton `Restablecer orden`.
+	- muestra el selector de empresas sin la tarjeta informativa de orden; el reordenamiento queda soportado por el script cuando se usa el asa de las tarjetas.
 - `web/js/seleccionar_empresa.js`:
 	- permite arrastrar tarjetas visibles por grupo, guardar el orden, restaurarlo al recargar y auditar el evento visual.
 - `web/estilos.css`:
-	- agrega estilos responsive y por tema para la barra de orden, asa de arrastre y estados de movimiento.
+	- conserva estilos responsive y por tema para el asa de arrastre y estados de movimiento.
 
 2026-06-06 - DIAN set real sin simulacion
 - `backend/handlers/modulos_faltantes.go`:

@@ -1,3 +1,13 @@
+## [2026-06-07] Selector de empresas sin tarjeta de orden
+- [Frontend] `seleccionar_empresa.html` elimina la tarjeta `Orden de tarjetas` y el boton visible `Restablecer orden`.
+- [Estilos] `estilos.css` retira las reglas de `.selector-order-tools`.
+- [Alcance] No cambia permisos, persistencia ni aislamiento; solo se limpia la ayuda visual solicitada.
+
+## [2026-06-07] Finanzas y cumplimiento sin accesos repetidos
+- [Frontend] El grupo `Finanzas y cumplimiento` de `administrar_empresa.html` queda reducido a `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.
+- [UX] `Suite contador`, `NIIF`, `Creditos y cartera`, `Gestion de cobranza` e `Impuestos` permanecen dentro de `finanzas_menu.html`, evitando que la misma funcion aparezca dos veces en el menu principal.
+- [Permisos] No se cambian wrappers, rutas ni reglas de autorizacion; solo se limpia la navegacion visible del menu principal.
+
 ## [2026-06-07] IA oculta por defecto por empresa
 - [Permisos] `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`, `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` quedan ocultos por defecto en `/api/empresa/permisos_contexto`.
 - [Backend] La empresa debe tener regla fina explicita de pagina permitida y conservar rol/licencia base para mostrar o acceder a IA empresarial.
@@ -5,7 +15,7 @@
 
 ## [2026-06-07] Modulo NIIF profesional
 - [Frontend] `administrar_empresa/niif.html` agrega diagnostico de adopcion NIIF, politicas contables, calculos de deterioro/depreciacion/valor razonable, conciliacion contable-fiscal, checklist de cierre y notas exportables.
-- [Navegacion] Se enlaza desde `Administrar empresa > Finanzas y cumplimiento`, `finanzas_menu.html` y `suite_contador.html`.
+- [Navegacion] Se enlaza desde `finanzas_menu.html` y `suite_contador.html`; el menu principal entra por `Centro financiero y contable`.
 - [Permisos] `linkNIIF` queda como `finanzas:R`; el rol `contador` puede consultarlo sin ganar escritura ni aprobacion.
 - [Seguridad] No se agregan endpoints ni tablas; la pagina lee el dashboard contable existente cuando el usuario tiene permisos y guarda marcas locales por empresa/navegador.
 
@@ -18,7 +28,7 @@
 ## [2026-06-07] Suite contador por empresa
 - [Investigacion] Se toma como referencia publica el enfoque de Siigo Contador: trabajo multicliente, obligaciones, contabilidad NIIF/PUC, impuestos, documentos electronicos, reportes y apoyo para firmas contables.
 - [Frontend] `administrar_empresa/suite_contador.html` agrega un hub profesional que agrupa Portal contador, Contabilidad Colombia, suite avanzada, impuestos, DIAN, declaraciones, certificados, cierres, activos, nomina, bancos, reportes y Renta IA.
-- [Navegacion] Se enlaza `Suite contador` desde `Administrar empresa > Finanzas y cumplimiento` y desde el `Centro financiero y contable` con chip `Contador 360`.
+- [Navegacion] Se enlaza `Suite contador` desde el `Centro financiero y contable` con chip `Contador 360`, sin duplicarlo como boton directo del menu principal.
 - [Permisos] Se agrega `linkSuiteContador` como `finanzas:R`; el rol `contador` puede ver la suite y accesos contables clave sin recibir permisos de escritura ni aprobacion fuera de los wrappers existentes.
 - [Portada] `web/index.html` actualiza la oferta de Finanzas y cumplimiento para presentar la suite contable profesional.
 
@@ -111,7 +121,7 @@
 - [Alcance] Funciona por separado en empresas con licencia activa y empresas sin licencia activa, conservando esos grupos.
 - [Persistencia] `/api/user/configuracion` guarda `selector_empresas_orden` por administrador en `usuario_configuracion.selector_empresas_orden_json`, con respaldo local si la red falla.
 - [Seguridad] El orden solo aplica a empresas que `/super/api/empresas` ya autorizo para la sesion; no concede acceso ni mezcla empresas de otros administradores.
-- [QA] Prueba visual local con empresas simuladas confirma mover activas, mover inactivas, recargar con persistencia y `Restablecer orden`.
+- [QA] Prueba visual local con empresas simuladas confirma mover activas, mover inactivas y recargar con persistencia.
 
 ## [2026-06-05] Centro de habilitacion DIAN
 - [Facturacion electronica] `facturacion_electronica_pruebas_dian.html` queda como pantalla de `Pasar test DIAN`, con estado de alistamiento, validacion de credenciales, diagnostico, objetivo del set y botones para envio automatico o por tipo documental.

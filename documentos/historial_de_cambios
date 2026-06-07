@@ -1,3 +1,9 @@
+2026-06-07: Retiro de tarjeta de orden en selector de empresas.
+- Modulo afectado: Seleccion de empresas.
+- Frontend: `web/seleccionar_empresa.html` elimina la tarjeta informativa `Orden de tarjetas` y el boton visible `Restablecer orden`.
+- Estilos: `web/estilos.css` retira las reglas especificas de `.selector-order-tools`.
+- Alcance: no se cambian permisos, datos, orden guardado ni aislamiento por usuario/empresa; solo se limpia la tarjeta visible solicitada por el usuario.
+
 2026-06-07: IA empresarial oculta por defecto para todas las empresas.
 - Modulos afectados: Administrar empresa, Centro financiero, Suite contador y permisos empresariales.
 - Backend: `backend/handlers/empresa_permisos.go` aplica default oculto a `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`, `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` en `permisos_contexto` y snapshot de autorizacion; solo se muestran si existe regla fina explicita de pagina permitida para la empresa y el rol/licencia base tambien lo permite.
@@ -179,7 +185,7 @@
 - Modulos afectados: seleccion de empresas, preferencias de usuario y seguridad multiempresa.
 - Cambio funcional: la pagina `seleccionar_empresa.html` permite reordenar tarjetas visibles con clic sostenido en PC o con el asa de mover en celular, tanto para empresas con licencia activa como para empresas sin licencia activa.
 - Backend/BD: `usuario_configuracion` agrega `selector_empresas_orden_json`; `/api/user/configuracion` devuelve y guarda `selector_empresas_orden` por administrador autenticado.
-- Frontend: `web/js/seleccionar_empresa.js` ordena empresas por preferencia guardada, implementa drag-and-drop robusto, respaldo local, auditoria visual y boton `Restablecer orden`.
+- Frontend: `web/js/seleccionar_empresa.js` ordena empresas por preferencia guardada, implementa drag-and-drop robusto, respaldo local y auditoria visual; la tarjeta/boton visible de orden fue retirada despues por limpieza de UX.
 - Seguridad: el orden no consulta ni habilita empresas fuera del alcance; solo reordena IDs saneados de la lista ya autorizada por `/super/api/empresas`.
 - Pruebas: `node --check web/js/seleccionar_empresa.js`; `go test ./db -run "TestNormalizeUsuarioSelectorEmpresaIDs" -count=1`; `go test ./handlers -run "^$" -count=1`; prueba visual local con empresas simuladas para mover activas, mover inactivas, persistir tras recarga y restablecer.
 

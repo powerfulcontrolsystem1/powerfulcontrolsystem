@@ -1,7 +1,13 @@
+2026-06-07: Finanzas y cumplimiento sin accesos repetidos
+- Modulo afectado: `administrar_empresa` y `finanzas`.
+- Frontend: `web/administrar_empresa.html` reduce el grupo `Finanzas y cumplimiento` a `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.
+- Navegacion: `Suite contador`, `NIIF`, `Creditos y cartera`, `Gestion de cobranza` e `Impuestos` quedan como accesos internos del Centro financiero para evitar duplicidad visible.
+- Permisos: no cambian paginas, wrappers, rutas ni acciones; los ids retirados del menu principal se conservan para submenus, enlaces historicos y control por rol.
+
 2026-06-07: Modulo NIIF
 - Modulo afectado: `finanzas`, `suite_contador`, `contabilidad_colombia` y `activos_fijos_niif_fiscal`.
 - Frontend: `web/administrar_empresa/niif.html` agrega diagnostico de adopcion NIIF, politicas contables, calculos de deterioro/depreciacion/valor razonable, conciliacion contable-fiscal, checklist de cierre y notas exportables.
-- Navegacion: se enlaza desde `Administrar empresa > Finanzas y cumplimiento`, desde el Centro financiero y desde Suite contador.
+- Navegacion: se enlaza desde el Centro financiero y desde Suite contador; el menu principal entra por `Centro financiero y contable`.
 - Datos: lee el dashboard real de contabilidad Colombia cuando el usuario tiene acceso; no crea endpoint ni tablas nuevas y no inventa cifras contables.
 - Permisos: `linkNIIF` usa `finanzas:R`; el rol `contador` puede verlo sin recibir escritura ni aprobacion.
 
@@ -14,7 +20,7 @@
 2026-06-07: Suite contador por empresa
 - Modulos afectados: `finanzas`, `portal_contador`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `facturacion_electronica`, `declaraciones_tributarias`, `portal_terceros_certificados`, `cierre_fiscal`, `activos_fijos_niif_fiscal`, `nomina_sueldos`, `reportes`, `roles/licencias`, `administrar_empresa`.
 - Frontend: `web/administrar_empresa/suite_contador.html` agrega una vista profesional tipo contador 360 inspirada en suites contables como Siigo Contador, usando solo modulos reales existentes.
-- Navegacion: se enlaza desde `Administrar empresa > Finanzas y cumplimiento` y desde el `Centro financiero y contable` con chip `Contador 360`.
+- Navegacion: se enlaza desde el `Centro financiero y contable` con chip `Contador 360`, sin duplicarlo como boton directo del menu principal.
 - Permisos: `linkSuiteContador` usa `finanzas:R`; el rol `contador` puede ver el hub y accesos contables clave sin recibir permisos de escritura ni aprobacion por este cambio.
 - Seguridad/alcance: no crea endpoint, tablas ni datos simulados; conserva `empresa_id` al abrir modulos y cada destino mantiene su wrapper/licencia.
 
@@ -108,7 +114,7 @@
 - Cambio funcional: `seleccionar_empresa.html` permite reordenar tarjetas con clic sostenido en PC o con el asa de mover en celular, tanto en empresas con licencia activa como en empresas sin licencia activa.
 - Persistencia: el orden se guarda por administrador en `usuario_configuracion.selector_empresas_orden_json` mediante `/api/user/configuracion`, con respaldo local si el guardado remoto falla.
 - Seguridad: no cambia el alcance de empresas; solo se ordenan las tarjetas que `/super/api/empresas` ya devolvio para la sesion autenticada.
-- UX: agrega boton `Restablecer orden` para volver al orden base.
+- UX: la tarjeta informativa `Orden de tarjetas` y el boton visible `Restablecer orden` fueron retirados del selector; el arrastre conserva su soporte interno.
 
 2026-06-05: Centro de habilitacion DIAN por empresa
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
@@ -707,7 +713,7 @@
 2026-05-21: Impuestos dentro de Finanzas y cumplimiento
 - Modulos afectados: `impuestos`, `finanzas`, `administrar_empresa`.
 - Cambio funcional: el area `Impuestos` pasa de Configuracion al grupo `Finanzas y cumplimiento` del panel empresarial.
-- Navegacion: el menu principal muestra `Impuestos` junto al Centro financiero, Facturacion electronica y Reportes; el centro financiero tambien lo ofrece en barra lateral y accesos rapidos.
+- Navegacion: `Impuestos` queda dentro del Centro financiero en barra lateral y accesos rapidos; el menu principal conserva solo la entrada general de Finanzas, Facturacion electronica y Reportes.
 - Alcance: no cambia APIs, tablas ni calculos tributarios; solo reubica el acceso operativo.
 
 2026-05-21: Emisoras online por pais
