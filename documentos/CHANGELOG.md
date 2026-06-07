@@ -1,3 +1,8 @@
+## [2026-06-06] Set DIAN completo por tandas reales
+- [Frontend] `facturacion_electronica_pruebas_dian.html` ejecuta el set automatico completo por tandas reales de 3 documentos cuando no se define limite manual, evitando el `504 Gateway Time-out` del proxy.
+- [DIAN] Cada tanda sigue usando `action=pruebas_dian`, TestSetId, firma y envio real a habilitacion; no se reintroduce simulacion.
+- [UX] La pantalla acumula procesados, resumen, detalles y lotes en la consola DIAN para cerrar 30 facturas, 10 notas debito y 10 notas credito sin perder evidencia.
+
 ## [2026-06-06] Resumen portal DIAN en pruebas
 - [Frontend] `facturacion_electronica_pruebas_dian.html` muestra una ficha espejo del portal DIAN con contribuyente, TestSetId, modo de operacion, rango, software, URL, documentos requeridos y aceptados requeridos.
 - [Seguridad] PIN y clave tecnica se muestran enmascarados por defecto y solo se revelan con accion explicita en pantalla.

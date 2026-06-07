@@ -287,7 +287,8 @@
       dianConfig: null,
       ultimoResultado: null,
       dianConsole: [],
-      dianConsoleAutoScroll: true
+      dianConsoleAutoScroll: true,
+      dianBatchSize: 3
     };
 
     const DIAN_SET_PRESETS = {
@@ -854,9 +855,150 @@
         }).join("") + '</tbody></table>';
     }
 
-    async function ejecutarDianSet(payload, label) {
+    function mergeDianResumen(target, source) {
+      target = target || {};
+      source = source || {};
+      ["aceptado", "rechazado", "enviado", "pendiente", "contingencia", "error", "simulado"].forEach(function(key) {
+        target[key] = Number(target[key] || 0) + Number(source[key] || 0);
+      });
+      return target;
+    }
+
+    function mergeDianAceptadosPorTipo(target, source) {
+      target = target || {};
+      source = source || {};
+      ["factura", "nota_debito", "nota_credito"].forEach(function(key) {
+        target[key] = Number(target[key] || 0) + Number(source[key] || 0);
+      });
+      return target;
+    }
+
+    function buildDianBatchPlan(payload) {
+      const plan = [];
+      const batchSize = Math.max(1, Number(state.dianBatchSize || 3));
+      [
+        { key: "facturas_electronicas", label: "facturas", tipo: "factura" },
+        { key: "notas_debito", label: "notas debito", tipo: "nota_debito" },
+        { key: "notas_credito", label: "notas credito", tipo: "nota_credito" }
+      ].forEach(function(item) {
+        let remaining = Number(payload[item.key] || 0);
+        while (remaining > 0) {
+          const count = Math.min(batchSize, remaining);
+          const batch = {
+            empresa_id: Number(state.empresaID),
+            facturas_electronicas: item.key === "facturas_electronicas" ? count : 0,
+            notas_debito: item.key === "notas_debito" ? count : 0,
+            notas_credito: item.key === "notas_credito" ? count : 0,
+            total_documentos: count,
+            max_envios: count,
+            tipo_lote: item.tipo,
+            etiqueta_lote: count + " " + item.label
+          };
+          plan.push(batch);
+          remaining -= count;
+        }
+      });
+      return plan;
+    }
+
+    async function enviarDianSetRequest(payload, label) {
+      const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
+      return await dianFetchJSON(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "same-origin"
+      }, "Envio real DIAN: " + label);
+    }
+
+    async function ejecutarDianSetPorTandas(payload, label) {
+      const plan = buildDianBatchPlan(payload);
+      if (!plan.length) {
+        setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
+        return;
+      }
+      if (!window.confirm("Esto enviara el set completo por tandas reales al ambiente de habilitacion DIAN. Continuar?")) {
+        return;
+      }
+      const totalPlan = plan.reduce(function(sum, item) { return sum + Number(item.total_documentos || 0); }, 0);
+      const aggregate = {
+        ok: true,
+        empresa_id: Number(state.empresaID),
+        simulado: false,
+        envio_por_tandas: true,
+        lote_total: plan.length,
+        objetivo: {
+          total_documentos: totalPlan,
+          facturas_electronicas: Number(payload.facturas_electronicas || 0),
+          notas_debito: Number(payload.notas_debito || 0),
+          notas_credito: Number(payload.notas_credito || 0)
+        },
+        procesados: 0,
+        resumen: {},
+        aceptados_por_tipo: {},
+        detenido_por_error: false,
+        detalles: [],
+        lotes: []
+      };
+      setJSON("feDianPruebasResultado", null);
+      renderDianRunResult(null);
+      for (let index = 0; index < plan.length; index++) {
+        const batch = Object.assign({}, plan[index], {
+          simular: false,
+          detener_en_error: true,
+          set_habilitacion: true
+        });
+        const progress = "lote " + (index + 1) + "/" + plan.length + " (" + batch.etiqueta_lote + ")";
+        setText("feDianPruebasMsg", "Enviando " + progress + "...", false);
+        try {
+          const data = await enviarDianSetRequest(batch, label + " - " + progress);
+          aggregate.lotes.push(data);
+          aggregate.procesados += Number(data && data.procesados || 0);
+          aggregate.resumen = mergeDianResumen(aggregate.resumen, data && data.resumen);
+          aggregate.aceptados_por_tipo = mergeDianAceptadosPorTipo(aggregate.aceptados_por_tipo, data && data.aceptados_por_tipo);
+          if (data && Array.isArray(data.detalles)) {
+            data.detalles.forEach(function(row) {
+              aggregate.detalles.push(Object.assign({}, row, { lote: index + 1 }));
+            });
+          }
+          aggregate.ok = aggregate.ok && !!(data && data.ok !== false);
+          aggregate.detenido_por_error = aggregate.detenido_por_error || !!(data && data.detenido_por_error);
+          aggregate.consecutivo_siguiente = data && data.consecutivo_siguiente;
+          aggregate.test_set_id = data && data.test_set_id || aggregate.test_set_id;
+          aggregate.endpoint = data && data.endpoint || aggregate.endpoint;
+          aggregate.requisito_set_dian = data && data.requisito_configurado || data && data.requisito_set_dian || aggregate.requisito_set_dian;
+          renderDianRunResult(aggregate);
+          setJSON("feDianPruebasResultado", aggregate);
+          if (!data || data.ok === false || data.detenido_por_error) {
+            aggregate.ok = false;
+            aggregate.detenido_por_error = true;
+            setText("feDianPruebasMsg", "Set detenido en " + progress + ". Revisa la consola DIAN.", true);
+            break;
+          }
+        } catch (err) {
+          aggregate.ok = false;
+          aggregate.detenido_por_error = true;
+          aggregate.error = err && err.message ? err.message : "Error enviando set por tandas.";
+          renderDianRunResult(aggregate);
+          setJSON("feDianPruebasResultado", err && err.data ? err.data : aggregate);
+          setText("feDianPruebasMsg", aggregate.error, true);
+          break;
+        }
+      }
+      if (!aggregate.detenido_por_error) {
+        setText("feDianPruebasMsg", "Set completo enviado por tandas. Revisa acuses y consola DIAN.", !aggregate.ok);
+      }
+      loadDianConfigStatus().catch(function() {});
+    }
+
+    async function ejecutarDianSet(payload, label, options) {
+      options = options || {};
       if (!payload || payload.total_documentos <= 0) {
         setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
+        return;
+      }
+      if (options.batched) {
+        await ejecutarDianSetPorTandas(payload, label);
         return;
       }
       if (!window.confirm("Esto enviara documentos reales al ambiente de habilitacion DIAN. Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
@@ -867,13 +1009,7 @@
       setJSON("feDianPruebasResultado", null);
       renderDianRunResult(null);
       try {
-        const url = "/api/empresa/facturacion_electronica/dian?action=pruebas_dian&empresa_id=" + encodeURIComponent(state.empresaID);
-        const data = await dianFetchJSON(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          credentials: "same-origin"
-        }, "Envio real DIAN: " + label);
+        const data = await enviarDianSetRequest(payload, label);
         renderDianRunResult(data);
         setJSON("feDianPruebasResultado", data);
         const first = data && Array.isArray(data.detalles) && data.detalles.length ? data.detalles[0] : null;
@@ -888,7 +1024,9 @@
     }
 
     async function ejecutarDianPruebas() {
-      await ejecutarDianSet(collectDianSetPayloadBase(), "set automatico DIAN");
+      const payload = collectDianSetPayloadBase();
+      const requestedMax = numberInputValue("feDianSetMaxEnvios", 0);
+      await ejecutarDianSet(payload, "set automatico DIAN", { batched: !requestedMax && Number(payload.total_documentos || 0) > state.dianBatchSize });
     }
 
     async function ejecutarDianPruebaDosCadaTipo() {

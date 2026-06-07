@@ -1,3 +1,10 @@
+2026-06-06: Set DIAN completo por tandas reales.
+- Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y centro de habilitacion.
+- Incidente: ejecutar los 50 documentos del set DIAN en una sola solicitud puede superar el timeout del proxy Nginx y devolver `504 Gateway Time-out` aunque el transporte DIAN este funcional.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` divide automaticamente el set completo en tandas reales de 3 documentos cuando no hay limite manual, manteniendo TestSetId, firma y envio a habilitacion.
+- Operacion: la pantalla acumula procesados, resumen, acuses, detalles y lotes en la consola DIAN para completar 30 facturas, 10 notas debito y 10 notas credito sin simular.
+- QA: validar sintaxis del script embebido y ejecutar visualmente el set completo desde empresa 12 para confirmar que no vuelve a cortar por 504.
+
 2026-06-06: Resumen portal DIAN visible en pagina de pruebas.
 - Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y soporte operativo.
 - Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrega una ficha `Resumen portal DIAN` con contribuyente, estado del set, TestSetId, modo de operacion, rango de numeracion, software, URL y conteos requeridos/aceptados.
