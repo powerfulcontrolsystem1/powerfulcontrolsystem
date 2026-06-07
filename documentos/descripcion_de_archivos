@@ -1,3 +1,9 @@
+2026-06-07 - Auditoria de navegacion de Administrar empresa
+- `web/administrar_empresa.html`:
+	- normaliza etiquetas visibles del menu principal, agrega `linkVolverEmpresas` y mejora textos del drawer de radio sin cambiar rutas ni permisos.
+- `web/js/plantillas_nuevas_catalogo.js`:
+	- corrige titulos, copys y secciones visibles de plantillas verticales para mantener una presentacion profesional.
+
 2026-06-07 - IA oculta por defecto por empresa
 - `backend/handlers/empresa_permisos.go`:
 	- aplica default oculto para paginas IA empresariales en el contexto y snapshot de permisos, salvo habilitacion fina explicita por empresa.

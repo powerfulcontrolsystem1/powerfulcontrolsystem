@@ -1,3 +1,8 @@
+## [2026-06-07] Auditoria de navegacion de Administrar empresa
+- [Frontend] `administrar_empresa.html` normaliza etiquetas visibles del menu principal y del drawer de radio con tildes y nombres mas profesionales.
+- [Catalogo] `plantillas_nuevas_catalogo.js` corrige titulos, textos y secciones visibles de plantillas verticales sin cambiar modulos, ids ni rutas.
+- [QA] Auditoria estatica confirma 57 enlaces con `id`, sin `href` vacios, sin rutas HTML inexistentes y sin URLs repetidas exactas.
+
 ## [2026-06-07] Selector de empresas sin tarjeta de orden
 - [Frontend] `seleccionar_empresa.html` elimina la tarjeta `Orden de tarjetas` y el boton visible `Restablecer orden`.
 - [Estilos] `estilos.css` retira las reglas de `.selector-order-tools`.
