@@ -1,3 +1,10 @@
+2026-06-07: Ayuda integrada con robot/caja IA
+- Modulos afectados: `ayuda`, `chat_flotante`, `robot_ia`, `nomina_sueldos` y paginas empresariales en iframe.
+- Frontend: `web/js/help_ai_bridge.js` captura enlaces de ayuda/tutorial, conserva `empresa_id` y solicita al panel padre abrir la ayuda en el robot/caja IA.
+- Chat: `web/js/ai_chat_drawer.js` agrega `PCSAIChatHelp`, muestra una guia contextual estatica y deja listo un prompt en modo `Ayudante por pasos` si el usuario quiere consultar.
+- Respaldo: cuando chat/IA estan apagados por empresa, el enlace conserva su destino HTML normal, sin activar IA ni cambiar permisos.
+- Nomina: el boton `Ayuda` queda integrado al robot/caja IA y mantiene `tutorial_nomina.html` como guia completa.
+
 2026-06-07: Configuracion de campos imprimibles por empresa
 - Modulos afectados: `configuracion_impresora`, `carrito_de_compras`, `corte_de_caja` y `reportes_turnos`.
 - Backend: `empresa_configuracion_avanzada` guarda `impresion_recibo_items_json` e `impresion_corte_items_json` como JSON saneado de booleanos por `empresa_id`.

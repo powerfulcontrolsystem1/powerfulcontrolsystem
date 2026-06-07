@@ -1,3 +1,10 @@
+2026-06-07: Ayuda integrada con robot/caja IA.
+- Modulos afectados: ayuda, chat flotante IA, robot/secretaria 3D y paginas empresariales en iframe.
+- Frontend: `web/js/help_ai_bridge.js` captura enlaces de ayuda/tutorial y los envia a `PCSAIChatHelp` en el panel padre conservando `empresa_id`.
+- Chat/robot: `web/js/ai_chat_drawer.js` muestra ayuda contextual estatica en robot o caja IA, con acciones de abrir guia y pedir paso a paso; no ejecuta mutaciones ni consume IA automaticamente.
+- Integracion: `web/js/empresa_submenu_context.js` carga el puente en subpaginas empresariales; `nomina_sueldos.html` conecta el boton `Ayuda` al nuevo flujo.
+- Seguridad: si chat/IA estan apagados por configuracion de empresa, se conserva el comportamiento seguro de abrir la pagina HTML de ayuda; no se cambia backend, permisos, licencias ni datos.
+
 2026-06-07: Ajuste visual de previsualizacion de factura electronica.
 - Modulo afectado: Facturas electronicas y comprobantes.
 - Frontend: `web/estilos.css` fija ancho minimo para la hoja embebida de previsualizacion y agrega desplazamiento horizontal cuando el contenedor sea angosto.

@@ -1,3 +1,8 @@
+## [2026-06-07] Ayuda integrada con robot/caja IA
+- [Frontend] `help_ai_bridge.js` conecta enlaces de ayuda y tutoriales con el robot/caja IA del panel empresarial.
+- [Chat IA] `ai_chat_drawer.js` muestra ayuda contextual estatica sin consumir IA ni ejecutar acciones hasta que el usuario lo pida.
+- [Nomina] El boton `Ayuda` abre el robot/caja cuando esta habilitado y mantiene el tutorial HTML como respaldo.
+
 ## [2026-06-07] Ajuste visual de previsualizacion de factura electronica
 - [Frontend] `estilos.css` evita que la hoja embebida de factura electronica se comprima y se solapen columnas en contenedores angostos.
 - [UX] La previsualizacion mantiene aspecto de papel, usa desplazamiento horizontal cuando el ancho disponible no alcanza y conserva contraste blanco/negro en tema oscuro.

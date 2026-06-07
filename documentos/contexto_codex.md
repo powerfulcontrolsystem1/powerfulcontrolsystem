@@ -4,6 +4,20 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-07 - Ayuda integrada con robot/caja IA
+
+- `web/js/help_ai_bridge.js` conecta enlaces de ayuda, tutoriales y botones con
+  `data-pcs-help-ai` al robot/caja IA del panel empresarial.
+- `web/js/ai_chat_drawer.js` expone `PCSAIChatHelp` y acepta el mensaje
+  `pcs-help-ai-open` para mostrar ayuda contextual estatica sin ejecutar
+  acciones ni consumir IA automaticamente.
+- Si el robot 3D esta habilitado por empresa, la ayuda aparece en sus globos; si
+  solo esta habilitada la caja IA, se abre el drawer en modo `Ayudante por
+  pasos`; si la IA/chat estan apagados, el enlace conserva la guia HTML normal.
+- `web/js/empresa_submenu_context.js` carga el puente de ayuda en subpaginas
+  empresariales para que los iframes puedan pedir ayuda al panel padre sin
+  romper `empresa_id`.
+
 ## Actualizacion 2026-06-07 - Barra de configuracion DIAN
 
 - `web/administrar_empresa/facturacion_electronica.html` muestra una barra

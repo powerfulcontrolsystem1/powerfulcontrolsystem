@@ -3808,6 +3808,20 @@
     var input = document.getElementById(ROBOT_INLINE_INPUT_ID);
     var value = normalize(prompt);
     if (!input || !value || state.loading) return;
+    if (value.indexOf('__PCS_HELP_OPEN_URL__') === 0) {
+      var helpUrl = normalize(value.replace('__PCS_HELP_OPEN_URL__', ''));
+      if (helpUrl && helpUrl.charAt(0) === '/') {
+        try {
+          window.open(helpUrl, '_blank', 'noopener,noreferrer');
+          setRobotAssistantText('Abrí la guía en una pestaña nueva. Puedes volver aquí y preguntarme el siguiente paso cuando quieras.');
+          setNotice('Guía de ayuda abierta.');
+        } catch (error) {
+          setRobotAssistantText('No pude abrir la guía automáticamente. Usa el enlace de ayuda de la pantalla o intenta de nuevo.');
+          setNotice('No se pudo abrir la guía de ayuda.', true);
+        }
+      }
+      return true;
+    }
     if (value.indexOf('__PCS_ROBOT_CONFIRM_ACTIONS__') === 0) {
       clearRobotActionChips();
       executeActionProposal(parseInt(value.replace('__PCS_ROBOT_CONFIRM_ACTIONS__', ''), 10));
@@ -4123,6 +4137,104 @@
     ]);
     setNotice('Recordatorio de notas cumplido.');
     speakRobotAnnouncement(message);
+    return true;
+  }
+
+  function normalizeHelpPayload(payload) {
+    payload = payload && typeof payload === 'object' ? payload : {};
+    var helpUrl = normalize(payload.helpUrl || payload.url || payload.href || '');
+    if (helpUrl && helpUrl.charAt(0) !== '/') {
+      try {
+        var parsed = new URL(helpUrl, window.location.origin);
+        if (parsed.origin === window.location.origin) {
+          helpUrl = parsed.pathname + parsed.search + parsed.hash;
+        } else {
+          helpUrl = '';
+        }
+      } catch (error) {
+        helpUrl = '';
+      }
+    }
+    return {
+      page: normalize(payload.page || payload.pagina || document.title || 'Pantalla actual'),
+      section: normalize(payload.section || payload.seccion || payload.title || payload.titulo || 'Ayuda contextual'),
+      detail: normalize(payload.detail || payload.detalle || ''),
+      prompt: normalize(payload.prompt || ''),
+      helpUrl: helpUrl || '/ayuda/ayuda_contextual.html'
+    };
+  }
+
+  function buildHelpAssistantText(payload) {
+    var title = payload.section || payload.page || 'esta pantalla';
+    var page = payload.page && payload.page !== title ? (' en ' + payload.page) : '';
+    var lines = [
+      'Te acompaño con la ayuda de ' + title + page + '.',
+      '',
+      'Puedo hacer tres cosas sin cambiar datos: explicar para qué sirve esta sección, darte pasos de operación y abrir la guía completa si necesitas más detalle.'
+    ];
+    if (payload.detail) {
+      lines.push('', payload.detail);
+    }
+    lines.push('', 'No voy a emitir documentos, guardar cambios ni consumir IA automáticamente hasta que escribas una consulta o confirmes una acción.');
+    return lines.join('\n');
+  }
+
+  function buildHelpAssistantPrompt(payload) {
+    if (payload.prompt) return payload.prompt;
+    return 'Actúa como ayudante por pasos de Powerful Control System. Explícame cómo usar "' + (payload.section || payload.page || 'esta pantalla') + '" y dime qué debo revisar antes de guardar o ejecutar acciones.';
+  }
+
+  function buildHelpAssistantActions(payload) {
+    var actions = [
+      {
+        label: 'Paso a paso',
+        prompt: buildHelpAssistantPrompt(payload)
+      },
+      {
+        label: 'Que revisar',
+        prompt: 'Dame una lista corta de validaciones antes de operar "' + (payload.section || payload.page || 'esta pantalla') + '" en esta empresa.'
+      }
+    ];
+    if (payload.helpUrl) {
+      actions.unshift({
+        label: 'Abrir guía',
+        prompt: '__PCS_HELP_OPEN_URL__' + payload.helpUrl
+      });
+    }
+    return actions;
+  }
+
+  function startHelpAssistant(rawPayload) {
+    if (!state.chatEnabled) return false;
+    var payload = normalizeHelpPayload(rawPayload);
+    var message = buildHelpAssistantText(payload);
+    var prompt = buildHelpAssistantPrompt(payload);
+    if (state.robotEnabled) {
+      var toggleBtn = document.getElementById(TOGGLE_ID);
+      setChatPersonalityMode(getChatPersonalityMode() === 'secretary' ? 'secretary' : 'robot');
+      closeChatDrawerFully();
+      ensureRobotInlineUI(toggleBtn);
+      showRobotAssistant(toggleBtn);
+      setRobotMood('thinking', 1800);
+      setRobotAssistantText(message);
+      renderRobotActionChips(buildHelpAssistantActions(payload));
+      setNotice('Ayuda contextual conectada al robot.');
+      focusRobotInput();
+      return true;
+    }
+    openChatDrawerFromUser();
+    var modeEl = document.getElementById(MODE_ID);
+    var input = document.getElementById(INPUT_ID);
+    if (modeEl) {
+      modeEl.value = 'ayudante';
+      syncModeUI();
+    }
+    appendMessage('assistant', message);
+    if (input) {
+      input.value = prompt;
+      input.focus();
+    }
+    setNotice('Ayuda contextual lista en la caja de IA. Revisa o envia la pregunta.');
     return true;
   }
 
@@ -4587,6 +4699,13 @@
         notifyRobotReminder(data.payload || data);
         return;
       }
+      if (data.type === 'pcs-help-ai-open') {
+        try {
+          if (event.origin && event.origin !== window.location.origin) return;
+        } catch (originError) {}
+        startHelpAssistant(data.payload || data);
+        return;
+      }
       if (data.type !== 'pcs-ai-drawer-open') return;
       if (!state.chatEnabled) return;
       if (isAvatarPersonalityMode(getChatPersonalityMode())) {
@@ -4629,6 +4748,7 @@
       startConfigurationAssistant: startConfigurationAssistant,
       startGuidedSetupWizard: startGuidedSetupWizard,
       notifyReminder: notifyRobotReminder,
+      startHelpAssistant: startHelpAssistant,
       showMessage: function (text, options) {
         if (!state.chatEnabled || !state.robotEnabled) return false;
         var toggleBtn = document.getElementById(TOGGLE_ID);
@@ -4645,6 +4765,8 @@
       },
       sendPrompt: sendRobotPrompt
     };
+
+    window.PCSAIChatHelp = startHelpAssistant;
 
     window.PCSAIChatOpen = function (options) {
       options = options || {};

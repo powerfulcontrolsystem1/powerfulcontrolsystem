@@ -1,3 +1,18 @@
+2026-06-07 - Ayuda integrada con robot/caja IA
+- `web/js/help_ai_bridge.js`:
+	- nuevo puente frontend para capturar enlaces de ayuda, tutoriales y botones `data-pcs-help-ai`.
+	- envia la solicitud al panel padre cuando la ayuda esta dentro de un iframe empresarial.
+	- conserva `empresa_id` en URLs internas y abre la guia HTML normal si el chat/IA no esta habilitado.
+- `web/js/ai_chat_drawer.js`:
+	- agrega `PCSAIChatHelp` y el mensaje `pcs-help-ai-open` para mostrar ayuda contextual estatica en robot o caja IA.
+	- no ejecuta acciones reales ni consume IA hasta que el usuario envie una pregunta o confirme una accion.
+- `web/js/empresa_submenu_context.js`:
+	- carga automaticamente el puente de ayuda en subpaginas empresariales.
+- `web/administrar_empresa.html`:
+	- carga el puente junto al drawer IA principal.
+- `web/administrar_empresa/nomina_sueldos.html`:
+	- conecta el boton `Ayuda` con el robot/caja IA y mantiene el tutorial HTML como respaldo.
+
 2026-06-07 - Ajuste visual de previsualizacion de factura electronica
 - `web/estilos.css`:
 	- fija ancho minimo de la hoja dentro de `.factura-print-preview`.

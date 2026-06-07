@@ -504,6 +504,19 @@
     applyThemeContext();
     applyEmpresaContext();
     renderMissingEmpresaContext();
+    ensureHelpAIBridge();
+  }
+
+  function ensureHelpAIBridge() {
+    try {
+      if (window.__pcsHelpAIBridgeInstalled) return;
+      if (document.querySelector('script[data-pcs-help-ai-bridge]')) return;
+      const script = document.createElement('script');
+      script.src = '/js/help_ai_bridge.js?v=20260607';
+      script.defer = true;
+      script.dataset.pcsHelpAiBridge = '1';
+      (document.head || document.documentElement).appendChild(script);
+    } catch (_) {}
   }
 
   if (document.readyState === 'loading') {
