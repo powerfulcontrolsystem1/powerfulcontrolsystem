@@ -13485,3 +13485,13 @@ Archivos modificados:
 - web/administrar_empresa.html
 - web/js/ai_chat_drawer.js
 - web/js/empresa_submenu_context.js
+
+2026-06-07 17:07:23 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: eca05714; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa.html
+- web/js/empresa_submenu_context.js
+- web/js/help_ai_bridge.js
