@@ -13,7 +13,8 @@ decisiones en cada tarea.
   acciones ni consumir IA automaticamente.
 - Si el robot 3D esta habilitado por empresa, la ayuda aparece en sus globos; si
   solo esta habilitada la caja IA, se abre el drawer en modo `Ayudante por
-  pasos`; si la IA/chat estan apagados, el enlace conserva la guia HTML normal.
+  pasos`; si la IA/chat estan apagados, se abre un panel de ayuda estatica sin
+  activar IA ni cambiar preferencias y con enlace a la guia HTML completa.
 - `web/js/empresa_submenu_context.js` carga el puente de ayuda en subpaginas
   empresariales para que los iframes puedan pedir ayuda al panel padre sin
   romper `empresa_id`.

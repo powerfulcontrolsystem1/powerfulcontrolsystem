@@ -2,10 +2,11 @@
 - `web/js/help_ai_bridge.js`:
 	- nuevo puente frontend para capturar enlaces de ayuda, tutoriales y botones `data-pcs-help-ai`.
 	- envia la solicitud al panel padre cuando la ayuda esta dentro de un iframe empresarial.
-	- conserva `empresa_id` en URLs internas y abre la guia HTML normal si el chat/IA no esta habilitado.
+	- conserva `empresa_id` en URLs internas y usa la guia HTML completa como respaldo visible.
 - `web/js/ai_chat_drawer.js`:
 	- agrega `PCSAIChatHelp` y el mensaje `pcs-help-ai-open` para mostrar ayuda contextual estatica en robot o caja IA.
 	- no ejecuta acciones reales ni consume IA hasta que el usuario envie una pregunta o confirme una accion.
+	- si la caja IA esta desactivada, abre un panel de ayuda estatica sin modificar la preferencia.
 	- inicializa tambien si el script se carga despues de `DOMContentLoaded`.
 - `web/js/empresa_submenu_context.js`:
 	- carga automaticamente el puente de ayuda en subpaginas empresariales.

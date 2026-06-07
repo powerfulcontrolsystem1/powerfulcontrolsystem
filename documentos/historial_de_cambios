@@ -3,8 +3,9 @@
 - Frontend: `web/js/help_ai_bridge.js` captura enlaces de ayuda/tutorial y los envia a `PCSAIChatHelp` en el panel padre conservando `empresa_id`.
 - Chat/robot: `web/js/ai_chat_drawer.js` muestra ayuda contextual estatica en robot o caja IA, con acciones de abrir guia y pedir paso a paso; no ejecuta mutaciones ni consume IA automaticamente.
 - Runtime: el drawer IA ahora inicializa tambien cuando el script carga despues de `DOMContentLoaded`, y `administrar_empresa.html` versiona el JS para evitar cache antiguo.
+- UX: si la caja IA esta oculta/desactivada por empresa, el enlace de ayuda ya no queda silencioso; abre un panel informativo sin enviar consultas ni activar IA automaticamente.
 - Integracion: `web/js/empresa_submenu_context.js` carga el puente en subpaginas empresariales; `nomina_sueldos.html` conecta el boton `Ayuda` al nuevo flujo.
-- Seguridad: si chat/IA estan apagados por configuracion de empresa, se conserva el comportamiento seguro de abrir la pagina HTML de ayuda; no se cambia backend, permisos, licencias ni datos.
+- Seguridad: si chat/IA estan apagados por configuracion de empresa, se muestra ayuda estatica visible y la guia completa sin cambiar preferencias, backend, permisos, licencias ni datos.
 
 2026-06-07: Ajuste visual de previsualizacion de factura electronica.
 - Modulo afectado: Facturas electronicas y comprobantes.

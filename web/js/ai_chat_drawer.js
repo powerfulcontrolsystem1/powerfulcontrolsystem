@@ -4205,10 +4205,15 @@
   }
 
   function startHelpAssistant(rawPayload) {
-    if (!state.chatEnabled) return false;
     var payload = normalizeHelpPayload(rawPayload);
     var message = buildHelpAssistantText(payload);
     var prompt = buildHelpAssistantPrompt(payload);
+    if (!state.chatEnabled) {
+      if (!openChatDrawerForHelpPanel()) return false;
+      appendMessage('assistant', message + '\n\nLa caja de IA esta desactivada para esta empresa. Esta ayuda queda visible sin enviar consultas ni consumir IA. Para conversar con el asistente, activa la caja de inteligencia artificial desde la configuracion del panel.\n\nGuia completa: ' + payload.helpUrl);
+      setNotice('Ayuda abierta sin activar IA. Activa la caja de inteligencia artificial si quieres conversar con el asistente.');
+      return true;
+    }
     if (state.robotEnabled) {
       var toggleBtn = document.getElementById(TOGGLE_ID);
       setChatPersonalityMode(getChatPersonalityMode() === 'secretary' ? 'secretary' : 'robot');
@@ -4462,6 +4467,22 @@
       var inp = document.getElementById(INPUT_ID);
       if (inp) inp.focus();
     }, 50);
+  }
+
+  function openChatDrawerForHelpPanel() {
+    var drawer = document.getElementById(DRAWER_ID);
+    var toggle = document.getElementById(TOGGLE_ID);
+    var minibar = document.getElementById(MINIBAR_ID);
+    if (!drawer || !toggle) return false;
+    drawer.classList.remove('minimized');
+    if (minibar) minibar.hidden = true;
+    drawer.classList.add('open');
+    toggle.classList.add('is-drawer-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('ai-chat-drawer-open');
+    setChatBackdropVisible(true);
+    setChatBodyScrollLock(true);
+    return true;
   }
 
   function minimizeChatDrawer() {
