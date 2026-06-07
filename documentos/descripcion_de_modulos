@@ -1,3 +1,9 @@
+2026-06-07: Bodega base por empresa
+- Modulos afectados: `seleccion_empresas`, `preconfiguraciones`, `inventario`, `bodegas`.
+- Cambio funcional: toda empresa nueva queda con una bodega activa llamada `Bodega 1`; si la bodega ya existe, el backend la conserva y la reactiva.
+- Backfill: el arranque aplica `20260607_bodega_1_default` para empresas existentes de preproduccion.
+- Alcance: no crea productos, existencias, movimientos ni stock simulado; solo deja la ubicacion minima para operar inventario real.
+
 2026-06-07: Apariencia profesional de Suite contador
 - Modulo afectado: `suite_contador`.
 - Frontend: `web/administrar_empresa/suite_contador.html` usa variables de tema, tarjetas compactas, acciones con iconos textuales y estados visuales consistentes para modulos disponibles o bloqueados.

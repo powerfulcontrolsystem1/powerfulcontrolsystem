@@ -1,3 +1,14 @@
+2026-06-07 - Bodega 1 por defecto en empresas
+- `backend/db/productos.go`:
+	- agrega `EnsureEmpresaBodega1` para crear o reactivar la bodega base `Bodega 1` por `empresa_id`.
+	- agrega `ApplyDefaultBodega1ToExistingEmpresas` con migracion `20260607_bodega_1_default`.
+- `backend/db/empresa_colombia_defaults.go`:
+	- incorpora la bodega base en la preconfiguracion aplicada al crear empresa y expone `bodega_id` en el resultado.
+- `backend/main.go`:
+	- ejecuta el backfill de `Bodega 1` despues de asegurar el esquema de productos.
+- `backend/db/productos_bodegas_test.go`:
+	- valida que el default sea idempotente y no cree stock/productos demo.
+
 2026-06-07 - Ayuda integrada con robot/caja IA
 - `web/js/help_ai_bridge.js`:
 	- nuevo puente frontend para capturar enlaces de ayuda, tutoriales y botones `data-pcs-help-ai`.

@@ -1,3 +1,20 @@
+## Actualizacion 2026-06-07 - Bodega base por empresa
+
+- `backend/db/productos.go`
+  - Agrega `EnsureEmpresaBodega1`, que garantiza una bodega activa `Bodega 1`
+    por `empresa_id`.
+  - Agrega `ApplyDefaultBodega1ToExistingEmpresas` con version
+    `20260607_bodega_1_default` para backfill idempotente de empresas
+    existentes.
+- `backend/db/empresa_colombia_defaults.go`
+  - La preconfiguracion empresarial incorpora `bodega_id` en el resultado de
+    defaults y en el marcador JSON.
+- `backend/main.go`
+  - El arranque ejecuta el backfill despues de asegurar `bodegas` y antes de
+    inventario avanzado.
+- Alcance: no se crean productos, existencias, movimientos ni datos simulados;
+  solo una ubicacion base real para inventario.
+
 ## Actualizacion 2026-06-04 (Camaras y DVR)
 
 - `backend/db/camaras.go`: define `empresa_camaras`, CRUD por `empresa_id` y

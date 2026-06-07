@@ -3,6 +3,15 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-07 (bodega base por empresa)
+- Tabla `bodegas`: cada empresa nueva recibe una fila activa con
+  `nombre='Bodega 1'`, creada por `EnsureEmpresaBodega1`.
+- La migracion `schema_migrations.version=20260607_bodega_1_default` aplica el
+  mismo default a empresas existentes de preproduccion.
+- La operacion es idempotente por `empresa_id`: si `Bodega 1` existe, se
+  reactiva; si falta, se crea. No inserta productos, existencias,
+  `inventario_movimientos`, lotes ni stock simulado.
+
 Actualizacion 2026-06-07 (catalogo legal versionado)
 - Nueva tabla `catalogo_legal_pais_versiones`: almacena versiones legales por
   pais (`pais_codigo`, `version`, vigencia, estado, fuente y descripcion).

@@ -1,3 +1,11 @@
+2026-06-07: Bodega 1 por defecto en empresas.
+- Modulos afectados: Creacion de empresas, preconfiguraciones e inventario/bodegas.
+- Backend: `backend/db/productos.go` agrega `EnsureEmpresaBodega1` y `ApplyDefaultBodega1ToExistingEmpresas`.
+- Creacion: `backend/db/empresa_colombia_defaults.go` incluye la bodega base en los defaults aplicados por empresa y devuelve `bodega_id`.
+- Arranque: `backend/main.go` ejecuta la migracion `20260607_bodega_1_default` para empresas existentes, independiente de migraciones anteriores.
+- Seguridad/datos: todas las operaciones filtran por `empresa_id`; no se crean productos, existencias, movimientos, lotes ni stock simulado.
+- QA: `go test ./db -run "Bodega|ColombiaDefaults" -count=1`; `go test ./handlers -run "Empresas|Permisos" -count=1`.
+
 2026-06-07: Boton Tutorial DIAN navega correctamente.
 - Modulo afectado: Facturacion electronica Colombia.
 - Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` marca `linkTutorialDian` con `data-pcs-help-ai="off"` para que el click cargue `facturacion_electronica_tutorial_dian.html` dentro de `facturacionContentFrame`.

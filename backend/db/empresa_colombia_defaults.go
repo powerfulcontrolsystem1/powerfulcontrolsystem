@@ -25,6 +25,7 @@ type EmpresaColombiaDefaultsResult struct {
 	Impuestos             int      `json:"impuestos"`
 	NominaConfiguracionID int64    `json:"nomina_configuracion_id"`
 	ConceptosNomina       int      `json:"conceptos_nomina"`
+	BodegaID              int64    `json:"bodega_id"`
 	MarkerID              int64    `json:"marker_id"`
 	Errores               []string `json:"errores,omitempty"`
 }
@@ -428,6 +429,7 @@ func ApplyEmpresaParametrosLegalesLatest(dbConn *sql.DB, empresaID int64, paisCo
 		"impuestos":           defaults.Impuestos,
 		"conceptos_nomina":    defaults.ConceptosNomina,
 		"nomina_config_id":    defaults.NominaConfiguracionID,
+		"bodega_id":           defaults.BodegaID,
 		"version_anterior":    prev.VersionAplicada,
 		"vigencia_desde":      latest.VigenciaDesde,
 		"catalogo_version_id": latest.ID,
@@ -659,6 +661,13 @@ func ApplyEmpresaColombiaDefaults(dbConn *sql.DB, empresaID int64, usuario strin
 		return res, err
 	}
 
+	bodegaID, err := EnsureEmpresaBodega1(dbConn, empresaID, usuario)
+	if err != nil {
+		res.Errores = append(res.Errores, "bodega_1: "+err.Error())
+	} else {
+		res.BodegaID = bodegaID
+	}
+
 	for _, imp := range EmpresaImpuestosCatalogoColombia() {
 		imp.EmpresaID = empresaID
 		imp.UsuarioCreador = usuario
@@ -693,6 +702,8 @@ func ApplyEmpresaColombiaDefaults(dbConn *sql.DB, empresaID int64, usuario strin
 		"auxilio_transporte_mensual": ColombiaAuxilioTransporteMensual2026,
 		"impuestos":                  res.Impuestos,
 		"conceptos_nomina":           res.ConceptosNomina,
+		"bodega_id":                  res.BodegaID,
+		"bodega_nombre":              "Bodega 1",
 		"observacion":                "preconfiguracion Colombia aplicada en preproduccion",
 	})
 	markerID, err := UpsertEmpresaEstacionPref(dbConn, EmpresaEstacionPref{

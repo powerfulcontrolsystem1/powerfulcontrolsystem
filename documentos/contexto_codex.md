@@ -4,6 +4,17 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-07 - Bodega base por empresa
+
+- Cada empresa nueva queda preconfigurada con una bodega activa llamada
+  `Bodega 1`.
+- El backend usa `EnsureEmpresaBodega1` para crearla de forma idempotente por
+  `empresa_id`: si ya existe, la reactiva; si falta, la crea sin productos,
+  existencias, movimientos ni stock simulado.
+- El arranque aplica la migracion `20260607_bodega_1_default` para empresas
+  existentes de preproduccion, independiente de las migraciones anteriores de
+  impuestos y nomina.
+
 ## Actualizacion 2026-06-07 - Ayuda integrada con robot/caja IA
 
 - `web/js/help_ai_bridge.js` conecta enlaces de ayuda, tutoriales y botones con

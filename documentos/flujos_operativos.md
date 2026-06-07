@@ -180,19 +180,22 @@ afecte dinero, documentos, licencias o seguridad.
 4. Ademas aplica la preconfiguracion Colombia `CO-2026-06`: impuestos base,
    configuracion legal de nomina, conceptos de nomina Colombia y marcador
    `preconfiguracion_colombia_fiscal_nomina` por `empresa_id`.
-5. La preconfiguracion no crea empleados, ventas, liquidaciones ni documentos
-   electronicos; solo deja parametros reales para operacion posterior.
-6. La creacion debe ser idempotente: doble clic, reintento o solicitud
+5. La preconfiguracion crea o reactiva una bodega base llamada `Bodega 1` por
+   `empresa_id`, sin productos, existencias, movimientos ni stock simulado.
+6. La preconfiguracion no crea empleados, ventas, liquidaciones ni documentos
+   electronicos; solo deja parametros y ubicacion base reales para operacion
+   posterior.
+7. La creacion debe ser idempotente: doble clic, reintento o solicitud
    concurrente con el mismo administrador, tipo, nombre y NIT debe devolver la
    empresa ya creada sin insertar otra ni repetir avisos.
-7. El backend prepara la carpeta empresarial
+8. El backend prepara la carpeta empresarial
    `web/uploads/empresas/empresa_{id}_{slug}/` con subcarpeta `imagenes` y la
    carpeta privada `facturacion_electronica/firma_electronica`.
-8. Si esta activo el aviso de empresa nueva, se notifica al super administrador
+9. Si esta activo el aviso de empresa nueva, se notifica al super administrador
    solo cuando realmente se inserta una empresa nueva.
-9. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
-   `empresa_id` correcto.
-10. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
+10. Pruebas: empresa creada, aparece en selector, entra a panel, conserva
+   `empresa_id` correcto y lista `Bodega 1` como bodega activa.
+11. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
    deben crear empresas duplicadas.
 
 ## Ordenar empresas en el selector

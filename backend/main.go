@@ -997,6 +997,11 @@ func main() {
 	if err := dbpkg.EnsureEmpresaProductosSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure empresa productos schema in empresas db: %v", err)
 	}
+	if result, err := dbpkg.ApplyDefaultBodega1ToExistingEmpresas(dbEmpresas); err != nil {
+		log.Printf("warning: no se pudo crear Bodega 1 por defecto en empresas existentes: %v", err)
+	} else if result != nil {
+		log.Printf("INFO: Bodega 1 por defecto verificada: empresas=%d aplicadas=%d errores=%d", result.Empresas, result.Aplicadas, len(result.Errores))
+	}
 	if err := dbpkg.EnsureEmpresaInventarioAvanzadoSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure inventario avanzado schema in empresas db: %v", err)
 	}

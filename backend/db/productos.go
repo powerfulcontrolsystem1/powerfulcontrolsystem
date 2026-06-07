@@ -37,6 +37,13 @@ type Bodega struct {
 	Observaciones      string `json:"observaciones,omitempty"`
 }
 
+type EmpresaBodega1BackfillResult struct {
+	Version   string   `json:"version"`
+	Empresas  int      `json:"empresas"`
+	Aplicadas int      `json:"aplicadas"`
+	Errores   []string `json:"errores,omitempty"`
+}
+
 // CategoriaProducto representa una categoría de productos dentro de una empresa.
 type CategoriaProducto struct {
 	ID                 int64  `json:"id"`
@@ -1197,6 +1204,123 @@ func CreateBodega(dbConn *sql.DB, b Bodega) (int64, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+// EnsureEmpresaBodega1 garantiza la bodega base de una empresa sin crear stock ni productos demo.
+func EnsureEmpresaBodega1(dbConn *sql.DB, empresaID int64, usuario string) (int64, error) {
+	if dbConn == nil {
+		return 0, fmt.Errorf("db nil")
+	}
+	if empresaID <= 0 {
+		return 0, fmt.Errorf("empresa_id es obligatorio")
+	}
+	if err := EnsureEmpresaProductosSchema(dbConn); err != nil {
+		return 0, err
+	}
+	usuario = strings.TrimSpace(usuario)
+	if usuario == "" {
+		usuario = "sistema.preconfiguracion"
+	}
+	const nombre = "Bodega 1"
+	id, err := getEmpresaBodegaIDByNombre(dbConn, empresaID, nombre)
+	if err == nil {
+		if setErr := SetBodegaEstado(dbConn, empresaID, id, "activo"); setErr != nil && setErr != sql.ErrNoRows {
+			return 0, setErr
+		}
+		return id, nil
+	}
+	if err != sql.ErrNoRows {
+		return 0, err
+	}
+	id, err = CreateBodega(dbConn, Bodega{
+		EmpresaID:      empresaID,
+		Codigo:         "BOD-001",
+		Nombre:         nombre,
+		Ubicacion:      "Principal",
+		UsuarioCreador: usuario,
+		Estado:         "activo",
+		Observaciones:  "Bodega base creada automaticamente por preconfiguracion empresarial.",
+	})
+	if err == nil {
+		return id, nil
+	}
+	if isBodegaUniqueError(err) {
+		if retryID, retryErr := getEmpresaBodegaIDByNombre(dbConn, empresaID, nombre); retryErr == nil {
+			if setErr := SetBodegaEstado(dbConn, empresaID, retryID, "activo"); setErr != nil && setErr != sql.ErrNoRows {
+				return 0, setErr
+			}
+			return retryID, nil
+		}
+		id, retryErr := CreateBodega(dbConn, Bodega{
+			EmpresaID:      empresaID,
+			Nombre:         nombre,
+			Ubicacion:      "Principal",
+			UsuarioCreador: usuario,
+			Estado:         "activo",
+			Observaciones:  "Bodega base creada automaticamente por preconfiguracion empresarial.",
+		})
+		if retryErr == nil {
+			return id, nil
+		}
+		if isBodegaUniqueError(retryErr) {
+			if finalID, finalErr := getEmpresaBodegaIDByNombre(dbConn, empresaID, nombre); finalErr == nil {
+				return finalID, nil
+			}
+		}
+		return 0, retryErr
+	}
+	return 0, err
+}
+
+func getEmpresaBodegaIDByNombre(dbConn *sql.DB, empresaID int64, nombre string) (int64, error) {
+	var id int64
+	err := queryRowSQLCompat(dbConn, `SELECT id FROM bodegas WHERE empresa_id = ? AND LOWER(nombre) = LOWER(?) LIMIT 1`, empresaID, strings.TrimSpace(nombre)).Scan(&id)
+	return id, err
+}
+
+func isBodegaUniqueError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "ux_bodegas_empresa_nombre") ||
+		strings.Contains(msg, "ux_bodegas_empresa_codigo") ||
+		(strings.Contains(msg, "bodegas") && (strings.Contains(msg, "duplicate") || strings.Contains(msg, "duplic") || strings.Contains(msg, "unique")))
+}
+
+// ApplyDefaultBodega1ToExistingEmpresas crea la bodega base en empresas ya existentes.
+func ApplyDefaultBodega1ToExistingEmpresas(dbConn *sql.DB) (*EmpresaBodega1BackfillResult, error) {
+	res := &EmpresaBodega1BackfillResult{Version: "20260607_bodega_1_default"}
+	if dbConn == nil {
+		return res, fmt.Errorf("db nil")
+	}
+	err := ApplySchemaMigration(dbConn, "empresas", res.Version, "Crea Bodega 1 por defecto en empresas existentes", func(tx *sql.DB) error {
+		empresas, err := GetEmpresas(tx)
+		if err != nil {
+			return err
+		}
+		res.Empresas = len(empresas)
+		for _, empresa := range empresas {
+			empresaID := empresa.EmpresaID
+			if empresaID <= 0 {
+				empresaID = empresa.ID
+			}
+			estado := strings.ToLower(strings.TrimSpace(empresa.Estado))
+			if empresaID <= 0 || estado == "eliminada" || estado == "eliminado" {
+				continue
+			}
+			if _, err := EnsureEmpresaBodega1(tx, empresaID, "sistema.preconfiguracion_bodega"); err != nil {
+				res.Errores = append(res.Errores, fmt.Sprintf("empresa_id=%d: %v", empresaID, err))
+				continue
+			}
+			res.Aplicadas++
+		}
+		if len(res.Errores) > 0 {
+			return fmt.Errorf("%s", strings.Join(res.Errores, "; "))
+		}
+		return nil
+	})
+	return res, err
 }
 
 // GetBodegasByEmpresa lista bodegas por empresa.

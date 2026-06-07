@@ -1,3 +1,8 @@
+## [2026-06-07] Bodega 1 por defecto en empresas
+- [Backend] `EnsureEmpresaBodega1` crea o reactiva una bodega activa llamada `Bodega 1` por `empresa_id`, sin productos, existencias ni movimientos simulados.
+- [Preconfiguracion] La creacion de empresa incluye `bodega_id` en los defaults aplicados y el arranque ejecuta la migracion `20260607_bodega_1_default` para empresas existentes.
+- [Inventario] El modulo de productos ya encuentra una bodega base al crear empresas nuevas, reduciendo el bloqueo inicial por falta de bodega.
+
 ## [2026-06-07] Boton Tutorial DIAN navega correctamente
 - [Frontend] `facturacion_electronica_menu.html` marca `Tutorial DIAN` como navegacion normal del submenu para abrir la guia dentro del iframe de facturacion.
 - [Ayuda] `help_ai_bridge.js` ya no intercepta enlaces de tutorial que apuntan a un iframe nombrado del modulo; conserva la integracion IA para ayudas explicitas y enlaces fuera de navegacion interna.
