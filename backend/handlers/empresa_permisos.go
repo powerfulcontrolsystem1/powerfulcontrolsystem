@@ -501,6 +501,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Centro financiero y contable", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkFinanzasMain", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas operativas", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkRentaIA", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Renta IA", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkEgresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Ingresos", Grupo: "Centro financiero y contable"},
@@ -1905,6 +1906,8 @@ func resolveInventarioPermissionAction(r *http.Request) string {
 func resolveFinanzasPermissionAction(r *http.Request) string {
 	action := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("action")))
 	switch action {
+	case "renta_ia", "renta_ai", "calcular_renta":
+		return permActionRead
 	case "cerrar", "reabrir", "aprobar", "procesar_asientos", "procesar", "conciliar_bancaria_auto", "conciliar_bancos", "conciliar_bancaria_automatica", "aprobar_workflow", "aprobar_reverso", "aprobar_refinanciacion", "rechazar_workflow", "rechazar_reverso", "rechazar_refinanciacion":
 		return permActionApprove
 	case "anular":
@@ -2959,7 +2962,7 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 		}
 	case "contador":
 		switch pageKey {
-		case "linkFinanzas", "linkFinanzasMain", "linkImpuestos":
+		case "linkFinanzas", "linkFinanzasMain", "linkRentaIA", "linkImpuestos":
 			return true
 		default:
 			return false
@@ -3032,6 +3035,7 @@ func restrictPermissionPagesForOperationalRole(role string, pages map[string]boo
 	case "contador":
 		pages["linkFinanzas"] = true
 		pages["linkFinanzasMain"] = true
+		pages["linkRentaIA"] = true
 		pages["linkImpuestos"] = true
 	case "empresario":
 		pages["linkReportes"] = true
@@ -3569,6 +3573,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 			return "linkReportesTurnos"
 		}
 		return "linkCorteCaja"
+	case path == "/api/empresa/finanzas/renta_ia":
+		return "linkRentaIA"
 	case strings.HasPrefix(path, "/api/empresa/finanzas/"):
 		return "linkFinanzas"
 	case path == "/api/empresa/contabilidad_colombia":

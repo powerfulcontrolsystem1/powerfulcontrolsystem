@@ -1,3 +1,9 @@
+2026-06-06: Nota de Renta IA financiera
+- Se agrega pagina `linkRentaIA` bajo modulo `finanzas` con accion de lectura (`R`).
+- Roles con lectura financiera, incluido `contador`, pueden consultar el calculo de renta estimada.
+- La accion IA registra consumo diario por empresa, pero no concede permisos de creacion, aprobacion, declaracion oficial ni edicion contable.
+- Seguridad: `/api/empresa/finanzas/renta_ia` queda detras de `WithEmpresaFinanzasPermissions` y filtra todas las fuentes por `empresa_id`.
+
 2026-06-06: Nota de modulo Bolsa empresarial
 - Se agrega modulo `bolsa`, pagina `linkBolsa` y wrapper `WithEmpresaBolsaPermissions`.
 - Matriz efectiva: lectura (`R`) para roles con acceso general de consulta; administracion no agrega acciones de escritura porque el endpoint es solo informativo.

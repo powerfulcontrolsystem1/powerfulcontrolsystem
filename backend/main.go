@@ -1245,6 +1245,7 @@ func main() {
 	http.HandleFunc("/api/empresa/corte_caja/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCorteCajaConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/configuracion", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasConfiguracionHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/periodos", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasPeriodosHandler(dbEmpresas)))
+	http.HandleFunc("/api/empresa/finanzas/renta_ia", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasRentaIAHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/finanzas/asientos_contables", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasAsientosContablesHandler(dbEmpresas)))
 	http.HandleFunc("/api/empresa/finanzas/cierres_caja", handlers.WithEmpresaFinanzasPermissions(dbEmpresas, dbSuper, handlers.EmpresaFinanzasCierresCajaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/contabilidad_colombia", handlers.WithEmpresaContabilidadColombiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaContabilidadColombiaHandler(dbEmpresas)))

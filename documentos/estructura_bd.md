@@ -3,6 +3,16 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-06 (Renta IA en finanzas)
+- No se agrega tabla nueva.
+- `/api/empresa/finanzas/renta_ia` lee fuentes existentes filtradas por
+  `empresa_id`: `carritos_compras`, `empresa_finanzas_movimientos`,
+  `inventario_movimientos` y `empresa_nomina_liquidaciones`.
+- El analisis IA registra consumo en las tablas existentes de uso/consulta IA
+  por empresa mediante `RegisterEmpresaAIConsulta`.
+- La estimacion no persiste declaracion ni estado tributario oficial; el
+  resultado se calcula al vuelo con parametros enviados por el usuario.
+
 Actualizacion 2026-06-05 (orden de empresas por usuario)
 - Tabla en `pcs_superadministrador`: `usuario_configuracion`.
 - Campo nuevo: `selector_empresas_orden_json TEXT DEFAULT '[]'`.

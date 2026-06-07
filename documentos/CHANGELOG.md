@@ -1,3 +1,9 @@
+## [2026-06-06] Renta IA en finanzas
+- [Frontend] `administrar_empresa/renta_ia.html` agrega una pantalla financiera para estimar renta empresarial con periodo, tarifa, sobretasa, ajustes fiscales, retenciones y fuentes reales.
+- [Backend] `/api/empresa/finanzas/renta_ia` calcula ingresos, deducciones, renta liquida gravable, impuesto estimado y saldo usando datos de ventas, movimientos financieros, inventario y nomina por `empresa_id`.
+- [IA] La explicacion con GPT-5.4 mini usa solo el JSON calculado por backend, respeta limite diario por empresa y conserva fallback numerico cuando la IA esta desactivada.
+- [Permisos] Se agrega `linkRentaIA` bajo `finanzas:R`, visible para contador y roles con lectura financiera.
+
 ## [2026-06-06] Modulo Bolsa empresarial
 - [Frontend] `administrar_empresa/bolsa.html` agrega un tablero profesional de indicadores internacionales y del pais detectado por empresa.
 - [Backend] `/api/empresa/bolsa` consulta datos de mercado en vivo desde servidor, aplica cache corta, detecta pais con la configuracion empresarial y devuelve errores por indicador sin romper la pantalla.

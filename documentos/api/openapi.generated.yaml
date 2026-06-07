@@ -1060,6 +1060,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/finanzas/renta_ia":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/renta_ia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/finanzas/renta_ia
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/frecuencia_fp/permitido":
     get:
       tags: [empresa]

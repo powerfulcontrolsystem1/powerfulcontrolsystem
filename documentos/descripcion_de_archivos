@@ -1,3 +1,18 @@
+2026-06-06 - Renta IA en finanzas
+- `backend/db/finanzas_renta.go`:
+	- agrega la funcion pura de estimacion de renta y la consulta consolidada por empresa.
+	- calcula ingresos base, deducciones base, renta liquida gravable, impuesto estimado, retenciones y saldo.
+- `backend/db/finanzas_renta_test.go`:
+	- cubre tarifa default, fuentes por defecto y doble conteo potencial de ventas/ingresos y egresos/costos.
+- `backend/handlers/finanzas_renta_ia.go`:
+	- expone `/api/empresa/finanzas/renta_ia`, calcula la renta y genera analisis IA opcional con GPT-5.4 mini.
+- `backend/handlers/empresa_permisos.go` y `backend/main.go`:
+	- registran ruta, accion de lectura y pagina `linkRentaIA` bajo permisos financieros.
+- `web/administrar_empresa/renta_ia.html`:
+	- nueva pagina de finanzas con parametros fiscales, KPIs, fuentes, alertas y diagnostico IA.
+- `web/administrar_empresa/finanzas_menu.html` y `web/js/administrar_empresa.js`:
+	- agregan enlace y chip `Renta IA` en el centro financiero con visibilidad por permisos.
+
 2026-06-06 - Modulo Bolsa empresarial
 - `backend/handlers/bolsa.go`:
 	- nuevo handler de solo lectura para indicadores internacionales y locales por pais detectado.

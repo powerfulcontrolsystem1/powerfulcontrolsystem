@@ -4,6 +4,19 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-06 - Renta IA financiera
+
+- `web/administrar_empresa/renta_ia.html` vive dentro del centro financiero y
+  usa `/api/empresa/finanzas/renta_ia?action=renta_ia`.
+- El backend calcula una estimacion gerencial de renta con datos reales por
+  `empresa_id`: ventas cerradas, movimientos financieros, compras de inventario
+  y nomina liquidada. No guarda declaracion ni crea tablas.
+- La IA empresarial solo interpreta el JSON ya calculado, registra consumo por
+  empresa y debe mantener la advertencia de que no reemplaza formulario oficial
+  ni revision del contador.
+- `linkRentaIA` usa `finanzas:R`, por lo que el rol `contador` puede verlo sin
+  permisos de creacion ni aprobacion.
+
 ## Actualizacion 2026-06-06 - DIAN SOAP real y acuse pendiente
 
 - El transporte oficial DIAN para habilitacion usa SOAP/WCF con

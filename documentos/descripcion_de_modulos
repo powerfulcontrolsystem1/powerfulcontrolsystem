@@ -1,3 +1,11 @@
+2026-06-06: Renta IA en finanzas
+- Modulo afectado: `finanzas`.
+- Frontend: `web/administrar_empresa/renta_ia.html` permite seleccionar periodo, tarifa, sobretasa y ajustes fiscales para calcular renta estimada.
+- Backend: `/api/empresa/finanzas/renta_ia` consolida datos por `empresa_id` desde ventas cerradas, movimientos financieros, compras de inventario y nomina liquidada.
+- IA: el analisis con GPT-5.4 mini se basa exclusivamente en el JSON del calculo; si IA no esta activa, la pantalla conserva el resultado numerico.
+- Permisos: `linkRentaIA` usa `finanzas:R`, queda disponible para contador y roles con lectura financiera.
+- Seguridad/alcance: no crea tablas ni mutaciones; todas las consultas filtran por `empresa_id` y el wrapper financiero valida sesion, licencia y rol.
+
 2026-06-06: Bolsa empresarial
 - Modulo afectado: `bolsa`.
 - Frontend: `web/administrar_empresa/bolsa.html` agrega una vista de indicadores internacionales y locales con resumen, tablas, estados por indicador y boton de actualizacion.

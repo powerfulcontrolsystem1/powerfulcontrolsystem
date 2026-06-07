@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Renta IA</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .renta-shell{width:min(1280px,calc(100% - 24px));margin:0 auto;padding:16px 0 28px}
+    .renta-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .renta-title{margin:0;font-size:1.55rem;line-height:1.15}
+    .renta-subtitle{margin:5px 0 0;color:var(--muted);font-weight:760;line-height:1.35;max-width:760px}
+    .renta-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .renta-grid{display:grid;grid-template-columns:minmax(320px,.92fr) minmax(0,1.08fr);gap:12px;align-items:start}
+    .renta-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);overflow:hidden}
+    .renta-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface-soft)}
+    .renta-card-head h2{margin:0;font-size:1.02rem;line-height:1.2}
+    .renta-form{display:grid;gap:10px;padding:14px}
+    .renta-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .renta-row-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .renta-checks{display:grid;gap:8px;margin-top:2px}
+    .renta-check{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;padding:8px 10px;background:var(--surface-soft);font-weight:800;color:var(--text)}
+    .renta-check input{margin-top:2px}
+    .renta-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+    .renta-kpi{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:12px;min-width:0}
+    .renta-kpi span{display:block;color:var(--muted);font-size:.72rem;font-weight:900;text-transform:uppercase}
+    .renta-kpi strong{display:block;margin-top:6px;font-size:1.2rem;line-height:1.12;overflow-wrap:anywhere}
+    .renta-kpi.is-danger strong{color:#ef4444}
+    .renta-kpi.is-good strong{color:#16a34a}
+    .renta-tables{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .renta-table-wrap{overflow-x:auto}
+    .renta-table{width:100%;border-collapse:collapse;min-width:520px}
+    .renta-table th,.renta-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    .renta-table th{font-size:.72rem;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:0;background:color-mix(in srgb,var(--surface) 88%,var(--surface-soft))}
+    .renta-table td:last-child{text-align:right;font-weight:900}
+    .renta-alerts{display:grid;gap:8px;padding:12px 14px}
+    .renta-alert{border:1px solid color-mix(in srgb,#f59e0b 60%,var(--border));border-radius:8px;padding:9px 10px;background:color-mix(in srgb,#f59e0b 12%,var(--surface));color:var(--text);font-weight:760}
+    .renta-ai{padding:14px;white-space:pre-wrap;line-height:1.48;color:var(--text)}
+    .renta-ai-empty{color:var(--muted);font-weight:800}
+    .renta-status{min-height:22px;color:var(--muted);font-weight:850}
+    .renta-note{margin-top:10px;color:var(--muted);font-size:.86rem;line-height:1.38;font-weight:760}
+    .renta-source{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-weight:850;font-size:.84rem}
+    .renta-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-soft);border-radius:8px;padding:6px 8px;color:var(--text);font-weight:900}
+    .btn-icon{display:inline-flex;align-items:center;gap:7px}
+    .btn-icon img{width:18px;height:18px}
+    @media(max-width:1050px){.renta-grid,.renta-tables{grid-template-columns:1fr}.renta-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.renta-shell{width:min(100% - 16px,1280px);padding-top:12px}.renta-row,.renta-row-3,.renta-kpis{grid-template-columns:1fr}.renta-actions{justify-content:flex-start}.renta-title{font-size:1.35rem}}
+  </style>
+</head>
+<body class="empresa-subpage">
+  <main class="renta-shell">
+    <header class="renta-head">
+      <div>
+        <h1 class="renta-title">Renta IA</h1>
+        <p class="renta-subtitle">Estimacion gerencial del impuesto de renta con datos registrados en ventas, finanzas, inventario y nomina de la empresa.</p>
+        <div id="rentaMeta" class="renta-source"></div>
+      </div>
+      <div class="renta-actions">
+        <button id="btnCalcular" class="btn btn-icon" type="button"><img src="/img/money.svg" alt="">Calcular</button>
+        <button id="btnIA" class="btn secondary btn-icon" type="button"><img src="/img/gpt.svg" alt="">Analizar con IA</button>
+      </div>
+    </header>
+
+    <section class="renta-grid">
+      <article class="renta-card">
+        <div class="renta-card-head">
+          <h2>Parametros</h2>
+        </div>
+        <form id="rentaForm" class="renta-form">
+          <div class="renta-row">
+            <label><span class="form-label">Desde</span><input id="desde" class="form-input" type="date"></label>
+            <label><span class="form-label">Hasta</span><input id="hasta" class="form-input" type="date"></label>
+          </div>
+          <div class="renta-row renta-row-3">
+            <label><span class="form-label">Tarifa renta %</span><input id="tarifaRenta" class="form-input" type="number" min="0" max="100" step="0.01" value="35"></label>
+            <label><span class="form-label">Sobretasa puntos</span><input id="sobretasaPuntos" class="form-input" type="number" min="0" max="50" step="0.01" value="0"></label>
+            <label><span class="form-label">Anticipo renta</span><input id="anticipoRenta" class="form-input" type="number" min="0" step="0.01" value="0"></label>
+          </div>
+          <div class="renta-row">
+            <label><span class="form-label">Ingresos no constitutivos</span><input id="ingresosNoConstitutivos" class="form-input" type="number" min="0" step="0.01" value="0"></label>
+            <label><span class="form-label">Rentas exentas</span><input id="rentasExentas" class="form-input" type="number" min="0" step="0.01" value="0"></label>
+          </div>
+          <div class="renta-row">
+            <label><span class="form-label">Deducciones adicionales</span><input id="deduccionesAdicionales" class="form-input" type="number" min="0" step="0.01" value="0"></label>
+            <label><span class="form-label">Descuentos tributarios</span><input id="descuentosTributarios" class="form-input" type="number" min="0" step="0.01" value="0"></label>
+          </div>
+          <div class="renta-row">
+            <label><span class="form-label">Retenciones adicionales</span><input id="retencionesAdicionales" class="form-input" type="number" min="0" step="0.01" value="0"></label>
+            <label><span class="form-label">Pregunta para IA</span><input id="preguntaIA" class="form-input" maxlength="600" placeholder="Ej: dime que debe revisar el contador"></label>
+          </div>
+          <div class="renta-checks" aria-label="Fuentes de calculo">
+            <label class="renta-check"><input id="usarVentasPOS" type="checkbox" checked><span>Usar ventas POS como fuente de ingresos</span></label>
+            <label class="renta-check"><input id="usarMovIngresos" type="checkbox" checked><span>Usar ingresos financieros como fuente de ingresos</span></label>
+            <label class="renta-check"><input id="usarMovEgresos" type="checkbox" checked><span>Usar egresos financieros como deducciones base</span></label>
+            <label class="renta-check"><input id="usarComprasNomina" type="checkbox" checked><span>Usar compras de inventario y nomina como deducciones base</span></label>
+          </div>
+          <div id="rentaStatus" class="renta-status"></div>
+          <p class="renta-note">La tarifa general de Colombia se precarga en 35% y puede ajustarse. El resultado no reemplaza la declaracion oficial ni la revision del contador.</p>
+        </form>
+      </article>
+
+      <section>
+        <div class="renta-kpis">
+          <article class="renta-kpi"><span>Ingresos base</span><strong id="kpiIngresos">--</strong></article>
+          <article class="renta-kpi"><span>Deducciones base</span><strong id="kpiDeducciones">--</strong></article>
+          <article class="renta-kpi"><span>Impuesto estimado</span><strong id="kpiImpuesto">--</strong></article>
+          <article class="renta-kpi" id="kpiSaldoCard"><span>Saldo estimado</span><strong id="kpiSaldo">--</strong></article>
+        </div>
+
+        <div class="renta-tables">
+          <article class="renta-card">
+            <div class="renta-card-head"><h2>Calculo</h2></div>
+            <div class="renta-table-wrap">
+              <table class="renta-table"><tbody id="tablaCalculo"><tr><td>Sin calcular</td><td>--</td></tr></tbody></table>
+            </div>
+          </article>
+          <article class="renta-card">
+            <div class="renta-card-head"><h2>Fuentes</h2></div>
+            <div class="renta-table-wrap">
+              <table class="renta-table"><thead><tr><th>Fuente</th><th>Registros</th><th>Valor</th></tr></thead><tbody id="tablaFuentes"><tr><td colspan="3">Sin datos</td></tr></tbody></table>
+            </div>
+          </article>
+        </div>
+
+        <article class="renta-card" style="margin-top:12px">
+          <div class="renta-card-head"><h2>Alertas</h2></div>
+          <div id="rentaAlerts" class="renta-alerts"><div class="renta-ai-empty">Sin alertas.</div></div>
+        </article>
+
+        <article class="renta-card" style="margin-top:12px">
+          <div class="renta-card-head"><h2>Analisis IA</h2><span id="iaUsage" class="renta-source"></span></div>
+          <div id="iaOutput" class="renta-ai"><span class="renta-ai-empty">Presiona Analizar con IA para generar el diagnostico.</span></div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var $ = function(id){ return document.getElementById(id); };
+      var lastResult = null;
+      function empresaId(){
+        try{
+          if(window.__resolveEmpresaIdContext){
+            var id = window.__resolveEmpresaIdContext();
+            if(id) return String(id);
+          }
+          if(parent && parent.__resolveEmpresaIdContext){
+            var pid = parent.__resolveEmpresaIdContext();
+            if(pid) return String(pid);
+          }
+        }catch(e){}
+        var qs = new URLSearchParams(location.search);
+        return qs.get("empresa_id") || qs.get("id") || "";
+      }
+      function todayISO(){ return new Date().toISOString().slice(0,10); }
+      function yearStartISO(){ var d = new Date(); return String(d.getFullYear()) + "-01-01"; }
+      function number(id){ var v = parseFloat(($(id).value || "0").replace(",", ".")); return isFinite(v) && v > 0 ? v : 0; }
+      function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+      function money(v, cur){
+        var n = Number(v || 0);
+        return (cur || "COP") + " " + n.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      }
+      function pct(v){ return Number(v || 0).toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + "%"; }
+      function payload(useIA){
+        return {
+          empresa_id: parseInt(empresaId(), 10),
+          desde: $("desde").value,
+          hasta: $("hasta").value,
+          tarifa_renta: number("tarifaRenta"),
+          sobretasa_puntos: number("sobretasaPuntos"),
+          anticipo_renta: number("anticipoRenta"),
+          ingresos_no_constitutivos: number("ingresosNoConstitutivos"),
+          rentas_exentas: number("rentasExentas"),
+          deducciones_adicionales: number("deduccionesAdicionales"),
+          descuentos_tributarios: number("descuentosTributarios"),
+          retenciones_adicionales: number("retencionesAdicionales"),
+          usar_ventas_pos_como_ingreso: $("usarVentasPOS").checked,
+          usar_movimientos_como_ingreso: $("usarMovIngresos").checked,
+          usar_movimientos_como_egreso: $("usarMovEgresos").checked,
+          usar_compras_y_nomina_egreso: $("usarComprasNomina").checked,
+          usar_ia: !!useIA,
+          pregunta: $("preguntaIA").value.trim()
+        };
+      }
+      function setStatus(msg, bad){ $("rentaStatus").textContent = msg || ""; $("rentaStatus").style.color = bad ? "#ef4444" : ""; }
+      function calcRows(r){
+        var cur = r.moneda || "COP";
+        return [
+          ["Ingresos base", money(r.ingresos_base, cur)],
+          ["Deducciones base", money(r.deducciones_base, cur)],
+          ["Utilidad antes de ajustes", money(r.utilidad_antes_ajustes, cur)],
+          ["Ingresos no constitutivos", money(r.ingresos_no_constitutivos, cur)],
+          ["Rentas exentas", money(r.rentas_exentas, cur)],
+          ["Deducciones adicionales", money(r.deducciones_adicionales, cur)],
+          ["Renta liquida estimada", money(r.renta_liquida_estimacion, cur)],
+          ["Renta liquida gravable", money(r.renta_liquida_gravable, cur)],
+          ["Tarifa total", pct(r.tarifa_total)],
+          ["Impuesto renta estimado", money(r.impuesto_renta_estimado, cur)],
+          ["Retenciones descontables", money(r.retenciones_descontables, cur)],
+          ["Descuentos tributarios", money(r.descuentos_tributarios, cur)],
+          ["Anticipo renta", money(r.anticipo_renta, cur)],
+          ["Saldo estimado", money(r.saldo_estimado, cur)]
+        ].map(function(row){ return "<tr><td>"+esc(row[0])+"</td><td>"+esc(row[1])+"</td></tr>"; }).join("");
+      }
+      function render(data){
+        var r = data && data.resultado;
+        if(!r) return;
+        lastResult = r;
+        var cur = r.moneda || "COP";
+        $("kpiIngresos").textContent = money(r.ingresos_base, cur);
+        $("kpiDeducciones").textContent = money(r.deducciones_base, cur);
+        $("kpiImpuesto").textContent = money(r.impuesto_renta_estimado, cur);
+        $("kpiSaldo").textContent = money(r.saldo_estimado, cur);
+        $("kpiSaldoCard").classList.toggle("is-danger", Number(r.saldo_estimado || 0) > 0);
+        $("kpiSaldoCard").classList.toggle("is-good", Number(r.saldo_estimado || 0) <= 0);
+        $("tablaCalculo").innerHTML = calcRows(r);
+        $("tablaFuentes").innerHTML = (r.fuentes || []).map(function(f){
+          return "<tr><td><strong>"+esc(f.nombre)+"</strong><br><small>"+esc(f.descripcion || "")+(f.usado ? " · usado" : " · informativo")+"</small></td><td>"+esc(f.registros || 0)+"</td><td>"+esc(money(f.valor, cur))+"</td></tr>";
+        }).join("") || '<tr><td colspan="3">Sin fuentes</td></tr>';
+        $("rentaAlerts").innerHTML = (r.alertas || []).length ? r.alertas.map(function(a){ return '<div class="renta-alert">'+esc(a)+'</div>'; }).join("") : '<div class="renta-ai-empty">Sin alertas.</div>';
+        $("rentaMeta").innerHTML = '<span class="renta-chip">Empresa '+esc(r.empresa_id)+'</span><span>Periodo '+esc(r.desde || "--")+' a '+esc(r.hasta || "--")+'</span><span>Generado '+esc(r.generado_en || "")+'</span>';
+        if(data.ia){
+          if(data.ia.ok){
+            $("iaOutput").textContent = data.ia.respuesta || "";
+            var u = data.ia.usage;
+            $("iaUsage").textContent = u ? ("Uso IA " + (u.daily_used || 0) + "/" + (u.daily_limit || "")) : "";
+          }else{
+            $("iaOutput").innerHTML = '<span class="renta-ai-empty">'+esc(data.ia.error || "No se pudo generar analisis IA.")+'</span>';
+            $("iaUsage").textContent = "";
+          }
+        }
+      }
+      async function calcular(useIA){
+        var id = empresaId();
+        if(!id){ setStatus("Falta empresa_id.", true); return; }
+        setStatus(useIA ? "Calculando y consultando IA..." : "Calculando renta estimada...", false);
+        if(useIA){ $("iaOutput").innerHTML = '<span class="renta-ai-empty">Generando diagnostico IA...</span>'; }
+        try{
+          var res = await fetch("/api/empresa/finanzas/renta_ia?action=renta_ia", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(payload(useIA))
+          });
+          var text = await res.text();
+          var data = {};
+          try{ data = text ? JSON.parse(text) : {}; }catch(e){}
+          if(!res.ok) throw new Error((data && data.error) || text || "No se pudo calcular la renta.");
+          render(data);
+          setStatus("Calculo actualizado.", false);
+        }catch(err){
+          setStatus(err.message || "No se pudo calcular.", true);
+        }
+      }
+      $("desde").value = yearStartISO();
+      $("hasta").value = todayISO();
+      $("btnCalcular").addEventListener("click", function(){ calcular(false); });
+      $("btnIA").addEventListener("click", function(){ calcular(true); });
+      $("rentaForm").addEventListener("submit", function(ev){ ev.preventDefault(); calcular(false); });
+      calcular(false);
+    })();
+  </script>
+</body>
+</html>

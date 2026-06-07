@@ -18,6 +18,29 @@ afecte dinero, documentos, licencias o seguridad.
 6. La pantalla muestra resumen, tablas y errores por indicador; no guarda datos,
    no emite ordenes y no constituye recomendacion de inversion.
 
+## Renta IA en finanzas
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Renta IA` dentro del
+   centro financiero.
+2. La pagina conserva `empresa_id`, define periodo y permite ajustar tarifa,
+   sobretasa, ingresos no constitutivos, rentas exentas, deducciones,
+   descuentos, retenciones y anticipo.
+3. El frontend llama `/api/empresa/finanzas/renta_ia?action=renta_ia` con
+   `credentials: same-origin`.
+4. El backend valida sesion, empresa, licencia y permiso `finanzas:R` mediante
+   `WithEmpresaFinanzasPermissions`.
+5. El calculo consolida datos reales filtrados por `empresa_id`: ventas
+   cerradas, ingresos/egresos financieros, compras de inventario y nomina
+   liquidada.
+6. Para reducir doble conteo, si hay POS e ingresos financieros simultaneos se
+   usa el mayor y se muestra alerta; lo mismo para egresos financieros frente a
+   compras + nomina.
+7. Si el usuario pide `Analizar con IA`, GPT-5.4 mini recibe solo el JSON del
+   calculo, registra uso IA diario por empresa y devuelve diagnostico
+   orientativo.
+8. El resultado es estimacion gerencial; no reemplaza formulario oficial,
+   declaracion tributaria ni revision del contador.
+
 ## GRAFOLOGIX grafologia OCR
 
 1. Abrir `Administrar empresa > Analisis y control > GRAFOLOGIX`.

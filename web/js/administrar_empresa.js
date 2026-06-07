@@ -166,6 +166,7 @@ try {
     document.getElementById("linkChatIA"),
     document.getElementById("linkFinanzas"),
     document.getElementById("linkFinanzasMain"),
+    document.getElementById("linkRentaIA"),
     document.getElementById("linkContabilidadColombia"),
     document.getElementById("linkContabilidadColombiaAvanzada"),
     document.getElementById("linkCentrosCosto"),
@@ -374,6 +375,7 @@ try {
 
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
     linkFinanzasMain: { module: permModuleFinanzas, action: permActionCreate },
+    linkRentaIA: { module: permModuleFinanzas, action: permActionRead },
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkEgresos: { module: permModuleFinanzas, action: permActionCreate },
     linkIngresos: { module: permModuleFinanzas, action: permActionCreate },
@@ -1399,7 +1401,7 @@ try {
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkImpuestos"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkRentaIA", "linkImpuestos"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1664,7 +1666,7 @@ try {
     }
     if (normalizedRole === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkImpuestos"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkRentaIA", "linkImpuestos"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
