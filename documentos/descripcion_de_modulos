@@ -1,3 +1,23 @@
+2026-06-07: Modulo NIIF
+- Modulo afectado: `finanzas`, `suite_contador`, `contabilidad_colombia` y `activos_fijos_niif_fiscal`.
+- Frontend: `web/administrar_empresa/niif.html` agrega diagnostico de adopcion NIIF, politicas contables, calculos de deterioro/depreciacion/valor razonable, conciliacion contable-fiscal, checklist de cierre y notas exportables.
+- Navegacion: se enlaza desde `Administrar empresa > Finanzas y cumplimiento`, desde el Centro financiero y desde Suite contador.
+- Datos: lee el dashboard real de contabilidad Colombia cuando el usuario tiene acceso; no crea endpoint ni tablas nuevas y no inventa cifras contables.
+- Permisos: `linkNIIF` usa `finanzas:R`; el rol `contador` puede verlo sin recibir escritura ni aprobacion.
+
+2026-06-07: Auditoria integral de modulos nuevos
+- Modulos afectados: `auditoria`, `reportes`, `DIAN`, `bolsa`, `renta_ia`, `suite_contador`, `niif`, `centro_ia_empresarial`, `compras_avanzadas`, `soportes_compras_ia`, `contabilidad_colombia`, `tesoreria`, `nomina`, `onlyoffice`, `gestion_documental`, `verticales`, `analisis_control` y `seguridad`.
+- Backend: `operativo_modulos_resumen` consolida existencia de tabla, totales, activos, anulados, rangos de fecha y ultimo registro para los modulos con tabla empresarial; los hubs sin tabla quedan marcados como `sin_tabla`.
+- Frontend: `auditoria.html` permite filtrar eventos por los nuevos modulos y el Centro de reportes ofrece `Auditoria de modulos`.
+- Permisos: no hay permisos nuevos; consulta y exportacion siguen bajo `reportes:R` o permisos de auditoria existentes, siempre con `empresa_id`.
+
+2026-06-07: Suite contador por empresa
+- Modulos afectados: `finanzas`, `portal_contador`, `contabilidad_colombia`, `contabilidad_colombia_avanzada`, `facturacion_electronica`, `declaraciones_tributarias`, `portal_terceros_certificados`, `cierre_fiscal`, `activos_fijos_niif_fiscal`, `nomina_sueldos`, `reportes`, `roles/licencias`, `administrar_empresa`.
+- Frontend: `web/administrar_empresa/suite_contador.html` agrega una vista profesional tipo contador 360 inspirada en suites contables como Siigo Contador, usando solo modulos reales existentes.
+- Navegacion: se enlaza desde `Administrar empresa > Finanzas y cumplimiento` y desde el `Centro financiero y contable` con chip `Contador 360`.
+- Permisos: `linkSuiteContador` usa `finanzas:R`; el rol `contador` puede ver el hub y accesos contables clave sin recibir permisos de escritura ni aprobacion por este cambio.
+- Seguridad/alcance: no crea endpoint, tablas ni datos simulados; conserva `empresa_id` al abrir modulos y cada destino mantiene su wrapper/licencia.
+
 2026-06-06: Renta IA en finanzas
 - Modulo afectado: `finanzas`.
 - Frontend: `web/administrar_empresa/renta_ia.html` permite seleccionar periodo, tarifa, sobretasa y ajustes fiscales para calcular renta estimada.
@@ -3633,6 +3653,17 @@ Captura inteligente de compras y gastos
 2026-05-20: Datáfonos POS multiempresa
 - Modulos afectados: `carritos`, `ventas_simple`, `corte de caja`, `pagos`, `seguridad y permisos`.
 - Se agrega `/api/empresa/datafonos` protegido con permisos de ventas para configurar terminales de Redeban, CredibanCo, Bold y BBVA por empresa, iniciar pagos, consultar confirmaciones y registrar transacciones.
+# Centro IA empresarial - 2026-06-07
+
+- Modulo: `centro_ia_empresarial`.
+- Navegacion: `Administrar empresa > Canales digitales y colaboracion > Centro IA empresarial` y acceso rapido desde `Centro financiero y contable > IA empresarial`.
+- Backend: `/api/empresa/ia_empresarial` en `backend/handlers/empresa_ia_empresarial.go`, protegido por `WithEmpresaReportesPermissions`.
+- Datos: no crea tablas; lee snapshot real por `empresa_id` de empresa, ventas cerradas, finanzas, clientes, productos, servicios e inventario; registra consumo IA diario en la infraestructura existente.
+- Funciones IA: diagnostico ERP, borrador de factura/cotizacion, cobranza y pagos, inventario inteligente, conciliacion bancaria, compras/gastos y cumplimiento DIAN.
+- Seguridad: no emite documentos, no registra pagos, no crea o modifica terceros, no actualiza inventario y no activa procesos DIAN. Las salidas son borradores/recomendaciones con datos faltantes.
+- Permisos: pagina `linkCentroIAEmpresarial`, modulo `reportes:R`; visible para roles con lectura gerencial y para `contador`/`empresario` sin conceder escritura.
+- UX: los botones de funciones IA usan icono GPT y badge `IA` mediante `web/js/ai_button_icons.js`.
+
 - El cliente Go usa HTTP/JSON configurable por endpoint contractual del proveedor, con autenticacion por referencia segura `env:*`; no se guardan claves reales en base de datos ni se imprimen en logs.
 - La respuesta del proveedor se normaliza a estados POS (`pendiente`, `aprobado`, `rechazado`, `error`) y se valida contra monto y referencia antes de aplicar el pago al carrito/caja.
 - Si el pago queda aprobado y se solicita `aplicar_al_pos`, el backend usa el cierre de caja abierto del usuario autenticado y marca el carrito con el metodo POS configurado para el datáfono.

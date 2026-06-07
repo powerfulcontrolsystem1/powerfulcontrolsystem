@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Centro financiero y contable</title>
   <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260607"></script>
   <style>
     .fin-center{display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;height:100%;min-height:0}
     .fin-center-overview{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
@@ -24,7 +26,6 @@
     @media(max-width:920px){.fin-center-overview{grid-template-columns:1fr}.fin-center-actions{justify-content:flex-start}.fin-center-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:620px){.fin-center-health{grid-template-columns:1fr}.fin-center-chip{flex:1 1 130px}}
   </style>
-  <script src="/js/empresa_submenu_context.js"></script>
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
@@ -33,7 +34,10 @@
       <p class="admin-sidebar-kicker">Finanzas, contabilidad y cumplimiento</p>
       <ul class="nav" id="finanzasSidebarNav">
         <li><a id="linkFinanzasMain" href="/administrar_empresa/finanzas.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Finanzas operativas</a></li>
-        <li><a id="linkRentaIA" href="/administrar_empresa/renta_ia.html" target="finanzasContentFrame"><img class="icon" src="/img/gpt.svg" alt="">Renta IA</a></li>
+        <li hidden><a id="linkRentaIA" href="/administrar_empresa/renta_ia.html" target="finanzasContentFrame"><img class="icon" src="/img/gpt.svg" alt="">Renta IA</a></li>
+        <li hidden><a id="linkCentroIAEmpresarial" href="/administrar_empresa/centro_ia_empresarial.html" target="finanzasContentFrame"><img class="icon" src="/img/gpt.svg" alt="">Centro IA empresarial</a></li>
+        <li><a id="linkSuiteContador" href="/administrar_empresa/suite_contador.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Suite contador</a></li>
+        <li><a id="linkNIIF" href="/administrar_empresa/niif.html" target="finanzasContentFrame"><img class="icon" src="/img/company-briefcase-color.svg" alt="">NIIF</a></li>
         <li><a id="linkContabilidadColombia" href="/administrar_empresa/contabilidad_colombia.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Contabilidad Colombia</a></li>
         <li><a id="linkContabilidadColombiaAvanzada" href="/administrar_empresa/contabilidad_colombia_avanzada.html" target="finanzasContentFrame"><img class="icon" src="/img/report.svg" alt="">Suite contable Colombia</a></li>
         <li><a id="linkCentrosCostoMenu" href="/administrar_empresa/centros_costo.html" target="finanzasContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Centros de costo</a></li>
@@ -71,7 +75,10 @@
             </div>
             <div class="fin-center-actions" aria-label="Accesos financieros principales">
               <button class="fin-center-chip is-active" type="button" data-frame="/administrar_empresa/finanzas.html" data-permission-link="linkFinanzasMain">Operación</button>
-              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/renta_ia.html" data-permission-link="linkRentaIA">Renta IA</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/renta_ia.html" data-permission-link="linkRentaIA" hidden>Renta IA</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/centro_ia_empresarial.html" data-permission-link="linkCentroIAEmpresarial" hidden>IA empresarial</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/suite_contador.html" data-permission-link="linkSuiteContador">Contador 360</button>
+              <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/niif.html" data-permission-link="linkNIIF">NIIF</button>
               <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/contabilidad_colombia.html" data-permission-link="linkContabilidadColombia">Contabilidad</button>
               <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/declaraciones_tributarias.html" data-permission-link="linkDeclaracionesTributarias">Tributario</button>
               <button class="fin-center-chip" type="button" data-frame="/administrar_empresa/impuestos.html" data-permission-link="linkImpuestos">Impuestos</button>
@@ -105,11 +112,13 @@
       var copy={
         "/administrar_empresa/finanzas.html":"Operación financiera, ingresos, egresos, caja y reportes base.",
         "/administrar_empresa/renta_ia.html":"Estimacion de renta empresarial con calculo real e interpretacion IA.",
+        "/administrar_empresa/centro_ia_empresarial.html":"Diagnostico IA, borradores operativos, cobranza, inventario, conciliacion y cumplimiento con datos reales de la empresa.",
         "/administrar_empresa/contabilidad_colombia.html":"PUC, terceros, impuestos, comprobantes, auditoría y cierres.",
         "/administrar_empresa/declaraciones_tributarias.html":"Declaraciones tributarias y control de cumplimiento.",
         "/administrar_empresa/impuestos.html":"Configuracion tributaria, impuestos por ventas y resumen fiscal por codigo.",
         "/administrar_empresa/creditos_menu.html":"Creditos, cuotas, saldos, abonos y cartera por cliente.",
         "/administrar_empresa/cobranza.html":"Seguimiento de cobranza, vencimientos y gestion de recaudo.",
+        "/administrar_empresa/suite_contador.html":"Centro de trabajo para contadores: clientes, PUC/NIIF, DIAN, impuestos, cierres, certificados, reportes y Renta IA.",
         "/administrar_empresa/tesoreria_presupuesto.html":"Tesorería, presupuesto y seguimiento de caja proyectada.",
         "/administrar_empresa/portal_contador.html":"Portal de contador con revisión documental y soporte contable."
       };
@@ -139,6 +148,9 @@
             document.querySelectorAll(".fin-center-chip[data-permission-link]").forEach(function(btn){
               var key=btn.getAttribute("data-permission-link")||"";
               var visible=!Object.prototype.hasOwnProperty.call(pages,key)||!!pages[key];
+              if((key==="linkRentaIA"||key==="linkCentroIAEmpresarial")&&!pages[key]){
+                visible=false;
+              }
               btn.hidden=!visible;
               if(visible&&!firstVisible)firstVisible=btn;
             });

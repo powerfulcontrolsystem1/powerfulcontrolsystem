@@ -100,12 +100,12 @@ func TestContadorRoleOnlyAllowsFinanceAndTaxesRead(t *testing.T) {
 	}
 
 	pages := buildPermissionPagesMapForRoleDynamic(nil, "contador", rows)
-	for _, page := range []string{"linkFinanzas", "linkFinanzasMain", "linkImpuestos"} {
+	for _, page := range []string{"linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkContabilidadColombia", "linkDeclaracionesTributarias"} {
 		if !pages[page] {
 			t.Fatalf("contador debe ver %s", page)
 		}
 	}
-	for _, page := range []string{"linkPanelEmpresa", "linkVentaDirecta", "linkEstaciones", "linkCarritoCompras", "linkCorteCaja", "linkContabilidadColombia", "linkDeclaracionesTributarias"} {
+	for _, page := range []string{"linkPanelEmpresa", "linkVentaDirecta", "linkEstaciones", "linkCarritoCompras", "linkCorteCaja", "linkProductos", "linkConfiguracion"} {
 		if pages[page] {
 			t.Fatalf("contador no debe ver %s", page)
 		}

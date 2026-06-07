@@ -4,6 +4,23 @@ Guia corta de los procesos que mas se prueban y modifican. Cada flujo debe
 mantener aislamiento por `empresa_id`, permisos por rol y trazabilidad cuando
 afecte dinero, documentos, licencias o seguridad.
 
+## Modulo NIIF
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > NIIF` o el acceso
+   `NIIF` dentro del Centro financiero y Suite contador.
+2. La pagina conserva `empresa_id` y consulta
+   `/api/empresa/contabilidad_colombia?action=dashboard&empresa_id={id}` cuando
+   el usuario tiene permisos contables/financieros suficientes.
+3. El modulo no guarda datos en servidor: las marcas de diagnostico, politicas
+   y cierre se conservan localmente por navegador y empresa para no crear
+   mutaciones sin endpoint dedicado.
+4. El tablero muestra base NIIF, periodo, diferencia debito/credito y avance de
+   adopcion calculado por estandares, politicas y checklist.
+5. Medicion permite calcular deterioro, depreciacion, valor razonable neto y
+   conciliacion contable-fiscal de apoyo gerencial.
+6. Notas genera un borrador exportable JSON/TXT; no reemplaza estados
+   financieros oficiales ni revision del contador.
+
 ## Bolsa empresarial
 
 1. Abrir `Administrar empresa > Analisis y control > Bolsa`.
@@ -18,28 +35,93 @@ afecte dinero, documentos, licencias o seguridad.
 6. La pantalla muestra resumen, tablas y errores por indicador; no guarda datos,
    no emite ordenes y no constituye recomendacion de inversion.
 
+## Suite contador
+
+1. Abrir `Administrar empresa > Finanzas y cumplimiento > Suite contador` o
+   `Centro financiero y contable > Contador 360`.
+2. La pagina conserva `empresa_id` y consulta
+   `/api/empresa/permisos_contexto?empresa_id={id}` para pintar cada modulo como
+   disponible o bloqueado.
+3. El hub no crea endpoints, tablas ni documentos; solo coordina modulos reales:
+   Portal contador, PUC/NIIF, suite contable avanzada, impuestos, DIAN,
+   declaraciones, certificados, cierres, activos, nomina, bancos, reportes,
+   y, solo si la empresa lo habilita, compras IA y Renta IA.
+4. Al abrir un modulo, el enlace reenvia `empresa_id`; la operacion final queda
+   protegida por el wrapper y permiso propio de ese modulo.
+5. El rol `contador` puede ver la suite y accesos contables clave, pero no recibe
+   permisos de escritura, aprobacion, pagos, inventario ni emision DIAN por este
+   cambio.
+
 ## Renta IA en finanzas
 
-1. Abrir `Administrar empresa > Finanzas y cumplimiento > Renta IA` dentro del
+1. Habilitar primero la pagina `linkRentaIA` en permisos finos de la empresa;
+   por defecto no se muestra en ninguna empresa.
+2. Abrir `Administrar empresa > Finanzas y cumplimiento > Renta IA` dentro del
    centro financiero.
-2. La pagina conserva `empresa_id`, define periodo y permite ajustar tarifa,
+3. La pagina conserva `empresa_id`, define periodo y permite ajustar tarifa,
    sobretasa, ingresos no constitutivos, rentas exentas, deducciones,
    descuentos, retenciones y anticipo.
-3. El frontend llama `/api/empresa/finanzas/renta_ia?action=renta_ia` con
+4. El frontend llama `/api/empresa/finanzas/renta_ia?action=renta_ia` con
    `credentials: same-origin`.
-4. El backend valida sesion, empresa, licencia y permiso `finanzas:R` mediante
+5. El backend valida sesion, empresa, licencia y permiso `finanzas:R` mediante
    `WithEmpresaFinanzasPermissions`.
-5. El calculo consolida datos reales filtrados por `empresa_id`: ventas
+6. El calculo consolida datos reales filtrados por `empresa_id`: ventas
    cerradas, ingresos/egresos financieros, compras de inventario y nomina
    liquidada.
-6. Para reducir doble conteo, si hay POS e ingresos financieros simultaneos se
+7. Para reducir doble conteo, si hay POS e ingresos financieros simultaneos se
    usa el mayor y se muestra alerta; lo mismo para egresos financieros frente a
    compras + nomina.
-7. Si el usuario pide `Analizar con IA`, GPT-5.4 mini recibe solo el JSON del
+8. Si el usuario pide `Analizar con IA`, GPT-5.4 mini recibe solo el JSON del
    calculo, registra uso IA diario por empresa y devuelve diagnostico
    orientativo.
-8. El resultado es estimacion gerencial; no reemplaza formulario oficial,
+9. El resultado es estimacion gerencial; no reemplaza formulario oficial,
    declaracion tributaria ni revision del contador.
+
+## Centro IA empresarial
+
+1. Habilitar primero la pagina `linkCentroIAEmpresarial` en permisos finos de
+   la empresa; por defecto no se muestra en ninguna empresa.
+2. Abrir `Administrar empresa > Canales digitales y colaboracion > Centro IA
+   empresarial` o el acceso rapido `IA empresarial` del Centro financiero.
+3. La pagina conserva `empresa_id`, periodo desde/hasta y consulta
+   `/api/empresa/ia_empresarial?empresa_id={id}` con `credentials:
+   same-origin`.
+4. El backend valida sesion, empresa, licencia y permiso `reportes:R` mediante
+   `WithEmpresaReportesPermissions`.
+5. El snapshot se calcula solo con datos reales filtrados por `empresa_id`:
+   ventas cerradas, ingresos, egresos, clientes, productos, servicios, bajo
+   stock y diferencia ventas versus ingresos financieros.
+6. Las funciones IA disponibles son diagnostico ERP, borrador de
+   factura/cotizacion, cobranza/pagos, inventario/productos, conciliacion
+   bancaria, compras/gastos y cumplimiento DIAN.
+7. La IA no emite documentos, no registra pagos, no crea clientes, no cambia
+   inventario y no activa DIAN; devuelve borradores revisables, riesgos, datos
+   faltantes y siguiente accion sugerida.
+8. Cada ejecucion IA usa GPT-5.4 mini, registra consumo diario por empresa y
+   muestra error saneado si la IA global, la IA empresarial o la credencial del
+   proveedor no estan disponibles.
+9. Los botones que ejecutan funciones IA deben mostrar el icono GPT y badge
+   `IA` mediante `web/js/ai_button_icons.js`.
+
+## Auditoria integral de modulos
+
+1. Abrir `Administrar empresa > Reportes > Centro de reportes`.
+2. Seleccionar el area `Operacion y auditoria` y abrir el reporte
+   `Auditoria de modulos`.
+3. El frontend consulta `/api/empresa/reportes?dataset=operativo_modulos_resumen`
+   conservando `empresa_id`.
+4. El backend valida sesion, licencia y permiso `reportes:R` mediante
+   `WithEmpresaReportesPermissions`.
+5. El dataset recorre el inventario de modulos nuevos y existentes, verifica si
+   la tabla existe, si tiene `empresa_id`, totales, activos, anulados, rango de
+   fechas y ultimo registro.
+6. Los hubs o calculos sin tabla propia, como Suite contador, Renta IA y Bolsa,
+   se reportan como `tabla=sin_tabla` para dejar evidencia sin crear datos
+   ficticios.
+7. En `Administrar empresa > Auditoria`, el filtro `Modulo` incluye DIAN,
+   Bolsa, Renta IA, Suite contador, Centro IA, compras IA, OnlyOffice,
+   contabilidad, nomina, verticales y analisis/control para revisar eventos
+   reales y exportar CSV/JSON.
 
 ## GRAFOLOGIX grafologia OCR
 

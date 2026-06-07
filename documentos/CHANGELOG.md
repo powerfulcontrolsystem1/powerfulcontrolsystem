@@ -1,3 +1,34 @@
+## [2026-06-07] IA oculta por defecto por empresa
+- [Permisos] `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`, `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` quedan ocultos por defecto en `/api/empresa/permisos_contexto`.
+- [Backend] La empresa debe tener regla fina explicita de pagina permitida y conservar rol/licencia base para mostrar o acceder a IA empresarial.
+- [Frontend] Administrar empresa, chat flotante, Centro financiero y Suite contador no muestran accesos, chips ni tarjetas IA sin esa habilitacion.
+
+## [2026-06-07] Modulo NIIF profesional
+- [Frontend] `administrar_empresa/niif.html` agrega diagnostico de adopcion NIIF, politicas contables, calculos de deterioro/depreciacion/valor razonable, conciliacion contable-fiscal, checklist de cierre y notas exportables.
+- [Navegacion] Se enlaza desde `Administrar empresa > Finanzas y cumplimiento`, `finanzas_menu.html` y `suite_contador.html`.
+- [Permisos] `linkNIIF` queda como `finanzas:R`; el rol `contador` puede consultarlo sin ganar escritura ni aprobacion.
+- [Seguridad] No se agregan endpoints ni tablas; la pagina lee el dashboard contable existente cuando el usuario tiene permisos y guarda marcas locales por empresa/navegador.
+
+## [2026-06-07] Auditoria integral de modulos nuevos
+- [Backend] `operativo_modulos_resumen` en `/api/empresa/reportes` ahora inventaria los modulos nuevos: DIAN, Bolsa, Renta IA, Suite contador, NIIF, Centro IA, compras IA, verticales, documental, nomina, contabilidad Colombia, tesoreria, seguridad y analisis/control.
+- [Frontend] `auditoria.html` amplia el filtro de modulo y `reportes_ejecutivos.html` agrega el area `Operacion y auditoria` con el reporte `Auditoria de modulos`.
+- [Seguridad] No se agregan permisos nuevos: el resumen sigue bajo `WithEmpresaReportesPermissions`, aislado por `empresa_id`, y marca hubs sin tabla propia como `sin_tabla`.
+- [QA] `go test ./handlers -run Reportes -count=1`; `go test ./... -run "^$" -count=1`; verificacion visual local de selectores y reporte fallback.
+
+## [2026-06-07] Suite contador por empresa
+- [Investigacion] Se toma como referencia publica el enfoque de Siigo Contador: trabajo multicliente, obligaciones, contabilidad NIIF/PUC, impuestos, documentos electronicos, reportes y apoyo para firmas contables.
+- [Frontend] `administrar_empresa/suite_contador.html` agrega un hub profesional que agrupa Portal contador, Contabilidad Colombia, suite avanzada, impuestos, DIAN, declaraciones, certificados, cierres, activos, nomina, bancos, reportes y Renta IA.
+- [Navegacion] Se enlaza `Suite contador` desde `Administrar empresa > Finanzas y cumplimiento` y desde el `Centro financiero y contable` con chip `Contador 360`.
+- [Permisos] Se agrega `linkSuiteContador` como `finanzas:R`; el rol `contador` puede ver la suite y accesos contables clave sin recibir permisos de escritura ni aprobacion fuera de los wrappers existentes.
+- [Portada] `web/index.html` actualiza la oferta de Finanzas y cumplimiento para presentar la suite contable profesional.
+
+## [2026-06-07] Centro IA empresarial por empresa
+- [Investigacion] Se toma como referencia publica el enfoque de Siigo/Jelou: IA para facturacion, clientes, productos, pagos, contabilidad, conciliaciones, reportes, compras/gastos y alertas DIAN; en PCS se implementa como asistente empresarial con datos reales por `empresa_id`.
+- [Backend] `/api/empresa/ia_empresarial` entrega catalogo de funciones y snapshot real de ventas, finanzas, clientes, catalogo e inventario; las acciones IA usan GPT-5.4 mini, registran uso diario por empresa y no ejecutan mutaciones.
+- [Frontend] `administrar_empresa/centro_ia_empresarial.html` agrega tablero profesional con KPIs, alertas, funciones IA, consulta libre y resultados accionables; se enlaza desde Administrar empresa y Centro financiero.
+- [UX] `web/js/ai_button_icons.js` agrega icono/badge IA a botones de funciones inteligentes, incluyendo Renta IA, compras/gastos IA y el nuevo centro IA.
+- [Permisos] Se agrega `linkCentroIAEmpresarial` bajo `reportes:R`, visible para roles con acceso gerencial y para `contador`/`empresario` sin conceder escritura ni aprobacion.
+
 ## [2026-06-06] Renta IA en finanzas
 - [Frontend] `administrar_empresa/renta_ia.html` agrega una pantalla financiera para estimar renta empresarial con periodo, tarifa, sobretasa, ajustes fiscales, retenciones y fuentes reales.
 - [Backend] `/api/empresa/finanzas/renta_ia` calcula ingresos, deducciones, renta liquida gravable, impuesto estimado y saldo usando datos de ventas, movimientos financieros, inventario y nomina por `empresa_id`.

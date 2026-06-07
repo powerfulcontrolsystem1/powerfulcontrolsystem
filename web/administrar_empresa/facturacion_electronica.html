@@ -1621,8 +1621,8 @@
       payload.campos_pais_json = jsonSafe;
 
       try {
-        const res = await fetch("/api/empresa/facturacion_electronica?empresa_id=" + encodeURIComponent(state.empresaID), {
-          method: "PUT",
+        const res = await fetch("/api/empresa/facturacion_electronica?action=config_pais&empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });

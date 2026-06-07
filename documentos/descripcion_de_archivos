@@ -1,3 +1,43 @@
+2026-06-07 - IA oculta por defecto por empresa
+- `backend/handlers/empresa_permisos.go`:
+	- aplica default oculto para paginas IA empresariales en el contexto y snapshot de permisos, salvo habilitacion fina explicita por empresa.
+- `backend/handlers/empresa_permisos_test.go`:
+	- cubre que las paginas IA quedan ocultas por defecto y que una pagina puede mostrarse si la empresa la habilita explicitamente.
+- `web/js/administrar_empresa.js`:
+	- mantiene ocultos los enlaces IA y el chat flotante si `/api/empresa/permisos_contexto` no los autoriza.
+- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/administrar_empresa/suite_contador.html`:
+	- agregan ocultamiento inicial de accesos IA para evitar parpadeos y omiten tarjetas/chips IA cuando no estan habilitados.
+
+2026-06-07 - Modulo NIIF
+- `web/administrar_empresa/niif.html`:
+	- nueva pagina NIIF dentro del centro financiero con diagnostico, politicas, medicion, conciliacion fiscal, cierre y notas exportables por empresa.
+	- consulta contabilidad Colombia en modo lectura y conserva marcas locales por navegador/empresa sin crear tablas ni endpoint propio.
+- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/administrar_empresa/suite_contador.html`:
+	- agregan accesos visibles a NIIF conservando `empresa_id`.
+- `backend/handlers/empresa_permisos.go` y `web/js/administrar_empresa.js`:
+	- registran `linkNIIF` como `finanzas:R` y lo incluyen en la visibilidad del rol `contador`.
+
+2026-06-07 - Auditoria integral de modulos nuevos
+- `backend/handlers/reportes.go`:
+	- el dataset `operativo_modulos_resumen` inventaria modulos nuevos y hubs sin tabla propia bajo permisos de reportes por `empresa_id`.
+- `web/administrar_empresa/auditoria.html`:
+	- el filtro de modulo cubre DIAN, Bolsa, Renta IA, Suite contador, Centro IA, compras IA, contabilidad, nomina, documental, verticales y analisis/control.
+- `web/administrar_empresa/reportes_ejecutivos.html`:
+	- el catalogo fallback incluye `Auditoria de modulos` y area `Operacion y auditoria`.
+
+2026-06-07 - Suite contador por empresa
+- `web/administrar_empresa/suite_contador.html`:
+	- nueva pagina hub para contadores con tarjetas de Portal contador, PUC/NIIF, suite contable, impuestos, DIAN, declaraciones, certificados, cierres, activos, reportes, nomina, bancos, compras IA y Renta IA.
+	- consulta `/api/empresa/permisos_contexto` y muestra modulos disponibles o bloqueados por empresa sin crear datos.
+- `web/administrar_empresa.html` y `web/administrar_empresa/finanzas_menu.html`:
+	- agregan enlace `Suite contador` y chip `Contador 360`.
+- `web/js/administrar_empresa.js`:
+	- registra `linkSuiteContador` en el catalogo visual y amplia la visibilidad del rol `contador` hacia accesos contables clave.
+- `backend/handlers/empresa_permisos.go`:
+	- agrega la pagina `linkSuiteContador` como `finanzas:R` y sincroniza la restriccion del rol `contador`.
+- `web/index.html`:
+	- actualiza la oferta publica de Finanzas y cumplimiento con Suite contador 360.
+
 2026-06-06 - Renta IA en finanzas
 - `backend/db/finanzas_renta.go`:
 	- agrega la funcion pura de estimacion de renta y la consulta consolidada por empresa.
@@ -10650,6 +10690,19 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Elimina la ruta interna de validacion de correo.
 - `web/administrar_empresa/panel.html`:
 	- Abre la bandeja corporativa cuando el buzon esta provisionado y muestra estados claros cuando falta Mailu.
+
+2026-06-07 - Centro IA empresarial por empresa
+- `backend/handlers/empresa_ia_empresarial.go`:
+	- Endpoint empresarial `/api/empresa/ia_empresarial` para catalogo de funciones IA, snapshot real por `empresa_id` y ejecucion GPT-5.4 mini con limite diario por empresa.
+	- Las respuestas IA son diagnosticos o borradores revisables; no mutan facturas, pagos, clientes, productos, inventario ni DIAN.
+- `web/administrar_empresa/centro_ia_empresarial.html`:
+	- Pantalla profesional del Centro IA empresarial con KPIs reales, alertas, funciones, consulta libre y resultado saneado.
+- `web/js/ai_button_icons.js`:
+	- Helper global que agrega icono GPT, clase y badge `IA` a botones de funciones inteligentes, incluso dentro de iframes same-origin.
+- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`, `web/js/administrar_empresa.js`:
+	- Enlazan el Centro IA empresarial y registran visibilidad por permisos/roles.
+- `backend/handlers/empresa_permisos.go`, `backend/main.go`:
+	- Registran `linkCentroIAEmpresarial`, endpoint protegido y restricciones para roles operativos.
 
 2026-05-30 - Prueba de autologin SnappyMail
 - `backend/handlers/email_corporativo_handlers_test.go`:

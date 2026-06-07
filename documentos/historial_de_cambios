@@ -1,3 +1,54 @@
+2026-06-07: IA empresarial oculta por defecto para todas las empresas.
+- Modulos afectados: Administrar empresa, Centro financiero, Suite contador y permisos empresariales.
+- Backend: `backend/handlers/empresa_permisos.go` aplica default oculto a `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`, `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` en `permisos_contexto` y snapshot de autorizacion; solo se muestran si existe regla fina explicita de pagina permitida para la empresa y el rol/licencia base tambien lo permite.
+- Frontend: `web/js/administrar_empresa.js`, `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/administrar_empresa/suite_contador.html` ocultan menus, chips, tarjetas y chat flotante IA por defecto, sin borrar las paginas ni sus endpoints.
+- Seguridad: ocultar botones no reemplaza backend; el snapshot de permisos tambien evita acceso directo por URL/API cuando la pagina IA no esta habilitada por empresa.
+
+2026-06-07: Retiro boton 2+2+2 DIAN.
+- Modulo afectado: Facturacion electronica Colombia, centro de habilitacion DIAN.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` elimina el boton `Enviar prueba 2 + 2 + 2`, su funcion `ejecutarDianPruebaDosCadaTipo` y el listener asociado.
+- Operacion: se conservan `Ejecutar set automatico` con el objetivo guardado por empresa y los envios manuales individuales de factura, nota debito y nota credito.
+- Seguridad: no se tocaron credenciales, TestSetId ni transporte DIAN; el cambio reduce envios parciales accidentales.
+
+2026-06-07: Reparacion boton Enviar nota credito DIAN.
+- Modulo afectado: Facturacion electronica Colombia, centro de habilitacion DIAN.
+- Causa tecnica: el envio manual dependia de `window.confirm`; en verificacion visual el popup nativo podia bloquear/cancelar la accion y el resultado quedaba en el documento anterior.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrega un modal propio de confirmacion para envios reales DIAN y lo usa en set completo, 2+2+2, factura, nota debito y nota credito.
+- Comportamiento: `Enviar nota credito` sigue enviando un documento real con `notas_credito=1`, `max_envios=1`, `simular=false` y `detener_en_error=true` hacia `action=pruebas_dian`.
+- Seguridad: no se tocaron secretos, certificados, TestSetId ni credenciales; la confirmacion visible evita envios accidentales y conserva el flujo por `empresa_id`.
+- QA: validacion sintactica del script embebido, `go test ./handlers -run "TestRunDIANPruebasHabilitacionTwoEachRealSOAPWithStatusZip|DIAN" -count=1` y verificacion visual local del modal al hacer click en `Enviar nota credito`.
+
+2026-06-07: Reparacion de Guardar configuracion pais en facturacion electronica.
+- Modulo afectado: Facturacion electronica Colombia por empresa.
+- Causa tecnica: el formulario de perfil pais enviaba un `PUT` ambiguo a `/api/empresa/facturacion_electronica`; en produccion el backend entro al flujo de accion fiscal y exigio `documento_codigo`.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` ahora guarda con `POST /api/empresa/facturacion_electronica?action=config_pais&empresa_id={id}`.
+- Backend: `backend/handlers/facturacion_electronica.go` reconoce `config_pais`, `guardar_config_pais` y `configuracion_pais` como acciones de configuracion, separadas de emision/anulacion de documentos electronicos.
+- Seguridad: no se tocaron secretos ni credenciales DIAN; el guardado conserva `empresa_id` y la auditoria de configuracion existente.
+- QA: validacion sintactica del script embebido y `go test ./handlers -run "DIAN|Facturacion" -count=1`.
+
+2026-06-07: Modulo NIIF profesional.
+- Modulo afectado: Finanzas y cumplimiento en Administrar empresa.
+- Frontend: `web/administrar_empresa/niif.html` agrega un centro NIIF con diagnostico de adopcion, politicas, calculos de medicion, conciliacion contable-fiscal, cierre y notas.
+- Integracion: se enlaza desde `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html` y `web/administrar_empresa/suite_contador.html`.
+- Permisos: `linkNIIF` queda registrado como `finanzas:R`; el rol `contador` puede consultarlo sin obtener permisos de escritura o aprobacion.
+- Seguridad: no se crean endpoints ni tablas; la lectura contable usa el endpoint existente protegido y las marcas operativas se guardan localmente por empresa/navegador.
+
+2026-06-07: Auditoria integral de modulos nuevos.
+- Modulos afectados: Auditoria empresarial y Centro de reportes.
+- Backend: `backend/handlers/reportes.go` amplia `operativo_modulos_resumen` para inventariar modulos recientes de DIAN, Bolsa, Renta IA, Suite contador, NIIF, Centro IA, compras IA, contabilidad, tesoreria, nomina, documental, seguridad, analisis/control y verticales.
+- Frontend: `web/administrar_empresa/auditoria.html` agrega filtros de modulo; `web/administrar_empresa/reportes_ejecutivos.html` agrega area `Operacion y auditoria` y fallback `Auditoria de modulos`.
+- Seguridad: no se agregan endpoints ni permisos; `/api/empresa/reportes` conserva `WithEmpresaReportesPermissions`, aislamiento por `empresa_id` y notas `sin_tabla` para hubs/calculos sin tabla propia.
+- QA: `go test ./handlers -run Reportes -count=1`, `go test ./... -run "^$" -count=1` y verificacion visual local de selectores/reporte.
+
+2026-06-07: Suite contador por empresa.
+- Modulo afectado: Finanzas y cumplimiento en Administrar empresa.
+- Investigacion: se reviso el enfoque publico de Siigo Contador para panel multicliente, obligaciones, PUC/NIIF, impuestos, documentos electronicos, reportes y apoyo a firmas contables.
+- Frontend: se crea `web/administrar_empresa/suite_contador.html`, un hub profesional que agrupa modulos reales existentes y marca disponibilidad por permisos/licencia.
+- Navegacion: `Suite contador` queda en el menu principal de Finanzas y cumplimiento y como chip `Contador 360` en el Centro financiero y contable.
+- Permisos: `linkSuiteContador` queda bajo `finanzas:R`; el rol `contador` ve el hub y accesos contables clave, sin conceder mutaciones ni aprobaciones fuera de cada wrapper.
+- Portada/documentacion: `web/index.html`, mapa, flujos, matriz, descripcion de archivos y descripcion de modulos quedan actualizados.
+- Seguridad: no se crean endpoints, tablas ni datos simulados; los enlaces conservan `empresa_id` y cada modulo destino mantiene aislamiento por empresa.
+
 2026-06-06: Renta IA en finanzas.
 - Modulo afectado: Finanzas en Administrar empresa > Centro financiero y contable.
 - Backend: se agrega `backend/db/finanzas_renta.go` y `/api/empresa/finanzas/renta_ia` para calcular renta estimada desde datos reales de ventas, finanzas, inventario y nomina filtrados por `empresa_id`.
@@ -31179,6 +31230,16 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - documentos/matriz_roles_permisos_pos_multiempresa.md
+2026-06-07: Centro IA empresarial por empresa
+- Modulos afectados: `IA`, `reportes`, `finanzas`, `permisos`, `frontend_ux`, `seguridad_multiempresa`.
+- Investigacion: se revisaron referencias publicas de Siigo/Jelou sobre IA aplicada a facturacion, clientes, productos, pagos, contabilidad, conciliaciones, reportes, compras/gastos y alertas DIAN.
+- Cambio funcional: se implementa `Centro IA empresarial` con funciones profesionales por empresa: diagnostico ERP, borrador de factura/cotizacion, cobranza, inventario, conciliacion, compras/gastos y cumplimiento DIAN.
+- Backend: `backend/handlers/empresa_ia_empresarial.go` expone `/api/empresa/ia_empresarial`, protegido por `WithEmpresaReportesPermissions`, con snapshot real filtrado por `empresa_id` y uso GPT-5.4 mini con limite diario.
+- Frontend: `web/administrar_empresa/centro_ia_empresarial.html` muestra KPIs reales, alertas, funciones IA y resultados; `web/js/ai_button_icons.js` marca botones IA con icono GPT y badge.
+- Permisos: se agrega `linkCentroIAEmpresarial` en catalogo, menu principal y centro financiero; roles `contador` y `empresario` pueden consultar sin permisos de escritura.
+- Seguridad: la IA no ejecuta mutaciones ni dice que emitio/registro operaciones; devuelve borradores, riesgos y datos faltantes para revision humana.
+- QA: `go test ./handlers -run "EmpresaPermisos|IAEmpresarial|Reportes" -count=1`; `go test ./... -run "^$" -count=1`; sintaxis JS con Node empaquetado de Codex.
+
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 
 2026-06-06: rs: actualizar repositorio y sincronizar VPS

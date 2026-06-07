@@ -6498,3 +6498,30 @@ La ayuda funcional se actualiza en `web/ayuda/ayuda.html` y el estado compacto d
 - Backend handlers: `/api/empresa/finanzas/cierres_caja` recibe `dbSuper` para resolver la licencia activa y bloquear aperturas/reaperturas cuando se supera el cupo.
 - Carrito/ventas: `carritos_compras` y metricas de estacion guardan `cierre_caja_id`, `caja_codigo`, `caja_turno` y sucursal para separar arqueos.
 - Frontend: `web/super/licencias.html` administra el cupo y `web/administrar_empresa/carrito_de_compras.html` exige seleccionar caja abierta antes de cobrar.
+## Actualizacion 2026-06-07 (Modulo NIIF)
+
+- `web/administrar_empresa/niif.html` agrega el centro NIIF por empresa dentro
+  de `administrar_empresa`, con diagnostico, politicas, mediciones,
+  conciliacion contable-fiscal, cierre y notas.
+- No se agregan handlers ni tablas. La pagina consulta el dashboard existente de
+  `/api/empresa/contabilidad_colombia?action=dashboard` y guarda marcas locales
+  por navegador/empresa.
+- `backend/handlers/empresa_permisos.go` registra `linkNIIF` como
+  `finanzas:R`, y `web/js/administrar_empresa.js` lo incluye en el catalogo y
+  en la visibilidad del rol `contador`.
+- La navegacion se conecta desde `web/administrar_empresa.html`,
+  `web/administrar_empresa/finanzas_menu.html` y
+  `web/administrar_empresa/suite_contador.html`.
+
+## Actualizacion 2026-06-07 (Suite contador)
+
+- `web/administrar_empresa/suite_contador.html` agrega una pagina hub dentro de
+  `administrar_empresa` para coordinar modulos contables/fiscales existentes por
+  `empresa_id`.
+- No se agregan handlers, tablas ni dependencias. La pagina consulta
+  `/api/empresa/permisos_contexto` y navega a rutas existentes.
+- `backend/handlers/empresa_permisos.go` registra `linkSuiteContador` como
+  `finanzas:R` y amplia la visibilidad controlada del rol `contador`.
+- `web/administrar_empresa.html`, `web/administrar_empresa/finanzas_menu.html`
+  y `web/js/administrar_empresa.js` incorporan el enlace en el menu principal,
+  centro financiero y catalogo de permisos frontend.

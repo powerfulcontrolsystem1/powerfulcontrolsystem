@@ -471,7 +471,7 @@ func EmpresaFacturacionElectronicaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFu
 				})
 				return
 			}
-			if facturacionActionRequiresFiscalIntegration(action) {
+			if !facturacionActionIsPaisConfig(action) && facturacionActionRequiresFiscalIntegration(action) {
 				var payload facturacionOperacionPayload
 				if r.Body != nil {
 					_ = json.NewDecoder(r.Body).Decode(&payload)
@@ -1386,6 +1386,15 @@ func facturacionActionRequiresFiscalIntegration(action string) bool {
 			actionNormalized = strings.TrimPrefix(actionNormalized, "emitir_")
 		}
 		return facturacionDocumentoElectronicoPermitido(actionNormalized)
+	}
+}
+
+func facturacionActionIsPaisConfig(action string) bool {
+	switch normalizeDocumentoState(action) {
+	case "", "config_pais", "guardar_config_pais", "configuracion_pais":
+		return true
+	default:
+		return false
 	}
 }
 

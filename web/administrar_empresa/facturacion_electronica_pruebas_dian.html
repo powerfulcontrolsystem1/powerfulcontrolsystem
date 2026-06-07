@@ -67,6 +67,12 @@
     .dian-console-title strong{color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
     .dian-console-meta{color:var(--muted);font-size:.76rem;white-space:nowrap}
     .dian-console-body{margin:0;padding:10px;color:var(--text);font-size:.78rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
+    .dian-confirm-backdrop{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(15,23,42,.58);padding:18px}
+    .dian-confirm-backdrop.is-visible{display:flex}
+    .dian-confirm-box{width:min(520px,100%);border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 18px 60px rgba(0,0,0,.28);padding:18px}
+    .dian-confirm-box h3{margin:0;color:var(--text);font-size:1.05rem;letter-spacing:0}
+    .dian-confirm-box p{margin:10px 0 0;color:var(--muted);font-size:.92rem;line-height:1.45}
+    .dian-confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px}
     @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}}
   </style>
@@ -191,7 +197,6 @@
       <div class="dian-test-actions">
         <button id="btnDianGuardarObjetivo" type="button" class="btn secondary">Guardar objetivo DIAN</button>
         <button id="btnDianPruebas" type="button" class="btn">Ejecutar set automatico</button>
-        <button id="btnDianPruebaDosCadaTipo" type="button" class="btn secondary">Enviar prueba 2 + 2 + 2</button>
         <button id="btnDianEnviarFactura" type="button" class="btn secondary">Enviar factura</button>
         <button id="btnDianEnviarND" type="button" class="btn secondary">Enviar nota debito</button>
         <button id="btnDianEnviarNC" type="button" class="btn secondary">Enviar nota credito</button>
@@ -308,6 +313,16 @@
       <pre id="op_resultado" class="form-help pre-output"></pre>
     </div>
   </div>
+  <div id="feDianConfirmOverlay" class="dian-confirm-backdrop" aria-hidden="true">
+    <div class="dian-confirm-box" role="dialog" aria-modal="true" aria-labelledby="feDianConfirmTitle">
+      <h3 id="feDianConfirmTitle">Confirmar envio real DIAN</h3>
+      <p id="feDianConfirmText">Esta accion enviara documentos reales al ambiente de habilitacion DIAN.</p>
+      <div class="dian-confirm-actions">
+        <button id="feDianConfirmCancel" type="button" class="btn secondary">Cancelar</button>
+        <button id="feDianConfirmAccept" type="button" class="btn">Enviar a DIAN</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const state = {
@@ -325,6 +340,7 @@
       gratuito: { facturas: 2, debito: 1, credito: 1, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 },
       historico: { facturas: 60, debito: 20, credito: 20, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 }
     };
+    let dianConfirmResolve = null;
 
     function txt(v) {
       return (v || "").toString().trim();
@@ -349,6 +365,33 @@
       } catch (_) {
         box.textContent = String(data);
       }
+    }
+
+    function closeDianConfirm(accepted) {
+      const overlay = document.getElementById("feDianConfirmOverlay");
+      if (overlay) {
+        overlay.classList.remove("is-visible");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+      const resolve = dianConfirmResolve;
+      dianConfirmResolve = null;
+      if (resolve) resolve(!!accepted);
+    }
+
+    function confirmarDianAccion(message, detail) {
+      const overlay = document.getElementById("feDianConfirmOverlay");
+      const text = document.getElementById("feDianConfirmText");
+      const accept = document.getElementById("feDianConfirmAccept");
+      if (!overlay || !text || !accept) {
+        return Promise.resolve(window.confirm(message));
+      }
+      text.textContent = message + (detail ? " " + detail : "");
+      overlay.classList.add("is-visible");
+      overlay.setAttribute("aria-hidden", "false");
+      accept.focus();
+      return new Promise(function(resolve) {
+        dianConfirmResolve = resolve;
+      });
     }
 
     function isSensitiveDianKey(key) {
@@ -1054,7 +1097,7 @@
         setText("feDianPruebasMsg", "Define al menos un documento para el set DIAN.", true);
         return;
       }
-      if (!window.confirm("Esto enviara el set completo por tandas reales al ambiente de habilitacion DIAN. Continuar?")) {
+      if (!await confirmarDianAccion("Esto enviara el set completo por tandas reales al ambiente de habilitacion DIAN.", "Continuar?")) {
         return;
       }
       const totalPlan = plan.reduce(function(sum, item) { return sum + Number(item.total_documentos || 0); }, 0);
@@ -1138,7 +1181,7 @@
         await ejecutarDianSetPorTandas(payload, label);
         return;
       }
-      if (!window.confirm("Esto enviara documentos reales al ambiente de habilitacion DIAN. Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
+      if (!await confirmarDianAccion("Esto enviara documentos reales al ambiente de habilitacion DIAN.", "Verifica que el set coincida con lo que DIAN asigno. Continuar?")) {
         return;
       }
       payload = Object.assign({}, payload, { simular: false, detener_en_error: true });
@@ -1164,23 +1207,6 @@
       const payload = collectDianSetPayloadBase();
       const requestedMax = numberInputValue("feDianSetMaxEnvios", 0);
       await ejecutarDianSet(payload, "set automatico DIAN", { batched: !requestedMax && Number(payload.total_documentos || 0) > state.dianBatchSize });
-    }
-
-    async function ejecutarDianPruebaDosCadaTipo() {
-      const payload = {
-        empresa_id: Number(state.empresaID),
-        facturas_electronicas: 2,
-        notas_debito: 2,
-        notas_credito: 2,
-        total_documentos: 6,
-        max_envios: 6
-      };
-      setValue("feDianSetPreset", "personalizado");
-      setValue("feDianSetFacturas", 2);
-      setValue("feDianSetNotasDebito", 2);
-      setValue("feDianSetNotasCredito", 2);
-      setValue("feDianSetTotalRequerido", 6);
-      await ejecutarDianSet(payload, "2 facturas, 2 notas debito y 2 notas credito");
     }
 
     async function ejecutarDianDocumentoManual(tipo) {
@@ -1300,10 +1326,17 @@
     document.getElementById("btnDianValidarCredenciales").addEventListener("click", validarDianCredenciales);
     document.getElementById("btnDianGuardarObjetivo").addEventListener("click", guardarDianObjetivo);
     document.getElementById("btnDianPruebas").addEventListener("click", ejecutarDianPruebas);
-    document.getElementById("btnDianPruebaDosCadaTipo").addEventListener("click", ejecutarDianPruebaDosCadaTipo);
     document.getElementById("btnDianEnviarFactura").addEventListener("click", function() { ejecutarDianDocumentoManual("factura"); });
     document.getElementById("btnDianEnviarND").addEventListener("click", function() { ejecutarDianDocumentoManual("nota_debito"); });
     document.getElementById("btnDianEnviarNC").addEventListener("click", function() { ejecutarDianDocumentoManual("nota_credito"); });
+    document.getElementById("feDianConfirmAccept").addEventListener("click", function() { closeDianConfirm(true); });
+    document.getElementById("feDianConfirmCancel").addEventListener("click", function() { closeDianConfirm(false); });
+    document.getElementById("feDianConfirmOverlay").addEventListener("click", function(event) {
+      if (event.target && event.target.id === "feDianConfirmOverlay") closeDianConfirm(false);
+    });
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Escape" && dianConfirmResolve) closeDianConfirm(false);
+    });
     document.getElementById("btnDianActivarProduccion").addEventListener("click", activarProduccionDianLocal);
     document.getElementById("btnDianConsoleLimpiar").addEventListener("click", clearDianConsole);
     document.getElementById("btnDianConsoleCopiar").addEventListener("click", copyDianConsole);

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Centro IA empresarial</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body.ai-center-page{margin:0;min-height:100vh;background:var(--bg,#f3f6fb);color:var(--text,#172033);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .ai-center-shell{max-width:1420px;margin:0 auto;padding:18px;display:grid;gap:14px}
+    .ai-center-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:16px}
+    .ai-center-head h1{margin:0;font-size:24px;line-height:1.18;letter-spacing:0}
+    .ai-center-head p{margin:6px 0 0;color:var(--muted);max-width:900px;line-height:1.45}
+    .ai-center-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:end}
+    .ai-center-filters{display:grid;grid-template-columns:repeat(2,minmax(145px,1fr));gap:8px;min-width:310px}
+    .ai-center-grid{display:grid;grid-template-columns:minmax(0,.86fr) minmax(420px,1.14fr);gap:14px;align-items:start}
+    .ai-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:14px;box-shadow:var(--shadow-sm,0 8px 20px rgba(15,23,42,.06))}
+    .ai-card h2{margin:0 0 10px;font-size:17px;line-height:1.25}
+    .ai-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .ai-kpi{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:11px;min-height:76px}
+    .ai-kpi span{display:block;color:var(--muted);font-size:12px;font-weight:850;text-transform:uppercase}
+    .ai-kpi strong{display:block;margin-top:7px;font-size:19px}
+    .ai-functions{display:grid;gap:9px}
+    .ai-function{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:8px;padding:11px;background:var(--surface-soft)}
+    .ai-function strong{display:block}
+    .ai-function span{display:block;margin-top:3px;color:var(--muted);font-size:13px;line-height:1.35}
+    .ai-function small{display:inline-block;margin-top:7px;color:var(--accent);font-weight:850}
+    .ai-result{white-space:pre-wrap;line-height:1.46;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;min-height:220px;overflow:auto}
+    .ai-result.is-error{border-color:color-mix(in srgb,var(--danger,#c43737) 44%,var(--border));color:var(--danger,#c43737)}
+    .ai-alerts{display:grid;gap:8px}
+    .ai-alert{border:1px solid color-mix(in srgb,var(--warning,#f59e0b) 38%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--warning,#f59e0b) 10%,var(--surface));padding:10px;color:var(--text)}
+    .ai-muted{color:var(--muted);font-size:13px;line-height:1.4}
+    .ai-query{display:grid;gap:8px}
+    .ai-query textarea{min-height:90px;resize:vertical}
+    .ai-source{display:grid;gap:6px;font-size:13px;color:var(--muted)}
+    .ai-source a{color:var(--accent);font-weight:800}
+    @media(max-width:980px){.ai-center-head,.ai-center-grid{grid-template-columns:1fr}.ai-center-actions{justify-content:flex-start}.ai-center-filters{min-width:0}.ai-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:620px){.ai-center-shell{padding:12px}.ai-kpis,.ai-center-filters,.ai-function{grid-template-columns:1fr}.ai-center-actions{display:grid;justify-content:stretch}.ai-function .btn{width:100%}}
+  </style>
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260607"></script>
+</head>
+<body class="ai-center-page admin-subpage">
+  <main class="ai-center-shell">
+    <header class="ai-center-head">
+      <div>
+        <h1>Centro IA empresarial</h1>
+        <p>Funciones inteligentes por empresa para diagnosticar, preparar borradores y revisar riesgos usando datos reales del POS, finanzas, clientes, productos e inventario. Las acciones quedan como recomendaciones revisables.</p>
+      </div>
+      <div class="ai-center-actions">
+        <div class="ai-center-filters">
+          <label><span class="form-label">Desde</span><input id="desde" class="form-input" type="date"></label>
+          <label><span class="form-label">Hasta</span><input id="hasta" class="form-input" type="date"></label>
+        </div>
+        <button id="btnActualizar" class="btn secondary" type="button">Actualizar</button>
+      </div>
+    </header>
+
+    <section class="ai-card">
+      <h2>Referencia investigada</h2>
+      <div class="ai-source">
+        <span>Se tomaron como referencia las capacidades publicas alrededor de Siigo: facturacion electronica, clientes, productos, pagos, contabilidad, conciliacion, reportes en tiempo real y agentes que operan esos flujos por conversacion.</span>
+        <span>En este sistema se implementa con control multiempresa: la IA analiza y prepara, pero no emite ni modifica datos sin pasar por los modulos operativos.</span>
+      </div>
+    </section>
+
+    <section class="ai-center-grid">
+      <div class="ai-card">
+        <h2>Snapshot real</h2>
+        <div class="ai-kpis" id="kpis"></div>
+        <h2 style="margin-top:14px">Alertas</h2>
+        <div id="alertas" class="ai-alerts"></div>
+      </div>
+
+      <div class="ai-card">
+        <h2>Ejecutar funcion IA</h2>
+        <div class="ai-query">
+          <textarea id="consulta" class="form-input" maxlength="1800" placeholder="Ej: prepara un borrador de factura para Cliente X por 2 servicios de consultoria de 350000 cada uno, o revisa por que no cuadran ventas e ingresos."></textarea>
+          <div class="ai-center-actions" style="justify-content:flex-start">
+            <button id="btnDiagnostico" class="btn" type="button" data-ai-button="true">Diagnostico ERP</button>
+            <button id="btnCustom" class="btn secondary" type="button" data-ai-button="true">Analizar con IA</button>
+          </div>
+        </div>
+        <p id="estado" class="ai-muted">Cargando datos reales de la empresa...</p>
+        <div id="resultado" class="ai-result">Selecciona una funcion IA.</div>
+      </div>
+    </section>
+
+    <section class="ai-card">
+      <h2>Funciones disponibles</h2>
+      <div id="funciones" class="ai-functions"></div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var state = { empresaId: 0, funciones: [], snapshot: null, accion: "diagnostico_erp" };
+      function $(id){ return document.getElementById(id); }
+      function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];}); }
+      function money(v){ return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(Number(v||0)); }
+      function empresaId(){
+        if(window.__empresaModuleGuard && typeof window.__empresaModuleGuard.resolveEmpresaId === "function") return Number(window.__empresaModuleGuard.resolveEmpresaId()||0);
+        if(window.__resolveEmpresaIdContext) return Number(window.__resolveEmpresaIdContext()||0);
+        var p = new URLSearchParams(location.search || "");
+        return Number(p.get("empresa_id") || p.get("id") || 0);
+      }
+      function defaultDates(){
+        var now = new Date();
+        var first = new Date(now.getFullYear(), now.getMonth(), 1);
+        $("desde").value = first.toISOString().slice(0,10);
+        $("hasta").value = now.toISOString().slice(0,10);
+      }
+      function apiUrl(){
+        return "/api/empresa/ia_empresarial?empresa_id="+encodeURIComponent(state.empresaId)+"&desde="+encodeURIComponent($("desde").value)+"&hasta="+encodeURIComponent($("hasta").value);
+      }
+      function setEstado(text, error){
+        $("estado").textContent = text || "";
+        $("estado").className = error ? "error" : "ai-muted";
+      }
+      function renderSnapshot(){
+        var s = state.snapshot || {};
+        var m = s.metricas || {};
+        var rows = [
+          ["Ventas cerradas", m.ventas_cerradas || 0],
+          ["Ventas total", money(m.ventas_total)],
+          ["Ingresos", money(m.ingresos_financieros)],
+          ["Egresos", money(m.egresos_financieros)],
+          ["Clientes", m.clientes_activos || 0],
+          ["Productos bajo stock", m.productos_bajo_stock || 0]
+        ];
+        $("kpis").innerHTML = rows.map(function(row){ return '<article class="ai-kpi"><span>'+esc(row[0])+'</span><strong>'+esc(row[1])+'</strong></article>'; }).join("");
+        var alerts = Array.isArray(s.alertas) ? s.alertas : [];
+        $("alertas").innerHTML = alerts.length ? alerts.map(function(a){ return '<div class="ai-alert">'+esc(a)+'</div>'; }).join("") : '<div class="ai-alert">Sin alertas disponibles.</div>';
+      }
+      function renderFunciones(){
+        $("funciones").innerHTML = state.funciones.map(function(f){
+          return '<article class="ai-function"><div><strong>'+esc(f.titulo)+'</strong><span>'+esc(f.descripcion)+'</span><small>'+esc(f.area)+'</small></div><button class="btn secondary" type="button" data-ai-button="true" data-run-ai="'+esc(f.id)+'">Ejecutar IA</button></article>';
+        }).join("");
+        if(window.PCSApplyAIButtonIcons) window.PCSApplyAIButtonIcons(document);
+      }
+      async function load(){
+        state.empresaId = empresaId();
+        if(!state.empresaId){ setEstado("No se encontro empresa_id.", true); return; }
+        setEstado("Cargando snapshot real...", false);
+        var res = await fetch(apiUrl(), { credentials: "same-origin" });
+        var data = await res.json().catch(function(){ return null; });
+        if(!res.ok || !data){ throw new Error((data && data.error) || "No se pudo cargar Centro IA."); }
+        state.funciones = Array.isArray(data.funciones) ? data.funciones : [];
+        state.snapshot = data.snapshot || null;
+        renderSnapshot();
+        renderFunciones();
+        setEstado("Datos reales actualizados para empresa "+state.empresaId+".", false);
+      }
+      async function run(accion){
+        state.accion = accion || state.accion || "diagnostico_erp";
+        $("resultado").className = "ai-result";
+        $("resultado").textContent = "Consultando IA empresarial...";
+        setEstado("Ejecutando funcion IA...", false);
+        var body = { empresa_id: state.empresaId, accion: state.accion, consulta: $("consulta").value.trim(), desde: $("desde").value, hasta: $("hasta").value };
+        var res = await fetch("/api/empresa/ia_empresarial", { method: "POST", credentials: "same-origin", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+        var data = await res.json().catch(function(){ return null; });
+        if(!res.ok || !data){ throw new Error((data && data.error) || "No se pudo ejecutar IA empresarial."); }
+        state.snapshot = data.snapshot || state.snapshot;
+        renderSnapshot();
+        var ia = data.ia || {};
+        if(ia.ok){
+          $("resultado").textContent = ia.respuesta || "La IA respondio sin contenido.";
+          setEstado("Funcion IA completada. Uso "+((ia.usage && ia.usage.daily_used) || 0)+"/"+((ia.usage && ia.usage.daily_limit) || ""), false);
+        }else{
+          $("resultado").className = "ai-result is-error";
+          $("resultado").textContent = ia.error || "La funcion IA no esta disponible.";
+          setEstado("Snapshot real disponible, IA pendiente de configuracion.", true);
+        }
+      }
+      document.addEventListener("click", function(ev){
+        var btn = ev.target.closest("[data-run-ai]");
+        if(btn){ run(btn.getAttribute("data-run-ai")).catch(function(e){ $("resultado").className="ai-result is-error"; $("resultado").textContent=e.message; setEstado(e.message,true); }); }
+      });
+      $("btnActualizar").addEventListener("click", function(){ load().catch(function(e){ setEstado(e.message,true); }); });
+      $("btnDiagnostico").addEventListener("click", function(){ run("diagnostico_erp").catch(function(e){ $("resultado").className="ai-result is-error"; $("resultado").textContent=e.message; setEstado(e.message,true); }); });
+      $("btnCustom").addEventListener("click", function(){ run(state.accion || "diagnostico_erp").catch(function(e){ $("resultado").className="ai-result is-error"; $("resultado").textContent=e.message; setEstado(e.message,true); }); });
+      defaultDates();
+      load().catch(function(e){ setEstado(e.message,true); });
+    })();
+  </script>
+</body>
+</html>

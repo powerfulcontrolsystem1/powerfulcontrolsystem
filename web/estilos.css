@@ -1,3 +1,7 @@
+[hidden] {
+  display: none !important;
+}
+
 .venta-publica-page {
   min-height: 100vh;
   background:
@@ -1471,6 +1475,11 @@ img{max-width:100%;height:auto}
 h1,h2,h3{margin:0 0 12px 0}
 p{color:var(--muted);line-height:1.5}
 .btn{display:inline-block;padding:8px 12px;background:linear-gradient(180deg, var(--btn-primary-top), var(--accent));color:var(--btn-primary-text);border-radius:8px;text-decoration:none;font-weight:700;border:1px solid var(--btn-primary-border);box-shadow:0 8px 18px var(--btn-primary-shadow);font-size:0.95rem;line-height:1;text-align:center;white-space:normal}
+.ai-action-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.ai-action-button .ai-button-icon{width:17px;height:17px;flex:0 0 auto;margin:0;filter:none}
+.ai-action-button:not(.secondary){background:linear-gradient(135deg,var(--accent),var(--accent-2,#0ea5a4))}
+.ai-action-button.secondary,.ai-action-button.capture-btn:not(.primary),.ai-action-button.fin-center-chip{border-color:color-mix(in srgb,var(--accent,#1769e0) 42%,var(--border,rgba(15,35,64,.16)));background:color-mix(in srgb,var(--surface,#fff) 78%,var(--accent,#1769e0) 10%);color:var(--text)}
+.ai-action-button::after{content:"IA";display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 5px;border-radius:999px;background:color-mix(in srgb,var(--accent-yellow,#fbbf24) 24%,transparent);color:var(--accent-yellow,#f59e0b);font-size:10px;font-weight:900;line-height:1}
 .btn.secondary{background:var(--surface-soft);border:1px solid var(--border);color:var(--text)}
 /* Botón 'Agregar' usado en formularios CRUD */
 .btn.add{background:linear-gradient(180deg,var(--btn-add-top),var(--accent-2));color:var(--btn-add-text);margin-bottom:12px;border-color:var(--btn-add-border)}

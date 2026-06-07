@@ -68,3 +68,31 @@ func TestPermissionChangeRequiresApprovalForSecurityEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestDefaultHiddenEnterpriseIAPagesRequireExplicitCompanyEnable(t *testing.T) {
+	pages := map[string]bool{
+		"linkReportes":              true,
+		"linkCentroIAEmpresarial":   true,
+		"linkRentaIA":               true,
+		"linkSoportesComprasIA":     true,
+		"linkSoportesComprasIAMenu": true,
+	}
+
+	hidden := applyDefaultHiddenEnterpriseIAPages(pages, map[string]bool{})
+	for _, page := range []string{"linkCentroIAEmpresarial", "linkRentaIA", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"} {
+		if hidden[page] {
+			t.Fatalf("%s debe quedar oculto por defecto", page)
+		}
+	}
+	if !hidden["linkReportes"] {
+		t.Fatal("una pagina no IA no debe cambiar por el default IA")
+	}
+
+	enabled := applyDefaultHiddenEnterpriseIAPages(pages, map[string]bool{"linkRentaIA": true})
+	if !enabled["linkRentaIA"] {
+		t.Fatal("linkRentaIA debe poder mostrarse cuando la empresa lo habilita explicitamente")
+	}
+	if enabled["linkCentroIAEmpresarial"] {
+		t.Fatal("linkCentroIAEmpresarial debe seguir oculto si no tiene habilitacion explicita")
+	}
+}

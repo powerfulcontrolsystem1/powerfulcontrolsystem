@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Suite contador</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/ai_button_icons.js?v=20260607"></script>
+  <style>
+    .accountant-suite{min-height:100vh;background:#f5f7fb;color:#172033;padding:18px}
+    .accountant-suite-shell{max-width:1240px;margin:0 auto;display:grid;gap:14px}
+    .accountant-suite-header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end;border:1px solid #d9e1ec;background:#fff;border-radius:8px;padding:16px}
+    .accountant-suite-kicker{margin:0 0 6px;color:#4a5f7a;font-size:.75rem;font-weight:850;text-transform:uppercase}
+    .accountant-suite-title{margin:0;color:#101828;font-size:1.45rem;line-height:1.15}
+    .accountant-suite-copy{max-width:840px;margin:8px 0 0;color:#475467;font-size:.95rem;line-height:1.45}
+    .accountant-suite-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .accountant-suite-actions .btn{white-space:nowrap}
+    .accountant-suite-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .accountant-suite-metric{border:1px solid #d9e1ec;background:#fff;border-radius:8px;padding:12px}
+    .accountant-suite-metric span{display:block;color:#667085;font-size:.72rem;font-weight:850;text-transform:uppercase}
+    .accountant-suite-metric strong{display:block;margin-top:4px;color:#101828;font-size:1.08rem}
+    .accountant-suite-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid #d9e1ec;background:#fff;border-radius:8px;padding:10px 12px}
+    .accountant-suite-search{width:min(420px,100%);border:1px solid #cfd8e6;border-radius:8px;padding:9px 11px;background:#fff;color:#172033}
+    .accountant-suite-status{color:#4a5f7a;font-size:.86rem;font-weight:750}
+    .accountant-suite-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .accountant-module{display:grid;grid-template-rows:auto 1fr auto;gap:10px;border:1px solid #d9e1ec;background:#fff;border-radius:8px;padding:14px;min-height:188px}
+    .accountant-module.is-locked{background:#f8fafc}
+    .accountant-module-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+    .accountant-module-icon{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;background:#e8f0fe;color:#174ea6;font-weight:900}
+    .accountant-module h2{margin:0;color:#101828;font-size:1rem;line-height:1.25}
+    .accountant-module p{margin:6px 0 0;color:#475467;font-size:.88rem;line-height:1.38}
+    .accountant-module-tags{display:flex;gap:6px;flex-wrap:wrap}
+    .accountant-module-tags span{border:1px solid #d9e1ec;border-radius:999px;padding:4px 7px;background:#f8fafc;color:#475467;font-size:.72rem;font-weight:800}
+    .accountant-module-footer{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    .accountant-pill{border-radius:999px;padding:5px 8px;font-size:.72rem;font-weight:850}
+    .accountant-pill-ok{background:#e7f6ef;color:#067647}
+    .accountant-pill-locked{background:#fff1f3;color:#b42318}
+    .accountant-module-open{border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:8px;padding:8px 10px;font-weight:850;cursor:pointer}
+    .accountant-module-open[disabled]{border-color:#cfd8e6;background:#e4e7ec;color:#667085;cursor:not-allowed}
+    .accountant-suite-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;border:1px solid #d9e1ec;background:#fff;border-radius:8px;padding:14px}
+    .accountant-suite-flow h2{grid-column:1/-1;margin:0;color:#101828;font-size:1.05rem}
+    .accountant-flow-step{border-left:3px solid #1d4ed8;background:#f8fafc;border-radius:6px;padding:10px}
+    .accountant-flow-step strong{display:block;color:#101828;font-size:.9rem}
+    .accountant-flow-step span{display:block;margin-top:5px;color:#667085;font-size:.78rem;line-height:1.35}
+    @media(max-width:980px){
+      .accountant-suite-header{grid-template-columns:1fr}
+      .accountant-suite-actions{justify-content:flex-start}
+      .accountant-suite-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .accountant-suite-flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .accountant-suite-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:640px){
+      .accountant-suite{padding:12px}
+      .accountant-suite-grid,.accountant-suite-flow,.accountant-suite-metrics{grid-template-columns:1fr}
+      .accountant-suite-toolbar{align-items:stretch;flex-direction:column}
+      .accountant-suite-actions .btn{width:100%}
+    }
+  </style>
+</head>
+<body class="accountant-suite">
+  <main class="accountant-suite-shell">
+    <header class="accountant-suite-header">
+      <div>
+        <p class="accountant-suite-kicker">Centro de trabajo para contadores</p>
+        <h1 class="accountant-suite-title">Suite contador</h1>
+        <p class="accountant-suite-copy">Panel profesional por empresa para coordinar clientes contables, PUC/NIIF, impuestos, documentos DIAN, cierres, certificados, reportes y analisis financiero usando los modulos reales ya activos del sistema.</p>
+      </div>
+      <div class="accountant-suite-actions">
+        <button class="btn" type="button" data-open="/administrar_empresa/portal_contador.html">Portal contador</button>
+        <button class="btn secondary" type="button" data-open="/administrar_empresa/declaraciones_tributarias.html">Declaraciones</button>
+        <button class="btn secondary ai-action-button" type="button" data-open="/administrar_empresa/renta_ia.html" data-permission-link="linkRentaIA" hidden>Renta IA</button>
+      </div>
+    </header>
+
+    <section class="accountant-suite-metrics" aria-label="Resumen contador">
+      <div class="accountant-suite-metric"><span>Cobertura</span><strong id="metricAvailable">0/0 modulos</strong></div>
+      <div class="accountant-suite-metric"><span>Empresa</span><strong id="metricCompany">Actual</strong></div>
+      <div class="accountant-suite-metric"><span>Modo</span><strong>Multiempresa</strong></div>
+      <div class="accountant-suite-metric"><span>Control</span><strong>Permisos por rol</strong></div>
+    </section>
+
+    <section class="accountant-suite-toolbar" aria-label="Filtro de modulos contables">
+      <input id="accountantSearch" class="accountant-suite-search" type="search" placeholder="Buscar modulo contable, DIAN, impuesto, certificado..." autocomplete="off">
+      <span id="accountantSuiteStatus" class="accountant-suite-status">Validando permisos de la empresa...</span>
+    </section>
+
+    <section id="accountantModuleGrid" class="accountant-suite-grid" aria-live="polite"></section>
+
+    <section class="accountant-suite-flow" aria-label="Flujo de trabajo sugerido">
+      <h2>Flujo operativo del contador</h2>
+      <div class="accountant-flow-step"><strong>1. Captura</strong><span>Revisar compras, soportes y documentos recibidos.</span></div>
+      <div class="accountant-flow-step"><strong>2. Contabiliza</strong><span>Validar PUC, terceros, impuestos y comprobantes.</span></div>
+      <div class="accountant-flow-step"><strong>3. Cumple</strong><span>Controlar IVA, retenciones, ICA, DIAN y declaraciones.</span></div>
+      <div class="accountant-flow-step"><strong>4. Cierra</strong><span>Bloquear periodos, depreciar activos y preparar certificados.</span></div>
+      <div class="accountant-flow-step"><strong>5. Informa</strong><span>Entregar reportes, tablero de gestion y estimacion de renta.</span></div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      var modules=[
+        {title:"Panel multicliente",desc:"Oficina virtual para clientes contables, obligaciones, documentos, tareas y vencimientos.",url:"/administrar_empresa/portal_contador.html",page:"linkPortalContadorMenu",icon:"PC",tags:["clientes","vencimientos"]},
+        {title:"Contabilidad Colombia",desc:"PUC, terceros, impuestos, comprobantes de doble partida, cierres y auditoria.",url:"/administrar_empresa/contabilidad_colombia.html",page:"linkContabilidadColombia",icon:"CO",tags:["PUC","NIIF"]},
+        {title:"Modulo NIIF",desc:"Politicas, diagnostico de adopcion, mediciones, conciliacion contable-fiscal, cierre y notas.",url:"/administrar_empresa/niif.html",page:"linkNIIF",icon:"NF",tags:["NIIF","politicas"]},
+        {title:"Suite contable avanzada",desc:"Exogena, nomina electronica, documento soporte, cartera, CxP y libros oficiales.",url:"/administrar_empresa/contabilidad_colombia_avanzada.html",page:"linkContabilidadColombiaAvanzada",icon:"SA",tags:["exogena","libros"]},
+        {title:"Impuestos",desc:"Configuracion y seguimiento de IVA, retenciones, ICA y resumen fiscal por codigo.",url:"/administrar_empresa/impuestos.html",page:"linkImpuestos",icon:"TX",tags:["IVA","ICA"]},
+        {title:"Declaraciones tributarias",desc:"Calendario, preparacion y control de obligaciones tributarias por empresa.",url:"/administrar_empresa/declaraciones_tributarias.html",page:"linkDeclaracionesTributarias",icon:"DT",tags:["DIAN","tributario"]},
+        {title:"Documentos DIAN",desc:"Facturacion electronica, documentos emitidos, validacion y trazabilidad por empresa.",url:"/administrar_empresa/facturacion_electronica_menu.html",page:"linkFacturacionElectronica",icon:"FE",tags:["DIAN","UBL"]},
+        {title:"Reportes financieros",desc:"Indicadores ejecutivos, ventas, margen, cartera, inventario y finanzas.",url:"/administrar_empresa/reportes_menu.html",page:"linkReportes",icon:"RF",tags:["KPI","exportar"]},
+        {title:"Renta IA",desc:"Estimacion gerencial de renta con calculo backend y explicacion IA cuando este habilitada.",url:"/administrar_empresa/renta_ia.html",page:"linkRentaIA",icon:"IA",tags:["renta","IA"],defaultHidden:true},
+        {title:"Certificados tributarios",desc:"Portal de terceros para certificados y soportes tributarios asociados a la empresa.",url:"/administrar_empresa/portal_terceros_certificados.html",page:"linkPortalTercerosCertificadosMenu",icon:"CT",tags:["terceros","certificados"]},
+        {title:"Cierre fiscal",desc:"Cierres, reaperturas controladas, bloqueo de periodos y trazabilidad fiscal.",url:"/administrar_empresa/cierre_fiscal.html",page:"linkCierreFiscalMenu",icon:"CF",tags:["cierre","control"]},
+        {title:"Activos fijos NIIF/Fiscal",desc:"Depreciacion, deterioro, valor fiscal y diferencias NIIF/fiscales.",url:"/administrar_empresa/activos_fijos_niif_fiscal.html",page:"linkActivosFijosNIIFMenu",icon:"AF",tags:["NIIF","activos"]},
+        {title:"Centro IA empresarial",desc:"Diagnosticos y borradores operativos con datos reales de la empresa.",url:"/administrar_empresa/centro_ia_empresarial.html",page:"linkCentroIAEmpresarial",icon:"AI",tags:["IA","analisis"],defaultHidden:true},
+        {title:"Nomina",desc:"Nomina de sueldos y base para costos laborales y soportes contables.",url:"/administrar_empresa/nomina_sueldos.html",page:"linkNominaMenu",icon:"NO",tags:["nomina","laboral"]},
+        {title:"Compras con IA",desc:"Captura inteligente de compras y gastos para alimentar revision contable.",url:"/administrar_empresa/soportes_compras_ia.html",page:"linkSoportesComprasIAMenu",icon:"OC",tags:["compras","OCR"],defaultHidden:true},
+        {title:"Bancos y tesoreria",desc:"Pagos, tesoreria, presupuesto y seguimiento de caja para conciliacion.",url:"/administrar_empresa/tesoreria_presupuesto.html",page:"linkTesoreriaPresupuesto",icon:"BT",tags:["bancos","caja"]}
+      ];
+      var pages=null;
+      var search=document.getElementById("accountantSearch");
+      var grid=document.getElementById("accountantModuleGrid");
+      var status=document.getElementById("accountantSuiteStatus");
+      var metricAvailable=document.getElementById("metricAvailable");
+      var metricCompany=document.getElementById("metricCompany");
+
+      function resolveEmpresaId(){
+        try{
+          return (parent&&parent.__resolveEmpresaIdContext&&parent.__resolveEmpresaIdContext())||new URLSearchParams(location.search).get("empresa_id")||new URLSearchParams(location.search).get("id")||"";
+        }catch(e){
+          return new URLSearchParams(location.search).get("empresa_id")||new URLSearchParams(location.search).get("id")||"";
+        }
+      }
+      function withEmpresa(url){
+        var empresaId=resolveEmpresaId();
+        if(!empresaId)return url;
+        return url+(url.indexOf("?")>=0?"&":"?")+"empresa_id="+encodeURIComponent(empresaId);
+      }
+      function isAllowed(mod){
+        if(mod.defaultHidden&&!pages)return false;
+        if(!pages)return true;
+        if(!Object.prototype.hasOwnProperty.call(pages,mod.page))return true;
+        return !!pages[mod.page];
+      }
+      function render(){
+        var query=(search.value||"").trim().toLowerCase();
+        var available=0;
+        var visible=0;
+        var total=0;
+        grid.innerHTML="";
+        modules.forEach(function(mod){
+          var allowed=isAllowed(mod);
+          if(mod.defaultHidden&&!allowed)return;
+          total++;
+          var haystack=(mod.title+" "+mod.desc+" "+mod.tags.join(" ")).toLowerCase();
+          if(query&&haystack.indexOf(query)===-1)return;
+          if(allowed)available++;
+          visible++;
+          var card=document.createElement("article");
+          card.className="accountant-module"+(allowed?"":" is-locked");
+          card.innerHTML='<div class="accountant-module-top"><div><div class="accountant-module-icon">'+mod.icon+'</div></div><span class="accountant-pill '+(allowed?"accountant-pill-ok":"accountant-pill-locked")+'">'+(allowed?"Disponible":"Bloqueado")+'</span></div>'+
+            '<div><h2>'+mod.title+'</h2><p>'+mod.desc+'</p></div>'+
+            '<div class="accountant-module-tags">'+mod.tags.map(function(tag){return "<span>"+tag+"</span>";}).join("")+'</div>'+
+            '<div class="accountant-module-footer"><small>'+(allowed?"Permiso activo":"Requiere permiso o licencia")+'</small><button class="accountant-module-open" type="button" '+(allowed?"":"disabled")+' data-url="'+mod.url+'">Abrir</button></div>';
+          grid.appendChild(card);
+        });
+        if(pages){
+          available=modules.filter(function(mod){return (!mod.defaultHidden||isAllowed(mod))&&isAllowed(mod);}).length;
+        }
+        metricAvailable.textContent=available+"/"+total+" modulos";
+        status.textContent=visible+" modulos visibles en esta busqueda";
+      }
+      function loadPermissions(){
+        var empresaId=resolveEmpresaId();
+        metricCompany.textContent=empresaId?"Empresa "+empresaId:"Empresa actual";
+        if(!empresaId){
+          status.textContent="Sin empresa_id en la URL; mostrando catalogo completo.";
+          render();
+          return;
+        }
+        fetch("/api/empresa/permisos_contexto?empresa_id="+encodeURIComponent(empresaId),{credentials:"same-origin"})
+          .then(function(resp){return resp.ok?resp.json():null;})
+          .then(function(data){
+            pages=data&&data.paginas&&typeof data.paginas==="object"?data.paginas:null;
+            document.querySelectorAll("[data-permission-link]").forEach(function(btn){
+              var key=btn.getAttribute("data-permission-link")||"";
+              btn.hidden=!(pages&&pages[key]);
+            });
+            status.textContent=pages?"Permisos validados para esta empresa.":"No se pudo leer permisos; mostrando catalogo completo.";
+            render();
+          })
+          .catch(function(){
+            status.textContent="No se pudo leer permisos; mostrando catalogo completo.";
+            render();
+          });
+      }
+      document.addEventListener("click",function(event){
+        var opener=event.target.closest("[data-open],.accountant-module-open[data-url]");
+        if(!opener||opener.disabled)return;
+        var target=opener.getAttribute("data-open")||opener.getAttribute("data-url");
+        if(target)location.href=withEmpresa(target);
+      });
+      search.addEventListener("input",render);
+      loadPermissions();
+    })();
+  </script>
+</body>
+</html>

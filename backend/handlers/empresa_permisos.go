@@ -442,6 +442,14 @@ type permissionPageRule struct {
 	Grupo         string   `json:"grupo,omitempty"`
 }
 
+var defaultHiddenEnterpriseIAPages = map[string]bool{
+	"linkChatIA":                true,
+	"linkCentroIAEmpresarial":   true,
+	"linkRentaIA":               true,
+	"linkSoportesComprasIA":     true,
+	"linkSoportesComprasIAMenu": true,
+}
+
 var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkPanelEmpresa", AlwaysVisible: true, Titulo: "Panel de empresa", Grupo: "Acceso general"},
 	{PaginaClave: "linkVentas", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Punto de venta / TPV", Grupo: "Permisos base de ventas"},
@@ -451,6 +459,7 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 	{PaginaClave: "linkCodigosDescuento", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Codigos de descuento", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkRedSocialComercial", Modulo: permModuleVentas, Accion: permActionCreate, Titulo: "Red social empresarial", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkChatIA", Modulo: permModuleVentas, Accion: permActionRead, Titulo: "Asistente IA (chat empresarial)", Grupo: "Canales digitales y colaboracion"},
+	{PaginaClave: "linkCentroIAEmpresarial", Modulo: permModuleReportes, Accion: permActionRead, Titulo: "Centro IA empresarial", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkReservasHotel", Modulo: permModuleReservasHotel, Accion: permActionCreate, Titulo: "Reservas (hotel / estaciones)", Grupo: "Plantillas de negocio"},
 	{PaginaClave: "linkChatTareas", Modulo: permModuleChatTareas, Accion: permActionCreate, Titulo: "Chat y tareas", Grupo: "Canales digitales y colaboracion"},
 	{PaginaClave: "linkTurnosAtencion", Modulo: permModuleTurnos, Accion: permActionCreate, Titulo: "Turnos de atencion y fila", Grupo: "Plantillas de negocio"},
@@ -501,6 +510,8 @@ var permissionPagesCatalogOrdered = []permissionPageRule{
 
 	{PaginaClave: "linkFinanzas", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Centro financiero y contable", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkFinanzasMain", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Finanzas operativas", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkSuiteContador", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Suite contador", Grupo: "Centro financiero y contable"},
+	{PaginaClave: "linkNIIF", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "NIIF - politicas, medicion y revelaciones", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkRentaIA", Modulo: permModuleFinanzas, Accion: permActionRead, Titulo: "Renta IA", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkEgresosIngresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos e ingresos", Grupo: "Centro financiero y contable"},
 	{PaginaClave: "linkEgresos", Modulo: permModuleFinanzas, Accion: permActionCreate, Titulo: "Egresos", Grupo: "Centro financiero y contable"},
@@ -763,6 +774,7 @@ func EmpresaPermisosContextoHandler(dbSuper *sql.DB) http.HandlerFunc {
 		paginas := buildPermissionPagesMapForRoleDynamic(dbSuper, effectiveRole, modulos)
 		paginas = applyEmpresaPageRestrictionsToMap(paginas, empresaPageOverrides)
 		paginas = restrictPermissionPagesForOperationalRole(effectiveRole, paginas)
+		paginas = applyDefaultHiddenEnterpriseIAPages(paginas, empresaPageOverrides)
 
 		var licenciaCtx *empresaPermisosLicenciaCtx
 		if licenciaPolicy != nil {
@@ -2962,14 +2974,23 @@ func isAllowedPageForOperationalRole(role, pageKey string) bool {
 		}
 	case "contador":
 		switch pageKey {
-		case "linkFinanzas", "linkFinanzasMain", "linkRentaIA", "linkImpuestos":
+		case "linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA",
+			"linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu",
+			"linkContabilidadColombia", "linkContabilidadColombiaAvanzada",
+			"linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu",
+			"linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu",
+			"linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas",
+			"linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu",
+			"linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto",
+			"linkBancosPagos", "linkNominaSueldos", "linkNominaMenu", "linkSoportesComprasIA",
+			"linkSoportesComprasIAMenu":
 			return true
 		default:
 			return false
 		}
 	case "empresario":
 		switch pageKey {
-		case "linkReportes", "linkReportesEjecutivos":
+		case "linkReportes", "linkReportesEjecutivos", "linkCentroIAEmpresarial":
 			return true
 		default:
 			return false
@@ -3035,11 +3056,38 @@ func restrictPermissionPagesForOperationalRole(role string, pages map[string]boo
 	case "contador":
 		pages["linkFinanzas"] = true
 		pages["linkFinanzasMain"] = true
+		pages["linkSuiteContador"] = true
+		pages["linkNIIF"] = true
 		pages["linkRentaIA"] = true
 		pages["linkImpuestos"] = true
+		pages["linkCentroIAEmpresarial"] = true
+		pages["linkPortalContador"] = true
+		pages["linkPortalContadorMenu"] = true
+		pages["linkContabilidadColombia"] = true
+		pages["linkContabilidadColombiaAvanzada"] = true
+		pages["linkDeclaracionesTributarias"] = true
+		pages["linkDeclaracionesTributariasMenu"] = true
+		pages["linkPortalTercerosCertificados"] = true
+		pages["linkPortalTercerosCertificadosMenu"] = true
+		pages["linkFacturacionElectronica"] = true
+		pages["linkFacturacionMain"] = true
+		pages["linkFacturasElectronicas"] = true
+		pages["linkReportes"] = true
+		pages["linkReportesEjecutivos"] = true
+		pages["linkCierreFiscal"] = true
+		pages["linkCierreFiscalMenu"] = true
+		pages["linkActivosFijosNIIF"] = true
+		pages["linkActivosFijosNIIFMenu"] = true
+		pages["linkTesoreriaPresupuesto"] = true
+		pages["linkBancosPagos"] = true
+		pages["linkNominaSueldos"] = true
+		pages["linkNominaMenu"] = true
+		pages["linkSoportesComprasIA"] = true
+		pages["linkSoportesComprasIAMenu"] = true
 	case "empresario":
 		pages["linkReportes"] = true
 		pages["linkReportesEjecutivos"] = true
+		pages["linkCentroIAEmpresarial"] = true
 	}
 	return pages
 }
@@ -3530,6 +3578,22 @@ func applyEmpresaPageRestrictionsToMap(paginas map[string]bool, overrides map[st
 	return out
 }
 
+func applyDefaultHiddenEnterpriseIAPages(paginas map[string]bool, overrides map[string]bool) map[string]bool {
+	if paginas == nil {
+		paginas = map[string]bool{}
+	}
+	out := make(map[string]bool, len(paginas)+len(defaultHiddenEnterpriseIAPages))
+	for k, v := range paginas {
+		out[k] = v
+	}
+	for pageKey := range defaultHiddenEnterpriseIAPages {
+		if _, explicitlyConfigured := overrides[pageKey]; !explicitlyConfigured {
+			out[pageKey] = false
+		}
+	}
+	return out
+}
+
 func resolvePermissionPageKeyForRequest(r *http.Request) string {
 	if r == nil || r.URL == nil {
 		return ""
@@ -3613,6 +3677,8 @@ func resolvePermissionPageKeyForRequest(r *http.Request) string {
 		return "linkGrafologia"
 	case path == "/api/empresa/bolsa":
 		return "linkBolsa"
+	case path == "/api/empresa/ia_empresarial":
+		return "linkCentroIAEmpresarial"
 	case strings.HasPrefix(path, "/api/empresa/creditos") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_cobrar") ||
 		strings.HasPrefix(path, "/api/empresa/cuentas_por_pagar"):
@@ -3844,6 +3910,7 @@ func getEmpresaPermissionSnapshot(dbEmp, dbSuper *sql.DB, adminEmail string, emp
 	dbpkg.PerfLogf("[perf][authz] snapshot empresa=%d email=%s step=allowed_pages dur=%s", empresaID, strings.ToLower(strings.TrimSpace(adminEmail)), time.Since(stepStarted))
 	allowedPages = applyEmpresaPageRestrictionsToMap(allowedPages, empresaPageOverrides)
 	allowedPages = restrictPermissionPagesForOperationalRole(effectiveRole, allowedPages)
+	allowedPages = applyDefaultHiddenEnterpriseIAPages(allowedPages, empresaPageOverrides)
 
 	roleModuleActions := map[string]bool{}
 	for _, row := range moduleRows {

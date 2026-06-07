@@ -1,3 +1,41 @@
+2026-06-07: Nota de auditoria integral de modulos nuevos
+- No se agregan permisos, endpoints ni wrappers nuevos.
+- `operativo_modulos_resumen` queda dentro de `/api/empresa/reportes` y conserva `WithEmpresaReportesPermissions`, por lo que requiere `reportes:R` y `empresa_id` valido.
+- `web/administrar_empresa/auditoria.html` solo amplia opciones visibles de filtro; consultar eventos sigue dependiendo del permiso/wrapper de auditoria existente.
+- Los hubs sin tabla propia se muestran como `sin_tabla`; esto documenta alcance operativo y no concede acceso a datos, mutaciones, emision DIAN, pagos, IA ni documentos.
+
+2026-06-07: Nota de IA oculta por defecto
+- Las paginas `linkChatIA`, `linkCentroIAEmpresarial`, `linkRentaIA`,
+  `linkSoportesComprasIA` y `linkSoportesComprasIAMenu` quedan ocultas por
+  defecto para todas las empresas.
+- El permiso base del rol/licencia sigue siendo necesario, pero no basta para
+  mostrar IA: la empresa debe tener una regla fina explicita de pagina
+  permitida.
+- El menu principal, el chat flotante, Centro financiero y Suite contador
+  consumen `/api/empresa/permisos_contexto` y no muestran IA sin esa regla.
+
+2026-06-07: Nota de Suite contador
+- Se agrega pagina `linkSuiteContador` bajo el modulo `finanzas` con accion de lectura (`R`).
+- El hub no tiene endpoint nuevo ni tablas; consulta `/api/empresa/permisos_contexto` y enlaza modulos existentes conservando `empresa_id`.
+- El rol `contador` puede ver la suite y accesos contables/fiscales principales. La escritura, aprobacion, emision DIAN, pagos, inventario y cambios de configuracion siguen sujetos a cada wrapper y matriz de permisos.
+- Seguridad: la pagina solo navega y muestra estados de disponibilidad; no ejecuta mutaciones ni expone secretos.
+
+2026-06-07: Nota de Modulo NIIF
+- Se agrega pagina `linkNIIF` bajo el modulo `finanzas` con accion de lectura
+  (`R`).
+- La pagina no tiene endpoint propio ni tablas; lee el dashboard contable
+  existente cuando el usuario tiene permiso y mantiene diagnostico local por
+  navegador/empresa.
+- El rol `contador` puede consultar NIIF, exportar su diagnostico local y abrir
+  enlaces contables, pero no recibe escritura, aprobacion, DIAN, ventas, caja ni
+  configuracion por este cambio.
+
+2026-06-07: Nota de Centro IA empresarial
+- Se agrega pagina `linkCentroIAEmpresarial` bajo el modulo `reportes` con accion de lectura (`R`).
+- El endpoint `/api/empresa/ia_empresarial` queda detras de `WithEmpresaReportesPermissions` y solo consulta datos reales filtrados por `empresa_id`.
+- Roles `contador` y `empresario` pueden ver el Centro IA empresarial como apoyo de analisis; no reciben permisos de escritura, aprobacion, emision de documentos, registro de pagos ni cambios de inventario.
+- Las funciones IA registran consumo diario por empresa y devuelven borradores/recomendaciones revisables. Cualquier accion operativa final debe ejecutarse en su modulo autorizado correspondiente.
+
 2026-06-06: Nota de Renta IA financiera
 - Se agrega pagina `linkRentaIA` bajo modulo `finanzas` con accion de lectura (`R`).
 - Roles con lectura financiera, incluido `contador`, pueden consultar el calculo de renta estimada.

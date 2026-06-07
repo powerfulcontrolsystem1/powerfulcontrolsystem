@@ -4,6 +4,78 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-07 - Modulo NIIF
+
+- `web/administrar_empresa/niif.html` agrega un centro NIIF por empresa dentro
+  de Finanzas y Suite contador.
+- La pagina lee, cuando hay permiso, el dashboard real de
+  `/api/empresa/contabilidad_colombia?action=dashboard` y no crea endpoint ni
+  tablas nuevas.
+- Incluye diagnostico de adopcion, politicas contables, calculos de deterioro,
+  depreciacion, valor razonable, conciliacion contable-fiscal, checklist de
+  cierre y notas exportables a JSON/TXT.
+- `linkNIIF` queda bajo `finanzas:R`; el rol `contador` puede verlo sin ganar
+  permisos de escritura, aprobacion, caja, ventas ni configuracion.
+
+## Actualizacion 2026-06-07 - IA oculta por defecto por empresa
+
+- Las paginas y accesos IA empresariales (`linkChatIA`,
+  `linkCentroIAEmpresarial`, `linkRentaIA`, `linkSoportesComprasIA` y
+  `linkSoportesComprasIAMenu`) quedan ocultos por defecto para todas las
+  empresas.
+- El backend solo los devuelve visibles en `/api/empresa/permisos_contexto`
+  cuando la empresa tiene una regla fina explicita de pagina permitida y el rol,
+  licencia y wrapper base ya lo permiten.
+- El menu principal, el chat flotante, el Centro financiero y la Suite contador
+  no muestran IA mientras no exista esa habilitacion explicita por empresa.
+
+## Actualizacion 2026-06-07 - Guardado de configuracion FE por pais
+
+- `web/administrar_empresa/facturacion_electronica.html` guarda el perfil de
+  pais con `POST /api/empresa/facturacion_electronica?action=config_pais`.
+- `backend/handlers/facturacion_electronica.go` reconoce `config_pais`,
+  `guardar_config_pais` y `configuracion_pais` como acciones de configuracion,
+  separadas de las acciones fiscales que exigen `documento_codigo`.
+- El flujo evita que el boton `Guardar configuracion pais` se confunda con
+  emision/anulacion de documentos electronicos y mantiene aislamiento por
+  `empresa_id`.
+
+## Actualizacion 2026-06-07 - Boton Enviar nota credito DIAN
+
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` reemplaza
+  la confirmacion nativa del navegador por un modal integrado para envios reales
+  de pruebas DIAN.
+- El boton `Enviar nota credito` conserva el payload real
+  `notas_credito=1`, `max_envios=1` y el endpoint
+  `/api/empresa/facturacion_electronica/dian?action=pruebas_dian`.
+- La reparacion evita que el click quede bloqueado o cancelado por el popup
+  nativo antes de llegar al envio real.
+
+## Actualizacion 2026-06-07 - Retiro del boton 2+2+2 DIAN
+
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` ya no
+  muestra el boton rapido `Enviar prueba 2 + 2 + 2`.
+- La pagina conserva `Ejecutar set automatico` para el objetivo real guardado y
+  los envios individuales `Enviar factura`, `Enviar nota debito` y
+  `Enviar nota credito`.
+- El retiro evita pruebas parciales accidentales y deja la operacion alineada
+  con el set asignado por DIAN para cada `empresa_id`.
+
+## Actualizacion 2026-06-07 - Suite contador
+
+- `web/administrar_empresa/suite_contador.html` centraliza el trabajo del
+  contador por empresa: portal contador, contabilidad Colombia, suite avanzada,
+  impuestos, DIAN, declaraciones, certificados, cierres, activos, reportes,
+  nomina, bancos, compras IA y Renta IA.
+- La pagina no crea endpoint ni tablas; consulta
+  `/api/empresa/permisos_contexto?empresa_id={id}` y muestra cada modulo como
+  disponible o bloqueado segun permisos/licencia.
+- `linkSuiteContador` queda registrado como `finanzas:R`. El rol `contador`
+  puede ver la suite y accesos contables clave, pero cada operacion real sigue
+  protegida por su wrapper y permiso propio.
+- La portada publica `web/index.html` ahora presenta `Suite contador 360` dentro
+  de Finanzas y cumplimiento.
+
 ## Actualizacion 2026-06-06 - Renta IA financiera
 
 - `web/administrar_empresa/renta_ia.html` vive dentro del centro financiero y
@@ -24,10 +96,10 @@ decisiones en cada tarea.
   referencia el `BinarySecurityToken` con `wsse:Reference URI="#X509-..."` e
   incluye `InclusiveNamespaces`; no se debe volver a `ThumbprintSHA1` para este
   flujo.
-- La prueba real `Enviar prueba 2 + 2 + 2` de la empresa interna Powerful
-  Control System ya envia documentos al ambiente de habilitacion y recibe HTTP
-  200, TrackId/ZipKey y respuesta `Batch en proceso de validacion`; el bloqueo
-  de transporte `InvalidSecurity` queda superado.
+- Los envios reales de habilitacion para la empresa interna Powerful Control
+  System ya reciben HTTP 200, TrackId/ZipKey y respuesta
+  `Batch en proceso de validacion`; el bloqueo de transporte `InvalidSecurity`
+  queda superado.
 - Lo pendiente para cerrar habilitacion no es simular ni rehacer el transporte:
   falta reconciliar cada TrackId con `GetStatusZip` hasta acuse final
   aceptado/rechazado, persistir el estado final por documento/lote, resumirlo en

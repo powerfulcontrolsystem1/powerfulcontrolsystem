@@ -1164,6 +1164,19 @@ paths:
       responses:
         "200":
           description: Respuesta exitosa o manejada por el handler real.
+  "/api/empresa/ia_empresarial":
+    get:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/ia_empresarial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
+    post:
+      tags: [empresa]
+      summary: Ruta inventariada /api/empresa/ia_empresarial
+      responses:
+        "200":
+          description: Respuesta exitosa o manejada por el handler real.
   "/api/empresa/importaciones_costeo":
     get:
       tags: [empresa]

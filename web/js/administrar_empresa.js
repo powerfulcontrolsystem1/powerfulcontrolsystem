@@ -114,6 +114,14 @@ try {
     : nuevasPlantillasCatalog.map(function (item) { return [item.id, item.module]; });
   var nuevasPlantillasMenuLinks = renderNuevasPlantillasMenuLinks();
   var storage = null;
+  var defaultHiddenEnterpriseAILinks = {
+    linkChatIA: true,
+    linkCentroIAEmpresarial: true,
+    linkRentaIA: true,
+    linkSoportesComprasIA: true,
+    linkSoportesComprasIAMenu: true
+  };
+  var enterpriseAIVisibleLinks = {};
   try {
     storage = window.sessionStorage;
   } catch (e) {
@@ -164,8 +172,11 @@ try {
     document.getElementById("linkFacturasElectronicas"),
     document.getElementById("linkAIUConstruccion"),
     document.getElementById("linkChatIA"),
+    document.getElementById("linkCentroIAEmpresarial"),
     document.getElementById("linkFinanzas"),
     document.getElementById("linkFinanzasMain"),
+    document.getElementById("linkSuiteContador"),
+    document.getElementById("linkNIIF"),
     document.getElementById("linkRentaIA"),
     document.getElementById("linkContabilidadColombia"),
     document.getElementById("linkContabilidadColombiaAvanzada"),
@@ -317,6 +328,7 @@ try {
     linkCodigosDescuento: { module: permModuleVentas, action: permActionCreate },
     linkRedSocialComercial: { module: permModuleVentas, action: permActionCreate },
     linkChatIA: { module: permModuleVentas, action: permActionRead },
+    linkCentroIAEmpresarial: { module: permModuleReportes, action: permActionRead },
     linkConfigEstaciones: { module: permModuleVentas, action: permActionApprove },
     linkTarifasPorMinutos: { module: permModuleVentas, action: permActionCreate },
     linkTarifasPorDia: { module: permModuleVentas, action: permActionCreate },
@@ -375,6 +387,8 @@ try {
 
     linkFinanzas: { module: permModuleFinanzas, action: permActionCreate },
     linkFinanzasMain: { module: permModuleFinanzas, action: permActionCreate },
+    linkSuiteContador: { module: permModuleFinanzas, action: permActionRead },
+    linkNIIF: { module: permModuleFinanzas, action: permActionRead },
     linkRentaIA: { module: permModuleFinanzas, action: permActionRead },
     linkEgresosIngresos: { module: permModuleFinanzas, action: permActionCreate },
     linkEgresos: { module: permModuleFinanzas, action: permActionCreate },
@@ -1365,7 +1379,41 @@ try {
     return isContextModuleActionAllowed(moduleRow, rule.action);
   }
 
+  function isDefaultHiddenEnterpriseAILinkId(linkId) {
+    return !!defaultHiddenEnterpriseAILinks[String(linkId || "").trim()];
+  }
+
+  function setEnterpriseAIChromeVisible(visible) {
+    visible = !!visible;
+    var toggle = document.getElementById("openAIDrawer");
+    var backdrop = document.getElementById("aiChatBackdrop");
+    var drawer = document.getElementById("aiChatDrawer");
+    [toggle, backdrop, drawer].forEach(function (el) {
+      if (!el) return;
+      el.hidden = !visible;
+      el.setAttribute("aria-hidden", visible ? "false" : "true");
+    });
+    if (!visible) {
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+      if (backdrop) backdrop.classList.remove("is-visible");
+      if (drawer) drawer.classList.remove("open", "minimized");
+      document.body.classList.remove("ai-chat-drawer-open");
+    }
+  }
+
+  function applyEnterpriseAIVisibilityFromContext(permissionContext) {
+    var pages = permissionContext && permissionContext.paginas;
+    enterpriseAIVisibleLinks = {};
+    if (pages && typeof pages === "object") {
+      Object.keys(defaultHiddenEnterpriseAILinks).forEach(function (key) {
+        enterpriseAIVisibleLinks[key] = !!pages[key];
+      });
+    }
+    setEnterpriseAIChromeVisible(!!enterpriseAIVisibleLinks.linkChatIA);
+  }
+
   function applyMenuPermissionsByContext(permissionContext) {
+    applyEnterpriseAIVisibilityFromContext(permissionContext);
     links.forEach(function (link) {
       setMenuLinkVisible(link, true);
     });
@@ -1401,7 +1449,7 @@ try {
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkRentaIA", "linkImpuestos"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1409,7 +1457,7 @@ try {
     }
     if (normalizePermissionRole(permissionContext.rol || permissionContext.role || "") === "empresario") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkReportes", "linkReportesEjecutivos"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkReportes", "linkReportesEjecutivos", "linkCentroIAEmpresarial"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1536,6 +1584,9 @@ try {
   function setMenuLinkVisible(link, visible) {
     if (!link) return;
     visible = !!visible && menuLinkPassesVerticalIntegration(link);
+    if (visible && isDefaultHiddenEnterpriseAILinkId(link.id) && !enterpriseAIVisibleLinks[link.id]) {
+      visible = false;
+    }
     var item = null;
     if (typeof link.closest === "function") {
       item = link.closest("li");
@@ -1544,6 +1595,7 @@ try {
       item = link.parentElement;
     }
     if (item) {
+      item.hidden = !visible;
       item.style.display = visible ? "" : "none";
     }
     link.setAttribute("data-menu-visible", visible ? "1" : "0");
@@ -1666,7 +1718,7 @@ try {
     }
     if (normalizedRole === "contador") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkRentaIA", "linkImpuestos"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkFinanzas", "linkFinanzasMain", "linkSuiteContador", "linkNIIF", "linkRentaIA", "linkImpuestos", "linkCentroIAEmpresarial", "linkPortalContador", "linkPortalContadorMenu", "linkContabilidadColombia", "linkContabilidadColombiaAvanzada", "linkDeclaracionesTributarias", "linkDeclaracionesTributariasMenu", "linkPortalTercerosCertificados", "linkPortalTercerosCertificadosMenu", "linkFacturacionElectronica", "linkFacturacionMain", "linkFacturasElectronicas", "linkReportes", "linkReportesEjecutivos", "linkCierreFiscal", "linkCierreFiscalMenu", "linkActivosFijosNIIF", "linkActivosFijosNIIFMenu", "linkTesoreriaPresupuesto", "linkBancosPagos", "linkNominaMenu", "linkSoportesComprasIA", "linkSoportesComprasIAMenu"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
@@ -1674,7 +1726,7 @@ try {
     }
     if (normalizedRole === "empresario") {
       links.forEach(function (link) {
-        setMenuLinkVisible(link, !!link && ["linkReportes", "linkReportesEjecutivos"].indexOf(link.id) !== -1);
+        setMenuLinkVisible(link, !!link && ["linkReportes", "linkReportesEjecutivos", "linkCentroIAEmpresarial"].indexOf(link.id) !== -1);
       });
       setSecondaryMenuVisibility(false);
       refreshMenuGroups();
