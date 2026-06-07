@@ -13238,3 +13238,22 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+
+2026-06-06 23:32:51 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6c65d5c8; PushStatus: OK
+Archivos modificados:
+- backend/handlers/bolsa.go
+- backend/handlers/bolsa_test.go
+- backend/handlers/empresa_permisos.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/administrar_empresa/bolsa.html
+- web/js/administrar_empresa.js
