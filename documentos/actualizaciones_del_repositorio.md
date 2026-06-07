@@ -13320,3 +13320,16 @@ Archivos modificados:
 - web/index.html
 - web/js/administrar_empresa.js
 - web/js/ai_button_icons.js
+
+2026-06-07 12:09:31 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 6cbc3288; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/estilos.css
+- web/seleccionar_empresa.html
