@@ -1,3 +1,10 @@
+2026-06-06: OnlyOffice JWT y presentaciones PPTX reales
+- Modulo afectado: `documentos_onlyoffice`.
+- Operacion: se alineo en VPS el secreto JWT usado por `pcs-backend` y `pcs-onlyoffice-documentserver` sin imprimir el secreto; esto elimina el error visual de token mal formado al abrir el editor.
+- Backend: las nuevas presentaciones `.pptx` usan `onlyOfficeBuildBlankPPTX`, que incluye partes PresentationML minimas de master, layout, theme, propiedades y relaciones para que OnlyOffice pueda abrirlas.
+- Seguridad: se conservan tokens temporales por archivo/callback, JWT HS256, aislamiento por `empresa_id` y permisos `documentos_onlyoffice`.
+- QA: `go test ./handlers -run OnlyOffice -count=1`; prueba visual autenticada de Word y Excel correctos y reproduccion/fix de la presentacion.
+
 2026-06-06: Barra de avance DIAN
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Frontend: `facturacion_electronica_pruebas_dian.html` muestra una barra 0-100% de avance de validacion DIAN con hitos visibles de configuracion, firma, TestSetId, objetivo, credenciales, envio real, acuse final y produccion local.

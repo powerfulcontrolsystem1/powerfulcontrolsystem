@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"archive/zip"
+	"bytes"
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
@@ -97,5 +99,38 @@ func TestOnlyOfficeAttachConfigTokenUsesTopLevelTokenOnly(t *testing.T) {
 	}
 	if ed, ok := cfg["editorConfig"].(map[string]any); !ok || ed["token"] != nil {
 		t.Fatalf("editorConfig.token must not be sent to Document Server")
+	}
+}
+
+func TestOnlyOfficeBuildBlankPPTXIncludesPresentationMinimumParts(t *testing.T) {
+	raw, err := onlyOfficeBuildBlankPPTX()
+	if err != nil {
+		t.Fatalf("onlyOfficeBuildBlankPPTX returned error: %v", err)
+	}
+	zr, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
+	if err != nil {
+		t.Fatalf("pptx must be a valid zip: %v", err)
+	}
+	seen := make(map[string]bool)
+	for _, f := range zr.File {
+		seen[f.Name] = true
+	}
+	required := []string{
+		"[Content_Types].xml",
+		"_rels/.rels",
+		"ppt/presentation.xml",
+		"ppt/_rels/presentation.xml.rels",
+		"ppt/slides/slide1.xml",
+		"ppt/slides/_rels/slide1.xml.rels",
+		"ppt/slideMasters/slideMaster1.xml",
+		"ppt/slideMasters/_rels/slideMaster1.xml.rels",
+		"ppt/slideLayouts/slideLayout1.xml",
+		"ppt/slideLayouts/_rels/slideLayout1.xml.rels",
+		"ppt/theme/theme1.xml",
+	}
+	for _, name := range required {
+		if !seen[name] {
+			t.Fatalf("pptx missing required part %s", name)
+		}
 	}
 }

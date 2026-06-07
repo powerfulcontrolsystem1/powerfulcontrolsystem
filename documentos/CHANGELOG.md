@@ -1,3 +1,8 @@
+## [2026-06-06] OnlyOffice JWT y PPTX real
+- [Operacion] Se alineo el secreto JWT del Document Server OnlyOffice con el backend en VPS sin exponer el valor, corrigiendo el error visual `The document security token is not correctly formed`.
+- [Backend] `onlyOfficeBuildBlankPPTX` genera presentaciones PresentationML con master, layout, theme, propiedades y relaciones minimas para que OnlyOffice abra archivos `.pptx` nuevos.
+- [QA] `go test ./handlers -run OnlyOffice -count=1`; verificacion visual autenticada de Word y Excel correctos, y reproduccion visual del fallo de PPTX antes del parche.
+
 ## [2026-06-06] Barra de avance DIAN
 - [Frontend] `facturacion_electronica_pruebas_dian.html` agrega una barra 0-100% para que el administrador vea el avance del proceso DIAN por hitos reales.
 - [Operacion] El porcentaje considera configuracion base, firma, TestSetId, objetivo del set, credenciales validadas, envio real, acuse final y produccion local.

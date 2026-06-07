@@ -1,3 +1,12 @@
+2026-06-06 - OnlyOffice JWT y PPTX real
+- `backend/handlers/onlyoffice.go`:
+	- conecta la creacion de `.pptx` con `onlyOfficeBuildBlankPPTX`.
+	- genera paquetes PresentationML con `presentation.xml`, slide, slide master, slide layout, theme, propiedades y relaciones para que OnlyOffice abra presentaciones nuevas.
+- `backend/handlers/onlyoffice_test.go`:
+	- agrega prueba de estructura ZIP para asegurar que los `.pptx` incluyan las partes minimas requeridas.
+- `documentos/*`:
+	- registra la reparacion operativa del JWT y la correccion del generador PPTX sin publicar secretos.
+
 2026-06-06 - Barra de avance DIAN
 - `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
 	- agrega una barra 0-100% en el Centro de habilitacion DIAN para mostrar al administrador el avance por hitos reales: configuracion base, firma, TestSetId, objetivo, credenciales, envio real, acuse final y produccion local.
