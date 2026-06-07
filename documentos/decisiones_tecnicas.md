@@ -74,6 +74,14 @@ trazabilidad en `documentos/historial_de_cambios`.
 
 - Colombia mantiene modelo SaaS con software DIAN compartido cuando aplique, pero
   NIT, credenciales, firma, certificados y trazabilidad son por empresa.
+- El transporte oficial DIAN SOAP/WCF para habilitacion conserva WS-Security con
+  `Timestamp`, `BinarySecurityToken`, firma RSA-SHA256 de `wsa:To`,
+  `wsse:Reference URI="#X509-..."` e `InclusiveNamespaces`; cualquier cambio en
+  esa forma exige prueba real contra habilitacion y no puede basarse en
+  simulacion.
+- TrackId/ZipKey y `Batch en proceso de validacion` son recepcion inicial, no
+  aceptacion legal. La habilitacion o produccion local solo puede activarse tras
+  acuse final aceptado y conteo de minimos por empresa.
 - Panama y Ecuador se manejan como configuraciones independientes por pais y
   licencia.
 - El submenu de facturacion electronica permanece, pero las paginas internas se

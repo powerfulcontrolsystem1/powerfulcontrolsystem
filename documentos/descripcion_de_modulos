@@ -1,3 +1,10 @@
+2026-06-06: DIAN SOAP real recibido y acuse final pendiente
+- Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
+- Backend: el transporte oficial SOAP/WCF conserva WS-Security con `BinarySecurityToken`, firma de `wsa:To` e `InclusiveNamespaces`; la prueba real 2+2+2 ya debe llegar a DIAN y recibir TrackId/ZipKey sin `InvalidSecurity`.
+- Operacion: `Batch en proceso de validacion` es recepcion inicial, no aceptacion final. Lo faltante es consultar `GetStatusZip` hasta acuse aceptado/rechazado, persistir ese cierre por documento/lote y actualizar conteos aceptados.
+- Frontend: la pantalla `Pasar test DIAN` debe mostrar los pendientes de acuse de forma resumida y permitir comprobar el cierre real sin exponer XML, certificados ni secretos.
+- QA: el cierre del modulo requiere repetir 2+2+2 real, validar TrackId/ZipKey, capturar acuse final y despues ejecutar el set completo configurado por empresa.
+
 2026-06-06: DIAN set real sin simulacion
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
 - Backend: `action=pruebas_dian` y `action=enviar_set_pruebas` ya no aceptan simulacion; el flujo automatico envia documentos reales al ambiente de habilitacion, recibe `ZipKey` y consulta `GetStatusZip` para cerrar el acuse final.

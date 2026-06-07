@@ -1,3 +1,10 @@
+2026-06-06: Documentacion DIAN habilitacion real y pendientes.
+- Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos, documentacion operativa.
+- Documentacion: se actualizan contexto rapido, mapa de modulos, flujos operativos, decisiones tecnicas, estructura BD, descripcion de modulos y changelog para reflejar el estado real del transporte DIAN.
+- Estado actual: el envio real 2+2+2 ya alcanza el ambiente de habilitacion, obtiene TrackId/ZipKey y queda como `Batch en proceso de validacion`; ese estado no se debe contar como aceptacion final.
+- Pendiente funcional: consultar `GetStatusZip` hasta acuse aceptado/rechazado, persistir el cierre por documento/lote, reconciliar cola/reintentos y activar produccion local solo si se cumplen los minimos aceptados del set por empresa.
+- Seguridad: no se documentan PIN, claves tecnicas, certificados, contrasenas ni tokens; las credenciales siguen como configuracion por `empresa_id`.
+
 2026-06-06: DIAN WS-Security compatible con clientes sandbox.
 - Modulos afectados: facturacion electronica Colombia, transporte SOAP/WCF DIAN y centro de habilitacion.
 - Backend: el sobre WS-Security oficial firma solo `wsa:To`, mantiene `Timestamp` y `BinarySecurityToken`, usa `wsse:Reference URI="#X509-..."` en `KeyInfo` e incluye `InclusiveNamespaces` en `SignedInfo`.

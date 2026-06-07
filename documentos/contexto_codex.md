@@ -4,6 +4,26 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-06 - DIAN SOAP real y acuse pendiente
+
+- El transporte oficial DIAN para habilitacion usa SOAP/WCF con
+  `SendTestSetAsync` y `GetStatusZip`. El sobre vigente firma `wsa:To`,
+  referencia el `BinarySecurityToken` con `wsse:Reference URI="#X509-..."` e
+  incluye `InclusiveNamespaces`; no se debe volver a `ThumbprintSHA1` para este
+  flujo.
+- La prueba real `Enviar prueba 2 + 2 + 2` de la empresa interna Powerful
+  Control System ya envia documentos al ambiente de habilitacion y recibe HTTP
+  200, TrackId/ZipKey y respuesta `Batch en proceso de validacion`; el bloqueo
+  de transporte `InvalidSecurity` queda superado.
+- Lo pendiente para cerrar habilitacion no es simular ni rehacer el transporte:
+  falta reconciliar cada TrackId con `GetStatusZip` hasta acuse final
+  aceptado/rechazado, persistir el estado final por documento/lote, resumirlo en
+  la pantalla y habilitar produccion local solo cuando se cumplan los minimos
+  aceptados configurados por empresa.
+- No documentar PIN, claves tecnicas, certificados, contrasenas ni tokens. El
+  TestSetId y demas datos operativos deben leerse de `empresa_dian_configuracion`
+  por `empresa_id`, no copiarse como secretos en guias o logs.
+
 ## Actualizacion 2026-06-05 - Set automatico DIAN y licencias
 
 - `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` permite

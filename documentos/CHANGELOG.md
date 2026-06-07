@@ -1,3 +1,9 @@
+## [2026-06-06] Documentacion DIAN habilitacion real
+- [Documentacion] Se actualiza el contexto operativo, mapa de modulos, flujos, decisiones tecnicas y estructura BD para reflejar que el transporte SOAP/WCF real ya responde con TrackId/ZipKey.
+- [DIAN] Se documenta la forma WS-Security vigente: `BinarySecurityToken`, firma de `wsa:To`, `wsse:Reference URI="#X509-..."` e `InclusiveNamespaces`.
+- [Operacion] Se aclara que `Batch en proceso de validacion` es estado pendiente y que falta reconciliar `GetStatusZip` hasta acuse final aceptado/rechazado antes de habilitar produccion local.
+- [Seguridad] La documentacion evita copiar PIN, claves tecnicas, certificados, contrasenas o tokens.
+
 ## [2026-06-06] DIAN WS-Security segun politica WSDL
 - [Backend] `SendTestSetAsync` y `GetStatusZip` ajustan la firma WS-Security a una forma compatible con clientes DIAN validados: firma solo `wsa:To`, referencia directa al `BinarySecurityToken` y `InclusiveNamespaces` en `SignedInfo`.
 - [Backend] El digest de `wsa:To` incluye los namespaces `soap`, `wcf`, `wsa` y `wsu` de la canonicalizacion esperada por WCF/DIAN.

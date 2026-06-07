@@ -283,16 +283,30 @@ afecte dinero, documentos, licencias o seguridad.
 12. Para endpoint oficial SOAP/WCF DIAN no se exige `token_emisor_ref`; ese
    token solo aplica a proveedor/API con bearer token. En habilitacion real si
    es obligatorio `test_set_id`, porque DIAN lo usa para `SendTestSetAsync`.
-13. Las pruebas DIAN automaticas no aceptan simulacion: deben enviar al ambiente
+13. El sobre SOAP oficial vigente para DIAN firma el header `wsa:To`, referencia
+   el `BinarySecurityToken` con `wsse:Reference URI="#X509-..."` e incluye
+   `InclusiveNamespaces`. Esta forma es la que debe conservarse para evitar
+   errores de seguridad del transporte WCF.
+14. Las pruebas DIAN automaticas no aceptan simulacion: deben enviar al ambiente
    de habilitacion, recibir `ZipKey` cuando aplique y consultar `GetStatusZip`
    hasta un acuse final. Solo una ejecucion real con acuse aceptado puede
    cambiar la empresa a habilitada/produccion local.
-14. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
+15. Estado operativo actual: la prueba `Enviar prueba 2 + 2 + 2` debe quedar
+   como envio real con HTTP 200, TrackId/ZipKey y respuesta inicial `Batch en
+   proceso de validacion`. Ese estado todavia no equivale a aceptacion final.
+16. Lo que falta en el modulo DIAN/documentos electronicos es consultar y
+   persistir el acuse final por TrackId hasta aceptado/rechazado, reconciliar
+   `facturacion_electronica_reintentos` y `empresa_facturacion_documentos`,
+   mostrar un resumen claro en la pantalla y habilitar produccion local solo
+   cuando los minimos aceptados del set esten cumplidos.
+17. Pruebas: subir PEM/P12 valido, verificar carpeta empresarial, validar que el
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar
    vencimiento` en la pantalla para confirmar que se ve fecha, dias restantes y
    estado de alerta. En `Pasar test DIAN`, guardar objetivo, validar
-   credenciales y ejecutar al menos un envio manual de factura de prueba.
+   credenciales, ejecutar al menos un envio manual de factura de prueba y correr
+   `Enviar prueba 2 + 2 + 2`; despues consultar `GetStatusZip` hasta cierre real
+   del acuse.
 
 ## Login usuarios operativos
 
@@ -426,8 +440,12 @@ afecte dinero, documentos, licencias o seguridad.
    pruebas y cola documental.
 3. Panama y Ecuador tienen paginas propias con configuracion de DGI/SRI.
 4. Credenciales, firma, NIT/RUC y trazabilidad son por empresa.
-5. Pruebas: guardar configuracion por pais, validar checklist, generar documento,
-   enviar correo si aplica, revisar cola/reintentos.
+5. En Colombia el envio real de habilitacion puede quedar primero como `Batch en
+   proceso de validacion`; el sistema debe tratarlo como pendiente hasta que
+   `GetStatusZip` entregue acuse final.
+6. Pruebas: guardar configuracion por pais, validar checklist, generar documento,
+   enviar correo si aplica, revisar cola/reintentos y reconciliar estados DIAN
+   finales por TrackId.
 
 ## Modo offline
 

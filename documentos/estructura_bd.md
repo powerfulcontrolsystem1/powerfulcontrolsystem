@@ -39,6 +39,20 @@ Actualizacion 2026-06-05 (carpetas empresariales y firma electronica)
 - La compatibilidad con P12/PFX modernos usa OpenSSL dentro del contenedor
   backend; no agrega columnas adicionales ni guarda la clave del certificado.
 
+Actualizacion 2026-06-06 (acuse DIAN y cola documental)
+- No se agrega tabla nueva. La configuracion operacional DIAN sigue en
+  `empresa_dian_configuracion` y la cola/reconciliacion por documento sigue en
+  `facturacion_electronica_reintentos` junto con `empresa_facturacion_documentos`.
+- El envio real `SendTestSetAsync` devuelve TrackId/ZipKey y puede quedar como
+  `Batch en proceso de validacion`; ese estado debe persistirse como pendiente,
+  no como aceptado final.
+- La mejora pendiente del modulo es asegurar consulta `GetStatusZip` por cada
+  TrackId hasta acuse final aceptado/rechazado, actualizar el estado documental y
+  contar minimos aceptados por empresa antes de marcar produccion local.
+- No guardar en tablas ni documentacion claves de certificado, PIN, contrasenas
+  ni tokens; `llave_tecnica` y referencias de certificado son datos sensibles
+  operativos por `empresa_id`.
+
 Actualizacion 2026-06-05 (centro de habilitacion DIAN)
 - No se agrega tabla nueva; se amplia `empresa_dian_configuracion` para guardar
   el objetivo de habilitacion que DIAN asigna a cada empresa.
