@@ -305,7 +305,9 @@
     }
 
     function isSensitiveDianKey(key) {
-      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|certificado_clave|llave_tecnica|software_pin/i.test(String(key || ""));
+      key = String(key || "");
+      if (/^certificado_/.test(key) && !/^certificado_(vencimiento|alerta_dias|alerta_email|alerta_ultimo_envio)/.test(key)) return true;
+      return /clave|password|contrasena|contrase(?:ñ|n)a|secret|token|pin|llave_tecnica|software_pin/i.test(key);
     }
 
     function sanitizeDianConsoleValue(value, key) {
