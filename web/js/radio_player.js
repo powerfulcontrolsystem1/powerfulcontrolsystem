@@ -128,7 +128,7 @@
   }
 
   function countryLabel(code) {
-    return (countryTools.labels && countryTools.labels[code]) || code || "pais no soportado";
+    return (countryTools.labels && countryTools.labels[code]) || code || "país no soportado";
   }
 
   function updateCountryControls() {
@@ -138,7 +138,7 @@
     if (state.countryCode) {
       countryStatus.textContent = "Pais de emisoras: " + countryLabel(state.countryCode) + ". Se muestran 10 principales y las personalizadas de la empresa.";
     } else {
-      countryStatus.textContent = "La deteccion automatica no encontro Panama o Ecuador. Puedes escoger un pais o agregar emisoras personalizadas.";
+      countryStatus.textContent = "La detección automática no encontró Panamá o Ecuador. Puedes escoger un país o agregar emisoras personalizadas.";
     }
   }
 
@@ -154,7 +154,7 @@
     var stations = currentStations();
     grid.classList.toggle("is-disabled", !state.enabled);
     if (!stations.length) {
-      grid.innerHTML = '<div class="radio-station-empty">Este modulo muestra emisoras principales solo para Panama y Ecuador. Selecciona uno de esos paises o agrega una emisora personalizada para esta empresa.</div>';
+      grid.innerHTML = '<div class="radio-station-empty">Este módulo muestra emisoras principales solo para Panamá y Ecuador. Selecciona uno de esos países o agrega una emisora personalizada para esta empresa.</div>';
       updateCountryControls();
       return;
     }
@@ -305,7 +305,7 @@
   function fetchDetectedCountry() {
     return fetch(buildCountryEndpoint(), { credentials: "same-origin" })
       .then(function (res) {
-        if (!res.ok) throw new Error("sin pais empresa");
+        if (!res.ok) throw new Error("sin país empresa");
         return res.json();
       })
       .then(function (data) {

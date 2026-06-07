@@ -1,6 +1,7 @@
 2026-06-07: Auditoria de navegacion de Administrar empresa.
 - Modulo afectado: Administrar empresa y plantillas verticales.
 - Frontend: `web/administrar_empresa.html` normaliza etiquetas visibles del menu principal, agrega `id` a `Volver a empresas`, pule textos del drawer de radio y muestra `Panamá` en el selector de pais sin cambiar el codigo tecnico `PA`.
+- Radio: `web/js/radio_catalog.js`, `web/js/radio_player.js` y `web/js/radio_online.js` corrigen mensajes y catalogo visible de Panamá/Ecuador con tildes; no cambian emisoras, codigos de pais ni endpoints.
 - Catalogo: `web/js/plantillas_nuevas_catalogo.js` corrige titulos, descripciones y secciones visibles con tildes y redaccion profesional.
 - QA: auditoria estatica del HTML confirma 57 enlaces con `id`, sin enlaces vacios, sin rutas HTML inexistentes y sin URLs repetidas exactas; `node --check` valida los scripts tocados.
 

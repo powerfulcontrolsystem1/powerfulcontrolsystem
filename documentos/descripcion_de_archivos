@@ -3,6 +3,8 @@
 	- normaliza etiquetas visibles del menu principal, agrega `linkVolverEmpresas` y mejora textos del drawer de radio sin cambiar rutas ni permisos; el selector de pais muestra `Panamá` manteniendo `PA`.
 - `web/js/plantillas_nuevas_catalogo.js`:
 	- corrige titulos, copys y secciones visibles de plantillas verticales para mantener una presentacion profesional.
+- `web/js/radio_catalog.js`, `web/js/radio_player.js` y `web/js/radio_online.js`:
+	- corrigen textos visibles de pais, estados y emisoras del modulo de radio que se carga dentro de Administrar empresa.
 
 2026-06-07 - IA oculta por defecto por empresa
 - `backend/handlers/empresa_permisos.go`:
