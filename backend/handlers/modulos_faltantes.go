@@ -8957,16 +8957,6 @@ func dianSOAPCanonicalToHeader(id, endpoint string) string {
 	)
 }
 
-func dianSOAPCanonicalActionHeader(id, action string) string {
-	return fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
-		dianSOAPNamespace,
-		dianAddressingNamespace,
-		dianWSUSecurityNS,
-		escapeXML(id),
-		escapeXML(action),
-	)
-}
-
 func dianSOAPCanonicalTimestamp(id, created, expires string) string {
 	return fmt.Sprintf(`<wsu:Timestamp xmlns:wsu="%s" wsu:Id="%s"><wsu:Created>%s</wsu:Created><wsu:Expires>%s</wsu:Expires></wsu:Timestamp>`,
 		dianWSUSecurityNS,
@@ -9006,7 +8996,6 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 	action := dianSOAPAction(operation)
 	bodyContent := dianBuildSOAPBody(operation, fileName, zipBytes, testSetID)
 	toID := dianSOAPSafeID("ID")
-	actionID := dianSOAPSafeID("ACT")
 	timestampID := dianSOAPSafeID("PCSTS")
 	tokenID := dianSOAPSafeID("X509")
 	signatureID := dianSOAPSafeID("SIG")
@@ -9016,8 +9005,8 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 
 	created := now.Format("2006-01-02T15:04:05.000Z")
 	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
-	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
-		dianSOAPNamespace, dianAddressingNamespace, dianWSUSecurityNS, actionID, escapeXML(action))
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
+		dianAddressingNamespace, escapeXML(action))
 	messageIDHeader := fmt.Sprintf(`<wsa:MessageID xmlns:wsa="%s">%s</wsa:MessageID>`,
 		dianAddressingNamespace, escapeXML(messageID))
 	replyToHeader := fmt.Sprintf(`<wsa:ReplyTo xmlns:wsa="%s"><wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address></wsa:ReplyTo>`,
@@ -9032,7 +9021,6 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 		tokenID, dianWSSBase64Encoding, dianWSSX509ValueType, dianWSSESecurityNS, dianWSUSecurityNS, base64.StdEncoding.EncodeToString(cert.Raw))
 
 	reference := dianSOAPSignedReference(timestampID, dianSOAPCanonicalTimestamp(timestampID, created, expires)) +
-		dianSOAPSignedReference(actionID, dianSOAPCanonicalActionHeader(actionID, action)) +
 		dianSOAPSignedReference(toID, dianSOAPCanonicalToHeader(toID, endpoint))
 	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="%s"><ds:CanonicalizationMethod Algorithm="%s"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="%s"></ds:SignatureMethod>%s</ds:SignedInfo>`,
 		dianDSigNamespace, dianExcC14NAlgorithm, dianRSASHA256Algorithm, reference)
@@ -9060,7 +9048,7 @@ func buildDIANSOAPEnvelopeWithWSSecurity(operation, endpoint, fileName string, z
 		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, messageIDHeader, replyToHeader, toHeader, body)
 	meta := map[string]interface{}{
 		"ws_security":              true,
-		"signed_parts":             []string{"Timestamp", "Action", "To"},
+		"signed_parts":             []string{"Timestamp", "To"},
 		"key_reference":            "ThumbprintSHA1",
 		"signature_algorithm":      "RSA-SHA256",
 		"digest_algorithm":         "SHA-256",
@@ -9125,7 +9113,6 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 	}
 	action := dianSOAPAction("GetStatusZip")
 	toID := dianSOAPSafeID("ID")
-	actionID := dianSOAPSafeID("ACT")
 	timestampID := dianSOAPSafeID("PCSTS")
 	tokenID := dianSOAPSafeID("X509")
 	signatureID := dianSOAPSafeID("SIG")
@@ -9135,8 +9122,8 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 
 	created := now.Format("2006-01-02T15:04:05.000Z")
 	expires := now.Add(60 * time.Second).Format("2006-01-02T15:04:05.000Z")
-	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:soap="%s" xmlns:wsa="%s" xmlns:wsu="%s" wsu:Id="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
-		dianSOAPNamespace, dianAddressingNamespace, dianWSUSecurityNS, actionID, escapeXML(action))
+	actionHeader := fmt.Sprintf(`<wsa:Action xmlns:wsa="%s" soap:mustUnderstand="1">%s</wsa:Action>`,
+		dianAddressingNamespace, escapeXML(action))
 	messageIDHeader := fmt.Sprintf(`<wsa:MessageID xmlns:wsa="%s">%s</wsa:MessageID>`,
 		dianAddressingNamespace, escapeXML(messageID))
 	replyToHeader := fmt.Sprintf(`<wsa:ReplyTo xmlns:wsa="%s"><wsa:Address>http://www.w3.org/2005/08/addressing/anonymous</wsa:Address></wsa:ReplyTo>`,
@@ -9151,7 +9138,6 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 		tokenID, dianWSSBase64Encoding, dianWSSX509ValueType, dianWSSESecurityNS, dianWSUSecurityNS, base64.StdEncoding.EncodeToString(cert.Raw))
 
 	reference := dianSOAPSignedReference(timestampID, dianSOAPCanonicalTimestamp(timestampID, created, expires)) +
-		dianSOAPSignedReference(actionID, dianSOAPCanonicalActionHeader(actionID, action)) +
 		dianSOAPSignedReference(toID, dianSOAPCanonicalToHeader(toID, endpoint))
 	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="%s"><ds:CanonicalizationMethod Algorithm="%s"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="%s"></ds:SignatureMethod>%s</ds:SignedInfo>`,
 		dianDSigNamespace, dianExcC14NAlgorithm, dianRSASHA256Algorithm, reference)
@@ -9179,7 +9165,7 @@ func buildDIANGetStatusZipEnvelopeWithWSSecurity(endpoint, trackID string, priva
 		dianSOAPNamespace, dianWCFNamespace, dianAddressingNamespace, security, actionHeader, messageIDHeader, replyToHeader, toHeader, body)
 	meta := map[string]interface{}{
 		"ws_security":         true,
-		"signed_parts":        []string{"Timestamp", "Action", "To"},
+		"signed_parts":        []string{"Timestamp", "To"},
 		"key_reference":       "ThumbprintSHA1",
 		"signature_algorithm": "RSA-SHA256",
 		"digest_algorithm":    "SHA-256",
