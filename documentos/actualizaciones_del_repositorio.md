@@ -13193,3 +13193,10 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-06-06 20:14:24 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: e77a2d31; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
