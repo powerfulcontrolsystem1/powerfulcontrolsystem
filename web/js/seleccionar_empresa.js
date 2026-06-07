@@ -1387,15 +1387,17 @@
       '<span>' + escapeHtml(licenseLabel) + '</span>' +
       '</button>';
     div.innerHTML =
-      '<span class="empresa-card-badge">' +
-      escapeHtml(visual.label || "Empresa") +
-      "</span>" +
-      '<span class="empresa-card-watermark" aria-hidden="true">' +
-      '<img src="' + escapeHtml(visual.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
-      "</span>" +
+      '<div class="empresa-card-topline">' +
       '<button type="button" class="empresa-reorder-handle" aria-label="Mover tarjeta de ' + escapeHtml(String(empresa.nombre || "empresa")) + '" title="Mover tarjeta">' +
       '<span aria-hidden="true">⋮⋮</span>' +
       "</button>" +
+      '<span class="empresa-card-badge">' +
+      escapeHtml(visual.label || "Empresa") +
+      "</span>" +
+      "</div>" +
+      '<span class="empresa-card-watermark" aria-hidden="true">' +
+      '<img src="' + escapeHtml(visual.icon || "/img/company-briefcase-color.svg") + '" alt="">' +
+      "</span>" +
       '<div class="card-body empresa-card-body">' +
       '<h3 class="card-title">' +
       escapeHtml(empresa.nombre || "--") +

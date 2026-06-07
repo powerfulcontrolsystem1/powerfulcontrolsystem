@@ -13078,6 +13078,43 @@ html.theme-light .task-item{
   touch-action:none;
 }
 
+.empresas-grid .portal-card.empresa-card .empresa-card-topline{
+  position:absolute;
+  top:10px;
+  left:10px;
+  right:66px;
+  z-index:5;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  min-width:0;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-topline .empresa-reorder-handle{
+  position:static !important;
+  top:auto !important;
+  right:auto !important;
+  flex:0 0 28px;
+  width:28px !important;
+  height:28px !important;
+  min-width:28px !important;
+  border-radius:8px !important;
+  font-size:.8rem !important;
+}
+
+.empresas-grid .portal-card.empresa-card .empresa-card-topline .empresa-card-badge{
+  position:static !important;
+  top:auto !important;
+  left:auto !important;
+  z-index:auto !important;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
 .empresas-grid .empresa-reorder-handle:hover,
 .empresas-grid .empresa-reorder-handle:focus-visible{
   background:var(--accent);
@@ -13111,6 +13148,10 @@ html.theme-light .task-item{
   .empresas-grid .empresa-reorder-handle{
     right:58px;
     top:10px;
+  }
+
+  .empresas-grid .portal-card.empresa-card .empresa-card-topline{
+    right:60px;
   }
 }
 

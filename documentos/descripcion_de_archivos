@@ -1,3 +1,9 @@
+2026-06-07 - Asa de orden en selector de empresas
+- `web/js/seleccionar_empresa.js`:
+	- reubica el boton de mover tarjeta dentro de la fila superior de cada tarjeta de empresa, antes del chip de tipo.
+- `web/estilos.css`:
+	- ajusta la fila superior para mostrar el asa en la esquina superior izquierda, alineada con etiquetas como `Pymes`.
+
 2026-06-07 - Auditoria de navegacion de Administrar empresa
 - `web/administrar_empresa.html`:
 	- normaliza etiquetas visibles del menu principal, agrega `linkVolverEmpresas` y mejora textos del drawer de radio sin cambiar rutas ni permisos; el selector de pais muestra `Panamá` manteniendo `PA`.

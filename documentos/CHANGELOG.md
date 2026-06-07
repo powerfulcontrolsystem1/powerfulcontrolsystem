@@ -1,3 +1,7 @@
+## [2026-06-07] Asa de orden en tarjetas de empresas
+- [Frontend] `seleccionar_empresa.js` mueve el boton de arrastre a la fila superior de la tarjeta, a la izquierda del chip de tipo de empresa.
+- [UX] `estilos.css` fija el asa en la esquina superior izquierda junto al titulo visual `Pymes`/tipo, conservando drag and drop en escritorio y movil.
+
 ## [2026-06-07] Auditoria de navegacion de Administrar empresa
 - [Frontend] `administrar_empresa.html` normaliza etiquetas visibles del menu principal y del drawer de radio con tildes y nombres mas profesionales.
 - [UX] El selector de pais del reproductor conserva `PA` como codigo tecnico y muestra `Panamá` como etiqueta visible.

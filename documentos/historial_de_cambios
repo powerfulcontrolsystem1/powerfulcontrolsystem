@@ -1,3 +1,9 @@
+2026-06-07: Asa de orden junto al tipo de empresa en selector.
+- Modulo afectado: Seleccion de empresas.
+- Frontend: `web/js/seleccionar_empresa.js` mueve el boton `empresa-reorder-handle` dentro de una fila superior junto al chip de tipo de empresa.
+- Estilos: `web/estilos.css` posiciona esa fila en la esquina superior izquierda, a la izquierda de etiquetas como `Pymes`, sin cambiar el guardado del orden ni permisos.
+- Alcance: no cambia endpoints, datos, licencias ni aislamiento por empresa; se conserva el drag and drop existente.
+
 2026-06-07: Auditoria de navegacion de Administrar empresa.
 - Modulo afectado: Administrar empresa y plantillas verticales.
 - Frontend: `web/administrar_empresa.html` normaliza etiquetas visibles del menu principal, agrega `id` a `Volver a empresas`, pule textos del drawer de radio y muestra `Panamá` en el selector de pais sin cambiar el codigo tecnico `PA`.
