@@ -13387,3 +13387,18 @@ Archivos modificados:
 2026-06-07 13:17:15 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: dd3f5b86; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/nomina_sueldos.html
+
+2026-06-07 14:37:00 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 5aec0c33; PushStatus: OK
+Archivos modificados:
+- backend/db/empresa_colombia_defaults.go
+- backend/handlers/nomina_sueldos.go
+- backend/handlers/system_empresas_handlers.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/nomina_sueldos.html
