@@ -4,6 +4,7 @@
 	- envia la solicitud al panel padre cuando la ayuda esta dentro de un iframe empresarial.
 	- conserva `empresa_id` en URLs internas y usa la guia HTML completa como respaldo visible.
 	- se autoinyecta en iframes empresariales same-origin y anidados desde el panel padre.
+	- no intercepta enlaces de tutorial/ayuda cuyo `target` apunta a un iframe nombrado del modulo, para no bloquear submenus internos como `Tutorial DIAN`.
 - `web/js/ai_chat_drawer.js`:
 	- agrega `PCSAIChatHelp` y el mensaje `pcs-help-ai-open` para mostrar ayuda contextual estatica en robot o caja IA.
 	- no ejecuta acciones reales ni consume IA hasta que el usuario envie una pregunta o confirme una accion.
@@ -11,6 +12,7 @@
 	- inicializa tambien si el script se carga despues de `DOMContentLoaded`.
 - `web/js/empresa_submenu_context.js`:
 	- carga automaticamente el puente de ayuda en subpaginas empresariales.
+	- versiona el puente cuando cambia la regla de captura para limpiar cache de subpaginas empresariales.
 - `web/administrar_empresa.html`:
 	- carga el puente junto al drawer IA principal.
 	- versiona `ai_chat_drawer.js` y `help_ai_bridge.js` para evitar cache antiguo del panel.
@@ -184,6 +186,7 @@
 	- nueva pagina de guia corta para configurar conexion DIAN, cargar firma, enviar 2+2+2, ejecutar set completo, consultar acuse final y activar produccion local sin publicar secretos.
 - `web/administrar_empresa/facturacion_electronica_menu.html`:
 	- agrega el enlace `Tutorial DIAN` dentro del submenu de facturacion electronica Colombia, gated por pais CO y permiso de lectura de facturacion.
+	- el enlace `Tutorial DIAN` navega dentro de `facturacionContentFrame` y queda excluido de la captura automatica de ayuda IA.
 - `documentos/*`:
 	- registra mapa, flujos, changelog, descripcion de modulos e historial para ubicar la guia en la operacion DIAN.
 

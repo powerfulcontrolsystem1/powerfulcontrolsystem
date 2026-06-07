@@ -3,7 +3,7 @@
 
   var HELP_MESSAGE_TYPE = 'pcs-help-ai-open';
   var INSTALLED_FLAG = '__pcsHelpAIBridgeInstalled';
-  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260607-help-ai3';
+  var BRIDGE_SRC = '/js/help_ai_bridge.js?v=20260607-help-ai4';
 
   if (window[INSTALLED_FLAG]) return;
   window[INSTALLED_FLAG] = true;
@@ -71,12 +71,23 @@
       || value.indexOf('facturacion_electronica_tutorial_dian.html') >= 0;
   }
 
+  function pointsToNamedFrame(link) {
+    if (!link) return false;
+    var target = normalize(link.getAttribute('target'));
+    if (!target || target === '_self' || target === '_top' || target === '_parent' || target === '_blank') return false;
+    try {
+      return !!document.querySelector('iframe[name="' + CSS.escape(target) + '"]');
+    } catch (error) {
+      return !!document.querySelector('iframe[name="' + target.replace(/"/g, '\\"') + '"]');
+    }
+  }
+
   function getClosestHelpLauncher(target) {
     if (!target || !target.closest) return null;
     var explicit = target.closest('[data-pcs-help-ai]');
     if (explicit) return explicit;
     var link = target.closest('a[href]');
-    if (link && isHelpHref(link.getAttribute('href') || link.href || '')) return link;
+    if (link && !pointsToNamedFrame(link) && isHelpHref(link.getAttribute('href') || link.href || '')) return link;
     var button = target.closest('button[data-help-url],button[data-help-href]');
     return button || null;
   }

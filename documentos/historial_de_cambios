@@ -1,3 +1,10 @@
+2026-06-07: Boton Tutorial DIAN navega correctamente.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` marca `linkTutorialDian` con `data-pcs-help-ai="off"` para que el click cargue `facturacion_electronica_tutorial_dian.html` dentro de `facturacionContentFrame`.
+- Ayuda integrada: `web/js/help_ai_bridge.js` evita capturar enlaces de ayuda/tutorial cuando su `target` apunta a un iframe nombrado de la misma pagina; mantiene la apertura del robot/caja IA para ayudas explicitas y enlaces fuera de navegacion interna.
+- Cache: `web/js/empresa_submenu_context.js` versiona el puente como `20260607-help-ai4`.
+- Alcance: no cambia endpoints, permisos, tablas ni reglas DIAN; solo corrige navegacion visible conservando `empresa_id`.
+
 2026-06-07: Apariencia profesional de Suite contador.
 - Modulo afectado: Suite contador.
 - Frontend: `web/administrar_empresa/suite_contador.html` reemplaza colores fijos por variables de tema, ordena tarjetas, botones, metricas, buscador y flujo operativo con una apariencia mas consistente dentro del Centro financiero.

@@ -1,3 +1,8 @@
+## [2026-06-07] Boton Tutorial DIAN navega correctamente
+- [Frontend] `facturacion_electronica_menu.html` marca `Tutorial DIAN` como navegacion normal del submenu para abrir la guia dentro del iframe de facturacion.
+- [Ayuda] `help_ai_bridge.js` ya no intercepta enlaces de tutorial que apuntan a un iframe nombrado del modulo; conserva la integracion IA para ayudas explicitas y enlaces fuera de navegacion interna.
+- [Cache] `empresa_submenu_context.js` actualiza la version del puente de ayuda para limpiar comportamiento anterior en subpaginas empresariales.
+
 ## [2026-06-07] Apariencia profesional de Suite contador
 - [Frontend] `suite_contador.html` adopta variables de tema para claro/oscuro, tarjetas compactas, botones con icono y estados disponibles/bloqueados más legibles.
 - [UX] Se corrige el contraste del botón `Abrir` en temas oscuros donde el acento global puede ser gris, y se valida responsive sin desborde horizontal.
