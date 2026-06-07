@@ -13261,3 +13261,25 @@ Archivos modificados:
 2026-06-06 23:48:29 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: d18fe631; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/bolsa.html
+
+2026-06-07 00:11:42 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 15cf4eba; PushStatus: OK
+Archivos modificados:
+- backend/db/finanzas_renta.go
+- backend/db/finanzas_renta_test.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/finanzas_renta_ia.go
+- backend/main.go
+- documentos/CHANGELOG.md
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/estructura_bd.md
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa/finanzas_menu.html
+- web/administrar_empresa/renta_ia.html
+- web/js/administrar_empresa.js
