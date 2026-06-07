@@ -13,6 +13,22 @@
     .dian-status-value{display:block;color:var(--text);font-size:1rem;font-weight:900;margin-top:6px;overflow-wrap:anywhere}
     .dian-test-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
     .dian-test-actions .btn{min-height:42px}
+    .dian-portal-summary{margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);overflow:hidden}
+    .dian-portal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border)}
+    .dian-portal-head h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-portal-head p{margin:4px 0 0;color:var(--muted);font-size:.85rem}
+    .dian-portal-sensitive-toggle{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:.84rem;font-weight:800}
+    .dian-portal-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+    .dian-portal-section{padding:12px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .dian-portal-section:nth-child(2n){border-right:0}
+    .dian-portal-section h4{margin:0 0 8px;color:var(--text);font-size:.86rem;letter-spacing:0}
+    .dian-portal-kv{display:grid;grid-template-columns:minmax(130px,.75fr) minmax(0,1.25fr);gap:6px 10px;align-items:start}
+    .dian-portal-kv dt{color:var(--muted);font-size:.76rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-portal-kv dd{margin:0;color:var(--text);font-size:.88rem;font-weight:750;overflow-wrap:anywhere}
+    .dian-portal-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .dian-portal-metric{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:8px;min-height:58px}
+    .dian-portal-metric span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-portal-metric strong{display:block;margin-top:5px;color:var(--text);font-size:1rem}
     .dian-result-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
     .dian-result-table th,.dian-result-table td{border-bottom:1px solid var(--border);padding:8px 6px;text-align:left;vertical-align:top;font-size:.86rem}
     .dian-result-table th{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
@@ -36,8 +52,8 @@
     .dian-console-title strong{color:var(--text);font-size:.86rem;overflow-wrap:anywhere}
     .dian-console-meta{color:var(--muted);font-size:.76rem;white-space:nowrap}
     .dian-console-body{margin:0;padding:10px;color:var(--text);font-size:.78rem;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto}
-    @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}}
-    @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}}
+    @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.dian-status-grid,.dian-test-actions{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -63,6 +79,7 @@
         <button id="btnDianDiagnostico" type="button" class="btn secondary">Diagnostico DIAN</button>
       </div>
       <div id="feDianConfigMsg" class="form-help"></div>
+      <div id="feDianPortalResumen" class="dian-portal-summary"></div>
     </div>
 
     <div class="card">
@@ -403,6 +420,106 @@
       if (el) el.textContent = txt(value) || emptyText || "No configurado";
     }
 
+    function portalValue(value, emptyText) {
+      const v = txt(value);
+      return v || emptyText || "No registrado";
+    }
+
+    function portalDateValue(value) {
+      const v = txt(value);
+      if (!v) return "No registrado";
+      const parsed = new Date(v);
+      if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString("es-CO");
+      return v;
+    }
+
+    function sensitivePreview(value) {
+      const v = txt(value);
+      if (!v) return "No registrado";
+      if (v.length <= 4) return "****";
+      return "****" + v.slice(-4);
+    }
+
+    function portalSensitiveSpan(value) {
+      const v = txt(value);
+      if (!v) return "No registrado";
+      return '<span class="dian-portal-sensitive" data-full="' + escapeHTML(v) + '" data-mask="' + escapeHTML(sensitivePreview(v)) + '">' + escapeHTML(sensitivePreview(v)) + '</span>';
+    }
+
+    function portalKV(label, value, sensitive) {
+      return '<dt>' + escapeHTML(label) + '</dt><dd>' + (sensitive ? portalSensitiveSpan(value) : escapeHTML(portalValue(value))) + '</dd>';
+    }
+
+    function portalMetric(label, value) {
+      return '<div class="dian-portal-metric"><span>' + escapeHTML(label) + '</span><strong>' + escapeHTML(portalValue(value, "0")) + '</strong></div>';
+    }
+
+    function updatePortalSensitiveVisibility() {
+      const show = !!(document.getElementById("feDianPortalMostrarSensibles") && document.getElementById("feDianPortalMostrarSensibles").checked);
+      document.querySelectorAll(".dian-portal-sensitive").forEach(function(el) {
+        el.textContent = show ? (el.getAttribute("data-full") || "") : (el.getAttribute("data-mask") || "****");
+      });
+    }
+
+    function renderDianPortalResumen(cfg) {
+      const box = document.getElementById("feDianPortalResumen");
+      if (!box) return;
+      cfg = cfg || {};
+      if (!cfg.id) {
+        box.innerHTML = '<div class="dian-portal-head"><div><h3>Resumen portal DIAN</h3><p>No hay configuracion DIAN cargada para mostrar.</p></div></div>';
+        return;
+      }
+      const totalDocs = Number(cfg.set_documentos_requeridos || 0) || (Number(cfg.set_facturas_requeridas || 0) + Number(cfg.set_notas_debito_requeridas || 0) + Number(cfg.set_notas_credito_requeridas || 0));
+      const aceptadosTotal = Number(cfg.set_documentos_aceptados_requeridos || 0);
+      const softwareNombre = cfg.nombre_software || cfg.software_nombre || cfg.nombre_comercial || cfg.razon_social || "Powerful Control System";
+      box.innerHTML =
+        '<div class="dian-portal-head">' +
+          '<div><h3>Resumen portal DIAN</h3><p>Datos guardados para comparar con el set de pruebas de factura electronica.</p></div>' +
+          '<label class="dian-portal-sensitive-toggle"><input id="feDianPortalMostrarSensibles" type="checkbox"> Mostrar PIN y clave tecnica</label>' +
+        '</div>' +
+        '<div class="dian-portal-sections">' +
+          '<section class="dian-portal-section"><h4>Contribuyente y set</h4><dl class="dian-portal-kv">' +
+            portalKV("UserName", cfg.razon_social || cfg.nombre_comercial || cfg.nit) +
+            portalKV("Tipo", cfg.tipo_persona || cfg.tipo_contribuyente || cfg.tipo_documento_emisor || "Persona Natural") +
+            portalKV("Estado set", cfg.estado_dian || cfg.estado || "En proceso") +
+            portalKV("TestSetId", cfg.test_set_id) +
+            portalKV("Modo", cfg.modo_operacion_descripcion || "Set SW Propio") +
+            '<dt>Inicio</dt><dd>' + escapeHTML(portalDateValue(cfg.modo_operacion_fecha_inicio)) + '</dd>' +
+            '<dt>Termino</dt><dd>' + escapeHTML(portalDateValue(cfg.modo_operacion_fecha_termino)) + '</dd>' +
+          '</dl></section>' +
+          '<section class="dian-portal-section"><h4>Rango de numeracion</h4><dl class="dian-portal-kv">' +
+            portalKV("Prefijo", cfg.prefijo || "SETP") +
+            portalKV("Resolucion", cfg.resolucion_numero) +
+            portalKV("Rango desde", cfg.rango_desde) +
+            portalKV("Rango hasta", cfg.rango_hasta) +
+            '<dt>Fecha desde</dt><dd>' + escapeHTML(portalDateValue(cfg.resolucion_fecha_desde)) + '</dd>' +
+            '<dt>Fecha hasta</dt><dd>' + escapeHTML(portalDateValue(cfg.resolucion_fecha_hasta)) + '</dd>' +
+            portalKV("Consecutivo actual", cfg.consecutivo_actual) +
+          '</dl></section>' +
+          '<section class="dian-portal-section"><h4>Informacion del software</h4><dl class="dian-portal-kv">' +
+            portalKV("Identificacion", cfg.software_id) +
+            portalKV("Nombre", softwareNombre) +
+            portalKV("Clave tecnica", cfg.llave_tecnica, true) +
+            portalKV("PIN", cfg.software_pin, true) +
+            portalKV("URL", cfg.url_dian) +
+          '</dl></section>' +
+          '<section class="dian-portal-section"><h4>Documentos requeridos</h4><div class="dian-portal-metric-grid">' +
+            portalMetric("Documentos", totalDocs) +
+            portalMetric("Facturas", cfg.set_facturas_requeridas) +
+            portalMetric("Notas debito", cfg.set_notas_debito_requeridas) +
+            portalMetric("Notas credito", cfg.set_notas_credito_requeridas) +
+          '</div><h4 style="margin-top:12px">Aceptados requeridos</h4><div class="dian-portal-metric-grid">' +
+            portalMetric("Documentos", aceptadosTotal) +
+            portalMetric("Facturas", cfg.set_facturas_aceptadas_requeridas) +
+            portalMetric("Notas debito", cfg.set_notas_debito_aceptadas_requeridas) +
+            portalMetric("Notas credito", cfg.set_notas_credito_aceptadas_requeridas) +
+          '</div></section>' +
+        '</div>';
+      const toggle = document.getElementById("feDianPortalMostrarSensibles");
+      if (toggle) toggle.addEventListener("change", updatePortalSensitiveVisibility);
+      updatePortalSensitiveVisibility();
+    }
+
     function asDateTimeLocal(raw) {
       raw = txt(raw);
       if (!raw) return "";
@@ -489,6 +606,7 @@
         ? [cfg.prefijo || "SETP", cfg.rango_desde || "?", "-", cfg.rango_hasta || "?", " sig.", cfg.consecutivo_actual || cfg.rango_desde || "?"].join(" ")
         : "";
       setStatusValue("feDianStatusRango", rango);
+      renderDianPortalResumen(cfg);
       setValue("feDianModoDescripcion", cfg.modo_operacion_descripcion || "");
       setValue("feDianModoFechaInicio", asDateTimeLocal(cfg.modo_operacion_fecha_inicio));
       setValue("feDianModoFechaTermino", asDateTimeLocal(cfg.modo_operacion_fecha_termino));

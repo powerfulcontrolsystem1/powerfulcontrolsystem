@@ -1,3 +1,10 @@
+2026-06-06: Resumen portal DIAN visible en pagina de pruebas.
+- Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y soporte operativo.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrega una ficha `Resumen portal DIAN` con contribuyente, estado del set, TestSetId, modo de operacion, rango de numeracion, software, URL y conteos requeridos/aceptados.
+- Seguridad: PIN y clave tecnica quedan enmascarados por defecto y solo se revelan mediante accion explicita del administrador en la misma pantalla.
+- Operacion: el administrador puede comparar los datos guardados con el portal DIAN antes de ejecutar `Enviar prueba 2 + 2 + 2` o el set automatico completo.
+- QA: validar sintaxis del script embebido y comprobar visualmente que la ficha se renderiza con datos reales de empresa 12.
+
 2026-06-06: Consola visible de respuestas DIAN.
 - Modulos afectados: facturacion electronica Colombia, DIAN, documentos electronicos y soporte operativo.
 - Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` agrega una consola en la pagina para registrar respuestas de configuracion, validacion, diagnostico, envios reales, conexion, cola y emision documental.

@@ -1,3 +1,8 @@
+## [2026-06-06] Resumen portal DIAN en pruebas
+- [Frontend] `facturacion_electronica_pruebas_dian.html` muestra una ficha espejo del portal DIAN con contribuyente, TestSetId, modo de operacion, rango, software, URL, documentos requeridos y aceptados requeridos.
+- [Seguridad] PIN y clave tecnica se muestran enmascarados por defecto y solo se revelan con accion explicita en pantalla.
+- [Operacion] La pagina permite comparar rapidamente los datos guardados contra el set de pruebas asignado por DIAN antes de ejecutar 2+2+2 o el set completo.
+
 ## [2026-06-06] Consola visible de respuestas DIAN
 - [Frontend] `facturacion_electronica_pruebas_dian.html` agrega una consola DIAN con historial visible de configuracion, validacion, diagnostico, envios reales, conexion, cola y operaciones documentales.
 - [Seguridad] La consola sanea claves, PIN, tokens, certificados y llave tecnica antes de mostrar o copiar respuestas.
