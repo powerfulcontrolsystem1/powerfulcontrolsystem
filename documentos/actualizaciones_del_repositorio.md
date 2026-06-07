@@ -13229,3 +13229,12 @@ Archivos modificados:
 2026-06-06 22:06:40 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 35b20915; PushStatus: OK
 Archivos modificados:
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-06-06 23:02:33 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: e235ebb3; PushStatus: OK
+Archivos modificados:
+- backend/handlers/onlyoffice.go
+- backend/handlers/onlyoffice_test.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
