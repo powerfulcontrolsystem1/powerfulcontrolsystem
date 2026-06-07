@@ -290,9 +290,11 @@ func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
 		`<wsse:BinarySecurityToken`,
 		`<ds:Signature`,
 		`<ds:SignatureValue>`,
-		`<wsse:KeyIdentifier EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary" ValueType="http://docs.oasis-open.org/wss/oasis-wss-soap-message-security-1.1#ThumbprintSHA1">`,
+		`<ec:InclusiveNamespaces xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#" PrefixList="wsa soap wcf"></ec:InclusiveNamespaces>`,
+		`<ec:InclusiveNamespaces xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#" PrefixList="soap wcf"></ec:InclusiveNamespaces>`,
+		`<wsse:Reference URI="#X509-`,
 		`<ds:Reference URI="#ID-`,
-		`<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing" soap:mustUnderstand="1">`,
+		`<wsa:Action xmlns:wsa="http://www.w3.org/2005/08/addressing">`,
 		`<wsa:MessageID`,
 		`<wsa:ReplyTo`,
 		`<wcf:testSetId>abc-test-set</wcf:testSetId>`,
@@ -305,8 +307,8 @@ func TestBuildDIANSOAPEnvelopeWithWSSecuritySendTestSetAsync(t *testing.T) {
 	if !parseTruthy(genericStringValue(meta["ws_security"])) {
 		t.Fatalf("expected ws_security meta true, got %#v", meta)
 	}
-	if genericStringValue(meta["key_reference"]) != "ThumbprintSHA1" {
-		t.Fatalf("expected ThumbprintSHA1 key reference, got %#v", meta)
+	if genericStringValue(meta["key_reference"]) != "BinarySecurityTokenReference" {
+		t.Fatalf("expected BinarySecurityTokenReference key reference, got %#v", meta)
 	}
 	if genericStringValue(meta["security_layout"]) != "strict_timestamp_token_signature" {
 		t.Fatalf("expected strict layout metadata, got %#v", meta)

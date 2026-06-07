@@ -1,7 +1,7 @@
-2026-06-06: DIAN WS-Security ajustado a SignedParts del WSDL.
+2026-06-06: DIAN WS-Security compatible con clientes sandbox.
 - Modulos afectados: facturacion electronica Colombia, transporte SOAP/WCF DIAN y centro de habilitacion.
-- Backend: el sobre WS-Security oficial firma `Timestamp` y `wsa:To`, manteniendo referencia `ThumbprintSHA1`, `BinarySecurityToken`, RSA-SHA256 y digest SHA-256 segun `SignedParts` publicado por DIAN.
-- Backend: el digest de `wsa:To` se calcula con el orden canonico de atributos XML (`wsu:Id` antes de `soap:mustUnderstand`) para evitar discrepancias de hash al validar en WCF/DIAN.
+- Backend: el sobre WS-Security oficial firma solo `wsa:To`, mantiene `Timestamp` y `BinarySecurityToken`, usa `wsse:Reference URI="#X509-..."` en `KeyInfo` e incluye `InclusiveNamespaces` en `SignedInfo`.
+- Backend: el digest de `wsa:To` se calcula con los namespaces `soap`, `wcf`, `wsa` y `wsu`, siguiendo ejemplos publicos de clientes DIAN que reportan aceptacion en sandbox.
 - QA visual: la prueba 2+2+2 real de la empresa 12 alcanzo DIAN y genero `SETP990000022`, pero DIAN respondio `InvalidSecurity`; este cambio ajusta la firma de encabezados WS-Addressing para una nueva validacion real.
 - Seguridad: no se imprimen credenciales ni secretos; el perfil temporal de navegador queda ignorado por git.
 

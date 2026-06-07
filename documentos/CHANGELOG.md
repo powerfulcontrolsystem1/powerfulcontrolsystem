@@ -1,7 +1,7 @@
 ## [2026-06-06] DIAN WS-Security segun politica WSDL
-- [Backend] `SendTestSetAsync` y `GetStatusZip` ajustan la firma WS-Security a la politica publicada por el WSDL de DIAN habilitacion: referencia `ThumbprintSHA1`, firma de `Timestamp + To`, headers WS-Addressing completos y layout estricto `Timestamp + BinarySecurityToken + Signature`.
-- [Backend] El digest de `wsa:To` usa el orden de atributos de XML Canonicalization para evitar `InvalidSecurity` por hash distinto en WCF/DIAN.
-- [QA] Prueba visual real contra empresa 12 confirmo que la variante anterior alcanzaba DIAN pero recibia SOAP Fault `InvalidSecurity`; se deja la firma en el set exacto de partes publicado por WSDL.
+- [Backend] `SendTestSetAsync` y `GetStatusZip` ajustan la firma WS-Security a una forma compatible con clientes DIAN validados: firma solo `wsa:To`, referencia directa al `BinarySecurityToken` y `InclusiveNamespaces` en `SignedInfo`.
+- [Backend] El digest de `wsa:To` incluye los namespaces `soap`, `wcf`, `wsa` y `wsu` de la canonicalizacion esperada por WCF/DIAN.
+- [QA] Prueba visual real contra empresa 12 confirmo que la variante anterior alcanzaba DIAN pero recibia SOAP Fault `InvalidSecurity`; esta variante se basa en ejemplos GitHub de transporte SOAP DIAN aceptado en sandbox.
 - [QA] `go test ./handlers -run "DIAN|Dian|FacturacionColombia|FacturaElectronicaVenta|NormalizeFacturacionDocumento|ResolveFacturacionTransition|FacturacionPermissions" -count=1`; `go test ./db -run "Dian|DIAN|Facturacion" -count=1`; `go test ./... -run "^$" -count=1`.
 
 ## [2026-06-06] Botones DIAN y conexion oficial
