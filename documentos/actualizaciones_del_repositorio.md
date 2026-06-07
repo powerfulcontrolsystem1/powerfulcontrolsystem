@@ -13502,3 +13502,12 @@ Archivos modificados:
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
 - web/administrar_empresa/suite_contador.html
+
+2026-06-07 17:39:46 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: fa6edaee; PushStatus: OK
+Archivos modificados:
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica_menu.html
+- web/js/empresa_submenu_context.js
+- web/js/help_ai_bridge.js
