@@ -6,10 +6,12 @@
 - `web/js/ai_chat_drawer.js`:
 	- agrega `PCSAIChatHelp` y el mensaje `pcs-help-ai-open` para mostrar ayuda contextual estatica en robot o caja IA.
 	- no ejecuta acciones reales ni consume IA hasta que el usuario envie una pregunta o confirme una accion.
+	- inicializa tambien si el script se carga despues de `DOMContentLoaded`.
 - `web/js/empresa_submenu_context.js`:
 	- carga automaticamente el puente de ayuda en subpaginas empresariales.
 - `web/administrar_empresa.html`:
 	- carga el puente junto al drawer IA principal.
+	- versiona `ai_chat_drawer.js` y `help_ai_bridge.js` para evitar cache antiguo del panel.
 - `web/administrar_empresa/nomina_sueldos.html`:
 	- conecta el boton `Ayuda` con el robot/caja IA y mantiene el tutorial HTML como respaldo.
 

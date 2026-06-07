@@ -4806,7 +4806,11 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', initDrawer);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDrawer);
+  } else {
+    initDrawer();
+  }
 })();
 
 
