@@ -3,6 +3,7 @@ package handlers
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -6972,6 +6973,19 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "analizar_captura_dian", "leer_captura_dian", "ocr_captura_dian":
+			if r.Method != http.MethodPost && r.Method != http.MethodPut {
+				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			response, status, err := analyzeDIANScreenshotUpload(dbEmp, r)
+			if err != nil {
+				http.Error(w, err.Error(), status)
+				return
+			}
+			writeJSON(w, status, response)
+			return
+
 		case "vencimiento_certificado", "verificar_vencimiento_certificado", "alerta_certificado":
 			empresaID, err := parseEmpresaIDQuery(r)
 			if err != nil {
@@ -11988,6 +12002,570 @@ func resolveEmpresaIDFromMultipartRequest(r *http.Request) (int64, error) {
 		return 0, fmt.Errorf("empresa_id invalido")
 	}
 	return id, nil
+}
+
+func analyzeDIANScreenshotUpload(dbEmp *sql.DB, r *http.Request) (map[string]interface{}, int, error) {
+	if err := r.ParseMultipartForm(16 << 20); err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("payload multipart invalido")
+	}
+	empresaID, err := resolveEmpresaIDFromMultipartRequest(r)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	file, header, err := r.FormFile("captura")
+	if err != nil {
+		file, header, err = r.FormFile("imagen")
+	}
+	if err != nil {
+		file, header, err = r.FormFile("screenshot")
+	}
+	if err != nil {
+		file, header, err = r.FormFile("archivo")
+	}
+	if err != nil {
+		return nil, http.StatusBadRequest, fmt.Errorf("captura es obligatoria")
+	}
+	defer file.Close()
+
+	contentBytes, err := io.ReadAll(io.LimitReader(file, 12<<20))
+	if err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo leer la captura")
+	}
+	if len(contentBytes) == 0 {
+		return nil, http.StatusBadRequest, fmt.Errorf("captura vacia")
+	}
+	if len(contentBytes) >= 12<<20 {
+		return nil, http.StatusBadRequest, fmt.Errorf("captura demasiado grande; maximo 12 MB")
+	}
+
+	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(header.Filename)))
+	contentType := http.DetectContentType(contentBytes)
+	if !isAllowedDIANScreenshotContent(contentType, ext) {
+		return nil, http.StatusBadRequest, fmt.Errorf("formato de captura no permitido; use PNG, JPG, JPEG o TIFF")
+	}
+	if ext == "" {
+		ext = extForDIANScreenshotContent(contentType)
+	}
+	if ext == "" {
+		ext = ".png"
+	}
+
+	if _, err := ensureEmpresaUploadFolders(dbEmp, empresaID); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio empresarial")
+	}
+	dir, _, empresaFolder := empresaUploadsSubdir(
+		dbEmp,
+		empresaID,
+		empresaFacturacionElectronicaDirName,
+		empresaCapturasDIANDirName,
+	)
+	if err := os.MkdirAll(dir, empresaFirmaElectronicaPrivateDirPerms); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo preparar directorio de capturas DIAN")
+	}
+	_ = os.Chmod(dir, empresaFirmaElectronicaPrivateDirPerms)
+
+	tipoPantalla := normalizeDIANScreenshotScreenType(r.FormValue("tipo_pantalla"))
+	fileName := fmt.Sprintf("captura_dian_%s_%d%s", tipoPantalla, time.Now().UnixNano(), ext)
+	absPath := filepath.Join(dir, fileName)
+	if err := os.WriteFile(absPath, contentBytes, 0o600); err != nil {
+		return nil, http.StatusInternalServerError, fmt.Errorf("no se pudo guardar la captura DIAN")
+	}
+
+	ocrText, ocrMotor, ocrWarnings := runDIANScreenshotOCR(r.Context(), absPath)
+	analysis := parseDIANScreenshotConfig(ocrText, tipoPantalla)
+	fields := analysis["campos_detectados"].(map[string]interface{})
+	response := map[string]interface{}{
+		"ok":                        true,
+		"lectura_ok":                strings.TrimSpace(ocrText) != "",
+		"empresa_id":                empresaID,
+		"archivo_original":          strings.TrimSpace(header.Filename),
+		"archivo_guardado":          fileName,
+		"carpeta_empresa":           empresaFolder,
+		"tamano_bytes":              len(contentBytes),
+		"content_type":              contentType,
+		"ocr_motor":                 ocrMotor,
+		"ocr_disponible":            ocrMotor != "",
+		"tipo_pantalla_solicitada":  tipoPantalla,
+		"pantalla_detectada":        analysis["pantalla_detectada"],
+		"confianza":                 analysis["confianza"],
+		"campos_detectados":         fields,
+		"campos_detectados_preview": maskDIANScreenshotFields(fields),
+		"campos_sensibles":          analysis["campos_sensibles"],
+		"faltantes_recomendados":    analysis["faltantes_recomendados"],
+		"advertencias":              append(listStringsFromAny(analysis["advertencias"]), ocrWarnings...),
+		"guia_capturas":             dianScreenshotGuide(),
+		"texto_detectado_resumen":   summarizeDIANScreenshotOCR(ocrText),
+		"siguiente_paso":            "Revise los campos detectados, aplique al formulario DIAN y guarde la configuracion de forma explicita.",
+		"persistencia_automatica":   false,
+		"nota_seguridad":            "La captura queda aislada por empresa. Los valores sensibles se enmascaran en vistas tecnicas y no se escriben en logs.",
+	}
+	return response, http.StatusOK, nil
+}
+
+func isAllowedDIANScreenshotContent(contentType, ext string) bool {
+	ext = strings.ToLower(strings.TrimSpace(ext))
+	if ext == ".svg" || strings.Contains(strings.ToLower(contentType), "svg") {
+		return false
+	}
+	if ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tif" || ext == ".tiff" {
+		return true
+	}
+	ct := strings.ToLower(strings.TrimSpace(contentType))
+	return ct == "image/png" || ct == "image/jpeg" || ct == "image/tiff" || ct == "image/x-tiff"
+}
+
+func extForDIANScreenshotContent(contentType string) string {
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "image/png":
+		return ".png"
+	case "image/jpeg":
+		return ".jpg"
+	case "image/tiff", "image/x-tiff":
+		return ".tiff"
+	default:
+		return ""
+	}
+}
+
+func normalizeDIANScreenshotScreenType(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	value = strings.NewReplacer(" ", "_", "-", "_", "/", "_", "\\", "_").Replace(value)
+	value = regexp.MustCompile(`[^a-z0-9_]+`).ReplaceAllString(value, "")
+	if value == "" {
+		return "general"
+	}
+	if len(value) > 40 {
+		value = value[:40]
+	}
+	return value
+}
+
+func runDIANScreenshotOCR(ctx context.Context, imagePath string) (string, string, []string) {
+	ctx, cancel := context.WithTimeout(ctx, 35*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "tesseract", imagePath, "stdout", "-l", "spa+eng", "--psm", "6")
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return "", "", []string{"OCR excedio el tiempo maximo; intente con una captura mas nitida y recortada."}
+	}
+	if err != nil {
+		return "", "", []string{"OCR local no disponible o no pudo leer la imagen. Verifique que Tesseract este instalado en el entorno."}
+	}
+	text := strings.TrimSpace(string(out))
+	if len(text) > 20000 {
+		text = text[:20000]
+	}
+	return text, "tesseract_cli", nil
+}
+
+func parseDIANScreenshotConfig(text, requestedType string) map[string]interface{} {
+	fields := map[string]interface{}{}
+	warnings := []string{}
+	sensitive := []string{}
+	normalized := normalizeDIANOCRComparable(text)
+	screen := detectDIANScreenshotScreen(normalized, requestedType)
+
+	url := firstDIANOCRRegex(text, `https?://[^\s<>"']+`)
+	if url != "" {
+		fields["url_dian"] = strings.TrimRight(url, ".,;")
+	}
+	if strings.Contains(normalized, "vpfe-hab") || strings.Contains(normalized, "habilitacion") {
+		fields["tipo_ambiente"] = "habilitacion"
+	} else if strings.Contains(normalized, "produccion") || strings.Contains(normalized, "vpfe.dian.gov.co") {
+		fields["tipo_ambiente"] = "produccion"
+	}
+	if nit := onlyDigits(valueAfterDIANOCRLabel(text, []string{`NIT`, `Identificaci[oó]n\s+tributaria`})); nit != "" && len(nit) >= 5 && len(nit) <= 15 {
+		fields["nit"] = nit
+	}
+	if dv := onlyDigits(valueAfterDIANOCRLabel(text, []string{`DV`, `D[ií]gito\s+verificador`, `Digito\s+verificador`})); dv != "" && len(dv) <= 2 {
+		fields["digito_verificacion"] = dv
+	}
+	if razon := cleanDIANOCRValue(valueAfterDIANOCRLabel(text, []string{`Raz[oó]n\s+social`, `Nombre\s+o\s+raz[oó]n\s+social`})); razon != "" && len(razon) <= 140 {
+		fields["razon_social"] = razon
+	}
+
+	uuids := findDIANOCRUUIDsWithContext(text)
+	testSetID := ""
+	softwareID := ""
+	for _, item := range uuids {
+		ctx := normalizeDIANOCRComparable(item["context"])
+		value := item["value"]
+		if testSetID == "" && (strings.Contains(ctx, "testset") || strings.Contains(ctx, "set de pruebas") || strings.Contains(ctx, "identificador del set")) {
+			testSetID = value
+			continue
+		}
+		if softwareID == "" && (strings.Contains(ctx, "software") || strings.Contains(ctx, "identificacion") || strings.Contains(ctx, "identificacion")) {
+			softwareID = value
+		}
+	}
+	for _, item := range uuids {
+		value := item["value"]
+		if testSetID == "" && value != softwareID {
+			testSetID = value
+			continue
+		}
+		if softwareID == "" && value != testSetID {
+			softwareID = value
+		}
+	}
+	if testSetID != "" {
+		fields["test_set_id"] = testSetID
+	}
+	if softwareID != "" {
+		fields["software_id"] = softwareID
+	}
+
+	if pin := cleanDIANOCRValue(valueAfterDIANOCRLabel(text, []string{`Pin`, `PIN`})); pin != "" && len(pin) <= 32 {
+		fields["software_pin"] = strings.Fields(pin)[0]
+		sensitive = append(sensitive, "software_pin")
+	}
+	if clave := findDIANClaveTecnica(text); clave != "" {
+		fields["llave_tecnica"] = clave
+		sensitive = append(sensitive, "llave_tecnica")
+	}
+	if prefijo := cleanDIANOCRValue(valueAfterDIANOCRLabel(text, []string{`Prefijo`})); prefijo != "" {
+		fields["prefijo"] = sanitizeDIANPrefix(prefijo)
+	}
+	if resolucion := onlyDigits(valueAfterDIANOCRLabel(text, []string{`N[úu]mero\s+Resoluci[oó]n`, `Resoluci[oó]n`})); resolucion != "" {
+		fields["resolucion_numero"] = resolucion
+	}
+	if rangoDesde := onlyDigits(valueAfterDIANOCRLabel(text, []string{`Rango\s+desde`, `Desde\s*\*?`})); rangoDesde != "" {
+		if n, err := strconv.ParseInt(rangoDesde, 10, 64); err == nil {
+			fields["rango_desde"] = n
+		}
+	}
+	if rangoHasta := onlyDigits(valueAfterDIANOCRLabel(text, []string{`Rango\s+hasta`, `Hasta\s*\*?`})); rangoHasta != "" {
+		if n, err := strconv.ParseInt(rangoHasta, 10, 64); err == nil {
+			fields["rango_hasta"] = n
+		}
+	}
+	if fechaDesde := parseDIANOCRDate(valueAfterDIANOCRLabel(text, []string{`Fecha\s+desde`, `Resoluci[oó]n\s+desde`})); fechaDesde != "" {
+		fields["resolucion_fecha_desde"] = fechaDesde
+	}
+	if fechaHasta := parseDIANOCRDate(valueAfterDIANOCRLabel(text, []string{`Fecha\s+hasta`, `Resoluci[oó]n\s+hasta`})); fechaHasta != "" {
+		fields["resolucion_fecha_hasta"] = fechaHasta
+	}
+	if modo := cleanDIANOCRValue(valueAfterDIANOCRLabel(text, []string{`Descripci[oó]n`, `Modo\s+de\s+operaci[oó]n`})); modo != "" && len(modo) <= 80 {
+		fields["modo_operacion_descripcion"] = modo
+	}
+	if fechaInicio := parseDIANOCRDate(valueAfterDIANOCRLabel(text, []string{`Fecha\s+de\s+inicio`})); fechaInicio != "" {
+		fields["modo_operacion_fecha_inicio"] = fechaInicio
+	}
+	if fechaTermino := parseDIANOCRDate(valueAfterDIANOCRLabel(text, []string{`Fecha\s+de\s+t[eé]rmino`, `Fecha\s+de\s+termino`})); fechaTermino != "" {
+		fields["modo_operacion_fecha_termino"] = fechaTermino
+	}
+
+	requiredSegment := segmentDIANOCR(text, `Total\s+de\s+documentos\s+requeridos`, `Total\s+de\s+documentos\s+aceptados`)
+	acceptedSegment := segmentDIANOCR(text, `Total\s+de\s+documentos\s+aceptados`, ``)
+	addIntFieldFromSegment(fields, requiredSegment, "set_documentos_requeridos", []string{`Documentos`})
+	addIntFieldFromSegment(fields, requiredSegment, "set_facturas_requeridas", []string{`Facturas\s+electr[oó]nicas`})
+	addIntFieldFromSegment(fields, requiredSegment, "set_notas_debito_requeridas", []string{`Notas\s+de\s+d[eé]bito`, `Notas\s+de\s+debito`})
+	addIntFieldFromSegment(fields, requiredSegment, "set_notas_credito_requeridas", []string{`Notas\s+de\s+cr[eé]dito`, `Notas\s+de\s+credito`})
+	addIntFieldFromSegment(fields, acceptedSegment, "set_documentos_aceptados_requeridos", []string{`Documentos`})
+	addIntFieldFromSegment(fields, acceptedSegment, "set_facturas_aceptadas_requeridas", []string{`Facturas\s+electr[oó]nicas`})
+	addIntFieldFromSegment(fields, acceptedSegment, "set_notas_debito_aceptadas_requeridas", []string{`Notas\s+de\s+d[eé]bito`, `Notas\s+de\s+debito`})
+	addIntFieldFromSegment(fields, acceptedSegment, "set_notas_credito_aceptadas_requeridas", []string{`Notas\s+de\s+cr[eé]dito`, `Notas\s+de\s+credito`})
+
+	if len(fields) == 0 && strings.TrimSpace(text) != "" {
+		warnings = append(warnings, "No se detectaron campos DIAN aplicables; suba una captura mas nitida o de una pantalla recomendada.")
+	}
+	missing := []string{}
+	for _, key := range []string{"nit", "digito_verificacion", "razon_social", "software_id", "software_pin", "test_set_id", "prefijo", "resolucion_numero", "rango_desde", "rango_hasta", "llave_tecnica"} {
+		if _, ok := fields[key]; !ok {
+			missing = append(missing, key)
+		}
+	}
+	confidence := 0
+	if strings.TrimSpace(text) != "" {
+		confidence = len(fields) * 8
+		if confidence > 96 {
+			confidence = 96
+		}
+		if confidence < 18 && len(fields) > 0 {
+			confidence = 18
+		}
+	}
+	return map[string]interface{}{
+		"pantalla_detectada":     screen,
+		"confianza":              confidence,
+		"campos_detectados":      fields,
+		"campos_sensibles":       uniqueStrings(sensitive),
+		"faltantes_recomendados": missing,
+		"advertencias":           warnings,
+	}
+}
+
+func detectDIANScreenshotScreen(normalizedText, requestedType string) string {
+	if requestedType != "" && requestedType != "general" {
+		return requestedType
+	}
+	if strings.Contains(normalizedText, "set de pruebas") || strings.Contains(normalizedText, "testset") {
+		return "set_pruebas_factura_electronica"
+	}
+	if strings.Contains(normalizedText, "rango de numeracion") || strings.Contains(normalizedText, "resolucion") {
+		return "numeracion_dian"
+	}
+	if strings.Contains(normalizedText, "modos de operacion") || strings.Contains(normalizedText, "software propio") {
+		return "modo_operacion"
+	}
+	if strings.Contains(normalizedText, "rut") || strings.Contains(normalizedText, "razon social") || strings.Contains(normalizedText, "nit") {
+		return "datos_empresa"
+	}
+	return "general"
+}
+
+func normalizeDIANOCRComparable(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	replacer := strings.NewReplacer(
+		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ñ", "n",
+		"Á", "a", "É", "e", "Í", "i", "Ó", "o", "Ú", "u", "Ñ", "n",
+	)
+	return replacer.Replace(value)
+}
+
+func valueAfterDIANOCRLabel(text string, labelPatterns []string) string {
+	for _, pattern := range labelPatterns {
+		re := regexp.MustCompile(`(?is)` + pattern + `\s*\*?\s*[:\-]?\s*([^\r\n]{1,180})`)
+		match := re.FindStringSubmatch(text)
+		if len(match) > 1 && strings.TrimSpace(match[1]) != "" {
+			return strings.TrimSpace(match[1])
+		}
+		re = regexp.MustCompile(`(?is)` + pattern + `\s*\*?\s*[:\-]?\s*[\r\n]+([^\r\n]{1,180})`)
+		match = re.FindStringSubmatch(text)
+		if len(match) > 1 && strings.TrimSpace(match[1]) != "" {
+			return strings.TrimSpace(match[1])
+		}
+	}
+	return ""
+}
+
+func cleanDIANOCRValue(raw string) string {
+	value := strings.TrimSpace(raw)
+	value = strings.Trim(value, " \t:*;,.")
+	value = strings.Join(strings.Fields(value), " ")
+	if len(value) > 160 {
+		value = value[:160]
+	}
+	return value
+}
+
+func firstDIANOCRRegex(text, pattern string) string {
+	re := regexp.MustCompile(`(?is)` + pattern)
+	return strings.TrimSpace(re.FindString(text))
+}
+
+func findDIANOCRUUIDsWithContext(text string) []map[string]string {
+	out := []map[string]string{}
+	re := regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+	matches := re.FindAllStringIndex(text, -1)
+	seen := map[string]bool{}
+	for _, idx := range matches {
+		value := strings.ToLower(text[idx[0]:idx[1]])
+		if seen[value] {
+			continue
+		}
+		seen[value] = true
+		start := idx[0] - 140
+		if start < 0 {
+			start = 0
+		}
+		end := idx[1] + 140
+		if end > len(text) {
+			end = len(text)
+		}
+		out = append(out, map[string]string{"value": value, "context": text[start:end]})
+	}
+	return out
+}
+
+func findDIANClaveTecnica(text string) string {
+	ctx := valueAfterDIANOCRLabel(text, []string{`Clave\s+t[eé]cnica`, `Clave\s+tecnica`})
+	re := regexp.MustCompile(`[0-9a-fA-F]{32,128}`)
+	if found := re.FindString(ctx); found != "" {
+		return strings.ToLower(found)
+	}
+	return strings.ToLower(re.FindString(text))
+}
+
+func sanitizeDIANPrefix(raw string) string {
+	value := strings.ToUpper(cleanDIANOCRValue(raw))
+	re := regexp.MustCompile(`[^A-Z0-9\-]+`)
+	value = re.ReplaceAllString(value, "")
+	if len(value) > 12 {
+		value = value[:12]
+	}
+	return value
+}
+
+func onlyDigits(raw string) string {
+	return regexp.MustCompile(`\D+`).ReplaceAllString(raw, "")
+}
+
+func parseDIANOCRDate(raw string) string {
+	value := cleanDIANOCRValue(raw)
+	if value == "" {
+		return ""
+	}
+	dateRe := regexp.MustCompile(`\d{1,4}[-/]\d{1,2}[-/]\d{1,4}`)
+	value = dateRe.FindString(value)
+	if value == "" {
+		return ""
+	}
+	for _, layout := range []string{"2006-01-02", "02-01-2006", "02/01/2006", "1/2/2006", "01/02/2006"} {
+		if t, err := time.Parse(layout, value); err == nil {
+			return t.Format("2006-01-02")
+		}
+	}
+	return ""
+}
+
+func segmentDIANOCR(text, startPattern, endPattern string) string {
+	if strings.TrimSpace(startPattern) == "" {
+		return text
+	}
+	startRe := regexp.MustCompile(`(?is)` + startPattern)
+	start := startRe.FindStringIndex(text)
+	if start == nil {
+		return ""
+	}
+	segment := text[start[1]:]
+	if strings.TrimSpace(endPattern) != "" {
+		endRe := regexp.MustCompile(`(?is)` + endPattern)
+		if end := endRe.FindStringIndex(segment); end != nil {
+			segment = segment[:end[0]]
+		}
+	}
+	return segment
+}
+
+func addIntFieldFromSegment(fields map[string]interface{}, segment, key string, labels []string) {
+	if strings.TrimSpace(segment) == "" {
+		return
+	}
+	value := onlyDigits(valueAfterDIANOCRLabel(segment, labels))
+	if value == "" {
+		return
+	}
+	n, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		fields[key] = n
+	}
+}
+
+func listStringsFromAny(value interface{}) []string {
+	out := []string{}
+	if arr, ok := value.([]string); ok {
+		return arr
+	}
+	if arr, ok := value.([]interface{}); ok {
+		for _, item := range arr {
+			if s := strings.TrimSpace(fmt.Sprint(item)); s != "" {
+				out = append(out, s)
+			}
+		}
+	}
+	return out
+}
+
+func uniqueStrings(items []string) []string {
+	out := []string{}
+	seen := map[string]bool{}
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" || seen[item] {
+			continue
+		}
+		seen[item] = true
+		out = append(out, item)
+	}
+	return out
+}
+
+func maskDIANScreenshotFields(fields map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{}
+	for key, value := range fields {
+		if isSensitiveDIANScreenshotField(key) {
+			out[key] = maskSecretValue(fmt.Sprint(value), false)
+			continue
+		}
+		out[key] = value
+	}
+	return out
+}
+
+func isSensitiveDIANScreenshotField(key string) bool {
+	k := strings.ToLower(strings.TrimSpace(key))
+	return strings.Contains(k, "pin") || strings.Contains(k, "llave") || strings.Contains(k, "token") || strings.Contains(k, "clave") || strings.Contains(k, "certificado")
+}
+
+func summarizeDIANScreenshotOCR(text string) string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return ""
+	}
+	text = maskDIANScreenshotSensitiveText(text)
+	lines := strings.Split(text, "\n")
+	out := []string{}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		out = append(out, line)
+		if len(out) >= 18 {
+			break
+		}
+	}
+	summary := strings.Join(out, "\n")
+	if len(summary) > 1800 {
+		summary = summary[:1800]
+	}
+	return summary
+}
+
+func maskDIANScreenshotSensitiveText(text string) string {
+	patterns := []string{
+		`(?im)(pin\s*\*?\s*[:\-]?\s*)\S+`,
+		`(?im)(clave\s+t[eé]cnica\s*\*?\s*[:\-]?\s*)\S+`,
+		`(?im)(software\s+pin\s*\*?\s*[:\-]?\s*)\S+`,
+		`(?im)(token\s*\*?\s*[:\-]?\s*)\S+`,
+	}
+	out := text
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		out = re.ReplaceAllString(out, `${1}[oculto]`)
+	}
+	return out
+}
+
+func dianScreenshotGuide() []map[string]interface{} {
+	return []map[string]interface{}{
+		{
+			"paso":    1,
+			"titulo":  "Set de pruebas / modo de operacion",
+			"detalle": "Capture la pantalla donde DIAN muestra TestSetId, Software ID, PIN, clave tecnica, prefijo SETP y rangos de prueba.",
+			"campos":  []string{"test_set_id", "software_id", "software_pin", "llave_tecnica", "prefijo", "rango_desde", "rango_hasta"},
+		},
+		{
+			"paso":    2,
+			"titulo":  "Numeracion de facturacion",
+			"detalle": "Capture la resolucion vigente, prefijo, rango autorizado, fecha desde y fecha hasta antes de pasar a produccion.",
+			"campos":  []string{"resolucion_numero", "prefijo", "rango_desde", "rango_hasta", "resolucion_fecha_desde", "resolucion_fecha_hasta"},
+		},
+		{
+			"paso":    3,
+			"titulo":  "Listado de modos asociados",
+			"detalle": "Capture el listado donde aparece Software propio/proveedor, estado, URL de recepcion y ambiente.",
+			"campos":  []string{"tipo_ambiente", "url_dian", "modo_operacion_descripcion"},
+		},
+		{
+			"paso":    4,
+			"titulo":  "Datos fiscales del emisor",
+			"detalle": "Capture RUT o datos empresariales solo cuando falten NIT, DV o razon social en PCS.",
+			"campos":  []string{"nit", "digito_verificacion", "razon_social"},
+		},
+	}
 }
 
 func uploadDIANCompanySignature(dbEmp, dbSuper *sql.DB, r *http.Request) (map[string]interface{}, int, error) {

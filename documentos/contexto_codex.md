@@ -4,6 +4,22 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - Herramientas locales Codex
+
+- Chrome esta instalado y la Codex Chrome Extension esta habilitada en el perfil
+  `Default`; Codex pudo listar pestañas reales de Chrome desde este hilo.
+- Computer Use / Remote Control respondio correctamente en este hilo con
+  `list_apps` y detecto Chrome como ventana controlable.
+- Para contexto de archivos del proyecto no se requiere una extension adicional:
+  Codex tiene acceso directo a `D:\powerfulcontrolsystem` y debe leer el
+  repositorio con `rg`, documentacion y archivos locales.
+- Usar Chrome cuando haga falta la sesion real del usuario en portales como PCS
+  o DIAN. Usar Computer Use solo para aplicaciones Windows o flujos que no sean
+  resolubles con APIs, navegador interno o comandos del proyecto.
+- Mantener seguridad: no enviar formularios, instalar extensiones, aceptar
+  permisos, ingresar credenciales o ejecutar acciones externas sin aprobacion
+  explicita del usuario.
+
 ## Actualizacion 2026-06-08 - DIAN XAdES v2 y estado real
 
 - Correccion posterior: el bloqueo `ZE02` se ataco ajustando la canonicalizacion

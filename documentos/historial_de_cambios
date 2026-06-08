@@ -1,3 +1,37 @@
+2026-06-08: Contexto operativo local de Codex.
+- Modulo afectado: documentacion operativa del agente.
+- `AGENTS.md` registra que Chrome con Codex Chrome Extension y Computer Use / Remote Control estan disponibles para validaciones con sesion real y control de ventanas Windows.
+- `documentos/contexto_codex.md` agrega el estado operativo: Chrome permite listar pestanas reales, Computer Use responde a `list_apps` y no hace falta otra extension para contexto de archivos porque Codex accede al workspace local.
+- Seguridad: se documenta que Chrome/Computer Use no deben usarse para enviar formularios, instalar extensiones, aceptar permisos, ingresar credenciales o ejecutar efectos externos sin autorizacion explicita del usuario.
+
+2026-06-08: Cobertura esencial de documentos DIAN visible.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `facturacion_electronica.html` muestra una tarjeta de verificacion rapida para confirmar si estan presentes factura electronica, notas credito/debito, documento soporte, nomina electronica y eventos RADIAN.
+- Centro de habilitacion: `facturacion_electronica_pruebas_dian.html` agrega `eventos_radian_recepcion` al selector y boton de operacion manual, y lo incluye en el preflight de conexion DIAN.
+- QA: se agrega caso RADIAN a `TestResolveFacturacionTransitionForDocumentosElectronicosNuevos` para cubrir la transicion generica de documentos/eventos DIAN.
+- Seguridad/alcance: no cambia tablas, credenciales, certificados ni transporte; mantiene aislamiento por `empresa_id` y no imprime datos sensibles.
+
+2026-06-08: Tutorial DIAN con fuentes oficiales y pasos posteriores a habilitacion.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `facturacion_electronica_tutorial_dian.html` agrega tarjetas de documentos oficiales DIAN con enlaces de consulta/descarga para registro y habilitacion, proceso completo, requerimientos y guia de facturacion gratuita.
+- Operacion: se incorpora el flujo posterior al estado aceptado/habilitado: reingresar al portal, registrar fecha de produccion, esperar RUT con responsabilidad 52, solicitar numeracion electronica y talonario de contingencia, asociar prefijos/rangos, actualizar PCS y empezar a emitir en produccion.
+- Seguridad/alcance: no cambia endpoints, credenciales, tablas ni envio DIAN; solo documentacion operativa en la pagina de ayuda.
+
+2026-06-08: Produccion local DIAN con explicacion visible.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Frontend: `facturacion_electronica_pruebas_dian.html` reemplaza el check pequeno de confirmacion por un panel destacado con texto grande, estado visual y diferencias entre no activar produccion local y activarla.
+- UX/operacion: se aclara que habilitacion/pruebas no son facturas fiscales reales para clientes; produccion local cambia la configuracion para emision fiscal real y trazabilidad contable configurada, sin crear contabilidad automaticamente por si sola.
+- Seguridad: se mantiene la confirmacion antes de llamar `activar_produccion_local`; no cambia endpoints, credenciales, firma ni transporte DIAN.
+
+2026-06-08: Asistente DIAN con capturas OCR/IA.
+- Modulo afectado: Facturacion electronica Colombia.
+- Causa funcional: el administrador necesitaba cargar capturas del portal DIAN para que el sistema ayudara a registrar TestSetId, Software ID, prefijo, resolucion, rangos, modo de operacion y datos del set sin depender de transcripcion manual.
+- Backend: `EmpresaDIANColombiaHandler` agrega `action=analizar_captura_dian` con carga multipart por `empresa_id`; valida formatos PNG/JPG/TIFF, guarda la captura en carpeta privada de la empresa, ejecuta OCR local con Tesseract cuando esta disponible y devuelve campos detectados, faltantes, advertencias y guia de pantallas.
+- Frontend: `facturacion_electronica.html` agrega la tarjeta `Asistente DIAN con capturas` entre configuracion DIAN y firma; muestra guia empresarial de pantallas, boton `Analizar captura`, resultados legibles, datos sensibles enmascarados y boton `Aplicar campos detectados` antes del guardado explicito.
+- Persistencia: no se agregan tablas; se reutilizan columnas existentes de `empresa_dian_configuracion` para modo de operacion, fechas del set, documentos requeridos/minimos y campos DIAN. La captura queda en `web/uploads/empresas/empresa_{id}_{slug}/facturacion_electronica/capturas_dian/`.
+- Seguridad: no se imprimen PIN, llaves, tokens, certificados ni OCR completo sin saneamiento; no hay escritura automatica de configuracion ni envio a DIAN desde este asistente.
+- QA: `go test ./db` OK; `go test ./handlers -run TestNoEjecutarSoloCompilarDIANCapturas` OK; `go test ./handlers` compila pero falla por test existente no relacionado `TestPermissionPagesCatalogExposesOnlyUniversalBusinessGroups` sobre `linkCreditosPanelMenu`; verificacion Browser estatica confirma presencia DOM de la tarjeta y contenido del asistente, pero el backend local no se pudo iniciar por falta de `DB_EMPRESAS_DSN` y `DB_SUPERADMIN_DSN`.
+
 2026-06-08: DIAN firma XMLDSig/XAdES con C14N de contexto.
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
 - Causa tecnica: la firma XAdES calculaba `KeyInfo`, `SignedProperties` y `SignedInfo` como subarboles casi aislados; DIAN verifica con canonicalizacion inclusiva dentro del documento UBL, donde el namespace default y los prefijos UBL heredados forman parte del byte stream firmado.

@@ -33,17 +33,41 @@
     .dian-readable-detail{margin-top:10px;border-top:1px solid var(--border);padding-top:8px;color:var(--muted)}
     .dian-readable-detail summary{cursor:pointer;font-weight:850;color:var(--text)}
     .dian-readable-detail pre{margin:8px 0 0;max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text)}
+    .dian-capture-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-ai-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;border:1px solid color-mix(in srgb,#38bdf8 45%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 12%,var(--surface));color:var(--text);font-weight:950;font-size:.78rem;letter-spacing:.02em}
+    .dian-capture-guide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+    .dian-capture-step{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;min-height:112px}
+    .dian-capture-step strong{display:block;color:var(--text);font-size:.9rem;line-height:1.25}
+    .dian-capture-step span{display:block;margin-top:6px;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .dian-capture-panel{border:1px dashed color-mix(in srgb,#38bdf8 44%,var(--border));border-radius:8px;background:color-mix(in srgb,#38bdf8 7%,var(--surface));padding:12px;margin-top:10px}
+    .dian-capture-results{margin-top:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px}
+    .dian-capture-results.is-empty{display:none}
+    .dian-capture-results h3{margin:0 0 8px;font-size:1rem;letter-spacing:0}
+    .dian-capture-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+    .dian-capture-field{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:8px;min-height:58px}
+    .dian-capture-field span{display:block;color:var(--muted);font-size:.72rem;font-weight:850;text-transform:uppercase;letter-spacing:.03em}
+    .dian-capture-field strong{display:block;margin-top:5px;color:var(--text);font-size:.88rem;overflow-wrap:anywhere}
+    .dian-capture-missing{margin-top:8px;color:var(--muted);font-size:.86rem;line-height:1.4}
+    .dian-essential-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+    .dian-essential-card{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;min-height:84px}
+    .dian-essential-card strong{display:block;color:var(--text);font-size:.92rem;line-height:1.25}
+    .dian-essential-card span{display:inline-flex;margin-top:8px;align-items:center;border:1px solid var(--border);border-radius:999px;padding:3px 8px;color:var(--muted);font-size:.74rem;font-weight:900}
+    .dian-essential-card span.ok{border-color:color-mix(in srgb,var(--success) 42%,var(--border));color:var(--success);background:color-mix(in srgb,var(--success) 10%,var(--surface))}
+    .dian-essential-card span.warn{border-color:color-mix(in srgb,#f59e0b 48%,var(--border));color:#b45309;background:color-mix(in srgb,#f59e0b 10%,var(--surface))}
+    .dian-essential-card p{margin:7px 0 0;color:var(--muted);font-size:.78rem;line-height:1.35}
     .fe-detected-card,
     #feVistaBloque{display:none !important}
     .fe-page-stack > .card{order:20}
     #feDianConfigCard{order:1}
-    #feFirmaCard{order:2}
-    #feDianDocumentosCard{order:3}
-    #feForm{order:4}
-    #advancedConfigCard{order:5}
+    #feDianScreenshotCard{order:2}
+    #feFirmaCard{order:3}
+    #feDianDocumentosCard{order:4}
+    #feForm{order:5}
+    #advancedConfigCard{order:6}
     .fe-page-stack{display:flex;flex-direction:column}
+    @media (max-width:1100px){.dian-capture-guide{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-capture-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-essential-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:900px){.fe-config-progress-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:560px){.fe-config-progress-steps,.dian-readable-grid{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}}
+    @media (max-width:560px){.fe-config-progress-steps,.dian-readable-grid,.dian-capture-guide,.dian-capture-fields,.dian-essential-grid{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
@@ -121,6 +145,17 @@
       </div>
       <form id="feDianConfigForm" class="form">
         <input type="hidden" id="dian_id">
+        <input type="hidden" id="dian_modo_operacion_descripcion">
+        <input type="hidden" id="dian_modo_operacion_fecha_inicio">
+        <input type="hidden" id="dian_modo_operacion_fecha_termino">
+        <input type="hidden" id="dian_set_documentos_requeridos">
+        <input type="hidden" id="dian_set_facturas_requeridas">
+        <input type="hidden" id="dian_set_notas_debito_requeridas">
+        <input type="hidden" id="dian_set_notas_credito_requeridas">
+        <input type="hidden" id="dian_set_documentos_aceptados_requeridos">
+        <input type="hidden" id="dian_set_facturas_aceptadas_requeridas">
+        <input type="hidden" id="dian_set_notas_debito_aceptadas_requeridas">
+        <input type="hidden" id="dian_set_notas_credito_aceptadas_requeridas">
         <div class="form-row">
           <div class="form-col"><label class="form-label">NIT</label><input id="dian_nit" class="form-input" placeholder="900123456"></div>
           <div class="form-col"><label class="form-label">DV</label><input id="dian_dv" class="form-input" placeholder="0"></div>
@@ -164,9 +199,52 @@
       </form>
     </div>
 
+    <div id="feDianScreenshotCard" class="card is-hidden">
+      <div class="dian-capture-head">
+        <div>
+          <h2>Asistente DIAN con capturas</h2>
+          <p class="form-help">
+            Sube capturas del portal DIAN para que PCS lea la imagen con OCR/IA operativa, detecte campos de configuracion y te indique que informacion falta antes de guardar.
+          </p>
+        </div>
+        <span class="dian-ai-badge" title="Lectura asistida por IA/OCR">IA</span>
+      </div>
+      <div class="dian-capture-guide" aria-label="Pantallas recomendadas del portal DIAN">
+        <div class="dian-capture-step"><strong>1. Set de pruebas</strong><span>TestSetId, Software ID, PIN, clave tecnica, prefijo SETP y rangos.</span></div>
+        <div class="dian-capture-step"><strong>2. Numeracion</strong><span>Resolucion, prefijo, rango autorizado y fechas de vigencia.</span></div>
+        <div class="dian-capture-step"><strong>3. Modo asociado</strong><span>Software propio/proveedor, URL de recepcion, estado y ambiente.</span></div>
+        <div class="dian-capture-step"><strong>4. Datos fiscales</strong><span>RUT o datos del emisor cuando falten NIT, DV o razon social.</span></div>
+      </div>
+      <div class="dian-capture-panel">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label" for="feDianScreenshotType">Pantalla capturada</label>
+            <select id="feDianScreenshotType" class="form-input">
+              <option value="set_pruebas">Set de pruebas / modo de operacion</option>
+              <option value="numeracion">Numeracion de facturacion</option>
+              <option value="modo_operacion">Listado de modos asociados</option>
+              <option value="datos_empresa">Datos fiscales del emisor</option>
+              <option value="general">Otra pantalla DIAN</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label" for="feDianScreenshotFile">Captura de pantalla</label>
+            <input id="feDianScreenshotFile" class="form-input" type="file" accept="image/png,image/jpeg,image/tiff,.png,.jpg,.jpeg,.tif,.tiff">
+          </div>
+          <div class="form-col form-col-end" style="display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;">
+            <button id="feDianScreenshotAnalyzeBtn" class="btn" type="button">Analizar captura</button>
+            <button id="feDianScreenshotApplyBtn" class="btn secondary" type="button" disabled>Aplicar campos detectados</button>
+          </div>
+        </div>
+        <div id="feDianScreenshotMsg" class="form-help"></div>
+      </div>
+      <div id="feDianScreenshotResult" class="dian-capture-results is-empty"></div>
+    </div>
+
     <div id="feDianDocumentosCard" class="card is-hidden">
       <h2>Documentos electronicos DIAN Colombia</h2>
       <p class="form-help">Activa los documentos del Sistema de Facturacion Electronica que la empresa usara. Las obligaciones de contador se separan para no mezclarlas con documentos UBL de venta.</p>
+      <div id="feDianEssentialDocs" class="dian-essential-grid"></div>
       <div class="form-row">
         <div class="form-col">
           <h3>Documentos y eventos del SFE</h3>
@@ -587,7 +665,8 @@
       paises: [],
       catalog: [],
       dianConfig: null,
-      dianCatalogo: null
+      dianCatalogo: null,
+      dianScreenshotFields: null
     };
 
     const advancedConfigState = {
@@ -614,6 +693,8 @@
       window.PCSFieldHelp.install({
         feFirmaFile: "Archivo de firma digital de la empresa. DIAN Colombia suele usar P12/PFX o certificado X.509 con llave privada.",
         feFirmaPassword: "Clave del archivo P12/PFX. Se usa para cargar la firma y no debe quedar escrita en observaciones ni documentos.",
+        feDianScreenshotType: "Indica que pantalla de DIAN estas subiendo para que el asistente priorice los campos correctos.",
+        feDianScreenshotFile: "Sube una captura nitida del portal DIAN. Evita recortes donde falten etiquetas como TestSetId, prefijo, resolucion o rangos.",
 
         dian_nit: "NIT del emisor registrado ante DIAN, sin puntos ni guiones. Debe coincidir con la empresa que esta en habilitacion.",
         dian_dv: "Digito de verificacion del NIT. Se calcula a partir del NIT y DIAN lo valida en los documentos.",
@@ -989,6 +1070,10 @@
         if (dianConfigCard) {
           dianConfigCard.classList.toggle("is-hidden", codeU !== "CO");
         }
+        var dianScreenshotCard = document.getElementById("feDianScreenshotCard");
+        if (dianScreenshotCard) {
+          dianScreenshotCard.classList.toggle("is-hidden", codeU !== "CO");
+        }
         var dianDocumentosCard = document.getElementById("feDianDocumentosCard");
         if (dianDocumentosCard) {
           dianDocumentosCard.classList.toggle("is-hidden", codeU !== "CO");
@@ -1325,7 +1410,44 @@
         var src = (data && data.fuentes || []).map(function(f) { return f.titulo || f.url || ""; }).filter(Boolean);
         fuentes.textContent = src.length ? "Fuentes: " + src.join(" | ") : "";
       }
+      renderDianEssentialDocs(data);
       syncDianCatalogFromJson();
+    }
+
+    function renderDianEssentialDocs(data) {
+      var box = document.getElementById("feDianEssentialDocs");
+      if (!box) return;
+      var catalog = {};
+      (data && data.documentos || []).forEach(function(item) {
+        catalog[item.codigo] = item;
+      });
+      var essentials = [
+        { title: "Facturacion electronica", codes: ["factura_electronica"], note: "Factura UBL 2.1 de venta." },
+        { title: "Notas credito y debito", codes: ["nota_credito", "nota_debito"], note: "Ajustes electronicos de facturas." },
+        { title: "Documento soporte", codes: ["documento_soporte"], note: "Adquisiciones a no obligados." },
+        { title: "Nomina electronica", codes: ["nomina_electronica"], note: "Documento soporte de pago de nomina." },
+        { title: "Eventos RADIAN", codes: ["eventos_radian_recepcion"], note: "Recepcion, aceptacion, reclamo y trazabilidad." }
+      ];
+      box.innerHTML = "";
+      essentials.forEach(function(item) {
+        var found = item.codes.map(function(code) { return catalog[code]; }).filter(Boolean);
+        var allFound = found.length === item.codes.length;
+        var allBase = allFound && found.every(function(doc) { return doc.estado_implementacion === "base_operativa"; });
+        var status = allBase ? "Implementado" : (allFound ? "Catalogado" : "Pendiente");
+        var card = document.createElement("div");
+        card.className = "dian-essential-card";
+        var title = document.createElement("strong");
+        title.textContent = item.title;
+        var badge = document.createElement("span");
+        badge.className = allBase ? "ok" : (allFound ? "warn" : "");
+        badge.textContent = status;
+        var note = document.createElement("p");
+        note.textContent = item.note;
+        card.appendChild(title);
+        card.appendChild(badge);
+        card.appendChild(note);
+        box.appendChild(card);
+      });
     }
 
     async function loadDianCatalog() {
@@ -1383,6 +1505,17 @@
         if (el) el.value = txt(value);
       };
       set("dian_id", cfg.id || "");
+      set("dian_modo_operacion_descripcion", cfg.modo_operacion_descripcion);
+      set("dian_modo_operacion_fecha_inicio", asDateValue(cfg.modo_operacion_fecha_inicio));
+      set("dian_modo_operacion_fecha_termino", asDateValue(cfg.modo_operacion_fecha_termino));
+      set("dian_set_documentos_requeridos", cfg.set_documentos_requeridos);
+      set("dian_set_facturas_requeridas", cfg.set_facturas_requeridas);
+      set("dian_set_notas_debito_requeridas", cfg.set_notas_debito_requeridas);
+      set("dian_set_notas_credito_requeridas", cfg.set_notas_credito_requeridas);
+      set("dian_set_documentos_aceptados_requeridos", cfg.set_documentos_aceptados_requeridos);
+      set("dian_set_facturas_aceptadas_requeridas", cfg.set_facturas_aceptadas_requeridas);
+      set("dian_set_notas_debito_aceptadas_requeridas", cfg.set_notas_debito_aceptadas_requeridas);
+      set("dian_set_notas_credito_aceptadas_requeridas", cfg.set_notas_credito_aceptadas_requeridas);
       set("dian_nit", cfg.nit || document.getElementById("adv_nit") && document.getElementById("adv_nit").value || document.getElementById("identificador_fiscal") && document.getElementById("identificador_fiscal").value);
       set("dian_dv", cfg.digito_verificacion || document.getElementById("adv_digito_verificacion") && document.getElementById("adv_digito_verificacion").value);
       set("dian_razon_social", cfg.razon_social || document.getElementById("adv_razon_social") && document.getElementById("adv_razon_social").value || document.getElementById("razon_social") && document.getElementById("razon_social").value);
@@ -1411,6 +1544,14 @@
 
     function collectDianConfigPayload() {
       var id = Number(document.getElementById("dian_id").value || 0);
+      var hiddenValue = function(id) {
+        var el = document.getElementById(id);
+        return el ? txt(el.value) : "";
+      };
+      var hiddenNumber = function(id) {
+        var n = Number(hiddenValue(id) || 0);
+        return Number.isFinite(n) ? n : 0;
+      };
       var payload = {
         empresa_id: Number(state.empresaID),
         nit: txt(document.getElementById("dian_nit").value),
@@ -1420,6 +1561,9 @@
         software_id: txt(document.getElementById("dian_software_id").value),
         software_pin: txt(document.getElementById("dian_software_pin").value),
         usar_software_compartido: !!document.getElementById("dian_usar_software_compartido").checked,
+        modo_operacion_descripcion: hiddenValue("dian_modo_operacion_descripcion"),
+        modo_operacion_fecha_inicio: hiddenValue("dian_modo_operacion_fecha_inicio"),
+        modo_operacion_fecha_termino: hiddenValue("dian_modo_operacion_fecha_termino"),
         test_set_id: txt(document.getElementById("dian_test_set_id").value),
         prefijo: txt(document.getElementById("dian_prefijo").value),
         resolucion_numero: txt(document.getElementById("dian_resolucion_numero").value),
@@ -1428,6 +1572,14 @@
         rango_desde: Number(document.getElementById("dian_rango_desde").value || 0),
         rango_hasta: Number(document.getElementById("dian_rango_hasta").value || 0),
         consecutivo_actual: Number(document.getElementById("dian_consecutivo_actual").value || 0),
+        set_documentos_requeridos: hiddenNumber("dian_set_documentos_requeridos"),
+        set_facturas_requeridas: hiddenNumber("dian_set_facturas_requeridas"),
+        set_notas_debito_requeridas: hiddenNumber("dian_set_notas_debito_requeridas"),
+        set_notas_credito_requeridas: hiddenNumber("dian_set_notas_credito_requeridas"),
+        set_documentos_aceptados_requeridos: hiddenNumber("dian_set_documentos_aceptados_requeridos"),
+        set_facturas_aceptadas_requeridas: hiddenNumber("dian_set_facturas_aceptadas_requeridas"),
+        set_notas_debito_aceptadas_requeridas: hiddenNumber("dian_set_notas_debito_aceptadas_requeridas"),
+        set_notas_credito_aceptadas_requeridas: hiddenNumber("dian_set_notas_credito_aceptadas_requeridas"),
         llave_tecnica: txt(document.getElementById("dian_llave_tecnica").value),
         url_dian: txt(document.getElementById("dian_url").value),
         token_emisor_ref: txt(document.getElementById("dian_token_emisor_ref").value),
@@ -1482,6 +1634,184 @@
       var data = await readJSONResponse(res);
       if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
       return data;
+    }
+
+    function setDianScreenshotMessage(text, isError) {
+      var el = document.getElementById("feDianScreenshotMsg");
+      if (!el) return;
+      el.textContent = text || "";
+      el.className = isError ? "form-help error" : "form-help";
+    }
+
+    function dianCaptureLabel(key) {
+      var labels = {
+        nit: "NIT",
+        digito_verificacion: "DV",
+        razon_social: "Razon social",
+        tipo_ambiente: "Ambiente",
+        url_dian: "URL DIAN",
+        test_set_id: "TestSetId",
+        software_id: "Software ID",
+        software_pin: "Software PIN",
+        prefijo: "Prefijo",
+        resolucion_numero: "Resolucion",
+        resolucion_fecha_desde: "Resolucion desde",
+        resolucion_fecha_hasta: "Resolucion hasta",
+        rango_desde: "Rango desde",
+        rango_hasta: "Rango hasta",
+        llave_tecnica: "Llave tecnica",
+        modo_operacion_descripcion: "Modo de operacion",
+        modo_operacion_fecha_inicio: "Inicio modo",
+        modo_operacion_fecha_termino: "Fin modo",
+        set_documentos_requeridos: "Docs requeridos",
+        set_facturas_requeridas: "Facturas requeridas",
+        set_notas_debito_requeridas: "ND requeridas",
+        set_notas_credito_requeridas: "NC requeridas",
+        set_documentos_aceptados_requeridos: "Docs aceptados minimos",
+        set_facturas_aceptadas_requeridas: "Facturas aceptadas minimas",
+        set_notas_debito_aceptadas_requeridas: "ND aceptadas minimas",
+        set_notas_credito_aceptadas_requeridas: "NC aceptadas minimas"
+      };
+      return labels[key] || key;
+    }
+
+    function isSensitiveDianCaptureField(key) {
+      return /pin|llave|clave|token|certificado/i.test(String(key || ""));
+    }
+
+    function displayDianCaptureValue(key, value) {
+      if (value === null || typeof value === "undefined" || txt(value) === "") return "Sin dato";
+      if (isSensitiveDianCaptureField(key)) return "********";
+      return txt(value);
+    }
+
+    function renderDianScreenshotResult(data) {
+      var box = document.getElementById("feDianScreenshotResult");
+      var applyBtn = document.getElementById("feDianScreenshotApplyBtn");
+      if (!box) return;
+      state.dianScreenshotFields = data && data.campos_detectados ? data.campos_detectados : null;
+      if (applyBtn) applyBtn.disabled = !(state.dianScreenshotFields && Object.keys(state.dianScreenshotFields).length);
+      if (!data) {
+        box.innerHTML = "";
+        box.classList.add("is-empty");
+        return;
+      }
+      box.classList.remove("is-empty");
+      var fields = data.campos_detectados || {};
+      var keys = Object.keys(fields);
+      var html = "<h3>Resultado de lectura DIAN</h3>";
+      html += '<div class="dian-readable-grid">';
+      html += '<div class="dian-readable-item"><span>Lectura</span><strong>' + escapeHTML(data.lectura_ok ? "Imagen leida" : "Sin OCR") + '</strong></div>';
+      html += '<div class="dian-readable-item"><span>Pantalla</span><strong>' + escapeHTML(data.pantalla_detectada || "General") + '</strong></div>';
+      html += '<div class="dian-readable-item"><span>Confianza</span><strong>' + escapeHTML((data.confianza || 0) + "%") + '</strong></div>';
+      html += '<div class="dian-readable-item"><span>Campos</span><strong>' + escapeHTML(String(keys.length)) + '</strong></div>';
+      html += "</div>";
+      if (keys.length) {
+        html += '<div class="dian-capture-fields">';
+        keys.forEach(function(key) {
+          html += '<div class="dian-capture-field"><span>' + escapeHTML(dianCaptureLabel(key)) + '</span><strong>' + escapeHTML(displayDianCaptureValue(key, fields[key])) + '</strong></div>';
+        });
+        html += "</div>";
+      } else {
+        html += '<div class="dian-capture-missing">No se detectaron campos aplicables. Sube una captura mas nitida o de una de las pantallas recomendadas.</div>';
+      }
+      var missing = Array.isArray(data.faltantes_recomendados) ? data.faltantes_recomendados : [];
+      if (missing.length) {
+        html += '<div class="dian-capture-missing"><strong>Campos que aun pueden faltar:</strong> ' + missing.map(function(key) { return escapeHTML(dianCaptureLabel(key)); }).join(", ") + ".</div>";
+      }
+      var warnings = Array.isArray(data.advertencias) ? data.advertencias : [];
+      if (warnings.length) {
+        html += '<div class="dian-capture-missing"><strong>Observaciones:</strong><ul>' + warnings.map(function(item) { return "<li>" + escapeHTML(item) + "</li>"; }).join("") + "</ul></div>";
+      }
+      if (data.texto_detectado_resumen) {
+        html += '<details class="dian-readable-detail"><summary>Ver texto leido de la captura</summary><pre>' + escapeHTML(data.texto_detectado_resumen) + "</pre></details>";
+      }
+      box.innerHTML = html;
+    }
+
+    function applyDianScreenshotFields() {
+      var fields = state.dianScreenshotFields || {};
+      var mapping = {
+        nit: "dian_nit",
+        digito_verificacion: "dian_dv",
+        razon_social: "dian_razon_social",
+        tipo_ambiente: "dian_tipo_ambiente",
+        url_dian: "dian_url",
+        test_set_id: "dian_test_set_id",
+        software_id: "dian_software_id",
+        software_pin: "dian_software_pin",
+        prefijo: "dian_prefijo",
+        resolucion_numero: "dian_resolucion_numero",
+        resolucion_fecha_desde: "dian_resolucion_fecha_desde",
+        resolucion_fecha_hasta: "dian_resolucion_fecha_hasta",
+        rango_desde: "dian_rango_desde",
+        rango_hasta: "dian_rango_hasta",
+        llave_tecnica: "dian_llave_tecnica",
+        modo_operacion_descripcion: "dian_modo_operacion_descripcion",
+        modo_operacion_fecha_inicio: "dian_modo_operacion_fecha_inicio",
+        modo_operacion_fecha_termino: "dian_modo_operacion_fecha_termino",
+        set_documentos_requeridos: "dian_set_documentos_requeridos",
+        set_facturas_requeridas: "dian_set_facturas_requeridas",
+        set_notas_debito_requeridas: "dian_set_notas_debito_requeridas",
+        set_notas_credito_requeridas: "dian_set_notas_credito_requeridas",
+        set_documentos_aceptados_requeridos: "dian_set_documentos_aceptados_requeridos",
+        set_facturas_aceptadas_requeridas: "dian_set_facturas_aceptadas_requeridas",
+        set_notas_debito_aceptadas_requeridas: "dian_set_notas_debito_aceptadas_requeridas",
+        set_notas_credito_aceptadas_requeridas: "dian_set_notas_credito_aceptadas_requeridas"
+      };
+      var applied = 0;
+      Object.keys(mapping).forEach(function(key) {
+        if (fields[key] === null || typeof fields[key] === "undefined" || txt(fields[key]) === "") return;
+        var el = document.getElementById(mapping[key]);
+        if (!el) return;
+        el.value = txt(fields[key]);
+        applied += 1;
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      renderDianSetupProgress();
+      setDianScreenshotMessage(applied ? ("Campos aplicados al formulario: " + applied + ". Revisa y presiona Guardar DIAN Colombia.") : "No hubo campos nuevos para aplicar.", !applied);
+    }
+
+    async function analyzeDianScreenshot() {
+      var btn = document.getElementById("feDianScreenshotAnalyzeBtn");
+      var input = document.getElementById("feDianScreenshotFile");
+      var typeInput = document.getElementById("feDianScreenshotType");
+      if (!btn || !input) return;
+      if (!state.empresaID) {
+        setDianScreenshotMessage("empresa_id no esta listo todavia.", true);
+        return;
+      }
+      var file = input.files && input.files[0];
+      if (!file) {
+        setDianScreenshotMessage("Selecciona una captura DIAN en PNG, JPG o TIFF.", true);
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Analizando...";
+      setDianScreenshotMessage("Leyendo captura DIAN...", false);
+      renderDianScreenshotResult(null);
+      try {
+        var fd = new FormData();
+        fd.append("empresa_id", String(state.empresaID));
+        fd.append("tipo_pantalla", typeInput ? txt(typeInput.value) : "general");
+        fd.append("captura", file, file.name);
+        var res = await fetch("/api/empresa/facturacion_electronica/dian?action=analizar_captura_dian&empresa_id=" + encodeURIComponent(state.empresaID), {
+          method: "POST",
+          body: fd,
+          credentials: "same-origin"
+        });
+        var data = await readJSONResponse(res);
+        if (!res.ok) throw new Error((data && (data.error || data.message)) || ("HTTP " + res.status));
+        renderDianScreenshotResult(data);
+        setDianScreenshotMessage((data && data.lectura_ok) ? "Captura leida. Revisa los campos detectados antes de aplicarlos." : "La captura fue recibida, pero no se pudo leer texto util.", !(data && data.lectura_ok));
+      } catch (e) {
+        renderDianScreenshotResult(null);
+        setDianScreenshotMessage(e && e.message ? e.message : "No se pudo analizar la captura DIAN.", true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Analizar captura";
+      }
     }
 
     (function initFirmaUpload() {
@@ -1884,6 +2214,16 @@
     var btnDianApplyDocs = document.getElementById("feDianApplyDocs");
     if (btnDianApplyDocs) {
       btnDianApplyDocs.addEventListener("click", applyDianCatalogToJson);
+    }
+
+    var btnDianScreenshotAnalyze = document.getElementById("feDianScreenshotAnalyzeBtn");
+    if (btnDianScreenshotAnalyze) {
+      btnDianScreenshotAnalyze.addEventListener("click", analyzeDianScreenshot);
+    }
+
+    var btnDianScreenshotApply = document.getElementById("feDianScreenshotApplyBtn");
+    if (btnDianScreenshotApply) {
+      btnDianScreenshotApply.addEventListener("click", applyDianScreenshotFields);
     }
 
     var btnDianConfigValidar = document.getElementById("btnDianConfigValidar");

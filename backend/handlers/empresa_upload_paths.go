@@ -14,6 +14,7 @@ const (
 	empresaUploadsRootDirName              = "empresas"
 	empresaFacturacionElectronicaDirName   = "facturacion_electronica"
 	empresaFirmaElectronicaDirName         = "firma_electronica"
+	empresaCapturasDIANDirName             = "capturas_dian"
 	empresaFirmaElectronicaPrivateDirPerms = 0o700
 )
 
@@ -66,6 +67,7 @@ func ensureEmpresaUploadFolders(dbEmp *sql.DB, empresaID int64) (string, error) 
 	publicImagesDir := filepath.Join(baseDir, "imagenes")
 	facturacionDir := filepath.Join(baseDir, empresaFacturacionElectronicaDirName)
 	firmaDir := filepath.Join(facturacionDir, empresaFirmaElectronicaDirName)
+	capturasDIANDir := filepath.Join(facturacionDir, empresaCapturasDIANDirName)
 	for _, item := range []struct {
 		path string
 		perm os.FileMode
@@ -74,6 +76,7 @@ func ensureEmpresaUploadFolders(dbEmp *sql.DB, empresaID int64) (string, error) 
 		{publicImagesDir, 0o755},
 		{facturacionDir, empresaFirmaElectronicaPrivateDirPerms},
 		{firmaDir, empresaFirmaElectronicaPrivateDirPerms},
+		{capturasDIANDir, empresaFirmaElectronicaPrivateDirPerms},
 	} {
 		if err := os.MkdirAll(item.path, item.perm); err != nil {
 			return folder, err

@@ -69,6 +69,22 @@
     .dian-pill.warn{background:color-mix(in srgb,var(--accent-yellow,#facc15) 18%,var(--surface));border-color:color-mix(in srgb,var(--accent-yellow,#facc15) 44%,var(--border));color:color-mix(in srgb,#b7791f 72%,var(--text))}
     .dian-pill.error{background:color-mix(in srgb,var(--danger) 16%,var(--surface));border-color:color-mix(in srgb,var(--danger) 40%,var(--border));color:color-mix(in srgb,var(--danger) 78%,var(--text))}
     .dian-source-note{border-left:4px solid var(--accent);padding:8px 10px;background:var(--surface-soft);border-radius:8px;color:var(--muted);font-size:.86rem}
+    .dian-production-panel{margin-top:12px;border:2px solid color-mix(in srgb,var(--accent) 45%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));padding:14px}
+    .dian-production-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .dian-production-check{display:flex;align-items:flex-start;gap:12px;color:var(--text);font-size:1.1rem;font-weight:950;line-height:1.25}
+    .dian-production-check input{width:26px;height:26px;flex:0 0 auto;margin-top:1px;accent-color:var(--success)}
+    .dian-production-check small{display:block;margin-top:5px;color:var(--muted);font-size:.9rem;font-weight:650;line-height:1.4}
+    .dian-production-state{border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);font-size:.82rem;font-weight:900;padding:6px 10px;white-space:nowrap}
+    .dian-production-state.on{border-color:color-mix(in srgb,var(--success) 44%,var(--border));background:color-mix(in srgb,var(--success) 14%,var(--surface))}
+    .dian-production-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    .dian-production-info{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px}
+    .dian-production-info strong{display:block;color:var(--text);font-size:.94rem}
+    .dian-production-info p{margin:6px 0 0;color:var(--muted);font-size:.88rem;line-height:1.45}
+    .dian-production-accounting{margin-top:10px;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .dian-production-warning{display:none;margin-top:12px;border:1px solid color-mix(in srgb,var(--accent-yellow,#facc15) 54%,var(--border));border-radius:8px;background:color-mix(in srgb,var(--accent-yellow,#facc15) 13%,var(--surface));padding:12px;color:var(--text);font-size:.94rem;line-height:1.45}
+    .dian-production-warning.is-visible{display:block}
+    .dian-production-warning strong{display:block;margin-bottom:5px;color:var(--text)}
+    .dian-production-warning a{font-weight:900}
     .dian-console-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
     .dian-console-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .dian-console-toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.86rem;font-weight:700}
@@ -91,7 +107,7 @@
     .dian-confirm-box p{margin:10px 0 0;color:var(--muted);font-size:.92rem;line-height:1.45}
     .dian-confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px}
     @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid,.dian-progress-milestones,.dian-readable-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:560px){.dian-status-grid,.dian-test-actions,.dian-readable-grid{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}.dian-track-key{max-width:180px}}
+    @media (max-width:560px){.dian-status-grid,.dian-test-actions,.dian-readable-grid,.dian-production-grid{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}.dian-track-key{max-width:180px}}
   </style>
 </head>
 <body class="super-page form-bg-dark dian-test-page">
@@ -205,9 +221,35 @@
           <label class="form-label">URL produccion DIAN/proveedor</label>
           <input id="feDianProduccionURL" class="form-input" placeholder="Configurar antes de activar produccion local">
         </div>
-        <div class="form-col">
-          <div class="form-help">Las pruebas se envian realmente al ambiente de habilitacion DIAN.</div>
-          <div class="form-help"><label><input id="feDianConfirmarHabilitado" type="checkbox"> Confirmo que DIAN ya dejo la empresa habilitada</label></div>
+      </div>
+      <div class="dian-production-panel" id="feDianProductionPanel">
+        <div class="dian-production-head">
+          <label class="dian-production-check" for="feDianConfirmarHabilitado">
+            <input id="feDianConfirmarHabilitado" type="checkbox">
+            <span>
+              DIAN ya habilito esta empresa para produccion
+              <small>Marca esto solo cuando el portal DIAN ya muestre la empresa habilitada y tengas resolucion, prefijo y rango reales de produccion.</small>
+            </span>
+          </label>
+          <span id="feDianProductionState" class="dian-production-state">Produccion local sin activar</span>
+        </div>
+        <div class="dian-production-grid">
+          <div class="dian-production-info">
+            <strong>Si NO esta activo</strong>
+            <p>PCS mantiene el ambiente de habilitacion/pruebas. Los envios se usan para validar DIAN y no deben tratarse como facturas fiscales reales para clientes.</p>
+          </div>
+          <div class="dian-production-info">
+            <strong>Si esta activo</strong>
+            <p>PCS cambia la configuracion local a produccion. Al cerrar ventas con facturacion electronica activa, los documentos salen como emision fiscal real y quedan listos para trazabilidad contable.</p>
+          </div>
+        </div>
+        <div class="dian-production-accounting">
+          Importante: este cambio no inventa contabilidad por si solo. Permite que las ventas reales emitidas electronicamente alimenten los consecutivos, documentos fiscales, reportes y asientos/conciliaciones que el sistema tenga configurados para la empresa.
+        </div>
+        <div id="feDianProductionResolutionWarning" class="dian-production-warning">
+          <strong>Antes de facturar en produccion necesitas numeracion real.</strong>
+          Debes solicitar en MUISCA una nueva resolucion/autorizacion de numeracion para factura electronica, asociar prefijos y rangos en el portal DIAN, y luego registrar esos datos en PCS.
+          <a id="feDianProductionTutorialLink" href="/administrar_empresa/facturacion_electronica_tutorial_dian.html">Ver Tutorial DIAN de facturacion electronica</a>.
         </div>
       </div>
       <div class="dian-test-actions">
@@ -216,7 +258,7 @@
         <button id="btnDianEnviarFactura" type="button" class="btn secondary">Enviar factura</button>
         <button id="btnDianEnviarND" type="button" class="btn secondary">Enviar nota debito</button>
         <button id="btnDianEnviarNC" type="button" class="btn secondary">Enviar nota credito</button>
-        <button id="btnDianActivarProduccion" type="button" class="btn secondary">Activar produccion local</button>
+        <button id="btnDianActivarProduccion" type="button" class="btn secondary">Activar produccion local y emitir real</button>
       </div>
       <div id="feDianPruebasMsg" class="form-help"></div>
       <div id="feDianResumenResultado" class="dian-status-grid"></div>
@@ -289,6 +331,7 @@
             <option value="documento_soporte">Documento soporte electronico</option>
             <option value="nomina_electronica">Nomina electronica</option>
             <option value="documento_equivalente_pos">Documento equivalente POS electronico</option>
+            <option value="eventos_radian_recepcion">Eventos RADIAN de recepcion</option>
           </select>
         </div>
         <div class="form-col">
@@ -338,6 +381,7 @@
         <button type="button" id="btnEmitirSoporte" class="btn secondary">Emitir soporte</button>
         <button type="button" id="btnEmitirNominaElectronica" class="btn secondary">Emitir nomina</button>
         <button type="button" id="btnEmitirPOSElectronico" class="btn secondary">Emitir POS electronico</button>
+        <button type="button" id="btnEmitirRadian" class="btn secondary">Registrar evento RADIAN</button>
       </div>
       <div id="op_msg" class="form-help"></div>
       <div id="op_resultado" class="dian-readable-result is-empty"></div>
@@ -653,6 +697,22 @@
       }
     }
 
+    function updateDianProductionCheckHint() {
+      const input = document.getElementById("feDianConfirmarHabilitado");
+      const stateEl = document.getElementById("feDianProductionState");
+      const warningEl = document.getElementById("feDianProductionResolutionWarning");
+      const tutorialLink = document.getElementById("feDianProductionTutorialLink");
+      if (!input || !stateEl) return;
+      const active = !!input.checked;
+      stateEl.textContent = active ? "Listo para activar produccion local" : "Produccion local sin activar";
+      stateEl.className = "dian-production-state" + (active ? " on" : "");
+      if (warningEl) warningEl.className = "dian-production-warning" + (active ? " is-visible" : "");
+      if (tutorialLink) {
+        const href = "/administrar_empresa/facturacion_electronica_tutorial_dian.html" + (state.empresaID ? ("?empresa_id=" + encodeURIComponent(state.empresaID)) : "");
+        tutorialLink.setAttribute("href", href);
+      }
+    }
+
     function portalValue(value, emptyText) {
       const v = txt(value);
       return v || emptyText || "No registrado";
@@ -857,6 +917,11 @@
         setValue("feDianSetAceptadasND", Number(cfg.set_notas_debito_aceptadas_requeridas || 0));
         setValue("feDianSetAceptadasNC", Number(cfg.set_notas_credito_aceptadas_requeridas || 0));
       }
+      const productionCheck = document.getElementById("feDianConfirmarHabilitado");
+      if (productionCheck && hasDianProduccionLocal(cfg)) {
+        productionCheck.checked = true;
+      }
+      updateDianProductionCheckHint();
       updateDianProgress();
     }
 
@@ -1404,7 +1469,8 @@
       const accionesElectronicas = [
         "emitir", "anular", "nota_credito", "emitir_nota_credito", "nota_debito", "emitir_nota_debito",
         "documento_soporte", "emitir_documento_soporte", "nomina_electronica", "emitir_nomina_electronica",
-        "documento_equivalente_pos", "emitir_documento_equivalente_pos"
+        "documento_equivalente_pos", "emitir_documento_equivalente_pos",
+        "eventos_radian_recepcion", "emitir_eventos_radian_recepcion", "evento_radian", "emitir_evento_radian"
       ];
       if (txt(payload && payload.pais_codigo).toUpperCase() !== "CO" || accionesElectronicas.indexOf(txt(action).toLowerCase()) === -1) {
         return {};
@@ -1461,6 +1527,8 @@
       if (event.key === "Escape" && dianConfirmResolve) closeDianConfirm(false);
     });
     document.getElementById("btnDianActivarProduccion").addEventListener("click", activarProduccionDianLocal);
+    document.getElementById("feDianConfirmarHabilitado").addEventListener("change", updateDianProductionCheckHint);
+    updateDianProductionCheckHint();
     document.getElementById("btnDianConsoleLimpiar").addEventListener("click", clearDianConsole);
     document.getElementById("btnDianConsoleCopiar").addEventListener("click", copyDianConsole);
     document.getElementById("btnDianTrackRecargar").addEventListener("click", function() {
@@ -1518,6 +1586,10 @@
     document.getElementById("btnEmitirPOSElectronico").addEventListener("click", function() {
       setTipoDocumentoOperacion("documento_equivalente_pos");
       ejecutarOperacionFacturacion("documento_equivalente_pos");
+    });
+    document.getElementById("btnEmitirRadian").addEventListener("click", function() {
+      setTipoDocumentoOperacion("eventos_radian_recepcion");
+      ejecutarOperacionFacturacion("eventos_radian_recepcion");
     });
 
     if (!state.empresaID) {

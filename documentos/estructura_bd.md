@@ -3,6 +3,19 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-08 (capturas DIAN OCR/IA)
+- No se agrega tabla nueva. El asistente de capturas usa
+  `empresa_dian_configuracion` para aplicar datos detectados al formulario DIAN
+  y conserva los campos ya existentes de modo de operacion, fechas del set,
+  documentos requeridos y minimos aceptados.
+- Las imagenes subidas se guardan por empresa en
+  `web/uploads/empresas/empresa_{id}_{slug}/facturacion_electronica/capturas_dian/`
+  con permisos privados de carpeta, sin exponer URL publica en la respuesta.
+- El endpoint `analizar_captura_dian` no persiste automaticamente la
+  configuracion; devuelve campos detectados y el administrador decide aplicar y
+  guardar. Valores sensibles como PIN, llave tecnica, tokens y certificados
+  deben tratarse como secretos y no imprimirse en logs ni documentacion.
+
 Actualizacion 2026-06-08 (UBL DIAN y parser de errores)
 - No se crean tablas nuevas. La trazabilidad sigue en
   `empresa_dian_track_historial` y la configuracion en

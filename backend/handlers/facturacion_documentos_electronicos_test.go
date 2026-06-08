@@ -39,6 +39,7 @@ func TestResolveFacturacionTransitionForDocumentosElectronicosNuevos(t *testing.
 		{name: "documento soporte", action: "documento_soporte", tipoDocumento: "documento_soporte", wantAccion: "documento_soporte", wantEstado: "emitida", wantEvento: "documento_soporte_emitido"},
 		{name: "nomina electronica", action: "nomina_electronica", tipoDocumento: "nomina_electronica", wantAccion: "nomina_electronica", wantEstado: "emitida", wantEvento: "nomina_electronica_emitida"},
 		{name: "pos electronico", action: "documento_equivalente_pos", tipoDocumento: "documento_equivalente_pos", wantAccion: "documento_equivalente_pos", wantEstado: "emitida", wantEvento: "documento_equivalente_pos_emitido"},
+		{name: "eventos radian", action: "eventos_radian_recepcion", tipoDocumento: "eventos_radian_recepcion", wantAccion: "eventos_radian_recepcion", wantEstado: "emitida", wantEvento: "eventos_radian_recepcion_emitido"},
 		{name: "nota ajuste soporte", action: "emitir_nota_ajuste_documento_soporte", tipoDocumento: "nota_ajuste_documento_soporte", wantAccion: "nota_ajuste_documento_soporte", wantEstado: "emitida", wantEvento: "nota_ajuste_documento_soporte_emitido"},
 		{name: "documento equivalente peajes", action: "documento_equivalente_peajes", tipoDocumento: "documento_equivalente_peajes", wantAccion: "documento_equivalente_peajes", wantEstado: "emitida", wantEvento: "documento_equivalente_peajes_emitido"},
 	}

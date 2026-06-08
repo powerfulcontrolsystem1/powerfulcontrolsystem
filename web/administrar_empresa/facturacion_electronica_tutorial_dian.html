@@ -25,12 +25,21 @@
     .dian-guide-checklist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
     .dian-guide-check{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:9px;color:var(--text);font-size:.88rem;min-height:58px}
     .dian-guide-check span:first-child{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:color-mix(in srgb,var(--success) 22%,var(--surface));color:var(--success);font-weight:900;flex:0 0 auto}
+    .dian-guide-resources{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+    .dian-guide-resource{border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:12px;min-height:150px;display:flex;flex-direction:column;gap:8px}
+    .dian-guide-resource h3{margin:0;color:var(--text);font-size:1rem;letter-spacing:0}
+    .dian-guide-resource p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .dian-guide-resource-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+    .dian-guide-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+    .dian-guide-flow-step{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:10px;min-height:78px}
+    .dian-guide-flow-step strong{display:block;color:var(--text);font-size:.9rem}
+    .dian-guide-flow-step span{display:block;margin-top:5px;color:var(--muted);font-size:.82rem;line-height:1.35}
     .dian-guide-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
     .dian-guide-table th,.dian-guide-table td{border-bottom:1px solid var(--border);padding:9px 7px;text-align:left;vertical-align:top;font-size:.9rem}
     .dian-guide-table th{color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
     .dian-guide-note{margin-top:12px;color:var(--muted);font-size:.9rem;line-height:1.5}
-    @media (max-width:900px){.dian-guide-grid{grid-template-columns:1fr}.dian-guide-checklist{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:560px){.dian-guide-actions{width:100%}.dian-guide-actions .btn{width:100%;justify-content:center}.dian-guide-checklist{grid-template-columns:1fr}.dian-guide-table{display:block;overflow-x:auto;white-space:nowrap}}
+    @media (max-width:900px){.dian-guide-grid{grid-template-columns:1fr}.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.dian-guide-actions{width:100%}.dian-guide-actions .btn{width:100%;justify-content:center}.dian-guide-checklist,.dian-guide-resources,.dian-guide-flow{grid-template-columns:1fr}.dian-guide-table{display:block;overflow-x:auto;white-space:nowrap}}
   </style>
 </head>
 <body class="super-page form-bg-dark dian-guide-page">
@@ -131,6 +140,67 @@
       </div>
       <p class="dian-guide-note">
         La consola de la pagina de pruebas debe ser la evidencia operativa principal: muestra respuestas DIAN saneadas sin exponer secretos.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Documentos oficiales DIAN y descargas</h2>
+      <p class="form-help">
+        Estos enlaces son fuentes oficiales de DIAN o del micrositio oficial del Sistema de Facturacion Electronica. Usalos para validar el proceso antes de cambiar la empresa a produccion.
+      </p>
+      <div class="dian-guide-resources">
+        <article class="dian-guide-resource">
+          <h3>Instructivo de Registro y Habilitacion</h3>
+          <p>Documento oficial para registrar el facturador, seleccionar modo de operacion y entender el paso a estado habilitado.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Ver pagina DIAN</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Proceso de Registro y Habilitacion</h3>
+          <p>Flujo general: registro, pruebas, estado habilitado, fecha de inicio de produccion, numeracion y asociacion de prefijos.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/como-hacerlo/Paginas/ser-facturador-electronico.aspx" target="_blank" rel="noopener">Abrir proceso</a>
+            <a class="btn secondary" href="https://catalogo-vpfe-hab.dian.gov.co/User/Login" target="_blank" rel="noopener">Portal habilitacion</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Requerimientos para ser Facturador Electronico</h3>
+          <p>Requisitos previos: RUT actualizado, correo del RUT, software, firma digital, acceso al portal y datos de modo de operacion.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/requerimientos-para-ser-facturador-electronico/" target="_blank" rel="noopener">Ver requerimientos</a>
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Registro_y_seleccion_modo_de_operacion_Facturacion_Electronica_DIAN.pdf" target="_blank" rel="noopener">PDF relacionado</a>
+          </div>
+        </article>
+        <article class="dian-guide-resource">
+          <h3>Guia de Facturacion Gratuita DIAN</h3>
+          <p>Manual oficial para el servicio gratuito DIAN, util como referencia para registro, habilitacion, numeracion, prefijos y emision.</p>
+          <div class="dian-guide-resource-actions">
+            <a class="btn secondary" href="https://www.dian.gov.co/impuestos/factura-electronica/Documents/Guia_uso_facturacion_gratuita_DIAN.pdf" target="_blank" rel="noopener">Descargar PDF</a>
+            <a class="btn secondary" href="https://micrositios.dian.gov.co/sistema-de-facturacion-electronica/guia-de-facturacion-gratuita-dian/" target="_blank" rel="noopener">Ver guia</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Despues de quedar ACEPTADO o HABILITADO</h2>
+      <p class="form-help">
+        Cuando DIAN ya acepta el set de pruebas, no basta con dejar el sistema en pruebas. Completa estos pasos para empezar a facturar en produccion.
+      </p>
+      <div class="dian-guide-flow">
+        <div class="dian-guide-flow-step"><strong>1. Reingresar al portal</strong><span>Entra al portal de habilitacion y confirma que el estado cambio a habilitado.</span></div>
+        <div class="dian-guide-flow-step"><strong>2. Fecha de produccion</strong><span>Registra la fecha de inicio de operacion que solicita DIAN.</span></div>
+        <div class="dian-guide-flow-step"><strong>3. RUT responsabilidad 52</strong><span>DIAN actualiza automaticamente el RUT con responsabilidad 52 en la fecha indicada.</span></div>
+        <div class="dian-guide-flow-step"><strong>4. Numeracion MUISCA</strong><span>Solicita autorizacion de numeracion para factura electronica y talonario de contingencia.</span></div>
+        <div class="dian-guide-flow-step"><strong>5. Asociar prefijos</strong><span>Asocia prefijos y rangos autorizados en el portal de Facturacion Electronica.</span></div>
+        <div class="dian-guide-flow-step"><strong>6. Configurar PCS</strong><span>Actualiza resolucion, prefijo, rango, llave tecnica y URL de produccion en PCS.</span></div>
+        <div class="dian-guide-flow-step"><strong>7. Activar produccion local</strong><span>Marca la confirmacion y activa produccion local solo con DIAN habilitado.</span></div>
+        <div class="dian-guide-flow-step"><strong>8. Emitir real</strong><span>Empieza a emitir facturas en produccion y revisa acuses, numeracion y reportes.</span></div>
+      </div>
+      <p class="dian-guide-note">
+        Resumen rapido: Registro -> Pruebas -> Estado habilitado -> Fecha de produccion -> RUT 52 -> Solicitar numeracion -> Asociar prefijos -> Facturar en produccion.
       </p>
     </div>
 

@@ -1,3 +1,28 @@
+2026-06-08: Cobertura esencial de documentos DIAN visible
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: `facturacion_electronica.html` agrega un resumen de cobertura esencial para factura electronica, notas credito/debito, documento soporte, nomina electronica y eventos RADIAN, usando el catalogo real del backend.
+- Centro de habilitacion: `facturacion_electronica_pruebas_dian.html` permite seleccionar y registrar `eventos_radian_recepcion` desde la emision documental manual, con preflight de conexion DIAN igual que los otros documentos Colombia.
+- Backend: la prueba `TestResolveFacturacionTransitionForDocumentosElectronicosNuevos` cubre RADIAN para asegurar que el flujo generico de documentos DIAN no se rompa.
+- Alcance: RADIAN queda visible y operable como evento DIAN catalogado; no reemplaza el flujo fiscal especifico de titulo valor que pueda exigir servicios/eventos adicionales.
+
+2026-06-08: Tutorial DIAN con documentos oficiales y pasos post-habilitacion
+- Modulo afectado: `facturacion_electronica`.
+- `facturacion_electronica_tutorial_dian.html` agrega enlaces oficiales DIAN para instructivo de registro/habilitacion, proceso de registro y habilitacion, requerimientos del facturador electronico y guia de facturacion gratuita.
+- El tutorial incluye el flujo posterior al estado aceptado/habilitado: fecha de produccion, RUT responsabilidad 52, numeracion MUISCA, talonario de contingencia, asociacion de prefijos, configuracion en PCS y emision real.
+
+2026-06-08: Produccion local DIAN con explicacion visible
+- Modulo afectado: `facturacion_electronica`.
+- `facturacion_electronica_pruebas_dian.html` convierte la confirmacion de habilitacion DIAN en un panel grande que diferencia ambiente de pruebas/habilitacion y produccion local.
+- La pantalla aclara que produccion local permite emitir documentos fiscales reales y alimentar trazabilidad contable configurada, pero no crea contabilidad automaticamente sin ventas reales y reglas contables activas.
+
+2026-06-08: Asistente DIAN con capturas OCR/IA
+- Modulo afectado: `facturacion_electronica`.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega la tarjeta `Asistente DIAN con capturas` entre `Configuracion DIAN Colombia` y `Cargar firma electronica`.
+- UX: guia al administrador sobre las pantallas que debe capturar en el portal DIAN: set de pruebas, numeracion, modo de operacion y datos fiscales del emisor.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=analizar_captura_dian` recibe imagenes PNG/JPG/TIFF por `empresa_id`, las guarda en carpeta privada empresarial y ejecuta OCR local para proponer campos DIAN aplicables al formulario.
+- Seguridad: los valores sensibles como PIN, llave tecnica, tokens o certificados se enmascaran en vistas tecnicas; el endpoint no escribe automaticamente la configuracion ni imprime secretos en logs.
+- Persistencia: el usuario debe presionar `Aplicar campos detectados` y luego `Guardar DIAN Colombia`; tambien se conservan campos internos del set como modo de operacion y totales requeridos cuando la captura los contiene.
+
 2026-06-08: UBL DIAN realista y diagnostico de rechazo
 - Modulo afectado: `facturacion_electronica`.
 - Cambio funcional: el generador Colombia ya diferencia factura electronica,

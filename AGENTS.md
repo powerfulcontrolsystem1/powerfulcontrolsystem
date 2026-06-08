@@ -69,6 +69,28 @@ Cada cambio funcional debe registrar trazabilidad en
 `documentos/historial_de_cambios` y, cuando corresponda, en `CHANGELOG.md` o
 `documentos/CHANGELOG.md`.
 
+## Herramientas locales disponibles
+
+- Codex tiene acceso directo al workspace `D:\powerfulcontrolsystem`; para
+  contexto de archivos debe priorizar `rg`, lectura de archivos y la
+  documentacion del proyecto antes de depender de extensiones del editor.
+- La Codex Chrome Extension esta instalada en Chrome y puede usarse para
+  controlar pestañas reales del usuario cuando el flujo dependa de sesiones,
+  cookies o portales abiertos. Usar Chrome solo cuando aporte estado real del
+  navegador; para pruebas locales normales preferir el navegador interno o
+  Playwright disponible.
+- Computer Use / Remote Control esta disponible para controlar aplicaciones de
+  Windows cuando una tarea requiera ventanas del PC. Antes de usarlo, comprobar
+  con una llamada ligera que el canal nativo responde y elegir ventanas desde
+  `list_apps`/`list_windows`.
+- No ingresar, enviar, instalar, subir archivos, aceptar permisos o ejecutar
+  acciones con efectos externos en Chrome o Windows sin autorizacion clara del
+  usuario y sin respetar las politicas de seguridad de Codex.
+- No hace falta instalar otra extension para obtener contexto del repositorio:
+  el acceso principal al codigo es el filesystem compartido. Una extension de
+  IDE solo seria complementaria para ver estado del editor abierto, no reemplaza
+  la lectura del proyecto.
+
 ## Matriz de coordinacion
 
 Activacion logica por tipo de trabajo:
