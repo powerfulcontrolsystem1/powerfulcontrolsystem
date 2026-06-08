@@ -13622,3 +13622,9 @@ Archivos modificados:
 - documentos/mapa_modulos.md
 - documentos/referencias/dian/README.md
 - scripts/validar_dian_xsd.ps1
+
+2026-06-08 05:14:58 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: fb6c474d; PushStatus: OK
+Archivos modificados:
+- backend/handlers/modulos_faltantes.go
+- documentos/contexto_codex.md
+- documentos/historial_de_cambios
