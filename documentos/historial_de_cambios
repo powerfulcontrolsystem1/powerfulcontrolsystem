@@ -1,3 +1,12 @@
+2026-06-08: Historial persistente de TrackId/ZipKey DIAN.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=historial_tracks` permite listar por `empresa_id` los TrackId/ZipKey reales y su ultimo acuse.
+- Persistencia: `SendTestSetAsync` guarda el TrackId recibido y `GetStatusZip` actualiza el mismo registro en `empresa_dian_track_historial`.
+- Parser DIAN: `StatusDescription` del SOAP se usa como mensaje visible; `Batch en proceso de validacion` queda como `pendiente`, no como aceptado final.
+- Frontend: `facturacion_electronica_pruebas_dian.html` agrega tarjeta de historial con boton `Recargar historial` y accion `Reconsultar`.
+- Seguridad: se filtra por `empresa_id`, no se guardan XML crudo, claves, certificados, PIN ni tokens.
+- QA: `go test ./handlers -run "TestExtractDIANSOAPResponseMapIncludesStatusDescription|TestResolveDIANAcuseFromStatusDescriptionPending|TestValidateDIANDocumentPreflightBlocksDemoMarkersForRealSend" -count=1`; validacion JS inline de la pagina DIAN.
+
 2026-06-08: DIAN sin preset reducido.
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
 - Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` elimina del selector `Preset del set` la opcion pequena de software gratuito y su entrada `DIAN_SET_PRESETS.gratuito`.

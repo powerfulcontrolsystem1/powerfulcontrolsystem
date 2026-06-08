@@ -1,3 +1,10 @@
+2026-06-08: Historial TrackId / ZipKey DIAN
+- Modulo afectado: `facturacion_electronica`.
+- Backend: `/api/empresa/facturacion_electronica/dian?action=historial_tracks` lista por `empresa_id` los TrackId/ZipKey guardados.
+- Persistencia: `SendTestSetAsync` y `GetStatusZip` actualizan `empresa_dian_track_historial` con estado, mensaje, documento, tipo y fechas.
+- Frontend: `facturacion_electronica_pruebas_dian.html` agrega una tarjeta visible para recargar historial y reconsultar acuses sin depender de consola temporal.
+- Seguridad: el historial no guarda XML crudo ni secretos de firma, software, PIN, certificados o tokens.
+
 2026-06-08: Centro de habilitacion DIAN legible
 - Modulo afectado: `facturacion_electronica`.
 - El boton y acceso antes llamados `Pasar test DIAN` ahora se muestran como `Centro de habilitación DIAN`.

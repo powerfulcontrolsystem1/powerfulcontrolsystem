@@ -717,6 +717,31 @@ func TestValidateDIANDocumentPreflightBlocksDemoMarkersForRealSend(t *testing.T)
 	}
 }
 
+func TestExtractDIANSOAPResponseMapIncludesStatusDescription(t *testing.T) {
+	raw := `<s:Envelope><s:Body><GetStatusZipResponse><GetStatusZipResult><b:IsValid>false</b:IsValid><b:StatusDescription>Batch en proceso de validacion.</b:StatusDescription><b:StatusCode>00</b:StatusCode></GetStatusZipResult></GetStatusZipResponse></s:Body></s:Envelope>`
+	result := extractDIANSOAPResponseMap(raw)
+	if got := genericStringValue(result["status_description"]); got != "Batch en proceso de validacion." {
+		t.Fatalf("expected StatusDescription, got %#v", result)
+	}
+	if got := genericStringValue(result["is_valid"]); got != "false" {
+		t.Fatalf("expected IsValid=false, got %#v", result)
+	}
+}
+
+func TestResolveDIANAcuseFromStatusDescriptionPending(t *testing.T) {
+	response := map[string]interface{}{
+		"is_valid":           "false",
+		"status_description": "Batch en proceso de validacion.",
+	}
+	estado, mensaje := resolveDIANAcuseFromResponse(http.StatusOK, response)
+	if estado != "pendiente" {
+		t.Fatalf("expected pendiente, got estado=%s mensaje=%s", estado, mensaje)
+	}
+	if mensaje != "Batch en proceso de validacion." {
+		t.Fatalf("expected DIAN status description as message, got %q", mensaje)
+	}
+}
+
 func validationResultHasCode(result map[string]interface{}, code string) bool {
 	for _, key := range []string{"issues", "warnings"} {
 		items, _ := result[key].([]map[string]interface{})

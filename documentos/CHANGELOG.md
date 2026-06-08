@@ -1,3 +1,10 @@
+## [2026-06-08] Historial TrackId DIAN
+- [Backend] `empresa_dian_track_historial` persiste cada TrackId/ZipKey por empresa y se actualiza al consultar `GetStatusZip`.
+- [API] `/api/empresa/facturacion_electronica/dian?action=historial_tracks` lista el historial visible filtrado por `empresa_id`.
+- [Frontend] El Centro de habilitacion DIAN agrega tarjeta de historial con recarga y reconsulta manual.
+- [Parser] `StatusDescription` del SOAP DIAN se muestra como mensaje de acuse; `Batch en proceso de validacion` queda pendiente.
+- [Seguridad] No se guardan XML crudo, certificados, claves, PIN ni tokens.
+
 ## [2026-06-08] DIAN sin preset reducido
 - [Frontend] `facturacion_electronica_pruebas_dian.html` elimina del selector el preset pequeno de software gratuito y conserva solo `30 + 10 + 10`, `60 + 20 + 20` y `Personalizado`.
 - [Operacion] Si una sesion antigua intenta aplicar el valor retirado, la pagina vuelve al objetivo real del portal para evitar envios parciales accidentales.

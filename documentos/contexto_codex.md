@@ -4,6 +4,16 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - Historial TrackId DIAN
+
+- `facturacion_electronica_pruebas_dian.html` muestra una tarjeta `Historial
+  TrackId / ZipKey DIAN` para consultar identificadores reales por empresa.
+- El backend guarda cada TrackId/ZipKey en `empresa_dian_track_historial` y lo
+  actualiza al consultar `GetStatusZip`; no guarda XML completo, claves,
+  certificados, PIN ni tokens.
+- `GetStatusZip` ahora toma `StatusDescription` del SOAP DIAN para distinguir
+  `Batch en proceso de validacion` como acuse pendiente, no aceptacion final.
+
 ## Actualizacion 2026-06-08 - DIAN sin preset reducido
 
 - `facturacion_electronica_pruebas_dian.html` no debe mostrar boton ni preset

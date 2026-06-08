@@ -47,6 +47,12 @@
     .dian-result-table{width:100%;border-collapse:collapse;margin-top:12px;color:var(--text)}
     .dian-result-table th,.dian-result-table td{border-bottom:1px solid var(--border);padding:8px 6px;text-align:left;vertical-align:top;font-size:.86rem}
     .dian-result-table th{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+    .dian-track-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .dian-track-table-wrap{margin-top:10px;overflow:auto}
+    .dian-track-key{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:.78rem;overflow-wrap:anywhere;max-width:260px}
+    .dian-track-empty{border:1px dashed var(--border);border-radius:8px;background:var(--surface-soft);padding:14px;color:var(--muted);text-align:center;margin-top:10px}
+    .dian-track-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .dian-track-actions .btn{min-height:34px;padding:7px 10px}
     .dian-readable-result{margin-top:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);padding:10px;color:var(--text);white-space:normal}
     .dian-readable-result.is-empty{display:none}
     .dian-readable-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
@@ -85,7 +91,7 @@
     .dian-confirm-box p{margin:10px 0 0;color:var(--muted);font-size:.92rem;line-height:1.45}
     .dian-confirm-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px}
     @media (max-width:900px){.dian-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dian-test-actions{grid-template-columns:1fr 1fr}.dian-portal-sections{grid-template-columns:1fr}.dian-portal-section{border-right:0}.dian-portal-metric-grid,.dian-progress-milestones,.dian-readable-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:560px){.dian-status-grid,.dian-test-actions,.dian-readable-grid{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}}
+    @media (max-width:560px){.dian-status-grid,.dian-test-actions,.dian-readable-grid{grid-template-columns:1fr}.dian-result-table{display:block;overflow-x:auto;white-space:nowrap}.dian-console-head{display:block}.dian-console-meta{display:block;margin-top:6px;white-space:normal}.dian-portal-kv{grid-template-columns:1fr}.dian-portal-metric-grid,.dian-progress-milestones{grid-template-columns:1fr}.dian-progress-percent{font-size:1.45rem}.dian-track-key{max-width:180px}}
   </style>
 </head>
 <body class="super-page form-bg-dark dian-test-page">
@@ -219,6 +225,20 @@
     </div>
 
     <div class="card">
+      <h2>Historial TrackId / ZipKey DIAN</h2>
+      <p class="form-help">
+        Guarda cada identificador real recibido desde DIAN y permite reconsultar GetStatusZip aunque la consola se haya limpiado o el navegador se cierre.
+      </p>
+      <div class="dian-track-toolbar">
+        <div id="feDianTrackMsg" class="form-help">Cargando historial DIAN...</div>
+        <div class="dian-track-actions">
+          <button id="btnDianTrackRecargar" type="button" class="btn secondary">Recargar historial</button>
+        </div>
+      </div>
+      <div id="feDianTrackHistorial"></div>
+    </div>
+
+    <div class="card">
       <h2>Consola DIAN</h2>
       <p class="form-help">
         Bitacora visible de las respuestas reales que llegan desde DIAN/proveedor por medio del backend. Los datos sensibles se ocultan automaticamente.
@@ -342,7 +362,8 @@
       dianValidationOk: false,
       dianConsole: [],
       dianConsoleAutoScroll: true,
-      dianBatchSize: 3
+      dianBatchSize: 3,
+      dianTrackHistory: []
     };
 
     const DIAN_SET_PRESETS = {
@@ -1077,6 +1098,64 @@
         }).join("") + '</tbody></table>';
     }
 
+    function renderDianTrackHistory(items) {
+      const box = document.getElementById("feDianTrackHistorial");
+      if (!box) return;
+      items = Array.isArray(items) ? items : [];
+      state.dianTrackHistory = items;
+      if (!items.length) {
+        box.innerHTML = '<div class="dian-track-empty">Aun no hay TrackId/ZipKey guardados para esta empresa.</div>';
+        return;
+      }
+      box.innerHTML = '<div class="dian-track-table-wrap"><table class="dian-result-table"><thead><tr>' +
+        '<th>Fecha</th><th>Documento</th><th>Tipo</th><th>Estado</th><th>Mensaje DIAN</th><th>TrackId / ZipKey</th><th>Acciones</th>' +
+        '</tr></thead><tbody>' + items.map(function(row) {
+          const track = txt(row.track_id || row.zip_key);
+          const mensaje = txt(row.status_description || row.acuse_mensaje || row.status_message || "Sin mensaje final");
+          const fecha = txt(row.fecha_ultimo_acuse || row.fecha_envio || row.fecha_actualizacion || row.fecha_creacion);
+          return '<tr>' +
+            '<td>' + escapeHTML(fecha || "-") + '</td>' +
+            '<td>' + escapeHTML(row.documento_codigo || "-") + '</td>' +
+            '<td>' + escapeHTML(row.tipo_documento || "-") + '</td>' +
+            '<td>' + renderPill(row.acuse_estado || row.estado_dian || "pendiente") + '</td>' +
+            '<td>' + escapeHTML(mensaje) + '</td>' +
+            '<td class="dian-track-key">' + escapeHTML(track) + '</td>' +
+            '<td><button type="button" class="btn secondary dian-track-reconsultar" data-track="' + escapeHTML(track) + '">Reconsultar</button></td>' +
+          '</tr>';
+        }).join("") + '</tbody></table></div>';
+    }
+
+    async function loadDianTrackHistory() {
+      if (!state.empresaID) return;
+      const url = "/api/empresa/facturacion_electronica/dian?action=historial_tracks&empresa_id=" + encodeURIComponent(state.empresaID) + "&limit=120";
+      const res = await fetch(url, { credentials: "same-origin" });
+      const data = await readJSONResponse(res);
+      if (!res.ok || !data || data.ok === false) {
+        throw new Error(data && data.error ? data.error : "No se pudo cargar historial TrackId DIAN");
+      }
+      renderDianTrackHistory(data.items || []);
+      setText("feDianTrackMsg", "Historial actualizado: " + (data.total || 0) + " registro(s).", false);
+    }
+
+    async function reconsultarDianTrack(trackID) {
+      trackID = txt(trackID);
+      if (!trackID) return;
+      setText("feDianTrackMsg", "Reconsultando GetStatusZip para " + trackID + "...", false);
+      try {
+        const url = "/api/empresa/facturacion_electronica/dian?action=consultar_acuse_real&empresa_id=" + encodeURIComponent(state.empresaID);
+        const data = await dianFetchJSON(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ empresa_id: Number(state.empresaID), track_id: trackID }),
+          credentials: "same-origin"
+        }, "GetStatusZip DIAN: " + trackID);
+        setText("feDianTrackMsg", "Acuse actualizado: " + (data && (data.acuse_mensaje || data.acuse_estado) || "respuesta recibida") + ".", !data || data.ok === false);
+      } catch (err) {
+        setText("feDianTrackMsg", err && err.message ? err.message : "No se pudo reconsultar TrackId DIAN.", true);
+      }
+      await loadDianTrackHistory().catch(function() {});
+    }
+
     function mergeDianResumen(target, source) {
       target = target || {};
       source = source || {};
@@ -1211,6 +1290,7 @@
         setText("feDianPruebasMsg", "Set completo enviado por tandas. Revisa acuses y consola DIAN.", !aggregate.ok);
       }
       loadDianConfigStatus().catch(function() {});
+      loadDianTrackHistory().catch(function() {});
     }
 
     async function ejecutarDianSet(payload, label, options) {
@@ -1238,6 +1318,7 @@
         const msg = first && first.mensaje_recepcion ? first.mensaje_recepcion : (data && data.habilitacion_aprobada ? "Pruebas DIAN aprobadas." : "Pruebas DIAN ejecutadas. Revisa resultado y acuses.");
         setText("feDianPruebasMsg", msg, !data || data.ok === false);
         loadDianConfigStatus().catch(function() {});
+        loadDianTrackHistory().catch(function() {});
       } catch (err) {
         setJSON("feDianPruebasResultado", err && err.data ? err.data : null);
         renderDianRunResult(err && err.data ? err.data : null);
@@ -1382,6 +1463,16 @@
     document.getElementById("btnDianActivarProduccion").addEventListener("click", activarProduccionDianLocal);
     document.getElementById("btnDianConsoleLimpiar").addEventListener("click", clearDianConsole);
     document.getElementById("btnDianConsoleCopiar").addEventListener("click", copyDianConsole);
+    document.getElementById("btnDianTrackRecargar").addEventListener("click", function() {
+      loadDianTrackHistory().catch(function(err) {
+        setText("feDianTrackMsg", err && err.message ? err.message : "No se pudo cargar historial TrackId DIAN.", true);
+      });
+    });
+    document.getElementById("feDianTrackHistorial").addEventListener("click", function(event) {
+      const btn = event.target && event.target.closest ? event.target.closest(".dian-track-reconsultar") : null;
+      if (!btn) return;
+      reconsultarDianTrack(btn.getAttribute("data-track"));
+    });
     document.getElementById("feDianConsoleAutoScroll").addEventListener("change", function(event) {
       state.dianConsoleAutoScroll = !!event.target.checked;
     });
@@ -1436,6 +1527,9 @@
       setText("feDianConfigMsg", "empresa_id requerido en la URL.", true);
     } else {
       loadDianConfigStatus().catch(function() {});
+      loadDianTrackHistory().catch(function(err) {
+        setText("feDianTrackMsg", err && err.message ? err.message : "No se pudo cargar historial TrackId DIAN.", true);
+      });
     }
   </script>
 </body>

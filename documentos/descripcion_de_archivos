@@ -1,3 +1,14 @@
+2026-06-08 - Historial TrackId DIAN
+- `backend/db/modulos_faltantes.go`:
+	- agrega la tabla `empresa_dian_track_historial` e indices por empresa/estado y documento.
+- `backend/handlers/modulos_faltantes.go`:
+	- agrega `historial_tracks`, saneamiento de respuestas DIAN, upsert/listado de TrackId y parser de `StatusDescription`.
+	- registra TrackId en envio SOAP y actualiza acuse en `GetStatusZip`.
+- `backend/handlers/dian_signature_upload_test.go`:
+	- cubre extraccion de `StatusDescription` y clasificacion pendiente de batch DIAN en proceso.
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
+	- agrega tarjeta de historial TrackId/ZipKey con recarga y reconsulta visible.
+
 2026-06-08 - Centro de habilitacion DIAN legible
 - `web/administrar_empresa/facturacion_electronica_menu.html`:
 	- renombra el acceso lateral de DIAN a `Centro de habilitación DIAN`.

@@ -7274,6 +7274,31 @@ func EmpresaDIANColombiaHandler(dbEmp, dbSuper *sql.DB) http.HandlerFunc {
 			writeJSON(w, status, response)
 			return
 
+		case "historial_tracks", "historial_trackid", "track_history":
+			empresaID, err := parseEmpresaIDQuery(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			limit := 80
+			if rawLimit := strings.TrimSpace(r.URL.Query().Get("limit")); rawLimit != "" {
+				if parsed, parseErr := strconv.Atoi(rawLimit); parseErr == nil {
+					limit = parsed
+				}
+			}
+			items, err := listDIANTrackHistory(dbEmp, empresaID, limit)
+			if err != nil {
+				http.Error(w, "no se pudo consultar historial TrackId DIAN", http.StatusInternalServerError)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok":         true,
+				"empresa_id": empresaID,
+				"items":      items,
+				"total":      len(items),
+			})
+			return
+
 		case "reconexion_dian":
 			if r.Method != http.MethodPost && r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -8082,15 +8107,19 @@ func extractDIANResponseMap(raw string) map[string]interface{} {
 }
 
 func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{}) (string, string) {
-	keys := []string{"acuse", "estado", "status", "estado_dian", "resultado"}
+	message := dianFirstNonBlank(
+		genericStringValue(response["mensaje"]),
+		genericStringValue(response["message"]),
+		genericStringValue(response["detalle"]),
+		genericStringValue(response["status_description"]),
+		genericStringValue(response["status_message"]),
+		genericStringValue(response["error_message"]),
+		genericStringValue(response["description"]),
+		genericStringValue(response["error"]),
+	)
+	keys := []string{"acuse", "estado", "status", "estado_dian", "resultado", "status_description", "status_message", "error_message"}
 	for _, key := range keys {
 		if v := normalizeDIANAcuseEstado(genericStringValue(response[key])); v != "" {
-			message := dianFirstNonBlank(
-				genericStringValue(response["mensaje"]),
-				genericStringValue(response["message"]),
-				genericStringValue(response["detalle"]),
-				genericStringValue(response["error"]),
-			)
 			return v, message
 		}
 	}
@@ -8104,7 +8133,7 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 		if accepted {
 			return "aceptado", "acuse positivo del proveedor DIAN"
 		}
-		return "enviado", "documento enviado a DIAN"
+		return "enviado", dianFirstNonBlank(message, "documento enviado a DIAN")
 	}
 	if statusCode >= 500 {
 		return "contingencia", "error de transporte DIAN"
@@ -8112,7 +8141,7 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 	if statusCode >= 400 {
 		return "rechazado", "DIAN rechazo la solicitud"
 	}
-	return "pendiente", "sin acuse concluyente"
+	return "pendiente", dianFirstNonBlank(message, "sin acuse concluyente")
 }
 
 func buildDIANCUFE(nit, documentoCodigo, fechaEmision, total, softwareID, softwarePIN string) string {
@@ -9220,12 +9249,13 @@ func extractDIANSOAPResponseMap(raw string) map[string]interface{} {
 		return out
 	}
 	for key, aliases := range map[string][]string{
-		"track_id":         {"ZipKey", "TrackId", "trackId"},
-		"status_code":      {"StatusCode", "statusCode"},
-		"status_message":   {"StatusMessage", "statusMessage"},
-		"error_message":    {"ErrorMessage", "errorMessage"},
-		"is_valid":         {"IsValid", "isValid"},
-		"xml_document_key": {"XmlDocumentKey", "xmlDocumentKey"},
+		"track_id":           {"ZipKey", "TrackId", "trackId"},
+		"status_code":        {"StatusCode", "statusCode"},
+		"status_message":     {"StatusMessage", "statusMessage"},
+		"status_description": {"StatusDescription", "statusDescription"},
+		"error_message":      {"ErrorMessage", "errorMessage"},
+		"is_valid":           {"IsValid", "isValid"},
+		"xml_document_key":   {"XmlDocumentKey", "xmlDocumentKey"},
 	} {
 		if value := extractDIANSOAPTag(raw, aliases...); value != "" {
 			out[key] = value
@@ -9233,6 +9263,162 @@ func extractDIANSOAPResponseMap(raw string) map[string]interface{} {
 	}
 	out["raw_xml"] = raw
 	return out
+}
+
+func dianSafeTrackHistoryJSON(raw map[string]interface{}) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	out := make(map[string]interface{}, len(raw))
+	for key, value := range raw {
+		lowerKey := strings.ToLower(strings.TrimSpace(key))
+		if lowerKey == "" || lowerKey == "raw_xml" || lowerKey == "raw_response" {
+			continue
+		}
+		if strings.Contains(lowerKey, "certificado") || strings.Contains(lowerKey, "private_key") || strings.Contains(lowerKey, "token") || strings.Contains(lowerKey, "password") || strings.Contains(lowerKey, "clave") || strings.Contains(lowerKey, "pin") {
+			out[key] = "[oculto]"
+			continue
+		}
+		if str, ok := value.(string); ok {
+			out[key] = dianTruncate(str, 2000)
+			continue
+		}
+		out[key] = value
+	}
+	bytes, err := json.Marshal(out)
+	if err != nil {
+		return ""
+	}
+	return string(bytes)
+}
+
+func upsertDIANTrackHistory(dbEmp *sql.DB, empresaID int64, data map[string]interface{}) {
+	if dbEmp == nil || empresaID <= 0 || data == nil {
+		return
+	}
+	trackID := strings.TrimSpace(genericStringValue(data["track_id"]))
+	if trackID == "" {
+		return
+	}
+	zipKey := dianFirstNonBlank(genericStringValue(data["zip_key"]), trackID)
+	now := dianNowLocal()
+	_, _ = dbEmp.Exec(`INSERT INTO empresa_dian_track_historial (
+		empresa_id, documento_codigo, tipo_documento, track_id, zip_key, test_set_id, ambiente, endpoint,
+		operacion_envio, operacion_acuse, http_status_envio, http_status_acuse, estado_dian, acuse_estado,
+		acuse_mensaje, status_code, status_description, is_valid, intento_consulta, respuesta_envio_json,
+		respuesta_acuse_json, fecha_envio, fecha_ultimo_acuse, fecha_actualizacion, usuario_creador, observaciones
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+	ON CONFLICT(empresa_id, track_id) DO UPDATE SET
+		documento_codigo=COALESCE(NULLIF(EXCLUDED.documento_codigo,''), empresa_dian_track_historial.documento_codigo),
+		tipo_documento=COALESCE(NULLIF(EXCLUDED.tipo_documento,''), empresa_dian_track_historial.tipo_documento),
+		zip_key=COALESCE(NULLIF(EXCLUDED.zip_key,''), empresa_dian_track_historial.zip_key),
+		test_set_id=COALESCE(NULLIF(EXCLUDED.test_set_id,''), empresa_dian_track_historial.test_set_id),
+		ambiente=COALESCE(NULLIF(EXCLUDED.ambiente,''), empresa_dian_track_historial.ambiente),
+		endpoint=COALESCE(NULLIF(EXCLUDED.endpoint,''), empresa_dian_track_historial.endpoint),
+		operacion_envio=COALESCE(NULLIF(EXCLUDED.operacion_envio,''), empresa_dian_track_historial.operacion_envio),
+		operacion_acuse=COALESCE(NULLIF(EXCLUDED.operacion_acuse,''), empresa_dian_track_historial.operacion_acuse),
+		http_status_envio=CASE WHEN EXCLUDED.http_status_envio > 0 THEN EXCLUDED.http_status_envio ELSE empresa_dian_track_historial.http_status_envio END,
+		http_status_acuse=CASE WHEN EXCLUDED.http_status_acuse > 0 THEN EXCLUDED.http_status_acuse ELSE empresa_dian_track_historial.http_status_acuse END,
+		estado_dian=COALESCE(NULLIF(EXCLUDED.estado_dian,''), empresa_dian_track_historial.estado_dian),
+		acuse_estado=COALESCE(NULLIF(EXCLUDED.acuse_estado,''), empresa_dian_track_historial.acuse_estado),
+		acuse_mensaje=COALESCE(NULLIF(EXCLUDED.acuse_mensaje,''), empresa_dian_track_historial.acuse_mensaje),
+		status_code=COALESCE(NULLIF(EXCLUDED.status_code,''), empresa_dian_track_historial.status_code),
+		status_description=COALESCE(NULLIF(EXCLUDED.status_description,''), empresa_dian_track_historial.status_description),
+		is_valid=COALESCE(NULLIF(EXCLUDED.is_valid,''), empresa_dian_track_historial.is_valid),
+		intento_consulta=empresa_dian_track_historial.intento_consulta + EXCLUDED.intento_consulta,
+		respuesta_envio_json=COALESCE(NULLIF(EXCLUDED.respuesta_envio_json,''), empresa_dian_track_historial.respuesta_envio_json),
+		respuesta_acuse_json=COALESCE(NULLIF(EXCLUDED.respuesta_acuse_json,''), empresa_dian_track_historial.respuesta_acuse_json),
+		fecha_envio=COALESCE(NULLIF(EXCLUDED.fecha_envio,''), empresa_dian_track_historial.fecha_envio),
+		fecha_ultimo_acuse=COALESCE(NULLIF(EXCLUDED.fecha_ultimo_acuse,''), empresa_dian_track_historial.fecha_ultimo_acuse),
+		fecha_actualizacion=EXCLUDED.fecha_actualizacion,
+		usuario_creador=COALESCE(NULLIF(EXCLUDED.usuario_creador,''), empresa_dian_track_historial.usuario_creador),
+		observaciones=COALESCE(NULLIF(EXCLUDED.observaciones,''), empresa_dian_track_historial.observaciones)`,
+		empresaID,
+		dianTruncate(genericStringValue(data["documento_codigo"]), 120),
+		dianTruncate(genericStringValue(data["tipo_documento"]), 80),
+		trackID,
+		dianTruncate(zipKey, 160),
+		dianTruncate(genericStringValue(data["test_set_id"]), 120),
+		dianTruncate(genericStringDefault(data["ambiente"], "habilitacion"), 40),
+		dianTruncate(genericStringValue(data["endpoint"]), 300),
+		dianTruncate(genericStringValue(data["operacion_envio"]), 80),
+		dianTruncate(genericStringValue(data["operacion_acuse"]), 80),
+		anyToInt64(data["http_status_envio"]),
+		anyToInt64(data["http_status_acuse"]),
+		dianTruncate(genericStringValue(data["estado_dian"]), 60),
+		dianTruncate(genericStringValue(data["acuse_estado"]), 60),
+		dianTruncate(genericStringValue(data["acuse_mensaje"]), 500),
+		dianTruncate(genericStringValue(data["status_code"]), 80),
+		dianTruncate(genericStringValue(data["status_description"]), 500),
+		dianTruncate(genericStringValue(data["is_valid"]), 20),
+		anyToInt64(data["intento_consulta"]),
+		genericStringValue(data["respuesta_envio_json"]),
+		genericStringValue(data["respuesta_acuse_json"]),
+		genericStringValue(data["fecha_envio"]),
+		genericStringValue(data["fecha_ultimo_acuse"]),
+		now,
+		dianTruncate(genericStringValue(data["usuario_creador"]), 160),
+		dianTruncate(genericStringValue(data["observaciones"]), 500),
+	)
+}
+
+func listDIANTrackHistory(dbEmp *sql.DB, empresaID int64, limit int) ([]map[string]interface{}, error) {
+	if limit <= 0 {
+		limit = 80
+	}
+	if limit > 300 {
+		limit = 300
+	}
+	rows, err := dbEmp.Query(`SELECT id, empresa_id, COALESCE(documento_codigo,''), COALESCE(tipo_documento,''),
+		track_id, COALESCE(zip_key,''), COALESCE(test_set_id,''), COALESCE(ambiente,''), COALESCE(endpoint,''),
+		COALESCE(operacion_envio,''), COALESCE(operacion_acuse,''), COALESCE(http_status_envio,0), COALESCE(http_status_acuse,0),
+		COALESCE(estado_dian,''), COALESCE(acuse_estado,''), COALESCE(acuse_mensaje,''), COALESCE(status_code,''),
+		COALESCE(status_description,''), COALESCE(is_valid,''), COALESCE(intento_consulta,0),
+		COALESCE(fecha_envio,''), COALESCE(fecha_ultimo_acuse,''), COALESCE(fecha_creacion,''), COALESCE(fecha_actualizacion,'')
+		FROM empresa_dian_track_historial
+		WHERE empresa_id=? AND COALESCE(estado,'activo') <> 'eliminado'
+		ORDER BY id DESC LIMIT ?`, empresaID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]map[string]interface{}, 0)
+	for rows.Next() {
+		var id, rowEmpresaID, httpEnvio, httpAcuse, intento int64
+		var documentoCodigo, tipoDocumento, trackID, zipKey, testSetID, ambiente, endpoint string
+		var operacionEnvio, operacionAcuse, estadoDIAN, acuseEstado, acuseMensaje, statusCode, statusDescription, isValid string
+		var fechaEnvio, fechaUltimoAcuse, fechaCreacion, fechaActualizacion string
+		if err := rows.Scan(&id, &rowEmpresaID, &documentoCodigo, &tipoDocumento, &trackID, &zipKey, &testSetID, &ambiente, &endpoint, &operacionEnvio, &operacionAcuse, &httpEnvio, &httpAcuse, &estadoDIAN, &acuseEstado, &acuseMensaje, &statusCode, &statusDescription, &isValid, &intento, &fechaEnvio, &fechaUltimoAcuse, &fechaCreacion, &fechaActualizacion); err != nil {
+			return nil, err
+		}
+		items = append(items, map[string]interface{}{
+			"id":                  id,
+			"empresa_id":          rowEmpresaID,
+			"documento_codigo":    documentoCodigo,
+			"tipo_documento":      tipoDocumento,
+			"track_id":            trackID,
+			"zip_key":             zipKey,
+			"test_set_id":         testSetID,
+			"ambiente":            ambiente,
+			"endpoint":            endpoint,
+			"operacion_envio":     operacionEnvio,
+			"operacion_acuse":     operacionAcuse,
+			"http_status_envio":   httpEnvio,
+			"http_status_acuse":   httpAcuse,
+			"estado_dian":         estadoDIAN,
+			"acuse_estado":        acuseEstado,
+			"acuse_mensaje":       acuseMensaje,
+			"status_code":         statusCode,
+			"status_description":  statusDescription,
+			"is_valid":            isValid,
+			"intento_consulta":    intento,
+			"fecha_envio":         fechaEnvio,
+			"fecha_ultimo_acuse":  fechaUltimoAcuse,
+			"fecha_creacion":      fechaCreacion,
+			"fecha_actualizacion": fechaActualizacion,
+		})
+	}
+	return items, rows.Err()
 }
 
 func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empresaID int64, payload map[string]interface{}, requestBody map[string]interface{}, endpoint, documentoCodigo, documentoTipo, xmlFirmado, cufe, token, softwareID string, useSharedSoftware bool) (map[string]interface{}, int, error) {
@@ -9396,6 +9582,26 @@ func sendDIANDocumentoRealSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empres
 		updates["consecutivo_actual"] = anyToInt64(cfg["consecutivo_actual"]) + 1
 	}
 	_ = updateDIANConfigFields(dbEmp, empresaID, cfg, updates)
+	upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
+		"documento_codigo":     documentoCodigo,
+		"tipo_documento":       documentoTipo,
+		"track_id":             genericStringValue(responseMap["track_id"]),
+		"zip_key":              genericStringValue(responseMap["track_id"]),
+		"test_set_id":          testSetID,
+		"ambiente":             ambiente,
+		"endpoint":             soapEndpoint,
+		"operacion_envio":      operation,
+		"http_status_envio":    resp.StatusCode,
+		"estado_dian":          estadoDIAN,
+		"acuse_estado":         acuseEstado,
+		"acuse_mensaje":        acuseMensaje,
+		"status_code":          genericStringValue(responseMap["status_code"]),
+		"status_description":   genericStringValue(responseMap["status_description"]),
+		"is_valid":             genericStringValue(responseMap["is_valid"]),
+		"respuesta_envio_json": dianSafeTrackHistoryJSON(responseMap),
+		"fecha_envio":          dianNowLocal(),
+		"observaciones":        "envio SOAP DIAN registrado por PCS",
+	})
 
 	return map[string]interface{}{
 		"ok":                  estadoDIAN == "aceptado" || estadoDIAN == "enviado" || acuseEstado == "pendiente",
@@ -9526,9 +9732,28 @@ func consultarDIANStatusZipSOAP(dbEmp *sql.DB, cfg map[string]interface{}, empre
 			genericStringValue(cfg["observaciones"]),
 			genericStringValue(cfg["estado_dian"]),
 			estadoDIAN,
-			dianFirstNonBlank(acuseMensaje, genericStringValue(responseMap["status_message"]), fmt.Sprintf("HTTP %d", resp.StatusCode)),
+			dianFirstNonBlank(acuseMensaje, genericStringValue(responseMap["status_description"]), genericStringValue(responseMap["status_message"]), fmt.Sprintf("HTTP %d", resp.StatusCode)),
 			"dian_get_status_zip",
 		),
+	})
+	upsertDIANTrackHistory(dbEmp, empresaID, map[string]interface{}{
+		"track_id":             trackID,
+		"zip_key":              trackID,
+		"test_set_id":          genericStringValue(cfg["test_set_id"]),
+		"ambiente":             genericStringDefault(cfg["tipo_ambiente"], "habilitacion"),
+		"endpoint":             soapEndpoint,
+		"operacion_acuse":      "GetStatusZip",
+		"http_status_acuse":    resp.StatusCode,
+		"estado_dian":          estadoDIAN,
+		"acuse_estado":         acuseEstado,
+		"acuse_mensaje":        acuseMensaje,
+		"status_code":          genericStringValue(responseMap["status_code"]),
+		"status_description":   genericStringValue(responseMap["status_description"]),
+		"is_valid":             genericStringValue(responseMap["is_valid"]),
+		"intento_consulta":     1,
+		"respuesta_acuse_json": dianSafeTrackHistoryJSON(responseMap),
+		"fecha_ultimo_acuse":   dianNowLocal(),
+		"observaciones":        "acuse GetStatusZip registrado por PCS",
 	})
 
 	return map[string]interface{}{

@@ -3,6 +3,20 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-08 (historial TrackId DIAN)
+- Nueva tabla `empresa_dian_track_historial`: guarda por `empresa_id` cada
+  `track_id`/`zip_key` recibido en envios reales DIAN y el ultimo acuse
+  consultado por `GetStatusZip`.
+- Campos operativos: `documento_codigo`, `tipo_documento`, `test_set_id`,
+  `ambiente`, `endpoint`, operaciones SOAP, HTTP de envio/acuse,
+  `estado_dian`, `acuse_estado`, `acuse_mensaje`, `status_code`,
+  `status_description`, `is_valid`, conteo de consultas y fechas de envio/
+  ultimo acuse.
+- La clave unica `(empresa_id, track_id)` evita duplicados y permite que nuevas
+  reconsultas actualicen el mismo registro.
+- No almacena XML SOAP completo, claves, PIN, certificados, tokens ni
+  contrasenas; las respuestas JSON se sanean antes de persistirse.
+
 Actualizacion 2026-06-07 (bodega base por empresa)
 - Tabla `bodegas`: cada empresa nueva recibe una fila activa con
   `nombre='Bodega 1'`, creada por `EnsureEmpresaBodega1`.
