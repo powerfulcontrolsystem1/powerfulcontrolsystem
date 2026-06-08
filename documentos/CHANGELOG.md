@@ -1,3 +1,9 @@
+## [2026-06-08] Facturacion electronica con DIAN primero
+- [Frontend] `facturacion_electronica.html` retira de la vista principal las tarjetas `Pais detectado automaticamente` y `Perfil de facturacion`.
+- [UX] La primera tarjeta visible ahora es `Configuracion DIAN Colombia` y la segunda `Cargar firma electronica (Colombia / DIAN)`.
+- [Compatibilidad] La deteccion de pais sigue ejecutandose internamente para cargar Colombia/DIAN y perfiles por pais, pero ya no ocupa espacio visual.
+- [QA] Validacion visual local en `http://127.0.0.1:8189`: las tarjetas retiradas no existen en DOM y el orden visible inicia DIAN -> firma.
+
 ## [2026-06-08] Ayuda contextual en formularios Producto y DIAN
 - [Frontend] `web/js/form_field_help.js` agrega botones circulares `?` reutilizables junto a etiquetas de formulario, con popover pequeno, fuente normal y cierre por Escape/clic externo.
 - [Inventario] `administrar_productos.html` instala ayuda en los 25 campos del formulario `Nuevo producto`.

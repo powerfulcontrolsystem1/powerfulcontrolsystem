@@ -26,6 +26,16 @@ decisiones en cada tarea.
 - Los textos de DIAN deben seguir sin secretos: no imprimir PIN, claves,
   certificados, tokens ni valores reales sensibles.
 
+## Actualizacion 2026-06-08 - Facturacion electronica inicia en DIAN
+
+- `web/administrar_empresa/facturacion_electronica.html` ya no muestra las
+  tarjetas introductorias `Pais detectado automaticamente` ni `Perfil de
+  facturacion`.
+- La pantalla inicia visualmente con `Configuracion DIAN Colombia` y luego
+  `Cargar firma electronica (Colombia / DIAN)`.
+- La deteccion de pais sigue corriendo internamente para cargar Colombia/DIAN y
+  perfiles por pais, pero no ocupa una tarjeta visible.
+
 ## Actualizacion 2026-06-07 - Ayuda integrada con robot/caja IA
 
 - `web/js/help_ai_bridge.js` conecta enlaces de ayuda, tutoriales y botones con

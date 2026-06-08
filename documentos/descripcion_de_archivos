@@ -1,3 +1,10 @@
+2026-06-08 - Orden operativo de facturacion electronica
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- retira de la vista las tarjetas introductorias de pais detectado y perfil de facturacion.
+	- agrega `removeFacturacionIntroCards` para remover esos bloques del DOM al cargar.
+	- agrega `reorderDianCards` para colocar `Configuracion DIAN Colombia` antes de `Cargar firma electronica`.
+	- conserva la deteccion de pais y carga de DIAN como logica interna sin mostrar las tarjetas retiradas.
+
 2026-06-08 - Ayuda contextual en campos de formulario
 - `web/js/form_field_help.js`:
 	- nuevo helper frontend sin dependencias para insertar botones `?` junto a labels de campos.

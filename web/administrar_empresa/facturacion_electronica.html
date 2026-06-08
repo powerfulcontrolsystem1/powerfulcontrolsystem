@@ -22,12 +22,21 @@
     .fe-config-missing strong{color:var(--text)}
     .fe-config-missing ul{margin:8px 0 0 18px;padding:0}
     .fe-config-missing li{margin:3px 0}
+    .fe-detected-card,
+    #feVistaBloque{display:none !important}
+    .fe-page-stack > .card{order:20}
+    #feDianConfigCard{order:1}
+    #feFirmaCard{order:2}
+    #feDianDocumentosCard{order:3}
+    #feForm{order:4}
+    #advancedConfigCard{order:5}
+    .fe-page-stack{display:flex;flex-direction:column}
     @media (max-width:900px){.fe-config-progress-steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:560px){.fe-config-progress-steps{grid-template-columns:1fr}.fe-config-progress-percent{font-size:1.45rem}}
   </style>
 </head>
 <body class="super-page form-bg-dark">
-  <div class="container">
+  <div class="container fe-page-stack">
     <div class="page-header">
       <h1 id="pageTitle">Facturación electrónica por país</h1>
     </div>
@@ -573,6 +582,21 @@
     const advancedConfigState = {
       allowed: true
     };
+
+    function removeFacturacionIntroCards() {
+      document.querySelectorAll(".fe-detected-card, #feVistaBloque").forEach(function(card) {
+        card.remove();
+      });
+    }
+
+    function reorderDianCards() {
+      var stack = document.querySelector(".fe-page-stack");
+      var dian = document.getElementById("feDianConfigCard");
+      var firma = document.getElementById("feFirmaCard");
+      if (stack && dian && firma && firma.previousElementSibling !== dian) {
+        stack.insertBefore(dian, firma);
+      }
+    }
 
     function installFacturacionFieldHelp() {
       if (!window.PCSFieldHelp || !window.PCSFieldHelp.install) return;
@@ -1676,8 +1700,10 @@
       await ensureOk(res);
       const info = await res.json();
       const label = (info.bandera || "") + " " + (info.pais_nombre || info.pais_codigo || "");
-      document.getElementById("detectedCountry").textContent = label.trim() || "No detectado";
-      document.getElementById("detectedSource").textContent = "Fuente: " + (info.source || "desconocida");
+      var detectedCountry = document.getElementById("detectedCountry");
+      var detectedSource = document.getElementById("detectedSource");
+      if (detectedCountry) detectedCountry.textContent = label.trim() || "No detectado";
+      if (detectedSource) detectedSource.textContent = "Fuente: " + (info.source || "desconocida");
       if (info.pais_codigo) {
         state.paisSeleccionado = String(info.pais_codigo).toUpperCase();
         document.getElementById("pais_codigo").value = state.paisSeleccionado;
@@ -1906,6 +1932,8 @@
       });
     });
 
+    removeFacturacionIntroCards();
+    reorderDianCards();
     installFacturacionFieldHelp();
     bindDianSetupProgressInputs();
 

@@ -1,3 +1,9 @@
+2026-06-08: Facturacion electronica con DIAN primero
+- Modulo afectado: `facturacion_electronica`.
+- La pagina principal de facturacion electronica deja de mostrar las tarjetas `Pais detectado automaticamente` y `Perfil de facturacion`.
+- El flujo operativo inicia directamente con `Configuracion DIAN Colombia` y luego `Cargar firma electronica (Colombia / DIAN)`.
+- La deteccion de pais se conserva como proceso interno para cargar el perfil correcto, sin tarjeta visible.
+
 2026-06-08: Ayuda contextual en formularios de Producto y DIAN
 - Modulos afectados: `inventario`, `productos`, `facturacion_electronica` y `DIAN`.
 - `administrar_productos.html` muestra un boton `?` al lado de cada etiqueta del formulario `Nuevo producto`; al presionarlo se abre una ventana pequena que explica que dato debe ir en el campo.

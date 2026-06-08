@@ -1,3 +1,10 @@
+2026-06-08: Facturacion electronica con Configuracion DIAN primero.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` elimina visualmente y remueve del DOM las tarjetas introductorias `Pais detectado automaticamente` y `Perfil de facturacion`.
+- UX: `Configuracion DIAN Colombia` queda como primera tarjeta operativa de la pagina y `Cargar firma electronica (Colombia / DIAN)` queda inmediatamente despues.
+- Alcance: no cambia endpoints, permisos, persistencia, firma, envio DIAN ni configuracion por pais; la deteccion interna se conserva para cargar el pais y los datos DIAN.
+- QA: validacion visual local en `http://127.0.0.1:8189/administrar_empresa/facturacion_electronica.html?empresa_id=12` confirma que `fe-detected-card` y `feVistaBloque` no existen y que el orden visible inicia con DIAN y luego firma.
+
 2026-06-08: Ayuda contextual en campos de Producto y DIAN.
 - Modulos afectados: Inventario, Productos, Facturacion electronica, DIAN y configuracion avanzada de facturacion.
 - Frontend: `web/js/form_field_help.js` agrega un helper reutilizable para botones `?` junto a labels de formulario, con popover pequeno, fuente normal de 14px, cierre por Escape/clic externo y sin dependencias.
