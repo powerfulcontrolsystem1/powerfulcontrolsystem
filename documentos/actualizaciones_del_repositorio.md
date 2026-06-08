@@ -13687,3 +13687,18 @@ Archivos modificados:
 - documentos/contexto_codex.md
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
+
+2026-06-08 14:51:50 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 93c5a6dd; PushStatus: OK
+Archivos modificados:
+- AGENTS.md
+- backend/handlers/empresa_upload_paths.go
+- backend/handlers/facturacion_documentos_electronicos_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/contexto_codex.md
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
