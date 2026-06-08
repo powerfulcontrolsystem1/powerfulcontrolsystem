@@ -13677,3 +13677,13 @@ Archivos modificados:
 - documentos/CHANGELOG.md
 - documentos/contexto_codex.md
 - documentos/historial_de_cambios
+
+2026-06-08 09:48:24 - Mensaje: DIAN: corregir C14N XMLDSig XAdES; Commit: d36c6aea; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
