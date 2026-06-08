@@ -4,6 +4,15 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - DIAN sin preset reducido
+
+- `facturacion_electronica_pruebas_dian.html` no debe mostrar boton ni preset
+  rapido 2+2+2/pequeno para habilitacion DIAN.
+- El Centro de habilitacion DIAN conserva el objetivo del portal
+  `30 + 10 + 10`, el historico excepcional `60 + 20 + 20` y `Personalizado`.
+- Si llega un valor viejo de preset reducido, la pantalla lo normaliza al
+  objetivo real del portal para evitar envios parciales accidentales.
+
 ## Actualizacion 2026-06-08 - Centro de habilitacion DIAN
 
 - El acceso operativo antes llamado `Pasar test DIAN` ahora se presenta como

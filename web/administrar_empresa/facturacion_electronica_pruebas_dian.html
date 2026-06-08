@@ -155,7 +155,6 @@
           <label class="form-label">Preset del set</label>
           <select id="feDianSetPreset" class="form-input">
             <option value="actual">Portal DIAN software propio/proveedor: 30 + 10 + 10</option>
-            <option value="gratuito">Software gratuito DIAN: 2 + 1 + 1</option>
             <option value="historico">Historico si DIAN lo exige: 60 + 20 + 20</option>
             <option value="personalizado">Personalizado</option>
           </select>
@@ -348,7 +347,6 @@
 
     const DIAN_SET_PRESETS = {
       actual: { facturas: 30, debito: 10, credito: 10, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 },
-      gratuito: { facturas: 2, debito: 1, credito: 1, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 },
       historico: { facturas: 60, debito: 20, credito: 20, aceptadosTotal: 1, aceptadasFacturas: 1, aceptadasDebito: 0, aceptadasCredito: 0 }
     };
     let dianConfirmResolve = null;
@@ -890,8 +888,10 @@
     }
 
     function applyDianPreset(presetKey) {
-      const preset = DIAN_SET_PRESETS[presetKey];
-      if (!preset) return;
+      const preset = DIAN_SET_PRESETS[presetKey] || DIAN_SET_PRESETS.actual;
+      if (!DIAN_SET_PRESETS[presetKey]) {
+        setValue("feDianSetPreset", "actual");
+      }
       setValue("feDianSetFacturas", preset.facturas);
       setValue("feDianSetNotasDebito", preset.debito);
       setValue("feDianSetNotasCredito", preset.credito);

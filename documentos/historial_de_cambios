@@ -1,3 +1,9 @@
+2026-06-08: DIAN sin preset reducido.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Frontend: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` elimina del selector `Preset del set` la opcion pequena de software gratuito y su entrada `DIAN_SET_PRESETS.gratuito`.
+- Operacion: los administradores solo pueden elegir el objetivo real del portal, el historico si DIAN lo exige o capturar un objetivo personalizado; un valor antiguo se normaliza al objetivo real.
+- Seguridad: sin cambios en endpoints, credenciales, certificados, TestSetId, transporte SOAP ni persistencia multiempresa.
+
 2026-06-08: Centro de habilitacion DIAN sin JSON crudo.
 - Modulo afectado: Facturacion electronica Colombia.
 - Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` y `web/administrar_empresa/facturacion_electronica.html` renombran el acceso operativo a `Centro de habilitación DIAN`.

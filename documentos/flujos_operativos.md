@@ -442,9 +442,9 @@ afecte dinero, documentos, licencias o seguridad.
    cambiar la empresa a habilitada/produccion local.
 15. La pagina `Facturacion electronica > Tutorial DIAN` resume el flujo
    operativo para conectar DIAN: datos del portal, configuracion Colombia,
-   carga de firma, prueba 2+2+2, set completo, acuse final y activacion local
+   carga de firma, set completo, acuse final y activacion local
    de produccion. Debe mantenerse sin secretos reales.
-16. Estado operativo actual: la prueba `Enviar prueba 2 + 2 + 2` debe quedar
+16. Estado operativo actual: el set real configurado por empresa debe quedar
    como envio real con HTTP 200, TrackId/ZipKey y respuesta inicial `Batch en
    proceso de validacion`. Ese estado todavia no equivale a aceptacion final.
 17. Lo que falta en el modulo DIAN/documentos electronicos es consultar y
@@ -456,9 +456,9 @@ afecte dinero, documentos, licencias o seguridad.
    archivo no se guarda en `/uploads/dian`, y confirmar que otro `empresa_id` no
    puede consultar ni modificar la configuracion. Luego usar `Verificar
    vencimiento` en la pantalla para confirmar que se ve fecha, dias restantes y
-   estado de alerta. En `Pasar test DIAN`, guardar objetivo, validar
+   estado de alerta. En `Centro de habilitacion DIAN`, guardar objetivo, validar
    credenciales, ejecutar al menos un envio manual de factura de prueba y correr
-   `Enviar prueba 2 + 2 + 2`; despues consultar `GetStatusZip` hasta cierre real
+   el set automatico real; despues consultar `GetStatusZip` hasta cierre real
    del acuse.
 
 ## Login usuarios operativos

@@ -1,3 +1,8 @@
+## [2026-06-08] DIAN sin preset reducido
+- [Frontend] `facturacion_electronica_pruebas_dian.html` elimina del selector el preset pequeno de software gratuito y conserva solo `30 + 10 + 10`, `60 + 20 + 20` y `Personalizado`.
+- [Operacion] Si una sesion antigua intenta aplicar el valor retirado, la pagina vuelve al objetivo real del portal para evitar envios parciales accidentales.
+- [Alcance] No cambia endpoints, tablas, credenciales, certificado ni transporte real DIAN.
+
 ## [2026-06-08] Centro de habilitacion DIAN sin JSON crudo
 - [Frontend] Los accesos de facturacion electronica cambian el texto `Pasar test DIAN` por `Centro de habilitación DIAN`.
 - [UX] El diagnostico DIAN ya no muestra el JSON completo abierto en la pagina; ahora renderiza estado, ambiente, configuracion, preparacion, siguiente paso, faltantes y observaciones tecnicas.
@@ -151,7 +156,7 @@
 - [Seguridad] La barra no muestra secretos y no reemplaza el acuse final aceptado de DIAN.
 
 ## [2026-06-06] Tutorial DIAN en submenu de facturacion electronica
-- [Frontend] `facturacion_electronica_tutorial_dian.html` agrega una guia operativa para configurar conexion DIAN, firma digital, prueba 2+2+2, set completo, acuse final y activacion de produccion local.
+- [Frontend] `facturacion_electronica_tutorial_dian.html` agrega una guia operativa para configurar conexion DIAN, firma digital, objetivo del portal, set completo, acuse final y activacion de produccion local.
 - [Navegacion] `facturacion_electronica_menu.html` incorpora `Tutorial DIAN` para Colombia con permiso de lectura de facturacion y conserva `empresa_id` al abrir configuracion o pruebas.
 - [Seguridad] El tutorial evita publicar secretos reales y orienta a usar la consola DIAN saneada como evidencia operativa.
 
@@ -163,7 +168,7 @@
 ## [2026-06-06] Resumen portal DIAN en pruebas
 - [Frontend] `facturacion_electronica_pruebas_dian.html` muestra una ficha espejo del portal DIAN con contribuyente, TestSetId, modo de operacion, rango, software, URL, documentos requeridos y aceptados requeridos.
 - [Seguridad] PIN y clave tecnica se muestran enmascarados por defecto y solo se revelan con accion explicita en pantalla.
-- [Operacion] La pagina permite comparar rapidamente los datos guardados contra el set de pruebas asignado por DIAN antes de ejecutar 2+2+2 o el set completo.
+- [Operacion] La pagina permite comparar rapidamente los datos guardados contra el set de pruebas asignado por DIAN antes de ejecutar el set automatico real.
 
 ## [2026-06-06] Consola visible de respuestas DIAN
 - [Frontend] `facturacion_electronica_pruebas_dian.html` agrega una consola DIAN con historial visible de configuracion, validacion, diagnostico, envios reales, conexion, cola y operaciones documentales.

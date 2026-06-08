@@ -129,7 +129,7 @@
 
 2026-06-06: Tutorial operativo DIAN
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
-- Frontend: `facturacion_electronica_tutorial_dian.html` agrega una guia corta dentro del submenu para conectar DIAN, cargar firma, validar credenciales, enviar 2+2+2, ejecutar set completo y cerrar acuse final.
+- Frontend: `facturacion_electronica_tutorial_dian.html` agrega una guia corta dentro del submenu para conectar DIAN, cargar firma, validar credenciales, guardar objetivo del portal, ejecutar set completo y cerrar acuse final.
 - Navegacion: `facturacion_electronica_menu.html` muestra `Tutorial DIAN` solo para Colombia y usuarios con permiso de lectura de facturacion.
 - Seguridad: la guia usa placeholders operativos y no imprime PIN, claves tecnicas, certificados, contrasenas ni tokens.
 
@@ -149,14 +149,14 @@
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Frontend: `facturacion_electronica_pruebas_dian.html` muestra una consola de respuestas DIAN/proveedor con hora, accion, estado HTTP, duracion y JSON saneado.
 - Seguridad: se ocultan claves, PIN, tokens, certificados y llave tecnica en la consola y al copiar la bitacora.
-- Operacion: la consola registra recarga de configuracion, validacion, diagnostico, prueba 2+2+2, envios manuales, conexion, cola y operaciones documentales para soporte sin depender de F12.
+- Operacion: la consola registra recarga de configuracion, validacion, diagnostico, set automatico, envios manuales, conexion, cola y operaciones documentales para soporte sin depender de F12.
 
 2026-06-06: DIAN SOAP real recibido y acuse final pendiente
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Backend: el transporte oficial SOAP/WCF conserva WS-Security con `BinarySecurityToken`, firma de `wsa:To` e `InclusiveNamespaces`; la prueba real 2+2+2 ya debe llegar a DIAN y recibir TrackId/ZipKey sin `InvalidSecurity`.
 - Operacion: `Batch en proceso de validacion` es recepcion inicial, no aceptacion final. Lo faltante es consultar `GetStatusZip` hasta acuse aceptado/rechazado, persistir ese cierre por documento/lote y actualizar conteos aceptados.
 - Frontend: la pantalla `Centro de habilitación DIAN` debe mostrar los pendientes de acuse de forma resumida y permitir comprobar el cierre real sin exponer XML, certificados ni secretos.
-- QA: el cierre del modulo requiere repetir 2+2+2 real, validar TrackId/ZipKey, capturar acuse final y despues ejecutar el set completo configurado por empresa.
+- QA: el cierre del modulo requiere ejecutar el set real configurado por empresa, validar TrackId/ZipKey y capturar acuse final.
 
 2026-06-06: DIAN set real sin simulacion
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa`.
