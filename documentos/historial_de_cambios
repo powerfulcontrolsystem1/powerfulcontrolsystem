@@ -2,8 +2,8 @@
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
 - Investigacion oficial: se contrasto `dianBuildXAdESBaseSignature` contra los XML de ejemplo de la Caja de herramientas DIAN FE V19 V2026; los ejemplos usan politica `https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf`, `xades:Description`, namespace `xades141` y `xades:SignedDataObjectProperties`.
 - Backend: la firma XAdES base ahora emite `ReferencePCS` como referencia del documento, `SignedDataObjectProperties/DataObjectFormat` con `MimeType text/xml` y `Encoding UTF-8`, `xades141` y politica v2.
-- Evidencia DIAN: se reconsultaron uno a uno con `GetStatusZip` real los TrackId/ZipKey de empresa `12`; el set `SETP990000135` a `SETP990000185` continua en `Batch en proceso de validacion`, y las pruebas nuevas `SETP990000186` a `SETP990000192` estan rechazadas con `StatusCode=99`.
-- Diagnostico actual: la factura `SETP990000192` con adquiriente normal conserva `ZE02 Valor de la firma invalido` y notificacion `FAJ43b`; las notas no deben reenviarse hasta obtener una factura aceptada `StatusCode=00`.
+- Evidencia DIAN: se reconsultaron uno a uno con `GetStatusZip` real los TrackId/ZipKey de empresa `12`; el set `SETP990000135` a `SETP990000185` continua en `Batch en proceso de validacion`, y las pruebas nuevas `SETP990000186` a `SETP990000194` estan rechazadas con `StatusCode=99`.
+- Diagnostico actual: tras desplegar XAdES v2 se enviaron `SETP990000193` y `SETP990000194`; `SETP990000194` con adquiriente normal conserva `ZE02 Valor de la firma invalido` y notificacion `FAJ43b`; las notas no deben reenviarse hasta obtener una factura aceptada `StatusCode=00`.
 - QA: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.
 
 2026-06-08: DIAN consumidor final y firma XAdES canonicalizada.

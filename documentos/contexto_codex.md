@@ -14,8 +14,8 @@ decisiones en cada tarea.
   documento XML.
 - La reconsulta real de `GetStatusZip` para Powerful Control System confirma:
   `SETP990000135` a `SETP990000185` siguen en `Batch en proceso de validacion`;
-  `SETP990000186` a `SETP990000192` estan rechazados `StatusCode=99`.
-- El ultimo diagnostico con adquiriente normal (`SETP990000192`) deja como
+  `SETP990000186` a `SETP990000194` estan rechazados `StatusCode=99`.
+- El ultimo diagnostico con adquiriente normal (`SETP990000194`) deja como
   bloqueo tecnico principal `ZE02 Valor de la firma invalido`; `FAJ43b` es una
   notificacion de nombre/RUT del adquiriente. No reenviar notas debito/credito
   hasta lograr una factura aceptada `StatusCode=00`.
