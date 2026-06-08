@@ -13650,3 +13650,13 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+
+2026-06-08 06:10:01 - Mensaje: DIAN: consumidor final usa codigo ZZ; Commit: 2734b694; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios

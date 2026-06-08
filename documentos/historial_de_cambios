@@ -32571,3 +32571,14 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+
+2026-06-08: DIAN: consumidor final usa codigo ZZ
+PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
