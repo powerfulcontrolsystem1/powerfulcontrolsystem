@@ -13660,3 +13660,13 @@ Archivos modificados:
 - documentos/descripcion_de_archivos
 - documentos/descripcion_de_modulos
 - documentos/historial_de_cambios
+
+2026-06-08 06:31:16 - Mensaje: DIAN: alinear politica XAdES v2; Commit: 8d8a03dd; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/historial_de_cambios
