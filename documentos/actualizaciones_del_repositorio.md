@@ -13670,3 +13670,10 @@ Archivos modificados:
 - documentos/contexto_codex.md
 - documentos/descripcion_de_archivos
 - documentos/historial_de_cambios
+
+2026-06-08 06:41:23 - Mensaje: DIAN: registrar prueba XAdES v2 real; Commit: dbb82093; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/historial_de_cambios
