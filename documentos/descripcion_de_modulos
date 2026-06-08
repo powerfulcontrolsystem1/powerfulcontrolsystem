@@ -1,3 +1,10 @@
+2026-06-08: Centro de habilitacion DIAN legible
+- Modulo afectado: `facturacion_electronica`.
+- El boton y acceso antes llamados `Pasar test DIAN` ahora se muestran como `Centro de habilitación DIAN`.
+- El diagnostico oficial DIAN deja de mostrarse como JSON crudo abierto: se resume en estado, ambiente, configuracion, preparacion, siguiente paso, faltantes y observaciones.
+- El detalle JSON queda plegado en `Ver detalle técnico`, con saneamiento de secretos para soporte.
+- No cambia backend, tablas, credenciales ni envio real a DIAN.
+
 2026-06-08: Facturacion electronica multi-pais en Otros paises
 - Modulo afectado: `facturacion_electronica`.
 - El menu de facturacion electronica mantiene Colombia/DIAN como flujo principal.
@@ -148,7 +155,7 @@
 - Modulos afectados: `facturacion_electronica`, `DIAN`, `administrar_empresa` y documentos electronicos Colombia.
 - Backend: el transporte oficial SOAP/WCF conserva WS-Security con `BinarySecurityToken`, firma de `wsa:To` e `InclusiveNamespaces`; la prueba real 2+2+2 ya debe llegar a DIAN y recibir TrackId/ZipKey sin `InvalidSecurity`.
 - Operacion: `Batch en proceso de validacion` es recepcion inicial, no aceptacion final. Lo faltante es consultar `GetStatusZip` hasta acuse aceptado/rechazado, persistir ese cierre por documento/lote y actualizar conteos aceptados.
-- Frontend: la pantalla `Pasar test DIAN` debe mostrar los pendientes de acuse de forma resumida y permitir comprobar el cierre real sin exponer XML, certificados ni secretos.
+- Frontend: la pantalla `Centro de habilitación DIAN` debe mostrar los pendientes de acuse de forma resumida y permitir comprobar el cierre real sin exponer XML, certificados ni secretos.
 - QA: el cierre del modulo requiere repetir 2+2+2 real, validar TrackId/ZipKey, capturar acuse final y despues ejecutar el set completo configurado por empresa.
 
 2026-06-06: DIAN set real sin simulacion
@@ -160,7 +167,7 @@
 
 2026-06-05: Set automatico DIAN configurable por empresa
 - Modulo afectado: `facturacion_electronica`, `DIAN`, `licencias`.
-- Cambio funcional: el preset principal de `Pasar test DIAN` queda alineado con el objetivo de habilitacion de Powerful Control System (30 facturas, 10 notas debito, 10 notas credito, minimo aceptado 1 factura), y el backend usa el objetivo guardado por cada empresa antes de ejecutar `action=pruebas_dian`.
+- Cambio funcional: el preset principal del `Centro de habilitación DIAN` queda alineado con el objetivo de habilitacion de Powerful Control System (30 facturas, 10 notas debito, 10 notas credito, minimo aceptado 1 factura), y el backend usa el objetivo guardado por cada empresa antes de ejecutar `action=pruebas_dian`.
 - Operacion: el flujo vigente de pruebas DIAN exige `test_set_id`, firma y acuse aceptado; la simulacion queda bloqueada para `action=pruebas_dian` y `action=enviar_set_pruebas`.
 - Licencias: se documenta que el correo unificado solo adjunta factura electronica cuando el pago comercial aprobado es mayor que cero; descuento total o valor cero no emite factura.
 

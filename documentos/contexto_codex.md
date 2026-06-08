@@ -4,6 +4,16 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - Centro de habilitacion DIAN
+
+- El acceso operativo antes llamado `Pasar test DIAN` ahora se presenta como
+  `Centro de habilitación DIAN`.
+- `facturacion_electronica_pruebas_dian.html` sigue siendo la pagina de
+  validacion, objetivo del set, envios manuales y set automatico real.
+- Las respuestas de `diagnostico_oficial` se muestran como resumen operativo
+  legible; el JSON tecnico queda plegado en `Ver detalle técnico` y saneado para
+  no exponer secretos.
+
 ## Actualizacion 2026-06-08 - Otros paises en facturacion electronica
 
 - `web/administrar_empresa/facturacion_electronica_menu.html` mantiene a

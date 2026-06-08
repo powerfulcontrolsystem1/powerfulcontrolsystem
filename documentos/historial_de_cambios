@@ -1,3 +1,10 @@
+2026-06-08: Centro de habilitacion DIAN sin JSON crudo.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` y `web/administrar_empresa/facturacion_electronica.html` renombran el acceso operativo a `Centro de habilitación DIAN`.
+- UX: `web/administrar_empresa/facturacion_electronica_pruebas_dian.html` renderiza el diagnostico DIAN como resumen legible y deja el JSON tecnico plegado en `Ver detalle técnico`.
+- Seguridad: el detalle tecnico usa saneamiento de claves, PIN, tokens y certificados antes de mostrarse.
+- Alcance: sin cambios en endpoints, tablas, credenciales ni transporte real DIAN.
+
 2026-06-08: Otros paises al final del menu de facturacion electronica.
 - Modulo afectado: Facturacion electronica multi-pais.
 - Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` reubica `Ecuador / SRI` y `Panamá / DGI` en el subgrupo colapsado `Otros países`, debajo de los botones principales.
@@ -302,7 +309,7 @@
 
 2026-06-05: Centro de habilitacion DIAN.
 - Modulos afectados: facturacion electronica, DIAN y administrar empresa.
-- Cambio funcional: la pagina `Pasar test DIAN` permite registrar el objetivo exacto del portal DIAN por empresa, ejecutar el set automatico y enviar documentos manuales de prueba.
+- Cambio funcional: la pagina `Centro de habilitación DIAN` permite registrar el objetivo exacto del portal DIAN por empresa, ejecutar el set automatico y enviar documentos manuales de prueba.
 - Backend: `empresa_dian_configuracion` agrega campos de modo, fechas, documentos requeridos y documentos aceptados requeridos; `action=pruebas_dian` usa esos valores para calcular cumplimiento.
 - Seguridad: la llave tecnica y el PIN se guardan como configuracion sensible y no se imprimen en documentacion ni respuestas de cierre.
 - Operacion: Powerful Control System queda configurada en produccion con el modo de operacion y rango de pruebas entregado por el portal DIAN.

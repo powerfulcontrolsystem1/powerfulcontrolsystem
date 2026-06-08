@@ -1,3 +1,9 @@
+## [2026-06-08] Centro de habilitacion DIAN sin JSON crudo
+- [Frontend] Los accesos de facturacion electronica cambian el texto `Pasar test DIAN` por `Centro de habilitación DIAN`.
+- [UX] El diagnostico DIAN ya no muestra el JSON completo abierto en la pagina; ahora renderiza estado, ambiente, configuracion, preparacion, siguiente paso, faltantes y observaciones tecnicas.
+- [Soporte] El JSON completo queda disponible dentro de `Ver detalle técnico`, saneado para no exponer claves, tokens, PIN ni certificados.
+- [Alcance] No cambia endpoints, tablas, credenciales ni el envio real a DIAN.
+
 ## [2026-06-08] Otros paises en facturacion electronica
 - [Frontend] `facturacion_electronica_menu.html` mueve `Ecuador / SRI` y `Panamá / DGI` fuera del listado principal y los agrupa al final bajo el subgrupo colapsado `Otros países`.
 - [Permisos] La visibilidad sigue dependiendo del pais detectado y de `permisos_contexto`; no se abren accesos de otros paises a empresas sin licencia o pais correspondiente.
@@ -207,7 +213,7 @@
 - [QA] Prueba visual local con empresas simuladas confirma mover activas, mover inactivas y recargar con persistencia.
 
 ## [2026-06-05] Centro de habilitacion DIAN
-- [Facturacion electronica] `facturacion_electronica_pruebas_dian.html` queda como pantalla de `Pasar test DIAN`, con estado de alistamiento, validacion de credenciales, diagnostico, objetivo del set y botones para envio automatico o por tipo documental.
+- [Facturacion electronica] `facturacion_electronica_pruebas_dian.html` queda como pantalla de `Centro de habilitación DIAN`, con estado de alistamiento, validacion de credenciales, diagnostico, objetivo del set y botones para envio automatico o por tipo documental.
 - [BD] `empresa_dian_configuracion` guarda modo de operacion, fechas del set y totales requeridos/aceptados por tipo documental para ajustar la habilitacion a lo que muestra el portal DIAN de cada empresa.
 - [Operacion] La empresa interna `Powerful Control System` queda configurada con el set DIAN asignado en el portal; la documentacion solo confirma que los secretos estan registrados, no los imprime.
 

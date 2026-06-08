@@ -1,3 +1,13 @@
+2026-06-08 - Centro de habilitacion DIAN legible
+- `web/administrar_empresa/facturacion_electronica_menu.html`:
+	- renombra el acceso lateral de DIAN a `Centro de habilitación DIAN`.
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- renombra el boton operativo de DIAN y muestra resultados tecnicos como resumen legible con detalle JSON plegado.
+- `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
+	- cambia el encabezado operativo del set, acentua `Diagnóstico DIAN` y evita mostrar JSON crudo abierto en los resultados principales.
+- `web/administrar_empresa/facturacion_electronica_tutorial_dian.html`:
+	- actualiza el nombre del flujo a `Centro de habilitación DIAN`.
+
 2026-06-08 - Submenu Otros paises en facturacion electronica
 - `web/administrar_empresa/facturacion_electronica_menu.html`:
 	- mueve los accesos de Ecuador/SRI y Panamá/DGI al final del menu, dentro del grupo colapsado `Otros paises`.
@@ -260,7 +270,7 @@
 - `web/administrar_empresa/facturacion_electronica_pruebas_dian.html`:
 	- reorganiza la pantalla como `Centro de habilitacion DIAN`, con estado, validacion, diagnostico, guardar objetivo, set automatico y botones manuales por documento.
 - `web/administrar_empresa/facturacion_electronica.html` y `facturacion_electronica_menu.html`:
-	- agregan acceso directo `Pasar test DIAN` desde la configuracion y el submenu de facturacion electronica.
+	- agregan acceso directo al `Centro de habilitación DIAN` desde la configuracion y el submenu de facturacion electronica.
 
 2026-06-05 - OnlyOffice corrige token JWT del editor
 - `backend/handlers/onlyoffice.go`:
