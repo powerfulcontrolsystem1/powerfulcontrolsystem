@@ -13628,3 +13628,15 @@ Archivos modificados:
 - backend/handlers/modulos_faltantes.go
 - documentos/contexto_codex.md
 - documentos/historial_de_cambios
+
+2026-06-08 05:43:25 - Mensaje: DIAN: corregir UBL y flujo uno a uno; Commit: d08d0047; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
