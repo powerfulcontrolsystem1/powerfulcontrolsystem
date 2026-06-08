@@ -1,3 +1,9 @@
+2026-06-08: Nota de OCR documental sin IA
+- Se agrega modulo `ocr`, pagina `linkOCR` y wrapper `WithEmpresaOCRPermissions`.
+- Matriz efectiva: lectura para roles con consulta general; procesar documentos requiere permiso de creacion/actualizacion segun la matriz empresarial y licencia activa.
+- Licencias: fallback a `reportes` o `seguridad` para no bloquear empresas que ya tienen analitica/administracion, pero planes nuevos pueden habilitar `ocr` como modulo independiente.
+- Seguridad: `/api/empresa/ocr` valida `empresa_id`, guarda archivos en carpeta empresarial y no aplica cambios automaticos sobre DIAN, inventario ni usuarios; las sugerencias OCR deben ser revisadas por el administrador.
+
 2026-06-07: Nota de navegacion financiera sin duplicados
 - El grupo `Finanzas y cumplimiento` del menu principal queda como entrada resumida: `Centro financiero y contable`, `Facturacion electronica` y `Reportes ejecutivos`.
 - `Suite contador`, `NIIF`, `Creditos y cartera`, `Gestion de cobranza` e `Impuestos` se mantienen dentro del Centro financiero para no duplicar funciones visibles.

@@ -3,6 +3,21 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-08 (OCR documental sin IA)
+- Nueva tabla `empresa_ocr_documentos`: guarda por `empresa_id` cada documento
+  procesado con OCR, tipo documental, titulo, archivo, MIME, motor, idioma,
+  estado, texto extraido, `campos_json`, `sugerencias_json`, confianza,
+  usuario creador y fecha.
+- Indices: `ix_empresa_ocr_documentos_empresa` por empresa/fecha e
+  `ix_empresa_ocr_documentos_tipo` por empresa/tipo.
+- Los archivos fuente quedan en
+  `web/uploads/empresas/empresa_{id}/ocr/`; el OCR no escribe configuraciones
+  fiscales, productos ni usuarios automaticamente. El administrador revisa las
+  sugerencias antes de aplicar cambios en los modulos destino.
+- La configuracion global vive en `pcs_superadministrador.configuraciones` con
+  claves `ocr.enabled`, `ocr.engine`, `ocr.tesseract_bin`, `ocr.pdftoppm_bin`,
+  `ocr.lang`, `ocr.psm`, `ocr.max_upload_mb` y `ocr.max_pdf_pages`.
+
 Actualizacion 2026-06-08 (capturas DIAN OCR/IA)
 - No se agrega tabla nueva. El asistente de capturas usa
   `empresa_dian_configuracion` para aplicar datos detectados al formulario DIAN

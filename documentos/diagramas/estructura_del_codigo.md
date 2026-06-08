@@ -1,3 +1,25 @@
+## Actualizacion 2026-06-08 - OCR documental sin IA
+
+- `backend/db/ocr.go`
+  - Define `empresa_ocr_documentos`, consultas de historial y lectura por
+    `empresa_id`.
+- `backend/handlers/ocr.go`
+  - Implementa `/api/empresa/ocr` con upload multipart, Tesseract CLI,
+    conversion PDF con `pdftoppm`, parser de campos y configuracion super
+    `/super/api/config/ocr`.
+- `backend/handlers/empresa_permisos.go`
+  - Agrega modulo `ocr`, pagina `linkOCR` y wrapper
+    `WithEmpresaOCRPermissions`.
+- `web/administrar_empresa/ocr.html`
+  - Pantalla empresarial independiente para procesar OCR, ver sugerencias,
+    texto extraido e historial.
+- `web/super/configuracion/ocr.html`
+  - Pantalla super para activar/probar binarios e idioma del motor OCR.
+- `deploy/docker/backend.Dockerfile`
+  - Incluye `poppler-utils` para PDFs, junto con Tesseract y datos `spa+eng`.
+- Flujo: Administrar empresa -> OCR -> `/api/empresa/ocr` ->
+  `empresa_ocr_documentos` -> sugerencias revisables para modulos destino.
+
 ## Actualizacion 2026-06-08 - Ayuda contextual en formularios
 
 - `web/js/form_field_help.js`

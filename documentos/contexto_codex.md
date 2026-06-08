@@ -109,11 +109,12 @@ decisiones en cada tarea.
 
 - `web/administrar_empresa/facturacion_electronica_menu.html` mantiene a
   Colombia/DIAN como flujo principal visible del submenu de facturacion.
-- Los accesos `Ecuador / SRI` y `Panamá / DGI` viven al final dentro del grupo
-  colapsado `Otros países`.
-- El grupo solo se muestra cuando la deteccion de pais y `permisos_contexto`
-  permiten alguna de esas paginas; no sustituye validaciones de backend ni
-  licencia.
+- El submenu usa un selector `Pais fiscal` alimentado por
+  `/api/empresa/facturacion_electronica/paises_disponibles`; Colombia carga la
+  pagina DIAN actual y Ecuador/Panama cargan sus paginas fiscales existentes
+  desde la misma seleccion, sin enlaces duplicados.
+- El selector conserva `empresa_id` en el iframe y no sustituye validaciones de
+  backend, permisos ni licencia.
 
 ## Actualizacion 2026-06-07 - Bodega base por empresa
 
@@ -139,13 +140,14 @@ decisiones en cada tarea.
 
 ## Actualizacion 2026-06-08 - Facturacion electronica inicia en DIAN
 
-- `web/administrar_empresa/facturacion_electronica.html` ya no muestra las
-  tarjetas introductorias `Pais detectado automaticamente` ni `Perfil de
-  facturacion`.
-- La pantalla inicia visualmente con `Configuracion DIAN Colombia` y luego
-  `Cargar firma electronica (Colombia / DIAN)`.
-- La deteccion de pais sigue corriendo internamente para cargar Colombia/DIAN y
-  perfiles por pais, pero no ocupa una tarjeta visible.
+- `web/administrar_empresa/facturacion_electronica.html` inicia con un selector
+  visible de pais detectado/seleccionado y luego conserva `Configuracion DIAN
+  Colombia` y `Cargar firma electronica (Colombia / DIAN)`.
+- La deteccion de pais carga Colombia/DIAN sin romper el flujo existente; si el
+  usuario elige Ecuador o Panama se redirige a la pagina fiscal especifica de
+  ese pais conservando `empresa_id`.
+- La tarjeta antigua `Perfil de facturacion` sigue fuera de la vista para no
+  duplicar informacion.
 
 ## Actualizacion 2026-06-07 - Ayuda integrada con robot/caja IA
 

@@ -6,11 +6,22 @@
   <title>Facturación electrónica - Menú</title>
   <link rel="stylesheet" href="/estilos.css">
   <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    .facturacion-country-picker{margin:10px 0 14px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+    .facturacion-country-picker label{display:block;margin-bottom:6px;color:var(--muted);font-size:.8rem;font-weight:800}
+    .facturacion-country-picker select{width:100%;min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:8px 10px}
+    .facturacion-country-picker p{margin:6px 0 0;color:var(--muted);font-size:.76rem;line-height:1.35}
+  </style>
 </head>
 <body class="admin-empresa-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Facturación electrónica</h2>
+      <div class="facturacion-country-picker">
+        <label for="facturacionPaisSelector">País fiscal</label>
+        <select id="facturacionPaisSelector"></select>
+        <p id="facturacionPaisSource">Detectando país de la empresa...</p>
+      </div>
       <ul class="nav admin-nav-grouped" id="facturacionSidebarNav">
         <li hidden data-country-gated="CO"><a id="linkFacturacionMain" href="/administrar_empresa/facturacion_electronica.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturación electrónica</a></li>
         <li hidden data-country-gated="CO"><a id="linkPruebasDian" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Centro de habilitación DIAN</a></li>
@@ -18,13 +29,6 @@
         <li hidden data-country-gated="CO"><a id="linkProveedoresFirmaDigital" href="/administrar_empresa/proveedores_firma_digital.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Proveedores de firma digital</a></li>
         <li><a id="linkFacturasElectronicas" href="/administrar_empresa/facturas_electronicas.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturas electrónicas</a></li>
         <li><a id="linkAIUConstruccion" href="/administrar_empresa/aiu_construccion.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">AIU construcción</a></li>
-        <li id="facturacionOtrosPaisesItem" class="admin-nav-group" hidden>
-          <div class="admin-nav-group-title">Otros países</div>
-          <ul class="admin-nav-sublist">
-            <li hidden data-country-gated="EC"><a id="linkFacturacionEcuador" href="/administrar_empresa/facturacion_electronica_ecuador.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Ecuador / SRI</a></li>
-            <li hidden data-country-gated="PA"><a id="linkFacturacionPanama" href="/administrar_empresa/facturacion_electronica_panama.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Panamá / DGI</a></li>
-          </ul>
-        </li>
         <li class="admin-menu-visibility-item">
           <button type="button" class="admin-menu-visibility-toggle" aria-controls="facturacionSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
@@ -45,18 +49,13 @@
 
       var countryLinks = Array.prototype.slice.call(document.querySelectorAll('[data-country-gated] a[id]'));
       var frame = document.getElementById('facturacionContentFrame');
-      var otherCountriesItem = document.getElementById('facturacionOtrosPaisesItem');
-      var otherCountryLinkIds = {
-        linkFacturacionEcuador: true,
-        linkFacturacionPanama: true
-      };
+      var selector = document.getElementById('facturacionPaisSelector');
+      var source = document.getElementById('facturacionPaisSource');
       var countryMenuState = {
-        applying: false,
         country: '',
         empresaId: 0,
         permissions: null
       };
-      if (!countryLinks.length) return;
 
       function setCountryLinkVisible(link, visible) {
         if (!link) return;
@@ -67,18 +66,6 @@
         item.style.display = visible ? '' : 'none';
         link.setAttribute('data-country-visible', visible ? '1' : '0');
         if (!visible) link.classList.remove('active');
-      }
-
-      function syncOtherCountriesVisibility() {
-        if (!otherCountriesItem) return;
-        var hasVisibleCountry = countryLinks.some(function(link) {
-          return !!otherCountryLinkIds[link.id] && link.getAttribute('data-country-visible') === '1';
-        });
-        otherCountriesItem.hidden = !hasVisibleCountry;
-        otherCountriesItem.style.display = hasVisibleCountry ? '' : 'none';
-        otherCountriesItem.classList.remove('is-open');
-        var title = otherCountriesItem.querySelector('.admin-nav-group-title');
-        if (title) title.setAttribute('aria-expanded', 'false');
       }
 
       function resolveEmpresaId() {
@@ -127,7 +114,6 @@
       function linkAllowedByLicenseAndRole(ctx, link) {
         if (!link || !ctx || typeof ctx !== 'object') return false;
         var pageKey = link.id || '';
-        if (!ctx || typeof ctx !== 'object') return false;
         if (pageKey && ctx.paginas && Object.prototype.hasOwnProperty.call(ctx.paginas, pageKey)) {
           return ctx.paginas[pageKey] === true;
         }
@@ -135,9 +121,7 @@
           linkFacturacionMain: { module: 'facturacion', action: 'C' },
           linkPruebasDian: { module: 'facturacion', action: 'A' },
           linkTutorialDian: { module: 'facturacion', action: 'R' },
-          linkProveedoresFirmaDigital: { module: 'facturacion', action: 'R' },
-          linkFacturacionEcuador: { module: 'facturacion_ecuador', action: 'C' },
-          linkFacturacionPanama: { module: 'facturacion_panama', action: 'C' }
+          linkProveedoresFirmaDigital: { module: 'facturacion', action: 'R' }
         };
         var rule = ruleByLink[pageKey] || {};
         var expectedModule = rule.module || '';
@@ -146,9 +130,7 @@
         for (var i = 0; i < modules.length; i += 1) {
           var row = modules[i] || {};
           var key = String(row.modulo || row.module || '').trim().toLowerCase();
-          if (key === expectedModule) {
-            return actionAllowedFromRow(row, rule.action);
-          }
+          if (key === expectedModule) return actionAllowedFromRow(row, rule.action);
         }
         return false;
       }
@@ -161,83 +143,90 @@
         });
       }
 
-      function withEmpresaContext(rawHref, empresaId) {
+      function withEmpresaContext(rawHref, empresaId, country) {
         try {
           var url = new URL(rawHref, window.location.origin);
           if (empresaId > 0) url.searchParams.set('empresa_id', String(empresaId));
+          if (country) url.searchParams.set('pais_codigo', String(country).toUpperCase());
           return url.pathname + url.search + url.hash;
         } catch (_) {
           return rawHref;
         }
       }
 
-      function chooseDefaultCountryPage(country, empresaId) {
-        if (!frame) return;
-        var firstVisible = null;
-        for (var i = 0; i < countryLinks.length; i += 1) {
-          var link = countryLinks[i];
-          var visible = link.getAttribute('data-country-visible') === '1';
-          if (visible && countryMatches(link, country)) {
-            firstVisible = link;
-            break;
-          }
-        }
-        if (!firstVisible) return;
-        var targetSrc = withEmpresaContext(firstVisible.getAttribute('href') || '', empresaId);
-        var currentSrc = frame.getAttribute('src') || '';
-        if (frame.getAttribute('data-country-default-applied') === '1' && currentSrc === targetSrc) return;
-        if (frame.getAttribute('data-country-default-applied') === '1' && country === 'CO') return;
-        frame.setAttribute('data-country-default-applied', '1');
-        frame.setAttribute('src', targetSrc);
+      function countryPage(country) {
+        country = String(country || '').trim().toUpperCase();
+        if (country === 'EC') return '/administrar_empresa/facturacion_electronica_ecuador.html';
+        if (country === 'PA') return '/administrar_empresa/facturacion_electronica_panama.html';
+        return '/administrar_empresa/facturacion_electronica.html';
       }
 
-      function applyCountryMenuState() {
-        if (!countryMenuState.country || !countryMenuState.permissions) return;
-        countryMenuState.applying = true;
+      function renderCountrySelector(items, selected) {
+        if (!selector) return;
+        var list = Array.isArray(items) && items.length ? items : [{ codigo: 'CO', nombre: 'Colombia', bandera: 'CO' }];
+        selector.innerHTML = '';
+        list.forEach(function(item) {
+          var code = String(item.codigo || '').trim().toUpperCase();
+          if (!code) return;
+          var opt = document.createElement('option');
+          opt.value = code;
+          opt.textContent = String((item.bandera || '') + ' ' + (item.nombre || code)).trim();
+          selector.appendChild(opt);
+        });
+        selector.value = selected || 'CO';
+        if (!selector.value && selector.options.length) selector.selectedIndex = 0;
+      }
+
+      function applyCountryMenuState(navigate) {
+        var country = String(countryMenuState.country || 'CO').trim().toUpperCase();
+        var permissions = countryMenuState.permissions || {};
         countryLinks.forEach(function(link) {
-          setCountryLinkVisible(link, countryMatches(link, countryMenuState.country) && linkAllowedByLicenseAndRole(countryMenuState.permissions, link));
+          setCountryLinkVisible(link, countryMatches(link, country) && linkAllowedByLicenseAndRole(permissions, link));
         });
-        syncOtherCountriesVisibility();
-        chooseDefaultCountryPage(countryMenuState.country, countryMenuState.empresaId);
-        countryMenuState.applying = false;
-      }
-
-      function scheduleCountryMenuRepairs() {
-        [120, 650, 1500].forEach(function(delay) {
-          setTimeout(applyCountryMenuState, delay);
-        });
+        if (selector && selector.value !== country) selector.value = country;
+        if (source) source.textContent = country === 'CO'
+          ? 'Colombia usa la configuración DIAN actual.'
+          : 'El país seleccionado carga su página fiscal específica.';
+        if (navigate && frame) {
+          var target = withEmpresaContext(countryPage(country), countryMenuState.empresaId, country);
+          if ((frame.getAttribute('src') || '') !== target) frame.setAttribute('src', target);
+        }
       }
 
       function syncCountryMenu() {
-        countryLinks.forEach(function(link) {
-          setCountryLinkVisible(link, false);
-        });
-        syncOtherCountriesVisibility();
+        countryLinks.forEach(function(link) { setCountryLinkVisible(link, false); });
         var empresaId = resolveEmpresaId();
         if (!empresaId) return;
         var tz = '';
         try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (_) {}
         var lang = '';
         try { lang = navigator.language || ''; } catch (_) {}
+        var catalogURL = '/api/empresa/facturacion_electronica/paises_disponibles?empresa_id=' + encodeURIComponent(empresaId);
         var detectedURL = '/api/empresa/facturacion_electronica/pais_detectado?empresa_id=' + encodeURIComponent(empresaId) + '&tz=' + encodeURIComponent(tz) + '&lang=' + encodeURIComponent(lang);
         var permsURL = '/api/empresa/permisos_contexto?empresa_id=' + encodeURIComponent(empresaId);
-        Promise.all([fetchJSON(detectedURL), fetchJSON(permsURL)]).then(function(results) {
-          var detected = results[0] || {};
-          var permissions = results[1] || {};
-          var country = String(detected.pais_codigo || '').trim().toUpperCase();
+        Promise.all([fetchJSON(catalogURL), fetchJSON(detectedURL), fetchJSON(permsURL)]).then(function(results) {
+          var catalog = results[0] || {};
+          var detected = results[1] || {};
+          var permissions = results[2] || {};
+          var country = String(detected.pais_codigo || 'CO').trim().toUpperCase();
           countryMenuState.country = country;
           countryMenuState.empresaId = empresaId;
           countryMenuState.permissions = permissions;
-          applyCountryMenuState();
-          scheduleCountryMenuRepairs();
+          renderCountrySelector(catalog.items || [], country);
+          applyCountryMenuState(true);
         }).catch(function() {
-          countryMenuState.country = '';
-          countryMenuState.empresaId = 0;
-          countryMenuState.permissions = null;
-          countryLinks.forEach(function(link) {
-            setCountryLinkVisible(link, false);
-          });
-          syncOtherCountriesVisibility();
+          countryMenuState.country = 'CO';
+          countryMenuState.empresaId = empresaId;
+          countryMenuState.permissions = {};
+          renderCountrySelector([], 'CO');
+          applyCountryMenuState(true);
+        });
+      }
+
+      if (selector) {
+        selector.addEventListener('change', function() {
+          countryMenuState.country = String(selector.value || 'CO').trim().toUpperCase();
+          applyCountryMenuState(true);
         });
       }
 

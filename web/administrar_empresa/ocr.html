@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OCR documental</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <script src="/menu.js"></script>
+  <script src="/js/empresa_submenu_context.js"></script>
+  <style>
+    body.ocr-page{min-height:100vh;background:var(--bg);color:var(--text)}
+    .ocr-shell{display:grid;gap:14px}
+    .ocr-layout{display:grid;grid-template-columns:minmax(320px,.92fr) minmax(360px,1.08fr);gap:14px;align-items:start}
+    .ocr-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+    .ocr-panel h2{margin:0 0 8px;font-size:1.05rem;color:var(--text)}
+    .ocr-muted{color:var(--muted);line-height:1.45;font-size:.92rem}
+    .ocr-drop{border:2px dashed var(--border);border-radius:8px;min-height:150px;background:var(--surface-soft);display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;cursor:pointer}
+    .ocr-drop.drag{border-color:var(--accent);background:color-mix(in srgb,var(--surface-soft) 82%,var(--accent) 18%)}
+    .ocr-form{display:grid;gap:10px}
+    .ocr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .ocr-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .ocr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .ocr-kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px}
+    .ocr-kpi span{display:block;color:var(--muted);font-size:.8rem}
+    .ocr-kpi strong{display:block;margin-top:4px;font-size:1.35rem;color:var(--text)}
+    .ocr-text{width:100%;min-height:220px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.86rem;line-height:1.45}
+    .ocr-suggestions{display:grid;gap:8px}
+    .ocr-suggestion{border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface-soft)}
+    .ocr-suggestion strong{display:block;color:var(--text)}
+    .ocr-suggestion code{display:inline-block;margin-top:4px;white-space:normal;word-break:break-word}
+    .ocr-history{display:grid;gap:8px;max-height:360px;overflow:auto}
+    .ocr-history button{width:100%;text-align:left;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);color:var(--text);padding:10px}
+    .ocr-status{font-weight:800;color:var(--accent)}
+    .ocr-status.error{color:var(--danger,#b91c1c)}
+    @media(max-width:900px){.ocr-layout,.ocr-grid{grid-template-columns:1fr}.ocr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body class="empresa-page ocr-page" data-auto-estacion-labels="true">
+  <main class="empresa-main ocr-shell">
+    <header class="page-heading compact">
+      <div>
+        <p class="eyebrow">Motor OCR sin inteligencia artificial</p>
+        <h1>OCR documental</h1>
+        <p>Convierte documentos de la empresa en texto y campos sugeridos para configurar DIAN, inventario, usuarios, clientes y otros procesos.</p>
+      </div>
+      <div class="page-heading-actions">
+        <button id="btnOCRRefresh" class="btn secondary" type="button">Actualizar</button>
+        <button id="btnOCRProcess" class="btn primary" type="button">Procesar OCR</button>
+      </div>
+    </header>
+
+    <section class="ocr-kpis" aria-label="Indicadores OCR">
+      <article class="ocr-kpi"><span>Documentos</span><strong id="ocrKpiDocs">0</strong></article>
+      <article class="ocr-kpi"><span>Motor</span><strong id="ocrKpiMotor">-</strong></article>
+      <article class="ocr-kpi"><span>Idioma</span><strong id="ocrKpiLang">-</strong></article>
+      <article class="ocr-kpi"><span>Estado</span><strong id="ocrKpiStatus">-</strong></article>
+    </section>
+
+    <section class="ocr-layout">
+      <article class="ocr-panel">
+        <h2>Cargar documento</h2>
+        <form id="ocrForm" class="ocr-form">
+          <input id="ocrFile" type="file" accept="image/*,application/pdf" hidden>
+          <div id="ocrDrop" class="ocr-drop" tabindex="0">
+            <div>
+              <strong id="ocrFileName">Arrastra una imagen o PDF</strong>
+              <p class="ocr-muted">Formatos admitidos: PNG, JPG, WEBP, TIFF y PDF.</p>
+            </div>
+          </div>
+          <div class="ocr-grid">
+            <label>Tipo de documento
+              <select id="ocrTipo" class="form-input">
+                <option value="dian">DIAN / facturacion electronica</option>
+                <option value="inventario">Inventario y productos</option>
+                <option value="usuarios">Usuarios y empleados</option>
+                <option value="clientes">Clientes y terceros</option>
+                <option value="general">Documento general</option>
+              </select>
+            </label>
+            <label>Titulo
+              <input id="ocrTitulo" class="form-input" type="text" maxlength="180" placeholder="Ej: Captura DIAN numeracion">
+            </label>
+          </div>
+          <div class="ocr-actions">
+            <button class="btn secondary" type="button" id="btnOCRChoose">Seleccionar archivo</button>
+            <button class="btn primary" type="submit">Procesar OCR</button>
+            <span id="ocrStatus" class="ocr-status"></span>
+          </div>
+        </form>
+      </article>
+
+      <article class="ocr-panel">
+        <h2>Sugerencias detectadas</h2>
+        <div id="ocrSuggestions" class="ocr-suggestions">
+          <p class="ocr-muted">Procesa un documento para ver campos detectados.</p>
+        </div>
+        <div class="ocr-actions" style="margin-top:10px">
+          <button id="btnOCRCopyJSON" class="btn secondary" type="button">Copiar JSON</button>
+          <a id="btnOCRDian" class="btn secondary" href="/administrar_empresa/facturacion_electronica.html" target="contentFrame">Abrir DIAN</a>
+          <a id="btnOCRInventario" class="btn secondary" href="/administrar_empresa/administrar_productos.html" target="contentFrame">Abrir inventario</a>
+          <a id="btnOCRUsuarios" class="btn secondary" href="/administrar_empresa/administrar_usuarios.html" target="contentFrame">Abrir usuarios</a>
+        </div>
+      </article>
+    </section>
+
+    <section class="ocr-layout">
+      <article class="ocr-panel">
+        <h2>Texto extraido</h2>
+        <textarea id="ocrText" class="form-input ocr-text" readonly></textarea>
+      </article>
+      <article class="ocr-panel">
+        <h2>Historial OCR</h2>
+        <div id="ocrHistory" class="ocr-history"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const params = new URLSearchParams(window.location.search || "");
+      const empresaID = params.get("empresa_id") || localStorage.getItem("empresa_id") || localStorage.getItem("empresaId") || "";
+      const state = { file:null, last:null, history:[] };
+      const $ = id => document.getElementById(id);
+      function api(action){
+        let url = "/api/empresa/ocr?empresa_id=" + encodeURIComponent(empresaID || "0");
+        if (action) url += "&action=" + encodeURIComponent(action);
+        return url;
+      }
+      function setStatus(text, isError){
+        const el = $("ocrStatus");
+        if (!el) return;
+        el.textContent = text || "";
+        el.classList.toggle("error", !!isError);
+      }
+      function escapeHTML(value){
+        return String(value || "").replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[ch]));
+      }
+      function cleanError(text){
+        try { const data = JSON.parse(text); return data.error || data.message || text; } catch(e){ return String(text || "").trim(); }
+      }
+      function bind(){
+        $("btnOCRRefresh")?.addEventListener("click", loadDashboard);
+        $("btnOCRProcess")?.addEventListener("click", () => $("ocrForm")?.requestSubmit());
+        $("btnOCRChoose")?.addEventListener("click", () => $("ocrFile")?.click());
+        $("btnOCRCopyJSON")?.addEventListener("click", copyJSON);
+        const file = $("ocrFile");
+        const drop = $("ocrDrop");
+        file?.addEventListener("change", () => selectFile(file.files && file.files[0]));
+        drop?.addEventListener("click", () => file?.click());
+        drop?.addEventListener("keydown", ev => {
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); file?.click(); }
+        });
+        ["dragenter","dragover"].forEach(name => drop?.addEventListener(name, ev => { ev.preventDefault(); drop.classList.add("drag"); }));
+        ["dragleave","drop"].forEach(name => drop?.addEventListener(name, ev => { ev.preventDefault(); drop.classList.remove("drag"); }));
+        drop?.addEventListener("drop", ev => selectFile(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]));
+        $("ocrForm")?.addEventListener("submit", processOCR);
+      }
+      function selectFile(file){
+        if (!file) return;
+        state.file = file;
+        $("ocrFileName").textContent = file.name;
+        setStatus("Archivo listo");
+      }
+      async function loadDashboard(){
+        if (!empresaID) return;
+        try {
+          const res = await fetch(api("dashboard"), { credentials:"include" });
+          if (!res.ok) throw new Error(cleanError(await res.text()));
+          const data = await res.json();
+          state.history = data.items || [];
+          $("ocrKpiDocs").textContent = String((data.resumen && data.resumen.documentos) || 0);
+          $("ocrKpiMotor").textContent = (data.resumen && data.resumen.motor) || "-";
+          $("ocrKpiLang").textContent = (data.resumen && data.resumen.idioma) || "-";
+          $("ocrKpiStatus").textContent = data.config && data.config.enabled ? "Activo" : "Apagado";
+          renderHistory();
+        } catch(err) {
+          setStatus("No se pudo cargar OCR: " + (err.message || err), true);
+        }
+      }
+      async function processOCR(ev){
+        ev.preventDefault();
+        if (!state.file) { setStatus("Selecciona un archivo", true); return; }
+        const fd = new FormData();
+        fd.append("documento", state.file, state.file.name);
+        fd.append("tipo_documento", $("ocrTipo").value || "general");
+        fd.append("titulo", $("ocrTitulo").value || state.file.name);
+        setStatus("Procesando OCR real...");
+        try {
+          const res = await fetch(api("procesar"), { method:"POST", credentials:"include", body:fd });
+          if (!res.ok) throw new Error(cleanError(await res.text()));
+          const data = await res.json();
+          state.last = data.item || null;
+          renderResult(state.last);
+          setStatus("OCR procesado");
+          await loadDashboard();
+        } catch(err) {
+          setStatus("Error OCR: " + (err.message || err), true);
+        }
+      }
+      async function loadItem(id){
+        try {
+          const res = await fetch(api("documento") + "&id=" + encodeURIComponent(id), { credentials:"include" });
+          if (!res.ok) throw new Error(cleanError(await res.text()));
+          const data = await res.json();
+          state.last = data.item || null;
+          renderResult(state.last);
+          setStatus("Documento cargado");
+        } catch(err) {
+          setStatus("No se pudo cargar: " + (err.message || err), true);
+        }
+      }
+      function renderResult(item){
+        $("ocrText").value = item && item.texto_extraido ? item.texto_extraido : "";
+        const box = $("ocrSuggestions");
+        box.innerHTML = "";
+        const fields = item && Array.isArray(item.campos) ? item.campos : [];
+        if (!fields.length) {
+          box.innerHTML = '<p class="ocr-muted">No se detectaron campos estructurados. Revisa el texto extraido.</p>';
+          return;
+        }
+        fields.forEach(f => {
+          const row = document.createElement("div");
+          row.className = "ocr-suggestion";
+          row.innerHTML = '<strong>' + escapeHTML(f.etiqueta || f.campo) + '</strong><code>' + escapeHTML(f.valor) + '</code><p class="ocr-muted">' + escapeHTML((f.modulo || "general") + " - " + (f.aplicacion || "revisar")) + '</p>';
+          box.appendChild(row);
+        });
+      }
+      function renderHistory(){
+        const box = $("ocrHistory");
+        box.innerHTML = "";
+        if (!state.history.length) {
+          box.innerHTML = '<p class="ocr-muted">Sin documentos procesados.</p>';
+          return;
+        }
+        state.history.forEach(item => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.innerHTML = '<strong>' + escapeHTML(item.titulo || item.archivo_nombre || "OCR") + '</strong><br><span class="ocr-muted">' + escapeHTML((item.tipo_documento || "general") + " | " + (item.fecha_creacion || "")) + '</span>';
+          btn.addEventListener("click", () => loadItem(item.id));
+          box.appendChild(btn);
+        });
+      }
+      async function copyJSON(){
+        if (!state.last) { setStatus("No hay resultado para copiar", true); return; }
+        const payload = JSON.stringify({ campos: state.last.campos || [], sugerencias: state.last.sugerencias || {} }, null, 2);
+        try {
+          await navigator.clipboard.writeText(payload);
+          setStatus("JSON copiado");
+        } catch(e) {
+          $("ocrText").value = payload;
+          setStatus("JSON colocado en texto extraido");
+        }
+      }
+      bind();
+      loadDashboard();
+    })();
+  </script>
+</body>
+</html>

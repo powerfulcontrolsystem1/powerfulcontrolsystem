@@ -550,43 +550,38 @@
       };
     }
 
+    function normalizeMinutesValue(value) {
+      let minutes = Math.floor(Number(value || 0));
+      if (!Number.isFinite(minutes) || minutes < 0) minutes = 0;
+      if (minutes > 1440) minutes = 1440;
+      return minutes;
+    }
+
     function buildConfigPayloadFromForm() {
-      function minutesValue(id) {
-        let value = Math.floor(Number(document.getElementById(id).value || 0));
-        if (!Number.isFinite(value) || value < 0) value = 0;
-        if (value > 1440) value = 1440;
-        return value;
-      }
       return {
         empresa_id: Number(state.empresaID),
         redondeo_modo: normalize(document.getElementById("cfg_redondeo_modo").value || "ninguno"),
         redondeo_unidad: Number(document.getElementById("cfg_redondeo_unidad").value || 100),
         monto_minimo_diario: Number(document.getElementById("cfg_monto_minimo_diario").value || 0),
         monto_maximo_diario: Number(document.getElementById("cfg_monto_maximo_diario").value || 0),
-        margen_tolerancia_entrada_minutos: minutesValue("cfg_margen_tolerancia_entrada_minutos"),
+        margen_tolerancia_entrada_minutos: normalizeMinutesValue(document.getElementById("cfg_margen_tolerancia_entrada_minutos").value),
         sensor_auto_activar_estacion: Boolean(document.getElementById("cfg_sensor_auto_activar_estacion").checked),
         margen_desactivacion_habilitado: Boolean(document.getElementById("cfg_margen_desactivacion_habilitado").checked),
-        margen_desactivacion_minutos: minutesValue("cfg_margen_desactivacion_minutos")
+        margen_desactivacion_minutos: normalizeMinutesValue(document.getElementById("cfg_margen_desactivacion_minutos").value)
       };
     }
 
     function applyConfigToForm(config) {
       const cfg = config || {};
-      function minutesValue(value) {
-        let n = Math.floor(Number(value || 0));
-        if (!Number.isFinite(n) || n < 0) n = 0;
-        if (n > 1440) n = 1440;
-        return n;
-      }
       state.config = {
         redondeo_modo: normalize(cfg.redondeo_modo || "ninguno") || "ninguno",
         redondeo_unidad: toNumber(cfg.redondeo_unidad, 100),
         monto_minimo_diario: toNumber(cfg.monto_minimo_diario, 0),
         monto_maximo_diario: toNumber(cfg.monto_maximo_diario, 0),
-        margen_tolerancia_entrada_minutos: minutesValue(cfg.margen_tolerancia_entrada_minutos),
+        margen_tolerancia_entrada_minutos: normalizeMinutesValue(cfg.margen_tolerancia_entrada_minutos),
         sensor_auto_activar_estacion: Boolean(cfg.sensor_auto_activar_estacion),
         margen_desactivacion_habilitado: Boolean(cfg.margen_desactivacion_habilitado),
-        margen_desactivacion_minutos: minutesValue(cfg.margen_desactivacion_minutos)
+        margen_desactivacion_minutos: normalizeMinutesValue(cfg.margen_desactivacion_minutos)
       };
       document.getElementById("cfg_redondeo_modo").value = state.config.redondeo_modo;
       document.getElementById("cfg_redondeo_unidad").value = String(state.config.redondeo_unidad);

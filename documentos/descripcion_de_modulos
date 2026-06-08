@@ -1,3 +1,10 @@
+2026-06-08: OCR documental sin IA
+- Modulo afectado: `ocr`.
+- Objetivo: permitir que una empresa cargue imagenes o PDFs para extraer texto con OCR libre y obtener campos sugeridos para configurar DIAN, inventario, usuarios, clientes u otros procesos, sin usar inteligencia artificial.
+- Backend: `/api/empresa/ocr` queda detras de `WithEmpresaOCRPermissions`, guarda historial en `empresa_ocr_documentos` y filtra todo por `empresa_id`.
+- Super administrador: `/super/api/config/ocr` permite activar/probar Tesseract, `pdftoppm`, idioma, PSM y limites de carga.
+- Seguridad: el OCR no aplica cambios automaticos en modulos destino; entrega sugerencias revisables porque una lectura OCR puede confundir caracteres o numeros.
+
 2026-06-08: Cobertura esencial de documentos DIAN visible
 - Modulo afectado: `facturacion_electronica`.
 - Frontend: `facturacion_electronica.html` agrega un resumen de cobertura esencial para factura electronica, notas credito/debito, documento soporte, nomina electronica y eventos RADIAN, usando el catalogo real del backend.

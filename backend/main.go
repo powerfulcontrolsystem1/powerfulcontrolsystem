@@ -973,6 +973,9 @@ func main() {
 	if err := dbpkg.EnsureEmpresaGrafologiaSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure grafologia schema in empresas db: %v", err)
 	}
+	if err := dbpkg.EnsureEmpresaOCRSchema(dbEmpresas); err != nil {
+		log.Fatalf("failed to ensure ocr schema in empresas db: %v", err)
+	}
 	if err := dbpkg.EnsureEmpresaCarnetsSchema(dbEmpresas); err != nil {
 		log.Fatalf("failed to ensure carnets empresa schema in empresas db: %v", err)
 	}
@@ -1259,6 +1262,7 @@ func main() {
 	http.HandleFunc("/api/empresa/energia_solar", handlers.WithEmpresaEnergiaSolarPermissions(dbEmpresas, dbSuper, handlers.EmpresaEnergiaSolarHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/camaras", handlers.WithEmpresaCamarasPermissions(dbEmpresas, dbSuper, handlers.EmpresaCamarasHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/grafologia", handlers.WithEmpresaGrafologiaPermissions(dbEmpresas, dbSuper, handlers.EmpresaGrafologiaHandler(dbEmpresas, dbSuper)))
+	http.HandleFunc("/api/empresa/ocr", handlers.WithEmpresaOCRPermissions(dbEmpresas, dbSuper, handlers.EmpresaOCRHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/bolsa", handlers.WithEmpresaBolsaPermissions(dbEmpresas, dbSuper, handlers.EmpresaBolsaHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/ia_empresarial", handlers.WithEmpresaReportesPermissions(dbEmpresas, dbSuper, handlers.EmpresaIAEmpresarialHandler(dbEmpresas, dbSuper)))
 	http.HandleFunc("/api/empresa/chat_tareas/conversaciones", handlers.WithEmpresaChatTareasPermissions(dbEmpresas, dbSuper, handlers.EmpresaChatTareasConversacionesHandler(dbEmpresas)))
@@ -1398,6 +1402,7 @@ func main() {
 	http.HandleFunc("/super/api/config/mantenimiento", handlers.WithSuperAuditoria(dbSuper, "super_config_mantenimiento", handlers.SuperMantenimientoConfigHandler(dbSuper)))
 	http.HandleFunc("/api/empresa/mantenimiento_programado", handlers.WithEmpresaSelfServicePermissions(dbEmpresas, dbSuper, handlers.EmpresaMantenimientoProgramadoHandler(dbSuper)))
 	http.HandleFunc("/super/api/config/onlyoffice", handlers.WithSuperAuditoria(dbSuper, "super_config_onlyoffice", handlers.OnlyOfficeConfigHandler(dbSuper)))
+	http.HandleFunc("/super/api/config/ocr", handlers.WithSuperAuditoria(dbSuper, "super_config_ocr", handlers.OCRConfigHandler(dbSuper)))
 	// Endpoint super para administrar contrato versionado y su historial
 	http.HandleFunc("/super/api/contrato", handlers.SuperContratoHandler(dbSuper))
 	// Endpoint super para monitoreo centralizado de errores del sistema

@@ -1,3 +1,25 @@
+2026-06-08: Modulo OCR documental sin IA.
+- Modulos afectados: OCR empresarial, configuracion super administrador, permisos/licencias y despliegue Docker VPS.
+- Backend: `backend/db/ocr.go` crea `empresa_ocr_documentos` por `empresa_id`; `backend/handlers/ocr.go` expone `/api/empresa/ocr` para subir imagenes/PDF, ejecutar Tesseract CLI real, convertir PDF con `pdftoppm`, guardar historial y devolver texto/campos sugeridos sin usar IA.
+- Backend: `backend/main.go` asegura esquema, registra `/api/empresa/ocr` con `WithEmpresaOCRPermissions` y agrega `/super/api/config/ocr` protegido por auditoria super.
+- Frontend: `web/administrar_empresa/ocr.html` agrega pagina independiente para cargar documentos, ver texto extraido, campos detectados e historial; `web/administrar_empresa.html` y `web/js/administrar_empresa.js` incorporan `linkOCR`.
+- Super administrador: `web/super/configuracion/ocr.html`, `web/super_administrador.html` y `web/js/super_administrador.js` agregan configuracion/probar motor OCR.
+- Licencias/permisos: `backend/handlers/empresa_permisos.go` agrega modulo `ocr`, pagina `linkOCR`, wrapper empresarial y fallback de licencia a `reportes` o `seguridad`; `web/super/licencias.html` agrega cobertura de licencia `ocr`.
+- VPS: `deploy/docker/backend.Dockerfile` instala `poppler-utils` ademas de Tesseract; `deploy/docker-compose.platform.yml` expone `OCR_PDFTOPPM_BIN`.
+- Seguridad/alcance: OCR no guarda secretos ni aplica cambios automaticos a DIAN, inventario o usuarios; solo sugiere campos para revision porque OCR puede confundir caracteres. Archivos y resultados quedan aislados por `empresa_id`.
+
+2026-06-08: Auditoria de duplicados e integracion de licencias.
+- Modulos afectados: Licencias super administrador y Tarifas por minutos.
+- Frontend: `web/super/licencias.html` agrega a la cobertura de modulos los codigos `facturacion_ecuador`, `facturacion_panama`, `bolsa`, `energia_solar` y `grafologia`, con etiquetas visibles y presets financiero/enterprise alineados.
+- Frontend: `web/administrar_empresa/tarifas_por_minutos.html` consolida la normalizacion de minutos en un helper unico para evitar funciones locales repetidas.
+- Seguridad/alcance: no cambia endpoints, tablas, permisos backend ni datos por `empresa_id`; corrige consistencia de licenciamiento y reduce duplicacion sin afectar contratos.
+- Validacion: auditoria profesional y auditoria permisos/licencias ejecutadas con estado `ok`.
+
+2026-06-08: Enlace DIAN para autorizacion de numeracion.
+- Modulo afectado: Facturacion electronica Colombia.
+- Frontend: `web/administrar_empresa/facturacion_electronica.html` agrega el boton `Ayuda numeracion DIAN` en la tarjeta `Configuracion DIAN Colombia`, enlazando al micrositio oficial de DIAN para autorizacion de numeracion de facturacion.
+- Seguridad/alcance: no cambia endpoints, permisos, credenciales, tablas, envios DIAN ni aislamiento por `empresa_id`; es un acceso externo de ayuda con `target="_blank"` y `rel="noopener"`.
+
 2026-06-08: Contexto operativo local de Codex.
 - Modulo afectado: documentacion operativa del agente.
 - `AGENTS.md` registra que Chrome con Codex Chrome Extension y Computer Use / Remote Control estan disponibles para validaciones con sesion real y control de ventanas Windows.
@@ -32679,3 +32701,12 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+
+2026-06-08: Facturacion electronica: selector unico de pais fiscal
+PushStatus: Pendiente
+Archivos modificados:
+- documentos/contexto_codex.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_menu.html

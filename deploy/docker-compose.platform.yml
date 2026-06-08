@@ -102,6 +102,7 @@ services:
       GRAFOLOGIA_TESSERACT_ENABLED: ${GRAFOLOGIA_TESSERACT_ENABLED:-1}
       GRAFOLOGIA_TESSERACT_BIN: ${GRAFOLOGIA_TESSERACT_BIN:-tesseract}
       GRAFOLOGIA_TESSERACT_LANG: ${GRAFOLOGIA_TESSERACT_LANG:-spa+eng}
+      OCR_PDFTOPPM_BIN: ${OCR_PDFTOPPM_BIN:-pdftoppm}
     volumes:
       - pcs_backend_logs:/app/backend/logs
       - pcs_web_uploads:/app/web/uploads

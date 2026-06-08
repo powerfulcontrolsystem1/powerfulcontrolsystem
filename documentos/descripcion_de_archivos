@@ -1,3 +1,9 @@
+2026-06-08 - OCR documental sin IA
+- `backend/db/ocr.go`: esquema y consultas de `empresa_ocr_documentos`, aisladas por `empresa_id`.
+- `backend/handlers/ocr.go`: handler empresarial `/api/empresa/ocr`, configuracion super `/super/api/config/ocr`, ejecucion Tesseract CLI, conversion PDF con `pdftoppm` y parser deterministico de sugerencias.
+- `web/administrar_empresa/ocr.html`: pagina independiente para cargar documentos, procesar OCR real, ver texto extraido, sugerencias e historial.
+- `web/super/configuracion/ocr.html`: pagina super administrador para activar, guardar y probar configuracion OCR global.
+
 2026-06-08 - DIAN C14N de contexto XMLDSig/XAdES
 - `backend/handlers/modulos_faltantes.go`:
 	- agrega deteccion del namespace raiz UBL y canonicalizacion con contexto para documento, `SignedInfo`, `KeyInfo` y `SignedProperties`.

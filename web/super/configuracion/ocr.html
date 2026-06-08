@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OCR - Configuracion super</title>
+  <link rel="stylesheet" href="/estilos.css">
+  <style>
+    body{margin:0;background:var(--bg);color:var(--text)}
+    .ocr-super{max-width:980px;margin:0 auto;padding:16px;display:grid;gap:14px}
+    .ocr-super-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .ocr-super-header h1{margin:0;font-size:1.45rem}
+    .ocr-super-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+    .ocr-super-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .ocr-super-grid label{display:flex;flex-direction:column;gap:5px;font-weight:800}
+    .ocr-super-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .ocr-super-status{display:grid;gap:8px}
+    .ocr-status-row{display:flex;justify-content:space-between;gap:10px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--surface-soft)}
+    .ocr-ok{color:var(--success,#15803d);font-weight:900}
+    .ocr-bad{color:var(--danger,#b91c1c);font-weight:900}
+    @media(max-width:760px){.ocr-super-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body class="super-page">
+  <main class="ocr-super">
+    <header class="ocr-super-header">
+      <div>
+        <p class="eyebrow">Plataforma</p>
+        <h1>Configuracion OCR</h1>
+        <p class="muted">Motor libre para lectura documental sin inteligencia artificial.</p>
+      </div>
+      <div class="ocr-super-actions">
+        <button id="btnOCRSuperLoad" class="btn secondary" type="button">Recargar</button>
+        <button id="btnOCRSuperTest" class="btn secondary" type="button">Probar motor</button>
+        <button id="btnOCRSuperSave" class="btn primary" type="button">Guardar</button>
+      </div>
+    </header>
+
+    <section class="ocr-super-card">
+      <h2>Motor OCR</h2>
+      <div class="ocr-super-grid">
+        <label><span>Activo</span>
+          <select id="ocrEnabled" class="form-input">
+            <option value="1">Activo</option>
+            <option value="0">Inactivo</option>
+          </select>
+        </label>
+        <label><span>Motor</span>
+          <select id="ocrEngine" class="form-input">
+            <option value="tesseract">Tesseract OCR</option>
+          </select>
+        </label>
+        <label><span>Binario Tesseract</span>
+          <input id="ocrTesseractBin" class="form-input" value="tesseract">
+        </label>
+        <label><span>Binario pdftoppm</span>
+          <input id="ocrPDFToPPM" class="form-input" value="pdftoppm">
+        </label>
+        <label><span>Idioma</span>
+          <input id="ocrLang" class="form-input" value="spa+eng" placeholder="spa+eng">
+        </label>
+        <label><span>Page segmentation mode</span>
+          <input id="ocrPSM" class="form-input" value="6" inputmode="numeric">
+        </label>
+        <label><span>Maximo archivo MB</span>
+          <input id="ocrMaxMB" class="form-input" type="number" min="1" max="80" value="20">
+        </label>
+        <label><span>Maximo paginas PDF</span>
+          <input id="ocrMaxPDFPages" class="form-input" type="number" min="1" max="12" value="4">
+        </label>
+      </div>
+      <p id="ocrSuperMsg" class="form-help"></p>
+    </section>
+
+    <section class="ocr-super-card">
+      <h2>Estado del VPS</h2>
+      <div id="ocrStatusBox" class="ocr-super-status"></div>
+    </section>
+  </main>
+  <script>
+    (function(){
+      const $ = id => document.getElementById(id);
+      function msg(text, bad){ const el=$("ocrSuperMsg"); el.textContent=text||""; el.style.color=bad?"var(--danger,#b91c1c)":"var(--muted)"; }
+      async function load(){
+        try{
+          const res = await fetch("/super/api/config/ocr", { credentials:"include" });
+          if(!res.ok) throw new Error(await res.text());
+          const data = await res.json();
+          paintConfig(data.config || {});
+          paintStatus(data.status || {});
+          msg("Configuracion cargada.");
+        }catch(err){ msg("No se pudo cargar OCR: " + (err.message || err), true); }
+      }
+      function paintConfig(c){
+        $("ocrEnabled").value = c.enabled ? "1" : "0";
+        $("ocrEngine").value = c.engine || "tesseract";
+        $("ocrTesseractBin").value = c.tesseract_bin || "tesseract";
+        $("ocrPDFToPPM").value = c.pdftoppm_bin || "pdftoppm";
+        $("ocrLang").value = c.lang || "spa+eng";
+        $("ocrPSM").value = c.psm || "6";
+        $("ocrMaxMB").value = c.max_upload_mb || 20;
+        $("ocrMaxPDFPages").value = c.max_pdf_pages || 4;
+      }
+      function paintStatus(s){
+        const box = $("ocrStatusBox");
+        const rows = [
+          ["Tesseract", s.tesseract_ok, s.tesseract_version || s.tesseract_error || ""],
+          ["pdftoppm PDF", s.pdftoppm_ok, s.pdftoppm_version || s.pdftoppm_error || ""],
+          ["Idioma", true, s.lang || ""]
+        ];
+        box.innerHTML = rows.map(r => '<div class="ocr-status-row"><strong>'+escapeHTML(r[0])+'</strong><span class="'+(r[1]?'ocr-ok':'ocr-bad')+'">'+(r[1]?'OK':'Revisar')+'</span><small>'+escapeHTML(r[2])+'</small></div>').join("");
+      }
+      function escapeHTML(v){ return String(v||"").replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[ch])); }
+      async function save(){
+        const payload = {
+          enabled: $("ocrEnabled").value === "1",
+          engine: $("ocrEngine").value,
+          tesseract_bin: $("ocrTesseractBin").value.trim(),
+          pdftoppm_bin: $("ocrPDFToPPM").value.trim(),
+          lang: $("ocrLang").value.trim(),
+          psm: $("ocrPSM").value.trim(),
+          max_upload_mb: Number($("ocrMaxMB").value || 20),
+          max_pdf_pages: Number($("ocrMaxPDFPages").value || 4)
+        };
+        try{
+          const res = await fetch("/super/api/config/ocr", { method:"PUT", credentials:"include", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(payload) });
+          if(!res.ok) throw new Error(await res.text());
+          msg("Configuracion OCR guardada.");
+          await load();
+        }catch(err){ msg("No se pudo guardar OCR: " + (err.message || err), true); }
+      }
+      async function test(){
+        try{
+          const res = await fetch("/super/api/config/ocr?action=test", { method:"POST", credentials:"include" });
+          const data = await res.json().catch(() => ({}));
+          paintStatus(data.status || {});
+          msg(res.ok ? "Motor OCR probado correctamente." : "El motor OCR requiere revision.", !res.ok);
+        }catch(err){ msg("No se pudo probar OCR: " + (err.message || err), true); }
+      }
+      $("btnOCRSuperLoad").addEventListener("click", load);
+      $("btnOCRSuperSave").addEventListener("click", save);
+      $("btnOCRSuperTest").addEventListener("click", test);
+      load();
+    })();
+  </script>
+</body>
+</html>
