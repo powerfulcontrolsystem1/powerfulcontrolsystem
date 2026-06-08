@@ -51,6 +51,35 @@ func TestCreditoGenerateCuotasTxUsesPostgresCompatibleWrites(t *testing.T) {
 	}
 }
 
+func TestCreditoDashboardsUsePostgresSafeDateComparisons(t *testing.T) {
+	raw, err := os.ReadFile("creditos.go")
+	if err != nil {
+		t.Fatalf("read creditos.go: %v", err)
+	}
+	src := string(raw)
+	cases := []struct {
+		name  string
+		start string
+		end   string
+	}{
+		{"hydrate cuotas", "func creditoHydrateCuotaStatus(", "func creditoHydrateCuotaStatusRows("},
+		{"filtros creditos", "func creditoBuildWhere(", "// ListEmpresaCreditos lista creditos"},
+		{"resumen cartera", "func GetEmpresaCreditosCarteraResumen(", "func GetEmpresaCreditosMoraDashboard("},
+		{"dashboard mora", "func GetEmpresaCreditosMoraDashboard(", "func scanEmpresaCreditoWorkflow("},
+	}
+	for _, tc := range cases {
+		body := extractCreditoFunctionForTest(t, src, tc.start, tc.end)
+		for _, forbidden := range []string{"datetime(", "date('now'", `date("now"`, "julianday("} {
+			if strings.Contains(body, forbidden) {
+				t.Fatalf("%s no debe usar %s en consultas runtime PostgreSQL: %s", tc.name, forbidden, body)
+			}
+		}
+		if !strings.Contains(body, "time.Now().In(time.Local).Format(\"2006-01-02\")") {
+			t.Fatalf("%s debe calcular la fecha actual desde Go y pasarla como parametro SQL: %s", tc.name, body)
+		}
+	}
+}
+
 func TestCreditoDailyScheduleSupportsLongContractsAndSkipsSundays(t *testing.T) {
 	if got := creditoMaxCuotas("diaria"); got < 730 {
 		t.Fatalf("los creditos diarios deben permitir contratos de al menos dos años, got=%d", got)

@@ -2575,3 +2575,8 @@
 - [Portal publico] La tarjeta `Documentos electronicos` del index muestra el bloque solicitado de documentos y eventos SFE para Colombia.
 - [DIAN] Se listan factura electronica de venta, nota credito, nota debito, reporte de contingencia, documento soporte y nota de ajuste del documento soporte.
 - [Super administrador] El contenido predeterminado del editor de `Informacion de modulos` se alinea con la nueva tarjeta y actualiza configuraciones antiguas que aun conservaban la lista generica.
+
+## [2026-06-08] Creditos - tablero PostgreSQL
+- [Creditos] El resumen de cartera, filtros de vencidos y dashboard de mora dejan de usar funciones SQLite en consultas runtime y comparan fechas normalizadas con parametros calculados desde Go.
+- [QA] Se agrega prueba estatica para bloquear `datetime()`, `date('now')` y `julianday()` en las rutas que alimentan el panel de creditos.
+- [E2E] Auditoria visual con Powerful Control System creo cliente, producto, usuario, empleado de nomina, liquidacion, credito, abono, carrito e item QA; el cierre/pago del carrito se omitio para evitar disparar facturacion electronica o caja real.

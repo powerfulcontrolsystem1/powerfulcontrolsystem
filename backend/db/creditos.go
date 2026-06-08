@@ -1268,15 +1268,16 @@ func creditoHydrateCuotaStatus(dbConn *sql.DB, empresaID int64, row *EmpresaCred
 	var vencidas int
 	var fechaMasAntigua string
 	var fechaProxima string
+	today := time.Now().In(time.Local).Format("2006-01-02")
 	err := queryRowSQLCompat(dbConn, `SELECT
 		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN 1 ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10) < SUBSTR(datetime('now','localtime'), 1, 10) THEN 1 ELSE 0 END), 0),
-		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10) < SUBSTR(datetime('now','localtime'), 1, 10) THEN fecha_vencimiento ELSE NULL END), ''),
+		COALESCE(SUM(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? THEN 1 ELSE 0 END), 0),
+		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? THEN fecha_vencimiento ELSE NULL END), ''),
 		COALESCE(MIN(CASE WHEN LOWER(COALESCE(estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida') AND COALESCE(saldo_cuota, 0) > 0 THEN fecha_vencimiento ELSE NULL END), '')
 	FROM empresa_creditos_cuotas
 	WHERE empresa_id = ?
 	  AND credito_id = ?
-	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, empresaID, row.ID).Scan(&pendientes, &vencidas, &fechaMasAntigua, &fechaProxima)
+	  AND LOWER(COALESCE(estado, 'activo')) = 'activo'`, today, today, today, today, empresaID, row.ID).Scan(&pendientes, &vencidas, &fechaMasAntigua, &fechaProxima)
 	if err != nil {
 		return
 	}
@@ -1456,11 +1457,11 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 		args = append(args, creditoNormalizeClasificacion(filter.Clasificacion))
 	}
 	if strings.TrimSpace(filter.Desde) != "" {
-		clauses = append(clauses, "date(COALESCE(fecha_inicio, fecha_creacion)) >= date(?)")
+		clauses = append(clauses, "COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_inicio, fecha_creacion, '')), 1, 10), ''), '0000-00-00') >= ?")
 		args = append(args, strings.TrimSpace(filter.Desde))
 	}
 	if strings.TrimSpace(filter.Hasta) != "" {
-		clauses = append(clauses, "date(COALESCE(fecha_inicio, fecha_creacion)) <= date(?)")
+		clauses = append(clauses, "COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_inicio, fecha_creacion, '')), 1, 10), ''), '9999-12-31') <= ?")
 		args = append(args, strings.TrimSpace(filter.Hasta))
 	}
 	if strings.TrimSpace(filter.Q) != "" {
@@ -1469,8 +1470,9 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 		args = append(args, pattern, pattern, pattern)
 	}
 	if filter.SoloVencidos {
+		today := time.Now().In(time.Local).Format("2006-01-02")
 		clauses = append(clauses, `COALESCE(saldo_actual, 0) > 0 AND (
-			date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+			COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 			OR EXISTS (
 				SELECT 1
 				FROM empresa_creditos_cuotas cc
@@ -1479,9 +1481,10 @@ func creditoBuildWhere(filter EmpresaCreditoFilter) (string, []interface{}) {
 				  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
 				  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 				  AND COALESCE(cc.saldo_cuota, 0) > 0
-				  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+				  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 			)
 		)`)
+		args = append(args, today, today, today, today)
 	}
 
 	if len(clauses) == 0 {
@@ -2354,11 +2357,12 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 		return nil, errors.New("empresa_id invalido")
 	}
 
+	today := time.Now().In(time.Local).Format("2006-01-02")
 	query := `SELECT
 		COUNT(1),
 		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'activo' THEN 1 ELSE 0 END),
 		SUM(CASE WHEN COALESCE(saldo_actual, 0) > 0 AND (
-			COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), SUBSTR(datetime('now','localtime'), 1, 10)) < SUBSTR(datetime('now','localtime'), 1, 10)
+			COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 			OR EXISTS (
 				SELECT 1 FROM empresa_creditos_cuotas cc
 				WHERE cc.empresa_id = empresa_creditos.empresa_id
@@ -2366,7 +2370,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 				  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
 				  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 				  AND COALESCE(cc.saldo_cuota, 0) > 0
-				  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+				  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 			)
 		) THEN 1 ELSE 0 END),
 		SUM(CASE WHEN COALESCE(dias_mora, 0) > 0 OR EXISTS (
@@ -2376,7 +2380,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 			  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
 			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 			  AND COALESCE(cc.saldo_cuota, 0) > 0
-			  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date('now','localtime')
+			  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 		) THEN 1 ELSE 0 END),
 		SUM(CASE WHEN LOWER(COALESCE(estado_credito, 'activo')) = 'cerrado' THEN 1 ELSE 0 END),
 		COALESCE(SUM(COALESCE(monto_aprobado, 0)), 0),
@@ -2384,7 +2388,7 @@ func GetEmpresaCreditosCarteraResumen(dbConn *sql.DB, empresaID int64, includeIn
 		COALESCE(SUM(COALESCE(saldo_disponible, 0)), 0)
 	FROM empresa_creditos
 	WHERE empresa_id = ?`
-	args := []interface{}{empresaID}
+	args := []interface{}{today, today, today, today, today, today, empresaID}
 	if !includeInactive {
 		query += ` AND LOWER(COALESCE(estado, 'activo')) = 'activo'`
 	}
@@ -2437,13 +2441,13 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	today := time.Now().In(time.Local).Format("2006-01-02")
 	maxDate := time.Now().In(time.Local).AddDate(0, 0, diasProximos).Format("2006-01-02")
 
-	proximosWhere := baseWhere + " AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) >= date(?) AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) <= date(?)"
+	proximosWhere := baseWhere + " AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) >= ? AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) <= ?"
 	proximosRows, err := listEmpresaCreditosByWhere(
 		dbConn,
 		empresaID,
 		proximosWhere,
-		"date(COALESCE(fecha_vencimiento, date('now','localtime'))) ASC, COALESCE(saldo_actual, 0) DESC, id DESC",
-		[]interface{}{today, maxDate},
+		"COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), '9999-12-31') ASC, COALESCE(saldo_actual, 0) DESC, id DESC",
+		[]interface{}{today, today, today, maxDate},
 		top,
 	)
 	if err != nil {
@@ -2458,28 +2462,28 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 		  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
 		  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 		  AND COALESCE(cc.saldo_cuota, 0) > 0
-		  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date(?)
+		  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 	)`
-	vencidosWhere := baseWhere + " AND (date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR " + cuotaVencidaSQL + ")"
+	vencidosWhere := baseWhere + " AND (COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR " + cuotaVencidaSQL + ")"
 	vencidosRows, err := listEmpresaCreditosByWhere(
 		dbConn,
 		empresaID,
 		vencidosWhere,
-		"date(COALESCE(fecha_vencimiento, date('now','localtime'))) ASC, COALESCE(saldo_actual, 0) DESC, id DESC",
-		[]interface{}{today, today},
+		"COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), '9999-12-31') ASC, COALESCE(saldo_actual, 0) DESC, id DESC",
+		[]interface{}{today, today, today, today},
 		top,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	rankingWhere := baseWhere + " AND (date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR " + cuotaVencidaSQL + ")"
+	rankingWhere := baseWhere + " AND (COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR " + cuotaVencidaSQL + ")"
 	rankingRows, err := listEmpresaCreditosByWhere(
 		dbConn,
 		empresaID,
 		rankingWhere,
-		"CAST(julianday(date('now','localtime')) - julianday(date(COALESCE(fecha_vencimiento, date('now','localtime')))) AS INTEGER) DESC, COALESCE(saldo_actual, 0) DESC, id DESC",
-		[]interface{}{today, today},
+		"COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), '0000-00-00') ASC, COALESCE(saldo_actual, 0) DESC, id DESC",
+		[]interface{}{today, today, today, today},
 		top,
 	)
 	if err != nil {
@@ -2487,33 +2491,39 @@ func GetEmpresaCreditosMoraDashboard(dbConn *sql.DB, empresaID int64, diasProxim
 	}
 
 	countQuery := `SELECT
-		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) >= date(?)
-			AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) <= date(?) THEN 1 ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR EXISTS (
+		COALESCE(SUM(CASE WHEN COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) >= ?
+			AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) <= ? THEN 1 ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR EXISTS (
 			SELECT 1 FROM empresa_creditos_cuotas cc
 			WHERE cc.empresa_id = empresa_creditos.empresa_id
 			  AND cc.credito_id = empresa_creditos.id
 			  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
 			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 			  AND COALESCE(cc.saldo_cuota, 0) > 0
-			  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date(?)
+			  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 		) THEN 1 ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) >= date(?)
-			AND date(COALESCE(fecha_vencimiento, date('now','localtime'))) <= date(?) THEN COALESCE(saldo_actual, 0) ELSE 0 END), 0),
-		COALESCE(SUM(CASE WHEN date(COALESCE(fecha_vencimiento, date('now','localtime'))) < date(?) OR EXISTS (
+		COALESCE(SUM(CASE WHEN COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) >= ?
+			AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) <= ? THEN COALESCE(saldo_actual, 0) ELSE 0 END), 0),
+		COALESCE(SUM(CASE WHEN COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(fecha_vencimiento, '')), 1, 10), ''), ?) < ? OR EXISTS (
 			SELECT 1 FROM empresa_creditos_cuotas cc
 			WHERE cc.empresa_id = empresa_creditos.empresa_id
 			  AND cc.credito_id = empresa_creditos.id
 			  AND LOWER(COALESCE(cc.estado, 'activo')) = 'activo'
 			  AND LOWER(COALESCE(cc.estado_cuota, 'pendiente')) IN ('pendiente','parcial','vencida')
 			  AND COALESCE(cc.saldo_cuota, 0) > 0
-			  AND date(COALESCE(cc.fecha_vencimiento, date('now','localtime'))) < date(?)
+			  AND COALESCE(NULLIF(SUBSTR(TRIM(COALESCE(cc.fecha_vencimiento, '')), 1, 10), ''), ?) < ?
 		) THEN COALESCE(saldo_actual, 0) ELSE 0 END), 0)
 	FROM empresa_creditos
 	WHERE empresa_id = ?
 	  AND COALESCE(saldo_actual, 0) > 0
 	  AND LOWER(COALESCE(estado_credito, 'activo')) IN ('activo','suspendido','castigado')`
-	countArgs := []interface{}{today, maxDate, today, today, today, maxDate, today, today, empresaID}
+	countArgs := []interface{}{
+		today, today, today, maxDate,
+		today, today, today, today,
+		today, today, today, maxDate,
+		today, today, today, today,
+		empresaID,
+	}
 	if !includeInactive {
 		countQuery += " AND LOWER(COALESCE(estado, 'activo')) = 'activo'"
 	}
