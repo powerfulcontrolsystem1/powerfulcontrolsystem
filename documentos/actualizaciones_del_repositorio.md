@@ -13578,3 +13578,16 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica_menu.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+
+2026-06-08 02:57:59 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 25a16932; PushStatus: OK
+Archivos modificados:
+- CHANGELOG.md
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/descripcion_del_proyecto
+- documentos/flujos_operativos.md
+- documentos/historial_de_cambios
+- web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+- web/administrar_empresa/facturacion_electronica_tutorial_dian.html
