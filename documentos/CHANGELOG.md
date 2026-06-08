@@ -1,3 +1,9 @@
+## [2026-06-08] DIAN politica XAdES v2 y comprobacion uno a uno
+- [Firma] `dianBuildXAdESBaseSignature` alinea la politica oficial con los ejemplos DIAN: URL `politicadefirma/v2/politicadefirmav2.pdf`, `Description`, namespace `xades141` y `SignedDataObjectProperties/DataObjectFormat` para el XML firmado.
+- [QA DIAN] Se reconsultaron uno a uno los TrackId/ZipKey de Powerful Control System: el set `SETP990000135` a `SETP990000185` sigue en `Batch en proceso de validacion`; las pruebas nuevas `SETP990000186` a `SETP990000192` tienen acuse final `StatusCode=99`.
+- [Diagnostico] La factura normal `SETP990000192` reduce el rechazo a `ZE02` y notificacion `FAJ43b`; por tanto el transporte DIAN funciona y el bloqueo principal queda en firma XMLDSig/XAdES.
+- [QA] `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.
+
 ## [2026-06-08] DIAN consumidor final y firma canonicalizada
 - [DIAN] La factura diagnostica real `SETP990000189` llego a habilitacion con TrackId y DIAN respondio `StatusCode=99`; los errores restantes fueron `ZE02`, `FAK61` y una notificacion de nombre/RUT del adquiriente.
 - [UBL] El adquiriente consumidor final ahora usa `AdditionalAccountID=2`, nombre `consumidor o usuario final`, `TaxLevelCode listName=49` y `TaxScheme ZZ / No aplica`, alineado con la lista de codigos oficial vigente.

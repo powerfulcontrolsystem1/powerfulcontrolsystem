@@ -4,6 +4,22 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - DIAN XAdES v2 y estado real
+
+- La firma XAdES base debe seguir el patron de los XML oficiales de la Caja de
+  herramientas DIAN FE V19 V2026: politica
+  `https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf`,
+  `xades:Description`, namespace `xades141` y
+  `SignedDataObjectProperties/DataObjectFormat` apuntando a la referencia del
+  documento XML.
+- La reconsulta real de `GetStatusZip` para Powerful Control System confirma:
+  `SETP990000135` a `SETP990000185` siguen en `Batch en proceso de validacion`;
+  `SETP990000186` a `SETP990000192` estan rechazados `StatusCode=99`.
+- El ultimo diagnostico con adquiriente normal (`SETP990000192`) deja como
+  bloqueo tecnico principal `ZE02 Valor de la firma invalido`; `FAJ43b` es una
+  notificacion de nombre/RUT del adquiriente. No reenviar notas debito/credito
+  hasta lograr una factura aceptada `StatusCode=00`.
+
 ## Actualizacion 2026-06-08 - UBL DIAN realista y errores completos
 
 - `generateDIANUBLBase` ya no genera XML UBL minimo/inventado: ahora emite

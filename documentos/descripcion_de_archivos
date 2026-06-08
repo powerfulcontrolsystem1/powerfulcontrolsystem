@@ -1,3 +1,12 @@
+2026-06-08 - DIAN politica XAdES v2 y comprobacion real
+- `backend/handlers/modulos_faltantes.go`:
+	- alinea la firma XAdES base con ejemplos DIAN usando politica de firma v2, `xades141` y `SignedDataObjectProperties/DataObjectFormat`.
+	- mantiene `ReferencePCS` como referencia del documento para que las propiedades firmadas identifiquen el XML principal.
+- `backend/handlers/dian_signature_upload_test.go`:
+	- agrega prueba de estructura XAdES oficial para politica v2, `Description`, `DataObjectFormat`, `MimeType` y `Encoding`.
+- `documentos/contexto_codex.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`, `documentos/historial_de_cambios`:
+	- registran la comprobacion uno a uno de TrackId/ZipKey y el estado real de DIAN para empresa 12.
+
 2026-06-08 - UBL DIAN realista y validacion XSD local
 - `backend/handlers/modulos_faltantes.go`:
 	- actualiza el generador UBL DIAN para factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`, `CUFE/CUDE-SHA384`, extensiones DIAN, QR, `SoftwareSecurityCode`, parties, totales y lineas documentales correctas.

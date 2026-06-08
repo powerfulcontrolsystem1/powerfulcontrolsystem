@@ -697,6 +697,46 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 	}
 }
 
+func TestSignDIANXMLXAdESBaseUsesOfficialPolicyAndDataObjectProperties(t *testing.T) {
+	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc")
+	result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
+		"documento_codigo": "SETP1",
+		"cliente_nombre":   "Cliente Test",
+		"cliente_nit":      "222222222222",
+		"total":            "1000.00",
+		"impuesto_total":   "0.00",
+		"moneda":           "COP",
+	})
+	if err != nil || status != http.StatusOK {
+		t.Fatalf("generateDIANUBLBase status=%d err=%v result=%#v", status, err, result)
+	}
+	signResp, signStatus, signErr := signDIANXMLXAdESBase(cfg, 1, map[string]interface{}{
+		"documento_codigo": "SETP1",
+		"xml_ubl_base":     genericStringValue(result["xml_ubl_base"]),
+	})
+	if signErr != nil || signStatus != http.StatusOK {
+		t.Fatalf("signDIANXMLXAdESBase status=%d err=%v result=%#v", signStatus, signErr, signResp)
+	}
+	signatureXML := genericStringValue(signResp["xml_signature"])
+	for _, expected := range []string{
+		`<ds:Reference Id="ReferencePCS" URI="">`,
+		`https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf`,
+		`<xades:Description></xades:Description>`,
+		`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
+		`<xades:SignedDataObjectProperties>`,
+		`<xades:DataObjectFormat ObjectReference="#ReferencePCS">`,
+		`<xades:MimeType>text/xml</xades:MimeType>`,
+		`<xades:Encoding>UTF-8</xades:Encoding>`,
+	} {
+		if !strings.Contains(signatureXML, expected) {
+			t.Fatalf("expected %q in XAdES signature: %s", expected, signatureXML)
+		}
+	}
+	if strings.Contains(signatureXML, "/politicadefirma/v1/") {
+		t.Fatalf("signature must not use obsolete DIAN policy v1 URL: %s", signatureXML)
+	}
+}
+
 func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 	cfg := map[string]interface{}{
 		"nit":                    "900373913",

@@ -9204,10 +9204,12 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 	signedPropertiesID := "SignedPropertiesPCS"
 	signatureID := "SignaturePCS"
 	keyInfoID := "KeyInfoPCS"
+	documentReferenceID := "ReferencePCS"
 
-	signaturePolicy := `<xades:SignaturePolicyIdentifier><xades:SignaturePolicyId><xades:SigPolicyId><xades:Identifier>https://facturaelectronica.dian.gov.co/politicadefirma/v1/politicadefirmav2.pdf</xades:Identifier></xades:SigPolicyId><xades:SigPolicyHash><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y=</ds:DigestValue></xades:SigPolicyHash></xades:SignaturePolicyId></xades:SignaturePolicyIdentifier>`
+	signaturePolicy := `<xades:SignaturePolicyIdentifier><xades:SignaturePolicyId><xades:SigPolicyId><xades:Identifier>https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf</xades:Identifier><xades:Description></xades:Description></xades:SigPolicyId><xades:SigPolicyHash><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y=</ds:DigestValue></xades:SigPolicyHash></xades:SignaturePolicyId></xades:SignaturePolicyIdentifier>`
 	signerRole := `<xades:SignerRole><xades:ClaimedRoles><xades:ClaimedRole>supplier</xades:ClaimedRole></xades:ClaimedRoles></xades:SignerRole>`
-	signedProperties := fmt.Sprintf(`<xades:SignedProperties xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s%s%s</xades:SignedSignatureProperties></xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert), signaturePolicy, signerRole)
+	signedDataObjectProperties := fmt.Sprintf(`<xades:SignedDataObjectProperties><xades:DataObjectFormat ObjectReference="#%s"><xades:MimeType>text/xml</xades:MimeType><xades:Encoding>UTF-8</xades:Encoding></xades:DataObjectFormat></xades:SignedDataObjectProperties>`, documentReferenceID)
+	signedProperties := fmt.Sprintf(`<xades:SignedProperties xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s%s%s</xades:SignedSignatureProperties>%s</xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert), signaturePolicy, signerRole, signedDataObjectProperties)
 	propsDigestBase64, err := dianCanonicalSHA256Base64(signedProperties)
 	if err != nil {
 		return nil, fmt.Errorf("no se pudo canonicalizar SignedProperties DIAN: %w", err)
@@ -9224,7 +9226,7 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 		keyInfoReference = fmt.Sprintf(`<ds:Reference URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>`, keyInfoID, keyInfoDigestBase64)
 	}
 
-	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod><ds:Reference Id="%s-ref0" URI=""><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>%s<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference></ds:SignedInfo>`, signatureID, documentDigestBase64, keyInfoReference, signedPropertiesID, propsDigestBase64)
+	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod><ds:Reference Id="%s" URI=""><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>%s<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference></ds:SignedInfo>`, documentReferenceID, documentDigestBase64, keyInfoReference, signedPropertiesID, propsDigestBase64)
 	canonicalSignedInfo, err := dianCanonicalizeXML(signedInfo)
 	if err != nil {
 		return nil, fmt.Errorf("no se pudo canonicalizar SignedInfo DIAN: %w", err)
@@ -9236,7 +9238,7 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 		return nil, fmt.Errorf("no se pudo firmar SignedInfo con RSA-SHA256")
 	}
 
-	signatureXML := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">%s<ds:SignatureValue Id="%s-sigvalue">%s</ds:SignatureValue>%s<ds:Object><xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="#%s">%s</xades:QualifyingProperties></ds:Object></ds:Signature>`,
+	signatureXML := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">%s<ds:SignatureValue Id="%s-sigvalue">%s</ds:SignatureValue>%s<ds:Object><xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" Id="QualifyingPropertiesPCS" Target="#%s">%s</xades:QualifyingProperties></ds:Object></ds:Signature>`,
 		signatureID,
 		canonicalSignedInfo,
 		signatureID,
