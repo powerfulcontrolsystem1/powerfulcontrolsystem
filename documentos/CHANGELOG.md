@@ -1,5 +1,11 @@
+## [2026-06-08] DIAN firma XMLDSig/XAdES con C14N de contexto
+- [Firma] `dianBuildXAdESBaseSignature` ya calcula `DigestValue` y `SignatureValue` con canonicalizacion inclusiva usando el contexto completo de namespaces UBL del documento, como hacen los ejemplos oficiales DIAN para `SignedInfo`, `KeyInfo` y `SignedProperties`.
+- [Politica] Para factura/nota FEV se usa la URL de politica presente en los ejemplos principales DIAN: `politicadefirma/v1/politicadefirmav2.pdf`.
+- [QA independiente] Un XML firmado de prueba generado por PCS fue verificado con `lxml` para los tres digest (`document`, `KeyInfo`, `SignedProperties`) y con `Node crypto` para `RSA-SHA256`; todos pasaron.
+- [QA] `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`.
+
 ## [2026-06-08] DIAN politica XAdES v2 y comprobacion uno a uno
-- [Firma] `dianBuildXAdESBaseSignature` alinea la politica oficial con los ejemplos DIAN: URL `politicadefirma/v2/politicadefirmav2.pdf`, `Description`, namespace `xades141` y `SignedDataObjectProperties/DataObjectFormat` para el XML firmado.
+- [Firma] `dianBuildXAdESBaseSignature` alineo una primera version con algunos ejemplos DIAN usando `Description`, namespace `xades141` y `SignedDataObjectProperties/DataObjectFormat` para el XML firmado.
 - [QA DIAN] Se reconsultaron uno a uno los TrackId/ZipKey de Powerful Control System: el set `SETP990000135` a `SETP990000185` sigue en `Batch en proceso de validacion`; las pruebas nuevas `SETP990000186` a `SETP990000194` tienen acuse final `StatusCode=99`.
 - [Diagnostico] Despues del despliegue XAdES v2 se enviaron `SETP990000193` y `SETP990000194`; la prueba limpia `SETP990000194` reduce el rechazo a `ZE02` y notificacion `FAJ43b`, por tanto el transporte DIAN funciona y el bloqueo principal queda en firma XMLDSig/XAdES.
 - [QA] `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.

@@ -1,7 +1,14 @@
+2026-06-08: DIAN firma XMLDSig/XAdES con C14N de contexto.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Causa tecnica: la firma XAdES calculaba `KeyInfo`, `SignedProperties` y `SignedInfo` como subarboles casi aislados; DIAN verifica con canonicalizacion inclusiva dentro del documento UBL, donde el namespace default y los prefijos UBL heredados forman parte del byte stream firmado.
+- Backend: `dianBuildXAdESBaseSignature` obtiene el namespace raiz del XML UBL y usa ese contexto al canonicalizar documento, `KeyInfo`, `SignedProperties` y `SignedInfo`; `ReferencePCS` queda como referencia del documento y la politica FEV vuelve a `politicadefirma/v1/politicadefirmav2.pdf`, usada por `Generica.xml`, `Consumidor Final.xml`, `CreditNote.xml` y `DebitNote.xml`.
+- QA independiente: un XML firmado de prueba generado por PCS fue validado fuera del backend: `lxml` recalculo y comparo los tres `DigestValue` embebidos y `Node crypto` verifico la `SignatureValue` RSA-SHA256 con el certificado X.509 de prueba.
+- QA Go: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`.
+
 2026-06-08: DIAN politica XAdES v2 y comprobacion uno a uno.
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
-- Investigacion oficial: se contrasto `dianBuildXAdESBaseSignature` contra los XML de ejemplo de la Caja de herramientas DIAN FE V19 V2026; los ejemplos usan politica `https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf`, `xades:Description`, namespace `xades141` y `xades:SignedDataObjectProperties`.
-- Backend: la firma XAdES base ahora emite `ReferencePCS` como referencia del documento, `SignedDataObjectProperties/DataObjectFormat` con `MimeType text/xml` y `Encoding UTF-8`, `xades141` y politica v2.
+- Investigacion oficial: se contrasto `dianBuildXAdESBaseSignature` contra los XML de ejemplo de la Caja de herramientas DIAN FE V19 V2026; se revisaron `Description`, namespace `xades141` y `xades:SignedDataObjectProperties`.
+- Backend: la firma XAdES base emitio `ReferencePCS` como referencia del documento, `SignedDataObjectProperties/DataObjectFormat` con `MimeType text/xml` y `Encoding UTF-8`.
 - Evidencia DIAN: se reconsultaron uno a uno con `GetStatusZip` real los TrackId/ZipKey de empresa `12`; el set `SETP990000135` a `SETP990000185` continua en `Batch en proceso de validacion`, y las pruebas nuevas `SETP990000186` a `SETP990000194` estan rechazadas con `StatusCode=99`.
 - Diagnostico actual: tras desplegar XAdES v2 se enviaron `SETP990000193` y `SETP990000194`; `SETP990000194` con adquiriente normal conserva `ZE02 Valor de la firma invalido` y notificacion `FAJ43b`; las notas no deben reenviarse hasta obtener una factura aceptada `StatusCode=00`.
 - QA: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.

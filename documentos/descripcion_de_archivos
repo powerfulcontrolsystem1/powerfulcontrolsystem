@@ -1,3 +1,12 @@
+2026-06-08 - DIAN C14N de contexto XMLDSig/XAdES
+- `backend/handlers/modulos_faltantes.go`:
+	- agrega deteccion del namespace raiz UBL y canonicalizacion con contexto para documento, `SignedInfo`, `KeyInfo` y `SignedProperties`.
+	- ajusta la politica FEV a `politicadefirma/v1/politicadefirmav2.pdf` segun ejemplos principales oficiales de factura y notas.
+- `backend/handlers/dian_signature_upload_test.go`:
+	- valida que `SignedInfo` incluya el contexto de namespaces UBL completo y que la politica FEV no use la variante RADIAN/otros documentos.
+- `documentos/contexto_codex.md`, `documentos/CHANGELOG.md`, `CHANGELOG.md`, `documentos/historial_de_cambios`:
+	- registran la causa tecnica de `ZE02` y la verificacion independiente con `lxml`/`Node crypto`.
+
 2026-06-08 - DIAN politica XAdES v2 y comprobacion real
 - `backend/handlers/modulos_faltantes.go`:
 	- alinea la firma XAdES base con ejemplos DIAN usando politica de firma v2, `xades141` y `SignedDataObjectProperties/DataObjectFormat`.

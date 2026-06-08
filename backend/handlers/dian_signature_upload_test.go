@@ -697,7 +697,7 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 	}
 }
 
-func TestSignDIANXMLXAdESBaseUsesOfficialPolicyAndDataObjectProperties(t *testing.T) {
+func TestSignDIANXMLXAdESBaseUsesOfficialFEVPolicyAndDataObjectProperties(t *testing.T) {
 	cfg := testDIANValidConfig(t, "https://vpfe-hab.dian.gov.co/WcfDianCustomerServices.svc")
 	result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
 		"documento_codigo": "SETP1",
@@ -719,8 +719,13 @@ func TestSignDIANXMLXAdESBaseUsesOfficialPolicyAndDataObjectProperties(t *testin
 	}
 	signatureXML := genericStringValue(signResp["xml_signature"])
 	for _, expected := range []string{
+		`<ds:SignedInfo xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"`,
+		`xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"`,
+		`xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"`,
+		`xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"`,
+		`xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1"`,
 		`<ds:Reference Id="ReferencePCS" URI="">`,
-		`https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf`,
+		`https://facturaelectronica.dian.gov.co/politicadefirma/v1/politicadefirmav2.pdf`,
 		`<xades:Description></xades:Description>`,
 		`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
 		`<xades:SignedDataObjectProperties>`,
@@ -732,8 +737,8 @@ func TestSignDIANXMLXAdESBaseUsesOfficialPolicyAndDataObjectProperties(t *testin
 			t.Fatalf("expected %q in XAdES signature: %s", expected, signatureXML)
 		}
 	}
-	if strings.Contains(signatureXML, "/politicadefirma/v1/") {
-		t.Fatalf("signature must not use obsolete DIAN policy v1 URL: %s", signatureXML)
+	if strings.Contains(signatureXML, "/politicadefirma/v2/") {
+		t.Fatalf("signature must use the DIAN FEV policy URL from official invoice/note examples: %s", signatureXML)
 	}
 }
 

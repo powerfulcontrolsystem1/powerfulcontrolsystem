@@ -6,10 +6,16 @@ decisiones en cada tarea.
 
 ## Actualizacion 2026-06-08 - DIAN XAdES v2 y estado real
 
+- Correccion posterior: el bloqueo `ZE02` se ataco ajustando la canonicalizacion
+  XMLDSig/XAdES para calcular `KeyInfo`, `SignedProperties` y `SignedInfo` con
+  el contexto completo de namespaces UBL heredado del documento. Un XML de prueba
+  PCS paso verificacion externa con `lxml` para digest y `Node crypto` para
+  `RSA-SHA256`.
+- Para factura/nota FEV, los ejemplos principales oficiales (`Generica.xml`,
+  `Consumidor Final.xml`, `CreditNote.xml`, `DebitNote.xml`) usan la politica
+  `https://facturaelectronica.dian.gov.co/politicadefirma/v1/politicadefirmav2.pdf`.
 - La firma XAdES base debe seguir el patron de los XML oficiales de la Caja de
-  herramientas DIAN FE V19 V2026: politica
-  `https://facturaelectronica.dian.gov.co/politicadefirma/v2/politicadefirmav2.pdf`,
-  `xades:Description`, namespace `xades141` y
+  herramientas DIAN FE V19 V2026: `xades:Description`, namespace `xades141` y
   `SignedDataObjectProperties/DataObjectFormat` apuntando a la referencia del
   documento XML.
 - La reconsulta real de `GetStatusZip` para Powerful Control System confirma:
