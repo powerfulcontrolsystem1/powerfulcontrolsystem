@@ -13606,3 +13606,19 @@ Archivos modificados:
 - documentos/historial_de_cambios
 - documentos/mapa_modulos.md
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
+
+2026-06-08 05:08:09 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: 1144b179; PushStatus: OK
+Archivos modificados:
+- .gitignore
+- CHANGELOG.md
+- backend/handlers/dian_signature_upload_test.go
+- backend/handlers/modulos_faltantes.go
+- documentos/CHANGELOG.md
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/referencias/dian/README.md
+- scripts/validar_dian_xsd.ps1
