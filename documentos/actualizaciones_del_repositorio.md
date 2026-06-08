@@ -13731,3 +13731,10 @@ Archivos modificados:
 - web/super/configuracion/ocr.html
 - web/super/licencias.html
 - web/super_administrador.html
+
+2026-06-08 17:42:16 - Mensaje: fix: creditos resumen cartera postgres; Commit: e0e4be5f; PushStatus: OK
+Archivos modificados:
+- backend/db/creditos.go
+- backend/db/creditos_postgres_test.go
+- documentos/CHANGELOG.md
+- documentos/historial_de_cambios
