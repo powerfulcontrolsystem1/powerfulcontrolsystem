@@ -1,3 +1,10 @@
+2026-06-08: Ayuda contextual en formularios de Producto y DIAN
+- Modulos afectados: `inventario`, `productos`, `facturacion_electronica` y `DIAN`.
+- `administrar_productos.html` muestra un boton `?` al lado de cada etiqueta del formulario `Nuevo producto`; al presionarlo se abre una ventana pequena que explica que dato debe ir en el campo.
+- `facturacion_electronica.html` aplica el mismo patron a la carga de firma, configuracion DIAN Colombia, configuracion por pais y configuracion avanzada de facturacion/impresion.
+- Los mensajes son operativos y no reemplazan validaciones backend; solo orientan al administrador antes de guardar.
+- No se agregan endpoints, tablas, permisos ni dependencias externas.
+
 2026-06-07: Bodega base por empresa
 - Modulos afectados: `seleccion_empresas`, `preconfiguraciones`, `inventario`, `bodegas`.
 - Cambio funcional: toda empresa nueva queda con una bodega activa llamada `Bodega 1`; si la bodega ya existe, el backend la conserva y la reactiva.

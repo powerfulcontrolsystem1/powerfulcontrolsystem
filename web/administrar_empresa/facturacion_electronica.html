@@ -559,6 +559,7 @@
     </div>
   </div>
 
+  <script src="/js/form_field_help.js?v=20260607-field-help1"></script>
   <script>
     const state = {
       empresaID: 0,
@@ -572,6 +573,88 @@
     const advancedConfigState = {
       allowed: true
     };
+
+    function installFacturacionFieldHelp() {
+      if (!window.PCSFieldHelp || !window.PCSFieldHelp.install) return;
+      window.PCSFieldHelp.install({
+        feFirmaFile: "Archivo de firma digital de la empresa. DIAN Colombia suele usar P12/PFX o certificado X.509 con llave privada.",
+        feFirmaPassword: "Clave del archivo P12/PFX. Se usa para cargar la firma y no debe quedar escrita en observaciones ni documentos.",
+
+        dian_nit: "NIT del emisor registrado ante DIAN, sin puntos ni guiones. Debe coincidir con la empresa que esta en habilitacion.",
+        dian_dv: "Digito de verificacion del NIT. Se calcula a partir del NIT y DIAN lo valida en los documentos.",
+        dian_razon_social: "Nombre legal del emisor tal como aparece en RUT/DIAN.",
+        dian_tipo_ambiente: "Ambiente de envio: habilitacion para pruebas DIAN o produccion cuando DIAN ya autorizo emitir.",
+        dian_url: "Endpoint oficial DIAN o URL del proveedor tecnologico. Para habilitacion DIAN Colombia suele iniciar con vpfe-hab.",
+        dian_test_set_id: "Identificador del set de pruebas entregado por el portal DIAN. Es obligatorio para asociar los envios de habilitacion.",
+        dian_software_id: "Identificacion del software registrada en DIAN para esta operacion.",
+        dian_software_pin: "PIN del software DIAN. Debe guardarse como dato sensible y no publicarse en capturas, logs ni documentacion.",
+        dian_usar_software_compartido: "Activalo solo cuando la empresa opera con el software SaaS compartido autorizado para el sistema.",
+        dian_prefijo: "Prefijo autorizado por DIAN para la numeracion de facturas o set de pruebas, por ejemplo SETP o FE.",
+        dian_resolucion_numero: "Numero de resolucion o autorizacion de numeracion asignado por DIAN.",
+        dian_consecutivo_actual: "Siguiente numero que usara el sistema para emitir. Debe estar dentro del rango autorizado.",
+        dian_resolucion_fecha_desde: "Fecha inicial de vigencia de la resolucion de numeracion.",
+        dian_resolucion_fecha_hasta: "Fecha final de vigencia de la resolucion. No se debe emitir fuera de esa vigencia.",
+        dian_rango_desde: "Rango autorizado por DIAN: numero inicial y numero final permitidos para el prefijo.",
+        dian_llave_tecnica: "Clave tecnica entregada por DIAN para construir CUFE/CUDE con la numeracion autorizada.",
+        dian_token_emisor_ref: "Referencia del token solo si se usa proveedor/API. En DIAN oficial SOAP normalmente no es requerido.",
+        dian_certificado_url: "Referencia interna del certificado X.509 cargado. No debe ser una URL publica si contiene material sensible.",
+        dian_certificado_clave_ref: "Referencia segura de la llave privada o firma cargada. No pegues la clave real en este campo.",
+        dian_observaciones: "Notas internas de soporte sobre habilitacion, cambios o incidencias. No escribas PIN, claves, tokens ni certificados.",
+
+        pais_codigo: "Pais cuya normativa de facturacion electronica se configurara para esta empresa.",
+        proveedor: "Proveedor de facturacion electronica o modo manual. En Colombia puede ser DIAN oficial o un proveedor tecnologico.",
+        ambiente: "Ambiente general de la configuracion por pais: pruebas/sandbox o produccion.",
+        moneda_codigo: "Moneda principal de emision, por ejemplo COP para Colombia o USD/PAB segun pais.",
+        tipo_documento_emisor: "Tipo de identificacion fiscal del emisor: NIT, RUC, cedula juridica u otro segun pais.",
+        identificador_fiscal: "Numero fiscal principal del emisor, sin formato innecesario.",
+        razon_social: "Nombre legal que se usara como emisor en documentos electronicos.",
+        email_facturacion: "Correo operativo de facturacion para notificaciones y contacto del emisor.",
+        enviar_factura_email_cliente_auto: "Cuando esta activo, el sistema intenta enviar la factura electronica al correo del cliente al emitirla.",
+        telefono_facturacion: "Telefono de contacto fiscal o administrativo del emisor.",
+        direccion_fiscal: "Direccion fiscal registrada de la empresa emisora.",
+        prefijo_factura: "Prefijo local de factura para la configuracion del pais seleccionado.",
+        resolucion_numero: "Resolucion, autorizacion o referencia fiscal local segun pais.",
+        api_base_url: "URL base del proveedor externo cuando se integra por API. No aplica si el envio es DIAN oficial directo.",
+        campos_pais_json: "JSON opcional para datos especificos del pais que no tienen campo propio. Debe ser JSON valido.",
+        observaciones: "Notas internas de la configuracion por pais. No escribas secretos ni claves.",
+
+        adv_facturacion_electronica_activa: "Activa el envio automatico de factura electronica al cerrar una venta cuando la empresa ya esta lista para emitir.",
+        adv_enviar_email_venta: "Permite enviar al cliente el comprobante o venta por correo, independiente de la factura electronica.",
+        adv_enviar_factura_electronica_venta: "Intenta enviar la factura electronica al correo del cliente despues de cerrar la venta.",
+        adv_tipo_documento_emisor: "Tipo de documento fiscal del emisor para datos avanzados de facturacion.",
+        adv_nit: "NIT o documento fiscal del emisor para impresion y datos avanzados.",
+        adv_digito_verificacion: "Digito de verificacion asociado al NIT del emisor.",
+        adv_razon_social: "Razon social que aparecera en documentos y configuracion avanzada.",
+        adv_nombre_comercial: "Nombre de marca visible en factura o comprobantes, si difiere de la razon social.",
+        adv_regimen_fiscal: "Regimen tributario del emisor, por ejemplo Responsable de IVA o SIMPLE.",
+        adv_responsabilidad_tributaria: "Codigo o descripcion de responsabilidad tributaria exigida por la normativa aplicable.",
+        adv_email_facturacion: "Correo usado como contacto de facturacion en la configuracion avanzada.",
+        adv_telefono_facturacion: "Telefono fiscal o administrativo del emisor.",
+        adv_direccion_fiscal: "Direccion principal que se imprime o usa como direccion fiscal del emisor.",
+        adv_departamento: "Departamento o provincia de la direccion fiscal.",
+        adv_municipio: "Municipio o ciudad de la direccion fiscal.",
+        adv_pais_codigo: "Codigo ISO del pais del emisor, por ejemplo CO.",
+        adv_codigo_postal: "Codigo postal si la normativa o el formato de impresion lo requiere.",
+        adv_ambiente_fe: "Ambiente operativo de facturacion electronica: habilitacion o produccion.",
+        adv_tipo_operacion: "Tipo de operacion fiscal. En DIAN Colombia el valor estandar suele ser 10.",
+        adv_prefijo_factura: "Prefijo avanzado para numeracion de factura.",
+        adv_resolucion_numero: "Numero de resolucion usado para numeracion avanzada.",
+        adv_resolucion_fecha_desde: "Inicio de vigencia de la resolucion avanzada.",
+        adv_resolucion_fecha_hasta: "Fin de vigencia de la resolucion avanzada.",
+        adv_consecutivo_desde: "Primer consecutivo permitido en el rango avanzado.",
+        adv_consecutivo_hasta: "Ultimo consecutivo permitido en el rango avanzado.",
+        adv_proximo_consecutivo: "Numero que se usara en la siguiente emision.",
+        adv_formato_impresion: "Formato visual de impresion: carta para documento amplio o POS para tirilla.",
+        adv_imprimir_copia_factura: "Imprime una copia adicional cuando el flujo operativo lo requiere.",
+        adv_logo_url: "Ruta del logo usado en la impresion. Usa una ruta publica controlada o archivo empresarial.",
+        adv_mostrar_logo: "Muestra u oculta el logo en la impresion de factura.",
+        adv_pie_factura: "Mensaje comercial o de agradecimiento para el pie impreso.",
+        adv_notas_legales: "Texto legal o tributario que debe aparecer impreso cuando aplique.",
+        adv_color_carrito_activo: "Color de referencia para estaciones con carrito activo.",
+        adv_color_carrito_inactivo: "Color de referencia para estaciones con carrito inactivo.",
+        adv_observaciones: "Notas internas de configuracion avanzada. No guardes secretos aqui."
+      });
+    }
 
     function q(name) {
       const p = new URLSearchParams(window.location.search);
@@ -836,6 +919,7 @@
       if (ve) ve.classList.toggle("is-hidden", codeU !== "VE");
       fillCountryHint(codeU);
       defaultMonedaForPais(codeU);
+      installFacturacionFieldHelp();
     }
 
     function defaultMonedaForPais(codeU) {
@@ -1822,6 +1906,7 @@
       });
     });
 
+    installFacturacionFieldHelp();
     bindDianSetupProgressInputs();
 
     (async function init() {

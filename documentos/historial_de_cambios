@@ -1,3 +1,11 @@
+2026-06-08: Ayuda contextual en campos de Producto y DIAN.
+- Modulos afectados: Inventario, Productos, Facturacion electronica, DIAN y configuracion avanzada de facturacion.
+- Frontend: `web/js/form_field_help.js` agrega un helper reutilizable para botones `?` junto a labels de formulario, con popover pequeno, fuente normal de 14px, cierre por Escape/clic externo y sin dependencias.
+- Inventario: `web/administrar_empresa/administrar_productos.html` instala ayuda en los 25 campos del formulario `Nuevo producto`.
+- Facturacion electronica: `web/administrar_empresa/facturacion_electronica.html` instala ayuda en firma DIAN, configuracion DIAN Colombia, perfil por pais y configuracion avanzada de facturacion/impresion; los labels dinamicos por pais reinstalan la ayuda cuando cambian.
+- Seguridad/alcance: no cambia endpoints, datos, permisos ni persistencia; no imprime ni solicita secretos en los textos de ayuda.
+- QA: `node --check web/js/form_field_help.js`; verificacion visual local en `http://127.0.0.1:8189` confirma popovers de Producto/Nombre y DIAN/TestSetId visibles con fuente 14px y ancho 290px; `git diff --check` sin errores, solo advertencias CRLF.
+
 2026-06-07: Bodega 1 por defecto en empresas.
 - Modulos afectados: Creacion de empresas, preconfiguraciones e inventario/bodegas.
 - Backend: `backend/db/productos.go` agrega `EnsureEmpresaBodega1` y `ApplyDefaultBodega1ToExistingEmpresas`.

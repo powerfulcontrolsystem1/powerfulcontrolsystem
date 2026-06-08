@@ -1,3 +1,14 @@
+2026-06-08 - Ayuda contextual en campos de formulario
+- `web/js/form_field_help.js`:
+	- nuevo helper frontend sin dependencias para insertar botones `?` junto a labels de campos.
+	- muestra un popover compacto con titulo y texto, fuente normal, cierre por Escape/clic externo y posicionamiento contra el viewport.
+	- expone `window.PCSFieldHelp.install(map)` para reutilizarlo en paginas empresariales.
+- `web/administrar_empresa/administrar_productos.html`:
+	- carga `form_field_help.js` e instala textos de ayuda para los campos de `Nuevo producto`.
+- `web/administrar_empresa/facturacion_electronica.html`:
+	- carga `form_field_help.js` e instala textos de ayuda para firma, DIAN Colombia, configuracion por pais y configuracion avanzada.
+	- reinstala la ayuda despues de cambios dinamicos de labels por pais.
+
 2026-06-07 - Bodega 1 por defecto en empresas
 - `backend/db/productos.go`:
 	- agrega `EnsureEmpresaBodega1` para crear o reactivar la bodega base `Bodega 1` por `empresa_id`.

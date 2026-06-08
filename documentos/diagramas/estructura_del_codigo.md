@@ -1,3 +1,18 @@
+## Actualizacion 2026-06-08 - Ayuda contextual en formularios
+
+- `web/js/form_field_help.js`
+  - Helper compartido de UI para insertar botones `?` junto a labels y mostrar
+    popovers compactos sin dependencias externas.
+  - Expone `window.PCSFieldHelp.install(map)` para que cada pagina registre sus
+    textos por `id` de campo.
+- `web/administrar_empresa/administrar_productos.html`
+  - Carga el helper e instala ayuda en el formulario `Nuevo producto`.
+- `web/administrar_empresa/facturacion_electronica.html`
+  - Carga el helper e instala ayuda en firma DIAN, configuracion DIAN Colombia,
+    configuracion por pais y configuracion avanzada.
+  - Reinstala ayudas cuando cambian labels dinamicos por pais.
+- Alcance: frontend estatico; no agrega endpoints, tablas ni permisos.
+
 ## Actualizacion 2026-06-07 - Bodega base por empresa
 
 - `backend/db/productos.go`

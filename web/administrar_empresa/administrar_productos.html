@@ -154,6 +154,7 @@
     }
   </style>
   <script src="/js/empresa_submenu_context.js"></script>
+  <script src="/js/form_field_help.js?v=20260607-field-help1"></script>
 </head>
 <body class="empresa-subpage">
   <div class="container empresa-module">
@@ -3950,7 +3951,39 @@
       });
     }
 
+    function installProductoFieldHelp() {
+      if (!window.PCSFieldHelp || !window.PCSFieldHelp.install) return;
+      window.PCSFieldHelp.install({
+        productoNombre: "Nombre comercial visible para busquedas, ventas, inventario y reportes. Usa una descripcion corta y clara del producto real.",
+        productoSKU: "Codigo interno de inventario. Sirve para identificar el producto dentro de la empresa aunque no tenga codigo de barras.",
+        productoCodigoBarras: "Codigo EAN, UPC o codigo propio que se escanea en caja. Si no existe, puedes dejarlo vacio.",
+        productoCategoria: "Grupo comercial del producto para filtros, reportes y analisis de inventario.",
+        productoMarca: "Marca, linea o fabricante. Ayuda a diferenciar productos parecidos.",
+        productoUnidad: "Unidad en la que se vende o controla el producto: unidad, caja, kilo, litro, servicio, etc.",
+        productoCosto: "Costo de compra o reposicion usado para margen y control interno. No es el precio de venta.",
+        productoPrecio: "Precio de venta antes o despues de impuestos segun la configuracion operativa de la empresa.",
+        productoImpuesto: "Impuesto aplicable al producto para ventas y reportes. Verifica que coincida con la clasificacion fiscal real.",
+        productoStockMin: "Cantidad minima deseada en bodega. El sistema la usa para alertas de reposicion.",
+        productoStockMax: "Cantidad maxima sugerida para evitar sobreinventario. Puede quedar en cero si la empresa no maneja maximos.",
+        productoStockInicial: "Existencia inicial que se registra solo al crear el producto. En edicion se controlan existencias desde movimientos.",
+        productoBodegaPrincipal: "Bodega donde queda el stock inicial y la ubicacion principal del producto.",
+        productoProveedorPrincipal: "Proveedor habitual para compras o reposicion. Es opcional, pero mejora los planes de abastecimiento.",
+        productoImagen: "Archivo local de imagen o logo del producto para reconocerlo visualmente en listados y ventas.",
+        productoManejaVencimiento: "Marca esta opcion si el producto tiene fecha de vencimiento, lote sanitario o control perecedero.",
+        productoFechaVencimiento: "Fecha de vencimiento del lote actual. Solo aplica si el producto maneja vencimiento.",
+        productoDiasAlertaVencimiento: "Dias de anticipacion para avisar que el producto esta cerca de vencer.",
+        productoLoteCodigo: "Codigo del lote o partida del producto. Ayuda a trazabilidad y retiros internos.",
+        productoImagenURL: "Ruta ya publicada de una imagen existente. Usala solo si no vas a cargar archivo local.",
+        productoImpresoraPedido: "Impresora o area donde debe salir la comanda de este producto, por ejemplo cocina o barra.",
+        productoMotivoPrecio: "Motivo operativo cuando editas el precio: proveedor, inflacion, promocion o autorizacion interna.",
+        productoReferenciaPrecio: "Referencia documental del cambio de precio: acta, lista de proveedor, ticket o consecutivo interno.",
+        productoDescripcion: "Descripcion ampliada para notas internas, catalogo o detalle comercial.",
+        productoObservaciones: "Notas internas que no necesariamente salen en la venta: cuidado, ubicacion, restricciones o comentarios."
+      });
+    }
+
     async function bootstrap() {
+      installProductoFieldHelp();
       hideCRUDForms();
       wireEvents();
       applyViewMode();

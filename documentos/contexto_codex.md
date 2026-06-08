@@ -15,6 +15,17 @@ decisiones en cada tarea.
   existentes de preproduccion, independiente de las migraciones anteriores de
   impuestos y nomina.
 
+## Actualizacion 2026-06-08 - Ayuda contextual en formularios
+
+- `web/js/form_field_help.js` expone `window.PCSFieldHelp.install(map)` para
+  agregar botones `?` junto a labels de formularios sin dependencias externas.
+- `administrar_productos.html` usa el helper en el formulario `Nuevo producto`
+  para explicar los 25 campos operativos antes de guardar.
+- `facturacion_electronica.html` usa el mismo patron en firma, DIAN Colombia,
+  configuracion por pais y configuracion avanzada de facturacion/impresion.
+- Los textos de DIAN deben seguir sin secretos: no imprimir PIN, claves,
+  certificados, tokens ni valores reales sensibles.
+
 ## Actualizacion 2026-06-07 - Ayuda integrada con robot/caja IA
 
 - `web/js/help_ai_bridge.js` conecta enlaces de ayuda, tutoriales y botones con

@@ -1,3 +1,10 @@
+## [2026-06-08] Ayuda contextual en formularios Producto y DIAN
+- [Frontend] `web/js/form_field_help.js` agrega botones circulares `?` reutilizables junto a etiquetas de formulario, con popover pequeno, fuente normal y cierre por Escape/clic externo.
+- [Inventario] `administrar_productos.html` instala ayuda en los 25 campos del formulario `Nuevo producto`.
+- [Facturacion] `facturacion_electronica.html` instala ayuda en carga de firma, configuracion DIAN Colombia, configuracion por pais y configuracion avanzada de facturacion/impresion.
+- [Seguridad] Los textos explican el dato requerido sin exponer PIN, claves, certificados, tokens ni valores privados.
+- [QA] Validacion local visual con servidor temporal: producto abre popover `Nombre` a 14px/290px; DIAN abre `TestSetId` a 14px/290px y mantiene visible el bloque Colombia.
+
 ## [2026-06-07] Bodega 1 por defecto en empresas
 - [Backend] `EnsureEmpresaBodega1` crea o reactiva una bodega activa llamada `Bodega 1` por `empresa_id`, sin productos, existencias ni movimientos simulados.
 - [Preconfiguracion] La creacion de empresa incluye `bodega_id` en los defaults aplicados y el arranque ejecuta la migracion `20260607_bodega_1_default` para empresas existentes.

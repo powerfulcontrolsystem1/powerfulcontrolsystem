@@ -198,6 +198,20 @@ afecte dinero, documentos, licencias o seguridad.
 11. Pruebas negativas: doble submit del mismo formulario y dos POST iguales no
    deben crear empresas duplicadas.
 
+## Ayuda contextual en formularios
+
+1. En `Administrar empresa > Productos > Nuevo producto`, cada campo del
+   formulario muestra un boton `?` junto a su etiqueta.
+2. Al presionarlo se abre una ventana pequena con texto operativo normal que
+   explica que dato debe ir en el campo.
+3. En `Administrar empresa > Facturacion electronica`, el mismo patron cubre
+   firma DIAN, configuracion DIAN Colombia, configuracion por pais y
+   configuracion avanzada de facturacion/impresion.
+4. Los textos de DIAN no deben incluir PIN, claves, tokens, certificados ni
+   datos privados reales; solo explican el tipo de dato y el cuidado operativo.
+5. La ayuda es frontend, no sustituye validaciones backend ni permisos por
+   `empresa_id`.
+
 ## Ordenar empresas en el selector
 
 1. Administrador entra a `web/seleccionar_empresa.html`.
