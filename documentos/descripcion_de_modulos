@@ -3,6 +3,12 @@
 - Cambio funcional: el generador Colombia ya diferencia factura electronica,
   nota credito y nota debito con estructuras UBL propias y lineas correctas por
   tipo documental.
+- Ajuste DIAN: el XML usa `ProfileID` detallado por tipo documental,
+  `PrepaidAmount` con la capitalizacion UBL oficial, `PaymentMeans` y el literal
+  exacto de agencia DIAN que aparece en la caja de herramientas oficial.
+- Flujo de notas: las notas credito/debito no se envian contra facturas solo
+  generadas o pendientes; requieren una factura aceptada por DIAN con codigo,
+  CUFE y fecha de emision para evitar rechazos por referencia inexistente.
 - Validacion: antes de enviar, el preflight bloquea faltantes criticos de UBL
   DIAN como `DianExtensions`, `SoftwareSecurityCode`, `CUFE/CUDE-SHA384`,
   `InvoiceLine/CreditNoteLine/DebitNoteLine` y referencias obligatorias de
@@ -10,6 +16,10 @@
 - Diagnostico: cuando DIAN responde `ErrorMessageList`, el sistema conserva la
   lista completa saneada y clasifica la respuesta como rechazo real si
   `IsValid=false` contiene errores.
+- Firma: se ajusta la firma XAdES base para firmar el mismo `SignedInfo`
+  insertado en el XML y calcular el digest del documento sin declaracion XML;
+  si DIAN mantiene `ZE02`, el siguiente frente es implementar canonicalizacion
+  XML/XAdES completa.
 - Operacion: un `TrackId/ZipKey` solo demuestra recepcion del ZIP; la empresa
   queda habilitada o un documento aceptado solo con acuse final DIAN positivo.
 

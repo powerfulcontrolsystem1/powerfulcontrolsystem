@@ -1,3 +1,9 @@
+## [2026-06-08] DIAN prueba real uno a uno
+- [DIAN] La reconsulta real de factura, nota debito y nota credito para empresa 12 confirma rechazos `StatusCode=99`; PCS conserva `ErrorMessageList` completo en historial TrackId.
+- [UBL] Corrige `PrepaidAmount`, literales DIAN oficiales con tildes, `ProfileID` por tipo documental, `PaymentMeans` y responsabilidad fiscal base cuando no hay catalogo configurado.
+- [Flujo] Las notas se bloquean si no existe factura aceptada por DIAN como referencia; ya no se envian contra una factura solo generada o pendiente.
+- [Firma] La firma XAdES base firma el `SignedInfo` embebido y agrega referencia a `KeyInfo`; un nuevo `ZE02` queda identificado como pendiente de canonicalizacion XMLDSig/XAdES completa.
+
 ## [2026-06-08] UBL DIAN realista y errores completos
 - [Backend] `generateDIANUBLBase` genera factura, nota credito y nota debito con estructura DIAN UBL 2.1, `DIAN 2.1`, `CustomizationID` oficial, `CUFE/CUDE-SHA384`, extensiones DIAN, QR, `SoftwareSecurityCode`, parties, totales y lineas correctas por tipo.
 - [Preflight] La validacion preventiva bloquea XML sin extensiones DIAN, sin esquema SHA384, con linea documental equivocada o notas sin referencia a factura.

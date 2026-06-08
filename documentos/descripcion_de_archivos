@@ -1,10 +1,12 @@
 2026-06-08 - UBL DIAN realista y validacion XSD local
 - `backend/handlers/modulos_faltantes.go`:
 	- actualiza el generador UBL DIAN para factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`, `CUFE/CUDE-SHA384`, extensiones DIAN, QR, `SoftwareSecurityCode`, parties, totales y lineas documentales correctas.
+	- alinea el XML con rechazos reales DIAN: `ProfileID` detallado, `PrepaidAmount`, `PaymentMeans` y literal oficial de agencia DIAN.
+	- evita enviar notas credito/debito sin una factura aceptada por DIAN como referencia.
 	- endurece `validateDIANDocumentPreflight` contra estructuras no aceptables antes de enviar a DIAN.
 	- parsea `ErrorMessageList` completo desde SOAP y clasifica errores finales de DIAN como rechazo real.
 - `backend/handlers/dian_signature_upload_test.go`:
-	- agrega cobertura para UBL generado, lineas de nota credito/debito y `ErrorMessageList`.
+	- agrega cobertura para UBL generado, literales DIAN oficiales, `PaymentMeans`, lineas de nota credito/debito y `ErrorMessageList`.
 - `scripts/validar_dian_xsd.ps1`:
 	- nuevo helper de QA para validar un XML contra los XSD oficiales de la caja DIAN descargada localmente.
 - `documentos/referencias/dian/README.md`:

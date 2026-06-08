@@ -7,15 +7,23 @@ decisiones en cada tarea.
 ## Actualizacion 2026-06-08 - UBL DIAN realista y errores completos
 
 - `generateDIANUBLBase` ya no genera XML UBL minimo/inventado: ahora emite
-  factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`,
-  `CustomizationID` oficial por tipo, `CUFE/CUDE-SHA384`, `DianExtensions`,
-  `SoftwareSecurityCode`, QR DIAN, parties, totales, `InvoiceLine`,
-  `CreditNoteLine` o `DebitNoteLine` segun corresponda.
-- En el set automatico, las notas referencian la ultima factura generada en la
-  misma corrida para evitar `BillingReference` generico.
+  factura, nota credito y nota debito con `UBL 2.1`, `ProfileID` especifico
+  por tipo, `CustomizationID` oficial por tipo, `CUFE/CUDE-SHA384`,
+  `DianExtensions`, `SoftwareSecurityCode`, QR DIAN, parties, `PaymentMeans`,
+  totales, `InvoiceLine`, `CreditNoteLine` o `DebitNoteLine` segun corresponda.
+- La prueba real de DIAN 2026-06-08 confirmo rechazos por `PrePaidAmount`
+  mal capitalizado, literales DIAN sin tildes, falta de `PaymentMeans`, perfil
+  incompleto, CUDE/firma y notas referenciando factura no aceptada.
+- El set automatico ya no usa una factura apenas generada como referencia de
+  notas: primero debe existir factura aceptada por DIAN (`StatusCode=00`);
+  sin esa referencia aceptada, las notas quedan bloqueadas antes de enviarse.
 - El preflight DIAN bloquea estructuras equivocadas antes de enviar: notas sin
   `DiscrepancyResponse/BillingReference`, UUID sin esquema SHA384, lineas de
   tipo incorrecto, falta de extensiones DIAN o falta de `SoftwareSecurityCode`.
+- La firma XAdES base incluye la referencia a `KeyInfo` y firma exactamente el
+  `SignedInfo` embebido; si DIAN sigue devolviendo `ZE02`, queda pendiente
+  sustituir la firma base por un firmador XMLDSig/XAdES con canonicalizacion
+  completa validado por la caja DIAN.
 - `GetStatusZip` y respuestas SOAP ahora parsean `ErrorMessageList` completo;
   si DIAN devuelve varias reglas de rechazo, PCS las conserva saneadas como
   lista visible y no las reduce a un estado generico.

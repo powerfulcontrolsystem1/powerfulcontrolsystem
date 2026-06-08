@@ -679,6 +679,19 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 	if !strings.Contains(xmlPayload, "<sts:DianExtensions>") || !strings.Contains(xmlPayload, "<cac:InvoiceLine>") {
 		t.Fatalf("expected DIAN extensions and invoice line, got %s", xmlPayload)
 	}
+	for _, expected := range []string{
+		"<cbc:ProfileID>DIAN 2.1: Factura Electrónica de Venta</cbc:ProfileID>",
+		"<cbc:PrepaidAmount",
+		"<cac:PaymentMeans>",
+		"CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)",
+	} {
+		if !strings.Contains(xmlPayload, expected) {
+			t.Fatalf("expected %q in invoice XML: %s", expected, xmlPayload)
+		}
+	}
+	if strings.Contains(xmlPayload, "PrePaidAmount") || strings.Contains(xmlPayload, "Direccion de Impuestos") {
+		t.Fatalf("invoice XML contains DIAN-rejected literal/casing: %s", xmlPayload)
+	}
 }
 
 func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
@@ -700,9 +713,10 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 		expectedRoot string
 		expectedLine string
 		expectedCUDE string
+		expectedID   string
 	}{
-		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`},
-		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`},
+		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1: Nota Crédito de Factura Electrónica de Venta</cbc:ProfileID>"},
+		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`, expectedID: "<cbc:ProfileID>DIAN 2.1: Nota Débito de Factura Electrónica de Venta</cbc:ProfileID>"},
 	} {
 		result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
 			"documento_codigo": "SETP99",
@@ -717,12 +731,12 @@ func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
 			t.Fatalf("%s generate status=%d err=%v result=%#v", tc.docType, status, err, result)
 		}
 		xmlPayload := genericStringValue(result["xml_ubl_base"])
-		for _, expected := range []string{tc.expectedRoot, tc.expectedLine, tc.expectedCUDE, "<cac:DiscrepancyResponse>", "<cac:BillingReference>"} {
+		for _, expected := range []string{tc.expectedRoot, tc.expectedLine, tc.expectedCUDE, tc.expectedID, "<cac:DiscrepancyResponse>", "<cac:BillingReference>", "<cac:PaymentMeans>", "<cbc:PrepaidAmount"} {
 			if !strings.Contains(xmlPayload, expected) {
 				t.Fatalf("%s expected %q in XML: %s", tc.docType, expected, xmlPayload)
 			}
 		}
-		if strings.Contains(xmlPayload, "<cac:InvoiceLine>") {
+		if strings.Contains(xmlPayload, "<cac:InvoiceLine>") || strings.Contains(xmlPayload, "PrePaidAmount") {
 			t.Fatalf("%s must not use InvoiceLine: %s", tc.docType, xmlPayload)
 		}
 	}

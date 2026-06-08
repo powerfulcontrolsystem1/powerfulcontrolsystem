@@ -1,3 +1,11 @@
+2026-06-08: DIAN prueba real uno a uno y correcciones por rechazo oficial.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Evidencia DIAN: reconsulta real de TrackId/ZipKey para empresa `12` devolvio `StatusCode=99` y `Validacion contiene errores en campos mandatorios` para factura, nota debito y nota credito; `ErrorMessageList` quedo persistido en `empresa_dian_track_historial`.
+- Backend UBL: se corrige `PrePaidAmount` a `PrepaidAmount`, se usan literales exactos `CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)`, `ProfileID` especifico por tipo, `PaymentMeans` y responsabilidad fiscal base `R-99-PN` cuando no hay valor configurado por catalogo.
+- Flujo operativo: las notas ya no se envian contra una factura apenas generada; requieren referencia de factura aceptada por DIAN o quedan bloqueadas antes de transporte para evitar `Documento referenciado no existe`.
+- Firma: `dianBuildXAdESBaseSignature` firma el mismo `SignedInfo` que se embebe en el XML y agrega referencia a `KeyInfo` siguiendo la estructura de ejemplos oficiales; se documenta que un nuevo `ZE02` exigira firmador XMLDSig/XAdES con canonicalizacion completa.
+- QA: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.
+
 2026-06-08: Generador UBL DIAN realista y parser de errores completo.
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
 - Investigacion: se descargaron localmente desde DIAN el Anexo Tecnico FE 1.9, la Caja de herramientas FE 1.9 V2026 y la guia de consumo WS; la carpeta fechada queda ignorada por Git por contener PDFs/ZIP/JARs grandes.
