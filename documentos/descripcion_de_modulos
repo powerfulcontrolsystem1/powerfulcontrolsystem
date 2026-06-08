@@ -1,3 +1,18 @@
+2026-06-08: UBL DIAN realista y diagnostico de rechazo
+- Modulo afectado: `facturacion_electronica`.
+- Cambio funcional: el generador Colombia ya diferencia factura electronica,
+  nota credito y nota debito con estructuras UBL propias y lineas correctas por
+  tipo documental.
+- Validacion: antes de enviar, el preflight bloquea faltantes criticos de UBL
+  DIAN como `DianExtensions`, `SoftwareSecurityCode`, `CUFE/CUDE-SHA384`,
+  `InvoiceLine/CreditNoteLine/DebitNoteLine` y referencias obligatorias de
+  notas.
+- Diagnostico: cuando DIAN responde `ErrorMessageList`, el sistema conserva la
+  lista completa saneada y clasifica la respuesta como rechazo real si
+  `IsValid=false` contiene errores.
+- Operacion: un `TrackId/ZipKey` solo demuestra recepcion del ZIP; la empresa
+  queda habilitada o un documento aceptado solo con acuse final DIAN positivo.
+
 2026-06-08: Historial TrackId / ZipKey DIAN
 - Modulo afectado: `facturacion_electronica`.
 - Backend: `/api/empresa/facturacion_electronica/dian?action=historial_tracks` lista por `empresa_id` los TrackId/ZipKey guardados.

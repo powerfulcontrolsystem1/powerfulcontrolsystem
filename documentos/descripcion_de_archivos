@@ -1,3 +1,17 @@
+2026-06-08 - UBL DIAN realista y validacion XSD local
+- `backend/handlers/modulos_faltantes.go`:
+	- actualiza el generador UBL DIAN para factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`, `CUFE/CUDE-SHA384`, extensiones DIAN, QR, `SoftwareSecurityCode`, parties, totales y lineas documentales correctas.
+	- endurece `validateDIANDocumentPreflight` contra estructuras no aceptables antes de enviar a DIAN.
+	- parsea `ErrorMessageList` completo desde SOAP y clasifica errores finales de DIAN como rechazo real.
+- `backend/handlers/dian_signature_upload_test.go`:
+	- agrega cobertura para UBL generado, lineas de nota credito/debito y `ErrorMessageList`.
+- `scripts/validar_dian_xsd.ps1`:
+	- nuevo helper de QA para validar un XML contra los XSD oficiales de la caja DIAN descargada localmente.
+- `documentos/referencias/dian/README.md`:
+	- documenta los artefactos oficiales DIAN descargados localmente y por que la carpeta fechada no se versiona.
+- `.gitignore`:
+	- ignora `documentos/referencias/dian/2026-06-08/` para evitar versionar PDFs/ZIP/JARs oficiales pesados.
+
 2026-06-08 - Historial TrackId DIAN
 - `backend/db/modulos_faltantes.go`:
 	- agrega la tabla `empresa_dian_track_historial` e indices por empresa/estado y documento.

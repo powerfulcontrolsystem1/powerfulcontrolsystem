@@ -3,6 +3,17 @@
 Version: 2026-05-15.1.0
 Ultima actualizacion: 2026-05-15
 
+Actualizacion 2026-06-08 (UBL DIAN y parser de errores)
+- No se crean tablas nuevas. La trazabilidad sigue en
+  `empresa_dian_track_historial` y la configuracion en
+  `empresa_dian_configuracion`.
+- `respuesta_acuse_json` puede contener `error_messages` como arreglo saneado
+  cuando DIAN devuelve `ErrorMessageList`; no se guardan XML crudo, certificados,
+  claves, PIN ni tokens.
+- Los estados derivados de acuse distinguen `pendiente` por batch en proceso,
+  `rechazado` por `IsValid=false` con errores y `aceptado` solo con acuse final
+  positivo.
+
 Actualizacion 2026-06-08 (historial TrackId DIAN)
 - Nueva tabla `empresa_dian_track_historial`: guarda por `empresa_id` cada
   `track_id`/`zip_key` recibido en envios reales DIAN y el ultimo acuse

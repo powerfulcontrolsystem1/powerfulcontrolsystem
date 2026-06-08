@@ -13,6 +13,7 @@ logs/test_runs/*.log
 test_runs/
 scripts/logs/*.log
 documentos/reportes_profesionales/
+documentos/referencias/dian/2026-06-08/
 # URL local del remoto para actualizar_repositorio.ps1 (no versionar)
 scripts/actualizar_repositorio.repo_url
 scripts/pcs_deployment.local.ps1

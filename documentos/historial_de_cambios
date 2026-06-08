@@ -1,3 +1,11 @@
+2026-06-08: Generador UBL DIAN realista y parser de errores completo.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Investigacion: se descargaron localmente desde DIAN el Anexo Tecnico FE 1.9, la Caja de herramientas FE 1.9 V2026 y la guia de consumo WS; la carpeta fechada queda ignorada por Git por contener PDFs/ZIP/JARs grandes.
+- Backend: `generateDIANUBLBase` emite factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`, `CustomizationID` oficial, `CUFE/CUDE-SHA384`, `DianExtensions`, `SoftwareSecurityCode`, QR, parties, totales y lineas `InvoiceLine`/`CreditNoteLine`/`DebitNoteLine` segun tipo.
+- Preflight: `validateDIANDocumentPreflight` bloquea antes del envio XML sin extensiones DIAN, sin esquema SHA384, con linea de tipo equivocada o notas sin `DiscrepancyResponse/BillingReference`.
+- Parser DIAN: `extractDIANSOAPResponseMap` conserva `ErrorMessageList` completo y `resolveDIANAcuseFromResponse` clasifica `IsValid=false` con errores como `rechazado`; `Batch en proceso de validacion` sigue como `pendiente`.
+- QA: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument" -count=1`; `go test ./handlers -run "DIAN|Dian|Facturacion|facturacion" -count=1`; parser PowerShell de `scripts/validar_dian_xsd.ps1`.
+
 2026-06-08: Historial persistente de TrackId/ZipKey DIAN.
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
 - Backend: `/api/empresa/facturacion_electronica/dian?action=historial_tracks` permite listar por `empresa_id` los TrackId/ZipKey reales y su ultimo acuse.

@@ -4,6 +4,27 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - UBL DIAN realista y errores completos
+
+- `generateDIANUBLBase` ya no genera XML UBL minimo/inventado: ahora emite
+  factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`,
+  `CustomizationID` oficial por tipo, `CUFE/CUDE-SHA384`, `DianExtensions`,
+  `SoftwareSecurityCode`, QR DIAN, parties, totales, `InvoiceLine`,
+  `CreditNoteLine` o `DebitNoteLine` segun corresponda.
+- El preflight DIAN bloquea estructuras equivocadas antes de enviar: notas sin
+  `DiscrepancyResponse/BillingReference`, UUID sin esquema SHA384, lineas de
+  tipo incorrecto, falta de extensiones DIAN o falta de `SoftwareSecurityCode`.
+- `GetStatusZip` y respuestas SOAP ahora parsean `ErrorMessageList` completo;
+  si DIAN devuelve varias reglas de rechazo, PCS las conserva saneadas como
+  lista visible y no las reduce a un estado generico.
+- Las referencias oficiales DIAN descargadas localmente viven en
+  `documentos/referencias/dian/2026-06-08/` y no se versionan por tamano/binarios.
+  El README versionado deja las URLs/artefactos; `scripts/validar_dian_xsd.ps1`
+  valida un XML contra los XSD oficiales cuando la caja esta descargada.
+- La aceptacion fiscal sigue dependiendo solo del acuse DIAN final
+  `IsValid=true`/`StatusCode=00`; `Batch en proceso de validacion` nunca cuenta
+  como aceptado.
+
 ## Actualizacion 2026-06-08 - Historial TrackId DIAN
 
 - `facturacion_electronica_pruebas_dian.html` muestra una tarjeta `Historial

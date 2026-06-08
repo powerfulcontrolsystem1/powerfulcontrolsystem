@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"database/sql"
 	"encoding/base64"
@@ -24,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -8108,15 +8110,35 @@ func extractDIANResponseMap(raw string) map[string]interface{} {
 
 func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{}) (string, string) {
 	message := dianFirstNonBlank(
+		genericStringValue(response["error_message"]),
 		genericStringValue(response["mensaje"]),
 		genericStringValue(response["message"]),
 		genericStringValue(response["detalle"]),
 		genericStringValue(response["status_description"]),
 		genericStringValue(response["status_message"]),
-		genericStringValue(response["error_message"]),
 		genericStringValue(response["description"]),
 		genericStringValue(response["error"]),
 	)
+	statusCodeDIAN := strings.TrimSpace(genericStringValue(response["status_code"]))
+	isValidRaw := strings.ToLower(strings.TrimSpace(genericStringValue(response["is_valid"])))
+	if isValidRaw == "true" && (statusCodeDIAN == "" || statusCodeDIAN == "00") {
+		return "aceptado", dianFirstNonBlank(message, "documento aceptado por DIAN")
+	}
+	if isValidRaw == "false" {
+		normalizedMessage := normalizeDIANAcuseEstado(message)
+		if normalizedMessage == "pendiente" {
+			return "pendiente", dianFirstNonBlank(message, "Batch en proceso de validacion.")
+		}
+		if statusCodeDIAN != "" && statusCodeDIAN != "00" {
+			return "rechazado", dianFirstNonBlank(message, "documento rechazado por DIAN")
+		}
+		if genericStringValue(response["error_message"]) != "" {
+			return "rechazado", message
+		}
+		if message != "" {
+			return "rechazado", message
+		}
+	}
 	keys := []string{"acuse", "estado", "status", "estado_dian", "resultado", "status_description", "status_message", "error_message"}
 	for _, key := range keys {
 		if v := normalizeDIANAcuseEstado(genericStringValue(response[key])); v != "" {
@@ -8144,17 +8166,163 @@ func resolveDIANAcuseFromResponse(statusCode int, response map[string]interface{
 	return "pendiente", dianFirstNonBlank(message, "sin acuse concluyente")
 }
 
-func buildDIANCUFE(nit, documentoCodigo, fechaEmision, total, softwareID, softwarePIN string) string {
+func buildDIANSHA384Hex(parts ...string) string {
 	seed := strings.Join([]string{
-		strings.TrimSpace(nit),
-		strings.TrimSpace(documentoCodigo),
-		strings.TrimSpace(fechaEmision),
-		strings.TrimSpace(total),
-		strings.TrimSpace(softwareID),
-		strings.TrimSpace(softwarePIN),
-	}, "|")
-	sum := sha256.Sum256([]byte(seed))
+		strings.TrimSpace(strings.Join(parts, "")),
+	}, "")
+	sum := sha512.Sum384([]byte(seed))
 	return strings.ToUpper(hex.EncodeToString(sum[:]))
+}
+
+func buildDIANCUFE(nit, documentoCodigo, fechaEmision, total, softwareID, softwarePIN string) string {
+	return buildDIANSHA384Hex(nit, documentoCodigo, fechaEmision, total, softwareID, softwarePIN)
+}
+
+func dianFormatDecimal(raw string, fallback float64) string {
+	value := ventasAnyToFloat64(raw)
+	if value == 0 && strings.TrimSpace(raw) == "" {
+		value = fallback
+	}
+	if value < 0 {
+		value = 0
+	}
+	return fmt.Sprintf("%.2f", value)
+}
+
+func dianFormatQuantity(raw string, fallback float64) string {
+	value := ventasAnyToFloat64(raw)
+	if value == 0 && strings.TrimSpace(raw) == "" {
+		value = fallback
+	}
+	if value <= 0 {
+		value = fallback
+	}
+	return fmt.Sprintf("%.6f", value)
+}
+
+func dianIssueDateTime(raw string) (string, string) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		now := time.Now()
+		return now.Format("2006-01-02"), now.Format("15:04:05-07:00")
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02T15:04:05-07:00", "2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
+		if parsed, err := time.Parse(layout, raw); err == nil {
+			if layout == "2006-01-02" {
+				return parsed.Format("2006-01-02"), time.Now().Format("15:04:05-07:00")
+			}
+			return parsed.Format("2006-01-02"), parsed.Format("15:04:05-07:00")
+		}
+	}
+	if len(raw) >= 10 {
+		return raw[:10], time.Now().Format("15:04:05-07:00")
+	}
+	now := time.Now()
+	return now.Format("2006-01-02"), now.Format("15:04:05-07:00")
+}
+
+func dianDocumentKind(raw string) (rootName, lineName, customizationID, uuidSchemeName, typeCode, totalTag, quantityTag, correctionCode string) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "nota_credito", "credit_note", "creditnote", "credito", "credit":
+		return "CreditNote", "CreditNoteLine", "11", "CUDE-SHA384", "91", "LegalMonetaryTotal", "CreditedQuantity", "1"
+	case "nota_debito", "debit_note", "debitnote", "debito", "debit":
+		return "DebitNote", "DebitNoteLine", "11", "CUDE-SHA384", "", "RequestedMonetaryTotal", "DebitedQuantity", "1"
+	default:
+		return "Invoice", "InvoiceLine", "01", "CUFE-SHA384", "01", "LegalMonetaryTotal", "InvoicedQuantity", ""
+	}
+}
+
+func dianCompanyIDSchemeID(nit, dv string) string {
+	if strings.TrimSpace(dv) != "" {
+		return dianOnlyDigits(dv)
+	}
+	if expected, ok := calculateColombianNITDV(nit); ok {
+		return strconv.Itoa(expected)
+	}
+	return "0"
+}
+
+func dianSupplierPartyXML(nit, dv, registrationName, prefijo, taxLevel string) string {
+	nit = escapeXML(dianOnlyDigits(nit))
+	dv = escapeXML(dianCompanyIDSchemeID(nit, dv))
+	registrationName = escapeXML(dianFirstNonBlank(registrationName, "EMPRESA SIN RAZON SOCIAL"))
+	prefijo = escapeXML(dianFirstNonBlank(prefijo, "SETP"))
+	taxLevel = escapeXML(dianFirstNonBlank(taxLevel, "O-99"))
+	return fmt.Sprintf(
+		`<cac:AccountingSupplierParty>`+
+			`<cbc:AdditionalAccountID schemeAgencyID="195">1</cbc:AdditionalAccountID>`+
+			`<cac:Party>`+
+			`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
+			`<cac:PhysicalLocation><cac:Address><cbc:ID>11001</cbc:ID><cbc:CityName>Bogota, D.C.</cbc:CityName><cbc:CountrySubentity>Bogota</cbc:CountrySubentity><cbc:CountrySubentityCode>11</cbc:CountrySubentityCode><cac:AddressLine><cbc:Line>Direccion registrada en la empresa</cbc:Line></cac:AddressLine><cac:Country><cbc:IdentificationCode>CO</cbc:IdentificationCode><cbc:Name languageID="es">Colombia</cbc:Name></cac:Country></cac:Address></cac:PhysicalLocation>`+
+			`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)" schemeID="%s" schemeName="31">%s</cbc:CompanyID><cbc:TaxLevelCode listName="05">%s</cbc:TaxLevelCode><cac:RegistrationAddress><cbc:ID>11001</cbc:ID><cbc:CityName>Bogota, D.C.</cbc:CityName><cbc:CountrySubentity>Bogota</cbc:CountrySubentity><cbc:CountrySubentityCode>11</cbc:CountrySubentityCode><cac:AddressLine><cbc:Line>Direccion registrada en la empresa</cbc:Line></cac:AddressLine><cac:Country><cbc:IdentificationCode>CO</cbc:IdentificationCode><cbc:Name languageID="es">Colombia</cbc:Name></cac:Country></cac:RegistrationAddress><cac:TaxScheme><cbc:ID>01</cbc:ID><cbc:Name>IVA</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
+			`<cac:PartyLegalEntity><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)" schemeID="%s" schemeName="31">%s</cbc:CompanyID><cac:CorporateRegistrationScheme><cbc:ID>%s</cbc:ID></cac:CorporateRegistrationScheme></cac:PartyLegalEntity>`+
+			`<cac:Contact><cbc:Name>%s</cbc:Name><cbc:ElectronicMail>facturacion@powerfulcontrolsystem.com</cbc:ElectronicMail></cac:Contact>`+
+			`</cac:Party>`+
+			`</cac:AccountingSupplierParty>`,
+		registrationName,
+		registrationName, dv, nit, taxLevel,
+		registrationName, dv, nit, prefijo,
+		registrationName,
+	)
+}
+
+func dianCustomerPartyXML(customerName, customerNIT string) string {
+	customerName = escapeXML(dianFirstNonBlank(customerName, "CONSUMIDOR FINAL"))
+	customerNITDigits := dianOnlyDigits(dianFirstNonBlank(customerNIT, "2222222222"))
+	additionalAccountID := "1"
+	schemeID := dianCompanyIDSchemeID(customerNITDigits, "")
+	schemeName := "31"
+	if customerNITDigits == "2222222222" || len(customerNITDigits) >= 10 && strings.Trim(customerNITDigits, "2") == "" {
+		additionalAccountID = "2"
+		schemeID = ""
+		schemeName = "13"
+	}
+	companyIDAttrs := fmt.Sprintf(`schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)" schemeName="%s"`, escapeXML(schemeName))
+	if schemeID != "" {
+		companyIDAttrs += fmt.Sprintf(` schemeID="%s"`, escapeXML(schemeID))
+	}
+	return fmt.Sprintf(
+		`<cac:AccountingCustomerParty>`+
+			`<cbc:AdditionalAccountID>%s</cbc:AdditionalAccountID>`+
+			`<cac:Party>`+
+			`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
+			`<cac:PhysicalLocation><cac:Address><cbc:ID>11001</cbc:ID><cbc:CityName>Bogota, D.C.</cbc:CityName><cbc:CountrySubentity>Bogota</cbc:CountrySubentity><cbc:CountrySubentityCode>11</cbc:CountrySubentityCode><cac:AddressLine><cbc:Line>Direccion del adquiriente</cbc:Line></cac:AddressLine><cac:Country><cbc:IdentificationCode>CO</cbc:IdentificationCode><cbc:Name languageID="es">Colombia</cbc:Name></cac:Country></cac:Address></cac:PhysicalLocation>`+
+			`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID %s>%s</cbc:CompanyID><cbc:TaxLevelCode listName="04">R-99-PN</cbc:TaxLevelCode><cac:RegistrationAddress><cbc:ID>11001</cbc:ID><cbc:CityName>Bogota, D.C.</cbc:CityName><cbc:CountrySubentity>Bogota</cbc:CountrySubentity><cbc:CountrySubentityCode>11</cbc:CountrySubentityCode><cac:AddressLine><cbc:Line>Direccion del adquiriente</cbc:Line></cac:AddressLine><cac:Country><cbc:IdentificationCode>CO</cbc:IdentificationCode><cbc:Name languageID="es">Colombia</cbc:Name></cac:Country></cac:RegistrationAddress><cac:TaxScheme><cbc:ID>01</cbc:ID><cbc:Name>IVA</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
+			`<cac:PartyLegalEntity><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID %s>%s</cbc:CompanyID></cac:PartyLegalEntity>`+
+			`<cac:Contact><cbc:Name>%s</cbc:Name><cbc:ElectronicMail>cliente@example.com</cbc:ElectronicMail></cac:Contact>`+
+			`</cac:Party>`+
+			`</cac:AccountingCustomerParty>`,
+		additionalAccountID,
+		customerName,
+		customerName, companyIDAttrs, escapeXML(customerNITDigits),
+		customerName, companyIDAttrs, escapeXML(customerNITDigits),
+		customerName,
+	)
+}
+
+func dianTaxTotalXML(currency, taxable, tax, percent string) string {
+	return fmt.Sprintf(
+		`<cac:TaxTotal><cbc:TaxAmount currencyID="%s">%s</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="%s">%s</cbc:TaxableAmount><cbc:TaxAmount currencyID="%s">%s</cbc:TaxAmount><cac:TaxCategory><cbc:Percent>%s</cbc:Percent><cac:TaxScheme><cbc:ID>01</cbc:ID><cbc:Name>IVA</cbc:Name></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal>`,
+		escapeXML(currency), escapeXML(tax), escapeXML(currency), escapeXML(taxable), escapeXML(currency), escapeXML(tax), escapeXML(percent),
+	)
+}
+
+func dianMonetaryTotalXML(tagName, currency, taxable, tax, total string) string {
+	return fmt.Sprintf(
+		`<cac:%s><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount><cbc:TaxExclusiveAmount currencyID="%s">%s</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="%s">%s</cbc:TaxInclusiveAmount><cbc:AllowanceTotalAmount currencyID="%s">0.00</cbc:AllowanceTotalAmount><cbc:ChargeTotalAmount currencyID="%s">0.00</cbc:ChargeTotalAmount><cbc:PrePaidAmount currencyID="%s">0.00</cbc:PrePaidAmount><cbc:PayableAmount currencyID="%s">%s</cbc:PayableAmount></cac:%s>`,
+		tagName, escapeXML(currency), escapeXML(taxable), escapeXML(currency), escapeXML(taxable), escapeXML(currency), escapeXML(total), escapeXML(currency), escapeXML(currency), escapeXML(currency), escapeXML(currency), escapeXML(total), tagName,
+	)
+}
+
+func dianLineXML(lineName, quantityTag, currency, taxable, tax, percent, quantity string) string {
+	return fmt.Sprintf(
+		`<cac:%s><cbc:ID>1</cbc:ID><cbc:%s unitCode="EA">%s</cbc:%s><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount>%s<cac:Item><cbc:Description>Servicio de habilitacion DIAN</cbc:Description><cac:SellersItemIdentification><cbc:ID>PCS-DIAN-001</cbc:ID></cac:SellersItemIdentification><cac:StandardItemIdentification><cbc:ID schemeID="999" schemeName="EAN13">7700000000019</cbc:ID></cac:StandardItemIdentification></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount><cbc:BaseQuantity unitCode="EA">%s</cbc:BaseQuantity></cac:Price></cac:%s>`,
+		lineName, quantityTag, escapeXML(quantity), quantityTag, escapeXML(currency), escapeXML(taxable), dianTaxTotalXML(currency, taxable, tax, percent), escapeXML(currency), escapeXML(taxable), escapeXML(quantity), lineName,
+	)
+}
+
+func dianProfileExecutionSchemeID(cfg map[string]interface{}) string {
+	return dianExpectedProfileExecutionID(cfg)
 }
 
 func dianValidationIssue(code, severity, field, message, source string) map[string]interface{} {
@@ -8451,28 +8619,71 @@ func validateDIANDocumentPreflight(cfg map[string]interface{}, empresaID int64, 
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-ROOT", "error", "xml", "raiz UBL debe ser Invoice, CreditNote o DebitNote", "ubl_2_1")
 			}
 			ublVersion := dianXMLFirst(values, "UBLVersionID")
+			profileID := dianXMLFirst(values, "ProfileID")
 			profileExecutionID := dianXMLFirst(values, "ProfileExecutionID")
 			xmlID := dianXMLFirst(values, "ID")
 			xmlUUID := dianXMLFirst(values, "UUID")
+			xmlCustomizationID := dianXMLFirst(values, "CustomizationID")
 			xmlPayable := ventasAnyToFloat64(dianXMLFirst(values, "PayableAmount"))
 			xmlTax := ventasAnyToFloat64(dianXMLFirst(values, "TaxAmount"))
+			xmlInvoiceType := dianXMLFirst(values, "InvoiceTypeCode")
+			xmlCreditType := dianXMLFirst(values, "CreditNoteTypeCode")
+			_, expectedLineName, expectedCustomizationID, expectedUUIDScheme, expectedTypeCode, expectedTotalTag, _, _ := dianDocumentKind(dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), root))
 			xmlChecks["ubl_version"] = ublVersion
+			xmlChecks["profile_id"] = profileID
 			xmlChecks["profile_execution_id"] = profileExecutionID
+			xmlChecks["customization_id"] = xmlCustomizationID
 			xmlChecks["id"] = xmlID
 			xmlChecks["uuid_presente"] = xmlUUID != ""
 			xmlChecks["signature_presente"] = strings.Contains(xmlPayload, "<ds:Signature") || strings.Contains(xmlPayload, ":Signature")
 			xmlChecks["x509_presente"] = strings.Contains(xmlPayload, "X509Certificate")
-			if ublVersion != "2.1" {
-				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-001", "error", "UBLVersionID", "UBLVersionID debe ser 2.1", "ubl_2_1")
+			xmlChecks["dian_extensions_presente"] = strings.Contains(xmlPayload, "DianExtensions")
+			xmlChecks["software_security_code_presente"] = strings.Contains(xmlPayload, "SoftwareSecurityCode")
+			xmlChecks["linea_esperada"] = expectedLineName
+			xmlChecks["linea_presente"] = strings.Contains(xmlPayload, "<cac:"+expectedLineName)
+			xmlChecks["total_esperado"] = expectedTotalTag
+			xmlChecks["total_presente"] = strings.Contains(xmlPayload, "<cac:"+expectedTotalTag)
+			if ublVersion != "2.1" && ublVersion != "UBL 2.1" {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-001", "error", "UBLVersionID", "UBLVersionID debe ser UBL 2.1", "ubl_2_1")
+			}
+			if profileID != "" && !strings.EqualFold(profileID, "DIAN 2.1") {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-PROFILE", "error", "ProfileID", "ProfileID debe ser DIAN 2.1", "ubl_2_1")
 			}
 			if profileExecutionID != "" && profileExecutionID != dianExpectedProfileExecutionID(cfg) {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-002", "error", "ProfileExecutionID", "ProfileExecutionID no coincide con el ambiente DIAN configurado", "ubl_2_1")
+			}
+			if xmlCustomizationID != "" && expectedCustomizationID != "" && xmlCustomizationID != expectedCustomizationID {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-CUSTOM", "error", "CustomizationID", "CustomizationID no corresponde al tipo de documento DIAN", "ubl_2_1")
 			}
 			if documentoCodigo != "" && xmlID != "" && xmlID != documentoCodigo {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-003", "error", "ID", "ID del XML no coincide con documento_codigo", "ubl_2_1")
 			}
 			if xmlUUID == "" {
 				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-004", "error", "UUID", "CUFE/CUDE UUID es obligatorio en el XML", "ubl_2_1")
+			}
+			if xmlUUID != "" && expectedUUIDScheme != "" && !strings.Contains(xmlPayload, `schemeName="`+expectedUUIDScheme+`"`) {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-UUID-SCHEME", "error", "UUID", "UUID debe usar "+expectedUUIDScheme+" segun el tipo de documento", "ubl_2_1")
+			}
+			if root == "Invoice" && expectedTypeCode != "" && xmlInvoiceType != expectedTypeCode {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-FE", "error", "InvoiceTypeCode", "factura electronica de venta debe usar InvoiceTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
+			}
+			if root == "CreditNote" && expectedTypeCode != "" && xmlCreditType != expectedTypeCode {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TIPO-NC", "error", "CreditNoteTypeCode", "nota credito debe usar CreditNoteTypeCode "+expectedTypeCode, "anexo_tecnico_dian")
+			}
+			if (root == "CreditNote" || root == "DebitNote") && (!strings.Contains(xmlPayload, "<cac:DiscrepancyResponse") || !strings.Contains(xmlPayload, "<cac:BillingReference")) {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-NOTA-REF", "error", "BillingReference", "notas credito/debito deben referenciar la factura afectada con DiscrepancyResponse y BillingReference", "anexo_tecnico_dian")
+			}
+			if expectedLineName != "" && !strings.Contains(xmlPayload, "<cac:"+expectedLineName) {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-LINEA", "error", expectedLineName, "el tipo de documento debe usar "+expectedLineName, "xsd_dian_ubl_2_1")
+			}
+			if expectedTotalTag != "" && !strings.Contains(xmlPayload, "<cac:"+expectedTotalTag) {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-TOTAL", "error", expectedTotalTag, "el tipo de documento debe usar "+expectedTotalTag, "xsd_dian_ubl_2_1")
+			}
+			if !strings.Contains(xmlPayload, "DianExtensions") {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-EXT", "error", "DianExtensions", "XML debe incluir ext:UBLExtensions/sts:DianExtensions con datos DIAN", "anexo_tecnico_dian")
+			}
+			if !strings.Contains(xmlPayload, "SoftwareSecurityCode") {
+				dianAppendValidationIssue(&issues, &warnings, "DIAN-UBL-SOFTWARE-CODE", "error", "SoftwareSecurityCode", "XML debe incluir SoftwareSecurityCode calculado con software, PIN y numero de documento", "anexo_tecnico_dian")
 			}
 			if strings.Contains(strings.ToUpper(xmlPayload), "PENDIENTE") || strings.Contains(strings.ToUpper(xmlPayload), "DEMO") {
 				severity := "warning"
@@ -8584,80 +8795,109 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 	documentoCodigo := dianFirstNonBlank(genericStringValue(payload["documento_codigo"]), "FV-"+time.Now().Format("20060102150405"))
 	documentoTipo := strings.ToLower(dianFirstNonBlank(genericStringValue(payload["documento_tipo"]), "factura"))
 	issueDateTime := dianFirstNonBlank(genericStringValue(payload["fecha_emision"]), time.Now().Format(time.RFC3339))
-	total := dianFirstNonBlank(genericStringValue(payload["total"]), "0")
-	impuestoTotal := dianFirstNonBlank(genericStringValue(payload["impuesto_total"]), "0")
+	total := dianFormatDecimal(genericStringValue(payload["total"]), 1190.00)
+	impuestoTotal := dianFormatDecimal(genericStringValue(payload["impuesto_total"]), 190.00)
 	moneda := strings.ToUpper(dianFirstNonBlank(genericStringValue(payload["moneda"]), "COP"))
-	clienteNombre := escapeXML(dianFirstNonBlank(genericStringValue(payload["cliente_nombre"]), "CONSUMIDOR FINAL"))
-	clienteNIT := escapeXML(dianFirstNonBlank(genericStringValue(payload["cliente_nit"]), "222222222222"))
-	emisorNIT := escapeXML(dianFirstNonBlank(genericStringValue(cfg["nit"]), "000000000"))
-	emisorRazon := escapeXML(dianFirstNonBlank(genericStringValue(cfg["razon_social"]), "EMPRESA SIN RAZON SOCIAL CONFIGURADA"))
-	prefijo := escapeXML(dianFirstNonBlank(genericStringValue(cfg["prefijo"]), "SETP"))
+	clienteNombre := dianFirstNonBlank(genericStringValue(payload["cliente_nombre"]), "CONSUMIDOR FINAL")
+	clienteNIT := dianOnlyDigits(dianFirstNonBlank(genericStringValue(payload["cliente_nit"]), "2222222222"))
+	emisorNIT := dianOnlyDigits(dianFirstNonBlank(genericStringValue(cfg["nit"]), "000000000"))
+	emisorDV := dianFirstNonBlank(genericStringValue(cfg["digito_verificacion"]), genericStringValue(payload["digito_verificacion"]))
+	emisorRazon := dianFirstNonBlank(genericStringValue(cfg["razon_social"]), "EMPRESA SIN RAZON SOCIAL CONFIGURADA")
+	prefijo := dianFirstNonBlank(genericStringValue(cfg["prefijo"]), "SETP")
+	llaveTecnica := dianFirstNonBlank(genericStringValue(cfg["llave_tecnica"]), genericStringValue(cfg["clave_tecnica"]), genericStringValue(cfg["technical_key"]))
+	resolucionNumero := dianFirstNonBlank(genericStringValue(cfg["resolucion_numero"]), "18760000001")
+	resolucionDesde := dianFirstNonBlank(genericStringValue(cfg["resolucion_fecha_desde"]), "2019-01-19")
+	resolucionHasta := dianFirstNonBlank(genericStringValue(cfg["resolucion_fecha_hasta"]), "2030-01-19")
+	rangoDesde := anyToInt64(cfg["rango_desde"])
+	if rangoDesde <= 0 {
+		rangoDesde = 990000000
+	}
+	rangoHasta := anyToInt64(cfg["rango_hasta"])
+	if rangoHasta <= 0 {
+		rangoHasta = 995000000
+	}
 	profileExecutionID := "2"
 	if chooseDIANAmbiente(cfg) == "produccion" {
 		profileExecutionID = "1"
 	}
 
-	issueDateOnly := time.Now().Format("2006-01-02")
-	if parsed, err := time.Parse(time.RFC3339, issueDateTime); err == nil {
-		issueDateOnly = parsed.Format("2006-01-02")
-	} else if len(strings.TrimSpace(issueDateTime)) >= 10 {
-		issueDateOnly = strings.TrimSpace(issueDateTime)[:10]
+	issueDateOnly, issueTime := dianIssueDateTime(issueDateTime)
+	rootName, lineName, customizationID, uuidSchemeName, typeCode, monetaryTotalTag, quantityTag, correctionCode := dianDocumentKind(documentoTipo)
+	totalFloat := ventasAnyToFloat64(total)
+	taxFloat := ventasAnyToFloat64(impuestoTotal)
+	taxableFloat := totalFloat - taxFloat
+	if taxableFloat < 0 {
+		taxableFloat = totalFloat
 	}
-
-	rootName := "Invoice"
-	customizationID := "DIAN-UBL-BASE-FACTURA"
-	signatureMethodHint := "Invoice"
-	switch documentoTipo {
-	case "nota_credito", "credit_note", "creditnote", "credito":
-		rootName = "CreditNote"
-		customizationID = "DIAN-UBL-BASE-NOTA-CREDITO"
-		signatureMethodHint = "CreditNote"
-	case "nota_debito", "debit_note", "debitnote", "debito":
-		rootName = "DebitNote"
-		customizationID = "DIAN-UBL-BASE-NOTA-DEBITO"
-		signatureMethodHint = "DebitNote"
+	taxable := fmt.Sprintf("%.2f", taxableFloat)
+	percent := "0.00"
+	if taxableFloat > 0 && taxFloat > 0 {
+		percent = fmt.Sprintf("%.2f", (taxFloat/taxableFloat)*100)
 	}
-
-	xmlPayload := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>`+
-		`<%s xmlns="urn:oasis:names:specification:ubl:schema:xsd:%s-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">`+
-		`<ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions>`+
-		`<cbc:UBLVersionID>2.1</cbc:UBLVersionID>`+
-		`<cbc:CustomizationID>%s</cbc:CustomizationID>`+
-		`<cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID>`+
-		`<cbc:ID>%s</cbc:ID>`+
-		`<cbc:UUID schemeName="CUFE-SHA256">%s</cbc:UUID>`+
-		`<cbc:IssueDate>%s</cbc:IssueDate>`+
-		`<cbc:DocumentCurrencyCode>%s</cbc:DocumentCurrencyCode>`+
-		`<cbc:LineCountNumeric>1</cbc:LineCountNumeric>`+
-		`<cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID>%s</cbc:CompanyID><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:TaxLevelCode>O-99</cbc:TaxLevelCode></cac:PartyTaxScheme></cac:Party></cac:AccountingSupplierParty>`+
-		`<cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme><cbc:CompanyID>%s</cbc:CompanyID><cbc:RegistrationName>%s</cbc:RegistrationName></cac:PartyTaxScheme></cac:Party></cac:AccountingCustomerParty>`+
-		`<cac:TaxTotal><cbc:TaxAmount currencyID="%s">%s</cbc:TaxAmount></cac:TaxTotal>`+
-		`<cac:LegalMonetaryTotal><cbc:PayableAmount currencyID="%s">%s</cbc:PayableAmount></cac:LegalMonetaryTotal>`+
-		`<cac:InvoiceLine><cbc:ID>1</cbc:ID><cbc:InvoicedQuantity unitCode="EA">1</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="%s">%s</cbc:LineExtensionAmount><cac:Item><cbc:Description>Producto o servicio facturado</cbc:Description></cac:Item><cac:Price><cbc:PriceAmount currencyID="%s">%s</cbc:PriceAmount></cac:Price></cac:InvoiceLine>`+
-		`<cbc:Note>Documento generado por Powerful Control System para validacion previa DIAN.</cbc:Note>`+
-		`<cbc:AccountingCost>%s</cbc:AccountingCost>`+
-		`</%s>`,
-		rootName,
-		signatureMethodHint,
-		escapeXML(customizationID),
-		profileExecutionID,
-		escapeXML(documentoCodigo),
-		escapeXML(buildDIANCUFE(genericStringValue(cfg["nit"]), documentoCodigo, issueDateTime, total, prefijo, genericStringValue(cfg["resolucion_numero"]))),
-		escapeXML(issueDateOnly),
-		escapeXML(moneda),
+	quantity := dianFormatQuantity(genericStringValue(payload["cantidad"]), 1)
+	softwareID, softwarePIN, _, credErr := resolveDIANSoftwareCredentials(cfg, payload)
+	if credErr != nil {
+		softwareID = dianFirstNonBlank(genericStringValue(cfg["software_id"]), genericStringValue(payload["software_id"]))
+		softwarePIN = dianFirstNonBlank(genericStringValue(cfg["software_pin"]), genericStringValue(payload["software_pin"]))
+	}
+	softwareSecurityCode := buildDIANSHA384Hex(softwareID, softwarePIN, documentoCodigo)
+	uuidValue := buildDIANSHA384Hex(documentoCodigo, issueDateOnly, issueTime, taxable, "01", impuestoTotal, "04", "0.00", "03", "0.00", total, emisorNIT, clienteNIT, llaveTecnica, profileExecutionID)
+	referenceID := dianFirstNonBlank(genericStringValue(payload["referencia_documento_codigo"]), genericStringValue(payload["documento_referencia"]), "SETP990000001")
+	referenceUUID := dianFirstNonBlank(genericStringValue(payload["referencia_cufe"]), genericStringValue(payload["cufe_referencia"]), buildDIANSHA384Hex(referenceID, issueDateOnly, emisorNIT))
+	referenceIssueDate := dianFirstNonBlank(genericStringValue(payload["referencia_fecha_emision"]), issueDateOnly)
+	qrURL := "https://catalogo-vpfe-hab.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(uuidValue)
+	if chooseDIANAmbiente(cfg) == "produccion" {
+		qrURL = "https://catalogo-vpfe.dian.gov.co/Document/FindDocument?documentKey=" + strings.ToLower(uuidValue)
+	}
+	xmlnsRoot := rootName
+	schemaFile := "UBL-" + rootName + "-2.1.xsd"
+	invoiceControl := ""
+	if rootName == "Invoice" {
+		invoiceControl = fmt.Sprintf(`<sts:InvoiceControl><sts:InvoiceAuthorization>%s</sts:InvoiceAuthorization><sts:AuthorizationPeriod><cbc:StartDate>%s</cbc:StartDate><cbc:EndDate>%s</cbc:EndDate></sts:AuthorizationPeriod><sts:AuthorizedInvoices><sts:Prefix>%s</sts:Prefix><sts:From>%d</sts:From><sts:To>%d</sts:To></sts:AuthorizedInvoices></sts:InvoiceControl>`,
+			escapeXML(resolucionNumero), escapeXML(resolucionDesde), escapeXML(resolucionHasta), escapeXML(prefijo), rangoDesde, rangoHasta)
+	}
+	dianExtensions := fmt.Sprintf(`<ext:UBLExtensions><ext:UBLExtension><ext:ExtensionContent><sts:DianExtensions>%s<sts:InvoiceSource><cbc:IdentificationCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listSchemeURI="urn:oasis:names:specification:ubl:codelist:gc:CountryIdentificationCode-2.1">CO</cbc:IdentificationCode></sts:InvoiceSource><sts:SoftwareProvider><sts:ProviderID schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)" schemeID="%s" schemeName="31">%s</sts:ProviderID><sts:SoftwareID schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)">%s</sts:SoftwareID></sts:SoftwareProvider><sts:SoftwareSecurityCode schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)">%s</sts:SoftwareSecurityCode><sts:AuthorizationProvider><sts:AuthorizationProviderID schemeAgencyID="195" schemeAgencyName="CO, DIAN (Direccion de Impuestos y Aduanas Nacionales)" schemeID="4" schemeName="31">800197268</sts:AuthorizationProviderID></sts:AuthorizationProvider><sts:QRCode>NroFactura=%s&#10;NitFacturador=%s&#10;NitAdquiriente=%s&#10;FechaFactura=%s&#10;ValorTotalFactura=%s&#10;CUFE=%s&#10;URL=%s</sts:QRCode></sts:DianExtensions></ext:ExtensionContent></ext:UBLExtension><ext:UBLExtension><ext:ExtensionContent></ext:ExtensionContent></ext:UBLExtension></ext:UBLExtensions>`,
+		invoiceControl,
+		escapeXML(dianCompanyIDSchemeID(emisorNIT, emisorDV)),
 		escapeXML(emisorNIT),
-		emisorRazon,
+		escapeXML(softwareID),
+		escapeXML(softwareSecurityCode),
+		escapeXML(documentoCodigo),
+		escapeXML(emisorNIT),
 		escapeXML(clienteNIT),
-		clienteNombre,
-		escapeXML(moneda),
-		escapeXML(impuestoTotal),
-		escapeXML(moneda),
+		escapeXML(issueDateOnly),
 		escapeXML(total),
-		escapeXML(moneda),
-		escapeXML(total),
-		escapeXML(moneda),
-		escapeXML(total),
-		escapeXML(prefijo),
+		escapeXML(strings.ToLower(uuidValue)),
+		escapeXML(qrURL),
+	)
+	header := fmt.Sprintf(`<cbc:UBLVersionID>UBL 2.1</cbc:UBLVersionID><cbc:CustomizationID>%s</cbc:CustomizationID><cbc:ProfileID>DIAN 2.1</cbc:ProfileID><cbc:ProfileExecutionID>%s</cbc:ProfileExecutionID><cbc:ID>%s</cbc:ID><cbc:UUID schemeID="%s" schemeName="%s">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate><cbc:IssueTime>%s</cbc:IssueTime>`,
+		escapeXML(customizationID), escapeXML(profileExecutionID), escapeXML(documentoCodigo), escapeXML(profileExecutionID), escapeXML(uuidSchemeName), escapeXML(strings.ToLower(uuidValue)), escapeXML(issueDateOnly), escapeXML(issueTime))
+	switch rootName {
+	case "Invoice":
+		header += fmt.Sprintf(`<cbc:DueDate>%s</cbc:DueDate><cbc:InvoiceTypeCode>%s</cbc:InvoiceTypeCode>`, escapeXML(issueDateOnly), escapeXML(typeCode))
+	case "CreditNote":
+		header += fmt.Sprintf(`<cbc:CreditNoteTypeCode>%s</cbc:CreditNoteTypeCode>`, escapeXML(typeCode))
+	}
+	header += fmt.Sprintf(`<cbc:Note>%s</cbc:Note><cbc:DocumentCurrencyCode listAgencyID="6" listAgencyName="United Nations Economic Commission for Europe" listID="ISO 4217 Alpha">%s</cbc:DocumentCurrencyCode><cbc:LineCountNumeric>1</cbc:LineCountNumeric>`,
+		escapeXML("Documento electronico generado por Powerful Control System para validacion previa DIAN."), escapeXML(moneda))
+	references := ""
+	if rootName == "CreditNote" || rootName == "DebitNote" {
+		references = fmt.Sprintf(`<cac:DiscrepancyResponse><cbc:ReferenceID>%s</cbc:ReferenceID><cbc:ResponseCode>%s</cbc:ResponseCode><cbc:Description>Ajuste de habilitacion DIAN</cbc:Description></cac:DiscrepancyResponse><cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>%s</cbc:ID><cbc:UUID schemeName="CUFE-SHA384">%s</cbc:UUID><cbc:IssueDate>%s</cbc:IssueDate></cac:InvoiceDocumentReference></cac:BillingReference>`,
+			escapeXML(referenceID), escapeXML(correctionCode), escapeXML(referenceID), escapeXML(strings.ToLower(referenceUUID)), escapeXML(referenceIssueDate))
+	}
+	supplierParty := dianSupplierPartyXML(emisorNIT, emisorDV, emisorRazon, prefijo, dianFirstNonBlank(genericStringValue(cfg["responsabilidad_fiscal"]), "O-99"))
+	customerParty := dianCustomerPartyXML(clienteNombre, clienteNIT)
+	xmlPayload := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>`+
+		`<%s xmlns="urn:oasis:names:specification:ubl:schema:xsd:%s-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2" xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:specification:ubl:schema:xsd:%s-2 http://docs.oasis-open.org/ubl/os-UBL-2.1/xsd/maindoc/%s">`+
+		`%s%s%s%s%s%s%s</%s>`,
+		rootName, xmlnsRoot, xmlnsRoot, schemaFile,
+		dianExtensions,
+		header,
+		references,
+		supplierParty,
+		customerParty,
+		dianTaxTotalXML(moneda, taxable, impuestoTotal, percent),
+		dianMonetaryTotalXML(monetaryTotalTag, moneda, taxable, impuestoTotal, total)+dianLineXML(lineName, quantityTag, moneda, taxable, impuestoTotal, percent, quantity),
 		rootName,
 	)
 
@@ -8666,12 +8906,15 @@ func generateDIANUBLBase(cfg map[string]interface{}, empresaID int64, payload ma
 		"empresa_id":              empresaID,
 		"documento_codigo":        documentoCodigo,
 		"documento_tipo":          documentoTipo,
-		"ubl_version":             "2.1",
+		"ubl_version":             "UBL 2.1",
 		"profile_execution_id":    profileExecutionID,
 		"customization_id":        customizationID,
+		"uuid_scheme":             uuidSchemeName,
+		"uuid":                    strings.ToLower(uuidValue),
+		"software_security_code":  "[calculado]",
 		"xml_ubl_base":            xmlPayload,
 		"estado_preparacion":      "pre_envio_validable",
-		"advertencia_oficialidad": "XML UBL 2.1 generado para validacion preventiva; la aceptacion fiscal final la confirma DIAN con su acuse.",
+		"advertencia_oficialidad": "XML UBL 2.1 generado con estructura DIAN, CUFE/CUDE SHA384 y extensiones DIAN; la aceptacion fiscal final la confirma DIAN con su acuse.",
 	}, http.StatusOK, nil
 }
 
@@ -8714,7 +8957,9 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 	signedPropertiesID := "SignedPropertiesPCS"
 	signatureID := "SignaturePCS"
 
-	signedProperties := fmt.Sprintf(`<xades:SignedProperties Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s</xades:SignedSignatureProperties></xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert))
+	signaturePolicy := `<xades:SignaturePolicyIdentifier><xades:SignaturePolicyId><xades:SigPolicyId><xades:Identifier>https://facturaelectronica.dian.gov.co/politicadefirma/v1/politicadefirmav2.pdf</xades:Identifier></xades:SigPolicyId><xades:SigPolicyHash><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y=</ds:DigestValue></xades:SigPolicyHash></xades:SignaturePolicyId></xades:SignaturePolicyIdentifier>`
+	signerRole := `<xades:SignerRole><xades:ClaimedRoles><xades:ClaimedRole>supplier</xades:ClaimedRole></xades:ClaimedRoles></xades:SignerRole>`
+	signedProperties := fmt.Sprintf(`<xades:SignedProperties Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s%s%s</xades:SignedSignatureProperties></xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert), signaturePolicy, signerRole)
 	propsDigest := sha256.Sum256([]byte(signedProperties))
 	propsDigestBase64 := base64.StdEncoding.EncodeToString(propsDigest[:])
 
@@ -9243,6 +9488,71 @@ func extractDIANSOAPTag(raw string, names ...string) string {
 	return ""
 }
 
+var (
+	dianSOAPErrorListRE    = regexp.MustCompile(`(?is)<(?:[A-Za-z0-9_.-]+:)?ErrorMessageList[^>]*>(.*?)</(?:[A-Za-z0-9_.-]+:)?ErrorMessageList>`)
+	dianSOAPErrorMessageRE = regexp.MustCompile(`(?is)<(?:[A-Za-z0-9_.-]+:)?(?:string|ErrorMessage|Message|Description)[^>]*>(.*?)</(?:[A-Za-z0-9_.-]+:)?(?:string|ErrorMessage|Message|Description)>`)
+	dianSOAPAnyTagRE       = regexp.MustCompile(`(?is)<[^>]+>`)
+)
+
+func dianSOAPCleanText(raw string) string {
+	raw = dianSOAPAnyTagRE.ReplaceAllString(raw, " ")
+	replacements := map[string]string{
+		"&lt;":   "<",
+		"&gt;":   ">",
+		"&amp;":  "&",
+		"&quot;": `"`,
+		"&#39;":  "'",
+	}
+	for old, repl := range replacements {
+		raw = strings.ReplaceAll(raw, old, repl)
+	}
+	return strings.Join(strings.Fields(strings.TrimSpace(raw)), " ")
+}
+
+func extractDIANSOAPErrorMessages(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	seen := map[string]bool{}
+	out := make([]string, 0)
+	add := func(value string) {
+		value = dianSOAPCleanText(value)
+		if value == "" || seen[value] {
+			return
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	scopes := []string{raw}
+	for _, match := range dianSOAPErrorListRE.FindAllStringSubmatch(raw, -1) {
+		if len(match) > 1 {
+			scopes = append(scopes, match[1])
+		}
+	}
+	for _, scope := range scopes {
+		for _, match := range dianSOAPErrorMessageRE.FindAllStringSubmatch(scope, -1) {
+			if len(match) > 1 {
+				add(match[1])
+			}
+		}
+	}
+	for _, match := range dianSOAPErrorListRE.FindAllStringSubmatch(raw, -1) {
+		if len(match) > 1 {
+			children := dianSOAPErrorMessageRE.FindAllStringSubmatch(match[1], -1)
+			for _, child := range children {
+				if len(child) > 1 {
+					add(child[1])
+				}
+			}
+			if len(children) == 0 {
+				add(match[1])
+			}
+		}
+	}
+	return out
+}
+
 func extractDIANSOAPResponseMap(raw string) map[string]interface{} {
 	out := map[string]interface{}{}
 	if raw = strings.TrimSpace(raw); raw == "" {
@@ -9260,6 +9570,10 @@ func extractDIANSOAPResponseMap(raw string) map[string]interface{} {
 		if value := extractDIANSOAPTag(raw, aliases...); value != "" {
 			out[key] = value
 		}
+	}
+	if messages := extractDIANSOAPErrorMessages(raw); len(messages) > 0 {
+		out["error_messages"] = messages
+		out["error_message"] = strings.Join(messages, " | ")
 	}
 	out["raw_xml"] = raw
 	return out
@@ -10586,7 +10900,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 		}, http.StatusBadRequest, nil
 	}
 	detenerEnError := parseTruthy(dianPayloadString(payload, "detener_en_error", "stop_on_error"))
-	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1000.00")
+	totalPorDocumento := dianFirstNonBlank(dianPayloadString(payload, "total_por_documento", "total"), "1190.00")
 	prefijo := dianFirstNonBlank(dianPayloadString(payload, "prefijo"), genericStringValue(cfg["prefijo"]), "SETP")
 	softwareID, _, useSharedSoftware, err := resolveDIANSoftwareCredentials(cfg, payload)
 	if err != nil {
@@ -10682,10 +10996,10 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				"documento_tipo":     target.Tipo,
 				"fecha_emision":      fechaEmision,
 				"total":              totalPorDocumento,
-				"impuesto_total":     dianFirstNonBlank(dianPayloadString(payload, "impuesto_total"), "0.00"),
+				"impuesto_total":     dianFirstNonBlank(dianPayloadString(payload, "impuesto_total"), "190.00"),
 				"moneda":             dianFirstNonBlank(dianPayloadString(payload, "moneda"), "COP"),
 				"cliente_nombre":     dianFirstNonBlank(dianPayloadString(payload, "cliente_nombre"), "Cliente habilitacion DIAN"),
-				"cliente_nit":        dianFirstNonBlank(dianPayloadString(payload, "cliente_nit"), "222222222222"),
+				"cliente_nit":        dianFirstNonBlank(dianPayloadString(payload, "cliente_nit"), "2222222222"),
 				"certificado_ref":    dianPayloadString(payload, "certificado_ref", "certificado_pem", "certificado_x509_ref"),
 				"private_key_pem":    dianPayloadString(payload, "private_key_pem"),
 				"software_id":        dianPayloadString(payload, "software_id"),

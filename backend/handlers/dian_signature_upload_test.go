@@ -578,7 +578,7 @@ func TestCalculateColombianNITDV(t *testing.T) {
 	}
 }
 
-func TestValidateDIANDocumentPreflightAcceptsBasicUBL(t *testing.T) {
+func TestValidateDIANDocumentPreflightAcceptsGeneratedDIANUBL(t *testing.T) {
 	cfg := map[string]interface{}{
 		"nit":                    "900373913",
 		"digito_verificacion":    "4",
@@ -600,18 +600,21 @@ func TestValidateDIANDocumentPreflightAcceptsBasicUBL(t *testing.T) {
 		"software_id":            "software-id",
 		"software_pin":           "software-pin",
 	}
-	xmlPayload := `<?xml version="1.0" encoding="UTF-8"?><Invoice><UBLVersionID>2.1</UBLVersionID><ProfileExecutionID>2</ProfileExecutionID><ID>SETP1</ID><UUID>ABC123</UUID><TaxAmount>0.00</TaxAmount><PayableAmount>1000.00</PayableAmount></Invoice>`
 	payload := map[string]interface{}{
 		"empresa_id":       1,
 		"documento_codigo": "SETP1",
 		"fecha_emision":    time.Now().Format(time.RFC3339),
 		"cliente_nombre":   "Cliente Test",
-		"cliente_nit":      "222222222222",
-		"total":            "1000.00",
-		"impuesto_total":   "0.00",
+		"cliente_nit":      "2222222222",
+		"total":            "1190.00",
+		"impuesto_total":   "190.00",
 		"moneda":           "COP",
-		"xml":              xmlPayload,
 	}
+	generated, status, err := generateDIANUBLBase(cfg, 1, payload)
+	if err != nil || status != http.StatusOK {
+		t.Fatalf("generateDIANUBLBase returned status=%d err=%v result=%#v", status, err, generated)
+	}
+	xmlPayload := genericStringValue(generated["xml_ubl_base"])
 	result := validateDIANDocumentPreflight(cfg, 1, payload, xmlPayload, "validacion_manual")
 	if blocked, _ := result["bloqueado"].(bool); blocked {
 		t.Fatalf("expected preflight to pass, got %#v", result)
@@ -670,8 +673,58 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 	if strings.Contains(upper, "DEMO") || strings.Contains(upper, "PENDIENTE") {
 		t.Fatalf("xml must not contain demo/pending markers: %s", xmlPayload)
 	}
-	if !strings.Contains(xmlPayload, `schemeName="CUFE-SHA256"`) {
+	if !strings.Contains(xmlPayload, `schemeName="CUFE-SHA384"`) {
 		t.Fatalf("expected CUFE scheme marker, got %s", xmlPayload)
+	}
+	if !strings.Contains(xmlPayload, "<sts:DianExtensions>") || !strings.Contains(xmlPayload, "<cac:InvoiceLine>") {
+		t.Fatalf("expected DIAN extensions and invoice line, got %s", xmlPayload)
+	}
+}
+
+func TestGenerateDIANUBLBaseUsesCorrectNoteLines(t *testing.T) {
+	cfg := map[string]interface{}{
+		"nit":                    "900373913",
+		"digito_verificacion":    "4",
+		"razon_social":           "Empresa Test SAS",
+		"tipo_ambiente":          "habilitacion",
+		"prefijo":                "SETP",
+		"resolucion_numero":      "18760000000001",
+		"resolucion_fecha_desde": time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
+		"resolucion_fecha_hasta": time.Now().AddDate(0, 1, 0).Format("2006-01-02"),
+		"llave_tecnica":          "llave-tecnica-test",
+		"software_id":            "software-id",
+		"software_pin":           "software-pin",
+	}
+	for _, tc := range []struct {
+		docType      string
+		expectedRoot string
+		expectedLine string
+		expectedCUDE string
+	}{
+		{docType: "nota_credito", expectedRoot: "<CreditNote ", expectedLine: "<cac:CreditNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`},
+		{docType: "nota_debito", expectedRoot: "<DebitNote ", expectedLine: "<cac:DebitNoteLine>", expectedCUDE: `schemeName="CUDE-SHA384"`},
+	} {
+		result, status, err := generateDIANUBLBase(cfg, 1, map[string]interface{}{
+			"documento_codigo": "SETP99",
+			"documento_tipo":   tc.docType,
+			"cliente_nombre":   "Cliente Test",
+			"cliente_nit":      "2222222222",
+			"total":            "1190.00",
+			"impuesto_total":   "190.00",
+			"moneda":           "COP",
+		})
+		if err != nil || status != http.StatusOK {
+			t.Fatalf("%s generate status=%d err=%v result=%#v", tc.docType, status, err, result)
+		}
+		xmlPayload := genericStringValue(result["xml_ubl_base"])
+		for _, expected := range []string{tc.expectedRoot, tc.expectedLine, tc.expectedCUDE, "<cac:DiscrepancyResponse>", "<cac:BillingReference>"} {
+			if !strings.Contains(xmlPayload, expected) {
+				t.Fatalf("%s expected %q in XML: %s", tc.docType, expected, xmlPayload)
+			}
+		}
+		if strings.Contains(xmlPayload, "<cac:InvoiceLine>") {
+			t.Fatalf("%s must not use InvoiceLine: %s", tc.docType, xmlPayload)
+		}
 	}
 }
 
@@ -725,6 +778,22 @@ func TestExtractDIANSOAPResponseMapIncludesStatusDescription(t *testing.T) {
 	}
 	if got := genericStringValue(result["is_valid"]); got != "false" {
 		t.Fatalf("expected IsValid=false, got %#v", result)
+	}
+}
+
+func TestExtractDIANSOAPResponseMapIncludesErrorMessageList(t *testing.T) {
+	raw := `<s:Envelope><s:Body><GetStatusZipResponse><GetStatusZipResult><b:IsValid>false</b:IsValid><b:StatusCode>99</b:StatusCode><b:ErrorMessageList><b:string>Regla DIAN A fallida</b:string><b:string>Regla DIAN B fallida</b:string></b:ErrorMessageList></GetStatusZipResult></GetStatusZipResponse></s:Body></s:Envelope>`
+	result := extractDIANSOAPResponseMap(raw)
+	messages, _ := result["error_messages"].([]string)
+	if len(messages) != 2 {
+		t.Fatalf("expected both DIAN error messages, got %#v", result)
+	}
+	estado, mensaje := resolveDIANAcuseFromResponse(http.StatusOK, result)
+	if estado != "rechazado" {
+		t.Fatalf("expected rejected DIAN acuse, got estado=%s mensaje=%s", estado, mensaje)
+	}
+	if !strings.Contains(mensaje, "Regla DIAN A fallida") || !strings.Contains(mensaje, "Regla DIAN B fallida") {
+		t.Fatalf("expected joined error list as message, got %q", mensaje)
 	}
 }
 

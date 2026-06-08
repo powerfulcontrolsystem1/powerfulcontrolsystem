@@ -1,3 +1,10 @@
+## [2026-06-08] UBL DIAN realista y errores completos
+- [Backend] `generateDIANUBLBase` genera factura, nota credito y nota debito con estructura DIAN UBL 2.1, `DIAN 2.1`, `CustomizationID` oficial, `CUFE/CUDE-SHA384`, extensiones DIAN, QR, `SoftwareSecurityCode`, parties, totales y lineas correctas por tipo.
+- [Preflight] La validacion preventiva bloquea XML sin extensiones DIAN, sin esquema SHA384, con linea documental equivocada o notas sin referencia a factura.
+- [SOAP] El parser conserva `ErrorMessageList` completo y clasifica `IsValid=false` con errores DIAN como rechazo, no como enviado generico.
+- [Referencias] Se documenta la descarga local del Anexo Tecnico FE 1.9, Caja de herramientas FE 1.9 V2026 y guia WS; los binarios oficiales quedan fuera de Git.
+- [QA] Agrega `scripts/validar_dian_xsd.ps1` para validacion local contra XSD oficiales descargados.
+
 ## [2026-06-08] Historial TrackId DIAN
 - [Backend] `empresa_dian_track_historial` persiste cada TrackId/ZipKey por empresa y se actualiza al consultar `GetStatusZip`.
 - [API] `/api/empresa/facturacion_electronica/dian?action=historial_tracks` lista el historial visible filtrado por `empresa_id`.
