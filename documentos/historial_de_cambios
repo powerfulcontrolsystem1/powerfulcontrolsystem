@@ -3,6 +3,8 @@
 - Causa tecnica: la firma XAdES calculaba `KeyInfo`, `SignedProperties` y `SignedInfo` como subarboles casi aislados; DIAN verifica con canonicalizacion inclusiva dentro del documento UBL, donde el namespace default y los prefijos UBL heredados forman parte del byte stream firmado.
 - Backend: `dianBuildXAdESBaseSignature` obtiene el namespace raiz del XML UBL y usa ese contexto al canonicalizar documento, `KeyInfo`, `SignedProperties` y `SignedInfo`; `ReferencePCS` queda como referencia del documento y la politica FEV vuelve a `politicadefirma/v1/politicadefirmav2.pdf`, usada por `Generica.xml`, `Consumidor Final.xml`, `CreditNote.xml` y `DebitNote.xml`.
 - QA independiente: un XML firmado de prueba generado por PCS fue validado fuera del backend: `lxml` recalculo y comparo los tres `DigestValue` embebidos y `Node crypto` verifico la `SignatureValue` RSA-SHA256 con el certificado X.509 de prueba.
+- QA DIAN real: despues del despliegue, la factura `SETP990000195` de Powerful Control System obtuvo `TrackId 46208d27-216d-4c86-8a81-93dff2f1ee75`, `StatusCode=00`, `IsValid=true` y `Procesado Correctamente`; ya no aparece `ZE02`.
+- Operacion: los envios `SETP990000196` a `SETP990000198` recibieron codigo operacional `2` porque DIAN marco el `TestSetId db98ef26-0c2a-468f-a3d0-31667aba47e1` como aceptado; no se consideran prueba de firma de notas.
 - QA Go: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`.
 
 2026-06-08: DIAN politica XAdES v2 y comprobacion uno a uno.

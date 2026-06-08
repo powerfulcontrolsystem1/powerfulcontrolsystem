@@ -2,6 +2,8 @@
 - [Firma] `dianBuildXAdESBaseSignature` ya calcula `DigestValue` y `SignatureValue` con canonicalizacion inclusiva usando el contexto completo de namespaces UBL del documento, como hacen los ejemplos oficiales DIAN para `SignedInfo`, `KeyInfo` y `SignedProperties`.
 - [Politica] Para factura/nota FEV se usa la URL de politica presente en los ejemplos principales DIAN: `politicadefirma/v1/politicadefirmav2.pdf`.
 - [QA independiente] Un XML firmado de prueba generado por PCS fue verificado con `lxml` para los tres digest (`document`, `KeyInfo`, `SignedProperties`) y con `Node crypto` para `RSA-SHA256`; todos pasaron.
+- [QA DIAN real] Tras desplegar, la factura diagnostica `SETP990000195` de Powerful Control System obtuvo `TrackId 46208d27-216d-4c86-8a81-93dff2f1ee75`, `StatusCode=00`, `IsValid=true` y `Procesado Correctamente`; DIAN dejo de devolver `ZE02`.
+- [Operacion] Los reenvios posteriores `SETP990000196` a `SETP990000198` ya no validaron XML porque DIAN respondio que el `TestSetId db98ef26-0c2a-468f-a3d0-31667aba47e1` se encuentra aceptado.
 - [QA] `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`.
 
 ## [2026-06-08] DIAN politica XAdES v2 y comprobacion uno a uno

@@ -11,6 +11,12 @@ decisiones en cada tarea.
   el contexto completo de namespaces UBL heredado del documento. Un XML de prueba
   PCS paso verificacion externa con `lxml` para digest y `Node crypto` para
   `RSA-SHA256`.
+- Verificacion real posterior al despliegue: `SETP990000195` obtuvo
+  `TrackId 46208d27-216d-4c86-8a81-93dff2f1ee75`, `StatusCode=00`,
+  `IsValid=true` y `Procesado Correctamente`; DIAN dejo de devolver `ZE02`.
+- DIAN respondio despues que el `TestSetId db98ef26-0c2a-468f-a3d0-31667aba47e1`
+  se encuentra aceptado, por lo que nuevos envios de ese set pueden devolver el
+  codigo operacional `2` sin validar XML.
 - Para factura/nota FEV, los ejemplos principales oficiales (`Generica.xml`,
   `Consumidor Final.xml`, `CreditNote.xml`, `DebitNote.xml`) usan la politica
   `https://facturaelectronica.dian.gov.co/politicadefirma/v1/politicadefirmav2.pdf`.
@@ -18,13 +24,10 @@ decisiones en cada tarea.
   herramientas DIAN FE V19 V2026: `xades:Description`, namespace `xades141` y
   `SignedDataObjectProperties/DataObjectFormat` apuntando a la referencia del
   documento XML.
-- La reconsulta real de `GetStatusZip` para Powerful Control System confirma:
-  `SETP990000135` a `SETP990000185` siguen en `Batch en proceso de validacion`;
-  `SETP990000186` a `SETP990000194` estan rechazados `StatusCode=99`.
-- El ultimo diagnostico con adquiriente normal (`SETP990000194`) deja como
-  bloqueo tecnico principal `ZE02 Valor de la firma invalido`; `FAJ43b` es una
-  notificacion de nombre/RUT del adquiriente. No reenviar notas debito/credito
-  hasta lograr una factura aceptada `StatusCode=00`.
+- La reconsulta real de `GetStatusZip` para Powerful Control System deja como
+  historico que `SETP990000186` a `SETP990000194` estuvieron rechazados por
+  `StatusCode=99` con `ZE02`, pero el diagnostico corregido `SETP990000195`
+  cerro la brecha de firma con aceptacion DIAN `00`.
 
 ## Actualizacion 2026-06-08 - UBL DIAN realista y errores completos
 
