@@ -10959,6 +10959,7 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 	detenidoPorError := false
 	detalles := make([]map[string]interface{}, 0, maxEnvios)
 	siguienteConsecutivo := consecutivoInicial
+	lastInvoiceReference := map[string]string{}
 
 	for _, target := range targets {
 		for i := 0; i < target.Cantidad; i++ {
@@ -11009,6 +11010,29 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				"set_habilitacion":   true,
 				"requisito_set_dian": fmt.Sprintf("%d facturas electronicas, %d notas debito y %d notas credito", facturas, notasDebito, notasCredito),
 			}
+			if target.Tipo != "factura" {
+				refCode := dianFirstNonBlank(
+					dianPayloadString(payload, "referencia_documento_codigo", "documento_referencia"),
+					lastInvoiceReference["documento_codigo"],
+				)
+				refCUFE := dianFirstNonBlank(
+					dianPayloadString(payload, "referencia_cufe", "cufe_referencia"),
+					lastInvoiceReference["cufe"],
+				)
+				refDate := dianFirstNonBlank(
+					dianPayloadString(payload, "referencia_fecha_emision"),
+					lastInvoiceReference["fecha_emision"],
+				)
+				if refCode != "" {
+					docPayload["referencia_documento_codigo"] = refCode
+				}
+				if refCUFE != "" {
+					docPayload["referencia_cufe"] = refCUFE
+				}
+				if refDate != "" {
+					docPayload["referencia_fecha_emision"] = refDate
+				}
+			}
 			ublResp, _, err := generateDIANUBLBase(cfg, empresaID, docPayload)
 			if err != nil {
 				detalle["ok"] = false
@@ -11024,6 +11048,13 @@ func runDIANSetPruebasEnvio(dbEmp *sql.DB, cfg map[string]interface{}, empresaID
 				continue
 			}
 			docPayload["xml_ubl_base"] = genericStringValue(ublResp["xml_ubl_base"])
+			if target.Tipo == "factura" {
+				lastInvoiceReference = map[string]string{
+					"documento_codigo": documentoCodigo,
+					"cufe":             genericStringValue(ublResp["uuid"]),
+					"fecha_emision":    strings.TrimSpace(fechaEmision[:10]),
+				}
+			}
 			signResp, _, err := signDIANXMLXAdESBase(cfg, empresaID, docPayload)
 			if err != nil {
 				detalle["ok"] = false

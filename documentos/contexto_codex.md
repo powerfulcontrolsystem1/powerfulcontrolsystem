@@ -11,6 +11,8 @@ decisiones en cada tarea.
   `CustomizationID` oficial por tipo, `CUFE/CUDE-SHA384`, `DianExtensions`,
   `SoftwareSecurityCode`, QR DIAN, parties, totales, `InvoiceLine`,
   `CreditNoteLine` o `DebitNoteLine` segun corresponda.
+- En el set automatico, las notas referencian la ultima factura generada en la
+  misma corrida para evitar `BillingReference` generico.
 - El preflight DIAN bloquea estructuras equivocadas antes de enviar: notas sin
   `DiscrepancyResponse/BillingReference`, UUID sin esquema SHA384, lineas de
   tipo incorrecto, falta de extensiones DIAN o falta de `SoftwareSecurityCode`.
