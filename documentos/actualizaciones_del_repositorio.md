@@ -13702,3 +13702,32 @@ Archivos modificados:
 - web/administrar_empresa/facturacion_electronica.html
 - web/administrar_empresa/facturacion_electronica_pruebas_dian.html
 - web/administrar_empresa/facturacion_electronica_tutorial_dian.html
+
+2026-06-08 16:27:43 - Mensaje: rs: actualizar repositorio y sincronizar VPS; Commit: b283cbc2; PushStatus: OK
+Archivos modificados:
+- backend/db/ocr.go
+- backend/handlers/empresa_permisos.go
+- backend/handlers/ocr.go
+- backend/handlers/ocr_test.go
+- backend/main.go
+- deploy/docker-compose.platform.yml
+- deploy/docker/backend.Dockerfile
+- documentos/api/openapi.generated.yaml
+- documentos/contexto_codex.md
+- documentos/descripcion_de_archivos
+- documentos/descripcion_de_modulos
+- documentos/diagramas/estructura_del_codigo.md
+- documentos/estructura_bd.md
+- documentos/historial_de_cambios
+- documentos/mapa_modulos.md
+- documentos/matriz_roles_permisos_pos_multiempresa.md
+- web/administrar_empresa.html
+- web/administrar_empresa/facturacion_electronica.html
+- web/administrar_empresa/facturacion_electronica_menu.html
+- web/administrar_empresa/ocr.html
+- web/administrar_empresa/tarifas_por_minutos.html
+- web/js/administrar_empresa.js
+- web/js/super_administrador.js
+- web/super/configuracion/ocr.html
+- web/super/licencias.html
+- web/super_administrador.html
