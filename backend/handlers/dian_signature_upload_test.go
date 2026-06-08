@@ -685,7 +685,7 @@ func TestGenerateDIANUBLBaseDoesNotEmitDemoOrPendingMarkers(t *testing.T) {
 		"<cac:PaymentMeans>",
 		"<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>",
 		"<cbc:Name>consumidor o usuario final</cbc:Name>",
-		"<cac:TaxScheme><cbc:ID>ZY</cbc:ID><cbc:Name>No causa</cbc:Name></cac:TaxScheme>",
+		"<cac:TaxScheme><cbc:ID>ZZ</cbc:ID><cbc:Name>No aplica</cbc:Name></cac:TaxScheme>",
 		"CO, DIAN (Dirección de Impuestos y Aduanas Nacionales)",
 	} {
 		if !strings.Contains(xmlPayload, expected) {

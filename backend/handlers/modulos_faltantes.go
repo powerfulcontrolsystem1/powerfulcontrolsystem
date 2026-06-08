@@ -8297,7 +8297,7 @@ func dianCustomerPartyXML(customerName, customerNIT string) string {
 				`<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>`+
 				`<cac:Party>`+
 				`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
-				`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="%s" schemeName="13">%s</cbc:CompanyID><cbc:TaxLevelCode listName="49">R-99-PN</cbc:TaxLevelCode><cac:TaxScheme><cbc:ID>ZY</cbc:ID><cbc:Name>No causa</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
+				`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="%s" schemeName="13">%s</cbc:CompanyID><cbc:TaxLevelCode listName="49">R-99-PN</cbc:TaxLevelCode><cac:TaxScheme><cbc:ID>ZZ</cbc:ID><cbc:Name>No aplica</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
 				`</cac:Party>`+
 				`</cac:AccountingCustomerParty>`,
 			customerName,

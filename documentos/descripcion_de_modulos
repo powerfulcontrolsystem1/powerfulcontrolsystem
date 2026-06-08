@@ -7,8 +7,8 @@
   `PrepaidAmount` con la capitalizacion UBL oficial, `PaymentMeans` y el literal
   exacto de agencia DIAN que aparece en la caja de herramientas oficial.
 - Consumidor final: cuando el adquiriente es el NIT DIAN de consumidor final, el
-  XML usa el bloque minimo del ejemplo oficial con `TaxScheme` `ZY / No causa`,
-  evitando tratarlo como cliente RUT normal.
+  XML usa el bloque minimo con `TaxScheme` `ZZ / No aplica`, autorizado por la
+  lista de codigos DIAN vigente, evitando tratarlo como cliente RUT normal.
 - Flujo de notas: las notas credito/debito no se envian contra facturas solo
   generadas o pendientes; requieren una factura aceptada por DIAN con codigo,
   CUFE y fecha de emision para evitar rechazos por referencia inexistente.
