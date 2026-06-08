@@ -1,3 +1,10 @@
+2026-06-08: Otros paises al final del menu de facturacion electronica.
+- Modulo afectado: Facturacion electronica multi-pais.
+- Frontend: `web/administrar_empresa/facturacion_electronica_menu.html` reubica `Ecuador / SRI` y `Panamá / DGI` en el subgrupo colapsado `Otros países`, debajo de los botones principales.
+- Seguridad/permiso: se conservan `data-country-gated` y `permisos_contexto`; no se exponen paginas de otros paises a empresas sin pais/licencia habilitados.
+- Ortografia visible: se corrige `Panama` a `Panamá` y se normaliza `Proveedores de firma digital`.
+- Alcance: sin cambios en endpoints, tablas, credenciales ni flujos reales de emision.
+
 2026-06-08: Facturacion electronica con Configuracion DIAN primero.
 - Modulo afectado: Facturacion electronica Colombia.
 - Frontend: `web/administrar_empresa/facturacion_electronica.html` elimina visualmente y remueve del DOM las tarjetas introductorias `Pais detectado automaticamente` y `Perfil de facturacion`.
@@ -1518,7 +1525,7 @@
 - Modulos afectados: `facturacion_electronica`, `permisos`, `licencias`, `frontend_ux`.
 - `backend/handlers/empresa_permisos.go` agrega el modulo independiente `facturacion_panama`, la pagina `linkFacturacionPanama`, el wrapper `WithEmpresaFacturacionPanamaPermissions` y el mapeo exacto del endpoint Panama para que la licencia lo controle sin habilitar DIAN Colombia.
 - `/api/empresa/facturacion_electronica/pais_detectado` queda disponible para usuarios autenticados con acceso a la empresa, sin conceder configuracion ni emision, para que el frontend pueda decidir las paginas del submenu por pais.
-- `web/administrar_empresa/facturacion_electronica_menu.html` mantiene el submenu de facturacion como contenedor y muestra paginas internas por pais detectado: CO para DIAN/pruebas/proveedores y PA para Panama/DGI si `facturacion_panama` esta habilitado por licencia y rol.
+- `web/administrar_empresa/facturacion_electronica_menu.html` mantiene el submenu de facturacion como contenedor y muestra paginas internas por pais detectado: CO para DIAN/pruebas/proveedores y PA para Panamá/DGI si `facturacion_panama` esta habilitado por licencia y rol.
 - `web/js/administrar_empresa.js` permite que el boton principal de facturacion electronica se vea cuando la licencia tenga `facturacion` o `facturacion_panama`, y registra las paginas internas para permisos.
 - Pruebas: `go test ./handlers ./db -run "Facturacion|Panama|Paises|Licencia|Permisos" -count=1`, `go test . -count=1`, `node --check web/js/administrar_empresa.js`, validacion de scripts inline del submenu y `git diff --check`.
 
@@ -1527,7 +1534,7 @@
 - `backend/db/facturacion_electronica.go` agrega defaults y checklist PA sobre `facturacion_electronica_pais.campos_pais_json`, con RUC, DV, modalidad, registro SFEP, declaracion jurada, firma, PAC, CAFE, CUFE, QR y documentos soportados.
 - `backend/handlers/facturacion_electronica.go` agrega `/api/empresa/facturacion_electronica/panama` para leer, guardar, validar checklist y entregar guia de onboarding Panama por `empresa_id`.
 - `backend/main.go` registra la ruta empresarial bajo los permisos existentes de facturacion.
-- `web/administrar_empresa/facturacion_electronica_panama.html` crea la pagina independiente Panama/DGI y `web/administrar_empresa/facturacion_electronica_menu.html` agrega el acceso `Panama / DGI`.
+- `web/administrar_empresa/facturacion_electronica_panama.html` crea la pagina independiente Panamá/DGI y `web/administrar_empresa/facturacion_electronica_menu.html` agrega el acceso `Panamá / DGI`.
 - Pruebas: `go test ./db ./handlers -run "Facturacion|Panama|Paises" -count=1` y `node --check web/js/administrar_empresa.js`.
 - Alcance: sin tablas nuevas, sin dependencias externas y manteniendo aislamiento por `empresa_id`.
 

@@ -1,3 +1,9 @@
+2026-06-08 - Submenu Otros paises en facturacion electronica
+- `web/administrar_empresa/facturacion_electronica_menu.html`:
+	- mueve los accesos de Ecuador/SRI y Panamá/DGI al final del menu, dentro del grupo colapsado `Otros paises`.
+	- conserva `data-country-gated` y `permisos_contexto` para mostrar solo paises permitidos por empresa/licencia.
+	- corrige textos visibles del menu: `Panamá / DGI` y `Proveedores de firma digital`.
+
 2026-06-08 - Orden operativo de facturacion electronica
 - `web/administrar_empresa/facturacion_electronica.html`:
 	- retira de la vista las tarjetas introductorias de pais detectado y perfil de facturacion.
@@ -893,7 +899,7 @@
 - `web/js/administrar_empresa.js`:
 	- permite mostrar el modulo contenedor de facturacion si la licencia trae DIAN o Panama y registra paginas internas del submenu.
 - `web/administrar_empresa/facturacion_electronica_menu.html`:
-	- muestra paginas internas por pais detectado: CO para DIAN/pruebas/proveedores y PA para Panama/DGI.
+	- muestra paginas internas por pais detectado: CO para DIAN/pruebas/proveedores y PA para Panamá/DGI.
 
 2026-05-19 - Instalacion PWA desde login
 - `web/login.html`:
@@ -1327,9 +1333,9 @@
 - `web/administrar_empresa/facturacion_electronica.html`:
 	- agrega el boton `Adquirir Firma Electronica` junto a `Cargar firma` y conserva `empresa_id` al navegar.
 - `web/administrar_empresa/proveedores_firma_digital.html`:
-	- nueva pagina interna `Proveedores de Firma Digital` con tarjeta de Sensiyo y enlace externo para comprar certificado digital/firma DIAN.
+	- nueva pagina interna `Proveedores de firma digital` con tarjeta de Sensiyo y enlace externo para comprar certificado digital/firma DIAN.
 - `web/administrar_empresa/facturacion_electronica_menu.html`:
-	- agrega acceso lateral a `Proveedores de Firma Digital` dentro del submenu de facturacion electronica.
+	- agrega acceso lateral a `Proveedores de firma digital` dentro del submenu de facturacion electronica.
 
 2026-05-13 - Tarjeta Caja compacta en estaciones
 - `web/administrar_empresa/estaciones.html`:
@@ -10557,7 +10563,7 @@ backend/handlers/user_config.go - Controlador que expone /api/user/configuracion
 	- Dashboards clasicos (`gimnasio`, `odontologia`, `parqueadero`, `taxi_system`, `domicilios`, `apartamentos_turisticos`, `propiedad_horizontal`, `alquileres`, `aiu_construccion`) : retiran acciones visibles de migracion manual.
 2026-05-19 - Facturacion electronica Panama
 - `web/administrar_empresa/facturacion_electronica_panama.html`:
-	- pagina independiente para configurar el perfil Panama/DGI/SFEP por empresa, con checklist, modalidad PAC o Facturador Gratuito, datos RUC/DV, firma electronica, CAFE/CUFE/QR y enlaces oficiales DGI/e-Tax2.0.
+	- pagina independiente para configurar el perfil Panamá/DGI/SFEP por empresa, con checklist, modalidad PAC o Facturador Gratuito, datos RUC/DV, firma electronica, CAFE/CUFE/QR y enlaces oficiales DGI/e-Tax2.0.
 - `backend/handlers/facturacion_electronica.go`:
 	- agrega el handler empresarial `/api/empresa/facturacion_electronica/panama` para leer, guardar, validar checklist y mostrar guia de onboarding Panama sin usar el endpoint DIAN.
 - `backend/db/facturacion_electronica.go`:

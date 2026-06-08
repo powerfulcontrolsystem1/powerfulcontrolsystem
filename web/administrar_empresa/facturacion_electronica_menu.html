@@ -11,15 +11,20 @@
   <div class="admin-layout">
     <aside class="admin-sidebar admin-sidebar-mobile-collapsible">
       <h2>Facturación electrónica</h2>
-      <ul class="nav" id="facturacionSidebarNav">
+      <ul class="nav admin-nav-grouped" id="facturacionSidebarNav">
         <li hidden data-country-gated="CO"><a id="linkFacturacionMain" href="/administrar_empresa/facturacion_electronica.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturación electrónica</a></li>
-        <li hidden data-country-gated="EC"><a id="linkFacturacionEcuador" href="/administrar_empresa/facturacion_electronica_ecuador.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Ecuador / SRI</a></li>
-        <li hidden data-country-gated="PA"><a id="linkFacturacionPanama" href="/administrar_empresa/facturacion_electronica_panama.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Panama / DGI</a></li>
         <li hidden data-country-gated="CO"><a id="linkPruebasDian" href="/administrar_empresa/facturacion_electronica_pruebas_dian.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Pasar test DIAN</a></li>
         <li hidden data-country-gated="CO"><a id="linkTutorialDian" href="/administrar_empresa/facturacion_electronica_tutorial_dian.html" target="facturacionContentFrame" data-pcs-help-ai="off"><img class="icon" src="/img/report.svg" alt="">Tutorial DIAN</a></li>
-        <li hidden data-country-gated="CO"><a id="linkProveedoresFirmaDigital" href="/administrar_empresa/proveedores_firma_digital.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Proveedores de Firma Digital</a></li>
+        <li hidden data-country-gated="CO"><a id="linkProveedoresFirmaDigital" href="/administrar_empresa/proveedores_firma_digital.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Proveedores de firma digital</a></li>
         <li><a id="linkFacturasElectronicas" href="/administrar_empresa/facturas_electronicas.html" target="facturacionContentFrame"><img class="icon" src="/img/analytics-color.svg" alt="">Facturas electrónicas</a></li>
         <li><a id="linkAIUConstruccion" href="/administrar_empresa/aiu_construccion.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">AIU construcción</a></li>
+        <li id="facturacionOtrosPaisesItem" class="admin-nav-group" hidden>
+          <div class="admin-nav-group-title">Otros países</div>
+          <ul class="admin-nav-sublist">
+            <li hidden data-country-gated="EC"><a id="linkFacturacionEcuador" href="/administrar_empresa/facturacion_electronica_ecuador.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Ecuador / SRI</a></li>
+            <li hidden data-country-gated="PA"><a id="linkFacturacionPanama" href="/administrar_empresa/facturacion_electronica_panama.html" target="facturacionContentFrame"><img class="icon" src="/img/invoice.svg" alt="">Panamá / DGI</a></li>
+          </ul>
+        </li>
         <li class="admin-menu-visibility-item">
           <button type="button" class="admin-menu-visibility-toggle" aria-controls="facturacionSidebarNav" aria-expanded="true" data-show-label="Mostrar menú" data-hide-label="Ocultar menú">
             <span class="admin-menu-visibility-icon" aria-hidden="true">&#9776;</span>
@@ -40,6 +45,17 @@
 
       var countryLinks = Array.prototype.slice.call(document.querySelectorAll('[data-country-gated] a[id]'));
       var frame = document.getElementById('facturacionContentFrame');
+      var otherCountriesItem = document.getElementById('facturacionOtrosPaisesItem');
+      var otherCountryLinkIds = {
+        linkFacturacionEcuador: true,
+        linkFacturacionPanama: true
+      };
+      var countryMenuState = {
+        applying: false,
+        country: '',
+        empresaId: 0,
+        permissions: null
+      };
       if (!countryLinks.length) return;
 
       function setCountryLinkVisible(link, visible) {
@@ -51,6 +67,18 @@
         item.style.display = visible ? '' : 'none';
         link.setAttribute('data-country-visible', visible ? '1' : '0');
         if (!visible) link.classList.remove('active');
+      }
+
+      function syncOtherCountriesVisibility() {
+        if (!otherCountriesItem) return;
+        var hasVisibleCountry = countryLinks.some(function(link) {
+          return !!otherCountryLinkIds[link.id] && link.getAttribute('data-country-visible') === '1';
+        });
+        otherCountriesItem.hidden = !hasVisibleCountry;
+        otherCountriesItem.style.display = hasVisibleCountry ? '' : 'none';
+        otherCountriesItem.classList.remove('is-open');
+        var title = otherCountriesItem.querySelector('.admin-nav-group-title');
+        if (title) title.setAttribute('aria-expanded', 'false');
       }
 
       function resolveEmpresaId() {
@@ -144,7 +172,7 @@
       }
 
       function chooseDefaultCountryPage(country, empresaId) {
-        if (!frame || frame.getAttribute('data-country-default-applied') === '1') return;
+        if (!frame) return;
         var firstVisible = null;
         for (var i = 0; i < countryLinks.length; i += 1) {
           var link = countryLinks[i];
@@ -155,14 +183,36 @@
           }
         }
         if (!firstVisible) return;
+        var targetSrc = withEmpresaContext(firstVisible.getAttribute('href') || '', empresaId);
+        var currentSrc = frame.getAttribute('src') || '';
+        if (frame.getAttribute('data-country-default-applied') === '1' && currentSrc === targetSrc) return;
+        if (frame.getAttribute('data-country-default-applied') === '1' && country === 'CO') return;
         frame.setAttribute('data-country-default-applied', '1');
-        frame.setAttribute('src', withEmpresaContext(firstVisible.getAttribute('href') || '', empresaId));
+        frame.setAttribute('src', targetSrc);
+      }
+
+      function applyCountryMenuState() {
+        if (!countryMenuState.country || !countryMenuState.permissions) return;
+        countryMenuState.applying = true;
+        countryLinks.forEach(function(link) {
+          setCountryLinkVisible(link, countryMatches(link, countryMenuState.country) && linkAllowedByLicenseAndRole(countryMenuState.permissions, link));
+        });
+        syncOtherCountriesVisibility();
+        chooseDefaultCountryPage(countryMenuState.country, countryMenuState.empresaId);
+        countryMenuState.applying = false;
+      }
+
+      function scheduleCountryMenuRepairs() {
+        [120, 650, 1500].forEach(function(delay) {
+          setTimeout(applyCountryMenuState, delay);
+        });
       }
 
       function syncCountryMenu() {
         countryLinks.forEach(function(link) {
           setCountryLinkVisible(link, false);
         });
+        syncOtherCountriesVisibility();
         var empresaId = resolveEmpresaId();
         if (!empresaId) return;
         var tz = '';
@@ -175,14 +225,19 @@
           var detected = results[0] || {};
           var permissions = results[1] || {};
           var country = String(detected.pais_codigo || '').trim().toUpperCase();
-          countryLinks.forEach(function(link) {
-            setCountryLinkVisible(link, countryMatches(link, country) && linkAllowedByLicenseAndRole(permissions, link));
-          });
-          chooseDefaultCountryPage(country, empresaId);
+          countryMenuState.country = country;
+          countryMenuState.empresaId = empresaId;
+          countryMenuState.permissions = permissions;
+          applyCountryMenuState();
+          scheduleCountryMenuRepairs();
         }).catch(function() {
+          countryMenuState.country = '';
+          countryMenuState.empresaId = 0;
+          countryMenuState.permissions = null;
           countryLinks.forEach(function(link) {
             setCountryLinkVisible(link, false);
           });
+          syncOtherCountriesVisibility();
         });
       }
 
@@ -191,6 +246,7 @@
       } else {
         syncCountryMenu();
       }
+
     })();
   </script>
   <script src="/menu.js"></script>

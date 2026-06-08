@@ -4,6 +4,16 @@ Este archivo es la primera lectura operativa antes de tocar el proyecto. Resume
 lo que Codex debe tener en memoria para evitar redescubrir rutas, flujos y
 decisiones en cada tarea.
 
+## Actualizacion 2026-06-08 - Otros paises en facturacion electronica
+
+- `web/administrar_empresa/facturacion_electronica_menu.html` mantiene a
+  Colombia/DIAN como flujo principal visible del submenu de facturacion.
+- Los accesos `Ecuador / SRI` y `Panamá / DGI` viven al final dentro del grupo
+  colapsado `Otros países`.
+- El grupo solo se muestra cuando la deteccion de pais y `permisos_contexto`
+  permiten alguna de esas paginas; no sustituye validaciones de backend ni
+  licencia.
+
 ## Actualizacion 2026-06-07 - Bodega base por empresa
 
 - Cada empresa nueva queda preconfigurada con una bodega activa llamada

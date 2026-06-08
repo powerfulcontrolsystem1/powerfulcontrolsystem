@@ -1,3 +1,9 @@
+## [2026-06-08] Otros paises en facturacion electronica
+- [Frontend] `facturacion_electronica_menu.html` mueve `Ecuador / SRI` y `Panamá / DGI` fuera del listado principal y los agrupa al final bajo el subgrupo colapsado `Otros países`.
+- [Permisos] La visibilidad sigue dependiendo del pais detectado y de `permisos_contexto`; no se abren accesos de otros paises a empresas sin licencia o pais correspondiente.
+- [Ortografia] Se corrige el texto visible `Panama` a `Panamá` y se normaliza `Proveedores de firma digital`.
+- [QA] Validacion de sintaxis del script inline y revision visual local con paises CO/EC/PA.
+
 ## [2026-06-08] Facturacion electronica con DIAN primero
 - [Frontend] `facturacion_electronica.html` retira de la vista principal las tarjetas `Pais detectado automaticamente` y `Perfil de facturacion`.
 - [UX] La primera tarjeta visible ahora es `Configuracion DIAN Colombia` y la segunda `Cargar firma electronica (Colombia / DIAN)`.
@@ -1000,14 +1006,14 @@
 - [Alcance] No agrega tablas ni dependencias; el transporte real SRI/proveedor se parametriza por proveedor y `api_base_url`.
 
 ## [2026-05-19] Facturacion electronica por pais y licencia
-- [Permisos] Ecuador/SRI y Panama/DGI usan modulos independientes `facturacion_ecuador` y `facturacion_panama`, paginas `linkFacturacionEcuador` y `linkFacturacionPanama`, y wrappers propios.
+- [Permisos] Ecuador/SRI y Panamá/DGI usan modulos independientes `facturacion_ecuador` y `facturacion_panama`, paginas `linkFacturacionEcuador` y `linkFacturacionPanama`, y wrappers propios.
 - [Licencias] La licencia puede activar Ecuador o Panama sin activar DIAN Colombia, y DIAN Colombia no habilita esos paises automaticamente.
 - [Frontend] El submenu `Facturacion electronica` permanece como contenedor; sus paginas internas se muestran segun pais detectado automaticamente y permisos efectivos.
-- [Operacion] Colombia muestra configuracion DIAN, pruebas DIAN y proveedores de firma; Panama muestra `Panama / DGI` cuando el pais detectado es PA y la licencia lo permite.
+- [Operacion] Colombia muestra configuracion DIAN, pruebas DIAN y proveedores de firma; Panama muestra `Panamá / DGI` cuando el pais detectado es PA y la licencia lo permite.
 
 ## [2026-05-19] Facturacion electronica Panama
-- [Backend] Nuevo endpoint independiente `/api/empresa/facturacion_electronica/panama` para configurar y validar checklist Panama/DGI sin usar DIAN Colombia.
-- [Frontend] Nueva pagina `facturacion_electronica_panama.html` enlazada como `Panama / DGI` en el submenu de facturacion electronica.
+- [Backend] Nuevo endpoint independiente `/api/empresa/facturacion_electronica/panama` para configurar y validar checklist Panamá/DGI sin usar DIAN Colombia.
+- [Frontend] Nueva pagina `facturacion_electronica_panama.html` enlazada como `Panamá / DGI` en el submenu de facturacion electronica.
 - [Normativa] El perfil PA queda basado en SFEP/DGI: Facturador Gratuito o PAC, declaracion jurada en e-Tax2.0, firma electronica, RUC/DV, CAFE/CUFE/QR y documentos factura/nota credito/nota debito.
 - [Alcance] No agrega tablas ni dependencias; el transporte real PAC/DGI se parametriza por proveedor y `api_base_url`.
 
@@ -1497,7 +1503,7 @@
 
 ## [2026-05-13] Facturacion electronica enlaza proveedores de firma digital
 - [Frontend] `web/administrar_empresa/facturacion_electronica.html` agrega el boton `Adquirir Firma Electronica` junto a `Cargar firma` en la tarjeta de carga DIAN Colombia.
-- [Frontend] `web/administrar_empresa/proveedores_firma_digital.html` publica la pagina `Proveedores de Firma Digital` dentro del submenu de facturacion electronica.
+- [Frontend] `web/administrar_empresa/proveedores_firma_digital.html` publica la pagina `Proveedores de firma digital` dentro del submenu de facturacion electronica.
 - [Proveedor externo] La pagina agrega a Sensiyo como opcion para adquirir certificado digital/firma electronica DIAN y abre la compra en `https://sensiyo.co/certificados-digitales/`.
 - [Alcance] Cambio solo de navegacion/frontend; no modifica endpoints, tablas, permisos ni dependencias.
 

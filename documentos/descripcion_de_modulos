@@ -1,3 +1,9 @@
+2026-06-08: Facturacion electronica multi-pais en Otros paises
+- Modulo afectado: `facturacion_electronica`.
+- El menu de facturacion electronica mantiene Colombia/DIAN como flujo principal.
+- Los accesos Ecuador/SRI y Panamá/DGI quedan al final dentro del grupo colapsado `Otros paises`, visible solo cuando la deteccion de pais y la licencia/permisos de la empresa lo permiten.
+- No cambia el backend, las tablas, las credenciales ni la emision real de documentos electronicos por pais.
+
 2026-06-08: Facturacion electronica con DIAN primero
 - Modulo afectado: `facturacion_electronica`.
 - La pagina principal de facturacion electronica deja de mostrar las tarjetas `Pais detectado automaticamente` y `Perfil de facturacion`.
@@ -904,7 +910,7 @@
 - Modulos afectados: `facturacion_electronica`, `frontend_ux`, `permisos`.
 - Backend: se agrega `/api/empresa/facturacion_electronica/panama`, separado del endpoint DIAN, reutilizando `facturacion_electronica_pais` con `pais_codigo=PA` para conservar aislamiento por `empresa_id` y por pais.
 - Permisos/licencia: Panama queda bajo el modulo independiente `facturacion_panama`; el endpoint PA usa `WithEmpresaFacturacionPanamaPermissions` y no se habilita solo por tener DIAN Colombia. La deteccion de pais sigue disponible para usuarios autenticados de la empresa para decidir que paginas mostrar.
-- Panama/DGI: el perfil PA incorpora defaults SFEP: RUC, DV, modalidad `pac` o `facturador_gratuito`, registro SFEP, declaracion jurada, certificado de firma, PAC, CAFE, CUFE, QR y documentos soportados `factura_electronica`, `nota_credito` y `nota_debito`.
+- Panamá/DGI: el perfil PA incorpora defaults SFEP: RUC, DV, modalidad `pac` o `facturador_gratuito`, registro SFEP, declaracion jurada, certificado de firma, PAC, CAFE, CUFE, QR y documentos soportados `factura_electronica`, `nota_credito` y `nota_debito`.
 - Frontend: nueva pagina `web/administrar_empresa/facturacion_electronica_panama.html` en el submenu de facturacion electronica, con formulario propio, checklist, enlaces oficiales DGI/e-Tax2.0 en ventana nueva y guardado independiente. El submenu de facturacion permanece visible como contenedor y muestra paginas internas segun pais detectado: CO para DIAN/pruebas/proveedores y PA para DGI/SFEP.
 - Alcance normativo: se basa en la documentacion publica de DGI Panama sobre SFEP, Facturador Gratuito, PAC, declaracion jurada de adopcion desde e-Tax2.0 y certificado/firma electronica. No implementa aun transporte real PAC/DGI; deja preparado el endpoint de proveedor por `api_base_url`.
 - Sin dependencias externas ni tablas nuevas.
