@@ -1,3 +1,9 @@
+## [2026-06-08] DIAN consumidor final y firma canonicalizada
+- [DIAN] La factura diagnostica real `SETP990000189` llego a habilitacion con TrackId y DIAN respondio `StatusCode=99`; los errores restantes fueron `ZE02`, `FAK61` y una notificacion de nombre/RUT del adquiriente.
+- [UBL] El adquiriente consumidor final ahora sigue el ejemplo oficial DIAN: `AdditionalAccountID=2`, nombre `consumidor o usuario final`, `TaxLevelCode listName=49` y `TaxScheme ZY / No causa`.
+- [Firma] XAdES base calcula digest del documento, `KeyInfo`, `SignedProperties` y `SignedInfo` sobre XML canonicalizado con namespaces explicitos usando Go estandar.
+- [Operacion] No se enviaron notas credito/debito porque la factura diagnostica no obtuvo acuse aceptado `StatusCode=00`.
+
 ## [2026-06-08] DIAN prueba real uno a uno
 - [DIAN] La reconsulta real de factura, nota debito y nota credito para empresa 12 confirma rechazos `StatusCode=99`; PCS conserva `ErrorMessageList` completo en historial TrackId.
 - [UBL] Corrige `PrepaidAmount`, literales DIAN oficiales con tildes, `ProfileID` por tipo documental, `PaymentMeans` y responsabilidad fiscal base cuando no hay catalogo configurado.

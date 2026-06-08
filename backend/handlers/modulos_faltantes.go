@@ -8279,12 +8279,33 @@ func dianSupplierPartyXML(nit, dv, registrationName, prefijo, taxLevel string) s
 	)
 }
 
+func dianIsConsumidorFinalNIT(customerNIT string) bool {
+	digits := dianOnlyDigits(customerNIT)
+	return len(digits) >= 6 && strings.Trim(digits, "2") == ""
+}
+
 func dianCustomerPartyXML(customerName, customerNIT string) string {
 	customerName = escapeXML(dianFirstNonBlank(customerName, "CONSUMIDOR FINAL"))
 	customerNITDigits := dianOnlyDigits(dianFirstNonBlank(customerNIT, "2222222222"))
 	additionalAccountID := "1"
 	schemeID := dianCompanyIDSchemeID(customerNITDigits, "")
 	schemeName := "31"
+	if dianIsConsumidorFinalNIT(customerNITDigits) {
+		customerName = "consumidor o usuario final"
+		return fmt.Sprintf(
+			`<cac:AccountingCustomerParty>`+
+				`<cbc:AdditionalAccountID>2</cbc:AdditionalAccountID>`+
+				`<cac:Party>`+
+				`<cac:PartyName><cbc:Name>%s</cbc:Name></cac:PartyName>`+
+				`<cac:PartyTaxScheme><cbc:RegistrationName>%s</cbc:RegistrationName><cbc:CompanyID schemeAgencyID="195" schemeAgencyName="%s" schemeName="13">%s</cbc:CompanyID><cbc:TaxLevelCode listName="49">R-99-PN</cbc:TaxLevelCode><cac:TaxScheme><cbc:ID>ZY</cbc:ID><cbc:Name>No causa</cbc:Name></cac:TaxScheme></cac:PartyTaxScheme>`+
+				`</cac:Party>`+
+				`</cac:AccountingCustomerParty>`,
+			customerName,
+			customerName,
+			escapeXML(dianAgencyName),
+			escapeXML(customerNITDigits),
+		)
+	}
 	if customerNITDigits == "2222222222" || len(customerNITDigits) >= 10 && strings.Trim(customerNITDigits, "2") == "" {
 		additionalAccountID = "2"
 		schemeID = ""
@@ -8991,9 +9012,194 @@ func dianCanonicalXMLDigestInput(xmlPayload string) string {
 	return xmlPayload
 }
 
+func dianCanonicalPrefixForNamespace(space string) string {
+	switch space {
+	case "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2":
+		return "cac"
+	case "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2":
+		return "cbc"
+	case "http://www.w3.org/2000/09/xmldsig#":
+		return "ds"
+	case "urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2":
+		return "ext"
+	case "dian:gov:co:facturaelectronica:Structures-2-1":
+		return "sts"
+	case "http://uri.etsi.org/01903/v1.3.2#":
+		return "xades"
+	case "http://uri.etsi.org/01903/v1.4.1#":
+		return "xades141"
+	case "http://www.w3.org/2001/XMLSchema-instance":
+		return "xsi"
+	case "http://www.w3.org/XML/1998/namespace":
+		return "xml"
+	default:
+		return ""
+	}
+}
+
+func dianIsDocumentRootNamespace(space string) bool {
+	switch space {
+	case "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+		"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2",
+		"urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2":
+		return true
+	default:
+		return false
+	}
+}
+
+func dianCanonicalRootNamespaceAttrs(root xml.Name) []string {
+	if dianIsDocumentRootNamespace(root.Space) {
+		return []string{
+			fmt.Sprintf(`xmlns="%s"`, dianEscapeCanonicalAttr(root.Space)),
+			`xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"`,
+			`xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"`,
+			`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
+			`xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"`,
+			`xmlns:sts="dian:gov:co:facturaelectronica:Structures-2-1"`,
+			`xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"`,
+			`xmlns:xades141="http://uri.etsi.org/01903/v1.4.1#"`,
+			`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
+		}
+	}
+	switch root.Space {
+	case "http://www.w3.org/2000/09/xmldsig#":
+		return []string{`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`}
+	case "http://uri.etsi.org/01903/v1.3.2#":
+		return []string{
+			`xmlns:ds="http://www.w3.org/2000/09/xmldsig#"`,
+			`xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"`,
+		}
+	default:
+		return nil
+	}
+}
+
+func dianCanonicalElementName(name xml.Name, rootSpace string) string {
+	if dianIsDocumentRootNamespace(rootSpace) && name.Space == rootSpace {
+		return name.Local
+	}
+	if prefix := dianCanonicalPrefixForNamespace(name.Space); prefix != "" {
+		return prefix + ":" + name.Local
+	}
+	return name.Local
+}
+
+func dianEscapeCanonicalText(v string) string {
+	replacer := strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		">", "&gt;",
+		"\r", "&#xD;",
+	)
+	return replacer.Replace(v)
+}
+
+func dianEscapeCanonicalAttr(v string) string {
+	replacer := strings.NewReplacer(
+		"&", "&amp;",
+		"<", "&lt;",
+		"\"", "&quot;",
+		"\t", "&#x9;",
+		"\n", "&#xA;",
+		"\r", "&#xD;",
+	)
+	return replacer.Replace(v)
+}
+
+func dianCanonicalAttrName(attr xml.Attr) (name, sortKey string, ok bool) {
+	if attr.Name.Space == "xmlns" || attr.Name.Space == "http://www.w3.org/2000/xmlns/" || attr.Name.Local == "xmlns" {
+		return "", "", false
+	}
+	if attr.Name.Space == "" {
+		return attr.Name.Local, "\x00" + attr.Name.Local, true
+	}
+	prefix := dianCanonicalPrefixForNamespace(attr.Name.Space)
+	if prefix == "" {
+		return attr.Name.Local, attr.Name.Space + "\x00" + attr.Name.Local, true
+	}
+	return prefix + ":" + attr.Name.Local, attr.Name.Space + "\x00" + attr.Name.Local, true
+}
+
+func dianCanonicalizeXML(raw string) (string, error) {
+	raw = dianCanonicalXMLDigestInput(raw)
+	decoder := xml.NewDecoder(strings.NewReader(raw))
+	var builder strings.Builder
+	var rootSpace string
+	depth := 0
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		switch node := token.(type) {
+		case xml.StartElement:
+			if depth == 0 {
+				rootSpace = node.Name.Space
+			}
+			builder.WriteString("<")
+			builder.WriteString(dianCanonicalElementName(node.Name, rootSpace))
+			if depth == 0 {
+				for _, nsAttr := range dianCanonicalRootNamespaceAttrs(node.Name) {
+					builder.WriteByte(' ')
+					builder.WriteString(nsAttr)
+				}
+			}
+			attrs := make([]struct {
+				name    string
+				value   string
+				sortKey string
+			}, 0, len(node.Attr))
+			for _, attr := range node.Attr {
+				attrName, sortKey, ok := dianCanonicalAttrName(attr)
+				if !ok {
+					continue
+				}
+				attrs = append(attrs, struct {
+					name    string
+					value   string
+					sortKey string
+				}{name: attrName, value: attr.Value, sortKey: sortKey})
+			}
+			sort.Slice(attrs, func(i, j int) bool { return attrs[i].sortKey < attrs[j].sortKey })
+			for _, attr := range attrs {
+				builder.WriteByte(' ')
+				builder.WriteString(attr.name)
+				builder.WriteString(`="`)
+				builder.WriteString(dianEscapeCanonicalAttr(attr.value))
+				builder.WriteByte('"')
+			}
+			builder.WriteString(">")
+			depth++
+		case xml.EndElement:
+			depth--
+			builder.WriteString("</")
+			builder.WriteString(dianCanonicalElementName(node.Name, rootSpace))
+			builder.WriteString(">")
+		case xml.CharData:
+			builder.WriteString(dianEscapeCanonicalText(string(node)))
+		}
+	}
+	return builder.String(), nil
+}
+
+func dianCanonicalSHA256Base64(xmlPayload string) (string, error) {
+	canonical, err := dianCanonicalizeXML(xmlPayload)
+	if err != nil {
+		return "", err
+	}
+	digest := sha256.Sum256([]byte(canonical))
+	return base64.StdEncoding.EncodeToString(digest[:]), nil
+}
+
 func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, cert *x509.Certificate) (map[string]string, error) {
-	documentDigest := sha256.Sum256([]byte(dianCanonicalXMLDigestInput(xmlPayload)))
-	documentDigestBase64 := base64.StdEncoding.EncodeToString(documentDigest[:])
+	documentDigestBase64, err := dianCanonicalSHA256Base64(xmlPayload)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo canonicalizar XML DIAN para digest: %w", err)
+	}
 	signingTime := time.Now().Format(time.RFC3339)
 	signedPropertiesID := "SignedPropertiesPCS"
 	signatureID := "SignaturePCS"
@@ -9001,29 +9207,39 @@ func dianBuildXAdESBaseSignature(xmlPayload string, privateKey *rsa.PrivateKey, 
 
 	signaturePolicy := `<xades:SignaturePolicyIdentifier><xades:SignaturePolicyId><xades:SigPolicyId><xades:Identifier>https://facturaelectronica.dian.gov.co/politicadefirma/v1/politicadefirmav2.pdf</xades:Identifier></xades:SigPolicyId><xades:SigPolicyHash><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>dMoMvtcG5aIzgYo0tIsSQeVJBDnUnfSOfBpxXrmor0Y=</ds:DigestValue></xades:SigPolicyHash></xades:SignaturePolicyId></xades:SignaturePolicyIdentifier>`
 	signerRole := `<xades:SignerRole><xades:ClaimedRoles><xades:ClaimedRole>supplier</xades:ClaimedRole></xades:ClaimedRoles></xades:SignerRole>`
-	signedProperties := fmt.Sprintf(`<xades:SignedProperties Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s%s%s</xades:SignedSignatureProperties></xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert), signaturePolicy, signerRole)
-	propsDigest := sha256.Sum256([]byte(signedProperties))
-	propsDigestBase64 := base64.StdEncoding.EncodeToString(propsDigest[:])
+	signedProperties := fmt.Sprintf(`<xades:SignedProperties xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Id="%s"><xades:SignedSignatureProperties><xades:SigningTime>%s</xades:SigningTime>%s%s%s</xades:SignedSignatureProperties></xades:SignedProperties>`, signedPropertiesID, escapeXML(signingTime), dianBuildSigningCertificateBlock(cert), signaturePolicy, signerRole)
+	propsDigestBase64, err := dianCanonicalSHA256Base64(signedProperties)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo canonicalizar SignedProperties DIAN: %w", err)
+	}
 
 	keyInfo := ""
 	keyInfoReference := ""
 	if cert != nil {
-		keyInfo = fmt.Sprintf(`<ds:KeyInfo Id="%s"><ds:X509Data><ds:X509Certificate>%s</ds:X509Certificate></ds:X509Data></ds:KeyInfo>`, keyInfoID, base64.StdEncoding.EncodeToString(cert.Raw))
-		keyInfoDigest := sha256.Sum256([]byte(keyInfo))
-		keyInfoReference = fmt.Sprintf(`<ds:Reference URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>`, keyInfoID, base64.StdEncoding.EncodeToString(keyInfoDigest[:]))
+		keyInfo = fmt.Sprintf(`<ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="%s"><ds:X509Data><ds:X509Certificate>%s</ds:X509Certificate></ds:X509Data></ds:KeyInfo>`, keyInfoID, base64.StdEncoding.EncodeToString(cert.Raw))
+		keyInfoDigestBase64, err := dianCanonicalSHA256Base64(keyInfo)
+		if err != nil {
+			return nil, fmt.Errorf("no se pudo canonicalizar KeyInfo DIAN: %w", err)
+		}
+		keyInfoReference = fmt.Sprintf(`<ds:Reference URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>`, keyInfoID, keyInfoDigestBase64)
 	}
 
-	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod><ds:Reference URI=""><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>%s<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference></ds:SignedInfo>`, documentDigestBase64, keyInfoReference, signedPropertiesID, propsDigestBase64)
+	signedInfo := fmt.Sprintf(`<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></ds:CanonicalizationMethod><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod><ds:Reference Id="%s-ref0" URI=""><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference>%s<ds:Reference Type="http://uri.etsi.org/01903#SignedProperties" URI="#%s"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod><ds:DigestValue>%s</ds:DigestValue></ds:Reference></ds:SignedInfo>`, signatureID, documentDigestBase64, keyInfoReference, signedPropertiesID, propsDigestBase64)
+	canonicalSignedInfo, err := dianCanonicalizeXML(signedInfo)
+	if err != nil {
+		return nil, fmt.Errorf("no se pudo canonicalizar SignedInfo DIAN: %w", err)
+	}
 
-	signedInfoDigest := sha256.Sum256([]byte(signedInfo))
+	signedInfoDigest := sha256.Sum256([]byte(canonicalSignedInfo))
 	signatureValue, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, signedInfoDigest[:])
 	if err != nil {
 		return nil, fmt.Errorf("no se pudo firmar SignedInfo con RSA-SHA256")
 	}
 
-	signatureXML := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">%s<ds:SignatureValue>%s</ds:SignatureValue>%s<ds:Object><xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="#%s">%s</xades:QualifyingProperties></ds:Object></ds:Signature>`,
+	signatureXML := fmt.Sprintf(`<ds:Signature Id="%s" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">%s<ds:SignatureValue Id="%s-sigvalue">%s</ds:SignatureValue>%s<ds:Object><xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="#%s">%s</xades:QualifyingProperties></ds:Object></ds:Signature>`,
 		signatureID,
-		signedInfo,
+		canonicalSignedInfo,
+		signatureID,
 		base64.StdEncoding.EncodeToString(signatureValue),
 		keyInfo,
 		signatureID,

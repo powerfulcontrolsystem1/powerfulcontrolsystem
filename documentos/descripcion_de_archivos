@@ -2,7 +2,9 @@
 - `backend/handlers/modulos_faltantes.go`:
 	- actualiza el generador UBL DIAN para factura, nota credito y nota debito con `UBL 2.1`, `DIAN 2.1`, `CUFE/CUDE-SHA384`, extensiones DIAN, QR, `SoftwareSecurityCode`, parties, totales y lineas documentales correctas.
 	- alinea el XML con rechazos reales DIAN: `ProfileID` detallado, `PrepaidAmount`, `PaymentMeans` y literal oficial de agencia DIAN.
+	- emite consumidor final con el bloque oficial `AdditionalAccountID=2` y `TaxScheme ZY / No causa`.
 	- evita enviar notas credito/debito sin una factura aceptada por DIAN como referencia.
+	- canonicaliza XML para digest XAdES de documento, `KeyInfo`, `SignedProperties` y `SignedInfo` sin dependencias externas.
 	- endurece `validateDIANDocumentPreflight` contra estructuras no aceptables antes de enviar a DIAN.
 	- parsea `ErrorMessageList` completo desde SOAP y clasifica errores finales de DIAN como rechazo real.
 - `backend/handlers/dian_signature_upload_test.go`:

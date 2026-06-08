@@ -1,3 +1,11 @@
+2026-06-08: DIAN consumidor final y firma XAdES canonicalizada.
+- Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
+- Evidencia DIAN: la factura diagnostica real `SETP990000189` recibio TrackId `d594d30a-25aa-4da1-b220-6439b68ce72f` y acuse final `StatusCode=99`; DIAN ya no reporto errores de `PrePaidAmount`, `ProfileID`, literales de agencia ni varios errores de esquema, quedando `ZE02`, `FAK61` y notificacion de nombre/RUT del adquiriente.
+- Backend UBL: `dianCustomerPartyXML` emite consumidor final conforme al ejemplo oficial DIAN `Consumidor Final.xml`: `AdditionalAccountID=2`, nombre `consumidor o usuario final`, `CompanyID schemeName=13`, `TaxLevelCode listName=49` y `TaxScheme ZY / No causa`.
+- Firma: `dianBuildXAdESBaseSignature` calcula digest de documento, `KeyInfo`, `SignedProperties` y `SignedInfo` mediante canonicalizacion XML basica en Go estandar, con namespaces explicitos para XMLDSig/XAdES.
+- Operacion: no se enviaron notas credito/debito porque no existe factura aceptada `StatusCode=00` que pueda servir como referencia fiscal.
+- QA: `go test ./handlers -run "DIAN|Dian|SOAP|StatusDescription|ErrorMessage|GenerateDIANUBL|ValidateDIANDocument|XAdES" -count=1`; `go test ./... -run "^$" -count=1`; `git diff --check`.
+
 2026-06-08: DIAN prueba real uno a uno y correcciones por rechazo oficial.
 - Modulo afectado: Facturacion electronica Colombia, Centro de habilitacion DIAN.
 - Evidencia DIAN: reconsulta real de TrackId/ZipKey para empresa `12` devolvio `StatusCode=99` y `Validacion contiene errores en campos mandatorios` para factura, nota debito y nota credito; `ErrorMessageList` quedo persistido en `empresa_dian_track_historial`.
